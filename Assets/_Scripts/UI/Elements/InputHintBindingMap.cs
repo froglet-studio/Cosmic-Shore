@@ -45,9 +45,9 @@ namespace CosmicShore.UI
             [HintBinding.PadButtonSouth]   = new[] { InputEvents.Button1Action },
             [HintBinding.PadButtonEast]    = new[] { InputEvents.Button2Action },
             [HintBinding.PadButtonWest]    = new[] { InputEvents.Button3Action },
-            [HintBinding.PadRightShoulder] = new[] { InputEvents.FlipAction },
+            [HintBinding.PadRightShoulder] = new[] { InputEvents.PayloadAction },
             [HintBinding.PadButtonNorth]   = new[] { InputEvents.Button4Action },
-            [HintBinding.PadLeftShoulder]  = new[] { InputEvents.IdleAction },
+            [HintBinding.PadLeftShoulder]  = new[] { InputEvents.LeftShoulderAction },
 
             // The keyboard's three action keys. Both desktop schemes raise these
             // (KeyboardInputStrategy and SingleStickMouseInputStrategy share their button half),
@@ -64,8 +64,8 @@ namespace CosmicShore.UI
             [HintBinding.KeySpace] = new[] { InputEvents.Button1Action },
             [HintBinding.KeyR]     = new[] { InputEvents.Button2Action },
             [HintBinding.KeyQ]     = new[] { InputEvents.Button3Action },
-            // E raises FlipAction (the pad's right shoulder) in both desktop schemes.
-            [HintBinding.KeyE]     = new[] { InputEvents.FlipAction },
+            // E raises PayloadAction (the pad's right shoulder) in both desktop schemes.
+            [HintBinding.KeyE]     = new[] { InputEvents.PayloadAction },
             // F raises Button4Action (the pad's Y) in both desktop schemes.
             [HintBinding.KeyF]     = new[] { InputEvents.Button4Action },
         };

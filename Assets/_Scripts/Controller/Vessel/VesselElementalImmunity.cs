@@ -94,6 +94,10 @@ namespace CosmicShore.Gameplay
         /// <summary>True while this window currently holds its grant - the HUD's indicator.</summary>
         public bool IsHolding => _granted != ElementalDebuffSources.None;
 
+        /// <summary>WhileAboveTopSpeedFraction's threshold, 0..1 of the hull's top speed (the Rhino's Time card marks it
+        /// on its speed gauge); 0 for any other condition.</summary>
+        public float TopSpeedFraction => condition == Condition.WhileAboveTopSpeedFraction ? topSpeedFraction : 0f;
+
         /// <summary>Which element's level-5 upgrade gates this window (None = ungated).</summary>
         public Element UpgradeGate => upgradeGate;
 

@@ -37,11 +37,13 @@ import re
 import statistics
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 AUTHOR = os.path.join(HERE, "author_skimrace_ai_config.py")
 REPORT_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_FROM_FLIGHTS.md")
+MODE = "Regatta"   # --mode SkimRace measures Skim Race too (per intensity, report only: see run_skimrace)
 REPORTS_PREFIX = "BugLedger/shared/reports/"
 SCHEMA = "cosmic-shore.flight/2"
 SCHEMAS = ("cosmic-shore.flight/1", SCHEMA, "cosmic-shore.flight/3")   # /1 carried the rail measures; /2 is measured here; /3 adds the situation columns (SITUATION_RECORDING_PLAN.md)
@@ -68,8 +70,36 @@ def git(*args):
     return r.stdout if r.returncode == 0 else None
 
 
-def flights_on_branches():
-    """Every flight file on every origin branch (deduped by blob): (name, json)."""
+# Flights no learner may read as a person's: the AI trainer flew them. The recorder now marks a trainer-flown hull as
+# held and never stores a match the trainer flew alone, and writes "pilot" into every record (PilotControl.IsHeldByTrainer,
+# HumanFlightRecorder, 2026-10-29); these were stored before that, as hand-flown, by Froglet Compute's first Unity run
+# (Switchback I2 on Shombith's PC, 2026-10-28: a 103 s race every ~35 s of wall time, the game at about 3x).
+NOT_A_PERSON = {
+    name: "the AI trainer flew it (Froglet Compute's first Unity run, 2026-10-28), not a person"
+    for name in ("flight_Switchback_Dolphin_20261028_211556.json", "flight_Switchback_Dolphin_20261028_211632.json",
+                 "flight_Switchback_Dolphin_20261028_211706.json", "flight_Switchback_Dolphin_20261028_211740.json",
+                 "flight_Switchback_Dolphin_20261028_211815.json", "flight_Switchback_Dolphin_20261028_211849.json",
+                 "flight_Switchback_Dolphin_20261028_211928.json")
+}
+PILOT = re.compile(r'"pilot"\s*:\s*"([^"]*)"')
+PERSON_PILOTS = ("human", "mixed")   # "mixed": the AI held the hull for part of it; those rows carry held = 1
+
+
+def not_a_person(name, text):
+    """Why no learner may read this flight as a person's, or None. The header's "pilot" (written since 2026-10-29) and
+    the named records stored before it; a record without the field is a person's, as every record was before."""
+    known = NOT_A_PERSON.get(os.path.basename(name))
+    if known:
+        return known
+    m = PILOT.search(text[:4096])
+    if m and m.group(1) not in PERSON_PILOTS:
+        return f"flown by {m.group(1) or 'nobody'}, not a person"
+    return None
+
+
+def flights_on_branches(include_not_a_person=False):
+    """Every flight file on every origin branch (deduped by blob): (name, json). Flights a person did not fly are left
+    out (not_a_person), unless asked for: ai_learn.py lists them as waiting, with the reason."""
     out, seen = [], set()
     refs = (git("for-each-ref", "--format=%(refname:short)", "refs/remotes/origin") or "").split()
     for ref in refs:
@@ -85,16 +115,18 @@ def flights_on_branches():
                 continue
             seen.add(blob)
             text = git("cat-file", "-p", blob)
-            if text:
+            if text and (include_not_a_person or not not_a_person(path, text)):
                 out.append((path, text))
     return out
 
 
-def flights_in_dir(folder):
+def flights_in_dir(folder, include_not_a_person=False):
     out = []
     for path in sorted(glob.glob(os.path.join(folder, "flight_*.json"))):
         with open(path, encoding="utf-8") as fh:
-            out.append((path, fh.read()))
+            text = fh.read()
+        if include_not_a_person or not not_a_person(path, text):
+            out.append((path, text))
     return out
 
 
@@ -210,6 +242,18 @@ def derive(f, lane):
 
 
 
+def race_seconds(f):
+    rows = f.get("samples") or []
+    return (rows[-1][0] - rows[0][0]) if rows else None
+
+
+def done_of(f):
+    """A race the pilot ran to its end: a Regatta race finished; a Skim Race (no ring target) ended by its own rules."""
+    if f.get("mode") == "SkimRace":
+        return f.get("ended") == "race over"
+    return finished_of(f)
+
+
 def finished_of(f):
     """A finished race. Flights recorded before 2026-10-16's recorder fix stopped one sample before the last ring counted
     (written 23 / 24): those count as finished when the race ended on its own and the last sample is at the last ring."""
@@ -281,7 +325,7 @@ def measure(f):
     seconds = max(rows[-1]["t"] - rows[0]["t"], 1e-3) if rows else 1e-3
     gaps = [r["gap"] for r in rows if r.get("gap", -1) >= 0]
     return {
-        "name": os.path.basename(f["name"]), "finished": finished_of(f), "raceSeconds": f.get("raceSeconds"),
+        "name": os.path.basename(f["name"]), "finished": done_of(f), "raceSeconds": f.get("raceSeconds") or race_seconds(f),
         "rings": f.get("rings") + (1 if finished_of(f) and not f.get("finished") else 0), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
         "samples": len(rows), "skimShare": len(skim) / max(len(rows), 1),
         "lineHeight": line_h, "lineSide": line_side, "minusFaceShare": side_share, "gapP10": pct([r["gap"] for r in skim], 0.1), "gapMedian": pct([r["gap"] for r in skim], 0.5),
@@ -415,6 +459,43 @@ def write_overrides(learned, n_flights):
 
 # ---------------------------------------------------------------- main
 
+def skimrace_policy(intensity):
+    """The Skim Race policy an intensity flies (SkimRaceAIDeployment.PolicyFor: its own tuning file, else the general one)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("author_cfg", AUTHOR)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    name = f"SkimRaceAIConfig_I{intensity}"
+    return (name, dict(mod.POLICIES[name])) if name in mod.POLICIES else ("SkimRaceAIConfig", dict(mod.POLICIES["SkimRaceAIConfig"]))
+
+
+def run_skimrace(ms, write):
+    """Skim Race, per intensity: what the person's races say against the policy that intensity flies. REPORT ONLY - those
+    policies are simulation-tuned to WIN their tracks (author_skimrace_ai_config.py: Regatta got its own copy so "Skim Race
+    was calibrated on" stays unmoved), so a person's numbers are evidence for that tuner, never written over it here."""
+    by = {}
+    for m in ms:
+        by.setdefault(int(m.get("intensity") or 1), []).append(m)
+    parts = []
+    for i in sorted(by):
+        name, base = skimrace_policy(i)
+        learned, notes, used, why_used = learn(by[i], base)
+        parts.append(f"## Intensity {i} (flies `{name}`)\n\n" + report(by[i], notes, used, why_used))
+    text = "\n\n".join(parts)
+    print(text)
+    if write:
+        doc = REPORT_DOC.replace("LEARNED_FROM_FLIGHTS", "LEARNED_FROM_FLIGHTS_SkimRace")
+        open(doc, "w", encoding="utf-8").write(
+            "# What people's Skim Race races say about the Squirrel AI\n\n"
+            f"Generated by `learn_from_flights.py --mode SkimRace --write` ({datetime.date.today().isoformat()}), run by the "
+            "AI learning sweep (`Docs/AI_SYSTEM/AUTO_LEARNING.md`). **Report only:** each intensity's policy is "
+            "simulation-tuned to win its track (`author_skimrace_ai_config.py`, `Docs/SKIM_RACE_AI.md`), so these numbers "
+            "are what the person flies, beside what the AI flies, for that tuner; nothing here is written into a policy.\n\n"
+            + text + "\n")
+        print(f"wrote {os.path.relpath(doc, REPO)}")
+    return 0
+
+
 def run(sources, write):
     ms, problems = [], []
     for name, text in sources:
@@ -422,9 +503,8 @@ def run(sources, write):
         if err:
             problems.append(err)
             continue
-        if f.get("mode") != "Regatta" or f.get("hull") != "Squirrel":
-            problems.append(f"{os.path.basename(name)}: {f.get('mode')} / {f.get('hull')} - only Regatta Squirrel flights teach this policy")
-            continue
+        if f.get("mode") != MODE or f.get("hull") != "Squirrel":
+            continue   # another mode's or hull's flight: not this learner's
         m = measure(f)
         if m is None:
             problems.append(f"{os.path.basename(name)}: no rail in the file ({f.get('laneError') or 'empty lane'})")
@@ -435,6 +515,11 @@ def run(sources, write):
         ms.append(m)
     for p in problems:
         print("skipped:", p)
+    if MODE == "SkimRace":
+        if not ms:
+            print("No Skim Race Squirrel flights with their track yet (the recorder copies Skim Race's track since 2026-10-26).")
+            return 0
+        return run_skimrace(ms, write)
     if not ms:
         print("No Regatta Squirrel flights to learn from. Fly Regatta as the Squirrel by hand (recording is automatic), "
               "stop Play and press Store AI record.")
@@ -456,7 +541,21 @@ def run(sources, write):
 
 
 def self_test():
-    import tempfile
+    # Who flew it (2026-10-29): a trainer-flown record and a named one from before the field are not a person's;
+    # a person's ("human", "mixed" or no field at all) is. Negative control: the same record marked human is read.
+    trainer = '{"schema":"cosmic-shore.flight/3","mode":"Switchback","pilot":"trainer","samples":[]}'
+    assert not_a_person("x/flight_Switchback_Dolphin_1.json", trainer), "a trainer-flown record was read as a person's"
+    assert not not_a_person("x/flight_Switchback_Dolphin_1.json", trainer.replace('"trainer"', '"human"')), \
+        "negative control: a person's record was refused"
+    assert not not_a_person("x/flight_a.json", '{"pilot":"mixed"}') and not not_a_person("x/flight_a.json", "{}")
+    assert not_a_person("BugLedger/shared/reports/shombith/flights/flight_Switchback_Dolphin_20261028_211556.json", "{}")
+    with tempfile.TemporaryDirectory() as tmp:
+        for n, t in (("flight_A_B_1.json", trainer), ("flight_A_B_2.json", trainer.replace('"trainer"', '"human"'))):
+            with open(os.path.join(tmp, n), "w", encoding="utf-8") as fh:
+                fh.write(t)
+        names = [os.path.basename(p) for p, _ in flights_in_dir(tmp)]
+        assert names == ["flight_A_B_2.json"], ("flights_in_dir must leave the trainer's record out", names)
+        assert len(flights_in_dir(tmp, include_not_a_person=True)) == 2
     # A circular rail of radius 300 with up pointing outward; the human flies 11 u outside it, steering a little.
     lane, n = [], 240
     for i in range(n):
@@ -542,7 +641,11 @@ def main():
     ap.add_argument("--dir", action="append", help="a local folder of flight_*.json (repeatable); default: every origin branch")
     ap.add_argument("--write", action="store_true", help="write the overrides, regenerate the asset and the report doc")
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--mode", default="Regatta", choices=("Regatta", "SkimRace"),
+                    help="Regatta (writes SkimRaceAIConfig_Regatta) or SkimRace (per intensity, report only)")
     a = ap.parse_args()
+    global MODE
+    MODE = a.mode
     if a.self_test:
         return self_test()
     if a.dir:

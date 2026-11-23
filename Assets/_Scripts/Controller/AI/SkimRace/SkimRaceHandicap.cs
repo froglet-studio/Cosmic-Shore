@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// One difficulty's deliberate mistakes (<see cref="SkimRaceHandicap"/>). The default - both zero -
-    /// is no handicap at all, which is what Hard flies.
+    /// is no handicap at all, which is what Legendary flies.
     /// </summary>
     [System.Serializable]
     public struct SkimRaceHandicapLevel
@@ -28,14 +28,14 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// The deliberate, human-shaped mistakes an Easy or Medium Skim Race AI makes - the lobby's AI
+    /// The deliberate, human-shaped mistakes an Easy, Medium or Hard Skim Race AI makes - the lobby's AI
     /// difficulty (<c>AIDifficulty</c>), which is independent of intensity: the same mistakes on every
     /// track, so the hardest AI can race intensity 1 and an easy one intensity 4.
     ///
     /// <para><b>It changes what the driver BELIEVES, never what it does with a belief.</b> The
     /// <see cref="SkimRaceDriver"/> decides exactly as it always does, on a view of the world this
     /// class has edited - so a handicapped pilot flies with the same steering, guards and recovery as
-    /// the unhandicapped one, and Hard (no handicap) is the shipped pilot byte for byte. Two kinds of
+    /// the unhandicapped one, and Legendary (no handicap) is the shipped pilot byte for byte. Two kinds of
     /// mistake, both per CRYSTAL rather than per frame, because a person's mistakes are decisions made
     /// a little late or a little wrong, not a shaking hand:</para>
     /// <list type="bullet">

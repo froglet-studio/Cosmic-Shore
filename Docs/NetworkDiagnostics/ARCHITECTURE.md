@@ -7,7 +7,7 @@ changes behavior.
 **Logging channel: `CSDebug.Log` (not `Debug.*`).** Every line this
 overlay emits — the per-catch `NetDiag` lines and the `NetworkMonitor`
 transition lines — goes through `CSDebug.Log`
-(`Assets/_Scripts/Utility/CSDebug.cs`). This is deliberate:
+(`Assets/_Scripts/Utility/Foundation/CSDebug.cs`). This is deliberate:
 
 - **Stripped from release builds.** `CSDebug.Log` carries
   `[Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]`, so
@@ -237,6 +237,9 @@ No injection needed — `NetworkDiagnostics` is a static helper. See
 `TODOS.md` for the candidate non-party adoption list.
 
 ## Related docs
+
+- `../Multiplayer/TEST_CHECKLIST.md` — the separate **multiplayer debug overlay** (Ctrl+Shift+M, Editor/Development builds: presence, Friends, arcade snapshot, per-player RTT) and the release-build **poor-connection badge** (`Utility/Network/ConnectionWarningBadge.cs`, thresholds in `ConnectionQuality`)
+- `../Multiplayer/README.md` — index of all multiplayer docs
 
 - `TESTS.md` — Tests A-E for verifying the diagnostic accuracy
 - `TODOS.md` — `BoostPolling`, active probing, baseline-entry log,

@@ -187,7 +187,7 @@ Two sub-kinds, and the split matters because only one of them is a defect:
 | `ActiveGameModesWindow.cs` | 160 | `#80CC80` |  | — | editor-inspector chrome |
 | `ActiveGameModesWindow.cs` | 168 | `#CC8080` |  | — | editor-inspector chrome |
 | `ConnectingPanelController.cs` | 160 | `#FFFFFF` |  | (b) | SO_ColorSet — domain accent fallback |
-| `Controller/MantaVesselHUDController.cs` | 22 | `#FF0000` |  | (b) | Manta HUD — overcharge state; danger candidate |
+| `Controller/MantaHUDController.cs` | 22 | `#FF0000` |  | (b) | Manta HUD — overcharge state; danger candidate |
 | `DomainVolumeHexGraphic.cs` | 84 | `#00FF00` |  | (b) | SO_ColorSet — hardcoded domain triad; SEE FLAG F1 |
 | `DomainVolumeHexGraphic.cs` | 84 | `#FF0000` |  | (b) | SO_ColorSet — hardcoded domain triad; SEE FLAG F1 |
 | `DomainVolumeHexGraphic.cs` | 84 | `#FFEB04` |  | (b) | SO_ColorSet — hardcoded domain triad; SEE FLAG F1 |

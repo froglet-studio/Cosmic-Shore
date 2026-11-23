@@ -3,7 +3,7 @@
 > **Input moved 2026-10-02:** both triggers are the Grizzly's bombs (the bomb pump then, the
 > **trigger bombs** since 2026-10-08 — `GRIZZLY_TRIGGER_BOMBS.md`, which reuse this gesture
 > per trigger with pressure in place of hold time), so Fire is on the pad's X (keyboard Q)
-> and the weapon cycle on RB (keyboard E). The gesture below is unchanged — it only changed
+> and the weapon cycle on Y (keyboard F; RB / E until 2026-10-27). The gesture below is unchanged — it only changed
 > buttons.
 
 Design source: `ClassGrizzly.md` (07/16/2026 design pass). Element link: **Space**.

@@ -200,7 +200,9 @@ namespace CosmicShore.Utility
                         // the stale-index catch-all, which the refresh loop must keep ignoring as Benign.
                         if (se.Error != SessionError.Unknown && se.InnerException is NullReferenceException)
                             return UgsFailureClass.Transient;
-                        var byError = ClassifySessionError(se.Error, se.Message);
+                        // The Unknown catch-all is read by its WHOLE chain's words: "Failed to join allocation"
+                        // says nothing, its inner RelayServiceException ("join code not found") says the party is over.
+                        var byError = ClassifySessionError(se.Error, se.Error == SessionError.Unknown ? FlattenMessages(se) : se.Message);
                         if (byError.HasValue) return byError.Value;
                         break; // an error member this table does not know - keep walking, then read the words
                     }
@@ -371,6 +373,14 @@ namespace CosmicShore.Utility
             if (Has(msg, "is full") || Has(msg, "lobby full") || Has(msg, "LobbyFull") || Has(msg, "no available slots"))
                 return UgsFailureClass.Full;
 
+            // A Relay allocation that no longer exists: the host froze past Relay's ~10 s silence or quit, and
+            // its lobby (and the presence row advertising it) outlived it. "Failed to join allocation ...
+            // RelayServiceException: Not Found: join code not found" (the four-player test of 2026-10-30, five
+            // joins into a dead host over 4.5 min). The party is over, exactly as a deleted lobby is.
+            if (Has(msg, "join code not found") || Has(msg, "allocation ID not found") ||
+                (Has(msg, "allocation") && Has(msg, "Not Found")))
+                return UgsFailureClass.Gone;
+
             bool namesASession = Has(msg, "session") || Has(msg, "lobby");
             if (namesASession &&
                 (Has(msg, "not found") || Has(msg, "deleted") || Has(msg, "does not exist") ||
@@ -508,6 +518,25 @@ namespace CosmicShore.Utility
             await ExecuteAsync<bool>(operationKey, async () => { await call(); return true; }, ct);
         }
 
+        /// <summary>
+        /// The innermost UGS SDK method in <paramref name="e"/>'s stack, for the verbose retry line: which call inside
+        /// an SDK operation was refused (a session create is a lobby create, a Relay allocation and lobby updates).
+        /// </summary>
+        internal static string ServiceCallSite(Exception e)
+        {
+            string trace = e?.StackTrace;
+            if (string.IsNullOrEmpty(trace)) return "(no stack)";
+            foreach (var raw in trace.Split('\n'))
+            {
+                string line = raw.Trim();
+                if (line.StartsWith("at ", StringComparison.Ordinal)) line = line.Substring(3);
+                if (line.IndexOf("Unity.Services.", StringComparison.Ordinal) < 0) continue;
+                int paren = line.IndexOf('(');
+                return paren > 0 ? line.Substring(0, paren) : line;
+            }
+            return "(no SDK frame)";
+        }
+
         private async UniTaskVoid RunAsync<T>(string key, Func<UniTask<T>> call, CancellationToken ct, UniTaskCompletionSource<T> completion)
         {
             string label = string.IsNullOrEmpty(key) ? "ugs" : key;
@@ -545,7 +574,7 @@ namespace CosmicShore.Utility
                         if (CSDebug.IsVerbose(CSLogChannel.Party))
                             CSDebug.LogVerbose(CSLogChannel.Party,
                                 $"[UgsRequestPolicy] {label}: attempt {attempt + 1} failed ({cls}: {e.GetType().Name}: {e.Message}) - " +
-                                $"retry {attempt + 1}/{retriesForClass} in {delayMs} ms");
+                                $"retry {attempt + 1}/{retriesForClass} in {delayMs} ms. Refused in: {ServiceCallSite(e)}");
                         await _delay(delayMs, ct);
                     }
                 }

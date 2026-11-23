@@ -1,0 +1,35 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2253-went-in-without-wait-6be8aa",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T05:27:58+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2253 went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+  "branch": "claude/project-thread-b6u2jo",
+  "pr": 2253,
+  "commit": "cf48ec109",
+  "paths": [
+    "Assets/Resources/RaceLines/Shrike_Regatta.asset",
+    "Assets/Resources/RaceLines/Shrike_Regatta.asset.meta",
+    "Assets/_SO_Assets/Games/ArcadeGameRegatta.asset",
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaController.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaShrikeSling.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaShrikeSling.cs.meta",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShrikeExecutor.cs",
+    "Containers/ShrikeConfigSO.cs",
+    "Docs/ElementalLoop/STATUS.md",
+    "Docs/ElementalLoop/loop.json",
+    "Tools/Build/author_race_lines.py",
+    "Tools/Build/author_regatta_assets.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset"
+    }
+  ]
+}

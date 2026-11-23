@@ -47,6 +47,13 @@ namespace CosmicShore.Utility
         /// can see the plasma, more prominently").</summary>
         public float SeamPetalGlow;
 
+        /// <summary>Seam walk: the share of seam choices (0..1) that steer the bolt toward the viewer's side of the crystal,
+        /// when the walker is given the eye. At a junction it then never takes a seam that ends out of sight while one that
+        /// ends in sight is open; from behind the crystal it takes the seam that comes round fastest. Garrett, 2026-11-12:
+        /// "the bolt should always be on screen. it spends too much time invisible to the player on the other side of the
+        /// crystal." 0 = the walk ignores the viewer (the lab and every walker given no eye).</summary>
+        public float SeamFaceViewer;
+
         /// <summary>Flux arc: a Mass column lights where an arc passes through it only while it stands out of the omni
         /// (designer, 2026-10-13: "they should only light when protracted (not retracted)"). Its strike fades in as its
         /// protraction (1 - its column place) rises from the first to the second.</summary>
@@ -699,12 +706,16 @@ namespace CosmicShore.Utility
         readonly List<Leg> legs = new();
         readonly List<int> recent = new(4);
         readonly List<int> options = new(3);
+        readonly List<int> kept = new(3);
+        readonly Vector3 centre;
         int at, previous = -1, serial;
         float end, odometer;
 
         public ChargeSeamWalker(ChargeSites sites, int seed, float startSeconds)
         {
             this.sites = sites;
+            for (int j = 0; j < sites.Junctions.Length; j++) centre += sites.Junctions[j];
+            centre /= Mathf.Max(1, sites.Junctions.Length);
             random = new System.Random(seed);
             at = random.Next(sites.Junctions.Length);
             end = startSeconds;
@@ -714,20 +725,41 @@ namespace CosmicShore.Utility
 
         /// <summary>Strikes every seam due by <paramref name="seconds"/> (and a second ahead), and forgets the ones that
         /// have faded out.</summary>
-        public void Advance(float seconds, in ChargeArcSettings settings)
+        public void Advance(float seconds, in ChargeArcSettings settings) => Advance(seconds, settings, null);
+
+        /// <summary><see cref="Advance(float, in ChargeArcSettings)"/>, steering the walk toward <paramref name="eye"/> (the
+        /// viewer, in the sites' space) as <see cref="ChargeArcSettings.SeamFaceViewer"/> says. Null = no steering.</summary>
+        public void Advance(float seconds, in ChargeArcSettings settings, Vector3? eye)
         {
             float span = settings.Span;
-            while (end <= seconds + 1f)
+            // Plan a second ahead; a walk that follows the viewer plans only a beat ahead, so each turn sees where the
+            // viewer is now rather than where they were a second ago.
+            float ahead = eye.HasValue && settings.SeamFaceViewer > 0f ? 0.1f : 1f;
+            while (end <= seconds + ahead)
             {
                 options.Clear();
                 foreach (int e in sites.SeamsOfJunction[at]) if (e != previous) options.Add(e);
+                bool steer = eye.HasValue && settings.SeamFaceViewer > 0f;
                 if (recent.Count >= 4)
                 {
-                    // never a fifth seam round one bloom
+                    // never a fifth seam round one bloom - unless, steering for the viewer, every way out leaves their
+                    // sight: then staying in view wins (Garrett, 2026-11-12: "the bolt should always be on screen")
                     var first = sites.Seams[recent[0]];
+                    int before = options.Count;
+                    if (steer) { kept.Clear(); kept.AddRange(options); }
                     AvoidCircling(first.SiteA);
                     AvoidCircling(first.SiteB);
+                    if (steer && options.Count < before && !AnyEndsInSight(eye.Value) && AnyEndsInSight(eye.Value, kept))
+                    {
+                        options.Clear();
+                        options.AddRange(kept);
+                    }
                 }
+                // Draw the steering roll only when steering can apply, so a walker given no eye (or a zero share)
+                // keeps exactly the sequence it always had.
+                if (eye.HasValue && settings.SeamFaceViewer > 0f && options.Count > 1
+                    && random.NextDouble() < settings.SeamFaceViewer)
+                    KeepFacing(eye.Value);
                 int seam = options[random.Next(options.Count)];
                 var edge = sites.Seams[seam];
                 bool forward = edge.A == at;
@@ -745,6 +777,92 @@ namespace CosmicShore.Utility
             int drop = 0;
             while (drop < legs.Count && seconds - legs[drop].Leaves > settings.SeamFade * span) drop++;
             if (drop > 0) legs.RemoveRange(0, drop);
+        }
+
+        /// <summary>How squarely junction <paramref name="j"/> faces <paramref name="eye"/>: the cosine between its outward
+        /// direction from the crystal's centre and the direction to the eye. Above 0 it is on the viewer's side.</summary>
+        public float Facing(int j, Vector3 eye)
+        {
+            Vector3 p = sites.Junctions[j];
+            Vector3 outward = p - centre, look = eye - p;
+            float lo = outward.magnitude, ll = look.magnitude;
+            return lo > 1e-6f && ll > 1e-6f ? Vector3.Dot(outward, look) / (lo * ll) : 0f;
+        }
+
+        const int SightLookahead = 4;
+
+        // Keep the options that keep the bolt in sight longest, looking SightLookahead seams ahead: the most seams in a
+        // row that can end in sight from here (never straight back); from behind the crystal, the soonest return to
+        // sight, then the seam ending nearest the viewer's side. Recursion over at most 2^4 paths an option, no
+        // allocation: this runs for every seam struck on every Charge crystal.
+        void KeepFacing(Vector3 eye)
+        {
+            int best = int.MinValue;
+            float bestFacing = float.NegativeInfinity;
+            for (int o = 0; o < options.Count; o++)
+            {
+                int score = Score(options[o], at, eye);
+                float f = Facing(FarEnd(options[o]), eye);
+                if (score > best || (score == best && f > bestFacing)) { best = score; bestFacing = f; }
+            }
+            for (int o = options.Count - 1; o >= 0 && options.Count > 1; o--)
+            {
+                int score = Score(options[o], at, eye);
+                bool keep = score == best && (best > 0 || Facing(FarEnd(options[o]), eye) >= bestFacing);
+                if (!keep) options.RemoveAt(o);
+            }
+        }
+
+        // > 0: seams in a row in sight starting with this one (best path); <= 0: minus the seams spent out of sight before
+        // the walk can be back in sight (-SightLookahead when it cannot within the lookahead).
+        int Score(int seam, int from, Vector3 eye)
+        {
+            int run = InSightRun(seam, from, eye, SightLookahead);
+            if (run > 0) return run;
+            for (int out_ = 1; out_ < SightLookahead; out_++)
+                if (BackInSightWithin(seam, from, eye, out_)) return -out_;
+            return -SightLookahead;
+        }
+
+        int InSightRun(int seam, int from, Vector3 eye, int depth)
+        {
+            var e = sites.Seams[seam];
+            int far = e.A == from ? e.B : e.A;
+            if (Facing(far, eye) <= 0f) return 0;
+            if (depth <= 1) return 1;
+            int best = 0;
+            foreach (int next in sites.SeamsOfJunction[far])
+                if (next != seam) best = Mathf.Max(best, InSightRun(next, far, eye, depth - 1));
+            return 1 + best;
+        }
+
+        // True when, after this seam and at most `outSeams - 1` more out of sight, the next seam ends in sight.
+        bool BackInSightWithin(int seam, int from, Vector3 eye, int outSeams)
+        {
+            var e = sites.Seams[seam];
+            int far = e.A == from ? e.B : e.A;
+            foreach (int next in sites.SeamsOfJunction[far])
+            {
+                if (next == seam) continue;
+                var n = sites.Seams[next];
+                if (Facing(n.A == far ? n.B : n.A, eye) > 0f) return true;
+                if (outSeams > 1 && BackInSightWithin(next, far, eye, outSeams - 1)) return true;
+            }
+            return false;
+        }
+
+        bool AnyEndsInSight(Vector3 eye) => AnyEndsInSight(eye, options);
+
+        bool AnyEndsInSight(Vector3 eye, List<int> seams)
+        {
+            for (int o = 0; o < seams.Count; o++) if (Facing(FarEnd(seams[o]), eye) > 0f) return true;
+            return false;
+        }
+
+        int FarEnd(int seam)
+        {
+            var e = sites.Seams[seam];
+            return e.A == at ? e.B : e.A;
         }
 
         // When the last four seams all ran round <paramref name="site"/>, drop the options that would run round it a
@@ -1170,14 +1288,23 @@ namespace CosmicShore.Utility
         /// out of the shell stands above the arcs, which bow just over it.
         /// </summary>
         public static void FluxStrikes(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
-            Vector3[] centres, float[] radii, float[] places, Vector3[] seats, float[] seatRadii, int count, float[] strike)
+            Vector3[] centres, float[] radii, float[] places, Vector3[] seats, float[] seatRadii, int count, float[] strike) =>
+            FluxStrikes(sites, chain, seconds, settings, centres, radii, places, seats, seatRadii, 0, count, strike);
+
+        /// <summary>
+        /// As above for prisms [<paramref name="start"/>, <paramref name="end"/>) only: those are cleared and recomputed,
+        /// every other entry of <paramref name="strike"/> is left as it was. A crystal with many columns spreads them over
+        /// rebuilds this way (<see cref="CrystalChargeArcs"/>), so one crystal cannot take a whole frame.
+        /// </summary>
+        public static void FluxStrikes(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
+            Vector3[] centres, float[] radii, float[] places, Vector3[] seats, float[] seatRadii, int start, int end, float[] strike)
         {
             s_seats = seats;
             s_seatRadii = seatRadii;
-            try { FluxStrikesUngated(sites, chain, seconds, settings, centres, radii, count, strike); }
+            try { FluxStrikesUngated(sites, chain, seconds, settings, centres, radii, start, end, strike); }
             finally { s_seats = null; s_seatRadii = null; }
             if (places == null) return;
-            for (int j = 0; j < count; j++)
+            for (int j = start; j < end; j++)
                 if (strike[j] > 0f) strike[j] *= StrikeGate(places[j], settings);
         }
 
@@ -1197,9 +1324,10 @@ namespace CosmicShore.Utility
         }
 
         static void FluxStrikesUngated(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
-            Vector3[] centres, float[] radii, int count, float[] strike)
+            Vector3[] centres, float[] radii, int start, int end, float[] strike)
         {
-            System.Array.Clear(strike, 0, count);
+            if (end <= start) return;
+            System.Array.Clear(strike, start, end - start);
             if (seconds < 0f) return;
             float fork = settings.FluxFork;
             long now = Now(seconds, settings);
@@ -1213,22 +1341,66 @@ namespace CosmicShore.Utility
                 for (int q = 0; q < path.SourceOffsets.Length; q++)
                 {
                     StrandPoints(path, q, steps, fork, settings, sites.Radius);
-                    StrikeAlong(s_points, centres, radii, count, intensity * 1.1f, settings, strike);
+                    StrikeAlong(s_points, centres, radii, start, end, intensity * 1.1f, settings, strike);
                 }
             }
         }
 
-        static void StrikeAlong(List<Vector3> path, Vector3[] centres, float[] radii, int count, float intensity,
+        // The strand cut into pieces of PieceSegments segments, each inside one sphere (s_pieceCentre / s_pieceRadius):
+        // a column farther from a piece's sphere than its own widest radius cannot be struck by any segment in that piece,
+        // so StrikeAlong measures a column only against the pieces that could reach it. The minimum over those is the
+        // minimum over the whole strand whenever it is under the radius (the only case that lights), so the strikes are
+        // exactly what the all-pairs loop gave, at a fraction of the cost (Switchback playtest 2026-11-02: one omni's
+        // strikes took 17-67 ms in a frame - 4 discharges x 5 strands x 96 points x 9 column samples x every column).
+        const int PieceSegments = 12;
+        const int MaxPieces = 32;
+        static readonly Vector3[] s_pieceCentre = new Vector3[MaxPieces];
+        static readonly float[] s_pieceRadius = new float[MaxPieces];
+
+        static int BuildPieces(List<Vector3> path)
+        {
+            int segments = path.Count - 1;
+            int pieces = Mathf.Min(MaxPieces, (segments + PieceSegments - 1) / PieceSegments);
+            int per = (segments + pieces - 1) / pieces;
+            for (int c = 0; c < pieces; c++)
+            {
+                int from = c * per, to = Mathf.Min(segments, from + per);   // points from..to (segments from..to-1)
+                Vector3 lo = path[from], hi = path[from];
+                for (int i = from + 1; i <= to; i++) { lo = Vector3.Min(lo, path[i]); hi = Vector3.Max(hi, path[i]); }
+                Vector3 centre = (lo + hi) * 0.5f;
+                float r2 = 0f;
+                for (int i = from; i <= to; i++) r2 = Mathf.Max(r2, (path[i] - centre).sqrMagnitude);
+                s_pieceCentre[c] = centre;
+                s_pieceRadius[c] = Mathf.Sqrt(r2);
+            }
+            return pieces;
+        }
+
+        static void StrikeAlong(List<Vector3> path, Vector3[] centres, float[] radii, int start, int end, float intensity,
             in ChargeArcSettings settings, float[] strike)
         {
             if (path.Count < 2) return;
-            for (int j = 0; j < count; j++)
+            int pieces = BuildPieces(path);
+            int segments = path.Count - 1;
+            int per = (segments + pieces - 1) / pieces;
+            for (int j = start; j < end; j++)
             {
                 float r = radii[j];
                 if (r <= 0f) continue;
+                int samples = s_seats != null ? ColumnSamples : 0;
+                // The column (seat .. prism, or the prism alone) and its widest radius: a piece whose sphere stays farther
+                // than that from the whole column cannot reach any sample on it.
+                Vector3 top = centres[j], foot = samples == 0 ? top : s_seats[j];
+                float widest = samples == 0 ? r : Mathf.Max(r, s_seatRadii[j]);
+                uint near = 0;
+                for (int c = 0; c < pieces; c++)
+                {
+                    float gap = DistanceToSegment(s_pieceCentre[c], foot, top) - s_pieceRadius[c];
+                    if (gap <= widest * 1.001f + 1e-4f) near |= 1u << c;
+                }
+                if (near == 0) continue;
                 // How deep inside the body (or its column) the arc runs, as a fraction of the radius there: 0 on the axis.
                 float depth = float.MaxValue;
-                int samples = s_seats != null ? ColumnSamples : 0;
                 for (int c = 0; c <= samples; c++)
                 {
                     float along = samples == 0 ? 1f : c / (float)samples;
@@ -1236,7 +1408,12 @@ namespace CosmicShore.Utility
                     float rr = samples == 0 ? r : Mathf.Lerp(s_seatRadii[j], r, along);
                     if (rr <= 0f) continue;
                     float d = float.MaxValue;
-                    for (int i = 0; i + 1 < path.Count; i++) d = Mathf.Min(d, DistanceToSegment(p, path[i], path[i + 1]));
+                    for (int k = 0; k < pieces; k++)
+                    {
+                        if ((near & (1u << k)) == 0) continue;
+                        int to = Mathf.Min(segments, (k + 1) * per);
+                        for (int i = k * per; i < to; i++) d = Mathf.Min(d, DistanceToSegment(p, path[i], path[i + 1]));
+                    }
                     depth = Mathf.Min(depth, d / rr);
                 }
                 if (depth >= 1f) continue;

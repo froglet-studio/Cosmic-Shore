@@ -78,11 +78,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Build the arena for <paramref name="definition"/> at <paramref name="origin"/>.
         /// <paramref name="template"/> is any live cell to clone the prefab and runtime shape from
-        /// - normally the scene's own cell.
+        /// - normally the scene's own cell. <paramref name="prismStride"/> overrides the library's
+        /// flight thinning (1 = every prism, as a match lays them; 0 = the library's
+        /// <see cref="ModePreviewLibrarySO.FlightPrismStride"/>) - a replay stands the arena a race
+        /// was flown in, so it asks for its own density (<c>Docs/REPLAYS.md</c>).
         /// </summary>
         public bool Stand(ModePreviewDefinitionSO definition, CellConfigDataSO config, Cell template,
                           GameObject cellPrefab, Vector3 origin, Container container = null,
-                          int intensity = 1)
+                          int intensity = 1, int prismStride = 0)
         {
             if (IsStanding) return false;
 
@@ -154,7 +157,8 @@ namespace CosmicShore.Gameplay
             // method; the track structure below builds inside an explicit scope.
             int stride = 1;
             var previewLibrary = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
-            if (previewLibrary) stride = previewLibrary.FlightPrismStride;
+            if (prismStride > 0) stride = prismStride;
+            else if (previewLibrary) stride = previewLibrary.FlightPrismStride;
             Cell.SatellitePrismStride = stride;
 
             if (!Cell.InitializeSatellite(config))
@@ -676,6 +680,11 @@ namespace CosmicShore.Gameplay
             // but a mode that did would genuinely have both in its arena.
             bool track = AddTrackModel(definition, intensity, gameData, pointBudget);
 
+            // A gate race's arena is its COURSE, laid by its controller at match start - twenty-two
+            // cards, and the cell alone drew every one of them as the same bare shell at every
+            // intensity. Additive like the track: Regatta's rails and its rings are both its arena.
+            track |= AddCourseModel(definition, intensity, config, gameData, pointBudget);
+
             if (!config.EnvironmentPrefab)
             {
                 bool planted = AddPlantingModel(config, gameData, pointBudget);
@@ -774,6 +783,41 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ModePreview] Track model '{spawnable.name}' up at intensity {intensity}.");
+            return true;
+        }
+
+        /// <summary>
+        /// A gate race's course as a model: the rings the tap will fly, at this intensity
+        /// (<see cref="ModePreviewTrackModel.BuildGateCourseLays"/>). No prisms, one mesh.
+        /// </summary>
+        bool AddCourseModel(ModePreviewDefinitionSO definition, int intensity, CellConfigDataSO config,
+                            GameDataSO gameData, int pointBudget)
+        {
+            if (!definition || RaceCourseSource.For(definition.Mode) == null) return false;
+
+            var lays = ModePreviewTrackModel.BuildGateCourseLays(definition.Mode, intensity, config,
+                                                                 Cell.MeasureNucleusRadius(config));
+            if (lays.Count == 0) return false;
+
+            var miniature = CellMiniatureBuilder.BuildFromLays(lays, _modelRadius,
+                                                               Mathf.Max(lays.Count, pointBudget),
+                                                               1f, $"{definition.Mode} course");
+            if (!miniature.IsValid) return false;
+
+            var body = ToyFactory.AddMiniatureBody(_modelRoot.transform, miniature,
+                                                   new ToyContext { GameData = gameData },
+                                                   "CourseModel");
+            if (!body)
+            {
+                Object.Destroy(miniature.Mesh);
+                return false;
+            }
+
+            _generatedMeshes.Add(miniature.Mesh);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Course model for {definition.Mode} up at intensity {intensity} " +
+                $"({lays.Count} shards).");
             return true;
         }
 

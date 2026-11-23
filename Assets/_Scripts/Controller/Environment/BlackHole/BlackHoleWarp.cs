@@ -75,7 +75,8 @@ namespace CosmicShore.Gameplay
         {
             towardHole = Vector3.forward;
             var config = BlackHoleRegistry.Config;
-            if (!config.WarpEnabled || config.VesselTideScale <= 0f || config.TidalResponseSeconds <= 0f) return 0f;
+            // The Mobile look never stretches a hull (Docs/BLACK_HOLE.md §5.4): no space warping.
+            if (!config.SpaceWarp || !config.WarpEnabled || config.VesselTideScale <= 0f || config.TidalResponseSeconds <= 0f) return 0f;
             float tau2 = config.TidalResponseSeconds * config.TidalResponseSeconds;
             float best = 0f;
             var holes = BlackHoleRegistry.Holes;
@@ -103,7 +104,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static void Flush(IReadOnlyList<BlackHole> holes, BlackHoleConfigSO config)
         {
-            bool enabled = config.WarpEnabled && config.IsSane && config.TidalResponseSeconds > 0f;
+            // The Mobile look (the default) publishes an empty bank: no prism is stretched, and the prisms' vertex
+            // stage takes its first branch (the sentinel is 0) — no per-vertex loop over holes or waves.
+            bool enabled = config.SpaceWarp && config.WarpEnabled && config.IsSane && config.TidalResponseSeconds > 0f;
             float tau2 = config.TidalResponseSeconds * config.TidalResponseSeconds;
             int count = 0;
             if (enabled)
@@ -134,7 +137,7 @@ namespace CosmicShore.Gameplay
 
             // The gravitational waves (BlackHoleWaves, the studio's gwPrism): the newest four, by age.
             int waves = 0;
-            if (config.WarpEnabled && config.GwPrism > 0f)
+            if (config.SpaceWarp && config.WarpEnabled && config.GwPrism > 0f)
             {
                 float now = BlackHoleWaves.Now;
                 var live = BlackHoleWaves.Live;

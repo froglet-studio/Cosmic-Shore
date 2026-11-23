@@ -18,15 +18,6 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Colony-wide event counters for the gyroid octagon population, plus a 5s heartbeat the
-    /// FOUNDER logs. Diagnostics, not gameplay: this colony's playtests kept producing symptoms
-    /// (a crystal/spindle flood outrunning grown prisms; "twinned" surfaces that would not mate)
-    /// which code reading alone could not attribute - so the decisive sites now report.
-    /// Volume is naturally low (births and mints are rare events in a healthy colony; a SPAMMING
-    /// counter in the console IS the diagnosis). Always compiled - plain CSDebug, no editor-only
-    /// guards (Docs/CONDITIONAL_COMPILATION.md).
-    /// </summary>
-    /// <summary>
     /// Colony-wide event counters for the Schwarz P TILE population (Docs/ECOSYSTEM.md 34.6).
     /// A separate class from <see cref="GyroidColonyDiagnostics"/> on purpose: the two colonies
     /// can live in one cell, and a merged counter is unattributable.
@@ -109,6 +100,15 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// Colony-wide event counters for the gyroid octagon population, plus a 5s heartbeat the
+    /// FOUNDER logs. Diagnostics, not gameplay: this colony's playtests kept producing symptoms
+    /// (a crystal/spindle flood outrunning grown prisms; "twinned" surfaces that would not mate)
+    /// which code reading alone could not attribute - so the decisive sites now report.
+    /// Volume is naturally low (births and mints are rare events in a healthy colony; a SPAMMING
+    /// counter in the console IS the diagnosis). Always compiled - plain CSDebug, no editor-only
+    /// guards (Docs/CONDITIONAL_COMPILATION.md).
+    /// </summary>
     public static class GyroidColonyDiagnostics
     {
         public static int Births;
@@ -286,6 +286,8 @@ namespace CosmicShore.Gameplay
             // that need it do not exist yet (they are created per prism), so every creation
             // site pushes it - see ApplyLatticeSpacing.
             if (tuning.LatticeScale > 0f) _latticeScaleOverride = tuning.LatticeScale;
+            // A quasicrystal element's heart seat (absolute units - crystals do not scale with the lattice).
+            if (tuning.HeartSeatInset > 0f) _heartSeatOverride = tuning.HeartSeatInset;
 
             // Pacing overrides - the prefab's throttles are shared by every biome's plants,
             // so a cell that wants a different pace authors it in config instead.
@@ -656,6 +658,7 @@ namespace CosmicShore.Gameplay
         int _idleGrowTicks;
 
         float _latticeScaleOverride = -1f;
+        float _heartSeatOverride = -1f;
         float? _latticeScaleCached;
 
         /// <summary>
@@ -717,16 +720,6 @@ namespace CosmicShore.Gameplay
         float MisalignmentRadius => 5.5f * LatticeScale;
 
         /// <summary>
-        /// Pushes this element's authored lattice scale onto a freshly created assembler, which
-        /// reads it before its first growth probe.
-        ///
-        /// <para>Each species scales a different thing, and each is exact for its own reason:
-        /// Schwarz P moves periodScale and separationDistance together so the subdivision level
-        /// is invariant; the gyroid moves its bond offsets AND every absolute tolerance that
-        /// decides lattice coherence (see GyroidAssembler.ApplyLatticeScale - scaling the
-        /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 34.8).</para>
-        /// </summary>
-        /// <summary>
         /// Scales the spindle's visible branch geometry with the lattice - the branch spans the
         /// gap between two prisms, so a widened lattice leaves an unscaled one visibly short.
         ///
@@ -760,6 +753,16 @@ namespace CosmicShore.Gameplay
                 root.GetChild(i).localScale *= scale;
         }
 
+        /// <summary>
+        /// Pushes this element's authored lattice scale onto a freshly created assembler, which
+        /// reads it before its first growth probe.
+        ///
+        /// <para>Each species scales a different thing, and each is exact for its own reason:
+        /// Schwarz P moves periodScale and separationDistance together so the subdivision level
+        /// is invariant; the gyroid moves its bond offsets AND every absolute tolerance that
+        /// decides lattice coherence (see GyroidAssembler.ApplyLatticeScale - scaling the
+        /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 34.8).</para>
+        /// </summary>
         void ApplyLatticeSpacing(Assembler target)
         {
             // The quasicrystal branch runs even with no scale override: its strut pose math
@@ -768,6 +771,7 @@ namespace CosmicShore.Gameplay
             if (target is QuasicrystalAssembler quasi)
             {
                 if (_latticeScaleOverride > 0f) quasi.ApplyLatticeScale(_latticeScaleOverride);
+                if (_heartSeatOverride > 0f) quasi.ConfigureHeartSeat(_heartSeatOverride);
                 quasi.ConfigureStrutLength(LeafSize.x);
                 return;
             }
@@ -2153,8 +2157,6 @@ namespace CosmicShore.Gameplay
         ///   (<see cref="GyroidBondMateDataContainer"/>): each site's delta position/up/forward,
         ///   composed exactly as <c>CalculateGlobalBondSite</c> + <c>CalculateRotation</c> do, so the
         ///   preview IS a patch of the gyroid the species actually grows.
-        /// • <see cref="WallAssembler"/> - its four in-plane bond offsets
-        ///   (±up, ±right by half-extent + separation).
         /// • <see cref="SchwarzPAssembler"/> - its own <c>TryPreviewLattice</c>: the same
         ///   subdivision level, the same measured tile sites and the same integer tile
         ///   arithmetic (<see cref="SchwarzPTileData"/>) the live growth uses, with the
@@ -2179,8 +2181,6 @@ namespace CosmicShore.Gameplay
                 return schwarz.TryPreviewLattice(budget, scale, into, latticeScale);
             if (healthPrism.TryGetComponent(out QuasicrystalAssembler quasi))
                 return quasi.TryPreviewLattice(budget, scale, into, latticeScale);
-            if (healthPrism.TryGetComponent(out WallAssembler wall))
-                return PreviewWall(wall, scale, budget, into);
 
             return false;
         }
@@ -2227,23 +2227,6 @@ namespace CosmicShore.Gameplay
             }
 
             return into.Count > 1;
-        }
-
-        static bool PreviewWall(WallAssembler prototype, Vector3 scale, int budget, List<SpawnPoint> into)
-        {
-            float separation = prototype.SeparationDistance;
-            float stepX = scale.x + separation;
-            float stepY = scale.y + separation;
-
-            // The wall bonds ±up / ±right in its own plane: a square sheet, grown outward from the
-            // seed so a partial budget still reads as a wall rather than a stripe.
-            int side = Mathf.Max(1, Mathf.FloorToInt(Mathf.Sqrt(budget)));
-            int half = side / 2;
-            for (int y = -half; y <= half && into.Count < budget; y++)
-            for (int x = -half; x <= half && into.Count < budget; x++)
-                into.Add(new SpawnPoint(new Vector3(x * stepX, y * stepY, 0f), Quaternion.identity, scale));
-
-            return into.Count > 0;
         }
 
         /// <summary>Lattice-cell key, so a site already bonded is never filled twice.</summary>

@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// before the next frame's pose, so no follow, zoom, rear view or portal math ever sees them:
     /// <list type="bullet">
     /// <item><b>G-force</b>: the camera lags the vessel's ACCELERATION (a boost pulls the hull ahead, a turn
-    /// swings it into the turn) and a drift's SLIDE (the hull slides out across the frame), never its speed, so a
+    /// swings it into the turn), never its speed, and never a drift (a drift only rumbles), so a
     /// steady cruise sits exactly where it always did; the same G tilts the camera like the pilot's neck. A bigger
     /// hull's pilot feels less of it, and more slowly.</item>
     /// <item><b>Kicks</b>: one damped spring every one-off event nudges: a skim pushes away from the prism, a
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
         [Range(0f, 0.3f)]
         [SerializeField] float maxLag = 0.06f;
 
-        [Tooltip("The furthest the G (lag and drift slide together) moves the camera, as a fraction of the follow " +
+        [Tooltip("The furthest the G lag moves the camera, as a fraction of the follow " +
                  "distance; it rounds off toward this rather than stopping at it. Scaled by the hull's G.")]
         [Range(0f, 0.4f)]
         [SerializeField] float maxGOffset = 0.14f;
@@ -74,7 +74,7 @@ namespace CosmicShore.Gameplay
         [Range(0f, 10f)]
         [SerializeField] float gPitch = 1.5f;
 
-        [Tooltip("The pilot's neck: lean outward at the full sideways G (a turn or a drift), degrees.")]
+        [Tooltip("The pilot's neck: lean outward at the full sideways G (a turn), degrees.")]
         [Range(0f, 15f)]
         [SerializeField] float gRoll = 3.5f;
 
@@ -268,26 +268,20 @@ namespace CosmicShore.Gameplay
         [Min(0.1f)]
         [SerializeField] float rumbleFrequency = 6.5f;
 
-        [Header("Drift: the hull slides out across the frame")]
+        [Header("Drift: a rumble only; it never moves the hull on screen")]
         [Tooltip("The slip angle (between where the hull points and where it travels) that counts as a full " +
                  "drift, degrees.")]
         [Range(1f, 90f)]
         [SerializeField] float driftFullSlipDegrees = 35f;
 
-        [Tooltip("How far the hull slides off the centre at a full drift, as a fraction of the follow distance. It " +
-                 "rides the G spring (an accelerating start, a small overshoot, a settle), leans the camera through " +
-                 "the neck roll above, and is scaled by the hull's G.")]
-        [Range(0f, 0.3f)]
-        [SerializeField] float driftSlide = 0.08f;
-
-        [Tooltip("The speed at which a drift slides in full, in follow distances per second; a slower slide slides " +
-                 "less, so a drift at a crawl stays gentle.")]
+        [Tooltip("The speed at which a drift rumbles in full, in follow distances per second; a slower drift " +
+                 "rumbles less, so a drift at a crawl stays quiet.")]
         [Min(0.01f)]
         [SerializeField] float driftFullSpeed = 4f;
 
         [Tooltip("Rumble level at a full drift (0..1).")]
         [Range(0f, 1f)]
-        [SerializeField] float driftRumble = 0.5f;
+        [SerializeField] float driftRumble = 0.15f;
 
         [Header("Breathing: always on, very slow")]
         [Tooltip("Slow drift of the view, degrees. 0 turns it off.")]
@@ -309,11 +303,12 @@ namespace CosmicShore.Gameplay
             new() { vessel = VesselClassType.Manta, gForce = 1.1f, weight = 1f },
             new() { vessel = VesselClassType.Urchin, gForce = 1f, weight = 0.9f },
             new() { vessel = VesselClassType.Sparrow, gForce = 1f, weight = 1f },
-            new() { vessel = VesselClassType.Rhino, gForce = 0.85f, weight = 1.25f },
+            new() { vessel = VesselClassType.Rhino, gForce = 0.85f, weight = 0f, noShake = true },   // no camera shake at all (2026-11-19, Garrett)
+            new() { vessel = VesselClassType.Swordfish, gForce = 0.85f, weight = 1.25f },   // the Rhino's airframe and ramp (2026-11-07 split)
             new() { vessel = VesselClassType.Grizzly, gForce = 0.85f, weight = 1.25f },
             new() { vessel = VesselClassType.Serpent, gForce = 0.9f, weight = 1.1f },
             new() { vessel = VesselClassType.Orca, gForce = 0.9f, weight = 1.3f },
-            new() { vessel = VesselClassType.Butterfly, gForce = 0.9f, weight = 0.9f },
+            new() { vessel = VesselClassType.TigerMoth, gForce = 0.9f, weight = 0.9f },
             new() { vessel = VesselClassType.Starling, gForce = 0.4f, weight = 0.5f },
         };
 
@@ -323,6 +318,12 @@ namespace CosmicShore.Gameplay
             public VesselClassType vessel;
             [Min(0f)] public float gForce;
             [Min(0f)] public float weight;
+
+            [Tooltip("No camera shake for this hull at all: no trauma, no rumble (skims, drifts), no hit, shot or " +
+                     "pickup kicks, and the older per-ability CustomCameraController.Shake calls are ignored while " +
+                     "the camera follows it. The G-force lag and the breathing stay (they are motion, not shake). " +
+                     "The Rhino, 2026-11-19 (Garrett: \"the rhino needs all camera shake removed\").")]
+            public bool noShake;
         }
 
         public bool Enabled => feelEnabled;
@@ -383,7 +384,6 @@ namespace CosmicShore.Gameplay
         public float RumbleFrequency => Mathf.Max(0.1f, rumbleFrequency);
 
         public float DriftFullSlipDegrees => Mathf.Clamp(driftFullSlipDegrees, 1f, 90f);
-        public float DriftSlide => Mathf.Max(0f, driftSlide);
         public float DriftFullSpeed => Mathf.Max(0.01f, driftFullSpeed);
         public float DriftRumble => Mathf.Clamp01(driftRumble);
 
@@ -409,8 +409,19 @@ namespace CosmicShore.Gameplay
             if (vessels != null)
                 for (int i = 0; i < vessels.Length; i++)
                     if (vessels[i].vessel == vessel)
-                        return (Mathf.Max(0f, vessels[i].gForce), Mathf.Max(0f, vessels[i].weight));
+                        return (Mathf.Max(0f, vessels[i].gForce), vessels[i].noShake ? 0f : Mathf.Max(0f, vessels[i].weight));
             return (1f, 1f);
+        }
+
+        /// <summary>True when <paramref name="vessel"/>'s row turns every camera shake off
+        /// (<see cref="VesselFeel.noShake"/>): no trauma, rumble or kicks, and no legacy Shake calls.</summary>
+        public bool NoShakeFor(VesselClassType vessel)
+        {
+            if (vessels != null)
+                for (int i = 0; i < vessels.Length; i++)
+                    if (vessels[i].vessel == vessel)
+                        return vessels[i].noShake;
+            return false;
         }
 
         /// <summary>

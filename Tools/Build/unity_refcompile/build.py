@@ -499,6 +499,38 @@ def tree_key():
     return os.path.basename(ROOT) + "-" + hashlib.sha1(ROOT.encode()).hexdigest()[:8]
 
 
+def prune_stale_outputs(out, keep):
+    """Delete the .rsp, .dll and .dll.stamp in `out` of every assembly this run does not build.
+
+    Response files were only ever ADDED here, and check_generated_assets.py feeds every *.rsp in this
+    directory to the Schema tool: after froglet-studio/Cosmic-Shore#1771 deleted the Obvious SOAP
+    plugin, the leftover Obvious.Soap.rsp still named the deleted sources and the Schema tool crashed
+    with DirectoryNotFoundException (gates.sh: FAIL generated_assets). A kept assembly's .rsp stays:
+    a cached assembly is not recompiled, so its .rsp from the run that built it is still the current
+    one. Only a response file whose -out: is this directory's <name>.dll is touched, so nothing else
+    in a hand-picked --out directory is. Returns the names removed."""
+    gone = []
+    for rsp in sorted(glob.glob(os.path.join(out, "*.rsp"))):
+        n = os.path.splitext(os.path.basename(rsp))[0]
+        if n in keep:
+            continue
+        dll = os.path.join(out, n + ".dll")
+        try:
+            with open(rsp, errors="replace") as f:
+                ours = any(l.strip() == '-out:"%s"' % dll for l in f)
+        except OSError:
+            continue
+        if not ours:
+            continue
+        for p in (rsp, dll, dll + ".stamp"):
+            if os.path.exists(p):
+                os.remove(p)
+        gone.append(n)
+    if gone:
+        print("[build] removed the outputs of %d assembly(ies) no longer built: %s" % (len(gone), ", ".join(gone)))
+    return gone
+
+
 def apply_source_patches():
     """source_patches.json: minimal edits to FETCHED package sources (never to Assets) where the
     package head needs engine API newer than the reference DLLs. Idempotent; each entry says why."""
@@ -577,9 +609,10 @@ def fingerprint(items):
 
 
 # Packages that are not reachable from this sandbox (no mirror): files that `using` them can only be
-# checked for errors that do not involve their types.
+# checked for errors that do not involve their types. Matched case-sensitively, so each namespace is listed
+# with its real casing (Play Mode's is `Unity.Multiplayer.PlayMode`).
 UNOBTAINABLE_NAMESPACES = ["Unity.Services.Multiplayer", "Unity.Services.Friends", "Unity.Services.Leaderboards",
-                           "Unity.Multiplayer.Playmode", "Unity.Multiplayer.Widgets"]
+                           "Unity.Multiplayer.Playmode", "Unity.Multiplayer.PlayMode", "Unity.Multiplayer.Widgets"]
 MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
 # In a file that uses an unobtainable package, these are cascades of its unresolved types too
 # (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).
@@ -931,6 +964,8 @@ def run_once():
         order.append(n)
     for n in sorted(need):
         visit(n)
+    # before anything is written: the response files of assemblies that are gone must not outlive them
+    prune_stale_outputs(out, set(order))
 
     csc = csc_path()
     nsrefs = base_refs()

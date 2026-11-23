@@ -46,7 +46,7 @@ namespace CosmicShore.UI
         static readonly (HangarAbilityKind kind, string[] words)[] NameRules =
         {
             (HangarAbilityKind.Sense, new[] { "sight", "scope", "pathfinder", "sonar", "scan", "radar", "targeting" }),
-            (HangarAbilityKind.Phase, new[] { "fold", "slip", "blink", "phase", "warp" }),
+            (HangarAbilityKind.Phase, new[] { "fold", "slip", "blink", "phase", "warp", "drop" }),
             (HangarAbilityKind.Stance, new[] { "/", "stance", "dig in", "plant", "weapon systems" }),
             (HangarAbilityKind.Pull, new[] { "dipole", "winch", "steal", "rider", "tether", "grapple", "hook", "lure" }),
             (HangarAbilityKind.Strike, new[] { "wrecking", "joust", "claw", "slash", "blade", "sword" }),

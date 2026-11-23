@@ -22,10 +22,10 @@ Two asymmetries make this specific failure likely rather than rare:
 So the confirmation has to be **asked for**, not inferred, and the commit has to be
 **scoped**, not `git add -A`.
 
-**§0.05 of `/ship` applies here in full: there is no compiler and no CI in this
-environment.** Nothing in this skill needs one — every check below is a git, `.meta` and
-GUID question — so do not run `/verify-unity`, do not stand a compiler up, do not gate the
-commit on any `Tools/Build/check_*.py` or on CI being green, and do not wait on checks after
+**§0.05 of `/ship` (the verify rule) applies to any C# in the commit.** Nothing else in this
+skill needs a compiler — every check below is a git, `.meta` and GUID question — so do not
+run `/verify-unity` (not required until that skill merges), do not stand up a syntax-only
+compiler, do not gate the commit on CI being green, and do not wait on checks after
 the push. The one compile in this document belongs to `FrogletToolShipPanel`, which runs in
 the HUMAN's editor, not here. This gate is why the setting is safe: it is exactly the check
 that does not depend on a build.
@@ -155,10 +155,16 @@ After the last push of this run, dispatch `unity-ci.yml` with `mode: static` on 
 exactly as `/ship` §5.5 says. A `claude/**` branch fires no CI on its own push; this is the
 one dispatch. Fire-and-forget — do not wait on it. If nothing was pushed, fire nothing.
 
+## 7.6 Refresh the Fleet Codex (skipped by `check`)
+
+When the pushed output touches a vessel (a map, prefab, class asset, HUD or ability icon), refresh the codex as
+`/ship` §5.6 says: built on bleeding-edge with this branch merged on top (`--pending`), published to the one codex url.
+
 ## 8. Report
 
 - Every tool: name, menu path, READER/WRITER, and its state from §3.
 - Whether the §7.5 CI dispatch went out (or was refused, with the manual route).
+- The §7.6 Fleet Codex refresh (published hash and pending list), or "no codex surface touched".
 - Which commit carries the output, and what §5 checked on it.
 - What was retired, and what was kept with the reason.
 - Anything a human must still do (an unrun tool, an unsaved editor), stated as a blocker.

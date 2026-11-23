@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author the Manta ability row's PLACEHOLDER icon sprites (Sting / Yastri / Kabloom / Soar).
+"""Author the Manta ability row's PLACEHOLDER icon sprites (Sting / Yawstery / Kabloom / Soar).
 
 The four icons authored by the spec remake shipped with empty sprite slots, which a UGUI
 Image renders as a bare white box — unreadable on the lockup card (playtest 2026-08-26:
@@ -66,7 +66,7 @@ def sting(px, py):
     return False
 
 
-def yastri(px, py):
+def yawstery(px, py):
     """A hard-turn arrow: a thick arc sweeping over the top, arrowhead on the right."""
     cx, cy, R, t = 64, 56, 34, 9
     dx, dy = px - cx, py - cy
@@ -112,7 +112,7 @@ def soar(px, py):
 
 ICONS = {
     "Manta_Sting.png": sting,
-    "Manta_Yastri.png": yastri,
+    "Manta_Yawstery.png": yawstery,
     "Manta_Kabloom.png": kabloom,
     "Manta_Soar.png": soar,
 }
@@ -179,7 +179,9 @@ def main() -> int:
     for folder, g in FOLDER_METAS.items():
         writes[folder + ".meta"] = folder_meta(g)
     for name, fn in ICONS.items():
-        writes[f"{OUT_DIR}/{name}"] = render(fn)
+        # The PNGs themselves are owned by the icon kit since 2026-10-24 (Tools/Build/icon_kit/specs/manta.py;
+        # the art pass this tool's docstring promised). This tool stands down on them and keeps owning the
+        # metas (same guids - the prefab's bindings never moved) and the folder metas.
         writes[f"{OUT_DIR}/{name}.meta"] = sprite_meta(guid_for(name))
 
     for rel, want in writes.items():
@@ -195,7 +197,7 @@ def main() -> int:
     if CHECK:
         if drift:
             print("DRIFT:\n  " + "\n  ".join(drift)); return 1
-        print("check clean"); return 0
+        print("check clean (the four PNGs are the icon kit's: python3 Tools/Build/icon_kit/author.py manta --check)"); return 0
     print(f"wrote {len(drift)} file(s)")
     for name in ICONS:
         print(f"  {name}: guid {guid_for(name)}")

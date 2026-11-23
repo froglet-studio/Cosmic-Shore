@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-the-escort-now-opens-with-a-skippable-in-ef1ca7",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-16T18:06:00+00:00",
+  "area": "Ark escort (ArkEscortRun opening)",
+  "summary": "The escort now opens with a skippable intro (VoyageIntro, ArkEscortIntro.asset): when the Ark sets sail the camera shows the Ark, the squad and the course for about 18 s while the pilot's own vessel flies on the escort AI with the stick held; the departure banner moves to after the hand-over. The escort sim (aiLocal) has no intro. Milestone 1, Shombith 2026-11-16.",
+  "branch": "claude/project-thread-st7qvh",
+  "commit": "89bfa4956"
+}

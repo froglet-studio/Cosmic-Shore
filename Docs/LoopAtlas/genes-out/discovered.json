@@ -1,0 +1,4382 @@
+{
+ "date": "2026-11-21",
+ "candidates": [
+  {
+   "vessel": "Thresher",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Time",
+    "Mass"
+   ],
+   "name": "Wrecking Ball into Plant into Mass Mode",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    9,
+    57
+   ],
+   "score": 0.925,
+   "evidence": "gene search (surrogate): 100% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Mass",
+    "Space"
+   ],
+   "name": "Void Sling into Nest into Void Lance",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.75,
+   "evidence": "gene search (surrogate): 75% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Throttle into Nucleus Seeding",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.71,
+   "evidence": "gene search (surrogate): 73% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Mass"
+   ],
+   "name": "Space Mode into Creation Mode",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    10,
+    60
+   ],
+   "score": 0.7,
+   "evidence": "gene search (surrogate): 71% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Dash to the School into Paint",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.69,
+   "evidence": "gene search (surrogate): 69% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Afterburner into Skyburst Rockets into Pulsefire Cannons",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    44
+   ],
+   "score": 0.688,
+   "evidence": "gene search (surrogate): 70% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Mass",
+   "chain": [
+    "Time",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Plant into Wrecking Ball into Mass Mode",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    9,
+    57
+   ],
+   "score": 0.671,
+   "evidence": "gene search (surrogate): 67% of the behaviour in an archive cell at 101% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Void Lance into Void Sling into Targeting Array",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.654,
+   "evidence": "gene search (surrogate): 71% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Heavy Launch into Catch Orbit",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.643,
+   "evidence": "gene search (surrogate): 67% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Plant into Winch",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    24
+   ],
+   "score": 0.635,
+   "evidence": "gene search (surrogate): 69% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Mass",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Ramp Spool into Blade",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.634,
+   "evidence": "gene search (surrogate): 67% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Void Lance into Void Sling into Nest",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.625,
+   "evidence": "gene search (surrogate): 62% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Pulsefire Cannons into Afterburner",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    24
+   ],
+   "score": 0.617,
+   "evidence": "gene search (surrogate): 68% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass"
+   ],
+   "name": "Paint into Lure, Tame & Grow",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    24
+   ],
+   "score": 0.616,
+   "evidence": "gene search (surrogate): 64% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Drop into Mass / Dust Mode into Scale Dust",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    9,
+    57
+   ],
+   "score": 0.615,
+   "evidence": "gene search (surrogate): 64% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Space",
+    "Mass"
+   ],
+   "name": "Energize into Blade Reach into Afterimage",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.609,
+   "evidence": "gene search (surrogate): 65% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Space",
+    "Time"
+   ],
+   "name": "Trail Rider into Track Projector into Slip",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    55
+   ],
+   "score": 0.603,
+   "evidence": "gene search (surrogate): 67% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Catch Orbit into Heavy Launch into Ripple",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.602,
+   "evidence": "gene search (surrogate): 66% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Drop into Scale Dust into Dust Reach",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.595,
+   "evidence": "gene search (surrogate): 63% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Time"
+   ],
+   "name": "Mass Mode into Wrecking Ball into Plant",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    9,
+    57
+   ],
+   "score": 0.587,
+   "evidence": "gene search (surrogate): 60% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Space"
+   ],
+   "name": "Kite Ram into Space Blast",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.583,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Space",
+    "Time"
+   ],
+   "name": "Chain Spikes into Track Projector into Slip",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    52
+   ],
+   "score": 0.581,
+   "evidence": "gene search (surrogate): 62% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Peck into Flit into Hive",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.579,
+   "evidence": "gene search (surrogate): 60% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Time",
+    "Space"
+   ],
+   "name": "Mass Mode into Plant into Winch",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    9,
+    54
+   ],
+   "score": 0.579,
+   "evidence": "gene search (surrogate): 62% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Winch into Plant",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    24
+   ],
+   "score": 0.578,
+   "evidence": "gene search (surrogate): 62% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Space Blast into Saved Boosts into Mass Cluster",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.578,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Mass",
+   "chain": [
+    "Time",
+    "Space",
+    "Mass"
+   ],
+   "name": "Void Sling into Void Lance into Nest",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.576,
+   "evidence": "gene search (surrogate): 62% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Dust Reach into Drop into Scale Dust",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.573,
+   "evidence": "gene search (surrogate): 62% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Orca",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Boost Tank into Flown Missiles into Burst",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    10,
+    55
+   ],
+   "score": 0.572,
+   "evidence": "gene search (surrogate): 61% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Solid Fuel Pellets into Cloak / Sniper Shot",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    40
+   ],
+   "score": 0.572,
+   "evidence": "gene search (surrogate): 63% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Time"
+   ],
+   "name": "Chain Spikes into Slip",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.571,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Ramp Spool into Afterimage",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.566,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Charge"
+   ],
+   "name": "Space Mode into Charge Mode",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    10,
+    60
+   ],
+   "score": 0.562,
+   "evidence": "gene search (surrogate): 60% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Quick Jump into Dens",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    16
+   ],
+   "score": 0.562,
+   "evidence": "gene search (surrogate): 56% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Space"
+   ],
+   "name": "Shove into Nucleus Seeding",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.56,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Charge",
+    "Time"
+   ],
+   "name": "Charged Cannon into Dig In into Rush",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.557,
+   "evidence": "gene search (surrogate): 59% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Charge"
+   ],
+   "name": "Hive into Flit",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.555,
+   "evidence": "gene search (surrogate): 59% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Time"
+   ],
+   "name": "Skyburst Rockets into Afterburner",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.555,
+   "evidence": "gene search (surrogate): 56% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Charge"
+   ],
+   "name": "Dens into Vortex Sting",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.552,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Trail Rider into Track Projector",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.552,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Space",
+    "Time"
+   ],
+   "name": "Afterimage into Blade Reach into Ramp Spool",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.551,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Pulsefire Cannons into Turret Stance into Skyburst Rockets",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.549,
+   "evidence": "gene search (surrogate): 56% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Manta",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Mass",
+    "Space"
+   ],
+   "name": "Yawstery into Decoy into Skim",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.548,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 101% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Soliton into Faster Ride",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.548,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Charge"
+   ],
+   "name": "Ramp Spool into Carry",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.548,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Dens into Undertow",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.547,
+   "evidence": "gene search (surrogate): 56% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass",
+    "Time"
+   ],
+   "name": "Charged Cannon into Weapon Systems into Rush",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.547,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Orca",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Charge"
+   ],
+   "name": "Danger Shield into Flown Missiles",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    40
+   ],
+   "score": 0.546,
+   "evidence": "gene search (surrogate): 57% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Space"
+   ],
+   "name": "Weapon Systems into Dig In into Charged Cannon",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.545,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Time"
+   ],
+   "name": "The Call into Decoys",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    40
+   ],
+   "score": 0.544,
+   "evidence": "gene search (surrogate): 60% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Time"
+   ],
+   "name": "Afterimage into Energize into Ramp Spool",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.544,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Space"
+   ],
+   "name": "Creation Mode into Charge Mode into Space Mode",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.543,
+   "evidence": "gene search (surrogate): 60% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Time"
+   ],
+   "name": "Danger Share into The Call into Decoys",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    55
+   ],
+   "score": 0.542,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Blade Reach into Afterimage into Energize",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.542,
+   "evidence": "gene search (surrogate): 60% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Space"
+   ],
+   "name": "Scale Dust into Dust Reach",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.542,
+   "evidence": "gene search (surrogate): 57% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Wide into Decoys",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    40
+   ],
+   "score": 0.541,
+   "evidence": "gene search (surrogate): 57% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Mass",
+    "Space"
+   ],
+   "name": "Drop into Mass / Dust Mode into Dust Reach",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    9,
+    57
+   ],
+   "score": 0.54,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Speed Mode into Space Mode into Charge Mode",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.538,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Rush into Charged Cannon into Dig In",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.534,
+   "evidence": "gene search (surrogate): 59% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Weapon Systems into Charged Cannon",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.532,
+   "evidence": "gene search (surrogate): 56% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Saved Boosts into Mass Cluster into Kite Ram",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.532,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Sentinel Mode into Faster Ride into Soliton",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.531,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Charge Fill Rate into Echo Sight into Echo Obliteration",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.53,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Mass",
+    "Time"
+   ],
+   "name": "Wide into The Call into Decoys",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    60
+   ],
+   "score": 0.529,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Peck into Slip into Hive",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.528,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Space",
+    "Charge"
+   ],
+   "name": "Creation Mode into Space Mode into Charge Mode",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.527,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Faster Ride into Sentinel Mode into Soliton",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.527,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Orca",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Space"
+   ],
+   "name": "Flown Missiles into Danger Shield into Burst",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    10,
+    55
+   ],
+   "score": 0.526,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Orca",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Time",
+    "Space"
+   ],
+   "name": "Danger Shield into Boost Tank into Burst",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    10,
+    55
+   ],
+   "score": 0.526,
+   "evidence": "gene search (surrogate): 58% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Timed Slingshot into Catch Orbit into Ripple",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.526,
+   "evidence": "gene search (surrogate): 53% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Charge Fill Rate into Crystal Seeding",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.524,
+   "evidence": "gene search (surrogate): 53% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Cloak / Sniper Shot into Solid Fuel Pellets",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    40
+   ],
+   "score": 0.521,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Time"
+   ],
+   "name": "Boost Ring into Skimming",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.52,
+   "evidence": "gene search (surrogate): 57% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Mass",
+    "Time"
+   ],
+   "name": "Space Mode into Creation Mode into Speed Mode",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.519,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Void Lance into Nest into Targeting Array",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.519,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Afterburner into Pulsefire Cannons",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    24
+   ],
+   "score": 0.516,
+   "evidence": "gene search (surrogate): 51% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space",
+    "Charge"
+   ],
+   "name": "Weapon Systems into Charged Cannon into Dig In",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.514,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Mass",
+    "Time"
+   ],
+   "name": "Peck into Hive into Slip",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.512,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Manta",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Skim into Yawstery",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.512,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Afterburner into Turret Stance into Skyburst Rockets",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.51,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Track Projector into Chain Spikes into Trail Rider",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    47
+   ],
+   "score": 0.51,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Slip into Track Projector into Chain Spikes",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    52
+   ],
+   "score": 0.509,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Charged Cannon into Rush into Weapon Systems",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.507,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Mass"
+   ],
+   "name": "Peck into Hive",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.504,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Ramp Spool into Blade Reach",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.504,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Skimming into Steal",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.501,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Mass"
+   ],
+   "name": "Wrecking Ball into Mass Mode",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.501,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Time"
+   ],
+   "name": "Trail Rider into Slip",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.5,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Time",
+    "Charge"
+   ],
+   "name": "Mass Cluster into Saved Boosts into Kite Ram",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.5,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Space",
+    "Charge"
+   ],
+   "name": "Hive into Peck into Flit",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.497,
+   "evidence": "gene search (surrogate): 51% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Space Blast into Saved Boosts into Kite Ram",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.497,
+   "evidence": "gene search (surrogate): 53% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Space",
+    "Time"
+   ],
+   "name": "Kite Ram into Space Blast into Saved Boosts",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.497,
+   "evidence": "gene search (surrogate): 54% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Space Mode into Creation Mode into Charge Mode",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.496,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Space"
+   ],
+   "name": "Echo Sight into Crystal Seeding into Echo Obliteration",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.492,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Charge"
+   ],
+   "name": "Afterimage into Energize",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.492,
+   "evidence": "gene search (surrogate): 49% of the behaviour in an archive cell at 101% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Charge"
+   ],
+   "name": "Ramp Spool into Energize",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.492,
+   "evidence": "gene search (surrogate): 55% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Dash to the School into Erase / Lock-on into Paint",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    44
+   ],
+   "score": 0.491,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Time",
+    "Charge"
+   ],
+   "name": "Heavy Launch into Timed Slingshot into Ripple",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.49,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Blade Reach into Ramp Spool into Afterimage",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.489,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Space",
+    "Charge"
+   ],
+   "name": "Crystal Seeding into Echo Obliteration into Echo Sight",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.487,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Dust Reach into Drop",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.479,
+   "evidence": "gene search (surrogate): 52% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space",
+    "Time"
+   ],
+   "name": "Seed Wall into Cloak / Sniper Shot into Solid Fuel Pellets",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.477,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Mass",
+    "Time"
+   ],
+   "name": "Paint into Lure, Tame & Grow into Dash to the School",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    44
+   ],
+   "score": 0.476,
+   "evidence": "gene search (surrogate): 49% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Time",
+    "Mass"
+   ],
+   "name": "Shove into Throttle into Switch",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    47
+   ],
+   "score": 0.476,
+   "evidence": "gene search (surrogate): 48% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Charge"
+   ],
+   "name": "Slip into Flit",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.475,
+   "evidence": "gene search (surrogate): 51% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Solid Fuel Pellets into Cloak / Sniper Shot into Scope",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    52
+   ],
+   "score": 0.474,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass"
+   ],
+   "name": "Cloak / Sniper Shot into Seed Wall",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.474,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Time",
+    "Mass"
+   ],
+   "name": "Flit into Slip into Hive",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.473,
+   "evidence": "gene search (surrogate): 48% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Boost Ring into Steal",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.472,
+   "evidence": "gene search (surrogate): 48% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Space"
+   ],
+   "name": "Chain Spikes into Trail Rider into Track Projector",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    47
+   ],
+   "score": 0.469,
+   "evidence": "gene search (surrogate): 48% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Energize into Ramp Spool into Blade Reach",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.468,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Time"
+   ],
+   "name": "Energize into Ramp Spool",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.465,
+   "evidence": "gene search (surrogate): 49% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Time",
+    "Charge"
+   ],
+   "name": "Afterimage into Ramp Spool into Energize",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.464,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Afterimage into Blade Reach",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.464,
+   "evidence": "gene search (surrogate): 48% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Furrow into Ramp Spool",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.462,
+   "evidence": "gene search (surrogate): 46% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Charge"
+   ],
+   "name": "Dash to the School into Erase / Lock-on",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.461,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Rush into Dig In into Charged Cannon",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.461,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Space"
+   ],
+   "name": "Scale Dust into Mass / Dust Mode into Dust Reach",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.457,
+   "evidence": "gene search (surrogate): 46% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Space",
+    "Time"
+   ],
+   "name": "Dig In into Charged Cannon into Rush",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.455,
+   "evidence": "gene search (surrogate): 46% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space",
+    "Time"
+   ],
+   "name": "Crystal Seeding into Echo Obliteration into Charge Fill Rate",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.45,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Blade into Furrow",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.45,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Rhino",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Mass",
+    "Space"
+   ],
+   "name": "Ramp Spool into Blade into Furrow",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.45,
+   "evidence": "gene search (surrogate): 50% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Space"
+   ],
+   "name": "Skyburst Rockets into Pulsefire Cannons",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.45,
+   "evidence": "gene search (surrogate): 47% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Catch Orbit into Timed Slingshot into Heavy Launch",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.445,
+   "evidence": "gene search (surrogate): 47% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Echo Obliteration into Charge Fill Rate into Echo Sight",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.442,
+   "evidence": "gene search (surrogate): 47% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Skimming into Steal into Crystal Joust",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.442,
+   "evidence": "gene search (surrogate): 45% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Manta",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Time"
+   ],
+   "name": "Decoy into Sting into Yawstery",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.441,
+   "evidence": "gene search (surrogate): 48% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Mass Cluster into Space Blast",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.436,
+   "evidence": "gene search (surrogate): 47% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Mass",
+    "Space"
+   ],
+   "name": "Ramp Spool into Afterimage into Blade Reach",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.432,
+   "evidence": "gene search (surrogate): 43% of the behaviour in an archive cell at 101% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Space"
+   ],
+   "name": "Ripple into Heavy Launch into Catch Orbit",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.429,
+   "evidence": "gene search (surrogate): 47% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Charge"
+   ],
+   "name": "Track Projector into Chain Spikes",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.429,
+   "evidence": "gene search (surrogate): 45% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Space Blast into Mass Cluster into Kite Ram",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.429,
+   "evidence": "gene search (surrogate): 45% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Space"
+   ],
+   "name": "Charge Mode into Space Mode",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    10,
+    60
+   ],
+   "score": 0.428,
+   "evidence": "gene search (surrogate): 46% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Time",
+    "Charge"
+   ],
+   "name": "Mass Mode into Plant into Wrecking Ball",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    9,
+    57
+   ],
+   "score": 0.427,
+   "evidence": "gene search (surrogate): 46% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Charge"
+   ],
+   "name": "Space Blast into Kite Ram",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.425,
+   "evidence": "gene search (surrogate): 43% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Afterburner into Skyburst Rockets into Turret Stance",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.423,
+   "evidence": "gene search (surrogate): 46% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Charge Fill Rate into Crystal Seeding into Echo Sight",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.42,
+   "evidence": "gene search (surrogate): 43% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Speed Mode into Creation Mode into Charge Mode",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.415,
+   "evidence": "gene search (surrogate): 42% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Kite Ram into Saved Boosts into Space Blast",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.408,
+   "evidence": "gene search (surrogate): 44% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Starling",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Time"
+   ],
+   "name": "Pick the Charge card into Pick the Mass card into Pick the Time card",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    30,
+    60
+   ],
+   "score": 0.406,
+   "evidence": "gene search (surrogate): 44% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Manta",
+   "element": "Mass",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Yawstery into Decoy",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.405,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Space"
+   ],
+   "name": "Afterimage into Energize into Blade Reach",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.405,
+   "evidence": "gene search (surrogate): 43% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Nucleus Seeding into Throttle into Shove",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.403,
+   "evidence": "gene search (surrogate): 43% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Time",
+    "Mass"
+   ],
+   "name": "Kite Ram into Saved Boosts into Mass Cluster",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.4,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "chain": [
+    "Time",
+    "Mass",
+    "Space"
+   ],
+   "name": "Saved Boosts into Mass Cluster into Space Blast",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.4,
+   "evidence": "gene search (surrogate): 42% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Manta",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Decoy into Skim",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.396,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Charge",
+    "Time"
+   ],
+   "name": "Cloak / Sniper Shot into Scope into Solid Fuel Pellets",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    52
+   ],
+   "score": 0.391,
+   "evidence": "gene search (surrogate): 43% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Space",
+    "Time"
+   ],
+   "name": "Wrecking Ball into Winch into Plant",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.391,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Space"
+   ],
+   "name": "Kite Ram into Mass Cluster into Space Blast",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.391,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Charge"
+   ],
+   "name": "Dust Reach into Scale Dust",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.386,
+   "evidence": "gene search (surrogate): 41% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Track Projector into Slip into Trail Rider",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    55
+   ],
+   "score": 0.385,
+   "evidence": "gene search (surrogate): 42% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Plant into Mass Mode",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.384,
+   "evidence": "gene search (surrogate): 39% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Dust Reach into Scale Dust into Mass / Dust Mode",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.38,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Time"
+   ],
+   "name": "Dens into Quick Jump",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    16
+   ],
+   "score": 0.378,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Charge"
+   ],
+   "name": "Slip into Chain Spikes",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.377,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Orca",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Boost Tank into Burst",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.375,
+   "evidence": "gene search (surrogate): 39% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Ramp Spool into Blade Reach into Energize",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.371,
+   "evidence": "gene search (surrogate): 39% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Space",
+    "Charge"
+   ],
+   "name": "Trail Rider into Track Projector into Chain Spikes",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    8,
+    47
+   ],
+   "score": 0.371,
+   "evidence": "gene search (surrogate): 40% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Space",
+    "Time"
+   ],
+   "name": "Heavy Launch into Catch Orbit into Timed Slingshot",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.369,
+   "evidence": "gene search (surrogate): 41% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Mass"
+   ],
+   "name": "Vortex Sting into Dens",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.367,
+   "evidence": "gene search (surrogate): 39% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Space",
+    "Mass"
+   ],
+   "name": "Shove into Nucleus Seeding into Switch",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.367,
+   "evidence": "gene search (surrogate): 37% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Nucleus Seeding into Shove into Switch",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.367,
+   "evidence": "gene search (surrogate): 37% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Jacks",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Space"
+   ],
+   "name": "The Call into Danger Share into Wide",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    55
+   ],
+   "score": 0.366,
+   "evidence": "gene search (surrogate): 39% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Rush into Charged Cannon",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.364,
+   "evidence": "gene search (surrogate): 39% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Undertow into Quick Jump into Dens",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    31
+   ],
+   "score": 0.362,
+   "evidence": "gene search (surrogate): 39% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space"
+   ],
+   "name": "Drop into Dust Reach",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.358,
+   "evidence": "gene search (surrogate): 37% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Space",
+    "Time"
+   ],
+   "name": "Charge Mode into Space Mode into Speed Mode",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.356,
+   "evidence": "gene search (surrogate): 38% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Charge",
+    "Space"
+   ],
+   "name": "Solid Fuel Pellets into Scope into Cloak / Sniper Shot",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    52
+   ],
+   "score": 0.356,
+   "evidence": "gene search (surrogate): 38% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Peck into Hive into Flit",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.354,
+   "evidence": "gene search (surrogate): 36% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Space",
+    "Mass"
+   ],
+   "name": "Vortex Sting into Undertow into Dens",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.353,
+   "evidence": "gene search (surrogate): 38% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Orca",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Burst into Boost Tank",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.351,
+   "evidence": "gene search (surrogate): 35% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Space",
+    "Time"
+   ],
+   "name": "Mass Cluster into Space Blast into Saved Boosts",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.351,
+   "evidence": "gene search (surrogate): 38% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Time",
+    "Space",
+    "Mass"
+   ],
+   "name": "Rush into Charged Cannon into Weapon Systems",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.346,
+   "evidence": "gene search (surrogate): 38% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Timed Slingshot into Ripple into Heavy Launch",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.345,
+   "evidence": "gene search (surrogate): 38% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Echo Sight into Charge Fill Rate into Echo Obliteration",
+   "cue": [
+    "rival_near"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.344,
+   "evidence": "gene search (surrogate): 37% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Time"
+   ],
+   "name": "Hive into Slip",
+   "cue": [
+    "open_space"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.344,
+   "evidence": "gene search (surrogate): 36% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass",
+    "Charge"
+   ],
+   "name": "Dust Reach into Mass / Dust Mode into Scale Dust",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.339,
+   "evidence": "gene search (surrogate): 38% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Space",
+    "Charge"
+   ],
+   "name": "Lure, Tame & Grow into Paint into Erase / Lock-on",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    36
+   ],
+   "score": 0.333,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Space"
+   ],
+   "name": "Seed Wall into Cloak / Sniper Shot",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.332,
+   "evidence": "gene search (surrogate): 37% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Mass"
+   ],
+   "name": "Space Blast into Mass Cluster",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.327,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 98% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Space",
+    "Mass"
+   ],
+   "name": "Targeting Array into Void Lance into Nest",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.324,
+   "evidence": "gene search (surrogate): 35% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Catch Orbit into Ripple into Heavy Launch",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.323,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Winch into Plant into Wrecking Ball",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.319,
+   "evidence": "gene search (surrogate): 32% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Mass",
+    "Time"
+   ],
+   "name": "Catch Orbit into Heavy Launch into Timed Slingshot",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.318,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Time"
+   ],
+   "name": "Nest into Targeting Array into Void Sling",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.317,
+   "evidence": "gene search (surrogate): 32% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Scarab",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Mass"
+   ],
+   "name": "Nucleus Seeding into Switch",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.315,
+   "evidence": "gene search (surrogate): 32% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Time"
+   ],
+   "name": "Ripple into Heavy Launch into Timed Slingshot",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.313,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Space",
+   "chain": [
+    "Mass",
+    "Time",
+    "Space"
+   ],
+   "name": "Mass Cluster into Saved Boosts into Space Blast",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.311,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass",
+    "Time"
+   ],
+   "name": "Space Blast into Mass Cluster into Saved Boosts",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.311,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Dig In into Rush into Charged Cannon",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.304,
+   "evidence": "gene search (surrogate): 33% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Charge"
+   ],
+   "name": "Boost Ring into Crystal Joust",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.295,
+   "evidence": "gene search (surrogate): 30% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Wrasse",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Time"
+   ],
+   "name": "Mass Cluster into Saved Boosts",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.295,
+   "evidence": "gene search (surrogate): 30% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Manta",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Time",
+    "Charge"
+   ],
+   "name": "Decoy into Yawstery into Sting",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.292,
+   "evidence": "gene search (surrogate): 29% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Mass"
+   ],
+   "name": "Charge Mode into Creation Mode",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    10,
+    60
+   ],
+   "score": 0.286,
+   "evidence": "gene search (surrogate): 30% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Dolphin",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Space"
+   ],
+   "name": "Crystal Seeding into Echo Sight into Echo Obliteration",
+   "cue": [
+    "dense_mass"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.286,
+   "evidence": "gene search (surrogate): 30% of the behaviour in an archive cell at 95% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Pulsefire Cannons into Afterburner into Skyburst Rockets",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    44
+   ],
+   "score": 0.285,
+   "evidence": "gene search (surrogate): 32% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Timed Slingshot into Heavy Launch",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.285,
+   "evidence": "gene search (surrogate): 31% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Time"
+   ],
+   "name": "Erase / Lock-on into Lure, Tame & Grow into Dash to the School",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    8,
+    44
+   ],
+   "score": 0.28,
+   "evidence": "gene search (surrogate): 30% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "BrittleStar",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Space",
+    "Mass"
+   ],
+   "name": "Charge Mode into Space Mode into Creation Mode",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    15,
+    60
+   ],
+   "score": 0.273,
+   "evidence": "gene search (surrogate): 28% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Undertow into Quick Jump into Vortex Sting",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    31
+   ],
+   "score": 0.255,
+   "evidence": "gene search (surrogate): 26% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Meerkat",
+   "element": "Mass",
+   "chain": [
+    "Space",
+    "Time",
+    "Mass"
+   ],
+   "name": "Soliton into Faster Ride into Exit Portal",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.25,
+   "evidence": "gene search (surrogate): 25% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Serpent",
+   "element": "Charge",
+   "chain": [
+    "Space",
+    "Charge"
+   ],
+   "name": "Cloak / Sniper Shot into Scope",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.25,
+   "evidence": "gene search (surrogate): 25% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Mass",
+    "Space"
+   ],
+   "name": "Targeting Array into Nest into Void Lance",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    12,
+    60
+   ],
+   "score": 0.25,
+   "evidence": "gene search (surrogate): 25% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Charge",
+   "chain": [
+    "Mass",
+    "Charge"
+   ],
+   "name": "Heavy Launch into Ripple",
+   "cue": [
+    "own_mass_gap"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.247,
+   "evidence": "gene search (surrogate): 25% of the behaviour in an archive cell at 99% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time"
+   ],
+   "name": "Blade Reach into Ramp Spool",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.246,
+   "evidence": "gene search (surrogate): 26% of the behaviour in an archive cell at 96% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Goby",
+   "element": "Mass",
+   "chain": [
+    "Mass",
+    "Charge",
+    "Space"
+   ],
+   "name": "Dens into Vortex Sting into Undertow",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    45
+   ],
+   "score": 0.241,
+   "evidence": "gene search (surrogate): 27% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Time",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Paint into Dash to the School into Erase / Lock-on",
+   "cue": [
+    "rival_mass_ahead"
+   ],
+   "t": [
+    8,
+    44
+   ],
+   "score": 0.237,
+   "evidence": "gene search (surrogate): 24% of the behaviour in an archive cell at 97% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Mass"
+   ],
+   "name": "Slip into Trail Rider",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    8,
+    35
+   ],
+   "score": 0.237,
+   "evidence": "gene search (surrogate): 26% of the behaviour in an archive cell at 92% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Sparrow",
+   "element": "Mass",
+   "chain": [
+    "Charge",
+    "Mass"
+   ],
+   "name": "Skyburst Rockets into Turret Stance",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.229,
+   "evidence": "gene search (surrogate): 23% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Orca",
+   "element": "Space",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Flown Missiles into Boost Tank into Burst",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    10,
+    55
+   ],
+   "score": 0.226,
+   "evidence": "gene search (surrogate): 25% of the behaviour in an archive cell at 90% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Time",
+   "chain": [
+    "Mass",
+    "Time"
+   ],
+   "name": "Lure, Tame & Grow into Dash to the School",
+   "cue": [
+    "fauna_near"
+   ],
+   "t": [
+    8,
+    32
+   ],
+   "score": 0.217,
+   "evidence": "gene search (surrogate): 23% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Angler",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Erase / Lock-on into Dash to the School into Paint",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    44
+   ],
+   "score": 0.217,
+   "evidence": "gene search (surrogate): 23% of the behaviour in an archive cell at 93% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "TigerMoth",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Space",
+    "Charge"
+   ],
+   "name": "Drop into Dust Reach into Scale Dust",
+   "cue": [
+    "crystal_near"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.216,
+   "evidence": "gene search (surrogate): 23% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Squirrel",
+   "element": "Mass",
+   "chain": [
+    "Time",
+    "Space",
+    "Mass"
+   ],
+   "name": "Skimming into Steal into Boost Ring",
+   "cue": [
+    "straight_ahead"
+   ],
+   "t": [
+    8,
+    50
+   ],
+   "score": 0.208,
+   "evidence": "gene search (surrogate): 21% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Thresher",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Charge",
+    "Mass"
+   ],
+   "name": "Winch into Wrecking Ball into Mass Mode",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    9,
+    57
+   ],
+   "score": 0.2,
+   "evidence": "gene search (surrogate): 20% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Manta",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Time"
+   ],
+   "name": "Sting into Yawstery",
+   "cue": [
+    "petals_loose"
+   ],
+   "t": [
+    8,
+    27
+   ],
+   "score": 0.194,
+   "evidence": "gene search (surrogate): 21% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Charge"
+   ],
+   "name": "Charged Cannon into Dig In",
+   "cue": [
+    "shielded_ahead"
+   ],
+   "t": [
+    8,
+    42
+   ],
+   "score": 0.19,
+   "evidence": "gene search (surrogate): 21% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Grizzly",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Time",
+    "Charge"
+   ],
+   "name": "Charged Cannon into Rush into Dig In",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    9,
+    60
+   ],
+   "score": 0.19,
+   "evidence": "gene search (surrogate): 21% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Shrike",
+   "element": "Charge",
+   "chain": [
+    "Time",
+    "Charge"
+   ],
+   "name": "Void Sling into Targeting Array",
+   "cue": [
+    "mass_ahead"
+   ],
+   "t": [
+    10,
+    60
+   ],
+   "score": 0.19,
+   "evidence": "gene search (surrogate): 19% of the behaviour in an archive cell at 100% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Urchin",
+   "element": "Charge",
+   "chain": [
+    "Charge",
+    "Time",
+    "Space"
+   ],
+   "name": "Chain Spikes into Slip into Track Projector",
+   "cue": [
+    "threatened"
+   ],
+   "t": [
+    8,
+    52
+   ],
+   "score": 0.189,
+   "evidence": "gene search (surrogate): 21% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Stoat",
+   "element": "Time",
+   "chain": [
+    "Time",
+    "Mass",
+    "Space"
+   ],
+   "name": "Timed Slingshot into Heavy Launch into Catch Orbit",
+   "cue": [
+    "gate_next"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.188,
+   "evidence": "gene search (surrogate): 20% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Honeyguide",
+   "element": "Time",
+   "chain": [
+    "Charge",
+    "Space",
+    "Time"
+   ],
+   "name": "Flit into Peck into Slip",
+   "cue": [
+    "rival_on_line"
+   ],
+   "t": [
+    8,
+    39
+   ],
+   "score": 0.153,
+   "evidence": "gene search (surrogate): 17% of the behaviour in an archive cell at 91% of the best genome",
+   "source": "gene-search"
+  },
+  {
+   "vessel": "Swordfish",
+   "element": "Space",
+   "chain": [
+    "Space",
+    "Mass"
+   ],
+   "name": "Blade Reach into Afterimage",
+   "cue": [
+    "bank_full"
+   ],
+   "t": [
+    8,
+    30
+   ],
+   "score": 0.146,
+   "evidence": "gene search (surrogate): 16% of the behaviour in an archive cell at 94% of the best genome",
+   "source": "gene-search"
+  }
+ ]
+}

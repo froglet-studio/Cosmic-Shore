@@ -11,19 +11,20 @@ Start whenever you are ready. Nothing here is time-boxed.
 
 ## 0. Your whole list, in one command
 
-Everything the owner tests by hand is a ticket on Froglet Tasks (GitHub issues labelled `team-task`; the
-board is https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f): the first-login guide, the performance captures, the Third Eye and
-Regatta playtests, the bug-flow check, and two for multiplayer (`T-20261015-4354` Unity, `T-20261015-0426`
-Amoebius). Tickets name nobody (since 2026-10-23); take one by naming your branch.
+Everything the owner hands you to test is on the swim lanes board (https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf,
+or `/swimlanes` in a session) as a FOR TEST lane: a session sends it with `/handoff-for-test`, and its brief says the
+steps, the build or branch and what good looks like. The editor hand tests themselves are in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`. (Until 2026-11-20 this list was Froglet Tasks tickets; that was retired for
+Swim Lanes.)
 
 ```bash
-python3 Tools/Build/team_tasks.py list --dept testers                       # what you can take
-python3 Tools/Build/team_tasks.py take <id> --who Andrew --branch <branch>   # so nobody does it twice
-python3 Tools/Build/team_tasks.py done <id> --note "what happened"           # when finished
+python3 .claude/skills/swimlanes/swimlanes.py --me Andrew                           # what is waiting for you
+python3 Tools/Build/handoff.py feedback <id or lane> good --note "what happened"     # it passed
+python3 Tools/Build/handoff.py feedback <id or lane> back --note "what failed"       # sent back, with what failed
 ```
 
-A test that FAILS is not "done": write what failed on the ticket, and the fix goes on a ticket of its own
-(`/team-tasks add --kind dev ...` from a session). Sections 1–3 below are the multiplayer tasks in full.
+Or `/handoff-feedback` in a session. A test that FAILS goes back with its note, and the lane opens again with your
+note at the top of its work. Sections 1–3 below are the multiplayer tasks in full.
 
 ---
 
@@ -132,7 +133,7 @@ A retest after a fix is always a **new** session file, never an edit.
 
 | Need | File |
 |---|---|
-| The team board (your tasks, take/done) | `Docs/TEAM_TASKS.md` |
+| The team board (what is for test, your feedback) | the Swim Lanes page; `.claude/skills/swimlanes/HANDOFF.md` |
 | Console errors → Claude | `Docs/DIAGNOSTICS.md` § "Send to Claude" |
 | The whole QA workflow, in full | `Docs/QA/README.md` |
 | The test items (steps, PASS/FAIL, known exceptions) | `Docs/QA/QA_BACKLOG.md` |

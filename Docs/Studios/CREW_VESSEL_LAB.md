@@ -387,7 +387,7 @@ The empty seat (solo pilot) is the baseline every console is measured against.
 | `swapCooldown` | 0.75 s | `PilotSwap.CooldownSeconds` |
 | one crystal = one petal | +1 level | `ResourceSystem.PetalNormalized`, `SkimmerAdjustElementLevelByCrystalEffectSO` |
 | element bands | base [0,10], overcharge to 15 drains | `ResourceSystem` resting band |
-| domain colours | Jade hull, Ruby rival | `OriginalColorSetSO.asset` via `studio-domains.js` |
+| domain colours | Jade hull, Ruby rival | `PhoticColorSetSO.asset` via `studio-domains.js` |
 | everything else | lab | marked `lab:` in the page's `SHIPPED` block |
 
 Element effects follow the fleet's element conventions, as lab stand-ins: **Time** = rate → speed

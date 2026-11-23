@@ -22,20 +22,12 @@ namespace CosmicShore.Gameplay
         // THERE IS NO LEVEL. A lifeform is its species and its element, and nothing else — a
         // creature you meet is exactly what its four-variant config says it is, with no hidden
         // per-individual history multiplying its body, its leaves or its heart
-        // (Docs/ECOSYSTEM.md §40, which retires §33). Every value an element needs — including
-        // the size of its heart — is authored ONCE in that element's own tuning block.
+        // (Docs/ECOSYSTEM.md §40, which retires §33). Every value an element needs is authored
+        // ONCE in that element's own tuning block. Its heart is not one of them: every heart is
+        // the one elemental crystal size (ElementalCrystalSetSO.CrystalWorldScale).
 
         /// <summary>The element this lifeform carries (its crystal's element; None if uncrystaled).</summary>
         Element Element { get; }
-
-        /// <summary>
-        /// The WORLD scale this lifeform's heart renders at — authored per element in the
-        /// species' own variant tuning and sized to suit that lifeform's body, so a tadpole's
-        /// heart is a tadpole's heart and a shark's is a shark's (Docs/ECOSYSTEM.md §40.2).
-        /// Read at the one gate every heart passes through (<see cref="Crystal.SetEmbeddedIn"/>).
-        /// A non-positive value means 'no authored size' and falls back to the set's default.
-        /// </summary>
-        float HeartWorldScale { get; }
 
         /// <summary>This lifeform's current travel speed (world units/s). 0 for rooted flora -
         /// which is what makes them trivially joustable (the jouster must be moving faster).</summary>

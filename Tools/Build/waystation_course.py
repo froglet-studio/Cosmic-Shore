@@ -18,8 +18,11 @@ What it proves, per intensity, over the whole sweep:
            depending on whether a pilot found a crystal.
   worth    every fold gap is LONGER than the cluster it leaves, so folding always beats flying.
   gap      no two consecutive clusters interpenetrate.
-  cone     the exit gate's facing is within the authored cone EXACTLY - it is that direction
-           deflected by that cone and nothing else, so anything else is a transcription error.
+  square   the exit gate FACES SQUARE to the next cluster (within 0.5 deg), so a pilot who threads it
+           has the next cluster under the belly and the Tiger Moth's Drop falls straight at it
+           (Garrett, 2026-10-29: "keep your flow by dropping to the next cluster").
+  twist    the exit gate's facing is within the authored twist of the square heading nearest the line
+           it is approached on - it is that heading turned about the drop line and nothing else.
 
 `--compile` goes one better than mirroring: it BUILDS and RUNS the shipped C# (Tools/Build/
 waystation_harness compiles WaystationCourse.cs and RaceCourseGeometry.cs verbatim out of Assets/
@@ -28,11 +31,12 @@ seeds agree to 0.0059 u of position and 0.0005 deg of axis - float32 against flo
 spanning a thousand units, which is what makes "the model verified it" mean "the game does it".
 It needs a dotnet SDK, so it is opt-in rather than part of --check.
 
-Three negative controls (--self-test) reproduce the defects that shaped the design: a positional
+Four negative controls (--self-test) reproduce the defects that shaped the design: a positional
 clamp on the cluster chain instead of a geodesic hop, a positional clamp on the EXIT GATE (which
 shortens the one leg a corner is measured on - the design's only walked leg, and the reason the
-retired walk-based cluster produced corners at 38 units), and a coil ring used as the aiming
-device instead of its own exit gate.
+retired walk-based cluster produced corners at 38 units), a coil ring used as the aiming
+device instead of its own exit gate, and the Fold-era exit gate that faced the next cluster
+(a nose jump's aim) instead of standing square to it (a belly drop's).
 """
 
 import argparse
@@ -45,8 +49,10 @@ ROOT = Path(__file__).resolve().parents[2]
 assert (ROOT / "Assets").is_dir(), f"ROOT is wrong: {ROOT}"
 
 CS_COURSE = ROOT / "Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs"
-BUTTERFLY = ROOT / "Assets/_Prefabs/Spacevessels/Butterfly.prefab"
-FOLD_ASSET = ROOT / "Assets/_SO_Assets/VesselActions/Butterfly/ButterflyFoldAction.asset"
+# The Tiger Moth flies Waystation since the Butterfly was retired (2026-10-29, TIGER_MOTH.md): the same airframe and
+# turn rates, so the corner verdict reads the same numbers; its Drop has no longest fall, so the reach verdict is moot.
+BUTTERFLY = ROOT / "Assets/_Prefabs/Spacevessels/TigerMoth.prefab"
+DROP_ASSET = ROOT / "Assets/_SO_Assets/VesselActions/TigerMoth/TigerMothDropAction.asset"
 
 
 # ---------------------------------------------------------------- vector helpers
@@ -127,7 +133,7 @@ def read_tables():
     src = CS_COURSE.read_text(encoding="utf-8")
     out = {}
     for field in ("RingsPerCluster", "RingRadius", "CoilRadius", "CoilStepDegrees", "CoilPitch",
-                  "MinHop", "MaxHop", "ExitConeDegrees"):
+                  "MinHop", "MaxHop", "ExitTwistDegrees"):
         m = re.search(rf"{field}\s*=\s*new\[\]\s*\{{([^}}]*)\}}", src)
         assert m, f"{field} array not found in {CS_COURSE.name}"
         out[field] = [float(x.strip().rstrip("f")) for x in m.group(1).split(",")]
@@ -157,10 +163,12 @@ def read_vessel():
 
 
 def read_fold_reach():
-    src = FOLD_ASSET.read_text(encoding="utf-8")
-    m = re.search(r"^\s*reachRange:\s*([0-9.]+)\s*$", src, re.M)
-    assert m, "reachRange not found in ButterflyFoldAction.asset"
-    return float(m.group(1))
+    """The jump's resting reach. The Fold reached 1800 u; the Tiger Moth's Drop falls for as long as the trigger is
+    held, so no gap can be out of reach. Asserted off the asset (no longest-drop key) so a reach coming back is seen."""
+    src = DROP_ASSET.read_text(encoding="utf-8")
+    assert "dropSpeed:" in src, "TigerMothDropAction.asset is not the drop"
+    assert not re.search(r"^\s*dropRange:", src, re.M), "the drop has a longest fall again - give the fold verdict its number"
+    return math.inf
 
 
 # the cell shell the gate-race platform lays a course inside (GateRaceController's own defaults:
@@ -173,7 +181,8 @@ CORNER_MARGIN = 1.20
 
 # ---------------------------------------------------------------- the mirror
 def generate(seed, intensity, ring_target, T, inner=INNER, outer=COURSE_OUTER,
-             clamp_instead_of_geodesic=False, coil_ring_aims=False, clamp_exit_gate=False):
+             clamp_instead_of_geodesic=False, coil_ring_aims=False, clamp_exit_gate=False,
+             exit_faces_next=False):
     i = intensity - 1
     per = max(1, int(T["RingsPerCluster"][i]))
     coil_rings = max(1, per - 1)
@@ -182,7 +191,7 @@ def generate(seed, intensity, ring_target, T, inner=INNER, outer=COURSE_OUTER,
     step = math.radians(T["CoilStepDegrees"][i])
     pitch = T["CoilPitch"][i]
     hlo, hhi = T["MinHop"][i], T["MaxHop"][i]
-    cone = T["ExitConeDegrees"][i]
+    twist = T["ExitTwistDegrees"][i]
     lead, apprch = T["ExitLead"], T["ExitApproachDegrees"]
     wander, frac = T["WanderDegrees"], T["CentreSphereOuterFraction"]
 
@@ -244,11 +253,20 @@ def generate(seed, intensity, ring_target, T, inner=INNER, outer=COURSE_OUTER,
             # laying an exit gate. A coil ring's facing is its own tangent, so it can be rolled
             # in azimuth and never in elevation.
             exitd = safe(sub(nxt, centre), axis)
-            aim = deflect(rng, exitd, cone)
+            aim = deflect(rng, exitd, 72.0)
             gates[-1] = (gates[-1][0], aim, rad)
+        elif not has_next:
+            # the terminal cluster: nothing to drop to, so the exit gate is laid straight on
+            to_next = safe(sub(nxt, last), last_leg)
+            straight = clamp_turn(last_leg, to_next, apprch)
+            ep = add(last, mul(straight, lead))
+            gates.append((ep, straight, rad))
+            pts.append(ep)
         else:
             to_next = safe(sub(nxt, last), last_leg)
-            ep = add(last, mul(clamp_turn(last_leg, to_next, apprch), lead))
+            square_leg = safe(sub(last_leg, mul(to_next, dot(last_leg, to_next))), perp(to_next))
+            approach = clamp_turn(last_leg, square_leg, apprch)
+            ep = add(last, mul(approach, lead))
             if clamp_exit_gate:
                 # NEGATIVE CONTROL: contain the exit gate by pulling its POSITION back into the
                 # shell. This is the one walked leg in the whole course, so shortening it is
@@ -256,7 +274,13 @@ def generate(seed, intensity, ring_target, T, inner=INNER, outer=COURSE_OUTER,
                 r = mag(ep)
                 if r > 1e-3 and not (inner <= r <= outer):
                     ep = mul(ep, max(inner, min(outer, r)) / r)
-            facing = deflect(rng, safe(sub(nxt, ep), to_next), cone)
+            drop = safe(sub(nxt, ep), to_next)
+            square = safe(sub(approach, mul(drop, dot(approach, drop))), perp(drop))
+            turn = math.radians(rng.range(-twist, twist))
+            facing = safe(rotate_about(square, drop, turn), square)
+            if exit_faces_next:
+                # NEGATIVE CONTROL: the Fold-era exit gate, which FACED the next cluster (a nose jump's aim).
+                facing = deflect(rng, drop, 40.0)
             gates.append((ep, facing, rad))
             pts.append(ep)
 
@@ -280,9 +304,9 @@ def corner_radius(a, b, c):
 
 def measure(intensity, T, seeds, target, **kw):
     i = intensity - 1
-    rad, cone = T["RingRadius"][i], T["ExitConeDegrees"][i]
+    rad, twist = T["RingRadius"][i], T["ExitTwistDegrees"][i]
     m = dict(corner=float("inf"), lo=1e9, hi=0.0, extent=0.0,
-             fold_lo=1e9, fold_hi=0.0, gap=1e9, cone=0.0, rings=0)
+             fold_lo=1e9, fold_hi=0.0, gap=1e9, square=0.0, twist=0.0, rings=0)
     for s in range(1, seeds + 1):
         gates, clust, centres, folds, per = generate(s, intensity, target, T, **kw)
         m["rings"] = len(gates)
@@ -303,11 +327,15 @@ def measure(intensity, T, seeds, target, **kw):
             m["fold_hi"] = max(m["fold_hi"], f)
         for c in range(len(clust) - 1):
             gate = gates[(c + 1) * stride - 1]
-            m["cone"] = max(m["cone"],
-                            angle(gate[1], safe(sub(centres[c + 1], gate[0]), gate[1])))
+            drop = safe(sub(centres[c + 1], gate[0]), gate[1])
+            m["square"] = max(m["square"], abs(angle(gate[1], drop) - 90.0))
+            if len(clust[c]) > 1:
+                approach = safe(sub(gate[0], clust[c][-2]), gate[1])
+                square = safe(sub(approach, mul(drop, dot(approach, drop))), approach)
+                m["twist"] = max(m["twist"], angle(gate[1], square))
             m["gap"] = min(m["gap"], min(mag(sub(a, b)) for a in clust[c] for b in clust[c + 1]))
     m["mouth_span"] = 2 * rad
-    m["cone_authored"] = cone
+    m["twist_authored"] = twist
     return m
 
 
@@ -318,7 +346,8 @@ def verdicts(m, hull_r, fold_reach):
         "fold": m["fold_hi"] < fold_reach,
         "worth": m["fold_lo"] > m["extent"],
         "gap": m["gap"] > m["mouth_span"],
-        "cone": m["cone"] <= m["cone_authored"] + 0.5,
+        "square": m["square"] <= 0.5,
+        "twist": m["twist"] <= m["twist_authored"] + 0.5,
     }
 
 
@@ -327,9 +356,9 @@ def run(seeds, target, quiet=False, **kw):
     top, omega, hull_r = read_vessel()
     fold_reach = read_fold_reach()
     if not quiet:
-        print(f"Butterfly  top {top:.0f} u/s, turn {omega:.0f} deg/s "
-              f"-> minimum circle {hull_r:.1f} u   (read off Butterfly.prefab)")
-        print(f"Fold       resting reach {fold_reach:.0f} u   (ButterflyFoldAction.reachRange)")
+        print(f"Tiger Moth top {top:.0f} u/s, turn {omega:.0f} deg/s "
+              f"-> minimum circle {hull_r:.1f} u   (read off TigerMoth.prefab)")
+        print("Drop       no longest fall (TigerMothDropAction): every gap is in reach")
         print(f"Cell       course shell [{INNER:.0f}, {COURSE_OUTER:.0f}], nucleus {NUCLEUS:.0f}\n")
     ok = True
     for i in (1, 2, 3, 4):
@@ -351,8 +380,10 @@ def run(seeds, target, quiet=False, **kw):
               f"{m['extent']:.0f}       {'OK' if v['worth'] else 'FAIL'}")
         print(f"    gap     min {m['gap']:7.1f} vs two mouths {m['mouth_span']:.0f}"
               f"                  {'OK' if v['gap'] else 'FAIL'}")
-        print(f"    cone    max {m['cone']:7.1f} vs authored {m['cone_authored']:.0f}"
-              f"                    {'OK' if v['cone'] else 'FAIL'}")
+        print(f"    square  max {m['square']:7.2f} deg off square to the next cluster"
+              f"        {'OK' if v['square'] else 'FAIL'}")
+        print(f"    twist   max {m['twist']:7.1f} vs authored {m['twist_authored']:.0f}"
+              f"                    {'OK' if v['twist'] else 'FAIL'}")
     if not quiet:
         print("\n" + ("ALL CHECKS PASS" if ok else "FAILED"))
     return ok
@@ -376,9 +407,11 @@ def self_test(seeds, target):
         ("a positional clamp instead of a geodesic hop",
          dict(clamp_instead_of_geodesic=True), None, ("mouth", "worth")),
         ("a positional clamp on the exit gate, in a shell tight enough for it to engage",
-         dict(clamp_exit_gate=True), (620.0, 900.0), ("corner",)),
+         dict(clamp_exit_gate=True), (650.0, 880.0), ("corner",)),
         ("a coil ring as the aiming device instead of an exit gate",
-         dict(coil_ring_aims=True), None, ("cone",)),
+         dict(coil_ring_aims=True), None, ("square",)),
+        ("the Fold-era exit gate, facing the next cluster instead of square to it",
+         dict(exit_faces_next=True), None, ("square",)),
     )
     for label, kw, bounds, expect in controls:
         print(f"self-test: {label}")
@@ -404,6 +437,23 @@ COMPILE_POS_TOLERANCE = 0.05     # units; measured worst 0.0059
 COMPILE_AXIS_TOLERANCE = 0.05    # degrees; measured worst 0.0005
 
 
+HARNESS_CSPROJ = """<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Unity.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs" />
+    <Compile Include="../../../Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs" />
+  </ItemGroup>
+</Project>
+"""
+
+
 def compile_and_compare(seeds, target):
     """Build and run the SHIPPED C#, then compare it to this model gate for gate."""
     import shutil
@@ -414,6 +464,12 @@ def compile_and_compare(seeds, target):
         print("--compile needs a dotnet SDK; install one and re-run (see .claude/skills/"
               "asset-surgery). SKIPPED, not passed.")
         return False
+
+    # The repo ignores *.csproj (Unity regenerates its own), so the harness's project file is never
+    # committed: without this a fresh clone fails with MSB1003, reported below as "does not compile".
+    csproj = HARNESS / "waystation_harness.csproj"
+    if not csproj.exists():
+        csproj.write_text(HARNESS_CSPROJ, encoding="utf-8")
 
     build = subprocess.run([dotnet, "build", "-v", "q", "--nologo"], cwd=HARNESS,
                            capture_output=True, text=True)

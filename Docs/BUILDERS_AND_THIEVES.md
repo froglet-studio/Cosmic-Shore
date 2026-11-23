@@ -397,7 +397,8 @@ death, domain, shield or capture. In the whole-cell run (SWARM_FAUNA.md §26) a 
   would make that one compound actor move. It was NOT taken: it would make every worn prism a kinematic trigger that
   fires against the cell's static prisms, a gameplay change nobody has measured. QA-SWARM-ROUND11-10 profiles it.
 - **The ladder** (item 1 of this round). Builder member bodies are `BindVirtualMass` entries, so `LiveVolume` counts
-  them. `author_builders.body_volume()` puts every colony's member cap x |1.4 x 0.9 x 2.6| into
+  them. `author_builders.body_volume()` puts every colony's member cap x |its BodyScale| (since 2026-10-26 a
+  per-species override, the research 1.4 x 0.9 x 2.6 x 3.55 / the retired heart: `Docs/ECOSYSTEM.md` §64.4) into
   `author_swarm_fauna.ladder()`, beside the substrate's bodies: 294.8 volume. FrenzyEnterVolume moves from
   448,000 to 449,000.
   - Worn prisms, walls, hoards and lairs are the cell's own mass changing hands, so they are not added.

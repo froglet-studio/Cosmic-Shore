@@ -11,7 +11,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using NUnit.Framework;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -150,18 +150,18 @@ namespace CosmicShore.Tests
             var variable = Track(ScriptableObject.CreateInstance<NetworkMonitorDataVariable>());
             var data = new NetworkMonitorData { OnNetworkLost = lost, OnNetworkFound = found };
             variable.Value = data;
-            int lostCount = 0;
-            lost.OnRaised += () => lostCount++;
 
+            // Counted on the monitor, not on the channel: a SOAP event does nothing outside Play mode
+            // (SoapCoreTests.Event_RaisedOutsidePlayMode_DoesNothing), so a subscriber here never hears it.
             bool reachable = true;
             var monitor = new NetworkMonitor(variable, () => reachable);
             monitor.Poll();
-            Assert.AreEqual(0, lostCount, "no transition, no event");
+            Assert.AreEqual(0, monitor.LossesSeen, "no transition, no event");
 
             reachable = false;
             monitor.Poll();
             monitor.Poll();
-            Assert.AreEqual(1, lostCount, "one loss is one notice, however many polls see it");
+            Assert.AreEqual(1, monitor.LossesSeen, "one loss is one notice, however many polls see it");
             Assert.IsFalse(data.IsOnline);
         }
 
@@ -273,6 +273,7 @@ namespace CosmicShore.Tests
             var transition = new FakeTransition { Shutdown = () => shutdown.Task };
             var session = new FakePartySession();
             var hcs = NewService(gameData, transition, session, new FakePresenceLobby());
+            Machine(hcs).TryTransition(PartyState.InPresenceLobby);   // the presence join has finished
 
             // Online at entry: the call passes its entry check and starts shutting the host down.
             var ensure = hcs.EnsurePartySessionAsync();
@@ -289,7 +290,32 @@ namespace CosmicShore.Tests
             Assert.AreEqual(UniTaskStatus.Succeeded, ensure.Status);
         }
 
+        // ── The boot's Relay retry must not outrun the presence join (2026-11-17) ───────────
+
+        [Test]
+        public void EnsurePartySession_WhileThePresenceJoinIsStillRunning_StartsNoHost()
+        {
+            var gameData = Track(ScriptableObject.CreateInstance<GameDataSO>());
+            var transition = new FakeTransition();
+            var session = new FakePartySession();
+            var lobby = new FakePresenceLobby();
+            var hcs = NewService(gameData, transition, session, lobby);
+            Set(hcs, "_joining", true);   // EnsureInitializedAsync is awaiting the lobby join
+
+            var ensure = hcs.EnsurePartySessionAsync();   // what AuthenticationSceneController's retry calls
+
+            Assert.AreEqual(UniTaskStatus.Succeeded, ensure.Status);
+            Assert.AreEqual(PartyState.Disconnected, Machine(hcs).CurrentState);
+            Assert.AreEqual(0, transition.ShutdownCalls, "the retry must leave the NetworkManager to the init in flight");
+            Assert.AreEqual(0, session.CreateCalls, "a host built now is one the state machine never learns about");
+            Assert.AreEqual(0, lobby.JoinCalls);
+        }
+
         // ── Fixtures ─────────────────────────────────────────────────────────────────────
+
+        static PartyStateMachine Machine(HostConnectionService hcs) =>
+            (PartyStateMachine)typeof(HostConnectionService)
+                .GetField("_stateMachine", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(hcs);
 
         HostConnectionService NewService(GameDataSO gameData, INetworkTransitionService transition,
                                          IPartySessionService session, IPresenceLobbyService lobby)
@@ -337,6 +363,8 @@ namespace CosmicShore.Tests
             public event Action<string> PlayerLeaving;
 #pragma warning restore CS0067
             public float CreatedAtUnscaledTime => 0f;
+            public bool ConsumeRosterChanged() => false;
+            public void TakeDepartures(System.Collections.Generic.ISet<string> into) => into.Clear();
             public UniTask CreateAsync(int maxPlayers) { CreateCalls++; return UniTask.CompletedTask; }
             public UniTask JoinByIdAsync(string sessionId) => UniTask.CompletedTask;
             public UniTask JoinByIdAsync(string sessionId, bool asSpectator) => UniTask.CompletedTask;
@@ -351,6 +379,9 @@ namespace CosmicShore.Tests
             public int JoinCalls;
             public ISession ActiveLobby => null;
             public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
+            public bool ConsumeRosterDirty() => false;
+            public bool ConsumeMembershipLost() => false;
+            public void TakeDepartures(System.Collections.Generic.ISet<string> into) => into.Clear();
             public UniTask JoinOrCreateAsync(int maxPlayers) { JoinCalls++; return UniTask.CompletedTask; }
             public UniTask LeaveAsync() => UniTask.CompletedTask;
             public UniTask RefreshAsync() => UniTask.CompletedTask;

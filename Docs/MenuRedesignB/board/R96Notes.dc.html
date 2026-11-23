@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:80px;top:64px;width:1760px;display:flex;flex-direction:column;gap:22px"><span style="font-size:36px">Rev 96 - the squad screen: a backdrop, soft buttons, one press</span><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">Asked</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">"S1A is good but I didnt like any of the second scren designs, the bg is too bland and also the button in both the screens are too hard not soft hard soft. Clicking through so many vessels and pilots and artifacts also seems like a drag, we need to make the experience smoother for the users" (Shombith, 2026-11-12, on Rev 95).</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">The backdrop</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">The squad stands on a lit deck over the sea of the voyage that was picked: its own course map, dimmed, with the deck's lines running away under the hulls.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">The buttons</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">"Soft hard soft" is read as solid in the middle and fading out to both ends. The Buttons board sets that beside two other readings; say if another is meant.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">One press</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">No steppers. Every choice is on screen. Picking a vessel brings the pilot and artifact kept for it in the Hangar, so most seats are done in one press.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">2D Deck (recommended)</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">The whole squad is seen at once, standing across the deck. A press on a seat picks it; one tray under them holds its four strips.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">2E Kits</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">The fewest presses: six whole kits, one press sets all four. Element and artifact can still be changed alone.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">2F Showroom</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">The picked seat is the hero; the others wait on a rail. The largest pictures to choose from.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">Screen 1</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">1A as picked, with the soft buttons. Its Configure squad opens 2D.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

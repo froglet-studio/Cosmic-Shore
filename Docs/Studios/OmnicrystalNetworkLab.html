@@ -1,0 +1,1033 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Omnicrystal Network Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a ride bench. The 3D view fills the left (orbit the network, or ride it); a control rack runs down the right. Phones stack them. */
+:root {
+  --bg: #f3f1ec; --rack: #fcfbf8; --fg: #211d16; --muted: #6a6253; --line: #e1dccf; --chip: #efeadf;
+  --accent: #a3741a; --good: #2f8a4a; --warn: #b07a12; --bad: #b8402e; --stage: #0a0906;
+  --ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f0d09; --rack: #16130e; --fg: #f1ece1; --muted: #a59b88; --line: #2c2619; --chip: #221d14;
+  --accent: #e8c26a; --good: #6fd38a; --warn: #f0c060; --bad: #ff8a74; --stage: #0a0906; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f0d09; --rack: #16130e; --fg: #f1ece1; --muted: #a59b88; --line: #2c2619; --chip: #221d14;
+  --accent: #e8c26a; --good: #6fd38a; --warn: #f0c060; --bad: #ff8a74; --stage: #0a0906; color-scheme: dark; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--ui); font-size: 14px; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; height: 100%; }
+.stage { position: relative; background: var(--stage); min-height: 0; overflow: hidden; touch-action: none; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hud { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); top: max(12px, env(safe-area-inset-top, 0px)); font: 500 12px/1.5 var(--num);
+  color: #f4ead2; background: rgba(10, 9, 6, .6); padding: 8px 10px; border-radius: 6px; pointer-events: none; max-width: calc(100% - 24px); }
+.hud b { color: #ffd88a; font-weight: 500; }
+[hidden] { display: none !important; }
+.pad { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 4px; }
+.pad button { font: 600 18px var(--ui); color: #f4ead2; background: rgba(30, 26, 18, .7); border: 1px solid rgba(232, 194, 106, .35); border-radius: 10px; cursor: pointer; }
+.pad button[data-live="1"] { border-color: #ffd88a; color: #ffd88a; }
+.pad button[data-picked="1"] { background: #e8c26a; color: #1a1408; }
+.pad .u { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .r { grid-column: 3; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 3; } .pad .c { grid-column: 2; grid-row: 2; } .pad .b { grid-column: 3; grid-row: 3; font-size: 15px; }
+.building { position: absolute; right: 12px; top: 10px; font: 500 12px var(--ui); color: #d9cfbb; background: rgba(10,9,6,.7); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+.banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font: 600 28px var(--ui); color: #ffd88a; text-shadow: 0 2px 12px rgba(0,0,0,.6); pointer-events: none; }
+.rack { background: var(--rack); border-left: 1px solid var(--line); overflow-y: auto; min-height: 0;
+  padding-block: 18px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px; }
+h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.lede { color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
+section { display: flex; flex-direction: column; gap: 8px; }
+h2 { font: 600 11px/1 var(--ui); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0; display: flex; justify-content: space-between; gap: 8px; }
+h2 small { font: 400 10px var(--num); letter-spacing: 0; text-transform: none; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; background: var(--chip); padding: 2px; border-radius: 6px; }
+.seg button { font: 500 12px var(--ui); color: var(--fg); background: transparent; border: 0; border-radius: 4px; padding: 7px 4px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--rack); color: var(--accent); box-shadow: 0 0 0 1px var(--line); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 2px 10px; align-items: center; }
+.row label { font-size: 12.5px; line-height: 1.3; min-width: 0; }
+.row label .gn { display: block; font: 400 10px var(--num); color: var(--muted); }
+.row output { font: 500 12px var(--num); text-align: right; font-variant-numeric: tabular-nums; }
+.row output.changed { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+.note { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.stat { background: var(--chip); border-radius: 6px; padding: 8px; min-width: 0; }
+.stat b { display: block; font: 500 15px var(--num); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11px; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font: 400 11.5px var(--num); font-variant-numeric: tabular-nums; }
+th { text-align: right; font: 600 10px var(--ui); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 4px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+td { text-align: right; padding: 5px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tr[data-sel="1"] td { background: var(--chip); }
+tbody tr { cursor: pointer; }
+.g { color: var(--good); } .w { color: var(--warn); } .b { color: var(--bad); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btns button { font: 600 12px var(--ui); border-radius: 6px; padding: 8px 12px; cursor: pointer; border: 1px solid var(--line); background: var(--rack); color: var(--fg); }
+.btns button.primary { background: var(--accent); border-color: var(--accent); color: var(--rack); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+summary { cursor: pointer; font: 600 12px var(--ui); }
+details > div { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); background: var(--chip); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; box-sizing: border-box; }
+@media (max-width: 860px) {
+  html, body { height: auto; }
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .stage { height: 64vh; min-height: 320px; }
+  .rack { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="view" aria-label="The omnicrystal's tunnel network. Orbit: drag and scroll. Ride: arrow keys or the pad pick at each junction."></canvas>
+    <div class="hud" id="hud"></div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="building" id="building" hidden>building…</div>
+    <div class="pad" id="pad" hidden>
+      <button type="button" class="u" data-slot="up" aria-label="Up at the next junction">▲</button>
+      <button type="button" class="l" data-slot="left" aria-label="Left at the next junction">◀</button>
+      <button type="button" class="r" data-slot="right" aria-label="Right at the next junction">▶</button>
+      <button type="button" class="d" data-slot="down" aria-label="Down at the next junction">▼</button>
+      <button type="button" class="c" data-slot="ahead" aria-label="Straight ahead at the crystal">●</button>
+      <button type="button" class="b" data-slot="behind" aria-label="Back the way you came in, at the crystal">↺</button>
+    </div>
+  </div>
+
+  <aside class="rack">
+    <header>
+      <h1>Omnicrystal Network Lab</h1>
+      <p class="lede">The Meerkat's omnicrystal grows a tunnel network to every exit. Every path from the entrance to an exit passes three bifurcations: the crystal itself, then two more, so there are eight exits. Every junction comes after a straight so you can choose, the turns come right after the fork, and the tube rolls you toward the way you chose. No path runs more than 20% longer than the straight line to its exit, and every path is scored for comfort.</p>
+    </header>
+
+    <section>
+      <h2>View</h2>
+      <div class="seg" id="modeSeg" role="group" aria-label="View">
+        <button type="button" data-v="orbit">Orbit the network</button>
+        <button type="button" data-v="ride">Ride it</button>
+      </div>
+      <div class="btns">
+        <button type="button" class="primary" id="btnRide">Ride from the crystal</button>
+        <button type="button" id="btnReroll">New exits</button>
+      </div>
+      <p class="note">Riding: pick at each junction with the arrow keys, WASD or the pad (it lights the ways that exist); at the crystal, Space or the centre button goes straight ahead and X or the corner button goes back the way you came in. With no pick you follow the path to the highlighted exit.</p>
+    </section>
+
+    <section>
+      <h2>The network</h2>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section>
+      <h2>Every path <small>click a row to highlight, double-click to ride</small></h2>
+      <div class="tablewrap"><table id="paths"><thead><tr>
+        <th>Exit</th><th>Forks</th><th>×</th><th>Ride s</th><th>Decide s</th><th>Turn °/s</th><th>Roll °/s</th><th>Side</th>
+      </tr></thead><tbody></tbody></table></div>
+      <p class="note"><b>Forks</b>: the junctions on the path, the crystal included. <b>×</b>: the path from the crystal to the exit, over the straight line between them. <b>Decide</b>: the shortest straight before a junction on the path, in seconds. <b>Turn</b>: the fastest the view swings (pitch and yaw). <b>Roll</b>: the fastest roll. <b>Side</b>: the average sideways push through the bends, as a share of the push of the tightest allowed turn taken flat (banking is what brings it down; the peak, at the start of a bend before the roll catches up, is in the stats). Green is comfortable, amber is lively, red is where people get sick.</p>
+    </section>
+
+    <section>
+      <h2>Exits</h2>
+      <div id="g-exits"></div>
+      <div class="seg" id="layoutSeg" role="group" aria-label="Exit layout">
+        <button type="button" data-v="branching">Branching</button>
+        <button type="button" data-v="anywhere">Anywhere</button>
+      </div>
+      <p class="note"><b>Branching</b> lays the exits out the way the tree branches, so every path can stay within the detour limit. <b>Anywhere</b> scatters them over the sphere: with three bifurcations on every path, two exits sharing their last junction can lie 90° apart, and the paths run well over 20% unless the exits are about 1,100 u out.</p>
+      <p class="note">Exits are rolled any way. Their facing stays within a cone round straight out: an exit facing back toward the crystal cannot be reached without a detour, and past about 50° the 20% limit no longer holds.</p>
+    </section>
+
+    <section>
+      <h2>Junctions</h2>
+      <div id="g-branch"></div>
+    </section>
+
+    <section>
+      <h2>Roll <small>the tube rolls the rider</small></h2>
+      <div class="seg" id="bankSeg" role="group" aria-label="Banking">
+        <button type="button" data-v="0">No banking</button>
+        <button type="button" data-v="1">Pitch plane</button>
+        <button type="button" data-v="2">Head to centre</button>
+      </div>
+      <div id="g-roll"></div>
+    </section>
+
+    <section>
+      <h2>Ride</h2>
+      <div id="g-ride"></div>
+    </section>
+
+    <details>
+      <summary>Comfort lines</summary>
+      <div id="g-comfort"></div>
+    </details>
+
+    <details>
+      <summary>How the network is built</summary>
+      <div>
+        <p class="note">Every junction is a bifurcation, and every path passes the same number of them (the slider; three by default), so there are 2<sup>n</sup> exits. You fly into the crystal along a straight from the emptiest direction. The crystal is the first bifurcation: its exits split into the two halves that are each tightest in direction, and each half leaves by the crystal point nearest its middle (two of ahead, behind, right, left, up, down). Each half runs straight to its next junction.</p>
+        <p class="note">At each later junction the exits split in two the same way, the ways named by where the halves lie round the rider (two of right, up, left, down). Each way is a <b>split</b> that peels off toward where it is going, a <b>turn</b> that never bends tighter than the tightest-turn radius and eases in and out over the turn ramp, and a <b>straight</b> into the next junction or the exit. The next junction sits where the turn naturally ends, as soon as it can by default (spacing 0), so the forks come early and the long run is the last one: a shared leg that runs far before it parts is length wasted for one of its exits.</p>
+        <p class="note">The rider's frame is carried along without spin (a rotation-minimising frame) and then rolled. <b>Banking</b> turns the rider so a bend is felt as pitch rather than a sideways shove. The <b>twist roll</b> rolls the rider toward the way they chose, during the turn after each fork: a helical feel that costs no length. An exit's own roll joins it. No straight before a junction ever rolls.</p>
+      </div>
+    </details>
+
+    <div class="btns">
+      <button type="button" id="btnCopy">Copy settings</button>
+      <button type="button" id="btnReset">Reset</button>
+    </div>
+    <textarea id="copyout" hidden readonly aria-label="Settings as JSON"></textarea>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+// ============ SHIPPED: Yash's Meerkat studio, round 18 (Docs/Studios/VesselStudio/meerkat.html), the omnicrystal labyrinth ============
+const SHIPPED = { labyrinthDiameter: 12, labyrinthMouthDiameter: 22, labyrinthRadiusMin: 90, labyrinthRadiusMax: 420, labyrinthOpeningsMin: 5, labyrinthOpeningsMax: 30, labyrinthSpread: 360 };
+// ============ LAB: Garrett's network (2026-10-28) ============
+const DEFAULTS = {
+  seed: 7, forks: 3, layout: 'branching', branchSpread: 35, reachMin: 450, reachMax: 700, exitCone: 35,
+  splitAngle: 28, splitLength: 30, twistLength: 150, minRadius: 70, turnRamp: 30, straightLength: 80, exitStraight: 40, spacing: 0,
+  bank: 1, bankAmount: 1, twistRoll: 0.25, rollSmooth: 10, maxRollRate: 90,
+  speed: 55, forkGain: 1.06, tubeRadius: SHIPPED.labyrinthDiameter / 2,
+  maxDetour: 1.2, okTurn: 45, badTurn: 90, okRoll: 60, badRoll: 120, okSlip: 25, badSlip: 50, okDecide: 1.2, badDecide: 0.8,
+  mode: 'orbit', sel: 0,
+};
+// Every other slider is lab-only: the game has no asset for the network yet, so its "shipped" value is this lab's proposal.
+for (const k in DEFAULTS) if (!(k in SHIPPED) && typeof DEFAULTS[k] === 'number' && k !== 'sel') SHIPPED[k] = DEFAULTS[k];
+const P = Object.assign({}, DEFAULTS);
+try { const s = JSON.parse(localStorage.getItem('omniNetLab.v3') || 'null'); if (s) for (const k in s) if (k in P) P[k] = s[k]; } catch (e) {}
+function save() { try { const d = {}; for (const k in P) if (P[k] !== DEFAULTS[k]) d[k] = P[k]; localStorage.setItem('omniNetLab.v3', JSON.stringify(d)); } catch (e) {} }
+
+const SPEC = [
+  ['exits', 'forks', 'Bifurcations from the entrance to each exit (2^n exits)', 1, 4, 1, 'labyrinthOpenings 5..30'],
+  ['exits', 'reachMin', 'Nearest exit (u from the crystal)', 40, 600, 10, 'labyrinthRadiusMin 90'],
+  ['exits', 'reachMax', 'Farthest exit (u)', 80, 900, 10, 'labyrinthRadiusMax 420'],
+  ['exits', 'branchSpread', 'Branching layout: how far each half spreads at the first junction (°)', 10, 60, 1, null],
+  ['exits', 'exitCone', 'Exit facing: most it turns from straight out (°)', 0, 90, 5, null],
+  ['exits', 'seed', 'Layout seed', 1, 99, 1, null],
+  ['branch', 'straightLength', 'Straight before each junction (u)', 20, 200, 5, null],
+  ['branch', 'splitAngle', 'Split: how hard each way peels off (°)', 10, 60, 1, null],
+  ['branch', 'splitLength', 'Split length (u)', 10, 80, 2, null],
+  ['branch', 'twistLength', 'Least room for a turn before the next straight (u)', 20, 300, 10, null],
+  ['branch', 'minRadius', 'Tightest turn radius (u)', 20, 200, 5, null],
+  ['branch', 'turnRamp', 'Turn ramp: how gently a turn begins and ends (u)', 5, 120, 5, null],
+  ['branch', 'spacing', 'Junction spacing (0 = each fork as soon as it can, 1 = evenly along the way)', 0, 1, 0.05, null],
+  ['branch', 'exitStraight', 'Straight into an exit (u)', 0, 150, 5, null],
+  ['roll', 'bankAmount', 'Banking strength', 0, 1, 0.05, null],
+  ['roll', 'twistRoll', 'Twist roll after each fork, toward the way you chose (turns)', 0, 1, 0.05, null],
+  ['roll', 'maxRollRate', 'Fastest the tube rolls you (°/s at ride speed)', 20, 360, 5, null],
+  ['roll', 'rollSmooth', 'Roll smoothing (u)', 2, 60, 1, null],
+  ['ride', 'speed', 'Ride speed (u/s)', 20, 160, 5, null],
+  ['ride', 'forkGain', 'Faster at every fork (×)', 1, 1.3, 0.01, "Yash's round 16"],
+  ['ride', 'tubeRadius', 'Tube radius (u)', 3, 20, 0.5, 'labyrinthDiameter 12'],
+  ['comfort', 'maxDetour', 'Longest path allowed (× the straight line to its exit)', 1, 2, 0.01, null],
+  ['comfort', 'okTurn', 'Turn rate, comfortable up to (°/s)', 10, 120, 5, null],
+  ['comfort', 'badTurn', 'Turn rate, sickening from (°/s)', 30, 240, 5, null],
+  ['comfort', 'okRoll', 'Roll rate, comfortable up to (°/s)', 10, 200, 5, null],
+  ['comfort', 'badRoll', 'Roll rate, sickening from (°/s)', 30, 360, 5, null],
+  ['comfort', 'okSlip', 'Average sideways push, comfortable up to (%)', 5, 80, 1, null],
+  ['comfort', 'badSlip', 'Average sideways push, sickening from (%)', 10, 100, 1, null],
+  ['comfort', 'okDecide', 'Decision time, comfortable from (s)', 0.3, 3, 0.1, null],
+  ['comfort', 'badDecide', 'Decision time, too short below (s)', 0.2, 2, 0.1, null],
+];
+const GROUPS = { exits: 'g-exits', branch: 'g-branch', roll: 'g-roll', ride: 'g-ride', comfort: 'g-comfort' };
+const inputs = {}, outs = {};
+const fmt = (v, st) => (+v).toFixed(st >= 1 ? 0 : st >= 0.1 ? 1 : 2);
+for (const [g, key, label, mn, mx, st, gn] of SPEC) {
+  const row = document.createElement('div'); row.className = 'row';
+  row.innerHTML = '<label for="sl-' + key + '">' + label + (gn ? '<span class="gn">' + gn + '</span>' : '') + '</label><output></output><input type="range" id="sl-' + key + '" min="' + mn + '" max="' + mx + '" step="' + st + '">';
+  document.getElementById(GROUPS[g]).appendChild(row);
+  const inp = row.querySelector('input'); inp.value = P[key]; inputs[key] = inp; outs[key] = [row.querySelector('output'), st];
+  inp.addEventListener('input', () => { P[key] = +inp.value; changedSoon(); });
+}
+function segBind(id, key, cast) { const el = document.getElementById(id); el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; P[key] = cast(b.dataset.v); changed(key !== 'mode'); if (key === 'mode') setMode(P.mode); }); return el; }
+const segs = { mode: segBind('modeSeg', 'mode', String), layout: segBind('layoutSeg', 'layout', String), bank: segBind('bankSeg', 'bank', Number) };
+
+// ============ vector helpers (plain arrays) ============
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const len = (a) => Math.hypot(a[0], a[1], a[2]), norm = (a) => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+const smooth5 = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * x * (x * (6 * x - 15) + 10); };
+const smoothstep = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+function rotAbout(v, axis, ang) { const c = Math.cos(ang), s = Math.sin(ang); return add(add(mul(v, c), mul(cross(axis, v), s)), mul(axis, dot(axis, v) * (1 - c))); }
+
+// ============ the exits ============
+// distance between segments ab and cd
+function segDist(a, b, c, d) {
+  const u = sub(b, a), v = sub(d, c), w = sub(a, c), A = dot(u, u), B = dot(u, v), C = dot(v, v), D = dot(u, w), E = dot(v, w), den = A * C - B * B;
+  let sc = den > 1e-9 ? Math.max(0, Math.min(1, (B * E - C * D) / den)) : 0, tc = C > 1e-9 ? (B * sc + E) / C : 0;
+  if (tc < 0) { tc = 0; sc = A > 1e-9 ? Math.max(0, Math.min(1, -D / A)) : 0; } else if (tc > 1) { tc = 1; sc = A > 1e-9 ? Math.max(0, Math.min(1, (B - D) / A)) : 0; }
+  return len(sub(add(w, mul(u, sc)), mul(v, tc)));
+}
+function makeExits() {
+  // 2^forks exits (every path passes `forks` bifurcations); any position; facing within exitCone of straight out (an exit facing back toward the crystal cannot be reached within
+  // the detour limit), any roll; an exit whose run-in would pass through another's is drawn again
+  const r = rng(P.seed * 7919 + 13), ex = [], clear = 4 * P.tubeRadius + 12, cone = P.exitCone * Math.PI / 180;
+  const randDir = () => { const z = 2 * r() - 1, a = 2 * Math.PI * r(), rr = Math.sqrt(1 - z * z); return [rr * Math.cos(a), z, rr * Math.sin(a)]; };
+  // 'branching': the exits fall the way the tree branches. The crystal's two halves lie at least 70° apart, each half
+  // splits branchSpread° either side of its middle, and every split after that splits at 0.6 of the one before; a little
+  // jitter on top. 'anywhere': uniform over the sphere.
+  let plan = null;
+  if (P.layout === 'branching') {
+    let a = randDir(), b; do { b = randDir(); } while (dot(a, b) > Math.cos(70 * Math.PI / 180));
+    let dirs = P.forks > 0 ? [a, b] : [a], spread = P.branchSpread * Math.PI / 180;
+    for (let lv = 1; lv < P.forks; lv++, spread *= 0.6) {
+      dirs = dirs.flatMap((d) => { const side = norm(cross(d, randDir())); return [rotAbout(d, side, spread), rotAbout(d, side, -spread)]; });
+    }
+    plan = dirs.map((d) => { const j = norm(cross(d, randDir())); return rotAbout(d, j, (r() - 0.5) * 0.12); });
+  }
+  for (let i = 0, n = 2 ** P.forks; i < n; i++) {
+    let e;
+    for (let tries = 0; tries < 40; tries++) {
+      const dir = plan ? plan[i] : randDir();
+      const reach = P.reachMin + (Math.max(P.reachMin, P.reachMax) - P.reachMin) * Math.cbrt(r());
+      const pos = mul(dir, reach);
+      // a direction uniform on the cap round straight out
+      const side = norm(cross(dir, [0.3, 1, 0.2]));
+      const ct = 1 - r() * (1 - Math.cos(cone)), st = Math.sqrt(Math.max(0, 1 - ct * ct));
+      const face = norm(add(mul(dir, ct), mul(rotAbout(side, dir, 2 * Math.PI * r()), st)));
+      let up = cross(face, [0.3 + r(), 1, r()]); if (len(up) < 1e-3) up = [0, 1, 0]; up = norm(cross(cross(face, up), face));
+      up = rotAbout(up, face, 2 * Math.PI * r());
+      e = { i, pos, face, up, dist: reach, approach: sub(pos, mul(face, P.exitStraight)) };
+      e.runIn = sub(pos, mul(face, P.exitStraight + 2 * P.minRadius));
+      if (ex.every((o) => segDist(e.runIn, pos, o.runIn, o.pos) > clear)) break;
+    }
+    ex.push(e);
+  }
+  return ex;
+}
+// The way in: you fly into the crystal along a straight (the decision before its fork) from the emptiest direction.
+function entranceFrame(exits) {
+  let best = null;
+  for (let i = 0; i < 300; i++) {
+    const z = 1 - 2 * (i + 0.5) / 300, a = i * 2.399963, q = Math.sqrt(1 - z * z), d = [q * Math.cos(a), z, q * Math.sin(a)];
+    const m = Math.min(...exits.map((e) => 1 - dot(d, norm(e.pos))));   // 1 - cos of the angle to the nearest exit
+    if (!best || m > best.m) best = { m, d };
+  }
+  const T = mul(best.d, -1); let U = sub([0, 1, 0], mul(T, T[1])); if (len(U) < 1e-3) U = sub([1, 0, 0], mul(T, T[0]));
+  U = norm(U); return { T, U, R: cross(T, U), p: [0, 0, 0] };
+}
+
+// ============ building the network ============
+// A frame is { T (forward), U (up), R (right = T x U) }.
+const SLOTS = [['right', 0], ['up', Math.PI / 2], ['left', Math.PI], ['down', -Math.PI / 2]];
+const angDist = (a, b) => { let d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d; };
+// Every junction is a bifurcation: its exits split into two equal halves, the split that keeps each half tightest in
+// direction (as seen from the junction). A junction's two ways are named by where the halves lie round the rider (two of
+// right, up, left, down); the crystal's by two of its six points.
+function halves(dirs, cands) {
+  let best = null;
+  for (const key of cands) {
+    const order = dirs.map((d, i) => [key(d), i]).sort((a, b) => a[0] - b[0]).map((x) => x[1]), h = dirs.length / 2;
+    const parts = [order.slice(0, h), order.slice(h)];
+    let cost = 0;
+    for (const part of parts) { const m = norm(part.reduce((a, i) => add(a, dirs[i]), [0, 0, 0])); for (const i of part) cost += 1 - dot(dirs[i], m); }
+    if (!best || cost < best.cost - 1e-9) best = { cost, parts };
+  }
+  return best.parts;
+}
+function bifurcate(pos, F, exits) {
+  const dirs = exits.map((e) => norm(sub(e.approach, pos))), az = (v) => Math.atan2(dot(v, F.U), dot(v, F.R));
+  const cands = []; for (let i = 0; i < 36; i++) { const psi = Math.PI * i / 36; cands.push((d) => Math.cos(az(d) - psi)); }
+  const parts = halves(dirs, cands), mid = parts.map((part) => az(part.reduce((a, i) => add(a, dirs[i]), [0, 0, 0])));
+  let best = null;
+  for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) if (a !== b) { const sc = Math.cos(mid[0] - SLOTS[a][1]) + Math.cos(mid[1] - SLOTS[b][1]); if (!best || sc > best.sc) best = { sc, a, b }; }
+  return [[parts[0], best.a], [parts[1], best.b]].map(([part, si]) => ({ slot: SLOTS[si][0], dir: SLOTS[si][1], exits: part.map((i) => exits[i]) }));
+}
+const CRYSTAL_WAYS = [['ahead', 'T', 1], ['behind', 'T', -1], ['right', 'R', 1], ['left', 'R', -1], ['up', 'U', 1], ['down', 'U', -1]];
+function crystalHalves(F, exits) {
+  const dirs = exits.map((e) => norm(e.approach)), cands = [];
+  for (let i = 0; i < 200; i++) { const z = 1 - 2 * (i + 0.5) / 200, a = i * 2.399963, q = Math.sqrt(1 - z * z), d = [q * Math.cos(a), z, q * Math.sin(a)]; cands.push((v) => dot(v, d)); }
+  const parts = exits.length > 1 ? halves(dirs, cands) : [[0]], axes = CRYSTAL_WAYS.map(([slot, ax, sg]) => ({ slot, axis: mul(F[ax], sg) }));
+  const mids = parts.map((part) => norm(part.reduce((a, i) => add(a, dirs[i]), [0, 0, 0])));
+  let best = null;
+  for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) if (a !== b) { const sc = dot(axes[a].axis, mids[0]) + (mids[1] ? dot(axes[b].axis, mids[1]) : 0); if (!best || sc > best.sc) best = { sc, a, b }; }
+  return parts.map((part, k) => ({ slot: axes[k ? best.b : best.a].slot, axis: mids[k], exits: part.map((i) => exits[i]) }));
+}
+
+const STEP = 2;   // u between samples
+function sampleSplit(p0, F, slotDir, out, toward) {
+  // the split peels off over splitLength, its heading easing from T by up to splitAngle (zero curvature at both ends)
+  let side = norm(add(mul(F.R, Math.cos(slotDir)), mul(F.U, Math.sin(slotDir))));
+  let a = P.splitAngle * Math.PI / 180;
+  if (toward) {
+    // never more than the way is off straight ahead (half of splitAngle at least, so the ways part before their mouths end),
+    // and toward it, but within 20° of its own way's side, so two ways never peel the same way
+    const perp = sub(toward, mul(F.T, dot(toward, F.T))), th = Math.acos(Math.max(-1, Math.min(1, dot(toward, F.T))));
+    if (len(perp) > 0.05) {
+      const da = Math.atan2(dot(perp, F.U), dot(perp, F.R)) - slotDir, w = Math.atan2(Math.sin(da), Math.cos(da)), lim = Math.PI / 9;
+      const ang = slotDir + Math.max(-lim, Math.min(lim, w)); side = norm(add(mul(F.R, Math.cos(ang)), mul(F.U, Math.sin(ang))));
+    }
+    a = Math.max(a / 2, Math.min(a, th));
+  }
+  const L = Math.max(P.splitLength, 1.5 * a * P.minRadius);   // smoothstep heading: peak curvature 1.5a/L, kept within the tightest turn
+  const n = Math.max(2, Math.round(L / STEP)); let p = p0.slice();
+  for (let i = 1; i <= n; i++) {
+    const u = (i - 0.5) / n, th = a * (u * u * (3 - 2 * u));
+    const d = norm(add(mul(F.T, Math.cos(th)), mul(side, Math.sin(th))));
+    p = add(p, mul(d, L / n)); out.push({ p, kind: 'split' });
+  }
+  return { p, t: norm(add(mul(F.T, Math.cos(a)), mul(side, Math.sin(a)))) };
+}
+// The twist: a steered path, not a fitted curve. A point flies from the split's end, never turning tighter than the tightest
+// turn radius (minRadius), its curvature ramping in and out over turnRamp (a waterslide's clothoid), following a plan: the
+// shortest way round onto the next straight. It spends length only on turning toward where it is going.
+function sampleSteer(p0, t0, Q, dq, out, v) {
+  if (steerPlan(p0, t0, Q, dq, out, v)) return true;
+  const n = Math.max(1, Math.round(len(sub(Q, p0)) / STEP));   // no plan: a straight line, which the scorecard will show
+  for (let i = 1; i <= n; i++) out.push({ p: add(p0, mul(sub(Q, p0), i / n)), kind: 'twist' });
+  return false;
+}
+// The shortest way round (a 3D Dubins path): turn, straight, turn, each turn in its own plane at radius R, either way round
+// that plane. The straight's heading is found by Newton from a few seeds and a coarse scan of the sphere, then a pattern
+// search. A target too close for that gets a longer straight into it. Measured offline on 1000 random targets: all solve.
+function solveCSC(p0, t0, Q, dq, R, long0, long1) {
+  const arcS = (t, d) => { const c = Math.max(-1, Math.min(1, dot(t, d))), a = Math.acos(c); let e = sub(d, mul(t, c)); const l = len(e);
+    if (l < 1e-9) { if (c > 0) return { a: 0, e: t, off: [0, 0, 0] }; e = cross(t, [0, 1, 0]); if (len(e) < 1e-3) e = cross(t, [1, 0, 0]); }
+    e = norm(e); return { a, e, off: add(mul(t, R * Math.sin(a)), mul(e, R * (1 - Math.cos(a)))) }; };
+  // the long way round the same plane: 2pi - a, curling the other way; its offset is the short way's, reversed
+  const arcL = (t, d) => { const A = arcS(t, d); return { a: 2 * Math.PI - A.a, e: mul(A.e, -1), off: mul(A.off, -1) }; };
+  const arc0 = long0 ? arcL : arcS, arc1 = long1 ? arcL : arcS;
+  const D0 = sub(Q, p0), wOf = (d) => sub(sub(D0, arc0(t0, d).off), arc1(d, dq).off);
+  const resid = (d) => { const w = wOf(d); return sub(w, mul(d, Math.max(0, dot(w, d)) + Math.min(0, dot(w, d)) * 3)); };
+  const basis = (d) => { let e1 = cross(d, [0, 1, 0]); if (len(e1) < 1e-3) e1 = cross(d, [1, 0, 0]); e1 = norm(e1); return [e1, cross(d, e1)]; };
+  const cost = (d) => len(resid(d));
+  // seeds: the obvious headings plus the best of a coarse scan of the sphere; each is refined by Newton, then a pattern search
+  const seeds = [norm(D0)];
+  const scan = [];
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 12; j++) { const z = -0.92 + 1.84 * i / 5, a = 2 * Math.PI * (j + 0.5 * (i % 2)) / 12, q = Math.sqrt(1 - z * z), d = [q * Math.cos(a), z, q * Math.sin(a)]; scan.push([cost(d), d]); }
+  scan.sort((x, y) => x[0] - y[0]); for (let i = 0; i < 3; i++) seeds.push(scan[i][1]);
+  let best = null;
+  for (let d of seeds) {
+    let g = resid(d), gl = len(g);
+    for (let it = 0; it < 20 && gl > 1e-4; it++) {
+      const [e1, e2] = basis(d), h = 1e-5, r0 = [dot(g, e1), dot(g, e2)];
+      const ga = resid(norm(add(d, mul(e1, h)))), gb = resid(norm(add(d, mul(e2, h))));
+      const J = [[(dot(ga, e1) - r0[0]) / h, (dot(gb, e1) - r0[0]) / h], [(dot(ga, e2) - r0[1]) / h, (dot(gb, e2) - r0[1]) / h]];
+      const det = J[0][0] * J[1][1] - J[0][1] * J[1][0]; if (Math.abs(det) < 1e-12) break;
+      let x = -(J[1][1] * r0[0] - J[0][1] * r0[1]) / det, y = -(-J[1][0] * r0[0] + J[0][0] * r0[1]) / det;
+      const m = Math.hypot(x, y); if (m > 0.5) { x *= 0.5 / m; y *= 0.5 / m; }
+      let step = 1, moved = false;
+      for (let ls = 0; ls < 12; ls++) { const nd = norm(add(d, add(mul(e1, x * step), mul(e2, y * step)))), ng = resid(nd), ngl = len(ng); if (ngl < gl) { d = nd; g = ng; gl = ngl; moved = true; break; } step *= 0.5; }
+      if (!moved) break;
+    }
+    for (let h = 0.05, it = 0; gl < 5 && h > 1e-6 && gl > 1e-3 && it < 150; it++) {
+      const [e1, e2] = basis(d); let moved = false;
+      for (const [x, y] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const nd = norm(add(d, add(mul(e1, x * h), mul(e2, y * h)))), ngl = cost(nd); if (ngl < gl) { d = nd; gl = ngl; moved = true; break; } }
+      if (!moved) h *= 0.5;
+    }
+    const w = wOf(d), L = dot(w, d);
+    if (gl < 0.05 && L >= 0) { const A0 = arc0(t0, d), A1 = arc1(d, dq), length = R * (A0.a + A1.a) + L; if (!best || length < best.length) best = { d, L, A0, A1, length }; if (gl < 1e-3) break; }
+  }
+  if (!best) return null;
+  best.p0 = p0; best.t0 = t0; best.Q = Q; return best;
+}
+// a target too close for one turn-straight-turn gets a longer run-in (the straight into it) or, failing that, a run-out first
+const PLAN_CACHE = new Map();   // cleared every build: the next-shortest variants reuse the same solutions
+function dubinsPlan(p0, t0, Q, dq, R, alt = 0) {
+  // alt > 0 takes the alt-th next shortest plan instead (another way round, for a branch that would cross a tube)
+  const key = [p0, t0, Q, dq].map((v) => v.map((x) => x.toFixed(3)).join(',')).join('|') + '|' + R.toFixed(3);
+  let entry = PLAN_CACHE.get(key);
+  if (!entry || (alt && !entry.full)) {
+    const sols = [];
+    for (const [k0, k1] of [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [0, 3], [2, 0], [1, 2], [2, 2], [0, 5], [3, 3]]) {
+      const a = add(p0, mul(t0, k0 * R)), b = sub(Q, mul(dq, k1 * R));
+      for (const [l0, l1] of [[0, 0], [0, 1], [1, 0], [1, 1]]) {
+        const c = solveCSC(a, t0, b, dq, R, l0, l1);
+        if (c && !sols.some((o) => Math.abs(o.length - c.length - (k0 + k1) * R) < 1)) sols.push(Object.assign(c, { length: c.length + (k0 + k1) * R, k0, k1 }));
+      }
+      if (!alt && sols.some((o) => o.length < 1.15 * len(sub(Q, p0)) + 2 * R)) break;   // good enough: the longer run-ins only add length
+    }
+    sols.sort((x, y) => x.length - y.length);
+    entry = { sols, full: !!alt }; PLAN_CACHE.set(key, entry);
+  }
+  const sols = entry.sols;
+  if (!sols.length) return null;
+  const best = sols[Math.min(alt, sols.length - 1)];
+  const { d, L, A0, A1 } = best, pts = [], line = (from, to) => { const n = Math.ceil(len(sub(to, from))); for (let i = 1; i <= n; i++) pts.push(add(from, mul(sub(to, from), i / n))); };
+  line(p0, best.p0); const s0 = best.p0;
+  const n0 = Math.ceil(R * A0.a); for (let i = 1; i <= n0; i++) { const x = R * A0.a * i / n0; pts.push(add(s0, add(mul(t0, R * Math.sin(x / R)), mul(A0.e, R * (1 - Math.cos(x / R)))))); }
+  const P1 = add(s0, A0.off), nl = Math.ceil(L); for (let i = 1; i <= nl; i++) pts.push(add(P1, mul(d, L * i / nl)));
+  const P2 = add(P1, mul(d, L)), n1 = Math.ceil(R * A1.a); for (let i = 1; i <= n1; i++) { const x = R * A1.a * i / n1; pts.push(add(P2, add(mul(d, R * Math.sin(x / R)), mul(A1.e, R * (1 - Math.cos(x / R)))))); }
+  line(best.Q, Q);
+  if (!pts.length || len(sub(pts[pts.length - 1], Q)) > 0.01) pts.push(Q.slice());
+  return { pts, length: best.length, d };
+}
+// Fly the plan: a steering point (curvature within 1/minRadius, ramped over turnRamp) chases a point a little ahead on it; the
+// plan is drawn a little wider than minRadius so the ramps have room to keep up. If it cannot keep up, the plan itself is used.
+function steerPlan(p0, t0, Q, dq, out, v) {
+  const R = P.minRadius, plan = dubinsPlan(p0, t0, Q, dq, R * v.rs, v.alt); if (!plan) return false;
+  const D = plan.pts, nD = D.length, look = 30, kmax = 1 / R, dk = kmax / Math.max(1, P.turnRamp), ds = 1, pts = [];
+  let p = p0.slice(), T = t0.slice(), k = [0, 0, 0], s = 0, idx = 0, done = false;
+  for (let it = 0; it < plan.length * 1.6 + 200; it++) {
+    let bi = idx, bd = Infinity;
+    for (let j = idx, J = Math.min(nD, idx + 40); j < J; j++) { const q = D[j], x = q[0] - p[0], y = q[1] - p[1], z = q[2] - p[2], dd = x * x + y * y + z * z; if (dd < bd) { bd = dd; bi = j; } }
+    idx = bi;
+    const ahead = idx + look, target = ahead < nD ? D[ahead] : add(Q, mul(dq, ahead - nD + 1));
+    const h = norm(sub(target, p)), c = Math.max(-1, Math.min(1, dot(h, T))), perp = sub(h, mul(T, c));
+    let kd = len(perp) > 1e-9 ? mul(norm(perp), Math.min(kmax, 2 * Math.acos(c) / look)) : [0, 0, 0];
+    if (len(kd) > kmax) kd = mul(kd, kmax / len(kd));
+    const diff = sub(kd, k), dl = len(diff); k = dl > dk ? add(k, mul(diff, dk / dl)) : kd;
+    k = sub(k, mul(T, dot(k, T)));
+    T = norm(add(T, mul(k, ds))); p = add(p, mul(T, ds)); s += ds; pts.push(p);
+    const along = dot(sub(p, Q), dq);
+    if (idx >= nD - look && along >= -1) { done = len(sub(add(Q, mul(dq, along)), p)) < 6 && Math.acos(Math.max(-1, Math.min(1, dot(T, dq)))) < 0.2; break; }
+  }
+  if (!done) { for (const q of plan.pts) out.push({ p: q, kind: 'twist' }); return true; }
+  blendEnd(pts, Q, dq, T, ds, out);
+  return true;
+}
+// the last error blended out over the last third, position AND heading (a cubic Hermite correction): no kink into the straight
+function blendEnd(pts, Q, dq, T, ds, out) {
+  const n = pts.length, from = Math.floor(n * 2 / 3), Lb = Math.max(1, n - 1 - from) * ds;
+  const err = sub(Q, pts[n - 1]), dT = sub(dq, T);
+  for (let i = 0; i < n; i++) {
+    let q = pts[i];
+    if (i >= from) { const u = (i - from) / Math.max(1, n - 1 - from); q = add(q, add(mul(err, 3 * u * u - 2 * u * u * u), mul(dT, Lb * (u * u * u - u * u)))); }
+    out.push({ p: q, kind: 'twist' });
+  }
+}
+function sampleStraight(p0, t, L, out) { const n = Math.max(1, Math.round(L / STEP)); for (let i = 1; i <= n; i++) out.push({ p: add(p0, mul(t, L * i / n)), kind: 'straight' }); }
+
+// Resample to even spacing, then carry the frame without spin (double reflection) from the frame it starts with.
+function finishEdge(edge, F0) {
+  const raw = [{ p: edge.start, kind: 'start' }].concat(edge.raw);
+  // even arc-length resample
+  const pts = [raw[0]]; let carry = 0;
+  for (let i = 1; i < raw.length; i++) {
+    const a = raw[i - 1].p, b = raw[i].p, d = len(sub(b, a)); if (d < 1e-6) continue;
+    let s = STEP - carry;
+    while (s <= d) { pts.push({ p: add(a, mul(sub(b, a), s / d)), kind: raw[i].kind }); s += STEP; }
+    carry = d - (s - STEP);
+  }
+  if (len(sub(pts[pts.length - 1].p, raw[raw.length - 1].p)) > 0.2) pts.push({ p: raw[raw.length - 1].p, kind: raw[raw.length - 1].kind });
+  const n = pts.length;
+  for (let i = 0; i < n; i++) pts[i].T = i === 0 ? F0.T : norm(sub(pts[Math.min(n - 1, i + 1)].p, pts[i - 1].p));
+  pts[0].U = F0.U;
+  for (let i = 0; i < n - 1; i++) {
+    const v1 = sub(pts[i + 1].p, pts[i].p), c1 = dot(v1, v1);
+    const rL = sub(pts[i].U, mul(v1, 2 / c1 * dot(v1, pts[i].U))), tL = sub(pts[i].T, mul(v1, 2 / c1 * dot(v1, pts[i].T)));
+    const v2 = sub(pts[i + 1].T, tL), c2 = dot(v2, v2);
+    let u = c2 > 1e-12 ? sub(rL, mul(v2, 2 / c2 * dot(v2, rL))) : rL;
+    u = norm(sub(u, mul(pts[i + 1].T, dot(u, pts[i + 1].T)))); pts[i + 1].U = u;
+  }
+  let s = 0;
+  for (let i = 0; i < n; i++) { if (i) s += len(sub(pts[i].p, pts[i - 1].p)); pts[i].s = s; pts[i].R = cross(pts[i].T, pts[i].U); }
+  edge.pts = pts; edge.length = s;
+  applyRoll(edge);
+}
+function curvatureAt(pts, i) {
+  const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], ds = b.s - a.s;
+  return ds > 1e-6 ? mul(sub(b.T, a.T), 1 / ds) : [0, 0, 0];
+}
+// The roll: banking (from the curvature, in the twist window), the twist roll toward the way you chose, and an exit's own
+// roll; it changes only in the twist window, so a straight never rolls.
+function applyRoll(edge) {
+  const pts = edge.pts, n = pts.length;
+  let w0 = -1, w1 = -1;
+  for (let i = 0; i < n; i++) if (pts[i].kind === 'split' || pts[i].kind === 'twist') { if (w0 < 0) w0 = i; w1 = i; }
+  const roll = new Float64Array(n);
+  if (w0 >= 0 && w1 > w0) {
+    const L = pts[w1].s - pts[w0].s;
+    // banking target, continuous (hysteresis on the half turn), weighted by curvature
+    const tgt = new Float64Array(n); let prev = 0;
+    for (let i = w0; i <= w1; i++) {
+      const k = curvatureAt(pts, i), km = len(k); let th = 0;
+      if (P.bank > 0 && km > 1e-6) {
+        th = Math.atan2(dot(k, pts[i].R), dot(k, pts[i].U));   // roll that turns the rider's up toward the turn centre
+        if (P.bank === 1) { th = ((th + Math.PI / 2) % Math.PI + Math.PI) % Math.PI - Math.PI / 2; }   // pitch plane: the smallest roll that puts the bend in pitch
+        while (th - prev > Math.PI) th -= 2 * Math.PI; while (th - prev < -Math.PI) th += 2 * Math.PI;
+        if (P.bank === 1) { if (th - prev > Math.PI / 2) th -= Math.PI; if (th - prev < -Math.PI / 2) th += Math.PI; }
+        prev = th;
+      }
+      tgt[i] = th * P.bankAmount * smoothstep(0.3 / P.minRadius, 0.6 / P.minRadius, km);   // only a real turn banks: a line still settling does not
+    }
+    // window the target so it is zero at both ends of the twist, smooth it along s (gaussian), then hold it to the
+    // fastest comfortable roll: a forward and a backward rate-limited pass, averaged, so the roll anticipates a turn
+    // instead of lagging it (the average of two rate-limited curves is still rate-limited)
+    for (let i = w0; i <= w1; i++) { const u = (pts[i].s - pts[w0].s) / L; tgt[i] *= smoothstep(0, 0.12, u) * smoothstep(1, 0.88, u); }
+    const sig = Math.max(1, P.rollSmooth / STEP), rad = Math.ceil(sig * 3), sm = new Float64Array(n);
+    for (let i = w0; i <= w1; i++) {
+      let acc = 0, wsum = 0;
+      for (let j = Math.max(w0, i - rad); j <= Math.min(w1, i + rad); j++) { const w = Math.exp(-0.5 * ((j - i) / sig) ** 2); acc += tgt[j] * w; wsum += w; }
+      sm[i] = acc / wsum;
+    }
+    // the twist roll (twistRoll turns toward the way you chose: right and up roll right, left and down roll left) and an
+    // exit's own roll join the signal before the limit, eased in over the window and held after it; an exit takes whichever
+    // equivalent of its roll is nearest the twist, so the twist never adds a turn just to undo it
+    const vMax = P.speed * Math.pow(P.forkGain, 6);   // the limit holds at the fastest a deep path is ridden
+    const lim = (P.maxRollRate * Math.PI / 180) / Math.max(1, vMax);   // radians per unit of length
+    const reach = 0.8 * lim * L;   // the most roll the window can make at the fastest comfortable rate
+    let twist = (edge.slot === 'left' || edge.slot === 'down' || edge.slot === 'behind' ? -1 : 1) * 2 * Math.PI * P.twistRoll;
+    if (Math.abs(twist) > reach) twist = Math.sign(twist) * reach;
+    let endVal = twist;
+    if (edge.exit) {
+      // of the exit roll's equivalents, the one nearest the twist that the window can reach, else the smallest
+      const e = pts[n - 1], own = Math.atan2(dot(cross(e.U, edge.exit.up), e.T), dot(e.U, edge.exit.up));
+      const cands = [-1, 0, 1].map((k) => own + 2 * Math.PI * k), ok = cands.filter((c) => Math.abs(c) <= reach);
+      endVal = (ok.length ? ok : cands).reduce((a, c) => (ok.length ? Math.abs(c - twist) < Math.abs(a - twist) : Math.abs(c) < Math.abs(a)) ? c : a);
+    }
+    for (let i = w0; i <= w1; i++) sm[i] += endVal * smooth5(((pts[i].s - pts[w0].s) / L - 0.1) / 0.8);
+    const fw = new Float64Array(n), bw = new Float64Array(n);
+    for (let i = w0; i <= w1; i++) { const prevR = i === w0 ? 0 : fw[i - 1], d = (pts[i].s - (i === w0 ? pts[w0].s : pts[i - 1].s)) * lim; fw[i] = Math.max(prevR - d, Math.min(prevR + d, sm[i])); }
+    for (let i = w1; i >= w0; i--) { const nextR = i === w1 ? endVal : bw[i + 1], d = ((i === w1 ? pts[w1].s : pts[i + 1].s) - pts[i].s) * lim; bw[i] = Math.max(nextR - d, Math.min(nextR + d, fw[i])); }
+    for (let i = w0; i <= w1; i++) roll[i] = bw[i];
+    for (let i = w1 + 1; i < n; i++) roll[i] = endVal;
+  }
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], c = Math.cos(roll[i]), s = Math.sin(roll[i]);
+    p.roll = roll[i]; p.UU = add(mul(p.U, c), mul(p.R, s)); p.RR = cross(p.T, p.UU);
+  }
+}
+const frameEnd = (edge) => { const p = edge.pts[edge.pts.length - 1]; return { T: p.T, U: p.UU, R: p.RR, p: p.p }; };
+
+let NET = null;
+function build() {
+  PLAN_CACHE.clear();
+  NET = buildOnce(makeExits()); scorePaths(); measureClearance();
+}
+function buildOnce(exits) {
+  const edges = [], junctions = [], F0 = entranceFrame(exits), O = [0, 0, 0];
+  // the way in: a straight into the crystal, the decision before its fork
+  const root = { id: 0, parent: null, start: mul(F0.T, -P.straightLength), raw: [], depth: 0, slot: 'entrance', children: [] };
+  sampleStraight(root.start, F0.T, P.straightLength, root.raw); finishEdge(root, F0); edges.push(root);
+  const towardOf = (g, from) => g.exits.length === 1 ? norm(sub(g.exits[0].approach, from)) : norm(g.exits.reduce((a, e) => add(a, norm(sub(e.approach, from))), [0, 0, 0]));
+  function place(edge, g, depth, make) {
+    // every way is built a few ways (variantsFor); none more than 8% longer than the shortest is kept (a way that dodges a
+    // crossing by looping wastes the rider's time, so the crossing is shown instead), and of those the shortest that clears
+    // the tubes already built by a tube radius stays, else the clearest
+    const cands = variantsFor(g.exits.length === 1).map((v) => make(v));
+    // a leaf with no room to line up at the tightest comfortable turn would loop: it turns tighter instead (its turn rate
+    // goes red on the scorecard), because a loop wastes the rider's time and a tight turn only costs comfort
+    if (g.exits.length === 1 && cands.every((c) => c.length > 1.35 * c.direct + 20)) for (const rs of [0.7, 0.5]) cands.push(make(Object.assign({}, variantsFor(true)[0], { rs })));
+    const shortest = Math.min(...cands.map((c) => c.length));
+    let best = null;
+    for (const child of cands.filter((c) => c.length <= shortest * 1.08 + 4).sort((x, y) => x.length - y.length)) {
+      const gap = gapTo(child), ok = gap >= P.tubeRadius;
+      if (!best || (ok && !best.ok) || (!ok && !best.ok && gap > best.gap)) best = { child, gap, ok };
+      if (ok) break;
+    }
+    const child = best.child;
+    child.id = edges.length; edge.children.push(child); edges.push(child); addToGrid(child);
+    if (g.exits.length > 1) grow(child, g.exits, depth + 1);
+  }
+  // forks still to come, counting the junction a group's way leads to: a group of 2^k exits has k
+  const forksIn = (g) => Math.round(Math.log2(g.exits.length));
+  // the crystal is the first bifurcation: each way leaves it toward its half of the exits; a single exit's way leaves along
+  // the one arc that meets the exit's facing, a half's runs straight to its first junction (spacing as below)
+  function crystalFork() {
+    const groups = crystalHalves(F0, exits);
+    junctions.push({ p: O, F: F0, depth: 0, ways: groups.map((g) => g.slot) });
+    for (const g of groups) {
+      const t = g.exits.length > 1 ? g.axis : towardOf(g, O), gh = { id: -1, parent: root, start: O, raw: [], mouthMin: 40 };
+      sampleStraight(O, t, 60, gh.raw); finishEdge(gh, frameAlong(F0, t)); gh.pts.forEach((q) => { q.kind = 'split'; }); addToGrid(gh);
+    }
+    for (const g of groups) place(root, g, 0, (v) => {
+      const t = towardOf(g, O), child = { id: -1, parent: root, start: O, raw: [], depth: 1, slot: g.slot, children: [], group: g, mouthMin: 40 };
+      if (g.exits.length === 1) {
+        const ex = g.exits[0], c = norm(ex.approach); child.exit = ex; child.direct = len(ex.pos);
+        let t0 = norm(sub(mul(c, 2 * dot(c, ex.face)), ex.face));   // the face mirrored across the chord: one arc meets it
+        if (dot(t0, c) < 0.5) t0 = norm(add(mul(c, 2), t0));
+        sampleSteer(O, t0, ex.approach, ex.face, child.raw, v); sampleStraight(ex.approach, ex.face, P.exitStraight, child.raw);
+        finishEdge(child, frameAlong(F0, t0));
+      } else {
+        const soonest = P.straightLength + 15, even = Math.min(...g.exits.map((e) => len(e.approach))) / (forksIn(g) + 1);
+        const r1 = Math.max(soonest, (soonest + P.spacing * Math.max(0, even - soonest)) * v.ch), ax = g.axis;
+        sampleStraight(O, ax, r1, child.raw); child.direct = r1; finishEdge(child, frameAlong(F0, ax));
+      }
+      return child;
+    });
+  }
+  function grow(edge, set, depth) {
+    const F = frameEnd(edge);
+    const groups = bifurcate(F.p, F, set);
+    junctions.push({ p: F.p, F, depth, ways: groups.map((g) => g.slot) });
+    // every way's mouth and every decision straight is known before any way is built, so an early way cannot cross a later one's
+    for (const g of groups) {
+      const gh = { id: -1, parent: edge, start: F.p, raw: [] }, sp = sampleSplit(F.p, F, g.dir, gh.raw, towardOf(g, F.p)); finishEdge(gh, F); addToGrid(gh);
+      if (g.exits.length > 1) { const { Q, dq } = nextJunction(g, sp, variantsFor(false)[0]); addGhostLine(sub(Q, mul(dq, 20)), add(Q, mul(dq, P.straightLength)), g); }
+    }
+    for (const g of groups) place(edge, g, depth, (v) => {
+      const child = { id: -1, parent: edge, start: F.p, raw: [], depth: depth + 1, slot: g.slot, children: [], group: g };
+      const sp = sampleSplit(F.p, F, g.dir, child.raw, towardOf(g, F.p));
+      if (g.exits.length === 1) {
+        const ex = g.exits[0]; child.exit = ex; child.direct = len(sub(ex.pos, F.p));
+        sampleSteer(sp.p, sp.t, ex.approach, ex.face, child.raw, v); sampleStraight(ex.approach, ex.face, P.exitStraight, child.raw);
+      } else {
+        const { Q, dq } = nextJunction(g, sp, v); child.direct = len(sub(add(Q, mul(dq, P.straightLength)), F.p));
+        sampleSteer(sp.p, sp.t, Q, dq, child.raw, v); sampleStraight(Q, dq, P.straightLength, child.raw);
+      }
+      finishEdge(child, F);
+      return child;
+    });
+  }
+  // the next junction lies where the turn toward the group naturally ends (one arc, then the straight), so the way never
+  // bends off and back onto a line; spacing 0 puts it as soon as the turn and twistLength allow, 1 an even share of the way
+  function nextJunction(g, sp, v) {
+    const dq = towardOf(g, sp.p), R = P.minRadius * v.rs, c = Math.max(-1, Math.min(1, dot(sp.t, dq))), a = Math.acos(c);
+    let e = sub(dq, mul(sp.t, c)); e = len(e) > 1e-6 ? norm(e) : [0, 0, 0];
+    const arcEnd = add(sp.p, add(mul(sp.t, R * Math.sin(a)), mul(e, R * (1 - Math.cos(a)))));
+    const soonest = Math.max(40, 0.6 * P.twistLength - 0.5 * R * a), even = Math.min(...g.exits.map((x) => len(sub(x.approach, sp.p)))) / (forksIn(g) + 1) - R * a - P.straightLength;
+    const room = Math.max(20, (soonest + P.spacing * Math.max(0, even - soonest)) * v.ch);
+    return { Q: add(arcEnd, mul(dq, room)), dq };
+  }
+  // a straight known before its tube is built (an exit's run-in, a junction's decision straight) is an obstacle from the start
+  function addGhostLine(a, b, owner) {
+    const gh = { id: -1, ghostOf: owner, pts: [], mouthS: -1 }, n = Math.max(1, Math.ceil(len(sub(b, a)) / STEP));
+    for (let i = 0; i <= n; i++) gh.pts.push({ p: add(a, mul(sub(b, a), i / n)), s: i * STEP, kind: 'straight' });
+    gh.len = n * STEP; addToGrid(gh);
+  }
+  // the tubes built so far, in a grid, for the crossing test
+  const cell = 30, grid = new Map(), gkey = (x, y, z) => x + ',' + y + ',' + z;
+  function addToGrid(e) { markMouth(e); for (const p of e.pts) { const k = gkey(Math.floor(p.p[0] / cell), Math.floor(p.p[1] / cell), Math.floor(p.p[2] / cell)); (grid.get(k) || grid.set(k, []).get(k)).push([e, p]); } }
+  function gapTo(e) {
+    markMouth(e); let d2 = Infinity;
+    for (let i = 0; i < e.pts.length; i += 2) {
+      const p = e.pts[i], x = Math.floor(p.p[0] / cell), y = Math.floor(p.p[1] / cell), z = Math.floor(p.p[2] / cell);
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+        const list = grid.get(gkey(x + dx, y + dy, z + dz)); if (!list) continue;
+        for (const [o, q] of list) { if (sharedMouth(e, p, o, q)) continue; const a = p.p[0] - q.p[0], b = p.p[1] - q.p[1], c = p.p[2] - q.p[2], dd = a * a + b * b + c * c; if (dd < d2) d2 = dd; }
+      }
+    }
+    return Math.sqrt(d2) - 2 * P.tubeRadius;
+  }
+  addToGrid(root);
+  for (const ex of exits) addGhostLine(sub(ex.pos, mul(ex.face, P.exitStraight + 30)), ex.pos, ex);
+  crystalFork();
+  // paths: the way in, then the crystal to each exit
+  const paths = [];
+  for (const e of edges) if (e.exit) { const chain = []; let x = e; while (x) { chain.unshift(x); x = x.parent; } paths.push({ exit: e.exit, chain }); }
+  paths.sort((a, b) => a.exit.i - b.exit.i);
+  return { exits, edges, junctions, paths, F0 };
+}
+// a frame heading along t, its up as near the given frame's as it can be
+function frameAlong(F, t) {
+  let U = sub(F.U, mul(t, dot(F.U, t))); if (len(U) < 1e-3) U = sub(F.T, mul(t, dot(F.T, t)));
+  U = norm(U); return { T: t, U, R: cross(t, U) };
+}
+
+// ============ comfort ============
+function rideSamples(path) {
+  // concatenated samples with speed: faster at every fork
+  const out = []; let v = P.speed;
+  path.chain.forEach((e, k) => { if (k > 0) v *= P.forkGain; e.pts.forEach((p, i) => { if (k > 0 && i === 0) return; out.push({ p: p.p, T: p.T, U: p.UU, R: p.RR, kind: p.kind, v, edge: e }); }); });
+  return out;
+}
+function scorePaths() {
+  for (const path of NET.paths) {
+    // the way in counts toward the first decision only; time, length and comfort run from the crystal
+    const S = rideSamples(path); let t = 0, maxTurn = 0, maxRoll = 0, peakSide = 0, sideSum = 0, sideN = 0, minDecide = Infinity, straightRun = 0;
+    for (let i = 1; i < S.length - 1; i++) {
+      const a = S[i - 1], b = S[i], c = S[i + 1], ds = len(sub(b.p, a.p)) || STEP, dt = ds / b.v;
+      if (b.edge.depth > 0) t += dt;
+      if (a.edge.depth > 0) {
+        // angular velocity of the rider's frame, in the rider's frame
+        const dT = sub(c.T, a.T), dU = sub(c.U, a.U), chord = len(sub(c.p, a.p)) || 2 * STEP, dt2 = chord / b.v;
+        const pitch = dot(dT, b.U) / dt2, yaw = -dot(dT, b.R) / dt2, roll = dot(dU, b.R) / dt2;
+        maxTurn = Math.max(maxTurn, Math.hypot(pitch, yaw) * 180 / Math.PI); maxRoll = Math.max(maxRoll, Math.abs(roll) * 180 / Math.PI);
+        // sideways push: the bend's pull along the rider's right, as a share of the tightest allowed turn taken flat;
+        // averaged over the turning stretches (a real bend), its peak kept as well
+        const k = mul(dT, 1 / chord), side = Math.abs(dot(k, b.R)) * P.minRadius * 100;
+        peakSide = Math.max(peakSide, side); if (len(k) * P.minRadius > 0.3) { sideSum += side; sideN++; }
+      }
+      if (b.kind === 'straight') straightRun += dt; else straightRun = 0;
+      if (b.edge !== c.edge && !b.edge.exit) minDecide = Math.min(minDecide, straightRun);
+    }
+    path.time = t; path.turn = maxTurn; path.roll = maxRoll; path.side = sideN ? sideSum / sideN : 0; path.peakSide = peakSide;
+    path.decide = minDecide === Infinity ? 0 : minDecide; path.junctions = path.chain.length - 1;
+    path.length = path.chain.reduce((a, e) => a + (e.depth > 0 ? e.length : 0), 0); path.detour = path.length / len(path.exit.pos);
+  }
+}
+// Where a parent ends and its children begin, the tubes share a mouth; tubes that meet at a fork are compared only away from it.
+function markMouth(e) {
+  if (e.len !== undefined) return;
+  let sEnd = 0; for (const p of e.pts) if (p.kind === 'split') sEnd = p.s;
+  e.mouthS = Math.max(e.mouthMin || 0, sEnd + 4 * P.tubeRadius); e.len = e.pts[e.pts.length - 1].s;
+}
+function sharedMouth(ea, pa, eb, pb) {
+  const nearStart = (e, p) => p.s < e.mouthS, nearEnd = (e, p) => e.len - p.s < 4 * P.tubeRadius + P.splitLength;
+  if (ea === eb) return true;
+  if (ea.ghostOf || eb.ghostOf) {
+    // a known straight is not an obstacle to its own tube, nor to the branches leaving the junction it leads to
+    const [r, pr, g] = ea.ghostOf ? [eb, pb, ea] : [ea, pa, eb];
+    return !!r.ghostOf || r.exit === g.ghostOf || r.group === g.ghostOf || (!!r.parent && r.parent.group === g.ghostOf && pr.s < r.mouthS + 2 * P.tubeRadius);
+  }
+  if (ea.parent && ea.parent === eb.parent) return nearStart(ea, pa) && nearStart(eb, pb);
+  if (ea.parent === eb) return nearStart(ea, pa) && nearEnd(eb, pb);
+  if (eb.parent === ea) return nearStart(eb, pb) && nearEnd(ea, pa);
+  return false;
+}
+// the ways a branch can be built: the plan drawn a little wider than the tightest turn, then at it, then (a leaf with little
+// room only) a tenth inside it rather than looping; the next-shortest plan; the next junction a little nearer or farther
+function variantsFor(toExit) {
+  const base = { ch: 1, rs: 1.25, alt: 0 }, V = [base, { rs: 1 }].concat(toExit ? [{ rs: 0.9 }, { alt: 1 }] : [{ alt: 1 }, { ch: 0.8 }, { ch: 1.25 }]);
+  return V.map((o) => Object.assign({}, base, o));
+}
+let clearance = Infinity, clearanceAt = null;
+function measureClearance() {
+  // the closest two tubes come
+  const cell = 40, grid = new Map(); clearance = Infinity; clearanceAt = null;
+  const key = (p) => Math.floor(p[0] / cell) + ',' + Math.floor(p[1] / cell) + ',' + Math.floor(p[2] / cell);
+  for (const e of NET.edges) { markMouth(e); e.pts.forEach((p) => { const k = key(p.p); (grid.get(k) || grid.set(k, []).get(k)).push([e, p]); }); }
+  for (const [k, list] of grid) {
+    const [x, y, z] = k.split(',').map(Number);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+      const other = grid.get((x + dx) + ',' + (y + dy) + ',' + (z + dz)); if (!other) continue;
+      for (const [ea, pa] of list) for (const [eb, pb] of other) {
+        if (sharedMouth(ea, pa, eb, pb)) continue;
+        const d = len(sub(pa.p, pb.p)); if (d < clearance) { clearance = d; clearanceAt = { a: ea, b: eb, p: mul(add(pa.p, pb.p), 0.5), sa: pa.s, sb: pb.s }; }
+      }
+    }
+  }
+  clearance -= 2 * P.tubeRadius;
+}
+const grade = (v, ok, bad, higherIsBetter) => higherIsBetter ? (v >= ok ? 'g' : v >= bad ? 'w' : 'b') : (v <= ok ? 'g' : v <= bad ? 'w' : 'b');
+
+// ============ three.js scene ============
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0906); scene.fog = new THREE.FogExp2(0x0a0906, 0.0009);
+const cam = new THREE.PerspectiveCamera(60, 1, 0.1, 6000);
+scene.add(new THREE.AmbientLight(0xfff2dc, 0.5));
+const sun = new THREE.DirectionalLight(0xffe7c0, 0.8); sun.position.set(300, 500, 200); scene.add(sun);
+const tubeMat = new THREE.ShaderMaterial({
+  uniforms: { uOpacity: { value: 0.55 }, uInside: { value: 0 }, uHi: { value: 0 } },
+  vertexShader: 'attribute float aS; attribute float aA; attribute float aDepth; attribute float aHi; varying float vS; varying float vA; varying float vDepth; varying float vHi; varying vec3 vN; varying vec3 vV; void main(){ vS=aS; vA=aA; vDepth=aDepth; vHi=aHi; vec4 mv = modelViewMatrix*vec4(position,1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix*normal); gl_Position = projectionMatrix*mv; }',
+  fragmentShader: 'uniform float uOpacity; uniform float uInside; varying float vS; varying float vA; varying float vDepth; varying float vHi; varying vec3 vN; varying vec3 vV;' +
+    'void main(){ float ring = smoothstep(0.92,1.0,abs(fract(vS/12.0)*2.0-1.0));' +
+    ' float lane = smoothstep(0.86,1.0,abs(fract(vA*6.0)*2.0-1.0));' +
+    ' float floorBand = smoothstep(0.35,0.0,abs(fract(vA+0.25)-0.5));' +   // the rider's floor (their down), so the roll shows
+    ' vec3 base = mix(vec3(0.55,0.36,0.14), vec3(0.95,0.78,0.42), clamp(vDepth/5.0,0.0,1.0));' +
+    ' vec3 col = base*(0.35+0.25*floorBand) + vec3(1.0,0.9,0.65)*(0.55*lane + 0.35*ring);' +
+    ' col = mix(col, vec3(1.0,0.95,0.8)*0.9 + col*0.4, vHi*0.6);' +
+    ' float rim = 1.0 - abs(dot(normalize(vN), normalize(vV)));' +
+    ' float a = mix(uOpacity*(0.25+0.75*rim*rim) + 0.25*lane, 0.92, uInside);' +
+    ' gl_FragColor = vec4(col, clamp(a + vHi*0.25*(1.0-uInside),0.0,1.0)); }',
+  transparent: true, side: THREE.DoubleSide, depthWrite: false,
+});
+let tubeMesh = null, decor = new THREE.Group(); scene.add(decor);
+function buildMeshes() {
+  if (tubeMesh) { scene.remove(tubeMesh); tubeMesh.geometry.dispose(); }
+  decor.clear();
+  const SEG = 14, pos = [], nor = [], aS = [], aA = [], aD = [], aH = [], idx = [];
+  const selPath = NET.paths[Math.min(P.sel, NET.paths.length - 1)], hiSet = new Set(selPath ? selPath.chain : []);
+  let sOff = new Map();
+  for (const e of NET.edges) {
+    const base = pos.length / 3, sStart = e.parent ? (sOff.get(e.parent) || 0) + e.parent.length : 0; sOff.set(e, sStart);
+    const rr = P.tubeRadius;
+    e.pts.forEach((p) => {
+      for (let j = 0; j <= SEG; j++) {
+        const a = j / SEG * Math.PI * 2, n = add(mul(p.UU, Math.cos(a)), mul(p.RR, Math.sin(a)));
+        const q = add(p.p, mul(n, rr)); pos.push(q[0], q[1], q[2]); nor.push(n[0], n[1], n[2]);
+        aS.push(sStart + p.s); aA.push(j / SEG); aD.push(e.depth); aH.push(hiSet.has(e) ? 1 : 0);
+      }
+    });
+    for (let i = 0; i < e.pts.length - 1; i++) for (let j = 0; j < SEG; j++) {
+      const a = base + i * (SEG + 1) + j, b = a + SEG + 1; idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('aS', new THREE.Float32BufferAttribute(aS, 1)); g.setAttribute('aA', new THREE.Float32BufferAttribute(aA, 1));
+  g.setAttribute('aDepth', new THREE.Float32BufferAttribute(aD, 1)); g.setAttribute('aHi', new THREE.Float32BufferAttribute(aH, 1));
+  g.setIndex(idx);
+  tubeMesh = new THREE.Mesh(g, tubeMat); tubeMesh.frustumCulled = false; scene.add(tubeMesh);
+  // the omnicrystal: gold-white and faceted (round 16)
+  const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(14, 0), new THREE.MeshStandardMaterial({ color: 0xfff0c8, emissive: 0xd9a640, emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.25, flatShading: true }));
+  decor.add(crystal); crystal.userData.spin = true;
+  // where two tubes cross, a red ring round the spot
+  if (clearance < 0 && clearanceAt) {
+    const m = new THREE.Mesh(new THREE.TorusGeometry(P.tubeRadius * 3, 1.2, 8, 32), new THREE.MeshBasicMaterial({ color: 0xff5a4a }));
+    m.position.set(...clearanceAt.p); m.userData.face = true; decor.add(m);
+  }
+  // junctions
+  for (const j of NET.junctions) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(P.tubeRadius * 1.25, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd88a, transparent: true, opacity: 0.35 }));
+    m.position.set(...j.p); decor.add(m);
+  }
+  // exits: a mouth ring (labyrinthMouthDiameter), its facing and its up
+  const mouth = SHIPPED.labyrinthMouthDiameter / 2;
+  for (const ex of NET.exits) {
+    const sel = selPath && selPath.exit === ex;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(mouth, 1.4, 8, 32), new THREE.MeshBasicMaterial({ color: sel ? 0xffffff : 0xf2c66d }));
+    ring.position.set(...ex.pos); ring.lookAt(new THREE.Vector3(...add(ex.pos, ex.face))); decor.add(ring);
+    const arrowG = new THREE.ConeGeometry(4, 12, 10); arrowG.rotateX(Math.PI / 2); arrowG.translate(0, 0, 10);
+    const arrow = new THREE.Mesh(arrowG, new THREE.MeshBasicMaterial({ color: sel ? 0xffffff : 0xf2c66d }));
+    arrow.position.set(...ex.pos); arrow.lookAt(new THREE.Vector3(...add(ex.pos, ex.face))); decor.add(arrow);
+    const tick = new THREE.Mesh(new THREE.BoxGeometry(1.6, mouth * 0.8, 1.6), new THREE.MeshBasicMaterial({ color: 0x9be0ff }));
+    tick.position.set(...add(ex.pos, mul(ex.up, mouth))); tick.lookAt(new THREE.Vector3(...add(add(ex.pos, mul(ex.up, mouth)), ex.face))); tick.up.set(...ex.up); decor.add(tick);
+  }
+}
+
+// ============ camera: orbit, or ride ============
+let orbit = { yaw: 0.8, pitch: 0.45, dist: 1750 };
+let ride = null;
+function setMode(m) {
+  P.mode = m; syncUI();
+  document.getElementById('pad').hidden = m !== 'ride';
+  tubeMat.uniforms.uInside.value = m === 'ride' ? 1 : 0;
+  if (m === 'ride' && !ride) startRide();
+}
+function startRide() {
+  ride = { edge: NET.edges[0], s: 0, v: P.speed, pick: null, done: 0 };
+  P.mode = 'ride'; document.getElementById('pad').hidden = false; tubeMat.uniforms.uInside.value = 1; syncUI();
+}
+function defaultChild(edge) {
+  const sel = NET.paths[Math.min(P.sel, NET.paths.length - 1)];
+  if (sel) { const i = sel.chain.indexOf(edge); if (i >= 0 && i + 1 < sel.chain.length) return sel.chain[i + 1]; }
+  return edge.children[0];
+}
+function sampleAt(edge, s) {
+  const pts = edge.pts; s = Math.max(0, Math.min(edge.length, s));
+  let lo = 0, hi = pts.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (pts[m].s <= s) lo = m; else hi = m; }
+  const a = pts[lo], b = pts[hi], u = b.s > a.s ? (s - a.s) / (b.s - a.s) : 0, l = (x, y) => add(mul(x, 1 - u), mul(y, u));
+  return { p: l(a.p, b.p), T: norm(l(a.T, b.T)), U: norm(l(a.UU, b.UU)), kind: b.kind };
+}
+const banner = document.getElementById('banner');
+function stepRide(dt) {
+  if (!ride) return;
+  if (ride.done > 0) { ride.done -= dt; if (ride.done <= 0) { banner.hidden = true; startRide(); } return; }
+  ride.s += ride.v * dt;
+  while (ride.s >= ride.edge.length) {
+    if (ride.edge.exit) { banner.textContent = 'Exit ' + (ride.edge.exit.i + 1); banner.hidden = false; ride.done = 1.6; ride.s = ride.edge.length; break; }
+    const kids = ride.edge.children, picked = ride.pick && kids.find((k) => k.slot === ride.pick);
+    if (ride.edge.depth === 0) ride.blend = 0.8;   // through the crystal the heading changes at once: the view eases round instead
+    ride.s -= ride.edge.length; ride.edge = picked || defaultChild(ride.edge); ride.pick = null; ride.v *= P.forkGain;
+  }
+  const f = sampleAt(ride.edge, ride.s);
+  if (ride.blend > 0 && ride.T) { const k = 1 - Math.exp(-dt / 0.18); ride.T = norm(add(ride.T, mul(sub(f.T, ride.T), k))); ride.U = norm(add(ride.U, mul(sub(f.U, ride.U), k))); ride.blend -= dt; }
+  else { ride.T = f.T; ride.U = f.U; }
+  const T = ride.T, U = ride.U;
+  cam.position.set(f.p[0] + f.U[0] * P.tubeRadius * 0.25, f.p[1] + f.U[1] * P.tubeRadius * 0.25, f.p[2] + f.U[2] * P.tubeRadius * 0.25);
+  cam.up.set(...U); cam.lookAt(new THREE.Vector3(...add(f.p, mul(T, 30))).add(new THREE.Vector3(...mul(f.U, P.tubeRadius * 0.25))));
+}
+function placeOrbit() {
+  const c = Math.cos(orbit.pitch);
+  cam.position.set(Math.sin(orbit.yaw) * c * orbit.dist, Math.sin(orbit.pitch) * orbit.dist, Math.cos(orbit.yaw) * c * orbit.dist);
+  cam.up.set(0, 1, 0); cam.lookAt(0, 0, 0);
+}
+// input
+const ptr = new Map(); let pinch = 0, dist0 = 0;
+canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]); if (ptr.size === 2) { const [a, b] = [...ptr.values()]; pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); dist0 = orbit.dist; } });
+canvas.addEventListener('pointermove', (e) => {
+  if (!ptr.has(e.pointerId) || P.mode !== 'orbit') { if (ptr.has(e.pointerId)) ptr.set(e.pointerId, [e.clientX, e.clientY]); return; }
+  const pr = ptr.get(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]);
+  if (ptr.size === 2 && pinch) { const [a, b] = [...ptr.values()]; orbit.dist = Math.max(80, Math.min(4000, dist0 * pinch / Math.hypot(a[0] - b[0], a[1] - b[1]))); }
+  else { orbit.yaw -= (e.clientX - pr[0]) * 0.006; orbit.pitch = Math.max(-1.5, Math.min(1.5, orbit.pitch + (e.clientY - pr[1]) * 0.006)); }
+});
+const pu = (e) => { ptr.delete(e.pointerId); if (ptr.size < 2) pinch = 0; };
+canvas.addEventListener('pointerup', pu); canvas.addEventListener('pointercancel', pu);
+canvas.addEventListener('wheel', (e) => { if (P.mode !== 'orbit') return; e.preventDefault(); orbit.dist = Math.max(80, Math.min(4000, orbit.dist * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
+const KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'ahead', KeyX: 'behind' };
+window.addEventListener('keydown', (e) => { if (P.mode !== 'ride' || !ride || !KEYS[e.code]) return; e.preventDefault(); ride.pick = KEYS[e.code]; });
+document.getElementById('pad').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || !ride) return; ride.pick = b.dataset.slot; });
+
+// ============ HUD, panel ============
+const hud = document.getElementById('hud');
+function updateHud() {
+  if (P.mode === 'ride' && ride) {
+    const toGo = (ride.edge.length - ride.s) / ride.v, kids = ride.edge.children;
+    const ways = kids.map((k) => k.slot);
+    for (const b of document.querySelectorAll('#pad button')) { b.dataset.live = ways.includes(b.dataset.slot) ? '1' : '0'; b.dataset.picked = ride.pick === b.dataset.slot ? '1' : '0'; }
+    hud.innerHTML = ride.edge.exit ? '<b>Exit ' + (ride.edge.exit.i + 1) + '</b> ahead · ' + toGo.toFixed(1) + ' s'
+      : 'Junction in <b>' + toGo.toFixed(1) + ' s</b> · ways: <b>' + ways.join(', ') + '</b>' + (ride.pick ? ' · you picked <b>' + ride.pick + '</b>' : '') + '<br>' + Math.round(ride.v) + ' u/s';
+  } else {
+    hud.innerHTML = NET.exits.length + ' exits · ' + NET.junctions.length + ' junctions · drag to orbit';
+  }
+}
+function renderPanel() {
+  const total = NET.edges.reduce((a, e) => a + (e.depth > 0 ? e.length : 0), 0), depth = Math.max(...NET.paths.map((p) => p.junctions));
+  const det = (v) => v <= P.maxDetour + 1e-9 ? 'g' : v <= P.maxDetour + 0.1 ? 'w' : 'b';
+  const worst = (k) => Math.max(...NET.paths.map((p) => p[k])), minDec = Math.min(...NET.paths.map((p) => p.decide));
+  const st = [
+    ['×' + worst('detour').toFixed(2), 'longest path, over its straight line', det(worst('detour'))],
+    [Math.round(total) + ' u', 'tube in all'], [NET.junctions.length, 'junctions'], [depth, 'most junctions on a path'],
+    [worst('time').toFixed(1) + ' s', 'longest ride, crystal to exit'],
+    [minDec.toFixed(2) + ' s', 'shortest decision', grade(minDec, P.okDecide, P.badDecide, true)],
+    [Math.round(worst('turn')) + '°/s', 'fastest turn', grade(worst('turn'), P.okTurn, P.badTurn)],
+    [Math.round(worst('peakSide')) + '%', 'peak sideways push'],
+    [(clearance === Infinity ? '—' : clearance < 0 ? 'cross' : Math.round(clearance) + ' u'), clearance < 0 ? 'two tubes cross (red ring)' : 'closest two tubes come', clearance < 0 ? 'b' : clearance < P.tubeRadius ? 'w' : 'g'],
+  ];
+  document.getElementById('stats').innerHTML = st.map(([v, l, c]) => '<div class="stat"><b class="' + (c || '') + '">' + v + '</b><span>' + l + '</span></div>').join('');
+  const tb = document.querySelector('#paths tbody');
+  tb.innerHTML = NET.paths.map((p, i) => '<tr data-i="' + i + '" data-sel="' + (i === P.sel ? 1 : 0) + '"><td>' + (p.exit.i + 1) + '</td><td>' + p.junctions + '</td><td class="' + det(p.detour) + '">' + p.detour.toFixed(2) + '</td><td>' + p.time.toFixed(1) + '</td>' +
+    '<td class="' + grade(p.decide, P.okDecide, P.badDecide, true) + '">' + p.decide.toFixed(2) + '</td>' +
+    '<td class="' + grade(p.turn, P.okTurn, P.badTurn) + '">' + Math.round(p.turn) + '</td>' +
+    '<td class="' + grade(p.roll, P.okRoll, P.badRoll) + '">' + Math.round(p.roll) + '</td>' +
+    '<td class="' + grade(p.side, P.okSlip, P.badSlip) + '">' + Math.round(p.side) + '%</td></tr>').join('');
+}
+document.querySelector('#paths tbody').addEventListener('click', (e) => { const r = e.target.closest('tr'); if (!r) return; P.sel = +r.dataset.i; buildMeshes(); renderPanel(); });
+document.querySelector('#paths tbody').addEventListener('dblclick', (e) => { const r = e.target.closest('tr'); if (!r) return; P.sel = +r.dataset.i; buildMeshes(); renderPanel(); startRide(); });
+document.getElementById('btnRide').addEventListener('click', startRide);
+document.getElementById('btnReroll').addEventListener('click', () => { P.seed = (P.seed % 99) + 1; changed(true); });
+document.getElementById('btnReset').addEventListener('click', () => { Object.assign(P, DEFAULTS); changed(true); setMode('orbit'); });
+document.getElementById('btnCopy').addEventListener('click', () => {
+  const pick = Object.fromEntries(Object.keys(DEFAULTS).filter((k) => k !== 'mode' && k !== 'sel').map((k) => [k, P[k]]));
+  const txt = JSON.stringify({ lab: 'Omnicrystal Network Lab', from: "Yash's Meerkat omnicrystal labyrinth (round 18)", settings: pick,
+    measured: score() }, null, 2);
+  const ta = document.getElementById('copyout'); ta.value = txt;
+  const done = (ok) => { if (!ok) { ta.hidden = false; ta.select(); } document.getElementById('btnCopy').textContent = ok ? 'Copied' : 'Select and copy below'; setTimeout(() => { document.getElementById('btnCopy').textContent = 'Copy settings'; }, 1500); };
+  try { navigator.clipboard.writeText(txt).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+});
+function syncUI() {
+  for (const k in inputs) { if (+inputs[k].value !== P[k]) inputs[k].value = P[k]; const [o, st] = outs[k]; o.textContent = fmt(P[k], st); o.classList.toggle('changed', P[k] !== DEFAULTS[k]); }
+  for (const k in segs) for (const b of segs[k].querySelectorAll('button')) b.setAttribute('aria-pressed', String(String(P[k]) === b.dataset.v));
+}
+// a slider rebuilds once it settles: building a network takes up to a second, so dragging only updates the readout
+let pending = 0;
+const buildingNote = document.getElementById('building');
+function changedSoon() {
+  syncUI(); clearTimeout(pending); buildingNote.hidden = false;
+  pending = setTimeout(() => requestAnimationFrame(() => setTimeout(() => { changed(true); buildingNote.hidden = true; }, 0)), 220);
+}
+function changed(rebuild) {
+  syncUI(); save();
+  if (rebuild) { build(); P.sel = Math.min(P.sel, NET.paths.length - 1); buildMeshes(); renderPanel(); if (ride) ride = null, (P.mode === 'ride' && startRide()); }
+}
+
+// ============ frame loop ============
+function resize() { const r = canvas.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / Math.max(1, r.height); cam.fov = P.mode === 'ride' ? 80 : 55; cam.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(canvas);
+let last = performance.now(), simT = 0;
+function simStep(dt) { simT += dt; if (P.mode === 'ride') stepRide(dt); else placeOrbit(); }
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!LAB.manualClock) simStep(dt);
+  decor.children.forEach((c) => { if (c.userData.spin) { c.rotation.y += dt * 0.6; c.rotation.x += dt * 0.25; } if (c.userData.face) c.lookAt(cam.position); });
+  resize(); renderer.render(scene, cam); updateHud();
+  requestAnimationFrame(frame);
+}
+build(); buildMeshes(); syncUI(); renderPanel(); setMode(P.mode === 'ride' ? 'orbit' : P.mode);
+requestAnimationFrame(frame);
+// the test surface: a manual clock, seeded rebuilds and a headless scorecard (labmaker §2.2)
+function score() {
+  const ps = NET.paths, mx = (k) => Math.max(...ps.map((p) => p[k]));
+  return { exits: NET.exits.length, junctions: NET.junctions.length, tube: Math.round(NET.edges.reduce((a, e) => a + (e.depth > 0 ? e.length : 0), 0)),
+    longestDetour: +mx('detour').toFixed(3), overDetour: ps.filter((p) => p.detour > P.maxDetour + 1e-9).length,
+    shortestDecision: +Math.min(...ps.map((p) => p.decide)).toFixed(2), fastestTurn: Math.round(mx('turn')), fastestRoll: Math.round(mx('roll')),
+    worstAverageSidePush: Math.round(mx('side')), peakSidePush: Math.round(mx('peakSide')), longestRide: +mx('time').toFixed(1),
+    shortestRide: +Math.min(...ps.map((p) => p.time)).toFixed(1), closestTubes: Math.round(clearance) };
+}
+const LAB = window.__lab = {
+  P, DEFAULTS, SHIPPED, SPEC, PLATFORM: 'web', manualClock: false,
+  tick: (dt = 1 / 60, n = 1) => { for (let i = 0; i < n; i++) simStep(dt); },
+  reset: (seed = P.seed) => { P.seed = seed; changed(true); simT = 0; },
+  state: () => ({ t: simT, mode: P.mode, seed: P.seed, ride: ride && { edge: ride.edge.id, s: +ride.s.toFixed(2), v: +ride.v.toFixed(2) } }),
+  score,
+  // the same settings over five seeds; restores the seed it found
+  runBatch: (seeds = [1, 3, 7, 11, 21]) => { const keep = P.seed, out = seeds.map((sd) => { P.seed = sd; build(); return Object.assign({ seed: sd }, score()); }); P.seed = keep; build(); return out; },
+  net: () => NET, clearance: () => clearance,
+  clearanceAt: () => clearanceAt && { a: clearanceAt.a.id, b: clearanceAt.b.id, p: clearanceAt.p, sa: clearanceAt.sa, sb: clearanceAt.sb, la: clearanceAt.a.len, lb: clearanceAt.b.len, xa: !!clearanceAt.a.exit, xb: !!clearanceAt.b.exit },
+  set: (k, v) => { P[k] = v; changed(true); }, ride: startRide, orbit: () => setMode('orbit'),
+};
+})();
+</script>

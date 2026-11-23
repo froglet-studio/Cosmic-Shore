@@ -62,6 +62,10 @@ namespace CosmicShore.Utility
         static float _homeFovOverride;
         static bool _homeFovOverrideActive;
 
+        // The ride scale (see SetEffectScale), keyed on the owning Transform like the scope override.
+        static Transform _effectScaleKey;
+        static float _effectScale = 1f;
+
         static SpeedTunnelConfigSO _config;
         static bool _configResolved;
 
@@ -72,7 +76,8 @@ namespace CosmicShore.Utility
         /// <summary>The vessel the tunnel is currently driven by, or null when it is off.</summary>
         public static IVesselStatus Target => _target;
 
-        /// <summary>Current effect strength in [0, 1] — 0 while the law is idle.</summary>
+        /// <summary>Current effect strength: [0, 1] by the law, up to <see cref="SpeedTunnelConfigSO.MaxEffect"/> under a
+        /// ride scale (<see cref="SetEffectScale"/>) — 0 while the law is idle.</summary>
         public static float Effect01 => _effect01;
 
         /// <summary>True while the tunnel is holding a camera and/or the Panini override.</summary>
@@ -212,6 +217,37 @@ namespace CosmicShore.Utility
         public static bool HasHomeFieldOfViewOverride => _homeFovOverrideActive;
 
         /// <summary>
+        /// Scale the law's effect while an ability RIDES the vessel (2026-10-27, the Meerkat's wormhole: "use 5x the normal
+        /// value when going through the wormhole"). The speed is still the measured speed and the law still the one
+        /// absolute function of it — the same speed on any vessel still looks the same outside the ride — this only says
+        /// how deep the push-in goes for the moments a tunnel flies the hull, up to <see cref="SpeedTunnelConfigSO.MaxEffect"/>.
+        /// Keyed on the owning vessel's Transform, the scope override's guard: it applies only while that vessel is the one
+        /// the law is driven by, and a late release from an outgoing vessel cannot cancel the incoming one's.
+        /// </summary>
+        public static void SetEffectScale(float scale, Transform key)
+        {
+            _effectScaleKey = key;
+            _effectScale = Mathf.Clamp(scale, 0f, SpeedTunnelConfigSO.MaxEffect);
+        }
+
+        /// <summary>Drop the ride scale, but only if <paramref name="key"/> still owns it.</summary>
+        public static void ClearEffectScale(Transform key)
+        {
+            if (_effectScaleKey == key)
+                ClearEffectScale();
+        }
+
+        /// <summary>Unconditional off.</summary>
+        public static void ClearEffectScale()
+        {
+            _effectScaleKey = null;
+            _effectScale = 1f;
+        }
+
+        /// <summary>The scale in force: the ride's while the vessel holding it is the law's target, else 1.</summary>
+        public static float EffectScale => _effectScaleKey && _effectScaleKey == _targetKey ? _effectScale : 1f;
+
+        /// <summary>
         /// The PLAYER's own field of view — what the camera runs at with neither the speed effect
         /// nor a scope applied, and what <see cref="RestoreFov"/> hands back. An ability holding
         /// an override reads this to find its unscoped endpoint, because the camera's live value
@@ -243,6 +279,8 @@ namespace CosmicShore.Utility
             _suppressed = false;
             _homeFovOverrideKey = null;
             _homeFovOverrideActive = false;
+            _effectScaleKey = null;
+            _effectScale = 1f;
             _effect01 = 0f;
             _applied = false;
             _appliedCamera = null;
@@ -276,7 +314,7 @@ namespace CosmicShore.Utility
                 // pace must not read as one crawling. Exactly the raw speed with no field.
                 var hull = _target.ShipTransform;
                 float warp = hull ? WarpFieldRuntime.ScaleAt(hull.position) : 1f;
-                target01 = config.Effect01(_target.Speed / warp);
+                target01 = config.Effect01(_target.Speed / warp) * EffectScale;
             }
 
             _effect01 = Mathf.Lerp(_effect01, target01,

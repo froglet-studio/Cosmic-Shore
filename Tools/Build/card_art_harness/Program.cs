@@ -111,10 +111,20 @@ static class Program
             case "slingshot":
             case "threshertime":
             case "wrasserun":
+            case "scarabrally":
+            case "serpenttime":
+            case "brittlestartime":
+            case "lanternrun":
+            case "thornline":
+            case "decoyrun":
+            case "perchrun":
+            case "slipline":
+            case "breach":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
                 int seed = layer.GetProperty("seed").GetInt32();
+                var thorns = new List<Vector3>();
                 List<RaceGate> gates = kind switch
                 {
                     "switchback" => SwitchbackCourse.Generate(seed, Apply(SwitchbackCourseSettings.ForIntensity(intensity), layer)),
@@ -124,7 +134,18 @@ static class Program
                     "slingshot" => HeadlongCircuit.Generate(seed, Apply(SlingshotCourse.ForIntensity(intensity), layer)),
                     "threshertime" => HeadlongCircuit.Generate(seed, Apply(ThresherTimeCourse.ForIntensity(intensity), layer)),
                     "wrasserun" => HeadlongCircuit.Generate(seed, Apply(WrasseRunCourse.ForIntensity(intensity), layer)),
-                    _ => RegattaCourse.BuildGates(seed, intensity),
+                    "scarabrally" => SwitchbackCourse.Generate(seed, Apply(ScarabRallyCourse.ForIntensity(intensity), layer)),
+                    "serpenttime" => HeadlongCircuit.Generate(seed, Apply(SerpentTimeCourse.ForIntensity(intensity), layer)),
+                    "brittlestartime" => BrittleStarTimeLap(seed, intensity, layer),
+                    "lanternrun" => HeadlongCircuit.Generate(seed, Apply(LanternRunCourse.ForIntensity(intensity), layer)),
+                    "thornline" => ThornlineCourse.Generate(seed, Apply(ThornlineCourse.ForIntensity(intensity), layer), thorns),
+                    "decoyrun" => DecoyRunCourse.Generate(seed, Apply(DecoyRunCourse.ForIntensity(intensity), layer)),
+                    "perchrun" => PerchRunCourse.Generate(seed, Apply(PerchRunCourse.ForIntensity(intensity), layer)),
+                    "slipline" => SlipLineCourse.Generate(seed, Apply(SlipLineCourse.ForIntensity(intensity), layer)),
+                    "breach" => BreachCourse.Generate(seed, Apply(BreachCourse.ForIntensity(intensity), layer)),
+                    _ => layer.TryGetProperty("genome", out var ge)
+                        ? RegattaCourseGenome.FromJson(ge.GetString()).BuildGates()
+                        : RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
                 var gm = GateMaterial(layer);
@@ -132,9 +153,66 @@ static class Program
                 foreach (var g in gates)
                     scene.Ring(ToV(g.Position), ToV(g.Axis), g.Radius, g.Radius * tube, gm, 56, 8);
                 if (layer.TryGetProperty("path", out var pe) && pe.GetBoolean())
-                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback", pal, layer);
+                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback" && kind != "scarabrally" && kind != "thornline", pal, layer);
                 if (kind == "threshertime") StageSling(scene, gates);
                 if (kind == "wrasserun") StageKite(scene, gates);
+                if (kind == "lanternrun") StageClusters(scene, gates, intensity);
+                if (kind == "decoyrun")
+                {
+                    // the chalk: each flat's two dotted rails, the super-shielded prisms the mode lays (drawn at twice their 5 u so a card shows them)
+                    var chalk = new List<Vector3>();
+                    DecoyRunCourse.ChalkFor(gates, Apply(DecoyRunCourse.ForIntensity(intensity), layer), DecoyRunCourse.StartStandoff, chalk);
+                    foreach (var c in chalk)
+                        AddPrism(scene, new SpawnPoint(c, Quaternion.identity, Vector3.one * DecoyRunCourse.ChalkSize * 2f), pal.For(Domains.Blue, PrismKind.SuperShielded));
+                    return chalk.Count;
+                }
+                if (kind == "perchrun")
+                {
+                    // the coral: one super-shielded cube per blocked leg, square to its leg, as the mode lays it
+                    var coral = new List<Coral>();
+                    PerchRunCourse.CoralFor(gates, Apply(PerchRunCourse.ForIntensity(intensity), layer), coral);
+                    foreach (var c in coral)
+                        AddPrism(scene, new SpawnPoint(c.Position, c.Rotation, Vector3.one * c.Size), pal.For(Domains.Blue, PrismKind.SuperShielded));
+                    return coral.Count;
+                }
+                if (kind == "slipline")
+                {
+                    // the rails: one super-shielded prism trail per rail in its Dynamo colour, as the mode lays them
+                    var rails = new List<Rail>();
+                    var points = new List<Vector3>();
+                    var st = Apply(SlipLineCourse.ForIntensity(intensity), layer);
+                    st.RingCount = gates.Count;
+                    SlipLineCourse.RailsFor(gates, st, rails);
+                    int laid = 0;
+                    foreach (var r in rails)
+                    {
+                        var rot = Quaternion.LookRotation(r.Direction);
+                        var scl = new Vector3(SlipLineCourse.PrismWidth * 2f, SlipLineCourse.PrismWidth * 2f, SlipLineCourse.PrismLength);
+                        SlipLineCourse.PrismsOf(r, points);
+                        foreach (var q in points) { AddPrism(scene, new SpawnPoint(q, rot, scl), pal.For(r.Colour switch { 1 => Domains.Ruby, 2 => Domains.Jade, _ => Domains.Gold }, PrismKind.SuperShielded)); laid++; }
+                    }
+                    return laid;
+                }
+                if (kind == "breach")
+                {
+                    // the walls: danger prisms square across each walled ring's line, as the mode lays them
+                    var wall = new List<(Vector3 position, int ring)>();
+                    var st = Apply(BreachCourse.ForIntensity(intensity), layer);
+                    st.RingCount = gates.Count;
+                    BreachCourse.WallsFor(gates, st, wall);
+                    var scl = new Vector3(BreachCourse.WallPrismSize, BreachCourse.WallPrismSize, BreachCourse.WallPrismDepth);
+                    foreach (var (position, ring) in wall)
+                        AddPrism(scene, new SpawnPoint(position, Quaternion.LookRotation(gates[ring].Axis), scl), pal.For(Domains.Blue, PrismKind.Danger));
+                    return wall.Count;
+                }
+                if (kind == "thornline")
+                {
+                    var laid = new List<Thorn>();
+                    ThornlineCourse.Lay(thorns, Apply(ThornlineCourse.ForIntensity(intensity), layer), laid);
+                    foreach (var t in laid)
+                        AddPrism(scene, new SpawnPoint(t.Position, Quaternion.identity, Vector3.one * t.Size), pal.For(Domains.Blue, t.Kind));
+                    return laid.Count;
+                }
                 return 0;
             }
             case "breakwater":
@@ -197,6 +275,17 @@ static class Program
                 UnityEngine.Debug.LogError($"unknown layer kind '{kind}'");
                 return 0;
         }
+    }
+
+    /// <summary>Brittle Star Time's lap as BrittleStarTimeCourseSource.Build lays it: the rung's own shape
+    /// (BrittleStarTimeCourse.BuildLap) in the card's shell, else the Gearbox (Headlong's solver).</summary>
+    static List<RaceGate> BrittleStarTimeLap(int seed, int intensity, JsonElement layer)
+    {
+        var gearbox = Apply(BrittleStarTimeCourse.Gearbox(), layer);
+        return BrittleStarTimeCourse.BuildLap(intensity, seed, gearbox.InnerRadius, gearbox.OuterRadius, gearbox.GateCount,
+                                              out var lap)
+            ? lap
+            : HeadlongCircuit.Generate(seed, gearbox);
     }
 
     /// <summary>Course settings are value types built by ForIntensity; a spec may override the
@@ -293,6 +382,21 @@ static class Program
                 scene.Box(c, f * 6, r * 1.2, u * 1.2, m, false);
             }
         }
+    }
+
+    /// <summary>LanternRun's signature: the mass clusters themselves at the SHIPPED layout (LanternRunCourse.Clusters),
+    /// glowing balls before and past their rings, with a dotted dash line from the first leg's near cluster through its
+    /// ring to its far one - the path the Angler paints and zooms along. Card-scale sizes, not the game's.</summary>
+    static void StageClusters(Scene scene, List<RaceGate> gates, int intensity)
+    {
+        var glow = new Material { Base = new V3(0.05, 0.18, 0.25), Rim = new V3(0.5, 1.6, 1.9), Emissive = new V3(0.35, 1.1, 1.3), EdgeGlow = 0.35, RimPower = 1.4 };
+        var dot = new Material { Base = new V3(0.25, 0.22, 0.05), Rim = new V3(1.8, 1.5, 0.4), Emissive = new V3(1.2, 1.0, 0.3), EdgeGlow = 0.2 };
+        foreach (var c in LanternRunCourse.Clusters(gates, intensity))
+            scene.Sphere(ToV(c.Centre), LanternRunCourse.ClusterRadius(intensity) * 2.2, glow, 20, 40, false);
+        if (!LanternRunCourse.HasCluster(0, LanternRunCourse.ClusterRole.Near, intensity)) return;
+        V3 near = ToV(LanternRunCourse.ClusterCentre(gates, 0, LanternRunCourse.ClusterRole.Near, intensity));
+        V3 far = ToV(LanternRunCourse.ClusterCentre(gates, 0, LanternRunCourse.ClusterRole.Far, intensity));
+        for (int j = 0; j < 22; j++) scene.Sphere(near + (far - near) * (j / 21.0), 3.0, dot, 8, 16, false);
     }
 
     /// <summary>

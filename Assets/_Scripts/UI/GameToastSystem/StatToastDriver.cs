@@ -51,6 +51,7 @@ namespace CosmicShore.UI
             new(GameToastSituation.CrystalCollected,         s => s.CrystalsCollected),
             new(GameToastSituation.RocketHit,                s => s.MissileHitsLanded),
             new(GameToastSituation.BendLanded,               s => s.DebuffHitsLanded),
+            new(GameToastSituation.StrikeLanded,             s => s.StrikeHitsLanded),
             new(GameToastSituation.PrismsDestroyedMilestone, s => s.HostilePrismsDestroyed),
             new(GameToastSituation.LifeformKilled,           s => s.LifeformsKilled),
             new(GameToastSituation.PrismsStolenMilestone,    s => s.PrismStolen),
@@ -83,7 +84,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < Watches.Length; i++)
             {
                 if (library.TryResolve(gameData.GameMode, Watches[i].Situation, out var definition))
-                    _active.Add((Watches[i], Mathf.Max(1, definition.everyN)));
+                    _active.Add((Watches[i], Mathf.Max(1, definition.EveryN)));
             }
 
             _turnActive = _active.Count > 0;

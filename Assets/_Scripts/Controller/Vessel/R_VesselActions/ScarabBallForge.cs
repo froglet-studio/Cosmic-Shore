@@ -83,7 +83,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// SPACE → ball SIZE (SCARAB.md §7): ×1 at rest, ×4 at Space 10, floored at ×0.5.
+        /// SPACE → the size of the balls the Scarab SEEDS on the nucleus membrane (SCARAB.md §7;
+        /// Space's ability since 2026-10-29): ×1 at rest, ×4 at Space 10, floored at ×0.5. A
+        /// FORGED ball is the omni crystal's ability and no element scales it, so it is born ×1.
         /// <para>The carrier is the ElementalFloat below rather than an authored asset field
         /// because this class is STATIC and can hold no serialized field — the same reason six
         /// other Scarab knobs live in C# (the vessel contract's rule 4-i). Promote it to a config
@@ -95,6 +97,12 @@ namespace CosmicShore.Gameplay
 
         public static float SizeScaleFor(IVesselStatus status) =>
             BallSizeScale.EvaluateLive(status);
+
+        /// <summary>SPACE 5, "Core Breaker": a ball this pilot mints destroys super-shielded
+        /// prisms instead of being spent on them. Read at minting; the ball keeps it.</summary>
+        public static bool BreaksSuperShieldedFor(IVesselStatus status) =>
+            status?.ElementalAbilityHandler != null
+            && status.ElementalAbilityHandler.IsUpgradeActive(Element.Space);
 
         /// <summary>
         /// Forge a ball for <paramref name="status"/>'s domain, on a peer that may spawn one.
@@ -110,8 +118,11 @@ namespace CosmicShore.Gameplay
             if (status == null || !CanSpawnLocally) return null;
             if (ForgeGate != null && !ForgeGate(status)) return null;
 
-            var ball = Spawn(prefab, at, velocity, status.Domain, SizeScaleFor(status));
+            // The OMNI crystal's ability: no element sizes a forged ball (SizeScaleFor is the
+            // seeded balls', Space's). Space 5 still rides on it - "Core Breaker" is the ball's.
+            var ball = Spawn(prefab, at, velocity, status.Domain, 1f);
             if (ball == null) return null;
+            ball.SetBreaksSuperShieldedServer(BreaksSuperShieldedFor(status));
 
             // The ball SCORES for its maker until somebody else bats it: the mass it eats is
             // credited to this pilot (AstroLeagueBall.RecordPilotServer), which is what makes a

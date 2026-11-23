@@ -9,16 +9,11 @@ namespace CosmicShore.Gameplay
     /// KNOCKS PETALS OUT OF A HULL AS COLLECTABLE CRYSTALS - the physical half of an ejecting
     /// elemental transfer (<see cref="ElementalTransfer"/>).
     ///
-    /// <para><b>One crystal is one petal, exactly.</b> The collect reward is
-    /// <c>SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain</c> =
-    /// <c>lossyScale.x * levelPerUnitScale</c>, and the shipped <c>levelPerUnitScale</c> is
-    /// <c>0.1</c> - which is <see cref="ResourceSystem.PetalNormalized"/>. So a crystal minted
-    /// at WORLD SCALE 1 returns precisely the one integer level that was taken, and the
-    /// economy closes: nothing is created, nothing is destroyed, the petal simply changes
-    /// hands. That is the whole reason the ejector mints at a fixed scale rather than encoding
-    /// the amount in the SIZE - a size-encoded petal would clip
-    /// <c>maxLevelGainPerCrystal</c> (0.5) the moment a hit took more than five, and a clipped
-    /// crystal is a quantity the player can see and a reward they cannot.</para>
+    /// <para><b>One crystal is one petal, exactly.</b> Every elemental crystal grants one petal
+    /// (<see cref="SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal"/>) and is one
+    /// size (<see cref="ElementalCrystalSetSO.CrystalWorldScale"/>), so a hit that takes N petals
+    /// mints N crystals and the economy closes: nothing is created, nothing is destroyed, the
+    /// petal simply changes hands.</para>
     ///
     /// <para><b>They belong to nobody.</b> An ejected petal is minted
     /// <see cref="Domains.Blue"/>, the platform's free-for-all, so it wears the lime
@@ -36,9 +31,6 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class ElementalCrystalEjector
     {
-        /// <summary>The world scale at which one crystal is worth exactly one petal. See the type doc.</summary>
-        public const float PetalCrystalWorldScale = 1f;
-
         /// <summary>
         /// How much of the hull's half-width a petal starts outside the centre, so crystals leave
         /// the SKIN rather than materialising inside the cockpit. Multiplied by the measured hull
@@ -169,7 +161,7 @@ namespace CosmicShore.Gameplay
             // altered by whatever it happens to hang from - and it does not follow the hull that
             // shed it, which would read as the pilot keeping what they just lost.
             var crystal = Object.Instantiate(prefab, position, Random.rotation);
-            crystal.transform.localScale = Vector3.one * PetalCrystalWorldScale;
+            crystal.transform.localScale = Vector3.one * ElementalCrystalSetSO.CrystalWorldScale;
             crystal.enabled = true;
             crystal.gameObject.SetActive(true);
 

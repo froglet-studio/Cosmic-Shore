@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-17-racejudge-picks-the-idle-host-s-hull-fro-8b44eb",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T08:20:33+00:00",
+  "area": "the Amoebius race judge",
+  "summary": "RaceJudge picks the idle host's hull from the original nine only when one is free, otherwise any seated hull, so a field of all nine plus the new hulls no longer throws 'Sequence contains no matching element'.",
+  "why": "The Wrasse, Thresher, Meerkat and Grizzly joined the Regatta card (#2123); a 13-hull field race now runs (host Dolphin, all 13 seats scored).",
+  "branch": "claude/project-thread-sl73tv",
+  "lane": "amoebius",
+  "commit": "618efd38b",
+  "paths": [
+    "Port/src/CosmicShore.Player/RaceJudge.cs"
+  ]
+}

@@ -32,4 +32,35 @@ namespace CosmicShore.Gameplay
         /// <summary>Members per worker batch: a pose is ~60 flops, so small batches would be all scheduling overhead.</summary>
         public const int BatchSize = 128;
     }
+
+    /// <summary>
+    /// The per-frame HEART pose of one element's heart list (Docs/ECOSYSTEM.md §65.7), Burst-compiled: one
+    /// <see cref="SwarmHeartPose.PoseMatrix"/> per listed member - the crystal root - times each of the element crystal's
+    /// model transforms, part-major (<c>Matrices[part * Count + k]</c>), so every crystal model is one instanced draw over
+    /// its own slice. <c>CrystalHeartDraw</c> runs it on the main thread (<c>Run</c>): a few hundred flops a heart.
+    /// </summary>
+    [BurstCompile]
+    public struct SwarmHeartPoseJob : IJobFor
+    {
+        [ReadOnly] public NativeArray<SwarmInstance> Instances;   // the published frame (copied once per tick)
+        [ReadOnly] public NativeArray<uint> Slots;                // this element's heart list, slots into Instances
+        [ReadOnly] public NativeArray<float4x4> Locals;           // each crystal model's transform under the crystal root
+        [WriteOnly, NativeDisableParallelForRestriction] public NativeArray<float4x4> Matrices;
+        public int Count, Element;
+        public float Alpha, Clock, BloomTicks, HeartScale;
+        public SVector3 Up, UpAlt;
+
+        public void Execute(int k)
+        {
+            uint slot = Slots[k];
+            var root = float4x4.zero;
+            if (slot < (uint)Instances.Length)
+            {
+                SwarmHeartPose.PoseMatrix(Instances[(int)slot], Element, Alpha, Clock, BloomTicks, Up, UpAlt, HeartScale, out var m);
+                root = new float4x4(new float4(m.C0X, m.C0Y, m.C0Z, m.C0W), new float4(m.C1X, m.C1Y, m.C1Z, m.C1W),
+                                    new float4(m.C2X, m.C2Y, m.C2Z, m.C2W), new float4(m.C3X, m.C3Y, m.C3Z, m.C3W));
+            }
+            for (int p = 0; p < Locals.Length; p++) Matrices[p * Count + k] = math.mul(root, Locals[p]);
+        }
+    }
 }

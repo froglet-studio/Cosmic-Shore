@@ -188,6 +188,28 @@ namespace CosmicShore.Utility
             return plateOf;
         }
 
+        /// <summary>
+        /// True when a plate's distinct <paramref name="corners"/> are a rhombic slab: exactly 8, at two clearly different
+        /// distances from their <paramref name="centroid"/> (a rectangle's are all equal). <paramref name="far"/> is the
+        /// farthest corner's distance. Also how <see cref="CrystalElementPlates"/> tells Time's rhombi from Space's squares.
+        /// </summary>
+        public static bool IsRhombus(IReadOnlyList<Vector3> corners, out Vector3 centroid, out float far)
+        {
+            centroid = Vector3.zero;
+            far = 0f;
+            if (corners.Count != 8) return false;
+            foreach (var c in corners) centroid += c;
+            centroid /= corners.Count;
+            float near = float.MaxValue;
+            foreach (var c in corners)
+            {
+                float d = (c - centroid).magnitude;
+                near = Mathf.Min(near, d);
+                far = Mathf.Max(far, d);
+            }
+            return near > 0f && far / near >= RhombusDistanceRatio;
+        }
+
         /// <summary>Builds a twin, uncached (the edit-mode tests own what they bake).</summary>
         internal static Skin Bake(Mesh source, out string problem)
         {
@@ -216,19 +238,7 @@ namespace CosmicShore.Utility
             float maxReach = 0f;
             foreach (int root in plateOrder)
             {
-                var corners = cornersByPlate[root];
-                if (corners.Count != 8) continue;
-                var centroid = Vector3.zero;
-                foreach (var c in corners) centroid += c;
-                centroid /= corners.Count;
-                float near = float.MaxValue, far = 0f;
-                foreach (var c in corners)
-                {
-                    float d = (c - centroid).magnitude;
-                    near = Mathf.Min(near, d);
-                    far = Mathf.Max(far, d);
-                }
-                if (near <= 0f || far / near < RhombusDistanceRatio) continue;
+                if (!IsRhombus(cornersByPlate[root], out var centroid, out float far)) continue;
 
                 boneOfPlate[root] = centroids.Count + 1;
                 centroids.Add(centroid);
@@ -256,6 +266,9 @@ namespace CosmicShore.Utility
             twin.name = $"{source.name} {BakedSuffix}";
             twin.bindposes = bindposes;
             twin.boneWeights = weights;
+            // Each plate's element for the omni body's per-element shades (Docs/PALETTE.md §2.12); the cut and shaped
+            // twins are copies of this one and keep it. A mesh with none of the four shapes simply goes without.
+            if (!CrystalElementPlates.Carries(twin)) CrystalElementPlates.TryWrite(twin, source, out _);
 
             problem = null;
             return new Skin { Source = source, Mesh = twin, PlateCentroids = centroids.ToArray(), MaxReach = maxReach };

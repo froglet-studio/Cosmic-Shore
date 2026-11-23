@@ -89,7 +89,10 @@ PRISM_SCALE = (2.6, 0.4, 3.0)          # wide, thin, long — a rib lying along 
 # horn narrows going back, so how far the heart shows through the hull grows monotonically
 # with depth — shallowest-and-legal is therefore also most-enclosed. Proved by
 # Tools/Build/verify_fauna_heart_seat.py, which carries the seat sweep as its control.
-HEART_Z_FBX = -2.8
+# -2.8 until 2026-10-26: the body then grew x1.6412 to the one heart size (Docs/ECOSYSTEM.md 64.4) while the heart is
+# sized in WORLD units, so in the prefab's units the heart is smaller and the shallowest legal seat moved to -2.4
+# (prefab z, = this + FBX_Z_OFFSET), which the sweep re-proved.
+HEART_Z_FBX = -2.54
 
 
 def blade_pitch_degrees():

@@ -76,6 +76,28 @@ namespace CosmicShore.Gameplay
         public Vector3? PlacementAnchor { get; set; }
 
         /// <summary>
+        /// A world rotation the FOLLOW FRAME is slerped toward by <see cref="FollowFrameOverride01"/>: the offset, the
+        /// look point and the camera's up all come from the result, so the whole rig re-orients round the hull while
+        /// the hull itself does not turn. Driven only by the Tiger Moth's Drop through
+        /// <see cref="VesselPlacementView.Frame"/> (<c>R_VesselActions/TIGER_MOTH.md</c>): the hull falls along its own
+        /// down, and the rig rides the frame pitched 90 degrees nose-down so the fall reads as forward; at the landing
+        /// the hull turns INTO this frame, so releasing it moves nothing.
+        ///
+        /// <para>Applied at the point of use (<see cref="StepFollowFrame"/>), never by writing the follow target or
+        /// <see cref="_followOffset"/>, for the reason <see cref="RearView"/> records. Null or a weight of 0 (the
+        /// default, and every other vessel) changes no line of the follow path. Reset with the follow target.</para>
+        /// </summary>
+        public Quaternion? FollowFrameOverride { get; set; }
+
+        /// <summary>How far the follow frame has moved onto <see cref="FollowFrameOverride"/>, 0..1.</summary>
+        public float FollowFrameOverride01
+        {
+            get => _followFrameOverride01;
+            set => _followFrameOverride01 = Mathf.Clamp01(value);
+        }
+        private float _followFrameOverride01;
+
+        /// <summary>
         /// A still vantage the camera eases INTO and holds instead of chasing the vessel: a world
         /// position, the point it looks at, and its up. Driven only by the Thresher
         /// (<c>ThresherExecutor</c>, <c>R_VesselActions/THRESHER.md</c>) — when its planted orbit
@@ -110,6 +132,20 @@ namespace CosmicShore.Gameplay
         public float SpectateBlendSeconds { get; set; } = 0.6f;
 
         /// <summary>
+        /// Clear the <see cref="Spectate"/> vantage with a CUT rather than the ease back: the camera is put back on the
+        /// follow pose it kept underneath, and the next frame is the plain follow camera. For a vantage that coincides
+        /// with the follow camera where it lets go (the Meerkat's ride camera), and safe on a camera that is switched
+        /// off at the time, which would otherwise keep the stale vantage blended in until it next ran.
+        /// </summary>
+        public void EndSpectateNow()
+        {
+            if (_spectateBlend > 0f)
+                transform.SetPositionAndRotation(_followPosePosition, _followPoseRotation);
+            _spectate = null;
+            _spectateBlend = 0f;
+        }
+
+        /// <summary>
         /// A cap (degrees/second) on how fast the FOLLOW FRAME — the rotation the offset is laid
         /// out in, and whose up the camera looks along — may turn toward the target's rotation.
         /// 0 (the default, and the only value any other vessel ever sees) makes the frame the
@@ -140,10 +176,20 @@ namespace CosmicShore.Gameplay
         private Vector3 _followAngularVelocity;          // degrees/s, axis x rate (angular-acceleration mode)
         private Quaternion _lastFollowTargetRotation;
 
+        /// <summary>The frame the camera follows in before any turn cap: the hull's rotation, moved onto
+        /// <see cref="FollowFrameOverride"/> by its weight.</summary>
+        private Quaternion FollowFrameTarget()
+        {
+            Quaternion hull = _followTarget.rotation;
+            return FollowFrameOverride.HasValue && _followFrameOverride01 > 0f
+                ? Quaternion.Slerp(hull, FollowFrameOverride.Value, _followFrameOverride01)
+                : hull;
+        }
+
         /// <summary>This frame's follow frame (see <see cref="MaxFollowTurnRate"/>).</summary>
         private Quaternion StepFollowFrame(float dt)
         {
-            Quaternion target = _followTarget.rotation;
+            Quaternion target = FollowFrameTarget();
             if (MaxFollowTurnRate <= 0f || !_followFrameValid)
             {
                 _followFrame = target;
@@ -192,6 +238,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// A PAN in the follow frame (vessel-local units, before the warp): the camera and the point it looks at
+        /// both move by it, so the view keeps its direction and whatever sits at that offset from the hull lands
+        /// where the hull would have. Driven only by the Swordfish (<c>SwordfishSwordCamera</c>,
+        /// <c>R_VesselActions/SWORDFISH.md</c>): a sword swung to the side pans along x to centre it, a sword
+        /// raised straight up pans along y. Zero (the default, and every other vessel) changes no line of the
+        /// follow path. Applied at the point of use, never by writing <see cref="_followOffset"/>, for the reason
+        /// <see cref="RearView"/> records. Not applied during a placement (an explicit world point is framed).
+        /// </summary>
+        public Vector3 FramingPan { get; set; }
+
+        private Vector3 PanAt(float warp, Quaternion frame) =>
+            PlacementAnchor.HasValue || FramingPan == Vector3.zero ? Vector3.zero : frame * (FramingPan * warp);
+
+        /// <summary>
         /// How much of the follow offset's HEIGHT (y) the camera keeps: 1 = the authored offset,
         /// 0 = level with the vessel, directly behind it. Driven by the Butterfly's
         /// <c>SpreadWingsActionExecutor</c> — Mass mode drops the camera to directly behind the
@@ -211,6 +271,60 @@ namespace CosmicShore.Gameplay
             set => _followHeightScale = Mathf.Clamp01(value);
         }
         private float _followHeightScale = 1f;
+
+        /// <summary>
+        /// How far the camera has moved into the SURROUND framing: 0 = the authored offset and look point,
+        /// 1 = straight behind the hull at the authored distance × <see cref="SurroundDistanceScale"/>, looking
+        /// at the hull itself (no look-ahead, no lift), so the hull sits in the middle of the frame. Driven only
+        /// by the Rhino's omni-crystal Surge (<c>SwordfishSurgeSwordRing</c>, <c>R_VesselActions/RHINO_ENERGY_SWORD.md</c>
+        /// § "The omni-crystal Surge"), which eases it in and out itself: a ring of swords round the hull only
+        /// reads if the hull is its centre and the whole ring is on screen.
+        ///
+        /// <para>Applied at the point of use (<see cref="EffectiveOffset"/>, <see cref="LookPoint"/>), never by
+        /// writing <see cref="_followOffset"/>, for the same reason as <see cref="RearView"/>: adaptive zoom and
+        /// every settings re-apply own that field. 0 (the default, and every other vessel) changes no line of the
+        /// follow path. Reset with the follow target.</para>
+        /// </summary>
+        public float SurroundFraming01
+        {
+            get => _surroundFraming01;
+            set => _surroundFraming01 = Mathf.Clamp01(value);
+        }
+        private float _surroundFraming01;
+
+        /// <summary>The camera distance multiplier at full <see cref="SurroundFraming01"/> (1 = the authored distance).</summary>
+        public float SurroundDistanceScale
+        {
+            get => _surroundDistanceScale;
+            set => _surroundDistanceScale = Mathf.Max(0.01f, value);
+        }
+        private float _surroundDistanceScale = 1f;
+
+        /// <summary>
+        /// A vessel-owned multiplier on the camera's distance (and its look point), applied at the point of
+        /// use like <see cref="SurroundFraming01"/>: 1 = the authored framing. Driven only by the Rhino, whose
+        /// camera pulls back as Space lengthens its sword (<c>SwordfishSwordLengthCamera</c>, Garrett 2026-10-26: "Space
+        /// alone can grow the sword, but move the camera accordingly"). Scaling the look point with the
+        /// offset keeps the hull where it sat on screen. Reset with the follow target.
+        /// </summary>
+        public float VesselDistanceScale
+        {
+            get => _vesselDistanceScale;
+            set => _vesselDistanceScale = Mathf.Max(0.01f, value);
+        }
+        private float _vesselDistanceScale = 1f;
+
+        /// <summary>
+        /// The surround framing applied to an offset: blend toward straight behind (or straight ahead, under the
+        /// rear view's mirror) at the offset's own length, then scale the distance. Pure, so it is tested directly.
+        /// </summary>
+        public static Vector3 SurroundOffset(Vector3 offset, float framing01, float distanceScale)
+        {
+            float s = Mathf.Clamp01(framing01);
+            if (s <= 0f) return offset;
+            Vector3 centred = new(0f, 0f, (offset.z > 0f ? 1f : -1f) * offset.magnitude);
+            return Vector3.Lerp(offset, centred, s) * Mathf.Lerp(1f, Mathf.Max(0.01f, distanceScale), s);
+        }
 
         /// <summary>
         /// The world point the camera frames this frame: the placement anchor if one is set, else
@@ -395,7 +509,13 @@ namespace CosmicShore.Gameplay
         /// (<c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4). A future cockpit would be a
         /// third case here, not a revival of a flag nothing was setting.</para>
         /// </summary>
-        private Vector3 EffectiveOffset => AuthoredOffset * FramingScale;
+        private Vector3 EffectiveOffset => SurroundedOffset * FramingScale;
+
+        /// <summary>The authored offset with the vessel's distance scale (<see cref="VesselDistanceScale"/>) and
+        /// the surround framing (<see cref="SurroundFraming01"/>); neither during a placement.</summary>
+        private Vector3 SurroundedOffset => PlacementAnchor.HasValue
+            ? AuthoredOffset
+            : SurroundOffset(AuthoredOffset, _surroundFraming01, _surroundDistanceScale) * _vesselDistanceScale;
 
         /// <summary>The authored offset with the height scale and rear-view mirror, before <see cref="FramingScale"/>.</summary>
         private Vector3 AuthoredOffset =>
@@ -430,12 +550,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private Vector3 LookPoint(Vector3 followPoint, float warp, Quaternion frame)
         {
-            if (PlacementAnchor.HasValue || !_followTarget || (_lookAhead == 0f && _lookLift == 0f)) return followPoint;
+            if (PlacementAnchor.HasValue || !_followTarget || (_lookAhead == 0f && _lookLift == 0f))
+                return followPoint + PanAt(warp, frame);
             float ahead = RearView ? -_lookAhead : _lookAhead;
-            Vector3 lookLocal = new(0f, _lookLift * _followHeightScale, ahead);
+            // The surround framing looks at the hull itself, so it sits in the middle of the frame.
+            Vector3 lookLocal = new Vector3(0f, _lookLift * _followHeightScale, ahead)
+                                * ((1f - _surroundFraming01) * _vesselDistanceScale);
             float s = FramingScale;
-            if (!Mathf.Approximately(s, 1f)) lookLocal = FramedLook(AuthoredOffset, lookLocal, s);
-            return followPoint + frame * (lookLocal * warp);
+            if (!Mathf.Approximately(s, 1f)) lookLocal = FramedLook(SurroundedOffset, lookLocal, s);
+            return followPoint + frame * (lookLocal * warp) + PanAt(warp, frame);
         }
 
         /// <summary>
@@ -478,7 +601,7 @@ namespace CosmicShore.Gameplay
         private float _shakeIntensity;
 
         // --- Camera feel (Docs/CAMERA_FEEL.md) ---
-        // Inertia, kicks, shake, rumble, drift lean and breathing, added on top of the settled pose and taken
+        // Inertia, kicks, shake, rumble and breathing, added on top of the settled pose and taken
         // off again at the top of the next frame (UndoFeel). The dynamic and eased rigs smooth FROM the camera's
         // current pose, so a feel offset left in it would be smoothed into the follow itself; taking it off first
         // means every pose, zoom, rear-view and portal line below only ever sees the clean pose.
@@ -489,6 +612,9 @@ namespace CosmicShore.Gameplay
         private IVesselStatus _feelVessel;                      // the vessel the follow target belongs to
         private Component _feelVesselBody;                      // the same object, for Unity's destroyed check
         private float _feelWeight = 1f;
+        // The followed hull's row says no camera shake at all (CameraFeelConfigSO.NoShakeFor): the feel holds its
+        // trauma, rumble and kicks at zero and Shake() ignores every call. Refreshed every frame by ApplyFeel.
+        private bool _feelNoShake;
         // The followed hull's measured size and what it and the hull's table row give the G. Fields rather than
         // properties so the Inspector's Debug view shows them while tuning.
         private float _feelHullSize;     // the mean of the model's length, width and height, world units; 0 = not yet
@@ -578,7 +704,7 @@ namespace CosmicShore.Gameplay
             // vessel asks for one (MaxFollowTurnRate).
             Quaternion rotation = StepFollowFrame(Time.deltaTime);
             Vector3 frameUp = rotation * Vector3.up;
-            Vector3 desiredPos = followPoint + rotation * (EffectiveOffset * warp);
+            Vector3 desiredPos = followPoint + rotation * (EffectiveOffset * warp) + PanAt(warp, rotation);
 
             if (teleported)
             {
@@ -682,6 +808,7 @@ namespace CosmicShore.Gameplay
         private void ApplyFeel(Vector3 followPoint, float warp)
         {
             var config = CameraFeelConfigSO.Instance;
+            _feelNoShake = _feelVesselBody && config.NoShakeFor(_feelVessel.VesselType);
             float scale = config.Enabled && !PlacementAnchor.HasValue
                 ? config.Strength * VesselCameraFeel.AccessibilityScale * (1f - Mathf.SmoothStep(0f, 1f, _spectateBlend))
                 : 0f;
@@ -711,7 +838,7 @@ namespace CosmicShore.Gameplay
             Quaternion view = transform.rotation;
             float distance = Mathf.Max(1f, EffectiveOffset.magnitude * warp);
             Feel.Step(config, Time.deltaTime, followPoint, view, distance, _feelGForce, _feelResponse,
-                DriftSlip(config, view));
+                DriftSlip(config, view), _feelNoShake);
 
             _feelPosition = view * (Feel.LocalOffset * (distance * scale));
             _feelRotation = Quaternion.Euler(Feel.LocalAngles * scale);
@@ -843,7 +970,7 @@ namespace CosmicShore.Gameplay
             Camera.farClipPlane = _currentSettings.farClipPlane;
             _lookAhead = _currentSettings.lookAheadDistance;
             _lookLift = _currentSettings.lookAheadLift;
-            _chaseEase = Mathf.Max(0f, _currentSettings.chaseEaseRate);
+            _chaseEase = Mathf.Max(0f, _currentSettings.ChaseEaseRate);
             _framingFov = Mathf.Max(0f, _currentSettings.framingFieldOfView);
             _easedLookValid = false;
 
@@ -853,8 +980,8 @@ namespace CosmicShore.Gameplay
                 _followOffset.y = settings.followOffset.y;
 
                 _followSmoothTime = settings.followSmoothTime;
-                _rotationSmoothTime = settings.rotationSmoothTime;
-                _disableRotationLerp = settings.disableSmoothing;
+                _rotationSmoothTime = settings.RotationSmoothTime;
+                _disableRotationLerp = settings.DisableSmoothing;
 
                 SetCameraDistance(settings.dynamicMinDistance);
             }
@@ -862,7 +989,7 @@ namespace CosmicShore.Gameplay
             {
                 _followOffset = settings.followOffset;
                 _disableRotationLerp = true;
-                adaptiveZoomEnabled = settings.enableAdaptiveZoom;
+                adaptiveZoomEnabled = settings.EnableAdaptiveZoom;
                 _neutralOffsetZ = _followOffset.z;
             }
         }
@@ -874,6 +1001,12 @@ namespace CosmicShore.Gameplay
             {
                 CancelCarry();
                 _followHeightScale = 1f;
+                _surroundFraming01 = 0f;
+                _surroundDistanceScale = 1f;
+                _vesselDistanceScale = 1f;
+                FramingPan = Vector3.zero;
+                FollowFrameOverride = null;
+                _followFrameOverride01 = 0f;
                 _spectate = null;
                 _spectateBlend = 0f;
                 MaxFollowTurnRate = 0f;
@@ -965,15 +1098,19 @@ namespace CosmicShore.Gameplay
 
             Vector3 followPoint = FollowPoint;
             _followFrameValid = false;
-            transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
+            Quaternion rotation = FollowFrameTarget();
+            transform.position = followPoint + rotation * EffectiveOffset + PanAt(1f, rotation);
 
-            _easedLook = LookPoint(followPoint, 1f, _followTarget.rotation);
+            _easedLook = LookPoint(followPoint, 1f, rotation);
             _easedLookValid = true;
-            if (SafeLookRotation.TryGet(_easedLook - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (SafeLookRotation.TryGet(_easedLook - transform.position, rotation * Vector3.up, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
             _lastTargetPos = followPoint;
             _velocity = Vector3.zero;
+            // A snap is a cut: no vantage left over from before it is still blended in on top (one that is still SET
+            // eases back in from here, as any new one does).
+            _spectateBlend = 0f;
 
             // The pose was just written whole, so there is no feel on it to take off, and a snap is a cut.
             _feelApplied = false;
@@ -1050,6 +1187,7 @@ namespace CosmicShore.Gameplay
         public void Shake(float intensity, float duration)
         {
             if (intensity <= 0f || duration <= 0f) return;
+            if (_feelNoShake) return;   // a no-shake hull (the Rhino) takes no shake from any source
 
             // Only override if this shake is stronger than what's already playing
             if (_shakeTimeRemaining > 0f && intensity < _shakeIntensity * (_shakeTimeRemaining / _shakeDuration))

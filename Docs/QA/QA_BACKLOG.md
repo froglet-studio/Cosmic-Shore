@@ -834,7 +834,7 @@ winner.
 different price than listed · a Rhino blade scoring every frame · the Serpent offered.
 **Known, do not fail on:** the Dolphin is the weakest seat (its cone needs a crystal).
 *(Corrected 2026-10-16: this line also said "the Rhino's sword drains no elements" — wrong. The
-sword STEALS petals: `RhinoSwordStealBySkimmerEffect`, −0.08 per element off the victim and +0.08
+sword STEALS petals: `SwordfishSwordStealBySkimmerEffect`, −0.08 per element off the victim and +0.08
 to the Rhino for 3 s, at most once a second, only on a hit the sword's scoring admits (so only when
 the Rhino is faster than its victim). Watch the victim's petal bars on a +8 hit: a small dip on all
 four is the PASS; no dip is a FAIL.)*
@@ -1897,7 +1897,7 @@ energizes lighting each other's cards.
 
 ### QA-RHINO-AFTERIMAGE ⬜ — Mass: an energized blade leaves 5 s of blade-shaped prisms
 **Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). Mass is now **Afterimage**
-(`RhinoSwordAfterimage` + `RhinoSwordAfterimageConfig.asset`, first-pass numbers, never played):
+(`SwordfishSwordAfterimage` + `SwordfishSwordAfterimageConfig.asset`, first-pass numbers, never played):
 for 5 s after the energized blade goes out, the sword lays prisms in its own shape and pose — at
 most one afterimage per 0.3 s and 6 u of tip travel, at most 16 per window, each cut into ≤ 6
 segments. Mass scales their volume ×1 → ×2.5; Mass L5 (**Danger Afterimages**) lays them as danger
@@ -1921,7 +1921,7 @@ omni Surge) · afterimages that never stop · the sword cutting its own afterima
 first second · the hull crashing into them inside the first second · plain-material prisms at Mass 5+ · a frame-rate drop
 or errors.
 **Report:** whether 5 s / 16 afterimages feels like too much mass or too little (dials on
-`RhinoSwordAfterimageConfig.asset`), and whether one energize plus cutting your own afterimages
+`SwordfishSwordAfterimageConfig.asset`), and whether one energize plus cutting your own afterimages
 refills the meter too easily (the self-farm watch; the lever is energy per own afterimage).
 
 ### QA-RHINO-LIVE-WIRE ⬜ — Charge L5: without it the energized tail runs out; with it the stance relights
@@ -1959,7 +1959,7 @@ is lit; below ~588 the same prism drains them; with Time below 5 it drains them 
 also blocks ordinary (non-danger) prism effects.
 
 ### QA-RHINO-OMNI-SURGE ⬜ — the omni crystal is a 6 s Surge; ordinary petals no longer empty the sword
-**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). `RhinoVesselSurgeByCrystalEffect` replaces
+**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). `SwordfishVesselSurgeByCrystalEffect` replaces
 the meter fill: it fills sword energy to 1, bursts the blade, holds it energized **6 s** with no
 stance and no cost (overriding a cooldown), lends **+2 levels** (+0.2) to all four elements
 decaying over the 6 s, and lays afterimages throughout; then the normal 5 s afterimage window
@@ -1984,7 +1984,7 @@ the meter emptying on an elemental petal.
 ### QA-RHINO-TWO-PEER ⬜ — two machines agree on the Rhino's swing, energize, afterimages and ramp
 **Source:** `cece/relaxed-hopper-r62hbd` (`805eef12` + `8a3b4161`). Every peer now poses the blade
 from `InputStatus`' replicated analog-trigger mirrors (touch still uses press/release events), and
-energy, energize phase and Surge are owner-authoritative through the new `RhinoSwordNetworkRelay`.
+energy, energize phase and Surge are owner-authoritative through the new `SwordfishSwordNetworkRelay`.
 Every peer now also grades the ramp from the replicated sticks — before, only the owner did, and a
 replica held `IsBoosting` and ×16.8 for the rest of the turn after its first ramp. Compiled offline
 only.
@@ -2014,12 +2014,12 @@ writes no analog mirrors), so a half-pull is not testable on touch.
 merge `5b09c6896`). The AI Rhino never ramped (only a human input strategy raises the ramp gesture) and
 never swung. `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` ramps on a straight that pays the wind-up
 back, brakes ON the ramp to a corner speed and lets go at a sharp corner (`AI_BOOST.md`, Ramp);
-`RhinoSwordAutopilot` (Rhino root) writes the
+`SwordfishSwordAutopilot` (Rhino root) writes the
 trigger mirrors — a stroke at the nearest hostile prism in reach (0.15 s think, 0.3 s stroke, 0.45 s
 rest), the energize stance near super-shielded mass or on a ≥ 75% meter. The AIPilot's old ability
 list (GrowTrail, flickering every frame) is empty. Reference: `_Scripts/Controller/AI/AI_BOOST.md`.
 1. Open `Rhino.prefab`: `AIPilot` → **Boost Policy** = `RhinoAIBoostPolicy`; the abilities list is
-   empty; a `RhinoSwordAutopilot` sits on the root.
+   empty; a `SwordfishSwordAutopilot` sits on the root.
 2. Launch **Headlong** at intensity 1 with an AI Rhino and follow it for a lap.
 3. Launch **Cleave** at intensity 1 with AI Rhinos and watch one cross the arena.
 4. Launch a mode with **super-shielded** mass and an AI Rhino — **Regatta** (super-shielded rails)
@@ -2278,7 +2278,7 @@ corrected above, and their checks wait for the next `/qa-backlog` run.
 
 ### QA-URCHIN-HUD ⬜ — the Urchin finally has its four ability icons and gauges
 **Source:** PR #973 (`Tools/Build/author_urchin_hud.py`; `UrchinHUDVariant.prefab`,
-`Urchin.prefab`, `UrchinVesselHUDController`). Prefabs written as text and never imported; the
+`Urchin.prefab`, `UrchinHUDController`). Prefabs written as text and never imported; the
 Urchin flew with no HUD at all before this. Reference: `Docs/UNITY_VERIFICATION_CHECKLIST.md`
 "Urchin HUD variant and four-icon row".
 
@@ -4182,7 +4182,7 @@ face**), #707 (gold's shielded prism brought into the pastel family; the danger 
 un-inverted). Colorimetry verified by simulation only — the engine has never rendered
 any of it. Reference: `Docs/PALETTE.md` §6.
 
-1. Pull and let `OriginalColorSetSO.asset` **reimport**. If nothing looks different,
+1. Pull and let `PhoticColorSetSO.asset` **reimport**. If nothing looks different,
    suspect a stale Library and Reimport before suspecting the values.
 2. **Shielded prisms** — any cell with lifeforms in Menu_Main freestyle (every
    flora/fauna health prism is shielded — the densest sample in the game). Confirm
@@ -5184,11 +5184,14 @@ cloud payload, stats write, unlock state is unchanged.** **FAIL = a Cloud Save e
 a clock that never accrues (or accrues while paused/in menu), or a vessel whose unlock
 state flipped.** Reference: `Docs/Analytics/DATA_ARCHITECTURE.md`.
 
-### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
-Run **Audit Vessel Skimmers** and fly the Serpent through cell mass. Expected: it FAILS
-the audit (inactive `VacuumSkimmer`, no impactor/container) and does not skim. **PASS =
-the failure is exactly as described and nothing else regressed.** Report any *different*
-symptom. Fix is tracked in `Docs/ElementalAbilitySystem/BACKLOG.md` §10–14.
+### QA-P2-SERPENT-SKIMMER ⬜ — Serpent collects crystals (FIXED 2026-10-31, needs a hand test)
+**Fixed on `claude/funny-fermat-9m75dr`** (`Tools/Build/fix_serpent_crystal_pickup.py`): the Serpent's
+`VacuumSkimmer` is now a live far-field crystal catcher (active, trigger on, `SkimmerImpactor` + `ImpactCollider` +
+kinematic `Rigidbody`), and its container hands every crystal to the hull, so the seed-wall re-shield still runs.
+Test: run **Audit Vessel Skimmers** - the Serpent reads `'VacuumSkimmer' OK (crystal pickup only)`. Fly a Serpent
+through elemental crystals (any cell with flora, or Serpent Gulag's field) and an omni crystal. **PASS = each
+elemental crystal is taken and raises its element's bar, the omni crystal is taken, and an active seed wall
+re-shields on each pickup.** Report a crystal that is skimmed from far too far away (the sphere is 25 u).
 
 ### QA-P2-BENCH-LEGACY-AB ⬜ — record the legacy-CPU side of the prism A/B
 Follow the cherry-pick recipe in `Docs/PRISM_EXPLOSION_BENCHMARK.md` on a `bench-legacy`

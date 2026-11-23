@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 6: an elemental UI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><style>@keyframes r4Breath{0%,100%{box-shadow:0 0 6px var(--g),inset 0 0 8px var(--g)}50%{box-shadow:0 0 18px var(--g),inset 0 0 16px var(--g)}}@keyframes r4Bolt{0%{transform:translateX(0) scaleX(.3);opacity:0}10%{opacity:1}100%{transform:translateX(520px) scaleX(1);opacity:0}}@keyframes r4Flash{0%,100%{opacity:0;transform:scale(.4)}12%{opacity:1;transform:scale(1)}40%{opacity:0;transform:scale(1.4)}}@keyframes r4Ring{0%{transform:translate(-50%,-50%) scale(.2);opacity:.9}100%{transform:translate(-50%,-50%) scale(2.2);opacity:0}}@keyframes r4Orbit{to{transform:rotate(360deg)}}@keyframes r4Float{0%,100%{transform:translateY(0) rotateY(-12deg)}50%{transform:translateY(-10px) rotateY(12deg)}}@keyframes r4Scan{0%{top:-10%}100%{top:110%}}@keyframes r4Fly{0%{transform:translate(0,0) scale(1);opacity:1}80%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0}}@keyframes r4Fill{0%,40%{background:#222645;box-shadow:none}55%{background:#fff;box-shadow:0 0 22px var(--g)}100%{background:var(--g);box-shadow:0 0 10px var(--g)}}@keyframes r4Pulse{0%,45%{transform:scale(1);filter:none}60%{transform:scale(1.08);filter:drop-shadow(0 0 26px var(--g)) brightness(1.4)}100%{transform:scale(1);filter:drop-shadow(0 0 8px var(--g))}}@keyframes r4Banner{0%,55%{opacity:0;transform:translateY(12px)}70%,92%{opacity:1;transform:translateY(0)}100%{opacity:0}}@keyframes r4Press{0%,30%{transform:scale(1)}35%{transform:scale(.94)}42%,100%{transform:scale(1)}}</style><style>@keyframes r6Spin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}@keyframes r6Pulse{from{stroke-dashoffset:40}to{stroke-dashoffset:-1000}}@keyframes r6Twinkle{0%,100%{opacity:.12}50%{opacity:1}}@keyframes r6Grow{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes r6Flicker{0%,100%{opacity:1}8%{opacity:.2}12%{opacity:1}46%{opacity:.9}50%{opacity:.15}54%{opacity:1}}@keyframes r6Bolt{from{stroke-dashoffset:300}to{stroke-dashoffset:0}}@keyframes r6Sink{0%{transform:scale(1.7);opacity:0}30%{opacity:.9}100%{transform:scale(.15);opacity:0}}@keyframes r6Warp{0%{transform:translate(0,0) scale(.2);opacity:0}25%{opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(1.1);opacity:0}}@keyframes r6Ripple{0%{transform:scale(.1);opacity:.95}100%{transform:scale(1.9);opacity:0}}@keyframes r6Hand{to{transform:rotate(360deg)}}@keyframes r6Orbit{to{transform:rotate(360deg)}}@keyframes r6OrbitBack{to{transform:rotate(-360deg)}}@keyframes r6Flow{to{stroke-dashoffset:-24}}@keyframes r6Sweep{from{left:-30px}to{left:100%}}@keyframes r6Breath{0%,100%{opacity:.55}50%{opacity:1}}@keyframes r6Bloom{from{opacity:0;transform:translate(-30px,40px) scale(.6)}to{opacity:1;transform:none}}.r6cap{font-family:'Chakra Petch';font-weight:600;letter-spacing:.14em;font-size:13px;text-transform:uppercase}</style>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+@keyframes csCount{0%{opacity:0;transform:scale(1)}3%{opacity:1}18%{opacity:1;transform:scale(1.25)}25%{opacity:0;transform:scale(1.5)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes csPunchA{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes csPunchB{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes csSlideIn{from{opacity:0;transform:translateX(-120px)}to{opacity:1;transform:none}}
+@keyframes csBanner{0%{opacity:0;transform:scaleX(.3)}60%{opacity:1;transform:scaleX(1.03)}100%{opacity:1;transform:scaleX(1)}}
+@keyframes csReveal{0%{opacity:0;transform:scale(.85)}45%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+@keyframes csTextSweep{0%{left:-30%}100%{left:130%}}
+@keyframes csTick{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="grid" style="position:absolute;inset:0;opacity:.5"></div><div style="position:absolute;left:90px;top:80px;width:1740px;columns:2;column-gap:80px"><div style="font-family:Aldrich;font-size:40px;margin-bottom:30px;column-span:all">Rev 6: an elemental UI</div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">The lattice</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">The blueprint grid behind panels (Ark recipe, leaderboard, Profile card, Toy Box, Toy configure) becomes a living crystal lattice: two layers drift at different speeds, energy pulses in the four element colours run along its lines, a few nodes glow. Windows crystallise in: the lattice grows from the centre as a window opens.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">The four elements as meaning</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Charge = threat and energy: START, PLAY, a match about to begin. Mass = substance: vessels, upgrades, crystals, prices. Space = reach and presence: friends, parties, invites, who is online. Time = rate: timers, quests, records, leaderboards. Omni (all four chasing round a rim) for Home, the Ark and anything about every element.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Frames</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Prism-cut panels (chamfered corners) instead of plain slivers. A panel about one element carries a comet of that element's light round its rim; an omni panel carries all four. Buttons are the same shape, lit in their element.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Friends</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Option A: the FRIENDS tab goes; a presence orb sits bottom-left (you, your party bonded to you, online friends orbiting) and blooms into your party as a molecule plus who is online. Option B: a bond rail on the left edge, hover for a friend's card. Both keep everything the panel does today: party seats, invite / join / watch, requests.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">How it is built in Unity</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">One UI shader draws the lattice procedurally (no textures, one quad per panel; the pulses are a time uniform), so it costs a fraction of the grid sprite's overdraw. The rims are a second small UI shader (a rotating conic mask on the sliver sprite). Element colours come from the existing AbilityLockupStyle palette - the same colours as the HUD and the Hangar.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Question 1</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Friends: option A (orb + molecule) or B (bond rail)?</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Question 2</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Elements as meaning across the whole menu (PLAY turns Charge yellow instead of cyan), or only as accents while CTA cyan stays the action colour?</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Question 3</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Charge yellow sits near Gold domain's orange. Keep both, or shift Charge toward white-gold so a domain is never mistaken for an element?</div></div></div>
+</div>
+</x-dc>
+</body>
+</html>

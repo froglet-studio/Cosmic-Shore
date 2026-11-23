@@ -25,26 +25,22 @@ struct SwarmInstance
     float3 Scale;    float PrismZ;
 };
 
-// per draw (MaterialPropertyBlock)
-float _SwarmPart;            // 0 body prism, 1 heart
-float _SwarmBase;            // heart draws: where this element's list starts in _SwarmHeartIdx (SM 4.5 path only)
-float _SwarmHeartElement;    // heart draws: which element this mesh is (0 Charge .. 3 Time)
-float4x4 _SwarmMeshLocal;    // the mesh's own transform under the member root (heart: per crystal model)
+// per draw (MaterialPropertyBlock). The member's HEART is not drawn here: it is the elemental crystal's own models and
+// materials (CrystalHeartDraw.cs, Docs/ECOSYSTEM.md §65.7), posed by SwarmHeartPose (SwarmPrismSync.cs).
+float4x4 _SwarmMeshLocal;    // the body mesh's own transform under the member root
 // per swarm, per frame
 float _SwarmAlpha;           // display alpha between Prev and Cur (0..1)
 float _SwarmClock;           // display time in TICKS (pair index + alpha)
 float _SwarmBloomTicks;      // a newborn grows in over this many ticks
 float4 _SwarmUp;             // the body's up (BY) ...
 float4 _SwarmUpAlt;          // ... and the fallback when the facing is parallel to it (BZ)
-float4 _SwarmHeartScale;     // heart world scale per element (x Charge, y Mass, z Space, w Time)
 // the body palette, per TIER and per DOMAIN SLOT (Docs/SWARM_FAUNA.md §16.4): [tier * 3 + slot], tier 0 plain,
 // 1 danger, 2 shielded; slot = SwarmInstance.Flags bits 7-8. A one-colour swarm writes the same domain into all
 // three slots. Base face (dark) and fresnel rim (bright), linear HDR. (New names: a shader property ARRAY's
 // length is pinned per editor session by NAME, so the round-7 scalar names are not reused.)
 float4 _SwarmTierDark[9];
 float4 _SwarmTierBright[9];
-float4 _SwarmHeartDull, _SwarmHeartBright;     // a living heart's neutral tint
-float _SwarmRimPower;        // body rim falloff (heart uses 4: the crystal convention)
+float _SwarmRimPower;        // body rim falloff
 // per swarm, at bind: each body tier's prism SPREAD - xyz = that tier material's _Spread, w = its _SqrDistance.
 // This is what OPENS a prism: BlockGraph's DistanceSpreadAndColors -> SpreadSubGraph -> TangentSlider push
 // every face out along its own normal by an amount that grows with camera distance (SwarmPrismSpread).
@@ -71,16 +67,6 @@ void SwarmBasis(float3 face, float3 up, float3 upAlt, out float3 bx, out float3 
     float lx = length(bx);
     bx = lx > 1e-6 ? bx / lx : float3(1, 0, 0);
     by = cross(bz, bx);
-}
-
-// The member's heart element as drawn now, and its display factor (the molt: shrink away, re-form).
-void SwarmHeart(SwarmInstance s, float a, out int element, out float factor)
-{
-    float m = lerp(s.PrevMolt, s.CurMolt, a);
-    int from = (int)((s.Flags >> 3) & 3u), to = (int)((s.Flags >> 5) & 3u);
-    element = (m >= 0.5 && to != from) ? to : from;
-    // a molt that finished this tick has from == to == the new element and runs m to 1
-    factor = m > 0.0 ? abs(1.0 - 2.0 * m) : 1.0;
 }
 
 // The prism look's face spread, transcribed from the graphs every live prism draws with (BlockGraph's vertex
@@ -119,7 +105,7 @@ SwarmInstance SwarmInstanceFromRows(float4 r0, float4 r1, float4 r2, float4 r3, 
     return s;
 }
 
-// The pose and palette of ONE member (the body prism, or its heart when _SwarmPart is 1), from its instance data.
+// The pose and palette of ONE member's body prism, from its instance data.
 SwarmMemberVertex SwarmMemberPoseOf(SwarmInstance s, float3 positionOS, float3 normalOS, float3 tangentOS)
 {
     SwarmMemberVertex o;
@@ -129,7 +115,6 @@ SwarmMemberVertex SwarmMemberPoseOf(SwarmInstance s, float3 positionOS, float3 n
     o.dark = float4(0, 0, 0, 1);
     o.bright = float4(0, 0, 0, 1);
 
-    bool heart = _SwarmPart > 0.5;
     if ((s.Flags & 1u) == 0u) return o;
 
     float a = saturate(_SwarmAlpha);
@@ -142,39 +127,22 @@ SwarmMemberVertex SwarmMemberPoseOf(SwarmInstance s, float3 positionOS, float3 n
     // continuity of existence: a newborn grows in from nothing over the bloom
     float bloom = max(0.001, SwarmSmooth01((_SwarmClock - s.BirthTick) / max(_SwarmBloomTicks, 1e-3)));
 
-    if (!heart)
-    {
-        // the prism opens with distance, exactly as a live prism does (SwarmPrismSpread)
-        int bodyTier = (int)((s.Flags >> 1) & 3u);
-        float4 spread = bodyTier == 1 ? _SwarmSpreadDanger : bodyTier == 2 ? _SwarmSpreadShield : _SwarmSpreadPlain;
-        float3 centre = p + bz * (s.PrismZ * bloom);
-        float3 dc = centre - _WorldSpaceCameraPos;
-        positionOS = SwarmPrismSpread(positionOS, normalOS, tangentOS, s.Scale, PrismDepthSqrDistance(centre, dot(dc, dc)), spread);
-    }
+    // the prism opens with distance, exactly as a live prism does (SwarmPrismSpread)
+    int tier = (int)((s.Flags >> 1) & 3u);
+    float4 spread = tier == 1 ? _SwarmSpreadDanger : tier == 2 ? _SwarmSpreadShield : _SwarmSpreadPlain;
+    float3 centre = p + bz * (s.PrismZ * bloom);
+    float3 dc = centre - _WorldSpaceCameraPos;
+    positionOS = SwarmPrismSpread(positionOS, normalOS, tangentOS, s.Scale, PrismDepthSqrDistance(centre, dot(dc, dc)), spread);
     float3 lp = mul(_SwarmMeshLocal, float4(positionOS, 1.0)).xyz;
     float3 ln = mul((float3x3)_SwarmMeshLocal, normalOS);
-    if (heart)
-    {
-        int element; float factor;
-        SwarmHeart(s, a, element, factor);
-        if (element != (int)(_SwarmHeartElement + 0.5)) return o;   // drawn by the other element's list
-        float hs = element == 0 ? _SwarmHeartScale.x : element == 1 ? _SwarmHeartScale.y
-                 : element == 2 ? _SwarmHeartScale.z : _SwarmHeartScale.w;
-        lp *= hs * max(factor, 0.001);
-        o.dark = _SwarmHeartDull;
-        o.bright = _SwarmHeartBright;
-    }
-    else
-    {
-        // the body prism: local scale = Scale (x wide, y thin, z long), seated at z = PrismZ behind the heart
-        lp = float3(lp.x * s.Scale.x, lp.y * s.Scale.y, lp.z * s.Scale.z + s.PrismZ);
-        ln = float3(ln.x / max(s.Scale.x, 1e-4), ln.y / max(s.Scale.y, 1e-4), ln.z / max(s.Scale.z, 1e-4));
-        int tier = (int)((s.Flags >> 1) & 3u);
-        int slot = (int)((s.Flags >> 7) & 3u);
-        int pal = (tier == 1 ? 1 : tier == 2 ? 2 : 0) * 3 + (slot > 2 ? 0 : slot);
-        o.dark = _SwarmTierDark[pal];
-        o.bright = _SwarmTierBright[pal];
-    }
+
+    // the body prism: local scale = Scale (x wide, y thin, z long), seated at z = PrismZ behind the heart
+    lp = float3(lp.x * s.Scale.x, lp.y * s.Scale.y, lp.z * s.Scale.z + s.PrismZ);
+    ln = float3(ln.x / max(s.Scale.x, 1e-4), ln.y / max(s.Scale.y, 1e-4), ln.z / max(s.Scale.z, 1e-4));
+    int slot = (int)((s.Flags >> 7) & 3u);
+    int pal = (tier == 1 ? 1 : tier == 2 ? 2 : 0) * 3 + (slot > 2 ? 0 : slot);
+    o.dark = _SwarmTierDark[pal];
+    o.bright = _SwarmTierBright[pal];
 
     o.positionWS = p + (bx * lp.x + by * lp.y + bz * lp.z) * bloom;
     float3 n = bx * ln.x + by * ln.y + bz * ln.z;
@@ -189,22 +157,19 @@ float3 SwarmMemberShade(float3 positionWS, float3 normalWS, float3 dark, float3 
 {
     float3 v = normalize(_WorldSpaceCameraPos.xyz - positionWS);
     float ndv = saturate(abs(dot(normalize(normalWS), v)));
-    float power = _SwarmPart > 0.5 ? 4.0 : max(_SwarmRimPower, 0.5);
+    float power = max(_SwarmRimPower, 0.5);
     return lerp(dark, bright, pow(1.0 - ndv, power));
 }
 
-// ---- the SM 4.5 half: the per-tick instance buffer and the per-element heart lists ----------------------------
+// ---- the SM 4.5 half: the per-tick instance buffer -----------------------------------------------------------------
 #ifndef SWARM_MEMBER_INSTANCED_INCLUDED
 #define SWARM_MEMBER_INSTANCED_INCLUDED
 
 StructuredBuffer<SwarmInstance> _SwarmInstances;
-StructuredBuffer<uint> _SwarmHeartIdx;
 
 SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 normalOS, float3 tangentOS)
 {
-    bool heart = _SwarmPart > 0.5;
-    uint slot = heart ? _SwarmHeartIdx[(uint)_SwarmBase + instanceID] : instanceID;
-    return SwarmMemberPoseOf(_SwarmInstances[slot], positionOS, normalOS, tangentOS);
+    return SwarmMemberPoseOf(_SwarmInstances[instanceID], positionOS, normalOS, tangentOS);
 }
 
 #endif

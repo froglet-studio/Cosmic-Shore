@@ -24,7 +24,17 @@ namespace CosmicShore.Gameplay
         /// cells. The corridor's spacing is dead time; a ship crosses it under way.</summary>
         public float ArkCruiseSpeedFactor = 4f;
 
+        /// <summary>The cell-aware speed profile (cruise / entry / crawl / membrane band, with a departure anchor). Null
+        /// keeps the legacy two-speed arrival profile above (the Arkway toy); the Ark escort sets it.</summary>
+        public ArkSpeedProfile? ArkPacing;
+
         public float ArkHullLength = 110f;
+
+        /// <summary>The model the Ark is drawn as (sockets, domain, jets and wings). Null keeps the spindle hull.</summary>
+        public ArkModelDefinitionSO ArkModel;
+
+        /// <summary>The Ark's reactor (the omni crystal aboard regrows the hull at a fixed rate). Null: the hull never regrows.</summary>
+        public ArkReactorSO ArkReactor;
 
         /// <summary>Units of travel between wake prisms. 0 = no wake.</summary>
         public float ArkWakeSpacing = 45f;
@@ -39,10 +49,25 @@ namespace CosmicShore.Gameplay
 
         public IReadOnlyList<CellConfigDataSO> Cells;
 
+        /// <summary>A route indexes <see cref="Cells"/> exactly as listed, without the traversal filter (environment-free
+        /// and wormhole worlds are kept). The Ark escort names its worlds; the Arkway and voyages leave this off.</summary>
+        public bool RouteWorldsAsAuthored;
+
         /// <summary>Crystal seated at each traversal cell's core. Null falls back to the omni
         /// crystal on <c>Resources/ModePreviewLibrary</c>.</summary>
         public Crystal CrystalPrefab;
         public float CellSpacing = 3200f;
+        /// <summary>Each traversal cell's membrane and nucleus at this many times their authored size, with the spacing
+        /// scaled to match (<see cref="Cell.SatelliteSizeScale"/>). 1 for the toy and the escort; the voyages set it.</summary>
+        public float CellScale = 1f;
+        /// <summary>Open water between two neighbouring cells' membranes, u. Above 0 the corridor spaces cells by their
+        /// membranes (twice the largest authored membrane radius of its worlds, times <see cref="CellScale"/>, plus this)
+        /// instead of <see cref="CellSpacing"/> times the scale: the voyages' short crossings (Shombith 2026-11-17: "the
+        /// distances between them smaller"). 0 for the toy and the escort.</summary>
+        public float CellGap;
+        /// <summary>Each traversal cell's life is born all through its open water (<see cref="Cell.ScatterLifeSpawns"/>).
+        /// Off for the toy and the escort; the voyages set it.</summary>
+        public bool ScatterLifeSpawns;
         public float MaxTurnDegrees = 25f;
         public int PrismStride = 4;
         public float PopulationScale = 0.5f;
@@ -94,7 +119,7 @@ namespace CosmicShore.Gameplay
     /// the second and every later cell stream in unveiled beside live play, which is what a
     /// satellite build is for — and the voyage opens only when that veil actually comes down.
     /// </summary>
-    public sealed class ArkwayRun : MonoBehaviour, IObjectiveProvider
+    public sealed partial class ArkwayRun : MonoBehaviour, IObjectiveProvider
     {
         const float TickSeconds = 0.2f;
 
@@ -195,6 +220,185 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a voyage is in progress (including the veiled first build).</summary>
         public bool IsRunning => _running || _beginning;
 
+        // ── A route (the voyage slice, Docs/Voyages/SLICE.md §4) ─────────────
+        //
+        // The Arkway toy sails the shuffle-bag forever. A VOYAGE sails a route: the cells of one leg, in order, and then
+        // HOLDS at the last one (the destination) until it is given the next leg. Everything else - the Ark, the leash,
+        // the trail recycling, the three ways a run ends - is the Arkway's own, unchanged. With no route set the run
+        // behaves exactly as it always has.
+
+        bool _holdingAtRouteEnd;
+
+        /// <summary>The Ark has reached the last cell of its route and holds there. Raised once per leg.</summary>
+        public event System.Action RouteEnded;
+
+        /// <summary>The voyage opened: the veil is down, the pilot is docked beside the Ark and it is under way.</summary>
+        public event System.Action Underway;
+
+        /// <summary>Any run's voyage opened (raised right after that run's <see cref="Underway"/>). The voyage scene lifts
+        /// the game's loading screen on it, so the player's first sight of the voyage is its opening.</summary>
+        public static event System.Action AnyUnderway;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetAnyUnderway() => AnyUnderway = null;
+
+        /// <summary>The Ark's last hull prism fell. Raised just before the run ends itself.</summary>
+        public event System.Action ArkFallen;
+
+        /// <summary>The live Ark, or null.</summary>
+        public Ark Ark => _ark;
+
+        /// <summary>True while the Ark holds at the end of its route, waiting for the next leg.</summary>
+        public bool IsHoldingAtRouteEnd => _holdingAtRouteEnd;
+
+        /// <summary>The first leg: call before <see cref="Begin"/>. Indices into <see cref="CellConveyor.TraversalWorlds"/>.</summary>
+        public void SetRoute(IReadOnlyList<int> worlds)
+        {
+            if (_conveyor) _conveyor.SetRoute(worlds);
+        }
+
+        /// <summary>Sail on from the route's end: the next leg. False when the Ark is not holding at a route's end.</summary>
+        public bool ContinueRoute(IReadOnlyList<int> worlds)
+        {
+            if (!_running || !_holdingAtRouteEnd || !_conveyor || worlds is not { Count: > 0 }) return false;
+            _conveyor.SetRoute(worlds);
+            _holdingAtRouteEnd = false;
+            if (_ark) _ark.SetUnderway(true);   // a leg ended early (EndRouteHere) stopped the Ark
+            return true;
+        }
+
+        /// <summary>End this leg where the Ark is: any anchor lifts and the Ark holds at the cell it is at or bound for, as
+        /// at a route's end (<see cref="RouteEnded"/> is raised now). <see cref="ContinueRoute"/> sails the next leg from
+        /// there. False when the run is not under way or already holding.</summary>
+        public bool EndRouteHere()
+        {
+            if (!_running || _holdingAtRouteEnd || !_ark) return false;
+            ClearAnchor();
+            // It stops where it is (the stop stands here) and its target is spent: the next leg sails on from it without
+            // anchoring there again. ContinueRoute gets it under way.
+            _anchoredAtTarget = true;
+            _ark.SetUnderway(false);
+            _holdingAtRouteEnd = true;
+            RouteEnded?.Invoke();
+            return true;
+        }
+
+        // ── The leash, as a run may shape it (Shombith, 2026-11-17: the voyage's stray recall) ──
+
+        /// <summary>The leash countdown's words for this many whole seconds left: a bold line and the line under it.
+        /// Unset (the toy) the countdown reads "RETURN TO THE ARK — n".</summary>
+        public System.Func<int, (string line, string under)> LeashCountdownText { get; set; }
+
+        /// <summary>Where a pilot who stayed past the leash is set back down. No answer (or unset) is the Ark's flank.</summary>
+        public System.Func<IVesselStatus, Pose?> RecallPose { get; set; }
+
+        /// <summary>A pilot stayed past the leash until the countdown ran out and was brought back to the Ark.</summary>
+        public event System.Action<IVesselStatus> Recalled;
+
+        // ── Anchoring: a raid window at each cell (Shombith, 2026-11-16, P1) ──
+        //
+        // With AnchorSeconds set, the Ark DROPS ANCHOR on reaching each cell of its route: it stops dead for the window
+        // the voyage asks for, then weighs anchor and sails on. The squad raids the cell while it waits. Unset (the toy,
+        // the escort) the Ark never stops, exactly as before.
+
+        float _anchorUntil = -1f, _anchorTotal;
+        bool _anchoredAtTarget;
+
+        /// <summary>Asked once each time the Ark reaches a cell of its route: seconds to hold there (0 or less, or no
+        /// answer: sail straight on). The final cell of a leg is asked too, before the Ark holds at the route's end.</summary>
+        public System.Func<float> AnchorSeconds { get; set; }
+
+        /// <summary>The Ark dropped anchor for this many seconds.</summary>
+        public event System.Action<float> Anchored;
+
+        /// <summary>The Ark weighed anchor and sails on.</summary>
+        public event System.Action Weighed;
+
+        /// <summary>True while the Ark is anchored at a cell.</summary>
+        public bool IsAnchored => _anchorUntil >= 0f;
+
+        /// <summary>Seconds left before the anchored Ark sails (0 when it is not anchored).</summary>
+        public float AnchorRemaining => IsAnchored ? Mathf.Max(0f, _anchorUntil - Time.time) : 0f;
+
+        /// <summary>The length of the window the Ark is anchored for (0 when it is not anchored).</summary>
+        public float AnchorTotal => IsAnchored ? _anchorTotal : 0f;
+
+        /// <summary>Weigh anchor now: the window ends early (the voyage's goal is met). No effect while not anchored.</summary>
+        public void WeighAnchor()
+        {
+            if (IsAnchored) _anchorUntil = Time.time;
+        }
+
+        /// <summary>A party friend's anchored Ark keeps the host's window (Docs/Voyages/PARTY.md §4): it sails when the
+        /// host's does. No effect while not anchored; 0 weighs anchor on the next tick.</summary>
+        public void SetAnchorRemaining(float seconds)
+        {
+            if (!IsAnchored) return;
+            _anchorUntil = Time.time + Mathf.Max(0f, seconds);
+        }
+
+        /// <summary>True while the Ark holds at a cell it reached: anchoring when it first arrives, and still anchored
+        /// until its window ends. False once the window is spent, so the corridor advances.</summary>
+        bool TickAnchor()
+        {
+            if (_anchorUntil < 0f)
+            {
+                if (_anchoredAtTarget) return false;   // this cell's window is spent
+                _anchoredAtTarget = true;
+                float seconds = AnchorSeconds?.Invoke() ?? 0f;
+                if (seconds <= 0f) return false;
+                _anchorTotal = seconds;
+                _anchorUntil = Time.time + seconds;
+                _ark.SetUnderway(false);
+                Anchored?.Invoke(seconds);
+                return true;
+            }
+            if (Time.time < _anchorUntil) return true;
+            ClearAnchor();
+            _ark.SetUnderway(true);
+            Weighed?.Invoke();
+            return false;
+        }
+
+        void ClearAnchor()
+        {
+            _anchorUntil = -1f;
+            _anchorTotal = 0f;
+        }
+
+        /// <summary>Show a line on the run's banner (an empty line shows nothing).</summary>
+        public void ShowBanner(string line, float seconds)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, seconds);
+        }
+
+        /// <summary>Show a toast on the run's banner: its <paramref name="mood"/> and a line under it (may be empty).</summary>
+        public void ShowBanner(string line, float seconds, ArkwayVoyageHud.Mood mood, string under)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, seconds, mood, under);
+        }
+
+        /// <summary>A running toast (a crystal picked up): it replaces the running toast already up or waiting instead of
+        /// queueing behind it, so a quick string of pickups is one toast that keeps count.</summary>
+        public void ShowRunningBanner(string line, float seconds, ArkwayVoyageHud.Mood mood, string under)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, seconds, mood, under, running: true);
+        }
+
+        /// <summary>
+        /// Holds the run's banners while it answers true (a voyage's intro is playing). The banners are always held while
+        /// the voyage builds behind the load veil: a toast raised as a voyage sets sail is shown when the screen opens.
+        /// </summary>
+        public System.Func<bool> HoldBanners { get; set; }
+
+        bool BannersHeld() => _beginning || HoldBanners != null && HoldBanners();
+
         /// <summary>True while the corridor and hull are still building behind the veil —
         /// the window in which the player can see nothing and a toy pass must not toggle.</summary>
         public bool IsBuilding => _beginning;
@@ -211,6 +415,22 @@ namespace CosmicShore.Gameplay
 
         // ── Begin ────────────────────────────────────────────────────────────
 
+        /// <summary>The corridor's origin and heading for the next <see cref="Begin"/> instead of the local vessel's pose: a
+        /// party friend sails from the host's (Docs/Voyages/PARTY.md §2), so every peer stands its worlds in the same places.
+        /// Consumed by Begin.</summary>
+        public Pose? HomeOverride { get; set; }
+
+        /// <summary>The pose the running voyage set out from (the corridor's origin and heading); false before one began.</summary>
+        public bool TryGetHome(out Pose home)
+        {
+            home = _home;
+            return _hasHome;
+        }
+
+        /// <summary>False on a party friend's machine: its own Ark's fall does not end its voyage, the host's outcome does
+        /// (the escort's shared fate). The fall is still raised (<see cref="ArkFallen"/>).</summary>
+        public bool EndsOnArkFall { get; set; } = true;
+
         /// <summary>
         /// Start a voyage from the local vessel's current pose. Idempotent: a second call while
         /// one is live is a no-op, so re-entering the toy cannot double-start.
@@ -221,9 +441,12 @@ namespace CosmicShore.Gameplay
             if (localVessel?.Transform == null) return;
 
             _beginning = true;
+            _anchoredAtTarget = false;
+            ClearAnchor();
             _warnedCreationBacklog = false;
             HoldCreationTier(true);
-            _home = new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
+            _home = HomeOverride ?? new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
+            HomeOverride = null;
             _hasHome = true;
 
             BeginVoyageAsync(localVessel, this.GetCancellationTokenOnDestroy()).Forget();
@@ -296,6 +519,11 @@ namespace CosmicShore.Gameplay
                     var arkPos = origin + course * 150f;
                     _ark = Ark.Create(transform.parent, arkPos,
                         Quaternion.LookRotation(course, Vector3.up));
+                    // Drawn as the model when the settings name one: its prisms in the model's sockets, the model in
+                    // the same domain as the hull (the theme's ship material), its jets and wings flying the turns.
+                    _ark.UseModel(_cfg.ArkModel, ToyFactory.Theme(_context));
+                    // The omni crystal aboard regrows the hull at a fixed rate.
+                    _ark.UseReactor(_cfg.ArkReactor);
                     await _ark.LayHullAsync(_cfg.PrismPrefab, vessel.Domain,
                         _cfg.ArkHullLength, _cfg.ArkSpeed, ct);
 
@@ -372,6 +600,14 @@ namespace CosmicShore.Gameplay
                 }
 
                 _stage = "opening the voyage";
+                // The hull the voyage began with can have been swapped during the build (a squad deploying puts the
+                // pilot in their seat's vessel): open the voyage with the hull the pilot flies now.
+                if (vessel is Object begun && !begun) vessel = LocalVessel();
+                if (vessel == null)
+                {
+                    End(returnToCell: false, "no live vessel when the veil came down");
+                    return;
+                }
                 // The wake is armed only now - never inside the bracket and never under the
                 // veil. Belt and braces with LayOne's watchForReveal: false - one keeps the
                 // wake out of the reveal watch, this keeps it out of the build entirely.
@@ -383,6 +619,10 @@ namespace CosmicShore.Gameplay
                 EnsureObjectiveArrow();
                 _conveyor.CellRetired -= OnCellRetired;
                 _conveyor.CellRetired += OnCellRetired;
+                ArkHold.LocalNotice -= OnPayloadNotice;
+                ArkHold.LocalNotice += OnPayloadNotice;
+                ArkHold.LocalLine -= OnPayloadLine;
+                ArkHold.LocalLine += OnPayloadLine;
                 EnsureHud();
                 _hud.ShowBanner("STAY WITH THE ARK", BannerSeconds);
 
@@ -406,6 +646,8 @@ namespace CosmicShore.Gameplay
                 _conveyor.StandAhead();
 
                 LogVoyageStart();
+                Underway?.Invoke();
+                AnyUnderway?.Invoke();
             }
             catch (System.OperationCanceledException)
             {
@@ -516,14 +758,24 @@ namespace CosmicShore.Gameplay
             // bug class), so the approach band read once at departure would be the fallback for
             // the whole leg.
             AimArk();
+            _conveyor.QueueDepartedOnceClear(_ark.Position);
 
+            if (_holdingAtRouteEnd) return;
             if (!_ark.HasArrived(CellConveyor.ArriveDistance)) return;
+            if (TickAnchor()) return;
 
             if (_conveyor.AdvancePastTarget())
             {
+                _anchoredAtTarget = false;   // a new cell ahead: its own window when the Ark reaches it
                 MarkTrail();
                 AimArk();
                 LogCensus();
+            }
+            else if (_conveyor.RouteExhausted)
+            {
+                // A voyage leg ends here: hold at the destination for the next one.
+                _holdingAtRouteEnd = true;
+                RouteEnded?.Invoke();
             }
             else
             {
@@ -601,6 +853,18 @@ namespace CosmicShore.Gameplay
         void AimArk()
         {
             if (!_ark) return;
+            if (_cfg.ArkPacing is { } pacing)
+            {
+                // Cell-aware: brake onto the destination membrane, crawl its cytoplasm, and crawl on out through the far
+                // side of the cell just left before making way again.
+                _ark.SetSpeedProfile(pacing);
+                _ark.SetDestination(_conveyor.CurrentTargetCentre, _conveyor.CurrentCellRadius);
+                if (_conveyor.HasDeparture)
+                    _ark.SetDeparture(_conveyor.DepartureCentre, _conveyor.DepartureRadius);
+                else
+                    _ark.ClearDeparture();
+                return;
+            }
             float approach = Mathf.Max(1f, _cfg.ArkSpeed);
             float cruise = approach * Mathf.Max(1f, _cfg.ArkCruiseSpeedFactor);
             _ark.SetSpeedProfile(approach, cruise, _conveyor.CurrentCellRadius);
@@ -621,6 +885,7 @@ namespace CosmicShore.Gameplay
 
             float leash = _conveyor.CurrentCellRadius * Mathf.Max(1f, _cfg.LeashRadiusFactor);
             float distSqr = (t.position - _ark.Position).sqrMagnitude;
+            TrackLeashShell(leash, t.position);
 
             bool breached = _leashBreachedAt >= 0f;
             if (!breached)
@@ -643,18 +908,30 @@ namespace CosmicShore.Gameplay
             float remaining = _cfg.LeashGraceSeconds - (Time.unscaledTime - _leashBreachedAt);
             if (remaining > 0f)
             {
-                _hud.ShowCountdown($"RETURN TO THE ARK — {Mathf.CeilToInt(remaining)}");
+                int seconds = Mathf.CeilToInt(remaining);
+                if (LeashCountdownText != null)
+                {
+                    var (line, under) = LeashCountdownText(seconds);
+                    _hud.ShowCountdown(line, under);
+                }
+                else _hud.ShowCountdown($"RETURN TO THE ARK — {seconds}");
                 return;
             }
 
             _leashBreachedAt = -1f;
             _hud.HideCountdown();
             RecallToArk(vessel);
+            Recalled?.Invoke(vessel);
         }
 
         void RecallToArk(IVesselStatus vessel)
         {
             if (vessel?.Vessel == null || !_ark) return;
+            if (RecallPose?.Invoke(vessel) is { } seat)
+            {
+                Repose(vessel, seat);
+                return;
+            }
 
             // The Ark's FLANK: abeam and slightly back, facing along the course, well clear of
             // the hull plates (~0.22 × length). Never the bow, which would put a recalled pilot
@@ -689,8 +966,38 @@ namespace CosmicShore.Gameplay
             if (pen) pen.SetSpawnerPaused(false);
         }
 
+        /// <summary>The local pilot's payload changed: show its authored line (an empty line shows nothing).</summary>
+        void OnPayloadNotice(PayloadNotice notice)
+        {
+            var cfg = ArkHold.Config;
+            string line = notice switch
+            {
+                PayloadNotice.Grabbed => cfg.GrabbedLine,
+                PayloadNotice.Released => cfg.ReleasedLine,
+                PayloadNotice.OutOfReach => cfg.OutOfReachLine,
+                PayloadNotice.HoldEmpty => cfg.HoldEmptyLine,
+                PayloadNotice.ArtifactTaken => cfg.ArtifactTakenLine,
+                PayloadNotice.ArtifactStowed => cfg.ArtifactStowedLine,
+                PayloadNotice.ArtifactDropped => cfg.ArtifactDroppedLine,
+                _ => null,
+            };
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, cfg.BannerSeconds);
+        }
+
+        void OnPayloadLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, ArkHold.Config.BannerSeconds);
+        }
+
         void OnArkHullDestroyed()
         {
+            ArkFallen?.Invoke();
+            // A party friend's Ark: the run that owns it says what the fall means (it holds for the host).
+            if (!EndsOnArkFall) return;
             EnsureHud();
             _hud.ShowBanner("THE ARK HAS FALLEN", BannerSeconds);
             End(returnToCell: true, "the Ark's last hull prism was destroyed");
@@ -753,10 +1060,14 @@ namespace CosmicShore.Gameplay
                 return;
             }
             _arrow.HideOnScreenWithin = ArrowHideOnScreenWithin;
+            HookDamageAlarm();
+            EnsureLeashShell();
         }
 
         void DestroyObjectiveArrow()
         {
+            UnhookDamageAlarm();
+            DestroyLeashShell();
             if (!_arrow) return;
             Destroy(_arrow.gameObject);
             _arrow = null;
@@ -963,6 +1274,9 @@ namespace CosmicShore.Gameplay
 
             _generation++; // a Begin still in flight must not resurrect this voyage
             _running = false;
+            _holdingAtRouteEnd = false;
+            _anchoredAtTarget = false;
+            ClearAnchor();
             _beginning = false;
             HoldCreationTier(false);
             _leashBreachedAt = -1f;
@@ -973,6 +1287,8 @@ namespace CosmicShore.Gameplay
             DestroyObjectiveArrow();
 
             if (_conveyor) _conveyor.CellRetired -= OnCellRetired;
+            ArkHold.LocalNotice -= OnPayloadNotice;
+            ArkHold.LocalLine -= OnPayloadLine;
             _trailMarks.Clear();
             _primaryRollTo = _secondaryRollTo = null;
             FlushWithering();
@@ -992,7 +1308,10 @@ namespace CosmicShore.Gameplay
             // microscene conveyor's gate exists to forbid. Each cell drains as it leaves view;
             // the next voyage's Begin force-clears any remainder behind its raised veil.
             if (_conveyor)
+            {
                 _conveyor.RetireAllWhenUnseen();
+                _conveyor.SetRoute(null);
+            }
 
             _onEnded?.Invoke();
         }
@@ -1020,6 +1339,7 @@ namespace CosmicShore.Gameplay
             var go = new GameObject("ArkwayVoyageHud");
             go.transform.SetParent(transform, false);
             _hud = go.AddComponent<ArkwayVoyageHud>();
+            _hud.Hold = BannersHeld;
         }
 
         void OnDestroy()

@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-20-a-manta-decoy-is-now-built-from-the-exec-e552c3",
+  "to": "Caleb",
+  "by": "Yash",
+  "date": "2026-11-20T15:47:05+00:00",
+  "area": "the Manta",
+  "summary": "A Manta decoy is now built from the executor's Update, later in the same frame as the collect, instead of inside OnTriggerEnter, where Unity refused the strip and the decoy kept its collider and CellItem (dedc985d2a). Nothing about the kit or the haptics changed.",
+  "why": "Bug Ledger E-3e99fba873, your machine and Garrett's.",
+  "branch": "Ys-bleeding-edge",
+  "lane": "manta",
+  "commit": "540bac6a2",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MantaStingActionExecutor.cs"
+  ]
+}

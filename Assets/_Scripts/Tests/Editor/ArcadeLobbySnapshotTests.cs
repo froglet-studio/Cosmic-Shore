@@ -39,6 +39,8 @@ namespace CosmicShore.Tests
                 object mutated = new ArcadeConfigSyncManager.LobbySnapshot();
                 if (field.FieldType == typeof(int)) field.SetValue(mutated, 7);
                 else if (field.FieldType == typeof(bool)) field.SetValue(mutated, true);
+                else if (field.FieldType == typeof(ulong)) field.SetValue(mutated, 7UL);
+                else if (field.FieldType == typeof(double)) field.SetValue(mutated, 7.0);
                 else Assert.Fail($"LobbySnapshot.{field.Name} is a {field.FieldType.Name}; teach " +
                                  "this test how to mutate it (and check NetworkSerialize handles it).");
 
@@ -85,14 +87,49 @@ namespace CosmicShore.Tests
                 "writing the hulls must not disturb the domains");
         }
 
-        /// <summary>Placements past the six replicated slots truncate rather than corrupt.</summary>
+        /// <summary>Each AI's own difficulty rides beside its placement, entry i for bot i; a short list leaves
+        /// the rest at 0 (the card's difficulty), and a change to one seat's level is a roster change.</summary>
+        [Test]
+        public void PerSeatDifficultiesRideBesideThePlacements()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 1 });
+            lobby.SetPlacedAiVessels(new[] { 6, 3, 0 });
+            lobby.SetPlacedAiDifficulties(new[] { 1, 3 });
+
+            CollectionAssert.AreEqual(new[] { 1, 3, 0 }, lobby.PlacedAiDifficulties());
+            CollectionAssert.AreEqual(new[] { 6, 3, 0 }, lobby.PlacedAiVessels(), "the levels must not disturb the hulls");
+
+            var other = lobby;
+            other.SetPlacedAiDifficulties(new[] { 1, 4 });
+            Assert.IsFalse(lobby.SameAi(other), "a seat's difficulty must take part in the roster's equality");
+        }
+
+        /// <summary>Placements past the eight replicated slots truncate rather than corrupt.</summary>
         [Test]
         public void PlacedAiTruncatesToTheReplicatedSlots()
         {
             var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
-            lobby.SetPlacedAiDomains(new[] { 1, 2, 3, 1, 2, 3, 1 });
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 3, 1, 2, 3, 1, 2, 3 });
             Assert.AreEqual(ArcadeConfigSyncManager.LobbySnapshot.MaxAiSlots, lobby.AiCount);
-            Assert.AreEqual(6, lobby.PlacedAiDomains().Length);
+            Assert.AreEqual(8, lobby.PlacedAiDomains().Length);
+        }
+
+        /// <summary>A nine-seat match played solo places EIGHT AI (Garrett 2026-11-17: nine vessels, three a
+        /// team), and the last two slots reach every peer in order with their hulls and levels.</summary>
+        [Test]
+        public void NineSeats_EightPlacedAi_RoundTrip()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 1, 2, 2, 2, 3, 3, 3 });
+            lobby.SetPlacedAiVessels(new[] { 1, 2, 3, 4, 5, 6, 7, 8 });
+            lobby.SetPlacedAiDifficulties(new[] { 1, 2, 3, 4, 1, 2, 3, 4 });
+            CollectionAssert.AreEqual(new[] { 1, 1, 2, 2, 2, 3, 3, 3 }, lobby.PlacedAiDomains());
+            CollectionAssert.AreEqual(new[] { 1, 2, 3, 4, 5, 6, 7, 8 }, lobby.PlacedAiVessels());
+            CollectionAssert.AreEqual(new[] { 1, 2, 3, 4, 1, 2, 3, 4 }, lobby.PlacedAiDifficulties());
+            var other = lobby;
+            other.SetPlacedAiVessels(new[] { 1, 2, 3, 4, 5, 6, 7, 9 });
+            Assert.IsFalse(lobby.SameAi(other), "the eighth slot must take part in the roster's equality");
         }
 
         /// <summary>

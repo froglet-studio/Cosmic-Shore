@@ -6,7 +6,8 @@ namespace CosmicShore.UI
 {
     public class ShipButtonPanel : MonoBehaviour
     {
-        public float fadeDuration = 0.2f;
+        [SerializeField] float fadeDuration = 0.2f;
+        public float FadeDuration => fadeDuration;
         Image[] buttonImages;
         Color[] originalColors;
         bool opaque = false;

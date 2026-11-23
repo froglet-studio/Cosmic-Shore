@@ -104,8 +104,8 @@ namespace CosmicShore.Core
 
             // Web checkout has no SDK handshake - it is ready as soon as a config (real or
             // default) is resolvable. We are "initialized" whenever we have a base URL to open.
-            IsInitialized = !string.IsNullOrWhiteSpace(Config.checkoutBaseUrl) ||
-                            !string.IsNullOrWhiteSpace(Config.supportUrl);
+            IsInitialized = !string.IsNullOrWhiteSpace(Config.CheckoutBaseUrl) ||
+                            !string.IsNullOrWhiteSpace(Config.SupportUrl);
         }
 
         void OnDestroy()
@@ -128,8 +128,8 @@ namespace CosmicShore.Core
                 return;
             }
 
-            string productId = string.IsNullOrEmpty(episode.episodeId) ? supportProductId : episode.episodeId;
-            string url = Config.BuildCheckoutUrl(productId, episode.priceUsd, episode.checkoutUrl);
+            string productId = string.IsNullOrEmpty(episode.EpisodeId) ? supportProductId : episode.EpisodeId;
+            string url = Config.BuildCheckoutUrl(productId, episode.PriceUsd, episode.CheckoutUrl);
             OpenCheckout(productId, url);
         }
 
@@ -138,9 +138,9 @@ namespace CosmicShore.Core
         /// </summary>
         public void InitiateSupportPurchase()
         {
-            string url = string.IsNullOrWhiteSpace(Config.supportUrl)
+            string url = string.IsNullOrWhiteSpace(Config.SupportUrl)
                 ? Config.BuildCheckoutUrl(supportProductId, 0f, null)
-                : Config.supportUrl;
+                : Config.SupportUrl;
             OpenCheckout(supportProductId, url);
         }
 

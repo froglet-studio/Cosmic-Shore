@@ -18,7 +18,7 @@ namespace CosmicShore.Utility
         Off = 2
     }
 
-    // The channels, their labels and their docs are the game's (Assets/_Scripts/Utility/CSDebug.cs),
+    // The channels, their labels and their docs are the game's (Assets/_Scripts/Utility/Foundation/CSDebug.cs),
     // copied so a port of a game file keeps its CSDebug.LogVerbose(CSLogChannel.X, ...) lines.
     /// <summary>
     /// Opt-in diagnostic channels for BRING-UP TELEMETRY — the dense per-step traces a system

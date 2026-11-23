@@ -59,7 +59,8 @@ ELEMENTS = [("Charge", 1), ("Mass", 2), ("Space", 3), ("Time", 4)]
 # what Tools/Build/nca_creature_harness measured (`run.sh measure`), and it re-asserts them.
 SPECIES = [
     dict(name="Lizard", run="lizard3d_swim", forward=(-0.6148, -0.7887), offset=(-1.39, -0.72), tint=0.65,
-         grown=1143, grow_steps=50, length_voxels=44, voxel_size=1.2,
+         # voxel_size 1.2 x 3.55/2.89 (Docs/ECOSYSTEM.md 64.4): the body matches the one heart size.
+         grown=1143, grow_steps=50, length_voxels=44, voxel_size=1.474,
          # its population in the Swarm demo cell: the middle shell, over the Time flora it grazes
          swarm=dict(band="Middle", radii=(690, 840), element="Time", count=1, cap=2)),
     # PENDING - the whale (16x26x39) and the jellyfish (22x22x30) share this runtime unchanged; their trainings are
@@ -149,6 +150,9 @@ def committed_weights_ok(path):
 # The platform's assets this script references (one owner each - checked by `check_refs`).
 RUNTIME_CELL_DATA = "8d4e8398eedc76c4dadb8604f89b9e1b"           # _SO_Assets/Cell Data/Runtime Cell Data.asset
 THEME = "d45a23e6bd2da304988606fba6c97628"                       # _SO_Assets/ThemeManagerDataContainer.asset
+# the hostile danger contact (VesselElementalDebuffByDangerPrismEffectSO) the substrate's species carry: a Charge creature's
+# body is all danger by the element law (Docs/ECOSYSTEM.md §65.7), and with no collider its pass is applied with this
+DANGER_CONTACT = "c7ccaca885824b24b716b12148d77ce1"
 HEALTH_BLOCK = "1488a2ac58b2b4c43b14f84206bd9195"                # _Prefabs/Trails/HealthBlock.prefab
 HEALTH_BLOCK_PRISM_FID = "6313579230210663873"                   # its HealthPrism component
 FAUNA_CONFIG_SCRIPT = "c778cfbe4dfc4c5c8401e40c17802311"         # FaunaConfigurationSO.cs
@@ -167,16 +171,15 @@ REPRODUCTION_COOLDOWN = 60
 SPECIES_CAP = 2
 
 
+# The retired per-creature heart size (Docs/ECOSYSTEM.md 40.2), frozen at what the band last solved for the
+# lizard. Nothing reads NcaCreatureConfigSO.HeartWorldScale since every heart became the one elemental crystal
+# size (64); the body was then scaled by 3.55 / RETIRED_HEART so it keeps that heart's proportion.
+RETIRED_HEART = {"Lizard": 2.89}
+
+
 def heart_scale(sp):
-    """Docs/ECOSYSTEM.md §40: K x bodyDiameter^0.5, with the K author_lifeform_heart_sizes.py solves for the whole
-    band (the lizard is not its largest lifeform, so K is unchanged by it); capped at HEART_MAX."""
-    sys.path.insert(0, HERE)
-    import author_lifeform_heart_sizes as hs
-    variants = hs.read_deployment_variants()
-    hs.compute_body_diameters(variants)
-    k = hs.solve_scale_constant(variants)
-    body = sp["length_voxels"] * sp["voxel_size"]
-    return round(min(hs.HEART_MAX, k * body ** hs.HEART_EXPONENT), 3), body
+    """The retired heart field's frozen value, and the body length in world units."""
+    return RETIRED_HEART[sp["name"]], sp["length_voxels"] * sp["voxel_size"]
 
 
 TEXT_META = """fileFormatVersion: 2
@@ -260,11 +263,12 @@ def config_asset(sp):
         "  StrokeThrust: 0.4\n  FullStrokeBendRate: 0.35\n"
         "  VesselSenseRadius: 120\n  BoltClosingSpeed: 25\n  BoltSeconds: 3\n  VesselBiteReachVoxels: 1.5\n"
         "  VesselBiteCooldown: 0.8\n"
+        f"  ContactEffect: {{fileID: 11400000, guid: {DANGER_CONTACT}, type: 2}}\n"
         "  BiteRadiusVoxels: 3.5\n  HitPrismSeconds: 2\n"
         f"  HitPrismPrefab: {{fileID: {HEALTH_BLOCK_PRISM_FID}, guid: {HEALTH_BLOCK}, type: 3}}\n"
-        f"  HitPrismScale: {v3(4, 4, 4)}\n"
+        f"  HitPrismScale: {v3(4.913, 4.913, 4.913)}\n"
         f"  BodyVolume: {body_volume}\n  HealShareOfMeal: 0.5\n"
-        "  MouthReach: 2\n  MouthRadius: 9\n  FeedInterval: 1.2\n  PrismsPerMouthful: 3\n"
+        "  MouthReach: 2.457\n  MouthRadius: 11.06\n  FeedInterval: 1.2\n  PrismsPerMouthful: 3\n"
         "  MatureFraction: 0.8\n  DeathFraction: 0.35\n"
         f"  HeartWorldScale: {heart}\n  HeartSeatDepthVoxels: 4\n  WitherSeconds: 3\n  DevourSeconds: 1.2\n")
 

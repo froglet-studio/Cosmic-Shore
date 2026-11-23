@@ -40,10 +40,10 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Manta** | flies beside it | Soar (free; costs yaw) 720 u/s | ram = slow (`VesselChangeSpeedByPrism`) |
 | **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 840 u/s (1200 before the 2026-09-25 retune) | none, **by design** — the hull ploughs prisms aside (`RhinoPloughPrismEffect`) and ramming costs no speed ("the bulldozer ignores mass", recorded in the Time row's description since 2026-10-16) |
 | **Dolphin** | skims for seed energy, not speed | charge (drift) → discharge 347 u/s | ram = slow + half the charge |
-| **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
+| **Serpent** | flies beside it | 4 charges × 6 s at 160 u/s, no clock regen (refills only while its wall eats its trail, 2026-10-31) | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
 | **Scarab** | flies beside it | 216 u/s ceiling, ×1.5 at Time 10 | none wired |
-| **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the pathfinder's WARP: the flight clock ×2.5 while its pair bends the path (Time → ×5); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |
+| **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the WARP of a held pair (orbit only since 2026-11-02): the flight clock ×2.7 (Time → ×5.6); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |
 
 Three rails, one per domain, because `TrailFollower` keys friendly terrain on **domain**: a
 neutral rail would be hostile to every rider. In a two-domain lobby the third rail is hostile to
@@ -75,7 +75,7 @@ line, intensity 1; re-run 2026-10-17):
 | Squirrel | none (rail) | 48.5 s | 48.5 s | — |
 | Serpent | Time → boost ×1.6, duration ×1.6 | 100.9 s | 58.1 s | Time 10 |
 | Sparrow | Time → boost ×1.5 | 107.5 s | 73.6 s | Time 10 |
-| Stoat | Time → warp ×2.5..5 | 96.8 s | 48.5 s | Time 10 |
+| Stoat | Time → warp ×2.7..5.6 | 98.1 s | 49.4 s | Time 10 |
 
 **Spread 6.03× at rest → 4.13× tuned at intensity 1** (I2 3.80×, I3 3.50×, I4 3.46×; `python3
 Tools/Build/regatta_balance.py`). That residual is the finding, not
@@ -124,15 +124,99 @@ rails' volume drops 0.9-1.4% (517,194 / 580,342 / 627,530 / 625,649 at intensiti
 by `Tools/Build/regatta_course_harness/run.sh` into `railVolume`). The cell's volume ladder prices
 that measured volume (`author_regatta_assets.py`), never count x 288.
 
-**The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per intensity) lays
+**The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per circuit) lays
 the rails from its own seed, and `RegattaController.BuildCourse` re-derives the SAME gates from
 the same pure call off the cell's *expected* config — Skein's pattern — so rails and rings
-cannot disagree, and the start line can be answered during the spawn chain. The cost, as in
-Skein: a given intensity is the same circuit every match.
+cannot disagree, and the start line can be answered during the spawn chain. A given prefab is the
+same circuit every match; the variety comes from the course pool below.
+
+### 4.1 The shuffled course pool (2026-11-07)
+
+Garrett, 2026-11-06: one Regatta level, no intensities, several balanced course variants shuffled.
+**Intensity no longer picks the course.** `Regatta Course Pool.asset` (`RegattaCoursePoolSO`, next
+to the cell configs) holds the shuffle: eight genome courses picked from the balanced archive3six pool
+(2026-11-18, PR #2211; `Tools/Build/regatta_shuffle_pool.json`, written by the W3 course search). Each is
+a `RegattaShuffleRails<Label>` prefab whose `courseGenome` is the whole `RegattaCourseGenome` the
+real-game judge raced. Picked on five-hull imbalance (Urchin, Scarab, Sparrow, Dolphin, Squirrel),
+the worse of card and L5 starts, 3 seeds: 1.13x card, 1.08x L5.
+
+The four old circuits in the table above (Wide, Mixed, Hairpins, Tight) were deleted from the pool
+and the project on 2026-11-18 (Garrett). The rows of `RegattaCourse.ForIntensity` stay in code as
+the circuit an empty genome lays. **Ref1-Ref4** are four of the eight, chosen as the tightest by
+five-hull spread and ordered by lap time (61-76 s). They are pool entries 0-3: the reference courses
+anything that needs a stable course races. The race judge and the training harness lay entry
+`intensity - 1` when they race "Regatta I1-I4" without a genome.
+
+| step | where | what |
+|---|---|---|
+| draw | host, `RegattaController.DrawCourseVariant` (called once by `MultiplayerMiniGameControllerBase.OnNetworkSpawn` before the config broadcast, or earlier by the start line during the spawn chain) | `RegattaCoursePoolSO.Draw`: a pinned variant (`CourseVariantOverride`: a replay, a benchmark) wins, else a **shuffle bag** (`CourseShuffleBag`) deals every enabled entry once before any repeats and never the same circuit twice running |
+| carry | `GameDataSO.CourseVariant` (-1 = none drawn), sent in `SyncGameConfigToClients_ClientRpc` (last argument before the rpc params) | cleared on every runtime reset, so each match draws afresh |
+| lay | the scene's Cell, `CellTypeChoiceOptions.CourseVariantWise` (3) | `CellConfigs[CourseVariant]`; waits (on the host too) until the variant is known, so no peer latches the wrong arena; runs the same life spawner IntensityWise did |
+| record | replay summary `CoursePoolEntry` (one-based), flight JSON `courseVariant` | a replay re-lays the circuit it was flown on |
+
+An entry IS a cell config: its `EnvironmentPrefab` carries the circuit (row, seed and any per-arena
+setting the course search adds) and its phase thresholds ride that circuit's measured volume, so the
+course data stays where the harness and the parity gates read it. The pool's entries must be the
+Cell's `CellConfigs` in the same order (`author_regatta_assets.py` checks it; the controller warns
+at runtime). An entry is taken out of the shuffle with its `Enabled` toggle. A searched course
+(the pool search, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) joins as a new entry in
+`regatta_shuffle_pool.json`; the generator writes its rails prefab, cell config and pool row.
+
+**Not yet decided by this change:** the card's `StartingElements` rows are still keyed by
+intensity, though intensity no longer picks the circuit they were measured on; removing intensity
+from the arena launch and its per-intensity rows is the "Replace arena intensities with vessel
+selection modes" work.
+
+**The `StartingElements` rows are kept as they were, on purpose (2026-11-18).** They are still
+`regatta_balance.py`'s answer over the four circuits #2212 deleted (Manta Time -5 levels; Serpent,
+Sparrow and Scarab +10, at every intensity), and they do NOT track the shipped shuffle. Re-keying the
+lap-time model onto Ref1-Ref4 was not done: the shuffle was picked by the real-game judge, which the
+Python model disagrees with, so model rows over the refs would re-balance against the wrong numbers.
+Garrett's open card recommends dropping the rows when step 5's next lever refit lands (the refit
+balances the hulls on the vessels themselves). Until he answers, the rows stay, and
+`author_regatta_assets.py` says so where it writes them. The real-game judge's calibration course is
+Ref1 (`regatta_judge.CALIBRATION_GENOME`), so it tracks the shipped level.
 
 **Laps are derived, not authored twice.** The arena lays exactly `RingsPerLap` (8) rings, the
 end-condition target is authored once (24), and `LapsPerRace = target / 8`. A target that is not
 a multiple of eight races to the course's honest length and warns.
+
+### 4.2 Lifeforms are a course setting, off on every shipped course (2026-11-06)
+
+A course may grow plants beside its spine and carry creatures (`Plan step: time-arena-course`, Garrett:
+"lifeforms, etc."). The arena never spawns one: `SpawnableRegattaRails` prepares planting SITES per leg
+(`RegattaLifeformSiteSettings`: sites per leg, offset from the spine, side window, leg window, ring clearance;
+the pure `RegattaLifeformSites.Sow` keeps every site off every rail, out of every mouth and inside the shell)
+and may ask its cell for a fauna corridor round the spine (`ICellFaunaCorridorSource`, adopted by the `Cell`
+like a garden's beds). WHICH species and HOW MANY are the course's own spawn profile, forked from Tollway's
+networked race-court plants (Spire, Cacti, Borromean; no lattice species, whose colonies grow off-site) and
+Skim Race's tadpole, with counts changed only. `Tools/Build/regatta_lifeforms.py` is the one description
+(catalogue, presets, search space, validation, `--self-test`); `author_regatta_assets.py`'s `LIFEFORMS` table
+writes it, today `RL.NONE` on all four, so the Barren profile and the cell configs are unchanged. The offline
+model sees none of this; a lifeform course is judged in the real game only. Report:
+`Docs/Reports/REGATTA_LIFEFORMS.md`.
+### 4.3 Course features: what the course is beyond its rings (2026-11-06, brief 10 of the balance plan)
+`RegattaCourseFeatures` (on each `SpawnableRegattaRails` variant, `courseFeatures`; **empty on every shipped variant,
+which is the course above, prism for prism**) is the space a course search moves beyond the ring geometry (Garrett:
+"not all supershielded ... gaps ... omnicrystals ... perturb regatta in much more interesting ways"):
+- **Rail sections** (`RegattaRailSection`, per leg or every leg, a share of the leg's spine arc, later entries win):
+  the stretch's KIND (super-shielded as today, shielded, or plain - a plain rail can be cut by abilities, so a rider's
+  stretch is contested), its COLOUR (neutral = `RegattaCourseFeatures.NeutralDomain`, no team's lane: an Urchin leaves
+  its rail, a Squirrel still skims it), a DETOUR (the whole braid swings off the spine by a sine-squared bow that is
+  zero at the section's ends, so every lane still threads every ring at 22 u), and a GAP (nothing laid; the lane is cut
+  into OPEN trails there, because a hole inside one trail is bridged at full pace - URCHIN_TRAIL_RIDER.md "Holes").
+- **Alternate rings** (`RegattaAlternateGate`): a second ring in the course ring's plane, either one counts
+  (`RegattaController.ThreadsGate`, Serpent Time's pattern). The rails thread only the course ring, so it is a route
+  choice. An AI takes it only when here -> ring -> next gate is shorter by `aiAlternateMargin` (decided once per gate,
+  `RegattaAlternateChoice`); an attached Urchin and the Squirrel's pilot keep the course ring.
+- **Line crystals** (`RegattaLineCrystals`, at most 4 a lap): crystals on the spine, laid as the crystal manager's
+  course keys (Switchback Blast Run's seam), which REPLACE the nucleus crystals while on. No AI detours for one
+  (`AIDetoursForCrystals` stays false; Yash's rule).
+Every AI reader of the rails reads them by LANE (`SpawnableRegattaRails.LanePrisms`, `LaneDomain`, `LaneOf`), not by
+trail or first-prism colour, so gaps and neutral stretches do not hand a pilot a rival's lane. The offline mirror is
+`Tools/Compute/evaluators/regatta_features.py` (the port, the search space and each feature's price per hull),
+held to the C# by `Tools/Build/regatta_course_harness/features.sh` (which also RUNS `RegattaCourseFeaturesTests`
+offline); the report is `Docs/Reports/REGATTA_COURSE_FEATURES.md`.
 
 ## 5. The start
 
@@ -143,14 +227,15 @@ corner it did not ask for.
 
 ## 6. AI
 
-**The Stoat (on the card 2026-10-17, Yash).** It flies the same gate steering; its own autopilot is three executors,
-unchanged: `StoatModeExecutor` switches to Time mode when the ring is ≥ 70° off the nose (back within half of it),
-`StoatDipoleExecutor` flies Mass mode's field dipole (path-watching, one-lap cap), and `StoatSlingExecutor` slings in
-Time mode (ring ≥ 30° off, ≥ 120 u away, every 3 s). In Regatta each reads its AUTOPILOT numbers through
-`AIModeTuning` (`StoatModeAction_Regatta`, `StoatDipoleConfig_Regatta`, `StoatSlingConfig_Regatta`), which
-`Tools/Build/learn_drives_from_flights.py` writes from people's editor flights; none exists yet, so it flies its shipped
-numbers. A person flying the Stoat reads the hull's own configs. Opponent AI stay pinned to the Squirrel
-(`OpponentAIVessel`); a Stoat AI is an ally pick (the launch panel's ally chip) or your own hull on the Third Eye's AI.
+**The Stoat (on the card 2026-10-17, Yash; orbit only since 2026-11-02, `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`; OFF the card since 2026-11-17, Garrett: it will be reworked a lot, so it is judge-only in `author_regatta_assets.py` JUDGE_ONLY_HULLS, keeps its race line and is out of the polished set).** It flies the same gate
+steering, and its autopilot is `StoatSlingExecutor`: it slings to turn (ring ≥ 7.84° off, ≥ 123 u away, every 0.94 s) and presses for
+the warp alone while its ring is ≥ 280 u away (`aiWarpMinDistance`). In Regatta it reads those numbers through `AIModeTuning`
+(`StoatSlingConfig_Regatta`, which `Tools/Build/learn_drives_from_flights.py` would write; none exists, so it flies the hull's own row). A
+person flying the Stoat reads the same config. In the offline model (`Tools/Build/stoat_orbit_sim.py`, gate steering only, no race line or
+rails) an AI Stoat at the card's Time 10 runs 59.5 / 60.6 / 65.3 / 93.6 s at I1-I4, among the Dolphin and the Squirrel (54-72 s and
+48.5-59.5 s, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) and behind them at I4. Opponent AI draw from the card like allies (the
+Squirrel pin retired 2026-11-17); to race an AI Stoat on purpose, tap an AI chip in the launch panel (the host can pick any seat, an opponent's too), or fly your own
+hull on the Third Eye's AI.
 
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override for the one
 hull that ATTACHES: an AI **Urchin** flies its kit through the shared `UrchinAutopilotDriver`
@@ -207,18 +292,19 @@ policy) — it flies the Skim Race pilot, below.
 **Two kinds of AI seat** (`AIHullSeating`, read by the lobby chips, the backfill and the arena
 hull backstop alike):
 
-- **Opponent seat** — an AI on a domain no human flies. The card pins
-  `SO_ArcadeGame.OpponentAIVessel` to the **Squirrel**, so every opponent is a Squirrel: it skims
-  the rails for boost energy, which is the one speed source a gate-following autopilot reaches
-  just by flying the racing line. Every Regatta Squirrel AI flies the **Skim Race pilot**
+- **Opponent seat** — an AI on a domain no human flies. It draws its hull from the card the way an ally
+  does (`PickAIVesselType`, arena seating: one pilot per hull). **The card pinned
+  `SO_ArcadeGame.OpponentAIVessel` to the Squirrel until 2026-11-17**, while the Squirrel was the only hull the racing
+  AI drove well; Garrett retired it once every card hull had a trained AI ("a vestige that needs to go away now that we
+  have more than the squirrel racing effectively"). In the real-game judge, a drawn five-AI field on the shipped course
+  and archive courses a9 and a6 (seed 11) went from three opponent Squirrels (9-14 gates when the race ended) to a
+  Sparrow, an Urchin and a Thresher (13-22 gates). The field and its pinned-opponent seating stay in the platform for a
+  card that wants them; `author_regatta_assets.py --check` fails if Regatta's card pins one again. Every Regatta Squirrel AI flies the **Skim Race pilot**
   (`SkimRacePilot`, `Docs/SKIM_RACE_AI.md`) with `RegattaRingObjective`: the same racing AI, its
   crystal swapped for the next ring and its track for the domain's rail. On the platform
   `AIPilot`'s ring waypoints the Squirrels threaded no rings at all (first playtest, 2026-10-06).
-  Pinned opponents sit **outside arena seating** — a grid of identical opponents is the point, and the arena backstop
-  (`ServerPlayerVesselInitializer.ResolveArenaUniqueHull`) skips them so a human who picked the
-  Squirrel keeps it. **This is a stopgap**: when the racing AI can drive every hull, clear
-  `OpponentAIVessel` in `author_regatta_assets.py` (and drop its assert) and the opponent grid
-  goes back to the card's mixed draw.
+  (A pinned opponent would sit outside arena seating, and the arena backstop
+  `ServerPlayerVesselInitializer.ResolveArenaUniqueHull` would skip it; Regatta no longer pins one.)
 - **Ally seat** — an AI on a domain a human flies. On the launch panel its avatar chip on the
   team tile shows the hull it will fly; **tap one of your own team's ally chips to step its hull**
   through *auto → the card's hulls in order → auto*, skipping hulls another pilot has claimed or
@@ -274,7 +360,7 @@ raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). S
 (`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
 numbers.
 
-**Watching them:** FrogletTools ▸ AI ▸ Third Eye. Every pilot now leaves a **trail** of its last seconds of flight
+**Watching them:** the in-game AI Diagnose panel (F2; until 2026-11-01 the FrogletTools ▸ AI ▸ Third Eye window). Every pilot now leaves a **trail** of its last seconds of flight
 (toolbar *Trails*, length in Settings), and each AI's readout names its phase (Approach / Through ring N, Crystal on
 the way, Not noticed yet, Misjudged, Riding the rail, Heading for its own rail, Finished), its lap, the ring it is
 after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolphin's charge).
@@ -282,12 +368,13 @@ after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolp
 **No AI targets a crystal in Regatta (2026-10-17, Yash):** *"in Regatta no AI should target an omni crystal; only
 the waypoints of the track."*
 - **The rule:** every Regatta AI steers for the course's rings, and for its rail while it rides one.
-- **How:** `RegattaController.AICrystalDetourSlack` is 0 in code. Every other gate race still lets an AI swing up to
-  `aiCrystalDetourSlack` (220 u in the scenes) for a crystal on its way, and `MinigameRegatta.unity` serializes 220
-  too. The code value wins, so no scene edit can turn the detour back on.
+- **How:** since 2026-10-26 the rule is every gate race's (Yash: "while playing any racing game mode, AI should not go
+  for crystals"): `GateRaceController.AIDetoursForCrystals` is false in code, so `aiCrystalDetourSlack` (220 u in the
+  scenes) is read only by a mode that opts in, and none does. No scene edit can turn the detour back on. (2026-10-17 to
+  10-26 it was Regatta's own override, `RegattaController.AICrystalDetourSlack` = 0.)
 - **Why:** in Yash's editor flights, rival AIs came within 20 u of crystals whenever the recording could see one (the
   Manta, Dolphin, Sparrow and Serpent beside omni crystals; the Rhino beside others).
-- **Test:** `RegattaNoCrystalTargetTests`, with Headlong as the negative control.
+- **Test:** `RaceAIWaypointsOnlyTests` (was `RegattaNoCrystalTargetTests`), with an opted-in mode as the negative control.
 - **The Squirrel** already aimed only at rings (`RegattaRingObjective`). The Third Eye's "Crystal on the way" phase
   no longer appears in Regatta.
 
@@ -396,6 +483,9 @@ minute in both), which is why the model is trusted to rank the fix; the editor i
 - **Rail rams:** 90-94% of the time the Dolphin, Sparrow, Squirrel and Urchin spent under 20 u/s mid-race they were
   within 15 u of a rail prism. Most of those races predate the line (2026-10-17), which exists to keep hulls off the
   rails; re-measure with races flown after this change.
+  **Re-measured 2026-11-07 for the Sparrow** (`Tools/Build/sparrow_regatta_sim.py --measure`, 5 races since the line):
+  within 15 u of a rail 0-3% of a race (26-48% before), rams costing 0.4-7 s; its slowness is its base drive letting go
+  of the afterburner every 0.6 s (cruise 35, afterburner 197.5 u/s). `Docs/Reports/SPARROW_AI.md`.
 
 Tests: `RegattaRaceLineTests` (`AimThroughRing_*`, `DistanceAlong_*`). The break-off flag is held by the model's
 self-test, not a Unity test (`AIPilot` needs a live vessel). Not editor-verified (`UNITY_VERIFICATION_CHECKLIST.md`).
@@ -465,6 +555,110 @@ with remote players, and Garrett's call (`VesselTransformer`).
 equal on every course, but the Manta and the Scarab still miss mouths at I2-I4 in the fixed-speed model; the Scarab is
 next to look at with its own model.
 
+### 6.6 Hulls seated on the real-game judge (2026-11-17)
+
+The card seated nine hulls; any other hull was swapped for a Squirrel. Two more now sit on it, the **Thresher** and the
+**Brittle Star** (`author_regatta_assets.py` `JUDGED_HULLS`). Six were raced; all six finished the shipped course and
+three `archive3six` courses alone under both starts (card and every hull at Time 5) in Amoebius headless
+(`regatta_judge.py`, seed 11, Legendary), and kept threading gates in a fourteen-hull field (the field race ends at the
+first finisher). The card is also the hull draw for every ally AI (`PickAIVesselType` reads its Vessels; opponents are
+pinned to the Squirrel), so only the hulls within about 1.5x of the first nine stay on it. The **Wrasse, Meerkat, Grizzly
+and Angler** finish at 2-5x the pace and are judge-only (`JUDGE_ONLY_HULLS`): they keep their race lines, and the judge
+seats any hull by name (RaceJudge adds a requested hull the card does not list to the card, in memory, for that run).
+They were on the card for a few hours (#2123, #2127) before coming off.
+
+| hull | alone, card start (s) | alone, L5 start (s) | race line |
+|---|---|---|---|
+| Thresher | 79 / 81 / 110 / 96 | 79 / 81 / 110 / 96 | trained in Thornline: nose 6.37/s, lead 2.77, drive `ThresherAIBoostPolicy_Regatta` (was 98.5 s mean at 10/s on its own policy) |
+| Wrasse | 167 / 169 / 196 / 171 | 110 / 118 / 123 / 130 | nose follow 10/s; about 900 rail contacts a race |
+| Grizzly | 209 / 209 / 176 / 350 | 164 / 164 / 176 / 350 | nose follow 10/s (gate way at 1.5/s stalled on one archive course) |
+| Meerkat | 280 / 280 / 372 / 353 | 274 / 274 / 327 / 319 | nose follow 10/s |
+
+Courses in order: shipped, then archive3six card records 9, 6 and 0 (Thresher: mean of seeds 11-12). Apart from the Thresher (Thornline run1, 2026-11-17), none of these hulls trained a nose pair in its own
+Time game (they fly the fleet lag there), so the race lines take the rate the Regatta judge picked from 1.5 / 5 / 10.
+`regatta_balance.py` has no model of them, so they take no StartingElements row. The Wrasse, Grizzly and Meerkat are
+slow beside the first nine: that gap is for step 5 and their own AI training to close before they return to the card.
+
+Second round (the same courses, seed and race line rate; a 600 s limit to read the Angler's time):
+
+| hull | alone, card start (s) | alone, L5 start (s) |
+|---|---|---|
+| Brittle Star | 82 / 82 / 89 / 87 | 73 / 73 / 77 / 79 |
+| Angler | 372 / 376 / 428 / 432 | 350 / 365 / 417 / 430 |
+
+Both kept threading gates in a fourteen-hull field (Brittle Star 10-13, Angler 2-3 by the first finish). On the gate way at
+the fleet lag the Brittle Star threaded 20 of 24 gates in 400 s with 800-1,300 prism hits: its race line is what seats it.
+The Brittle Star is on the card and in `regatta_qd.ENGINE_TRUSTED`; the Angler finishes past the search's 400 s limit and
+is judge-only.
+
+Not seated yet:
+- **Honeyguide**: 395-485 s, and a 14-gate stall on one archive course, on its race line or on the gate way. (A faster
+  read that night, 94-126 s, was a Squirrel standing in: the Honeyguide was off the card, so the game swapped it. Before
+  RaceJudge seated hulls by name, an off-card hull raced under its own name as the card's Squirrel.)
+- **Shrike**: 11-15 gates. It cruises at 18 u/s and needs its sling, which only fires at a block near its aim
+  (Thornline's AI plan aims at thorns).
+- **Jacks** (2026-11-19): off a coach an AI Jacks herds on its own rhythm and crawls at 50 u/s (4 of 24 gates in 600 s).
+  `RegattaJacksCoach` (`aiJacksCoach` on the controller) runs Decoy Run's door cycle on each ring through
+  `DecoyRunCourse.PlanCycle`: it finishes every course, card 158 s / L5 154 s on the shuffle (3 seeds), 2.2-2.4x the
+  five, so it stays off the card and is flagged in `Docs/ElementalLoop/REDESIGN.md`.
+- **Meerkat** (2026-11-19, judge-only): shuffle 294 s card / 257 s L5 (2 seeds), 4.0x the five on its trained AI. Its
+  Time rush at the lever cap only reaches 3.4x, so it is flagged in `Docs/ElementalLoop/REDESIGN.md`.
+
+**The Goby** joined the card on 2026-11-19. It had threaded 0 gates: two faults, both upstream of balance.
+- No coach. Perch Run's `IGobyRaceCoach` is set by `PerchRunController` only, so in Regatta the seat's Goby AI laid
+  islands for the Pistol. `RegattaController` is now the Goby's coach too (`RegattaGobyDart`, a field on the
+  controller): Perch Run's plan on Regatta's gates, a double shot through the next gate to the one after when one dart
+  reaches, else a clear shot at the next gate's centre or rim (`GobyPistolDuo.RaceDartStops` asks whether a block
+  stops the dart; none does once Time 5 phases it through), and fly straight while the gate is inside the turning circle.
+- A stuck stick. The seat's Goby AI stops the hull's autopilot, which left the stick where it last held it (full
+  pitch), so the nose spun and never settled within the dart's 0.5 degrees. `GobyPistolDuo.ReleaseStick` zeroes it.
+Then its Time lever (PERCH_RUN.md 4.3, `dartPace` at rest x1.0 -> x1.25, the level-5 value unchanged) brought it inside
+the bar: 15 seeds on the shipped shuffle, card 83.3 -> 78.1 s (1.06x the polished five), L5 62.6 s (0.97x).
+
+**The Swordfish** joined the card on 2026-11-17, toward Garrett's "regatta 10". It flies the Rhino's airframe and ramp
+(`RhinoAIBoostPolicy_Regatta` by the base policy's name) on the Rhino's line and nose pair, with Spearline's 10 degree
+lead cap. Raced alone, it ran level with the Rhino: shipped course 32 vs 36 s, the L5 start 31 vs 31 s, three archive
+card courses 47 / 39 / 31 vs 40 / 35 / 38 s. It finishes in a full field too. With the Rhino it is the fastest hull on
+the card. (The 1.5x read was against the Stoat, 49 s, which came off the card later that night; against the hulls on the
+card now it is about 2x the Manta on the shipped course.)
+
+**The Tiger Moth** joined the card on 2026-11-18, on Garrett's word ("he wants it in the ten"). On 2026-11-17 it ran
+214 s on the shipped course: its speed is the Drop, and only Waystation's controller pressed it. Two changes seat it:
+- `RegattaTigerMothDrop` (a field on `RegattaController`) is Waystation's long-drop coach on Regatta's rings, for the
+  autopilot only. Before a leg worth a drop, the pilot steers its heading square to the next ring, rolls its belly onto
+  it, presses when the belly is on, and lets go short of the ring's plane. It always lines up by roll: Waystation's
+  pitch-up line-up overshot on Regatta's open legs and never dropped. Alone, seeds 1-2, card start: 214 s to 143 s.
+- The Drop recharges in 10 s instead of 20 (`TigerMothDropAction.fullCooldownSeconds`), a vessel change and Garrett's
+  pick. The sweep over 1x / 1.5x / 2x / 3x / 4x cheaper ran 143 / 132 / 131 / 131 / 131 s at the card start and
+  108 / 91 / 87 / 87 / 87 s at L5. It is flat past 2x because by then the pilot drops once a ring, so 2x is the knee.
+  Waystation's I1-I4 stayed flat across the sweep, and its tower model still passes; the hard far edge of a hop moved
+  out by up to 35 u (`waystation_tower_course.py` `FAR_EDGE_GIVE`).
+
+Judged alone, seeds 1-3 on the shipped course, all 24 rings: **card start 131 s**, about **1.6x** the slowest hull
+seated before it (Manta 82 s), so past the 1.5x rule. **L5 start 87 s**, 1.25x the slowest (Serpent 70 s). Seated on
+Garrett's word with that gap stated. What closes the rest is its 67 u/s cruise between drops.
+
+### 6.7 The Serpent's burn length, its step-5 Time lever (2026-11-17)
+
+The Serpent sat at Time 10 on the card and still raced the pools at 138 s (card) and 142 s (L5), about 1.9x the field:
+it spends its pellets in lap 1 and its Wall Seeds refill (one wall per about 42 s, `train/Serpent/regatta-trace`) cannot
+keep up. Its one Time lever is the pellet burn length, `ConsumeBoostAction.timeDurationMultiplier` (x1.6 at Time 10).
+Swept on `w3/SIX_POOLS_1225.json` plus the pass-3 pools (8 card, 8 L5 courses, 3 seeds, Serpent alone, no DNF):
+
+| burn Max at Time 10 | change | card mean (s) | L5 mean (s) |
+|---|---|---|---|
+| 1.6 | 0 | 138.1 | 141.7 |
+| 2.0 | +25% | 111.7 | 117.4 |
+| 2.4 | +50% | 98.0 | 104.8 |
+| **2.8** | **+75%** | **75.0** | **80.7** |
+| 3.2 | +100% | 61.8 | 65.9 |
+
+The curve has no knee: every step buys more, because a longer burn also stretches the lap-1 tank further. Pool
+imbalance stops falling where the Serpent stops being the slowest hull (the Squirrel, about 83 s card and 90 s L5),
+near +70%. **Shipped 2.8**, which lands the Serpent mid-field (pass 3's card median is about 76 s) and does not overshoot it;
+3.2 would put it among the fast hulls. Serpentine, seeds 1-2: I1 103 s unchanged (Time 0), I2 74 -> 62, I3 76 -> 68,
+I4 93 -> 75, every rung inside its bars. A kit change: it moves the Serpent in every mode that raises its Time.
+
 ## 6.5 Scoring — the team sum
 
 `RegattaScoringRuleSO` (a `GateRaceScoringRuleSO` subclass; the asset is points rules,
@@ -489,8 +683,8 @@ next to look at with its own model.
 Everything by `Tools/Build/author_regatta_assets.py` (`--check` passes; `--check` was watched to
 fail on a mutated cell config). The card is registered in the **master roster and `ArenaGames`**
 (`arcade_mode_lib.register_arena_card`), never `ArcadeGames`. The scene is a clone of
-`MinigameRedline` with the controller, rule, field block, IntensityWise cell list and AI templates
-swapped. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
+`MinigameRedline` with the controller, rule, field block, cell list (CourseVariantWise since 2026-11-07,
+IntensityWise before) and AI templates swapped; the controller also carries the course pool. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
 
 **Toasts** (`GameToastConfig_Regatta.asset`, authored by the generator): two idle hints
 (`RegattaRailHint` 110, `RegattaLaneHint` 111), the comeback line, and — since #985 — the four
@@ -601,7 +795,7 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   model, first through the last ring wins outright; (4) a playtest before any of them, because
   this model is arithmetic.
 - **2026-10-16 Rhino kit — needs a playtest.** (1) **AI Rhinos now cut the rails.**
-  `RhinoSwordAutopilot` holds the energize stance near super-shielded mass, and every rail prism is
+  `SwordfishSwordAutopilot` holds the energize stance near super-shielded mass, and every rail prism is
   super-shielded, so an AI Rhino flying beside a rail will now energize and pop holes in it — before
   today no AI could. A rider bridges a hole at full pace, but whether a bot grid shreds the braid is
   a playtest question. (2) **The AI now ramps** (`RampBoostAIPolicySO`), so the AI Rhino's lap time

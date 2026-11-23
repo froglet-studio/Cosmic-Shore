@@ -17,7 +17,16 @@ namespace CosmicShore.Gameplay
         {
             var status = vesselImpactor.Vessel.VesselStatus;
             if (status == null || !status.IsLocalUser || status.AutoPilotEnabled) return;
-            HapticController.PlayPunish();
+            HapticController.PlayPunish(WeightOf(prismImpactee));
+        }
+
+        /// <summary>The hull-hit ladder (Docs/HAPTICS.md): danger or super-shielded hits hardest, shielded next.</summary>
+        static PunishWeight WeightOf(PrismImpactor prismImpactee)
+        {
+            var props = prismImpactee && prismImpactee.Prism ? prismImpactee.Prism.prismProperties : null;
+            if (props == null) return PunishWeight.Plain;
+            if (props.IsDangerous || props.IsSuperShielded) return PunishWeight.Heavy;
+            return props.IsShielded ? PunishWeight.Shielded : PunishWeight.Plain;
         }
     }
 }

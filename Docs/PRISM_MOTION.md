@@ -8,6 +8,10 @@ use the ultra high res prism used by slicing. these should look spectacular when
 undistinguished from the normal explosion when squinting. when we can afford it use those for level one
 and turn it off on level 2. your setting at 256 (192) can define the transition to level three."*
 
+Garrett, 2026-10-27: *"change the fundamental movement interaction of prisms (effecting all shielded prism
+movement), so shielded prisms bounce off each other and other prisms instead of being destroyed on collision."*
+That is expectation 1a below.
+
 The fundamental's entry (canonical term **Prism movement**) is in
 `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § "The fundamentals". This file is the design and the
 verification record. The code is one static class, `PrismMotion`
@@ -15,11 +19,12 @@ verification record. The code is one static class, `PrismMotion`
 
 ## 1. What a moving prism is
 
-A prism is **moving** when a FORCE displaces it from where it rests. Two forces do today:
+A prism is **moving** when a FORCE displaces it from where it rests. Three forces do today:
 
 | Mover | What moves the prism | Shape of the move | Path |
 |---|---|---|---|
 | The Rhino's hull plough (`RhinoPloughPrismEffectSO`, `RHINO_PLOUGH.md`) | a hull ram shoves it sideways out of the furrow | ONE step, made the frame of the ram (the visual slides on the prism clock afterwards) | one-shot: `PrismMotion.TrySweep` |
+| The Jacks' net (`JacksNet.DragPrisms`, `R_VesselActions/JACKS.md` §1.1; Garrett, 2026-10-25: "lets have prisms move and be dragged by the net. they should only be destroyed when they collide with other prisms") | the net between the two flying fish carries what its mouth crossed | one step per frame, per dragged prism (up to `netPrismCap`, 48); a plant's prism is plucked first (`HealthPrism.LeaveAsSkeleton`: free cell mass, no longer posed by its plant), so it is a moving prism and not a posed one | the box path: `PrismMotion.TryFirstContact` with the net's own prisms as movers of the same step (`MoverSteps`), so the catch never breaks itself; level by `NextLevel` over the count |
 | Every black hole's gravity field (`BlackHoleGravityField`, `BLACK_HOLE.md` §3) — the Stoat's dipole, the drift pair, the crystal wormhole | the holes' pull, integrated every frame | one step per frame, per body (up to 6,000 bodies) | climbs the LADDER (§2.3) with its body count: boxes (`PrismMotion.TryFirstContact`, main thread) at levels 1–2, spheres (`PrismMotion.ContactJob`, Burst) at level 3 |
 
 **Not a moving prism**: one POSED by its owner every frame — a creature's body (`HealthPrism`, the
@@ -35,6 +40,31 @@ displaced, so they do not run the rule. They are valid TARGETS of it.
    closing velocity (restitution 1/3, ceiling 200 u/s — the ram's numbers, so a prism thrown into a
    prism comes apart like one a hull hit at that speed), and both deaths go through the ordinary
    destruction path (stats, cell sums, the index).
+1a. **Shielded prisms bounce** (Garrett, 2026-10-27; **LOCKED** 2026-10-28, the rule every mover builds on, the Meerkat's
+   soliton first; `PrismBounce`, `PrismMotion.Bounces`). A collision a
+   SHIELDED prism is part of, as the mover or as the prism it runs into, destroys neither: the movers rebound
+   off the contact, keeping `shieldBounceRestitution` (0.6, `Resources/PrismMotionConfig`) of the closing speed.
+   A shielded mover bounces off super-shielded mass too; an unshielded one still goes against it (4).
+
+   | Mover | Prism it runs into | Outcome |
+   |---|---|---|
+   | plain | plain | both destroyed (1) |
+   | shielded | plain | bounce |
+   | plain | shielded | bounce |
+   | shielded | shielded | bounce |
+   | plain | super-shielded | the mover is destroyed (4) |
+   | shielded | super-shielded | bounce |
+
+   Each mover rebounds its own way, since it owns the prism's motion:
+   - **The gravity field:** the body's velocity rebounds off the contact normal (from the struck prism's centre to
+     the mover's). Against another body the impulse is shared equally, equal and opposite, so momentum is kept;
+     against a prism that is not a body, the mover takes all of it and the other keeps still
+     (`BlackHoleGravityField.Bounce`, `BouncesTotal`).
+   - **The Rhino plough:** the thrown prism stops at the contact and the rest of the throw rebounds off it, mirrored
+     and shortened by the restitution (`PrismBounce.Rebound`). A second prism in the way of the rebound stops it
+     there: a bounce again, or both go if neither of that pair is shielded.
+   - **The Jacks net:** the net poses its prisms, so a shielded collision holds the dragged prism against the other
+     at the contact instead of through it. Neither goes, and the net keeps it.
 2. **"Runs into" = the contact shapes go from apart to touching over the step**
    (`PrismMotion.EntersContact`, a box overload and a sphere overload). Both prisms are taken as
    translating linearly over the step (a static target is a zero step; no mover turns a prism), so two
@@ -64,8 +94,8 @@ displaced, so they do not run the rule. They are valid TARGETS of it.
    - **Sphere** (cheap): the sphere of the prism's own volume (`PrismMotion.ContactRadius`), the
      quantity the cells already weigh, capped at `MaxContactRadius` (6 u, ~900 u³) to bound the broad
      phase. Thousands of bodies at once, in Burst.
-4. **Super-shielded mass is the one survivor.** It is indestructible: `Prism.Damage`'s own gate makes
-   it deflect, and only the mover is destroyed. No force moves it in the first place (the plough
+4. **Super-shielded mass is never destroyed.** It is indestructible: `Prism.Damage`'s own gate makes
+   it deflect, and an unshielded mover is destroyed against it (a shielded one bounces, 1a). No force moves it in the first place (the plough
    jiggles it, the gravity field never admits it).
 5. **Scored to the force behind the motion**: the Rhino's pilot for a plough throw; the hole's owner
    (`BlackHole.CaptureOwnerName` / `CaptureDomain`) for a body, read off the hole nearest the body,
@@ -104,6 +134,17 @@ ARE every body's pre-step positions. On the main thread `ApplyContacts` annihila
 `ApplyVerdicts`, which then drops every destroyed body from the ledger — so a collision outranks a
 capture or a throat transit on the same frame. A pair both bodies reported is annihilated once
 (`Damage` is idempotent on a destroyed prism).
+
+**A black hole EATS what collides in its pull (Yash, 2026-11-22).** *"The visuals of black hole sucking prisms need to
+be same as the fauna devouring the prisms, the same shader effect."* A horizon capture was already `Prism.Consume` (the
+suction a creature's meal uses, its shards drawn into the eater); but most of a dense trail never reaches the horizon:
+it collides on the way in, and those pairs exploded. In the black hole's field `ApplyContacts` now calls
+`PrismMotion.AnnihilateInto(mover, struck, hole.transform, …)`: both are destroyed exactly as before (rule 1 is
+unchanged: scored to the hole's owner, a shield no answer, a shielded contact still bounces), and both are DRAWN
+consumed into the nearest hole. The ladder still picks how contacts are FOUND (boxes or spheres); the look of a
+contact here is the suction's own detail levels (`PrismInteractionLod.TrySuction`, else the batched implosion), not
+the explosion table below. Every other mover (the Rhino's plough, Jacks' net, the Meerkat's swallow) keeps
+`PrismMotion.Annihilate` and its explosion. Held by `PrismMotionTests.BlackHoleContacts_AreDrawnAsTheHoleEatingThem_NotAsAnExplosion`.
 
 ## 3a. The look — the destruction detail levels (level 1)
 
@@ -178,7 +219,8 @@ steps down, and past every level the ordinary effect.
 
 | File | Role |
 |---|---|
-| `_Scripts/Controller/Prisms/PrismMotion.cs` | The rule: `Annihilate`; boxes — `Box`, `TryGetBox`, `EntersContact(Box…)`, `TryFirstContact`, `MoverSteps`, `TrySweep`; spheres — `ContactRadius`, `EntersContact(float3…)`, `ContactJob`, `MapSlotsJob` |
+| `_Scripts/Controller/Prisms/PrismBounce.cs`, `_Scripts/Tests/Editor/PrismBounceTests.cs` | Shielded prisms bounce (1a): who bounces, the contact normal, the shared impulse, the plough's rebound |
+| `_Scripts/Controller/Prisms/PrismMotion.cs` | The rule: `Annihilate`, `Bounces`, `BounceRestitution`; boxes — `Box`, `TryGetBox`, `EntersContact(Box…)`, `TryFirstContact`, `MoverSteps`, `TrySweep`; spheres — `ContactRadius`, `EntersContact(float3…)`, `ContactJob`, `MapSlotsJob` |
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | `StoredPosition`, `ContactVolume`, `TryGetMotionView` (region "Prism motion") |
 | `_Scripts/Controller/Environment/BlackHole/BlackHoleGravityField.cs` | `PrevPoints` out of the integration, `NextLevel` (the ladder), `BoxContacts`, `ScheduleContacts`, `ApplyContacts`, `CollisionsTotal` |
 | `_Scripts/ScriptableObjects/PrismMotionConfigSO.cs`, `Resources/PrismMotionConfig.asset` | The ladder (`showcaseMaxMovers` 64, `boxMaxMovers` 256) |
@@ -186,8 +228,8 @@ steps down, and past every level the ordinary effect.
 | `_Scripts/Utility/Effects/PrismInteractionLod.cs` | Picks the level: destruction (explosion / shatter / glitter) and stealing (grade / shed) |
 | `_Scripts/Utility/Effects/PrismCollisionBurst.cs` | The carrier: culling bounds, stamp, drain, retire (destruction and sheds on separate expiry queues) |
 | `_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` / `.shader`, `_Graphics/Materials/PrismCollisionBurstMaterial.mat` | The five kinds, the two fade curves, the URP passes |
-| `_Scripts/Utility/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random); `GetSierpinski` (the destruction's cut at a depth); `GetShed` (the union-jack cut the sheds draw) |
-| `_Scripts/Utility/PrismSierpinskiTiling.cs` | The destruction's Sierpinski cut by recursion depth — pure, held to the lab's port and to `Prism.asset` (depth 0) by `parity.py` (.NET) |
+| `_Scripts/Utility/Foundation/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random); `GetSierpinski` (the destruction's cut at a depth); `GetShed` (the union-jack cut the sheds draw) |
+| `_Scripts/Utility/Foundation/PrismSierpinskiTiling.cs` | The destruction's Sierpinski cut by recursion depth — pure, held to the lab's port and to `Prism.asset` (depth 0) by `parity.py` (.NET) |
 | `_Scripts/Utility/Effects/PrismDebris.cs` | `ResolveExplosionFlight` — the explosion's flight, shared |
 | `_Scripts/Controller/Vessel/Prism.cs`, `PrismEventChannelWithReturnSO.cs`, `PrismFactory.cs` | `DamageByCollision` → `PrismEventData.PlainDeath` (above level 1) → the factory's slice, detail level, explosion |
 | `Tools/Shaders/verify_prism_collision_burst.py` | Executes the shipped HLSL (12 properties, 5 negative controls, the shipped grade executed) and glslang-compiles every pass |

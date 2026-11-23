@@ -82,6 +82,15 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<FixedString64Bytes> NetUgsPlayerId = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         /// <summary>
+        /// Round-trip time from the HOST to this player's machine in ms, sampled by the host once a
+        /// second from UnityTransport (<see cref="ConnectionQuality.SampleIntervalSeconds"/>). 0 for
+        /// the host's own player and for AI. Read by the multiplayer debug overlay; thresholds in
+        /// <see cref="ConnectionQuality"/>.
+        /// </summary>
+        public NetworkVariable<ushort> NetRttMs = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        float _nextRttSampleTime;
+
+        /// <summary>
         /// True once this player has tapped READY in the Maelstrom hub. Same shape as
         /// <see cref="NetRematchVote"/> and <see cref="NetArenaReady"/>: server-write,
         /// everyone-read STATE, so the hub can put a FACE against every ready press rather than
@@ -146,41 +155,113 @@ namespace CosmicShore.Gameplay
         public void RequestArenaHullClaim(VesselClassType hull)
         {
             if (!IsSpawned) return;
-            if (IsServer) { TryGrantArenaHullClaim(hull); return; }
+            if (IsServer) { TryGrantArenaHullClaim(hull, ArenaClaimKind.Chosen); return; }
             if (IsOwner) RequestArenaHullClaim_ServerRpc(hull);
         }
 
         [ServerRpc]
-        void RequestArenaHullClaim_ServerRpc(VesselClassType hull) => TryGrantArenaHullClaim(hull);
+        void RequestArenaHullClaim_ServerRpc(VesselClassType hull) => TryGrantArenaHullClaim(hull, ArenaClaimKind.Chosen);
 
-        void TryGrantArenaHullClaim(VesselClassType hull)
+        /// <summary>How a hull claim came about, for <see cref="ServerArenaClaimGate"/>.</summary>
+        public enum ArenaClaimKind
         {
-            if (!IsServer) return;
+            /// <summary>The pilot chose the hull (SELECT VESSEL).</summary>
+            Chosen = 1,
+            /// <summary>The server dealt it (the Random and Squad selection modes).</summary>
+            Dealt = 2,
+        }
+
+        /// <summary>
+        /// HOST: whether a claim may land under the open card's vessel-selection mode (the Vessels row,
+        /// <c>CosmicShore.Data.VesselSelectionMode</c>): a chosen hull only in Pick, or on this pilot's own draft turn;
+        /// a dealt hull only in Random and Squad. Set by the launch modal while an arena card is open and cleared when it
+        /// closes; null lets every claim through (no lobby, or a card without the row). A release always lands.
+        /// </summary>
+        public static Func<Player, ArenaClaimKind, VesselClassType, bool> ServerArenaClaimGate;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetArenaClaimGate() => ServerArenaClaimGate = null;
+
+        /// <summary>
+        /// Ask the server to DEAL this pilot a hull (the Random and Squad selection modes): a random free hull from
+        /// <paramref name="preferred"/> (the chosen squad's vessels; empty for Random), else from
+        /// <paramref name="fallback"/> (the card's hulls). Owner-only, server-arbitrated like
+        /// <see cref="RequestArenaHullClaim"/>; the deal lands as <see cref="NetArenaHullClaim"/>.
+        /// </summary>
+        public void RequestArenaDealtClaim(VesselClassType[] preferred, VesselClassType[] fallback)
+        {
+            if (!IsSpawned) return;
+            preferred ??= Array.Empty<VesselClassType>();
+            fallback ??= Array.Empty<VesselClassType>();
+            if (IsServer) { ServerDealArenaHull(preferred, fallback, ArenaClaimKind.Dealt); return; }
+            if (IsOwner) RequestArenaDealtClaim_ServerRpc(Array.ConvertAll(preferred, h => (int)h), Array.ConvertAll(fallback, h => (int)h));
+        }
+
+        // Ints on the wire: an int[] is the array shape every Netcode version serializes without a custom serializer.
+        [ServerRpc]
+        void RequestArenaDealtClaim_ServerRpc(int[] preferred, int[] fallback) =>
+            ServerDealArenaHull(Array.ConvertAll(preferred ?? Array.Empty<int>(), h => (VesselClassType)h),
+                                Array.ConvertAll(fallback ?? Array.Empty<int>(), h => (VesselClassType)h), ArenaClaimKind.Dealt);
+
+        /// <summary>
+        /// SERVER: give this pilot a random hull nobody else holds, from <paramref name="preferred"/> first and then
+        /// <paramref name="fallback"/>, under <paramref name="kind"/>'s gate. False when the gate refuses, the pilot
+        /// already holds a hull, or every candidate is held.
+        /// </summary>
+        public bool ServerDealArenaHull(IReadOnlyCollection<VesselClassType> preferred, IReadOnlyCollection<VesselClassType> fallback,
+                                        ArenaClaimKind kind)
+        {
+            if (!IsServer || AIHullSeating.IsConcrete(NetArenaHullClaim.Value)) return false;
+
+            var held = HullsHeldByOtherPilots();
+            var rng = new System.Random(unchecked(Environment.TickCount * 31 + (int)OwnerClientId));
+            if (!VesselSelectionRules.TryDealFromSquad(preferred, fallback, held, rng, out var hull)) return false;
+            return TryGrantArenaHullClaim(hull, kind);
+        }
+
+        HashSet<VesselClassType> HullsHeldByOtherPilots()
+        {
+            var held = new HashSet<VesselClassType>();
+            var players = gameData != null ? gameData.Players : null;
+            if (players == null) return held;
+            for (int i = 0; i < players.Count; i++)
+                if (players[i] is Player other && other && other != this && other.IsSpawned &&
+                    AIHullSeating.IsConcrete(other.NetArenaHullClaim.Value))
+                    held.Add(other.NetArenaHullClaim.Value);
+            return held;
+        }
+
+        /// <summary>SERVER: grant <paramref name="hull"/> to this pilot when nobody else holds it and the selection
+        /// mode allows a <paramref name="kind"/> claim. True when the claim is now this pilot's.</summary>
+        public bool TryGrantArenaHullClaim(VesselClassType hull, ArenaClaimKind kind)
+        {
+            if (!IsServer) return false;
 
             if (hull is VesselClassType.Random or VesselClassType.Any)
             {
                 NetArenaHullClaim.Value = VesselClassType.Random;
-                return;
+                return true;
             }
 
-            if (NetArenaHullClaim.Value == hull) return;
+            if (NetArenaHullClaim.Value == hull) return true;
 
-            var players = gameData != null ? gameData.Players : null;
-            if (players != null)
+            if (ServerArenaClaimGate != null && !ServerArenaClaimGate(this, kind, hull))
             {
-                for (int i = 0; i < players.Count; i++)
-                {
-                    if (players[i] is not Player other || !other || other == this || !other.IsSpawned) continue;
-                    if (other.NetArenaHullClaim.Value != hull) continue;
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[Player] Arena hull claim refused: {NetName.Value} asked for {hull} ({kind}), " +
+                    "which the card's vessel selection does not allow now.");
+                return false;
+            }
 
-                    CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
-                        $"[Player] Arena hull claim refused: {NetName.Value} asked for {hull}, " +
-                        $"already held by {other.NetName.Value}.");
-                    return;
-                }
+            if (HullsHeldByOtherPilots().Contains(hull))
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[Player] Arena hull claim refused: {NetName.Value} asked for {hull}, already held by another pilot.");
+                return false;
             }
 
             NetArenaHullClaim.Value = hull;
+            return true;
         }
 
         // ── Seats and hulls (CrewStations) ─────────────────────────────────────────────────────
@@ -201,11 +282,25 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (IsSpawned && IsServer) KeepStationValid();
+            if (IsSpawned && IsServer) SampleRtt();
             // the person on this machine (IsLocalPilot also covers the legacy un-networked spawn, where only their own
             // hull's seats are in the ring)
             if (!IsLocalPilot || (IsSpawned && !IsLocalUser)) return;
             _localStation ??= new LocalCrewStation(this);
             _localStation.Tick(gameData);
+        }
+
+        /// <summary>Host only: refresh <see cref="NetRttMs"/> from the transport once a second.</summary>
+        void SampleRtt()
+        {
+            if (Time.unscaledTime < _nextRttSampleTime) return;
+            _nextRttSampleTime = Time.unscaledTime + ConnectionQuality.SampleIntervalSeconds;
+
+            var nm = NetworkManager;
+            ushort rtt = 0;
+            if (!NetIsAI.Value && nm != null && OwnerClientId != nm.LocalClientId && nm.NetworkConfig.NetworkTransport != null)
+                rtt = ConnectionQuality.ToWire(nm.NetworkConfig.NetworkTransport.GetCurrentRtt(OwnerClientId));
+            if (NetRttMs.Value != rtt) NetRttMs.Value = rtt;
         }
 
         /// <summary>A menu parked this person's own hull on its AI (<see cref="CrewSeat.ReturnHumansToHull"/>): a ride ends
@@ -438,10 +533,6 @@ namespace CosmicShore.Gameplay
         internal ThemeManagerDataContainerSO _vesselThemeManagerData;
 
         /// <summary>
-        /// Changes the player's domain at runtime. Used by shape mode to match
-        /// the player's prism color to the collided shape's domain.
-        /// </summary>
-        /// <summary>
         /// Writes the owner's UGS PlayerId once auth is available. Defensive: analytics is
         /// never worth throwing a spawn path over.
         /// </summary>
@@ -458,6 +549,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Changes the player's domain at runtime. Used by shape mode to match
+        /// the player's prism color to the collided shape's domain.
+        /// </summary>
         public void SetDomain(Domains newDomain)
         {
             Domain = newDomain;
@@ -496,29 +591,6 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty();
         }
 
-        /// <summary>
-        /// Owner-side report that THIS player killed a creature - the fauna counterpart of the
-        /// joust round-trip in <c>NetworkVesselImpactor</c>, and the only way a client's kill
-        /// can ever score.
-        ///
-        /// Fauna have no NetworkObject: every peer simulates its OWN swarm and the populations
-        /// diverge (Docs/ECOSYSTEM.md §7 caveat 4). So unlike a prism - which exists at the same
-        /// place on every peer, letting the server's own physics see a client's ram and record
-        /// it - a creature a client just shot may not exist on the server at all. Without this
-        /// RPC a client's kills would silently never register, and only the host could win
-        /// Wildlife Liberation.
-        ///
-        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
-        /// the default, and the server credits the RoundStats of the Player object the RPC
-        /// arrived on - so a client can only ever credit ITSELF, no matter what it sends.
-        /// </summary>
-        /// <summary>
-        /// Announce that this player's machine has finished loading the arena. Same
-        /// owner-detects / server-records round trip as
-        /// <see cref="ReportFaunaKill_ServerRpc"/> - the arena is built independently on every
-        /// peer (each runs its own spawner), so only the owner can know when ITS build is
-        /// done. Idempotent; safe to call every frame.
-        /// </summary>
         /// <inheritdoc />
         public bool IsArenaReady => !IsSpawned || NetArenaReady.Value;
 
@@ -547,6 +619,13 @@ namespace CosmicShore.Gameplay
             if (NetRematchVote.Value != voted) NetRematchVote.Value = voted;
         }
 
+        /// <summary>
+        /// Announce that this player's machine has finished loading the arena. Same
+        /// owner-detects / server-records round trip as
+        /// <see cref="ReportFaunaKill_ServerRpc"/> - the arena is built independently on every
+        /// peer (each runs its own spawner), so only the owner can know when ITS build is
+        /// done. Idempotent; safe to call every frame.
+        /// </summary>
         public void ReportArenaReady()
         {
             if (NetArenaReady.Value) return;
@@ -616,6 +695,40 @@ namespace CosmicShore.Gameplay
         static bool IsCreditableVolume(float volume) =>
             volume >= 0f && !float.IsInfinity(volume);
 
+        readonly HitReportGuard _hitReportGuard = new();
+
+        /// <summary>
+        /// Host: rate-limit this player's prism reports and cap the volume each may claim
+        /// (<see cref="HitReportGuard"/>). Returns false when the report must be dropped.
+        /// </summary>
+        bool PassesHitReportGuard(ref float volume)
+        {
+            if (!_hitReportGuard.TryConsume(Time.unscaledTimeAsDouble))
+            {
+                if (_hitReportGuard.Throttled % 100 == 1)
+                    CSDebug.LogWarning($"[Player] Prism reports from {NetName.Value} throttled ({_hitReportGuard.Throttled} dropped so far).");
+                return false;
+            }
+            volume = HitReportGuard.ClampVolume(volume);
+            return true;
+        }
+
+        /// <summary>
+        /// Owner-side report that THIS player killed a creature - the fauna counterpart of the
+        /// joust round-trip in <c>NetworkVesselImpactor</c>, and the only way a client's kill
+        /// can ever score.
+        ///
+        /// Fauna have no NetworkObject: every peer simulates its OWN swarm and the populations
+        /// diverge (Docs/ECOSYSTEM.md §7 caveat 4). So unlike a prism - which exists at the same
+        /// place on every peer, letting the server's own physics see a client's ram and record
+        /// it - a creature a client just shot may not exist on the server at all. Without this
+        /// RPC a client's kills would silently never register, and only the host could win
+        /// Wildlife Liberation.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
+        /// the default, and the server credits the RoundStats of the Player object the RPC
+        /// arrived on - so a client can only ever credit ITSELF, no matter what it sends.
+        /// </summary>
         [ServerRpc]
         public void ReportFaunaKill_ServerRpc()
         {
@@ -726,6 +839,7 @@ namespace CosmicShore.Gameplay
 
             if (!CanCreditReport()) return;
             if (!IsCreditableVolume(volume)) return;
+            if (!PassesHitReportGuard(ref volume)) return;
 
             var resolved = System.Enum.IsDefined(typeof(Domains), prismDomain)
                 ? (Domains)prismDomain
@@ -804,13 +918,14 @@ namespace CosmicShore.Gameplay
 
             if (!CanCreditReport()) return;
             if (!IsCreditableVolume(volume)) return;
+            if (!PassesHitReportGuard(ref volume)) return;
 
-            StatsManager.CreditPrismSteal(RoundStats, volume);
+            StatsManager.CreditPrismSteal(RoundStats, volume, gameData ? gameData.VolumeLedger : null);
 
             var victim = victimName.ToString();
             if (string.IsNullOrEmpty(victim) || gameData == null) return;
             if (gameData.TryGetRoundStats(victim, out IRoundStats victimStats))
-                StatsManager.DebitPrismSteal(victimStats, volume);
+                StatsManager.DebitPrismSteal(victimStats, volume, gameData.VolumeLedger, -1f, RoundStats);
         }
 
         /// <summary>
@@ -985,7 +1100,7 @@ namespace CosmicShore.Gameplay
 
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
-            Name = NetName.Value.ToString();
+            Name = ResolveRosterName(); // fair play T7, and unique in the match (RosterNames)
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
@@ -1007,6 +1122,11 @@ namespace CosmicShore.Gameplay
         {
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}");
             base.OnNetworkSpawn();
+
+            if (!s_spawnedPlayers.Contains(this))
+                s_spawnedPlayers.Add(this);
+            // A client receives the players in any order, so a namesake with a higher id may have resolved first.
+            RefreshNamesakeRosterNames(this);
 
             // Add to game data early so ServerPlayerVesselInitializer can find us.
             gameData.Players.Add(this);
@@ -1123,6 +1243,7 @@ namespace CosmicShore.Gameplay
         {
             // NetworkBehaviour.OnDestroy is virtual and does Netcode's own teardown; a plain
             // `void OnDestroy()` here would HIDE it and skip that cleanup.
+            s_spawnedPlayers.Remove(this);
             if (gameData)
             {
                 gameData.Players.Remove(this);
@@ -1150,6 +1271,12 @@ namespace CosmicShore.Gameplay
             _spawnEventRaised = false;
             _localStation = null;
             gameData.Players.Remove(this);
+
+            // A pilot leaving frees its place among its namesakes. Not while the whole session is going down:
+            // every player despawns then and there is no roster left to keep unique.
+            s_spawnedPlayers.Remove(this);
+            if (NetworkManager != null && !NetworkManager.ShutdownInProgress)
+                RefreshNamesakeRosterNames(this);
 
             NetDomain.OnValueChanged -= OnNetDomainChanged;
             NetIsAI.OnValueChanged -= OnNetIsAIChanged;
@@ -1279,7 +1406,7 @@ namespace CosmicShore.Gameplay
             // if a value happens to be the same, the local property
             // would remain stale without this explicit sync.
             Domain = NetDomain.Value;
-            Name = NetName.Value.ToString();
+            Name = ResolveRosterName(); // fair play T7, and unique in the match (RosterNames)
             AvatarId = NetAvatarId.Value;
 
             // Re-register with gameData (cleared by ResetRuntimeData during scene transition)
@@ -1385,9 +1512,55 @@ namespace CosmicShore.Gameplay
                 ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel);
         }
         
+        // Every Player spawned on this machine, for the namesake check. GameDataSO.Players is not used: it is
+        // cleared on scene transitions and refilled one player at a time, so it can miss a namesake.
+        static readonly List<Player> s_spawnedPlayers = new();
+        static readonly List<(ulong networkObjectId, string displayName)> s_namesakeScratch = new();
+
+        /// <summary>
+        /// This pilot's name for the roster: the display name, made unique among the spawned players by
+        /// <see cref="RosterNames"/>. Every machine reaches the same answer from the replicated names and ids.
+        /// </summary>
+        string ResolveRosterName()
+        {
+            string display = DisplayNameValidator.ForDisplay(NetName.Value.ToString());
+            if (!IsSpawned || string.IsNullOrEmpty(display)) return display;
+
+            s_namesakeScratch.Clear();
+            for (int i = s_spawnedPlayers.Count - 1; i >= 0; i--)
+            {
+                var other = s_spawnedPlayers[i];
+                if (!other) { s_spawnedPlayers.RemoveAt(i); continue; }
+                if (ReferenceEquals(other, this) || !other.IsSpawned) continue;
+                s_namesakeScratch.Add((other.NetworkObjectId,
+                    DisplayNameValidator.ForDisplay(other.NetName.Value.ToString())));
+            }
+
+            return RosterNames.Compose(display,
+                RosterNames.NamesakesBefore(NetworkObjectId, display, s_namesakeScratch),
+                gameData ? gameData.DuplicatePlayerNameTemplate : null);
+        }
+
+        /// <summary>Re-resolve every other spawned pilot's roster name after <paramref name="changed"/> arrived, renamed or left.</summary>
+        static void RefreshNamesakeRosterNames(Player changed)
+        {
+            for (int i = s_spawnedPlayers.Count - 1; i >= 0; i--)
+            {
+                var other = s_spawnedPlayers[i];
+                if (!other || ReferenceEquals(other, changed) || !other.IsSpawned) continue;
+
+                string resolved = other.ResolveRosterName();
+                if (resolved == other.Name) continue;
+
+                other.Name = resolved;
+                if (other.TryGetComponent<RoundStats>(out var otherStats))
+                    otherStats.Name = resolved;
+            }
+        }
+
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
-            Name = newValue.ToString();
+            Name = ResolveRosterName(); // fair play T7, and unique in the match (RosterNames)
 
             // Keep the RoundStats identity mirror live. A mid-session rename
             // (menu profile edit -> HandleProfileLoadedAfterSpawn on the owner)
@@ -1400,6 +1573,9 @@ namespace CosmicShore.Gameplay
             // an already-spawned NetworkObject.
             if (TryGetComponent<RoundStats>(out var stats))
                 stats.Name = Name;
+
+            // This name arriving or changing can move a same-named pilot's place among its namesakes.
+            RefreshNamesakeRosterNames(this);
 
             TryRaiseDeferredSpawnEvent();
         }
@@ -1440,11 +1616,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server-only: when a remote client's owner-written values (name, vessel type)
-        /// replicate, check if we can now raise the spawn event that was deferred
-        /// in OnNetworkSpawn because the owner block was skipped.
-        /// </summary>
-        /// <summary>
         /// Server-only: allow the spawn event to be raised AGAIN for this player, because the
         /// spawner consumed the first one and could not act on it.
         ///
@@ -1473,6 +1644,11 @@ namespace CosmicShore.Gameplay
             TryRaiseDeferredSpawnEvent();
         }
 
+        /// <summary>
+        /// Server-only: when a remote client's owner-written values (name, vessel type)
+        /// replicate, check if we can now raise the spawn event that was deferred
+        /// in OnNetworkSpawn because the owner block was skipped.
+        /// </summary>
         void TryRaiseDeferredSpawnEvent()
         {
             if (IsServer && !_spawnEventRaised && IsSpawnReady())

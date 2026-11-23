@@ -15,34 +15,41 @@ namespace CosmicShore.Gameplay
         [Header("Seeding")]
         [Tooltip("Seconds between one Scarab planting one ball in the nucleus. Passive — no input, " +
                  "no meter, the Dolphin crystal-seeding shape.")]
-        [Min(0.5f)] public float seedIntervalSeconds = 14f;
+        [SerializeField, Min(0.5f)] float seedIntervalSeconds = 14f;
+        public float SeedIntervalSeconds => seedIntervalSeconds;
 
         [Tooltip("Most embedded (not yet knocked loose) balls one DOMAIN may have studding the " +
                  "nucleus at once. The clock PAUSES at the cap rather than culling anything — not " +
                  "creating mass is allowed, aging it out is not.")]
-        [Min(1)] public int maxEmbeddedPerDomain = 3;
+        [SerializeField, Min(1)] int maxEmbeddedPerDomain = 3;
+        public int MaxEmbeddedPerDomain => maxEmbeddedPerDomain;
 
         [Tooltip("How far the ball sinks into the nucleus surface, as a fraction of its own radius. " +
                  "0 = sitting on the surface, 1 = fully swallowed. ~0.4 reads as embedded.")]
-        [Range(0f, 1f)] public float embedSinkFraction = 0.4f;
+        [SerializeField, Range(0f, 1f)] float embedSinkFraction = 0.4f;
+        public float EmbedSinkFraction => embedSinkFraction;
 
         [Tooltip("The ball prefab the seeder mints. Leave EMPTY to disable seeding entirely — an " +
                  "unwired slot is a visible TODO, never a borrowed prefab.")]
-        public AstroLeagueBall ballPrefab;
+        [SerializeField] AstroLeagueBall ballPrefab;
+        public AstroLeagueBall BallPrefab => ballPrefab;
 
         [Header("Nucleus overload")]
         [Tooltip("How many of ONE SCARAB's balls (counted by domain) may be knocked INTO the nucleus " +
                  "before the next one overloads it. One more of that domain's balls detonates " +
                  "instead of entering, so this many can be banked safely per Scarab.")]
-        [Min(1)] public int nucleusEntryLimit = 5;
+        [SerializeField, Min(1)] int nucleusEntryLimit = 5;
+        public int NucleusEntryLimit => nucleusEntryLimit;
 
         [Tooltip("Explosion radius of the overload detonation, as a multiple of each ball's own " +
                  "radius.")]
-        [Min(0.1f)] public float detonationRadiusScale = 6f;
+        [SerializeField, Min(0.1f)] float detonationRadiusScale = 6f;
+        public float DetonationRadiusScale => detonationRadiusScale;
 
         [Tooltip("ON: the overload detonates EVERY live ball (the authored spectacle). OFF: only the " +
                  "balls banked inside the nucleus. A dial for playtest, not a design fork.")]
-        public bool detonateAllLiveBalls = true;
+        [SerializeField] bool detonateAllLiveBalls = true;
+        public bool DetonateAllLiveBalls => detonateAllLiveBalls;
 
         // NO CYTOPLASM FIELD. A ball knocked outward is held inside the membrane and bounced off the
         // nucleus from outside by the BALL itself (AstroLeagueBall.ResolveNucleusBoundary), which

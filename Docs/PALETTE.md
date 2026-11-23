@@ -1,5 +1,8 @@
 # PALETTE.md — the domain colour set (and how to change a prism tier safely)
 
+> Which of the six families a colour belongs to, and the forbidden band between them, is decided by
+> `Docs/VesselModels/colour_domains.json` (`COLOR_DOMAINS.md`, `Tools/Build/colour_domains.py --check`).
+
 Scope: `SO_ColorSet` — the per-domain colours that drive vessels, prisms, crystals,
 AOE and UI. This doc exists because prism colours are **measurable**, not a matter of
 taste alone: the shielded tier was hand-tuned twice by eye and both passes missed the
@@ -9,9 +12,57 @@ actual defect. Read §3 before touching any `*BlockColor` field.
 
 | | |
 |---|---|
-| Active asset | `Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset` (guid `8d1c1bdcb636a424d9c54fbd1afc952f`) |
-| Wired at | `ThemeManagerDataContainer.asset` → `ColorSet` |
+| Active asset | `Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset` (guid `116ff08ebc0c4e6db955bab003a86ce4`), the default since 2026-11-03 |
+| Wired at | `ThemeManagerDataContainer.asset` → `ColorSet`, and directly in `ThemeManager`, `ArkView`, `CodexView`, `ConfigureDomainColumn` and `ConfigureSeatPedestal` |
+| Written by | `Tools/Build/author_colour_set_assets.py`, from `Docs/VesselModels/colour_sets.json` and the tuning in Photic. Never hand-edit it; `--check` is the drift gate. |
 | Consumer | `ThemeManager.GenerateDomainMaterialSet` (per-domain material set) + `GameToastAPI.ColorSet` (domain name tinting) |
+
+**`PhoticColorSetSO`** (guid `8d1c1bdcb636a424d9c54fbd1afc952f`; named `OriginalColorSetSO` until 2026-11-03) was the
+default until then. It is no longer wired to the game, but it is still load-bearing: every number this doc quotes as
+"shipped" or "authored" is Photic's, Nocturne's fields take their brightness, alpha and tier whiteness from it, and
+`colour_domains.py`, `kite_mote_colors.py`, `vessel_colors.py`, the vessel studio's `domain_colors.py` and
+`render_card_backgrounds.py` still read it. So a tuning edit goes into Photic, then re-run the writer to carry it into
+the sets. A hue belongs in `colour_sets.json`.
+
+Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
+
+- **HUD shielded signal.** `GetShieldedSignalColor` reads the shielded FACE, so it now paints Jade `#552345`, Ruby
+  `#385060` and Gold `#53416C` (HSV value 0.33-0.42, against Photic's 0.60-0.73). The Squirrel, Angler and Butterfly HUDs
+  use it. Check that those icons stay legible.
+- **Not moved by the switch, because they read Photic:** the vessel hull materials (`vessel_colors.py`), the rendered card
+  art (`render_card_backgrounds.py`), the vessel studio's colours (`domain_colors.py`) and the Amoebius launcher's three
+  accent colours (`Port/src/CosmicShore.Launcher/Neon.cs`, kept matched to Photic by `domain_colors.py --check`).
+  Amoebius itself follows the live palette since 2026-11-05: its player loads whatever `ThemeManagerDataContainer.ColorSet`
+  names, and its client windows read that asset by guid (`SkimRaceTheme.CreateColorSet`, `LivePaletteTests`).
+- **The icon kit's shielded colours are a hand table** (`Tools/Build/icon_kit/states.py` `SHIELDED`, light blues and
+  golds that predate the switch), so its states sheets and the Fleet Codex's L5 art (`fleet_codex.py` `L5_SHIELDED`)
+  no longer match what the HUD paints. The Fleet Codex's domain picker reads the live palette (whatever
+  `ThemeManagerDataContainer.ColorSet` names) since 2026-11-05.
+
+- **Nocturne's Gold domain was in the forbidden band; fixed 2026-11-10.** The HUD reads `TrailHighlightColor` as sRGB,
+  so Nocturne's honey showed there as `#FF8F11`, between Gold and Fire. Its Gold rim moved 4 degrees toward yellow (hue
+  83 to 87, `colour_sets.json` rule 4) and the HUD gold is now `#FF9B11`, inside Gold; the style guide's tokens
+  (`Tools/Build/froglet_style.py`) followed.
+
+**`NacreColorSetSO`** (2026-11-08, re-derived 2026-11-10) is the light set, Nocturne's complement: soft bodies in each
+family's own colour under clearer rims of the same family, written like the others from `colour_sets.json` (`nacre`)
+and offered in the Profile's colour-set rail. It is the one set with `rim_brightness` (0.7): its rim fields are Photic's
+brightness times 0.7. Its first cut painted pale faces of other hues at L 0.70-0.79; under the gameplay bloom (threshold
+0.2, clamp 0.5, intensity 2.5) they washed out to white and named the wrong domains. Its faces now sit at mid L
+0.56-0.66, so the bloom lifts them to pastel (`colour_set_maker.py preview` models it); how light it reads on screen is
+still an editor call. It does not replace `PastelColorSetSO`, which is older and still unwired.
+
+**`DartFrogColorSetSO`** was re-derived on 2026-11-10 too: each frog's warning colour stays the rim and its ground goes
+into the night (L 0.40 or below), so a Jade prism no longer reads as bronze; Blue is the Azureus, azure over cobalt. Every
+set obeys the seven rules of `colour_sets.json` (`colour_sets.py --check`, `/colour-set`).
+
+**`BlueRingedOctopusColorSetSO`, `NeonNoirColorSetSO`, `UkiyoEColorSetSO` and `DuskColorSetSO`** (2026-11-11) were the
+`/colour-set` skill's worked examples (an animal, a film genre's palette, a painting style, a mood) and are now game sets
+in the Profile's colour-set rail, beside the other looks (free track, unlocked like every set; Garrett: "the artifact
+lab had some great new color sets"), written like the others from `colour_sets.json`. Taking Dusk in moved its Lime
+face (Heather) 1 degree and 0.005 saturation: the palette writer's whitened Ruby fields walk toward grey along the
+plum's hue and one of them (`AOEConicEdgeColor`) landed in that quiet purple face. `author_colour_set_assets.py --check`
+now holds the examples to the same field rule, so the next example taken into the game is a move, not a re-derivation.
 
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
@@ -85,8 +136,9 @@ blast impulse"). Set it to 1 for palette-only behaviour.
 
 ### 2.2 The CTA lime — the crystal tier, and why bloom is bought with AREA (2026-08-15)
 
-Crystal COLOUR signals **who may collect it**, never which element it is (element is shape):
-domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
+Crystal COLOUR signals **who may collect it** (element is shape; since 2026-10-27 the free
+elementals also wear one SHADE of the lime each, §2.11, so the colour FAMILY says who collects and
+the shade says which element): domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
 neutral, and a **free pickup wears the lime CTA** (`EnvironmentColorSet.BrightCTA` / `DarkCTA`).
 `Crystal.ApplyColorSetTint` drives it per-renderer through a `MaterialPropertyBlock`, and
 `Crystal.FindColorPropertyNames` accepts either naming pair, so it reaches all five crystals
@@ -142,7 +194,7 @@ bloom contribution rises with the max channel only up to 0.5 and is **flat above
 Two consequences, both load-bearing:
 
 1. **§3's "channels above 1.0 bloom" is FALSE in gameplay.** 56 of the 86 colours authored in
-   `OriginalColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
+   `PhoticColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
    flattened to the same bloom. Raising the clamp is therefore not a crystal change — it re-lights
    the entire palette — and is deliberately **not** done here. See §7.
 2. **Within the clamp, extra bloom is bought with bright AREA, not intensity.** `DarkCTA` was
@@ -154,10 +206,13 @@ Two consequences, both load-bearing:
    unchanged at `(0.59, 0.92, 0.16)`: at max 0.92 it was already saturating the clamp, so raising
    it would have bought exactly nothing.
 
-**The omni is the hero; the four elementals are the same lime, dimmed.**
+**The omni is the hero; the four elementals are the lime, dimmed** (each in its own shade since
+2026-10-27, §2.11: the tint moves the CTA pair to the element's hue at the same brightest channel,
+then applies this scalar, so the table below still holds for the shades whose brightest channel is 1).
 `EnvironmentColorSet.ElementalCrystalDimming` (**0.45**) scales the CTA pair for anything
-`CrystalProperties.IsElemental`, leaving the omni at full strength. Note the omni and the Mass
-crystal wear the *same four materials*, so this scalar is the only thing that distinguishes them.
+`CrystalProperties.IsElemental`, leaving the omni at full strength. That note once said the omni and the Mass
+crystal wear the same materials so this scalar was all that told them apart; by 2026-10 neither was
+reached by the tint at all and they wore one identical lime, which §2.11 resolves.
 
 The scalar is far more sensitive than it looks, because the bloom **threshold (0.2) sits inside
 the elemental body's range** — so tune it against the measured curve, not by eye:
@@ -238,7 +293,7 @@ actually *transitioning*, and cheaper than the cloned-material lerp it runs alon
 ### 2.4 A crystal colour is NOT a domain's UI colour — `GetDomainSignalColor` (2026-08-17)
 
 **`DullCrystalColor` is authored `(0, 0, 0)` on Jade, Ruby AND Gold in the live
-`OriginalColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
+`PhoticColorSetSO`.** Only Blue has a non-black dull. That is deliberate and correct *on a
 crystal*: §2.2 established that at the crystal shaders' fresnel power the dull colour paints ~93% of
 the surface, so a near-black body with a bright fresnel rim is what makes a faceted domain crystal
 read as a dark gem with a lit edge.
@@ -272,7 +327,7 @@ separate by HUE from the lit prisms around it, and brightness alone cannot do th
 §2.2's "dull is the body, bright is only the rim" is a statement about a **crystal**, and it is
 what makes `DarkCTA` the right read *on a crystal*. It is the wrong read on anything that does not
 compose the pair. A **prism** does not: it takes one colour. So a prism painted from `DarkCTA`
-alone renders the shipped `OriginalColorSetSO` value (0.28125, 0.5, 0.078125) as a **dark olive**,
+alone renders the shipped `PhoticColorSetSO` value (0.28125, 0.5, 0.078125) as a **dark olive**,
 not as the free-pickup lime a player has learned — the same shape of mistake as §2.4's, reached
 from the other pair.
 
@@ -306,7 +361,7 @@ The danger tier has **no colour fields of its own** (§ "The danger tier borrows
 `EnvironmentColors.Danger` rim, and the RIM is the half that says dangerous. So that is what the
 accessor returns, normalised the way the other two are:
 
-| source | shipped `OriginalColorSetSO` value |
+| source | shipped `PhoticColorSetSO` value |
 |---|---|
 | `EnvironmentColors.Danger` raw | (1.4979, 0.00585, 0.00685, **a: 0**) |
 | `GetDangerSignalColor()` | (1.0, 0.0039, 0.0046, a: 1) |
@@ -401,7 +456,7 @@ as Jade — is 41° away in the other direction:
 So a *correct* Jade card and the sentinel bug are indistinguishable at 60 px, and the only thing that
 separates "this is Jade" from "this never resolved" is that an unresolved read renders **white**. The
 icon is honest — Jade's shielded mass really is blue, on every palette that authors it (`CosmicWave`
-and `Pastel` author alpha 0 and are correctly refused, so `OriginalColorSetSO` is the only live answer
+and `Pastel` author alpha 0 and are correctly refused, so `PhoticColorSetSO` is the only live answer
 and `ThemeManager` never swaps it). If a card should say WHICH DOMAIN rather than WHAT THE MASS IS,
 that is `GetDomainSignalColor` and a different promise.
 
@@ -409,7 +464,7 @@ The refusal belongs to the **CALLER**, not to the accessor: "no pilot can fly Bl
 pilots, and a neutral mine or an uncommitted crystal legitimately wants to know what colour no-team
 is, so the palette stays a pure palette read. A HUD that means *this pilot's domain* tests for the
 sentinel itself and treats it as "not resolved yet" — alpha 0, keep your white, and keep looking
-(`SquirrelVesselHUDController.ResolveShieldedColor`). Two executors already used exactly that idiom
+(`SquirrelHUDController.ResolveShieldedColor`). Two executors already used exactly that idiom
 from the other direction before this — `EchoSightActionExecutor` and `SniperShotActionExecutor` both
 write `status?.Player != null ? status.Domain : Domains.Blue`, i.e. **Blue already MEANS unresolved in
 this codebase** — which is the whole reason it must never be looked up as a colour.
@@ -659,7 +714,8 @@ mismatch the first pass had: the triangles were on `ShepardGraph`, whose colour 
 `lerp(dull, bright, (1−N·V)⁴)` and which `Crystal.ApplyColorSetTint` repaints with the CTA pair at
 runtime, while the body showed its authored Fresnel lime — two formulas, two limes. Neither Fresnel
 shader is reached by the CTA tint (they name the pair `_BrightColor`/`_DarkColor`), so the omni shows
-exactly its authored lime, like the Space and Time crystals.
+exactly its authored lime, like the Space and Time crystals. (Since 2026-10-28 that authored lime is
+four: each element's shapes in its own shade, §2.12.)
 
 **Team crystals are the same crystal in domain colours.** A domain-owned crystal (Skim Race track
 crystals through `CrystalManager.ChangeDomain`, the Dolphin's `TeamCrystal`) swaps every model to
@@ -754,6 +810,133 @@ nearly "cleaned up". Zeroing it takes assimp from **3 animations to 9**, because
 hold translation curves that ARE that offset and were being dropped as no-ops against it. It stays.
 It never reaches the shells anyway — they reference the MESH, whose vertices Unity keeps in node
 space. *Before removing a transform that looks like an export artifact, check what reads it.*
+
+### 2.11 Each free elemental crystal wears its own shade of lime (Garrett, 2026-10-27; shades replaced 2026-10-31, §2.13)
+
+"Right now mass crystals and omnicrystals are the hardest to distinguish. Shift the colors on each
+element to match the color shifts we used for the wrasse's 2d elements." Measured before the change:
+the omni body (`OmniCrystalBody`), its triangles (`OmniDepthPrisms`) and the free Mass crystal
+(`MassDepthPrisms`) all wore `_BrightColor` `#7cfc00` over the same near-black, on shaders the
+runtime tint does not reach, and Space and Time shared `LimeCrystalFresnelMaterial` with that same
+lime. So only shape told the omni from the Mass crystal.
+
+**The shades** are the Wrasse's four lasso colours (`Tools/Build/kite_mote_colors.py`: the corners
+of the largest tetrahedron inside lime's boundary against Jade, Ruby, Gold, Blue and Fire, every
+pair apart in hue, saturation and value). The script now also writes them into the palette,
+`EnvironmentColors.ElementalCrystalColors` (index = `Element` − 1), and `--check` holds all three
+copies (Kite config, Wrasse Lasso Lab, palette) to the one derivation.
+
+| element | shade | vs the omni's `#7cfc00` (OKLab) |
+|---|---|---|
+| Charge | `#a0ff00` | 0.034, warmer and brighter |
+| Mass | `#5ec600` | **0.153**, the darkest corner |
+| Space | `#40ff00` | 0.034, cooler (toward Jade) |
+| Time | `#9bcf00` | 0.119, the warmest |
+
+**How each crystal takes it** (one rule: the element's shade at the donor colour's brightest
+channel, `Color.WithHueOf`):
+- **Charge** (and `ActiveCrystalSpace`'s `CrystalGraph` material): the runtime tint,
+  `Crystal.TryResolveTintColors`: CTA pair → the shade → `ElementalCrystalDimming`. An unauthored
+  shade (alpha 0) falls back to the plain CTA.
+- **Mass**: `MassDepthPrisms.mat`'s bright colour, authored by `author_mass_crystal_look.py`.
+- **Space / Time**: their own clones of `LimeCrystalFresnelMaterial`, `SpaceCrystalFresnelMaterial`
+  and `TimeCrystalFresnelMaterial`, as each prefab's free (default) material. Authored by
+  `Tools/Build/author_elemental_crystal_colors.py` (`--check`, `--self-test`), which reads the
+  shades from the palette and also fails if the Mass crystal wears the omni's colour again.
+- The Fresnel materials move only their bright colour: their dark end is near-black.
+
+**Unchanged:** embedded hearts keep the blue-white neutral, and team crystals keep their domain pair.
+Lime still means anyone collects. **Superseded for the omni on 2026-10-28 (§2.12):** it no longer wears
+one lime but all four shades, each on its element's shapes, and **the omni converter**
+(`OmniCombinePlayer`, the Elemental Converter's conversion animation) no longer eases each crystal to the
+omni's lime: each keeps its own shade all the way in and lands as the omni's plates in that same shade. The
+Omni Combine Lab does not model the colours; its parity harness holds the motion only. **To retune a shade**,
+rerun `kite_mote_colors.py`, then `author_elemental_crystal_colors.py`, `author_mass_crystal_look.py` and
+`author_omni_crystal_triangles.py` (the omni's four shades). The Fresnel family still sits
+outside the live tint (§2.10, "Not reached by §2.2's tint"), so those materials are generated from the
+palette rather than painted by it.
+
+**Through the bloom (measured 2026-10-27, `Tools/Build/crystal_bloom_preview.py`).** Garrett's bar: each crystal
+distinct AND reading as lime (not green, not yellow, not white) *after* the gameplay bloom. The tool renders each free
+crystal from its real mesh and shader formula, then runs URP 17's own bloom chain with the gameplay profile. In that
+chain the threshold is `Mathf.GammaToLinearSpace(0.2)`, about 0.033 in linear. The clamp of 0.5 applies per
+channel before the threshold, and the knee is hard-coded to half the threshold. It measures the light each crystal
+adds over the sky, at a near and a far size. What it found for the shipped shades:
+
+| crystal | after bloom | the problem |
+|---|---|---|
+| Space `#40ff00` | 10% green near, 27% far | its shade sits ON the 105° green edge, and the shading carries it over |
+| Time `#9bcf00` | 89% yellow near, 74% far | its shade sits ON the 75° yellow edge; the per-channel clamp cuts green more than red |
+| Omni / Space | 0.023 apart (far) | the closest pair, about one just-noticeable difference |
+| Charge | lime, but OKLab L 0.28-0.34 | `ElementalCrystalDimming` 0.45 leaves it dark green-black, outside lime's lightness |
+
+Nothing clips, whitens or turns yellow from bloom alone: the 0.5 clamp keeps every glow below saturation. Bloom
+raises lightness and chroma but barely moves hue. A candidate set that passes (`--propose`, all four inside the lime
+boundary, at most 5% off-lime after bloom at both sizes, Mass darkest, Space coolest, Time warmest) is Charge
+`#5fd200`, Mass `#89bf00`, Space `#52df00`, Time `#a4df00`: closest pair 0.050 after bloom. It is NOT applied; the
+shades are the Wrasse's too. Charge's lightness is a separate decision: undimmed it collides with Mass (0.030),
+because its shader paints mostly the dull end of its pair.
+
+### 2.12 The omni crystal wears all four shades, each on its element's shapes (Garrett, 2026-10-28)
+
+"When the elemental crystals combine have them retain their separate colors. Change the omnicrystal to retain
+all four elemental colors of lime in all instances." Until then (§2.11) the free omni wore ONE lime, and the
+converter eased each crystal from its shade to that lime as it landed.
+
+**The rule.** An element's shapes wear that element's shade wherever they are: on the free elemental crystal
+(§2.11), in flight in the converter, and on the omni. The omni is an exploded polyhedron whose plate
+families ARE the elements (§2.10), so it reads as the four crystals combined:
+
+| plates | element | shade (at the body's brightness) | drawn by |
+|---|---|---|---|
+| 12 pentagonal prisms (10 corners) | Charge | `_ChargeColor` | the body, and the flux arcs' lit pentagons (`OmniChargeArcs`, `CrystalAccentTint`) |
+| 20 triangular prisms (6 corners) | Mass | `_MassColor` = `OmniDepthPrisms._BrightColor` | the depth prisms (the body's own triangles are cut) |
+| 60 square slabs (8 corners, one distance) | Space | `_SpaceColor` | the body |
+| 30 rhombic slabs (8 corners, two distances) | Time | `_TimeColor` | the body |
+
+**How the body knows which plate is which.** It is one mesh, so the element rides per vertex:
+`CrystalElementPlates` splits the mesh into plates exactly as `RhombusSkinBaker` does (weld, connected
+components, corner count, the rhombus distance test) and writes `(int)Element` into **TEXCOORD4.x**
+(channels 2 and 3 are the crystal morph's). `OmniCrystalFresnelShader` reads it: with `_ElementShades` on, a
+plate's bright colour is its element's, else `_BrightColor`. Every mesh the body draws carries the channel:
+the skin twin (`RhombusSkinBaker.Bake`) writes it and the cut and Space-squares twins are copies of it;
+`CrystalSpaceSquaresBaker` writes it for a body that never went through the skin bake; the vessel morphs
+(the Scarab forge, the Squirrel ring) build from `CrystalElementPlates.WithElements` and
+`CrystalMorphMeshBuilder` carries it per corner, and the shades fade into the target's colour on the morph
+weight; the converter's pieces write it from the combine data (a crystal's every plate is its own element,
+an omni plate its `plateOwner`'s). Measured on the shipped FBX: 12 / 20 / 60 / 30 plates, none left over
+(`CrystalElementPlatesTests`).
+
+**Where each colour is authored.** `author_omni_crystal_triangles.py` (`--check`) writes the four shades into
+`OmniCrystalBody.mat` from the palette's `ElementalCrystalColors` by §2.11's rule (`ELEMENT_COLORS.recolor`:
+the element's shade at the body's bright colour's brightest channel), the Mass shade onto `OmniDepthPrisms`
+and the Charge shade onto `OmniChargeArcs`. `_BrightColor` stays the omni's lime: the fallback for a plate
+or mesh that names no element.
+
+**What stays one colour.** The embedded omni (`OmniCrystalBodyInactive`, `_ElementShades` 0) stays the
+blue-white neutral, and a TEAM omni stays its domain pair: `ThemeManager` paints every team crystal clone and
+turns its `_ElementShades` off. Colour FAMILY still says who collects; the shade says which element.
+
+**Not modelled:** the Omni Shepard Lab and the Omni Combine Lab draw the omni body in one lime (their parity
+harnesses hold shape and motion, not colour), and `crystal_bloom_preview.py`'s "Omni" row measures the body's
+`_BrightColor` alone.
+
+### 2.13 The four shades became one lime at four lightnesses (Garrett, 2026-10-31)
+
+The shades §2.11 and §2.12 measured were replaced. §2.11's tables describe the 2026-10-27 shades and stay as that
+round's record; the rules they explain (each crystal takes its shade at the donor's brightness, the omni wears all four
+on its element's shapes) are unchanged. The four are now `Docs/VesselModels/COLOR.md` §5d:
+
+| Element | Colour | sRGB | OKLab L | in Lime (source of truth) |
+|---|---|---|---|---|
+| Charge | `#2E5300` | (0.1821, 0.327, 0) | 0.400 | 0.2 JND inside its border |
+| Mass | `#508900` | (0.312, 0.5361, 0) | 0.567 | 1.1 JND |
+| Space | `#73C200` | (0.4519, 0.7614, 0) | 0.734 | 2.0 JND |
+| Time | `#99FF00` | (0.6, 1, 0) | 0.902 | 2.9 JND |
+
+Charge is the darkest (its plasma lights it up), so its crystal and its arcs (`OmniChargeArcs`) are much darker than
+before; the arcs' white core still carries their light. The omni's own lime (`#7cfc00` body, at full CTA strength) is
+untouched.
 
 ## 3. The colour-space rule (this is the trap)
 
@@ -1042,7 +1225,7 @@ other tiers first, then solve the channels.
 
 Machine validation covers structure and colorimetry; only a playtest covers *looks right*:
 
-1. Pull, let Unity reimport `OriginalColorSetSO.asset` (if nothing changes visually,
+1. Pull, let Unity reimport `PhoticColorSetSO.asset` (if nothing changes visually,
    suspect a stale Library and Reimport the asset before suspecting the values).
 2. Get shielded prisms on screen. Verified producers, easiest first:
    - **Any cell with lifeforms** (Menu_Main freestyle) — every flora/fauna **health

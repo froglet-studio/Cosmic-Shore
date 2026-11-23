@@ -103,7 +103,7 @@ namespace CosmicShore.Utility
 
                 bool wantPair =
                     config.HasConcepts(ScreenshotFramingKind.Pair) &&
-                    _rng.NextDouble() < config.pairChance &&
+                    _rng.NextDouble() < config.PairChance &&
                     TryResolvePair(config, subject, out pairA, out pairB, out pairRadius);
 
                 var kind = wantPair ? ScreenshotFramingKind.Pair : ScreenshotFramingKind.Solo;
@@ -224,8 +224,8 @@ namespace CosmicShore.Utility
             Func<ScreenshotShot> solve,
             Func<ScreenshotShot, int> scoreOccluders)
         {
-            int samples = Mathf.Max(1, config.clearShotSamples);
-            int acceptAt = Mathf.Max(0, config.clearShotAcceptOccluders);
+            int samples = Mathf.Max(1, config.ClearShotSamples);
+            int acceptAt = Mathf.Max(0, config.ClearShotAcceptOccluders);
 
             ScreenshotShot best = solve();
             if (samples == 1) return best;
@@ -436,7 +436,7 @@ namespace CosmicShore.Utility
         /// </summary>
         static bool HoldOcclusionCorridor(ScreenshotDirectorConfigSO config)
         {
-            if (!config.holdOcclusionCorridor || PrismOcclusionCorridor.IsSuppressed) return false;
+            if (!config.HoldOcclusionCorridor || PrismOcclusionCorridor.IsSuppressed) return false;
             PrismOcclusionCorridor.SetSuppressed(true);
             return true;
         }
@@ -448,7 +448,7 @@ namespace CosmicShore.Utility
             var cam = EnsureCamera(config);
             if (cam == null) return null;
 
-            int height = Mathf.Clamp(config.captureHeight, 480, 4320);
+            int height = Mathf.Clamp(config.CaptureHeight, 480, 4320);
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
             int width = Mathf.Clamp(Mathf.RoundToInt(height * aspect), 480, 8192);
 
@@ -457,7 +457,7 @@ namespace CosmicShore.Utility
             // shot comes back with stair-stepped prism edges and reads as a lower-quality image
             // than the screen it was taken from. `QualitySettings.antiAliasing` is the value URP
             // syncs FROM its own asset, so this asks for exactly what the game is running.
-            int msaa = config.matchGameQuality ? ResolveMsaaSamples() : 1;
+            int msaa = config.MatchGameQuality ? ResolveMsaaSamples() : 1;
 
             // sRGB read/write, because the project renders in linear and the PNG has to come out
             // looking like the screen rather than washed out.
@@ -541,17 +541,17 @@ namespace CosmicShore.Utility
             {
                 _camera.clearFlags = source.clearFlags;
                 _camera.backgroundColor = source.backgroundColor;
-                _camera.cullingMask = source.cullingMask & ~config.excludedLayers.value;
+                _camera.cullingMask = source.cullingMask & ~config.ExcludedLayers.value;
                 _camera.allowHDR = source.allowHDR;
                 _camera.allowMSAA = source.allowMSAA;
             }
             else
             {
                 _camera.clearFlags = CameraClearFlags.Skybox;
-                _camera.cullingMask = ~config.excludedLayers.value;
+                _camera.cullingMask = ~config.ExcludedLayers.value;
             }
 
-            AdoptUrpSettings(_camera, source, config.matchGameQuality);
+            AdoptUrpSettings(_camera, source, config.MatchGameQuality);
             return _camera;
         }
 

@@ -1472,7 +1472,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 1
+    Value: 1.871
     Min: 1
     Max: 1
     element: 0
@@ -1552,6 +1552,8 @@ MonoBehaviour:
   playerSeekUpdateInterval: 0.5
   playerReacquireInterval: 0.1
   massClusterRetargetInterval: 1.5
+  attackFiredByCrystal: 1
+  rivalAimMaxRange: 900
   breakOrbits: 1
   orbitBreakAwayBias: 0.35
   approachRunSeconds: 2.5
@@ -3397,11 +3399,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7719386630505466999}
     m_Modifications:
-    - target: {fileID: 139200945702124579, guid: 3a48a770e15885e4dbc159855aebb73e,
-        type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 1586211685923894504, guid: 3a48a770e15885e4dbc159855aebb73e,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -3536,11 +3533,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8426153630896085836, guid: 3a48a770e15885e4dbc159855aebb73e,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:

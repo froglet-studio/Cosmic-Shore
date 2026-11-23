@@ -177,5 +177,119 @@ namespace CosmicShore.Tests
             var f = JacksMath.SteadyForward(Vector3.forward, Vector3.up, Vector3.right);
             Assert.AreEqual(Vector3.forward, f);
         }
+
+        [Test]
+        public void Net_OpensWithTheSticksApart_AndReadsBackFromTheFish()
+        {
+            // Garrett, 2026-10-24: "a net that opens wider with xdiff"
+            Assert.AreEqual(0f, JacksMath.NetOpenFromSticks(Vector2.zero, Vector2.zero), Eps);
+            Assert.AreEqual(1f, JacksMath.NetOpenFromSticks(Vector2.left, Vector2.right), Eps);
+            Assert.AreEqual(0f, JacksMath.NetOpenFromSticks(Vector2.right, Vector2.left), Eps);   // together: closed
+            Assert.AreEqual(0.5f, JacksMath.NetOpenFromSticks(new Vector2(-0.5f, 0f), new Vector2(0.5f, 0f)), Eps);
+            Assert.AreEqual(0f, JacksMath.NetOpenFromGap(28f, 28f, 128f), Eps);
+            Assert.AreEqual(0.5f, JacksMath.NetOpenFromGap(78f, 28f, 128f), Eps);
+            Assert.AreEqual(1f, JacksMath.NetOpenFromGap(500f, 28f, 128f), Eps);
+        }
+
+        [Test]
+        public void Net_HoldsWhatIsBetweenTheFishAndBehindTheMouth()
+        {
+            // the fish 40 apart across the hull's x, flying +z: the bag hangs back toward -z
+            var net = JacksMath.NetFrame.Between(new Vector3(-20f, 0f, 0f), new Vector3(20f, 0f, 0f), Vector3.forward,
+                                                Vector3.up, 20f, 24f);
+            Assert.Less(Vector3.Distance(net.Normal, Vector3.forward), Eps);
+            Assert.IsTrue(net.Contains(new Vector3(0f, 0f, -10f), 0f, out float s, out float t, out float w));
+            Assert.AreEqual(0.5f, s, Eps);
+            Assert.AreEqual(0f, t, Eps);
+            Assert.AreEqual(10f / 24f, w, Eps);
+            Assert.IsFalse(net.Contains(new Vector3(0f, 0f, 5f), 0f, out _, out _, out _), "ahead of the mouth");
+            Assert.IsFalse(net.Contains(new Vector3(0f, 0f, -30f), 0f, out _, out _, out _), "past the bag");
+            Assert.IsFalse(net.Contains(new Vector3(30f, 0f, -1f), 0f, out _, out _, out _), "outside the fish");
+            Assert.IsFalse(net.Contains(new Vector3(0f, 15f, -5f), 0f, out _, out _, out _), "above the mouth");
+            // a point's (s, t, w) maps back to itself
+            var p = net.Point(0.3f, -0.4f, 0.6f);
+            Assert.IsTrue(net.Contains(p, 0.01f, out s, out t, out w));
+            Assert.AreEqual(0.3f, s, Eps);
+            Assert.AreEqual(-0.4f, t, Eps);
+            Assert.AreEqual(0.6f, w, Eps);
+        }
+
+        [Test]
+        public void ChaseCamera_BacksOffUntilTheNetIsInView()
+        {
+            float tan = Mathf.Tan(30f * Mathf.Deg2Rad);
+            // a fish 50 to the side: at fill 1 the camera sits 50 / tan30 back
+            Assert.AreEqual(50f / tan, JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 1f), 0.01f);
+            // the bag behind the hull needs the camera further back by as much
+            Assert.AreEqual(50f / tan + 20f, JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, -20f), tan, tan, 1f), 0.01f);
+            // a smaller share of the view pushes it back
+            Assert.Greater(JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 0.5f),
+                           JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 1f));
+        }
+
+        [Test]
+        public void Net_SwingsOutAgainstTheTurn_InEveryDirection_WhileTheTurnLasts()
+        {
+            // Garrett, 2026-10-25: "i would expect this to work in any direction (including combinations like 30 degrees vs 70
+            // degrees) and it should work whether changing or maintaining directions"
+            var f = Vector3.forward;
+            Assert.Less(Vector3.Distance(JacksMath.SwingBag(f, Vector3.zero, 0.6f, 1.2f), Vector3.back), Eps, "straight: back");
+            foreach (float deg in new[] { 0f, 30f, 70f, 90f, 180f, 250f })
+            {
+                // the nose turning toward `dir` at 1 rad/s: the bag leans the other way, the same every frame it lasts
+                var dir = Quaternion.AngleAxis(deg, f) * Vector3.up;
+                var bag = JacksMath.SwingBag(f, dir, 0.6f, 1.2f);
+                Assert.Less(Vector3.Dot(bag, f), 0f, $"{deg}: behind");
+                var lean = Vector3.ProjectOnPlane(bag, f).normalized;
+                Assert.Less(Vector3.Distance(lean, -dir), Eps, $"{deg}: out against the turn");
+            }
+            // turning up swings it down; turning left swings it right; capped
+            var up = JacksMath.SwingBag(f, Vector3.up * 10f, 0.6f, 1.2f);
+            Assert.Less(up.y, 0f);
+            Assert.AreEqual(Mathf.Atan(1.2f), Vector3.Angle(up, Vector3.back) * Mathf.Deg2Rad, 1e-3f);
+            Assert.Greater(JacksMath.SwingBag(f, Vector3.left, 0.6f, 1.2f).x, 0f);
+        }
+
+        [Test]
+        public void Net_ALeaningBag_HoldsWhatHangsInIt()
+        {
+            // the bag swung sideways, along the fish line: a point it holds maps back to itself, and the mouth stays between the fish
+            var bag = new Vector3(0.6f, 0f, -0.8f);
+            var net = JacksMath.NetFrame.Between(new Vector3(-20f, 0f, 0f), new Vector3(20f, 0f, 0f), Vector3.forward, Vector3.up,
+                                                bag, 20f, 24f);
+            Assert.Less(Vector3.Distance(net.Bag, bag.normalized), Eps);
+            var p = net.Point(0.4f, 0.3f, 0.7f);
+            Assert.IsTrue(net.Contains(p, 0.01f, out float s, out float t, out float w));
+            Assert.AreEqual(0.4f, s, Eps);
+            Assert.AreEqual(0.3f, t, Eps);
+            Assert.AreEqual(0.7f, w, Eps);
+            Assert.IsFalse(net.Contains(new Vector3(0f, 0f, 3f), 0f, out _, out _, out _), "ahead of the mouth");
+            // a bag laid flat against the mouth is stood back up
+            var flat = JacksMath.NetFrame.Between(new Vector3(-20f, 0f, 0f), new Vector3(20f, 0f, 0f), Vector3.forward, Vector3.up,
+                                                 Vector3.right, 20f, 24f);
+            Assert.GreaterOrEqual(-Vector3.Dot(flat.Bag, flat.Normal), 0.29f);
+        }
+
+        [Test]
+        public void Net_ASurfacePoint_LiesAcrossTheMesh_FacingTheMouth()
+        {
+            // what is stuck in the net lies flat against it (2026-10-25): along the fish line at the bottom of the bag, standing
+            // out toward the mouth, and the normal is square to both directions of the mesh everywhere
+            var net = JacksMath.NetFrame.Between(new Vector3(-20f, 0f, 0f), new Vector3(20f, 0f, 0f), Vector3.forward, Vector3.up,
+                                                20f, 24f);
+            net.SurfaceAt(0.5f, 0f, 1f, out var along, out var normal);
+            Assert.Less(Vector3.Distance(along, Vector3.right), Eps, "across the bottom of the bag: along the fish line");
+            Assert.Less(Vector3.Distance(normal, Vector3.forward), Eps, "facing the mouth");
+            foreach (var (s, t) in new[] { (0.2f, 0.5f), (0.8f, -0.6f), (0.5f, 0.9f), (0.05f, 0f) })
+            {
+                net.SurfaceAt(s, t, 1f, out along, out normal);
+                const float h = 1e-3f;
+                var ds = net.Point(s + h, t, 1f) - net.Point(s - h, t, 1f);
+                var dt = net.Point(s, t + h, 1f) - net.Point(s, t - h, 1f);
+                Assert.Less(Mathf.Abs(Vector3.Dot(normal, ds.normalized)), 1e-2f, $"square to the mesh along s at ({s}, {t})");
+                Assert.Less(Mathf.Abs(Vector3.Dot(normal, dt.normalized)), 1e-2f, $"square to the mesh along t at ({s}, {t})");
+                Assert.Greater(Vector3.Dot(normal, net.Normal), 0f, "toward the mouth");
+            }
+        }
     }
 }

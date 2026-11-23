@@ -579,3 +579,104 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     General rule: **a file's default pose is an output.** Gate it like the takes and morphs.
     (The Unity side is inferred from the symptom: all 14 hulls rest in their first take. The reimport check in
     `Docs/UNITY_VERIFICATION_CHECKLIST.md` confirms it; if a hull still leans, capture rest from the bind poses in code.)
+
+52. **A hull filmed SIDE-ON is judged from the camera's side, at the camera's size (2026-10-25, the Pistol,
+    `specs/pistol.py`).** The contact sheet's `side` tile looks from +X, the pilot's LEFT. The Pistol's camera sees its
+    pilot's RIGHT, where the big claw is, so round 1 was judged from a tile that showed the claw behind the body. Render
+    the camera's side too (`render.VIEWS` takes a new entry such as `(-1, 0, 0.06)`; `render.render_frame` with
+    `dist_factor` about 4 gives the game's pixel size) and look at both. Three more things the rounds taught:
+    - **A crustacean side-on reads from its outline, not its parts.** Round 1 had every part (claw, rings, struts, whips)
+      and read as a wasp: a straight tube abdomen, rings lofted flat, struts standing straight down. Round 2 read as a
+      pistol shrimp with three outline changes: rings on a CURVED spine (`spine_loft`, sections square to it) bending
+      to the fan, a pleuron plate hanging down each side of each ring (the scalloped lower edge), and struts that bend
+      in the camera's plane.
+    - **A paint band only catches faces whose CENTRE falls in it.** The barrel's loft had stations 0.09 apart and its
+      domain bands were 0.02-0.04 wide, so no face centre fell inside and nothing painted. The build reported green.
+      Loft densely (here 19 stations) wherever a band, stripe or rim is painted by position.
+    - **Build a hinged part SHUT and rotate it open by the take's angle.** The cocked hammer is the shut geometry turned
+      by -75 degrees about its knuckle, and `snap` is +75. Round 1 cocked at 62 and snapped 55, so the shut pose
+      stayed 7 degrees open. With one constant for both angles, the take is exact by construction.
+
+53. **A hull whose prefab's parts all pivot at the HULL'S CENTRE (2026-10-27, the Grizzly, `specs/grizzly.py`).** The
+    Grizzly flew the generic wedge: eight part meshes, every one pivoting at the body's origin, which `BufoAnimation`
+    swings by about 26 degrees relative to the hull. The new model keeps those part transforms (colliders, jets, guns)
+    and its bones FOLLOW them (the Rhino's pattern), but one rule did not fit every part:
+    - **A part whose FX lives on it follows rigidly.** The four engine pods follow their thrusters about the hull's
+      centre, because their VesselJets ride those transforms; a pod that pivoted elsewhere would leave its exhaust.
+    - **A part that SITS ON the body follows partly, about its own base.** The top fin's swing about the hull's
+      centre would slide the hump (now the reactor shell) a unit and a half off the shoulders. So the hump and keel
+      take 35 % of the fin's rotation about their own pivots (`humpFollow`, `keelFollow`), which reads as rolling
+      shoulders.
+    - **Read the camera before the silhouette.** The Grizzly's camera is straight behind (followOffset (0, 0, -60)), so
+      the read is the hump, the four mouths and the claws out wide. The head, the canopy and the ears are for the
+      cards and the hangar.
+    - **A long, flat muzzle reads as a crocodile.** A bear's muzzle is deep and blunt, and its brow rises steeply off
+      it. Round 1's snout was 40 % of the head and flat; round 3's was the same length, 20 % deeper and blunt at the
+      tip, and read as a bear.
+    - **Domain on a curved plate is a conformal plate, never a painted band.** Painting faces by a world threshold
+      (`n.z > 0.55`, `c.z > 0.62`) on a curved loft leaves a stair along the band's edge. A thin `offset_shell` over
+      the band, on a hairline seam, has edges that run along the body's own lines. This applies the Orca's armour-plate
+      lesson to trims, blazes and knuckles.
+    - **A tilted part meets its neighbour at its RIM.** A sensor dish tilted toward the brow touched the head at its
+      lower front rim. Raising its base made that worse, because the brow rises ahead of it, and `assembly_report`
+      measured a 0.08 % gap. Measure the clearance in the spec (a KD-tree of the neighbour's vertices; `lift_clear`)
+      and lift until it holds, instead of guessing an offset.
+
+54. **The Ark (2026-10-27/28, `cece/upbeat-johnson-j7izg7`, `specs/ark_reverse.py`): a model the game BINDS to, not just
+    draws.** Seven rounds took the mothership from a "bubbly pokemon" to a hull in five levels of scale (the boolean
+    lessons are in `Docs/VesselModels/ArkReverse.md` § What round 5 taught). Then the game started reading it:
+    - **Write a RIG TABLE beside the FBX when the game needs the model's numbers.** The Ark's hull prisms sit in the
+      model's 108 sockets and its jets and wings play its takes, so the build writes `ArkReverse.rig.json` (sockets:
+      pose, size, kind, bone; takes: per-bone quaternions per input, in Unity model space, `M R Mᵀ` with
+      `M` = Blender to Unity) and Unity reads it (`ArkRigTable`, `ArkModel`). One source, so no number is retyped in C#.
+      A take that SLIDES (the lance's `release`) carries its translation as `<take>Move`.
+    - **A take proved alone can collide when the game blends it.** `pose_clearance --takes all` was green, but the
+      game plays pitch, yaw, the bank it derives from yaw and speed at once. A jet's pitch and bank takes both turn it
+      about its own x axis, so together they swung `engine.3.ring` to 0.37 % (gate 0.4 %). The fix was a rule in the
+      game, not a smaller take: a bone two inputs move shares ONE take's worth (`ArkRigTable.Budget`), and
+      `pose_clearance --combos <grid> --budget` proves the game's whole input grid under that rule. Prove the action
+      takes (doors, lance) during the worst turns too.
+    - **The FBX export is not byte-stable; `build.py --check` compares STRUCTURE.** Two builds of the same spec
+      differed in 11 million bytes and passed `--check`. To refresh a sidecar (the rig table), build with
+      `--out <scratch>/X.fbx --no-render`, copy only the sidecar, and leave the committed FBX alone. Rebuild in place
+      only when the mesh, shapes or takes change.
+    - **The omni crystal is always one size** (Garrett, 2026-10-28). No shape key and no game code may scale it. The
+      Ark's Charge shape now lengthens only the lance. (Concept A, `specs/ark.py`, was retired the same day.)
+
+55. **The Meerkat (2026-11-03, `specs/meerkat.py`): a borrowed rig whose donor is itself a NEW hull, and a lope that
+    lifts as it bends.** The Meerkat wore the Stoat's model, so its hull keeps the Stoat's names and rest (LESSONS 48) and
+    `StoatAnimation` lopes it unchanged. Five rounds; what was new:
+    - **Pin the donor by commit, not by the working tree.** The Stoat is our own hull and still being worked on, so the
+      spec imports it with `build.artist_path(RIG_FROM, RIG_REF)` (`git show <commit>:<path>`, cached). A later Stoat
+      edit then never moves the Meerkat, and `rest_compare` / take parity have a fixed reference.
+    - **Retargeted takes need `use_fake_user` to get their rest lead.** `build.run` adds the leading `rest` take
+      (LESSONS 51) only when the first fake-user action deflects. `takes.retarget_from` leaves its actions without a
+      fake user, so the file led with `arch` and verify refused it. Set `act.use_fake_user = True` on the retargeted
+      actions and the pipeline's own rest lead applies. Retarget only the deflecting takes (`only=`), so the donor's
+      `rest` does not collide with the one the build adds.
+    - **`pose_clearance.py --combos` composes rotations only; a lope also LIFTS.** It zeroes every bone's location,
+      which suits a rotation-only rig such as the Ark. `StoatAnimation` raises the plates, the head and the tail as it
+      tilts them. So `land+turnright` there is a landing with the chest NOT raised: it reported the claws inside the
+      chest, a pose the game never plays. A blend that keeps the lifts (rotations composed, translations summed) cleared
+      the claws at 0.51 %. It found the real near-touches: the rump swings the nacelle lips 0.1 inward in a full turn
+      while the first tail sleeve stays near its pivot, and the neck base sits in the bending chest. Check a translating
+      rig's blends with the translations. The tool should grow a flag for it (Shombith heads tooling: a proposal, not
+      done here).
+    - **A conformal plate with any outline is a parametric slab.** `offset_shell` lofts stations across y, so its edges
+      are straight across the body. A chevron stripe, a carapace with chevron edges and a visor that slants from the
+      nose bridge back to the sides all need y to vary across the plate. `slab(grid(u, v, outer))` builds the outer and
+      inner skins over any (u, v) patch of the body's surface, plus four walls, and keeps the even gap underneath.
+    - **To raise a head over the back, lower the body, not the head.** The height budget was the Stoat's (1.43). A head
+      pushed up hit the ceiling and still barely cleared the back from the side. Dropping the core 6 cm under the bones'
+      line (the plates still turn about their bones) let the head stand clear, and the legs got shorter.
+    - **A banded back on a smooth body needs plates, not paint.** Thick domain bands read as a bee. Thin stripes read as
+      clips on a tube. Dark carapace plates, one per plate bone, each carrying a chevron, read as banded armour and
+      broke the tube's silhouette.
+    - **A pale ring on a snout tip reads as a pig's nose.** The wormhole former became a dark ring with a hot inner wall.
+    - **Render the standing pose when the game stands the hull up.** The sentinel is this hull baked mid-lope and stood
+      nose to the sky. That view showed the paws held before the chest and the tail as the prop, which the flight views
+      cannot show. When rotating an imported FBX for such a view, turn only the root objects: the importer parents the
+      mesh to the armature, so rotating both turns the mesh twice.
+    - **A path inside `python -c "..."` is not converted by Git Bash on Windows.** A `/c/Users/...` path embedded in the
+      code string became `C:\c\Users\...` for Blender's render output and `B:\c\...` for `os.makedirs`. Pass paths as
+      arguments, or write them as Windows paths.

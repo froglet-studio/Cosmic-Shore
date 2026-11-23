@@ -27,11 +27,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] ThresherDials dials = new ThresherDials();
 
         [Header("Elements")]
-        [Tooltip("CHARGE: petals the ball or the chain takes from an ENEMY vessel per hit, on each element " +
-                 "(a scored Strike that STEALS them - the PvP-is-petals-only rule). 1 at rest -> 3 at full Charge.")]
-        [SerializeField] ElementalFloat vesselHitPetals = ElementalFloat.Multiplier(1f, 3f, Element.Charge, 0.5f);
-        [Tooltip("MASS: size multiplier (every axis) on the prisms the ball lays in Mass Mode (massTrailPrismScale).")]
-        [SerializeField] ElementalFloat massTrailScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
+        [Tooltip("Petals the ball or the chain takes from an ENEMY vessel per hit, on each element (a scored Strike " +
+                 "that STEALS them - the PvP-is-petals-only rule). Fixed at 1 since 2026-11-18: petals per hit was the " +
+                 "Charge placeholder; Charge now sets the smash speed (smashSpeedScale).")]
+        [SerializeField] ElementalFloat vesselHitPetals = new(1f);
+        [Tooltip("CHARGE: multiplier on the speed the ball must reach to SMASH (turn red: destroy every prism, explode, " +
+                 "plough on) and on the white-hot speed above it. x1 at rest -> x0.6 at Charge 10, so a charged Thresher " +
+                 "turns its ball destructive with a lazier swing. Falling: the Floor guards the Charge 15 end. Read at " +
+                 "the replicated level every frame (ApplyElementScaling), so every peer flies the same ball.")]
+        [SerializeField] ElementalFloat smashSpeedScale = ElementalFloat.Multiplier(1f, 0.6f, Element.Charge, 0.4f);
+        [Tooltip("MASS: size multiplier (every axis) on the prisms the ball lays in Mass Mode (massTrailPrismScale). " +
+                 "0.45 -> 0.9 since the 2026-11-19 Brood Rush knee (was 1 -> 2: the ball trail was ~80% of the Thresher's " +
+                 "net control, index 2.95 against the tuned field; 1.00 at 0.45 -> 0.9).")]
+        [SerializeField] ElementalFloat massTrailScale = ElementalFloat.Multiplier(0.45f, 0.9f, Element.Mass, 0.25f);
         [Tooltip("SPACE: the largest explosion-diameter multiplier the chain's banked energy can buy - the cap " +
                  "of 1 + energyDiameterPerUnit x energy. 4 at rest -> 8 at full Space. The Space card's gauge " +
                  "shows how much of it is banked.")]
@@ -101,6 +109,12 @@ namespace CosmicShore.Gameplay
                  "0.25 s timing window until 2026-10-13; tripled to x4.8 then.")]
         [FormerlySerializedAs("perfectBoost")]
         [SerializeField, Min(1f)] float launchBoost = 4.8f;
+        [Tooltip("The aimed launch's EXIT BUFF: for launchExitSeconds after it, the hull TRAVELS this many times what " +
+                 "the chain physics gives it, easing linearly back to 1x - to make up the time the swing spent in " +
+                 "place. The ball and chain are carried with it, so the physics itself is unchanged. A new plant ends it.")]
+        [SerializeField, Min(1f)] float launchExitSpeedMultiplier = 2f;
+        [Tooltip("Seconds the exit buff takes to ease from launchExitSpeedMultiplier back to 1x. 0 = no buff.")]
+        [SerializeField, Min(0f)] float launchExitSeconds = 8f;
 
         [Header("Chain cut")]
         [Tooltip("The chain's cutting half-width (world units). It cuts RIVAL prisms it touches while taut; " +
@@ -204,6 +218,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aimYawRate = 180f;
         [Tooltip("While spectating, full stick Y pitches the aim at this rate (degrees/s), the hull's own pitch sign.")]
         [SerializeField, Min(0f)] float aimPitchRate = 120f;
+        [Tooltip("When the aim begins, the sticks' authority over it eases in from 0 to full over this long (seconds, " +
+                 "SmoothStep), so a stick already over takes the aim over smoothly rather than swinging it at full rate " +
+                 "on the first frame. It is never ignored. 0 = full authority at once.")]
+        [SerializeField, Min(0f)] float aimStickEaseSeconds = 0.3f;
 
         [Header("Analog triggers (with dials.analogTriggers; Docs/Studios/THRESHER_PLANT_LAB.md round 2)")]
         [Tooltip("Trigger depth that counts as a FULL pull: LT stops the ball here, and the launch camera needs both " +
@@ -218,8 +236,8 @@ namespace CosmicShore.Gameplay
                  "PREVIOUS frame's velocity and does not turn at all on the frame a plant begins - a one-frame hitch.")]
         [SerializeField] bool hullFollowsPlantedVelocity = false;
         [Tooltip("On leaving a planted orbit, wind the spin's turn down over this long instead of stopping it in one " +
-                 "frame (seconds; an aimed launch leaves early by the angle it will still turn, so it lands on the aim). " +
-                 "0 = the old dead stop.")]
+                 "frame (seconds). PLAIN releases only: an aimed launch leaves exactly from its point along the aim and " +
+                 "faces it at once (2026-10-30). 0 = the old dead stop.")]
         [SerializeField, Min(0f)] float releaseSpinDownSeconds = 0f;
         [Tooltip("The wind-down is shortened so it never turns the ship more than this past its line (degrees): a " +
                  "fast spin then stops harder, a bigger cap is smoother but the exit drifts more.")]
@@ -233,6 +251,21 @@ namespace CosmicShore.Gameplay
                  "cameraMaxFollowTurnRate cap, so it eases into and out of a turn instead of starting and stopping it " +
                  "in one frame. 0 = the rate cap alone.")]
         [SerializeField, Min(0f)] float cameraMaxFollowAngularAcceleration = 0f;
+
+        [Header("Snap aim - both triggers pulled FAST (analog triggers; local pilot only)")]
+        [Tooltip("LT leaving rest and BOTH triggers reaching fullPull within this long (seconds) is a snap: the launch " +
+                 "view aims along the hull's flight direction from the last frame LT was at rest (before the pull's " +
+                 "brake and anchor touched the ship), and the camera eases straight into the launch view along it " +
+                 "instead of riding the hook and spin. A slower pull plants exactly as before. The physics never " +
+                 "changes either way. 0 = off (the crosshair starts from the camera's facing at the plant).")]
+        [SerializeField, Range(0f, 1f)] float snapAimSeconds = 0.25f;
+        [Tooltip("LT below this depth counts as at rest: its brake and anchor are still negligible, so the hull's " +
+                 "flight direction there is the one a snap keeps.")]
+        [SerializeField, Range(0.01f, 0.5f)] float snapAimRestDepth = 0.1f;
+        [Tooltip("Longest a snap holds the camera on its heading before the launch view's own rules qualify " +
+                 "(seconds); then the camera goes back to the chase pose. The view normally qualifies in 0.35-0.6 s " +
+                 "(the chain's rigidity slew).")]
+        [SerializeField, Min(0f)] float snapAimHoldSeconds = 1.5f;
 
         [Header("Launch sight - the Time-petal zoom window (local pilot only)")]
         [Tooltip("The zoom window's vertical field of view with LT held lightly (degrees) - the wide end. A " +
@@ -293,6 +326,7 @@ namespace CosmicShore.Gameplay
 
         public ThresherDials Dials => dials;
         public ElementalFloat VesselHitPetals => vesselHitPetals;
+        public ElementalFloat SmashSpeedScale => smashSpeedScale;
         public ElementalFloat MassTrailScale => massTrailScale;
         public ElementalFloat EnergyMaxDiameterScale => energyMaxDiameterScale;
         public ElementalFloat SpinMultiplier => spinMultiplier;
@@ -354,10 +388,16 @@ namespace CosmicShore.Gameplay
         public float ReleaseSpinDownMaxDegrees => releaseSpinDownMaxDegrees;
         public float SpectateCarrySeconds => spectateCarrySeconds;
         public float CameraMaxFollowAngularAcceleration => cameraMaxFollowAngularAcceleration;
+        public float LaunchExitSpeedMultiplier => launchExitSpeedMultiplier;
+        public float LaunchExitSeconds => launchExitSeconds;
+        public float SnapAimSeconds => snapAimSeconds;
+        public float SnapAimRestDepth => snapAimRestDepth;
+        public float SnapAimHoldSeconds => snapAimHoldSeconds;
         public float SpectateEnterSeconds => spectateEnterSeconds;
         public float SpectateExitSeconds => spectateExitSeconds;
         public float AimYawRate => aimYawRate;
         public float AimPitchRate => aimPitchRate;
+        public float AimStickEaseSeconds => aimStickEaseSeconds;
         public float BallBodyCool => ballBodyCool;
         public float BallBodyNearSmash => ballBodyNearSmash;
         public float BallBodyHot => ballBodyHot;
@@ -370,8 +410,8 @@ namespace CosmicShore.Gameplay
         public float BallVisualScale => ballVisualScale;
         public int ChainLinks => chainLinks;
         public int ChainRenderSubdivisions => chainRenderSubdivisions;
-        public Color ChainColor => chainColor;
-        public Color FallbackDomainColor => fallbackDomainColor;
+        public Color ChainColor => ColorTrace.Retrace(ColorTrace.World, chainColor);
+        public Color FallbackDomainColor => ColorTrace.Retrace(ColorTrace.World, fallbackDomainColor);
         public Color FallbackDangerColor => fallbackDangerColor;
         public Color FallbackReadyColor => fallbackReadyColor;
         public float SkidTrailSeconds => skidTrailSeconds;

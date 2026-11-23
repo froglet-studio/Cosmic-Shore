@@ -1,5 +1,12 @@
 # Substrate fauna: the Living Ecology agent substrate in the game (round 11b)
 
+> **2026-10-26: bodies scaled to the one heart size** (`Docs/ECOSYSTEM.md` §64.4). Each species asset carries
+> `bodyScale` (3.55 / its element's retired heart: 2.044 Time/Mass, 1.545 Space/Charge), applied by
+> `SubstrateSpeciesParams.WithBodyScale` when the asset hands its params to a population: stocks x k^3 (a body is its
+> stock), satiation per eaten volume / k^3, contact radii and spacings x k, speeds and senses unchanged. The research
+> numbers below and the harness that asserts them are unchanged (k = 1); the trained shoal and harrier policies take
+> world-unit inputs and were not re-trained for the bigger bodies.
+
 **Status:** branch `overnight/substrate` (round 11b), `overnight/substrate2` (round 11b-2: the Burst agent pass, the ladder,
 the pack's menace hold - §7). Headless harness, Roslyn type-check and asset generators all pass. **Not yet run in the
 Unity editor**: see QA-SWARM-ROUND11-2 and QA-SWARM-ROUND11-8 in `Docs/QA/QA_BACKLOG.md`.
@@ -245,7 +252,9 @@ It now draws through the swarm's SM 3.5 instanced path, `SwarmMemberFallbackDraw
 - **Different carrier:** five `float4` rows per instance in the instancing constant buffer, `RenderMeshInstanced` in
   batches of 128.
 - **Per tick,** `Upload` packs this population's slice of the cell's frame. The living agents are compacted, and the
-  hearts come from `HeartIdx[start ..]`: one element, local slot indices, exactly the list the GPU path uploads.
+  hearts come from `HeartIdx[start ..]`: one element, local slot indices, exactly the list the GPU path uploads. (Since 2026-10-28 the hearts are drawn by
+  `CrystalHeartDraw` from that list on both paths, as the elemental crystal they are, and an agent's tier follows the
+  element law - a Charge population is all danger, a Mass one armoured; Docs/ECOSYSTEM.md §65.7.)
 - **Between ticks,** `HideSlot` zeroes the slot's rows at once.
 
 The choice is the renderer's and keys off the GPU (`SwarmMemberRenderer.Supported`), not off the toybox flag.

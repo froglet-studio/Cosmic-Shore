@@ -19,9 +19,22 @@ MonoBehaviour:
   ReconnectingLabel: "Reconnecting…"
   DismissLabel: Continue Offline
   TitleConnectionRestored: Back Online
+  TitleDroppedOut: You dropped out
+  BodyDroppedOut: "Your connection to {mode} broke. An AI pilot took your vessel so your team keeps its seat."
+  TitleRejoin: "Rejoin {mode}?"
+  BodyRejoin: "You left a match that is still going. An AI pilot has your vessel; rejoin and it is yours again."
+  RejoinLabel: Rejoin
+  NotNowLabel: Not now
+  TitleHostLeft: The host left
+  BodyHostLeft: The match ended when its host disconnected. Nothing you earned in it is lost.
+  BackHomeLabel: Back to Home
+  RejoinCheckSeconds: 2
+  RejoinGiveUpSeconds: 20
+  DroppedOutRecentSeconds: 180
   RestoredDwellSeconds: 2.5
   FadeSeconds: 0.2
   SuppressDuringLaunch: 1
+  WindowPrefab: {fileID: 740998004000551072, guid: af63aee8517fadb8bf94b1e30e393c4b, type: 3}
   ScrimColor: {r: 0, g: 0, b: 0, a: 0.72}
   PanelColor: {r: 0.1, g: 0.1, b: 0.15, a: 0.98}
   TitleColor: {r: 1, g: 1, b: 1, a: 1}

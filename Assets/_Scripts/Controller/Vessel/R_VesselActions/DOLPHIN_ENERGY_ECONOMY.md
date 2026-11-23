@@ -246,7 +246,7 @@ Concretely, ramming at the peak of a full discharge: meter 1 → 0.5, `ChargedBo
 2.259 → 1.630 immediately, `BoostMultiplier` 2.259 → 1.630 within one 0.1 s tick — speed factor
 5.10 → 2.66, and the discharge runs out in half the time it had left. The HUD's boost ring
 follows for free: `Resource.CurrentAmount`'s setter always raises `OnResourceChange`, which is
-what `DolphinVesselHUDController.PushDriftBoost` binds to, so the ring drops on the ram whether
+what `DolphinHUDController.PushDriftBoost` binds to, so the ring drops on the ram whether
 the executor or an impact effect wrote the meter.
 
 ### The drift is a momentum-preserving slide — the whole velocity is frozen, not just its direction
@@ -434,7 +434,7 @@ can recover that with the phone's gyro."*
 | LT (held) = drift + charge boost + drift trail | lift **either** thumb = drift + charge boost + drift trail **+ Echo Sight**, together |
 | RT (held) = Echo Sight | (same lift) |
 | release LT = discharge (the boost) | put the thumb back = discharge (the boost), Echo off |
-| right stick = roll | while one thumb flies, **turn the phone like a wheel** = roll (`TouchControlProfile.tiltRollOnOneThumb`) |
+| right stick = roll | while one thumb flies, **turn the phone like a wheel** = roll (`TouchControlProfile.gyroRollOnOneThumb`) |
 
 - **Binding.** `Dolphin.prefab` `_touchActionOverrides`: `LeftStickAction (2)` and `RightStickAction (1)` both run
   `[DolphinDriftAction, ChargeBoostAction, DriftTrailAction, EchoSightAction]` (guids `51198b11…`, `ab7bab2c…`,
@@ -477,7 +477,7 @@ fully shut** — at empty energy the blast is a short capsule with a real 4.76°
 jaw would misreport it as nothing.
 
 The HUD's jaw icon takes its whole range from `RiptideAnimation.MinJawAngleDegrees` /
-`MaxJawAngleDegrees` (`DolphinVesselHUDController` → `view.SetJawAngleRange`), so the cockpit and
+`MaxJawAngleDegrees` (`DolphinHUDController` → `view.SetJawAngleRange`), so the cockpit and
 the hull cannot disagree; the blast is the only third party, hence the rule above.
 
 **The linear approximation is gone.** The jaws used to lerp `0 → MaxJawAngle` while the true
@@ -562,7 +562,7 @@ Three things make this legal on a HUD whose upgrade tint is deliberately off (§
 One skim moves the gape by a 150th of its range — about 0.12°, invisible. The other signals
 wired to a skim are the forcefield crackle across the skimmer sphere and a haptic pulse that
 is a **no-op on desktop**. So the discrete event gets its own beat:
-`DolphinVesselHUDController` treats an energy **rise** as the skim (nothing else raises
+`DolphinHUDController` treats an energy **rise** as the skim (nothing else raises
 energy — the blast spends it all, a ram halves it) and punches the jaw pair.
 
 ---

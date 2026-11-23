@@ -87,6 +87,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds before the same vessel can bite again.")]
         public float VesselBiteCooldown = 0.8f;
 
+        [Tooltip("The danger contact a vessel passing through a CHARGE creature takes (the element law: every Charge prism " +
+                 "is a danger prism - Docs/ECOSYSTEM.md §65.7). The body has no collider, so this is the burn its danger " +
+                 "prisms would land, applied at the pass. Unread on every other element.")]
+        public CosmicShore.Gameplay.VesselElementalDebuffByDangerPrismEffectSO ContactEffect;
+
         [Header("Wounds")]
         [Tooltip("Radius of the hole one hit cuts, voxels.")]
         public float BiteRadiusVoxels = 3.5f;
@@ -130,8 +135,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("A grown creature whose body falls under this share of GrownVoxels dies of its wounds.")]
         [Range(0f, 1f)] public float DeathFraction = 0.35f;
 
-        [Tooltip("The creature's heart, world scale (Docs/ECOSYSTEM.md §40: K x bodyLength^0.5, written by " +
-                 "author_nca_creatures.py with the K author_lifeform_heart_sizes.py solves).")]
+        [Tooltip("RETIRED, not read (2026-10-26): every heart is the one elemental crystal size, " +
+                 "ElementalCrystalSetSO.CrystalWorldScale. Still written by author_nca_creatures.py.")]
         public float HeartWorldScale = 2.9f;
 
         [Tooltip("How far behind the head's front the heart sits, voxels (it must sit wholly behind the front plane).")]

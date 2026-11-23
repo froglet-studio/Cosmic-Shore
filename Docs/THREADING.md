@@ -16,8 +16,8 @@ From the ThreadPool:
 
 - Any `UnityEngine.Object` access (incl. `obj == null`, which routes through
   `Object.op_Equality` → `GetInstanceID` → `EnsureRunningOnMainThread`) throws.
-- Any `Obvious.Soap.ScriptableEvent.Raise()` invokes its listeners **inline on the calling thread**
-  (confirmed by reading `Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs`) —
+- Any SOAP `ScriptableEvent.Raise()` invokes its listeners **inline on the calling thread**
+  (`Assets/Plugins/CosmicShoreSoap/Runtime/ScriptableEventNoParam.cs`; the Obvious plugin it replaced did the same) —
   so if a listener touches Unity state, it crashes too.
 
 If you wire SOAP events to UGS-callback chains naively, your `OnEstablished` listener fires on

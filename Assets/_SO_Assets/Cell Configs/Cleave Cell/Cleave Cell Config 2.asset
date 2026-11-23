@@ -23,6 +23,7 @@ MonoBehaviour:
   MembranePrefab: {fileID: 346633111830028674, guid: 6eb45784f9024cbb879f94c23ae46bd9, type: 3}
   NucleusPrefab: {fileID: 0}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 360
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: cd48ee57babf1969b767be400358c056, type: 2}
   EnvironmentPrefab: {fileID: 5260000000000203, guid: 712a4a919c3c256c33b851ef819e7de1, type: 3}

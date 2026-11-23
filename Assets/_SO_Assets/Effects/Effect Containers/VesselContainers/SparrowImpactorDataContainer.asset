@@ -23,3 +23,4 @@ MonoBehaviour:
   vesselElementalCrystalEffects:
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
   vesselSkimmerEffects: []
+  omniCrystalRetirement: {fileID: 11400000, guid: 9a40b3a2720043cd86332dbf7e16dd8d, type: 2}

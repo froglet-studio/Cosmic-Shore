@@ -96,6 +96,23 @@ TYPE_HEADER = re.compile(r"\b(class|struct|interface|namespace|enum)\b")
 FAUNA_SUBCLASS = re.compile(r"\bclass\s+\w+\s*:\s*(?:Fauna|LightFauna|WormFauna|WormSegmentFauna)\b")
 
 
+# Reviewed sites that match the textual test but instantiate something that is NOT a
+# creature and carries no NetworkObject. Keyed by (repo-relative path, the exact
+# Instantiate expression) - never by line number, and never by file alone - so a
+# second Instantiate in the same file, or the same expression anywhere else, is
+# still checked. Each entry says why; add one only after confirming the prefab.
+ALLOWED_SITES = {
+    ("Assets/_Scripts/Controller/Environment/FloraAndFauna/NcaCreature/NcaCreatureFauna.cs",
+     "config.HitPrismPrefab"):
+        # The NCA creature's per-segment hit collider, a HealthPrism (NcaCreatureConfigSO.
+        # HitPrismPrefab; LizardNcaConfig assigns Assets/_Prefabs/Trails/HealthBlock.prefab,
+        # which has no NetworkObject). It matches only because NcaCreatureFauna is a Fauna
+        # subclass and the field ends in "Prefab". Recorded as a heuristic false positive in
+        # Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §10, finding F6.
+        "NCA hit prism - a HealthPrism without a NetworkObject (review §10 F6)",
+}
+
+
 def names_a_fauna_prefab(expr: str, in_creature_file: bool) -> bool:
     low = expr.lower()
     if low.endswith("prefab"):
@@ -196,6 +213,8 @@ def check_source(src: str, path_label: str) -> list[str]:
     for m in INSTANTIATE.finditer(clean):
         expr = m.group(1)
         if not names_a_fauna_prefab(expr, in_creature_file):
+            continue
+        if (path_label.replace("\\", "/"), expr) in ALLOWED_SITES:
             continue
         pos = m.start()
         line_no = clean.count("\n", 0, pos) + 1
@@ -345,8 +364,35 @@ class S {
 ]
 
 
+_NCA = "Assets/_Scripts/Controller/Environment/FloraAndFauna/NcaCreature/NcaCreatureFauna.cs"
+_NCA_SRC = """
+class NcaCreatureFauna : Fauna {
+  Prism Materialise(int slot) {
+    var hp = Instantiate(config.HitPrismPrefab, pos, rot, transform);
+    hp.Initialize(name);
+    return hp;
+  }
+}
+"""
+# (label, path, source, expect_problem) - the allow-list must stay exactly as narrow
+# as its key: the reviewed file AND the reviewed expression.
+ALLOW_TEST_CASES = [
+    ("allow-listed: the reviewed NCA hit prism is clean", _NCA, _NCA_SRC, False),
+    ("allow-list is per FILE: same code elsewhere still fires",
+     "Assets/_Scripts/Controller/Environment/FloraAndFauna/OtherCreature.cs", _NCA_SRC, True),
+    ("allow-list is per EXPRESSION: another prefab in the NCA file still fires",
+     _NCA, _NCA_SRC.replace("config.HitPrismPrefab", "config.BodyPrefab"), True),
+]
+
+
 def self_test() -> int:
     failures = 0
+    for label, path, src, expect in ALLOW_TEST_CASES:
+        got = bool(check_source(src, path))
+        ok = got == expect
+        print(f"  [{'ok' if ok else 'FAIL'}] {label} (expected {'a finding' if expect else 'clean'}, got {'a finding' if got else 'clean'})")
+        if not ok:
+            failures += 1
     for label, src, expect in SELF_TEST_CASES:
         got = bool(check_source(src, "<self-test>"))
         ok = got == expect
@@ -357,8 +403,9 @@ def self_test() -> int:
     if failures:
         print(f"self-test: {failures} case(s) FAILED")
         return 1
-    print(f"self-test: OK ({len(SELF_TEST_CASES)} cases, "
-          f"{sum(1 for c in SELF_TEST_CASES if c[2])} of them negative controls)")
+    print(f"self-test: OK ({len(SELF_TEST_CASES) + len(ALLOW_TEST_CASES)} cases, "
+          f"{sum(1 for c in SELF_TEST_CASES if c[2]) + sum(1 for c in ALLOW_TEST_CASES if c[3])} "
+          f"of them negative controls)")
     return 0
 
 

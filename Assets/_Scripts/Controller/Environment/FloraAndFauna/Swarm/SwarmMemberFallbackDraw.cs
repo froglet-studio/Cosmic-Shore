@@ -15,12 +15,13 @@ namespace CosmicShore.Gameplay
     /// <para>
     /// The picture is the SM 4.5 path's. SwarmMemberInstancedFallback.shader runs the same <c>SwarmMemberPoseOf</c>
     /// and <c>SwarmMemberShade</c> (SwarmMemberInstanced.hlsl) over the same 80-byte <see cref="SwarmInstance"/>, so the
-    /// interpolated pose, the newborn bloom, the heart molt, the tier and domain palette, the open-with-distance spread
-    /// and the prism occlusion corridor are identical. What changes is how the instance reaches the vertex shader:
-    /// once per TICK each member is packed into five float4 rows (<see cref="Pack"/>): the bodies compacted to the
-    /// living slots, the hearts gathered per element from the tick's heart lists. Once per FRAME each list is drawn
-    /// with <c>Graphics.RenderMeshInstanced</c> in batches of <see cref="Batch"/>, the rows travelling as
-    /// MaterialPropertyBlock arrays in Unity's instancing constant buffer.
+    /// interpolated pose, the newborn bloom, the tier and domain palette, the open-with-distance spread and the prism
+    /// occlusion corridor are identical. What changes is how the instance reaches the vertex shader: once per TICK
+    /// each living member is packed into five float4 rows (<see cref="Pack"/>), compacted to the living slots. Once per
+    /// FRAME the list is drawn with <c>Graphics.RenderMeshInstanced</c> in batches of <see cref="Batch"/>, the rows
+    /// travelling as MaterialPropertyBlock arrays in Unity's instancing constant buffer. The HEARTS are not drawn here
+    /// on either path: they are the elemental crystals' own draw (<see cref="CrystalHeartDraw"/>, Docs/ECOSYSTEM.md
+    /// §65.7), which needs no structured buffer.
     /// </para>
     ///
     /// <para>
@@ -53,8 +54,6 @@ namespace CosmicShore.Gameplay
             Shader.PropertyToID("_SwarmRow0"), Shader.PropertyToID("_SwarmRow1"), Shader.PropertyToID("_SwarmRow2"),
             Shader.PropertyToID("_SwarmRow3"), Shader.PropertyToID("_SwarmRow4"),
         };
-        static readonly int PartId = Shader.PropertyToID("_SwarmPart");
-        static readonly int HeartElementId = Shader.PropertyToID("_SwarmHeartElement");
         static readonly int MeshLocalId = Shader.PropertyToID("_SwarmMeshLocal");
         static readonly int AlphaId = Shader.PropertyToID("_SwarmAlpha");
         static readonly int ClockId = Shader.PropertyToID("_SwarmClock");
@@ -69,7 +68,7 @@ namespace CosmicShore.Gameplay
         static bool s_materialLoaded;
         static readonly HashSet<string> s_announced = new();
 
-        /// <summary>One list of instances, drawn by one or more parts: the bodies, or one element's hearts.</summary>
+        /// <summary>The list of living members' instances, drawn by the body part.</summary>
         sealed class InstanceList
         {
             public int Count;
@@ -93,19 +92,17 @@ namespace CosmicShore.Gameplay
         {
             public Mesh Mesh;
             public int Submesh;
-            public int List;                       // 0 = bodies, 1 + e = the hearts of element e
             public MaterialPropertyBlock[] Blocks; // one per batch
             public int[] Seen;                     // the list version each block last read
         }
 
         readonly Material _mat;
         readonly int _cap, _batches;
-        readonly InstanceList[] _lists = new InstanceList[5];
+        readonly InstanceList _bodies;
         readonly List<DrawPart> _parts = new();
         readonly List<MaterialPropertyBlock> _blocks = new();
         readonly int[] _bodyAt;   // slot -> index in the body list, -1 = not drawn
         readonly int[] _bodySlot; // body index -> slot (ascending: the list is built in slot order)
-        readonly int[] _heartAt;  // slot * 2 + k -> element * cap + index in that element's list, -1 = none
 
         /// <summary>Every block this draw owns, so the owner can write the per-swarm palette and spread once, at bind,
         /// exactly as it writes its GraphicsBuffer blocks.</summary>
@@ -148,39 +145,29 @@ namespace CosmicShore.Gameplay
         }
 
         /// <param name="material">From <see cref="LoadMaterial"/>; shared, never modified (every value is a block's).</param>
-        /// <param name="cap">Member slots: the most bodies, and the most hearts of any one element, a tick can list.</param>
+        /// <param name="cap">Member slots: the most bodies a tick can list.</param>
         public SwarmMemberFallbackDraw(Material material, int cap)
         {
             _mat = material;
             _cap = Mathf.Max(1, cap);
             _batches = (_cap + Batch - 1) / Batch;
-            for (int l = 0; l < _lists.Length; l++) _lists[l] = new InstanceList(_batches);
+            _bodies = new InstanceList(_batches);
             _bodyAt = new int[_cap];
             _bodySlot = new int[_cap];
-            _heartAt = new int[2 * _cap];
             System.Array.Fill(_bodyAt, -1);
-            System.Array.Fill(_heartAt, -1);
         }
 
         /// <summary>The body prism (drawn over the body list).</summary>
-        public void AddBody(Mesh mesh, int submesh, Matrix4x4 local) => AddPart(mesh, submesh, local, 0, 0f, 0f);
-
-        /// <summary>One crystal model of one heart element (drawn over that element's heart list).</summary>
-        public void AddHeart(Mesh mesh, int submesh, Matrix4x4 local, int element) =>
-            AddPart(mesh, submesh, local, 1 + Mathf.Clamp(element, 0, 3), 1f, element);
-
-        void AddPart(Mesh mesh, int submesh, Matrix4x4 local, int list, float part, float element)
+        public void AddBody(Mesh mesh, int submesh, Matrix4x4 local)
         {
             var p = new DrawPart
             {
-                Mesh = mesh, Submesh = submesh, List = list,
+                Mesh = mesh, Submesh = submesh,
                 Blocks = new MaterialPropertyBlock[_batches], Seen = new int[_batches],
             };
             for (int b = 0; b < _batches; b++)
             {
                 var block = new MaterialPropertyBlock();
-                block.SetFloat(PartId, part);
-                block.SetFloat(HeartElementId, element);
                 block.SetMatrix(MeshLocalId, local);
                 p.Blocks[b] = block;
                 _blocks.Add(block);
@@ -191,7 +178,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Once per TICK: the living members of slots [<paramref name="start"/>, start + cap), in slot order.</summary>
         public void UploadBodies(SwarmInstance[] instances, int start)
         {
-            var list = _lists[0];
+            var list = _bodies;
             int n = 0, slots = Mathf.Min(_cap, instances.Length - start);
             for (int i = 0; i < _cap; i++)
             {
@@ -205,48 +192,13 @@ namespace CosmicShore.Gameplay
             list.Touch(n);
         }
 
-        /// <summary>Once per TICK, before the <see cref="UploadHearts"/> calls: empties every element's heart list.</summary>
-        public void BeginHearts()
-        {
-            for (int e = 0; e < 4; e++) _lists[1 + e].Count = 0;
-            System.Array.Fill(_heartAt, -1);
-        }
-
-        /// <summary>
-        /// Once per TICK per element: <paramref name="count"/> slot indices from
-        /// <paramref name="slots"/>[<paramref name="slotsStart"/>..], each relative to <paramref name="start"/> in
-        /// <paramref name="instances"/> - the same list the GraphicsBuffer path uploads as _SwarmHeartIdx. A molting
-        /// heart is in two elements' lists; the shader shows it in the one the molt has reached.
-        /// </summary>
-        public void UploadHearts(int element, SwarmInstance[] instances, int start, uint[] slots, int slotsStart, int count)
-        {
-            if (element < 0 || element > 3) return;
-            var list = _lists[1 + element];
-            int n = Mathf.Clamp(count, 0, _cap);
-            for (int k = 0; k < n; k++)
-            {
-                uint slot = slots[slotsStart + k];
-                if (slot >= (uint)_cap) { Pack(default, list.Rows, k); continue; }   // never drawn: Flags 0
-                Pack(in instances[start + (int)slot], list.Rows, k);
-                int at = (int)slot * 2;
-                _heartAt[_heartAt[at] < 0 ? at : at + 1] = element * _cap + k;
-            }
-            list.Count = n;
-            list.Touch(n);
-        }
-
         /// <summary>A member died between uploads: hide every row that draws <paramref name="slot"/> NOW (the owner
         /// has already zeroed its Flags in the frame). Event-driven, a few writes.</summary>
         public void Hide(int slot)
         {
             if (slot < 0 || slot >= _cap) return;
             int b = _bodyAt[slot];
-            if (b >= 0) Kill(_lists[0], b);
-            for (int k = 0; k < 2; k++)
-            {
-                int h = _heartAt[slot * 2 + k];
-                if (h >= 0) Kill(_lists[1 + h / _cap], h % _cap);
-            }
+            if (b >= 0) Kill(_bodies, b);
         }
 
         static void Kill(InstanceList list, int index)
@@ -260,7 +212,7 @@ namespace CosmicShore.Gameplay
         /// Once per FRAME. <paramref name="bodySlotLimit"/> is the GraphicsBuffer path's instance count: bodies of
         /// slots at or past it are not drawn (every caller passes the cap today).
         /// </summary>
-        public void Draw(Bounds bounds, int layer, bool drawBodies, int bodySlotLimit, float alpha, float clock,
+        public void Draw(Bounds bounds, int layer, int bodySlotLimit, float alpha, float clock,
                          float bloomTicks, Vector3 up, Vector3 upAlt)
         {
             var rp = new RenderParams(_mat)
@@ -273,9 +225,8 @@ namespace CosmicShore.Gameplay
             for (int q = 0; q < _parts.Count; q++)
             {
                 var p = _parts[q];
-                if (p.List == 0 && !drawBodies) continue;
-                var list = _lists[p.List];
-                int n = p.List == 0 ? BodiesBelow(bodySlotLimit) : list.Count;
+                var list = _bodies;
+                int n = BodiesBelow(bodySlotLimit);
                 for (int b = 0; b * Batch < n; b++)
                 {
                     var block = p.Blocks[b];
@@ -298,7 +249,7 @@ namespace CosmicShore.Gameplay
         /// <summary>How many listed bodies have a slot below <paramref name="limit"/> (the list is in slot order).</summary>
         int BodiesBelow(int limit)
         {
-            int n = _lists[0].Count;
+            int n = _bodies.Count;
             if (limit >= _cap) return n;
             if (limit <= 0) return 0;
             int lo = 0, hi = n;

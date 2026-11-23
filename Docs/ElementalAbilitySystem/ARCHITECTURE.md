@@ -340,7 +340,7 @@ oversights:
 - **LANDED 2026-10-06 — the HUD.** `UrchinHUDVariant.prefab` (a variant of `VesselHUDPrefab`)
   binds 4/4 ability icons in charge → mass → space → time order plus the view's ammo fill
   (Charge gauge) and binary riding indicator (Mass gauge); `Urchin.prefab` nests it and wires
-  `vesselHUDController` to `UrchinVesselHUDController`, which also pushes the Track recharge
+  `vesselHUDController` to `UrchinHUDController`, which also pushes the Track recharge
   veil onto the Space card. Authored by `Tools/Build/author_urchin_hud.py` (`--check`); icons are placeholders.
 
 Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Codex - discovery</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.card{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0;background:none}
+.card:focus{outline:none}
+.card{transition:filter 120ms ease-out}
+.card:hover{filter:brightness(1.18)}
+.num{font-variant-numeric:tabular-nums}
+@keyframes r26Breath{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes r26Rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes r26Turn{0%,100%{transform:rotateY(-14deg) translateY(0)}50%{transform:rotateY(14deg) translateY(-8px)}}
+@keyframes r26Toast{0%{opacity:0;transform:translateX(40px)}10%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes r26Fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif"><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 40% 60%,rgba(40,70,190,.35),rgba(0,4,31,0) 60%)"></div><img src="/_blob/57b1e7f4ebd98251f65f564a7262921d" alt="" style="position:absolute;left:520px;top:330px;width:420px;height:420px;object-fit:contain;opacity:.9"><img src="/_blob/ac740f6036d0e6f6592b5d9f4073211f" alt="" style="position:absolute;left:705px;top:500px;width:60px;height:60px;object-fit:contain;animation:r26Breath 1.6s ease-in-out infinite"><div style="position:absolute;left:40px;top:40px" class="lab">In a match &middot; Hesperides</div><div style="position:absolute;right:40px;top:150px;width:470px;animation:r26Toast 6s ease-in-out infinite"><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="background:rgba(6,10,36,.95);display:flex;gap:16px;align-items:center;padding:14px 18px"><img src="/_blob/57b1e7f4ebd98251f65f564a7262921d" alt="" style="width:72px;height:72px;object-fit:contain"><div style="flex:1"><div class="cap" style="font-size:12px;color:#99FF80">New Codex entry</div><div class="cap" style="font-size:20px;margin-top:3px">SHARK</div><div style="font-size:13px;color:#747BAD;margin-top:3px">Fauna &middot; 5 / 6</div></div><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#C9CDEA"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA">Y</span>Open</span></div></div></div><div style="position:absolute;left:40px;bottom:80px;width:900px;font-size:16px;color:#C9CDEA;line-height:1.5">Meeting something for the first time adds its page. A toast slides in under Settings for six seconds; Y opens the page after the match. In the Codex the tile wears NEW until it has been looked at.</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

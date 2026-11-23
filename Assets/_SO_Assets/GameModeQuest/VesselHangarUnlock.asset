@@ -20,6 +20,7 @@ MonoBehaviour:
   TargetValue: 0
   Order: 6
   IsPlaceholder: 0
+  RewardColorSet: {fileID: 11400000, guid: 5c23989fe41646f5998662aa44c15ffa, type: 2}
   FeatureKind: 3
   FeatureRef: Hangar
   CallToActionTargetID: 300

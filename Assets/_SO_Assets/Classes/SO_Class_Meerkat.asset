@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Meerkat
+  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
+  Class: 28
+  Name: Meerkat
+  Description: Digs its own way. The reticle on its nose is the tunnel it would form; bend it with
+    the right stick, shorten it with LT, and RT ripples the wormhole open and dives you through it,
+    out the far end with the speed you went in with. Everyone sees the bridge it leaves.
+  PrimaryElement: 3
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
+  IconActive: {fileID: 21300000, guid: 1044b4ba3628662cb3d493c5964c90e3, type: 3}
+  IconInactive: {fileID: 21300000, guid: 4c105fe2b4587f8aeb45941018d9f446, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 8bdf1e4b7f59ac0a194106e8587ae1e7, type: 3}
+  SquadImage: {fileID: 21300000, guid: ec3b66f2f2ab57fd5a2ebd4929c4b388, type: 3}
+  TrailPreviewImage: {fileID: 0}
+  CardSilohoutteActive: {fileID: 21300000, guid: 1044b4ba3628662cb3d493c5964c90e3, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: 40ef5c9b840962b43b389c68db6198e7, type: 3}
+  Abilities: []
+  Games: []
+  TrainingGames: []
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.6
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.7
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.5
+  isLocked: 0
+  ownedFromStart: 1
+  UnlockCost: 0

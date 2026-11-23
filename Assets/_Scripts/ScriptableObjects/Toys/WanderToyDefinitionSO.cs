@@ -6,8 +6,7 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// The <b>Wander</b> toy: leave the cell and go wandering - <b>with an Ark</b> or <b>without
-    /// one</b>. Fly it and two stations bloom out ahead (the Toy Box window shows the same two as
-    /// cards); thread one and you are gone.
+    /// one</b>: two cards in the Toy Box; start one and you are gone.
     ///
     /// <list type="bullet">
     /// <item><b>Without Ark</b> - the Wanderway: the cell reverts to its bare canvas and a belt of
@@ -38,21 +37,12 @@ namespace CosmicShore.ScriptableObjects
                                  "cannot exist without a hull, so the choice refuses to start.")]
         ArkwaySettingsSO withArk;
 
-        [Header("Wander - the matrix")]
-        [SerializeField, Min(20f), Tooltip("Centre-to-centre gap between the two stations, world units.")]
-        float stationSpacing = 90f;
-
-        [SerializeField, Min(0.5f), Tooltip("How far out the two stations bloom, in multiples of Station Spacing.")]
-        float matrixDistanceFactor = 3f;
-
         /// <summary>Where you are, by taking you out of it: both choices hand the host CELL its bare
         /// canvas and put a world of their own ahead of you instead.</summary>
         public override ToyCategory Category => ToyCategory.World;
 
         public WanderwaySettingsSO WithoutArk => withoutArk;
         public ArkwaySettingsSO WithArk => withArk;
-        public float StationSpacing => stationSpacing;
-        public float MatrixDistanceFactor => matrixDistanceFactor;
 
         /// <summary>The build veil's label for a wander without an Ark.</summary>
         public const string WithoutArkVeilLabel = "WANDER";
@@ -68,7 +58,7 @@ namespace CosmicShore.ScriptableObjects
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
+            var go = ToyFactory.CreateToyRoot(Id, parent, placement);
             var toy = go.AddComponent<WanderToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);

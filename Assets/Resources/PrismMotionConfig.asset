@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismMotionConfigSO
   showcaseMaxMovers: 64
   boxMaxMovers: 256
+  shieldBounceRestitution: 0.6

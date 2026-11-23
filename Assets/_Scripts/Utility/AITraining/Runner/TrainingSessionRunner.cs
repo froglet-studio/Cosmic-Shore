@@ -103,6 +103,7 @@ namespace CosmicShore.Utility.AITraining
         public void Configure(TrainingScenarioSO scn, TrainingSessionStateSO st, TrainingArchiveSO arch, TrainingTelemetrySO tel, GameDataSO gd, CellRuntimeDataSO cd)
         {
             scenario = scn; state = st; archive = arch; telemetry = tel; gameData = gd; cellData = cd;
+            PeopleLine.Set(st != null ? st.PeopleLinePoints : null, st != null ? st.PeopleLineStarts : null);
         }
 
         public void StartSession()

@@ -260,7 +260,7 @@ namespace CosmicShore.Gameplay
             void Arm(float now)
             {
                 _armedAt = now;
-                _action.StartAction(_executors, _status);
+                VesselActionTape.Start(_action, _executors, _status);
             }
 
             // An explicit end: a graded ramp's own release is the top of its slope, not an end
@@ -268,7 +268,7 @@ namespace CosmicShore.Gameplay
             void End()
             {
                 if (_executor) _executor.End();
-                else _action.StopAction(_executors, _status);
+                else VesselActionTape.Stop(_action, _executors, _status);
             }
         }
     }

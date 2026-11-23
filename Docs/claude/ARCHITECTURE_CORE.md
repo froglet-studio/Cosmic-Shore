@@ -18,7 +18,13 @@ All tunable gameplay parameters live in ScriptableObjects, not in MonoBehaviours
 
 ### SOAP — Scriptable Object Architecture Pattern (Primary Architecture)
 
-This project uses the **SOAP asset** (Obvious.Soap v2.7.0, installed at `Assets/Plugins/Obvious/Soap/`) as the backbone for modular, event-driven, and data-container-based architecture. **Use SOAP whenever possible** for cross-system communication and shared state — do not introduce singletons, static events, or direct references between systems when a SOAP variable or event can do the job.
+This project uses **SOAP** as the backbone for modular, event-driven, and data-container-based architecture. **Use SOAP whenever possible** for cross-system communication and shared state — do not introduce singletons, static events, or direct references between systems when a SOAP variable or event can do the job.
+
+**SOAP is our own code** (Yash, 2026-11-06): about 600 lines in `Assets/Plugins/CosmicShoreSoap/Runtime/`, assembly `CosmicShore.Soap.Core`, namespace `CosmicShore.Soap` (`using CosmicShore.Soap;`). It replaced the paid Obvious "Soap" Asset Store plugin (`Obvious.Soap`), which is gone from the project. Its rules:
+- **The asset format is the plugin's.** The concrete classes keep the plugin's script GUIDs in their `.meta` files and its serialized field names, so every asset, prefab and scene made with the plugin loads unchanged. Never regenerate those `.meta` files or rename a serialized field (`_value`, `_resetOn`, `_list`, `_binding`, `_eventResponses` and its `Delay` / `ScriptableEvent` / `Response`). Fields commented "kept for the asset format" do nothing; they keep files and the `Tools/Build` generators byte-stable. `SoapFormatTests` fails on a lost GUID or on a serialized key no field receives; `SoapCoreTests` holds the behaviour.
+- **Behaviour kept from the plugin, with the team's play-mode patches:** `Raise()` does nothing outside Play mode; listener components run first (newest first), then C# subscribers in subscription order; every subscriber is dropped at both edit/play boundaries (Play mode has no domain reload); a variable starts each Play session from its asset value and returns to it when Play stops (and on a Single scene load with Reset On = Scene Loaded); lists start each session empty.
+- **One change:** a value set while playing no longer marks the asset dirty, so play-session values (the `Runtime …Selected….asset` files) no longer show up as changes after playing.
+- Amoebius compiles the game against its own SOAP (`Port/src/CosmicShore.Engine/Soap/`); `Port/src/CosmicShore.Live/SyncUnitySources.targets` maps `CosmicShore.Soap` onto it. A new public SOAP member must exist in both.
 
 **Fail-loud policy**: Do not add if-null guards on `ScriptableEvent` serialized fields. Missing references should produce immediate, obvious errors rather than silent failures.
 
@@ -57,11 +63,10 @@ Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationStat
 - **Do not** use `FindObjectOfType` or service locators to get shared data — wire a `ScriptableVariable` in the inspector
 - **Do not** create C# events or `Action` delegates on MonoBehaviours for things that multiple unrelated systems need to observe — use `ScriptableEvent`
 - **Do not** duplicate SOAP types — check `Assets/_Scripts/ScriptableObjects/SOAP/` for existing types before creating new ones
-- **Do not** type a parameter that receives a SOAP list as `IReadOnlyList<T>` — `Obvious.Soap`'s
-  `ScriptableList<T>` implements `IList<T>` and **not** `IReadOnlyList<T>`, so the read-only type
-  does not accept one. Take `IList<T>` and simply never write to it. This is an editor-only
-  compile error: the base type lives in the monolith, so an out-of-editor syntax check cannot see
-  it (see "a check that cannot resolve a type cannot see errors ABOUT that type")
+- A SOAP list (`ScriptableList<T>`) implements both `IList<T>` and `IReadOnlyList<T>` (since
+  2026-11-06; the Obvious plugin's implemented only `IList<T>`), so a read-only parameter may take
+  `IReadOnlyList<T>`. Setting an item through its indexer raises no event; use `RemoveAt` + `Insert`
+  when subscribers must hear the change
 - **Do not** put gameplay logic inside ScriptableVariable/ScriptableEvent classes — they are data containers and channels, not controllers
 - **Do not** add if-null guards on ScriptableEvent serialize fields — fail loud on missing references
 - **Do not** let a `ScriptableVariable` holding RUNTIME state start a session with whatever the last one left in it.** A SOAP variable is a ScriptableObject **asset**, so in the Editor its value survives play-mode exit — "it starts empty" is only true on a fresh install. Its **single writer must reset it at construction**. Shipped instance: every quit ends in `ApplicationState.ShuttingDown` (a terminal state), so the next play session began there and `ApplicationStateMachine` refused *every* transition for the whole run — `Invalid transition: ShuttingDown → MainMenu` at boot, on every session, for as long as the machine had existed.
@@ -74,7 +79,7 @@ See `Docs/THREADING.md` for the full reference. The short version:
 
 UGS SDK (`Unity.Services.*`) and Netcode methods return `System.Threading.Tasks.Task` whose
 continuations complete on the .NET ThreadPool. From the ThreadPool, any `UnityEngine.Object`
-access throws `EnsureRunningOnMainThread`, and any `Obvious.Soap` `ScriptableEvent.Raise()` runs
+access throws `EnsureRunningOnMainThread`, and any SOAP `ScriptableEvent.Raise()` runs
 its listeners **inline on the off-thread**, surfacing the same crash one level deeper.
 
 **The contract:** every `await` of a UGS / Netcode `Task` uses `.AsMainThread()`:
@@ -156,6 +161,16 @@ Key classes:
 - `BootstrapConfigSO` — configures: service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
 - `FriendsServiceFacade` (`_Scripts/System/FriendsServiceFacade.cs`) — pure C# class (DI lazy singleton). Single-writer facade for UGS Friends service. Syncs relationship data into `FriendsDataSO`. Supports friend requests, management, presence, and refresh.
 
+**Play in the editor always starts from Bootstrap** (`Assets/_Scripts/Editor/SceneBootstrapper.cs`, toggle under
+FrogletTools > Scenes > Testing Multiplayer). It asks "Scene(s) Have Been Modified" only when it must switch to
+Bootstrap, because opening Bootstrap discards unsaved edits; playing from Bootstrap itself never asks (Unity keeps
+unsaved edits across Play). With domain reload off (Enter Play Mode Options 3), anything a play session subscribes
+to a static event outlives Stop and runs in edit mode, so a static render or update hook that writes scene objects
+needs an `Application.isPlaying` guard (`CameraAspectFit` and `OrthographicLens` have one). A Bootstrap that turns
+dirty after every Play with no edit is Cinemachine's **Save During Play** (a per-user preference, the checkbox on
+any CinemachineCamera): with it on, every Play exit registers an undo on each virtual camera and dirties the scene
+even when nothing changed (measured 2026-11-07); leave it off unless you are tuning a camera in Play.
+
 See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues. See `Docs/SCENES.md` for the complete scene inventory, game mode reference, and game launch pipeline documentation.
 
 ### Authentication & Session Flow
@@ -168,9 +183,9 @@ The auth system follows a **single-writer / multi-reader** pattern through SOAP:
 
 - **`AuthenticationServiceFacade`** (plain C# singleton, Reflex DI) — the **sole writer** to `AuthenticationDataVariable`. Handles UGS initialization, anonymous sign-in, cached session restore, event wiring, and sign-out. Created by `AppManager.InstallBindings()` as a lazy singleton.
 - **`AuthenticationDataVariable`** (SOAP `ScriptableVariable<AuthenticationData>`) — the **shared state**. All other systems read from this or subscribe to its events.
-- **`AuthenticationController`** (MonoBehaviour) — thin adapter that delegates to the facade via `[Inject]`. Exists for scenes that need a GameObject entry point (e.g., inspector-driven `autoSignInAnonymously` toggle).
+- **`AuthenticationController`** (MonoBehaviour) — thin adapter that delegates to the facade via `[Inject]`. Exists for scenes that need a GameObject entry point (e.g., inspector-driven `autoSignInAnonymously` toggle). (retired 2026-10-25: on no scene or asset, `Docs/Reports/DEAD_CODE_M8.md`)
 - **`AuthenticationSceneController`** (MonoBehaviour) — orchestrates the Authentication scene UI: auto-skip on cached auth, guest login button, username setup panel, navigation to main menu. All async work uses `CancellationToken` and `UniTask`.
-- **`SplashToAuthFlow`** (MonoBehaviour) — placed on the splash scene. After splash display, reads `AuthenticationDataVariable` to decide: skip to `Menu_Main` (if signed in) or load the Authentication scene.
+- **`SplashToAuthFlow`** (MonoBehaviour) — placed on the splash scene. After splash display, reads `AuthenticationDataVariable` to decide: skip to `Menu_Main` (if signed in) or load the Authentication scene. (retired 2026-10-25: on no scene or asset, `Docs/Reports/DEAD_CODE_M8.md`)
 
 #### Execution Flow
 
@@ -355,7 +370,7 @@ ApplicationStateDataVariable (ScriptableObject asset)
        └─ .OnStateChanged ──► (ScriptableEventApplicationState — any subscriber)
 ```
 
-Readers of auth state: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService`, `AuthenticationController`, `MultiplayerSetup`, `FriendsServiceFacade`.
+Readers of auth state: `AuthenticationSceneController`, `PlayerDataService`, `MultiplayerSetup`, `FriendsServiceFacade`.
 
 Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or `ApplicationStateData.OnStateChanged` SOAP event.
 
@@ -368,8 +383,6 @@ Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or 
 | Auth facade (single writer) | `AuthenticationServiceFacade.cs` | `_Scripts/System/` |
 | Friends facade (single writer) | `FriendsServiceFacade.cs` | `_Scripts/System/` |
 | Auth scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
-| MonoBehaviour auth adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
-| Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
 | Network monitor | `NetworkMonitor.cs` | `_Scripts/System/` |
 | SOAP auth state | `AuthenticationData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | SOAP auth variable | `AuthenticationDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
@@ -387,7 +400,7 @@ Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or 
 - **UniTask + CancellationToken**: All auth async paths use `UniTask` with `CancellationTokenSource` tied to `OnEnable`/`OnDisable` lifecycle. No raw `Task.Delay` or manual elapsed-time polling.
 - **Timeout via linked CTS**: Use `CancellationTokenSource.CreateLinkedTokenSource(ct)` + `CancelAfter()` for timeouts, not polling loops.
 - **Button interactability**: Disable buttons during async operations instead of boolean `_isProcessing` guards.
-- **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own `AuthenticationController` GameObjects at runtime.
+- **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own auth GameObjects at runtime.
 
 ### Dependency Injection (Reflex)
 
@@ -421,7 +434,9 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
   carries a pitch sign of its own; `InputInversionTests` scans for one.
 - **A human pilot's nose has no lag (2026-10-21).** Every transformer's `RotateShip` goes through
   `VesselTransformer.NoseFollowFraction`: the local human's nose is the commanded rotation each frame on every device;
-  AI, autopilot and remote hulls keep the fleet's 1.5/s, which the autopilots model. Predict a hull with its
+  AI, autopilot and remote hulls keep the fleet's 1.5/s, which the autopilots model. One exception: a mode may set an AI
+  pilot's own rate (`VesselTransformer.AINoseFollowPerSecond`, default unset = the fleet lag); only Switchback does, by
+  intensity and difficulty (`SWITCHBACK.md` "Lag by difficulty", Yash 2026-11-02). Predict a hull with its
   `NoseFollowRate`, never the static `RotationFollowRate`.
 - **The nose lag is one dial per device, never per hull (Garrett, 2026-10-23).** For a local human,
   `NoseFollowFraction` closes `1 - e^(-rate·dt)` of the gap at the device's rate (`PilotNoseFollowPerSecond`, which
@@ -435,5 +450,11 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
   generated by `Tools/Build/author_touch_profiles.py`): ThumbLifts or TotemButtons, tilt, both-thumbs-off controls and
   extra buttons (a hull's tilt may be turned over per axis, `flipTiltSteerPitch` / `flipTiltSteerYaw`: the Manta flips
   pitch only, Garrett 2026-10-22 / 2026-10-25; it is hull data under the one Invert Y rule, not a strategy's sign; a
-  hull may soften one-thumb flight at home with `oneThumbResponseCurve`, the Dolphin 0.6, rim unchanged), read by `TouchInputStrategy` (flight) and `TouchControlsHud` (the cards). Both thumbs off reads as a
-  released pad. `Docs/ABILITY_LOCKUP.md` "On a phone" and `Docs/Reports/MOBILE_VESSELS.md` §8.
+  hull may soften one-thumb flight at home with `oneThumbResponseCurve`, the Dolphin 0.6, rim unchanged), read by `TouchInputStrategy` (flight) and `TouchControlsHud` (the cards). Both thumbs off reads as both
+  triggers pulled and switches to gyro controls (Garrett, 2026-11-14: "both thumbs off should read as both triggers pulled
+  and switch to gyro controls"): `idlePullsBothTriggers` raises exactly what a pad's two held triggers raise (the shared
+  `TriggerEdges`, which the gamepad and keyboard read too) and `tiltSteersWhileIdle` steers by tilt. Every thumb-lift
+  hull has both except where its both-thumbs-off has another job (the Manta's soar and the Thresher's launch keep the
+  gyro only; the Dolphin's one-thumb flight and the Honeyguide's cancel keep neither); the TotemButtons hulls keep a
+  released pad, since their triggers are on-screen buttons (`author_touch_profiles.py`, `BOTH_OFF`). The one-thumb
+  gyro roll is `gyroRollOnOneThumb` (was `tiltRollOnOneThumb`), any hull's to use. `Docs/ABILITY_LOCKUP.md` "On a phone" and `Docs/Reports/MOBILE_VESSELS.md` §8.

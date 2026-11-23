@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -20,8 +22,8 @@ namespace CosmicShore.Gameplay
     /// left the bloom dusting nothing; see BUTTERFLY.md §3.3a.)</para>
     ///
     /// <para><b>Two layers of motes, both the capsule's motes.</b> Same material, same colour rule
-    /// (<see cref="ButterflyDustField.ResolveMoteColour"/> — the shielded rim of the pilot's
-    /// domain), same in-hold-out alpha and the same slow downward drift:</para>
+    /// (<see cref="ButterflyDustField.ResolveMotePalette"/> — each mote one of the danger, plain and
+    /// shielded rims of the pilot's domain), same in-hold-out alpha and the same slow downward drift:</para>
     /// <list type="bullet">
     /// <item><b>The bloom</b> — as the wavefront passes each radius it leaves dust behind, at a
     /// constant density through the whole sphere (the emitted count follows the swept VOLUME,
@@ -37,6 +39,13 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>The motes are cosmetic and per machine; their scatter uses a private hash rather than
     /// <c>UnityEngine.Random</c> (vessel contract rule 18).</para>
+    ///
+    /// <para><b>It cleanses its own side.</b> As the wavefront passes the pilot who set it off and
+    /// every ally (<see cref="ElementalCleanse.IsAlly"/>), each is cleansed once: silence lifted,
+    /// temporary debuffs ended (Garrett, 2026-10-29: "this applies to the omnicrystal dust ... the
+    /// omnicrystal also dusts yourself"). Tested by position against the roster rather than through
+    /// the blast's vessel effects, because the bloom's <c>affectSelf</c> gate keeps its own side out of
+    /// those (they bite). Every peer runs the bloom, so every peer cleanses its own copies.</para>
     ///
     /// <para><b>Telemetry.</b> On retirement it reports, on <see cref="CSLogChannel.ButterflyBloom"/>,
     /// how many prisms the sweep reached and what the dust did to them, by outcome.</para>
@@ -100,11 +109,13 @@ namespace CosmicShore.Gameplay
         float _fullRadius;
         Domains _domain;
         ParticleSystem _particles;
-        Color _colour;
+        readonly Color[] _colours = new Color[ButterflyDustField.MotePaletteSize];
+        int _colourTurn;
         int _bloomEmitted;
         float _lastRadius;
         uint _rng;
         readonly int[] _tally = new int[10];
+        readonly HashSet<IVesselStatus> _cleansed = new();
         static bool s_warnedNoMaterial;
         static bool s_warnedNoDust;
 
@@ -123,7 +134,8 @@ namespace CosmicShore.Gameplay
             if (_rng == 0) _rng = 0x9E3779B9u;
             _domain = _explosion.Domain;
             _fullRadius = _colliderRadius * _explosion.MaxScale;
-            _colour = ButterflyDustField.ResolveMoteColour(_gameData, _domain, dustColor);
+            // The fallback (a Blue pilot, or no palette) as the worn colour set paints it; the domain tiers are the set's.
+            ButterflyDustField.ResolveMotePalette(_gameData, _domain, ColorTrace.Retrace(ColorTrace.World, dustColor), _colours);
             Build();
         }
 
@@ -148,10 +160,28 @@ namespace CosmicShore.Gameplay
                 emit.position = centre + RandomDirection() * r;
                 emit.velocity = new Vector3(0f, -fallSpeed, 0f);
                 emit.startSize = Mathf.Lerp(moteSize.x, moteSize.y, Next01());
-                emit.startColor = _colour;
+                emit.startColor = NextColour();
                 _particles.Emit(emit, 1);
             }
             _lastRadius = radius;
+            CleanseOwnSide(centre, radius);
+        }
+
+        /// <summary>Cleanse, once each, the bloom's pilot and every ally the wavefront has reached.</summary>
+        void CleanseOwnSide(Vector3 centre, float radius)
+        {
+            var pilot = _impactor ? _impactor.SourceVessel?.VesselStatus : null;
+            if (pilot == null || _gameData == null || _gameData.Players == null) return;
+            float reach = radius * radius;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var status = players[i]?.Vessel?.VesselStatus;
+                if (status == null || _cleansed.Contains(status) || !ElementalCleanse.IsAlly(pilot, status)) continue;
+                if ((status.Transform.position - centre).sqrMagnitude > reach) continue;
+                _cleansed.Add(status);
+                ElementalCleanse.Cleanse(status);
+            }
         }
 
         /// <summary>
@@ -205,9 +235,17 @@ namespace CosmicShore.Gameplay
                 emit.position = position;
                 emit.velocity = RandomDirection() * puffSpeed + new Vector3(0f, -fallSpeed, 0f);
                 emit.startSize = Mathf.Lerp(moteSize.x, moteSize.y, Next01()) * puffSizeScale;
-                emit.startColor = _colour;
+                emit.startColor = NextColour();
                 _particles.Emit(emit, 1);
             }
+        }
+
+        /// <summary>The next mote's colour: the palette's three in turn, so every handful of motes shows all three.</summary>
+        Color NextColour()
+        {
+            var c = _colours[_colourTurn];
+            _colourTurn = (_colourTurn + 1) % _colours.Length;
+            return c;
         }
 
         void OnDestroy()
@@ -256,7 +294,7 @@ namespace CosmicShore.Gameplay
             main.startLifetime = moteLifetime;
             main.startSpeed = 0f;
             main.startSize = new ParticleSystem.MinMaxCurve(moteSize.x, moteSize.y);
-            main.startColor = _colour;
+            main.startColor = ButterflyDustField.MotePaletteGradient(_colours);
             main.gravityModifier = 0f;
             main.maxParticles = Mathf.Max(maxMotes, bloomMotes);
 

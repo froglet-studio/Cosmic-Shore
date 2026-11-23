@@ -63,7 +63,7 @@ No action needed; the tables below omit them from "depends on".
 | Type | Defining file | Lines | Depends on | Disposition |
 |---|---|---|---|---|
 | `VesselTrailCustomization` | `Controller/Vessel/VesselTrailCustomization.cs` | 62 | ❌ E14 (`Gradient`/`GradientColorKey`/`GradientAlphaKey` + `TrailRenderer.colorGradient`) | **SHALLOW** after E14 |
-| `VesselPrefabContainer` | `ScriptableObjects/SOAP/VesselPrefabContainer.cs` | 50 | `IVesselStatus` ✅, `TryGetComponent` ✅, `CSDebug` ✅ | **LEAF** |
+| `VesselPrefabContainer` | `ScriptableObjects/SOAPGameplay/VesselPrefabContainer.cs` | 50 | `IVesselStatus` ✅, `TryGetComponent` ✅, `CSDebug` ✅ | **LEAF** |
 | `PlayerProfileData` | `UI/Views/PlayerProfileData.cs` | 15 | pure data | **LEAF** |
 | `SO_ProfileIconList` (+`ProfileIcon`) | `ScriptableObjects/SO_ProfileIconList.cs` | 26 | `Sprite` ✅ | **LEAF** |
 | `PlayerDataService` | `UI/Views/PlayerDataService.cs` | 363 | `GameDataSO` ✅, `[Inject]` ✅, `Random` ✅; ❌ `SO_ProfileIconList`, ❌ `PlayerProfileData`; **UGS-coupled**: `UGSDataService` (CloudSave repo), `Unity.Services.Core`, `AuthenticationService`, `LogControlWindow` (`#if UNITY_EDITOR`, drops out) | **SHALLOW** with **Deviation #14 extension** — UGS paths commented (same family as `GameSetting`). Class is already null-tolerant: with `_ugsDataService == null` it runs on the local default profile, which is exactly the headless behavior we want. `Instance` static singleton + `OnProfileChanged` + `CurrentProfile` + `IsInitialized` port verbatim |

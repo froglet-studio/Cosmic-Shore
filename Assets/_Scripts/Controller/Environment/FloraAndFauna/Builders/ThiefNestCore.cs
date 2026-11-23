@@ -41,13 +41,15 @@ namespace CosmicShore.Gameplay
         public float Spot = 700f;                // a ship in sight is tailed
         public float TailBack = 70f;
         public float Territory = 900f;           // GAME: living cell R3 leash
-        public float SnatchReach = 5f;
+        // Body lengths are the research's x 3.55/2.298 (the nest is Space): the thief's body matches the one heart
+        // size (Docs/ECOSYSTEM.md 64.4). Speeds and sight stay world units.
+        public float SnatchReach = 7.72f;
         public float HomeReach = 12f;
         public float HoardBase = 8f, HoardGrow = 1.5f;   // drop radius 8 + 1.5 * cbrt(hoard + 1)
         public float RoostSpeed = 30f, RoostJitter = 30f;
         public float TimidRange = 120f, TimidDot = 0.85f;
-        public float Separation = 8f, SeparationGain = 40f;
-        public float Size = 2.2f, KnockExtra = 4f;
+        public float Separation = 12.36f, SeparationGain = 40f;   // research 8
+        public float Size = 3.4f, KnockExtra = 6.18f;              // research 2.2 / 4
         public float RaidReach = 4f;             // a vessel this close to a hoarded prism takes it back
         public float SettleSeconds = 0.3f;
         public float Containment = 1104f;        // the soft membrane starts at 0.92 x 1200

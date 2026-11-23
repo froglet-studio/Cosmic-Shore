@@ -67,6 +67,9 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the dust capsule is live.</summary>
         public bool IsDustMode => _dustMode;
 
+        /// <summary>The dust capsule this mode switches on (null when the prefab carries none).</summary>
+        public ButterflyDustField DustField => dustField;
+
         /// <summary>True while the wake is wide — kept for readers of the pre-mode API.</summary>
         public bool IsSpread => !_dustMode;
 

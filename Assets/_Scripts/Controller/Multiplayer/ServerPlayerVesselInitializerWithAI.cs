@@ -271,19 +271,7 @@ namespace CosmicShore.Gameplay
                     // A placed domain is never written into a count dict that lacks its key:
                     // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
                     // minTotal no listed domain can then match, starving the pick to its error path.
-                    var placed = i < gameData.RequestedAIDomains.Count
-                        ? gameData.RequestedAIDomains[i]
-                        : Domains.Blue;
-                    if (placed != Domains.Blue)
-                    {
-                        aiDomain = placed;
-                        if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
-                    }
-                    else
-                    {
-                        aiDomain = GetBalancedDomain(totalCounts, humanCounts);
-                        totalCounts[aiDomain]++;
-                    }
+                    aiDomain = PlacedOrBalancedDomain(i, gameData.RequestedAIDomains, totalCounts, humanCounts);
 
                     // Deal the seat so every later round of this tournament replays it. Appended
                     // in loop order, which is the order it is read back in.
@@ -314,8 +302,33 @@ namespace CosmicShore.Gameplay
                 }
 
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
-                ConfigureAIPilot(aiVesselNO);
+
+                // This seat's level: its own pick on the launch panel, else the match's. Stamped on the pilot so
+                // every handicap installed later (a gate race arming its racers) reads the same one.
+                var difficulty = gameData.RequestedAIDifficultyAt(i);
+                gameData.SetAIPilotDifficulty(aiPlayer.PlayerNetId, difficulty);
+                ConfigureAIPilot(aiVesselNO, difficulty);
             }
+        }
+
+        /// <summary>
+        /// The domain AI seat <paramref name="ordinal"/> flies, counted into <paramref name="totalCounts"/>: the one
+        /// the host PLACED for it on the launch panel (<c>GameDataSO.RequestedAIDomains</c>, entry i is bot i), else
+        /// the balanced pick. Blue, and anything past the end of the list, means not placed.
+        ///
+        /// <para>ONE rule for every dealer of AI seats. The Maelstrom deals its seats in the hub
+        /// (<c>MaelstromController.DealAISeats</c>) and had only the balanced half: a host who put both AI on Ruby
+        /// got one on Ruby and one on Gold in every round (Garrett and Yash, 2026-11-19).</para>
+        /// </summary>
+        public static Domains PlacedOrBalancedDomain(int ordinal, IReadOnlyList<Domains> placedDomains,
+            Dictionary<Domains, int> totalCounts, Dictionary<Domains, int> humanCounts)
+        {
+            var placed = placedDomains != null && ordinal >= 0 && ordinal < placedDomains.Count
+                ? placedDomains[ordinal]
+                : Domains.Blue;
+            var domain = placed != Domains.Blue ? placed : GetBalancedDomain(totalCounts, humanCounts);
+            if (totalCounts.ContainsKey(domain)) totalCounts[domain]++;
+            return domain;
         }
 
         /// <summary>
@@ -601,11 +614,11 @@ namespace CosmicShore.Gameplay
             ConfigureAIPilot(vc.NetworkObject);
         }
 
-        void ConfigureAIPilot(NetworkObject aiVesselNO)
+        void ConfigureAIPilot(NetworkObject aiVesselNO, AIDifficulty? difficulty = null)
         {
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
-            ConfigureAIPilotForMode(aiPilot, gameData);
+            ConfigureAIPilotForMode(aiPilot, gameData, difficulty);
 
             // Skim Race seats fly the dedicated racing pilot (input-only; it stands AIPilot down).
             if (aiVesselNO.TryGetComponent(out IVessel vessel))
@@ -618,7 +631,9 @@ namespace CosmicShore.Gameplay
         /// departed human (<see cref="ConfigureDepartedPilotAI"/>) and an arena pilot swap
         /// (<see cref="PilotSwap"/>) - and all three must fly to the same standard.
         /// </summary>
-        public static void ConfigureAIPilotForMode(AIPilot aiPilot, GameDataSO gameData)
+        /// <param name="difficulty">The level this pilot flies (its seat's own, stamped at spawn); null for the
+        /// match's (a hull handed to the AI mid-match, an adopted hull).</param>
+        public static void ConfigureAIPilotForMode(AIPilot aiPilot, GameDataSO gameData, AIDifficulty? difficulty = null)
         {
             if (aiPilot == null || gameData == null) return;
 
@@ -636,15 +651,19 @@ namespace CosmicShore.Gameplay
                 gameData.GameMode == GameModes.Joust ||
                 gameData.GameMode == GameModes.DogFight ||
                 gameData.GameMode == GameModes.Broadside;
-            float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+            // An arena card has no intensity row (it always plays SO_ArcadeGame.ArenaIntensity), so its autopilot skill
+            // follows the AI difficulty the host picked instead; every other card keeps intensity x 0.25.
+            float skill = gameData.IsArenaMatch
+                ? VesselSelectionRules.ArenaAutopilotSkill(AIDifficultyRules.Resolve(difficulty ?? gameData.RequestedAIDifficulty))
+                : Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
 
-            // The lobby AI difficulty, on the modes whose AI is this autopilot (the Arena's Astro
-            // League, Brood Rush and Broadside): Easy and Medium fly on a belief with the Skim Race's
-            // mistakes (late notice, a misjudged target), Hard on the truth. Every other mode clears
+            // The lobby AI difficulty, on every mode whose AI is this autopilot (all but the Skim Race and the
+            // gate races, which carry their own handicap): Easy, Medium and Hard fly on a belief with the Skim
+            // Race's mistakes (late notice, a misjudged target), Legendary on the truth. Every other mode clears
             // it, so a pilot that changes modes or hands never carries a stale one.
             var level = AIDifficultyRules.UsesPilotBelief(gameData.GameMode)
-                ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
+                ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(difficulty ?? gameData.RequestedAIDifficulty))
                 : default;
             aiPilot.SetTargetBelief(level.IsNone
                 ? null

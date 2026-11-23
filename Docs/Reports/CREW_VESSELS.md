@@ -41,8 +41,9 @@ the hit box, jets and engine flash are still the Sparrow's (`T-20261020-a9f5`).
 **Rounds 8-10 (2026-10-20/21):**
 - **Layout:** the hand stops at a line just above the totems and a small margin inside the screen; the Wrasse is held only by
   its cord. The Grouper's view fills the box left of the totems and below the line, and no longer pumps.
-- **Colours:** the four lasso elements are four green-yellow limes, derived by `Tools/Build/kite_mote_colors.py` (Charge
-  `#a0ff00`, Mass `#5ec600`, Space `#40ff00`, Time `#9bcf00`).
+- **Colours:** the four lasso elements were four green-yellow limes, derived by `Tools/Build/kite_mote_colors.py` (Charge
+  `#a0ff00`, Mass `#5ec600`, Space `#40ff00`, Time `#9bcf00`). Since 2026-10-31 they are one lime at four lightnesses,
+  Charge the darkest: `#2E5300`, `#508900`, `#73C200`, `#99FF00` (`Docs/VesselModels/COLOR.md` §5d).
 - **Juice:** every effect ring is gone and each loop's motes become its effect: a fizzle sputters out, Space explodes with
   the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, and Charge orbits onto the Wrasse.
 - Not editor-verified: `T-20261020-8dbc`, `T-20261021-3d24`, `T-20261021-d063`.

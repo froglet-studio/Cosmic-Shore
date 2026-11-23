@@ -5,10 +5,36 @@ The Serpent's Time ability, restored to its original design on 2026-09-25.
 **Press the button and one solid fuel pellet burns** — a fixed amount of fuel (a quarter of the
 tank). Every burn is its own event with its own duration. **Press again while one is still
 burning and a second pellet lights beside it**: the burns overlap, and each adds the same increment
-of speed, so four pellets burning at once is four times the effect of one. Fuel refills at a fixed
-rate and the tank holds exactly four pellets. That makes it two things at once: a manoeuvre (a
-burst of speed you can stack on demand) and a resource to manage (keep some in hand, or dump all
-four for one big overlap and fly on empty while it refills).
+of speed, so four pellets burning at once is four times the effect of one. The tank holds exactly
+four pellets and **does not refill on a clock**: a pellet comes back only while the Serpent's own
+wall eats the Serpent's own trail (below). That makes it two things at once: a manoeuvre (a burst
+of speed you can stack on demand) and a resource to manage (keep some in hand, or dump all four
+for one big overlap and fly on empty until you build).
+
+## The wall refills the tank (Garrett, 2026-10-31)
+
+> "lets remove the automatic regeneration on the serpents fuel pellets. the way for it to regen a
+> pellet is when its trail gets eaten by its wall. when it flies out at normal speed in plane with
+> a wall its trail will get pulled into the wall. it shoul get 1 pellet for 2 seconds of building.
+> pellets should last twice as long at base and scale from there, so max time is also twice as long."
+
+- **No clock refill.** The `Boost` resource (index 1) on `Serpent.prefab` authors
+  `resourceGainRate 0`. The tank starts full (four pellets) and only the wall puts fuel back.
+- **Building refills it.** `SerpentWallAssembler` reports each of the OWNER's own trail prisms
+  (same domain and same `PlayerName`) that LANDS in one of its walls to the owner's
+  `ConsumeBoostActionExecutor.CreditWallBuilding`. The time since the previous landing is building
+  time, paid at one pellet per `secondsOfWallBuildingPerPellet` (1.5 s since 2026-11-18; Garrett's 2 s before, see "Regatta pace" below). Only while the Serpent flies (`refillWhileStopped` off). A gap longer than
+  `wallBuildingGapSeconds` (0.4 s, just above the wall's 0.3 s steal sweep) starts a new stretch and
+  pays nothing for the pause. Landings in the same frame pay once, so two walls eating at once
+  refill no faster than one, and an opponent's or a teammate's prisms pay nothing.
+- **A pellet is a pellet**: the credit is in pellets, so at Time 5 (0.2 pellets) 1.5 s of building
+  still returns one whole (smaller) pellet.
+- **Burns twice as long.** `boostDuration` 3 s -> **6 s** at rest; Time still scales it x1 -> x1.6,
+  so Time 10 is 9.6 s (was 4.8 s).
+- The wall is reached through `SerpentWallAssembler.Snapshot.Fuel`, which
+  `SeedAssemblerActionExecutor.StartSeed` fills from its sibling executor, so a wall laid by the
+  cloak or the stopped stance both refuel. Every peer rebuilds walls from replicated inputs, so
+  every peer credits the same landings, the same way every peer already ran the pellet burns.
 
 ## What was wrong, and what changed
 
@@ -37,6 +63,9 @@ partial fill at half brightness, and spending snaps the pips down at once while 
 (`pipFillRate`). The pips read the fuel resource itself, never a count of presses, so the readout
 and the gate that decides whether a press burns cannot disagree.
 
+- **Mirrored to fly right** (Garrett, 2026-10-30), nose first like every hull on the row: the
+  generator mirrors `PelletSlots.png`, `Line_1..4.png` are flipped, their anchored x negated and
+  their fill origin moved to the right (the pellet's round nose) on `SerpentHUDVariant.prefab`.
 - `PelletSlots.png` is **derived**, never hand-edited: `Tools/Build/author_serpent_pellet_icon.py`
   keys the translucent decagon plate and its rim stroke out of `Base.png` (the ability lockup
   retired the fleet's decagon backdrops — every card draws its own trapezoid plate). `--check`
@@ -57,10 +86,12 @@ and the gate that decides whether a press burns cannot disagree.
 
 | File | Role |
 |---|---|
-| `Executors/ConsumeBoostActionExecutor.cs` | The pellet tank: gate on fuel, spend, overlapping burns, multiplier, teardown |
+| `Executors/ConsumeBoostActionExecutor.cs` | The pellet tank: gate on fuel, spend, overlapping burns, multiplier, teardown, the wall-building refill (`CreditWallBuilding`) |
+| `../../Assemblers/SerpentWallAssembler.cs` | Reports each of the owner's own trail prisms landing in its wall (`Snapshot.Fuel`) |
+| `Executors/SeedAssemblerActionExecutor.cs` | Hands the wall its owner's pellet executor when it seeds |
 | `Data Containers/ConsumeBoostActionSO.cs` | Shared stateless config: per-pellet multiplier, burn duration, Time scaling, fuel index + pellet cost |
 | `_SO_Assets/VesselActions/Serpent/ConsumeBoostAction.asset` | The authored numbers (dead magazine keys removed) |
-| `UI/Controller/SerpentVesselHUDController.cs` | Pushes the fuel level to the view off `ResourceSystem.OnResourceChanged` |
+| `UI/Controller/SerpentHUDController.cs` | Pushes the fuel level to the view off `ResourceSystem.OnResourceChanged` |
 | `UI/View/SerpentVesselHUDView.cs` | Paints the four pips (`SetPelletFuel`) |
 | `_Prefabs/UI Elements/VesselHUD/SerpentHUDVariant.prefab` | `TimeIcon` + re-parented pips |
 | `_Prefabs/Spacevessels/Serpent.prefab` | Executor `config` wired; `abilityIcons` Time binding; `shieldIcon` nulled |
@@ -72,20 +103,29 @@ and the gate that decides whether a press burns cannot disagree.
 | Knob | Where | Shipped | Effect |
 |---|---|---|---|
 | `boostMultiplier` | `ConsumeBoostAction.asset` | 3 | Boost ONE pellet gives; n pellets give `1 + (3 − 1) × n` = 3/5/7/9x |
-| `boostDuration` | `ConsumeBoostAction.asset` | 3 s | One pellet's burn at rest |
-| `timeDurationMultiplier` | `ConsumeBoostAction.asset` | ×1 → ×1.6 at Time 10, floor ×0.25 | Time → burn duration (3 s → 4.8 s) |
+| `boostDuration` | `ConsumeBoostAction.asset` | 6 s | One pellet's burn at rest (3 s until 2026-10-31) |
+| `timeDurationMultiplier` | `ConsumeBoostAction.asset` | ×1 → ×1.6 at Time 10, floor ×0.25 | Time → burn duration (6 s → 9.6 s) |
 | `resourceCost` | `ConsumeBoostAction.asset` | 0.25 | Pellet size; capacity = `maxAmount / resourceCost` = 4 |
-| `resourceGainRate` | `Serpent.prefab` → `ResourceSystem` → `Boost` (index 1) | 0.07 / s | Refill: one pellet per ~3.6 s, a full tank in ~14 s |
+| `resourceGainRate` | `Serpent.prefab` → `ResourceSystem` → `Boost` (index 1) | **0** | No clock refill (0.07 / s until 2026-10-31) |
+| `secondsOfWallBuildingPerPellet` | `ConsumeBoostAction.asset` | 2 s | Seconds of the wall eating your own trail per pellet back |
+| `wallBuildingGapSeconds` | `ConsumeBoostAction.asset` | 0.4 s | Longest gap between own-trail landings still counted as building |
 | `pipFillRate` | `SerpentVesselHUDView` | 1.5 pellets/s | How fast the pips pour up to the real level |
 | `pelletIgniteEvent` | `ConsumeBoostActionExecutor` on `Serpent.prefab` | *empty* | Dedicated FMOD ignite sound; empty falls back to the shared `BoostActivate` category |
 
-Level 5 (Time) is still an **open design slot** — nothing is invented here. The old FLEET_MAPS
-proposal *Endless Coil* ("chains without the reload pause") no longer means anything, because the
-reload is gone.
+**Level 5 (Time): Fifth Pellet** (Garrett, 2026-10-30: "Time L5 lets give players a fifth
+pellet"). `upgradeResourceCost` 0.2 replaces the 0.25 pellet while `IsUpgradeActive(Time)`, so the
+same 1.0 tank holds five; a pellet still burns and boosts exactly as before (five at once is 9.5x),
+and 1.5 s of wall building still returns one (smaller) pellet. The TIME card
+re-lays itself as five rows (`SerpentVesselHUDView.SetFivePellets`: the slots swap to
+`PelletSlots5.png` from `author_serpent_pellet_icon.py`, the pips shrink to 0.8 and close up to
+24.9 apart, and a fifth pip is cloned from the first).
 
 ## Verification status
 
-**Not run in the editor.** The four changed C# files were type-checked with Roslyn against a stub
+**2026-10-31 (wall refill, 6 s burns): not run in the editor**; C# type-checked offline only.
+Steps 3, 5, 5a, 6 and 7 below are the hand test.
+
+**Earlier: not run in the editor.** The four changed C# files were type-checked with Roslyn against a stub
 harness; the prefab edits were checked for dangling local fileIDs; every offline gate passes.
 
 ## In-editor verification
@@ -94,16 +134,21 @@ harness; the prefab edits were checked for dangling local fileIDs; every offline
    icon is four pellets; Charge/Mass/Space are LOCKED cards. No old Serpent HUD art (decagon, wall
    seeds, glyph roots) anywhere on screen. Clean console.
 2. Tank starts full: all four pellets lit.
-3. Tap **A / Space** once → one pellet goes dark at once, the vessel boosts (~3x cruise) for 3 s.
-   Hold the button — the burn still ends after 3 s; release early — the burn still lasts 3 s.
-4. Tap four times quickly → all four go dark; speed steps up with each press (3x → 5x → 7x → 9x)
+3. Tap **A / Space** once → one pellet goes dark at once, the vessel boosts (~3x cruise) for 6 s.
+   Hold the button — the burn still ends after 6 s; release early — the burn still lasts 6 s.
+4. Tap four times quickly → all four go dark; speed steps up with each press (2.7x → 4.4x → 6.1x → 7.8x)
    and steps back down as each burn ends, in the order they were lit.
-5. With the tank empty, press → nothing happens. Watch a pellet pour back in over ~3.6 s at half
-   brightness, go fully lit, and become burnable.
+5. With the tank empty, press → nothing happens. Fly on: **no pellet comes back**, however long
+   you wait.
+5a. Lay a wall (cloak, or stop for the stance), then fly out at cruise in the wall's plane so the
+   trail is pulled into it → a pellet pours in at half brightness over ~1.5 s of the wall eating
+   the trail, goes fully lit, and is burnable. Fly away from the plane (the wall stops eating)
+   → the refill stops. Two walls eating at once refill no faster than one.
 6. Raise Time (debug harness `TimeTestHarness` on `ResourceSystem`) → each burn lasts longer
-   (4.8 s at Time 10). Speed per pellet does not change.
+   (9.6 s at Time 10). Speed per pellet does not change.
 7. Put an **AI** Serpent in a match (any arena card with AI backfill that allows the Serpent, or
-   Spawn Matrix → Vessels → Serpent): it now boosts visibly every ~8 s.
+   Spawn Matrix → Vessels → Serpent): it burns its opening four pellets and then refills only
+   when its walls eat its trail.
 8. MPPM two clients: both see the other Serpent's boost (speed replicates through the transform).
 
 ## Follow-ups
@@ -113,3 +158,25 @@ harness; the prefab edits were checked for dangling local fileIDs; every offline
   no target on any shipped HUD. Delete it when the Mass slot is designed, or re-home it if that
   design brings the wall back.
 - Author a dedicated FMOD ignite event into `pelletIgniteEvent`.
+
+## Regatta pace (2026-11-18)
+
+Regatta's per-vessel starting Time boosts are going (they are handicaps), and without its Time 10 the Serpent raced 1.98x
+slower than the balanced five (Urchin, Scarab, Sparrow, Dolphin, Squirrel) on the 8 shipped courses. Garrett turned the
+wall a quarter instead (`SERPENT_SEED_WALL.md`, "The wall's plane"): it now stands along the heading, so flying straight on
+feeds it. That made the refill the Serpent's steady speed source, and two numbers were retuned on the real-game Regatta
+judge (`regatta_judge.py --course shuffle --seeds 1,2,3`, Serpent / mean of the five, total time over the 8 courses):
+
+| Kit | Rest start | Time L5 start |
+|---|---|---|
+| Before (wall across the heading, 3x a pellet, 2 s a pellet) | 1.98 | 1.07 |
+| Keel wall, 3x, 2 s | 1.04 | 0.89 |
+| Wings wall, 3x, 2 s | 1.29 | - |
+| Keel wall, 3x, 2.5 s | 1.15 | 0.89 |
+| Keel wall, 2.6x, 1.7 s | 1.10 | 1.02 |
+| **Keel wall, `boostMultiplier` 2.7x, `secondsOfWallBuildingPerPellet` 1.5 s (shipped)** | **1.02** | **1.00** |
+
+Why two numbers: at Time 5 a pellet burns long enough that the AI sits at its three-burn cap whenever it builds, so the
+refill rate stops mattering there and only the per-pellet boost moves it; at rest the refill is what runs out. A lower boost
+with a faster refill brings both starts in. No element dial changed: Time still scales the burn, the L5 still adds a pellet.
+

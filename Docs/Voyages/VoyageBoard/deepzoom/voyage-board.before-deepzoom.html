@@ -1,0 +1,1448 @@
+<title>HyperSea Voyage Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a navigator's table. The live chart of the Milky Way is the page; the rail beside it is the Ark: where it is, the voyages the crew found, the crew. One deliberate dark look (a star chart read in the void), so no light variant. */
+:root {
+  --void: #050912;
+  --ink: #0a1120;
+  --panel: #0d1526;
+  --line: #1c2a42;
+  --line-hi: #2c3f60;
+  --fg: #e4ebf5;
+  --muted: #8a9ab3;
+  --faint: #56647d;
+  --ark: #ffc740;          /* VoyageToyDefinitionSO.HereColor */
+  --route: #b3ff59;        /* VoyageToyDefinitionSO.RouteColor */
+  --i1: #7f96b8; --i2: #d9c36a; --i3: #ef8a3c; --i4: #e5484d;   /* the game's one difficulty scale */
+  --spray: #8e9cb4; --froth: #2e8a9e; --water: #2869b8; --thick: #6a44b0; --reef: #e0644a;
+  --merchant: #e7c46a; --hunter: #7fd18b; --pirate: #ef7a6f; --aristocrat: #a99bff;
+  --f-display: "Oxanium", "Eurostile", "Arial Narrow", sans-serif;
+  --f-label: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--void); color: var(--fg); }
+body { font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap {
+  max-width: 1480px; margin: 0 auto;
+  padding-block: 18px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 14px;
+}
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; }
+header > div { display: grid; gap: 4px; min-width: 0; }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: clamp(22px, 3vw, 32px); letter-spacing: .04em; margin: 0; text-wrap: balance; line-height: 1.1; }
+h1 span { color: var(--ark); }
+.lede { color: var(--muted); max-width: 72ch; margin: 0; }
+.eyebrow { font-family: var(--f-label); font-weight: 600; text-transform: uppercase; letter-spacing: .14em; font-size: 11.5px; color: var(--muted); }
+.sel { display: inline-flex; align-items: center; gap: 8px; font: 600 12px var(--f-label); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.sel select { font: 500 14px var(--f-body); color: var(--fg); background: var(--ink); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 14px; align-items: start; }
+@media (max-width: 1040px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.chartcol { position: sticky; top: env(safe-area-inset-top, 0px); min-width: 0; }
+@media (max-width: 1040px) { .chartcol { position: static; } }
+.chart {
+  position: relative; width: 100%; height: min(calc(82vh - 144px), 760px); min-height: 400px;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--void);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+@media (max-width: 1040px) { .chart { height: 58vh; min-height: 360px; } }
+.side { position: relative; width: 100%; height: 136px; margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--void); }
+@media (max-width: 1040px) { .side { height: 116px; } }
+.side canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.side .cap { position: absolute; left: 10px; right: 10px; top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; font: 600 11px var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: rgba(214,224,240,.8); text-shadow: 0 0 6px var(--void); }
+.side .cap span { color: var(--muted); letter-spacing: .04em; text-transform: none; font: 500 11px var(--f-mono); margin-left: 6px; }
+.chart canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.chart canvas.dragging { cursor: grabbing; }
+.tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 20px); }
+.tb {
+  font: 600 12px var(--f-label); letter-spacing: .08em; text-transform: uppercase;
+  background: rgba(10, 17, 32, .88); color: var(--fg); border: 1px solid var(--line-hi); border-radius: 999px;
+  padding: 5px 11px; cursor: pointer; min-height: 30px;
+}
+.tb:hover { border-color: var(--muted); }
+.tb[aria-pressed="true"] { color: var(--void); background: var(--fg); border-color: var(--fg); }
+.tb.sq { width: 30px; padding: 0; font-size: 16px; }
+.readout {
+  position: absolute; left: 10px; bottom: 10px; pointer-events: none; display: grid; gap: 3px;
+  font: 500 11.5px var(--f-mono); color: rgba(220, 230, 245, .8); text-shadow: 0 0 6px var(--void);
+}
+.readout .bar { height: 6px; border: 1.5px solid rgba(220,230,245,.8); border-top: 0; }
+.seakey {
+  position: absolute; right: 10px; bottom: 10px; pointer-events: none; display: grid; gap: 3px; justify-items: end;
+  font: 500 11px var(--f-mono); color: rgba(220, 230, 245, .75); text-shadow: 0 0 6px var(--void);
+}
+.seakey .ramp { display: flex; gap: 2px; }
+.seakey .ramp i { width: 34px; height: 8px; display: block; border-radius: 2px; }
+.seakey .lab { display: flex; gap: 2px; }
+.seakey .lab span { width: 34px; text-align: center; font-size: 9.5px; letter-spacing: .02em; }
+@media (max-width: 560px) { .seakey .ramp i, .seakey .lab span { width: 26px; } .seakey .lab span { font-size: 8.5px; } .readout { bottom: 44px; } }
+.banner {
+  position: absolute; left: 50%; top: 52px; transform: translateX(-50%); pointer-events: none;
+  background: rgba(9, 14, 25, .92); border: 1px solid var(--line-hi); border-radius: 999px; padding: 5px 14px;
+  font: 600 13px var(--f-label); letter-spacing: .06em; color: var(--ark); white-space: nowrap; max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis;
+}
+.tip {
+  position: absolute; pointer-events: none; z-index: 2; max-width: 270px;
+  background: rgba(9, 14, 25, .95); border: 1px solid var(--line-hi); border-radius: 8px;
+  padding: 7px 10px; font-size: 13px; line-height: 1.4;
+}
+.tip b { font-family: var(--f-label); font-size: 15px; letter-spacing: .02em; }
+.tip .k { color: var(--muted); }
+
+.rail { display: grid; gap: 12px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.card[hidden] { display: none; }
+.here { display: flex; justify-content: space-between; align-items: start; gap: 10px; }
+.here strong { font-family: var(--f-display); font-weight: 600; font-size: 21px; letter-spacing: .02em; display: block; line-height: 1.15; }
+.sub { color: var(--muted); font-size: 13px; }
+.meters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.meter { display: grid; gap: 1px; min-width: 0; }
+.meter b { font: 500 16px var(--f-mono); font-variant-numeric: tabular-nums; }
+.meter span { color: var(--muted); font-size: 11.5px; line-height: 1.25; }
+.hull { position: relative; height: 6px; border-radius: 3px; background: var(--ink); border: 1px solid var(--line); overflow: hidden; }
+.hull i { position: absolute; inset: 0 auto 0 0; background: var(--route); transition: width .3s; }
+.hull i.low { background: var(--i4); }
+.arrival { border: 1px solid var(--line-hi); background: #111c30; border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; font-size: 13.5px; }
+.arrival[hidden] { display: none; }
+.arrival h3 { margin: 0; font: 600 15px var(--f-label); letter-spacing: .03em; color: var(--ark); }
+.arrival.bad h3 { color: var(--i4); }
+.arrival p { margin: 0; }
+.arrival .k { color: var(--muted); }
+
+.pill { font: 600 11.5px var(--f-mono); color: #0b1220; background: var(--c); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.opts { display: grid; gap: 8px; }
+.opt {
+  text-align: left; cursor: pointer; color: var(--fg); font: inherit;
+  background: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+  padding: 9px 11px; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 4px 10px; min-width: 0;
+}
+.opt:hover { border-color: var(--line-hi); }
+.opt[aria-pressed="true"] { background: #122036; border-color: var(--route); }
+.opt .num { grid-row: 1 / span 3; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--muted); display: grid; place-items: center; font: 600 12px var(--f-mono); color: var(--muted); align-self: start; margin-top: 1px; }
+.opt[aria-pressed="true"] .num { background: var(--route); border-color: var(--route); color: #0b1220; }
+.opt.home .num { border-color: var(--ark); color: var(--ark); }
+.opt.home[aria-pressed="true"] .num { background: var(--ark); color: #1b1404; }
+.opt .t { font: 600 15.5px var(--f-label); letter-spacing: .02em; line-height: 1.25; }
+.opt .t em { font-style: normal; color: var(--muted); font-weight: 500; }
+.opt .facts { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font: 500 12.5px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.opt .facts b { color: var(--fg); font-weight: 500; }
+.who { display: flex; flex-wrap: wrap; gap: 4px; }
+.cs { display: inline-flex; align-items: baseline; gap: 5px; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; background: #0d1626; }
+.cs code { font: 500 11px var(--f-mono); letter-spacing: .04em; color: var(--c, var(--fg)); }
+.cs.finder { border-color: var(--line-hi); }
+
+.detail { display: grid; gap: 9px; border-top: 1px solid var(--line); padding-top: 10px; }
+.detail[hidden] { display: none; }
+.pitch { margin: 0; font-size: 14px; }
+.pitch .by { color: var(--muted); }
+.lightline { margin: 0; font-size: 13.5px; color: var(--ark); }
+.strip { display: grid; gap: 4px; }
+.cells { display: flex; flex-wrap: wrap; gap: 2px; }
+.cells i { width: 8px; height: 12px; border-radius: 2px; display: block; }
+.cells i.now { outline: 2px solid var(--ark); outline-offset: 1px; }
+.paths { display: flex; gap: 6px; flex-wrap: wrap; }
+.path { font: 600 12px var(--f-label); letter-spacing: .08em; text-transform: uppercase; color: var(--fg); background: #0d1626; border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+.path[aria-pressed="true"] { border-color: var(--route); box-shadow: inset 0 0 0 1px var(--route); }
+.path span { font: 500 11px var(--f-mono); color: var(--muted); text-transform: none; letter-spacing: 0; margin-left: 4px; }
+.nav { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 12px; font-size: 13px; margin: 0; }
+.nav dt { color: var(--muted); }
+.nav dd { margin: 0; min-width: 0; }
+.tag { font: 500 10.5px var(--f-mono); color: var(--faint); margin-left: 4px; }
+.sail {
+  font: 600 14px var(--f-label); letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+  background: var(--route); color: #0b1220; border: 0; border-radius: 8px; padding: 11px 12px;
+}
+.sail.home { background: var(--ark); color: #1b1404; }
+.sail:disabled { background: var(--line); color: var(--faint); cursor: not-allowed; }
+.sail.ghost { background: none; color: var(--fg); border: 1px solid var(--line-hi); }
+.empty { color: var(--muted); font-size: 13.5px; margin: 0; }
+
+details.card > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::after { content: "+"; font: 500 16px var(--f-mono); color: var(--muted); }
+details.card[open] > summary::after { content: "–"; }
+.crew { display: grid; gap: 2px; }
+.mate { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 0 10px; padding: 5px 6px; border-radius: 6px; }
+.mate code { font: 500 11.5px var(--f-mono); letter-spacing: .05em; color: var(--c); }
+.mate .n { font-size: 13.5px; }
+.mate .f { grid-column: 2; color: var(--muted); font-size: 12px; }
+.log { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.log li b { color: var(--fg); font-weight: 500; }
+.linkbtn { justify-self: start; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; padding: 0; }
+
+.insp h3 { margin: 0; font: 600 18px var(--f-label); letter-spacing: .02em; }
+.insp p { margin: 0; font-size: 13.5px; }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.notes > div { min-width: 0; }
+.notes h2 { margin: 0 0 6px; font: 600 17px var(--f-display); letter-spacing: .03em; }
+.notes ul, .notes ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: 13.5px; color: var(--muted); }
+.notes li b { color: var(--fg); font-weight: 500; }
+.notes a { color: var(--fg); }
+.notes .t { font: 500 10.5px var(--f-mono); color: var(--faint); }
+
+button:focus-visible, select:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px solid var(--ark); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Cosmic Shore · Voyages</div>
+      <h1>HyperSea <span>Voyage Board</span></h1>
+      <p class="lede">The Milky Way, as an Ark crew feels it: a sea crossed at twenty light years a minute. Your crew has found these voyages from where the Ark is moored. Pick one and set sail.</p>
+    </div>
+    <label class="sel" for="start">Home port
+      <select id="start"><option value="tumult">Tumult</option><option value="hyades">Hyades beacon, near Sol</option></select>
+    </label>
+  </header>
+
+  <div class="main">
+    <div class="chartcol">
+      <div class="chart" id="chart">
+        <canvas id="cv" tabindex="0" aria-label="Chart of the Milky Way. Drag to pan, scroll or pinch to zoom, tap a place to read about it."></canvas>
+        <div class="tools">
+          <button class="tb" id="u-crew" aria-pressed="false" title="Show distances as your expanded crew perceives them">Crew's eye</button>
+          <button class="tb" id="v-ark">Ark</button>
+          <button class="tb" id="v-gal">Galaxy</button>
+          <button class="tb sq" id="z-in" aria-label="Zoom in">+</button>
+          <button class="tb sq" id="z-out" aria-label="Zoom out">−</button>
+        </div>
+        <div class="banner" id="banner" hidden></div>
+        <div class="readout" id="readout"></div>
+        <div class="seakey" id="seakey" aria-label="Sea density, as the crew perceives it">
+          <div class="ramp"><i style="background:var(--spray)"></i><i style="background:var(--froth)"></i><i style="background:var(--water)"></i><i style="background:var(--thick)"></i><i style="background:var(--reef)"></i></div>
+          <div class="lab"><span>spray</span><span>froth</span><span>water</span><span>thick</span><span>reef</span></div>
+        </div>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <div class="side" id="side">
+        <canvas id="sv" aria-label="Side view of the disk at true scale, sliced through the Ark"></canvas>
+        <div class="cap" id="sidecap">Side view, true scale</div>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <section class="card" aria-live="polite">
+        <div class="here">
+          <div style="min-width:0"><div class="eyebrow">Your Ark is at</div><strong id="here-name">-</strong><div class="sub" id="here-sub"></div></div>
+        </div>
+        <div class="hull" title="Ark hull"><i id="hull-fill"></i></div>
+        <div class="meters">
+          <div class="meter"><b id="m-hull">10</b><span>hull</span></div>
+          <div class="meter"><b id="m-aboard">0</b><span>finds aboard</span></div>
+          <div class="meter"><b id="m-banked">0</b><span>finds home</span></div>
+          <div class="meter"><b id="m-omni">0</b><span>omni</span></div>
+        </div>
+        <div class="arrival" id="arrival" hidden></div>
+        <button class="sail ghost" id="skip" hidden>Skip to arrival</button>
+      </section>
+
+      <section class="card">
+        <div class="eyebrow" id="props-title">Voyages your crew found</div>
+        <div class="opts" id="opts"></div>
+        <button class="sail" id="sail" disabled>Set sail</button>
+      </section>
+
+      <section class="card insp" id="insp" hidden></section>
+
+      <details class="card" id="crew-card">
+        <summary><span class="eyebrow" id="crew-title">Ark crew</span></summary>
+        <div class="crew" id="crew"></div>
+      </details>
+
+      <details class="card">
+        <summary><span class="eyebrow">Voyage log</span></summary>
+        <ol class="log" id="log"></ol>
+        <button class="linkbtn" id="restart">Start over from home</button>
+      </details>
+    </aside>
+  </div>
+
+  <section class="card notes">
+    <div>
+      <h2>Reading the chart</h2>
+      <ul>
+        <li><b>The galaxy is ours, unchanged.</b> Every named star, cloud and nebula sits where astronomers put it. Zoom in and the sea resolves into cells, each 20 light years across and one minute of sailing.</li>
+        <li><b>Colour is the sea's density as your crew feels it.</b> Expanded, they sweep so much gas that it reads as a liquid: thin spray in hot bubbles, water in the open disk, thick water in the arms, reefs in molecular clouds. Reefs are impassable, so courses bend round them.</li>
+        <li><b>Thick water is rich and rough.</b> Denser gas grows more prisms, prisms feed fauna, fauna grow bolder. Spray is safe and empty. A voyage is as hard as its roughest water or its destination, whichever is harder; two backers ease it one step.</li>
+        <li><b>Couriers are the only fast news.</b> Every voyage shows how long light would take. A message the Ark carries in twenty minutes would take light four hundred years.</li>
+        <li><b>The side view is the disk edge-on, at true scale.</b> The galaxy is 1,000 ly thick, 50 cells, so from far out it is a hairline; zoomed in, the gauge on the left shows where in that thickness your Ark is. Clouds are thin sheets near the midplane, and above and below the disk the sea thins to the halo's spray.</li>
+        <li><b>Crew's eye</b> switches distances to what your expanded crew perceives: a cell is 2.25 million km, the whole galaxy 75 AU.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>The Milky Way, reimagined</h2>
+      <ul>
+        <li>Cell 20 ly; 1 minute per cell; Ark 20 ly a minute <span class="t">[S] Fact Sheet, Notion Timelines</span></li>
+        <li>Galaxy 100,000 × 1,000 ly; 80 hours across, 50 minutes through <span class="t">[S]</span></li>
+        <li>Heights from galactic latitude, with Sol 65 ly above the midplane; warm gas thins with a 360 ly scale height <span class="t">[D]</span></li>
+        <li>A course takes its planar cells or its climb in layers of foam-packed cells (0.82 of a cell each), whichever is more <span class="t">[D]</span></li>
+        <li>Perceived compression 8.4 × 10⁷, so perceived g/cm³ equals real atoms per cm³ <span class="t">[S] Garrett; [D]</span></li>
+        <li>Tumult to Sol about 24,000 ly, 20 hours <span class="t">[S] Timelines</span>; placed here 23,900 ly from Sol, 2,300 ly from the centre <span class="t">[A]</span></li>
+        <li>Real positions from galactic longitude and distance; arms are a four-arm log spiral at 13° pitch with the Orion Spur; Sol 26,000 ly from the centre <span class="t">[D] standard astronomy</span></li>
+        <li>Cloud and bubble densities are standard ISM values; their shapes here are simplified <span class="t">[D]</span></li>
+        <li>Places near Tumult are invented (the slice's names first). Earth cannot see this region through the dust, so it is ours to fill <span class="t">[A]</span></li>
+        <li>Crew, factions and job words are the slice's <code style="font:500 12px var(--f-mono)">voyage_slice.json</code> <span class="t">[S]</span>; hull, odds and rewards are this page's <span class="t">[A]</span></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Decisions for Garrett</h2>
+      <ol>
+        <li><b>Tumult sits 2,300 ly from the galactic centre, toward Sol.</b> Home waters are calm spray inside Tumult's own bubble; the centre's reefs are two hours out. Any point 24,000 ly from Sol fits the canon.</li>
+        <li><b>The Heart (Sagittarius A*) is closed.</b> The deepest well squeezes an infused traveller past return. The other option is a late lair.</li>
+        <li><b>Sol is closed.</b> The Terminal guards Earth's well, so courses route round it. The Hyades beacon is a proposed Terminal harbour for a start near Sol.</li>
+        <li><b>Sea density sets danger and reward.</b> Reefs over 100 g/cm³ are impassable.</li>
+        <li><b>Sol to the edge.</b> The map uses the real 26,000 ly from the centre; Timelines' 15 hours to the edge would need 32,000.</li>
+        <li><b>Reefs are routed round, not over.</b> They are sheets a few hundred ly thick, so a course could climb over one through thin water. Allowing it would add a slow, safe third course.</li>
+        <li><b>Voyages run 8 to 55 minutes</b> (160 to 1,100 ly), so the galaxy is a lifetime and Earth is a pilgrimage.</li>
+      </ol>
+      <p class="sub" style="margin:10px 0 0">Sources: <a href="https://claude.ai/artifact/8bvB2BA3AoUWmkt89wwGB2" target="_blank" rel="noopener">HyperSea Fact Sheet</a>, <a href="https://claude.ai/artifact/GRXLicf4UnhXjQVFqWrEZr" target="_blank" rel="noopener">The Etherion Laws</a>, <a href="https://claude.ai/artifact/HrSTREQuMeRd47r1KaKchS" target="_blank" rel="noopener">Tumult World Model</a>, <a href="https://claude.ai/artifact/VL56ftu3mu8XUvX6SPPoqT" target="_blank" rel="noopener">HyperSea Charts</a> (the earlier prototype), Docs/Voyages in the repo.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+// ── Canon numbers ─────────────────────────────────────────────────────────
+const CELL = 20;              // ly per cell [S]
+const MIN_PER_CELL = 1;       // minutes per cell [S]
+const K = 8.4e7;              // perceived compression [S/D]
+const LY_KM = 9.4607e12;
+const AU_KM = 1.496e8;
+const R0 = 26000;             // Sol from the galactic centre, ly [D]
+const DEG = Math.PI / 180;
+const SQ3 = Math.sqrt(3);
+const HULL_MAX = 10;
+const RANGE_MIN = 8, RANGE_MAX = 55;
+const I_COL = ["#7f96b8", "#d9c36a", "#ef8a3c", "#e5484d"];
+const FACTION_COL = { Merchant: "#e7c46a", Hunter: "#7fd18b", Pirate: "#ef7a6f", Aristocrat: "#a99bff" };
+
+// Sol at (0, R0), the centre at the origin, screen y down; galactic longitude 90° points left (the galaxy turns clockwise seen from the north).
+const ZSUN = 65;              // Sol sits about 65 ly above the midplane [D]
+const DISK_HALF = 500;        // the disk is 1,000 ly thick [S]
+const fromLD = (l, d, b = 0) => { const dp = d * Math.cos(b * DEG); return [-dp * Math.sin(l * DEG), R0 - dp * Math.cos(l * DEG)]; };
+const zOf = (d, b) => Math.round(ZSUN + d * Math.sin(b * DEG));
+const fromL0 = l => -R0 * Math.sin(l * DEG);   // projected offset of a centre object at longitude l
+
+// ── Places ────────────────────────────────────────────────────────────────
+const EXP = {
+  Harbour:    { label: "Harbour",        col: "#ffc740", base: 1 },
+  Port:       { label: "Port",           col: "#ede6cf", base: 1 },
+  VaultField: { label: "Vault field",    col: "#8cbfff", base: 2 },
+  Core:       { label: "Contested core", col: "#ff6f57", base: 2 },
+  Wreck:      { label: "Wreck",          col: "#c7a07a", base: 2 },
+  Hoard:      { label: "Hoard",          col: "#b9a6ff", base: 3 },
+  Lair:       { label: "Lair",           col: "#f25c8e", base: 4 },
+  Guarded:    { label: "Closed well",    col: "#ffe9a8", base: 4 },
+  Far:        { label: "Landmark",       col: "#9fb0c8", base: 4 },
+};
+const P = [];
+const place = (o) => {
+  const [x, y] = o.at;
+  // places near Tumult get an invented height; the centre's places sit near the midplane
+  const z = o.z !== undefined ? o.z : o.region === "tumult" ? Math.round((hash(P.length, 7) - .5) * 340) : o.region === "core" ? Math.round((hash(P.length, 9) - .5) * 60) : 0;
+  P.push({ berth: 3, region: "", tag: "S", ...o, x, y, z });
+};
+
+// Tumult's reach [A]: invented places in water Earth cannot see through the dust.
+place({ id: "tumult", name: "Tumult", exp: "Harbour", at: [900, 2100], z: 30, region: "tumult", tag: "A",
+  fact: "Home. Celadon, Carmine and Aurum harbours ride the Rim of a lens-shaped world that spins once an hour.", sub: "Rim harbours · Tumult's bubble" });
+place({ id: "tollmoor", name: "Tollmoor", exp: "Port", at: [1300, 2360], region: "tumult", tag: "A", fact: "A toll port on the edge of Tumult's bubble. The dock crews hear everything first." });
+place({ id: "lantern", name: "Lantern Reach", exp: "VaultField", at: [560, 1690], region: "tumult", tag: "A", fact: "Super-shielded shells drift in a lit shoal, each with an artifact inside." });
+place({ id: "hollow", name: "The Hollow", exp: "VaultField", at: [1520, 1760], region: "tumult", tag: "A", fact: "A quiet pocket of vaults behind a reef. Few Arks bother. Those that do come back heavy." });
+place({ id: "verdigris", name: "Verdigris", exp: "Core", at: [430, 2360], region: "tumult", tag: "A", fact: "A contested core. Whoever holds the nucleus decides whose colour the waves fight for." });
+place({ id: "saltmarch", name: "Saltmarch", exp: "Core", at: [1120, 1520], region: "tumult", tag: "A", fact: "A core in thick water, rich in prisms and fought over constantly." });
+place({ id: "brinewake", name: "Brinewake", exp: "Wreck", at: [1660, 2560], region: "tumult", tag: "A", fact: "A fallen Ark, its hold spilled, its hull mass grazed by fauna." });
+place({ id: "magpie", name: "Magpie Cache", exp: "Hoard", at: [300, 1960], region: "tumult", tag: "A", fact: "A thieves' stash tucked against a reef." });
+place({ id: "gallowglass", name: "Gallowglass", exp: "Hoard", at: [1380, 1290], region: "tumult", tag: "A", fact: "The thieves' hold in the reefs toward the centre." });
+place({ id: "maw", name: "The Maw", exp: "Lair", at: [700, 1250], region: "tumult", tag: "A", fact: "One great creature in a closed cell, fat on thick water." });
+place({ id: "driftmark", name: "Driftmark", exp: "Port", at: [170, 1440], region: "tumult", tag: "A", fact: "The port where crews bound for the centre take on hull plate." });
+place({ id: "quayhaven", name: "Quayhaven", exp: "Port", at: [-300, 900], region: "tumult", tag: "A", fact: "The last port before the Heart's ring of reefs." });
+place({ id: "patience", name: "Wreck of the Patience", exp: "Wreck", at: [-160, 1240], region: "tumult", tag: "A", fact: "An Ark that tried for the Heart and turned back too late." });
+
+// The galactic centre [S positions in longitude; depth simplified].
+place({ id: "heart", name: "The Heart", exp: "Guarded", at: [0, 0], region: "core",
+  fact: "Sagittarius A*, a black hole of 4 million Suns. The deepest well in the galaxy squeezes an infused traveller past return.", berth: 0 });
+place({ id: "arches", name: "Arches Cluster", exp: "Core", at: [fromL0(0.12), 90], region: "core", fact: "The densest young cluster known: over a hundred heavy stars packed into 3 light years." });
+place({ id: "pistol", name: "Pistol Star", exp: "VaultField", at: [fromL0(0.16), -50], region: "core", fact: "One of the brightest stars known, wrapped in a shell it threw off a few thousand years ago." });
+place({ id: "sgrb2", name: "Tandava's Lair", exp: "Lair", at: [fromL0(0.67), 420], region: "core", berth: 6, fact: "Sagittarius B2, the biggest cloud near the centre: millions of Suns of gas, thick with alcohol and complex molecules." });
+place({ id: "brick", name: "The Brick", exp: "VaultField", at: [fromL0(0.253), 210], region: "core", fact: "A cloud dense enough to make stars that, strangely, hardly does." });
+place({ id: "sgrc", name: "Sagittarius C", exp: "Core", at: [fromL0(-0.57), 60], region: "core", fact: "A star-forming cloud on the western side of the centre's ring." });
+place({ id: "mouse", name: "The Mouse", exp: "Wreck", at: [fromL0(-0.77), -110], region: "core", fact: "A runaway pulsar, the wreck of a dead star, ploughing through gas with a tail 55 ly long." });
+place({ id: "sgrd", name: "Sagittarius D", exp: "Port", at: [fromL0(1.1), 160], region: "core", fact: "A bright nursery at the eastern edge of the centre's clouds." });
+place({ id: "sgre", name: "Sagittarius E", exp: "VaultField", at: [fromL0(-1.2), 30], region: "core", fact: "A string of small nurseries where gas falls onto the centre's ring." });
+
+// Sol's reach [S].
+place({ id: "sol", name: "Sol", exp: "Guarded", at: [0, R0], z: ZSUN, region: "sol", berth: 0, fact: "Our Sun and Earth. The Terminal closes Earth's well to every Ark." });
+place({ id: "hyades", name: "Hyades beacon", exp: "Harbour", at: fromLD(180.1, 153, -22.3), z: zOf(153, -22.3), region: "sol", tag: "A", sub: "Terminal beacon · the Local Bubble",
+  fact: "The nearest star cluster to Earth, 153 ly out. Proposed here as a Terminal beacon harbour." });
+place({ id: "pleiades", name: "Pleiades", exp: "Port", at: fromLD(166.6, 444, -23.5), z: zOf(444, -23.5), region: "sol", fact: "The Seven Sisters: about a thousand stars, 100 million years young." });
+place({ id: "taurus", name: "Taurus Cloud", exp: "Hoard", at: fromLD(172, 450, -16), z: zOf(450, -16), region: "sol", berth: 4, fact: "The nearest big star-forming cloud. Thieves stash things in its edge." });
+place({ id: "orion", name: "Orion Nebula", exp: "Core", at: fromLD(209, 1344, -19.4), z: zOf(1344, -19.4), region: "sol", fact: "M42, the nearest large stellar nursery, lit by the four hot stars of the Trapezium." });
+place({ id: "betelgeuse", name: "Betelgeuse", exp: "Lair", at: fromLD(199.8, 550, -9), z: zOf(550, -9), region: "sol", fact: "A red supergiant 700 times the Sun's width, due to explode within 100,000 years." });
+place({ id: "vela", name: "Vela", exp: "Wreck", at: fromLD(263.9, 800, -3.3), z: zOf(800, -3.3), region: "sol", fact: "The shell of a star that exploded 11,000 years ago. Its pulsar spins 11 times a second." });
+place({ id: "rhooph", name: "Rho Ophiuchi", exp: "VaultField", at: fromLD(353, 460, 16.7), z: zOf(460, 16.7), region: "sol", fact: "A dark cloud full of newborn stars, one of the closest nurseries to Earth." });
+place({ id: "antares", name: "Antares", exp: "Port", at: fromLD(351.9, 550, 15.1), z: zOf(550, 15.1), region: "sol", fact: "The red heart of Scorpius, a supergiant 700 times the Sun's width." });
+place({ id: "coalsack", name: "Coalsack", exp: "Hoard", at: fromLD(301, 600, -1), z: zOf(600, -1), region: "sol", fact: "A dark cloud you can see by eye beside the Southern Cross." });
+place({ id: "lupus", name: "Lupus Clouds", exp: "VaultField", at: fromLD(340, 500, 15), z: zOf(500, 15), region: "sol", fact: "A chain of small dark clouds making low-mass stars." });
+place({ id: "helix", name: "Helix Nebula", exp: "Wreck", at: fromLD(36.2, 650, -57), z: zOf(650, -57), region: "sol", fact: "The shed shell of a dying Sun-like star, 650 ly away and nearly 500 ly below the midplane, at the disk's lower edge." });
+place({ id: "polaris", name: "Polaris", exp: "Port", at: fromLD(123.3, 433, 26.5), z: zOf(433, 26.5), region: "sol", fact: "The North Star, a Cepheid that pulses every four days." });
+place({ id: "cepheus", name: "Cepheus Flare", exp: "Core", at: fromLD(110, 1000, 15), z: zOf(1000, 15), region: "sol", fact: "Clouds lifted above the disk, forming stars in a ring." });
+
+// Far landmarks [S], for the galaxy view.
+[["Crab Nebula", 184.6, 6500, -5.8, "The wreck of a star seen exploding in 1054."], ["Carina Nebula", 287.6, 7500, -0.6, "One of the largest nurseries in the galaxy, home of Eta Carinae."],
+ ["Cygnus X", 80, 4600, 1, "The richest star-forming complex near Sol."], ["Eagle Nebula", 17, 5700, 0.8, "The Pillars of Creation."], ["Lagoon Nebula", 6, 4100, -1.3, "A nursery bright enough to see by eye."],
+ ["Cassiopeia A", 111.7, 11000, -2.1, "The youngest known supernova wreck in the galaxy."], ["Westerlund 1", 339.6, 12000, -0.4, "The most massive young cluster known near Sol."],
+ ["Omega Centauri", 309, 17000, 15, "The galaxy's biggest globular cluster, possibly a swallowed dwarf galaxy's core."], ["NGC 3603", 291.6, 22000, -0.6, "The brightest nursery in the visible disk."],
+ ["Rosette Nebula", 206, 5200, -2, "A rose of gas around a young cluster."], ["Terzan 5", 3.8, 19600, 1.7, "A bulge cluster with stars of two ages."], ["Liller 1", 354.8, 26000, -0.8, "A fossil cluster from the bulge's birth."]
+].forEach(([name, l, d, b, fact]) => place({ id: "far-" + name, name, exp: "Far", at: fromLD(l, d, b), z: zOf(d, b), region: "far", fact, berth: 0 }));
+
+const BY = {}; P.forEach(p => BY[p.id] = p);
+
+// ── The sea: real gas density, which the crew perceives in g/cm³ ─────────
+const CLOUDS = [];
+const cloud = (at, rx, ry, peak, ang = 0, z = 0) => CLOUDS.push({ x: at[0], y: at[1], z, h: (rx + ry) * .45, rx, ry, peak, c: Math.cos(ang), s: Math.sin(ang) });
+cloud(fromLD(172, 450, -16), 50, 32, 400, .6, zOf(450, -16));          // Taurus
+cloud(fromLD(211, 1350, -19.4), 62, 24, 600, 1.1, zOf(1350, -19.4));        // Orion A
+cloud(fromLD(206, 1360, -15), 34, 30, 380, 0, zOf(1360, -15));             // Orion B
+cloud(fromLD(353, 460, 16.7), 26, 22, 600, 0, zOf(460, 16.7));              // Rho Oph
+cloud(fromLD(340, 500, 15), 26, 18, 260, .4, zOf(500, 15));          // Lupus
+cloud(fromLD(301, 600, -1), 30, 26, 300, 0, zOf(600, -1));              // Coalsack
+cloud(fromLD(28, 700, 3), 120, 40, 260, .3, zOf(700, 3));          // Aquila Rift
+cloud(fromLD(159, 1000, -20), 70, 26, 300, -.4, zOf(1000, -20));        // Perseus cloud
+cloud(fromLD(110, 1000, 15), 60, 50, 250, 0, zOf(1000, 15));             // Cepheus Flare
+cloud(fromLD(80, 4600), 220, 160, 420);            // Cygnus X
+cloud(fromLD(287.6, 7500), 160, 110, 420);         // Carina
+cloud(fromLD(17, 5700), 110, 90, 320);             // Eagle
+cloud(fromLD(6, 4100), 100, 80, 320);              // Lagoon
+// the centre's ring of reefs, Sgr B2 and the Brick
+for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2 + .2; cloud([-40 + Math.cos(a) * 330, 30 + Math.sin(a) * 190], 46, 40, 260); }
+cloud([fromL0(0.67), 420], 70, 70, 1500);
+cloud([fromL0(0.253), 210], 30, 26, 800);
+cloud([fromL0(-0.57), 60], 50, 44, 400);
+// reefs around Tumult [A]
+cloud([900, 1660], 130, 70, 420, .2, -30); cloud([600, 1480], 90, 60, 300, 0, -70); cloud([1270, 1900], 80, 80, 260, 0, -100);
+cloud([1830, 2120], 160, 90, 380, 1.2, 60); cloud([340, 1820], 70, 55, 300, 0, -90); cloud([1400, 1180], 120, 90, 380, .5, -50);
+cloud([700, 1110], 90, 70, 330, 0, 40); cloud([-60, 1060], 110, 60, 300, -.3, 30);
+
+const BUBBLES = [
+  { at: fromLD(230, 80), r: 470, k: .02 },   // Local Bubble, Sol inside
+  { at: fromLD(200, 720), r: 320, k: .05 },  // Orion-Eridanus superbubble
+  { at: fromLD(330, 360), r: 290, k: .04 },  // Loop I
+  { at: [960, 2160], r: 330, k: .03 },       // Tumult's bubble [A]
+].map(b => ({ x: b.at[0], y: b.at[1], r: b.r, k: b.k }));
+
+// noise
+function hash(i, j) { let h = Math.imul(i | 0, 374761393) + Math.imul(j | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+const fbm = (x, y) => (vnoise(x, y) * .55 + vnoise(x * 2.3 + 17, y * 2.3 - 9) * .3 + vnoise(x * 5.1 - 31, y * 5.1 + 4) * .15);
+
+// arms: four trailing log spirals, 13° pitch, plus the Orion Spur through Sol
+const PITCH = 13 * DEG, B = Math.tan(PITCH), SINP = Math.sin(PITCH);
+const phiAt = (r, theta) => theta + Math.log(r) / B;                  // the arm's phase that passes (r, theta)
+const PHI_SC = phiAt(20000, Math.PI / 2);                            // Sagittarius-Carina passes 20,000 ly inside Sol's line
+const ARMS = [
+  { name: "Sagittarius–Carina Arm", phi: PHI_SC },
+  { name: "Perseus Arm", phi: PHI_SC + Math.PI / 2 },
+  { name: "Norma–Outer Arm", phi: PHI_SC + Math.PI },
+  { name: "Scutum–Centaurus Arm", phi: PHI_SC - Math.PI / 2 },
+];
+const SPUR_B = Math.tan(10 * DEG), SPUR_PHI = Math.PI / 2 + Math.log(26000) / SPUR_B;
+const wrap = a => { a = (a + Math.PI) % (2 * Math.PI); if (a < 0) a += 2 * Math.PI; return a - Math.PI; };
+function armProfile(x, y, r, width) {
+  if (r < 6000) return 0;
+  const th = Math.atan2(y, x), ramp = Math.min(1, (r - 6000) / 5000);
+  let best = 0;
+  for (const a of ARMS) {
+    const d = Math.abs(wrap(th + Math.log(r) / B - a.phi)) * r * SINP / (1 + 0) ;
+    // a log spiral crosses the circle at the pitch angle, so arc offset × sin(pitch) is the distance to the arm
+    const v = Math.exp(-(d * d) / (width * width));
+    if (v > best) best = v;
+  }
+  // the Orion Spur, a short arm segment between Sagittarius and Perseus
+  if (r > 23000 && r < 30000) {
+    const ds = Math.abs(wrap(th + Math.log(r) / SPUR_B - SPUR_PHI)) * r * Math.sin(10 * DEG);
+    const thw = Math.abs(wrap(th - Math.PI / 2));
+    if (thw < .45) best = Math.max(best, .7 * Math.exp(-(ds * ds) / (width * width * .5)) * (1 - thw / .45));
+  }
+  return best * ramp;
+}
+const BAR_C = Math.cos(-27 * DEG), BAR_S = Math.sin(-27 * DEG);
+function bar(x, y) { const u = x * BAR_C - y * BAR_S, v = x * BAR_S + y * BAR_C; return Math.exp(-Math.pow(v / 12500, 4) - (u / 3000) ** 2); }
+
+// z omitted: the column through (x, y), as the chart draws it. z given: the sea at that height.
+function dens(x, y, z) {
+  const col = z === undefined;
+  const r = Math.hypot(x, y);
+  const arm = armProfile(x, y, r, 1100);
+  let n = (0.28 + 2.2 * arm + 1.2 * bar(x, y) * 0.5) * (1 + 4 * Math.exp(-r / 2500));
+  if (r > 45000) n *= Math.exp(-(r - 45000) / 3000);
+  n *= Math.exp((fbm(x / 520, y / 520) - .5) * 2.4 + (vnoise(x / 110, y / 110) - .5) * .9);
+  for (const b of BUBBLES) {
+    const d = Math.hypot(x - b.x, y - b.y) * (1 + (vnoise(x / 90, y / 90) - .5) * .35);
+    if (d < b.r) { const t = d < b.r * .65 ? 1 : 1 - (d - b.r * .65) / (b.r * .35); n *= 1 + (b.k - 1) * t; }
+  }
+  if (!col) n *= Math.exp(-((z / 360) ** 2));   // warm gas thins away from the midplane
+  for (const c of CLOUDS) {
+    let dx = x - c.x, dy = y - c.y;
+    if (Math.abs(dx) > c.rx * 3.2 + c.ry * 3.2 || Math.abs(dy) > c.rx * 3.2 + c.ry * 3.2) continue;
+    // ragged edges: warp each cloud by noise at its own scale, so reefs have spurs and channels
+    const sc = Math.max(18, (c.rx + c.ry) * .35);
+    dx += (vnoise(x / sc + 3.1, y / sc) - .5) * (c.rx + c.ry) * .8;
+    dy += (vnoise(x / sc, y / sc + 7.7) - .5) * (c.rx + c.ry) * .8;
+    const u = dx * c.c + dy * c.s, v = -dx * c.s + dy * c.c;
+    const e = (u * u) / (c.rx * c.rx) + (v * v) / (c.ry * c.ry);
+    if (e < 9) n += c.peak * Math.exp(-e) * (.35 + 1.3 * fbm(x / (sc * .6), y / (sc * .6))) * (col ? 1 : Math.exp(-(((z - c.z) / c.h) ** 2)));
+  }
+  return col ? n : n + .003;   // the halo above and below the disk is the thinnest spray
+}
+function starlight(x, y, z) {
+  const r = Math.hypot(x, y);
+  let bulge = 2.4 * Math.exp(-((r / 3600) ** 2)) + 1.1 * bar(x, y);
+  if (z !== undefined) bulge *= Math.exp(-((z / 2400) ** 2));
+  let disk = Math.exp(-r / 15000) * (.16 + 1.25 * armProfile(x, y, r, 1700));
+  if (r > 45000) disk *= Math.exp(-(r - 45000) / 2500);
+  disk *= .55 + .9 * fbm(x / 2600, y / 2600);
+  if (z !== undefined) disk *= Math.exp(-((z / 380) ** 2)) * 1.4;
+  return { bulge, disk };
+}
+
+// sea colour by log density: spray, froth, water, thick, reef
+const STOPS = [[-2.2, [26, 34, 52]], [-1.3, [74, 86, 112]], [-0.6, [30, 92, 110]], [0, [26, 72, 140]], [0.9, [70, 50, 150]], [1.7, [110, 44, 140]], [1.999, [130, 40, 120]], [2, [214, 92, 70]], [3.2, [255, 150, 100]]];
+function seaRGB(n) {
+  const l = Math.log10(Math.max(n, 1e-3));
+  if (l <= STOPS[0][0]) return STOPS[0][1];
+  for (let i = 1; i < STOPS.length; i++) {
+    if (l <= STOPS[i][0]) { const [a, ca] = STOPS[i - 1], [b, cb] = STOPS[i], t = (l - a) / (b - a); return [ca[0] + (cb[0] - ca[0]) * t, ca[1] + (cb[1] - ca[1]) * t, ca[2] + (cb[2] - ca[2]) * t]; }
+  }
+  return STOPS[STOPS.length - 1][1];
+}
+const seaName = n => n < 0.1 ? "spray" : n < 0.6 ? "froth" : n < 5 ? "water" : n < 100 ? "thick water" : "reef";
+const danger = n => Math.max(0, Math.min(3, 0.9 * Math.log10(Math.max(n, 1e-3)) + 0.6));
+function feelsLike(n) {
+  if (n < 0.1) return "as light as fresh snow";
+  if (n < 0.6) return "a froth, lighter than water";
+  if (n < 2) return "about water";
+  if (n < 8) return "as heavy as iron";
+  if (n < 19) return "as heavy as lead";
+  if (n < 23) return "as heavy as gold";
+  if (n < 100) return "heavier than osmium";
+  return "denser than any material";
+}
+
+// ── Hex cells, 20 ly each ─────────────────────────────────────────────────
+const hexXY = (q, r) => [CELL * (q + r / 2), CELL * SQ3 / 2 * r];
+function hexOf(x, y) {
+  const fr = y / (CELL * SQ3 / 2), fq = x / CELL - fr / 2, fs = -fq - fr;
+  let q = Math.round(fq), r = Math.round(fr), s = Math.round(fs);
+  const dq = Math.abs(q - fq), dr = Math.abs(r - fr), ds = Math.abs(s - fs);
+  if (dq > dr && dq > ds) q = -r - s; else if (dr > ds) r = -q - s;
+  return [q, r];
+}
+const KEY = (q, r) => (q + 8000) * 16384 + (r + 8000);
+const unKEY = k => [Math.floor(k / 16384) - 8000, (k % 16384) - 8000];
+const hexDist = (a, b) => (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[0] + a[1] - b[0] - b[1])) / 2;
+const NB = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+const nCache = new Map();
+function cellN(q, r) {
+  const k = KEY(q, r);
+  let n = nCache.get(k);
+  if (n === undefined) { const [x, y] = hexXY(q, r); n = dens(x, y); if (nCache.size > 400000) nCache.clear(); nCache.set(k, n); }
+  return n;
+}
+const berths = new Set(), closed = new Set();
+P.forEach(p => {
+  p.hex = hexOf(p.x, p.y);
+  const rad = p.exp === "Guarded" ? (p.id === "heart" ? 4 : 1) : p.berth;
+  for (let dq = -rad; dq <= rad; dq++) for (let dr = -rad; dr <= rad; dr++) {
+    if (hexDist([0, 0], [dq, dr]) > rad) continue;
+    (p.exp === "Guarded" ? closed : berths).add(KEY(p.hex[0] + dq, p.hex[1] + dr));
+  }
+});
+const passable = (q, r) => { const k = KEY(q, r); return !closed.has(k) && (berths.has(k) || cellN(q, r) < 100); };
+
+// Dijkstra over hex cells with a binary heap
+function search(start, costFn, maxHops, goalKey) {
+  const dist = new Map(), prev = new Map(), heap = [];
+  const push = (k, d) => { heap.push([d, k]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  const sk = KEY(start[0], start[1]);
+  dist.set(sk, 0); push(sk, 0);
+  let guard = 0;
+  while (heap.length && guard++ < 160000) {
+    const [d, k] = pop();
+    if (d > dist.get(k)) continue;
+    if (k === goalKey) break;
+    const [q, r] = unKEY(k);
+    for (const [a, b] of NB) {
+      const nq = q + a, nr = r + b;
+      if (hexDist(start, [nq, nr]) > maxHops || !passable(nq, nr)) continue;
+      const nk = KEY(nq, nr), nd = d + costFn(cellN(nq, nr));
+      if (nd < (dist.has(nk) ? dist.get(nk) : Infinity)) { dist.set(nk, nd); prev.set(nk, k); push(nk, nd); }
+    }
+  }
+  return { dist, prev, sk };
+}
+function trace(s, goalKey) {
+  if (!s.dist.has(goalKey)) return null;
+  const keys = [goalKey];
+  let k = goalKey;
+  while (k !== s.sk) { k = s.prev.get(k); if (k === undefined) return null; keys.push(k); }
+  return keys.reverse();
+}
+const quickCost = n => 1 + 0.002 * danger(n);
+const safeCost = n => { const d = danger(n); return 1 + 0.9 * d * d; };
+// Cells pack like foam, so a step can also climb one layer (0.82 of a cell). A course takes the planar steps or the layers, whichever is more.
+const LAYER = CELL * Math.sqrt(2 / 3);
+function measure(keys, z0 = 0, z1 = 0) {
+  const flat = keys.slice(1).map(k => { const [q, r] = unKEY(k); const [x, y] = hexXY(q, r); return { q, r, x, y }; });
+  const layers = Math.ceil(Math.abs(z1 - z0) / LAYER), steps = Math.max(flat.length, layers);
+  const cells = [];
+  for (let i = 0; i < steps; i++) {
+    const t = (i + 1) / steps, f = flat[Math.min(flat.length - 1, Math.max(0, Math.ceil(t * flat.length) - 1))], z = z0 + (z1 - z0) * t;
+    const n = dens(f.x, f.y, z);
+    cells.push({ ...f, z, n, d: danger(n) });
+  }
+  const ds = cells.map(c => c.d), maxD = Math.max(...ds), avgD = ds.reduce((a, b) => a + b, 0) / ds.length;
+  const [q0, r0] = unKEY(keys[0]), [x0, y0] = hexXY(q0, r0);
+  const pts = [[x0, y0], ...flat.map(c => [c.x, c.y])];
+  const zs = pts.map((_, i) => z0 + (z1 - z0) * i / Math.max(1, pts.length - 1));
+  let thick = cells[0];
+  cells.forEach(c => { if (c.n > thick.n && !berths.has(KEY(c.q, c.r))) thick = c; });
+  return { keys, cells, pts, zs, z0, z1, climb: z1 - z0, layers, flatN: flat.length, n: cells.length, minutes: cells.length * MIN_PER_CELL, ly: cells.length * CELL, maxD, avgD, thick,
+    courseI: Math.max(1, Math.min(4, 1 + Math.round(0.6 * maxD + 0.4 * avgD))), sig: keys.join(",") };
+}
+
+// ── Crew (voyage_slice.json) and what each callsign sees (Docs/Pilots/CALLSIGNS.md) ──
+const PILOTS = {
+  CITADEL: { name: "Oriel Vance", faction: "Hunter", story: "Reads a vault's shell like a face. Has opened more than she has kept." },
+  TALON:   { name: "Brisk Amadou", faction: "Hunter", story: "Tracks predators for a living, and sells what they guard." },
+  DOE:     { name: "Ilse Marren", faction: "Hunter", story: "Follows the grazers. Where they gather, something sealed lies near." },
+  ANVIL:   { name: "Teodor Haskel", faction: "Hunter", story: "Weighs every find before he touches it. Usually right." },
+  NEEDLE:  { name: "Pell", faction: "Hunter", story: "Finds the switch nobody else saw. Talks to it, too." },
+  GALLEON: { name: "Cass Morrow", faction: "Pirate", story: "Knows every Ark by its silhouette, and every wreck by its smell." },
+  BANDIT:  { name: "Juno Rask", faction: "Pirate", story: "Calls the rival out before the rival knows they are a rival." },
+  HORNET:  { name: "Sable Okoye", faction: "Pirate", story: "Flies the burning edge of a wreck field for fun." },
+  FLUME:   { name: "Aster Quill", faction: "Pirate", story: "Rides the tunnels others fear. Arrives early, leaves rich." },
+  VOLT:    { name: "Merrin Tal", faction: "Merchant", story: "Prices news by its voltage. Fresh news sparks." },
+  ZODIAC:  { name: "Dov Ferrante", faction: "Merchant", story: "Charts the fastest lane between any two ports, then charges for it." },
+  SUNDIAL: { name: "Noor Achebe", faction: "Merchant", story: "Never late. Has never once been late." },
+  OPAL:    { name: "Wren Holloway", faction: "Merchant", story: "Carries sealed dispatches for three ports and reads none of them. Probably." },
+  MANGER:  { name: "Rook Sandoval", faction: "Merchant", story: "Knows where the herds will feed tomorrow, and who will pay to know it." },
+  ENSIGN:  { name: "Lady Corvina Ash", faction: "Aristocrat", story: "Holds what is hers. Considers most things hers." },
+  RAMPART: { name: "Marshal Edda Kroll", faction: "Aristocrat", story: "Has held Verdigris twice and lost it once. Remembers the once." },
+  WINGMAN: { name: "Captain Theo Lark", faction: "Aristocrat", story: "Never leaves a wing behind. Never lets you forget it." },
+  IVY:     { name: "Warden Sorrel", faction: "Aristocrat", story: "Tends the gardens of the cores, and the guns that guard them." },
+};
+const START_CREW = ["CITADEL", "TALON", "GALLEON", "VOLT", "ZODIAC", "RAMPART", "WINGMAN"];
+const JOB_OF = { Port: "courier", VaultField: "hunt", Lair: "hunt", Wreck: "salvage", Hoard: "raid", Core: "defence" };
+const FACTION_OF = { courier: "Merchant", hunt: "Hunter", salvage: "Pirate", raid: "Pirate", defence: "Aristocrat" };
+const JOB = {
+  courier: { title: "Carry sealed news to {to}", ok: "The news reached {to}. The dock crews were talking about it before the hull cooled.", fail: "The dispatch for {to} never arrived." },
+  hunt:    { title: "Open the vaults at {to}", lair: "Hunt the creature in {to}", ok: "The crew opened a vault at {to} and brought its artifact aboard.", okLair: "The creature at {to} fell. Its hoard is aboard.", fail: "{to} kept its secrets." },
+  salvage: { title: "Strip the wreck at {to}", ok: "The wreck at {to} was picked clean.", fail: "Someone else got to {to} first." },
+  raid:    { title: "Raid the thieves' cache at {to}", ok: "The cache at {to} came aboard, all of it.", fail: "The cache at {to} was already empty." },
+  defence: { title: "Hold the core at {to}", ok: "The squad held {to}. The wardens paid in omni.", fail: "{to} fell to the waves while the squad held the wrong side." },
+  home:    { title: "Sail home to {to}", ok: "Docked at {to}. Everything aboard is yours.", fail: "" },
+};
+function sees(cs, job, dest, c) {
+  const e = dest.exp;
+  switch (cs) {
+    case "CITADEL": return e === "VaultField" && "sees the vault shells";
+    case "ANVIL":   return ["VaultField", "Hoard", "Wreck"].includes(e) && "weighs the find first";
+    case "NEEDLE":  return (e === "VaultField" || e === "Lair") && "finds the switch nobody saw";
+    case "TALON":   return (e === "Lair" || c.maxD >= 1.5) && "sees the predators in thick water";
+    case "DOE":     return e === "VaultField" && "follows the grazers to sealed things";
+    case "MANGER":  return e === "Core" && "knows where the herds will feed";
+    case "GALLEON": return (e === "Wreck" && "smells the wreck's spilled hold") || (job === "courier" && c.n >= 30 && "spots rival Arks on a long run");
+    case "HORNET":  return (e === "Wreck" && "flies the burning edge of wrecks") || (c.maxD >= 2.2 && "reads the danger prisms");
+    case "BANDIT":  return (e === "Core" || e === "Hoard") && "calls the rivals out first";
+    case "WINGMAN": return c.n >= 30 && "keeps the wings together on a long run";
+    case "ZODIAC":  return (job === "courier" || c.n >= 40) && "charts the fastest lane";
+    case "SUNDIAL": return job === "courier" && "is never late";
+    case "VOLT":    return job === "courier" && "prices the news aboard";
+    case "OPAL":    return job === "courier" && "carries sealed dispatches";
+    case "FLUME":   return c.cells.filter(x => x.n < 0.1).length >= 8 && "rides the tunnels through the spray";
+    case "ENSIGN":  return job === "defence" && "holds what is hers";
+    case "RAMPART": return job === "defence" && "has held cores before";
+    case "IVY":     return e === "Core" && "tends the core's gardens";
+  }
+  return false;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────
+const SAVE = "hs.voyageboard.v1";
+const store = { get() { try { return JSON.parse(localStorage.getItem(SAVE) || "null"); } catch { return null; } }, set(v) { try { localStorage.setItem(SAVE, JSON.stringify(v)); } catch {} } };
+const S = {
+  home: "tumult", here: "tumult", crew: START_CREW.slice(), hull: HULL_MAX, aboard: 0, banked: 0, omni: 0, minutes: 0, ly: 0, n: 0,
+  log: [], visited: [], trail: [], props: [], sel: 0, path: 0, arrival: null, sailing: null, inspect: null, crewEye: false,
+};
+const save = () => store.set({ home: S.home, here: S.here, crew: S.crew, hull: S.hull, aboard: S.aboard, banked: S.banked, omni: S.omni, minutes: S.minutes, ly: S.ly, n: S.n, log: S.log, visited: S.visited, trail: S.trail });
+function load() {
+  const s = store.get();
+  if (!s || !BY[s.here] || !BY[s.home]) return false;
+  Object.assign(S, s, { crew: (s.crew || []).filter(c => PILOTS[c]), trail: (s.trail || []).slice(-14) });
+  if (!S.crew.length) S.crew = START_CREW.slice();
+  return true;
+}
+function reset(home) {
+  Object.assign(S, { home, here: home, crew: START_CREW.slice(), hull: HULL_MAX, aboard: 0, banked: 0, omni: 0, minutes: 0, ly: 0, n: 0, log: [], visited: [home], trail: [], arrival: null, inspect: null });
+}
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const strHash = s => { let h = 7; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h; };
+const pick = (a, R) => a[Math.floor(R() * a.length)];
+const fill = (t, o) => t.replace(/\{(\w+)\}/g, (m, k) => o[k] ?? m);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => Math.round(n).toLocaleString("en-US");
+
+// ── Units: light years, or what the expanded crew perceives ──────────────
+function dist(ly) {
+  if (!S.crewEye) return fmt(ly) + " ly";
+  const km = ly * LY_KM / K;
+  if (km >= 0.2 * AU_KM) return (km / AU_KM).toFixed(km / AU_KM < 10 ? 2 : 0) + " AU";
+  if (km >= 1e6) return (km / 1e6).toFixed(km < 1e7 ? 2 : 1) + " million km";
+  return fmt(km) + " km";
+}
+function lightYears(ly) { return ly < 2 ? "about a year" : fmt(ly) + " years"; }
+function duration(min) { if (min < 120) return Math.round(min) + " min"; const h = min / 60; return (h < 10 ? h.toFixed(1) : fmt(h)) + " h"; }
+
+// ── The crew finds voyages from where the Ark is ──────────────────────────
+function propose() {
+  const here = BY[S.here], start = here.hex;
+  const R = rng(strHash(S.here) + S.n * 977 + S.crew.length * 31);
+  const quick = search(start, quickCost, RANGE_MAX + 6), safe = search(start, safeCost, RANGE_MAX + 6);
+  const jobs = new Set(S.crew.map(cs => PILOTS[cs].faction));
+  const cands = [];
+  P.forEach(p => {
+    if (p.id === S.here || !JOB_OF[p.exp] || p.region === "far") return;
+    const job = JOB_OF[p.exp];
+    if (!jobs.has(FACTION_OF[job])) return;
+    const gk = KEY(p.hex[0], p.hex[1]);
+    const qk = trace(quick, gk);
+    if (!qk) return;
+    const q = measure(qk, here.z, p.z);
+    if (q.n < RANGE_MIN || q.n > RANGE_MAX) return;
+    const paths = [{ name: "Quick", ...q }];
+    const sk = trace(safe, gk);
+    if (sk) { const s = measure(sk, here.z, p.z); if (s.sig !== q.sig && s.courseI < q.courseI && s.n <= q.n * 1.8 + 2) paths.push({ name: "Safe", ...s }); }
+    const destI = Math.min(4, EXP[p.exp].base + (p.region === "core" ? 1 : 0));
+    cands.push({ dest: p, job, paths, destI, I: Math.max(destI, q.courseI), fresh: !S.visited.includes(p.id) });
+  });
+  const out = [], used = new Set();
+  const take = c => { out.push(c); used.add(c.dest.id); };
+  for (let I = 1; I <= 4 && out.length < 4; I++) {
+    const pool = cands.filter(c => c.I === I && !used.has(c.dest.id));
+    if (!pool.length) continue;
+    const fresh = pool.filter(c => c.fresh);
+    take(pick(fresh.length && R() < .75 ? fresh : pool, R));
+  }
+  for (let g = 0; out.length < 4 && g < 30; g++) {
+    const pool = cands.filter(c => !used.has(c.dest.id) && !out.some(o => o.job === c.job));
+    const any = pool.length ? pool : cands.filter(c => !used.has(c.dest.id));
+    if (!any.length) break;
+    take(pick(any, R));
+  }
+  out.sort((a, b) => a.I - b.I || a.paths[0].n - b.paths[0].n);
+  const usedFinder = new Set();
+  out.forEach(c => {
+    const able = S.crew.filter(cs => PILOTS[cs].faction === FACTION_OF[c.job]);
+    c.finder = able.find(cs => !usedFinder.has(cs)) || able[0];
+    usedFinder.add(c.finder);
+    c.backers = S.crew.filter(cs => cs !== c.finder).map(cs => ({ cs, why: sees(cs, c.job, c.dest, c.paths[0]) })).filter(b => b.why).slice(0, 3);
+  });
+  // the way home
+  if (S.here !== S.home) {
+    const h = BY[S.home], gk = KEY(h.hex[0], h.hex[1]);
+    const hk = trace(search(start, quickCost, 400, gk), gk);
+    if (hk) { const m = measure(hk, here.z, h.z); out.push({ dest: h, job: "home", paths: [{ name: "Quick", ...m }], destI: 1, I: m.courseI, backers: [], home: true }); }
+  }
+  return out;
+}
+function voyageI(c, path) { const raw = Math.max(c.destI, path.courseI); return Math.max(1, raw - (c.backers.length >= 2 ? 1 : 0)); }
+const pSuccess = (I, backers) => Math.min(.95, [.9, .78, .64, .5][I - 1] + .04 * backers);
+const hullCost = (path, backers) => path.cells.reduce((a, c) => a + .2 * c.d + .01, 0) * (1 - .1 * backers);
+const finds = I => [1, 1, 2, 3][I - 1];
+
+// ── Canvas chart ──────────────────────────────────────────────────────────
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const chartEl = document.getElementById("chart");
+let W = 0, H = 0, DPR = 1;
+const view = { cx: 900, cy: 2000, w: 2400 };
+let field = null, fieldView = null, fieldTimer = 0, anim = null, needs = true;
+const field2 = document.createElement("canvas"), fctx = field2.getContext("2d");
+const scale = () => W / view.w;
+const toScreen = (x, y) => [(x - view.cx) * scale() + W / 2, (y - view.cy) * scale() + H / 2];
+const toWorld = (sx, sy) => [(sx - W / 2) / scale() + view.cx, (sy - H / 2) / scale() + view.cy];
+
+function resize() {
+  const r = chartEl.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  const sr = sideEl.getBoundingClientRect();
+  SH = sr.height; sideCv.width = Math.round(W * DPR); sideCv.height = Math.round(SH * DPR);
+  sideView = null;
+  fieldView = null; schedule(true);
+}
+// one image of the sea for the current view; coarse while moving, fine at rest
+function renderField(step) {
+  const fw = Math.max(1, Math.ceil(W / step)), fh = Math.max(1, Math.ceil(H / step));
+  if (field2.width !== fw || field2.height !== fh) { field2.width = fw; field2.height = fh; }
+  const img = fctx.createImageData(fw, fh), data = img.data;
+  const s = scale(), galaxy = Math.min(1, Math.max(0, (Math.log(view.w) - Math.log(5000)) / (Math.log(40000) - Math.log(5000))));
+  for (let j = 0; j < fh; j++) {
+    const y = (j * step + step / 2 - H / 2) / s + view.cy;
+    for (let i = 0; i < fw; i++) {
+      const x = (i * step + step / 2 - W / 2) / s + view.cx;
+      let r = 0, g = 0, b = 0;
+      if (galaxy < 1) { const c = seaRGB(dens(x, y)); r = c[0] * (1 - galaxy); g = c[1] * (1 - galaxy); b = c[2] * (1 - galaxy); }
+      if (galaxy > 0) {
+        const st = starlight(x, y);
+        const tw = hash(Math.floor(x / 90), Math.floor(y / 90));
+        const spark = tw > .985 ? (tw - .985) * 60 * Math.min(1, st.disk * 3 + st.bulge) : 0;
+        const ar = 1 - Math.exp(-(st.bulge * 1.0 + st.disk * .25 + spark));
+        const ab = 1 - Math.exp(-(st.disk * 1.1 + st.bulge * .6 + spark));
+        const rr = Math.hypot(x, y), hii = armProfile(x, y, rr, 600) * (vnoise(x / 700, y / 700) > .72 ? 1 : 0) * .6 * Math.exp(-rr / 26000);
+        r += galaxy * (8 + 245 * ar * .95 + 180 * hii);
+        g += galaxy * (12 + 205 * (ar * .55 + ab * .45));
+        b += galaxy * (24 + 240 * ab * .9 + 90 * hii);
+      }
+      const o = (j * fw + i) * 4;
+      data[o] = r; data[o + 1] = g; data[o + 2] = b; data[o + 3] = 255;
+    }
+  }
+  fctx.putImageData(img, 0, 0);
+  field = field2; fieldView = { ...view, W, H };
+  renderSide(step);
+}
+// at cell zoom, the sea is drawn as its cells: one hex per 20 ly, filled with that cell's density
+function renderCells() {
+  const fw = Math.round(W * DPR), fh = Math.round(H * DPR);
+  if (field2.width !== fw || field2.height !== fh) { field2.width = fw; field2.height = fh; }
+  const c2 = fctx, s = scale();
+  c2.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c2.fillStyle = "#050912"; c2.fillRect(0, 0, W, H);
+  const cellPx = CELL * s, rad = CELL / SQ3 * s;
+  const [x0, y0] = toWorld(-cellPx, -cellPx), [x1, y1] = toWorld(W + cellPx, H + cellPx);
+  const r0 = Math.floor(y0 / (CELL * SQ3 / 2)) - 1, r1 = Math.ceil(y1 / (CELL * SQ3 / 2)) + 1;
+  const gap = cellPx > 14 ? .8 : .5;
+  for (let r = r0; r <= r1; r++) {
+    const q0 = Math.floor(x0 / CELL - r / 2) - 1, q1 = Math.ceil(x1 / CELL - r / 2) + 1;
+    for (let q = q0; q <= q1; q++) {
+      const [x, y] = hexXY(q, r), sx = (x - view.cx) * s + W / 2, sy = (y - view.cy) * s + H / 2, c = seaRGB(cellN(q, r));
+      c2.beginPath();
+      c2.moveTo(sx + (rad - gap) * Math.cos(Math.PI / 6), sy + (rad - gap) * Math.sin(Math.PI / 6));
+      for (let i = 1; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; c2.lineTo(sx + (rad - gap) * Math.cos(a), sy + (rad - gap) * Math.sin(a)); }
+      c2.closePath();
+      c2.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; c2.fill();
+      if (closed.has(KEY(q, r))) { c2.strokeStyle = "rgba(255,233,168,.45)"; c2.lineWidth = 1; c2.stroke(); }
+    }
+  }
+  field = field2; fieldView = { ...view, W, H };
+  renderSide(3);
+}
+const renderFine = () => (CELL * scale() > 6.5 ? renderCells() : renderField(3));
+function schedule(fine) {
+  needs = true;
+  clearTimeout(fieldTimer);
+  if (fine) fieldTimer = setTimeout(() => { renderFine(); needs = true; }, 90);
+}
+function setView(cx, cy, w) {
+  view.cx = cx; view.cy = cy; view.w = Math.max(260, Math.min(140000, w));
+}
+function flyTo(cx, cy, w, ms = 650) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) ms = 0;
+  anim = { from: { ...view }, to: { cx, cy, w: Math.max(260, Math.min(140000, w)) }, t0: performance.now(), ms };
+  needs = true;
+}
+function fitPoints(pts, minW = 900, pad = 1.35) {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  pts.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  const w = Math.max(minW, (x1 - x0) * pad, (y1 - y0) * pad * W / H);
+  return [(x0 + x1) / 2, (y0 + y1) / 2, w];
+}
+
+// glyphs for each kind of place
+function glyph(p, sx, sy, sz, hot) {
+  const col = EXP[p.exp].col;
+  ctx.save();
+  ctx.lineWidth = 1.6; ctx.strokeStyle = col; ctx.fillStyle = col;
+  ctx.shadowColor = "rgba(5,9,18,.9)"; ctx.shadowBlur = 4;
+  ctx.beginPath();
+  switch (p.exp) {
+    case "Harbour": ctx.arc(sx, sy, sz, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(sx, sy, sz * .5, 0, 7); ctx.fill(); break;
+    case "Port": ctx.arc(sx, sy, sz * .8, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(sx, sy, 1.8, 0, 7); ctx.fill(); break;
+    case "VaultField": for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + Math.PI / 6; ctx.lineTo(sx + Math.cos(a) * sz * .85, sy + Math.sin(a) * sz * .85); } ctx.closePath(); ctx.stroke(); break;
+    case "Core": ctx.arc(sx, sy, sz * .45, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(sx, sy, sz * .9, 0, 7); ctx.stroke(); break;
+    case "Wreck": ctx.arc(sx, sy, sz * .8, .4, 2.6); ctx.stroke(); ctx.beginPath(); ctx.arc(sx, sy, sz * .8, 3.4, 5.6); ctx.stroke(); ctx.beginPath(); ctx.moveTo(sx - sz * .5, sy - sz * .5); ctx.lineTo(sx + sz * .5, sy + sz * .5); ctx.stroke(); break;
+    case "Hoard": ctx.moveTo(sx, sy - sz); ctx.lineTo(sx + sz * .75, sy); ctx.lineTo(sx, sy + sz); ctx.lineTo(sx - sz * .75, sy); ctx.closePath(); ctx.stroke(); break;
+    case "Lair": for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, rr = i % 2 ? sz * .45 : sz; ctx.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr); } ctx.closePath(); ctx.stroke(); break;
+    case "Guarded":
+      if (p.id === "heart") { ctx.fillStyle = "#000"; ctx.arc(sx, sy, sz, 0, 7); ctx.fill(); ctx.strokeStyle = "#ffe9a8"; ctx.stroke(); }
+      else { ctx.arc(sx, sy, sz * .45, 0, 7); ctx.fill(); }
+      ctx.beginPath(); ctx.setLineDash([3, 3]); ctx.strokeStyle = "rgba(255,233,168,.7)"; ctx.arc(sx, sy, sz * 1.7, 0, 7); ctx.stroke(); ctx.setLineDash([]); break;
+    default: ctx.moveTo(sx - sz * .7, sy); ctx.lineTo(sx + sz * .7, sy); ctx.moveTo(sx, sy - sz * .7); ctx.lineTo(sx, sy + sz * .7); ctx.stroke();
+  }
+  if (hot) { ctx.beginPath(); ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 1; ctx.arc(sx, sy, sz + 5, 0, 7); ctx.stroke(); }
+  ctx.restore();
+}
+function routePath(pts, smooth = true) {
+  ctx.beginPath();
+  const sp = pts.map(([x, y]) => toScreen(x, y));
+  ctx.moveTo(sp[0][0], sp[0][1]);
+  if (!smooth || sp.length < 3) { sp.slice(1).forEach(p => ctx.lineTo(p[0], p[1])); return sp; }
+  for (let i = 1; i < sp.length - 1; i++) { const mx = (sp[i][0] + sp[i + 1][0]) / 2, my = (sp[i][1] + sp[i + 1][1]) / 2; ctx.quadraticCurveTo(sp[i][0], sp[i][1], mx, my); }
+  ctx.lineTo(sp[sp.length - 1][0], sp[sp.length - 1][1]);
+  return sp;
+}
+function hexPath(cx, cy, rad) { ctx.moveTo(cx + rad * Math.cos(Math.PI / 6), cy + rad * Math.sin(Math.PI / 6)); for (let i = 1; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; ctx.lineTo(cx + rad * Math.cos(a), cy + rad * Math.sin(a)); } ctx.closePath(); }
+
+let hits = [];
+function draw(now) {
+  if (anim) {
+    const t = anim.ms ? Math.min(1, (now - anim.t0) / anim.ms) : 1, e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const lw = Math.log(anim.from.w) + (Math.log(anim.to.w) - Math.log(anim.from.w)) * e;
+    setView(anim.from.cx + (anim.to.cx - anim.from.cx) * e, anim.from.cy + (anim.to.cy - anim.from.cy) * e, Math.exp(lw));
+    if (t >= 1) { anim = null; schedule(true); }
+  }
+  const moving = !!anim || dragging;
+  if (!needs && !moving && !S.sailing) return;
+  needs = false;
+  if (moving) renderField(9);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = "#050912"; ctx.fillRect(0, 0, W, H);
+  if (!fieldView) renderFine();
+  if (field && fieldView) {
+    const f = fieldView, s0 = f.W / f.w, s = scale();
+    const wx = f.cx - f.W / 2 / s0, wy = f.cy - f.H / 2 / s0;
+    const [sx, sy] = toScreen(wx, wy);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(field, sx, sy, f.W * s / s0, f.H * s / s0);
+  }
+  const s = scale();
+  const cellPx = CELL * s;
+  // past voyages
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  S.trail.forEach(t => { routePath(t); ctx.strokeStyle = "rgba(255,199,64,.32)"; ctx.lineWidth = 2; ctx.stroke(); });
+  // proposals
+  const sel = S.props[S.sel];
+  const farOut = view.w > 15000;
+  S.props.forEach((c, i) => {
+    if (i === S.sel || S.sailing || farOut) return;
+    routePath(c.paths[0].pts); ctx.setLineDash([3, 5]); ctx.lineWidth = 1.6;
+    ctx.strokeStyle = c.home ? "rgba(255,199,64,.6)" : "rgba(228,235,245,.5)"; ctx.stroke(); ctx.setLineDash([]);
+  });
+  const sailPath = S.sailing ? S.sailing.path : sel ? sel.paths[S.path] || sel.paths[0] : null;
+  if (sailPath && !farOut) {
+    const col = (S.sailing ? S.sailing.c.home : sel.home) ? "#ffc740" : "#b3ff59";
+    routePath(sailPath.pts); ctx.strokeStyle = "rgba(5,9,18,.75)"; ctx.lineWidth = 6; ctx.stroke();
+    routePath(sailPath.pts); ctx.strokeStyle = col; ctx.lineWidth = 2.6; ctx.stroke();
+    if (cellPx > 6) sailPath.cells.forEach(c => { const [sx, sy] = toScreen(c.x, c.y); ctx.beginPath(); ctx.arc(sx, sy, Math.min(3, cellPx * .14), 0, 7); ctx.fillStyle = col; ctx.fill(); });
+  }
+  // places
+  hits = [];
+  const labels = [];
+  const wv = view.w;
+  const showPlace = p => {
+    if (p.region === "far") return wv > 3500;
+    if (p.id === "tumult" || p.id === "sol" || p.id === "heart") return true;
+    if (p.id === BY[S.home].id) return true;
+    return wv < 16000;
+  };
+  const propDest = new Map(farOut ? [] : S.props.map((c, i) => [c.dest.id, i]));
+  const order = P.slice().sort((a, b) => (propDest.has(b.id) - propDest.has(a.id)) || ((b.id === S.here) - (a.id === S.here)));
+  order.forEach(p => {
+    if (!showPlace(p)) return;
+    const [sx, sy] = toScreen(p.x, p.y);
+    if (sx < -60 || sy < -40 || sx > W + 60 || sy > H + 40) return;
+    const big = p.exp === "Harbour" || p.exp === "Guarded";
+    const sz = p.region === "far" ? 4.5 : big ? 7 : 6;
+    glyph(p, sx, sy, sz, S.inspect === p.id);
+    hits.push({ p, sx, sy, r: 14 });
+    labels.push({ p, sx, sy, sz, pri: propDest.has(p.id) ? 3 : p.id === S.here ? 4 : big ? 2 : p.region === "far" ? 0 : 1 });
+  });
+  // numbered badges on proposals
+  if (!S.sailing && !farOut) S.props.forEach((c, i) => {
+    const [sx, sy] = toScreen(c.dest.x, c.dest.y);
+    const on = i === S.sel, col = c.home ? "#ffc740" : on ? "#b3ff59" : "#e4ebf5";
+    const bx = sx + 11, by = sy - 11;
+    ctx.beginPath(); ctx.arc(bx, by, 8.5, 0, 7);
+    ctx.fillStyle = on ? col : "rgba(5,9,18,.9)"; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = on ? "#0b1220" : col; ctx.font = "600 10.5px 'JetBrains Mono', monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(c.home ? "H" : String(i + 1), bx, by + .5);
+    hits.push({ prop: i, sx: bx, sy: by, r: 11 });
+  });
+  // labels, most important first, skipping collisions
+  labels.sort((a, b) => b.pri - a.pri);
+  const boxes = [[W - 310, 0, 310, 50], [0, H - 44, 270, 44], [W - 200, H - 44, 200, 44]];
+  // the Earth line, at galaxy scale
+  const ark = S.sailing ? S.sailing.pos : [BY[S.here].x, BY[S.here].y];
+  const [ax, ay] = toScreen(ark[0], ark[1]);
+  if (wv > 9000 && S.home === "tumult") {
+    const sol = BY.sol, d = Math.hypot(sol.x - ark[0], sol.y - ark[1]);
+    const [sx, sy] = toScreen(sol.x, sol.y);
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(sx, sy); ctx.setLineDash([2, 6]); ctx.strokeStyle = "rgba(255,233,168,.5)"; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
+    const t = `Earth · ${dist(d)} · ${duration(d / CELL * MIN_PER_CELL)} by Ark`;
+    ctx.font = "500 11px 'JetBrains Mono', monospace"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    const tw = ctx.measureText(t).width, lx = Math.max(6, Math.min(W - tw - 10, (ax + sx) / 2 - tw - 14)), ly = (ay + sy) / 2;
+    boxes.push([lx - 4, ly - 9, tw + 8, 18]);
+    ctx.fillStyle = "rgba(5,9,18,.75)"; ctx.fillRect(lx - 4, ly - 9, tw + 8, 18);
+    ctx.fillStyle = "rgba(255,233,168,.92)"; ctx.fillText(t, lx, ly + .5);
+  }
+  ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  labels.forEach(L => {
+    const big = L.pri >= 2;
+    ctx.font = (big ? "600 12.5px" : "600 11.5px") + " 'Barlow Semi Condensed', 'Arial Narrow', sans-serif";
+    const text = L.p.region === "far" ? L.p.name : L.p.name;
+    const tw = ctx.measureText(text).width;
+    const off = propDest.has(L.p.id) && !S.sailing ? 23 : L.sz + 6;
+    const bw = tw + 6, bh = 15, by = L.sy - 7;
+    const clash = x => x < 2 || x + bw > W - 2 || boxes.some(b => x < b[0] + b[2] && x + bw > b[0] && by < b[1] + b[3] && by + bh > b[1]);
+    let bx = L.sx + off;
+    if (clash(bx)) { const left = L.sx - L.sz - 6 - bw; if (!clash(left)) bx = left; else if (L.pri < 3) return; }
+    boxes.push([bx, by, bw, bh]);
+    ctx.fillStyle = "rgba(5,9,18,.62)"; ctx.fillRect(bx - 2, by, bw, bh);
+    ctx.fillStyle = L.p.id === S.here ? "#ffc740" : L.pri >= 3 ? "#f1f5fb" : L.p.region === "far" ? "rgba(190,204,224,.8)" : "rgba(214,224,240,.88)";
+    ctx.fillText(text, bx + 1, L.sy + .5);
+  });
+  // arm names, at galaxy scale
+  if (wv > 12000) {
+    ctx.font = "600 12px 'Barlow Semi Condensed', sans-serif"; ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(170,190,225,.55)";
+    ARMS.forEach((a, i) => {
+      const r = [33000, 37000, 45000, 23000][i];
+      const th = a.phi - Math.log(r) / B, [sx, sy] = toScreen(r * Math.cos(th), r * Math.sin(th));
+      if (sx > 40 && sx < W - 40 && sy > 20 && sy < H - 20) ctx.fillText(a.name.toUpperCase(), sx, sy);
+    });
+    const [sx, sy] = toScreen(-6200, 25600); if (wv < 60000) ctx.fillText("ORION SPUR", sx, sy);
+  }
+  // Ark
+  const pulse = S.sailing ? S.sailing.halo : 0;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(ax, ay, 15 + pulse * 30, 0, 7); ctx.strokeStyle = `rgba(255,199,64,${.55 * (1 - pulse)})`; ctx.lineWidth = 1.5; ctx.stroke();
+  const dir = S.sailing ? S.sailing.dir : -Math.PI / 2;
+  ctx.translate(ax, ay); ctx.rotate(dir + Math.PI / 2);
+  ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(6.5, 7); ctx.lineTo(0, 3.5); ctx.lineTo(-6.5, 7); ctx.closePath();
+  ctx.fillStyle = "#ffc740"; ctx.shadowColor = "rgba(255,199,64,.8)"; ctx.shadowBlur = 10; ctx.fill();
+  ctx.restore();
+  drawSide();
+  readout();
+}
+function readout() {
+  document.getElementById("seakey").hidden = view.w > 20000;
+  const el = document.getElementById("readout");
+  const targetPx = 110, ly = view.w / W * targetPx;
+  const mag = Math.pow(10, Math.floor(Math.log10(ly))), nice = [1, 2, 5, 10].map(m => m * mag).reverse().find(v => v <= ly) || mag;
+  const px = nice / view.w * W;
+  const cells = nice / CELL;
+  el.innerHTML = `<span>${dist(nice)}${cells >= 1 && cells <= 400 ? ` · ${fmt(cells)} cells · ${duration(cells * MIN_PER_CELL)}` : ""}</span><div class="bar" style="width:${px.toFixed(0)}px"></div>`;
+}
+function loop(now) { draw(now); requestAnimationFrame(loop); }
+
+
+// ── Side view: the disk edge-on, at the same scale as the chart ──────────
+// Horizontal is the chart's own x axis; vertical is height above the midplane at the SAME px per ly,
+// so the 1,000 ly thickness is drawn true. The sea is a slice through the Ark's line; places are projected onto it.
+const sideEl = document.getElementById("side"), sideCv = document.getElementById("sv"), sctx = sideCv.getContext("2d");
+const sideImg = document.createElement("canvas"), siCtx = sideImg.getContext("2d");
+let SH = 120, sideView = null;
+const arkPos = () => S.sailing ? [S.sailing.pos[0], S.sailing.pos[1], S.sailing.z] : [BY[S.here].x, BY[S.here].y, BY[S.here].z];
+function sideFrame() {
+  const s = scale(), [, ay, az] = arkPos();
+  const fits = (2 * DISK_HALF + 120) * s <= SH - 24;
+  return { s, zc: fits ? 0 : az, sliceY: ay };
+}
+const sideY = (z, f) => SH / 2 + 8 - (z - f.zc) * f.s;
+function renderSide(step) {
+  const f = sideFrame(), fw = Math.max(1, Math.ceil(W / step)), fh = Math.max(1, Math.ceil(SH / step));
+  if (sideImg.width !== fw || sideImg.height !== fh) { sideImg.width = fw; sideImg.height = fh; }
+  const img = siCtx.createImageData(fw, fh), data = img.data;
+  const galaxy = Math.min(1, Math.max(0, (Math.log(view.w) - Math.log(5000)) / (Math.log(40000) - Math.log(5000))));
+  for (let i = 0; i < fw; i++) {
+    const x = (i * step + step / 2 - W / 2) / f.s + view.cx;
+    for (let j = 0; j < fh; j++) {
+      const z = f.zc - (j * step + step / 2 - SH / 2 - 8) / f.s;
+      let r = 0, g = 0, b = 0;
+      if (galaxy < 1) { const c = seaRGB(dens(x, f.sliceY, z)); r = c[0] * (1 - galaxy); g = c[1] * (1 - galaxy); b = c[2] * (1 - galaxy); }
+      if (galaxy > 0) {
+        // edge-on, a line of sight crosses the whole disk, so sum starlight along it
+        let bu = 0, di = 0;
+        for (let k = -3; k <= 3; k++) { const st = starlight(x, k * 9000, z); bu += st.bulge; di += st.disk; }
+        const ar = 1 - Math.exp(-(bu * .5)), ab = 1 - Math.exp(-(di * .35 + bu * .25));
+        r += galaxy * (8 + 240 * ar * .95 + 60 * ab); g += galaxy * (12 + 200 * (ar * .55 + ab * .5)); b += galaxy * (24 + 235 * ab * .9 + 40 * ar);
+      }
+      const o = (j * fw + i) * 4;
+      data[o] = r; data[o + 1] = g; data[o + 2] = b; data[o + 3] = 255;
+    }
+  }
+  siCtx.putImageData(img, 0, 0);
+  sideView = { ...view, W, ...f };
+}
+function zText(z) { const a = Math.abs(Math.round(z)); return a < 10 ? "on the midplane" : `${dist(a)} ${z > 0 ? "above" : "below"} the midplane`; }
+function drawSide() {
+  const c = sctx;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.fillStyle = "#050912"; c.fillRect(0, 0, W, SH);
+  const f = sideFrame();
+  if (!sideView || Math.abs(sideView.zc - f.zc) * f.s > 6 && !anim && !dragging) renderSide(S.sailing ? 6 : 3);
+  if (sideView) {
+    const v = sideView, s0 = v.W / v.w, s = scale();
+    const [sx] = toScreen(v.cx - v.W / 2 / s0, 0);
+    const ky = s / s0;   // the side view zooms with the chart, vertically too
+    const top = sideY(v.zc + (SH / 2 + 8) / s0, f);
+    c.imageSmoothingEnabled = true;
+    c.drawImage(sideImg, sx, top, v.W * ky, SH * ky);
+  }
+  // the disk's faces at +-500 ly, and the midplane
+  c.font = "500 10.5px 'JetBrains Mono', monospace"; c.textBaseline = "middle"; c.textAlign = "left";
+  [[DISK_HALF, "+500 ly"], [-DISK_HALF, "−500 ly"], [0, "midplane"]].forEach(([z, t]) => {
+    const y = sideY(z, f);
+    if (y < -2 || y > SH + 2) return;
+    c.beginPath(); c.moveTo(56, y); c.lineTo(W, y); c.setLineDash(z ? [5, 5] : [1, 6]);
+    c.strokeStyle = z ? "rgba(255,233,168,.55)" : "rgba(214,224,240,.3)"; c.lineWidth = 1; c.stroke(); c.setLineDash([]);
+    if (f.s * 1000 > 40) { c.fillStyle = z ? "rgba(255,233,168,.85)" : "rgba(214,224,240,.55)"; c.fillText(t, W - c.measureText(t).width - 8, y - 7); }
+  });
+  // places, projected
+  const sel = S.props[S.sel], wv = view.w;
+  P.forEach(p => {
+    if (p.region === "far" && wv < 3500) return;
+    if (p.region !== "far" && wv > 16000 && !["tumult", "sol", "heart", S.home].includes(p.id)) return;
+    const [x] = toScreen(p.x, p.y), y = sideY(p.z, f);
+    if (x < 56 || x > W || y < 0 || y > SH) return;
+    c.beginPath(); c.arc(x, y, p.region === "far" ? 1.8 : 2.6, 0, 7); c.fillStyle = EXP[p.exp].col; c.globalAlpha = .85; c.fill(); c.globalAlpha = 1;
+  });
+  // the chosen course, as an elevation
+  const path = S.sailing ? S.sailing.path : sel && !(view.w > 15000) ? sel.paths[S.path] || sel.paths[0] : null;
+  if (path) {
+    const col = (S.sailing ? S.sailing.c.home : sel.home) ? "#ffc740" : "#b3ff59";
+    c.beginPath();
+    path.pts.forEach(([x, y], i) => { const [sx] = toScreen(x, y), sy = sideY(path.zs[i], f); i ? c.lineTo(sx, sy) : c.moveTo(sx, sy); });
+    c.strokeStyle = "rgba(5,9,18,.8)"; c.lineWidth = 5; c.stroke(); c.strokeStyle = col; c.lineWidth = 2; c.stroke();
+    const d = (S.sailing ? S.sailing.c : sel).dest, [dx] = toScreen(d.x, d.y), dy = sideY(d.z, f);
+    c.font = "600 11.5px 'Barlow Semi Condensed', sans-serif"; c.fillStyle = "#f1f5fb";
+    const label = `${d.name} · ${zText(d.z)}`;
+    const lw = c.measureText(label).width, lx = Math.max(60, Math.min(W - lw - 8, dx + 8)), ly = Math.max(30, Math.min(SH - 10, dy));
+    c.fillStyle = "rgba(5,9,18,.7)"; c.fillRect(lx - 3, ly - 8, lw + 6, 16); c.fillStyle = "#f1f5fb"; c.fillText(label, lx, ly + .5);
+    if (dy < 0 || dy > SH) { c.fillStyle = col; c.fillText(dy < 0 ? "▲" : "▼", Math.max(60, Math.min(W - 12, dx)) - 4, dy < 0 ? 26 : SH - 8); }
+  }
+  // the Ark
+  const [ax, ay, az] = arkPos(), [asx] = toScreen(ax, ay), asy = sideY(az, f);
+  c.beginPath(); c.arc(asx, asy, 4.5, 0, 7); c.fillStyle = "#ffc740"; c.shadowColor = "rgba(255,199,64,.8)"; c.shadowBlur = 8; c.fill(); c.shadowBlur = 0;
+  // the depth gauge: the whole 1,000 ly disk, the window this view shows, and the Ark
+  const gx = 18, g0 = 26, g1 = SH - 10, gz = z => g1 - (z + 700) / 1400 * (g1 - g0);
+  c.fillStyle = "rgba(5,9,18,.8)"; c.fillRect(0, 22, 58, SH);
+  c.fillStyle = "rgba(42,104,184,.35)"; c.fillRect(gx - 4, gz(DISK_HALF), 8, gz(-DISK_HALF) - gz(DISK_HALF));
+  c.strokeStyle = "rgba(255,233,168,.6)"; c.lineWidth = 1; c.strokeRect(gx - 4.5, gz(DISK_HALF) + .5, 9, gz(-DISK_HALF) - gz(DISK_HALF) - 1);
+  const zTop = f.zc + (SH / 2 + 8) / f.s, zBot = f.zc - (SH / 2 - 8) / f.s;
+  const wt = gz(Math.min(700, zTop)), wb = gz(Math.max(-700, zBot));
+  if (wb - wt < g1 - g0 - 2) { c.strokeStyle = "rgba(228,235,245,.9)"; c.strokeRect(gx - 8.5, wt, 17, Math.max(2, wb - wt)); }
+  c.beginPath(); c.moveTo(gx + 6, gz(az)); c.lineTo(gx + 12, gz(az) - 4); c.lineTo(gx + 12, gz(az) + 4); c.closePath(); c.fillStyle = "#ffc740"; c.fill();
+  c.font = "500 9.5px 'JetBrains Mono', monospace"; c.fillStyle = "rgba(214,224,240,.7)"; c.textAlign = "left";
+  c.fillText("1,000", 34, gz(70)); c.fillText("ly", 34, gz(-50));
+  document.getElementById("sidecap").innerHTML = `Side view, true scale <span>disk 1,000 ly · 50 cells · 50 min · Ark ${Math.abs(az) < 10 ? "on the midplane" : (az > 0 ? "+" : "−") + dist(Math.abs(Math.round(az)))}</span>`;
+}
+
+// ── Pointer: drag, wheel and pinch zoom, tap to inspect ──────────────────
+let dragging = false, pointers = new Map(), downAt = null, pinch0 = null;
+cv.addEventListener("pointerdown", e => {
+  cv.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, [e.offsetX, e.offsetY]);
+  downAt = { x: e.offsetX, y: e.offsetY, t: performance.now(), view: { ...view }, moved: false };
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), w: view.w, mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], world: toWorld((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) }; }
+  anim = null;
+});
+cv.addEventListener("pointermove", e => {
+  if (!pointers.has(e.pointerId)) { hover(e.offsetX, e.offsetY); return; }
+  pointers.set(e.pointerId, [e.offsetX, e.offsetY]);
+  if (pointers.size === 2 && pinch0) {
+    const [a, b] = [...pointers.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    setView(view.cx, view.cy, pinch0.w * pinch0.d / Math.max(10, d));
+    const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], s = scale();
+    view.cx = pinch0.world[0] - (mid[0] - W / 2) / s; view.cy = pinch0.world[1] - (mid[1] - H / 2) / s;
+    dragging = true; downAt.moved = true; cv.classList.add("dragging"); needs = true; return;
+  }
+  const dx = e.offsetX - downAt.x, dy = e.offsetY - downAt.y;
+  if (Math.hypot(dx, dy) > 4) { downAt.moved = true; dragging = true; cv.classList.add("dragging"); }
+  if (dragging) { const s = scale(); view.cx = downAt.view.cx - dx / s; view.cy = downAt.view.cy - dy / s; needs = true; }
+});
+const up = e => {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinch0 = null;
+  if (pointers.size === 0) {
+    if (downAt && !downAt.moved) tap(e.offsetX, e.offsetY);
+    if (dragging) { dragging = false; cv.classList.remove("dragging"); schedule(true); }
+    downAt = null;
+  } else if (pointers.size === 1) { const [p] = [...pointers.values()]; downAt = { x: p[0], y: p[1], view: { ...view }, moved: true }; }
+};
+cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+cv.addEventListener("pointerleave", () => { document.getElementById("tip").hidden = true; });
+cv.addEventListener("wheel", e => {
+  e.preventDefault();
+  anim = null;
+  const [wx, wy] = toWorld(e.offsetX, e.offsetY);
+  setView(view.cx, view.cy, view.w * Math.exp(e.deltaY * .0018));
+  const s = scale(); view.cx = wx - (e.offsetX - W / 2) / s; view.cy = wy - (e.offsetY - H / 2) / s;
+  dragging = true; needs = true; clearTimeout(cv._wt); cv._wt = setTimeout(() => { dragging = false; schedule(true); }, 140);
+}, { passive: false });
+function hitAt(x, y) { let best = null; hits.forEach(h => { const d = Math.hypot(h.sx - x, h.sy - y); if (d < h.r && (!best || d < best.d)) best = { ...h, d }; }); return best; }
+function tap(x, y) {
+  if (S.sailing) { finishSail(); return; }
+  const h = hitAt(x, y);
+  if (!h) { if (S.inspect) { S.inspect = null; renderInsp(); needs = true; } return; }
+  if (h.prop !== undefined) { selectProp(h.prop); return; }
+  const i = S.props.findIndex(c => c.dest.id === h.p.id);
+  if (i >= 0) selectProp(i); else { S.inspect = h.p.id; renderInsp(); needs = true; }
+}
+function hover(x, y) {
+  const tip = document.getElementById("tip");
+  const h = hitAt(x, y);
+  let html = "";
+  if (h && h.p) {
+    const p = h.p;
+    html = `<b>${esc(p.name)}</b> <span class="k">· ${EXP[p.exp].label}</span><br>${esc(p.fact)}`;
+  } else if (view.w < 9000) {
+    const [wx, wy] = toWorld(x, y), [q, r] = hexOf(wx, wy), n = cellN(q, r);
+    html = `<span class="k">This cell:</span> ${seaName(n)}, ${n < 10 ? n.toFixed(2) : fmt(n)} g/cm³ to your crew <span class="k">(${feelsLike(n)})</span>`;
+  }
+  if (!html) { tip.hidden = true; return; }
+  tip.innerHTML = html; tip.hidden = false;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = Math.min(W - tw - 6, x + 14) + "px"; tip.style.top = Math.min(H - th - 6, y + 14) + "px";
+}
+new ResizeObserver(resize).observe(chartEl);
+
+// ── Rail ──────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const csChip = (cs, finder) => `<span class="cs${finder ? " finder" : ""}" style="--c:${FACTION_COL[PILOTS[cs].faction]}"><code>${cs}</code></span>`;
+const iPill = I => `<span class="pill" style="--c:${I_COL[I - 1]}">I${I}</span>`;
+function titleOf(c) {
+  if (c.home) return fill(JOB.home.title, { to: c.dest.name });
+  const t = c.job === "hunt" && c.dest.exp === "Lair" ? JOB.hunt.lair : JOB[c.job].title;
+  return fill(t, { to: c.dest.name });
+}
+function rewardOf(c, I) {
+  if (c.home) return S.aboard ? `bank ${S.aboard} find${S.aboard === 1 ? "" : "s"}` : "refit the hull";
+  if (c.job === "courier" || c.job === "defence") return `${I + 1} to ${I * 2 + 2} omni`;
+  return `${finds(I)} find${finds(I) === 1 ? "" : "s"}`;
+}
+function renderProps() {
+  const el = $("opts");
+  if (S.sailing) { el.innerHTML = `<p class="empty">Under way to ${esc(S.sailing.c.dest.name)}. Tap the chart to skip to arrival.</p>`; $("sail").disabled = true; return; }
+  if (!S.props.length) { el.innerHTML = `<p class="empty">No voyages in reach. Sail home to refit.</p>`; $("sail").disabled = true; return; }
+  el.innerHTML = S.props.map((c, i) => {
+    const on = i === S.sel, path = on ? c.paths[S.path] || c.paths[0] : c.paths[0], I = voyageI(c, path);
+    const finder = c.finder ? `<span class="cs finder" style="--c:${FACTION_COL[PILOTS[c.finder].faction]}"><code>${c.finder}</code> found it</span>` : "";
+    const backers = c.backers.map(b => csChip(b.cs)).join("");
+    return `<button class="opt${c.home ? " home" : ""}" data-i="${i}" aria-pressed="${on}">
+      <span class="num">${c.home ? "H" : i + 1}</span>
+      <span class="t">${esc(titleOf(c))} <em>· ${EXP[c.dest.exp].label}</em></span>
+      <span class="facts"><b>${duration(path.minutes)}</b><span>${dist(path.ly)}</span>${iPill(I)}<span>${rewardOf(c, I)}</span></span>
+      ${finder || backers ? `<span class="who">${finder}${backers}</span>` : ""}
+    </button>${on ? detailHTML(c, path, I) : ""}`;
+  }).join("");
+  el.querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => selectProp(+b.dataset.i, true)));
+  el.querySelectorAll(".path").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); S.path = +b.dataset.p; renderProps(); needs = true; }));
+  const c = S.props[S.sel];
+  $("sail").disabled = !c;
+  $("sail").className = "sail" + (c && c.home ? " home" : "");
+  $("sail").textContent = c ? (c.home ? `Sail home · ${duration((c.paths[S.path] || c.paths[0]).minutes)}` : `Set sail for ${c.dest.name}`) : "Set sail";
+}
+function detailHTML(c, path, I) {
+  const p = c.dest;
+  const counts = { spray: 0, froth: 0, water: 0, "thick water": 0, reef: 0 };
+  path.cells.forEach(x => counts[seaName(x.n)]++);
+  const mix = Object.entries(counts).filter(([, v]) => v).map(([k, v]) => `${v} ${k}`).join(", ");
+  const strip = path.cells.map((x, i) => { const col = seaRGB(x.n); return `<i style="background:rgb(${col.map(v => v | 0).join(",")})" title="cell ${i + 1}: ${seaName(x.n)}"></i>`; }).join("");
+  const pitch = c.home ? "Dock at home and everything aboard joins the Ark's hoard. The hull is refitted." : `${esc(PILOTS[c.finder].story)} <span class="by">(${esc(PILOTS[c.finder].name)}, ${PILOTS[c.finder].faction})</span>`;
+  const why = c.backers.map(b => `${b.cs} ${b.why}`).join("; ");
+  const odds = c.home ? "" : `<dt>Odds</dt><dd>${Math.round(pSuccess(I, c.backers.length) * 100)}% ${c.backers.length >= 2 ? "(two backers ease it a step)" : ""}</dd>`;
+  const lightTxt = c.job === "courier" ? `News by light would take ${lightYears(path.ly)} to reach ${esc(p.name)}. Your Ark carries it in ${duration(path.minutes)}.`
+    : `Light from here takes ${lightYears(path.ly)} to reach ${esc(p.name)}. You take ${duration(path.minutes)}.`;
+  const paths = c.paths.length > 1 ? `<div class="paths">${c.paths.map((x, i) => `<button class="path" data-p="${i}" aria-pressed="${i === S.path}">${x.name}<span>${duration(x.minutes)} · I${voyageI(c, x)}</span></button>`).join("")}</div>` : "";
+  return `<div class="detail">
+    <p class="pitch">${pitch}</p>
+    ${paths}
+    <div class="strip"><div class="eyebrow">Course, cell by cell · ${mix}</div><div class="cells">${strip}</div></div>
+    <p class="lightline">${lightTxt}</p>
+    <dl class="nav">
+      ${odds}
+      ${why ? `<dt>Backed by</dt><dd>${esc(why)}</dd>` : ""}
+      <dt>Thickest water</dt><dd>${path.thick.n < 10 ? path.thick.n.toFixed(1) : fmt(path.thick.n)} g/cm³, ${feelsLike(path.thick.n)}<span class="tag">[D]</span></dd>
+      <dt>${esc(p.name)}</dt><dd>${esc(p.fact)}<span class="tag">[${p.tag}]</span></dd>
+      <dt>Height</dt><dd>${esc(p.name)} lies ${zText(p.z)}${path.layers > path.flatN ? `; the climb sets the course length (${path.layers} layers of cells)` : Math.abs(path.climb) >= 10 ? `; the course ${path.climb > 0 ? "climbs" : "descends"} ${dist(Math.abs(path.climb))} on the way` : ""}<span class="tag">[D]</span></dd>
+      <dt>To your crew</dt><dd>${S.crewEye ? `${fmt(path.ly)} light years` : `this course is ${dist2(path.ly)} long`}<span class="tag">[D]</span></dd>
+    </dl>
+  </div>`;
+}
+function dist2(ly) { const keep = S.crewEye; S.crewEye = true; const t = dist(ly); S.crewEye = keep; return t; }
+function selectProp(i, fromList) {
+  if (S.sailing) return;
+  if (S.sel !== i) S.path = 0;
+  S.sel = i; S.inspect = null;
+  renderProps(); renderInsp(); needs = true;
+  const c = S.props[i];
+  if (c && !fromList) return;
+  if (c) { const [cx, cy, w] = fitPoints(c.paths[0].pts.concat([[BY[S.here].x, BY[S.here].y]]), 700); if (Math.abs(w - view.w) / view.w > .5 || !inView(c.dest)) flyTo(cx, cy, w); }
+}
+const inView = p => { const [sx, sy] = toScreen(p.x, p.y); return sx > 30 && sy > 30 && sx < W - 30 && sy < H - 30; };
+function renderAll() {
+  const here = BY[S.here];
+  $("here-name").textContent = here.name;
+  const n = dens(here.x, here.y);
+  $("here-sub").textContent = `${here.sub || EXP[here.exp].label} · ${dist(Math.hypot(here.x - BY.sol.x, here.y - BY.sol.y))} from Earth · sailed ${duration(S.minutes)}, ${dist(S.ly)}`;
+  $("m-hull").textContent = Math.max(0, Math.round(S.hull)); $("m-aboard").textContent = S.aboard; $("m-banked").textContent = S.banked; $("m-omni").textContent = S.omni;
+  const hf = $("hull-fill"); hf.style.width = Math.max(0, S.hull / HULL_MAX * 100) + "%"; hf.classList.toggle("low", S.hull < 4);
+  const a = $("arrival");
+  if (S.arrival) { a.hidden = false; a.className = "arrival" + (S.arrival.bad ? " bad" : ""); a.innerHTML = `<h3>${esc(S.arrival.h)}</h3>${S.arrival.lines.map(l => `<p>${l}</p>`).join("")}`; } else a.hidden = true;
+  $("skip").hidden = !S.sailing;
+  $("props-title").textContent = S.props.length ? `Voyages your crew found from ${here.name}` : "Voyages";
+  $("crew-title").textContent = `Ark crew · ${S.crew.length}`;
+  $("crew").innerHTML = S.crew.map(cs => `<div class="mate" style="--c:${FACTION_COL[PILOTS[cs].faction]}"><code>${cs}</code><span class="n">${esc(PILOTS[cs].name)}</span><span class="f">${PILOTS[cs].faction} · ${esc(PILOTS[cs].story)}</span></div>`).join("");
+  $("log").innerHTML = S.log.length ? S.log.slice().reverse().map(l => `<li>${l}</li>`).join("") : `<li>The Ark is moored at ${esc(BY[S.home].name)}.</li>`;
+  renderProps(); renderInsp();
+}
+function renderInsp() {
+  const el = $("insp");
+  if (!S.inspect) { el.hidden = true; return; }
+  const p = BY[S.inspect], here = BY[S.here];
+  const d = Math.hypot(p.x - here.x, p.y - here.y);
+  const d3 = Math.hypot(d, p.z - here.z);
+  const status = p.exp === "Guarded" ? "Closed to every Ark." : p.region === "far" ? `Far beyond this voyage: about ${duration(d / CELL)} of sailing in a straight line.` : p.id === S.here ? "Your Ark is here." : "Not on today's board. Your crew finds new voyages after every arrival.";
+  el.hidden = false;
+  el.innerHTML = `<div class="eyebrow">${EXP[p.exp].label}</div><h3>${esc(p.name)}</h3><p>${esc(p.fact)} <span class="tag">[${p.tag}]</span></p>
+    <p class="sub">${zText(p.z)} · ${dist(Math.hypot(d, p.z - here.z))} from the Ark in a straight line · light takes ${lightYears(d)} · ${esc(status)}</p>`;
+}
+
+// ── Sailing ───────────────────────────────────────────────────────────────
+const banner = $("banner");
+function setSail() {
+  const c = S.props[S.sel]; if (!c || S.sailing) return;
+  const path = c.paths[S.path] || c.paths[0];
+  S.arrival = null; S.inspect = null;
+  const [cx, cy, w] = fitPoints(path.pts, 700, 1.25);
+  flyTo(cx, cy, w, 500);
+  const ms = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Math.min(5200, Math.max(1600, path.n * 85));
+  S.sailing = { c, path, t0: performance.now() + 450, ms, pos: path.pts[0], z: path.z0, dir: -Math.PI / 2, halo: 0 };
+  renderAll();
+  requestAnimationFrame(stepSail);
+}
+function stepSail(now) {
+  const sv = S.sailing; if (!sv) return;
+  const t = sv.ms ? Math.max(0, Math.min(1, (now - sv.t0) / sv.ms)) : 1;
+  const pts = sv.path.pts, f = t * (pts.length - 1), i = Math.min(pts.length - 2, Math.floor(f)), u = f - i;
+  const a = pts[i], b = pts[i + 1];
+  sv.pos = [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+  sv.dir = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  sv.z = sv.path.z0 + (sv.path.z1 - sv.path.z0) * t;
+  sv.halo = t < .12 ? t / .12 : t > .88 ? 1 - (t - .88) / .12 : 1;
+  const cell = sv.path.cells[Math.min(sv.path.cells.length - 1, Math.floor(t * sv.path.cells.length))];
+  banner.hidden = false;
+  banner.textContent = `${t < .1 ? "Leaving the well · the sea shrinks around you" : t > .9 ? "Falling into " + sv.c.dest.name + "'s well" : "Under way"} · ${Math.ceil(t * sv.path.minutes)} of ${sv.path.minutes} min · ${seaName(cell.n)}`;
+  needs = true;
+  if (t >= 1) finishSail(); else requestAnimationFrame(stepSail);
+}
+function finishSail() {
+  const sv = S.sailing; if (!sv) return;
+  S.sailing = null; banner.hidden = true;
+  const c = sv.c, path = sv.path, I = voyageI(c, path), nb = c.backers.length, to = c.dest.name;
+  const R = rng(strHash(c.dest.id) + S.n * 131 + 7);
+  S.n++; S.minutes += path.minutes; S.ly += path.ly;
+  S.trail.push(path.pts.filter((_, i) => i % 2 === 0 || i === path.pts.length - 1)); S.trail = S.trail.slice(-14);
+  const lines = [];
+  const cost = c.home ? hullCost(path, 0) * .5 : hullCost(path, nb);
+  S.hull -= cost;
+  if (S.hull <= 0) {
+    const lost = S.aboard;
+    S.aboard = 0; S.hull = HULL_MAX; S.here = S.home;
+    S.arrival = { bad: true, h: "The Ark fell", lines: [`Fauna broke the hull on the way to ${esc(to)}.${lost ? ` ${lost} find${lost === 1 ? " was" : "s were"} lost to the sea.` : ""}`, `<span class="k">A Terminal tow brought the Ark home to ${esc(BY[S.home].name)}.</span>`] };
+    S.log.push(`<b>Fell</b> on the way to ${esc(to)}${lost ? `, losing ${lost} find${lost === 1 ? "" : "s"}` : ""}.`);
+  } else {
+    S.here = c.dest.id;
+    if (!S.visited.includes(c.dest.id)) S.visited.push(c.dest.id);
+    if (c.home) {
+      const b = S.aboard; S.banked += b; S.aboard = 0; S.hull = HULL_MAX;
+      S.arrival = { h: `Home at ${to}`, lines: [b ? `${b} find${b === 1 ? "" : "s"} joined the hoard.` : "Hull refitted. Nothing aboard to bank.", `<span class="k">${duration(path.minutes)}, ${dist(path.ly)}.</span>`] };
+      S.log.push(`<b>Docked home</b>${b ? `, banking ${b} find${b === 1 ? "" : "s"}` : ""}.`);
+    } else {
+      const ok = R() < pSuccess(I, nb);
+      const J = JOB[c.job];
+      if (ok) {
+        if (c.job === "courier" || c.job === "defence") { const o = I + 1 + Math.floor(R() * (I + 2)); S.omni += o; lines.push(fill(J.ok, { to: esc(to) }) + ` <span class="k">+${o} omni.</span>`); }
+        else { const f = finds(I); S.aboard += f; lines.push(fill(c.dest.exp === "Lair" ? J.okLair : J.ok, { to: esc(to) }) + ` <span class="k">+${f} find${f === 1 ? "" : "s"} aboard.</span>`); }
+      } else lines.push(fill(J.fail, { to: esc(to) }));
+      if (c.dest.exp === "Port") {
+        S.hull = Math.min(HULL_MAX, S.hull + 3); lines.push(`<span class="k">The port refitted the hull.</span>`);
+        const free = Object.keys(PILOTS).filter(cs => !S.crew.includes(cs));
+        if (free.length && R() < .55) { const cs = pick(free, R); S.crew.push(cs); lines.push(`${esc(PILOTS[cs].name)} (<code>${cs}</code>, ${PILOTS[cs].faction}) signed on, and brings ${PILOTS[cs].faction.toLowerCase()} work with them.`); }
+      }
+      lines.push(`<span class="k">${duration(path.minutes)} · ${dist(path.ly)} · light would have taken ${lightYears(path.ly)}.</span>`);
+      S.arrival = { bad: !ok, h: ok ? `Arrived at ${to}` : `Arrived at ${to}, empty-handed`, lines };
+      S.log.push(`<b>${esc(to)}</b>: ${ok ? "done" : "failed"} (${duration(path.minutes)}).`);
+    }
+  }
+  newBoard(true);
+}
+function newBoard(fly) {
+  S.props = propose(); S.sel = 0; S.path = 0;
+  save(); renderAll(); needs = true;
+  if (fly) fitBoard();
+}
+function fitBoard() {
+  const here = BY[S.here];
+  const pts = [[here.x, here.y]];
+  S.props.filter(c => !c.home).forEach(c => pts.push([c.dest.x, c.dest.y]));
+  const [cx, cy, w] = fitPoints(pts, 800, 1.45);
+  flyTo(cx, cy, w);
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────
+$("sail").addEventListener("click", setSail);
+$("skip").addEventListener("click", finishSail);
+$("v-ark").addEventListener("click", fitBoard);
+$("v-gal").addEventListener("click", () => flyTo(0, 4000, Math.max(110000, 110000 * W / H)));
+$("z-in").addEventListener("click", () => flyTo(view.cx, view.cy, view.w / 2, 300));
+$("z-out").addEventListener("click", () => flyTo(view.cx, view.cy, view.w * 2, 300));
+$("u-crew").addEventListener("click", () => { S.crewEye = !S.crewEye; $("u-crew").setAttribute("aria-pressed", S.crewEye); renderAll(); needs = true; });
+$("start").addEventListener("change", e => { reset(e.target.value); newBoard(true); });
+$("restart").addEventListener("click", () => { reset(S.home); newBoard(true); });
+cv.addEventListener("keydown", e => {
+  const pan = view.w * .12;
+  if (e.key === "ArrowLeft") view.cx -= pan; else if (e.key === "ArrowRight") view.cx += pan;
+  else if (e.key === "ArrowUp") view.cy -= pan; else if (e.key === "ArrowDown") view.cy += pan;
+  else if (e.key === "+" || e.key === "=") setView(view.cx, view.cy, view.w / 1.5);
+  else if (e.key === "-") setView(view.cx, view.cy, view.w * 1.5);
+  else return;
+  e.preventDefault(); schedule(true);
+});
+document.addEventListener("keydown", e => {
+  if (e.target.closest("select")) return;
+  const n = e.key === "h" || e.key === "H" ? S.props.findIndex(c => c.home) : +e.key - 1;
+  if (n >= 0 && n < S.props.length && !S.sailing && /^[1-5hH]$/.test(e.key)) selectProp(n, true);
+  if (e.key === "Enter" && e.target === document.body) setSail();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+if (!load()) reset("tumult");
+$("start").value = S.home;
+resize();
+newBoard(false);
+{ const here = BY[S.here]; const pts = [[here.x, here.y]]; S.props.filter(c => !c.home).forEach(c => pts.push([c.dest.x, c.dest.y])); const [cx, cy, w] = fitPoints(pts, 800, 1.45); setView(cx, cy, w); fieldView = null; }
+requestAnimationFrame(loop);
+})();
+</script>

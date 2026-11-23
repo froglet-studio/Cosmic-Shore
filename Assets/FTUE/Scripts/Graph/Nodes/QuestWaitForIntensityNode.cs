@@ -23,10 +23,12 @@ namespace CosmicShore.Core
         public override QuestVenue VenueAfter => QuestVenue.AppShell;
 
         [Tooltip("The game mode whose intensity gate this node waits on.")]
-        public GameModes mode = GameModes.Scurry;
+        [SerializeField] GameModes mode = GameModes.Scurry;
+        public GameModes Mode => mode;
 
         [Tooltip("The intensity tier that satisfies this gate (4 = the tier that completes the mode's quest).")]
-        [Range(2, 4)] public int intensityTier = 4;
+        [SerializeField, Range(2, 4)] int intensityTier = 4;
+        public int IntensityTier => intensityTier;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

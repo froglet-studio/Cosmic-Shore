@@ -26,19 +26,24 @@ namespace CosmicShore.Core
               + (forcedDomainCount > 0 ? $" · {forcedDomainCount} domains" : string.Empty);
 
         [Tooltip("Clear every constraint instead of applying (end of the funnel).")]
-        public bool clearConstraints;
+        [SerializeField] bool clearConstraints;
+        public bool ClearConstraints => clearConstraints;
 
         [Tooltip("The one game card left clickable. Random = no card restriction.")]
-        public GameModes allowedMode = GameModes.Scurry;
+        [SerializeField] GameModes allowedMode = GameModes.Scurry;
+        public GameModes AllowedMode => allowedMode;
 
         [Tooltip("The only selectable intensity in the configure modal (0 = no restriction).")]
-        [Range(0, 4)] public int forcedIntensity = 1;
+        [SerializeField, Range(0, 4)] int forcedIntensity = 1;
+        public int ForcedIntensity => forcedIntensity;
 
         [Tooltip("Exact player count the configure modal defaults to (0 = no override).")]
-        [Range(0, 12)] public int forcedPlayerCount = 2;
+        [SerializeField, Range(0, 12)] int forcedPlayerCount = 2;
+        public int ForcedPlayerCount => forcedPlayerCount;
 
         [Tooltip("Default the configure modal's domain (team) count (0 = no override).")]
-        [Range(0, 3)] public int forcedDomainCount = 2;
+        [SerializeField, Range(0, 3)] int forcedDomainCount = 2;
+        public int ForcedDomainCount => forcedDomainCount;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

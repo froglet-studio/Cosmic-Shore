@@ -19,8 +19,11 @@ namespace CosmicShore.UI
         [Header("Parts")]
         [Tooltip("The tile this row drives (selected / locked state and colours).")]
         [SerializeField] private KitTile tile;
-        [Tooltip("SO_Vessel.IconActive.")]
+        [Tooltip("The hull: its Hangar card art, else SO_Vessel.IconActive.")]
         [SerializeField] private Image icon;
+        [Tooltip("The Hangar list's colourful card art (Tools/Build/author_hangar_card_art.py). A vessel it does not name " +
+                 "shows its card icon.")]
+        [SerializeField] private HangarCardArtSO cardArt;
         [Tooltip("The vessel's name (Body role; the tile owns its colour).")]
         [SerializeField] private TMP_Text nameText;
         [Tooltip("\"Owned\" or \"Locked / price\" (Label role; the tile owns its colour).")]
@@ -44,7 +47,11 @@ namespace CosmicShore.UI
             _vessel = vessel;
             _screen = screen;
 
-            if (icon) icon.sprite = vessel.IconActive;
+            if (icon)
+            {
+                var art = cardArt ? cardArt.For(vessel) : null;
+                icon.sprite = art ? art : vessel.IconActive;
+            }
             if (nameText) nameText.text = vessel.Name;
             Refresh();
 

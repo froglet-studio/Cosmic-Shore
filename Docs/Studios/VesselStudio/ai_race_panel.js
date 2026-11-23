@@ -53,7 +53,7 @@
   var CAMERAS = ['Chase', 'Follow', 'Free'];
   var SPEEDS = [1, 2, 4];
   var SEAT_LEVELS = ['Off'].concat(LEVELS);
-  // the game's domain colours (studio-domains.js, generated from OriginalColorSetSO.asset); the fallback is the same table
+  // the game's domain colours (studio-domains.js, generated from PhoticColorSetSO.asset); the fallback is the same table
   var GAME_DOMAINS = window.VesselStudioDomains ? window.VesselStudioDomains.list : [{ key: 'jade', name: 'Jade', color: '#13fff2' }, { key: 'ruby', name: 'Ruby', color: '#ff00f9' }, { key: 'gold', name: 'Gold', color: '#ffa700' }, { key: 'blue', name: 'Blue', color: '#6680ff' }];
   var DEFAULT_SEATS = GAME_DOMAINS.slice(1).map(function (d) { return { name: d.name, color: d.color }; });
   var CAMERA_TIPS = {

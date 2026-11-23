@@ -44,7 +44,7 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
     `GetBalancedDomain`, static `ConfigureAIPilotForMode(AIPilot, GameDataSO)`.
   - **This is where a duo's AI half is spawned beside its human half.**
 - **Hull per AI seat:** `C/Multiplayer/AIHullSeating.cs`.
-- **Prefabs:** `Assets/_Scripts/ScriptableObjects/SOAP/VesselPrefabContainer.cs`
+- **Prefabs:** `Assets/_Scripts/ScriptableObjects/SOAPGameplay/VesselPrefabContainer.cs`
   (`TryGetShipPrefab`).
 - **Class SO:** `Assets/_Scripts/ScriptableObjects/SO_Vessel.cs`, with assets in
   `Assets/_SO_Assets/Classes/SO_Class_*.asset`.

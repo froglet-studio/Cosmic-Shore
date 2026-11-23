@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 41 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0C10}
+.app{font-family:'Inter',system-ui,sans-serif;color:#E6E8EE;font-size:14px;line-height:20px}
+.side a,.nav a{color:#A0A5B0;text-decoration:none}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12.5px}
+.num{font-variant-numeric:tabular-nums}
+.btn{font:500 13px/1 'Inter',sans-serif;height:32px;padding:0 12px;border-radius:6px;border:1px solid #2A2F3A;background:#151820;color:#E6E8EE;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.btn.pri{background:#00D4FF;border-color:#00D4FF;color:#00141A;font-weight:600}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45}
+.tab{font:500 13px/1 'Inter',sans-serif;height:28px;padding:0 10px;border-radius:6px;border:1px solid transparent;background:transparent;color:#A0A5B0;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tab.on{background:#151820;border-color:#2A2F3A;color:#E6E8EE}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.tag{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border:1px solid #2A2F3A;border-radius:11px;font-size:12px;color:#A0A5B0;white-space:nowrap}
+.th{font-size:12px;font-weight:500;color:#858B97;text-align:left;padding:0 12px;height:36px;border-bottom:1px solid #1F232C}
+.td{padding:0 12px;height:52px;border-bottom:1px solid #1F232C;vertical-align:middle}
+.sec{font-size:12px;font-weight:600;color:#858B97;letter-spacing:.02em}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:900px;position:relative;overflow:hidden;background:#0B0C10"><div style="position:absolute;left:80px;top:54px;font-size:34px;font-weight:600">Rev 41 notes - a run you can see start</div><div style="position:absolute;left:80px;top:124px;width:1760px;font-size:19px;line-height:30px;color:#A0A5B0"><b style="color:#E6E8EE">Asked.</b> "Half of the run does not make sense, can you please create some mockups of how they look and also the buttons dont work, registering a PC does not work that well there is no live bar" (Shombith, 2026-10-31, on the live console at the VM).</div><div style="position:absolute;left:80px;top:228px;width:1760px;font-size:19px;line-height:30px;color:#A0A5B0"><b style="color:#E6E8EE">What was wrong, measured on the live console.</b> Two runs sent to dragonsweapon on 2026-10-31 22:48 were taken by its agent and stopped 44 s later, and in those 44 s the page showed nothing: a run reports only after its first match, and a Unity run spends its first minute opening Unity. The VM read "Working" with "Nothing is running" under it. New run opened on "This computer" (a line to paste), which on the live console is the wrong default. The ai branch sat 105 commits behind because nothing ran its sync.</div><div style="position:absolute;left:80px;top:362px;width:1760px;font-size:19px;line-height:30px;color:#A0A5B0"><b style="color:#E6E8EE">Runs.</b> Send closes the sheet and opens Runs with one line saying where the run went and what to expect. The run is there at once as Starting, with a sliding bar until the first report (the one motion on the page; off under reduced motion). A sent run that has not started says why, from the computer's own state: on another run, in use and its owner does not allow a start, offline, outside its hours. A run shown as Running is not listed again under Sent runs. Stop asks first, then says Stopping until the computer confirms.</div><div style="position:absolute;left:80px;top:496px;width:1760px;font-size:19px;line-height:30px;color:#A0A5B0"><b style="color:#E6E8EE">New run.</b> On the live console Where lists the computers first and picks the best one: free, else in use with a start allowed, else the team queue; each shows its status and whether it starts at once or when free. The button says what will happen: Start on dragonsweapon now, Send to dragonsweapon · when free, Send to the team. "This computer" stays last, as the paste-a-line way.</div><div style="position:absolute;left:80px;top:600px;width:1760px;font-size:19px;line-height:30px;color:#A0A5B0"><b style="color:#E6E8EE">Computers.</b> Starting is a status of its own (the agent took a run, nothing has reported yet). Working always names what is running. The row menu's Stop names the run and asks first.</div><div style="position:absolute;left:80px;top:674px;width:1760px;font-size:19px;line-height:30px;color:#A0A5B0"><b style="color:#E6E8EE">Out of sight.</b> The VM syncs the ai branch every hour on its own (bleeding-edge in, Yash's AI paths replayed) and the AI branch page says when it last did; nobody types sync. The ai sync and the hub's heartbeat phase are in the same push as these boards; the boards show the built page, not a proposal. Same kit as Rev 38 (Inter, the dark ground, Jade cyan as the one accent). The data is the console's of 2026-10-31.</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

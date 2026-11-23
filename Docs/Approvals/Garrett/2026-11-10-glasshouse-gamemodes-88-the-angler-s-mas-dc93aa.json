@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-10-glasshouse-gamemodes-88-the-angler-s-mas-dc93aa",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-10T18:53:14+00:00",
+  "area": "Angler",
+  "summary": "Glasshouse (GameModes 88), the Angler's Mass game: a timed garden built entirely on the Angler's own Lure, Tame & Grow and omni-crystal seed (no vessel file, prefab or action SO changed). A new AI driver (GlasshouseGardener) presses the Angler's lure for AI seats; ANGLER.md follow-up 2 gained a one-line pointer to it. Design and open tuning questions in Arcade/GLASSHOUSE.md.",
+  "branch": "claude/peaceful-cerf-vpl3x8",
+  "commit": "2a4735edb"
+}

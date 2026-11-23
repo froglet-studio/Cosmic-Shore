@@ -80,6 +80,15 @@ namespace CosmicShore.Engine
         public bool Overlaps(Rect other)
             => other.xMax > xMin && other.xMin < xMax && other.yMax > yMin && other.yMin < yMax;
 
+        /// <summary>As <see cref="Overlaps(Rect)"/>; <paramref name="allowInverse"/> first normalizes a rect
+        /// whose width or height is negative (original contract).</summary>
+        public bool Overlaps(Rect other, bool allowInverse)
+            => allowInverse ? OrderMinMax(this).Overlaps(OrderMinMax(other)) : Overlaps(other);
+
+        static Rect OrderMinMax(Rect r)
+            => MinMaxRect(Mathf.Min(r.xMin, r.xMax), Mathf.Min(r.yMin, r.yMax),
+                          Mathf.Max(r.xMin, r.xMax), Mathf.Max(r.yMin, r.yMax));
+
         /// <summary>Normalized [0,1]² coordinates → a point inside the rect.</summary>
         public static Vector2 NormalizedToPoint(Rect rect, Vector2 normalized)
             => new(Mathf.Lerp(rect.xMin, rect.xMax, normalized.x),

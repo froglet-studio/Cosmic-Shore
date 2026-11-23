@@ -60,7 +60,7 @@ namespace CosmicShore.UI
         [SerializeField] private Image teamStripe;
         [Tooltip("The line along the row's foot: the pilot's share of the team's count. Hidden when there is none.")]
         [SerializeField] private RectTransform shareBar;
-        [Tooltip("The row's glass fill; the local pilot's is tinted toward the selection blue.")]
+        [Tooltip("The row's glass fill; the local pilot's leans toward Local Glass Tint Token.")]
         [SerializeField] private Image glassFill;
         [SerializeField] private CosmicShore.UI.UIColorToken glassToken = CosmicShore.UI.UIColorToken.SurfaceVeryDark;
         [Range(0f, 1f)]
@@ -68,8 +68,11 @@ namespace CosmicShore.UI
         [Tooltip("How far the local pilot's glass leans toward the selection blue.")]
         [Range(0f, 1f)]
         [SerializeField] private float localGlassTint = 0.35f;
-        [Tooltip("The border's light for a pilot on the winning team (ElementRim_Time), on another team " +
-                 "(ElementRim_Space) and for the local pilot (SelectionRim). Empty: the hairline tokens above.")]
+        [Tooltip("What the local pilot's glass leans toward. Neutral by default: the row is yours, not a selection " +
+                 "(Docs/UI_COLOR_RULES.md - the selection blue means only what is actually selected).")]
+        [SerializeField] private CosmicShore.UI.UIColorToken localGlassTintToken = CosmicShore.UI.UIColorToken.NeutralLightest;
+        [Tooltip("Optional border light for a pilot on the winning team, on another team and for the local pilot. " +
+                 "Empty (the default since 2026-10-24: no element rims, no selection rim on a row): the hairline tokens above.")]
         [SerializeField] private Material wonBorderMaterial;
         [SerializeField] private Material lostBorderMaterial;
         [SerializeField] private Material localBorderMaterial;
@@ -245,9 +248,8 @@ namespace CosmicShore.UI
             if (material)
             {
                 borderImage.material = material;
-                // The rim materials carry their own colour; the local selection takes the theme's blue.
-                borderImage.color = CosmicShore.UI.UITheme.Resolve(null, _isLocal ? CosmicShore.UI.UIColorToken.Selection
-                                                                                  : CosmicShore.UI.UIColorToken.TextLight);
+                // A border material carries its own colour; the vertex colour stays white.
+                borderImage.color = CosmicShore.UI.UITheme.Resolve(null, CosmicShore.UI.UIColorToken.TextLight);
                 return;
             }
             borderImage.color = CosmicShore.UI.UITheme.Resolve(null, _isLocal ? localBorderToken : otherBorderToken);
@@ -258,7 +260,7 @@ namespace CosmicShore.UI
             if (!glassFill) return;
             var glass = CosmicShore.UI.UITheme.Resolve(null, glassToken);
             if (_isLocal)
-                glass = Color.Lerp(glass, CosmicShore.UI.UITheme.Resolve(null, CosmicShore.UI.UIColorToken.Selection), localGlassTint);
+                glass = Color.Lerp(glass, CosmicShore.UI.UITheme.Resolve(null, localGlassTintToken), localGlassTint);
             glass.a = glassAlpha;
             glassFill.color = glass;
         }

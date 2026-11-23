@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The launch panel's AI DIFFICULTY row: Easy, Medium, Hard - one lit.
+    /// The launch panel's AI DIFFICULTY row: Easy, Medium, Hard, Legendary - one lit.
     ///
     /// <para>It is a widget and nothing more, on the same terms as the intensity row: a press is
     /// RAISED (<see cref="OnPicked"/>), and <c>ArcadeGameConfigureModal</c> decides what it means
@@ -18,8 +18,8 @@ namespace CosmicShore.UI
     /// so a guest's row always shows the HOST's pick.</para>
     ///
     /// <para>Difficulty is the OPPONENT, intensity is the MAP - so the two rows are independent and
-    /// a Hard AI can race intensity 1. The row is shown only on cards whose AI reads the setting
-    /// (<see cref="AIDifficultyRules.IsOfferedFor"/>).</para>
+    /// a Legendary AI can race intensity 1. Every mode offers the row (<see cref="AIDifficultyRules.IsOfferedFor"/>,
+    /// 2026-10-26); the weekly challenge pins it.</para>
     /// </summary>
     public class AIDifficultyPicker : MonoBehaviour
     {

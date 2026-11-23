@@ -64,7 +64,7 @@ MonoBehaviour:
   plantRadiusCellFractionMin: 0.25
   formByElement:
   - Element: 1
-    CrossSection: {x: 0.0221156, y: 0.0097569}
+    CrossSection: {x: 0.037162, y: 0.016395}
     Rules:
       Field: 0
       SwirlDegrees: 0
@@ -82,7 +82,7 @@ MonoBehaviour:
       RadiusMin: 0
       RadiusMax: 0
       MinRun: 0
-      LengthFactor: 0.45
+      LengthFactor: 1
       GirthTaper: 1
       TwistDegreesPerStep: 0
       DiveCount: 3
@@ -110,14 +110,15 @@ MonoBehaviour:
       GasketOctave: 0.75
       DiscRelaxRate: 0
       RingGirthFloor: 0.55
+    ShellScale: 1
   - Element: 2
-    CrossSection: {x: 0.0424305, y: 0.0613651}
+    CrossSection: {x: 0.0167357, y: 0.00738341}
     Rules:
       Field: 0
       SwirlDegrees: 0
       FieldMix: 0
       Momentum: 0
-      StepSize: 0.0552959
+      StepSize: 0.063
       MaxSteps: 0
       LanesPerSeed: 0
       LaneGap: 0
@@ -129,13 +130,13 @@ MonoBehaviour:
       RadiusMin: 0
       RadiusMax: 0
       MinRun: 0
-      LengthFactor: 1
+      LengthFactor: 0.511778
       GirthTaper: 1
       TwistDegreesPerStep: 0
-      DiveCount: 5
+      DiveCount: 6
       DiveStepFraction: 0.4
       DiveAngleDegrees: 60
-      DiveStopRadius: 0.045
+      DiveStopRadius: 0.155694
       DiveMaxSteps: 160
       DiveSwirlDegrees: 0
       DiveStrideCeiling: 0.45
@@ -157,6 +158,7 @@ MonoBehaviour:
       GasketOctave: 0.75
       DiscRelaxRate: 0
       RingGirthFloor: 0.55
+    ShellScale: 1.95397
   - Element: 3
     CrossSection: {x: 0.0384507, y: 0.00319209}
     Rules:
@@ -204,6 +206,7 @@ MonoBehaviour:
       GasketOctave: 0.75
       DiscRelaxRate: 0
       RingGirthFloor: 0.55
+    ShellScale: 1
   - Element: 4
     CrossSection: {x: 0.034, y: 0.015}
     Rules:
@@ -251,6 +254,7 @@ MonoBehaviour:
       GasketOctave: 0.75
       DiscRelaxRate: 0
       RingGirthFloor: 0.55
+    ShellScale: 1
   shellRadius: 75
   fieldWidth: 192
   weightSpread: 1

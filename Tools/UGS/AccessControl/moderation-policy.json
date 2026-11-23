@@ -1,0 +1,12 @@
+{
+  "statements": [
+    {
+      "Sid": "fair-play-allow-player-reports",
+      "Action": ["*"],
+      "Effect": "Allow",
+      "Principal": "Player",
+      "Resource": "urn:ugs:moderation-report:/*",
+      "Version": "1.0.0"
+    }
+  ]
+}

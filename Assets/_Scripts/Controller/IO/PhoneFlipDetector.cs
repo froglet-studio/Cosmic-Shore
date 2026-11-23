@@ -8,7 +8,8 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] float phoneFlipThreshold = .1f;
         public bool PhoneFlipState;
-        public ScreenOrientation currentOrientation;
+        [SerializeField] ScreenOrientation currentOrientation;
+        public ScreenOrientation CurrentOrientation => currentOrientation;
 
         public delegate void OnPhoneFlipEvent(bool state);
         public static event OnPhoneFlipEvent onPhoneFlip;

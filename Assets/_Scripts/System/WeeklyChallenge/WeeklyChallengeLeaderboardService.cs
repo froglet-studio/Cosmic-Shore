@@ -228,6 +228,12 @@ namespace CosmicShore.Core
         async UniTask SubmitToBoardAsync(
             string id, double seconds, AddPlayerScoreOptions options, CancellationToken ct)
         {
+            if (ServerScoreGate.IsActive)
+            {
+                await SubmitThroughServerAsync(id, seconds, ct);
+                return;
+            }
+
             try
             {
                 await LeaderboardsService.Instance.AddPlayerScoreAsync(id, seconds, options).AsMainThread();
@@ -241,6 +247,25 @@ namespace CosmicShore.Core
             {
                 CSDebug.LogWarning($"[WeeklyChallengeLeaderboard] Submit failed for '{id}': {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// The server-checked path (fair play, Threat Board T2): the <c>weekly-score</c> Cloud Code script refuses
+        /// impossible times and is the only writer once players are denied leaderboard writes. It stamps the same
+        /// period and avatar metadata this class reads back.
+        /// </summary>
+        async UniTask SubmitThroughServerAsync(string id, double seconds, CancellationToken ct)
+        {
+            int avatar = _localAvatarId?.Invoke() ?? WeeklyChallengeRanking.NoAvatar;
+            var verdict = await ServerScores.SubmitWeeklyAsync(id, seconds, CurrentPeriodKey, avatar);
+            if (ct.IsCancellationRequested || verdict == null) return;
+
+            if (verdict.ok)
+                CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
+                    $"[WeeklyChallengeLeaderboard] Server posted {WeeklyChallengeRanking.FormatSeconds(seconds)} to '{id}'.");
+            else
+                CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
+                    $"[WeeklyChallengeLeaderboard] Server refused {WeeklyChallengeRanking.FormatSeconds(seconds)} for '{id}': {verdict.reason}.");
         }
 
         /// <summary>
@@ -336,6 +361,8 @@ namespace CosmicShore.Core
             }
 
             if (dropped > 0) WarnIfBoardNotResetting(id, dropped, period);
+
+            await SpliceShadowRowAsync(id, scope, limit, localId, period, rows, ct);
 
             return rows;
         }
@@ -471,12 +498,43 @@ namespace CosmicShore.Core
             return dropped;
         }
 
+        /// <summary>
+        /// Fair play, phase B: an account the server put in the Undertow has its times on the twin board
+        /// (<c>&lt;id&gt;</c> + <see cref="FairPlayTrust.BoardSuffix"/>), not on this one, so its own row is read from
+        /// there and spliced into the page (<see cref="WeeklyChallengeRanking.SpliceOwnRow"/>). Nothing happens for
+        /// anyone else, or while the trust gate is off. A missing twin row (no time this week) leaves the page as it is.
+        /// </summary>
+        async UniTask SpliceShadowRowAsync(string id, LeaderboardScope scope, int limit, string localId, string period,
+            List<WeeklyChallengeRanking> rows, CancellationToken ct)
+        {
+            string suffix = FairPlayTrust.BoardSuffix;
+            if (string.IsNullOrEmpty(suffix) || string.IsNullOrEmpty(localId)) return;
+            try
+            {
+                var entry = await LeaderboardsService.Instance
+                    .GetPlayerScoreAsync(id + suffix, new GetPlayerScoreOptions { IncludeMetadata = true })
+                    .AsMainThread();
+                ct.ThrowIfCancellationRequested();
+                if (entry == null) return;
+                var own = ToRanking(entry, localId);
+                if (!WeeklyChallengeRanking.IsForPeriod(own.PeriodKey, period)) return;
+                WeeklyChallengeRanking.SpliceOwnRow(rows, own, limit);
+                if (scope == LeaderboardScope.Friends) WeeklyChallengeRanking.Renumber(rows);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                // No time on the twin board yet reads as an error from UGS; the page simply has no own row.
+                CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge, $"[WeeklyChallengeLeaderboard] No own row on '{id + suffix}': {ex.Message}");
+            }
+        }
+
         static WeeklyChallengeRanking ToRanking(UgsLeaderboardEntry entry, string localId) =>
             new()
             {
                 Rank = entry.Rank + 1,      // UGS ranks from 0; a player reads from 1
                 PlayerId = entry.PlayerId,
-                PlayerName = StripNameSuffix(entry.PlayerName),
+                PlayerName = DisplayNameValidator.ForDisplay(StripNameSuffix(entry.PlayerName)), // fair play T7
                 Seconds = entry.Score,
                 IsLocalPlayer = !string.IsNullOrEmpty(localId) && entry.PlayerId == localId,
                 AvatarId = WeeklyChallengeRanking.ReadAvatarIdFromMetadata(entry.Metadata),

@@ -43,7 +43,7 @@ namespace CosmicShore.ScriptableObjects
         public int GetBreakwaterCrossingTarget() => 0;
         public int GetSkeinRingTarget() => 0;
         public int GetRegattaGateTarget() => 0;
-        public int GetWaystationRingTarget() => 0;
+        public int GetWaystationClusterTarget() => 0;
     }
 }
 

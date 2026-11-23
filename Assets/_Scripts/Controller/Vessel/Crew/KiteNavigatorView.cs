@@ -106,6 +106,7 @@ namespace CosmicShore.Gameplay
             // mask, SDR. Draw the way the game's camera draws (OffscreenCameraSetup; Garrett, 2026-10-21)
             OffscreenCameraSetup.AdoptGameCameraImage(_cam, postProcessing: true, antiAliasing: true, shadows: true);
             _marks = new UnprocessedOverlay(_cam, "KiteNavigatorMarks");
+            TwoDCameraSky.Register(_cam);   // a 2D camera: no sky cell net glued to the board (TwoDCameraSky)
             RenderPipelineManager.beginCameraRendering += BeginRender;
             RenderPipelineManager.endCameraRendering += EndRender;
 
@@ -132,22 +133,25 @@ namespace CosmicShore.Gameplay
 
             var cfg = nav.Config;
             var unlit = LoadUnlitTemplate();
-            _tailMat = VertexColoured(Lime);
+            // The kite's own colours in the worn colour set (ColorTrace); WorldColorTrace repaints these materials when
+            // the player wears another set while the kite is out.
+            Color lime = ColorTrace.Retrace(ColorTrace.World, Lime), gold = ColorTrace.Retrace(ColorTrace.World, Gold);
+            _tailMat = VertexColoured(lime);
             _loopMat = VertexColoured(new Color(1f, 1f, 1f, 0.85f));
             _juiceMat = VertexColoured(Color.white);
             _cordMat = VertexColoured(new Color(1f, 1f, 1f, cfg.CordAlpha));
             _kiteMat = Unlit(unlit, KiteWhite);
-            _kiteChargedMat = Unlit(unlit, Gold);
+            _kiteChargedMat = Unlit(unlit, gold);
             _kiteFaintMat = Unlit(unlit, new Color(1f, 1f, 1f, cfg.PilotKiteAlpha));
-            _limeMat = Unlit(unlit, Lime);
+            _limeMat = Unlit(unlit, lime);
             for (int e = 0; e < 4; e++)
             {
-                var c = cfg.ElementColor(e, Lime);
+                var c = cfg.ElementColor(e, lime);
                 _moteMats[e] = Unlit(unlit, new Color(c.r, c.g, c.b, 1f));
                 _moteFaintMats[e] = Unlit(unlit, new Color(c.r, c.g, c.b, cfg.PilotDotAlpha));
             }
-            _goldMat = Unlit(unlit, Gold);
-            _plasmaMat = Unlit(unlit, Plasma);
+            _goldMat = Unlit(unlit, gold);
+            _plasmaMat = Unlit(unlit, ColorTrace.Retrace(ColorTrace.World, Plasma));
             _plasmaMat.renderQueue += 1;                     // the bolt over the lime petals
         }
 
@@ -218,6 +222,7 @@ namespace CosmicShore.Gameplay
             RenderPipelineManager.beginCameraRendering -= BeginRender;
             RenderPipelineManager.endCameraRendering -= EndRender;
             EndRender(default, _cam);
+            TwoDCameraSky.Unregister(_cam);
             RestorePilot();
             _park.Release();
             _frame.Dispose();
@@ -502,7 +507,8 @@ namespace CosmicShore.Gameplay
         KiteJuiceSettings JuiceSettings()
         {
             var cfg = _nav.Config;
-            for (int e = 0; e < 4; e++) _juiceColours[e] = cfg.ElementColor(e, Lime);
+            var lime = ColorTrace.Retrace(ColorTrace.World, Lime);
+            for (int e = 0; e < 4; e++) _juiceColours[e] = cfg.ElementColor(e, lime);
             return new KiteJuiceSettings
             {
                 MoteSize = cfg.MoteSize, SpaceSpinDegreesPerSecond = cfg.SpaceSpinDegreesPerSecond, KiteRadius = cfg.KiteRadius,

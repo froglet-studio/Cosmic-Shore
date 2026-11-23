@@ -921,6 +921,28 @@ def plan_keys():
     return keys
 
 
+# ARMOUR (Shombith 2026-10-26: "man the game is so easy. The rhino killed the whole form under 20 seconds"): the body's
+# Mass members are SHIELD tier, so every hit on one sheds its shield first and only the second kills it (Prism.Damage) -
+# the Rhino's sword needs two slices (one with its Space-5 Breaker), every gun two shots. The armour comes OFF in the
+# poses it eats in - the serpents' coils, the Antlion's strike pose (it eats in its jaws) - so the meal stays the moment
+# to strike, the body exposed while it cannot heal. The swarm honours a non-Charge shield only on scripted plans
+# (SwarmTickSettings.PlanDanger); the census planner's identity() never authors one.
+ARMOUR_TIER = 2
+
+
+def armoured(key, form):
+    """Does this pose wear its armour? Every pose but the ones the form eats in."""
+    pose = split_key(key)[1]
+    return not (pose in coils_of(form) or (pose == "feed" and not coils_of(form)))
+
+
+def _tier(u, key, form):
+    """A unit's tier in this pose: Charge's own (shield hood, danger guards), armour on Mass, nothing on the rest."""
+    if u.elem == CHARGE:
+        return u.tier
+    return ARMOUR_TIER if u.elem == MASS and armoured(key, form) else 0
+
+
 def split_key(key):
     """(variant key, pose): pose is "travel", "feed", one of a form's lunges_of, or one of COILS."""
     for pose in ("feed", "gape", "snap", "rear", "strike") + COILS:
@@ -997,9 +1019,9 @@ def bake(key):
         for u in units:
             pos.extend(_r(u.pos[f][a] - c[a]) for a in range(3))
             face.extend(_r(x) for x in unit(u.face[f]))
-            h, t = identity(u.elem, u.half, u.tier)
+            h, _ = identity(u.elem, u.half, u.tier)
             half_f.extend(_r(x) for x in h)
-            tier_f.append(t)
+            tier_f.append(_tier(u, key, form))
             sp_f.extend((_r(u.sp[0]), _r(u.sp[1])))
     half0 = []
     for u in units:
@@ -1009,7 +1031,7 @@ def bake(key):
         "kind": key, "name": name, "form": form, "major": MAJOR, "n": n, "frames": FRAMES,
         "frameSteps": _frame_steps(key),
         "order": list(range(FRAMES)),   # every Tandava form loops (no ping-pong)
-        "elem": [u.elem for u in units], "tier": [u.tier if u.elem == CHARGE else 0 for u in units], "half": half0,
+        "elem": [u.elem for u in units], "tier": [_tier(u, key, form) for u in units], "half": half0,
         "pos": pos, "face": face, "swimAxis": [1, 0, 0], "upAxis": [0, 1, 0],
         "slot": [u.slot for u in units], "halfF": half_f, "tierF": tier_f, "sp": sp_f,
         "centroid": [_r(x) for x in c],
@@ -1060,8 +1082,14 @@ def validate(plans):
                 errors.append(f"{kind}: frame {f} has two units {g:.2f} apart (< {MIN_GAP})")
         if any(s not in (0, 1) for s in p["slot"]) or not (0 in p["slot"] and 1 in p["slot"]):
             errors.append(f"{kind}: every form needs both regions (back 0, belly 1) for the lineages")
-        if any(t != 0 for e, t in zip(p["elem"], p["tier"]) if e != CHARGE):
-            errors.append(f"{kind}: a non-Charge unit carries a tier (only Charge changes state)")
+        if any(t != 0 for e, t in zip(p["elem"], p["tier"]) if e not in (CHARGE, MASS)):
+            errors.append(f"{kind}: a Space or Time unit carries a tier (only Charge changes state; Mass wears the armour)")
+        want = ARMOUR_TIER if armoured(kind, p["form"]) else 0
+        mass_tiers = {t for e, t in zip(p["elem"], p["tier"]) if e == MASS} | \
+                     {t for f in range(FRAMES) for e, t in zip(p["elem"], p["tierF"][f * n:(f + 1) * n]) if e == MASS}
+        if mass_tiers != {want}:
+            errors.append(f"{kind}: its Mass body is tier {sorted(mass_tiers)}, want {want} - "
+                          + ("armoured (shield) in every pose but the ones it eats in" if want else "bare while it eats"))
         for k in range(n):
             h = p["half"][3 * k:3 * k + 3]
             e = p["elem"][k]

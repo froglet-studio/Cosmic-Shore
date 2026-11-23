@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-16-garrett-relaxed-a-racing-ai-never-goes-f-83ccb7",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-16T22:14:45+00:00",
+  "area": "racing AI crystal rule (MINIGAME_TRAINING_PLAN 6.1)",
+  "summary": "Garrett relaxed 'a racing AI never goes for crystals' into a learned gene of each hull's Time genome (RaceAICrystalGenesSO, read by GateRaceController; 0 = your rule until a search writes a row). Racing searches should add the gene starting at 0.",
+  "branch": "claude/project-thread-31ri4q",
+  "commit": "1f79fe4a4",
+  "loop": {
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

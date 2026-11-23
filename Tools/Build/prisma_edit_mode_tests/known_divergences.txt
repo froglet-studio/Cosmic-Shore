@@ -1,0 +1,19 @@
+# Edit-mode tests that are correct in the Unity Editor but cannot pass on Prisma, because Prisma
+# has no Edit Mode: its engine always behaves like Play Mode. One `Suite.Test  reason` per line.
+# run.sh still RUNS these; summarize.py reports them under "known engine divergences" and keeps
+# them out of the exit code. A listed test that starts PASSING is reported as a stale entry and
+# fails the run, so this list cannot quietly outlive the divergence it describes.
+#
+# AddComponent runs Awake. Unity's edit-mode AddComponent does not wake a MonoBehaviour that is
+# not [ExecuteAlways], so the test drives Awake once by hand (EditModeLifecycle.InvokeAwake). On
+# Prisma Awake has already run, the hand-driven call builds a SECOND fade overlay, and
+# _fadeCanvasGroup is that second one while the test inspects GetChild(0) - the first one,
+# untouched. (Measured 2026-10-08: childCount 2, IsOnMainThread true, field != child 0's group.
+# SetFadeImmediate_SetsAlphaToZero passes here only because the untouched overlay is already at 0.)
+SceneTransitionManagerTests.SetFadeImmediate_SetsAlphaToOne               Prisma AddComponent runs Awake: two fade overlays, test reads the untouched first one
+SceneTransitionManagerTests.SetFadeImmediate_HalfAlpha_BlocksRaycasts     Prisma AddComponent runs Awake: two fade overlays, test reads the untouched first one
+SceneTransitionManagerTests.SetFadeImmediate_VerySmallAlpha_DoesNotBlockRaycasts  Prisma AddComponent runs Awake: two fade overlays, test reads the untouched first one
+#
+# Destroy is refused in Edit Mode: Unity logs "Destroy may not be called from edit mode" and keeps
+# the object, and the test LogAssert.Expects that error. Prisma's Destroy just destroys.
+AppManagerBootstrapTests.Awake_WhenAlreadyBootstrapped_SkipsBootstrapWork  Prisma Destroy never logs Unity's edit-mode refusal the test expects

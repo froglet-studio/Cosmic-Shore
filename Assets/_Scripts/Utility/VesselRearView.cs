@@ -7,7 +7,7 @@ namespace CosmicShore.Utility
     /// The look-back view: the gameplay camera moves to the mirror of its own follow offset —
     /// the same distance AHEAD of the vessel that it normally sits behind it — and keeps
     /// looking at the ship, so the pilot sees their own nose against everything that is
-    /// chasing them. Toggled by <see cref="RearViewGesture"/> (C, or LB+RB together).
+    /// chasing them. Toggled by <see cref="RearViewGesture"/> (C, or D-pad down).
     ///
     /// <para>It replaces the picture-in-picture rear view (<c>Pip</c> / <c>PipUI</c> /
     /// <c>PipCamera.prefab</c>), which showed the same information in a 300x150 corner panel at

@@ -6,18 +6,16 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One choice inside a toy, as the <b>app shell</b> reads it - the flat 2D twin of a station
-    /// you would fly through in freestyle.
+    /// One choice inside a toy, as the <b>app shell</b>'s Toy Box reads it - the only place a toy's
+    /// choices are offered (toys have no world body, 2026-11-01).
     ///
     /// <para>An option is either a LEAF (<see cref="Apply"/> does the thing) or a BRANCH
-    /// (<see cref="Expand"/> yields the next layer). The two shapes exist because that is exactly
-    /// what a toy already is in the world: a <see cref="MatrixToy"/> unfolds into stations, and the
-    /// Spawn Matrix unfolds again into species and then variants. Modelling the shell as one
-    /// flat list would have flattened a tree the player already knows is a tree.</para>
+    /// (<see cref="Expand"/> yields the next layer): the Spawn Matrix is kingdom, then species,
+    /// then element; a finished painting opens into Share and Repaint.</para>
     /// </summary>
     public sealed class ToyShellOption
     {
-        /// <summary>What the option is called - the station's own label.</summary>
+        /// <summary>What the option is called.</summary>
         public string Label = "";
 
         /// <summary>Second line: progress, state, "you are already here". Optional.</summary>
@@ -31,7 +29,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public string Description = "";
 
-        /// <summary>The colour the station wears in the world.</summary>
+        /// <summary>The colour the row wears.</summary>
         public Color Accent = Color.white;
 
         /// <summary>A glyph the configure window draws beside the label - an element's petal, say.
@@ -41,8 +39,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True when this option is the state the player is ALREADY in - the cell they are flying
-        /// in, the hull they are flying. Never hidden: the diegetic toys show it too (the cell
-        /// selector haloes the current world, and flying it is the freestyle reset).
+        /// in, the hull they are flying. Never hidden: the player should see what they are on (and
+        /// for the cell selector, choosing it is the freestyle reset).
         /// </summary>
         public bool IsCurrent;
 
@@ -54,10 +52,9 @@ namespace CosmicShore.Gameplay
         public bool RequiresFreestyle;
 
         /// <summary>
-        /// True when PICKING the row is the act - no second press. Set by a toy whose world form
-        /// is a <b>flip-set</b> (<see cref="SwapToySetCoordinator{T}"/>): there, the option IS a
-        /// toy you fly through, so there is no select-then-commit step in the world either and the
-        /// flat surface would be inventing one.
+        /// True when PICKING the row is the act - no second press. Set by an option set
+        /// (<see cref="ToyOptionSet{T}"/>, the domain changer), whose applies are instant and undone
+        /// by picking another row.
         ///
         /// <para>False - the default - is the <b>matrix</b> shape: the row selects, and the window's
         /// Switch button commits. That is not fussiness, it is what these applies COST. A cell swap
@@ -106,20 +103,19 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// How far back a window should stand to watch <see cref="WatchAfterApply"/>'s object -
         /// the creature blooms in from zero, so its own bounds say nothing on the frame it
-        /// appears and the option has to state a size. 0 leaves the camera at the toy's radius.
+        /// appears and the option has to state a size. 0 uses the preview's default radius.
         /// </summary>
         public float WatchRadius;
 
         /// <summary>
         /// Where this option LIVES in the world, for a window to turn its picture onto when the
-        /// row is picked - the domain changer's switch for that colour, say. Optional; null (or a
-        /// null return) means the option has no place of its own and the picture stays on the
-        /// toy. Resolved late rather than captured, because a flip-set re-homes its slots every
-        /// time the current option changes.
+        /// row is picked, and for Navigate to fly the player to - the newest creature a Spawn Matrix
+        /// row released, say. Optional; null (or a null return) means the option has no place of
+        /// its own. Resolved late rather than captured, because the place moves.
         /// </summary>
         public Func<Transform> WorldAnchor;
 
-        /// <summary>How far back a window stands to look at <see cref="WorldAnchor"/>. 0 = the toy's radius.</summary>
+        /// <summary>How far back a window stands to look at <see cref="WorldAnchor"/>. 0 = the preview's default.</summary>
         public float WorldAnchorRadius;
 
         /// <summary>
@@ -131,8 +127,8 @@ namespace CosmicShore.Gameplay
         /// <para>Optional, and deliberately NOT <see cref="WorldAnchor"/>: an anchor is where an
         /// option LIVES (for a picture to turn onto), an arrival is where its play HAPPENS. A wander
         /// or a voyage answers invalid - it happens wherever the player already is, so there is
-        /// nowhere to take them. It is what lets today's-activity switch take the player to the
-        /// activity rather than start it somewhere they cannot see.</para>
+        /// nowhere to take them. It is what lets today's activity take the player to the activity
+        /// rather than start it somewhere they cannot see.</para>
         /// </summary>
         public Func<ToyArrival> Arrival;
 
@@ -147,8 +143,7 @@ namespace CosmicShore.Gameplay
         /// what that IS - and the only thing that knows what an option looks like is the toy that
         /// offers it, exactly as the only thing that knows what it DOES is <see cref="Apply"/>. So
         /// the cell selector hands back its own cached scale model and the vessel changer its own
-        /// mini hull: the same builders their world stations use, which is what stops the flat
-        /// preview and the station from drifting apart.</para>
+        /// mini hull.</para>
         ///
         /// <para>The caller owns the returned object and destroys it. An implementation must
         /// therefore build a NEW one rather than lending out something the toy is still using -
@@ -163,12 +158,8 @@ namespace CosmicShore.Gameplay
         /// <c>VesselClassType</c>, the <c>PaintingDefinitionSO</c>. Opaque to every reader except
         /// the toy that set it.
         ///
-        /// <para>It exists so ONE option list can serve both surfaces. A fly-through station has
-        /// to build a model of what it offers, and before this the toy kept a second, parallel
-        /// list of its own subjects for that - which is precisely the thing that can disagree with
-        /// the window's list. With the subject riding the option, the matrix and the Toy Box are
-        /// reading the same rows (<c>MatrixToy</c>, and Docs/ToySystem/ARCHITECTURE.md
-        /// § "One declaration").</para>
+        /// <para>It lets the option carry its subject instead of the toy keeping a second, parallel
+        /// list of subjects beside its option list.</para>
         /// </summary>
         public object Payload;
 
@@ -200,19 +191,16 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// A live toy's <b>app-shell face</b>: the same choices it offers in the world, and the same
-    /// calls behind them.
+    /// A live toy's <b>app-shell face</b>: the choices it offers, and the calls behind them.
     ///
     /// <para>The shell asks the LIVE toy rather than carrying its own table of what each toy can
     /// do. That is the whole design: "change your domain" in the Toy Box modal is literally
-    /// <c>DomainChangerToySet.Apply</c>, the call the ring makes, so the two surfaces cannot drift
-    /// and a toy authored tomorrow appears in the shell by implementing one interface. A parallel
+    /// <c>DomainChangerToySet.Apply</c>, and a toy authored tomorrow appears in the shell by implementing one interface. A parallel
     /// list of toy actions would be a second authority on the same state - the failure the
     /// single-writer rule exists to prevent.</para>
     ///
     /// <para>Implement it on the object that OWNS the decision: the <see cref="Toy"/> itself for a
-    /// matrix toy, the <see cref="SwapToySetCoordinator{T}"/> for a flip-set (the individual
-    /// <see cref="SwapToy"/> slots hold no option state).</para>
+    /// matrix toy, the <see cref="ToyOptionSet{T}"/> for an option set.</para>
     /// </summary>
     public interface IToyShellSurface
     {

@@ -92,12 +92,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The sector pen's soft width, in cosine: the pull ramps from 0 at SectorCos + this to full at the edge.</summary>
         public const float PenSectorSoft = 0.1f;
 
-        /// <summary>
-        /// The pen's pull at <paramref name="beyond"/> u past its edge (negative = inside): ramps 0 -> 2 over the soft width
-        /// inside the edge, then on to 6 over two soft widths past it (round 11-14). Capped at 2, a lurker's flee or a
-        /// mobber's dive outweighed it and carried them 20-60 u out of their band; past the edge the pen now outweighs any
-        /// one drive, so it bends a chase back rather than walling it.
-        /// </summary>
         /// <summary>How far inside its band's edges an agent's SEAT (home) stands: two soft widths (the pen's ramp), at most a
         /// quarter of the band (round 11-14, SubstrateCore.InPen).</summary>
         public static float SeatMargin(float inner, float outer)
@@ -106,6 +100,12 @@ namespace CosmicShore.Gameplay
             return KernelMath.Min(2f * 0.1f * KernelMath.Max(w, 50f), 0.25f * w);
         }
 
+        /// <summary>
+        /// The pen's pull at <paramref name="beyond"/> u past its edge (negative = inside): ramps 0 -> 2 over the soft width
+        /// inside the edge, then on to 6 over two soft widths past it (round 11-14). Capped at 2, a lurker's flee or a
+        /// mobber's dive outweighed it and carried them 20-60 u out of their band; past the edge the pen now outweighs any
+        /// one drive, so it bends a chase back rather than walling it.
+        /// </summary>
         public static float PenWeight(float beyond, float soft) =>
             Clamp((beyond + soft) / soft, 0f, 1f) * 2f + Clamp(beyond / soft, 0f, 2f) * 2f;
 
@@ -143,12 +143,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        static int NearestPilot(in SubstrateAgentSoA s, int npil, float px, float py, float pz, out float dist)
+        // A cling-only hull (SubstratePilot.ClingOnly: the Ark) is a pilot only to a species that clings - its riders
+        // hunt it the way they hunt a vessel; every other species does not see it (no hunt, ring, dive or provocation).
+        static int NearestPilot(in SubstrateAgentSoA s, int npil, float px, float py, float pz, bool seeClingOnly, out float dist)
         {
             dist = 1e9f;
             int best = -1;
             for (int j = 0; j < npil; j++)
             {
+                if (!seeClingOnly && s.Pilots[j].ClingOnly != 0) continue;
                 float d = Len(px - s.Pilots[j].Pos.X, py - s.Pilots[j].Pos.Y, pz - s.Pilots[j].Pos.Z);
                 if (d < dist) { dist = d; best = j; }
             }
@@ -188,7 +191,7 @@ namespace CosmicShore.Gameplay
             float hu = s.Hunger[i] + k.Metabolism * dt;   // above 1 = the stomach is empty and the reserve is burning
             s.Hunger[i] = hu;
             float h = KernelMath.Min(1f, hu);
-            int pj = NearestPilot(s, w.NPil, px, py, pz, out float pd);
+            int pj = NearestPilot(s, w.NPil, px, py, pz, k.Cling != 0, out float pd);
             float prox = Clamp(1f - pd / k.Sense, 0f, 1f);
             float threat = s.FThreat[i], alarm = s.FAlarm[i];
             float fe = s.Fear[i];

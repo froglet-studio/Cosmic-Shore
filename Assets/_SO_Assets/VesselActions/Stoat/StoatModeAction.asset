@@ -12,29 +12,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a205d398502473897ba2c04e8c4955e, type: 3}
   m_Name: StoatModeAction
   m_EditorClassIdentifier: 
-  massModeThickness:
-    Enabled: 1
-    Value: 3
-    Min: 3
-    Max: 6
-    element: 2
-    UseFloor: 1
-    Floor: 1
-  blendSeconds: 0.8
-  massUpgradeShieldsInMassMode: 1
-  autopilotTimeModeDegrees: 70
-  autopilotModeIntervalSeconds: 3
-  massModeEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  timeModeEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 

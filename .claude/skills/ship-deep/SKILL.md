@@ -8,15 +8,22 @@ description: The thorough lane of the ship protocol - for a large branch, a LOCK
 **Read `.claude/skills/ship/SKILL.md` first and run all of it.** This file adds passes;
 it replaces nothing. Run them after §2 and before the §4 go/no-go.
 
-**§0.05 applies here in full, and depth does not buy an exception: there is no compiler and
-no CI in this environment.** Every pass below is a READING and GREP discipline — none of it
-needs `/verify-unity`, a `Tools/Build/check_*.py` run, or a green build, and "deep" must not
+**§0.05 (the verify rule) applies here in full, and depth does not buy an exception.** Every
+pass below is a READING and GREP discipline on top of it — none of it needs `/verify-unity`
+(not required until that skill merges), an extra `Tools/Build/check_*.py` run, or a green CI build, and "deep" must not
 be read as licence to go install one. Depth here means more eyes on the diff, not a
 manufactured compile. D5's matrix carries "not compiled" as a first-class row value.
 
 The premise: on a branch this size, "I read it and it looked right" has a known failure
 rate, and every check below exists because a specific class of defect survived exactly
 that reading. Each pass produces EVIDENCE — a command and its output — not an impression.
+
+## D0. Read every trap, not the triage's pick
+
+`/ship` §0.0's triage picks the traps that match a branch's file kinds; deep mode does not trust the pick. Read all of
+`.claude/skills/ship/references/REVIEW_TRAPS.md`, all of `MERGE_TRAPS.md` when anything merged, and
+`REFACTOR_PASS.md` for D8. Still run the triage first: its trial merge, merge-base count and LAB / COMPUTE / CODEX lines
+are measurements, not a reading plan.
 
 ## D1. Adversarial re-read
 
@@ -207,7 +214,7 @@ If `/ship` §3.55's detect step hits, run §3.55 in full and then add three chec
 ## Then
 
 Return to `/ship` §3.5 (skill capture — a branch this size almost always taught
-something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once). The PR body carries D5's matrix and D2's sweep
+something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once), §5.6 (refresh the Fleet Codex), §5.7 (merge into bleeding-edge on the GO). The PR body carries D5's matrix and D2's sweep
 results; the report carries every pass's verdict, including the ones that found nothing —
 "D3 found no duplicate members across the 2 genuinely-merged files" is a result. D8's rows
 go in the report as rows, with where each one lives; a row that turned into a diff hunk on

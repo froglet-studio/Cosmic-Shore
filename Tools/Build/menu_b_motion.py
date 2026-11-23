@@ -9,7 +9,7 @@ module, so a screen built in one item moves and reads like a screen built in ano
     ambient(...)       KitAmbient body: float / breathe / spin / sway / pan (the separable ambient layer)
     spark_body(...)    KitSpark body: the travelling highlight, or a button sweep (pause > 0)
     shake() / drain()  KitShake / KitDrain bodies
-    grid_node(...)     the living lattice backdrop (rev 6; Lattice_Panel.mat), window_lattice_node for windows
+    panel_sea_node(...) the sea inside a panel (§70; Sea_Panel.mat), window_sea_node behind a window (Sea_Window.mat)
     bracket_nodes(...) four corner brackets (kit_bracket, turned by z rotation)
     spark_line(...)    a 2 px route line that clips a KitSpark streak (RectMask2D)
 
@@ -29,6 +29,8 @@ _spec.loader.exec_module(K)
 
 REPO = K.REPO
 RECT_MASK_2D = "3312d7739989d2b4e91e6319e9a96d76"
+# What rect_mask() authors: the kit RectMask2D that sleeps while nothing under it can be seen.
+KIT_RECT_MASK_2D = K.kit_script("KitRectMask2D")
 CANVAS_GROUP = 225
 
 # Mirrors of the C# enums (Assets/_Scripts/UI/Kit/KitEntrance.cs, KitAmbient.cs, KitMotion.cs).
@@ -99,7 +101,7 @@ def canvas_group(alpha=1.0, interactable=True, blocks=True):
 
 
 def rect_mask():
-    return lambda ctx, go: K.mono(go, RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
+    return lambda ctx, go: K.mono(go, KIT_RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
 
 
 def tiled_image(color, sprite):
@@ -122,13 +124,15 @@ def _lattice_guid(key):
     return hashlib.md5(f"CosmicShore/MenuB/lattice/{key}".encode()).hexdigest()
 
 
-LATTICE_PANEL_MAT = _lattice_guid("panel_mat")
-LATTICE_WINDOW_MAT = _lattice_guid("window_mat")
+SEA_WINDOW_MAT = _lattice_guid("sea_window_mat")
+SEA_PANEL_MAT = _lattice_guid("sea_panel_mat")
+# The retired crystal lattice's materials (§45.2, retired for the sea 2026-10-25, §70): kept so a gate can name them.
+RETIRED_LATTICE_MATS = (_lattice_guid("panel_mat"), _lattice_guid("window_mat"))
 
 
 def lattice_image(material_guid):
-    """A sprite-less Image (its UVs span the rect - the lattice's edge fade and reveal read them) drawn with a
-    lattice material. White tint: the material carries the colours; the vertex alpha grows it in."""
+    """A sprite-less Image (its UVs span the rect - the sea's edge fade and wash read them) drawn with one of the
+    background materials. White tint: the material carries the colours; the vertex alpha fades it with its window."""
     base = K.image((1.0, 1.0, 1.0, 1.0))
     return lambda ctx, go: base(ctx, go).replace(
         "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n", 1)
@@ -150,8 +154,13 @@ RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
 
 
 def rim_material(element):
-    """author_ui_lattice.py's ElementRim_<element>.mat (Charge / Mass / Space / Time / Omni)."""
+    """The guid author_ui_lattice.py's ElementRim_<element>.mat had (Charge / Mass / Space / Time / Omni). The element
+    rims were RETIRED 2026-10-24 (Docs/UI_COLOR_RULES.md: elements carry no colour in the UI, and a light running round a
+    panel nobody selected read as the selection); the guids are kept so the gates can catch a stray reference."""
     return _lattice_guid(f"rim_{element.lower()}_mat")
+
+
+RETIRED_RIM_GUIDS = tuple(rim_material(e) for e in ("Charge", "Mass", "Space", "Time", "Omni"))
 
 
 def find_node(node, key):
@@ -164,40 +173,19 @@ def find_node(node, key):
     return None
 
 
-def rim_border(node, element):
-    """Rev 6 (Docs/MENU_REDESIGN_B.md §45.3): light a border node (a sliver line Image) with the elemental rim - a comet
-    of the element's light running round it, or all four for Omni. Its theme tint becomes TextLight (the material
-    carries the colour; a dark tint would smother it) and KitRimMesh tells the shader where each vertex sits."""
-    mat = rim_material(element)
-    white = K.tok("TextLight")
-    comps = []
-    for k, cid, body in node.comps:
-        if k == "img":
-            # The sliver line sprite's centre slice is fully transparent, so the rim does not draw it: the rim
-            # shader would otherwise run over the whole panel interior for nothing (§46.3).
-            body = (lambda b: lambda ctx, go: re.sub(r"  m_Color: \{[^}]*\}\n", f"  m_Color: {K.col(white)}\n", b(ctx, go), count=1)
-                    .replace("  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {mat}, type: 2}}\n", 1)
-                    .replace("  m_FillCenter: 1\n", "  m_FillCenter: 0\n", 1))(body)
-        elif k == "th":
-            body = K.themed("TextLight")
-        comps.append((k, cid, body))
-    node.comps = comps
-    node.add("rim", 114, lambda ctx, go: K.mono(go, RIM_SCRIPT, ""))
-    return node
-
-
-def grid_node(key, name="Lattice"):
-    """Rev 6 (Docs/MENU_REDESIGN_B.md §45.2): the living crystal lattice that replaced the blueprint grid
-    (kit_grid). Full-stretch; put it first under a panel's fill so content draws over it."""
+def panel_sea_node(key, name="Sea"):
+    """The sea inside a panel (§70, Sea_Panel.mat: finer, fainter lines and no wash), the background the blueprint grid
+    and then the crystal lattice used to be. Full-stretch; put it first under a panel's fill so content draws over it."""
     n = K.Node(key, name, K.STRETCH)
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_PANEL_MAT))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(SEA_PANEL_MAT))
     return n
 
 
-def window_lattice_node(key, name="Lattice", rect=None):
-    """The two-layer lattice for a whole window's backdrop (Lattice_Window.mat)."""
+def window_sea_node(key, name="SeaLines", rect=None):
+    """The sea behind a whole window or screen (§67, §70, Sea_Window.mat): slow wave lines in three depth layers over a
+    wash. Put it right after the veil so the window's content draws over it."""
     n = K.Node(key, name, rect or K.STRETCH)
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_WINDOW_MAT))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(SEA_WINDOW_MAT))
     return n
 
 
@@ -222,7 +210,7 @@ SPARK_LEN = 48
 
 
 def spark_line(parent, key, name, r, vertical=False, token="TextLight", period=1.8, delay=0.4, grow_delay=0.0,
-               spark=True):
+               spark=False):
     """A route line (Image, token colour) that draws in on the std token and clips a travelling spark."""
     line = K.Node(key, name, r)
     line.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok(token))).add("th", 114, K.themed(token)) \

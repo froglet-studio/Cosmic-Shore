@@ -30,6 +30,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AnAIHull_KeepsTheFleetLag_UnlessItsSkillSetsARate()
+        {
+            // AINoseFollowPerSecond (Switchback's lag by difficulty, 2026-11-02): unset = the fleet lag for every AI in
+            // every mode; a positive rate; 0 = no lag. A bare transformer has no local human pilot, so it reads as an AI hull.
+            var go = new GameObject("NoseFollowDialTests_AI");
+            try
+            {
+                var t = go.AddComponent<VesselTransformer>();
+                Assert.That(t.AINoseFollowPerSecond, Is.LessThan(0f), "unset: every mode keeps the fleet lag");
+                Assert.That(t.NoseFollowRate, Is.EqualTo(VesselTransformer.RotationFollowRate));
+                t.AINoseFollowPerSecond = 3f;
+                Assert.That(t.NoseFollowRate, Is.EqualTo(3f));
+                t.AINoseFollowPerSecond = 0f;
+                Assert.That(float.IsPositiveInfinity(t.NoseFollowRate), "0 = no lag");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void TheShippedAssets_MatchTheDefaults()
         {
             var pad = Resources.Load<GamepadFlightConfigSO>("GamepadFlightConfig");

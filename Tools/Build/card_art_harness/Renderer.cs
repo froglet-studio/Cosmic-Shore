@@ -183,6 +183,16 @@ namespace CardArt
         public double BloomThreshold = 0.9, BloomStrength = 0.55;
         public int Stars = 900;
         public int Seed = 1;
+        // The cell's WALL (Shombith, 2026-11-23, Frogma Rev 129 "Inside the cell"): the membrane is a net of
+        // many-sided panes round the arena, the first thing a player sees in flight, and the cell is full of
+        // white dust. 0 = no wall (a card that is not in a cell). The wall is centred on the origin, as the
+        // membrane is.
+        public double CellRadius = 0;
+        public V3 WallColour = new V3(0.42, 0.52, 0.62);
+        public double WallStrength = 0;      // the panes' edges; their faces get a tenth of it
+        public int WallPanes = 220;          // seeds on the sphere: the pane count
+        public int Dust = 0;                 // motes in view, inside the cell
+        public V3 DustColour = new V3(0.9, 0.92, 0.95);
     }
 
     public static class Renderer
@@ -284,6 +294,9 @@ namespace CardArt
                 }
             }
 
+            if (look.CellRadius > 0 && look.WallStrength > 0) Wall(col, depth, cam, look, W, H, ss);
+            if (look.CellRadius > 0 && look.Dust > 0) DustMotes(col, depth, cam, look, W, H, ss, fogDist);
+
             // ── membrane shells (analytic, additive, depth-aware on the near half) ──────
             foreach (var (centre, radius, colour, strength) in scene.Shells)
             {
@@ -341,6 +354,103 @@ namespace CardArt
                     outBytes[o] = ToByte(r * inv); outBytes[o + 1] = ToByte(g * inv); outBytes[o + 2] = ToByte(b * inv);
                 }
             return outBytes;
+        }
+
+
+        // ── the cell wall: a Voronoi net on the membrane sphere ─────────────────────────────────
+        // Seeds are a jittered Fibonacci sphere (seeded), each pixel's ray meets the wall where it leaves the
+        // cell (and, from outside, where it enters too), and an edge is where the two nearest seeds are about
+        // equally near. Evaluated once per OUTPUT pixel (the centre ray) and depth-tested per subpixel, so a
+        // card costs ~W*H*panes dot products, not ss^2 times that.
+        static void Wall(V3[] col, double[] depth, Camera cam, Look look, int W, int H, int ss)
+        {
+            double R = look.CellRadius;
+            var rng = new Random(look.Seed * 7919 + 17);
+            int n = Math.Max(8, look.WallPanes);
+            var seeds = new V3[n];
+            double golden = Math.PI * (3 - Math.Sqrt(5));
+            for (int i = 0; i < n; i++)
+            {
+                double y = 1 - 2 * (i + 0.5) / n, rr = Math.Sqrt(1 - y * y), a = golden * i;
+                var p = new V3(Math.Cos(a) * rr, y, Math.Sin(a) * rr);
+                var j = new V3(rng.NextDouble() - 0.5, rng.NextDouble() - 0.5, rng.NextDouble() - 0.5) * (1.6 / Math.Sqrt(n));
+                seeds[i] = (p + j).Norm;
+            }
+            double pixAng = 2 * cam.TanHalfFov / (H / ss);   // radians per output pixel
+            var oc = cam.Pos;                                 // the wall's centre is the origin
+            double cc = V3.Dot(oc, oc) - R * R;
+            bool inside = cc < 0;
+            int w = W / ss, h = H / ss;
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    var d = cam.Ray(x * ss + ss * 0.5 - 0.5, y * ss + ss * 0.5 - 0.5, W, H);
+                    double b = V3.Dot(oc, d), disc = b * b - cc;
+                    if (disc <= 0) continue;
+                    double sq = Math.Sqrt(disc);
+                    double dz = V3.Dot(d, cam.Fwd);
+                    // far wall (always), near wall only from outside - dimmer, it is the glass you look through
+                    for (int side = 0; side < 2; side++)
+                    {
+                        double t = side == 0 ? -b + sq : -b - sq;
+                        if (t <= 0 || (side == 1 && inside)) continue;
+                        var u = (oc + d * t) * (1 / R);
+                        double d1 = -2, d2 = -2; int k1 = 0;
+                        for (int i = 0; i < n; i++)
+                        {
+                            double v = V3.Dot(u, seeds[i]);
+                            if (v > d1) { d2 = d1; d1 = v; k1 = i; } else if (v > d2) d2 = v;
+                        }
+                        // half the angle gap ~ the perpendicular distance to the pane's edge, on the wall
+                        double gap = 0.5 * (Math.Acos(Math.Clamp(d2, -1, 1)) - Math.Acos(Math.Clamp(d1, -1, 1))) * R;
+                        double px = gap / Math.Max(1e-6, t * pixAng);          // in output pixels
+                        double edge = Math.Exp(-px * px / 0.9);               // a line about 2 px wide, soft
+                        double facet = 0.012 + 0.022 * ((k1 * 2654435761u) % 1000) / 1000.0;
+                        // the rim of the sphere (grazing) reads brighter, as glass does
+                        double graze = 1 - Math.Abs(V3.Dot(u, d));
+                        double k = look.WallStrength * (edge + facet) * (0.75 + 0.5 * graze * graze) * (side == 1 ? 0.45 : 1.0);
+                        double zt = t * dz;
+                        var add = look.WallColour * k;
+                        for (int j = 0; j < ss; j++)
+                            for (int i = 0; i < ss; i++)
+                            {
+                                int idx = (y * ss + j) * W + x * ss + i;
+                                if (zt < depth[idx]) col[idx] = col[idx] + add;
+                            }
+                    }
+                }
+        }
+
+        // ── the dust: white motes through the cell, near ones larger, depth-tested ────────────────
+        static void DustMotes(V3[] col, double[] depth, Camera cam, Look look, int W, int H, int ss, double fogDist)
+        {
+            var rng = new Random(look.Seed * 104729 + 3);
+            double R2 = look.CellRadius * look.CellRadius;
+            double zMin = Math.Max(2, fogDist * 0.01), zMax = fogDist * 1.2;
+            double pixAng = 2 * cam.TanHalfFov / H;          // radians per SUBpixel
+            for (int m = 0; m < look.Dust; m++)
+            {
+                double sx = rng.NextDouble() * W, sy = rng.NextDouble() * H;
+                double z = zMin * Math.Pow(zMax / zMin, rng.NextDouble());
+                double size = 0.4 + rng.NextDouble() * 1.1;    // world units: a mote
+                double bright = 0.25 + 0.75 * Math.Pow(rng.NextDouble(), 2);
+                var d = cam.Ray(sx, sy, W, H);
+                var p = cam.Pos + d * (z / Math.Max(1e-6, V3.Dot(d, cam.Fwd)));
+                if (V3.Dot(p, p) > R2) continue;
+                double rpx = Math.Clamp(size / (z * pixAng), 0.6 * ss, 3.2 * ss);
+                double fade = Math.Exp(-z / (fogDist * 0.6));
+                int x0 = (int)(sx - rpx * 2), x1 = (int)(sx + rpx * 2), y0 = (int)(sy - rpx * 2), y1 = (int)(sy + rpx * 2);
+                for (int py = Math.Max(0, y0); py <= Math.Min(H - 1, y1); py++)
+                    for (int px = Math.Max(0, x0); px <= Math.Min(W - 1, x1); px++)
+                    {
+                        int idx = py * W + px;
+                        if (z >= depth[idx]) continue;
+                        double ddx = (px + 0.5 - sx) / rpx, ddy = (py + 0.5 - sy) / rpx;
+                        double g = Math.Exp(-(ddx * ddx + ddy * ddy) * 1.6);
+                        if (g < 0.01) continue;
+                        col[idx] = col[idx] + look.DustColour * (g * bright * fade * 0.9);
+                    }
+            }
         }
 
         static V3 ToCam(V3 p, Camera c) { var d = p - c.Pos; return new V3(V3.Dot(d, c.Right), V3.Dot(d, c.Up), V3.Dot(d, c.Fwd)); }

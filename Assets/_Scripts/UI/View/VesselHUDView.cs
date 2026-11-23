@@ -164,11 +164,6 @@ namespace CosmicShore.UI
         /// <summary>True while this element's level-5 upgrade is active on this HUD.</summary>
         public bool IsAbilityUpgraded(Element element) => _upgraded.Contains(element);
 
-        /// <summary>
-        /// The ability icon this element upgrades, if the vessel wired one. Used by the control-hint
-        /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
-        /// a hand-authored position.
-        /// </summary>
         /// <summary>The meter this ability drives, if the vessel wired one.</summary>
         public bool TryGetAbilityGauge(Element element, out Image gauge)
         {
@@ -182,6 +177,11 @@ namespace CosmicShore.UI
             return false;
         }
 
+        /// <summary>
+        /// The ability icon this element upgrades, if the vessel wired one. Used by the control-hint
+        /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
+        /// a hand-authored position.
+        /// </summary>
         public bool TryGetAbilityIcon(Element element, out Image icon)
         {
             foreach (var binding in abilityIcons)
@@ -427,6 +427,18 @@ namespace CosmicShore.UI
             _omniAbilityIcon.color = tint;
         }
 
+        /// <summary>
+        /// Swaps the omni card's lower-plate art at runtime, for a hull whose card shows a COUNT (the Brittle Star's
+        /// spare-ring stock, one sprite per amount held). The card keeps its tint and any running collect flash; a null
+        /// sprite is ignored. Before the card exists this does nothing (the authored <c>omniAbilitySprite</c> is what
+        /// <see cref="EnsureOmniCrystalCard"/> draws first).
+        /// </summary>
+        protected void SetOmniAbilitySprite(Sprite sprite)
+        {
+            if (!sprite || !_omniAbilityIcon || _omniAbilityIcon.sprite == sprite) return;
+            _omniAbilityIcon.sprite = sprite;
+        }
+
         [Header("Omni crystal card - collect juice")]
         [Tooltip("Scale the omni card's icon punches to when this hull collects an omni crystal.")]
         [SerializeField] private float omniCollectPunchScale = 1.35f;
@@ -550,6 +562,29 @@ namespace CosmicShore.UI
             }
 
             abilityIcons.Add(new AbilityIconBinding { element = element, icon = icon });
+        }
+
+        /// <summary>
+        /// Points an ELEMENT's card at a meter built at runtime (the Squirrel's joust speed), adding the entry when
+        /// the vessel authored none. The gauge twin of <see cref="BindGeneratedAbilityIcon"/>, called from
+        /// <see cref="EnsureGeneratedAbilityIcons"/> so the lockup adopts it like an authored one. An authored
+        /// gauge always wins.
+        /// </summary>
+        protected void BindGeneratedAbilityGauge(Element element, Image gauge)
+        {
+            if (!gauge) return;
+
+            for (int i = 0; i < abilityIcons.Count; i++)
+            {
+                if (abilityIcons[i].element != element) continue;
+                if (abilityIcons[i].gauge) return;         // an authored meter wins
+                var binding = abilityIcons[i];
+                binding.gauge = gauge;
+                abilityIcons[i] = binding;
+                return;
+            }
+
+            abilityIcons.Add(new AbilityIconBinding { element = element, gauge = gauge });
         }
 
         /// <summary>

@@ -349,10 +349,11 @@ def preview_parts():
     live = N("Preview/Live", "LivePreview", R((1, 1), None, (-18, -16), (lw + 22, 18), (1, 1)))
     H.label(live.child(N("Preview/Live/Text", "Text", R((1, 0.5), None, (0, 0), (lw, 18), (1, 0.5)))), "Live preview", "Label", "NeutralLightest", align="right")
     dot = live.child(N("Preview/Live/Dot", "Dot", R((0, 0.5), None, (4, 0), (8, 8))))
-    dot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Danger"), K.kit_sprite("kit_oct_fill"), preserve=True)) \
-        .add("th", 114, H.themed("Danger")).add("breathe", 114, M.ambient("Breathe", period=1.2, amplitude=0.6))
+    # A still, neutral dot: fire is for danger only and a live view is not a problem (Docs/UI_COLOR_RULES.md).
+    dot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"), K.kit_sprite("kit_oct_fill"), preserve=True)) \
+        .add("th", 114, H.themed("ControlActive"))
     eyebrow = N("Preview/Eyebrow", "PreviewEyebrow", R((0, 0), None, (22, 62), (400, 18), (0, 0)))
-    H.label(eyebrow, "Next round", "Label", "Cta")
+    H.label(eyebrow, "Next round", "Label", "NeutralLightest")
     return [fade, frame, live, eyebrow]
 
 
@@ -392,12 +393,14 @@ def hub_text(p):
 
     # New blocks on Content.
     eyebrow = N("ModeEyebrow", "ModeEyebrow", TL(60, 44, 800, 20))
-    H.label(eyebrow, "Maelstrom", "Label", "Cta")
+    H.label(eyebrow, "Maelstrom", "Label", "NeutralLightest")
     caption = N("Caption", "Caption", TL(1280, 876, 580, 22))
     H.label(caption, "", "BodySmall", "NeutralLightest")
     hints = N("KeyHints", "KeyHints", TL(60, 1030, 900, 20))
     H.label(hints, "", "Label", "NeutralLightest")
-    ready = kit_button("Hub/Ready", "ReadyButton", TL(1280, 800, 300, 60), 300, "Play", True, "Ready 4/4", "A")
+    # Ready and Play again are Play / Ready on Frogma's Style Guide 5: the commit Ruby, no way back
+    # (Docs/UI/specs/sg5-play-ready.md). Next stays the lime Play until Q3 there is answered.
+    ready = kit_button("Hub/Ready", "ReadyButton", TL(1280, 800, 300, 60), 300, "Commit", True, "Ready 4/4", "A")
     nxt = kit_button("Hub/Next", "NextButton", TL(1280, 800, 260, 60), 260, "Play", True, "Next", "A", active=False)
     new = [eyebrow, chips_node(), standings_node(), pilots_node(), ready, nxt, caption, hints]
     added = SF.emit_under(p, I["content_rt"], new, I["content_cr"], lambda rts: [k for k in p.kids(I["content_rt"]) if k not in rts] + rts)
@@ -415,7 +418,7 @@ def hub_text(p):
 
     # The countdown: the number, with its caption as a child so they show and hide together.
     p.rect(I["start_rt"], TL(1610, 822, 220, 56))
-    p.replace(I["start_tmp"], tmp_restyle(p.doc(I["start_tmp"]), "Aldrich", 48, False, 0, "left", "Cta"))
+    p.replace(I["start_tmp"], tmp_restyle(p.doc(I["start_tmp"]), "Aldrich", 48, False, 0, "left", "TextLight"))
     cap = N("Countdown/Caption", "Caption", R((0, 1), None, (0, 6), (220, 18), (0, 0)))
     H.label(cap, "Game starts in", "Label", "NeutralLightest")
     SF.emit_under(p, I["start_rt"], [cap], I["start_tmp"], lambda rts: rts)
@@ -442,14 +445,14 @@ def summary_text(p):
     buttons = N("Summary/Buttons", "Buttons", R((0.5, 0), None, (0, 80), (1000, 64)))
     buttons.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0))) \
         .add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", delay=0.6))
-    buttons.child(kit_button("Sum/Again", "PlayAgain Button", None, 280, "Play", True, "Play again", "A"))
+    buttons.child(kit_button("Sum/Again", "PlayAgain Button", None, 280, "Commit", True, "Play again", "A"))
     buttons.child(kit_button("Sum/Stats", "StatsScreenButton", None, 200, "Default", False, "Stats", "Y", pad=PAD_NORTH))
     buttons.child(kit_button("Sum/Menu", "Main Menu Button", None, 260, "Cancel", False, "Main menu", "B", pad=PAD_EAST))
     added = SF.emit_under(p, I["sum_rt"], [dim, rule, rank, buttons], I["sum_rt"],
                           lambda rts: [rts[0]] + [k for k in p.kids(I["sum_rt"]) if k not in rts] + rts[1:])
 
     p.rect(I["sum_title_rt"], R((0.5, 1), None, (0, -70), (800, 20), (0.5, 1)))
-    p.replace(I["sum_title_tmp"], tmp_restyle(p.doc(I["sum_title_tmp"]), "Chakra", 14, True, 14, "center", "Cta"))
+    p.replace(I["sum_title_tmp"], tmp_restyle(p.doc(I["sum_title_tmp"]), "Chakra", 14, True, 14, "center", "NeutralLightest"))
     p.rect(I["sum_info_rt"], R((0.5, 1), None, (0, -96), (800, 40), (0.5, 1)))
     p.replace(I["sum_info_tmp"], tmp_restyle(p.doc(I["sum_info_tmp"]), "Aldrich", 30, False, 0, "center", "NeutralLightest"))
     p.rect(I["sum_lead_rt"], R((0.5, 1), None, (0, -140), (1400, 100), (0.5, 1)))

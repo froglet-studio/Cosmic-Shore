@@ -1,5 +1,9 @@
 # Analytics & Attribution Viability Report
 
+> **PostHog is gone.** The PostHog sink this describes was replaced by Froglet Analytics, our own
+> server (`Tools/Analytics/server/`), on 2026-11-06, and the PostHog project was closed on 2026-11-23.
+> This page is kept as the record of the July 2026 analysis.
+
 > **Provenance.** Written on the `claude/analytics-attribution-viability-vwkunw` branch
 > (PR #592) as an analysis/design pass, and salvaged onto bleeding-edge after the sink
 > layer shipped separately. The *analysis* here stands. Where it describes implementation

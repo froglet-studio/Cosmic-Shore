@@ -27,6 +27,7 @@ namespace CosmicShore.UI
         bool _isLocalPilotHud;
         Element _detailsShown = Element.None;
         int _detailsLevel = -1;
+        string _detailsCard;
         readonly StringBuilder _lines = new();
         readonly List<StarlingCard> _scratch = new();
         int _secondsShown = -1, _countShown = -1, _capShown = -1;
@@ -46,6 +47,19 @@ namespace CosmicShore.UI
             _phaseShown = (StarlingPhase)(-1);
             _detailsShown = Element.None;
             _detailsLevel = -1;
+            _detailsCard = null;
+
+            if (view)
+            {
+                view.HandCardTapped -= OnHandCardTapped;
+                if (_isLocalPilotHud) view.HandCardTapped += OnHandCardTapped;
+            }
+        }
+
+        /// <summary>A tap on a card of the element hand's row takes it (a phone; a pad moves the highlight with X / B).</summary>
+        void OnHandCardTapped(int index)
+        {
+            if (_isLocalPilotHud && starlings) starlings.PickAt(index);
         }
 
         void Update()
@@ -77,28 +91,54 @@ namespace CosmicShore.UI
                     "cap", cap.ToString(CultureInfo.InvariantCulture)));
             }
 
+            bool spread = rules.HasHand && !rules.IsElementHand;
             for (int slot = 0; slot < StarlingRules.HandOrder.Length; slot++)
             {
                 var element = StarlingRules.HandOrder[slot];
                 int held = Mathf.Min(StarlingRules.MaxLevel, rules.HeldInElement(element));
-                var card = rules.HandCard(slot);
+                var card = spread ? rules.HandCard(slot) : default;
                 if (!card.IsEmpty)
                 {
                     // A card you already hold reads "Lv 3 -> 7": picking it ADDS its level to yours (StarlingRules.Pick).
-                    int from = rules.Level(card.Card.Id), to = PickedLevel(from, card.Level);
                     view.SetCard(slot,
                         TemplateText.Fill(view.CardNameTemplate, "name", card.Card.DisplayName),
-                        from > 0 && to > from
-                            ? TemplateText.Fill(view.CardLevelUpTemplate, "from", Num(from), "to", Num(to))
-                            : TemplateText.Fill(view.CardLevelTemplate, "level", Num(to)),
-                        true, held / (float)StarlingRules.MaxLevel);
+                        CardLevel(rules, card), true, held / (float)StarlingRules.MaxLevel);
                 }
                 else
-                    view.SetCard(slot, string.Empty,
+                {
+                    // No spread hand: the element the next hand is drawn from carries the next-draw label (Garrett,
+                    // 2026-11-01), and lights while its element hand is up.
+                    bool draw = element == rules.DrawElement;
+                    view.SetCard(slot, draw ? view.NextDrawLabel : string.Empty,
                         held > 0 ? TemplateText.Fill(view.HeldTemplate, "level", held.ToString(CultureInfo.InvariantCulture)) : string.Empty,
-                        false, held / (float)StarlingRules.MaxLevel);
+                        rules.IsElementHand && element == rules.HandElement, held / (float)StarlingRules.MaxLevel);
+                }
             }
+
+            // The element hand: a row of up to five cards of one element in the middle of the screen, the highlighted one
+            // raised. A pad moves the highlight with X / B and takes it with A; a phone taps a card.
+            if (rules.IsElementHand)
+            {
+                view.SetHandRow(rules.HandSize, rules.Focus, rules.HandElement, view.HandHint);
+                for (int i = 0; i < rules.HandSize; i++)
+                {
+                    var card = rules.HandCard(i);
+                    if (card.IsEmpty) continue;
+                    view.SetHandCard(i, TemplateText.Fill(view.CardNameTemplate, "name", card.Card.DisplayName), CardLevel(rules, card));
+                }
+            }
+            else view.SetHandRow(0, 0, Element.None, null);
         }
+
+        /// <summary>The level line under a hand card: the level it arrives at, or "Lv 3 -> 7" for a card already held.</summary>
+        string CardLevel(StarlingRules rules, StarlingHandCard card)
+        {
+            int from = rules.Level(card.Card.Id), to = PickedLevel(from, card.Level);
+            return from > 0 && to > from
+                ? TemplateText.Fill(view.CardLevelUpTemplate, "from", Num(from), "to", Num(to))
+                : TemplateText.Fill(view.CardLevelTemplate, "level", Num(to));
+        }
+
         /// <summary>The card details while a pick is held open (a trigger held, or a long press): the hand's card of that
         /// element at the level picking it takes it to (beside the level held, when held), else every card held of it with
         /// what it does now and at the next level. Another pick button pressed
@@ -108,11 +148,15 @@ namespace CosmicShore.UI
         {
             var element = starlings.DetailsElement;
             int slot = element == Element.None ? -1 : StarlingRules.SlotOf(element);
-            var card = slot >= 0 ? rules.HandCard(slot) : default;
+            // An element hand's details are always its highlighted card, whichever button opened them.
+            var card = slot < 0 ? default : rules.IsElementHand ? rules.HandCard(rules.Focus) : rules.HandCard(slot);
+            if (!card.IsEmpty) element = card.Card.Element;
             int level = card.IsEmpty ? -1 : card.Level;
-            if (element == _detailsShown && level == _detailsLevel) return;
+            string cardId = card.IsEmpty ? null : card.Card.Id;
+            if (element == _detailsShown && level == _detailsLevel && cardId == _detailsCard) return;
             _detailsShown = element;
             _detailsLevel = level;
+            _detailsCard = cardId;
             if (element == Element.None) { view.SetDetails(Element.None, null, null, null); return; }
 
             _lines.Clear();

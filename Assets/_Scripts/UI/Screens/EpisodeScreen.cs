@@ -141,7 +141,7 @@ namespace CosmicShore.UI
                 if (nameTransform != null)
                 {
                     if (nameTransform.TryGetComponent(out TMP_Text nameTMP))
-                        nameTMP.text = episode.title;
+                        nameTMP.text = episode.Title;
                 }
 
                 // EpisodeDetail (description)
@@ -149,7 +149,7 @@ namespace CosmicShore.UI
                 if (detailTransform != null)
                 {
                     if (detailTransform.TryGetComponent(out TMP_Text detailTMP))
-                        detailTMP.text = episode.description;
+                        detailTMP.text = episode.Description;
                 }
 
                 // A non-zero priceUsd marks the episode as purchasable "support" - its card
@@ -163,7 +163,7 @@ namespace CosmicShore.UI
                 // to be right the day the panel opens again - the gate and the rendering must flip
                 // together or the first build after the conversion shows prices it cannot take.
                 bool episodesAvailable = SO_CommerceAvailability.Instance.IsAvailable(CommerceSurface.Episodes);
-                bool isPurchasable = episode.priceUsd > 0f && episodesAvailable;
+                bool isPurchasable = episode.PriceUsd > 0f && episodesAvailable;
 
                 // Amount / ValueText - price (purchasable), completion, or the free-text amount.
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
@@ -172,20 +172,20 @@ namespace CosmicShore.UI
                     if (valueTransform.TryGetComponent(out TMP_Text valueTMP))
                     {
                         if (isPurchasable)
-                            valueTMP.text = FormatPrice(episode.priceUsd);
-                        else if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
+                            valueTMP.text = FormatPrice(episode.PriceUsd);
+                        else if (cloudProgress != null && cloudProgress.IsCompleted(episode.EpisodeId))
                             valueTMP.text = completedLine;
                         else
-                            valueTMP.text = episode.amount;
+                            valueTMP.text = episode.Amount;
                     }
                 }
 
                 // BG image
                 var bgTransform = cardGO.transform.Find("BG");
-                if (bgTransform != null && episode.cardImage != null)
+                if (bgTransform != null && episode.CardImage != null)
                 {
                     if (bgTransform.TryGetComponent(out Image bgImage))
-                        bgImage.sprite = episode.cardImage;
+                        bgImage.sprite = episode.CardImage;
                 }
 
                 var button = cardGO.transform.Find("Button");
@@ -218,9 +218,9 @@ namespace CosmicShore.UI
                         {
                             // Play semantics (unchanged): interactable when available or cloud-unlocked.
                             // Prefab-wired onClick listeners are left intact.
-                            bool isAvailable = episode.isAvailable;
+                            bool isAvailable = episode.IsAvailable;
                             if (cloudProgress != null)
-                                isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.episodeId);
+                                isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.EpisodeId);
                             btn.interactable = isAvailable;
                         }
                     }

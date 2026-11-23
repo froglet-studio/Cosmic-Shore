@@ -20,10 +20,12 @@ namespace CosmicShore.Engine
         readonly Dictionary<int, Matrix4x4> _matrices = new();
         readonly Dictionary<int, float[]> _floatArrays = new();
         readonly Dictionary<int, Vector4[]> _vectorArrays = new();
+        readonly Dictionary<int, Matrix4x4[]> _matrixArrays = new();
         readonly Dictionary<int, object> _buffers = new();   // ComputeBuffer / GraphicsBuffer: kept, nothing samples them
 
         public bool isEmpty => _colors.Count == 0 && _floats.Count == 0 && _vectors.Count == 0
-                               && _textures.Count == 0 && _matrices.Count == 0 && _floatArrays.Count == 0 && _vectorArrays.Count == 0;
+                               && _textures.Count == 0 && _matrices.Count == 0 && _floatArrays.Count == 0 && _vectorArrays.Count == 0
+                               && _matrixArrays.Count == 0;
 
         public void Clear()
         {
@@ -34,6 +36,7 @@ namespace CosmicShore.Engine
             _matrices.Clear();
             _floatArrays.Clear();
             _vectorArrays.Clear();
+            _matrixArrays.Clear();
             _buffers.Clear();
         }
 
@@ -67,6 +70,11 @@ namespace CosmicShore.Engine
         public void SetVectorArray(string name, Vector4[] values) => _vectorArrays[Shader.PropertyToID(name)] = (Vector4[])values.Clone();
         public void SetVectorArray(int nameID, Vector4[] values) => _vectorArrays[nameID] = (Vector4[])values.Clone();
         public void SetVectorArray(int nameID, List<Vector4> values) => _vectorArrays[nameID] = values.ToArray();
+        public void SetMatrixArray(string name, Matrix4x4[] values) => _matrixArrays[Shader.PropertyToID(name)] = (Matrix4x4[])values.Clone();
+        public void SetMatrixArray(int nameID, Matrix4x4[] values) => _matrixArrays[nameID] = (Matrix4x4[])values.Clone();
+        public void SetMatrixArray(string name, List<Matrix4x4> values) => _matrixArrays[Shader.PropertyToID(name)] = values.ToArray();
+        public void SetMatrixArray(int nameID, List<Matrix4x4> values) => _matrixArrays[nameID] = values.ToArray();
+        public Matrix4x4[] GetMatrixArray(int nameID) => _matrixArrays.TryGetValue(nameID, out var a) ? a : null;
         public float[] GetFloatArray(int nameID) => _floatArrays.TryGetValue(nameID, out var a) ? a : null;
         public Vector4[] GetVectorArray(int nameID) => _vectorArrays.TryGetValue(nameID, out var a) ? a : null;
 

@@ -24,16 +24,14 @@ namespace CosmicShore.Gameplay
             var prism = prismImpactee ? prismImpactee.Prism : null;
             if (prism == null) return;
 
-            if (!prism.prismProperties.IsSuperShielded) return;
-
-            // A silenced shooter cracks nothing (VesselSilence); the round deflects.
+            // The crack itself is SuperShieldCrack's, shared with the payload, so super-shield
+            // removal stays one code path. A silenced shooter cracks nothing (VesselSilence); the
+            // round deflects. Own-domain mass never reaches here (DisallowImpactOnPrism), so no
+            // domain is spared again.
             var projectile = impactor ? impactor.Projectile : null;
             var shooter = projectile ? projectile.VesselStatus : null;
-            if (shooter != null && prism.DeflectsSilenced(shooter.PlayerName, 0f)) return;
-
-            prism.DeactivateShields();
-            if (leaveRegularShield)
-                prism.ActivateShield();
+            SuperShieldCrack.TryCrack(prism, shooter != null ? shooter.PlayerName : null, null,
+                alsoShielded: false, leaveRegularShield);
         }
     }
 }

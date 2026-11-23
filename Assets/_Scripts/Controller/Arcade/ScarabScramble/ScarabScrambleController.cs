@@ -249,15 +249,15 @@ namespace CosmicShore.Gameplay
                     // "drive it through a ring" needs no further explanation.
                     float angle = (Mathf.PI * 2f * i) / count;
                     Vector3 radial = new(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                    pos = centre + radial * (courtRadius * settings.hoopRingRadiusFraction);
+                    pos = centre + radial * (courtRadius * settings.HoopRingRadiusFraction);
                     axis = radial;
                 }
 
                 go.transform.position = pos;
 
                 var hoop = go.AddComponent<ScarabScrambleHoop>();
-                hoop.Configure(this, axis, mouthRadius, settings.hoopAccentColor,
-                               settings.hoopFlareSeconds, serverDetects: IsServer);
+                hoop.Configure(this, axis, mouthRadius, settings.HoopAccentColor,
+                               settings.HoopFlareSeconds, serverDetects: IsServer);
                 _hoops.Add(hoop);
             }
         }
@@ -523,7 +523,7 @@ namespace CosmicShore.Gameplay
                                 || !IsForgeSource(targetCrystal)));
                     if (Time.time >= nextSample || latchDied)
                     {
-                        nextSample = Time.time + settings.aiRetargetSeconds;
+                        nextSample = Time.time + settings.AiRetargetSeconds;
                         targetBall = FindNearestDomainBall(captured.Domain, selfPos);
                         stealBall = null;
                         targetCrystal = null;
@@ -546,20 +546,20 @@ namespace CosmicShore.Gameplay
                     if (targetBall != null)
                     {
                         Vector3 predicted = targetBall.transform.position
-                                            + targetBall.Velocity * settings.aiInterceptLeadSeconds;
+                                            + targetBall.Velocity * settings.AiInterceptLeadSeconds;
                         Vector3 hoopPos = NearestHoopPosition(predicted, centre);
                         Vector3 toHoop = hoopPos - predicted;
                         Vector3 push = toHoop.sqrMagnitude > 1e-4f
                             ? toHoop.normalized
                             : (predicted - selfPos).normalized;
-                        aim = predicted - push * settings.aiApproachLead;
+                        aim = predicted - push * settings.AiApproachLead;
                         escorting = true;
                     }
                     else if (stealBall != null)
                     {
                         // Fly THROUGH the rival ball: the dash below converts it on contact.
                         aim = stealBall.transform.position
-                              + stealBall.Velocity * settings.aiInterceptLeadSeconds;
+                              + stealBall.Velocity * settings.AiInterceptLeadSeconds;
                     }
                     else if (targetCrystal != null && targetCrystal.gameObject.activeInHierarchy)
                     {
@@ -716,15 +716,15 @@ namespace CosmicShore.Gameplay
 
         void UpdateFaunaExclusion()
         {
-            if (arenaCell == null || settings == null || !settings.faunaWaitOutsideCourt) return;
+            if (arenaCell == null || settings == null || !settings.FaunaWaitOutsideCourt) return;
             if (_appliedCourtRadius <= 0f) return;   // court not published yet
 
             // "The pitch is crowded" is read from the cell's own volume ladder, never a
             // bespoke signal: Calm holds the swarm out; Restless+ lets it pour in to graze.
-            float closed = _appliedCourtRadius * settings.faunaExclusionCourtFraction;
+            float closed = _appliedCourtRadius * settings.FaunaExclusionCourtFraction;
             float target = arenaCell.Phase == CellPhase.Calm ? closed : 0f;
 
-            float rate = closed / Mathf.Max(0.1f, settings.faunaExclusionSweepSeconds);
+            float rate = closed / Mathf.Max(0.1f, settings.FaunaExclusionSweepSeconds);
             _faunaExclusionCurrent = Mathf.MoveTowards(_faunaExclusionCurrent, target,
                                                        rate * Time.deltaTime);
             arenaCell.FaunaExclusionRadius = _faunaExclusionCurrent;

@@ -40,8 +40,8 @@ namespace CosmicShore.UI
         [SerializeField] AbilityRow[] abilityRows = System.Array.Empty<AbilityRow>();
         [Tooltip("Shown over the rows; hidden with them when the hull lists no abilities.")]
         [SerializeField] GameObject abilitiesGroup;
-        [Tooltip("Element colours for the rows' hexes.")]
-        [SerializeField] AbilityLockupStyleSO lockupStyle;
+        [Tooltip("What the rows' hexes draw in. Docs/UI_COLOR_RULES.md: an element never has a fixed colour in the UI.")]
+        [SerializeField] CosmicShore.UI.UIColorToken hexTint = CosmicShore.UI.UIColorToken.NeutralLightest;
 
         [Header("Words")]
         [Tooltip("The subtitle when the seat and the element are both known; {seat} and {element} are filled in.")]
@@ -185,7 +185,7 @@ namespace CosmicShore.UI
                     row.name.text = show ? entry.AbilityLabel : string.Empty;
                     row.name.transform.parent.gameObject.SetActive(show);
                 }
-                if (row.hex && lockupStyle) row.hex.color = lockupStyle.ColourFor(row.element);
+                if (row.hex) row.hex.color = CosmicShore.UI.UITheme.Resolve(null, hexTint);
                 any |= show;
             }
             return any;

@@ -812,8 +812,8 @@ namespace CosmicShore.Client
             int winTarget = stations;
 
             // ── shared data: the REAL theme pipeline (rung 5) — the authored
-            // OriginalColorSetSO palette + OriginalMaterialSet base materials
-            // (SkimRaceTheme transcribes the wired Unity assets), with the verbatim
+            // palette ThemeManagerDataContainer names + OriginalMaterialSet base materials
+            // (SkimRaceTheme reads the wired Unity assets), with the verbatim
             // ThemeManager (the single writer) generating the four per-domain material
             // sets at Awake and handing the ColorSet to GameFeedAPI — exactly the
             // original's startup flow. Every draw color (prisms, vessels, crystals,

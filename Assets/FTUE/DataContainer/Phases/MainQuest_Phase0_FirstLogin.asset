@@ -22,9 +22,14 @@ MonoBehaviour:
     delaySeconds: 0
   source: 0
   mode: 33
-  arcadeCaption: Your first race is waiting. Open the Arcade.
-  cardCaption: This week's game. Open it.
-  previewCaption: Tap the window to fly.
+  arcadeCaption: "Pilot. I'm Trace, your captain. Your first race is in the Arcade. Take us in."
+  cardCaption: "This week's game. Fly close to a trail and you steal its speed. Open it."
+  previewCaption: "Your vessel is warm. Tap the window and fly. Show me what you've got."
+  speaker: {fileID: 11400000, guid: c7150b96b57ea6719cf13977333a9a45, type: 2}
+  arcadeAction: Arcade
+  cardAction: Open
+  previewAction: Fly
+  actionKeycap: A
   skipLabel: Skip tutorial
   skipKeycap: Y
   dimAlpha: 0.7

@@ -147,9 +147,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <param name="newParent">Where the freed prism is re-homed - the host cell. Null
         /// detaches it to the scene root, which is still better than dying with the husk.</param>
-        public void LeaveAsSkeleton(Transform newParent)
+        /// <param name="recycleWhenDestroyed">Natural-death skeletons pass true: nobody keeps a reference to that
+        /// mass any more, so when the food web or a weapon later destroys it, <see cref="PrismRecycler"/> returns it
+        /// to <see cref="EnvironmentPrismPool"/> after its death effect (<see cref="Prism.RecyclesWhenDestroyed"/>).
+        /// Ability plucks (Meerkat swallow, Jacks' net) leave it false: those executors go on holding the prism.</param>
+        public void LeaveAsSkeleton(Transform newParent, bool recycleWhenDestroyed = false)
         {
             if (destroyed) return;
+            if (recycleWhenDestroyed) RecyclesWhenDestroyed = true;
 
             // A skeleton is ordinary cell mass and is drawn as one, whoever was drawing the living
             // body before (a swarm member's body is hidden while the swarm draws it, Docs/SWARM_FAUNA.md §14).

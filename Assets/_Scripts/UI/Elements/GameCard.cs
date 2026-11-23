@@ -59,6 +59,23 @@ namespace CosmicShore.UI
                  "genre is one element.")]
         [SerializeField] Image GenrePetalSecondary;
 
+        [Tooltip("The element icons the genre petals draw, Charge, Mass, Space, Time: each element's SHAPE " +
+                 "(Assets/_Graphics/ElementShapes: pentagon, triangle, kite, diamond), the icon the Codex and the " +
+                 "ability rows draw. Shombith, 2026-10-28: \"the arcade cards again are using the old elelmental " +
+                 "icons\" - the lone HUD petal read as the old diamond set. An empty slot falls back to the fleet's " +
+                 "petal sprite (ElementalBarsConfigSO), the card's look before this field.")]
+        [SerializeField] Sprite[] GenreShapes = new Sprite[4];
+
+        [Header("Genre Flower (Rev 24)")]
+        [Tooltip("The genre's element as the HUD's whole flower, filled to the level the PLAYER has bought for that " +
+                 "element on the mode's hull in the Hangar (HangarUpgradeStore; every element starts at 1). Shombith, " +
+                 "2026-10-26: \"That same petal can be showed in the arcade game cards updated with the real value " +
+                 "the players have.\" When wired it replaces the single genre petal; hidden on a mode with no genre.")]
+        [SerializeField] KitElementFlower GenreFlower;
+
+        [Tooltip("The second genre's flower, for a two-genre mode (Brood Rush: MASS and SPACE). Hidden on every other card.")]
+        [SerializeField] KitElementFlower GenreFlowerSecondary;
+
         [Header("Party Picks")]
         [Tooltip("Container the interested party members' avatars are laid out in. The FIRST " +
                  "AvatarIcon under it is the authored template every extra chip is cloned from, " +
@@ -130,10 +147,9 @@ namespace CosmicShore.UI
 
         void Start()
         {
-            if (gameMode == GameModes.Random)
-                gameMode = GameModes.BlockBandit;
-
-            UpdateCardView();
+            // A card no view has given a mode yet draws nothing: the GameMode setter draws it when it is assigned. The old
+            // fallback named BlockBandit, which has no card, and logged 70 warnings (about 0.5 s) on every menu load.
+            if (gameMode != GameModes.Random) UpdateCardView();
             ShowPartyPicks(null, false);
         }
 
@@ -233,10 +249,72 @@ namespace CosmicShore.UI
         /// </summary>
         void UpdateGenrePetal(SO_ArcadeGame game)
         {
+            if (GenreFlower || GenreFlowerSecondary)
+            {
+                _hull = ResolveModeVessel(game) is { } vessel ? vessel.Class : VesselClassType.Any;
+                _hasGenre = TryResolveGenre(game.Mode, out _genre, out _genreSecondary);
+                ApplyPetal(GenrePetal, null, Color.white);
+                ApplyPetal(GenrePetalSecondary, null, Color.white);
+                DrawGenreFlowers();
+                return;
+            }
             ResolveGenrePetals(game.Mode, out var primary, out var secondary, out var tint);
             ApplyPetal(GenrePetal, primary, tint);
             ApplyPetal(GenrePetalSecondary, secondary, tint);
         }
+
+        /// <summary>The genre flowers at the player's bought level for each element on the mode's hull.</summary>
+        void DrawGenreFlowers()
+        {
+            DrawFlower(GenreFlower, _hasGenre, _genre);
+            DrawFlower(GenreFlowerSecondary, _hasGenre && _genreSecondary != Element.None, _genreSecondary);
+        }
+
+        void DrawFlower(KitElementFlower flower, bool shown, Element element)
+        {
+            if (!flower) return;
+            if (flower.gameObject.activeSelf != shown) flower.gameObject.SetActive(shown);
+            if (!shown) return;
+            int level = _hull == VesselClassType.Any ? HangarUpgradeStore.StartLevel : HangarUpgradeStore.GetLevel(_hull, element);
+            flower.Set(element, level);
+        }
+
+        // A bought level redraws the cards of that hull; the profile arriving from the cloud (it can land after the
+        // grid is built) redraws every card, since the levels came with it.
+        void OnEnable()
+        {
+            HangarUpgradeStore.LevelChanged += HandleUpgrade;
+            _profile = PlayerDataService.Instance;
+            if (_profile) _profile.OnProfileChanged += HandleProfile;
+            if (_hasGenre) DrawGenreFlowers();
+        }
+
+        void OnDisable()
+        {
+            HangarUpgradeStore.LevelChanged -= HandleUpgrade;
+            if (_profile) _profile.OnProfileChanged -= HandleProfile;
+            _profile = null;
+        }
+
+        void HandleUpgrade(VesselClassType vessel, Element element, int level)
+        {
+            if (_hasGenre && vessel == _hull) DrawGenreFlowers();
+        }
+
+        void HandleProfile(PlayerProfileData profile)
+        {
+            if (_hasGenre) DrawGenreFlowers();
+        }
+
+        PlayerDataService _profile;
+
+        VesselClassType _hull = VesselClassType.Any;
+        Element _genre, _genreSecondary;
+        bool _hasGenre;
+
+        // The one genre answer the Arcade's element filter reads too (ArcadeGridOrder, section 85).
+        static bool TryResolveGenre(GameModes mode, out Element first, out Element second) =>
+            ArcadeGridOrder.TryGenres(mode, out first, out second);
 
         static void ApplyPetal(Image image, Sprite sprite, Color tint)
         {
@@ -269,18 +347,22 @@ namespace CosmicShore.UI
             secondary = null;
             tint = Color.white;
 
-            if (!_previews) _previews = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
-            var definition = _previews ? _previews.Resolve(mode) : null;
-            ScoringMetric? metric = definition ? definition.ObjectiveMetric : (ScoringMetric?)null;
-
-            if (!ModeGenre.TryElementsFor(mode, metric, out var first, out var second)) return;
+            if (!TryResolveGenre(mode, out var first, out var second)) return;
 
             if (!_bars) _bars = Resources.Load<ElementalBarsConfigSO>(ElementalBarsConfigSO.ResourcePath);
             if (!_bars) return;
 
-            tint = _bars.whiteColor;
-            primary = _bars.GetPetalSprite(first);
-            if (second != Element.None) secondary = _bars.GetPetalSprite(second);
+            tint = _bars.WhiteColor;
+            primary = GenreIcon(first);
+            if (second != Element.None) secondary = GenreIcon(second);
+        }
+
+        // The element's authored shape, else the fleet's petal (Charge=1..Time=4 index the shapes from 0).
+        Sprite GenreIcon(Element element)
+        {
+            int i = (int)element - 1;
+            if (GenreShapes != null && i >= 0 && i < GenreShapes.Length && GenreShapes[i]) return GenreShapes[i];
+            return _bars.GetPetalSprite(element);
         }
 
         // Both assets are shipped singletons and the grid rebuilds every card on every refresh
@@ -331,13 +413,13 @@ namespace CosmicShore.UI
         /// </summary>
         Sprite ResolveAvatar(int avatarId)
         {
-            if (!ProfileIcons || ProfileIcons.profileIcons == null) return null;
+            if (!ProfileIcons || ProfileIcons.ProfileIcons == null) return null;
 
-            foreach (var icon in ProfileIcons.profileIcons)
+            foreach (var icon in ProfileIcons.ProfileIcons)
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
 
-            return ProfileIcons.profileIcons.Count > 0 ? ProfileIcons.profileIcons[0].IconSprite : null;
+            return ProfileIcons.ProfileIcons.Count > 0 ? ProfileIcons.ProfileIcons[0].IconSprite : null;
         }
 
         public void ToggleFavorite()
@@ -387,8 +469,9 @@ namespace CosmicShore.UI
         /// <summary>The local player's own pick. Legacy: tints the card's Border.</summary>
         protected virtual void DrawLocalPick(bool picked)
         {
+            // Both in the worn colour set: the rest colour was captured at Awake, as the prefab authored it.
             if (LocalPickBorder)
-                LocalPickBorder.color = picked ? localPickBorderColor : _borderRestColor;
+                LocalPickBorder.color = ColorTrace.Retrace(ColorTrace.Ui, picked ? localPickBorderColor : _borderRestColor);
         }
 
         /// <summary>One party-pick avatar chip. Legacy: toggles its GameObject.</summary>
@@ -407,7 +490,7 @@ namespace CosmicShore.UI
                 if (locked && !_isLocked)
                     _originalBgColor = BackgroundImage.color;
 
-                BackgroundImage.color = locked ? lockedTintColor : _originalBgColor;
+                BackgroundImage.color = ColorTrace.Retrace(ColorTrace.Ui, locked ? lockedTintColor : _originalBgColor);
             }
         }
     }

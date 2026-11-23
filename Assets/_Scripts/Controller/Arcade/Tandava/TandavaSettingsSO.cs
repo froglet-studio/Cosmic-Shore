@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -213,6 +214,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("While the swarm feeds, bots strike its body this far BEHIND its centre (world), clear of the guards round " +
                  "its mouth.")]
         [Min(0f)] public float AiFlankBack = 70f;
+
+        /// <summary><see cref="AscensionPalette"/> as the worn colour set paints it (<see cref="ColorTrace"/>, role world,
+        /// alpha kept): what the cell eases into for the dance. The asset keeps the authored (Photic) colours.</summary>
+        public CellPalette WornAscensionPalette() => new()
+        {
+            MembraneBright = ColorTrace.Retrace(ColorTrace.World, AscensionPalette.MembraneBright),
+            MembraneDull = ColorTrace.Retrace(ColorTrace.World, AscensionPalette.MembraneDull),
+            NucleusEdge = ColorTrace.Retrace(ColorTrace.World, AscensionPalette.NucleusEdge),
+            NucleusStraight = ColorTrace.Retrace(ColorTrace.World, AscensionPalette.NucleusStraight),
+            Cytoplasm = ColorTrace.Retrace(ColorTrace.World, AscensionPalette.Cytoplasm),
+        };
 
         /// <summary>The narrator's line <paramref name="line"/>, with {0}/{1} filled from <paramref name="a"/>/<paramref name="b"/>
         /// - except a form's line, whose {0} is <paramref name="name"/> (the variant the match drew).</summary>

@@ -42,11 +42,23 @@ namespace CosmicShore.Gameplay
 
         [Header("Prism Status")] 
         public bool destroyed;
-        public bool devastated;
+        [SerializeField] bool devastated;
+        public bool Devastated => devastated;
 
         // Set transiently by Damage/Consume right before destruction so the destruction
         // SFX can tell a creature (fauna) kill from a generic block destroy. Reset on pool reuse.
         bool _destroyedByCreature;
+
+        /// <summary>The force that destroyed this prism (the destroyed channel's attacker name), or
+        /// null while it stands. An Ark's fall is credited to whoever took its LAST hull prism
+        /// (Docs/Pilots/ARTIFACTS.md §5). Reset on pool reuse.</summary>
+        public string DestroyerName { get; private set; }
+
+        /// <summary>Game time this prism was destroyed (meaningless while it stands).</summary>
+        public float DestroyedAt { get; private set; }
+
+        /// <summary>True when fauna took this prism (a creature kill credits nobody).</summary>
+        public bool DestroyedByCreature => _destroyedByCreature;
 
         // Set transiently by Damage the same way, so the destroyed-channel payload can say
         // whether DIRECT GUNFIRE killed this prism. It exists for the weapon that reloads by
@@ -61,6 +73,7 @@ namespace CosmicShore.Gameplay
         // Slice clears it again whether or not the hit destroyed the prism.
         Vector3 _sliceCutPoint;
         Vector3 _sliceCutNormal;
+        bool _burnedOut;   // transient, set only inside BurnOut: the death is drawn by PrismBurnView, so Explode raises no effect
         // Set transiently by DamageByCollision around its Damage call, the same way: this death is
         // prism movement's collision ABOVE level 1 of its ladder, so the factory draws the plain
         // explosion rather than a finer detail level (Docs/PRISM_ANIMATION.md §4.12).
@@ -338,6 +351,11 @@ namespace CosmicShore.Gameplay
                 if (scaleAnimator is not null) scaleAnimator.MaxScale = value;
             }
         }
+
+        /// <summary>The size this prism's prefab AUTHORED (its local scale before Awake zeroed it), unclamped: the
+        /// scale window trims <see cref="TargetScale"/>, never this. See PrismScaleAnimator.AuthoredTargetScale.</summary>
+        public Vector3 AuthoredScale =>
+            scaleAnimator && scaleAnimator.AuthoredTargetScale != Vector3.zero ? scaleAnimator.AuthoredTargetScale : transform.localScale;
 
         /// <summary>Widens this prism's scale-constraint window so an AUTHORED size survives
         /// <see cref="TargetScale"/>'s per-axis clamp. See PrismScaleAnimator.AdmitTargetScale.</summary>
@@ -983,6 +1001,10 @@ namespace CosmicShore.Gameplay
             _ownerHidden = false;
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            DestroyerName = null;         // pool reuse: the next life has no destroyer yet
+            _armourWear = 0f;             // pool reuse: the next life's armour is whole
+            DestroyedAt = 0f;             // pool reuse: recycled corpses come back (PrismRecycler); no stale death time
+            RecyclesWhenDestroyed = false; // pool reuse: each life opts in to recycling itself
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
             // (AdmitTargetScale) must not carry that ceiling into its next life.
@@ -1008,21 +1030,28 @@ namespace CosmicShore.Gameplay
             // IsShielded/IsDangerous are NOT cleared: spawners set those pre-Initialize
             // as the requested state for this life.
             if (prismProperties != null) prismProperties.IsSuperShielded = false;
+            // Pool reuse: EXPLOSIVE is never requested by a spawner (only a skim primes it, on a live prism), so a set
+            // flag here is always the previous life's - left set, this life would detonate its neighbours on death.
+            if (prismProperties != null) prismProperties.IsExplosive = false;
             // Pool reuse: this is also what INVALIDATES any super-shield deflection settle
             // still scheduled from the previous life. That callback compares its captured
             // stamp time against LastSuperShieldJiggleTime and no-ops on a mismatch, so
             // resetting here is what stops it resetting THIS life's culling envelope.
             _lastSuperShieldJiggleTime = float.NegativeInfinity;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
+            _carried = false;   // (and no parcel holds a pooled prism)
+            _sealed = false;    // (nor a Soliton Tunnel)
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
+            BookedShieldVolume = 0f; // the shell volume the books hold for this prism (VolumeLedger)
             IsSmallest = false;
             IsLargest = false;
 
             // SetupDestruction disables the scale animator (destroyed mass must stop scaling and
             // weighing). Re-arm it on pool-reuse creation so the re-minted prism grows in from
             // zero (continuity law) and GetCurrentVolume tracks again (volume is the spine).
-            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched;
-            // Restore() never routes through here and keeps its bookkept-volume fallback.
+            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched.
+            // Restore() never routes through here: it re-arms through RearmAfterRestore, keeping
+            // the size the prism died at and blooming it back in.
             if (scaleAnimator && !scaleAnimator.enabled)
             {
                 scaleAnimator.enabled = true;
@@ -1320,12 +1349,21 @@ namespace CosmicShore.Gameplay
         bool _creationQueued;
 
         /// <summary>
-        /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
-        /// exactly the completion the coroutine would have run (visibility, collider, growth stamp, created
-        /// event, spatial registration). For an OWNER that needs the prism real in the frame it asked - a swarm
-        /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
-        /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
+        /// Bumped by every <see cref="SetupDestruction"/>. <see cref="PrismRecycler"/> stamps it on its queue entry
+        /// and acts only while it still matches, so a Restore followed by a second death never lets the FIRST
+        /// death's entry recycle the prism early (and a pool reuse is caught by <c>destroyed</c> going false).
         /// </summary>
+        internal int DestroyEpoch { get; private set; }
+
+        /// <summary>
+        /// Opt-in for <see cref="PrismRecycler"/>'s environment route: this prism is free mass whose death nobody
+        /// else owns (a natural-death skeleton, <see cref="HealthPrism.LeaveAsSkeleton"/>), so once destroyed and
+        /// its death effect has played it goes back to <see cref="EnvironmentPrismPool"/>. Vessel-trail prisms do
+        /// not need it (their trail opts in, <see cref="Trail.RecycleDestroyedMembers"/>). Cleared on every
+        /// Initialize: each life states it again.
+        /// </summary>
+        public bool RecyclesWhenDestroyed { get; set; }
+
         /// <summary>
         /// Abandon this life's pending creation (spawn wait or the creation queue): the prism stays invisible,
         /// collider-off and unregistered until it is released or re-initialised. For mass leaving the world
@@ -1339,6 +1377,13 @@ namespace CosmicShore.Gameplay
             _creationQueued = false;   // its queue entry is dropped when the drain reaches it
         }
 
+        /// <summary>
+        /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
+        /// exactly the completion the coroutine would have run (visibility, collider, growth stamp, created
+        /// event, spatial registration). For an OWNER that needs the prism real in the frame it asked - a swarm
+        /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
+        /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
+        /// </summary>
         public void CompleteCreationImmediately()
         {
             if (destroyed || IsCreationComplete || (_creationRoutine == null && !_creationQueued)) return;
@@ -1459,12 +1504,60 @@ namespace CosmicShore.Gameplay
                 _colliderBeforeLodCull = blockCollider.enabled;
                 blockCollider.enabled = false;
             }
-            else if (!destroyed && _colliderBeforeLodCull)
+            else if (!destroyed && !_carried && _colliderBeforeLodCull)
             {
                 blockCollider.enabled = true;
             }
             _lodCulled = culled;
         }
+
+        bool _carried;
+        bool _colliderBeforeCarry;
+
+        /// <summary>
+        /// A payload parcel is riding a vessel (<see cref="PayloadCarrier"/>,
+        /// Docs/Pilots/ARTIFACTS.md §2): the prism keeps its mass, its domain and its place in the
+        /// spatial index, but its collider is held off so the hull carrying it never strikes its own
+        /// cargo. The LOD manager's restore respects the hold. Clear it before the prism goes back to
+        /// a pool.
+        /// </summary>
+        public void SetCarried(bool carried)
+        {
+            if (_carried == carried || !blockCollider) { _carried = carried; return; }
+            if (carried)
+            {
+                _colliderBeforeCarry = blockCollider.enabled;
+                blockCollider.enabled = false;
+            }
+            else if (!destroyed && !_lodCulled && _colliderBeforeCarry)
+            {
+                blockCollider.enabled = true;
+            }
+            _carried = carried;
+        }
+
+        /// <summary>True while a payload parcel holds this prism (<see cref="SetCarried"/>).</summary>
+        public bool IsCarried => _carried;
+
+        bool _sealed;
+
+        /// <summary>
+        /// This prism is inside a Soliton Tunnel, in another dimension until it comes out (<see cref="SolitonIsolation"/>;
+        /// Yash, 2026-11-20: "anything inside a wormhole won't interact with anything outside the hole"). Its collider is
+        /// held off as a carried parcel's is (<see cref="SetCarried"/>), and nothing damages, consumes, gnaws, vanishes or
+        /// steals it: <see cref="Damage"/> is the funnel every damage source passes, so the one gate there covers rounds,
+        /// blasts, blades, rams, burns and sweeps. It keeps its mass and its place in the spatial index. Whoever seals it
+        /// (<c>MeerkatSwallow</c>) lets it out; a pooled prism is never sealed.
+        /// </summary>
+        public void SetSealed(bool on)
+        {
+            if (_sealed == on) return;
+            _sealed = on;
+            SetCarried(on);
+        }
+
+        /// <summary>True while a Soliton Tunnel carries this prism (<see cref="SetSealed"/>).</summary>
+        public bool IsSealed => _sealed;
 
         /// <summary>True while this prism's collider is enabled (LOD telemetry).</summary>
         public bool ColliderEnabled => blockCollider && blockCollider.enabled;
@@ -1497,6 +1590,29 @@ namespace CosmicShore.Gameplay
         /// compute cost moves from O(all prisms)/recompute to O(growing)/frame.
         /// </summary>
         internal float CachedVolume { get; private set; }
+
+        /// <summary>
+        /// The shield shell volume the volume books hold for this prism (<see cref="VolumeLedger.ShieldExtra"/>):
+        /// booked as CREATED when a shield goes up and DESTROYED when it comes off, re-booked when the prism grows,
+        /// and carried away by a steal or a destruction (<see cref="PrismStats.ShieldVolume"/>).
+        /// </summary>
+        public float BookedShieldVolume { get; private set; }
+
+        /// <summary>
+        /// Brings <see cref="BookedShieldVolume"/> up to this prism's shield state and box, and reports the change
+        /// on the volume-modified channel so the owner's books move by it. Called on every shield transition
+        /// (<see cref="PrismStateManager"/>) and when a growth settles (<see cref="PrismScaleAnimator"/>).
+        /// </summary>
+        internal void BookShieldVolume()
+        {
+            if (destroyed || prismProperties == null) return;
+            float extra = VolumeLedger.ShieldExtra(Mathf.Max(prismProperties.volume, 0f),
+                prismProperties.IsShielded, prismProperties.IsSuperShielded);
+            float delta = extra - BookedShieldVolume;
+            if (Mathf.Abs(delta) < 1e-5f) return;
+            BookedShieldVolume = extra;
+            if (scaleAnimator) scaleAnimator.RaiseShieldVolumeDelta(delta);
+        }
 
         /// <summary>
         /// Recompute <see cref="CachedVolume"/> from the live transform. Mirrors
@@ -1625,6 +1741,16 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = volumeAtDeath;
 
             destroyed = true;
+            DestroyerName = attackerPlayerName;
+            DestroyedAt = Time.time;
+
+            // EXPLOSIVE: this death takes its prismscape neighbours with it, a beat later (PrismExplosiveChain). Spent
+            // here - read and cleared before anything else can run - so one prism fires its chain exactly once.
+            if (prismProperties.IsExplosive)
+            {
+                prismProperties.IsExplosive = false;
+                PrismExplosiveChain.Fire(this, _lastDestructionPosition, destructionScale, domain, attackerPlayerName);
+            }
             _creationQueued = false;   // as the waiting coroutine did: killed while waiting never completes (a Restore registers itself)
             devastated = devastate;
 
@@ -1652,10 +1778,19 @@ namespace CosmicShore.Gameplay
                     AttackerName = attackerPlayerName,
                     OwnDomain = Domain,
                     DestroyedByGunfire = _destroyedByGunfire,
+                    ShieldVolume = BookedShieldVolume,
+                    WasSuperShielded = prismProperties.IsSuperShielded,
                 });
             }
+            BookedShieldVolume = 0f; // destroyed with the prism; a Restore books its shell again
 
             _lastDestructionScale = destructionScale;
+
+            // Dead mass goes back to its pool once the death effect has played out, instead of living on
+            // forever as a hidden, active GameObject in its trail (the idle-Lavalamp leak). The recycler decides
+            // whether an owner keeps this corpse; see PrismRecycler for who is and is not recycled.
+            DestroyEpoch++;
+            PrismRecycler.Enqueue(this);
             return null;
         }
 
@@ -1694,6 +1829,10 @@ namespace CosmicShore.Gameplay
             var kind = PrismKinds.Of(this);
 
             SetupDestruction(domain, playerName, devastate);
+            // A BURNOUT is already drawn - the prism burned away on screen (PrismBurnView) or, beyond the burn's
+            // draw distance, simply goes back to the pool - so no debris and no per-prism SFX (a Fulmen strike
+            // burns out dozens at once). Everything the death MEANS happened in SetupDestruction.
+            if (_burnedOut) return;
             PlayDestructionSFX();
 
             // A supplied debrisSpeedLimit marks impactVector as a TRUE velocity (see
@@ -1774,6 +1913,7 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f, bool byGunfire = false)
         {
             if (destroyed) return;
+            if (_sealed) return;   // inside a Soliton Tunnel: nothing in the world reaches it (SetSealed)
             // A SILENCED attacker's hit on anything but their own domain's mass deflects
             // (VesselSilence, Docs/ElementalAbilitySystem/SILENCE.md): the weapon still connects and
             // the prism still answers with the deflection wobble, so the shot reads as blocked rather
@@ -1861,9 +2001,66 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void Vanish(string playerName)
         {
-            if (destroyed) return;
+            if (destroyed || _sealed) return;
             if (DeflectsSilenced(playerName, 0f)) return;
             SetupDestruction(Domain, playerName, devastate: true);
+        }
+
+        // Armour wear from creature bites (GnawArmour). Local to the simulation that runs the bites; never replicated:
+        // the crack itself travels as an ordinary shield drop (DeactivateShields).
+        float _armourWear;
+
+        /// <summary>Armour points a super-shield takes to crack under creature bites (a shield takes 1).</summary>
+        public const float SuperArmourPoints = 2f;
+
+        /// <summary>Armour worn so far this life, in armour points (0 = whole).</summary>
+        public float ArmourWear => _armourWear;
+
+        /// <summary>
+        /// A creature's bite on an ARMOURED prism (shielded or super-shielded): wears the armour by
+        /// <paramref name="bite"/> armour points and returns true when it just CRACKED, after which the prism is plain
+        /// mass and the caller consumes it. A shield cracks at 1 point, a super-shield at <see cref="SuperArmourPoints"/>.
+        /// Every bite that does not crack reads as the deflection wobble ("being gnawed").
+        ///
+        /// <para>The one creature path through armour (the Ark escort; Garrett, 2026-10-31: "fauna should attack and
+        /// actually eat the Ark's shielded and super-shielded plates"). Fenced: only <c>Fauna.BiteMass</c> calls it, and
+        /// only for a species whose shield / super-shield bite is above 0 in a cell whose <c>ArmourIsFood</c> is set (the
+        /// escort sets it on its own worlds). Vessels, explosions and abilities still meet
+        /// <see cref="AbsorbSuperShieldHit"/> unchanged. Recorded in Docs/ECOSYSTEM.md §0.</para>
+        /// </summary>
+        public bool GnawArmour(float bite)
+        {
+            if (destroyed || _sealed || bite <= 0f) return false;
+            var props = prismProperties;
+            if (props is not { IsShielded: true } && props is not { IsSuperShielded: true }) return false;
+            _armourWear += bite;
+            float need = props.IsSuperShielded ? SuperArmourPoints : 1f;
+            if (_armourWear < need)
+            {
+                StampDeflection(0f);
+                return false;
+            }
+            _armourWear = 0f;
+            DeactivateShields();   // the sanctioned break: both flags clear, the shield-state funnel re-files the prism
+            return true;
+        }
+
+        /// <summary>
+        /// <see cref="Damage"/>, delivered by FIRE burning out (<see cref="PrismBurnManager"/>): same gates, same shield
+        /// semantics (a shielded prism sheds its shield and survives), same scoring - but if it dies, the death raises
+        /// no explosion and no sound, because <c>PrismBurnView</c> already drew it burning away.
+        /// </summary>
+        public void BurnOut(Vector3 impactVector, Domains domain, string playerName)
+        {
+            _burnedOut = true;
+            try
+            {
+                Damage(impactVector, domain, playerName);
+            }
+            finally
+            {
+                _burnedOut = false;
+            }
         }
 
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
@@ -1871,7 +2068,7 @@ namespace CosmicShore.Gameplay
             // A consume carries no impact vector — only the suction sink — so the deflection
             // is stamped at the floor magnitude rather than derived from a direction that
             // describes where the mass was being pulled, not how hard it was struck.
-            if (destroyed) return;
+            if (destroyed || _sealed) return;
             if (DeflectsSilenced(playerName, 0f)) return;
             if (AbsorbSuperShieldHit(0f)) return;
             // Impact-less on purpose, for the same reason the deflection above is stamped
@@ -1952,6 +2149,26 @@ namespace CosmicShore.Gameplay
         }
 
         // State Management Methods
+
+        /// <summary>True while this prism is primed to take its prismscape neighbours with it when it dies.</summary>
+        public bool IsExplosive => prismProperties is { IsExplosive: true };
+
+        /// <summary>
+        /// Primes this prism EXPLOSIVE (the Manta's Space skim): its death destroys the prisms adjacent to it in its
+        /// prismscape, which carries on through every explosive neighbour (<see cref="PrismExplosiveChain"/>). The prism
+        /// is lit by <paramref name="lift"/> so a primed run reads before it goes - a look on the machine that primed it,
+        /// like every colour lift. False when the prism is dead, already explosive, or the primer is silenced.
+        /// </summary>
+        public bool MakeExplosive(string primerName, float lift, float fadeSeconds)
+        {
+            if (destroyed || prismProperties == null || prismProperties.IsExplosive) return false;
+            // A silenced pilot's abilities arm nothing (VesselSilence) - the same gate danger uses.
+            if (VesselSilence.SuppressesDanger(primerName)) return false;
+            prismProperties.IsExplosive = true;
+            if (lift > 0f) SetColorLift(Mathf.Max(_colorLift, lift), fadeSeconds);
+            return true;
+        }
+
         public void MakeDangerous()
         {
             // A silenced pilot's abilities turn nothing dangerous (VesselSilence). Danger that is
@@ -1998,6 +2215,7 @@ namespace CosmicShore.Gameplay
         {
             // A silenced pilot steals no prism (VesselSilence) - the steal deflects like a hit.
             if (DeflectsSilenced(playerName, 0f)) return;
+            if (_sealed) return;   // inside a Soliton Tunnel (SetSealed): its carrier steals before it seals
             teamManager.Steal(playerName, domain, superSteal);
         }
 
@@ -2089,6 +2307,11 @@ namespace CosmicShore.Gameplay
                 blockCollider.enabled = true;
                 SetRenderVisible(true);
                 destroyed = false;
+
+                // SetupDestruction turned the scale animator off; a restored prism grows again
+                // like any live one (an Urchin's ride restores then grows) and blooms back in
+                // from zero on the clock at the size it died at (Docs/PRISM_ANIMATION.md §3.3).
+                if (scaleAnimator) scaleAnimator.RearmAfterRestore();
 
                 // Restored mass weighs again — re-seed the cache (destroyed=false now).
                 RefreshVolumeCache();

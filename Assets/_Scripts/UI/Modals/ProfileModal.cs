@@ -446,9 +446,9 @@ namespace CosmicShore.UI
                 sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.Identity.AvatarId);
             }
             // Fallback: first icon in the locally-wired list if the service isn't ready.
-            else if (profileIconList != null && profileIconList.profileIcons is { Count: > 0 })
+            else if (profileIconList != null && profileIconList.ProfileIcons is { Count: > 0 })
             {
-                sprite = profileIconList.profileIcons[0].IconSprite;
+                sprite = profileIconList.ProfileIcons[0].IconSprite;
             }
 
             if (sprite != null)

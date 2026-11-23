@@ -21,10 +21,12 @@ namespace CosmicShore.Core
         public override string EditorSummary => acceptedInputs == null || acceptedInputs.Count == 0 ? "Any input" : string.Join(", ", acceptedInputs);
 
         [Tooltip("Control inputs that satisfy this step. Empty = any input completes it.")]
-        public List<InputEvents> acceptedInputs = new();
+        [SerializeField] List<InputEvents> acceptedInputs = new();
+        public List<InputEvents> AcceptedInputs => acceptedInputs;
 
         [Tooltip("Haptic pulse when the player performs the correct input.")]
-        public HapticType successHaptic = HapticType.ButtonPress;
+        [SerializeField] HapticType successHaptic = HapticType.ButtonPress;
+        public HapticType SuccessHaptic => successHaptic;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

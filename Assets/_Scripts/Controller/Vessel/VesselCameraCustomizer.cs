@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay
             if (flags.HasFlag(CameraMode.Orthographic) &&
                 _cameraCtrl is CustomCameraController cccOrtho)
             {
-                cccOrtho.SetOrthographic(true, settings.orthographicSize);
+                cccOrtho.SetOrthographic(true, settings.OrthographicSize);
             }
         }
         

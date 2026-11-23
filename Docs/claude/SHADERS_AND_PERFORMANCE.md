@@ -53,6 +53,14 @@ motion, give it a volume. A screen-space ring, a label or a word over it is the 
   gives every orthographic Game camera its own volume stack and holds `PaniniProjection.distance` at 0 in it. Panini is
   a perspective lens. On a flat picture it only bows straight edges. Bloom, the tonemapper and the rest are untouched.
   `OrthographicLens.AllowPanini(cam, true)` opts a camera out; nothing does.
+- **A 2D camera fades the sky's Voronoi cell net** (Garrett 2026-10-25: "the characters with an orthographic view like
+  the shrimp are doing something weird with the voroni effect on the skybox"; "call these 2d cameras"). A 2D camera is
+  one that slides and zooms across a plane: the Pistol's off-axis side view, the Wrasse's kite board, the Jacks' herding
+  view. The sky follows only rotation, so through those lenses its cell net sat magnified and glued to the screen.
+  `TwoDCameraSky.Register(cam)` (in `Crew/CrewViews.cs`) sets the global `_SkyCellOverlaySuppress` to 1 as that camera
+  begins rendering and 0 for every other camera; `HyperSeaSkybox.shader` multiplies its cell overlay by
+  `1 - _SkyCellOverlaySuppress`. Stars, nebulae and the galactic band stay. Register every new 2D camera and unregister
+  it on dispose. The baked MobileLow sky carries its cells in its texture and is not faded.
 - **2D marks in an orthographic view skip its post-processing.** Icons, dots, rings, cords and petals are drawn
   through an `UnprocessedOverlay` (`Assets/_Scripts/Utility/`): an overlay camera on the view's URP stack with
   post-processing off, seeing only the otherwise empty `3D UI` layer. Draw with `RenderParams.camera = overlay.Camera`
@@ -69,6 +77,17 @@ motion, give it a volume. A screen-space ring, a label or a word over it is the 
   `PipViewFrame` and calls `Show(smallCamera)` each frame (null hides it).
 
 ### HLSL / Shader Graph
+
+- **A watery or glassy surface, bent space, or a lit underground wall**: start from the Meerkat family and its recipe,
+  `Docs/Shaders/WATERY_GLASS.md` (the HLSL traps of porting an artifact's GLSL are listed there).
+
+- **A render pass that redraws a renderer with its own materials picks each material's pass the way URP does**
+  (2026-11-10, `BrittleStarRingSmearPass.ForwardPass`): one tagged `UniversalForward`, `UniversalForwardOnly` or
+  `SRPDefaultUnlit`, else the first pass with NO LightMode tag, which URP draws as `SRPDefaultUnlit`. An Unlit Shader
+  Graph writes its forward pass untagged (`// LightMode: <None>`), and the shared vessel materials wear one
+  (`VesselGraph`: 14 `.mat` files on 2026-11-10, the domain, engine and screen materials among them), so a lookup by
+  tag alone finds no pass and the redraw comes out empty with no error. Count such a pass as drawn only when
+  it has something to draw.
 
 - Custom Function nodes use HLSL files stored in a consistent location
 - Function signatures must follow Shader Graph conventions (proper `_float` suffix usage, sampler declarations)

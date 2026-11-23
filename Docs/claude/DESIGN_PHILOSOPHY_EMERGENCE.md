@@ -73,16 +73,17 @@ ones.
   every black hole — pulls them (`BLACK_HOLE.md`, `STOAT_DIPOLE.md`). It extends **Prisms** rather
   than sitting beside them: mass that was static is now mass with a path. **The expectations**
   (`PrismMotion`, `Docs/PRISM_MOTION.md`): (1) **a moving prism that runs into another prism
-  destroys BOTH** — scored to the force behind the motion, devastating (an ordinary shield is no
-  answer); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
+  destroys BOTH** — scored to the force behind the motion, devastating; (1a) **shielded prisms bounce**
+  (Garrett, 2026-10-27; LOCKED 2026-10-28): a collision a SHIELDED prism is part of, mover or struck, destroys neither, and the
+  movers rebound off the contact (`PrismBounce`); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
   their exact oriented BOXES when few prisms move (a plough throw, a sparse field), as the SPHERES of
   their volumes when many do — a three-level LADDER by moving count (`PrismMotionConfig`: level 1 ≤ 64
   boxes + the high-res destruction detail level (the silver gnomon cut, `PRISM_ANIMATION.md` §4.12); level 2 ≤ 256 boxes + the explosion;
   level 3 spheres + the explosion; down at three quarters of each line). The count changes the
   precision and the look, never the rule. Neighbours already touching when the step begins — a trail falling
   together — are at rest, not a collision; (3) **super-shielded mass is
-  the one survivor**: it is indestructible, so it deflects and only the mover goes, and no force
-  moves it in the first place; (4) **the move is final the frame it is made** — collider, spatial
+  never destroyed**: it deflects, an unshielded mover goes against it and a shielded one bounces, and no
+  force moves it in the first place; (4) **the move is final the frame it is made** — collider, spatial
   index and shell agree with the transform (the movers contract, `PRISM_ANIMATION.md` §3.6) — so a
   moving prism is always tested where it actually is. **What is NOT a moving prism**: one POSED by
   its owner every frame — a creature's body, a builder setting a stone, a growing plant, a
@@ -97,7 +98,18 @@ ones.
   box budget, schedules `PrismMotion.ContactJob` (spheres)** — never its own overlap test.
 - **Flora & Fauna** — populations that live on and respond to the
   fundamentals above (e.g. fauna attraction to prisms, flora growth on
-  cells).
+  cells). **A fauna's ROLE is not fixed by its kingdom** (Garrett, 2026-10-31, `Docs/ECOSYSTEM.md` §66): besides the
+  CONSUMERS (`FaunaDiet.Herbivore` eats prism mass, `Predator` eats herbivores) there are **POLLINATORS**
+  (`FaunaDiet.Pollinator`, the bees), fauna whose effect is PRODUCTIVE. A pollinator eats no flora and no mass; its
+  visits hasten the flora's own growth (`Flora.Hasten`), what it carries is a TRANSFER (mass stung off opposing fauna,
+  built into its home), and its population is raised by its HOME, a flora (`BeeHiveFlora`) that takes a FLORA slot in
+  the spawn profile and the flora budget. So a pollinator population sits on the producer side of the ledger, like a
+  plant, and never starves. It is still PREY (Garrett, 2026-11-01: predators eat bees; `FaunaDiets.IsPrey`), it
+  pollinates flora of every domain, and its home is built from all three domains, each comb cell in the domain of the
+  mass that paid for it (a transfer domain for domain). Run through the curation process as an EXTENSION of this entry, not a new fundamental:
+  it is a third role inside Flora & Fauna, composing with Mass (transfer, never minted), Domain (it defends its own),
+  Elementals (one heart per bee, its hive's element), Cells (the production freeze and caps) and Vessels (the Ratel's
+  raided hive and the Honeyguide's Mass power found hives through `BeeHiveFlora.SeedAt`).
 - **Vessels** — the player/AI actors whose class-specific abilities compose
   with the fundamentals above.
 - **Toys** — interactive world-space stations the player's **Vessel** flies into,
@@ -316,7 +328,7 @@ ones.
   `Docs/LIT.md`.
 - **Ark** — *a mothership: a prism-bodied home that travels the hypersea, wears a domain, and
   lives or dies by the food web.* Added at the prompter's explicit request as the anchor of the
-  highest-level gameplay arc — faction missions, where players venture into the hypersea for
+  highest-level gameplay arc — faction missions (now **Voyages**, `Docs/Voyages/VOYAGES.md`), where players venture into the hypersea for
   story-driven reasons with galactic consequences — and derisked first through the **Arkway**
   toy (the cellular Wanderway: a corridor of three satellite **Cells**, previous/current/next,
   that an `Ark` sails at its own unhurried pace while players are leashed to its side). Its
@@ -336,6 +348,39 @@ ones.
   abilities); it imposes no decay and no timer on anything else. Code: `Ark`
   (`_Scripts/Controller/Environment/`), first vehicle the Arkway — the **Wander** toy's With Ark choice (`WanderToy`/`ArkwayRun`/`CellConveyor`).
   Record: `Docs/ECOSYSTEM.md §41`, `Docs/ToySystem/ARCHITECTURE.md` § "Arkway".
+- **Soliton** — *a standing tunnel through space that keeps its shape, carries whatever enters one mouth out of the
+  other, and is seen only by the way it bends the world.* Added at the prompter's explicit request (Garrett,
+  2026-10-27: "the meerkat should be producing a new fundamental (solitons)"). **Partly built**: the Meerkat's wormhole
+  (`R_VesselActions/MEERKAT.md`) is the first maker, and its surface area and swallow are in Unity (Yash's round 23,
+  `MeerkatSwallow`, `SolitonTunnelShapeMath`); the rest is design, `Docs/Studios/MEERKAT.md` § Garrett's direction, whose
+  element definition is LOCKED (Garrett, 2026-10-28). The curation checks:
+  **A soliton is a structured vector field** (Garrett, 2026-11-16: "we can generalize solitons to structured vector fields. Thus what we just detailed are tubular solitons, but the pistol's vortex ring should be a moving ring soliton. the stoats source and sink should be point solitons."). Three shapes so far: the **tubular** soliton (the Meerkat's tunnel, everything above and the two lines below), the **moving ring** soliton (the Pistol's vortex ring) and the **point** soliton (the Stoat's source and sink). The ring and the points are not built as solitons yet.
+  **A tubular soliton is one way** (Garrett, 2026-11-16: "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited"): its exit mouth is its only source, its entrance mouth its only sink, and its wall lets anything in from outside but nothing out.
+  **Riding a tubular soliton is a waterslide** (Garrett, 2026-11-16: "also solitons should feel like a waterslide where there is a sense of "down" and sliding up and down the walls like a skater in a halfpipe. down should be defined by their entering orientation and controlling the vessel should feel like a fun sense of control over riding up and down the walls of the water slide. some mix of going with the flow and deciding how to roll with it.").
+  1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
+  2. **Reach.**
+     - The Meerkat's Space ability makes one.
+     - Any vessel rides one.
+     - Prisms are carried through one.
+     - The Meerkat's Time passive is defined over every soliton, whoever made it.
+     - The FLUME pilot sight lights them.
+     - AI routing can take one as a shortcut.
+  3. **Composition.**
+     - **Mass**: it moves prisms and never deletes them, so conservation holds.
+     - **Prism movement**: a prism it fires is a moving prism under the one rule.
+     - **Domain**: anyone may ride it, and what it fires is scored to its maker.
+     - **Elementals**: its maker's levels set its size (Space) and the ride (Time).
+     - **Vessels**: riders.
+     - **Flora & Fauna**: whether creatures ride one is open.
+     - **Switch**: a soliton aimed through a ring threads it.
+     - **Cells**: a soliton can join two places in one.
+  4. **Extension over addition.** It is not made of prisms, so it is not a prismscape. Toys come closest, since you fly
+     into one, but a toy is a station placed in the world while a soliton is made by a vessel, mid-flight, wherever it
+     points.
+  5. **Weight.** Agreed by the prompter, who asked for it.
+
+  Its look is the contour-field lens (`SolitonTunnelLensPass`): no grid, no surface, only bent space, and the
+  placement grid is its maker's alone. Its pilot sight is **FLUME** (`Docs/Pilots/CALLSIGNS.md`).
 
 ### Process for curating fundamentals
 
@@ -479,3 +524,10 @@ local workaround.
 Name the fundamentals involved, describe how each candidate solution
 interacts with them, and prefer the solution that leaves the fundamentals
 intact and more expressive for future features.
+
+
+## The principles ledger and the design brief (2026-11-07)
+
+The fundamentals above are the WHY; the owners' stated rules, in their words with their source lines, are the
+ledger `Docs/claude/PRINCIPLES.md` (`Tools/Build/principles.py --area <area>`; drafted, waiting on each owner).
+A feature is designed against both on one page before it is built: `Docs/claude/DESIGN_BRIEF.md`.

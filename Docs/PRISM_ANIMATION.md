@@ -180,7 +180,7 @@ per-tick `smoothstep` color lerp → `PrismRenderService.SetColors` or MPB write
 | Explosion debris | `Prism.Damage` → `Explode` → `PrismExplosion` | `PrismEffectsManager.ProcessExplosions`: per-frame Burst job computing `pos = p₀ + t·v`, `amount = speed·t`, `opacity = 1 − t/dur` → per-frame `transform.position` + `SetExplosionParams`/MPB writes (`PrismEffectsManager.cs:242-331`). Every output is linear in t. | ❌ |
 | Implosion / consume | `Prism.Consume` → `Implode` → `PrismImplosion` | `ProcessImplosions`: per-frame progress `±t/dur` + per-frame moving-target `RefreshConvergence()` → `SetImplosionParams`/MPB | ❌ (progress) · ⚠ (moving target — see §1) |
 | Destruction state | `SetupDestruction` | One-shot: collider off, render off, spatial `MarkDestroyed`, volume zeroed | ✅ |
-| Restore | `Prism.Restore` | One-shot re-show (`SetRenderVisible(true)`) | ✅ by this law (⚠ it pops in — a continuity-law gap to fix WITH clock-material bloom, not with a CPU animation) |
+| Restore | `Prism.Restore` | One-shot re-show (`SetRenderVisible(true)`) plus, since 2026-10-29, `PrismScaleAnimator.RearmAfterRestore`: the animator `SetupDestruction` turned off is re-armed (a restored prism used to be unable to grow ever again, so the Urchin's restore-then-grow payoff never grew anything) and ONE clock grow stamp blooms it from zero to the size it died at | ✅ by this law; the pop-in gap is closed by the clock bloom (`PrismRestoreTests`) |
 
 ### 3.4 Shields (exotic geometry)
 
@@ -2452,8 +2452,8 @@ sword landed.** Two independent reasons, and both are wiring rather than design:
 
 1. Four of the five skimmer containers (Dolphin, Manta-overcharge, Sparrow, Squirrel) carry **no
    prism-damage effect at all**, so they never call `Prism.Damage` and cannot reach the gate.
-2. The fifth — `RhinoForceFieldSkimmerImpactorDataContainer` — carries
-   `RhinoSkimmerDamagePrismEffectSO`, which handles super-shielded contact in its own branch
+2. The fifth — `SwordfishForceFieldSkimmerImpactorDataContainer` — carries
+   `SwordfishSkimmerDamagePrismEffectSO`, which handles super-shielded contact in its own branch
    (`PopSuperShield` on an energized blade, `NotifyPopDenied` + `BounceBack` otherwise) and
    **returns before any `Damage` call** either way.
 
@@ -2599,7 +2599,7 @@ the three time constants, the dissolve window, separation, opening angle, drift,
 clamp, the budget); the time constants and window are written onto a runtime CLONE of the material,
 so the shared material asset is never written at runtime. `PrismSliceMaterial` owns the look
 (fresnel, fresh-cut colour and cooling time, seam width, cut-face glow and shading, dissolve noise,
-ember band/glow/whiteness). `RhinoSkimmerDamagePrismEffectSO.sliceDestroyedPrisms` is the A/B switch.
+ember band/glow/whiteness). `SwordfishSkimmerDamagePrismEffectSO.sliceDestroyedPrisms` is the A/B switch.
 
 **Proof.** `Tools/Shaders/verify_prism_slice.py` — (A) clang++ compiles and RUNS the shipped HLSL:
 identity unstamped, the kept side bit-identical, every far vertex on the cut and inside the prism,
@@ -2691,7 +2691,7 @@ still snaps and screams through `PrismClockDiagnostics.WarnNoRenderEntity`, exac
   above. NOT verified: nothing has run in a browser or in the editor — see `Docs/WEBGL_TOYBOX.md` §4 for the
   in-browser checks.
 
-### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21)
+### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21; the suction on the destruction's ladder, round 15, 2026-10-25)
 
 **Current design (round 2, the designer, 2026-10-14):** *"lets do without the white edge on the dissolves
 and the glitter; the interior brighter color will create plenty of contrast already. in this scheme
@@ -2709,6 +2709,49 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 |---|---|---|---|
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+| **Suction** (every consumption, `PrismFactory.SpawnImplosion`; round 15) | LEVEL 0 — the suction kind on the cut's depth 0 (the explosion's 24 wedges); refused, the SuctionGraph's implosion | the destruction's DEPTHS 1–2, same lines | its DEPTHS 3–4, same lines |
+
+**Round 15 (Garrett, 2026-10-25) — the suction comes apart on the destruction's cut and ladder:** *"lets use the silver
+gnomen triangles that are used on the explosion shader on the suction shader. Use the same LOD system as well."*
+
+- **The SUCTION kind** (kind 7, `PrismBurstSuctionPose`, its own program `_BURST_SUCTION`): a consumed prism is drawn
+  on the destruction's own mesh at the destruction's own depth (`PrismInteractionLod.TrySuction` runs `PickDepth`,
+  the crowding steps and the triangle fit exactly as `TryDestruction` does), and every silver triangle and gnomon is
+  drawn into the eater over the implosion's authored life (`PrismImplosion.prefab` `implosionDuration`, 2 s, read
+  through `PrismDebris.TryGetImplosionDuration`). **Round 15b (Garrett, the same day): *"i was thinking it would detatch
+  one triangle at a time along the current faces. so we would see the triangle spaced out along their path. so
+  instead of one whole face that face simply separates its triangles as it is pulled in."*** Every face stays whole
+  and lets go of its triangles ONE AFTER ANOTHER, starting from the face's point nearest the eater and spreading
+  across it, over `suctionStagger` (0.7) of the life; the face toward the eater starts first and the face turned
+  away `suctionFaceLag` (0.2 of the order) later, the SuctionGraph's face order kept as a lag instead of a block. A
+  gradient noise bends the peel front a little (`suctionOrderNoise` 0.03). Each triangle's own trip (the remaining
+  quarter of the life) is eased in as u^`suctionAcceleration` (1.4) along a curve lifted `suctionLift` (0.35 R) off
+  its face, wound `suctionSwirl` (0.25 turns, its hand per suction) about the line to the eater, tumbling
+  `suctionSpin` (0.75 turns, the destruction's size spin and cap), shrinking over the last `suctionShrink` (0.3) of
+  the trip so it is gone exactly AT the eater; with the trips overlapping, each face feeds a stream of triangles
+  strung out along the path in. Every fragment is in by 95% of the life. (Round 15's first cut ordered the whole
+  prism by how far each piece sat toward the eater, so the face toward it went as one block.)
+- **The moving target, unchanged**: the eater swims while it feeds, so the sink is RETAINED, not snapshotted — the
+  burst carrier's one post-spawn write, `PrismCollisionBurst.RefreshSuctions` → `PrismRenderService
+  .RefreshSliceDebrisSinkBatch`, one float4 (`_SliceCentre`, unused by every other burst kind) per live suction per
+  frame, the §1 exception exactly as `PrismDebris.RefreshImplosions` writes the SuctionGraph's `_Location`. The
+  stamp-time sink rides `_SliceAxis` and fixes the order and the vortex's axis, so a fragment already on its way
+  never changes its turn. An eater that dies mid-suction freezes the sink where it was last seen.
+- **Level 0 and the budget**: far away, off screen or over the detail budget a suction is the same kind on depth 0
+  (`suctionAsFragments`, its own cap `maxLiveSuctions` 1,024, outside the detail budget like the explosions); close-up
+  suctions share the detail budget (`maxLiveBursts`, `maxLiveTriangles`) with destructions and sheds. Any refusal —
+  config off, budget, the render service down, a device without Entities Graphics — draws the SuctionGraph's implosion,
+  so a consumption never loses its visual. **Grow** (the Sparrow's ReverseSuction, `PrismType.Grow`) is untouched: it
+  still runs the pooled SuctionGraph, which owns its completion callback.
+- **Proved offline**: `verify_prism_collision_burst.py` § S — the first frame is the prism, every fragment rigid up to
+  its shrink, every pose inside `PrismBurstSuctionReach` about the LIVE sink (= `PrismCollisionBurst.SuctionReach`, the
+  culling box grown when the sink wanders), every fragment at the live sink by 95% of the life; on each face the
+  triangles let go from its point nearest the sink outward (S6: every same-face pair in order) and one at a time (S7:
+  each face's departures spread over at least half its share, under 2% of consecutive ones at one instant; measured
+  0.79 and 15 of 17,784); negative controls: a random order (S6 fires), a face letting go whole (S7 fires), the sink
+  snapshotted at the stamp (S5 fires). Every pass compiles with
+  `_BURST_SUCTION`, plain and DOTS-instanced. The Collision Burst Lab does not draw the suction yet (its page is rebuilt
+  from the shipped HLSL; its JS port has no suction kind).
 
 **Round 14 (Garrett, 2026-10-23) — the skin is the OLD domain on both sides:** *"the stealing effect is supposed to
 curl the original domain and reveal the stolen domain underneath, but i am seeing it immediately change domain color
@@ -2901,7 +2944,9 @@ pose, the flight, the kind — so it is §1's ordinary shape: one stamp per pris
 off `_PrismClock`, one batched retirement. It rides the slice's carrier unchanged
 (`PrismRenderService.SpawnSliceDebrisBatch`, the `Slice` override set, its `_SliceTiming` and
 `_SliceDrift` channels) with its own mesh and material, so it added no ECS component and no render-service
-code. No per-frame CPU write to any burst, no §1 exception, no residency swap (born on the dense mesh).
+code. No per-frame CPU write to any burst, no §1 exception, no residency swap (born on the dense mesh). (Round 15's
+SUCTION kind is the one exception since: its live sink, one `_SliceCentre` float4 per live suction per frame through
+`PrismRenderService.RefreshSliceDebrisSinkBatch` — see the round-15 entry above.)
 
 **The mesh is the slice's, UNWELDED.** `HighPolyPrismMesh.GetUnwelded(10)`: the identical solid, 1,200
 triangles, every triangle owning its own three vertices, plus TEXCOORD2 = the triangle's centroid in
@@ -3015,6 +3060,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C20 | Prism-movement collisions die as the ordinary explosion at every load | ✅ SHIPPED 2026-10-14 (§4.12) — at ladder level 1 a collision death is a COLLISION BURST: one pure render entity per prism on the unwelded `HighPolyPrismMesh` (s10), four kinds (shatter / bloom / unravel / glitter) off one stamp on the slice's carrier, sharing the explosion's flight, life, palette, size and linear fade (the Collision Burst Lab measured that this does NOT yet squint as the explosion — 0.33–0.47 against a 0.08 band; decision open, `Docs/Studios/COLLISION_BURST_LAB.md`); **round 2 (same day): game-wide DETAIL LEVELS** — destruction explosion → shatter → glitter and stealing grade → bloom / unravel / flake shed, by size on screen, no white accents (§4.12, `PrismInteractionLod`); explosion fallback on any refusal, budget 57,600 triangles / zero colliders. Proven offline by `verify_prism_collision_burst.py` (execution, 4 negative controls, glslang) and `PrismCollisionBurstTests`; **not run in the editor** |
 | C21 | The five lab-only burst kinds (shatter, bloom, unravel, glitter, flake) still ship in the burst shader's every-kind program | ⬜ OPEN (decision) — since round 11 the game draws destructions with the fragment-only program and steals with the roll-only one (`multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL`); the every-kind program is reached in the game only if a shed weight other than `rollWeight` is raised above 0 (all 0 in `PrismInteractionLodConfig.asset`). The kinds' code (~400 HLSL lines, `PrismBurstShatter` / `Bloom` / `Unravel` / `Flake` and the glitter tiling) stays for the Collision Burst Lab's Archive comparisons. Decide: keep them reachable (design options) or strip them from the game shader and keep them lab-only. Measure first: the every-kind program's register count against the fragment-only one (a shader compile report in the editor). |
 | C22 | The destruction cut's meshes still carry the explosion's UV0 (`HighPolyPrismMesh.PopulateCut`, `PrismSierpinskiTiling.WedgeUV`) | ⬜ OPEN (debt this branch created) — no shader reads it since round 9 (the fragments shrink instead of eroding), but `EveryFragmentWearsItsWedgesExplosionUV` and the lab parity check `uv_vs_prism` pin it. Remove the channel, the test and the check together, or keep it as a layout invariant and say why in the mesh's doc. |
+| C23 | A settled prism kept paying for its bloom and its (absent) sway: the entity path never cleared the grow stamp (`ClearGrowStamp` ran only on the §4.11 twin and pool reuse), so every prism that ever bloomed evaluated `PrismGrowScale`'s exp() and three per-instance loads per vertex for life, and `PrismSway_float` ran two sines on every prism with a zero span | ✅ BUILT 2026-11-10, not yet compiled in the Unity editor — every `PrismRenderService.StampGrow` pushes ONE entry `(fireTime, handle, stampTime)` on a single shared due-queue, `PrismGrowStampClearQueue` (a preallocated min-heap of structs, 1024 doubling to a 2^18 cap, no per-entry allocation), at `t0 + (ln max\|1-s0\| + 27 ln2)/k`, the first time the shader's float32 factor is exactly 1.0f (threshold 25 ln2, measured; `PrismGrowStampClearTests`). The render service's existing LateUpdate flush host drains it after visibility and transforms: O(1) when nothing is due, O(log n) per pop, at most 1024 clears a frame. Entries are never cancelled: each pop re-reads the entity's current stamp (`Decide`), so a retarget, restore or pool reuse makes an old entry a no-op and a same-instant re-stamp with a later end pushes itself again. No `PrismTimerManager` entry, no delegate. `PrismSway_float` returns `PositionOS` when both spans are exactly zero (`verify_prism_sway.py` T2b: equal to the full path, only a -0 coordinate can come back +0). Offline estimate (unity-standins prism worker, DOTS-modelled SPIR-V): resting-prism vertex path ≈ 415 → ≈ 270 executed instructions. |
 
 Phase D — lock-in:
 

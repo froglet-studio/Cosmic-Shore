@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -26,13 +27,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] TextAsset combineData;
 
         [Header("Materials")]
-        [Tooltip("The Space, Time and Charge crystals. OmniCrystalBody: the omni's own body material, so the plates they land as are already the omni's hue and nothing changes at the hand-off (Charge's own lime differed, and its pentagons came in the wrong hue; its contrast is its lit state, the seam walk).")]
+        [Tooltip("The Space, Time and Charge crystals. OmniCrystalBody: the omni's own body material, which paints each plate in its element's shade of lime (_ElementShades), so each crystal flies in its own shade on the omni's look, lands as the omni's plates in that same shade, and nothing changes at the hand-off. (Charge's own material differed, and its pentagons came in the wrong hue; its contrast is its lit state, the seam walk.)")]
         [SerializeField] Material shellMaterial;
         [Tooltip("The Mass crystal, as it is drawn in play: MassDepthPrisms (the depth-prism shader). The crystal itself is the game's MassCrystalPrisms mesh, carried in the combine data.")]
         [SerializeField] Material massMaterial;
-        [Tooltip("The finished omni crystal's body. OmniCrystalBody.")]
+        [Tooltip("The finished omni crystal's body. OmniCrystalBody: each plate in its element's shade of lime.")]
         [SerializeField] Material omniMaterial;
-        [Tooltip("The omni's triangles, as they are drawn in play: OmniDepthPrisms.")]
+        [Tooltip("The omni's triangles, as they are drawn in play: OmniDepthPrisms, in the Mass shade.")]
         [SerializeField] Material omniTrianglesMaterial;
 
         [Header("Depth prisms (the game's)")]

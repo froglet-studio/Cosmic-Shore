@@ -113,6 +113,12 @@ namespace CosmicShore.Editor
 
         static CrashDetectorMonitor()
         {
+            // An asset import worker is a separate editor process that runs [InitializeOnLoad] but
+            // never ticks the editor loop, so its heartbeat reads as a frozen main thread, and when
+            // Unity retires the idle worker the next launch reported it as a crash: Crash-20261026-034810
+            // (yskha) was pid 16260, "unresponsive for ~5324s", while the editor (pid 7240) played on.
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
+
             // The detector must never take the editor down — a watchdog that crashes the patient
             // is worse than none.
             try { Boot(); }

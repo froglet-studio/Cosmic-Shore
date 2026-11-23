@@ -78,8 +78,8 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Attaches the context that makes a crash report actionable: which build, which platform,
-        /// which graphics device. Deliberately excludes anything that identifies a person - the
+        /// Attaches the context that makes a crash report actionable: which build (version, build
+        /// number, commit, release channel, UGS environment), which platform, which graphics device. Deliberately excludes anything that identifies a person - the
         /// player id is NOT attached, so a crash report cannot be joined back to an individual.
         /// </summary>
         static void StampMetadataOnce()
@@ -89,7 +89,14 @@ namespace CosmicShore.Core
 
             try
             {
+                // Which build, exactly: the stamp the build pipeline wrote (BuildStamp).
+                var stamp = BuildStamp.Current;
                 CrashReportHandler.SetUserMetadata("build_version", Application.version);
+                CrashReportHandler.SetUserMetadata("build_number", stamp.buildNumber);
+                CrashReportHandler.SetUserMetadata("build_commit", stamp.commit);
+                CrashReportHandler.SetUserMetadata("release_channel", stamp.channel);
+                CrashReportHandler.SetUserMetadata("ugs_environment", stamp.ugsEnvironment);
+                CrashReportHandler.SetUserMetadata("development_build", stamp.development ? "true" : "false");
                 CrashReportHandler.SetUserMetadata("unity_version", Application.unityVersion);
                 CrashReportHandler.SetUserMetadata("platform", Application.platform.ToString());
                 CrashReportHandler.SetUserMetadata("gpu", SystemInfo.graphicsDeviceName);

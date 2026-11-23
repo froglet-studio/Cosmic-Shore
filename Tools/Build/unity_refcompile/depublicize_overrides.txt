@@ -37,3 +37,12 @@ UnityEngine.UI|UnityEngine.UI.Text|OnPopulateMesh|family
 UnityEngine.UI|UnityEngine.UI.Selectable|Awake|family
 UnityEngine.UI|UnityEngine.UI.Selectable|OnDisable|family
 UnityEngine.UI|UnityEngine.UI.Selectable|DoStateTransition|family
+# uGUI: RectMask2D's OnEnable / OnDisable / OnDestroy / OnTransformParentChanged / OnCanvasHierarchyChanged
+# are `protected override` and UIBehaviour.OnCanvasGroupChanged is `protected virtual` (documented);
+# KitRectMask2D overrides them.
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnEnable|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnDisable|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnDestroy|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnTransformParentChanged|family
+UnityEngine.UI|UnityEngine.UI.RectMask2D|OnCanvasHierarchyChanged|family
+UnityEngine.UI|UnityEngine.EventSystems.UIBehaviour|OnCanvasGroupChanged|family

@@ -25,13 +25,15 @@ namespace CosmicShore.Core
                  "Its lock-APPLYING nodes still pass straight through under the gate (nothing gets locked); " +
                  "everything else - navigation, dialogue, gates - runs. Off by default, so a quest that was " +
                  "authored as a lock funnel keeps standing down exactly as before.")]
-        public bool runsUnderDeveloperUnlock;
+        [SerializeField] bool runsUnderDeveloperUnlock;
+        public bool RunsUnderDeveloperUnlock => runsUnderDeveloperUnlock;
 
         [Tooltip("Designer notes for the whole quest — the progression plan, assumptions, links.")]
         [TextArea(3, 12)] public string designerNotes;
 
         [Tooltip("Ordered phase graphs. Index 0 runs first; a Phase End node advances to the next.")]
-        public List<QuestPhaseGraphSO> phases = new();
+        [SerializeField] List<QuestPhaseGraphSO> phases = new();
+        public List<QuestPhaseGraphSO> Phases => phases;
 
         /// <summary>Persistence/analytics key with fallback to the asset name.</summary>
         public string QuestId => string.IsNullOrEmpty(questId) ? name : questId;

@@ -39,11 +39,25 @@ namespace CosmicShore.Gameplay
     /// (births bloom in the shader, proxies appear and leave under an unchanged picture, deaths wither through the
     /// platform); every agent drops one crystal (only through a proxy - an agent with no proxy cannot die).
     /// </summary>
-    public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation
+    public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation,
+        ISpeciesDataOverride
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Substrate")]
         [Tooltip("The species this population is (its parameters, drawing, proxy budget and feeding).")]
         [SerializeField] SubstrateSpeciesSO species;
+
+        /// <summary>
+        /// A per-world species asset (FaunaConfigurationSO.SpeciesDataOverride) replaces the prefab's
+        /// before the block is claimed - the Swarm world's pack hunters ring the escort's vessels and
+        /// its leeches hold on longer, while the shared Substrate Fauna assets stay as the lab tuned them.
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (cfg && cfg.SpeciesDataOverride is SubstrateSpeciesSO worldSpecies) species = worldSpecies;
+        }
 
         const float BloomTicks = 8f;
         const int HitBudgetPerFrame = 48;
@@ -472,8 +486,44 @@ namespace CosmicShore.Gameplay
                 return;
             }
             var victim = _host?.VesselById(e.Other);
-            if (victim != null) fx.ApplyContact(victim, domain, e.Value);
+            if (victim != null) { fx.ApplyContact(victim, domain, e.Value); return; }
+
+            // A rider on the ARK (a cling-only hull, SubstrateCellHost.ArkById) sips a plate: the hull prism nearest the
+            // rider takes one creature bite through Fauna.BiteMass - plain plates are eaten, armoured ones gnawed at the
+            // sip's weight (AuthoredArmourBite) where the cell lets armour be food. The suction sinks to the rider's seat.
+            var ark = _host?.ArkById(e.Other);
+            if (!ark || !IsSimAuthority) return;
+            var core = _host.Core;
+            if (e.Index < 0 || e.Index >= core.Pos.Length) return;
+            var sp = core.Pos[e.Index];
+            Vector3 seat = _host.Centre + new Vector3(sp.X, sp.Y, sp.Z);
+            ark.GetLiveHullPrisms(seat, s_sipPlates);
+            if (s_sipPlates.Count == 0) return;
+            var plate = s_sipPlates[0];
+            if ((plate.transform.position - seat).sqrMagnitude > ArkSipReach * ArkSipReach) return;
+            if (!_sipMouth)
+            {
+                var go = new GameObject("SipMouth");
+                go.transform.SetParent(transform, false);
+                _sipMouth = go.transform;
+            }
+            _sipMouth.position = seat;
+            var result = BiteMass(plate, _sipMouth, domain, species.SpeciesName, IsShieldedMass(plate));
+            if (result != BiteResult.None) ArkSips++;
         }
+
+        /// <summary>A rider's bite on the Ark: the sip's weight in armour points (the leech's SipWeight; 0 for a species
+        /// that never clings, which never sips anything).</summary>
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            species && species.Species.ClingMax > 0 ? Mathf.Max(0f, species.Species.SipWeight) : 0f;
+
+        /// <summary>How far from a rider's seat the plate it sips may be (the seat sits a little off the hull).</summary>
+        const float ArkSipReach = 60f;
+        static readonly List<Prism> s_sipPlates = new(128);
+        Transform _sipMouth;
+
+        /// <summary>Sim telemetry: bites riders have landed on an Ark's plates this session (read by the escort's metrics).</summary>
+        public static int ArkSips;
 
         bool _warnedSip;
 
@@ -791,7 +841,7 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
                 m.SetShape(BodyScale(job, i), BodyZ(job, i));
-                m.SetDanger(job.Instances[i].Tier == 1, species.Species.ContactWeight);
+                SetTier(m, job.Instances[i]);
             }
         }
 
@@ -817,7 +867,7 @@ namespace CosmicShore.Gameplay
             var at = job.PoseAt(i, _host.Alpha);
             var member = Instantiate(species.AgentPrefab, new Vector3(at.X, at.Y, at.Z), Face(job.FaceAt(i, _host.Alpha)));
             float age = Mathf.Max(0f, (job.Tick + _host.Alpha - job.Instances[i].BirthTick) * _host.Dt);
-            member.Bind(HostCell, this, i, e, species.HeartWorldScale(e), BodyScale(job, i), BodyZ(job, i), domain, age, _gpu);
+            member.Bind(HostCell, this, i, e, BodyScale(job, i), BodyZ(job, i), domain, age, _gpu);
             HostCell.RegisterSpawnedObject(member.gameObject);
             // The replication seam every fauna producer reaches. An agent carries no NetworkObject (agents are
             // client-local, like every swarm member), so this only neutralizes; it keeps the seam gate whole.
@@ -906,7 +956,7 @@ namespace CosmicShore.Gameplay
             var p = job.PoseAt(i, _host.Alpha);
             m.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z), Face(job.FaceAt(i, _host.Alpha)));
             if (!m.MaterialiseNow()) return null;
-            m.SetDanger(job.Instances[i].Tier == 1, species.Species.ContactWeight);
+            SetTier(m, job.Instances[i]);
             m.SyncBodyToIndex();
             SuspendEntry(k);   // its real body is the agent's one entry now
             return m;
@@ -973,6 +1023,16 @@ namespace CosmicShore.Gameplay
                     break;
                 }
             }
+        }
+
+        /// <summary>A proxy's body takes its agent's published tier and shield (the element law is already in the frame,
+        /// SubstrateTickJob). A Charge population's prisms are danger prisms by the law, so they burn at a danger prism's
+        /// full weight even where the species' strike is lighter or never burns (Docs/ECOSYSTEM.md §65.7).</summary>
+        void SetTier(SubstrateAgentFauna m, in SwarmInstance s)
+        {
+            float weight = species.Species.ContactWeight;
+            if (_element == 0) weight = Mathf.Max(1f, weight);
+            m.SetTier(s.Tier == 1, s.Shielded, weight);
         }
 
         /// <summary>The diet: living flora mass only, through the platform's one edibility rule and the shielded-mass rule.</summary>

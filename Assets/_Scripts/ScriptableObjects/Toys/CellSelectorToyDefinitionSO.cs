@@ -9,19 +9,15 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// The <b>Cell Selector</b> toy - the freestyle world picker, and the freestyle reset.
     ///
-    /// Fly the station and a matrix of MINI-CELLS blooms beside it, one per config the
-    /// containing <see cref="Cell"/> can be - each holding a genuine SCALE MODEL of the world
-    /// that config creates, sampled by <see cref="CellMiniatureBuilder"/> from the generator's
-    /// own output (no prisms spawned). Fly a mini-cell and the cell becomes it: the old world
-    /// suctions away and the chosen one grows back behind the standard environment veil.
-    /// Fly the mini-cell of the world you are already in and you get that same cycle on the
-    /// same config - the reset.
+    /// The Toy Box lists one world per config the containing <see cref="Cell"/> can be, each
+    /// previewed as a genuine SCALE MODEL (<see cref="CellMiniatureBuilder"/>, no prisms spawned).
+    /// Pick one and the cell becomes it: the old world suctions away and the chosen one grows back
+    /// behind the standard environment veil. Picking the world you are already in is the reset.
     ///
     /// This is what makes entering freestyle cheap. The Cell boots with
     /// <c>CellTypeChoiceOptions.EnvironmentFree</c> (no authored environment, so Menu_Main
     /// opens - and re-opens after an arcade game - without a multi-second prism build), and the
-    /// heavy worlds become opt-in: the load is paid only by the player who flies in and asks
-    /// for one.
+    /// heavy worlds become opt-in: the load is paid only by the player who asks for one.
     ///
     /// Toy-faithful: no score, no end condition, no timers. Nothing here is on a clock and no
     /// prism ages out - a cell swap is an explicit, player-initiated world change, the same
@@ -46,21 +42,10 @@ namespace CosmicShore.ScriptableObjects
                                  "touched either way.")]
         bool clearLooseTrailMass = true;
 
-        [Header("Layout")]
-        [SerializeField, Min(10f), Tooltip("Spacing between mini-cells in the matrix.")]
-        float stationSpacing = 110f;
-
-        [SerializeField, Min(1f), Tooltip("Radius of one mini-cell (its membrane rings). The scale " +
-                                          "model inside is fitted to just under this.")]
+        [Header("Scale models")]
+        [SerializeField, Min(1f), Tooltip("Radius a world's scale model (the Toy Box preview) is fitted to.")]
         float stationRadius = 18f;
 
-        [SerializeField, Min(0.5f), Tooltip("How far out the matrix blooms, in multiples of Station " +
-                                            "Spacing, measured from the toy along the outward radial " +
-                                            "(away from the cell centre). You fly AT the toy and keep " +
-                                            "going, so this is the gap you cross before the choices.")]
-        float matrixDistanceFactor = 3f;
-
-        [Header("Scale models")]
         [SerializeField, Range(200, 4000), Tooltip("Samples taken from an environment's real generated " +
                                                    "output to build its mini-cell scale model (24 mesh " +
                                                    "vertices each). The silhouette is what reads at " +
@@ -78,9 +63,7 @@ namespace CosmicShore.ScriptableObjects
 
         public IReadOnlyList<CellConfigDataSO> Cells => cells;
         public bool ClearLooseTrailMass => clearLooseTrailMass;
-        public float StationSpacing => stationSpacing;
         public float StationRadius => stationRadius;
-        public float MatrixDistanceFactor => matrixDistanceFactor;
         public int ModelPointBudget => modelPointBudget;
         public float SignatureCoverage => signatureCoverage;
 
@@ -90,7 +73,7 @@ namespace CosmicShore.ScriptableObjects
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
+            var go = ToyFactory.CreateToyRoot(Id, parent, placement);
             var toy = go.AddComponent<CellSelectorToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);

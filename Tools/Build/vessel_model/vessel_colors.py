@@ -39,7 +39,7 @@ MATERIALS = {
     "window": "Assets/_Graphics/Materials/ScreenVesselMaterial.mat",
     "engine": "Assets/_Graphics/Materials/EngineVesselMaterial.mat",
 }
-COLOR_SET = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset"
+COLOR_SET = "Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset"
 DOMAINS = ("Jade", "Ruby", "Gold")
 ENGINE_BOOST_MULTIPLIER = 5.0   # VesselAnimation.FlareEngine
 

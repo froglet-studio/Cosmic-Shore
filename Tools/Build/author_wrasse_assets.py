@@ -55,6 +55,7 @@ THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md): it runs 
 and `--check` validates the SHIPPED prefab's invariants rather than diffing it against a fresh clone of a donor that
 will move on. To re-author from scratch, delete Wrasse.prefab and its .meta and run again.
 """
+import hashlib
 import os
 import re
 import sys
@@ -305,6 +306,9 @@ def strip_sparrow_kit(text: str) -> str:
             d = re.sub(r"\{fileID: %s\}" % r, "{fileID: 0}", d)
         if f"guid: {ai_guid}, type: 3" in d:
             d = re.sub(r"(  abilities:)\n(?:  [- ] .*\n)+", r"\1 []\n", d)
+            # The Sparrow's boost policy presses a Boost the Wrasse does not bind; the Grouper's boost is KiteNavigator's
+            # (AIPilotWantsBoost), so the AIPilot names none (2026-10-26).
+            d = re.sub(r"^  boostPolicy: \{[^}]*\}\n", "  boostPolicy: {fileID: 0}\n", d, flags=re.M)
         if f"guid: {sparrow_tel}, type: 3" in d:
             d = d.replace(f"guid: {sparrow_tel}, type: 3", f"guid: {default_tel}, type: 3")
             for key in SPARROW_TELEMETRY_KEYS:
@@ -520,6 +524,35 @@ DESCRIPTION = ("  Description: Two seats, one hull, like a cleaner wrasse and th
 CREW = "  CrewNames:\n  - Wrasse\n  - Grouper\n  CrewNameTemplate: '{0} and {1}'\n"
 
 
+# A class card rendered by Tools/Build/vessel_model/render_cards.py, which names each new PNG
+# md5("cosmic-shore-card:" + its repo path); a generator that writes the class asset names the same guids. The Wrasse's
+# card is its carrier, the Grouper (2026-11-15; it wore the Sparrow's card until then). author_orca_assets.py uses it too.
+def card_fields(vessel: str) -> dict:
+    def g(rel):
+        return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+    ci = "Assets/_Graphics/CardImages/" + vessel
+    active = g(ci + ".png")
+    return {"IconActive": active, "IconInactive": g(ci + "_Inactive.png"), "CardSilohoutteActive": active,
+            "CardSilohoutteInactive": g(ci + "_silhouette.png"), "SquadImage": g(ci + "_large.png"),
+            "PreviewImage": g("Assets/_Graphics/Design Assests/Hangar/%s_Hangar_Preview.png" % vessel)}
+
+
+def cards_retrofit(text: str, vessel: str) -> str:
+    """Point a class asset's six card fields at the vessel's own renders. Idempotent."""
+    for field, guid in card_fields(vessel).items():
+        text, n = re.subn(r"(?m)^(  %s: )\{[^}]*\}" % field,
+                          lambda m: m.group(1) + "{fileID: 21300000, guid: %s, type: 3}" % guid, text, count=1)
+        if n != 1:
+            raise RuntimeError("donor drifted: the class field %s was not found" % field)
+    return text
+
+
+def cards_errors(cls: str, vessel: str) -> list:
+    return ["SO_Class_%s: %s is not its rendered card (render_cards.py %s)" % (vessel, field, vessel)
+            for field, guid in card_fields(vessel).items()
+            if not re.search(r"  %s: \{fileID: 21300000, guid: %s," % (field, guid), cls)]
+
+
 def class_asset(donor_class: str) -> str:
     text = replace_once(donor_class, "  m_Name: SO_Class_Sparrow\n", "  m_Name: SO_Class_Wrasse\n", "class m_Name")
     text = replace_once(text, f"  Class: {SPARROW_CLASS_ID}\n", f"  Class: {WRASSE_CLASS_ID}\n", "class Class")
@@ -530,7 +563,7 @@ def class_asset(donor_class: str) -> str:
     text, n = re.subn(r"  isLocked: \d\n", "  isLocked: 0\n  ownedFromStart: 1\n", text, count=1)
     if n != 1:
         raise RuntimeError("donor drifted: the class isLocked line was not found")
-    return text
+    return cards_retrofit(text, "Wrasse")
 
 
 def native_meta(guid: str) -> str:
@@ -582,7 +615,7 @@ WRASSE_MAP_ENTRIES = [
      "Shield Breaker", "Space blasts destroy shielded and super-shielded prisms."),
     (4, "Saved Boosts", "Every loop of Time motes the kite closes saves boosts for the pilot. The pilot spends them on "
         "the trigger; the card counts how many are saved.",
-     "", ""),  # Time L5 is an open slot: boosts have no cooldown to remove (Garrett, 2026-10-21)
+     "Tailwind", "Every saved boost lasts half as long again."),  # the vessel pass, 2026-11-13 (KiteNavigatorConfigSO)
     (2, "Mass Cluster", "A loop of Mass motes lays a cluster of prisms on the kite's plane. The card flashes when one "
         "is laid.",
      "Shielded Clusters", "Mass clusters are laid shielded."),
@@ -644,6 +677,9 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
         if not cond:
             errs.append(msg)
     want("  m_Name: Wrasse\n" in text, "Wrasse.prefab: the root is not named Wrasse")
+    want("  boostPolicy: {fileID: 0}\n" in text,
+         "Wrasse.prefab: the AIPilot names a boost policy - the Grouper's boost is KiteNavigator's (AIPilotWantsBoost), and "
+         "the Sparrow's policy it inherited presses a Boost the Wrasse does not bind")
     want("  _name: Wrasse\n" in text, "Wrasse.prefab: VesselStatus _name is not Wrasse")
     want(f"  vesselType: {WRASSE_CLASS_ID}\n" in text, f"Wrasse.prefab: vesselType is not {WRASSE_CLASS_ID}")
     want(f"  vesselType: {SPARROW_CLASS_ID}\n" not in text, "Wrasse.prefab: still carries the Sparrow's vesselType")
@@ -706,6 +742,8 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  Class: {WRASSE_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls and "  isLocked: 0\n" in cls,
          "SO_Class_Wrasse: wrong class, locked, or not owned from the start")
     want(CREW in cls, "SO_Class_Wrasse: the card does not name both subvessels (CrewNames Wrasse, Grouper)")
+    for e in cards_errors(cls, "Wrasse"):
+        want(False, e)
     want(f"  vesselClass: {WRASSE_CLASS_ID}\n" in kmap and "  m_Name: Wrasse\n" in kmap, "ElementalAbilityMaps/Wrasse: wrong class or name")
     inputs = map_inputs(kmap)
     want(inputs == {e: MAP_INPUTS.get(e, 0) for e in (1, 2, 3, 4)},

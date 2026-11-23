@@ -31,7 +31,7 @@ WHAT IT MAKES
         - the executors: the Brittle Star's executor and its turrets object (gun, factory, round pool) removed;
           ShrikeExecutor added (config, hull, turn-end channel);
         - the bindings (shared; OWNED - re-applied to the shipped prefab): RT the mode's action, LT zoom, X Space mode,
-          RB Charge mode, B Time mode, A Mass (detach and leave a nest);
+          Y Charge mode, B Time mode, A Mass (detach and leave a nest);
         - the AI: no blind ability cycle, the no-op HoldBoostAIPolicy (no boost to drive); the executor's autopilot presses
           the replicated controls;
         - the HUD: ShrikeHUDVariant (a copy of BrittleStarHUDVariant: same internal fileIDs, the view swapped to
@@ -103,6 +103,7 @@ CAMERA_GUID = guid_for("ShrikeCameraSettingsSO.asset")
 VESSEL_CONTAINER_GUID = guid_for("ShrikeImpactorDataContainer.asset")
 SKIMMER_CONTAINER_GUID = guid_for("ShrikeSkimmerImpactorDataContainer.asset")
 CRYSTAL_EFFECT_GUID = guid_for("ShrikeCrystalEffect.asset")
+CRYSTAL_MORPH_GUID = guid_for("ShrikeCrystalMorphByCrystal.asset")   # the omni retirement (SHRIKE_CRYSTAL_MORPH.md)
 ACTIONS_FOLDER_GUID = guid_for("VesselActions/Shrike")
 DOC_GUID = guid_for("SHRIKE.md")
 CARD_ACTIVE = hashlib.md5(b"CosmicShore/Shrike/CardImages/Shrike.png").hexdigest()            # the card PNGs; rendered from the model by vessel_model/render_cards.py
@@ -116,9 +117,11 @@ CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Shrike_large.png")
 CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Shrike_Hangar_Preview.png")
 
 # (control name, enum value, InputEvents it is bound to). The InputEvents numbers: RightStickAction=1 (RT / LMB /
-# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), FlipAction=3 (RB / E), Button1=6 (A / Space),
-# Button2=7 (B / R), Button3=8 (X / Q). Garrett, 2026-10-15: LT is always zoom, RT does the mode's action.
-CONTROLS = (("ShrikeTrigger", 4, 1), ("ShrikeZoom", 5, 2), ("ShrikeChargeMode", 7, 3), ("ShrikeMass", 3, 6),
+# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), Button1=6 (A / Space), Button2=7 (B / T), Button3=8 (X / Q),
+# Button4=14 (Y / F). Garrett, 2026-10-15: LT is always zoom, RT does the mode's action. Charge mode was FlipAction=3
+# (RB / E) until 2026-10-27, when Garrett moved every RB ability to Y: the shoulders belong to the pilot (LB sight,
+# RB payload; Docs/Pilots/CALLSIGNS.md section 5).
+CONTROLS = (("ShrikeTrigger", 4, 1), ("ShrikeZoom", 5, 2), ("ShrikeChargeMode", 7, 14), ("ShrikeMass", 3, 6),
             ("ShrikeTimeMode", 8, 7), ("ShrikeSpaceMode", 6, 8))
 # The first port's control assets, retired with the direct Lance / Sling / Paint / Dock controls.
 RETIRED_CONTROLS = ("ShrikeLance", "ShrikeSling", "ShrikePaint", "ShrikeDock")
@@ -556,7 +559,8 @@ def vessel_container_asset() -> str:
             "  vesselSpaceCrystalEffects:\n" + crystal +
             "  vesselTimeCrystalEffects:\n" + crystal +
             "  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            # The omni crystal folds into the nest flora it grows instead of the shared husk spray.
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {CRYSTAL_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:
@@ -597,8 +601,8 @@ def class_asset() -> str:
                                                                 "  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel\n") +
             f"  Class: {CLASS_ID}\n"
             "  Name: Shrike\n"
-            "  Description: A slow sniper that docks to whatever it touches. Build nests of super-shielded blocks,\n"
-            "    pierce anything with the Void Lance, sling across the cell on a tether, and paint targets for the\n"
+            "  Description: A slow sniper that docks to whatever it touches. Weave nests walled in super-shielded\n"
+            "    plates, pierce anything with the Void Lance, sling across the cell on a tether, and paint targets for the\n"
             "    missiles your nests launch.\n"
             "  PrimaryElement: 0\n"
             "  Element: {fileID: 0}\n"
@@ -622,21 +626,23 @@ def class_asset() -> str:
 
 
 # (element, label, InputEvents shown on its card, description, upgrade label, upgrade description). Garrett, 2026-10-15:
-# the modes (X Space, RB Charge, B Time) pick what RT does; LT is always zoom.
+# the modes (X Space, Y Charge, B Time) pick what RT does; LT is always zoom.
 MAP_ENTRIES = (
-    (1, "Targeting Array", 3,
-     "RB: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a plant, then the centre "
+    (1, "Targeting Array", 14,
+     "Y: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a plant, then the centre "
      "of the mass nearest your aim - and every nest flora with a ready missile launches it, one each per 0.8 s, homing "
      "while you paint. A missile blows on contact in an 18 u blast (a shield takes the hit first); a rival hull inside "
      "it is a petal hit (petals only - nothing is moved). The card counts the missiles left across every flora. A "
      "collected crystal becomes a nest flora that grows large missiles (one per 6 s, up to 4). Space widens the lock "
-     "cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone).", "", ""),
+     "cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone).",
+     "Salvo", "Every nest flora launches twice as often while you paint."),
     (2, "Nest", 6,
      "A. Any block you touch docks you (the camera eases back); docked, every cooldown runs x1.6 (x2.5 on "
-     "super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a cup of super-shielded "
-     "blocks round where you were, no two touching, the nose's way out open, crowned with a flora carrying ONE "
+     "super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a shell of super-shielded "
+     "plates round where you were (hoops of shielded twigs and a lining of plain pads inside), no two touching, the nose's way out open, crowned with a flora carrying ONE "
      "missile (8 s cooldown; at most three nests). Mass is volume - one dial: 12 -> 32 blocks per nest at level 10 "
-     "(ShrikeConfigSO.nestBlocks), and the cruising trail's wavelength 8 -> 4 u (trailWavelength).", "", ""),
+     "(ShrikeConfigSO.nestBlocks), and the cruising trail's wavelength 8 -> 4 u (trailWavelength).",
+     "Armed Nests", "A nest you leave behind carries two missiles."),
     (3, "Void Lance", 8,
      "X: Space mode. RT (held) fires a hitscan beam 2400 u long that breaks every block it passes, any domain, except "
      "super-shielded mass and the nest you are docked in; a rival hull on the line is a scored petal hit. 1.2 s "
@@ -645,7 +651,8 @@ MAP_ENTRIES = (
     (4, "Void Sling", 7,
      "B: Time mode. RT shoots a tether (1600 u); it anchors on the first block it meets and the hull flies straight "
      "there in exactly 1 s, laying thick trail, docking on the first block it touches. A crystal resets it. Time is "
-     "rate - one dial: the cooldown 6 -> 2.5 s at level 10 (ShrikeConfigSO.slingCooldown).", "", ""),
+     "rate - one dial: the cooldown 6 -> 2.5 s at level 10 (ShrikeConfigSO.slingCooldown).",
+     "Whipcrack", "The sling reaches its anchor in 0.6 s."),
 )
 
 
@@ -672,8 +679,8 @@ def map_asset() -> str:
                 "    UnlockLevel: 5\n"
                 "    RelockBelowLevel: 4\n"
                 "    LatchPolicy: 0\n"
-                # Only the Space upgrade is designed (Garrett, 2026-10-15: the lance breaks super-shielded mass "when
-                # upgraded"); the other level-5 slots stay OPEN - the vessel skill's design gate forbids inventing one.
+                # Space's upgrade is Garrett's (2026-10-15: the lance breaks super-shielded mass "when upgraded"); the
+                # other three were filled in the vessel pass (Garrett, 2026-11-12/13: fill every vessel's empty L5 slots).
                 f"    UpgradeLabel: {upgrade}\n"
                 f"    UpgradeDescription: {quote(upgrade_text) if upgrade_text else ''}\n")
     return out
@@ -839,8 +846,11 @@ def check(files: "dict[str, str]") -> "list[str]":
         need(f"guid: {SCRIPT['ShrikeHUDView']}" in hud and BRITTLESTAR["BrittleStarHUDView.cs"] not in hud, "the HUD variant's view is not ShrikeHUDView")
         for field in ("chargeGauge", "massGauge", "spaceGauge", "timeGauge"):
             need(re.search(r"  %s: \{fileID: [1-9]\d*\}" % field, hud), f"HUD view field {field} is not wired")
+        # Since the 2026-11-07 icon roster pass the kit (Tools/Build/icon_kit/specs/shrike.py) seats each card's parts
+        # under its slot icon and leaves the slot's own sprite empty, so the Shrike sprite is there OR the kit's parts are.
+        kit_parts = "arrayShrikeIcon:" in hud
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            need(old not in hud and (new in hud or kit_parts), f"HUD icon {new} not swapped in")
 
     for path, want in owned_files().items():
         have = files.get(path)

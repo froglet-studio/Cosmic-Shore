@@ -207,13 +207,15 @@ def flora_component_block(p):
         cx, cy = M.cross_section_for(elem, species)
         forms.append("  - Element: %d\n" % ELEMENT_ID[elem]
                      + "    CrossSection: {x: %g, y: %g}\n" % (cx, cy)
-                     + "    Rules:\n" + rules_block(elem, 6, species))
+                     + "    Rules:\n" + rules_block(elem, 6, species) + "\n"
+                     # The ARMOUR's shell growth (Docs/ECOSYSTEM.md §65): 1 / the dash on Mass, 1 elsewhere.
+                     + "    ShellScale: %g" % round(M.armour_growth(species, elem), 6))
     # The prefab's own seed prism is the ONLY prism that reads leafSize - every prism the
     # plant lays carries a size measured from its own curve (MandelbulbFlora.AddHealthBlock).
     scx, scy, scz, _ = M.elemental_prism(species, "Space")
     # On SPACE's own shell, not the authored one: the §51 reach makes those two different
     # numbers, and a seed prism authored at the wrong shell is a prism no element ever lays.
-    _sh = M.shell_for("Space")
+    _sh = M.shell_for("Space", species=species)
     seed = (scx * _sh, scy * _sh, scz * _sh)
     return (
         "  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}\n"
@@ -325,8 +327,13 @@ def config_text(p, elem):
         "    PlantRadiusCellFraction: 0.6",
         "    PlantRadiusCellFractionMin: 0.25",
     ]
-    if elem == "Charge":
+    # THE ARMOUR (ElementalArmour, Docs/ECOSYSTEM.md §65): Mass is shielded and re-armoured every second; Charge never
+    # shields, because every prism it lays is a danger prism and a shield clears danger. The runtime law enforces both
+    # whatever is authored (author_flora_armour.py --check gates the data); the asset states it so it reads true.
+    if elem == "Mass":
         lines.append("    ShieldPeriod: 1")
+    elif elem == "Charge":
+        lines.append("    ShieldPeriod: 0")
 
     # HeartWorldScale is owned by Tools/Build/author_lifeform_heart_sizes.py, which solves the
     # whole fleet's band at once. Carry whatever it wrote straight through: re-authoring it here

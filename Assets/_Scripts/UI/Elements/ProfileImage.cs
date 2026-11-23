@@ -77,8 +77,8 @@ namespace CosmicShore.UI
                 return service.GetAvatarSprite(service.CurrentProfile.Identity.AvatarId);
 
             // Fallback: resolve avatar 0 from the local list if the service isn't ready.
-            if (ProfileIcons != null && ProfileIcons.profileIcons is { Count: > 0 })
-                return ProfileIcons.profileIcons.First().IconSprite;
+            if (ProfileIcons != null && ProfileIcons.ProfileIcons is { Count: > 0 })
+                return ProfileIcons.ProfileIcons.First().IconSprite;
 
             return null;
         }

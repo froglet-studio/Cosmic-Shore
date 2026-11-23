@@ -35,7 +35,7 @@ function buildInPage(arg) {
   const ev = (e) => ({ tinker: () => 'T' + e.from + '>' + e.to, refuel: () => 'R' + e.cell + ':' + e.colour, place: () => 'P' + e.cell + ':' + e.colour,
     ability: () => 'A' + e.slot + ':' + e.pid + ':' + e.use, charge: () => 'C' + e.colour, replaced: () => 'X' + e.colour,
     pick: () => 'K' + e.slot + ':' + e.pid + ':' + e.cell + ':' + e.colour, retire: () => 'Q' + e.slot + ':' + e.old + ':' + e.pid,
-    shuffle: () => 'S' + e.ability + ':' + e.portSet, remove: () => 'D' + e.cell + ':' + e.colour, ports: () => 'p' + e.portSet, resume: () => 'r', effect: () => 'F' + e.kind + ':' + e.n,
+    shuffle: () => 'S' + e.ability + ':' + e.portSet, offer: () => 'O' + e.offers.join(',') + ':' + e.portSet, remove: () => 'D' + e.cell + ':' + e.colour, ports: () => 'p' + e.portSet, resume: () => 'r', effect: () => 'F' + e.kind + ':' + e.n,
     tick: () => 't' + e.n + ':' + e.ap })[e.k]();
   const inpStr = (i) => (i ? 'i' + i.k + ':' + (i.k === 'tinker' ? i.from + '>' + i.to : i.k === 'refuel' ? i.cell + ':' + (i.colour || 0) : i.slot) : 'i-');
   const KINDS = ['burn', 'purge', 'free', 'bonus', 'rewind', 'unspin', 'trio', 'scatter', 'charge', 'drain', 'drainOne'];
@@ -48,6 +48,8 @@ function buildInPage(arg) {
     fixedAbility: v < ABIL.length ? ABIL[v] : '', firstPortSet: v % 2 ? -1 : (v * 7) % portSets.length,
     // the random draw's pool: every ability, all but the retired Printer (the shipped rule), two, or one
     abilities: v < ABIL.length || v % 3 === 0 ? null : v === 23 ? ['swap'] : v === 22 ? ['mirror', 'overclock'] : ABIL.filter((a) => a !== 'printer'),
+    // round 7: the pick of N (1 = the old random draw), with a time limit, a short one, or none
+    abilityChoices: [3, 1, 2, 3, 4][v % 5], pickSeconds: [10, 0, 1.2][v % 3],
   });
   const scenarios = [], results = [];
   rules.forEach((R, n) => {
@@ -63,9 +65,10 @@ function buildInPage(arg) {
         for (let i = 0; i < st.cells.length; i++) (st.cells[i] ? full : empty).push(i);
         if (w < 0.25 && full.length) step = { inp: { k: 'remove', cell: full[Math.floor(r() * full.length)] } };   // right-click delete
         else if (w < 0.5 && st.free.length && empty.length) step = { inp: { k: 'refuel', cell: empty[Math.floor(r() * empty.length)], colour: r() < 0.8 ? st.free[0] : 1 + Math.floor(r() * 3) } };
+        else if (w < 0.65 && st.reveal && st.reveal.offers) step = { inp: { k: 'pick', slot: Math.floor(r() * st.reveal.offers.length) } };   // a person's pick
         else { const all = D.legalInputs(st); step = all.length ? { inp: all[Math.floor(r() * all.length)] } : { dt: 0.2 }; }
       }
-      else if (u < 0.88) step = { inp: { k: ['tinker', 'refuel', 'activate', 'remove'][Math.floor(r() * 4)], from: Math.floor(r() * 40) - 1, to: Math.floor(r() * 40) - 1, cell: Math.floor(r() * 40) - 1, slot: Math.floor(r() * 4) - 1, colour: Math.floor(r() * 4) } };
+      else if (u < 0.88) step = { inp: { k: ['tinker', 'refuel', 'activate', 'remove', 'pick'][Math.floor(r() * 5)], from: Math.floor(r() * 40) - 1, to: Math.floor(r() * 40) - 1, cell: Math.floor(r() * 40) - 1, slot: Math.floor(r() * 4) - 1, colour: Math.floor(r() * 4) } };
       else if (u < 0.94) step = { spend: 1 + Math.floor(r() * 3) };
       else { const kind = KINDS[Math.floor(r() * KINDS.length)]; step = { fx: kind, arg: kind === 'purge' || kind === 'charge' ? 1 + Math.floor(r() * 3) : kind === 'rewind' ? 5 : Math.floor(r() * 4) }; }
       steps.push(step);
@@ -134,7 +137,7 @@ function compare(a, b) {
   let fail = false;
   const count = (pred) => ref.results.reduce((s, rows) => s + rows.reduce((t, r) => t + r.e.filter(pred).length, 0), 0);
   const acts = count((e) => e[0] === 'A'), picks = count((e) => e[0] === 'K'), ticks = count((e) => e[0] === 't'), shuffles = count((e) => e[0] === 'S'),
-    retires = count((e) => e[0] === 'Q'), effects = count((e) => e[0] === 'F'), aiMoves = count((e) => e[0] === 'i' && e !== 'i-'), places = count((e) => e[0] === 'P'), removes = count((e) => e[0] === 'D');
+    retires = count((e) => e[0] === 'Q'), offers = count((e) => e[0] === 'O'), aiPicks = count((e) => e.startsWith('ipick')), effects = count((e) => e[0] === 'F'), aiMoves = count((e) => e[0] === 'i' && e !== 'i-'), places = count((e) => e[0] === 'P'), removes = count((e) => e[0] === 'D');
   const illegal = ref.results.reduce((s, rows) => s + rows.filter((r) => !r.ok).length, 0);
   const portsSame = JSON.stringify(cs.portSets) === JSON.stringify(ref.portSets);
   if (!portsSame) { fail = true; console.log(`FAIL: the C# BuildPortSets makes ${cs.portSets.length} port sets, the page ${ref.portSets.length}, or their order differs`); }
@@ -144,9 +147,9 @@ function compare(a, b) {
     if (res.first) console.log(JSON.stringify(res.first, null, 1).slice(0, 2400));
     if (res.slipFirst) console.log(JSON.stringify(res.slipFirst, null, 1).slice(0, 2000));
   } else {
-    console.log(`PASS: ${res.steps} steps over ${ref.scenarios.length} rule sets, ${aiMoves} Engineer-AI moves chosen alike, ${acts} patterns made, ${picks} battery picks, ${retires} retired, ${shuffles} new abilities + port patterns, ${ticks} spins, ${effects} board effects, ${places} free placements, ${removes} prisms deleted, ${illegal} illegal inputs refused alike; ${ref.portSets.length} port sets built alike from the engines; ${res.slips} slip destinations equal to 1e-9`);
+    console.log(`PASS: ${res.steps} steps over ${ref.scenarios.length} rule sets, ${aiMoves} Engineer-AI moves chosen alike, ${acts} patterns made, ${picks} battery picks, ${retires} retired, ${shuffles} new abilities + port patterns (${offers} offered as a pick, ${aiPicks} picked by the AI), ${ticks} spins, ${effects} board effects, ${places} free placements, ${removes} prisms deleted, ${illegal} illegal inputs refused alike; ${ref.portSets.length} port sets built alike from the engines; ${res.slips} slip destinations equal to 1e-9`);
   }
-  if (acts < 300 || shuffles < 30 || retires < 30 || aiMoves < 1000 || places < 10 || removes < 50) { fail = true; console.log(`FAIL: the scenarios exercised too little (${acts} made, ${shuffles} shuffles, ${retires} retired, ${aiMoves} AI moves, ${places} free placements)`); }
+  if (acts < 300 || shuffles < 30 || retires < 30 || aiMoves < 1000 || places < 10 || removes < 50 || offers < 20 || aiPicks < 5) { fail = true; console.log(`FAIL: the scenarios exercised too little (${acts} made, ${shuffles} shuffles, ${offers} offers, ${aiPicks} AI picks, ${retires} retired, ${aiMoves} AI moves, ${places} free placements)`); }
   // negative controls
   const plants = [
     ['ports turn counter-clockwise', (s) => s.replace('for (const p of st.ports) p[0] = rot60(p[0]);\n    const over', 'for (const p of st.ports) p[0] = rot60(rot60(rot60(rot60(rot60(p[0])))));\n    const over'), {}],
@@ -158,6 +161,9 @@ function compare(a, b) {
     ['a delete costs no AP', (s) => s.replace("st.cells[inp.cell] === 0 || !spendAp(st, 1)) return false;\n        const colour", "st.cells[inp.cell] === 0) return false;\n        const colour"), {}],
     ['a free prism places in any domain', (s) => s.replace('if (inp.colour !== st.free[0]) return false;', ''), {}],
     ['the draw ignores the ability pool', (s) => s.replace('return S.abilities && S.abilities.length ? S.abilities : ABILITIES;', 'return ABILITIES;'), {}],
+    ['a timed-out pick takes the last offer', (s) => s.replace('if (rv.offers) takeOffer(st, 0);', 'if (rv.offers) takeOffer(st, rv.offers.length - 1);'), {}],
+    ['the AI picks by the order reversed', (s) => s.replace('AI_PICK_ORDER.indexOf(offers[k]) < AI_PICK_ORDER.indexOf(offers[best])', 'AI_PICK_ORDER.indexOf(offers[k]) > AI_PICK_ORDER.indexOf(offers[best])'), {}],
+    ['offers may repeat the held ability', (s) => s.replace('const cand = pool.filter((a) => a !== st.ability)', 'const cand = pool.slice()'), {}],
     ['the slip takes the other end', (s) => s.replace('const end = d1 >= d0 ? 1 : 0', 'const end = d1 >= d0 ? 0 : 1'), {}],
   ];
   for (const [name, plant, extra] of plants) {

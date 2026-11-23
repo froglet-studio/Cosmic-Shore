@@ -63,6 +63,11 @@ namespace CosmicShore.UI
 
         RectTransform _target;
         string _captionText;
+        // Rev 36 B (section 102.1): when a step has a speaker, her comms window replaces the caption pill.
+        GuideSpeakerSO _speaker;
+        string _action;
+        string _actionKeycap;
+        GuideCommsView _comms;
         bool _wantVisible;
         bool _hasHole;
         Rect _hole;
@@ -99,8 +104,20 @@ namespace CosmicShore.UI
 
         /// <summary>As <see cref="Show(RectTransform,string,Color,float)"/>, with the Skip button's
         /// label (null or empty hides Skip) and the pad button named on its keycap.</summary>
-        public void Show(RectTransform target, string caption, Color cta, float dimAlpha, string skipLabel, string skipKeycap)
+        public void Show(RectTransform target, string caption, Color cta, float dimAlpha, string skipLabel, string skipKeycap) =>
+            Show(target, caption, cta, dimAlpha, skipLabel, skipKeycap, null, null, null);
+
+        /// <summary>
+        /// As above, spoken by <paramref name="speaker"/>: her comms window docks on the side away from the target and says
+        /// <paramref name="caption"/>, with <paramref name="actionKeycap"/> and <paramref name="action"/> as its prompt
+        /// (Rev 36 B). A null speaker, or one with no comms prefab, shows the plain caption.
+        /// </summary>
+        public void Show(RectTransform target, string caption, Color cta, float dimAlpha, string skipLabel, string skipKeycap,
+                         GuideSpeakerSO speaker, string action, string actionKeycap)
         {
+            _speaker = speaker && speaker.commsPrefab ? speaker : null;
+            _action = action;
+            _actionKeycap = actionKeycap;
             _skipText = skipLabel;
             _skipCapText = skipKeycap;
             _wantVisible = target;
@@ -308,9 +325,32 @@ namespace CosmicShore.UI
             _frame.color = c;
             _frame.SetVerticesDirty();
 
-            PlaceCaption(scale, bounds);
+            if (_speaker)
+            {
+                _caption.gameObject.SetActive(false);
+                _captionBacking.gameObject.SetActive(false);
+                PlaceComms(scale, bounds, dt);
+            }
+            else
+            {
+                if (_comms && _comms.gameObject.activeSelf) _comms.gameObject.SetActive(false);
+                PlaceCaption(scale, bounds);
+            }
             PlaceSkip(scale, true);
             HoldPadOnPath();
+        }
+
+        void PlaceComms(float scale, Rect bounds, float dt)
+        {
+            if (!_comms)
+            {
+                _comms = Instantiate(_speaker.commsPrefab, transform, false);
+                // Above the dim and the frame, below Skip: Skip stays the last thing drawn.
+                _comms.transform.SetSiblingIndex(_skipRect.GetSiblingIndex());
+            }
+            if (!_comms.gameObject.activeSelf) _comms.gameObject.SetActive(true);
+            _comms.Present(_speaker, _captionText, _action, _actionKeycap);
+            _comms.Place(_hole, bounds, scale, dt);
         }
 
         void PlaceCaption(float scale, Rect bounds)

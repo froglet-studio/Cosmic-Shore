@@ -349,11 +349,9 @@ namespace CosmicShore.Gameplay
 
             var crystal = Instantiate(prefab, transform);
             crystal.transform.localPosition = localPosition;
-            // MULTIPLY the prefab's authored scale (the elemental prefabs share one convention:
-            // root 1.5, ~2 world units of visible crystal per unit of root scale). The multiplier
-            // lands skims at ~1.5-3.5 visible world units. Sized before Start(): crystalValue and
-            // the element-level gain both read lossyScale.
-            crystal.transform.localScale *= (float)(rng.NextDouble() * 0.7 + 0.5);
+            // Every elemental crystal is one size and one petal (ElementalCrystalSetSO.CrystalWorldScale).
+            // Sized before Start(): crystalValue reads lossyScale.
+            LifeFormCrystal.SetWorldScale(crystal, ElementalCrystalSetSO.CrystalWorldScale);
             crystal.enabled = true;
             crystal.gameObject.SetActive(true);
 

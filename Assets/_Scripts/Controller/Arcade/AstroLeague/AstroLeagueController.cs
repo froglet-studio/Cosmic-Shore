@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
                 // (EndConditionOverridesSO); the settings field is only the fallback when that
                 // asset is missing.
                 var overrides = EndConditionOverridesSO.Instance;
-                n_GoalTarget.Value = overrides != null ? overrides.GetAstroLeagueGoalLimit() : settings.goalLimit;
+                n_GoalTarget.Value = overrides != null ? overrides.GetAstroLeagueGoalLimit() : settings.GoalLimit;
                 n_IntensityScale.Value = ScaleForIntensity();
                 n_BoundaryShape.Value = (int)ShapeForIntensity();
                 n_CentralGoal.Value = CentralGoalForIntensity();
@@ -302,15 +302,15 @@ namespace CosmicShore.Gameplay
             // (along X) so the ball doesn't start sitting inside the central goal. Non-central modes keep
             // the ball's authored center spawn.
             if (ball != null && centralGoal)
-                ball.SetSpawnPosition(arenaCenter + Vector3.right * (settings.centralBallSpawnOffset * _currentScale));
+                ball.SetSpawnPosition(arenaCenter + Vector3.right * (settings.CentralBallSpawnOffset * _currentScale));
 
             // Goal lines and kickoff lines are DERIVED from the court dimensions, not from authored
             // scene positions: the goals belong on the flat caps at ±length/2 by construction, so
             // reading them from the same asset that sizes the court is what lets the playfield be
             // resized with one number and no scene edit. (_baseGoalLocalPos / _baseSpawnLocalPos
             // remain the fallback for a scene with no settings asset wired.)
-            float halfLength = arena != null ? arena.ArenaLength * 0.5f : settings.arenaLength * _currentScale * 0.5f;
-            float kickoffLine = settings.kickoffLineDistance * _currentScale;
+            float halfLength = arena != null ? arena.ArenaLength * 0.5f : settings.ArenaLength * _currentScale * 0.5f;
+            float kickoffLine = settings.KickoffLineDistance * _currentScale;
 
             if (goals != null)
                 for (int i = 0; i < goals.Count; i++)
@@ -326,7 +326,7 @@ namespace CosmicShore.Gameplay
                         goals[i].transform.position = arenaCenter;
                         Vector3 normal = i == 0 ? Vector3.forward : Vector3.back;
                         goals[i].Configure(ball, arenaCenter, _currentScale, normal, passThrough: true,
-                            baseMouthRadius: settings.goalMouthRadius);
+                            baseMouthRadius: settings.GoalMouthRadius);
                     }
                     else
                     {
@@ -336,7 +336,7 @@ namespace CosmicShore.Gameplay
                         // Wire the ball + arena center + scale AFTER repositioning so the goal's inward
                         // normal and mouth radius are computed from its final scaled world position.
                         goals[i].Configure(ball, arenaCenter, _currentScale,
-                            baseMouthRadius: settings.goalMouthRadius);
+                            baseMouthRadius: settings.GoalMouthRadius);
                     }
                 }
 
@@ -374,7 +374,7 @@ namespace CosmicShore.Gameplay
         {
             if (cell == null || settings == null) return;
 
-            if (!settings.faunaWaitOutsideCourt)
+            if (!settings.FaunaWaitOutsideCourt)
             {
                 if (_faunaExclusionSeeded) { cell.FaunaExclusionRadius = 0f; _faunaExclusionSeeded = false; }
                 return;
@@ -385,7 +385,7 @@ namespace CosmicShore.Gameplay
             // Nothing has hatched yet either way (InitialFaunaSpawnWaitTime).
             if (arena == null || arena.Boundary == null) return;
 
-            float closed = arena.Boundary.MaxExtent * Mathf.Max(0f, settings.faunaExclusionCourtFraction);
+            float closed = arena.Boundary.MaxExtent * Mathf.Max(0f, settings.FaunaExclusionCourtFraction);
 
             // Calm = the pitch is still clear, keep them out. Restless/Frenzy = it is filling up,
             // let them in. The ladder's own hysteresis (Enter/Exit volumes) debounces the edge for
@@ -399,8 +399,8 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                float sweep = settings.faunaExclusionSweepSeconds > 0f
-                    ? closed / settings.faunaExclusionSweepSeconds * Time.deltaTime
+                float sweep = settings.FaunaExclusionSweepSeconds > 0f
+                    ? closed / settings.FaunaExclusionSweepSeconds * Time.deltaTime
                     : Mathf.Infinity;
                 _faunaExclusion = Mathf.MoveTowards(_faunaExclusion, _faunaExclusionTarget, sweep);
             }
@@ -428,7 +428,7 @@ namespace CosmicShore.Gameplay
         {
             // Server-only in the multiplayer flow (InitializeAfterDelay → SetupNewRound).
             phase = MatchPhase.PreMatch;
-            matchMonitor.ConfigureDuration(settings.matchDurationSeconds);
+            matchMonitor.ConfigureDuration(settings.MatchDurationSeconds);
             ball.ResetToCenterServer(); // Frozen showpiece at center until the first kickoff
             base.SetupNewTurn();
         }
@@ -482,7 +482,7 @@ namespace CosmicShore.Gameplay
             // every cooldown, stacking toward VesselTransformer.velocityModifierMax (100) and throwing
             // the vessel around ("the ball imparts a force that never diminishes"). Skip the RPC entirely
             // when disabled; dial it up only if you want a subtle "bounce off" juice.
-            if (settings.vesselRecoilSpeed <= 0f) return;
+            if (settings.VesselRecoilSpeed <= 0f) return;
             if (vessel?.Transform == null || ball == null) return;
             ulong vesselNetId = striker.VesselNetId;
             if (vesselNetId == 0) return;
@@ -490,8 +490,8 @@ namespace CosmicShore.Gameplay
             Vector3 away = vessel.Transform.position - ball.transform.position;
             if (away.sqrMagnitude < 0.0001f) return;
 
-            float magnitude = settings.vesselRecoilSpeed * (0.4f + 0.6f * Mathf.Clamp01(intensity));
-            RecoilVessel_ClientRpc(vesselNetId, away.normalized, magnitude, settings.vesselRecoilDuration);
+            float magnitude = settings.VesselRecoilSpeed * (0.4f + 0.6f * Mathf.Clamp01(intensity));
+            RecoilVessel_ClientRpc(vesselNetId, away.normalized, magnitude, settings.VesselRecoilDuration);
         }
 
         [ClientRpc]
@@ -563,7 +563,7 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(settings.celebrationSeconds),
+                await UniTask.Delay(TimeSpan.FromSeconds(settings.CelebrationSeconds),
                     ignoreTimeScale: true, cancellationToken: token);
 
                 if (phase == MatchPhase.Finished) return;
@@ -581,7 +581,7 @@ namespace CosmicShore.Gameplay
 
             // Hold the ball frozen for the kickoff count-in window, then go (the shared 3-2-1
             // countdown canvas / GO cue is the existing-system feedback; no bespoke banner here).
-            await UniTask.Delay(TimeSpan.FromSeconds(settings.kickoffFreezeSeconds),
+            await UniTask.Delay(TimeSpan.FromSeconds(settings.KickoffFreezeSeconds),
                 ignoreTimeScale: true, cancellationToken: token);
 
             if (phase == MatchPhase.Finished) return;
@@ -598,7 +598,7 @@ namespace CosmicShore.Gameplay
         {
             if (phase == MatchPhase.Finished || _finalResultsSent) return;
 
-            if (IsTiedAcrossActiveDomains() && settings.goldenGoalOvertime)
+            if (IsTiedAcrossActiveDomains() && settings.GoldenGoalOvertime)
             {
                 matchMonitor.EnterOvertime();
                 AnnounceOvertime_ClientRpc();
@@ -653,7 +653,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    await UniTask.Delay(TimeSpan.FromSeconds(settings.winnerBannerSeconds),
+                    await UniTask.Delay(TimeSpan.FromSeconds(settings.WinnerBannerSeconds),
                         ignoreTimeScale: true, cancellationToken: matchCts.Token);
                 }
                 catch (OperationCanceledException) { return; }
@@ -806,7 +806,7 @@ namespace CosmicShore.Gameplay
 
             // Slots fan out laterally: 0, +1, -1, +2, -2, ... - spacing scales with the arena.
             int offsetSteps = (slot + 1) / 2 * (slot % 2 == 0 ? 1 : -1);
-            Vector3 lateral = anchor.right * (offsetSteps * settings.kickoffLateralSpacing * _currentScale);
+            Vector3 lateral = anchor.right * (offsetSteps * settings.KickoffLateralSpacing * _currentScale);
 
             Vector3 toCenter = (ball.transform.position - anchor.position).normalized;
             var rotation = toCenter.sqrMagnitude > 0.001f
@@ -871,7 +871,7 @@ namespace CosmicShore.Gameplay
                     .CompareTo((b.Vessel.Transform.position - ballPos).sqrMagnitude));
 
                 int defenders = Mathf.Clamp(
-                    Mathf.FloorToInt(_roleScratch.Count * Mathf.Clamp01(settings.strikerDefenderFraction)),
+                    Mathf.FloorToInt(_roleScratch.Count * Mathf.Clamp01(settings.StrikerDefenderFraction)),
                     0, _roleScratch.Count - 1);
 
                 for (int i = 0; i < _roleScratch.Count; i++)
@@ -920,11 +920,11 @@ namespace CosmicShore.Gameplay
 
             // ── 1. Intercept: extrapolate the ball over this AI's own travel time ──
             Vector3 predicted = ballPos;
-            if (settings.strikerClosingSpeedEstimate > 0.01f)
+            if (settings.StrikerClosingSpeedEstimate > 0.01f)
             {
                 float lead = Mathf.Min(
-                    Vector3.Distance(aiPos, ballPos) / settings.strikerClosingSpeedEstimate,
-                    Mathf.Max(0f, settings.strikerMaxLeadSeconds));
+                    Vector3.Distance(aiPos, ballPos) / settings.StrikerClosingSpeedEstimate,
+                    Mathf.Max(0f, settings.StrikerMaxLeadSeconds));
                 predicted = ballPos + ball.Velocity * lead;
             }
 
@@ -933,10 +933,10 @@ namespace CosmicShore.Gameplay
             bool defending = _aiIsDefender.TryGetValue(aiPlayer, out bool isDef) && isDef;
             if (defending && ownGoal != null)
             {
-                float clearRange = settings.defenderClearDistance * _currentScale;
+                float clearRange = settings.DefenderClearDistance * _currentScale;
                 if (Vector3.Distance(predicted, ownGoal.MouthCenter) > clearRange)
                     return Vector3.Lerp(ownGoal.MouthCenter, predicted,
-                        Mathf.Clamp01(settings.defenderStandoffFraction));
+                        Mathf.Clamp01(settings.DefenderStandoffFraction));
                 // Ball is in our area - stop holding position and go clear it.
             }
 
@@ -949,8 +949,8 @@ namespace CosmicShore.Gameplay
                 ? targetGoal.MouthCenter + targetGoal.InwardNormal * (300f * _currentScale)
                 : targetGoal.MouthCenter;
             Vector3 shotDir = (aimPoint - predicted).normalized;
-            float approachLead = settings.strikerApproachLead * _currentScale;
-            float recover = settings.strikerRecoverDistance * _currentScale;
+            float approachLead = settings.StrikerApproachLead * _currentScale;
+            float recover = settings.StrikerRecoverDistance * _currentScale;
 
             bool onAttackSide = Vector3.Dot(predicted - aiPos, shotDir) > 0f;
 
@@ -962,7 +962,7 @@ namespace CosmicShore.Gameplay
                 Vector3 driveDir = predicted - aiPos;
                 Vector3 toOwnGoal = ownGoal.MouthCenter - predicted;
                 if (driveDir.sqrMagnitude > 1e-4f && toOwnGoal.sqrMagnitude > 1e-4f)
-                    wouldOwnGoal = Vector3.Angle(driveDir, toOwnGoal) < settings.strikerOwnGoalGuardDegrees;
+                    wouldOwnGoal = Vector3.Angle(driveDir, toOwnGoal) < settings.StrikerOwnGoalGuardDegrees;
             }
 
             if (onAttackSide && !wouldOwnGoal)
@@ -1038,8 +1038,8 @@ namespace CosmicShore.Gameplay
             // On-goal arena reset, on every peer, behind the goal replay: park the vessels this
             // peer owns with speed zeroed and sweep the field prisms clean (per-peer local copies).
             // The kickoff re-park before GO is idempotent on top of this.
-            float resetWindow = settings.celebrationSeconds + settings.kickoffFreezeSeconds;
-            if (settings.goalResetsArena)
+            float resetWindow = settings.CelebrationSeconds + settings.KickoffFreezeSeconds;
+            if (settings.GoalResetsArena)
             {
                 ParkOwnedVesselsForKickoff();
                 if (matchCts != null)
@@ -1048,7 +1048,7 @@ namespace CosmicShore.Gameplay
 
             // The goal replay fills the reset window on the replay camera; it restores the
             // gameplay camera when playback ends (or at kickoff GO, whichever lands first).
-            if (settings.goalReplayEnabled && goalReplay != null)
+            if (settings.GoalReplayEnabled && goalReplay != null)
                 goalReplay.Play(resetWindow, _currentScale);
         }
 
@@ -1080,7 +1080,7 @@ namespace CosmicShore.Gameplay
             });
 
             int total = s_fieldClearBuffer.Count;
-            float duration = Mathf.Max(0.1f, settings.goalPrismClearSeconds);
+            float duration = Mathf.Max(0.1f, settings.GoalPrismClearSeconds);
             float start = Time.unscaledTime;
             int cleared = 0;
 
@@ -1116,12 +1116,12 @@ namespace CosmicShore.Gameplay
         {
             if (matchCts == null) return;
             float baseFixedDelta = Time.fixedDeltaTime / Mathf.Max(Time.timeScale, 0.0001f);
-            Time.timeScale = settings.celebrationTimeScale;
-            Time.fixedDeltaTime = baseFixedDelta * settings.celebrationTimeScale;
+            Time.timeScale = settings.CelebrationTimeScale;
+            Time.fixedDeltaTime = baseFixedDelta * settings.CelebrationTimeScale;
 
             try
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(settings.celebrationSeconds),
+                await UniTask.Delay(TimeSpan.FromSeconds(settings.CelebrationSeconds),
                     ignoreTimeScale: true, cancellationToken: matchCts.Token);
             }
             catch (OperationCanceledException) { /* teardown mid-celebration */ }

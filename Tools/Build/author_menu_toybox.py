@@ -91,23 +91,39 @@ def tile(key, primary, art=(), selected=False, sel_border="Selection"):
 # ToyCard.prefab
 # --------------------------------------------------------------------------------------------
 
+TOY_WELL_H = 150                # Rev 18 A: the portrait's well on top, the words under it
+TOY_PORTRAIT = 128
+
+
 def build_card():
+    """Rev 18 A (Docs/MENU_REDESIGN_B.md section 72): the toy's portrait in a well of its own, bobbing slowly
+    (Card_PortraitBob.mat); the section, the name and its one line on the opaque body under it."""
     root = N("root", "ToyCard", R(size=(TOY_W, TOY_H)))
     ring_node(root, "FocusRing", 14)
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
-    root.child(M.grid_node("Grid"))
+    clip = root.child(N("Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
+    clip.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
+        .add("mask", 114, A.mask(False))
+    well = image_node(clip, "Well", "Well", R((0, 1), (1, 1), (0, -TOY_WELL_H / 2), (0, TOY_WELL_H), (0.5, 0.5)), "SurfaceDark",
+                      alpha=0.45)
+    A.drift_art(well, "Portrait", "Portrait", R(size=(TOY_PORTRAIT, TOY_PORTRAIT)), None, material=A.PORTRAIT_BOB_MAT,
+                preserve=True)
+    A.body_sea(clip, "Clip/Sea", TOY_H - TOY_WELL_H)
+    image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, TOY_H - TOY_WELL_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
     acc = root.child(N("Accent", "Accent", R((0, 1), (1, 1), (0, -1), (-24, 3), (0.5, 1))))
     acc.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0)))
-    art_node(root, "Portrait", "Portrait", R((0.5, 1), None, (0, -18), (110, 110), (0.5, 1)), None, preserve=True)
-    label(root.child(N("Section", "Section", R((0, 0), None, (16, 96), (300, 16), (0, 0)))), "Pilot", "Label", "NeutralLightest")
-    nm = root.child(N("Name", "Name", R((0, 0), None, (16, 64), (310, 30), (0, 0))))
+    body_top = TOY_H - TOY_WELL_H
+    label(root.child(N("Section", "Section", R((0, 0), None, (16, body_top - 22), (300, 16), (0, 0.5)))), "Pilot", "Label",
+          "NeutralLightest")
+    nm = root.child(N("Name", "Name", R((0, 0), None, (16, body_top - 46), (310, 30), (0, 0.5))))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Toy", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
-    tag = root.child(N("Tagline", "Tagline", R((0, 0), None, (16, 14), (310, 46), (0, 0))))
+    tag = root.child(N("Tagline", "Tagline", R((0, 0), None, (16, 12), (310, 44), (0, 0))))
     tag.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("", "BodySmall", tok("NeutralLightest"), valign="top", wrap=True)) \
         .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
@@ -134,7 +150,7 @@ def daily_card(parent):
     frame(n, k)
     art_node(n, f"{k}/Portrait", "Portrait", R((0, 0.5), None, (24, 0), (170, 170), (0, 0.5)), None, preserve=True)
     t = n.child(N(f"{k}/Title", "Title", R((0, 1), None, (222, -26), (420, 18), (0, 1))))
-    label(t, "Today's activity", "Label", "Cta")
+    label(t, "Today's activity", "Label", "NeutralLightest")
     act = n.child(N(f"{k}/Activity", "Activity", R((0, 1), None, (222, -46), (440, 44), (0, 1))))
     act.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Activity", "H1", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
@@ -145,9 +161,9 @@ def daily_card(parent):
     H.framed(chip, f"{k}/Reward", 10, "SurfaceVeryDark", "Cta")
     label(chip.child(N(f"{k}/Reward/Label", "Label", R((0, 0), (1, 1), (-10, 0), (-40, 0)))), "Try it", "Label", "Cta",
           align="center")
-    image_node(chip, f"{k}/Reward/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (16, 16), (1, 0.5)), "Cta",
+    image_node(chip, f"{k}/Reward/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (16, 16), (1, 0.5)), "Purchase",
                K.chrome_sprite("chrome_crystal"), preserve=True)
-    n.add("tile", 114, tile(k, [c(f"{k}/Activity", "tmp")], art=[c(f"{k}/Portrait", "img")], selected=True, sel_border="Cta"))
+    n.add("tile", 114, tile(k, [c(f"{k}/Activity", "tmp")], art=[c(f"{k}/Portrait", "img")]))   # its call to action is the lime "Try it" chip, never a selection
     n.add("daily", 114, lambda ctx, go: mono(go, S["daily"],
           f"  titleText: {ref(ctx.c(f'{k}/Title', 'tmp'))}\n  activityText: {ref(ctx.c(f'{k}/Activity', 'tmp'))}\n"
           f"  toyText: {ref(ctx.c(f'{k}/Toy', 'tmp'))}\n  statusText: {{fileID: 0}}\n"
@@ -162,7 +178,6 @@ def shuffle_card(parent):
     n = parent.child(N(k, "ShuffleCard", R((0, 1), None, (0, 0), (FEAT_W, FEAT_H), (0, 1))))
     ring_node(n, f"{k}/FocusRing", 14)
     frame(n, k)
-    n.child(M.grid_node(f"{k}/Grid"))
     image_node(n, f"{k}/Glyph", "Glyph", R((0, 0.5), None, (84, 0), (44, 44), (0, 0.5)), "TextLight",
                K.chrome_sprite("chrome_shuffle"), preserve=True)
     label(n.child(N(f"{k}/Eyebrow", "Eyebrow", R((0, 1), None, (222, -26), (420, 18), (0, 1)))), "Shuffle", "Label",
@@ -188,8 +203,8 @@ def build_view():
     root = N("root", "ToyboxView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
-    # Rev 6: the living lattice over the glass (Lattice_Window.mat); it crystallises in as the window fades in.
-    root.child(M.window_lattice_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    # §67: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
+    root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
     body = root.child(N("Body", "Body", A.WINDOW_BODY))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
@@ -228,6 +243,7 @@ def build_view():
           align="center")
     # Rev 3: the party panel moved to the one friends drawer on Menu_Main.
     header = root.child(N("Header", "Header", A.WINDOW_HEADER))
+    A.drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "TOY BOX", "Label",
           "NeutralLightest")
@@ -419,6 +435,8 @@ def validate(files):
     card = files[prefab_path("ToyCard")]
     _, body = A.doc_of(card, K.FileIds("ToyCard")("root#card"))
     assert body and S["card"] in body, "ToyCard: the root carries no ToyboxCard"
+    _, por = A.doc_of(files[prefab_path("ToyCard")], K.FileIds("ToyCard")("Portrait#img"))
+    assert por and f"guid: {A.PORTRAIT_BOB_MAT}" in por, "ToyCard: the portrait does not bob (Card_PortraitBob.mat, section 72)"
     for field, want in CARD_FIELDS.items():
         C.wired(card, body, field, want, "ToyCard")
     view = files[prefab_path("ToyboxView")]
@@ -472,6 +490,8 @@ def self_test(files):
     ids = Ids()
     cases = [
         ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
+        ("the toy portrait standing still", lambda f: f.__setitem__(prefab_path("ToyCard"), f[prefab_path("ToyCard")].replace(
+            A.PORTRAIT_BOB_MAT, A.ART_DRIFT_MAT))),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ToyboxView"), M.strip_entrances(f[prefab_path("ToyboxView")]))),
         ("the body back under the friends orb", lambda f: f.__setitem__(prefab_path("ToyboxView"), A.in_one(
             f[prefab_path("ToyboxView")], K.FileIds("ToyboxView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),

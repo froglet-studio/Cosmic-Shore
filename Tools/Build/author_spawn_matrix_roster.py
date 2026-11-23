@@ -143,13 +143,22 @@ FAUNA = [
     ("Fortress Builders", ["Cell Configs/Swarm Cell/Swarm Fortress Builder Fauna Config Data.asset"]),
     ("Thief Nest", ["Cell Configs/Swarm Cell/Swarm Thief Nest Builder Fauna Config Data.asset"]),
     ("Wearer Builders", ["Cell Configs/Swarm Cell/Swarm Wearer Builder Fauna Config Data.asset"]),
+    # the pollinator (Docs/ECOSYSTEM.md 66): released without a hive a bee pollinates wherever it is; a hive raises its own
+    ("Bee", [f"Lifeforms/Bee Fauna {e}.asset" for e in ELEMENTS]),
+    # the first GROWN creature (Tools/Build/fauna_kit/unity_port.py ray; Docs/Studios/FAUNA_LAB.md round 7)
+    ("Ray", [f"Lifeforms/Ray Fauna {e}.asset" for e in ELEMENTS]),
+    ("Plume", [f"Lifeforms/Plume Fauna {e}.asset" for e in ELEMENTS]),
+    ("Lantern", [f"Lifeforms/Lantern Fauna {e}.asset" for e in ELEMENTS]),
+    ("Ammon", [f"Lifeforms/Ammon Fauna {e}.asset" for e in ELEMENTS]),
+    ("Nettle", [f"Lifeforms/Nettle Fauna {e}.asset" for e in ELEMENTS]),
 ]
 
 FLORA = [
     *[(n, lifeform_set(n)) for n in
       ("Arbor", "Coral", "Frond", "Lantern", "Reed", "Rosette", "Spire", "Tendril")],
+    # the Swarm cell grows no Mass forest since the element law armoured Mass (Docs/ECOSYSTEM.md 65.7: its whale band
+    # grazes Time), so the cell's row is its Space and Time forks; the canonical Borromean row still offers Mass
     ("Swarm Borromean", [
-        "Cell Configs/Swarm Cell/Swarm Inner Borromean Flora Mass Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Outer Borromean Flora Space Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Middle Borromean Flora Time Config Data.asset",
     ]),
@@ -157,6 +166,8 @@ FLORA = [
     ("SchwarzP Topiary", ["Cell Configs/Hesperides Cell/Hesperides SchwarzP Topiary Config Data.asset"]),
     ("Physarum", ["Threat Flora/Swarm Physarum Flora Space Config Data.asset"]),
     ("Snap Trap", ["Threat Flora/Swarm Snap Trap Flora Time Config Data.asset"]),
+    # a flora slot that raises fauna: the hive is the plant, its bees its members (author_bee_assets.py)
+    ("Bee Hive", lifeform_set("Bee Hive")),
 ]
 
 # ── Species descriptions ───────────────────────────────────────────────────────
@@ -221,8 +232,6 @@ DESCRIPTIONS = {
                 "of pipes. Space tiles are five times wider.",
     "Quasicrystal": "A colony of 110-strut stars of a lattice that never repeats, budding outward. Space "
                     "struts run long, Mass beams short.",
-    "Wall": "A flat strip of square plates laid side by side out of its crystal: a living barrier. All "
-            "four elements share one form.",
     "Branching": "A tree that grows toward the cell's crystal, forking two or three ways at up to 60 "
                  "degrees, with up to 5,000 leaves.",
     "Cacti": "An upright trunk throwing five to nine right-angle arms per node, slowly crusted with "
@@ -255,6 +264,24 @@ DESCRIPTIONS = {
                 "down the cables, and your wake repels it.",
     "Snap Trap": "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, "
                  "then snap shut on danger teeth.",
+    "Bee Hive": "A comb of hexagonal cells and the bees it raises. The bees pollinate plants of every colour, which "
+                "then grow faster, and sting opposing creatures near the hive, carrying their mass home: the comb is "
+                "built from it, in the colours they brought. They eat no plants.",
+    "Ray": "A glider grown from woven wire: two great vanes that beat in a slow wave, two lobes curled round its "
+           "crystal, a long whip with a sting. It grazes mass as it passes. Ride it with a Jewel Wasp: it eats "
+           "whatever comes within its lobes.",
+    "Plume": "A feather star grown from woven wire: ten feathered arms round a cup, every one ending in a sting. It "
+             "eats on every side through its plumes and whips all ten arms at a vessel. Each element is its own "
+             "body.",
+    "Lantern": "A lit comb jelly: eight rows of beating combs round a woven body, two long stinging lines behind. "
+               "The smoothest swimmer here and quick to turn; it lunges. Each element is its own body.",
+    "Ammon": "Twin coiled shells either side of its heart, like a ram's horns, with six stinging feelers between. "
+             "It swims in jets: a kick, then a glide it turns in. Each element is its own body.",
+    "Nettle": "A woven bell that swims in pulses, eight stinging tendrils hanging from its rim and four frilled arms "
+              "beneath. It eats on every side and whips a vessel anywhere inside its tendrils. Each element is its "
+              "own body.",
+    "Bee": "A pollinator. It eats no plants: it makes the plants it visits, of every colour, grow faster. Released "
+           "on its own it pollinates wherever it is; predators hunt it.",
     "Gyroid Topiary": "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in "
                       "Mass slabs, a colony that stops at eight instead of sprawling into a lattice.",
     "SchwarzP Topiary": "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves "

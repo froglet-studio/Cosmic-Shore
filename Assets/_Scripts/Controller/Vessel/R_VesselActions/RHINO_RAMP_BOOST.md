@@ -1,5 +1,20 @@
 # Rhino Ramp Boost + Speed-Tunnel Quasi Dolly Zoom
 
+> **2026-11-19: the Rhino is a freight train, and it oversteers** (Garrett: "change the time ability so it builds up
+> velocity and looses it with a lot more inertia. this will introduce a new type of drift: over steering as the rhino
+> turns a little sharper than it changes direction. set the top speed very high, but the acceleration low"). The Time
+> card is now **Momentum**: top 1400 u/s (x28), climb 110 u/s per second at Time rest, bleed 90 and coast 60, the
+> Momentum ward in the base kit (above 50% of top), and an inertial grip that lets the nose lead the travel. Its new
+> level 5 is **Slingshot**. See § "Inertia and Slingshot (2026-11-19)"; the Swordfish's ramp
+> (`SwordfishRampBoostAction.asset`) is untouched. The numbers in the older sections below are the 840 u/s record.
+
+> **2026-11-18: the ramp runs on FUEL that ploughing and slicing earn** (Garrett: "make their boosting resource tied
+> to their slicing and plowing. that will slow them down over longer time scales, while letting them keep their speed
+> and reward them for their fun"). See § "Fuel" below. Both hulls ran Regatta about 2x faster than the polished five
+> on a free ramp (`Docs/ElementalLoop/REDESIGN.md`).
+
+> **2026-11-07: both the Rhino and the Swordfish fly this ramp.** The Rhino split in two (`SWORDFISH.md`): the Swordfish took the sword, the Rhino kept the plough, and both kept the same `RhinoRampBoostAction` asset, Ramp Spool and Momentum.
+
 > **2026-10-16:** every peer now grades the ramp from `InputStatus`' replicated sticks (replicas
 > used to hold `IsBoosting` + ×16.8 forever after the first ramp); Time is read live; climb/bleed
 > compares against `VesselTransformer.TrackedSpeed`. The AI now ramps (`RampBoostAIPolicySO`).
@@ -229,6 +244,64 @@ and stopped being survivable the moment the ability's full-power plateau had to 
 where the gesture begins. `StraightLineGesture` (`_Scripts/Controller/IO/`) is that home; all six
 strategies now call it.
 
+## Fuel (2026-11-18)
+
+The ramp burns a tank, `ResourceSystem` slot 0 ("Ramp Fuel", max 1) on `Rhino.prefab` and `Swordfish.prefab`, named by
+`RampBoostActionSO.fuelResourceIndex` (-1 = the old free ramp, still the default for any other asset).
+
+| | Rhino | Swordfish |
+|---|---|---|
+| Earned by | ploughing: each hull contact with a prism, `RhinoPloughFuelByPrismEffect` (a `VesselGainResourceByPrismEffectSO`, first in `RhinoImpactorDataContainer`), 0.0015 a prism | slicing: each bill contact, `SwordfishSliceFuelByPrismEffect` (a `SkimmerChangeResourceByPrismEffectSO`, first in the sword's skimmer container), 0.004 a prism x TIME (x1 at rest, x4.5 at level 10, `_gainMultiplier`) |
+| Not earned by | super-shielded prisms (deflected, nothing ploughed), contacts while riding a trail | super-shielded prisms (the blade binds); the hull ram |
+| Burn | `fuelBurnPerSecond` 0.1 at full ramp (a full tank is 10 s of top power), proportional to the share of the ramp the line uses, nothing at cruise | the same |
+| Empty tank | the ramp still climbs, to `emptyTankMaxBoostMultiplier` 2.5x (125 u/s) instead of 16.8x (840 u/s), graded the same way; the next prism brings the full top back without a new gesture | the same |
+| Start | empty (`initialAmount` 0): the first plough fuels the first big ramp | the same |
+
+Why an empty tank keeps a small ramp: starving to the 50 u/s cruise made the pace bistable (measured 2026-11-18 in the
+real-game judge: a race either never ran dry, 27 s, or crawled at cruise once it did, 160-190 s, because a slow hull
+ploughs too few prisms to recover). With a 2.5x fumes ramp the pace is a smooth function of how much the hull ploughs.
+
+Why the start is empty: a full starting tank alone carried the short Regatta courses (10 s of top power) and left the
+pace unchanged there.
+
+Prism contact is simulated per peer, so each peer fills and burns its own copy of the tank, as the plough and the
+grading already run per peer. A replica can disagree briefly on whether the tank is dry.
+
+Regatta, shuffle set, card and all-L5 starts, measured by the real-game judge: see `Docs/ElementalLoop/REDESIGN.md`.
+Tests: `RampFuelTests`.
+
+## Inertia and Slingshot (2026-11-19)
+
+| | before | now |
+|---|---|---|
+| top (`maxBoostMultiplier`) | 16.8, 840 u/s | **28, 1400 u/s** |
+| climb (`accelerationPerSecond`, x Time 1 -> 2.5) | 220 (cruise -> top 3.6 s) | **110** (12.3 s at rest, 4.9 s at Time 10) |
+| bleed while steering (`bleedPerSecond`) | 300 | **90** |
+| coast once released (`returnPerSecond`) | 120 | **60** |
+| Momentum ward (`VesselElementalImmunity`) | Time level 5, above 70% of top (588) | **base**, above 50% of top (700) |
+| flight model | scalar | **vector, inertial grip 16 -> 15 per second** (`Rhino.prefab`, `VesselTransformer`) |
+
+**Inertia (oversteer).** `VesselTransformer` gained an inertial grip for the vector flight model
+(`inertialGripAtCruise`, `inertialGripAtSpeed`, `inertialGripSpeed`): outside a drift, momentum swings back onto the
+nose at that grip instead of snapping (`InertialGripMath.Convergence`, `1 - e^(-grip dt)`). A steady turn settles at a
+slip of turn rate / grip: about 6 degrees at cruise (100 deg/s / 16), about 13 at 600 u/s and 23 at the 1400 top. The
+nose leads and the path catches up; the turn radius of a held turn is unchanged (the travel still rotates at the
+nose's rate once settled). Turning never gains speed: outside a drift the vector model's magnitude is bounded by the
+throttle target (`ShapeSpeed`). Every other hull authors grip 0 and is bit-identical.
+
+**Slingshot (Time level 5, `RhinoSlingshot` on the root).** A slide begins when the slip passes 12 degrees and ends
+when it falls back under 4. With `IsUpgradeActive(Time)` the end flings the hull forward by the slide's depth: up to
+30% of its speed (at most 350 u/s) for a 35 degree slide, linear below that, none under 80 u/s, never past the ramp's
+top (`VesselTransformer.KickSpeed`). The 90 / 60 bleed then holds the kick for seconds. The Time card flashes on each fling.
+
+**Camera.** The Rhino takes no camera shake at all: `CameraFeelConfig`'s Rhino row is `noShake` (no trauma, no skim or
+drift rumble, no hit / shot / pickup kicks, and `CustomCameraController.Shake` is ignored while following it). The
+G-force lag and the breathing stay. The oversteer would otherwise rumble on every turn.
+
+**Not moved:** Headlong's course generator still sizes corners for the 840 u/s top (`HeadlongCircuitSettings`
+constants, `HeadlongHedges.MomentumFraction` 0.7); the drive sims (`rhino_drive_sim.py`, `rhino_line_sim.py`) still
+model the old numbers. Regatta: measured with the real-game judge, see the PR and `Docs/ElementalLoop/REDESIGN.md`.
+
 ## Visual model — the speed-tunnel PLATFORM LAW
 
 The optical sell is **no longer part of the Rhino**. The speed tunnel is a fleet-wide platform
@@ -372,7 +445,7 @@ with the rest of the law.
   Afterimage / Danger Afterimages; Space — Blade Reach / Breaker; Time — Ramp Spool / Momentum),
   and the row binds 4/4 with PLACEHOLDER icons — no card is LOCKED. The Time row's own `Input` is
   still deliberately **0**: the ramp engages on a full-throttle straight, not a button.
-- **OPEN: the graded ramp is not reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
+- **DONE 2026-10-26 (Garrett: "yes"): the Time gauge DIMS as the line bends** while the ramp is engaged - `RhinoHUDController.PushLineToTimeGauge` scales the gauge's authored alpha from 1 (straight) down to `bentLineGaugeAlpha` (0.3) by `RampBoostActionExecutor.Straightness01`; the fill is still speed / top speed. *Was:* **OPEN: the graded ramp is not reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
   is published for exactly this and is still read by nothing. The Time card now exists — lit
   while the ramp boosts, flashing once at Momentum, its gauge filling with speed / top speed
   (2026-10-17) — and straightness is still the obvious second readout for it: the one number that tells a

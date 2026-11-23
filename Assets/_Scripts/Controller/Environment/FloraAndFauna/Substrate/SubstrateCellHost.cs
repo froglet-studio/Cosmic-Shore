@@ -268,15 +268,44 @@ namespace CosmicShore.Gameplay
                 };
                 _vesselById[c.GetInstanceID()] = status;
             }
+
+            // An Ark inside the cell is a CLING-ONLY hull (SubstratePilot.ClingOnly): a leech latches onto it and sips its
+            // plates (SubstrateFauna.Sip -> the hull), and no other species sees it at all. A sip finds the plate nearest
+            // the rider's seat.
+            _arkById.Clear();
+            var arks = Ark.Live;
+            float r2 = Core.R * Core.R;
+            for (int a = 0; a < arks.Count && n < Job.Pilots.Length; a++)
+            {
+                var ark = arks[a];
+                if (!ark) continue;
+                var p = ark.Position - Centre;
+                if (p.sqrMagnitude > r2) continue;
+                var v = ark.Forward * ark.Speed;
+                Job.Pilots[n++] = new SubstratePilot
+                {
+                    Pos = new SVector3(p.x, p.y, p.z), Vel = new SVector3(v.x, v.y, v.z), Radius = ArkClingRadius,
+                    Id = ark.GetInstanceID(), ClingOnly = 1,
+                };
+                _arkById[ark.GetInstanceID()] = ark;
+            }
             Job.PilotCount = n;
         }
+
+        /// <summary>A rider's seat is this far off the Ark's centre (the hull is a long body; a seat off its flank reads
+        /// as riding it, and the sip reaches the nearest plate from there).</summary>
+        const float ArkClingRadius = 40f;
+        readonly Dictionary<int, Ark> _arkById = new(4);
+
+        /// <summary>The Ark a tick's pilot Id named at the last sense (a cling-only hull), or null.</summary>
+        public Ark ArkById(int id) => _arkById.TryGetValue(id, out var ark) && ark ? ark : null;
 
         /// <summary>The vessel a tick's pilot Id (SubstratePilot.Id) named at the last sense, or null when it has left
         /// (round 11-11: a contact the core decides without a collision - a leech's sip - is applied to it).</summary>
         public IVesselStatus VesselById(int id) => _vesselById.TryGetValue(id, out var v) && v is Component c && c ? v : null;
 
-        /// <summary>The cell's living FLORA, one unit of food per plant heart - the food field is a READ of mass. A Charge
-        /// plant is no food at all (its leaves are armoured: shielded mass is never food).</summary>
+        /// <summary>The cell's living FLORA, one unit of food per plant heart - the food field is a READ of mass. An
+        /// armoured plant (Mass, <see cref="ElementalArmour.Shields"/>) is no food at all: shielded mass is never food.</summary>
         void SenseFood()
         {
             var live = FloraHeartRegistry.Live;
@@ -285,7 +314,7 @@ namespace CosmicShore.Gameplay
             for (int k = 0; k < live.Count; k++)
             {
                 var f = live[k];
-                if (!f || f.IsDying || f.Element == Element.Charge) continue;
+                if (!f || f.IsDying || ElementalArmour.Shields(f.Element)) continue;
                 var ht = f.HeartTransform;
                 if (!ht) continue;
                 var p = ht.position - Centre;

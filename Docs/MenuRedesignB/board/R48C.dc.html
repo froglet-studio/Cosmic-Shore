@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 48 C - Fleet Codex, Ledger</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Bebas+Neue&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EDEDEB}
+.app{font-family:'Inter',system-ui,sans-serif;color:#111;font-size:14px;line-height:20px;position:relative;overflow:hidden;background:#EDEDEB}
+.hd{font-family:'Bebas Neue','Arial Narrow',Impact,sans-serif;font-weight:400;letter-spacing:.03em;text-transform:uppercase}
+.mo{font-family:'Space Mono',ui-monospace,Menlo,monospace;font-size:11.5px;color:#555}
+.num{font-variant-numeric:tabular-nums}
+.ink{width:52px;height:52px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;flex:none}
+.chip{width:22px;height:22px;border-radius:5px;background:#111;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.cap{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:26px;padding:0 7px;box-sizing:border-box;border:1px solid #9A9A9A;border-bottom-width:3px;border-radius:5px;font-family:'Space Mono',monospace;font-size:11px;color:#111;background:#FAFAF8;white-space:nowrap}
+.th{font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#555;text-transform:uppercase;padding:0 12px;display:flex;align-items:center}
+.td{padding:12px;border-top:1px solid #CFCFCC;display:flex;align-items:center;gap:10px;min-width:0}
+a{color:#111}
+a:focus-visible,input:focus-visible{outline:2px solid #111;outline-offset:2px}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:1080px">
+
+<header style="position:absolute;left:0;right:0;top:0;height:60px;box-sizing:border-box;padding:0 48px;display:flex;align-items:center;gap:28px;border-bottom:1px solid #CFCFCC">
+  <span class="hd" style="font-size:26px">Fleet Codex</span>
+  <nav aria-label="The fleet" style="display:flex;gap:16px;flex:1;min-width:0;overflow:hidden;white-space:nowrap;font-size:13px">
+    <a href="#v" style="color:#777;text-decoration:none">Angler</a><a href="#v" aria-current="page" style="color:#111;font-weight:600;text-decoration:underline;text-underline-offset:6px">Brittle Star</a><a href="#v" style="color:#777;text-decoration:none">Dolphin</a><a href="#v" style="color:#777;text-decoration:none">Grizzly</a><a href="#v" style="color:#777;text-decoration:none">Jacks</a><a href="#v" style="color:#777;text-decoration:none">Manta</a><a href="#v" style="color:#777;text-decoration:none">Meerkat</a><a href="#v" style="color:#777;text-decoration:none">Rhino</a><a href="#v" style="color:#777;text-decoration:none">Scarab</a><a href="#v" style="color:#777;text-decoration:none">Serpent</a><a href="#v" style="color:#777;text-decoration:none">Shrike</a><a href="#v" style="color:#777;text-decoration:none">Sparrow</a><a href="#v" style="color:#777;text-decoration:none">Squirrel</a><a href="#v" style="color:#777;text-decoration:none">Starlings</a><a href="#v" style="color:#777;text-decoration:none">Stoat</a><a href="#v" style="color:#777;text-decoration:none">Thresher</a><a href="#v" style="color:#777;text-decoration:none">Tiger Moth</a><a href="#v" style="color:#777;text-decoration:none">Urchin</a>
+  </nav>
+  <label style="display:flex;align-items:center;gap:8px;height:34px;width:240px;padding:0 12px;border:1px solid #BDBDBA;border-radius:17px;background:#F7F7F5;box-sizing:border-box"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input aria-label="Search the fleet" placeholder="Search" style="all:unset;font-size:13px;color:#111;width:100%"></label>
+</header>
+
+<nav aria-label="Crew vessels" style="position:absolute;left:48px;right:48px;top:60px;height:30px;display:flex;align-items:center;gap:18px;border-bottom:1px solid #CFCFCC;font-size:13px">
+  <span class="mo" style="letter-spacing:.12em;display:flex;align-items:center;gap:6px"><svg aria-hidden="true" width="18" height="12" viewBox="0 0 30 20" fill="none" stroke="#555" stroke-width="2"><circle cx="9" cy="6" r="4"/><circle cx="21" cy="6" r="4"/><path d="M2 19c1-4 4-6 7-6s6 2 7 6M14 19c1-4 4-6 7-6s6 2 7 6"/></svg>CREW VESSELS</span>
+  <a href="#v" style="color:#333;text-decoration:none">Goby and Pistol <span class="mo">2 seats</span></a>
+  <a href="#v" style="color:#333;text-decoration:none">Honeyguide and Ratel <span class="mo">2 seats</span></a>
+  <a href="#v" style="color:#333;text-decoration:none">Orca <span class="mo">4 seats</span></a>
+  <a href="#v" style="color:#333;text-decoration:none">Wrasse and Grouper <span class="mo">2 seats</span></a>
+</nav>
+
+<section aria-label="Brittle Star" style="position:absolute;left:48px;right:48px;top:100px;height:206px;display:flex;gap:40px;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:18px;box-sizing:border-box">
+  <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
+    <span class="mo" style="letter-spacing:.14em">NO. 16 · ONE-STICK FLYER · IN THE VESSEL CHANGER · READ 2026-11-02 FROM BLEEDING-EDGE</span>
+    <span class="hd" style="font-size:112px;line-height:.82">Brittle Star</span>
+    <span style="font-size:15px;color:#333;max-width:820px">A cockpit inside a five-pointed ring: four modes, five guns that overheat or five cords that whip and stiffen, and spare rings thrown as bombs.</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,auto));gap:4px 28px;flex:none;padding-bottom:4px">
+    <span><span class="hd num" style="font-size:30px">45</span> <span class="mo">u/s cruise</span></span>
+    <span><span class="hd num" style="font-size:30px">270</span> <span class="mo">u/s speed mode</span></span>
+    <span><span class="hd num" style="font-size:30px">80°</span> <span class="mo">turn, +0.1 per u/s</span></span>
+    <span><span class="hd num" style="font-size:30px">0/5</span> <span class="mo">level 5 wired</span></span>
+  </div>
+  <img src="/_blob/c84bea63aca36f0395c8a771b975039e" alt="Brittle Star in the hangar" style="width:340px;height:192px;object-fit:cover;border-radius:10px;flex:none">
+</section>
+
+<section aria-label="The kit" style="position:absolute;left:48px;right:48px;top:318px;display:grid;grid-template-columns:300px minmax(0,1fr) 230px 170px 110px 120px 130px">
+  <span class="th" style="height:36px">The kit</span><span class="th">What it does</span><span class="th">Element scales</span><span class="th">Level 5</span><span class="th">Controller</span><span class="th">Keyboard</span><span class="th">Phone</span>
+  <sc-for list="{{kit}}" as="k" hint-placeholder-count="5">
+    <div class="td"><span class="ink"><img src="{{k.icon}}" alt="" style="width:40px;height:40px"></span><span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="hd" style="font-size:26px;line-height:1">{{k.name}}</span><span style="display:flex;align-items:center;gap:6px"><span class="chip"><img src="{{k.mark}}" alt="" style="width:15px;height:15px"></span><span class="mo">{{k.element}}</span></span></span></div>
+    <div class="td" style="font-size:13px;line-height:18px;color:#333">{{k.desc}}</div>
+    <div class="td mo" style="color:#111">{{k.scales}}</div>
+    <div class="td mo">{{k.l5}}</div>
+    <div class="td"><img src="{{k.pad}}" alt="{{k.padLabel}}" style="height:28px;width:auto;max-width:44px"></div>
+    <div class="td"><span class="cap">{{k.key}}</span></div>
+    <div class="td"><span class="chip" style="width:34px;height:34px;border-radius:8px"><img src="{{k.touch}}" alt="{{k.touchLabel}}" style="width:24px;height:24px"></span><span class="mo" style="font-size:10px">{{k.touchLabel}}</span></div>
+  </sc-for>
+  <span class="th" style="height:34px;grid-column:1 / -1;border-top:2px solid #111;margin-top:6px">Fly and fire</span>
+  <sc-for list="{{flight}}" as="f" hint-placeholder-count="3">
+    <div class="td" style="padding:8px 12px"><span class="hd" style="font-size:22px">{{f.name}}</span></div>
+    <div class="td" style="padding:8px 12px;font-size:13px;color:#333;grid-column:2 / 5">{{f.desc}}</div>
+    <div class="td" style="padding:8px 12px"><img src="{{f.pad}}" alt="{{f.padLabel}}" style="height:28px;width:auto;max-width:44px"></div>
+    <div class="td" style="padding:8px 12px"><span class="cap">{{f.key}}</span></div>
+    <div class="td" style="padding:8px 12px"><span class="mo" style="font-size:10px;color:#111">{{f.touch}}</span></div>
+  </sc-for>
+</section>
+
+<footer style="position:absolute;left:48px;right:48px;bottom:20px;height:44px;display:flex;align-items:center;gap:18px;border-top:1px solid #CFCFCC">
+  <img src="/_blob/b6613dd7af3b52561c77c4bdfdb52634" alt="" style="width:64px;height:36px;object-fit:cover;border-radius:4px;filter:grayscale(1)">
+  <span><span class="mo">PLAYS IN</span> <span style="font-weight:600">Brittle Star Time</span> <span class="mo">arcade · time · I1-I4</span></span>
+  <span style="flex:1"></span>
+  <span class="mo">Docs: BRITTLE_STAR.md · BRITTLESTARTIME.md · last change 2026-11-01</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      kit: [
+        { name: 'Charge Mode', element: 'CHARGE', mark: '/_blob/5e320705da242326bd1f14d57cb94875', icon: '/_blob/6765374ab30e26e1c28e76ce2996b4b4',
+          desc: 'Five cords that slice every prism they touch and strike rivals for petals. RT loose: long whips that carry slow waves. RT pulled: short sabers. They cool the guns.',
+          scales: 'cord width x1 - x1.8', l5: 'Open', pad: '/_blob/6289c201c33069e59ed27cf4ebc43183', padLabel: 'Y', key: 'F', touch: '/_blob/6765374ab30e26e1c28e76ce2996b4b4', touchLabel: 'Charge card' },
+        { name: 'Creation Mode', element: 'MASS', mark: '/_blob/a94b4259b11be12ae624a402365e488f', icon: '/_blob/c18b72a161afeb8dc00f0aa413963515',
+          desc: 'A trail behind each of the ring’s five corners instead of the cockpit’s one, turning with the ring. The slowest mode, half cruise.',
+          scales: 'block width x1 - x2', l5: 'Open', pad: '/_blob/195dc0210411ddfb88bbdf6dfa3ef678', padLabel: 'B', key: 'T', touch: '/_blob/c18b72a161afeb8dc00f0aa413963515', touchLabel: 'Creation card' },
+        { name: 'Space Mode', element: 'SPACE', mark: '/_blob/407c65dfa28d85aa1ea8e411299436b0', icon: '/_blob/08bc6e56a67715808b99c72b777fb3cd',
+          desc: 'Five guns on RT, the pull setting the rate, meeting 120 u ahead or splayed. Every round heats them; overheated, your trail lays danger prisms.',
+          scales: 'range 387 - 774 u, heat 6 - 20 s', l5: 'Open', pad: '/_blob/3c599d50ebee9808268bd94461b7bdb8', padLabel: 'X', key: 'Q', touch: '/_blob/08bc6e56a67715808b99c72b777fb3cd', touchLabel: 'Space card' },
+        { name: 'Speed Mode', element: 'TIME', mark: '/_blob/34fa9e05d3c3263f8a856df7bfd0062a', icon: '/_blob/c108fbe6c1debeb3814467220aeef479',
+          desc: 'Every thruster lit: six times cruise, the trail stretched so output holds. It turns a 145 u circle against cruise’s 30 u.',
+          scales: 'speed x6 - x8', l5: 'Open', pad: '/_blob/af32a060cfd796ebea9c75336c0d8640', padLabel: 'A', key: 'SPACE', touch: '/_blob/c108fbe6c1debeb3814467220aeef479', touchLabel: 'Speed card' },
+        { name: 'Spare Ring', element: 'OMNI CRYSTAL', mark: '/_blob/ef6b3eba67683e1f949ec76faceb1fb0', icon: '/_blob/5d7f106739f3fefd69c2c702b070a980',
+          desc: 'Any crystal stores a spare ring, two at most. Throw it: a disk as wide as the nucleus breaks every prism in its plane and takes petals from rivals.',
+          scales: 'Charge: blast x1 - x4', l5: 'None', pad: '/_blob/878f20c2fd5584d694da93570b98557f', padLabel: 'LT', key: 'LSHIFT', touch: '/_blob/6a9b009f37ab9a4db850193ff0137214', touchLabel: 'Ring button' },
+      ],
+      flight: [
+        { name: 'Steer', desc: 'One-stick flight: the left stick turns the hull.', pad: '/_blob/796be3e3ceba8832a696a5c193f97459', padLabel: 'Left stick', key: 'W A S D', touch: 'Either thumb' },
+        { name: 'Aim the ring', desc: 'Turns the ring to bring a turret to bear; pushed out, the guns or cords splay.', pad: '/_blob/1176bbf07b07210e24879436bcfddf49', padLabel: 'Right stick', key: "P ; L '", touch: 'Drag Fire' },
+        { name: 'Fire', desc: 'Five guns in Space Mode, the cords in Charge Mode, one turret otherwise. Only a controller pulls part-way.', pad: '/_blob/8f66fc8db175fc9dad110dc28c1d1a04', padLabel: 'RT', key: 'RSHIFT', touch: 'Fire button' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

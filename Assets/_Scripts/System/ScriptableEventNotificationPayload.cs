@@ -1,6 +1,6 @@
 using CosmicShore.UI;
 using UnityEngine;
-using Obvious.Soap;
+using CosmicShore.Soap;
 
 namespace CosmicShore.Core
 {

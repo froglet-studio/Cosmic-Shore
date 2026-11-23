@@ -12,8 +12,8 @@ GameObject, its fileID and its name; only its look, its rect and its children ch
     Hub row (ButtonLayouts): along the bottom, 30 apart. Each hub's Button becomes a KitButton under the
         SAME fileID (MenuHubButton requires a Button and KitButton is one; the press-sound call stays),
         with the kit's FocusRing / Fill / Border children, a hub glyph and its label - Toy Box, Arcade,
-        Arena, Mission. Arcade is the opaque Play button with the A keycap and the pad's preferred
-        focus; Mission draws Inactive (its MenuAvailabilityView stays Unavailable, no double dim). All
+        Arena, Mission. Arcade keeps the A keycap and the pad's preferred focus
+        but draws like the other three (Shombith, 2026-10-24: the four hubs share one colour, no lime); Mission draws Inactive (its MenuAvailabilityView stays Unavailable, no double dim). All
         four used to point m_TargetGraphic at the legacy, inactive ArcadeButton's Image, so none gave
         any press feedback; that legacy object is deleted.
     Pilot chip (top left): a framed plate behind the octagonal avatar (HomeScreen.avatarImage moves to
@@ -29,6 +29,13 @@ GameObject, its fileID and its name; only its look, its rect and its children ch
     Settings: a hex with a slowly turning gear and the X keycap under it (ScreenSwitcher answers X);
         its ControllerButtonPress (bound to North, a second Settings opener) is removed.
     Freestyle hint: "Tap the cell to fly" breathing at the centre; the tap target leaves pad navigation.
+
+    Upright (Docs/MENU_REDESIGN_B.md section 138, the picked Rev 63 B; PortraitRect): the same pieces at their PC
+    sizes on the 1080-wide canvas. The pilot chip, Settings, the Up next cards (stacked, 480 wide) and the party invite
+    keep their PC places, which already fit under the band; the fly hint moves to the middle; the hub row becomes the
+    hubs 2 x 2, each 488 wide, along the bottom above the friends orb. The row is a GridLayoutGroup (one row of four
+    210 x 66 cells, 30 apart: exactly the HorizontalLayoutGroup it replaced, since every hub sat at its 210 minimum)
+    so the upright pose can turn it into two columns.
 
 STANDING DOWN: everything is re-derived on each run from the objects above (the legacy deletion runs
 while the legacy object exists); a re-run is a no-op (--check).
@@ -80,7 +87,7 @@ IDS = dict(
     bar_text_rt="1060766722", bar_text="1060766723",
     accept_go="909973148", accept_rt="909973149", accept_img="909973151", accept_icon_rt="1829191283", accept_icon="1829191284",
     cancel_go="1110576754", cancel_rt="1110576755", cancel_img="1110576757", cancel_icon_rt="1002720939", cancel_icon="1002720940",
-    name_go="7613213338458363602", name_rt="8076153094407706410", name_img="1014305526008866599",
+    name_btn="151569430713730966", name_go="7613213338458363602", name_rt="8076153094407706410", name_img="1014305526008866599",
     name_text_rt="8019494028173304602", name_text="1674904252436572557",
     avatar_go="3602970348709213962", avatar_rt="5738383061455623117", avatar_img="7652523670908676547",
     avatar_btn="4628693416680068390",
@@ -89,13 +96,30 @@ IDS = dict(
     row_go="1613024078", row_rt="1613024079", row_hlg="1613024080",
     tap_btn="797780469", quest_runner="654228613",
 )
+# Rev 13 (Shombith, 2026-10-25): the fourth hub is VOYAGE - the Mission window became the Voyage window (episodes, the
+# quest track, and the voyages they lead to: Tandava first). Its key and GameObjects keep the Mission names (the modal
+# type is still ModalWindows.MISSION); it opens (Available) and draws like the other three.
 HUBS = [  # key, go, rt, root img, button, hub comp, avail comp, label go, label rt, label tmp, caption, glyph, variant
     ("Toybox", "200217508", "200217509", "200217512", "200217511", "200217515", "200217514", "1681475207", "1681475208", "1681475209", "Toy Box", "chrome_cube", "Default"),
-    ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Play"),
+    ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Default"),
     ("Arena", "1015093819", "1015093820", "1015093823", "1015093822", "1015093826", "1015093825", "2097070915", "2097070916", "2097070917", "Arena", "chrome_blades", "Default"),
-    ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Mission", "chrome_target", "Inactive"),
+    ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Voyage", "chrome_globe", "Default"),
 ]
 HUB_PAD, HUB_MIN_W, HUB_H = (28, 28, 18, 18), 210, 66
+HUB_GAP = 30                  # between hubs on PC
+GRID = W.GRID                 # UnityEngine.UI.GridLayoutGroup
+PORTRAIT = K.meta_guid("Assets/_Scripts/UI/PortraitRect.cs")
+
+# Upright (section 138, Rev 63 B): Menu_Main's canvas is 1080 wide; content keeps 40 from each side. The hubs go 2 x 2
+# along the bottom, lifted clear of the friends orb in the bottom-left corner (author_menu_arcade.ORB_*); the fly hint
+# sits in the middle. Every other Home piece keeps its PC place (it fits under the band as it is).
+UP_W, UP_MARGIN = 1080, 40
+UP_HEIGHTS = (1800, 2080, 2337)          # safe heights checked: a short phone, a notched phone's safe area, 390 x 844
+UP_HUB_COLS = 2
+UP_HUB_GAP = (24, 20)
+UP_HUB_CELL = ((UP_W - 2 * UP_MARGIN - UP_HUB_GAP[0]) / UP_HUB_COLS, HUB_H)
+UP_HUB_Y = A.ORB_Y + A.ORB_SIZE + 20     # the row's bottom, over the orb's top
+UP_HUB_H = 2 * HUB_H + UP_HUB_GAP[1]
 
 # 6b
 OUT_DIR = "Assets/_Prefabs/UI Elements/Main Menu Screens/Home"
@@ -112,10 +136,13 @@ SWITCHER = "4216411968520269688"
 # challenge smaller tabs"): compact docked cards. Two of them under the pilot chip end at y ~442 at
 # 1080, clear of rev 3's friends handle (centred on the left edge, from y ~484) and of rev 6's presence
 # orb that replaced it (bottom-left corner, from y 944).
-CARD_W, CARD_H = 480, 100
-ART_W = 132                   # the card's art strip
-TEXT_X = ART_W + 16           # where a card's words start
-TEXT_W = CARD_W - TEXT_X - 2 * 26 - 20   # clear of the - and x buttons
+# Loop Atlas era.tide (Garrett, 2026-11-21, the picked Frogma option C, Docs/UI/specs/tide-home.md): the two cards are
+# the Tide strip and the quest chain, 420 wide, folded to a 56 strip at rest and opened by focus or hover; no fold or
+# close buttons ("lets not x them out").
+CARD_W = 420
+PAD_X = 20                    # where a card's words start
+INNER_W = CARD_W - 2 * PAD_X
+TIDE_H, QUEST_H = 132, 178    # each card opened
 
 
 def ctx_new():
@@ -276,11 +303,17 @@ def kit_button_doc(old, ctx, key, variant, label_tmp):
 def patch_hubs(p):
     I = IDS
     p.rect(I["row_rt"], R((0, 0), (1, 0), (0, 56), (0, HUB_H + 20), (0.5, 0)))
-    hlg = p.doc(I["row_hlg"])
-    for f, v in (("m_ChildAlignment", "4"), ("m_Spacing", "30"), ("m_ChildControlWidth", "1"), ("m_ChildControlHeight", "1"),
-                 ("m_ChildForceExpandWidth", "0"), ("m_ChildForceExpandHeight", "0")):
-        hlg = C.field_set(hlg, f, v)
-    p.replace(I["row_hlg"], hlg)
+    # One row of four 210 x 66 cells, centred, 30 apart: what the HorizontalLayoutGroup it replaces drew (each hub at its
+    # 210 minimum, 66 tall, centred in the 86-tall row). A grid, so the upright pose can make it two columns.
+    p.body(I["row_hlg"], lambda ctx, go: mono(go, GRID,
+           "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+           f"  m_ChildAlignment: 4\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+           f"  m_CellSize: {K.v2(HUB_MIN_W, HUB_H)}\n  m_Spacing: {K.v2(HUB_GAP, 0)}\n"
+           f"  m_Constraint: 1\n  m_ConstraintCount: {len(HUBS)}\n"), I["row_go"])
+    p.remove_comp(I["row_go"], str(p.ctx.fid(f"{I['row_go']}#portrait")))
+    p.add_comp(I["row_go"], "portrait", 114, K.portrait_rect(
+        R((0, 0), (1, 0), (0, UP_HUB_Y), (-2 * UP_MARGIN, UP_HUB_H), (0.5, 0)),
+        grid=dict(columns=UP_HUB_COLS, cell=UP_HUB_CELL, spacing=UP_HUB_GAP)))
     for key, go, rt, img, btn, hub, avail, lgo, lrt, ltmp, caption, glyph, variant in HUBS:
         p.body(img, img_body((1.0, 1.0, 1.0, 0.0), raycast=True), go)
         nodes, content = hub_children(key, glyph, variant)
@@ -305,6 +338,7 @@ def patch_hubs(p):
         p.replace(hub, hb)
         if variant == "Inactive":
             p.field(avail, "dimOwnGraphics", "0")
+        p.field(avail, "availability", "2" if variant == "Inactive" else "0")
 
 
 def _last_doc(p, node):
@@ -336,18 +370,26 @@ def chip_node():
     image_node(n, "Chip/Divider", "Divider", TL(436, 28, 1, 56), "SurfaceDark")
     cr = n.child(N("Chip/Crystals", "Crystals", TL(456, 26, 130, 60)))
     label(cr.child(N("Chip/Crystals/Label", "Label", TL(0, 0, 130, 16))), "Crystals", "Label", "NeutralLightest")
-    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "ElementMass", K.chrome_sprite("chrome_crystal"), preserve=True)
+    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "Purchase", K.chrome_sprite("chrome_crystal"), preserve=True)
     amt = cr.child(N("Chip/Crystals/Amount", "Amount", TL(28, 22, 100, 28)))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("ElementMass"))) \
-        .add("kt", 114, K.kit_text("Data", "ElementMass"))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("Data", "TextLight"))
     cr.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Chip/Crystals/Amount', 'tmp'))}\n"))
     return n
 
 
+def _disabled(body_fn):
+    """A component body with m_Enabled 0 (kept in the scene so its fileIDs stay, drawing and masking nothing)."""
+    return lambda ctx, go: body_fn(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1)
+
+
 def avatar_nodes():
+    # Rev 127 D (section 217): the avatar wears the round border (AvatarRippleBorder, built round it at run time by
+    # HomeScreen); the octagon clip that cut it would also cut the border's halo, so it masks nothing now.
     clip = N("Avatar/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-4, -4)))
-    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)) \
-        .add("mask", 114, A.mask(False))
+    clip.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, _disabled(K.image(K.WHITE, K.kit_sprite("kit_ring_fill"), False))) \
+        .add("mask", 114, _disabled(A.mask(False)))
     av = clip.child(N("Avatar/Clip/Avatar", "Avatar", STRETCH))
     av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER, preserve=False))
     return clip
@@ -380,8 +422,7 @@ def settings_nodes():
     bord = N("Settings/Border", "Border", STRETCH)
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_hex_line1"), True))
     gear = N("Settings/Gear", "Gear", R(size=(36, 36)))
-    gear.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_gear"), preserve=True)) \
-        .add("spin", 114, M.ambient("Spin", period=24.0, amplitude=0.0))
+    gear.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_gear"), preserve=True))
     kw = K.label_width("X", "Label") + 24
     slot = N("Settings/KeycapSlot", "KeycapSlot", R((0.5, 0), None, (0, -8), (kw, K.line_height("Label") + 8), (0.5, 1)))
     slot.children.append(P.Inst("SettingsKeycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", "X", None)]))
@@ -391,26 +432,40 @@ def settings_nodes():
 HINT_W, HINT_H, HINT_X = 300, 36, 28     # the fly hint, and its × (rev 3)
 
 
-def icon_button(parent, k, name, glyph, r, glyph_node=None):
+def icon_button(parent, k, name, glyph, r, glyph_node=None, plate=0):
     """A flat glyph control (the hint's x, a docked card's - and x): no plate and no border (2026-10-17, the
     owner on the boxed versions: "i dont like the designs"). The glyph rests dim, brightens under the
     pointer and lights in the accent colour when pressed or focused by the pad (a ColorTint on the glyph);
-    a transparent hit area keeps it easy to press. `glyph` None draws the minimise bar."""
+    a transparent hit area keeps it easy to press. `glyph` None draws the minimise bar.
+    `plate` (px, 0 = none, the default every other caller keeps): a visible square plate of that size centred in the
+    hit area, a dark fill with a hairline that lights under the pointer and in the accent when pressed, and a larger
+    glyph (the friends drawer's minimise, which was too small to hit, 2026-11-09)."""
     b = parent.child(N(k, name, r))
     b.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
-    g = b.child(N(f"{k}/Glyph", "Glyph", R(size=(14, 14)) if glyph else R(size=(12, 2))))
+    if plate:
+        pl = b.child(N(f"{k}/Plate", "Plate", R(size=(plate, plate))))
+        pl.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_sliver10_fill"), True))
+        bd = b.child(N(f"{k}/PlateBorder", "PlateBorder", R(size=(plate, plate))))
+        bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver10_line1"), True))
+    gsize = (20, 3) if plate else (12, 2)
+    g = b.child(N(f"{k}/Glyph", "Glyph", R(size=(14, 14)) if glyph else R(size=gsize)))
     g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.chrome_sprite(glyph) if glyph else None,
                                                                     preserve=bool(glyph)))
+    # With a plate the tint drives the PLATE (resting dark, lighter under the pointer, accent when pressed or focused);
+    # the glyph stays white. Without one it drives the glyph, as before.
+    rest, hover, down = ((tok("SurfaceDark", 0.7), tok("SurfaceLight", 0.9), tok("ControlActive")) if plate
+                         else (tok("NeutralLightest"), tok("TextLight"), tok("ControlActive")))
     tint = (A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n")
-            .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n", f"    m_NormalColor: {K.col(tok('NeutralLightest'))}\n")
+            .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n", f"    m_NormalColor: {K.col(rest)}\n")
             .replace("    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
-                     f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
+                     f"    m_HighlightedColor: {K.col(hover)}\n")
             .replace("    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}\n",
-                     f"    m_PressedColor: {K.col(tok('ControlActive'))}\n")
+                     f"    m_PressedColor: {K.col(down)}\n")
             .replace("    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
-                     f"    m_SelectedColor: {K.col(tok('ControlActive'))}\n"))
+                     f"    m_SelectedColor: {K.col(down)}\n"))
+    target = f"{k}/Plate" if plate else f"{k}/Glyph"
     b.add("button", 114, lambda ctx, go: C.mono(go, A.BUTTON,
-          tint + f"  m_TargetGraphic: {C.ref(ctx.c(f'{k}/Glyph', 'img'))}\n" + A.calls([])))
+          tint + f"  m_TargetGraphic: {C.ref(ctx.c(target, 'img'))}\n" + A.calls([])))
     b.add("audio", 114, A.menu_audio(11))
     return b
 
@@ -428,6 +483,7 @@ def hint_node():
     dock.add("cg", 225, H.canvas_group(True))
     n = dock.child(N("Hint", "FlyHint", R((0.5, 1), None, (0, -500), (HINT_W, HINT_H), (0.5, 1))))
     n.add("cg", 225, H.canvas_group(True)).add("breathe", 114, M.ambient("Breathe", period=3.2, amplitude=0.45))
+    n.add("portrait", 114, K.portrait_rect(R((0.5, 0.5), None, (0, 0), (HINT_W, HINT_H), (0.5, 0.5))))   # upright: the middle
     n.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.6), K.kit_sprite("kit_sliver10_fill"), True))
     lab = n.child(N("Hint/Label", "Label", R((0, 0), (1, 1), (-(HINT_X + 8) / 2, 0), (-(HINT_X + 8), 0))))
@@ -449,16 +505,24 @@ def patch_header(p):
     # The hint moved under its fade wrapper (HintDock): a scene written before that still lists it here.
     p.children(I["panel_rt"], [k for k in p.kids(I["panel_rt"]) if str(k) != str(p.ctx.rt("Hint"))])
 
-    # Avatar: octagon ring (its own Image), a masked octagon holding the avatar art, the lamp on top.
+    # Avatar: a clear round hit area (the button's target), the avatar art in its round border, the lamp on top.
     p.rect(I["avatar_rt"], TL(CHIP["x"] + 14, CHIP["y"] + 14, 84, 84))
-    p.body(I["avatar_img"], img_body(tok("TextLight"), K.kit_sprite("kit_oct_fill"), True, raycast=True), I["avatar_go"])
+    p.body(I["avatar_img"], img_body(tok("TextLight", 0.0), K.kit_sprite("kit_ring_fill"), False, raycast=True), I["avatar_go"])
     clip_rt = p.emit(avatar_nodes(), I["avatar_rt"], I["avatar_rt"])
     p.children(I["avatar_rt"], [clip_rt, I["lamp_rt"]])
     p.field(I["home_comp"], "avatarImage", ref(p.ctx.c("Avatar/Clip/Avatar", "img")))
-    # Parity with the old Home: pressing the avatar opens the profile window (its Avatar tab).
+    # Rev 13 (Shombith, 2026-10-25): the profile has no tab; pressing the pilot (avatar or name) opens it, as Y does.
+    # The avatar editor is the profile's own CHANGE AVATAR.
     p.add_comp(I["avatar_go"], "button", 114, lambda ctx, go: mono(go, A.BUTTON,
                A.selectable() + f"  m_TargetGraphic: {ref(I['avatar_img'])}\n"
-               + A.calls([(PROFILE_WINDOW, "CosmicShore.UI.ProfileIconSelectView", "OpenAvatar")])))
+               + A.calls([(SWITCHER, "CosmicShore.UI.ScreenSwitcher", "OnClickProfileNav")])))
+    # The name's own Button opens it too (Shombith, 2026-10-25: "Clicking on the avatar or name should bring up the whole
+    # profile"); it opened the display-name editor, which is the profile's own now. Its press sound stays.
+    nb = p.doc(I["name_btn"])
+    nb = re.sub(r"(      - m_Target: )\{fileID: " + PROFILE_WINDOW + r"\}\n        m_TargetAssemblyTypeName: [^\n]*\n(?:          [^\n]*\n)?        m_MethodName: OpenDisplayName\n",
+                lambda m: f"{m.group(1)}{{fileID: {SWITCHER}}}\n        m_TargetAssemblyTypeName: CosmicShore.UI.ScreenSwitcher, Assembly-CSharp\n"
+                          "        m_MethodName: OnClickProfileNav\n", nb)
+    p.replace(I["name_btn"], nb)
 
     # Lamp: a diamond on the avatar's corner; no profile call (it asks Go offline?).
     p.rect(I["lamp_rt"], R((1, 0), (1, 0), (4, 4), (28, 28), (0.5, 0.5)))
@@ -532,38 +596,31 @@ def patch_header(p):
 # 6b: Up next cards (scene) and the party invite (prefab)
 # --------------------------------------------------------------------------------------------
 
-DOCK_GAP = 10                 # rev 3: the cards stack under the pilot chip
-FOLDED_H = 40                 # a folded card: its art slice and eyebrow
-DOCK_BTN = 24
+DOCK_GAP = 10                 # the cards stack under the pilot chip
+FOLDED_H = 56                 # a card at rest: its eyebrow, its summary and (on the Tide) the clock
+TIDE_WEEKS = 6
+CHAIN_SLOTS, CHAIN_R, CHAIN_GAP, CHAIN_X, CHAIN_Y = 5, 9, 82, 32, 46
+UPNEXT_H = FOLDED_H + DOCK_GAP + max(TIDE_H, QUEST_H)   # the stack with the taller card open
 
 
-def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
+def dock_card(key, eyebrow, summary_x, expanded):
+    """One folding card: frame, eyebrow and summary on the strip; the rest under Detail, shown while it is open."""
     k = f"UpNext/{key}"
-    c = N(k, key, TL(x, 0, CARD_W, CARD_H))
+    c = N(k, key, TL(0, 0, CARD_W, FOLDED_H))
     c.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=14)) \
         .add("le", 114, le(pw=CARD_W, ph=-1))
     fill = c.child(N(f"{k}/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.9), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
-    clip = c.child(N(f"{k}/Clip", "Clip", R((0, 0), (0, 1), (ART_W / 2 + 2, 0), (ART_W, -2), (0.5, 0.5))))
-    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_sliver14_fill"), True)) \
-        .add("mask", 114, A.mask(False)) \
-        .add("cover", 114, lambda ctx, go: mono(go, A.S["cover"], f"  image: {ref(ctx.c(f'{k}/Clip/Art', 'img'))}\n"))
-    A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(ART_W, CARD_H)), None)
     bord = c.child(N(f"{k}/Border", "Border", STRETCH))
-    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(border_token), K.kit_sprite("kit_sliver14_line1"), True))
-    if border_token == "ElementTime":
-        M.rim_border(bord, "Time")                                      # rev 6: progress is Time
-    label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(TEXT_X, 12, TEXT_W, 16))), eyebrow, "Label", eyebrow_token)
-    # Everything under the eyebrow folds away with the card (HomeDockCard.detailGroup).
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
+    label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(PAD_X, 14, summary_x - PAD_X - 8, 16))), eyebrow, "Label", "TextLight")
+    sm = c.child(N(f"{k}/Summary", "Summary", TL(summary_x, 12, CARD_W - summary_x - PAD_X, 18)))
+    sm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "DataSmall", tok("NeutralLightest")))) \
+        .add("kt", 114, K.kit_text("DataSmall", "NeutralLightest"))
+    # Everything the strip does not show opens with the card (HomeDockCard.detailGroup).
     detail = c.child(N(f"{k}/Detail", "Detail", STRETCH))
     detail.add("cg", 225, H.canvas_group(True))
-    t = detail.child(N(f"{k}/Title", "Title", TL(TEXT_X, 30, CARD_W - TEXT_X - 18, 26)))
-    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Mode", "H3", tok("TextLight")))) \
-        .add("kt", 114, K.kit_text("H3", "TextLight"))
-    o = detail.child(N(f"{k}/Line", "Line", TL(TEXT_X, 56, CARD_W - TEXT_X - 18, 18)))
-    o.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "BodySmall", tok("NeutralLightest")))) \
-        .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
     c.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
           A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n").replace(
               "    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
@@ -572,63 +629,96 @@ def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
               f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
           + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Border', 'img'))}\n" + A.calls([])))
     c.add("audio", 114, A.menu_audio(2))
-    icon_button(c, f"{k}/Minimise", "Minimise", None, TR(10 + DOCK_BTN + 6, 8, DOCK_BTN, DOCK_BTN))
-    icon_button(c, f"{k}/Close", "Close", "chrome_close", TR(10, 8, DOCK_BTN, DOCK_BTN))
     c.add("dock", 114, lambda ctx, go: mono(go, S["dock"],
-          f"  cardGroup: {ref(ctx.c(k, 'cg'))}\n  detailGroup: {ref(ctx.c(f'{k}/Detail', 'cg'))}\n"
-          f"  card: {ref(ctx.rt(k))}\n"
-          f"  minimiseButton: {ref(ctx.c(f'{k}/Minimise', 'button'))}\n  closeButton: {ref(ctx.c(f'{k}/Close', 'button'))}\n"
-          f"  expandedHeight: {CARD_H}\n  foldedHeight: {FOLDED_H}\n  foldSeconds: 0.18\n"
-          f"  foldKey: menu.home.dock.{key.lower()}.folded\n"))
+          f"  detailGroup: {ref(ctx.c(f'{k}/Detail', 'cg'))}\n  card: {ref(ctx.rt(k))}\n"
+          f"  expandedHeight: {expanded}\n  foldedHeight: {FOLDED_H}\n  foldSeconds: 0.18\n"))
     return c, detail
 
 
+def line(parent, k, name, r, t, role, token, align="left"):
+    n = parent.child(N(k, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text(t, role, tok(token), align))) \
+        .add("kt", 114, K.kit_text(role, token))
+    return n
+
+
+def themed_bar(parent, k, name, r, token, sprite=None):
+    n = parent.child(N(k, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(token), K.kit_sprite(sprite) if sprite else None, bool(sprite))) \
+        .add("th", 114, H.themed(token))
+    return n
+
+
 def upnext_node():
-    # Rev 3: docked on the left under the pilot chip, stacked; a closed card closes its gap.
-    root = N("UpNext", "UpNext", TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, CARD_W, 2 * CARD_H + DOCK_GAP))
+    root = N("UpNext", "UpNext", TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, CARD_W, UPNEXT_H))
     root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), DOCK_GAP, 0, (0, 0), (0, 0)))
-    w, wd = upnext_card("Weekly", "Weekly challenge", "ElementTime", "ElementTime", 0)
-    # The stats row sizes each word to itself (an HLG over TMP's preferred widths): "YOUR BEST" ran into
-    # its value when the slots were fixed pixel widths.
-    stats = wd.child(N("UpNext/Weekly/Stats", "Stats", TL(TEXT_X, 76, CARD_W - TEXT_X - 14, 18)))
+    # The Tide: the week of the Tide and this week's card on the strip, the six-week clock under it; opened, the
+    # challenge's mode, objective, countdown and best.
+    w, wd = dock_card("Weekly", "The Tide", 120, TIDE_H)
+    seg_w = (INNER_W - 4 * (TIDE_WEEKS - 1)) / TIDE_WEEKS
+    for i in range(TIDE_WEEKS):
+        themed_bar(w, f"UpNext/Weekly/Week{i + 1}", f"Week{i + 1}", TL(PAD_X + i * (seg_w + 4), 38, seg_w, 4), "SurfaceDark")
+    line(wd, "UpNext/Weekly/Title", "Title", TL(PAD_X, 54, INNER_W, 26), "Mode", "H3", "TextLight")
+    line(wd, "UpNext/Weekly/Line", "Line", TL(PAD_X, 80, INNER_W, 18), "", "BodySmall", "NeutralLightest")
+    # The stats row sizes each word to itself (an HLG over TMP's preferred widths).
+    stats = wd.child(N("UpNext/Weekly/Stats", "Stats", TL(PAD_X, 104, INNER_W, 18)))
     stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (1, 1), (0, 0)))
     label(stats.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", R(size=(64, 18)))), "Ends in", "Label", "TextLight")
     cd = stats.child(N("UpNext/Weekly/Countdown", "Countdown", R(size=(110, 18))))
-    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("ElementTime"))) \
-        .add("kt", 114, K.kit_text("DataSmall", "ElementTime"))
+    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     stats.child(N("UpNext/Weekly/StatsGap", "Gap", R(size=(10, 18)))).add("le", 114, le(pw=10, ph=18))
     label(stats.child(N("UpNext/Weekly/BestLabel", "BestLabel", R(size=(76, 18)))), "Your best", "Label", "NeutralLightest")
     b = stats.child(N("UpNext/Weekly/Best", "Best", R(size=(100, 18))))
     b.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("None yet", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(w)
-    q, qd = upnext_card("Quest", "Current quest", "ElementTime", "ElementTime", 0)
-    for i, h in enumerate((8, 10, 12, 14)):
-        seg = qd.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (TEXT_X + i * 10, -92), (7, h), (0, 0))))
-        seg.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
-    mt = qd.child(N("UpNext/Quest/MeterText", "MeterText", TL(TEXT_X + 46, 76, CARD_W - TEXT_X - 60, 18)))
-    mt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "DataSmall", tok("TextLight"))) \
-        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
+    # The quest chain: the current quest and where it sits on the strip; opened, the chain (done, current, ahead),
+    # the next goal and the intensity. No colour by element.
+    q, qd = dock_card("Quest", "Quest chain", 150, QUEST_H)
+    d = 2 * CHAIN_R
+    for i in range(CHAIN_SLOTS - 1):
+        themed_bar(qd, f"UpNext/Quest/Link{i + 1}", f"Link{i + 1}",
+                   TL(CHAIN_X + i * CHAIN_GAP + d, CHAIN_Y + CHAIN_R - 1, CHAIN_GAP - d, 2), "SurfaceDark")
+    for i in range(CHAIN_SLOTS):
+        cx = CHAIN_X + i * CHAIN_GAP
+        node = themed_bar(qd, f"UpNext/Quest/Node{i + 1}", f"Node{i + 1}", TL(cx, CHAIN_Y, d, d), "SurfaceDark", "kit_hex_fill")
+        themed_bar(node, f"UpNext/Quest/Node{i + 1}/Ring", "Ring", STRETCH, "TextLight", "kit_hex_line2")
+        line(qd, f"UpNext/Quest/Label{i + 1}", f"Label{i + 1}", TL(cx + CHAIN_R - (CHAIN_GAP - 4) / 2, CHAIN_Y + d + 6, CHAIN_GAP - 4, 18),
+             "", "BodySmall", "NeutralLightest", align="center")
+    line(qd, "UpNext/Quest/Line", "Line", TL(PAD_X, 100, INNER_W, 20), "", "Body", "TextLight")
+    line(qd, "UpNext/Quest/MeterText", "MeterText", TL(PAD_X, 124, INNER_W, 18), "", "DataSmall", "NeutralLightest")
+    line(qd, "UpNext/Quest/Hint", "Hint", TL(PAD_X, 150, INNER_W, 18), "Press A or click to open", "BodySmall", "Selection")
     root.children.append(q)
     root.add("upnext", 114, lambda ctx, go: mono(go, S["upnext"],
              f"  weeklyButton: {ref(ctx.c('UpNext/Weekly', 'button'))}\n  weeklyGroup: {ref(ctx.c('UpNext/Weekly', 'cg'))}\n"
-             f"  weeklyArt: {ref(ctx.c('UpNext/Weekly/Clip/Art', 'img'))}\n"
-             f"  weeklyModeText: {ref(ctx.c('UpNext/Weekly/Title', 'tmp'))}\n"
+             f"  tideSummaryText: {ref(ctx.c('UpNext/Weekly/Summary', 'tmp'))}\n"
+             + K.refs_list("tideSegments", [ctx.c(f"UpNext/Weekly/Week{i + 1}", "th") for i in range(TIDE_WEEKS)])
+             + f"  weeklyModeText: {ref(ctx.c('UpNext/Weekly/Title', 'tmp'))}\n"
              f"  weeklyObjectiveText: {ref(ctx.c('UpNext/Weekly/Line', 'tmp'))}\n"
              f"  weeklyCountdownText: {ref(ctx.c('UpNext/Weekly/Countdown', 'tmp'))}\n"
              f"  weeklyBestText: {ref(ctx.c('UpNext/Weekly/Best', 'tmp'))}\n"
+             f"  tideStartUtc: {TIDE_START}\n  tideWeeks: {TIDE_WEEKS}\n"
              f"  questButton: {ref(ctx.c('UpNext/Quest', 'button'))}\n  questGroup: {ref(ctx.c('UpNext/Quest', 'cg'))}\n"
-             f"  questArt: {ref(ctx.c('UpNext/Quest/Clip/Art', 'img'))}\n"
-             f"  questTitleText: {ref(ctx.c('UpNext/Quest/Title', 'tmp'))}\n"
+             f"  questSummaryText: {ref(ctx.c('UpNext/Quest/Summary', 'tmp'))}\n"
              f"  questNextText: {ref(ctx.c('UpNext/Quest/Line', 'tmp'))}\n"
              f"  questMeterText: {ref(ctx.c('UpNext/Quest/MeterText', 'tmp'))}\n"
-             + K.refs_list("questMeterSegments", [ctx.c(f"UpNext/Quest/Meter{i + 1}", "th") for i in range(4)])
-             + f"  weeklyDock: {ref(ctx.c('UpNext/Weekly', 'dock'))}\n  questDock: {ref(ctx.c('UpNext/Quest', 'dock'))}\n"
-             + "  noBestText: None yet\n  readyToClaimText: Ready to claim on your Profile\n"
+             + K.refs_list("chainNodes", [ctx.c(f"UpNext/Quest/Node{i + 1}", "th") for i in range(CHAIN_SLOTS)])
+             + K.refs_list("chainRings", [ctx.c(f"UpNext/Quest/Node{i + 1}/Ring", "th") for i in range(CHAIN_SLOTS)])
+             + K.refs_list("chainLinks", [ctx.c(f"UpNext/Quest/Link{i + 1}", "th") for i in range(CHAIN_SLOTS - 1)])
+             + K.refs_list("chainLabels", [ctx.c(f"UpNext/Quest/Label{i + 1}", "kt") for i in range(CHAIN_SLOTS)])
+             + f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n  screenSwitcher: {ref(SWITCHER)}\n  refreshSeconds: 1\n"
+             + '  tideSummaryTemplate: "Week {week} of {weeks} \\xB7 {mode}"\n'
+             + "  tideWeekOnlyTemplate: Week {week} of {weeks}\n  tideNoClockTemplate: '{mode}'\n"
+             + "  noBestText: None yet\n"
+             + '  questSummaryTemplate: "{quest} \\xB7 {number} of {count}"\n'
+             + "  readyToClaimText: Ready to claim in Quests\n"
              + "  nextGoalTemplate: 'Next: {goal}'\n  allUnlockedText: Every intensity unlocked\n"
-             + "  meterTemplate: Intensity {level} of {max}\n"
-             + f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n  screenSwitcher: {ref(SWITCHER)}\n  refreshSeconds: 1\n"))
+             + "  meterTemplate: Intensity {level} of {max}\n"))
     return root
+
+
+TIDE_START = "2026-11-16"     # Tide 1's first day (a Monday, UTC); HomeUpNext.tideStartUtc
 
 
 def build_invite():
@@ -649,7 +739,7 @@ def build_invite():
         .add("mask", 114, A.mask(False))
     av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
     av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
-    label(root.child(N("Eyebrow", "Eyebrow", TL(112, 24, 380, 16))), "Party invite", "Label", "Cta")
+    label(root.child(N("Eyebrow", "Eyebrow", TL(112, 24, 380, 16))), "Party invite", "Label", "NeutralLightest")
     nm = root.child(N("Name", "Name", TL(112, 44, 380, 28)))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Pilot", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight"))
@@ -698,8 +788,34 @@ def invite_ids():
     return inst, stub, go_stub
 
 
+def _remove_upnext(p):
+    """Drop the old Up next stack before emitting the new one: emit() replaces documents by fileID but leaves the
+    ones the new tree no longer has (the art clips, the - and x buttons, the meter). Follows m_Father too, since the
+    icon buttons' rings and fills hang off their parent without being listed in its m_Children."""
+    go = str(p.ctx.go("UpNext"))
+    if not p.sc.has(go):
+        return
+    gone = set(C.subtree(p.sc, go))
+    grew = True
+    while grew:
+        grew = False
+        for fid in list(p.sc.order):
+            if fid in gone or p.sc.cls[fid] != 224:
+                continue
+            m = re.search(r"m_Father: \{fileID: (-?\d+)\}", p.doc(fid))
+            if m and m.group(1) in gone:
+                g = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(fid)).group(1)
+                gone.update(C.subtree(p.sc, g))
+                gone.update((fid, g))
+                grew = True
+    for fid in gone:
+        if p.sc.has(fid):
+            p.sc.remove(fid)
+
+
 def patch_upnext(p):
     I = IDS
+    _remove_upnext(p)
     node = upnext_node()
     after = _last_doc(p, hint_node())
     rt = p.emit(node, I["panel_rt"], after)
@@ -853,12 +969,16 @@ def validate(files):
         assert S["kitbutton"] in d, f"{key}Button is not a KitButton"
         assert f"  m_TargetGraphic: {{fileID: {ctx.c(f'Hub/{key}/Fill', 'img')}}}" in d, f"{key}Button: press feedback targets another object"
         assert f"  variant: {K.VARIANTS[variant]}\n" in d, f"{key}Button: wrong variant"
+        assert variant == "Default", f"{key}: the four hubs draw alike (Default)"
+        assert "  availability: 0\n" in sc.docs[avail], f"{key}: the hub is not Available"
         assert "m_MethodName: PlayAudio" in d, f"{key}Button lost its press sound"
         assert f"  preferredFocus: {1 if key == 'Arcade' else 0}\n" in sc.docs[hub], f"{key}: preferredFocus wrong"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["lamp_btn"]]), "the lamp still opens the profile window"
     avatar_btn = str(ctx.fid(f"{I['avatar_go']}#button"))
-    assert sc.has(avatar_btn) and f"m_Target: {{fileID: {PROFILE_WINDOW}}}" in sc.docs[avatar_btn] \
-        and "m_MethodName: OpenAvatar\n" in sc.docs[avatar_btn], "pressing the Home avatar no longer opens the profile window"
+    assert sc.has(avatar_btn) and f"m_Target: {{fileID: {SWITCHER}}}" in sc.docs[avatar_btn] \
+        and "m_MethodName: OnClickProfileNav\n" in sc.docs[avatar_btn], "pressing the Home pilot no longer opens the profile"
+    nb = sc.docs[I["name_btn"]]
+    assert "m_MethodName: OnClickProfileNav\n" in nb and "OpenDisplayName" not in nb, "pressing the Home pilot's name does not open the profile"
     assert sc.script(PROFILE_WINDOW) == C.script("ProfileIconSelectView"), "PROFILE_WINDOW is not the profile window"
     lamp = sc.docs[I["lamp_comp"]]
     assert f"  statusLabel: {{fileID: {ctx.c('Name/Status', 'tmp')}}}" in lamp, "the lamp's status label is unwired"
@@ -885,11 +1005,19 @@ def validate(files):
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["bar_btn"]]), "the question bar still opens the display-name window"
     # 6b
     up = sc.docs[str(ctx.c("UpNext", "upnext"))]
-    for f in ("weeklyButton", "weeklyModeText", "weeklyCountdownText", "weeklyBestText", "questButton", "questTitleText", "questNextText",
-              "weeklyDock", "questDock"):
+    for f in ("weeklyButton", "tideSummaryText", "weeklyModeText", "weeklyCountdownText", "weeklyBestText", "questButton",
+              "questSummaryText", "questNextText", "questMeterText"):
         assert re.search(r"^  %s: \{fileID: [1-9]" % f, up, re.M), f"HomeUpNext.{f} is not wired"
     assert f"guid: {ARCADE_GAMES}" in up, "HomeUpNext.games is not the arcade card list"
-    assert up.count("  - {fileID: ") == 4, "the quest meter needs four segments"
+    for f, n in (("tideSegments", TIDE_WEEKS), ("chainNodes", CHAIN_SLOTS), ("chainRings", CHAIN_SLOTS),
+                 ("chainLinks", CHAIN_SLOTS - 1), ("chainLabels", CHAIN_SLOTS)):
+        m = re.search(r"^  %s:\n((?:  - \{fileID: [1-9]\d*\}\n)*)" % f, up, re.M)
+        assert m and m.group(1).count("  - ") == n, f"HomeUpNext.{f} needs {n} wired entries"
+    assert f"  tideWeeks: {TIDE_WEEKS}\n" in up and re.search(r"^  tideStartUtc: \d{4}-\d{2}-\d{2}\n", up, re.M), \
+        "the Tide's clock has no start date or the wrong number of weeks"
+    for word in ("Minimise", "Close", "Clip", "Meter1"):   # no x, no fold button, no art, no old meter
+        for key in ("Weekly", "Quest"):
+            assert not sc.has(str(ctx.go(f"UpNext/{key}/{word}"))), f"the {key} card still has its old {word}"
     # One click on empty Home must not launch freestyle: the tap surface relays to DoubleTapRelay.
     assert "m_MethodName: ToggleTransition" not in sc.docs[TAP["button"]], "Home's tap surface launches freestyle on ONE click"
     assert f"m_Target: {{fileID: {TAP['relay']}}}" in sc.docs[TAP["button"]] and "m_MethodName: Tap\n" in sc.docs[TAP["button"]], \
@@ -903,20 +1031,23 @@ def validate(files):
     assert handlers == [CRYSTAL_HANDLER], f"Menu_Main must hold exactly one MenuCrystalClickHandler, found {handlers}"
     assert f"  crystalClickHandler: {{fileID: {CRYSTAL_HANDLER}}}\n" in sc.docs[SWITCHER], \
         "ScreenSwitcher.crystalClickHandler is not the scene's MenuCrystalClickHandler (pad Y on Home would not fly)"
-    for key in ("Weekly", "Quest"):   # rev 3: each docked card folds and closes
+    for key in ("Weekly", "Quest"):   # era.tide: each docked card rests folded and opens on focus or hover
         dk = sc.docs[str(ctx.c(f"UpNext/{key}", "dock"))]
-        # Rev 3.1: both cards expanded must end clear of the friends control - the owner's "friends is
-        # overlaying vessel hangar". Since rev 6 that is the presence orb in the bottom-left corner
-        # (author_menu_arcade.ORB_*), whose top sits at y 944 at 1080.
+        # Both cards must end clear of the friends orb (author_menu_arcade.ORB_*, top at y 944 at 1080) with the
+        # taller card open: the owner's "friends is overlaying vessel hangar".
         exp = int(re.search(r"expandedHeight: (\d+)", dk).group(1))
-        bottom = CHIP["y"] + CHIP["h"] + 16 + 2 * exp + DOCK_GAP
+        fold = int(re.search(r"foldedHeight: (\d+)", dk).group(1))
+        bottom = CHIP["y"] + CHIP["h"] + 16 + fold + exp + DOCK_GAP
         orb_top = 1080 - (A.ORB_Y + A.ORB_SIZE)
         assert bottom <= orb_top - 16, f"the docked cards reach y {bottom}: over the friends orb (top {orb_top})"
-        for f, want in (("detailGroup", ctx.c(f"UpNext/{key}/Detail", "cg")), ("minimiseButton", ctx.c(f"UpNext/{key}/Minimise", "button")),
-                        ("closeButton", ctx.c(f"UpNext/{key}/Close", "button")), ("cardGroup", ctx.c(f"UpNext/{key}", "cg"))):
+        assert fold < exp, f"{key} card: folded is not smaller than open"
+        for f, want in (("detailGroup", ctx.c(f"UpNext/{key}/Detail", "cg")), ("card", ctx.rt(f"UpNext/{key}"))):
             assert f"  {f}: {{fileID: {want}}}" in dk, f"{key} card: HomeDockCard.{f} is not wired"
-        title = sc.docs[str(ctx.rt(f"UpNext/{key}/Title"))]
-        assert f"  m_Father: {{fileID: {ctx.rt(f'UpNext/{key}/Detail')}}}" in title, f"{key} card: the title does not fold with the detail"
+        assert "minimiseButton" not in dk and "closeButton" not in dk, f"{key} card: a fold or close button is back"
+        summary = sc.docs[str(ctx.rt(f"UpNext/{key}/Summary"))]
+        assert f"  m_Father: {{fileID: {ctx.rt(f'UpNext/{key}')}}}" in summary, f"{key} card: the summary folds away with the detail"
+        title = sc.docs[str(ctx.rt(f"UpNext/{key}/Line"))]
+        assert f"  m_Father: {{fileID: {ctx.rt(f'UpNext/{key}/Detail')}}}" in title, f"{key} card: the line does not fold with the detail"
     inst, stub, go_stub = invite_ids()
     assert not sc.has(OLD_INVITE["pi"]), "the old invite instance survives"
     assert sc_text.count(f"m_SourcePrefab: {{fileID: 100100000, guid: {P.asset_guid(INVITE)}") == 1, "Menu_Main must hold one PartyInvitePopup"
@@ -928,6 +1059,7 @@ def validate(files):
     for f in ("inviterNameText", "inviterAvatarImage", "acceptButton", "declineButton", "canvasGroup", "partyCountText", "timerBar",
               "entrance"):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, panel, re.M), f"PartyInvitePopup: {f} is not wired"
+    check_upright(sc)
     anchors = set(re.findall(r"^--- !u!\d+ &(-?\d+)", sc_text, re.M)) | {"0"}
     for m in re.finditer(r"\{fileID: (-?\d+)\}", sc_text):
         assert m.group(1) in anchors, f"Menu_Main: dangling local fileID {m.group(1)}"
@@ -935,6 +1067,118 @@ def validate(files):
     for rt in [I["row_rt"], I["avatar_rt"], I["name_rt"], I["bar_rt"], I["settings_rt"], I["panel_rt"]] + [h[2] for h in HUBS]:
         for kid in re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)|^  m_Children: \[\]", sc.docs[rt], re.M).group(0)):
             assert f"  m_Father: {{fileID: {rt}}}" in sc.docs[kid], f"child {kid} of {rt} names another father"
+
+
+# --------------------------------------------------------------------------------------------
+# Upright (section 138): every Home block's place on the 1080-wide canvas
+# --------------------------------------------------------------------------------------------
+
+BAND_TOP = 84 + 20          # the nav band (84) plus air: nothing on Home starts above it
+
+
+def _v2(doc, name):
+    m = re.search(r"^  %s: \{x: (-?[\d.e+-]+), y: (-?[\d.e+-]+)\}" % name, doc, re.M)
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def portrait_of(sc, go):
+    """The PortraitRect on a GameObject (its document), or None."""
+    comps = re.findall(r"  - component: \{fileID: (-?\d+)\}", sc.docs[go]) if sc.has(go) else []
+    found = [c for c in comps if sc.has(c) and sc.script(c) == PORTRAIT]
+    assert len(found) <= 1, f"{go}: more than one PortraitRect"
+    return sc.docs[found[0]] if found else None
+
+
+def box(r, w, h):
+    """A rect's (left, bottom, right, top) in a parent w x h, origin bottom-left."""
+    (ax0, ay0), (ax1, ay1) = r["amin"], r["amax"]
+    (px, py), (x, y), (sx, sy) = r["pivot"], r["pos"], r["size"]
+    bw, bh = (ax1 - ax0) * w + sx, (ay1 - ay0) * h + sy
+    cx, cy = (ax0 + (ax1 - ax0) * px) * w + x, (ay0 + (ay1 - ay0) * py) * h + y
+    return (cx - bw * px, cy - bh * py, cx - bw * px + bw, cy - bh * py + bh)
+
+
+def rect_of_doc(doc, unity=True):
+    names = ("m_AnchorMin", "m_AnchorMax", "m_Pivot", "m_AnchoredPosition", "m_SizeDelta") if unity else \
+        ("anchorMin", "anchorMax", "pivot", "anchoredPosition", "sizeDelta")
+    v = [_v2(doc, n) for n in names]
+    assert all(v), "a rect field is missing"
+    return dict(amin=v[0], amax=v[1], pivot=v[2], pos=v[3], size=v[4])
+
+
+def upright_blocks(sc):
+    """{block: (rect, PortraitRect doc or None)} on Main_Menu_Panel upright: the pose where the block has one, else its
+    PC rect (a block with no pose stays where it is)."""
+    I, ctx = IDS, ctx_new()
+    gos = dict(chip=str(ctx.go("Chip")), settings=I["settings_go"], upnext=str(ctx.go("UpNext")), bar=I["bar_go"],
+               hint=str(ctx.go("Hint")), hubs=I["row_go"])
+    out = {}
+    for key, go in gos.items():
+        pr = portrait_of(sc, go)
+        if pr is not None:
+            assert "  drawAtPcScale: 0\n" in pr, f"Home {key}: a Home block must not be a PC-scale fallback block"
+            if "  movesRect: 1\n" in pr:
+                out[key] = (rect_of_doc(pr, unity=False), pr)
+                continue
+        out[key] = (rect_of_doc(sc.docs[sc.rect_of(go)]), pr)
+    # The party invite (a prefab instance; its rect is this script's) and the friends orb (author_menu_friends_drawer).
+    out["invite"] = (R((1, 1), None, (-40, -INVITE_TOP), (520, 132), (1, 1)), None)
+    out["orb"] = (R((0, 0), None, (A.ORB_X, A.ORB_Y), (A.ORB_SIZE, A.ORB_SIZE), (0, 0)), None)
+    return out
+
+
+def check_upright(sc):
+    blocks = upright_blocks(sc)
+    for key in ("hint", "hubs"):
+        assert blocks[key][1] is not None and "  movesRect: 1\n" in blocks[key][1], f"Home {key}: no upright pose (PortraitRect)"
+    hub_pr = blocks["hubs"][1]
+    assert f"  gridColumns: {UP_HUB_COLS}\n" in hub_pr, "Home hubs: the upright grid is not 2 columns"
+    cell, gap = _v2(hub_pr, "gridCellSize"), _v2(hub_pr, "gridSpacing")
+    # PC is unchanged: the grid draws one row of four 210 x 66 cells, 30 apart, centred - every hub's preferred width (its
+    # padding, glyph, gap, caption and, on Arcade, the A keycap) is within the 210 minimum the old row gave each one.
+    grid = sc.docs[IDS["row_hlg"]]
+    assert sc.script(IDS["row_hlg"]) == GRID and f"  m_CellSize: {K.v2(HUB_MIN_W, HUB_H)}\n" in grid \
+        and f"  m_Spacing: {K.v2(HUB_GAP, 0)}\n" in grid and "  m_Constraint: 1\n" in grid \
+        and f"  m_ConstraintCount: {len(HUBS)}\n" in grid and "  m_ChildAlignment: 4\n" in grid, \
+        "Home hubs: the PC grid no longer draws the one row of four the HorizontalLayoutGroup drew"
+    for key, *rest in HUBS:
+        caption = rest[9]
+        want = HUB_PAD[0] + 22 + 10 + K.label_width(caption.upper(), "Button") + HUB_PAD[1] \
+            + ((K.label_width("A", "Label") + 24 + 10) if key == "Arcade" else 0)
+        assert want <= HUB_MIN_W, f"{key} hub wants {want:g} wide, over its {HUB_MIN_W} cell: the grid would clip it on PC"
+    for h in UP_HEIGHTS:
+        boxes = {k: box(r, UP_W, h) for k, (r, _) in blocks.items()}
+        for k, (l, b, r, t) in boxes.items():
+            if k == "orb":
+                continue
+            assert l >= UP_MARGIN - 0.01 and r <= UP_W - UP_MARGIN + 0.01, \
+                f"Home {k} upright spans x {l:g}..{r:g}: outside the 1080 canvas's 40 margins"
+            assert t <= h - BAND_TOP + 0.01 and b >= 0, \
+                f"Home {k} upright spans y {b:g}..{t:g} of {h}: under the nav band or off the bottom"
+        hl, hb, hr, ht = boxes["hubs"]
+        assert UP_HUB_COLS * cell[0] + (UP_HUB_COLS - 1) * gap[0] <= hr - hl + 0.01 \
+            and 2 * cell[1] + gap[1] <= ht - hb + 0.01, "Home hubs: the 2 x 2 grid does not fit its upright row"
+        # The question bar covers the Up next cards when it is asked (it draws after them, as on PC); every other pair
+        # of blocks stays apart.
+        keys = sorted(boxes)
+        for i, a in enumerate(keys):
+            for b_ in keys[i + 1:]:
+                if {a, b_} == {"bar", "upnext"}:
+                    continue
+                (l1, b1, r1, t1), (l2, b2, r2, t2) = boxes[a], boxes[b_]
+                assert r1 <= l2 + 0.01 or r2 <= l1 + 0.01 or t1 <= b2 + 0.01 or t2 <= b1 + 0.01, \
+                    f"Home upright at height {h}: {a} {boxes[a]} overlaps {b_} {boxes[b_]}"
+    return blocks
+
+
+def upright_table(sc):
+    """Each block's upright rect on a 390 x 844 phone (1080 x 2337), top-down y: for the report."""
+    h = UP_HEIGHTS[-1]
+    rows = []
+    for k, (r, _) in upright_blocks(sc).items():
+        l, b, rr, t = box(r, UP_W, h)
+        rows.append((h - t, k, l, rr, h - t, h - b))
+    return [f"{k:9s} x {l:7.1f}..{rr:7.1f}  y {t:7.1f}..{bt:7.1f} (from top)" for _, k, l, rr, t, bt in sorted(rows)]
 
 
 def drift(files):
@@ -964,8 +1208,14 @@ def self_test(files):
 
     def avatar_dead(f):
         s = f[SCENE]
-        i = s.index("m_MethodName: OpenAvatar\n", s.index(f"  m_TargetGraphic: {{fileID: {IDS['avatar_img']}}}"))
-        f[SCENE] = s[:i] + "m_MethodName: OpenAvatarX\n" + s[i + len("m_MethodName: OpenAvatar\n"):]
+        i = s.index("m_MethodName: OnClickProfileNav\n", s.index(f"  m_TargetGraphic: {{fileID: {IDS['avatar_img']}}}"))
+        f[SCENE] = s[:i] + "m_MethodName: OnClickProfileNavX\n" + s[i + len("m_MethodName: OnClickProfileNav\n"):]
+
+    def name_dead(f):
+        s = f[SCENE]
+        i = s.index(f"--- !u!114 &{I['name_btn']}\n")
+        j = s.index("--- ", i + 4)
+        f[SCENE] = s[:i] + s[i:j].replace("m_MethodName: OnClickProfileNav\n", "m_MethodName: OpenDisplayName\n") + s[j:]
 
     def arcade_unfocused(f):
         hub = HUBS[1][5]
@@ -977,16 +1227,20 @@ def self_test(files):
         ("the invite's drop-in stripped", lambda f: f.__setitem__(invite_path(), M.strip_entrances(f[invite_path()]))),
         ("the lamp's status label unwired", unwire_status),
         ("the Home avatar no longer opens the profile window", avatar_dead),
+        ("the Home pilot's name back on the name editor", name_dead),
         ("Arcade not the pad's first stop", arcade_unfocused),
         ("a hub left a plain Button", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),
         ("the invite with no drain bar", lambda f: f.__setitem__(invite_path(), re.sub(
             r"(  timerBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[invite_path()]))),
-        ("a docked card that cannot fold", lambda f: f.__setitem__(SCENE, re.sub(r"(  minimiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
+        ("a docked card that cannot fold", lambda f: f.__setitem__(SCENE, re.sub(r"(  detailGroup: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
+        ("the Tide's clock missing a week", lambda f: f.__setitem__(SCENE, re.sub(r"(  tideSegments:\n  - \{fileID: -?\d+\}\n)", "  tideSegments:\n", f[SCENE], count=1))),
         ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("the double-tap surface back over the panel", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  m_Children:\n  - {{fileID: {TAP['rt']}}}\n  - {{fileID: 1769152617528871830}}\n",
             f"  m_Children:\n  - {{fileID: 1769152617528871830}}\n  - {{fileID: {TAP['rt']}}}\n", 1))),
+        ("the Arcade hub lime again", lambda f: f.__setitem__(SCENE, re.sub(
+            r"(--- !u!114 &1749518389\n(?:(?!--- ).*\n)*?  variant: )0\n", r"\g<1>5\n", f[SCENE], count=1))),
         ("the Arcade hub re-targeted away from ARCADE", lambda f: f.__setitem__(SCENE, re.sub(
             r"(--- !u!114 &1749518393\n(?:(?!--- ).*\n)*?  target: )10\n", r"\g<1>14\n", f[SCENE], count=1))),
         ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
@@ -995,12 +1249,26 @@ def self_test(files):
             "        m_TargetAssemblyTypeName: CosmicShore.UI.DoubleTapRelay, Assembly-CSharp\n        m_MethodName: Tap\n",
             "        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuCrystalClickHandler, Assembly-CSharp\n        m_MethodName: ToggleTransition\n", 1))),
         ("the docked cards grown over the friends orb", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
-            f"expandedHeight: {CARD_H}\n", "expandedHeight: 400\n", 1))),
+            f"expandedHeight: {QUEST_H}\n", "expandedHeight: 800\n", 1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),
         ("pad Y on Home unwired from the freestyle toggle", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  crystalClickHandler: {{fileID: {CRYSTAL_HANDLER}}}\n  freestyleToggleCooldown:",
             "  crystalClickHandler: {fileID: 0}\n  freestyleToggleCooldown:", 1))),
+        ("the hubs with no upright pose", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  - component: {{fileID: {ctx_new().fid(IDS['row_go'] + '#portrait')}}}\n", "", 1))),
+        ("the upright hub cells too wide for 1080", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  gridCellSize: {K.v2(*UP_HUB_CELL)}\n", "  gridCellSize: {x: 560, y: 66}\n", 1))),
+        ("the upright hint dropped onto the hubs", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  anchorMin: {K.v2(0.5, 0.5)}\n  anchorMax: {K.v2(0.5, 0.5)}\n  pivot: {K.v2(0.5, 0.5)}\n"
+            f"  anchoredPosition: {K.v2(0, 0)}\n  sizeDelta: {K.v2(HINT_W, HINT_H)}\n",
+            f"  anchorMin: {K.v2(0.5, 0)}\n  anchorMax: {K.v2(0.5, 0)}\n  pivot: {K.v2(0.5, 0.5)}\n"
+            f"  anchoredPosition: {K.v2(0, 200)}\n  sizeDelta: {K.v2(HINT_W, HINT_H)}\n", 1))),
+        ("the PC hub grid cells narrower than the old row's hubs", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  m_CellSize: {K.v2(HUB_MIN_W, HUB_H)}\n", "  m_CellSize: {x: 180, y: 66}\n", 1))),
+        ("Home carrying the PC-scale fallback", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            "  drawAtPcScale: 0\n  pcWidth: 1920\n  movesRect: 1\n  anchorMin: {x: 0, y: 0}\n  anchorMax: {x: 1, y: 0}\n",
+            "  drawAtPcScale: 1\n  pcWidth: 1920\n  movesRect: 1\n  anchorMin: {x: 0, y: 0}\n  anchorMax: {x: 1, y: 0}\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

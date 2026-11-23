@@ -1,5 +1,10 @@
 # The Butterfly
 
+> **RETIRED 2026-10-29** (Garrett: "retire the butterfly, the tiger moth replaces it"). The Tiger Moth (`TIGER_MOTH.md`)
+> flies this airframe, its wings, dust, wake, camera, HUD and all four of its modes, with the Drop in place of the Fold.
+> `Butterfly.prefab`, its class asset and its map are deleted; everything below is the design record of the hull the
+> Tiger Moth is built from, and still describes every part except Time.
+
 > *"It captures what we lost when we moved the Manta from a graceful soaring vessel to a speeding
 > bomber. Someone who flies slow from far away with a wide piano-key trail. They get to enjoy
 > making beautiful curvy surfaces through the hypersea. While everyone else is fighting they are
@@ -207,10 +212,13 @@ LONGER rather than fatter, and `ButterflyDustField`, which switches the collider
 off together outside Dust mode (a disabled collider sends no `OnTriggerExit`, and Unity delivers
 trigger messages to disabled MonoBehaviours, so both have to go) and draws the capsule as a runtime
 particle fall of motes sized to its live world length. Motes stop EMITTING on the way out rather
-than vanishing (continuity of existence). The motes wear the **shielded tier of the vessel's own
-domain** — the rim colour (`ShieldedInsideBlockColor`), read through
-`SO_ColorSet.TryGetPrismKindColors(domain, PrismKind.Shielded)`, the one source every prism tier is
-painted from, so the dust always matches the shielded mass it lays and shields. It is read LIVE
+than vanishing (continuity of existence). The dust is made of **three colours of the vessel's own
+domain** (Garrett, 2026-11-01: "make a dust made of danger color, team domain color, team shielded
+domain color"): each mote wears ONE of the DANGER, PLAIN and SHIELDED tiers' rims, read through
+`SO_ColorSet.TryGetPrismKindColors(domain, kind)`, the one source every prism tier is painted from, so
+the dust shows the three things it turns your mass into (`ButterflyDustField.ResolveMotePalette`; the
+capsule picks one at random per mote through a fixed-mode gradient, the bloom takes them in turn). The
+HUD's Charge and Space cards draw their dust in the same three. It is read LIVE
 each frame against the last domain painted, so a domain change reaches the NEXT motes while the
 ones in the air finish in their old colour; `Domains.Blue` and a missing palette fall back to the
 authored `dustColor`. Motes are 2.5-6 world units: at the Butterfly's ~204-unit camera a world unit
@@ -359,8 +367,8 @@ calls it.
 once (`ExplosionImpactor._vesselsHit`).
 
 **It is drawn as the capsule's dust** (`ButterflyBloomDust` on the prefab, round 2). Same material
-(`fx_spark_oval`), same colour rule (`ButterflyDustField.ResolveMoteColour` — the shielded rim of
-the pilot's domain), same in-hold-out fade and downward drift as the Dust-mode motes, in two layers:
+(`fx_spark_oval`), same colour rule (`ButterflyDustField.ResolveMotePalette` — the danger, plain and
+shielded rims of the pilot's domain), same in-hold-out fade and downward drift as the Dust-mode motes, in two layers:
 the wavefront leaves **2400 motes** through the sphere at constant density (the count follows swept
 volume, r³, so the haze is as thick beside the hull as at the rim), and **every prism the dust
 changes releases a puff of 5 larger motes** where it stood — the eye goes straight to the mass that

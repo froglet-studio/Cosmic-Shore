@@ -16,7 +16,7 @@ MonoBehaviour:
   Notes: 'Reuses Dog Fight''s Boneyard outright - referenced, not forked, exactly as the mode
     does. OPEN-ENDED: it scores on dusting rival pilots and a solo preview has none; what it
     teaches is the Butterfly, the mode switch and the dust hanging below the hull. Vessel pinned
-    to Butterfly(13).'
+    to TigerMoth(29).'
   PreviewCell: {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
@@ -27,7 +27,7 @@ MonoBehaviour:
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
-  Vessel: 13
+  Vessel: 29
   ObjectiveText: Fly over a rival in Dust mode
   ObjectiveMetric: 8
   ObjectiveTarget: 0

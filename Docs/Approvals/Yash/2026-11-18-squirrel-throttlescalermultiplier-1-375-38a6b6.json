@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-18-squirrel-throttlescalermultiplier-1-375-38a6b6",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T01:59:19+00:00",
+  "area": "Squirrel Time throttle (Regatta step 5)",
+  "summary": "Squirrel ThrottleScalerMultiplier 1.375->1.65 raised to 1.5->1.8 (50% lever). #2200's 37.5% notch had been fitted to judge races that flew a Scarab in the Squirrel's seat (bug fixed in #2208). Re-judged: five-hull imbalance card 1.06, L5 1.075 (20 fresh + shipped). Skim Race rungs stay inside their bars, but I2 slows from ~148 s to ~207 s mean (one 299 s on a 300 s bar). A Skim Race AI retrain at the new throttle is the follow-up.",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "4abd93208"
+}

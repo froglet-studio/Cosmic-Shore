@@ -38,8 +38,22 @@ SCOPES = [
     "Assets/_Scripts/Controller/AI/SkimRace",
     "Assets/_Scripts/Utility/AITraining",
     "Assets/_Scripts/Editor/AI",
+    # The in-game Third Eye (dev builds): a viewer of every pilot; it may move only the camera it borrows.
+    "Assets/_Scripts/Controller/Camera/ThirdEye",
     # The microgame drill: its Ghost Demo presses a control for the autopilot (TRAINING_PLAN §10.7).
     "Assets/_Scripts/Controller/Arcade/Preview/Drill",
+    # Every hull's boost policy: each presses its vessel's abilities through the replicated press (2026-11-02, with the
+    # Thresher's aimed launch, which hands its executor an aim and nothing else).
+    "Assets/_Scripts/Controller/AI/Boost",
+    # The Thresher's Belfry AI (2026-11-07): where it aims and when it ducks - nothing it may write to a vessel.
+    "Assets/_Scripts/Controller/Arcade/ThresherTime/AI",
+    # Brittle Star Time's race coach (2026-11-16): the Speed wish, the line and the nose follow - nothing it may write to
+    # a vessel. Two FILES (a scope may be one): the rest of that folder is the race and its heat, which move scenery.
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeCoach.cs",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeController.Coach.cs",
+    # Grizzly Time's AI (2026-11-20): where it aims and when it presses Rush (the replicated press) - nothing it may write
+    # to a vessel. One FILE: the rest of that folder is the race and its kegs, which move scenery.
+    "Assets/_Scripts/Controller/Arcade/GrizzlyTime/GrizzlyTimeController.AI.cs",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.
@@ -69,6 +83,8 @@ REFLECTION = re.compile(r"\.SetValue\s*\(|\bBindingFlags\b|\bSendMessage\s*\(|\b
 
 # (path suffix, receiver regex, member, reason) - each a reviewed exception.
 ALLOW = [
+    ("Camera/ThirdEye/ThirdEyeHud.cs", r"^Eye\.Fly$", "Speed",
+     "the AI Diagnose fly-speed slider sets the dev free-fly CAMERA speed (FreeFlyCamera), never a vessel"),
     ("Utility/AITraining/Pilot/TrainingPilot.cs", r"^_ctx$", "Speed",
      "_ctx is the genome's own DecisionContext, filled from a READ of _status.Speed"),
     ("Utility/AITraining/Pilot/TrainingPilot.cs", r"^_ctx$", "IsBoosting",
@@ -80,8 +96,8 @@ ALLOW = [
     ("Utility/AITraining/Runner/TrainingAutoLauncher.cs", r"^Time$", "timeScale",
      "overnight TRAINING batches only (never a benchmark); applies to every pilot equally, "
      "refused while another client is connected, restored after the batch"),
-    ("Editor/AI/ThirdEyeWindow.cs", r"^_cam\.transform$", "SetPositionAndRotation",
-     "_cam is the Third Eye window's own hidden camera rig, never a vessel; it only watches"),
+    ("Controller/Camera/ThirdEye/ThirdEye.cs", r"^_cam\.transform$", "SetPositionAndRotation",
+     "_cam is the game camera the Third Eye borrows while F2 is on (its own driver suspended), never a vessel"),
 ]
 
 ASSIGN = re.compile(
@@ -161,6 +177,9 @@ def scan_text(rel, text):
 def files():
     for scope in SCOPES:
         base = os.path.join(ROOT, scope)
+        if os.path.isfile(base):
+            yield scope, base
+            continue
         for dp, _, fns in os.walk(base):
             if "/Tests" in dp.replace(os.sep, "/"):
                 continue
@@ -231,7 +250,7 @@ def self_test():
     if not scan_text("Assets/_Scripts/Utility/AITraining/Pilot/TrainingPilot.cs", "_status.Speed = s;"):
         print("SELF-TEST FAIL: exception leaked to another receiver")
         bad += 1
-    eye = "Assets/_Scripts/Editor/AI/ThirdEyeWindow.cs"
+    eye = "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEye.cs"
     if scan_text(eye, "_cam.transform.SetPositionAndRotation(p, q);"):
         print("SELF-TEST FAIL: reviewed call exception not honoured")
         bad += 1

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 36 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA;box-sizing:border-box}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes r33Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA;box-sizing:border-box}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes r33Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.abs{position:absolute}
+.frame{position:absolute;padding:1px;background:#2B3266}
+.frame>div{width:100%;height:100%;background:rgba(5,10,46,.94)}
+.steps label{cursor:pointer}
+.stage{position:absolute;inset:0;display:none}
+@keyframes r36Pan{from{transform:scale(1.06) translateX(-12px)}to{transform:scale(1.06) translateX(12px)}}
+@keyframes r36In{from{opacity:0}to{opacity:1}}
+@keyframes r36Up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes r36Type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes r36Ring{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.18)}}
+@keyframes r36Open{from{transform:scaleY(.02);opacity:.4}to{transform:none;opacity:1}}
+@keyframes r36Wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+@keyframes r36FromL{from{transform:translateX(-120%)}to{transform:none}}
+@keyframes r36FromR{from{transform:translateX(120%)}to{transform:none}}
+@keyframes r36Draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes r36Fly{from{offset-distance:0%}to{offset-distance:100%}}
+@keyframes r36Out{to{opacity:0}}
+</style>
+</helmet>
+<div style="width:1920px;height:900px;position:relative;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich','Chakra Petch',sans-serif"><div class="abs disp" style="left:80px;top:54px;font-size:34px">Rev 36 notes - the captain arrives</div><div class="abs" style="left:80px;top:124px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Asked.</b> "For the FTUE I do not like them one bit. Up your game." (Rev 34), then "just make it good".</div><div class="abs" style="left:80px;top:188px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>What Rev 34 got wrong.</b> The screens behind her were empty seas with a placeholder line, not the game; she was a static cut-out stuck to a corner; the dim flattened the whole screen grey; in C her line ran over the very button she pointed at. Rev 36 draws every step on a full screen (the live cell, the nav with its icons, the cards, the vessel, the HUD, the finish) and gives her an entrance with a beginning, a landing and a rest.</div><div class="abs" style="left:80px;top:314px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>The path, unchanged and LOCKED.</b> Five steps: Home (ARCADE), Arcade (Skim Race), Configure (START), the first race (hold RT to boost), the finish (RACE AGAIN). One control is lit in lime, inside a hole in a 72 % dim; Settings and Skip guide (Y) stay live above it; she enters from the side away from the control and never presses anything.</div><div class="abs" style="left:80px;top:440px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Timing.</b> A: the trail draws in 1.3 s while the hull flies in on it (1.1 s); the comm opens at 1.25 s and her line types at 45 characters a second. B: the window docks in 0.5 s, her portrait rises, the voice bars run while the line types. C: the edge darkens, she leans in over 0.65 s, then the name, the rule, the line. In all three the lime ring answers three times and rests.</div><div class="abs" style="left:80px;top:566px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Recommended: A (Wingman).</b> It is the only one that could not belong to another game: her vessel flies the game's own move (a skim trail) and the trail IS the pointer, so the eye follows it to the control without an arrow. B is the one to keep for in-match lines (it covers least). C has the most character and the most screen.</div><div class="abs" style="left:80px;top:692px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>For the build.</b> Words go in the guide asset (MainQuest), one line per step, the speaker from the pilot roster (Trace's portrait and hull render already exist). The dialogue system carries speaker and line today; the entrance, the trail and the spotlight hole are new view work on MainMenuDialogueView. Open: her voice (VO or a comm blip) and her name with Shombith and Caleb.</div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

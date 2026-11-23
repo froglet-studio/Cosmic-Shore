@@ -18,6 +18,10 @@ namespace CosmicShore.UI
         [Tooltip("The image to size. The fit anchors it to this rect's centre.")]
         [SerializeField] private Image image;
 
+        [Tooltip("How much larger than a cover fit to draw the image (1 = exactly cover). A card whose art drifts " +
+                 "(Card_ArtDrift.mat) needs a margin the drift's reach never crosses, or an edge shows.")]
+        [SerializeField, Min(1f)] private float overscan = 1f;
+
         // The sprite the current fit was computed for; a different one means fit again.
         private Sprite _fitted;
 
@@ -50,9 +54,9 @@ namespace CosmicShore.UI
             if (size.x <= 0f || size.y <= 0f || spriteRect.height <= 0f) return;
 
             float aspect = spriteRect.width / spriteRect.height;
-            var fitted = size.x / size.y > aspect
+            var fitted = (size.x / size.y > aspect
                 ? new Vector2(size.x, size.x / aspect)
-                : new Vector2(size.y * aspect, size.y);
+                : new Vector2(size.y * aspect, size.y)) * overscan;
 
             var rt = image.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);

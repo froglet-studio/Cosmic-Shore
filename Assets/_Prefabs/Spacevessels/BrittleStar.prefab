@@ -593,7 +593,7 @@ MonoBehaviour:
   ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 1
   TickSyncChildren: 0
-  UseUnreliableDeltas: 0
+  UseUnreliableDeltas: 1
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -606,9 +606,9 @@ MonoBehaviour:
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 1
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
@@ -909,7 +909,7 @@ MonoBehaviour:
   - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: fcbf39a50ea36d566289b4d999a065fb, type: 2}
-  - InputEvent: 3
+  - InputEvent: 14
     ShipActions:
     - {fileID: 11400000, guid: 30193df2c492c5ba431b666c13b91521, type: 2}
   - InputEvent: 6
@@ -1556,6 +1556,16 @@ PrefabInstance:
         type: 3}
       propertyPath: Scale.Min
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 7.5
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

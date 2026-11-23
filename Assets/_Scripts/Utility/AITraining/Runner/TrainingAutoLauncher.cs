@@ -327,10 +327,22 @@ namespace CosmicShore.Utility.AITraining
             int totalPlayers = Mathf.Max(2, Scenario.OpponentCount);
 
             bool humanMatch = Control != null && Control.HumanPlaysThisLaunch;
+            // The mode's card first, as every other launch path does (the configure modal, the benchmark runner, a
+            // replay): SyncFromArcadeGame publishes the card's legal hulls (AllowedVesselClasses), which the vessel
+            // spawner clamps every seat to and draws every AI backfill from. Without it the list is whatever the
+            // previous launch left (it survives ResetRuntimeData by design), so a Serpentine run after a Switchback
+            // one clamped the host's Serpent to a Dolphin and fielded Dolphins against it (Shombith, 2026-11-01).
+            var card = FindCard(Scenario.GameMode);
+            if (card != null) _gameData.SyncFromArcadeGame(card);
             _gameData.GameMode = Scenario.GameMode;
             _gameData.SceneName = ResolveSceneName(Scenario.GameMode);
             _gameData.IsTraining = !humanMatch;
             _gameData.IsMultiplayerMode = IsNetworked(Scenario.GameMode);
+            if (card == null)
+            {
+                Debug.LogWarning($"[TrainingAutoLauncher] No SO_ArcadeGame card for {Scenario.GameMode}: the seats keep the " +
+                                 "previous launch's allowed hulls, so the AIs may fly the wrong vessel.");
+            }
 
             if (_gameData.selectedVesselClass != null) _gameData.selectedVesselClass.Value = Scenario.Vessel;
             if (_gameData.SelectedPlayerCount != null) _gameData.SelectedPlayerCount.Value = totalPlayers;
@@ -340,6 +352,21 @@ namespace CosmicShore.Utility.AITraining
             // Play against trained AI leaves it human.
             _gameData.RequestedAIBackfillCount = Mathf.Max(0, totalPlayers - 1);
             _gameData.RequestedDomainCount = 3;
+        }
+
+        /// <summary>The arcade card of a mode: a loaded one first, else the asset (the editor only, which is where the trainer runs).</summary>
+        static SO_ArcadeGame FindCard(GameModes mode)
+        {
+            foreach (var g in Resources.FindObjectsOfTypeAll<SO_ArcadeGame>())
+                if (g != null && g.Mode == mode) return g;
+#if UNITY_EDITOR
+            foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:SO_ArcadeGame"))
+            {
+                var g = UnityEditor.AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(UnityEditor.AssetDatabase.GUIDToAssetPath(guid));
+                if (g != null && g.Mode == mode) return g;
+            }
+#endif
+            return null;
         }
 
         static bool IsNetworked(GameModes mode)

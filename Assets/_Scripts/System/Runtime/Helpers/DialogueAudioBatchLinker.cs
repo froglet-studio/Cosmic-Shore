@@ -9,7 +9,7 @@ namespace CosmicShore.Core
     {
         public static void LinkMissingAudio(DialogueSet set)
         {
-            foreach (var line in set.lines)
+            foreach (var line in set.Lines)
             {
                 if (line.voiceClip == null)
                 {

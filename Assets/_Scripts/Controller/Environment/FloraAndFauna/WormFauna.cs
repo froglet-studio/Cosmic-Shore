@@ -43,13 +43,24 @@ namespace CosmicShore.Gameplay
     /// a kaiju), and <see cref="Predated"/> is sealed off — the segments are the
     /// killable surface.
     /// </summary>
-    public class WormFauna : Fauna
+    public class WormFauna : Fauna, ISpeciesDataOverride
     {
         const string PLAYER_NAME = "WormColony";
         const string MouthName = "Mouth";
 
         [Header("Worm Colony")]
         [SerializeField] WormColonyConfigSO config;
+
+        /// <summary>
+        /// A per-world colony config (FaunaConfigurationSO.SpeciesDataOverride) replaces the prefab's
+        /// before the chain is built, so one world's kaiju can hunt from further and more often
+        /// (The Maw) without the shared WormColonyConfig changing under every other biome. The
+        /// swap is on this instance's field only (a split-born half clones the root and inherits it).
+        /// </summary>
+        public void BindSpeciesData(FaunaConfigurationSO cfg)
+        {
+            if (cfg && cfg.SpeciesDataOverride is WormColonyConfigSO worldConfig) config = worldConfig;
+        }
         [Tooltip("The three colony member types. Head and Tail author danger prisms + " +
                  "an elemental heart; Body is the splittable connective tissue.")]
         [SerializeField] WormSegmentFauna headPrefab;
@@ -105,6 +116,43 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Live head speed — jousting a segment heart means outracing the kaiju.</summary>
         public override float CurrentSpeed => _currentSpeed;
+
+        // --- Possession (Fauna.Possession): a rider steers the HEAD, whichever segment it stung ----------------------
+
+        /// <summary>The rider nests beside the head's heart.</summary>
+        public override Transform PossessionNest => segments.Count > 0 && segments[0] ? segments[0].PossessionNest : transform;
+        public override Vector3 PossessionForward => segments.Count > 0 && segments[0] ? segments[0].transform.forward : transform.forward;
+        public override Transform PossessionMouth => _mouth ? _mouth : transform;
+        public override float PossessionMouthReach => config
+            ? Mathf.Max(config.MouthRadius, config.FaunaBiteRange, 6f) : base.PossessionMouthReach;
+        public override float PossessionTopSpeed => config ? config.CruiseSpeed * Mathf.Max(1f, config.PursuitSpeedMultiplier) : base.PossessionTopSpeed;
+        public override float PossessionBodyRadius => segments.Count > 0 && segments[0]
+            ? Mathf.Max(2f, segments[0].PossessionBodyRadius * 1.5f) : base.PossessionBodyRadius;
+
+        /// <summary>The worm's attack is its own lunge (the kaiju's strike), aimed where the rider says.</summary>
+        public override void PlayPossessionAttack(Vector3 at, float seconds)
+        {
+            if (segments.Count == 0 || !config) return;
+            _threat = null;
+            _lungePoint = at;
+            SetState(AttackState.Lunge);
+        }
+
+        /// <summary>A colony is its segments: a steal (the Jewel Wasp riding it, the Jacks' net) takes every one of them,
+        /// and a segment it adopts later takes the colony's domain then (<c>AdoptChain</c>).</summary>
+        public override bool CanBeStolen => true;
+
+        protected override void OnTeamChanged()
+        {
+            for (int i = 0; i < segments.Count; i++)
+                if (segments[i]) segments[i].SetTeam(domain);
+        }
+
+        protected override void OnPossessionChanged(bool possessed)
+        {
+            _threat = null;
+            if (_state != AttackState.Lunge) SetState(AttackState.Cruise);
+        }
 
         /// <summary>Current chain length (the boss's visible health-and-history bar).</summary>
         public int SegmentCount => segments.Count;
@@ -202,11 +250,19 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < segments.Count; i++)
             {
                 var seg = segments[i];
-                // The colony's authored heart SIZE rides along with its element: a segment is
-                // a MEMBER of the population and carries the species' own heart, and it never
-                // gets an AssignLineage of its own to read one from (Docs/ECOSYSTEM.md §40.2).
-                if (seg) seg.ReprovisionHeart(element, HeartWorldScale);
+                // A segment is a MEMBER of the population and carries the colony's element, and
+                // it never gets an AssignLineage of its own to read one from.
+                if (seg) seg.ReprovisionHeart(element);
             }
+        }
+
+        protected override float AuthoredArmourBite(bool superShielded) =>
+            config ? (superShielded ? config.SuperShieldBite : config.ShieldBite) : 0f;
+
+        protected override void ApplyRuntimeTuning(FaunaRuntimeTuning tuning, string species)
+        {
+            base.ApplyRuntimeTuning(tuning, species);
+            config = tuning.ResolveWormConfig(config, species);   // the run's copy, never the asset
         }
 
         public override void Initialize(Cell cell)
@@ -336,12 +392,11 @@ namespace CosmicShore.Gameplay
             seg.Colony = this;
             seg.Initialize(cell);
             // A colony breeds true: a member grown after the species config picked an
-            // element carries that element's heart - its MODEL and its SIZE - not the body
-            // prefab's authored one. No-ops when they already agree (EnsureElementalCrystal
-            // keeps a match), and the size is re-applied either way so a segment grown at
-            // any point in the colony's life matches the ones it grew beside.
+            // element carries that element's heart model, not the body prefab's authored one.
+            // No-ops when they already agree (EnsureElementalCrystal keeps a match), and the
+            // one heart size is re-applied either way.
             if (_pickedHeartElement != Element.None)
-                seg.ReprovisionHeart(_pickedHeartElement, HeartWorldScale);
+                seg.ReprovisionHeart(_pickedHeartElement);
             if (cell) cell.RegisterSpawnedObject(seg.gameObject);
             // The replication seam, at the one funnel every one of this colony's four segment
             // producers reaches (grow-head / grow-tail / grow-body / initial chain). AFTER the
@@ -361,8 +416,10 @@ namespace CosmicShore.Gameplay
         //  a head-driven slither wave; the body propagates it naturally).
         // -------------------------------------------------------------------
 
+        static readonly Unity.Profiling.ProfilerMarker s_pmUpdate = new("Fauna.Worm.Update");
         void Update()
         {
+            using var __pm = s_pmUpdate.Auto();
             // Defensive sweep: segments can be destroyed outside the death path
             // (scene teardown, turn-end cleanup) — a null in the chain is fatal to
             // the follow pass, and an emptied colony must die, not idle.
@@ -408,9 +465,13 @@ namespace CosmicShore.Gameplay
 
         void SetState(AttackState state)
         {
+            if (state == AttackState.Lunge && _state != AttackState.Lunge) Lunges++;
             _state = state;
             _stateSince = Time.time;
         }
+
+        /// <summary>Sim telemetry: lunges at vessels this session, every colony (read by the Ark escort's metrics).</summary>
+        public static int Lunges;
 
         void UpdateAttackState()
         {
@@ -517,6 +578,16 @@ namespace CosmicShore.Gameplay
                     break;
 
                 default:
+                    if (IsPossessed && Leash.TrySteer(this, out var riderGoal, out float riderSpeed, out _))
+                    {
+                        // POSSESSED (Fauna.Possession): the rider's sticks steer the head and the body follows it
+                        desiredDirection = (riderGoal - leader.position).normalized;
+                        if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr) desiredDirection = leader.forward;
+                        targetSpeed = riderSpeed;
+                        turnRate *= config.PursuitTurnMultiplier * 2f;
+                        swayMultiplier = 0.6f;
+                        break;
+                    }
                     desiredDirection = (Goal - leader.position).normalized;
                     targetSpeed = config.CruiseSpeed * speedMult;
                     separates = true;
@@ -561,6 +632,10 @@ namespace CosmicShore.Gameplay
                 Vector3 target = Vector3.one * SegmentTargetScale(i);
                 if ((seg.localScale - target).sqrMagnitude <= 1e-4f) continue;
                 seg.localScale = Vector3.Lerp(seg.localScale, target, glideT);
+                // The heart is sized in WORLD units against its segment's scale, so a segment
+                // that is still blooming (it starts at zero) or re-tapering carries its heart
+                // with it unless the one size is re-applied as the scale moves.
+                segments[i].KeepHeartSize();
             }
         }
 
@@ -688,6 +763,11 @@ namespace CosmicShore.Gameplay
             }
             if (_state == AttackState.Lunge || _state == AttackState.Recover)
                 return; // committed — the locked strike plays out
+            if (IsPossessed)
+            {
+                _threat = null;   // a possessed worm strikes only at its rider's word (PlayPossessionAttack)
+                return;
+            }
 
             Vector3 headPos = segments[0].transform.position;
             _threat = FindNearestVessel(headPos, config.AggroRadius);
@@ -738,9 +818,9 @@ namespace CosmicShore.Gameplay
                 var prism = PrismScratch[i];
                 if (!IsEdiblePrism(prism)) continue;
                 float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
-                prism.Consume(head, domain, PLAYER_NAME, true, true);
-                NotifyFed(meal);
-                bites++;
+                var result = BiteMass(prism, head, domain, PLAYER_NAME, true);
+                if (result == BiteResult.Ate) NotifyFed(meal);
+                if (result != BiteResult.None) bites++;
             }
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Game;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -63,6 +64,9 @@ namespace CosmicShore.Gameplay
 
         readonly List<TraversalCell> _cells = new();
         readonly List<CellConfigDataSO> _bag = new();      // shuffle-bag of traversal configs
+        readonly List<int> _route = new();                 // a voyage's ordered worlds (indices), or empty
+        readonly List<CellConfigDataSO> _worlds = new();   // the route's index space, unshuffled
+        int _routeNext;
         readonly Plane[] _frustumPlanes = new Plane[6];
         Camera _cam;
 
@@ -111,6 +115,56 @@ namespace CosmicShore.Gameplay
 
         public bool HasCells => _cells.Count > 0;
 
+        /// <summary>Centre to centre between traversal cells: the authored spacing grown with the cells
+        /// (<see cref="ArkwayConfig.CellScale"/>) so bigger cells never overlap, or, with a
+        /// <see cref="ArkwayConfig.CellGap"/>, two grown membranes and that much open water between them.</summary>
+        float Spacing => _cfg.CellGap > 0f
+            ? CellSpacingFor(_membraneRadius, _cfg.CellScale, _cfg.CellGap)
+            : _cfg.CellSpacing * Mathf.Max(1f, _cfg.CellScale);
+
+        /// <summary>The largest authored membrane radius among the corridor's worlds (read in <see cref="Begin"/>).</summary>
+        float _membraneRadius = MembraneRadiusFloor;
+
+        /// <summary>The freestyle membrane's authored radius: the least a world's membrane is taken to be.</summary>
+        public const float MembraneRadiusFloor = 1200f;
+
+        /// <summary>Centre to centre for cells of authored membrane <paramref name="radius"/> grown
+        /// <paramref name="scale"/> times, with <paramref name="gap"/> of open water between neighbouring membranes.</summary>
+        public static float CellSpacingFor(float radius, float scale, float gap) =>
+            2f * Mathf.Max(MembraneRadiusFloor, radius) * Mathf.Max(1f, scale) + Mathf.Max(0f, gap);
+
+        /// <summary>A world's membrane radius as authored: a capsule membrane's radius, any other membrane's scale.
+        /// 0 with no membrane.</summary>
+        public static float AuthoredMembraneRadius(CellConfigDataSO config)
+        {
+            var prefab = config ? config.MembranePrefab : null;
+            if (!prefab) return 0f;
+            return prefab.TryGetComponent<CapsuleMembrane>(out var cm) ? cm.Radius : prefab.transform.localScale.x;
+        }
+
+        // The cell the Ark last left (its core reached, the corridor advanced): the departure anchor of the Ark's
+        // cell-aware speed profile. None before the first advance (the voyage opens in open water).
+        Cell _departedCell;
+        Vector3 _departedCentre;
+        bool _hasDeparture;
+
+        /// <summary>True once there is a cell behind the Ark (each world whose core it has reached).</summary>
+        public bool HasDeparture => _hasDeparture;
+
+        /// <summary>Centre of the cell the Ark is leaving.</summary>
+        public Vector3 DepartureCentre => _departedCentre;
+
+        /// <summary>Membrane radius of the cell the Ark is leaving, with the same fallback as <see cref="CurrentCellRadius"/>
+        /// (a struck or unbuilt membrane reads 0).</summary>
+        public float DepartureRadius
+        {
+            get
+            {
+                float r = _departedCell ? _departedCell.MembraneRadius : 0f;
+                return r > 1f ? r : _cfg?.LeashRadiusFallback ?? 1200f;
+            }
+        }
+
         /// <summary>
         /// Raised as a traversal cell is struck, BEFORE its drain runs. The run listens so the
         /// player's own trail mass laid in (and on the way to) that cell goes with it — a struck
@@ -120,6 +174,52 @@ namespace CosmicShore.Gameplay
         /// unbounded ribbon behind it.
         /// </summary>
         public event System.Action CellRetired;
+
+        /// <summary>
+        /// Called for each traversal cell just before it initializes (its spawners start inside that), with the cell and
+        /// its position on the route (-1 off a route): where a route tunes its own worlds, such as an Ark escort raising a
+        /// cell's population past the corridor's cap or starting it hostile. Unset, every cell is the corridor's own.
+        /// </summary>
+        public System.Action<Cell, int> PrepareCell;
+
+        /// <summary>True while the corridor sails an ordered ROUTE (a voyage leg) instead of the shuffle-bag.</summary>
+        public bool HasRoute => _route.Count > 0;
+
+        /// <summary>True once every world on the route has been stood: the Ark is at (or bound for) the last.</summary>
+        public bool RouteExhausted => _route.Count > 0 && _routeNext >= _route.Count;
+
+        /// <summary>
+        /// Sail <paramref name="worlds"/> in order (indices into <see cref="TraversalWorlds"/>, modulo its count) instead
+        /// of the shuffle-bag: the voyage's leg (Docs/Voyages/SLICE.md §1.5). Once the last is stood, no further cell
+        /// stands, so <see cref="AdvancePastTarget"/> returns false at the last world and the run holds there until a
+        /// new route is set. Null or empty goes back to the bag. Safe before <see cref="Begin"/> and mid-voyage.
+        /// </summary>
+        public void SetRoute(IReadOnlyList<int> worlds)
+        {
+            _route.Clear();
+            _routeNext = 0;
+            if (worlds != null) _route.AddRange(worlds);
+        }
+
+        /// <summary>
+        /// The worlds a corridor may stand, in their authored order: <paramref name="authored"/> when it names any, else
+        /// <paramref name="template"/>'s own configs, without the environment-free ones (open water, which the corridor
+        /// already has between cells) and without the crystal-wormhole world (its poles would pull the Ark). The
+        /// shuffle-bag and a route both draw from this; a route's indices count into it.
+        /// </summary>
+        public static void TraversalWorlds(IReadOnlyList<CellConfigDataSO> authored, Cell template,
+            List<CellConfigDataSO> into)
+        {
+            into.Clear();
+            IReadOnlyList<CellConfigDataSO> source = authored is { Count: > 0 }
+                ? authored
+                : template ? template.AvailableConfigs : null;
+            if (source == null) return;
+            foreach (var config in source)
+                if (config && config.EnvironmentPrefab && config.EnvironmentPrefab is not SpawnableCrystalWormhole
+                    && !into.Contains(config))
+                    into.Add(config);
+        }
 
         /// <summary>
         /// Stand the FIRST traversal cell down the player's heading. Call inside the run's
@@ -152,6 +252,7 @@ namespace CosmicShore.Gameplay
 
             _template = Cell.FindCellContaining(origin);
             if (!_template) _template = Cell.FindNearestActiveCell(origin);
+            _worlds.Clear();
             if (!_template || !_template.RuntimeData)
             {
                 CSDebug.LogWarning($"[Arkway] No scene cell to clone traversal cells from " +
@@ -165,8 +266,20 @@ namespace CosmicShore.Gameplay
             // membrane has spawned (the ModePreviewArena.FramingRadius bug class) - floor it
             // at the freestyle membrane's authored size so a mid-rebuild host can't fold the
             // corridor back onto itself.
+            // The corridor's membranes, for the gap spacing: the largest any of its worlds authors.
+            _membraneRadius = MembraneRadiusFloor;
+            var worlds = new List<CellConfigDataSO>();
+            if (cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) worlds.AddRange(cfg.Cells);
+            else TraversalWorlds(cfg.Cells, _template, worlds);
+            foreach (var world in worlds)
+                _membraneRadius = Mathf.Max(_membraneRadius, AuthoredMembraneRadius(world));
+
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
-            Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
+            Vector3 first = origin + _heading * (hostRadius + Spacing * 0.5f);
+            // No departure anchor at the start: the Ark sets sail from wherever the player stood in the host (often deep
+            // inside it), and crawling out through the host would be a long empty opening. It cruises to the first cell.
+            _departedCell = null;
+            _hasDeparture = false;
 
             if (!StandCell(first))
             {
@@ -209,6 +322,9 @@ namespace CosmicShore.Gameplay
                     return false;
             }
 
+            _departedCell = _cells[_targetIndex].Cell;
+            _departedCentre = _cells[_targetIndex].Centre;
+            _hasDeparture = true;
             _targetIndex++;
 
             // Stand the new NEXT beyond the new current, so the corridor always reaches one
@@ -221,6 +337,32 @@ namespace CosmicShore.Gameplay
                 _cells[i].RetireQueued = true;
 
             return true;
+        }
+
+        /// <summary>Open water the Ark must put between itself and the membrane of the cell it departed before that cell
+        /// is queued for its (off-screen-gated) retirement.</summary>
+        public const float DepartedRetireMargin = 600f;
+
+        /// <summary>The margin this conveyor uses (<see cref="DepartedRetireMargin"/> unless its owner sets one: a voyage on a
+        /// phone retires the cell behind sooner, VoyageToyDefinitionSO.RetireMargin).</summary>
+        public float RetireMargin { get; set; } = DepartedRetireMargin;
+
+        /// <summary>
+        /// Queue the cell the Ark departed for its off-screen retirement once the Ark is
+        /// <see cref="DepartedRetireMargin"/> clear of its membrane, instead of only when the Ark reaches the NEXT core.
+        /// Voyage cells are big (2.5x) and the Ark crawls inside them, so waiting kept the cell behind standing, still
+        /// growing its whole ecology, for the length of a cell: three full worlds plus one draining, the frame-rate fall
+        /// after a few cells (Shombith, 2026-11-17). The retirement itself is unchanged (off-screen gate, frame-sliced
+        /// drain, nothing dies), so nothing is watched popping out.
+        /// </summary>
+        public void QueueDepartedOnceClear(Vector3 arkPosition)
+        {
+            if (!_hasDeparture || _targetIndex < 1 || _targetIndex - 1 >= _cells.Count) return;
+            var record = _cells[_targetIndex - 1];
+            if (record.RetireQueued || !record.Root) return;
+            float r = record.Cell && record.Cell.MembraneRadius > 1f ? record.Cell.MembraneRadius : MembraneRadiusFloor;
+            float clear = r + Mathf.Max(0f, RetireMargin);
+            if ((arkPosition - record.Centre).sqrMagnitude > clear * clear) record.RetireQueued = true;
         }
 
         void Update()
@@ -255,8 +397,11 @@ namespace CosmicShore.Gameplay
 
         bool StandCell(Vector3 centre)
         {
+            // A failed stand must not cost the route its world: NextConfig has consumed the index, and the retry
+            // (StandAhead / AdvancePastTarget) would otherwise stand the NEXT world and silently skip this one.
+            int routeBefore = _routeNext;
             var config = NextConfig();
-            if (!config || !_template || !_template.RuntimeData) return false;
+            if (!config || !_template || !_template.RuntimeData) { UnconsumeRoute(routeBefore, config); return false; }
 
             // The mode preview's satellite recipe, verbatim: instantiate under an INACTIVE root
             // so the cell's OnEnable cannot wipe the shared runtime asset's config before it has
@@ -287,6 +432,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError("[Arkway] The cloned cell carries no Cell component - stand aborted.");
                 Destroy(root);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -301,6 +447,8 @@ namespace CosmicShore.Gameplay
             cell.SatellitePrismStride = Mathf.Max(1, _cfg.PrismStride);
             cell.SatelliteEcologyEnabled = true;
             cell.RuntimePopulationScale = Mathf.Clamp(_cfg.PopulationScale, 0.1f, 1f);
+            cell.SatelliteSizeScale = Mathf.Max(1f, _cfg.CellScale);
+            cell.ScatterLifeSpawns = _cfg.ScatterLifeSpawns;
             // NucleusIsControlZone is deliberately LEFT AT ITS DEFAULT (true). A traversal cell
             // is an ordinary cell, not a mode's borrowed play geometry: its nucleus is a claim
             // to contest, its interior is fauna sanctuary, and its exterior is the feeding
@@ -308,12 +456,17 @@ namespace CosmicShore.Gameplay
             // made the whole cell legacy opposing-domain territory, which is what left the Ark
             // untouchable by any swarm wearing its own colour.
 
+            // A route's own tuning for this world (an Ark escort's per-cell threat), after the voyage's and before the
+            // spawner starts. -1 when the corridor sails the shuffle-bag.
+            PrepareCell?.Invoke(cell, _route.Count > 0 ? _routeNext - 1 : -1);
+
             if (!cell.InitializeSatellite(config))
             {
                 CSDebug.LogWarning($"[Arkway] Traversal cell '{config.CellName}' refused " +
                                    "InitializeSatellite - stand aborted (the Cell warned above with the reason).");
                 Destroy(root);
                 Destroy(runtime);
+                UnconsumeRoute(routeBefore, config);
                 return false;
             }
 
@@ -437,7 +590,22 @@ namespace CosmicShore.Gameplay
             crystal.gameObject.SetActive(true);
             crystal.enabled = true;
             crystal.DeactivateModels();                        // the crystal's own fade-in bloom
-            if (runtime) runtime.AddCrystalToList(crystal);
+            if (!runtime) return;
+            // AddCrystalToList raises the shared OnCellItemsUpdated event: every AI pilot's handler runs inside this
+            // call. A listener's exception must not abort the STAND (it did: a pilot reading a destroyed crystal from
+            // another runtime's list threw here, and the escort skipped the world).
+            try { runtime.AddCrystalToList(crystal); }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[Arkway] A cell-items listener threw while the core crystal was registered " +
+                                   $"({e.GetType().Name}: {e.Message}) - the cell stands regardless.");
+            }
+        }
+
+        /// <summary>Give a failed stand's world back to the route (the retry stands the same world, not the next).</summary>
+        void UnconsumeRoute(int routeBefore, CellConfigDataSO consumed)
+        {
+            if (_route.Count > 0 && consumed && _routeNext > routeBefore) _routeNext = routeBefore;
         }
 
         /// <summary>
@@ -457,7 +625,7 @@ namespace CosmicShore.Gameplay
                 Vector3 axis = Quaternion.AngleAxis(roll, _heading) * side;
                 _heading = (Quaternion.AngleAxis(angle, axis) * _heading).normalized;
             }
-            return from + _heading * Mathf.Max(2000f, _cfg.CellSpacing);
+            return from + _heading * Mathf.Max(2000f, Spacing);
         }
 
         /// <summary>
@@ -469,21 +637,28 @@ namespace CosmicShore.Gameplay
         /// </summary>
         CellConfigDataSO NextConfig()
         {
+            if (_route.Count > 0)
+            {
+                // A voyage leg: the next world in order, and nothing once the route is spent.
+                if (_routeNext >= _route.Count) return null;
+                if (_worlds.Count == 0)
+                {
+                    // An Ark escort names its worlds exactly, environment or not (a bare world's flora and fauna are
+                    // the whole of it); every other route keeps the traversal filter.
+                    if (_cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) _worlds.AddRange(_cfg.Cells);
+                    else TraversalWorlds(_cfg?.Cells, _template, _worlds);
+                }
+                if (_worlds.Count == 0) return null;
+                int index = _route[_routeNext++] % _worlds.Count;
+                return _worlds[index < 0 ? index + _worlds.Count : index];
+            }
+
             if (_bag.Count == 0)
             {
-                var authored = _cfg?.Cells;
-                IReadOnlyList<CellConfigDataSO> source = authored is { Count: > 0 }
-                    ? authored
-                    : _template ? _template.AvailableConfigs : null;
-                if (source == null) return null;
-
                 // A crystal-wormhole world is skipped too: it lays nothing either, and its poles are
                 // live wells that would pull and push the Ark and every vessel in the corridor
                 // (Docs/CRYSTAL_WORMHOLE.md). An authored Cells list can still name it on purpose.
-                foreach (var config in source)
-                    if (config && config.EnvironmentPrefab && config.EnvironmentPrefab is not SpawnableCrystalWormhole
-                        && !_bag.Contains(config))
-                        _bag.Add(config);
+                TraversalWorlds(_cfg?.Cells, _template, _bag);
 
                 // Fisher-Yates on the seeded stream, so a seeded voyage is reproducible.
                 for (int i = _bag.Count - 1; i > 0; i--)
@@ -691,13 +866,19 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
-            // Scene teardown: the drain coroutine dies with us - strike synchronously, pool-safe,
-            // and let the scene unload take the instantiated remainder in one sweep (the unload
-            // pays that cost anyway).
+            // The toybox root torn down while the scene lives: the drain coroutine dies with us, so
+            // strike synchronously, pool-safe.
+            // The scene itself closing is different: a strike gathers the world under a NEW
+            // GameObject, and one made while a scene closes is left behind ("Some objects were not
+            // cleaned up when closing the scene", Cell0_RetiringWorld, six machines) and re-parents
+            // creatures whose NetworkManager is already gone. The unload destroys every cell and
+            // its world in the same sweep, and Cell.OnDestroy retires the cell's own books, so
+            // there is nothing for a strike to do.
+            bool sceneClosing = !gameObject.scene.isLoaded;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var record = _cells[i];
-                if (record.Cell) record.Cell.StrikeSatelliteWorld();
+                if (record.Cell && !sceneClosing) record.Cell.StrikeSatelliteWorld();
                 if (record.Runtime) Destroy(record.Runtime);
             }
             _cells.Clear();

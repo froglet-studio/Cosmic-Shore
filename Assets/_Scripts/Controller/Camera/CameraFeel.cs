@@ -3,17 +3,21 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The camera feel's state and math (<c>Docs/CAMERA_FEEL.md</c>): G-force (the lag of acceleration and the slide
-    /// of a drift, and the neck tilt they give), kicks, shake, rumble and breathing, folded into one camera-local
+    /// The camera feel's state and math (<c>Docs/CAMERA_FEEL.md</c>): G-force (the lag of acceleration, and the neck
+    /// tilt it gives), kicks, shake, rumble and breathing, folded into one camera-local
     /// offset (<see cref="LocalOffset"/>, a fraction of the follow distance) and one camera-local tilt
     /// (<see cref="LocalAngles"/>, degrees) that <see cref="CustomCameraController"/> adds on top of its settled pose.
     /// Plain C# with no scene dependency, so every behaviour is tested directly.
     ///
-    /// <para><b>G lags ACCELERATION and SLIDE, never speed.</b> The framed point's velocity is estimated from its
-    /// motion, and its change drives a damped spring as a pseudo-force (the camera is a mass on a spring riding the
-    /// hull): a constant acceleration settles at a constant lag, a constant velocity at none. A drift's slide is a
-    /// second rest point on the same spring. So a cruise frames exactly as before, and only boosts, stops, turns and
-    /// drifts move the hull on screen, each with the same accelerating start and settle.</para>
+    /// <para><b>G lags ACCELERATION, never speed.</b> The framed point's velocity is estimated from its motion, and
+    /// its change drives a damped spring as a pseudo-force (the camera is a mass on a spring riding the hull): a
+    /// constant acceleration settles at a constant lag, a constant velocity at none. So a cruise frames exactly as
+    /// before, and only boosts, stops and turns move the hull on screen, each with the same accelerating start and
+    /// settle.</para>
+    ///
+    /// <para><b>A drift never moves the hull on screen</b> (Garrett 2026-11-02). The game is truly 3D with no "up",
+    /// so the hull's place in the frame is the pilot's reference for position, speed and orientation; displacing it
+    /// in a drift hinders that read. A drift only rumbles.</para>
     ///
     /// <para><b>Kick units are true peaks.</b> An author writes "this shoves the camera 3.5% of the follow distance";
     /// the impulse that produces that peak through the kick spring's damping is worked out here
@@ -164,11 +168,20 @@ namespace CosmicShore.Gameplay
         /// <param name="response">How quickly the G builds and settles: 1 = the reference hull, below for a bigger,
         /// slower-responding hull.</param>
         /// <param name="drift">The signed drift, -1..1: how far, and to which side of the view, the hull's travel
-        /// slips from where it points (0 when not drifting).</param>
+        /// slips from where it points (0 when not drifting). It drives the rumble only.</param>
+        /// <param name="noShake">The followed hull wants no camera shake at all (<see cref="CameraFeelConfigSO.NoShakeFor"/>):
+        /// trauma, rumble and kicks are held at zero, so only the G-force lag and the breathing move the camera.</param>
         public void Step(CameraFeelConfigSO c, float dt, Vector3 point, Quaternion view, float distance,
-            float gForce, float response, float drift)
+            float gForce, float response, float drift, bool noShake = false)
         {
             if (!(dt > 0f)) return;   // paused: hold the pose as it is
+            if (noShake)
+            {
+                _kick = _kickVelocity = Vector3.zero;
+                _kickAngles = _kickAngularVelocity = Vector3.zero;
+                _trauma = _skimRumble = 0f;
+                drift = 0f;
+            }
             dt = Mathf.Min(dt, MaxStep);
             _clock += dt;
             _noiseTime += dt;
@@ -177,7 +190,7 @@ namespace CosmicShore.Gameplay
             response = Mathf.Max(0.05f, response);
             drift = Mathf.Clamp(drift, -1f, 1f);
 
-            // --- G: the acceleration of the framed point, and the slide of a drift, drive one spring.
+            // --- G: the acceleration of the framed point drives one spring.
             Vector3 accel = Vector3.zero;
             if (_primed == 0) { _lastPoint = point; _primed = 1; }
             else
@@ -198,19 +211,11 @@ namespace CosmicShore.Gameplay
             // In "full lags": 1 settles the spring at lagMax behind the acceleration.
             Vector3 drive = Vector3.ClampMagnitude(accel / (distance * c.FullLagAcceleration), MaxDrive);
 
-            // A drift locks the hull's course while its nose swings, so its real acceleration is near zero and the
-            // lag alone never saw one. The slide is fed to the same spring as a rest point of its own: the camera
-            // is left behind toward where the hull is sliding FROM, so the hull slides out across the frame. At
-            // drift speed only (a slow slide is a gentle one), and through the spring, so it builds with an
-            // accelerating start, swings a little past and settles, instead of easing in along a straight line.
-            float speedShare = Mathf.SmoothStep(0f, 1f, _velocity.magnitude / (distance * c.DriftFullSpeed));
-            Vector3 slideRest = view * new Vector3(-drift * c.DriftSlide * gForce * speedShare, 0f, 0f);
-
-            // e'' = -w^2 (e - rest) - 2 z w e': settles at rest = behind the push, plus the slide. The rest is
-            // held for the frame, so the exact step is the spring's step around that rest point.
+            // e'' = -w^2 (e - rest) - 2 z w e': settles at rest = behind the push. The rest is held for the frame,
+            // so the exact step is the spring's step around that rest point.
             if (gMax > 0f)
             {
-                Vector3 rest = -drive * lagMax + slideRest;
+                Vector3 rest = -drive * lagMax;
                 Vector3 offset = _lag - rest;
                 Spring.Step(lagOmega, c.InertiaDamping, dt).Apply(ref offset, ref _lagVelocity);
                 _lag = rest + offset;
@@ -231,7 +236,7 @@ namespace CosmicShore.Gameplay
             gLocal = SoftClamp(gLocal, gMax);
 
             // The pilot's neck: the same G that moves the camera tilts it. Thrown back under a boost (nose up),
-            // forward under a stop (nose down), and leaned outward through a turn or a slide. Read against the
+            // forward under a stop (nose down), and leaned outward through a turn. Read against the
             // fleet's full G, so a big hull that is pushed less also leans less.
             float gFull = Mathf.Max(1e-4f, c.MaxGOffset);
             Vector3 neck = new(c.GPitch * gLocal.z / gFull, 0f, -c.GRoll * gLocal.x / gFull);
@@ -240,6 +245,8 @@ namespace CosmicShore.Gameplay
             _trauma = Mathf.Max(0f, _trauma - c.TraumaDecay * dt);
             float shake = _trauma * _trauma;
             _skimRumble *= Mathf.Exp(-c.SkimRumbleDecay * dt);
+            // At drift speed only: a drift at a crawl stays quiet.
+            float speedShare = Mathf.SmoothStep(0f, 1f, _velocity.magnitude / (distance * c.DriftFullSpeed));
             _drift = Mathf.Lerp(_drift, Mathf.Abs(drift) * speedShare, 1f - Mathf.Exp(-DriftRumbleEase * dt));
             float rumble = Mathf.Clamp01(Mathf.Max(_skimRumble, _drift * c.DriftRumble));
 

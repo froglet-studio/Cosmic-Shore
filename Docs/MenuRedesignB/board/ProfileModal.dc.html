@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Profile window</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.72)"></div>
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #747BAD">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+  <div style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; background: rgba(0, 1, 10, 0.5)"></div>
+
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.7)"></div>
+  <section role="dialog" aria-label="Profile" style="position: absolute; left: 330px; top: {{popTop}}px; width: 1260px; height: {{popH}}px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 0ms both">
+    <div class="sl" style="position: absolute; inset: 0; background: #E6E9FF; padding: 1px">
+      <div class="sl" style="position: relative; height: 100%; box-sizing: border-box; background: #00010A; display: flex">
+        <aside class="grid" style="position: relative; width: 340px; flex: none; box-sizing: border-box; padding: 40px 34px; display: flex; flex-direction: column; align-items: center; gap: 16px; border-right: 1px solid #222645">
+          <span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+          <span class="lab">How others see you</span>
+          <span class="oct" style="display: grid; place-items: center; width: 184px; height: 184px; background: #E6E9FF; margin-top: 10px">
+            <span class="oct" style="display: block; width: 180px; height: 180px; overflow: hidden; background: #222645"><img src="{{avatar}}" alt="" style="width: 180px; height: 180px; object-fit: cover; animation: csFloat 4s ease-in-out infinite"></span>
+          </span>
+          <span style="font-size: 28px; text-align: center; word-break: break-word">{{previewName}}</span>
+          <span class="lab" style="color: #99FF80">Online</span>
+          <div class="sls" style="margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; background: #0B0F29">
+            <span class="oct" style="display: grid; place-items: center; width: 40px; height: 40px; flex: none; background: #00D4FF"><span class="oct" style="display: block; width: 34px; height: 34px; overflow: hidden; background: #222645"><img src="{{avatar}}" alt="" style="width: 34px; height: 34px; object-fit: cover"></span></span>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px">{{previewName}}</span><span class="lab" style="font-size: 11px">In a party slot</span></span>
+          </div>
+        </aside>
+        <div style="flex: 1; box-sizing: border-box; padding: 36px 44px 64px; display: flex; flex-direction: column; gap: 24px">
+          <div style="display: flex; align-items: flex-end; justify-content: space-between">
+            <nav aria-label="Profile tabs" style="display: flex; gap: 36px">
+              <button class="tile" type="button" onClick="{{tabA.pick}}" style="display: flex; flex-direction: column; gap: 8px; background: transparent; padding: 0">
+          <span class="lab" style="font-size: 18px; color: {{tabA.color}}">Avatar</span>
+          <span style="height: 2px; background: #00D4FF; transform-origin: left; transition: transform 200ms cubic-bezier(.33,1,.68,1); transform: scaleX({{tabA.scale}})"></span>
+        </button>
+              <button class="tile" type="button" onClick="{{tabN.pick}}" style="display: flex; flex-direction: column; gap: 8px; background: transparent; padding: 0">
+          <span class="lab" style="font-size: 18px; color: {{tabN.color}}">Display name</span>
+          <span style="height: 2px; background: #00D4FF; transform-origin: left; transition: transform 200ms cubic-bezier(.33,1,.68,1); transform: scaleX({{tabN.scale}})"></span>
+        </button>
+            </nav>
+            <button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">B</span></span>Close</span></button>
+          </div>
+          <sc-if value="{{onAvatar}}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; grid-template-columns: repeat(6, 112px); gap: 18px 22px">
+              <sc-for list="{{icons}}" as="i" hint-placeholder-count="18">
+                <button class="tile oct" type="button" aria-label="Avatar {{i.n}}" onClick="{{i.pick}}" style="display: grid; place-items: center; width: 112px; height: 112px; background: {{i.border}}; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{i.d}}ms both">
+                  <span class="oct" style="display: block; width: {{i.inner}}px; height: {{i.inner}}px; overflow: hidden; background: #222645"><img src="{{i.src}}" alt="" style="width: 100%; height: 100%; object-fit: cover; opacity: {{i.alpha}}"></span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 15px; color: {{saveColor}}">
+              <sc-if value="{{saved}}" hint-placeholder-val="{{ false }}"><span style="color: #99FF80; display: flex; animation: csPop 320ms cubic-bezier(.34,1.56,.64,1) both"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg></span></sc-if>
+              <span>{{saveNote}}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{onName}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 22px; padding-top: 10px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 0ms both">
+              <h2 style="margin: 0; font-weight: 400; font-size: 28px">Choose the name of your Ark</h2>
+              <label style="display: flex; flex-direction: column; gap: 10px">
+                <span class="lab">Display name</span>
+                <span class="sls" style="position: relative; display: block; background: {{fieldBorder}}; padding: 1px; transition: background 120ms ease-out">
+                  <span class="sls" style="position: relative; display: block; background: #001826; padding: 0 18px">
+                    <input type="text" value="{{name}}" onInput="{{typed}}" maxlength="25" placeholder="Enter display name..." aria-label="Display name" style="width: 100%; box-sizing: border-box; height: 58px; background: transparent; border: 0; outline: none; color: #E6E9FF; font: 22px 'Aldrich', sans-serif; caret-color: #00D4FF">
+                    <span style="position: absolute; right: 0; top: 0; width: 120px; height: 1px; background: #80EAFF"></span>
+                    <span class="num lab" style="position: absolute; right: 16px; bottom: 8px; font-size: 11px">{{len}} / 25</span>
+                  </span>
+                </span>
+              </label>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 22px">
+                <sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+                  <span style="display: flex; align-items: center; gap: 10px; font-size: 15px; color: {{r.color}}; transition: color 120ms ease-out">
+                    <sc-if value="{{r.ok}}" hint-placeholder-val="{{ true }}"><span style="color: #99FF80; display: flex"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg></span></sc-if>
+                    <sc-if value="{{r.bad}}" hint-placeholder-val="{{ false }}"><span style="display: block; width: 8px; height: 8px; margin: 0 3px; border: 1px solid #5C5F70; transform: rotate(45deg)"></span></sc-if>
+                    {{r.text}}
+                  </span>
+                </sc-for>
+              </div>
+              <sc-if value="{{hasError}}" hint-placeholder-val="{{ false }}">
+                <div class="sls" role="alert" style="background: #FF4B3A; color: #00010A; padding: 12px 18px; font-size: 17px; animation: csDrop 200ms cubic-bezier(.22,1,.36,1) 0ms both">{{error}}</div>
+              </sc-if>
+              <sc-if value="{{checking}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: center; gap: 12px"><span class="hex" style="display: block; width: 22px; height: 20px; background: #00D4FF; animation: csSpin 1s linear infinite"></span><span class="lab" style="color: #E6E9FF">Checking the name...</span></span></sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    <div style="position: absolute; left: 384px; bottom: -24px; display: flex; gap: 16px">
+      <sc-if value="{{onAvatar}}" hint-placeholder-val="{{ true }}"><button class="btn big" type="button" onClick="{{close}}" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span>Done</span></button></sc-if>
+      <sc-if value="{{canSubmit}}" hint-placeholder-val="{{ false }}"><button class="btn big" type="button" onClick="{{submit}}" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span style="position: relative; overflow: hidden; padding: 14px 28px; font-size: 18px">Submit<span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span></button></sc-if>
+      <sc-if value="{{noSubmit}}" hint-placeholder-val="{{ false }}"><button class="btn big" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #5C5F70; --bt: #25262D"><span>Submit</span></button></sc-if>
+      <sc-if value="{{onName}}" hint-placeholder-val="{{ false }}"><button class="btn big" type="button" onClick="{{cancel}}" style="--bc: #747BAD; --bf: #747BAD; --bt: #00010A"><span>Cancel</span></button></sc-if>
+    </div>
+  </section>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const AV = ["/_blob/9a4056241500f4b0b79480b0fe3a767d", "/_blob/2cc2a6e62ae1396c8f5de3abef10e911", "/_blob/235ab6e35ba068dadd55579362aad847", "/_blob/84f030327dea2da91414bad3c8b31503", "/_blob/5a183917b2d8308cf5d3cc0650fbc359", "/_blob/fe5678a904b7cc505ffc1ca5d3806c63", "/_blob/ee4bf7ad283c99d16dd17efe71012237", "/_blob/0b54fb2a941aa0806c1aa5b7ab8099dd", "/_blob/a222a7741e335ef265c6409589a099c7", "/_blob/357232684e62c3323ea05ecb9b3bf921", "/_blob/aa68449f06d220e145108192c0af177c", "/_blob/7eaa27fb8ceb63828f5b02dedccd616a", "/_blob/9eec88b032aebb43abe9eb8b7a1d9b99", "/_blob/df1dbe80a73ba684c3ea01433ff0b4db", "/_blob/ffab301434b2c67d238f6f9eb1425b98", "/_blob/611de1d4aebd64ce54f40eec00947ec5", "/_blob/ec7403d6960ec10aff4f4e2d218d39be", "/_blob/9777e9dfe4bc2e7c58228ee8f7b8f457"];
+const TAKEN = ['halcyon', 'novakite', 'kestrel'];
+function check(n) {
+  if (!n || !n.trim()) return 'Enter a name.';
+  if (n.length < 3) return 'Names must be at least 3 characters long.';
+  if (n.length > 25) return 'Names can be at most 25 characters long.';
+  if (/[^A-Za-z0-9 _.\-]/.test(n)) return 'Names can only contain letters and numbers, spaces and _ - .';
+  if (!/[A-Za-z]/.test(n)) return 'Names must contain at least one letter.';
+  if (!/^[A-Za-z0-9].*[A-Za-z0-9]$/.test(n)) return 'Names must start and end with a letter or number.';
+  if (/[ _.\-]{2}/.test(n)) return 'Names cannot contain back-to-back spaces or punctuation.';
+  return '';
+}
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ tab: 'avatar', avatar: 0, name: 'Gradies', error: '', checking: false }, props.start || {});
+    this.state = { tab: s.tab, avatar: s.avatar, saved: false, name: s.name, error: s.error, checking: s.checking, toast: '' };
+    this.timer = null; this.wait = null;
+  }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); if (this.wait) clearTimeout(this.wait); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  tab(key) {
+    const on = this.state.tab === key;
+    return { pick: () => this.setState({ tab: key }), color: on ? '#E6E9FF' : '#5C5F70', scale: on ? 1 : 0 };
+  }
+  renderVals() {
+    const st = this.state, n = st.name;
+    const live = check(n);
+    const error = st.error || (n.length >= 3 || n.length === 0 ? live : '');
+    const rule = (ok, text) => ({ ok, bad: !ok, text, color: ok ? '#E6E9FF' : '#747BAD' });
+    return {
+      popTop: st.tab === 'name' ? 200 : 150, popH: st.tab === 'name' ? 560 : 680,
+      tabA: this.tab('avatar'), tabN: this.tab('name'), onAvatar: st.tab === 'avatar', onName: st.tab === 'name',
+      avatar: AV[st.avatar], previewName: n || 'Pilot4821',
+      icons: AV.map((src, i) => ({ n: i + 1, src, border: i === st.avatar ? '#E6E9FF' : '#222645', inner: i === st.avatar ? 106 : 110,
+                                   alpha: i === st.avatar ? 1 : 0.8, d: 80 + Math.min(i, 8) * 40,
+                                   pick: () => this.setState({ avatar: i, saved: true }) })),
+      saved: st.saved, saveColor: st.saved ? '#E6E9FF' : '#747BAD',
+      saveNote: st.saved ? 'Saved to your profile.' : 'Your avatar saves as soon as you pick it.',
+      name: n, len: String(n.length), typed: (e) => this.setState({ name: e && e.target ? e.target.value : n, error: '' }),
+      rules: [rule(n.length >= 3 && n.length <= 25, '3 to 25 characters'), rule(n.length > 0 && !/[^A-Za-z0-9 _.\-]/.test(n), 'Letters, numbers, spaces, _ - .'),
+              rule(/^[A-Za-z0-9].*[A-Za-z0-9]$/.test(n), 'Starts and ends with a letter or number'), rule(n.length > 0 && !/[ _.\-]{2}/.test(n), 'No doubled spaces or punctuation')],
+      fieldBorder: error ? '#FF4B3A' : '#00D4FF', hasError: !!error && !st.checking, error,
+      checking: st.checking, canSubmit: st.tab === 'name' && !live && !st.checking, noSubmit: st.tab === 'name' && (!!live || st.checking),
+      submit: () => {
+        this.setState({ checking: true });
+        this.wait = setTimeout(() => {
+          if (TAKEN.indexOf(n.toLowerCase()) >= 0) this.setState({ checking: false, error: 'That name is already taken. Try another one.' });
+          else { this.setState({ checking: false }); this.say('Name saved. The window closes.'); }
+        }, 1400);
+      },
+      cancel: () => this.say('Cancel puts the old name back and closes the window.'),
+      close: () => this.say('Done closes the window.'),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

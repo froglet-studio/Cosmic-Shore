@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 634002907447383638}
   - component: {fileID: 296582887329433260}
   - component: {fileID: 514242100704905636}
+  - component: {fileID: 382972104806199471}
   m_Layer: 5
   m_Name: ProfileAvatarButton
   m_TagString: Untagged
@@ -91,13 +92,13 @@ MonoBehaviour:
   isLocked: 0
   fillImage: {fileID: 846981477007406755}
   borderImage: {fileID: 999241122732647268}
-  borderSelectedSprite: {fileID: 21300000, guid: 17ad9aae4a9b3016d67843d91ccef11e, type: 3}
-  borderUnselectedSprite: {fileID: 21300000, guid: 17ad9aae4a9b3016d67843d91ccef11e, type: 3}
+  borderSelectedSprite: {fileID: 21300000, guid: 19b1c663d50cf7411f528e56f9203b79, type: 3}
+  borderUnselectedSprite: {fileID: 21300000, guid: 19b1c663d50cf7411f528e56f9203b79, type: 3}
   selectedBorderToken: 17
   primaryGraphics: []
   unselectedPrimaryToken: 0
   secondaryGraphics: []
-  lockedSecondaryToken: 11
+  lockedSecondaryToken: 7
   artGraphics: []
   lockGraphic: {fileID: 0}
   lockLabel: {fileID: 0}
@@ -116,6 +117,20 @@ MonoBehaviour:
   BorderImage: {fileID: 0}
   IconImage: {fileID: 286254689187899334}
   tile: {fileID: 296582887329433260}
+--- !u!114 &382972104806199471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 111698954150440058}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ab003d74ac0f546021608ad90dc0065, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 0}
+  margin: 12
 --- !u!1 &33471350735514551
 GameObject:
   m_ObjectHideFlags: 0
@@ -151,7 +166,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 12, y: 12}
+  m_SizeDelta: {x: 8, y: 8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &282896721430244226
 CanvasRenderer:
@@ -181,7 +196,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 17ad9aae4a9b3016d67843d91ccef11e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b786c8265f4c2926303e4b4ea866d855, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -226,7 +241,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -24, y: -24}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &977338355914295559
 CanvasRenderer:
@@ -256,7 +271,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 17ad9aae4a9b3016d67843d91ccef11e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 19b1c663d50cf7411f528e56f9203b79, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -301,7 +316,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -6, y: -6}
+  m_SizeDelta: {x: -26, y: -26}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &873652111632645425
 CanvasRenderer:
@@ -331,7 +346,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 17ad9aae4a9b3016d67843d91ccef11e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 19b1c663d50cf7411f528e56f9203b79, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -376,7 +391,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -10, y: -10}
+  m_SizeDelta: {x: -26, y: -26}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &976481400271529082
 CanvasRenderer:

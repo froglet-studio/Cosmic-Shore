@@ -19,6 +19,7 @@ MonoBehaviour:
   seamDwellMinSeconds: 0.1
   seamDwellMaxSeconds: 0.28
   seamFadeSeconds: 0.85
+  seamFaceViewer: 1
   seamPetalGlow: 0.35
   fluxGapSeconds: 0.9
   fluxChargeSeconds: 0.45
@@ -35,5 +36,9 @@ MonoBehaviour:
   coreWidth: 0.012
   writheSpeed: 3
   flickerSpeed: 4
-  sleepBelowScreenRadiusPixels: 24
+  sleepBelowScreenRadiusPixels: 32
   halfRateBelowScreenRadiusPixels: 64
+  quarterRateBelowScreenRadiusPixels: 40
+  maxRebuildsPerFrame: 8
+  rebuildBudgetMs: 0.75
+  maxWakesPerFrame: 2

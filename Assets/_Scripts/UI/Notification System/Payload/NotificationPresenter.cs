@@ -65,7 +65,7 @@ namespace CosmicShore.UI
 
         void Enqueue(NotificationPayload p)
         {
-            while (settings && _queue.Count >= settings.maxQueue && _queue.Count > 0)
+            while (settings && _queue.Count >= settings.MaxQueue && _queue.Count > 0)
                 _queue.Dequeue();
 
             _queue.Enqueue(p);
@@ -97,40 +97,40 @@ namespace CosmicShore.UI
             // compute positions using current on-screen pos from the prefab
             var showPos  = rt.anchoredPosition; // designer-defined on-screen position
             var startPos = v.fitHelper
-                ? v.fitHelper.GetOffscreenPos(showPos, settings.inFrom, settings.inPadding)
+                ? v.fitHelper.GetOffscreenPos(showPos, settings.InFrom, settings.InPadding)
                 : showPos;
 
             var exitPos  = v.fitHelper
-                ? v.fitHelper.GetOffscreenPos(showPos, settings.outTo, settings.outPadding)
+                ? v.fitHelper.GetOffscreenPos(showPos, settings.OutTo, settings.OutPadding)
                 : showPos;
 
             // prepare
             KillSeq();
             rt.anchoredPosition = startPos;
 
-            if (settings.fade && cg) cg.alpha = settings.startAlpha;
-            if (settings.scale) v.transform.localScale = settings.startScale;
+            if (settings.Fade && cg) cg.alpha = settings.StartAlpha;
+            if (settings.scale) v.transform.localScale = settings.StartScale;
 
             // build sequence
             _activeSeq = DOTween.Sequence();
-            if (settings.useUnscaledTime) _activeSeq.SetUpdate(true);
+            if (settings.UseUnscaledTime) _activeSeq.SetUpdate(true);
 
             // IN
-            _activeSeq.Join(rt.DOAnchorPos(showPos, settings.inDuration).SetEase(settings.inEase));
-            if (settings.fade && cg)
-                _activeSeq.Join(cg.DOFade(settings.endAlpha, settings.inDuration));
+            _activeSeq.Join(rt.DOAnchorPos(showPos, settings.InDuration).SetEase(settings.InEase));
+            if (settings.Fade && cg)
+                _activeSeq.Join(cg.DOFade(settings.EndAlpha, settings.InDuration));
             if (settings.scale)
-                _activeSeq.Join(v.transform.DOScale(settings.endScale, settings.inDuration));
+                _activeSeq.Join(v.transform.DOScale(settings.EndScale, settings.InDuration));
 
             // HOLD
-            _activeSeq.AppendInterval(settings.holdDuration);
+            _activeSeq.AppendInterval(settings.HoldDuration);
 
             // OUT
-            _activeSeq.Append(rt.DOAnchorPos(exitPos, settings.outDuration).SetEase(settings.outEase));
-            if (settings.fade && cg)
-                _activeSeq.Join(cg.DOFade(settings.startAlpha, settings.outDuration));
+            _activeSeq.Append(rt.DOAnchorPos(exitPos, settings.OutDuration).SetEase(settings.OutEase));
+            if (settings.Fade && cg)
+                _activeSeq.Join(cg.DOFade(settings.StartAlpha, settings.OutDuration));
             if (settings.scale)
-                _activeSeq.Join(v.transform.DOScale(settings.startScale, settings.outDuration));
+                _activeSeq.Join(v.transform.DOScale(settings.StartScale, settings.OutDuration));
 
             yield return _activeSeq.WaitForCompletion();
             _activeSeq = null;

@@ -1,3 +1,4 @@
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -46,7 +47,15 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)]
         [SerializeField] int boxMaxMovers = DefaultBoxMaxMovers;
 
+        [Header("Shielded prisms bounce")]
+        [Tooltip("A collision a shielded prism is part of is a bounce, never an annihilation (Garrett, 2026-10-27). " +
+                 "How much of the closing speed the movers keep, rebounding off the contact: 0 = they stop dead " +
+                 "against each other, 1 = a perfectly elastic rebound.")]
+        [Range(0f, 1f)]
+        [SerializeField] float shieldBounceRestitution = PrismBounce.DefaultRestitution;
+
         public int ShowcaseMaxMovers => Mathf.Max(0, showcaseMaxMovers);
+        public float ShieldBounceRestitution => Mathf.Clamp01(shieldBounceRestitution);
         public int BoxMaxMovers => Mathf.Max(0, boxMaxMovers);
 
         /// <summary>The ladder is ordered.</summary>

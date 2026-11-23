@@ -84,8 +84,16 @@ namespace CosmicShore.UI
         ControlGlyphSetSO glyphSet;
 
         [SerializeField, Tooltip("Element petal artwork, shared with the HUD's flower row. Empty " +
-                                 "loads Resources/ElementalBarsConfig.")]
+                                 "loads Resources/ElementalBarsConfig. Only the fallback for an empty " +
+                                 "Element Shapes slot: a row's element mark is the element's SHAPE.")]
         ElementalBarsConfigSO barsConfig;
+
+        [SerializeField, Tooltip("The element marks the rows draw, Charge, Mass, Space, Time: each element's SHAPE " +
+                                 "(Assets/_Graphics/ElementShapes: pentagon, triangle, kite, diamond), the icon the " +
+                                 "Codex, the arcade cards and the ability rows draw. Shombith, 2026-11-02: \"use the " +
+                                 "correct icons for elements, check codex for that\". An empty slot falls back to " +
+                                 "the HUD petal (barsConfig).")]
+        Sprite[] elementShapes = new Sprite[4];
 
         [SerializeField, Tooltip("The fleet's vessel-prefab table, so a row can read an ability's " +
                                  "REAL icon off that vessel's own HUD. Empty loads the one asset " +
@@ -108,6 +116,17 @@ namespace CosmicShore.UI
         [Header("Copy")]
         [SerializeField, Tooltip("Heading above the mode's authored rows. Empty draws no heading.")]
         string flightSectionTitle = "Controls";
+
+        [SerializeField, Tooltip("Section 90 (Shombith 2026-10-27: \"in the controls tab the omni crystal ability of the " +
+                                 "vessel should also show\"): the Omni crystal's icon on its row.")]
+        Sprite omniIcon;
+
+        [SerializeField, Tooltip("The Omni row's name when the hull's ability map authors none. {ability} is the map's " +
+                                 "OmniAbilityLabel. Empty: no Omni row.")]
+        string omniRowTemplate = "Omni crystal: {ability}";
+
+        [SerializeField, Tooltip("The Omni row's name when the hull's map authors no Omni ability. Empty: no Omni row then.")]
+        string omniDefaultLabel = "Omni crystal: fly into it";
 
         [SerializeField, Tooltip("Heading above the derived ability rows. Empty draws no heading.")]
         string abilitySectionTitle = "Abilities";
@@ -338,6 +357,20 @@ namespace CosmicShore.UI
             return used;
         }
 
+        /// <summary>The hull's Omni crystal row after its four elements: no button (you fly into it), no cooldown.</summary>
+        int BuildOmniRow(ElementalAbilityMapSO map, int used)
+        {
+            string label = map && !string.IsNullOrWhiteSpace(map.OmniAbilityLabel)
+                ? TemplateText.Fill(omniRowTemplate, "ability", map.OmniAbilityLabel.Trim())
+                : omniDefaultLabel;
+            if (string.IsNullOrEmpty(label)) return used;
+            var row = RowAt(used);
+            if (!row) return used;
+            RecordBinding(used, HintBinding.None);
+            row.Bind(Element.Omni, label, string.Empty, omniIcon, null, null, null, showsCooldown: false);
+            return used + 1;
+        }
+
         int BuildAbilityRows(GameModes mode, VesselClassType vesselClass, SO_Vessel vessel, int used)
         {
             if (vesselClass is VesselClassType.Any or VesselClassType.Random) return used;
@@ -348,8 +381,8 @@ namespace CosmicShore.UI
                 // Not a fault: a vessel without a map simply has no authored ability set yet, and
                 // the flight rows above still say everything that is true.
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
-                    $"[ArcadeLaunch] No ElementalAbilityMap for {vesselClass}; flight rows only.");
-                return used;
+                    $"[ArcadeLaunch] No ElementalAbilityMap for {vesselClass}; flight rows and the Omni row only.");
+                return BuildOmniRow(null, used);
             }
 
             var shown = controlsLibrary ? controlsLibrary.AbilitiesFor(mode) : null;
@@ -389,7 +422,7 @@ namespace CosmicShore.UI
                          entry.AbilityLabel,
                          string.Empty,
                          ResolveAbilityIcon(vesselClass, vessel, element, entry.AbilityLabel),
-                         barsConfig ? barsConfig.GetPetalSprite(element) : null,
+                         ElementMark(element),
                          _keyboardWhenBound ? null : glyph?.padGlyph,
                          _keyboardWhenBound ? glyph?.keyboardLabel : null,
                          // A passive has nothing to fire and therefore nothing to recharge.
@@ -401,7 +434,15 @@ namespace CosmicShore.UI
 
                 used++;
             }
-            return used;
+            return BuildOmniRow(map, used);
+        }
+
+        /// <summary>The element's shape (Charge=1..Time=4 index the shapes from 0), else the HUD petal.</summary>
+        Sprite ElementMark(Element element)
+        {
+            int i = (int)element - 1;
+            if (elementShapes != null && i >= 0 && i < elementShapes.Length && elementShapes[i]) return elementShapes[i];
+            return barsConfig ? barsConfig.GetPetalSprite(element) : null;
         }
 
         /// <summary>

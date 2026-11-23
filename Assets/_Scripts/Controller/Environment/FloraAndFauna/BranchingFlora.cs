@@ -76,8 +76,8 @@ namespace CosmicShore.Gameplay
         /// family's leaf DOES carry a length, so the leaf transform already lengthens a Space
         /// needle - but the branch STEP is a separate authored distance, and leaving it alone
         /// would stretch the prisms past the gaps they are meant to span. Scaling the step with
-        /// them keeps a Space plant a wider skeleton and a Mass plant a compact block, rather
-        /// than either one changing how densely its own branches are packed.
+        /// them keeps a Space plant a wider skeleton and a Mass plant the neutral plant grown whole
+        /// (Docs/ECOSYSTEM.md §65), rather than either one changing how densely its own branches are packed.
         /// </summary>
         protected override void OnElementResolved()
         {
@@ -143,7 +143,7 @@ namespace CosmicShore.Gameplay
             var leaves = GetComponentsInChildren<HealthPrism>(true);
             if (leaves != null && leaves.Length != 0) yield break;
             CSDebug.LogWarning($"{name}: BranchingFlora had no HealthPrisms after {seconds}s. Auto-dying.");
-            Die();
+            DieOnce();
         }
         void SeedBranches()
         {
@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < trunkCount; i++)
             {
                 Branch branch = new Branch();
-                branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
+                branch.gameObject = SpindlePool.Get(spindle, transform.position, transform.rotation).gameObject;
                 branch.gameObject.transform.rotation = RandomVectorRotation(0,180);
                 branch.gameObject.transform.parent = transform;
                 branch.depth = 0;
@@ -190,11 +190,28 @@ namespace CosmicShore.Gameplay
             List<Branch> branchesToRemove = new List<Branch>();
             foreach (Branch branch in activeBranches)
             {
+                // A branch whose limb died is no longer ours: destroyed, or back in the SpindlePool
+                // (and perhaps already another plant's limb).
+                if (!branch.gameObject || !branch.gameObject.transform.IsChildOf(transform))
+                {
+                    branchesToRemove.Add(branch);
+                    continue;
+                }
+
                 if (Random.value < growthChance && branch.depth < maxDepth)
                 {
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
+                        // THE HEART'S CLEARANCE (Docs/ECOSYSTEM.md §65): a branch that curls back onto its own
+                        // crystal ends there without a leaf, so no leaf - and no Mass leaf's shield - sits in the
+                        // heart's swing. The branch still terminates, exactly as a leaf would have ended it.
+                        if (IntrudesOnHeart(HeartTransform.position, ChildPosition(branch),
+                                branch.gameObject.transform.rotation, LeafSize))
+                        {
+                            branchesToRemove.Add(branch);
+                            continue;
+                        }
                         newBranch.gameObject = EnvironmentPrismPool.Get(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
@@ -219,7 +236,7 @@ namespace CosmicShore.Gameplay
                         int numBranches = Random.Range(minBranches, maxBranches + 1);
                         for (int i = 0; i < numBranches; i++)
                         {
-                            newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
+                            newBranch.gameObject = SpindlePool.Get(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
                             ScaleAndPositionBranch(ref newBranch, branch);
 
                             if (goal != Vector3.zero && SafeLookRotation.TryGet(goal - transform.position, out var branchRotation, newBranch.gameObject))
@@ -263,6 +280,15 @@ namespace CosmicShore.Gameplay
                 float radius = ResolvePlantRadius(legacyRadius: plantRadius);
                 transform.position = ResolvePlantCenter() + (radius * Random.onUnitSphere);
             }
+        }
+
+        /// <summary>Where <see cref="ScaleAndPositionBranch"/> puts a child of <paramref name="branch"/> - one step
+        /// forward, foreshortened past depth 1.</summary>
+        Vector3 ChildPosition(Branch branch)
+        {
+            Transform t = branch.gameObject.transform;
+            return branch.depth <= 1 ? t.position + branchingScaleFactor * t.forward
+                                     : t.position + branchingScaleFactor / (branch.depth - 1) * t.forward;
         }
 
         void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)
@@ -320,7 +346,9 @@ namespace CosmicShore.Gameplay
 
                     if (rng.NextDouble() < leaf)
                     {
-                        into.Add(new SpawnPoint(childPos, rot, leafScale));
+                        // Grow()'s heart clearance: the plant's origin is its heart here.
+                        if (!IntrudesOnHeart(Vector3.zero, childPos, rot, leafScale))
+                            into.Add(new SpawnPoint(childPos, rot, leafScale));
                         continue; // a leaf terminates the branch, as in Grow()
                     }
 

@@ -506,8 +506,8 @@ public class VesselStatusC3Tests
     public void VesselStatus_RequireComponentSet_IsFrozen()
     {
         var declared = typeof(VesselStatus)
-            .GetCustomAttributes(typeof(RequireComponentAttribute), false)
-            .Cast<RequireComponentAttribute>()
+            .GetCustomAttributes(typeof(RequireComponent), false)
+            .Cast<RequireComponent>()
             .Select(a => a.m_Type0)
             .ToHashSet();
         Assert.Equal(RequiredComponents.ToHashSet(), declared);

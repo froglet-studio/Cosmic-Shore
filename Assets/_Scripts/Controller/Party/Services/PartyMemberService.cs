@@ -65,6 +65,12 @@ namespace CosmicShore.Gameplay
         private readonly HostConnectionDataSO _connectionData;
         private readonly SoapPartyEventBus    _eventBus;
 
+        /// <summary>
+        /// Block 5 step 7: a member missing from one session read is not gone yet (see
+        /// <see cref="AbsenceStrikes"/> for why one short read is not evidence).
+        /// </summary>
+        private readonly AbsenceStrikes _absences = new();
+
         // ─────────────────────────────────────────────────────────────────────
         // Construction
         // ─────────────────────────────────────────────────────────────────────
@@ -94,27 +100,40 @@ namespace CosmicShore.Gameplay
         public void SeedLocalPlayer(bool clearFirst = true)
         {
             if (clearFirst)
+            {
                 _connectionData.PartyMembers?.Clear();
+                _absences.Clear();
+            }
 
-            if (!string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
-                _connectionData.PartyMembers?.Add(_connectionData.LocalPlayerData);
+            // Idempotent (Block 5 step 3): without the clear the list may already hold our row, and
+            // PartyPlayerData is equal by PlayerId, so a blind Add would seat the local player twice.
+            var local = _connectionData.LocalPlayerData;
+            if (!string.IsNullOrEmpty(local.PlayerId) && _connectionData.PartyMembers != null
+                && !_connectionData.PartyMembers.Contains(local))
+                _connectionData.PartyMembers.Add(local);
 
             CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Seeded PartyMembers with local player.");
         }
 
         /// <inheritdoc/>
-        public IReadOnlyList<string> SyncFromSession(ISession session, string localPlayerId)
+        public IReadOnlyList<string> SyncFromSession(ISession session, string localPlayerId,
+            ISet<string> departed = null, bool serverRead = true)
         {
             if (_connectionData.PartyMembers == null) return System.Array.Empty<string>();
+            // A session let go between a caller's await and this call (a join or leave started) has no roster to read.
+            if (session?.Players == null) return System.Array.Empty<string>();
 
             // Build a fast-lookup set of current session player IDs. A SPECTATOR is in the
             // session (it needs the Relay seat to watch) but is never a party member: it is
             // left out of this set too, so a member who turns spectator is REMOVED below
-            // exactly as if they had left.
+            // exactly as if they had left - at once, since the session states it.
             var sessionPlayerIds = new HashSet<string>();
+            var spectatorIds     = new HashSet<string>();
             foreach (var p in session.Players)
-                if (!PartySessionService.IsSpectator(p))
-                    sessionPlayerIds.Add(p.Id);
+            {
+                if (PartySessionService.IsSpectator(p)) spectatorIds.Add(p.Id);
+                else sessionPlayerIds.Add(p.Id);
+            }
 
             // Add players that are in the session but not yet in the SOAP list;
             // refresh identity (displayName/avatarId) on members already present.
@@ -158,18 +177,34 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Remove players that are in the SOAP list but no longer in the session.
+            // Remove players that are in the SOAP list but no longer in the session - after
+            // AbsenceStrikes.ReadsBeforeRemoval consecutive absent server reads, or at once when the
+            // session stated it (a PlayerLeaving / PlayerHasLeft push, or the member turned spectator).
             for (int i = _connectionData.PartyMembers.Count - 1; i >= 0; i--)
             {
                 var member = _connectionData.PartyMembers[i];
                 if (member.PlayerId == localPlayerId) continue;
 
-                if (!sessionPlayerIds.Contains(member.PlayerId))
+                if (sessionPlayerIds.Contains(member.PlayerId))
                 {
-                    _connectionData.PartyMembers.RemoveAt(i);
-                    _eventBus.RaisePartyMemberLeft(member);
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
+                    _absences.Seen(member.PlayerId);
+                    continue;
                 }
+
+                bool stated = spectatorIds.Contains(member.PlayerId)
+                              || (departed != null && departed.Contains(member.PlayerId));
+                if (!_absences.Absent(member.PlayerId, stated, serverRead))
+                {
+                    if (serverRead)
+                        CSDebug.LogVerbose(CSLogChannel.Party,
+                            $"[PartyMemberService] Member {member.DisplayName} ({member.PlayerId}) absent from session read " +
+                            $"{_absences.StrikesFor(member.PlayerId)}/{AbsenceStrikes.ReadsBeforeRemoval} - holding the slot.");
+                    continue;
+                }
+
+                _connectionData.PartyMembers.RemoveAt(i);
+                _eventBus.RaisePartyMemberLeft(member);
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
             }
 
             return joinedPlayerIds;
@@ -179,6 +214,7 @@ namespace CosmicShore.Gameplay
         public void ClearSilent()
         {
             _connectionData.PartyMembers?.Clear();
+            _absences.Clear();
             CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Party members cleared (silent).");
         }
 
@@ -186,6 +222,7 @@ namespace CosmicShore.Gameplay
         public void ClearWithEvents(string localPlayerId)
         {
             if (_connectionData.PartyMembers == null) return;
+            _absences.Clear();
 
             for (int i = _connectionData.PartyMembers.Count - 1; i >= 0; i--)
             {

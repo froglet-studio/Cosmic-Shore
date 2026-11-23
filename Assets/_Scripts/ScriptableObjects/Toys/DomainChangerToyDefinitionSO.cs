@@ -5,8 +5,8 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Toy that cycles the local player's domain (team colour) on each pass - fly through it
-    /// to rotate Jade → Ruby → Gold. Routes through the server-authoritative
+    /// Toy that sets the local player's domain (team colour) - Jade, Ruby or Gold, picked in the
+    /// Toy Box. Routes through the server-authoritative
     /// <c>Player.RequestSetDomain_ServerRpc</c> (never a client-local write), so the recolour
     /// replicates to every peer via <c>Player.NetDomain</c>.
     /// </summary>
@@ -22,7 +22,7 @@ namespace CosmicShore.ScriptableObjects
             var host = new GameObject($"ToySet_{Id}");
             host.transform.SetParent(parent, false);
             var set = host.AddComponent<DomainChangerToySet>();
-            set.Initialize(this, context, placement, placement.BodyRadius, placement.TriggerRadius);
+            set.Initialize(this, context);
         }
     }
 }

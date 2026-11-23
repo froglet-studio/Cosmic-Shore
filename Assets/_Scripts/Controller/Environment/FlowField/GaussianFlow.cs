@@ -7,7 +7,8 @@ namespace CosmicShore.Gameplay
     [System.Serializable]
     public class GaussianFlow : FlowFieldSO
     {
-        public float sigma = 100;
+        [SerializeField] float sigma = 100;
+        public float Sigma => sigma;
 
         public GaussianFlow()
         {

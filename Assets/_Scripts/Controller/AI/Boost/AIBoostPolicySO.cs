@@ -160,6 +160,24 @@ namespace CosmicShore.Gameplay
             return variant && variant.GetType() == policy.GetType() ? variant : policy;
         }
 
+        /// <summary>
+        /// The variant tuned for one mode at one intensity - <c>&lt;name&gt;_&lt;mode&gt;_I&lt;n&gt;</c>, e.g.
+        /// <c>DolphinAIBoostPolicy_Switchback_I4</c>, learned from that intensity's races alone - else the mode's
+        /// variant (<see cref="ForMode(AIBoostPolicySO, GameModes)"/>). A mode whose intensity is its course (Switchback's
+        /// 72 u mouths at I1, 20 u at I4) needs a drive per course: one set of numbers learned from every intensity
+        /// is the easiest one's, and throws the hardest one's mouths. <paramref name="intensity"/> 0 or less: the mode's.
+        /// </summary>
+        public static AIBoostPolicySO ForMode(AIBoostPolicySO policy, GameModes mode, int intensity)
+        {
+            if (!policy) return policy;
+            if (intensity > 0)
+            {
+                var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}_I{intensity}");
+                if (variant && variant.GetType() == policy.GetType()) return variant;
+            }
+            return ForMode(policy, mode);
+        }
+
         /// <summary>A straight worth starting to spend on (before the runway test).</summary>
         public bool IsStraight(in AIBoostContext c) =>
             !c.Restricted && !c.BreakingOrbit && c.AngleToTarget <= alignDegrees && c.Stick <= stickBand;

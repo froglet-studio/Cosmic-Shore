@@ -59,7 +59,10 @@ namespace CosmicShore.Gameplay
             // Remote peers learn unlock flips through the replicated bits (their local
             // ResourceSystem copies drift and must not gate outcomes).
             if (_netActions)
+            {
                 _netActions.NetElementUnlocks.OnValueChanged += HandleNetUnlocksChanged;
+                _netActions.OwnershipHandedOver += AdoptHandover;
+            }
 
             if (_map == null || _resources == null) return;
 
@@ -77,7 +80,10 @@ namespace CosmicShore.Gameplay
             if (_resources != null)
                 _resources.OnElementLevelChange -= HandleElementLevelChanged;
             if (_netActions)
+            {
                 _netActions.NetElementUnlocks.OnValueChanged -= HandleNetUnlocksChanged;
+                _netActions.OwnershipHandedOver -= AdoptHandover;
+            }
             _unlocked.Clear();
             _initialized = false;
         }
@@ -141,6 +147,40 @@ namespace CosmicShore.Gameplay
                 || !_netActions.IsSpawned || !_netActions.IsOwner) return;
             foreach (var element in AllElements)
                 PublishLevel(element, _resources.GetLevel(element));
+            PublishBase();
+        }
+
+        // The hull's base levels, for whichever machine takes it over next (ElementHandover).
+        void PublishBase()
+        {
+            var local = ElementHandover.Pack(_resources.BaseLevel(Element.Charge), _resources.BaseLevel(Element.Mass),
+                                             _resources.BaseLevel(Element.Space), _resources.BaseLevel(Element.Time));
+            bool ever = _netActions.NetElementBasePublished.Value;
+            if (!ElementHandover.ShouldPublish(_netActions.NetElementBase.Value, local, ever)) return;
+            _netActions.NetElementBase.Value = local;
+            if (!ever) _netActions.NetElementBasePublished.Value = true;
+        }
+
+        /// <summary>
+        /// This machine has just taken the hull over (<see cref="R_VesselActionHandler.OwnershipHandedOver"/>): its own copy of
+        /// the levels is whatever its replica held, so it adopts the last owner's published base levels and latched unlocks
+        /// before it simulates or publishes anything (<see cref="ElementHandover"/>). The unlocks go first, so the level
+        /// writes below run the latch from the state the last owner had.
+        /// </summary>
+        void AdoptHandover()
+        {
+            if (!_resources || !_netActions || !_netActions.NetElementBasePublished.Value) return;
+            byte bits = _netActions.NetElementUnlocks.Value;
+            foreach (var element in AllElements)
+            {
+                bool was = LocalUpgradeActive(element), now = (bits & BitFor(element)) != 0;
+                _unlocked[element] = now;
+                if (was != now) OnUpgradeStateChanged?.Invoke(element, now);
+            }
+            var levels = _netActions.NetElementBase.Value;
+            _resources.ClearPendingElementalLoss();
+            foreach (var element in AllElements)
+                _resources.SetElementLevel(element, ElementHandover.Get(levels, element));
         }
 
         void PublishLevel(Element element, int level)

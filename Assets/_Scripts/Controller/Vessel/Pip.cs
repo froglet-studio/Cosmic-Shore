@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// is replaced by the full-screen look-back camera, <c>VesselRearView</c>
     /// (Docs/REAR_VIEW.md): same information, at the vessel's own follow distance, drawn by the
     /// one gameplay rig every camera platform law is already bound to, toggled by <c>C</c> or
-    /// LB+RB. <c>VesselController</c> no longer calls <see cref="SetLocalPilot"/>, so no vessel
+    /// D-pad down. <c>VesselController</c> no longer calls <see cref="SetLocalPilot"/>, so no vessel
     /// ever claims the panel and the panel never lights.
     ///
     /// <para><b>The file is kept, and keeping it is load-bearing rather than sentimental.</b>

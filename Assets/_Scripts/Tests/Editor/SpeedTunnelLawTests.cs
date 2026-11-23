@@ -146,6 +146,19 @@ namespace CosmicShore.Tests
                 "running with, and returns there exactly at zero.");
         }
 
+        /// <summary>A ride scale (VesselSpeedTunnel.SetEffectScale, the Meerkat's wormhole x5) takes the optics past the law's
+        /// full strength, up to SpeedTunnelConfigSO.MaxEffect and never below the minimum field of view.</summary>
+        [Test]
+        public void ARideScale_GoesDeeperThanFull_UpToTheCap()
+        {
+            var config = NewConfig();
+            Assert.AreEqual(10f, config.FovFor(60f, 2f), Tolerance, "60 - 25 x 2");
+            Assert.AreEqual(-1f, config.PaniniOffsetFor(2f), Tolerance, "-0.5 x 2 (the post volume clamps the distance at 0)");
+            Assert.AreEqual(config.FovFor(60f, SpeedTunnelConfigSO.MaxEffect), config.FovFor(60f, 50f), Tolerance,
+                "past MaxEffect nothing moves");
+            Assert.GreaterOrEqual(config.FovFor(60f, SpeedTunnelConfigSO.MaxEffect), SpeedTunnelConfigSO.MinFieldOfView);
+        }
+
         [Test]
         public void FovFor_NeverProducesADegenerateCamera()
         {

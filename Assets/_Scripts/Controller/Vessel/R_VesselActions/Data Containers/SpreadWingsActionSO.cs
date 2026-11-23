@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
                  "reads 5x at Mass 0, 15x at Mass 10 and 20x at Mass 15 — exactly 5 + level. The " +
                  "floor keeps the deficit band from making Mass mode NARROWER than dust mode.")]
         [SerializeField] ElementalFloat massModeWidth =
-            ElementalFloat.Multiplier(5f, 15f, Element.Mass, 1f);
+            ElementalFloat.Multiplier(5f, 15f, Element.Mass, 2.5f);
 
         [Tooltip("Seconds for the wake to open fully from the narrow line (and to close again). " +
                  "The width eases rather than steps, which is what makes a stroke read as a " +

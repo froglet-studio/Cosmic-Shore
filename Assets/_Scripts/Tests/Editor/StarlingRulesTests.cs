@@ -64,38 +64,38 @@ namespace CosmicShore.Tests
             new Golden("mass-snowball", 1, StarlingStatKind.Linear, 2f, 1f, 0, 5, 6f),   // "6"
             new Golden("mass-snowball", 1, StarlingStatKind.Linear, 2f, 1f, 0, 10, 11f),   // "11"
             new Golden("mass-snowball", 1, StarlingStatKind.Linear, 2f, 1f, 0, 15, 16f),   // "16"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 1, 4f),   // "4%"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 5, 20f),   // "20%"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 10, 40f),   // "40%"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 15, 60f),   // "60%"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 1, 90f),   // "90°/s"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 5, 150f),   // "150°/s"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 10, 225f),   // "225°/s"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 15, 300f),   // "300°/s"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 1, 2f),   // "2.00×"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 5, 2.6f),   // "2.60×"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 10, 3.35f),   // "3.35×"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 15, 4.1f),   // "4.10×"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 1, 1f),   // "1%"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 5, 6f),   // "6%"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 10, 12f),   // "12%"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 15, 18f),   // "18%"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 1, 72f),   // "72°/s"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 5, 94f),   // "94°/s"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 10, 121f),   // "121°/s"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 15, 149f),   // "149°/s"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 1, 1.35f),   // "1.35×"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 5, 1.75f),   // "1.75×"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 10, 2.25f),   // "2.25×"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 15, 2.75f),   // "2.75×"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 1, 3f),   // "3.0 s"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 5, 4.6f),   // "4.6 s"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 10, 6.6f),   // "6.6 s"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 15, 8.6f),   // "8.6 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 1, 24f),   // "24.0 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 5, 15.1f),   // "15.1 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 10, 8.4f),   // "8.4 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 15, 4.7f),   // "4.7 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 1, 54f),   // "54.0 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 5, 33.9f),   // "33.9 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 10, 18.9f),   // "18.9 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 15, 10.6f),   // "10.6 s"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 1, 300f),   // "300 u"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 5, 500f),   // "500 u"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 10, 750f),   // "750 u"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 15, 1000f),   // "1000 u"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 1, 3f),   // "3%"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 5, 11f),   // "11%"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 10, 21f),   // "21%"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 15, 31f),   // "31%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 1, 10f),   // "10%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 5, 26f),   // "26%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 10, 46f),   // "46%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 15, 66f),   // "66%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 1, 6f),   // "6%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 5, 21f),   // "21%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 10, 40f),   // "40%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 15, 59f),   // "59%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 1, 14f),   // "14%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 5, 36f),   // "36%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 10, 65f),   // "65%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 15, 93f),   // "93%"
             new Golden("space-hole-punch", 0, StarlingStatKind.Linear, 0.2f, 0.1f, 1, 1, 0.2f),   // "0.2/s"
             new Golden("space-hole-punch", 0, StarlingStatKind.Linear, 0.2f, 0.1f, 1, 5, 0.6f),   // "0.6/s"
             new Golden("space-hole-punch", 0, StarlingStatKind.Linear, 0.2f, 0.1f, 1, 10, 1.1f),   // "1.1/s"
@@ -286,10 +286,13 @@ namespace CosmicShore.Tests
         {
             var rules = new StarlingRules(Config());
             Assert.IsFalse(rules.Pick(Element.Charge), "no hand, no pick");
-            for (int i = 0; i < 20; i++)
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Charge), "the first hand is the spread hand");
+            Assert.IsFalse(rules.HasHand);
+            for (int i = 1; i < 20; i++)
             {
                 rules.DealHand();
-                Assert.IsTrue(rules.Pick(Element.Charge));
+                Assert.IsTrue(rules.PickFocus(), "every later hand is a Charge hand");
                 Assert.IsFalse(rules.HasHand);
             }
             Assert.AreEqual(StarlingRules.MaxLevel, rules.Level(StarlingCardIds.Lasers));
@@ -303,11 +306,10 @@ namespace CosmicShore.Tests
             var rules = new StarlingRules(Config());
             Assert.AreEqual(200, rules.CapNow);
             Assert.AreEqual(30, rules.MinNow);
-            rules.DealHand();
-            rules.Pick(Element.Mass);
+            Take(rules, Element.Mass);
             Assert.AreEqual(206, rules.CapNow, "level 1: cap 200 + (46 - 40) = +6");
             Assert.AreEqual(30, rules.MinNow, "level 1: minimum 30 + (6 - 6) = +0");
-            for (int i = 0; i < 4; i++) { rules.DealHand(); rules.Pick(Element.Mass); }
+            for (int i = 0; i < 4; i++) Take(rules, Element.Mass);
             Assert.AreEqual(5, rules.Level(StarlingCardIds.BigFamily));
             Assert.AreEqual(230, rules.CapNow, "level 5: 200 + (70 - 40) = 230");
             Assert.AreEqual(32, rules.MinNow, "level 5: 30 + (8 - 6) = 32");
@@ -318,16 +320,231 @@ namespace CosmicShore.Tests
         {
             var rules = new StarlingRules(Config());
             Assert.AreEqual(30f, rules.PhaseLength(StarlingPhase.Omnicrystal), 1e-4f);
-            rules.DealHand();
-            rules.Pick(Element.Time);
+            Take(rules, Element.Time);
             Assert.AreEqual(30f * 0.97f, rules.PhaseLength(StarlingPhase.Omnicrystal), 1e-4f, "level 1 cuts 3%");
             Assert.AreEqual(1, rules.SwarmCount(true), "no Split held");
-            rules.DealHand();
-            rules.Pick(Element.Space);
+            Take(rules, Element.Space);
             Assert.AreEqual(1, rules.SwarmCount(false));
             Assert.AreEqual(2, rules.SwarmCount(true), "below level 5 the split is timed");
-            for (int i = 0; i < 4; i++) { rules.DealHand(); rules.Pick(Element.Space); }
+            for (int i = 0; i < 4; i++) Take(rules, Element.Space);
             Assert.AreEqual(2, rules.SwarmCount(false), "level 5: the split is permanent");
+        }
+
+        /// <summary>Draw a hand of <paramref name="element"/> and take its first card (the known deck wires one card per element).</summary>
+        static void Take(StarlingRules rules, Element element)
+        {
+            Assert.IsTrue(rules.ChooseDrawElement(element));
+            rules.DealHand();
+            Assert.IsTrue(rules.PickAt(0));
+        }
+
+        // ---- the four elements (Garrett, 2026-11-17: every vessel scales with every element and has its L5 upgrades) ----
+
+        [Test]
+        public void AnElementsLevel_AddsLevelsToItsDrawnCards()
+        {
+            var config = Config();
+            var rules = new StarlingRules(config);
+            float massFactor = 1f;
+            rules.ArrivalLevel = e => e == Element.Mass ? massFactor : 1f;
+            rules.DealHand();
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "at rest a card arrives at lvMass");
+
+            massFactor = 2f;
+            rules.DealHand();
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "one level gained");
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Time)).Level, "and no other element moves");
+
+            massFactor = 2.9f;
+            rules.DealHand();
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "the gain is rounded down");
+            massFactor = 0.5f;
+            rules.DealHand();
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "a deficit never deals below level 1");
+            massFactor = 40f;
+            rules.DealHand();
+            Assert.AreEqual(StarlingRules.MaxLevel, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "nor above 15");
+        }
+
+        [Test]
+        public void TheShippedScaling_AddsOneLevelPerThreeElementLevels_PastLevelTen()
+        {
+            // Garrett, 2026-11-18: "+3 at L9 and +5 at L15".
+            var config = Config();
+            var rules = new StarlingRules(config);
+            int[] elementLevel = { 0, 2, 3, 5, 6, 8, 9, 10, 12, 14, 15 };
+            int[] gain = { 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5 };
+            foreach (var e in StarlingRules.HandOrder)
+            {
+                var factor = config.ArrivalLevel(e);
+                Assert.IsNotNull(factor, e.ToString());
+                for (int k = 0; k < elementLevel.Length; k++)
+                {
+                    float level = elementLevel[k];
+                    rules.ArrivalLevel = x => ElementalFloatAt(config.ArrivalLevel(x), level / 10f);
+                    rules.DealHand();
+                    Assert.AreEqual(1 + gain[k], rules.HandCard(StarlingRules.SlotOf(e)).Level, $"{e} at element level {level}");
+                }
+                Assert.AreEqual(0.5f, ElementalFloatAt(factor, -0.5f), 1e-5f, $"{e} floored at half its rest at level -5");
+            }
+        }
+
+        static float ElementalFloatAt(ElementalFloat f, float normalized) => f.EvaluateAtNormalizedLevel(normalized);
+
+        [Test]
+        public void Encore_APickOfAnUpgradedElement_LeavesTheRestOfTheSpreadHandUp_OncePerHand()
+        {
+            var rules = new StarlingRules(Config());
+            rules.EncoreActive = e => e == Element.Mass;
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Mass));
+            Assert.IsTrue(rules.HasHand, "Encore: the hand stays up");
+            Assert.IsTrue(rules.EncoreSpent);
+            Assert.IsTrue(rules.HandCard(StarlingRules.SlotOf(Element.Mass)).IsEmpty, "the taken card leaves its slot");
+            Assert.IsFalse(rules.Pick(Element.Mass), "and cannot be taken twice");
+            Assert.IsFalse(rules.HandCard(StarlingRules.SlotOf(Element.Time)).IsEmpty, "the other slots keep their cards");
+            Assert.IsTrue(rules.Pick(Element.Time));
+            Assert.IsFalse(rules.HasHand, "the second pick spends the hand");
+            Assert.AreEqual(1, rules.Level(StarlingCardIds.BigFamily));
+            Assert.AreEqual(1, rules.Level(StarlingCardIds.HurryUp));
+
+            rules.DealHand();
+            Assert.IsFalse(rules.EncoreSpent, "every hand has its own Encore");
+        }
+
+        [Test]
+        public void Encore_IsKeyedOnThePickedCardsElement_AndNothingWithoutTheUpgrade()
+        {
+            var rules = new StarlingRules(Config());
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Mass));
+            Assert.IsFalse(rules.HasHand, "no upgrade, one pick");
+
+            rules.EncoreActive = e => e == Element.Mass;
+            rules.ChooseDrawElement(Element.Time);
+            rules.DealHand();
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsFalse(rules.HasHand, "a Time card with only Mass upgraded is one pick");
+        }
+
+        [Test]
+        public void Encore_InAnElementHand_ClosesTheRowUp()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            rules.EncoreActive = e => e == Element.Time;
+            Assert.IsTrue(rules.ChooseDrawElement(Element.Time));
+            rules.DealHand();
+            int size = rules.HandSize;
+            Assert.Greater(size, 1);
+            var second = rules.HandCard(1).Card.Id;
+            rules.MoveFocus(size - 1);
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsTrue(rules.HasHand);
+            Assert.AreEqual(size - 1, rules.HandSize, "the row closes up");
+            Assert.AreEqual(second, rules.HandCard(0).Card.Id);
+            Assert.Less(rules.Focus, rules.HandSize, "the highlight stays on a card");
+            Assert.IsTrue(rules.PickFocus());
+            Assert.IsFalse(rules.HasHand);
+        }
+
+        // ---- the draw element (Garrett, 2026-11-01) ----
+
+        /// <summary>A deck with six wired Time cards and one of each other element (the shipped deck wires six per element).</summary>
+        static StarlingConfigSO TimeHeavyConfig()
+        {
+            var cards = new List<StarlingCard>
+            {
+                new(StarlingCardIds.Lasers, Element.Charge, "Lasers", true),
+                new(StarlingCardIds.BigFamily, Element.Mass, "Big Family", true),
+                new(StarlingCardIds.Split, Element.Space, "Split", true),
+            };
+            foreach (var id in new[] { StarlingCardIds.Quickening, StarlingCardIds.Agility, StarlingCardIds.Dragonfly,
+                                       StarlingCardIds.SkipAhead, StarlingCardIds.HurryUp, StarlingCardIds.BlinkStep })
+                cards.Add(new StarlingCard(id, Element.Time, id, true));
+            return StarlingConfigSO.CreateForTests(StarlingCardDeckSO.CreateForTests(cards));
+        }
+
+        [Test]
+        public void TheFirstPick_SetsTheDrawElement_AndEveryLaterHandIsFiveDifferentCardsOfIt()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            Assert.AreEqual(Element.None, rules.DrawElement);
+            rules.DealHand();
+            Assert.IsFalse(rules.IsElementHand, "no draw element yet: the spread hand");
+            Assert.AreEqual(4, rules.HandSize);
+            Assert.IsTrue(rules.Pick(Element.Time));
+            Assert.AreEqual(Element.Time, rules.DrawElement, "nothing chosen: it keeps the picked card's element");
+
+            for (int hand = 0; hand < 20; hand++)
+            {
+                rules.DealHand();
+                Assert.IsTrue(rules.IsElementHand);
+                Assert.AreEqual(Element.Time, rules.HandElement);
+                Assert.AreEqual(StarlingRules.ElementHandSize, rules.HandSize, "five of the six wired Time cards");
+                var seen = new HashSet<string>();
+                for (int i = 0; i < rules.HandSize; i++)
+                {
+                    var card = rules.HandCard(i);
+                    Assert.IsFalse(card.IsEmpty);
+                    Assert.AreEqual(Element.Time, card.Card.Element);
+                    Assert.AreEqual(1, card.Level, "at the element's level");
+                    Assert.IsTrue(seen.Add(card.Card.Id), $"{card.Card.Id} offered twice");
+                }
+                Assert.IsTrue(rules.HandCard(StarlingRules.ElementHandSize).IsEmpty);
+                Assert.IsFalse(rules.Pick(Element.Time), "an element hand is not picked by element");
+                Assert.IsTrue(rules.PickFocus());
+                Assert.AreEqual(Element.Time, rules.DrawElement, "nothing chosen: it keeps the old one");
+            }
+        }
+
+        [Test]
+        public void TheDrawElement_IsChosenOnlyWithNoHandUp_AndAnElementWithFewerWiredCardsOffersWhatItHas()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            Assert.IsTrue(rules.ChooseDrawElement(Element.Mass), "it can be chosen before the first hand");
+            Assert.IsFalse(rules.ChooseDrawElement(Element.None));
+            rules.EndPhase(false);   // the omnicrystal phase's timeout draw
+            Assert.IsTrue(rules.IsElementHand);
+            Assert.AreEqual(1, rules.HandSize, "Mass wires one card here");
+            Assert.AreEqual(StarlingCardIds.BigFamily, rules.HandCard(0).Card.Id);
+            Assert.IsFalse(rules.ChooseDrawElement(Element.Space), "pick from the hand up first");
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsTrue(rules.ChooseDrawElement(Element.Space));
+            rules.OnOmniCollected();   // an omnicrystal draw outside its phase
+            Assert.AreEqual(Element.Space, rules.HandElement);
+            Assert.AreEqual(StarlingCardIds.Split, rules.HandCard(0).Card.Id);
+        }
+
+        [Test]
+        public void TheFocus_WrapsAlongTheHand_AndPickingTakesTheHighlightedCard()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            rules.ChooseDrawElement(Element.Time);
+            rules.DealHand();
+            Assert.AreEqual(0, rules.Focus);
+            rules.MoveFocus(-1);
+            Assert.AreEqual(4, rules.Focus, "left from the first card wraps to the last");
+            rules.MoveFocus(1);
+            rules.MoveFocus(1);
+            rules.MoveFocus(1);
+            Assert.AreEqual(2, rules.Focus);
+            string id = rules.HandCard(2).Card.Id;
+            Assert.IsTrue(rules.PickFocus());
+            Assert.AreEqual(1, rules.Level(id));
+            Assert.AreEqual(1, rules.HeldInElement(Element.Time), "only the highlighted card was taken");
+            rules.DealHand();
+            Assert.AreEqual(0, rules.Focus, "a new hand starts on its first card");
+        }
+
+        [Test]
+        public void ANewRun_ForgetsTheDrawElement()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            rules.ChooseDrawElement(Element.Charge);
+            rules.Reset(3);
+            Assert.AreEqual(Element.None, rules.DrawElement);
+            rules.DealHand();
+            Assert.IsFalse(rules.IsElementHand);
         }
 
         [Test]

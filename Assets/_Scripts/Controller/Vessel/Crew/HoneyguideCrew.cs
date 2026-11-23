@@ -95,6 +95,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The battery the two seats share: slip charges, colours 1 Ruby, 2 Jade, 3 Gold, oldest first.</summary>
         public IReadOnlyList<int> Battery => _core != null ? _core.Battery : System.Array.Empty<int>();
 
+        /// <summary>How many charges the battery holds before a new one pushes the oldest out.</summary>
+        public int BatteryCap => _core != null ? _core.BatteryCap(_s) : 0;
+
+        /// <summary>The hull this crew flies (null while unbound).</summary>
+        public Transform RaceHull => _vessel?.Transform;
+
+        /// <summary>
+        /// A race's coach for this hull's AI (Slip Line). Set: the AI's slip guard measures a slip against the coach's
+        /// goal instead of the pilot's objective. Null: the shipped AI. A person's slips never ask it.
+        /// </summary>
+        public IHoneyguideRaceCoach RaceCoach { get; set; }
+
         // ------------------------------------------------------------------ binding
 
         // The local pilot's own hull, flown by a human - or handed to the AI by this component's own swap - or an AI crew: a
@@ -134,6 +146,7 @@ namespace CosmicShore.Gameplay
             _humanEngineers = _weTookHull = _remoteRatel = false;
             _startSeatPending = !_aiCrew && !_rider;
             _stateSendAt = 0f;
+            BindHive();
             ResetPilotSide();
             _execs = null;
             // a rider's copy flies nothing: the trail it would watch is the hull machine's
@@ -160,6 +173,7 @@ namespace CosmicShore.Gameplay
             if (_humanEngineers && !_rider) SetHumanEngineers(false);
             _humanEngineers = false;
             if (!_rider) EndPilotSide();
+            UnbindHive();
             if (_laidBy) _laidBy.OnBlockSpawned -= OnTrailPrismLaid;
             _laidBy = null;
             _view?.Dispose();
@@ -192,8 +206,10 @@ namespace CosmicShore.Gameplay
                 // the copy: the person's moves are applied here at once and sent on; the hull's machine answers with the
                 // real board, which overwrites this one (OnCrewState). It advances so the board keeps turning between.
                 if (_view != null) _view.ReadEngineerInput(_core, _s);
-                _core.Advance(_s, dt);
+                if (_hive == null) _core.Advance(_s, dt);
+                else { _hiveT += dt; HiveCore.Tick(_hive, dt); }   // the hull's machine decides when hive mode ends
                 DrainEvents();
+                ScanStrip();
                 _view?.Frame(dt);
                 return;
             }
@@ -202,9 +218,15 @@ namespace CosmicShore.Gameplay
             _remoteRatel = CrewStations.HeldByRemoteHuman(this, 1);
             if (_remoteRatel && _humanEngineers) SetHumanEngineers(false);
             if (_humanEngineers && _view != null) _view.ReadEngineerInput(_core, _s);
-            else if (!_remoteRatel) StepEngineerAI(dt);
-            _core.Advance(_s, dt);
+            else if (!_remoteRatel)
+            {
+                if (_hive != null) StepHiveAI(dt);
+                else StepEngineerAI(dt);
+            }
+            if (_hive == null) _core.Advance(_s, dt);   // the Dynamo's clock holds in hive mode
+            StepHive(dt);
             DrainEvents();
+            if (!_aiCrew) ScanStrip();
             if (_remoteRatel && Time.time >= _stateSendAt) SendState();
 
             StepPilotSide(dt);
@@ -239,6 +261,9 @@ namespace CosmicShore.Gameplay
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             _startSeatPending = false;
             SetHumanEngineers(engineer);
+            // The seat the person picks is the one this hull starts on next time, the Wrasse's rule (CrewSeatChoice): a
+            // puzzle-first player who plays the Ratel lands on its board from then on (P14, the puzzle-first door).
+            if (_status != null) CrewSeatChoice.Set(_status.VesselType, engineer ? 1 : 0);
         }
 
         // ------------------------------------------------------------------ the Ratel on another machine (ICrewRelay)
@@ -248,6 +273,13 @@ namespace CosmicShore.Gameplay
         {
             if (seat != 1 || _core == null || _rider || data == null || data.Length < 6) return;
             if (!CrewStations.HeldByRemoteHuman(this, 1)) return;
+            if (data[0] >= HiveInputBase)   // a hive move (HiveInput)
+            {
+                ApplyHiveInput(data[0] - HiveInputBase, data[3]);
+                DrainEvents();
+                SendState();
+                return;
+            }
             var inp = new DynamoInput
             {
                 Kind = (DynamoInputKind)data[0], From = data[1], To = data[2], Cell = data[3], Colour = data[4], Slot = data[5],
@@ -262,8 +294,9 @@ namespace CosmicShore.Gameplay
             if (!_rider || _core == null) return;
             int ticks = _core.Ticks, portSet = _core.PortSet;
             var ability = _core.Ability;
-            if (!_core.ReadState(data)) return;
+            if (!_core.ReadState(data, out int end)) return;
             _core.Events.Clear();
+            ReadHiveState(data, end);
             // the view's stamps follow what changed, as the hull machine's events would have moved them
             if (_core.Ticks != ticks) SpinAt = Time.time;
             if (_core.PortSet != portSet) PortsAt = Time.time;
@@ -275,17 +308,20 @@ namespace CosmicShore.Gameplay
         {
             _stateSendAt = Time.time + 0.2f;
             _core.WriteState(_stateScratch);
+            WriteHiveState(_stateScratch);
             CrewRelay.SendState(this, _stateScratch.ToArray());
         }
 
-        // On the lowest preset the person starts on the Ratel (Garrett, 2026-10-22: "start the player in the wrasse and the
+        // The person starts on the Ratel when they last picked it on this hull (CrewSeatChoice, P14), and always on the
+        // lowest preset (Garrett, 2026-10-22: "start the player in the wrasse and the
         // ratel ... so the ratel should run fine on very old phones"): its board is UI, and with no picture-in-picture the
         // world under it is not drawn at all (CrewSingleView). Taken once the hull is really the person's - flown by them,
         // not parked on its AI by a menu or the Vessel Changer, with live input - the Wrasse's rule (KiteNavigator.ApplySeatChoice).
         void ApplyStartSeat()
         {
             if (!_startSeatPending) return;
-            if (_humanEngineers || !CrewSingleView.On) { _startSeatPending = false; return; }
+            bool wantsBoard = CrewSingleView.On || _status != null && CrewSeatChoice.Get(_status.VesselType) == 1;
+            if (_humanEngineers || !wantsBoard) { _startSeatPending = false; return; }
             var input = _player?.InputStatus;
             if (_status == null || _status.AutoPilotEnabled || input == null || input.Paused || PauseSystem.Paused) return;
             _startSeatPending = false;
@@ -395,6 +431,10 @@ namespace CosmicShore.Gameplay
                     Play(_cfg.RevealSfx);
                     var ab = _cfg.AbilityText(e.Ability);   // both seats read what the Ratel's new ability does
                     if (ab != null) Toast(TemplateText.Fill(_cfg.AbilityToastTemplate, "name", ab.name, "text", ab.text));
+                    break;
+                case DynamoEventKind.Offer:   // round 7: the abilities on offer; the Shuffle that follows the pick toasts the one taken
+                    AbilityAt = Time.time;
+                    Play(_cfg.RevealSfx);
                     break;
                 case DynamoEventKind.Ports:
                     PortsAt = Time.time;

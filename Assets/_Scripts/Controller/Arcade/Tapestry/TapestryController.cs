@@ -199,7 +199,8 @@ namespace CosmicShore.Gameplay
                 var pos = centre + new Vector3(ring * Mathf.Cos(theta), y, ring * Mathf.Sin(theta)) * r;
 
                 var crystal = Instantiate(prefab, pos, Quaternion.identity);
-                crystal.transform.localScale *= (float)(rng.NextDouble() * 0.7 + 0.5);
+                // One size, one petal, like every elemental crystal (ElementalCrystalSetSO.CrystalWorldScale).
+                crystal.transform.localScale = Vector3.one * ElementalCrystalSetSO.CrystalWorldScale;
                 crystal.enabled = true;
                 crystal.gameObject.SetActive(true);
 

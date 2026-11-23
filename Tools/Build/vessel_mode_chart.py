@@ -27,6 +27,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
+from learn_from_flights import not_a_person  # noqa: E402  - the one rule for whose flight it is
 OUT_MD = os.path.join(REPO, "Docs", "AI_SYSTEM", "VESSEL_MODE_CHART.md")
 OUT_JSON = os.path.join(REPO, "Docs", "AI_SYSTEM", "vessel_mode_chart.json")
 
@@ -46,7 +47,7 @@ AI_DRIVE = {
 }
 POLICY_ASSET = {  # hull -> its drive's asset/code file, checked to exist
     "Squirrel": "Assets/_Scripts/Controller/AI/SkimRace/SkimRacePilot.cs",
-    "Stoat": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatDipoleExecutor.cs",
+    "Stoat": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs",
     "Manta": "Assets/_Scripts/Controller/AI/Boost/MantaSoarAITuningSO.cs",
     "Rhino": "Assets/_SO_Assets/AI Boost Policies/RhinoAIBoostPolicy.asset",
     "Urchin": "Assets/_Scripts/Controller/AI/Urchin",
@@ -160,6 +161,8 @@ def flights(fetch):
                 f = json.loads(raw)
             except ValueError:
                 continue
+            if not_a_person(path, raw):   # the AI trainer flew it (learn_from_flights.not_a_person): nobody's race
+                continue
             rv, n = f.get("rivals") or [], len(f.get("rivalHulls") or [])
             last = rv[-1] if rv else []
             out.append({"file": name, "pilot": b.split("/")[-1], "mode": f.get("mode"), "hull": f.get("hull"),
@@ -242,7 +245,7 @@ def markdown(C):
          "  `GateRaceController`'s steering. Other modes give the platform autopilot their own objectives.",
          "- **The drive** (when to spend the hull's speed verb) belongs to the HULL and works in any mode.",
          "",
-         "Regatta-only extras: the commit-from-approach-point fix, no crystal detour, the Urchin's rail aim, and the",
+         "Regatta-only extras (no crystal detour is every gate race's since 2026-10-26): the commit-from-approach-point fix, the Urchin's rail aim, and the",
          "`_Regatta` tuning variants.", "",
          "So a Regatta AI hull is **ready to fly** any mode whose card offers it. It is **only tuned and tested** in the",
          "modes listed under *Tuned and tested in* (Regatta, plus Skim Race for the Squirrel).", "",

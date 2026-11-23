@@ -46,6 +46,11 @@ namespace CosmicShore.Gameplay
                  "than the engine is a feel choice, not a tug of war.")]
         [SerializeField, Min(0f)] float accelerationPerSecond = 90f;
 
+        [Tooltip("TIME: multiplier on accelerationPerSecond, x1 at rest -> x2 at Time 10 (floor x0.5). A Time-heavy " +
+                 "Scarab punches up to its ceiling in half the time - the throttle's tempo, beside the ceiling Time " +
+                 "already raises (ThrottleScalerMultiplier). 2026-11-18, the element-placeholder pass.")]
+        [SerializeField] ElementalFloat accelerationScale = ElementalFloat.Multiplier(1f, 2f, Element.Time, 0.5f);
+
         [Tooltip("Speed shed per second when the trigger is released (world units/s²). The Scarab " +
                  "has no brake — releasing the throttle IS the brake, so this is deliberately " +
                  "strong: at 120 a full-speed vessel is stopped in about 1.8 seconds. " +
@@ -69,9 +74,23 @@ namespace CosmicShore.Gameplay
         [Tooltip("Two throttle-trigger presses inside this window fire the dash (seconds).")]
         [SerializeField, Min(0.05f)] float doubleTapWindowSeconds = 0.3f;
         [Tooltip("Peak dash speed injected along the current course via ModifyVelocity " +
-                 "(world u/s; the channel clamps at 100 — see VesselTransformer).")]
-        [SerializeField, Min(0f)] float dashSpeed = 100f;
+                 "(world u/s). 500 since 2026-10-29 (Garrett: five times the old 100). The " +
+                 "dash raises the displacement channel's ceiling to this for its own life, so " +
+                 "the shared 100 clamp does not cut it back.")]
+        [SerializeField, Min(0f)] float dashSpeed = 500f;
         [SerializeField, Min(0.05f)] float dashDurationSeconds = 0.4f;
+        [Tooltip("Seconds after a Snap Dash before the next one fires (2026-10-29: 5). A tap " +
+                 "inside it is just more throttle.")]
+        [SerializeField, Min(0f)] float snapDashCooldownSeconds = 5f;
+
+        float _lastSnapDashTime = float.NegativeInfinity;
+
+        /// <summary>True when the Snap Dash can fire (off its cooldown).</summary>
+        public bool SnapDashReady => SnapDashOffCooldown(Time.time, _lastSnapDashTime, snapDashCooldownSeconds);
+
+        /// <summary>Pure cooldown test, pinned by a test.</summary>
+        public static bool SnapDashOffCooldown(float now, float lastDash, float cooldown)
+            => now - lastDash >= cooldown;
 
         bool _triggerHeld;
         float _lastTapTime = float.NegativeInfinity;
@@ -81,6 +100,9 @@ namespace CosmicShore.Gameplay
         /// within one MoveShip, so the value is always fresh — sampling the input twice would
         /// risk reading a different frame's trigger between them.</summary>
         float _throttle01;
+
+        /// <summary>This frame's trigger depth, 0..1 (what the Throttle card's wake shows).</summary>
+        public float Throttle01 => _throttle01;
 
         public override void Initialize(IVessel vessel)
         {
@@ -203,8 +225,7 @@ namespace CosmicShore.Gameplay
             if (VesselStatus == null || !VesselStatus.AutoPilotEnabled) return false;
             if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
 
-            FireSnapDash();
-            return true;
+            return FireSnapDash();
         }
 
         /// <summary>
@@ -222,16 +243,20 @@ namespace CosmicShore.Gameplay
             if (!ThrottleIsSetAndHold(InputStatus)) return false;
             if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
 
-            FireSnapDash();
-            return true;
+            return FireSnapDash();
         }
 
-        void FireSnapDash()
+        /// <summary>Fires the dash unless it is recharging; returns whether it fired.</summary>
+        bool FireSnapDash()
         {
+            if (!SnapDashReady) return false;
+            _lastSnapDashTime = Time.time;
+
             Vector3 course = VesselStatus.Course.sqrMagnitude > 1e-4f
                 ? VesselStatus.Course
                 : transform.forward;
-            ModifyVelocity(course.normalized * dashSpeed, dashDurationSeconds);
+            ModifyVelocity(course.normalized * dashSpeed, dashDurationSeconds, false, dashSpeed);
+            return true;
         }
 
         // The Scarab's speed is state, not a tracked target, so there is no meaningful "target"
@@ -249,7 +274,7 @@ namespace CosmicShore.Gameplay
         {
             _throttle01 = ReadThrottle01();
             DetectSnapDash(_throttle01);
-            return _throttle01 * accelerationPerSecond * dt;
+            return _throttle01 * accelerationPerSecond * Mathf.Max(0f, accelerationScale.EvaluateLive(VesselStatus)) * dt;
         }
 
         /// <summary>

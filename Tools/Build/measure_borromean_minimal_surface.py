@@ -38,9 +38,12 @@ one covers the same membrane with fewer, bigger pieces.  Four tables are therefo
 and the ladder runs one way: the more room per site, the bigger the body it carries.  Room
 is bought two ways, by cutting the membrane into fewer pieces and by growing the membrane,
 and SPACE - the element whose identity IS room - is the one that does the second.
-CHARGE is fitted against its SHIELD rather than its plate, because a shield swaps the plate
-for its circumscribing octahedron three times its reach, which is the body a Charge plant
-actually wears.
+MASS is fitted against its SHIELD rather than its plate, because a shield swaps the plate
+for its circumscribing octahedron three times its reach, which is the body a Mass plant
+actually wears (Docs/ECOSYSTEM.md 65 - the shield moved from Charge to Mass on 2026-10-28,
+and Mass took SIZE: its table is the anchor's tessellation grown until its octahedra clear,
+and its heart's swing).  CHARGE is the anchor's plant: unshielded, every prism a danger
+prism, so it needs nothing of its own.
 
 WHY THE SITES ARE EXACTLY SYMMETRIC
 -----------------------------------
@@ -65,6 +68,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import borromean_surface as B
+import mass_armour_lib as armour
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 assert os.path.isdir(os.path.join(ROOT, 'Assets')), \
@@ -108,11 +112,12 @@ CLEARANCE     = 0.03    # every plate clears its neighbours by this fraction of 
 # room a site has, the bigger the body it carries.  An element buys that room TWO ways -
 # by cutting the membrane into fewer pieces (ORBITS) or by growing the membrane
 # (SURFACE_SCALE) - which is why SPACE can take the most room per site while having a
-# FINER cut than Mass or Charge.  TIME's plate is the anchor and gets the tightest
-# membrane; MASS is a brick; CHARGE's real body is its SHIELD, three times the reach of
-# the plate it replaces; SPACE grows the membrane itself and spends the room on length.
+# FINER cut than Time.  TIME's plate is the anchor and gets the tightest membrane; CHARGE is the
+# anchor's plant (its identity is danger, a state); MASS is the anchor's plant GROWN - its real
+# body is its SHIELD, three times the reach of the plate, so its membrane is grown until those
+# clear (and its heart's swing does); SPACE grows the membrane itself and spends the room on length.
 ELEMENTS      = ('Charge', 'Mass', 'Space', 'Time')
-ORBITS        = dict(Time=60, Space=48, Mass=36, Charge=30)   # x6 sites, and x6 grow ticks
+ORBITS        = dict(Time=60, Space=48, Mass=60, Charge=60)   # x6 sites, and x6 grow ticks
 
 # HOW BIG THE WHOLE SURFACE IS, per element - the second half of "positioning and spacing".
 # ORBITS says how many pieces the membrane is cut into; this says how far apart they are, so it
@@ -128,22 +133,18 @@ ORBITS        = dict(Time=60, Space=48, Mass=36, Charge=30)   # x6 sites, and x6
 # big it is bought by making the whole thing LONGER: the fit hands a 2x surface a 2x footprint,
 # and holding the plate's volume then drives its thickness down by 4.  Same plant volume, same
 # site count, twice the span.
-SURFACE_SCALE = dict(Time=1.0, Space=2.0, Mass=1.0, Charge=1.0)
+SURFACE_SCALE = dict(Time=1.0, Space=2.0, Mass=None, Charge=1.0)   # Mass: SOLVED (_mass_surface_scale)
 
 # The in-plane x:y of each element's plate - its SHAPE, and the only part of it authored.
 #   TIME   the anchor, 1.69:1 - the plate tuned by rendering it.
-#   MASS   1.20:1, nearly square, and THICK: the brick.  Its three axes come out
-#          1 : 0.83 : 0.50, which is as near a cube as this contract can take it - the
-#          footprint is FITTED, so the only way to make a plate chunkier is to spend
-#          thickness, and thickness is volume.
+#   CHARGE the anchor's plate: its identity is that every prism is DANGER (Docs/ECOSYSTEM.md 65).
+#   MASS   the anchor's plate SHAPE (the 1.2:1 thick "brick" was retired on 2026-10-28 with the
+#          shield's move): x mass_armour_lib.mass_axis() on every axis, so it adds the leaf law's
+#          Mass volume (x2.09) - on a membrane grown until its OCTAHEDRA clear.
 #   SPACE  8.50:1 on a membrane TWICE the anchor's - it spends its area on LENGTH twice
 #          over, so at equal volume its membrane reads as a frame of long thin struts
 #          rather than a skin of plates.
-#   CHARGE square.  The clearance of a SHIELDED plate is set by the tightest bond, which
-#          runs along the grain, so length there is paid for twice - a square footprint
-#          covers half again as much membrane with octahedra as Time's aspect does.  A
-#          plate whose shielded form has no grain does not need one.
-ASPECT        = dict(Time=1.69, Space=8.5, Mass=1.2, Charge=1.0)
+ASPECT        = dict(Time=1.69, Space=8.5, Mass=1.69, Charge=1.69)
 
 # THICKNESS, the axis that is nearly free.  Time's is authored (in mean site spacings, the
 # thickness its approved plate had); Mass's and Space's are SOLVED so that their plate
@@ -153,13 +154,13 @@ ASPECT        = dict(Time=1.69, Space=8.5, Mass=1.2, Charge=1.0)
 # footprint, so its circumscribing octahedron is a jewel lying IN the membrane rather than
 # a flat lozenge or a spike standing out of it.
 TIME_THICKNESS   = 0.115
-VOLUME_OF_TIME   = dict(Mass=8.00, Space=1.00)
-CHARGE_THICKNESS = 0.5
+VOLUME_OF_TIME   = dict(Space=1.00)
+MASS_THICKNESS   = None   # the anchor's thickness against its own footprint - set from Time's fit
 FIT_PASSES       = 6    # fit -> solve the thickness -> refit.  Converges in 3; ends on a FIT,
                         # so the shipped plate is always one that cleared at its own thickness.
 
 # A shield swaps the plate for its CIRCUMSCRIBING octahedron, which reaches 1.5 x leafSize
-# from the centre (Docs/ECOSYSTEM.md 35) - so on a Charge plant the body that has to clear
+# from the centre (Docs/ECOSYSTEM.md 35) - so on a Mass plant the body that has to clear
 # is three times the plate, and it is the SHIELDED form that is fitted here.
 SHIELD_BODY   = 1.5
 # ------------------------------------------------------------------ solver settings
@@ -266,8 +267,22 @@ def measure(log=print, cache=None):
     # against, so what the other three get cannot depend on the order they are measured in.
     tables = {}
     for name in ('Time', 'Mass', 'Space', 'Charge'):
+        if name == 'Mass':
+            SURFACE_SCALE['Mass'] = _mass_surface_scale(tables['Time'], log)
         t = _cvt(name, ORBITS[name], P, N, G, log)
         _fit(t, tables['Time']['volume'] if name != 'Time' else 0.0, log)
+        if name == 'Mass':
+            # MASS HAS SIZE (Docs/ECOSYSTEM.md 64.8, 65): grown whole until its heart's full swing clears every octahedron
+            need, clear = armour.swing_need(), _shield_heart_clear(t)
+            log(f'      Mass: heart clear of its octahedra {clear:.2f} u, needs {need:.2f} u')
+            if clear < need:
+                SURFACE_SCALE['Mass'] *= need / clear * 1.001
+                log(f'      Mass: grown whole x{need / clear:.4f} for the swing -> surface x{SURFACE_SCALE["Mass"]:.4f}')
+                t = _cvt(name, ORBITS[name], P, N, G, log)
+                _fit(t, tables['Time']['volume'], log)
+                clear = _shield_heart_clear(t)
+                assert clear >= need, f'Mass heart clear {clear:.2f} < {need:.2f} after growing'
+            t['swing_clear'] = clear
         # against THIS element's own membrane: an element that grows the surface by k has
         # k^2 of it to cover, so measuring against the anchor's area would report a bigger
         # plant as a fuller one.
@@ -282,12 +297,12 @@ def measure(log=print, cache=None):
         log(f'      {name:<6} {t["sites"]:3d} plates  plate volume {t["volume"]:7.2f} '
             f'({t["volume"]/vt:4.2f}x Time)  plant {t["plant_volume"]:8.0f}  '
             f'membrane covered {100*t["cover"]:4.1f}%  radius {t["radius"]:.1f}')
-    ch = tables['Charge']
-    oc = SHIELD_BODY * ch['leaf']
-    r['charge_cover'] = float(ch['sites'] * 2 * oc[0] * oc[1] / (area * ch['surface_scale'] ** 2))
-    log(f'      CHARGE is fitted to its SHIELD, not to its plate: its octahedra reach '
+    ms = tables['Mass']
+    oc = SHIELD_BODY * ms['leaf']
+    r['mass_cover'] = float(ms['sites'] * 2 * oc[0] * oc[1] / (area * ms['surface_scale'] ** 2))
+    log(f'      MASS is fitted to its SHIELD, not to its plate: its octahedra reach '
         f'{oc[0]:.2f} x {oc[1]:.2f} x {oc[2]:.2f} and cover '
-        f'{100*r["charge_cover"]:.1f}% of the membrane')
+        f'{100*r["mass_cover"]:.1f}% of the membrane')
     r['tables'] = tables
     r['ring_semi'] = (1.0 * PLANT_SCALE, B.PHI * PLANT_SCALE)
     r['surface_area'] = area
@@ -423,6 +438,34 @@ def _cvt(name, orbits, P, N, G, log):
         radius=float(np.linalg.norm(S, axis=1).max()*scale))
 
 
+def _mass_surface_scale(time_table, log):
+    """MASS HAS SIZE: how much bigger its membrane is than the anchor's. The anchor's plate SHAPE fitted against its
+    own OCTAHEDRA on the anchor's own membrane comes out x s of the anchor's plate (a shield is 3x the reach, so s ~
+    1/3); a Mass plate is the anchor's x mass_axis, so the membrane that lets it clear is x mass_axis / s - a
+    similarity, the one transform that maps a clearing arrangement onto a clearing arrangement."""
+    global MASS_THICKNESS
+    t = time_table
+    S, X, Y, Z = t['S'], t['X'], t['Y'], t['Z']
+    sp, T = t['spacing'][1], t['leaf']
+    MASS_THICKNESS = float(T[2] / T[0])
+    thick = T[2]
+    for _ in range(FIT_PASSES):
+        s = B.fit_clear_scale(S, X, Y, Z, (ASPECT['Mass'], 1.0, max(thick, 1e-6)), SHIELD_BODY, 5.0 * sp, margin=CLEARANCE)
+        leaf = np.array([ASPECT['Mass'] * s, s, thick])
+        thick = MASS_THICKNESS * leaf[0]
+    scale = armour.mass_axis() * T[0] / leaf[0]
+    log(f'      Mass: the anchor plate clears its own octahedra at x{leaf[0] / T[0]:.4f} of itself; a Mass plate is '
+        f'x{armour.mass_axis():.4f}, so its membrane is x{scale:.4f}')
+    return float(scale)
+
+
+def _shield_heart_clear(t):
+    """The heart's (the origin's) clear radius to every shield, exactly."""
+    leaf = t['leaf']
+    return min(armour.octahedron_distance(np.zeros(3), t['S'][i], np.column_stack([t['X'][i], t['Y'][i], t['Z'][i]]),
+                                          SHIELD_BODY * leaf) for i in range(len(t['S'])))
+
+
 def _fit(t, time_volume, log):
     """ONE ELEMENT'S PLATE: the largest that clears its own neighbours, at the thickness
     its element is entitled to.
@@ -433,14 +476,14 @@ def _fit(t, time_volume, log):
     contract says it belongs, because thickness costs almost no clearance."""
     S, X, Y, Z = t['S'], t['X'], t['Y'], t['Z']
     sp, name = t['spacing'][1], t['name']
-    body = SHIELD_BODY if name == 'Charge' else 0.5
+    body = SHIELD_BODY if name == 'Mass' else 0.5
     thick = TIME_THICKNESS * sp
     leaf = None
     for _ in range(FIT_PASSES):
         s = B.fit_clear_scale(S, X, Y, Z, (ASPECT[name], 1.0, max(thick, 1e-6)),
                               body, 5.0 * sp, margin=CLEARANCE)
         leaf = np.array([ASPECT[name] * s, s, thick])
-        if name == 'Charge':      thick = CHARGE_THICKNESS * leaf[0]
+        if name == 'Mass':        thick = MASS_THICKNESS * leaf[0]
         elif name in VOLUME_OF_TIME:
             thick = VOLUME_OF_TIME[name] * time_volume / (leaf[0] * leaf[1])
         else:                     break
@@ -493,13 +536,13 @@ def emit(r):
                      f"other element is a perturbation of. Its thickness is the one authored "
                      f"number in the four ({f(TIME_THICKNESS)} of the site spacing); the other three "
                      f"spend theirs."),
-            'Mass': (f"VOLUME, and the CHUNKIEST plate of the four: its axes come out 1 : "
-                     f"{leaf[1]/leaf[0]:.2f} : {leaf[2]/leaf[0]:.2f}, which is as near a cube as this contract can "
-                     f"take it - the footprint is FITTED, so the only way to make a plate "
-                     f"chunkier is to spend thickness, and thickness IS the volume. "
-                     f"{t['volume']/anchor['volume']:.2f}x Time's plate, bought on the axis that costs no clearance. "
-                     f"A looser tessellation ({t['sites']} plates) gives each brick the room it needs, "
-                     f"so the membrane reads as fewer, heavier pieces."),
+            'Mass': (f"ARMOUR and SIZE (Docs/ECOSYSTEM.md 65): the anchor's plate SHAPE at the leaf law's Mass "
+                     f"volume ({t['volume']/anchor['volume']:.2f}x Time's plate), on the anchor's tessellation grown "
+                     f"{f(t['surface_scale'])}x - the membrane on which its SHIELDS clear: a shield swaps the plate for its "
+                     f"circumscribing octahedron, reaching 1.5 x leafSize from the centre, so what is fitted here is the "
+                     f"SHIELDED body. Its octahedra reach {f(1.5*leaf[0])} x {f(1.5*leaf[1])} x {f(1.5*leaf[2])}, cover "
+                     f"{100*r['mass_cover']:.0f}% of the membrane and clear the heart's full swing by "
+                     f"{f(t.get('swing_clear', 0.0))} u; the plant spans {f(2*t['radius'])} against Time's {f(2*anchor['radius'])}."),
             'Space': (f"ROOM, spent twice over. Its membrane is {f(t['surface_scale'])}x the anchor's, so the "
                       f"plant spans {t['radius']/anchor['radius']:.2f}x as far ({f(2*t['radius'])} against {f(2*anchor['radius'])} "
                       f"across) - and its plate is {leaf[0]/leaf[1]:.2f}:1 against Time's "
@@ -510,12 +553,8 @@ def emit(r):
                       f"same plant volume, same site count, twice the span, struts {anchor['leaf'][2]/leaf[2]:.1f}x thinner. "
                       f"Its membrane covers {100*t['cover']:.0f}% of the surface against Time's {100*anchor['cover']:.0f}% and "
                       f"reads as a frame of struts rather than a skin of plates."),
-            'Charge': (f"ARMOUR, and the only element fitted to something other than its own plate: "
-                       f"a shield swaps the plate for its circumscribing octahedron, reaching 1.5 x "
-                       f"leafSize from the centre (Docs/ECOSYSTEM.md 35), so what is fitted here is "
-                       f"the SHIELDED body - three times the plate. Its octahedra reach "
-                       f"{f(1.5*leaf[0])} x {f(1.5*leaf[1])} x {f(1.5*leaf[2])} and cover {100*r['charge_cover']:.0f}% of the membrane; "
-                       f"the plate is what is left between shield refreshes."),
+            'Charge': (f"DANGER (Docs/ECOSYSTEM.md 65): every prism a danger prism and none shielded, so it "
+                       f"is the anchor's plant - its {t['sites']} plates, its {f(leaf[0])} x {f(leaf[1])} x {f(leaf[2])} plate."),
         }[name]
         return f'''
         // ------------------------------------------------------------------ {name.upper()}

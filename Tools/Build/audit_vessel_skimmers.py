@@ -80,7 +80,7 @@ RECT_TRANSFORM = 224
 MONO = 114
 PREFAB_INSTANCE = 1001
 
-DEFAULT_ALLOW = ("Serpent",)   # QA-AUDIT-TOOLS' standing exception (QA-P2-SERPENT-SKIMMER)
+DEFAULT_ALLOW = ()   # the Serpent was the one standing exception until 2026-10-31 (fix_serpent_crystal_pickup.py)
 
 
 # ---------------------------------------------------------------- YAML -----

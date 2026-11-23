@@ -1,4 +1,6 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CosmicShore.Utility;
+using CosmicShore.Utility.AITraining;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -19,6 +21,10 @@ namespace CosmicShore.Gameplay
     /// you earn in a rival's hull is credited to you.</item>
     /// </list>
     ///
+    /// <para><b>Compiled into the editor and development builds only</b> (fair play, Threat Board T6;
+    /// Docs/AntiCheat/README.md §2): in a release build a modded host could otherwise call it to sit in any hull.
+    /// Its two callers, <c>HumanFlightRecorder</c> and the Third Eye, are guarded the same way.</para>
+    ///
     /// <para><b>Host only, and a test tool.</b> The arena swap stays the player-facing feature (same team, AI teammates
     /// only, refused server-side otherwise); this skips those two rules so a tester can sit in any AI hull. Every call
     /// runs on the server, which owns every AI hull, and the swap itself replicates to every peer as the arena swap
@@ -31,18 +37,40 @@ namespace CosmicShore.Gameplay
         /// <summary>True when this machine may move pilots: the server (the editor as host, or solo).</summary>
         public static bool CanControl => NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
 
-        /// <summary>Is <paramref name="human"/>'s hull being flown by the AI right now?</summary>
+        /// <summary>
+        /// True when this machine may hand <paramref name="human"/>'s hull to the AI and back: the server, or the
+        /// machine that owns the hull. A hull is flown on the machine that owns it, so a guest's own hull can only be
+        /// handed over there; with the host-only rule a guest's hull sat at its spawn in every two-player test unless
+        /// someone held its controller (2026-11-17). Taking over ANOTHER hull stays host only.
+        /// </summary>
+        public static bool CanSetAIFlies(Player human) => CanControl || (human && human.IsLocalUser);
+
+        /// <summary>
+        /// Is <paramref name="human"/>'s hull being flown by the AI right now? The AI trainer counts: it switches the
+        /// hull's AIPilot off and writes the sticks itself, so without it a trainer match read as a person's flight
+        /// (HumanFlightRecorder stored seven of Froglet Compute's first run as hand-flown, 2026-10-28).
+        /// </summary>
         public static bool IsHeldByAI(Player human) =>
             human && human.Vessel is Component hull && hull &&
             ((hull.TryGetComponent(out SkimRacePilot skim) && skim.FlyingForHuman) ||
-             (hull.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled));
+             (hull.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled) ||
+             IsHeldByTrainer(human));
+
+        /// <summary>Is the AI trainer (<see cref="TrainingPilot"/>, an AI Training run) flying this hull's episode?</summary>
+        public static bool IsHeldByTrainer(Player human) =>
+            human && human.Vessel is Component hull && hull &&
+            hull.TryGetComponent(out TrainingPilot trainer) && trainer.isActiveAndEnabled && trainer.EpisodeActive;
+
+        const string TrainerRefusal = "a trained AI pilot (TrainingPilot) is flying this hull: its sticks would fight yours";
 
         /// <summary>
         /// Let the AI fly <paramref name="human"/>'s hull (<paramref name="aiFlies"/> true), or give it back to them.
         /// </summary>
         public static bool TrySetAIFlies(Player human, bool aiFlies, GameDataSO gameData, out string refusal)
         {
-            if (!TryCheckHuman(human, out refusal)) return false;
+            if (!TryCheckHuman(human, out refusal, ownHullOnOwnMachine: true)) return false;
+            // Handing the hull to the AIPilot would start it writing the sticks against the trainer, every frame.
+            if (IsHeldByTrainer(human)) { refusal = TrainerRefusal; return false; }
             var hull = human.Vessel;
             if (hull is not Component c || !c.TryGetComponent(out AIPilot pilot))
             {
@@ -50,6 +78,14 @@ namespace CosmicShore.Gameplay
                 return false;
             }
             if (aiFlies == IsHeldByAI(human)) return true;
+            // A hull is flown on the machine that owns it. The host's AIPilot would steer its own copy of a remote
+            // pilot's hull, which that pilot's machine overwrites: the hull kept flying uncontrolled while this read
+            // "the AI flies it" (two-player Switchback test, 2026-11-15).
+            if (aiFlies && hull is VesselController { IsSpawned: true, IsOwner: false })
+            {
+                refusal = $"{human.Name}'s hull is flown on their machine: the host's AI cannot steer it";
+                return false;
+            }
 
             if (aiFlies)
             {
@@ -92,6 +128,7 @@ namespace CosmicShore.Gameplay
             if (!target || target == human)               { refusal = "pick another pilot's hull"; return false; }
             if (!target.NetIsAI.Value)                    { refusal = $"{target.Name}'s hull is flown by a human"; return false; }
             if (target.Vessel is not Object t || !t)      { refusal = $"{target.Name} has no hull"; return false; }
+            if (IsHeldByTrainer(human) || IsHeldByTrainer(target)) { refusal = TrainerRefusal; return false; }
 
             // If the AI was holding the hull being left, the player's input was paused for it. The swap turns the AI
             // on for that hull again, under its new pilot; the player's own sticks must be live for the new one.
@@ -109,10 +146,11 @@ namespace CosmicShore.Gameplay
             if (hull is Component c && c && c.TryGetComponent(out SkimRacePilot skim)) skim.FlyingForHuman = false;
         }
 
-        static bool TryCheckHuman(Player human, out string refusal)
+        static bool TryCheckHuman(Player human, out string refusal, bool ownHullOnOwnMachine = false)
         {
             refusal = null;
-            if (!CanControl)                              { refusal = "only the host can change who flies a hull"; return false; }
+            if (!(ownHullOnOwnMachine ? CanSetAIFlies(human) : CanControl))
+                                                          { refusal = "only the host can change who flies a hull"; return false; }
             if (!human || human.NetIsAI.Value)            { refusal = "no human pilot"; return false; }
             if (human.Vessel is not Object v || !v)       { refusal = "you have no hull"; return false; }
             return true;
@@ -126,3 +164,4 @@ namespace CosmicShore.Gameplay
         }
     }
 }
+#endif

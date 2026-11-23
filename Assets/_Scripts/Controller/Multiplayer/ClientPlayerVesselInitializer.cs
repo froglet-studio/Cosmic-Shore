@@ -45,6 +45,10 @@ namespace CosmicShore.Gameplay
         CancellationTokenSource _rosterRetryCts;
         bool _localPairResolved;
 
+        // The vessel this machine last initialised as its OWN (the local user's pair). A rejoin's
+        // seat claim reads it to tell "already set up as mine" from "set up as somebody else's" (B47).
+        IVessel _vesselInitializedAsLocal;
+
         // Load Time Insights span: open while pairs are queued waiting for replication.
         int _pendingWaitSpan = -1;
 
@@ -258,6 +262,145 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------
+        // REJOIN (section 103): the host handed this client its old seat back
+        // ---------------------------------------------------------
+
+        /// <summary>
+        /// Sent to a client that REJOINED a running match when the host has handed it back the Player the AI was flying
+        /// (<see cref="ServerPlayerVesselInitializer"/>.TryReclaimSeat). The pair may already have been initialised here
+        /// as somebody else's, so it is re-initialised as this machine's own once the ownership and the human flag land.
+        ///
+        /// <para>It also carries the match's turn state. This client loaded the scene after the countdown's StartTurn
+        /// went out, so on its own it reads the match as not started: the HUD played the intro and showed READY, and
+        /// the press waited forever on a ready gate the racing pilots would never press again.</para>
+        /// </summary>
+        [ClientRpc]
+        internal void SeatReclaimed_ClientRpc(ulong playerNetId, bool turnRunning, float turnElapsedSeconds,
+            int roundsPlayed, int turnsTakenThisRound, ClientRpcParams rpcParams = default)
+        {
+            if (IsServer) return;
+            // Kept as a local start time, so the seconds spent waiting for the claim below count too.
+            var turn = new RunningTurn(turnRunning, Time.time - turnElapsedSeconds, roundsPlayed, turnsTakenThisRound);
+            ClaimReclaimedSeatAsync(playerNetId, turn, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        /// <summary>The host's turn state at the moment it handed a rejoiner its seat back.</summary>
+        readonly struct RunningTurn
+        {
+            public readonly bool Running;
+            public readonly float LocalStartTime;
+            public readonly int RoundsPlayed, TurnsTakenThisRound;
+
+            public RunningTurn(bool running, float localStartTime, int roundsPlayed, int turnsTakenThisRound)
+            {
+                Running = running;
+                LocalStartTime = localStartTime;
+                RoundsPlayed = roundsPlayed;
+                TurnsTakenThisRound = turnsTakenThisRound;
+            }
+        }
+
+        async UniTaskVoid ClaimReclaimedSeatAsync(ulong playerNetId, RunningTurn turn, CancellationToken ct)
+        {
+            // Ownership (the Player's AND the vessel's), NetIsAI and the vessel id replicate on their own messages;
+            // wait for all of them (bounded). p.Vessel is set only by InitializePair, so the roster has always
+            // initialised the pair here by the time this loop lets go - as somebody else's if the ownership and
+            // the human flag had not landed yet (B47).
+            Player player = null;
+            float until = Time.unscaledTime + 10f;
+            while (Time.unscaledTime < until)
+            {
+                if (gameData.TryGetPlayerByNetworkObjectId(playerNetId, out var ip) && ip is Player p
+                    && p.IsOwner && !p.NetIsAI.Value && p.Vessel != null
+                    && (p.Vessel is not NetworkBehaviour vesselNet || !vesselNet.IsSpawned || vesselNet.IsOwner))
+                {
+                    player = p;
+                    break;
+                }
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            MatchRejoin.ClearApprovalPayload();
+            if (player == null)
+            {
+                CSDebug.LogWarning("[ClientPlayerVesselInitializer] Rejoined, but the reclaimed seat never became ours - the join watchdog will bounce.");
+                return;
+            }
+
+            gameData.ClaimLocalPlayer(player);
+            ClaimReclaimedPair(player, player.Vessel);
+
+            MatchRejoin.Remember(gameData.PartyId, gameData.GameMode);
+            _signalClientReadyWhenDone = false;
+            _localPairResolved = true;
+            _rosterRetryCts?.Cancel();
+
+            // ClientReady before the turn joins: the HUD's ClientReady handler clears its score and cards first thing,
+            // so the turn-started setup has to land after that clear, not be wiped by it.
+            gameData.InvokeClientReady();
+
+            if (turn.Running)
+                JoinRunningTurn(player, turn);
+        }
+
+        /// <summary>
+        /// The match was already racing when this client came back: join the turn where the others are instead of
+        /// starting it over. The countdown that activates the pilots and frees input has been and gone, so this does
+        /// what its ClientRpc would have done here, without zeroing anybody's score.
+        /// </summary>
+        void JoinRunningTurn(Player player, RunningTurn turn)
+        {
+            gameData.RoundsPlayed = turn.RoundsPlayed;
+            gameData.TurnsTakenThisRound = turn.TurnsTakenThisRound;
+            gameData.SetPlayersActive();
+            gameData.JoinRunningTurn(Time.time - turn.LocalStartTime);
+            NetSessionRecorder.Mark("rejoinedRunningTurn", $"{Time.time - turn.LocalStartTime:F1}s in");
+
+            if (player.InputController != null)
+            {
+                player.InputController.SetPause(false);
+                player.InputController.SetIdle(false);
+                player.Vessel.VesselStatus.IsStationary = false;
+            }
+        }
+
+        /// <summary>
+        /// Makes the reclaimed pair this machine's own (B47, Docs/PartySystem/BUGS.md). Nothing to do when the roster
+        /// already initialised it as the local user's.
+        ///
+        /// <para>The vessel is LIVE: the roster initialised it before the claim could run (the claim waits for
+        /// <c>Player.Vessel</c>, which only InitializePair sets). Calling <c>Initialize</c> on it again is refused by
+        /// VesselController's double-initialization guard, which skips every local-user binding (input, camera, HUD,
+        /// the platform laws) and left the rejoiner watching a ship it could not fly. A live hull handed to the local
+        /// pilot goes through <c>ChangePlayer</c>, exactly as the arena pilot swap does (<see cref="PilotSwap"/>).
+        /// A vessel nobody has initialised (not reachable today) still takes the full Initialize path.</para>
+        /// </summary>
+        void ClaimReclaimedPair(Player player, IVessel vessel)
+        {
+            if (ReferenceEquals(_vesselInitializedAsLocal, vessel))
+                return;
+
+            if (vessel.VesselStatus.Player == null)
+            {
+                ReInitializePair(player, vessel);
+                return;
+            }
+
+            InjectVesselDependencies(vessel);
+            if (vessel.VesselStatus.AutoPilotEnabled) vessel.ToggleAIPilot(false);
+            player.SetDomain(player.NetDomain.Value);
+            vessel.ChangePlayer(player);
+            // This machine simulates the hull from here; it was following the network's kinematics a frame ago.
+            vessel.VesselStatus.VesselTransformer.AdoptCurrentMotion();
+            ShipHelper.SetShipProperties(themeManagerData, vessel);
+            player._vesselThemeManagerData = themeManagerData;
+            _vesselInitializedAsLocal = vessel;
+
+            gameData.InvokePlayerPairInitialized(player.PlayerNetId);
+            if (CameraManager.Instance)
+                CameraManager.Instance.SnapPlayerCameraToTarget();
+        }
+
+        // ---------------------------------------------------------
         // CLIENT-PULL ROSTER BOOTSTRAP (client-side)
         // ---------------------------------------------------------
 
@@ -302,12 +445,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Bounded self-healing loop: re-asks the host for the roster until the local
-        /// player's pair resolves. Recovers a dropped request, a dropped reply, or a
-        /// late host-side spawn. Cancelled once the local pair is initialised
-        /// (<see cref="InitializePair"/>) or on despawn.
-        /// </summary>
-        /// <summary>
         /// Tells every peer that a departed pilot's ship is now flown by the AI. The toast feed is
         /// a per-peer surface, so the server's own post does not travel - this carries it.
         /// </summary>
@@ -318,6 +455,12 @@ namespace CosmicShore.Gameplay
             GameToastAPI.Post(GameToastSituation.PilotHandedToAI, (Domains)domain, playerName);
         }
 
+        /// <summary>
+        /// Bounded self-healing loop: re-asks the host for the roster until the local
+        /// player's pair resolves. Recovers a dropped request, a dropped reply, or a
+        /// late host-side spawn. Cancelled once the local pair is initialised
+        /// (<see cref="InitializePair"/>) or on despawn.
+        /// </summary>
         async UniTaskVoid RosterPullRetryLoop(CancellationToken ct)
         {
             // These must cover MORE wall-clock than PartyInviteController.joinReadyTimeoutSeconds,
@@ -556,6 +699,7 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser)
             {
+                _vesselInitializedAsLocal = vessel;
                 // Local pair resolved - stop the client-pull retry loop and clear the splash.
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();
@@ -595,8 +739,12 @@ namespace CosmicShore.Gameplay
             // while in freestyle; MainMenuController re-activates non-local swapped vessels.
             gameData.InvokePlayerPairInitialized(player.PlayerNetId);
 
-            if (player.IsLocalUser && CameraManager.Instance)
-                CameraManager.Instance.SnapPlayerCameraToTarget();
+            if (player.IsLocalUser)
+            {
+                _vesselInitializedAsLocal = newVessel;
+                if (CameraManager.Instance)
+                    CameraManager.Instance.SnapPlayerCameraToTarget();
+            }
         }
     }
 }

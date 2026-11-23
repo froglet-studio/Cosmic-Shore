@@ -71,7 +71,7 @@ def panel(root, key, name, r, stagger, grid=True):
     n.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=stagger))
     C.frame(n, f"{key}/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
     if grid:
-        n.child(M.grid_node(f"{key}/Grid"))
+        n.child(M.panel_sea_node(f"{key}/Grid"))
     M.bracket_nodes(n, f"{key}/Bracket")
     return n
 

@@ -246,7 +246,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 14. **A HUD controller must never reach for another vessel's executor by TYPE.**
     `GetComponentInChildren<SomeOtherVesselsExecutor>(true)` compiles fine, returns null on every
     vessel that isn't the one carrying it, and the gauge it feeds then simply never moves — no
-    error, no warning, nothing to notice. `SquirrelVesselHUDController` polled the Sparrow-only
+    error, no warning, nothing to notice. `SquirrelHUDController` polled the Sparrow-only
     `OverheatingActionExecutor` for its heat gauge for the component's entire life; the gauge was
     dead the whole time and the bug only surfaced when the Sparrow branch DELETED the type and the
     Squirrel stopped compiling. If a HUD needs a signal, bind it on the vessel's OWN component (a
@@ -381,6 +381,15 @@ applies to new abilities, new resources on the meter list, and anything that add
     CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
     (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
     them; reading either alone gives a confident wrong answer about which gate you are moving.
+    **When an L5 gates an outcome, find EVERY system that re-derives that outcome, and give them one
+    gate on the per-vessel state they all read.** Making the Rhino's super-shield pop the Space L5
+    (2026-10-26) first put the gate on the damage effect alone, and the review found
+    `ShieldSkimmerScaleDriver.UpdateBind` deciding "this blade can pop, so it is not bound" from
+    `IsEnergized` by itself, so an energized blade without the upgrade was refused the pop and then slid
+    through the prism with no drag. The ignition re-dispatch and the AI's "energize for hardened mass"
+    trigger had the same old condition. The fix was one bit on the sword
+    (`ISwordfishSwordState.SuperShieldUpgradeActive`, authored on the sword's config) that all four read.
+    Grep the old CONDITION (`IsEnergized`), not just the effect you are gating.
 
 27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
     containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
@@ -800,13 +809,13 @@ applies to new abilities, new resources on the meter list, and anything that add
       the slope, not an end), and `Tick` returned early off the owner - so every replica held
       `IsBoosting` and ×16.8 for the rest of the turn. Grade from the replicated sticks everywhere.
     - **Owner-authoritative STATE needs a relay, not a hope.** Energy banked from per-peer kills and
-      an energize phase run on per-peer clocks decided what pops; `RhinoSwordNetworkRelay` (energy,
+      an energize phase run on per-peer clocks decided what pops; `SwordfishSwordNetworkRelay` (energy,
       phase, surge bit, owner-write) is the shape. Route the mirrored phase through the same setter
       the owner uses, so the edges (ignition re-dispatch, FX, the afterimage window) fire everywhere.
     - **No AI raises `FullSpeedStraightAction`** - only a human input strategy does - so an ability
       bound to the gesture is human-only until an `AIBoostPolicySO` presses it; and an ability posed
       by TRIGGERS is human-only until something writes the trigger mirrors for the autopilot
-      (`RhinoSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
+      (`SwordfishSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
 53. **On a PHONE, lifting the thumb is an instant `Idle()`: ease every stick term INSIDE the animation.**
     `TouchInputStrategy` sets `InputStatus.Idle = true` the frame the last thumb leaves the glass, and
     `VesselAnimation.Update` then calls `Idle()` INSTEAD of `PerformShipPuppetry`. An animation whose `Idle()` is
@@ -868,7 +877,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     controls, laid out round the right thumb in millimetres). Ask of every new ability: *how does a phone press it?*
     A trigger-depth read needs a press fallback (`max(analog, held)`, the Thresher and Angler pattern) or a hold-time
     ramp (the Stoat's `Hold01`); an LT+RT ability needs a both-thumbs-off form (`idlePullsBothTriggers`, the Rhino) or a
-    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up (the roll one
+    card; tilt (`gyroRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up (the roll one
     is an ANGLE, one to one with the phone like an AR window, `IInputStatus.HoldsRollAngle`, applied to the command so the touch nose lag filters sensor jitter; the steer is a stick). The gate:
     `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
     no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
@@ -891,7 +900,8 @@ applies to new abilities, new resources on the meter list, and anything that add
     transformer's RotateShip goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a
     new override; read `NoseFollowRate` to predict a hull), which since 2026-10-23 reads one dial per device
     (`PilotNoseFollowPerSecond`: pad `GamepadFlightConfig` 1.5, touch `TouchControlProfiles` 9, keyboard and mouse
-    none; never per hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
+    none; never per hull; an AI hull keeps the fleet's 1.5/s unless a mode sets `AINoseFollowPerSecond`, which only
+    Switchback does, by difficulty) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
     input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
     **The pad's smoothness IS its one-stage nose lag; neither a curve nor a smoothing chain replaces it** (Garrett,
     2026-10-23, `cece/serene-galileo-t77xt3`). A response curve shapes how FAR a stick turns the hull, not how the
@@ -924,6 +934,117 @@ applies to new abilities, new resources on the meter list, and anything that add
     sized for a THUMB (a touch-run crew) frames it from a reference phone (`JacksMath.ThumbViewSpan`), the same
     span on every device, keeping the gameplay length (the ring) independent of the view: a span the ring is derived
     from cannot be zoomed without changing the game.
+
+
+61. **A runtime COPY of a live vessel part (a second blade, a mirrored arm) is cloned under an INACTIVE holder and
+    stripped before it wakes.** The Rhino's surge ring (`SwordfishSurgeSwordRing`, 2026-10-26) needed seven more swords that
+    cut exactly like the real one. A clone of the blade root carries everything that makes a blade a blade (mesh, both
+    trigger colliders, the kinematic body, `SkimmerImpactor` + `ImpactCollider` wired to the CLONE by Unity's internal
+    reference remap, its own `SkimmerSwingKinematics`) - and also the one-of-a-kind parts, whose serialized references
+    point OUTSIDE the clone and still reach the original: `SwordfishSwordFXController.bladeTracers` names the fuselage's five
+    tracers, so a woken copy would re-seat and tint the pilot's own streaks. So: `Instantiate` under a holder whose
+    GameObject is INACTIVE (no Awake / OnEnable runs on the copy), `DestroyImmediate` the one-of-a-kind components, then
+    arm what is left (`Skimmer.Initialize(status)`, `HasExternalScaleDriver = true`, `SwordState` = the real sword's, so
+    every copy cuts through the same effect chain and reads the same energized state), and only then activate. Before
+    trusting the remap, list each copied component's serialized object references and sort them into "inside the clone"
+    (remapped) and "outside" (shared with the original). Pose every copy from the original's LIVE local pose in
+    LateUpdate, after the executor that writes it, and copy the body's MaterialPropertyBlock so the look follows too.
+62. **An ability that moves the camera writes a POINT-OF-USE multiplier on `CustomCameraController`, never
+    `_followOffset`** - the same rule `RearView`, `FollowHeightScale` and `SurroundFraming01` follow, for the same reason:
+    adaptive zoom and every settings re-apply write `_followOffset`, so the first of them to fire would silently undo the
+    ability. The Rhino has two (2026-10-26): `SurroundFraming01` (the surge: straight back and centred on the hull) and
+    `VesselDistanceScale` (the blade's Space length: the camera pulls back in proportion). Both reset in
+    `SetFollowTarget`, both are written only for the LOCAL HUMAN pilot (an AI, a remote copy or the lava lamp's
+    autopilot must never move this machine's camera), and the owner releases them on disable (`SwordfishSwordLengthCamera`). Keep
+    the hull where it sat on screen by scaling the LOOK POINT with the offset. FOV stays the player's (rule 21).
+63. **To move an ability to another button, change the BINDING's owner, then measure who reads the old button.**
+    `cece/sweet-mendel-yoq3vo` (2026-10-27) moved the three RB abilities to Y. What it learned:
+    - **RB is `FlipAction` (InputEvents 3), and the name is legacy**: it fires whatever a hull binds there. RB also
+      writes `InputStatus.Throttle`, but a hull reads that only with `toggleManualThrottle`, which no shipped prefab
+      sets. Reading `GamepadInputStrategy` alone said "RB is boost and flip". The prefabs said "RB is three
+      abilities". Ask the consumers (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`, the maps'
+      `Input:`), never the producer.
+    - **A binding lives in two places**: the prefab's `_inputEventShipActions` and the `ElementalAbilityMapSO`'s
+      `Input` (which the HUD chip reads). A generator that authors the vessel owns both. Change its table, or the
+      next run puts the old button back. The Shrike's generator re-applies bindings on every run. The Brittle Star's
+      applies them only inside its one-shot clone, so after editing its table you also edit the prefab line, and its
+      `--check` confirms the two agree.
+    - **The executors find their controls by event** (`Enum.GetValues(typeof(InputEvents))`), so the AI follows a
+      rebind with no change. The control-chip tests name events, so update those.
+64. **A speed buff on a TETHERED vessel must carry the tether, or the tether takes the buff back.** The fleet's
+    `throttleMultiplier` scales only a frame's travel, never the momentum, so it reads like the clean way to say "N x
+    what the physics gives". It is not, for anything whose physics reads the hull's POSITION against a body it is tied
+    to. `cece/sweet-newton-78wr4o` (2026-10-30) gave the Thresher's aimed launch a x3 exit: the chain saw the hull run
+    ahead of the ball, stretched, and braked the physics to its 42 u/s floor in 0.25 s, so 3 s after the launch the
+    ship had gone 579 u against today's 532 (RT held), and 622 against 655 with RT released, which is worse than no
+    buff. Carry the whole rig by the extra travel after each move (ball, pivot and chain links with their previous
+    positions, so no link gains a velocity; `ThresherExecutor.CarryRig`), and sweep the carried stretch so the ball
+    still hits what it passes. The physics then stays today's frame for frame (1 272 u and 1 570 u). **Test the
+    untouched half**: assert the physics speed trace equals the unbuffed one, not only that the ship went further
+    (`ExitBuff_MultipliesTheExitAndLeavesThePhysicsAlone_BecauseTheRigIsCarried`).
+65. **Entering a mode that hands the sticks a new job must EASE their authority in, never latch them off.** A stick
+    already over when the job changes (the turn the pilot was flying, now an aim at 180 deg/s) jumps the new job at
+    full rate on its first frame. Ignoring the stick until it re-centres stops that and reads to the pilot as "the
+    controls disengaged ... I had to return it to home position and move the sticks again" (Garrett, 2026-10-30, on the
+    Thresher's snap aim). Ramp the authority from 0 to full over a short dial (`ThresherCameraFraming.AimStickAuthority`,
+    SmoothStep over `aimStickEaseSeconds` 0.3): a held stick starts working on the first frame and never stops.
+
+66. **A skimmer runs its vessel effects on ENTRY, so a contact meant to keep working while a rival STAYS needs the
+    standing-contact path, and a take priced in petals must price its silence and score in petals too.** The Tiger
+    Moth's shred (`cece/gallant-gauss-1lsqle`, 2026-10-31: one petal of one random element per Charge-scaled tick)
+    found that `SkimmerImpactor`'s stay handler runs no effects: Dustup had been designed around "one dusting per
+    pass" because of it. The shape that works: `SkimmerImpactor` keeps the hulls standing inside it (only while its
+    container holds an effect whose `RepeatsWhileInside` is true, so no other skimmer pays), the vessel's own component
+    calls `ReapplyVesselEffectsToOverlapping` every frame (the vessel twin of the Rhino's prism re-apply), and the
+    reporter's latch window paces it. The take implements `IPacedContactPetalTake`: its own window
+    (`SameVictimCooldownSeconds`), its worth in petals (`PetalsPerTake`, which `CombatHitDrain.TryAdmitPetals` silences
+    for), and `CanTakeFrom`, so a victim with nothing to take is not admitted. Score follows petals: one hit of the class
+    per `CombatHitDrain.PetalsFor(class)` petals (a Strike is 3.2: ten points to the petal, on four elements). Two
+    consequences to check before adopting it: a mode scored on that contact now scores on TIME in contact (re-tune its
+    target), and a one-element take must pick among the elements the victim HOLDS by their replicated level, or it
+    lands on an empty element while another still has petals.
+
+67. **SPLITTING one vessel's kit into two hulls: clone first, strip second, and the weapon is often the skimmer.**
+    The Rhino became the Rhino (the plough) and the Swordfish (the sword) on 2026-11-07
+    (`Tools/Build/author_swordfish_assets.py`, `R_VesselActions/SWORDFISH.md`). Four things that recipe learned:
+    - **One generator, two one-shots, in order:** clone the donor WITH the kit (fresh hash, rule 42), then strip
+      the kit from the donor in a document-level pass gated by `dangling_refs` (rule 46). Each stands down once
+      its output is committed (the clone while the new prefab is absent, the strip while the donor still carries
+      the kit's executor), and `--check` holds both prefabs' invariants. The strip found a dangling reader nothing
+      named (an INACTIVE `CameraZoomFollowScaleProvider` pointing at the blade driver): let the gate find them.
+    - **The weapon may be the vessel's only near-field skimmer**, so removing it silently stops elemental crystals
+      (rule 11). Keep the skimmer as a crystal catcher (static scale, a haptics-only container) instead.
+    - **Re-point the modes, the models AND their generators**: a mode seated on the old hull for the kit you moved
+      (Cleave, Astro League) needs the card, the scene's `aiInitializeDatas`, the mode preview's `Vessel:`, the
+      training catalog and the generator that authors the card; a balance model keyed by hull name
+      (`broadside_balance.py`) needs the row renamed, not duplicated, when only one hull has the verb.
+    - **`element_ability_table.py` resolves an L5 gate only when the `IsUpgradeActive` argument IS the serialized
+      element field.** A helper `UpgradeActive(status, element)` hides every gate behind one parameter and the
+      table reports "UPGRADE IS PROSE". Call `abilities.IsUpgradeActive(<field>)` at each site.
+
+68. **An element's dial is a continuous quantity, not a PETAL COUNT** (Garrett, 2026-11-10: "move away from charge
+    being coupled to elemental petals. it is too coarse to adjust"). A petal take settles in whole petals, so Charge
+    0 -> 10 on a 1.2-petal bite moves it by about one petal and there is nothing in between to tune. Three hulls were
+    re-cut on `cece/cool-dijkstra-4puf92` and they are the pattern: the take goes flat (its priced value), and the
+    element moves something continuous the pilot plays with - the Manta's shared FUSE length at each reset
+    (`MantaStingConfigSO.fuseScale`), the Squirrel's minimum JOUST SPEED (`JoustSpeedConfigSO`, vessel and lifeform
+    jousts), the Scarab's shove COOLDOWN (`ScarabCavitationBlast.cooldownScale`, snapshotted when it fires). Read it
+    at the REPLICATED level wherever more than one machine decides the outcome (a joust, a blast every peer fires)
+    and at the live level where only one does (the Manta's fuse runs on the bomb's simulating machine only). Still
+    coupled when this was written, and each the owner's call: the Swordfish's sword steal, the Thresher's ball hit,
+    the Goby & Pistol's rings, the Meerkat's zaps (`element_ability_table.py <Hull>` shows each).
+    **A behaviour can have several DECIDERS, and the gate goes on all of them** (rule 26's lesson, met again). A
+    Squirrel joust is decided in FOUR places: the scored hit and steal (`VesselCombatHitBySkimmerEffectSO`), the
+    joust point and its blast, which is what the Joust mode counts (`VesselExplosionBySkimmerEffectSO`), the friendly
+    buff (`VesselOvertakeBySkimmerEffectSO.Execute`) and the lifeform joust (`VesselWitherLifeformByCrystalEffectSO`).
+    The first cut gated three; the ship review found the joust point still scoring a joust that stole nothing. Two of
+    those assets are shared by five hulls, so the rule rides the hull's OWN sibling effect (`IContactAdmission`,
+    asked through `ContactAdmission.AdmittedBySiblings`) and the shared assets stay byte-identical. List the deciders
+    by grepping the CONDITION the old rule used (here the overtake test, `Speed <= ...Speed`), not the effect you
+    started from. **A live measurement on a card** (the joust speed against its minimum) is generated in
+    `EnsureGeneratedAbilityIcons` and bound with `BindGeneratedAbilityGauge`, so the lockup adopts and styles it like
+    an authored gauge; its threshold is drawn the way the Rhino draws Momentum (ticks below, a gap through the fill
+    once past). Three views now carry that mark code (Sparrow, Rhino, Squirrel): `Docs/REFACTOR_BACKLOG.md` S118.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
@@ -1279,6 +1400,28 @@ objects no-ops off the server (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
   to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
   pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
 
+### 4.ac2 An ability that takes prisms: `IsEnvironmentOwned` is NOT "a mode's track" (the Jacks' net, 2026-10-25)
+
+`Prism.IsEnvironmentOwned` means only **no player name**. That is Skim Race's track, but it is also every plant prism
+and every prism a cell's environment lays: the Toybox boots into **Garland**, whose bough is ~4,300 owner-less
+`SpawnablePrism`s (`SpawnableGarland` → `PrismTrailBuilder.ConfigureLaid`, no player name) beside 13 plants. The Jacks'
+net skipped `IsEnvironmentOwned` "to spare the track" and so touched NOTHING for three playtest rounds, each reported as
+"no interaction with prisms", while static reading of the spatial index, the move and the render path found no bug.
+Rules: (1) to spare an indestructible track, test what makes it indestructible (`prismProperties.IsSuperShielded`), not
+the owner name; (2) when a prism filter "does nothing" in play, first list what the TEST CELL actually spawns (follow
+the scene's `CellConfigs` → the BootDefault config → its EnvironmentPrefab and spawn profile) and run each population
+through the filter by hand. The hull breaks owner-less prisms in every mode; an ability that refuses them needs a
+reason that names the case.
+
+### 4.ac3 A vessel draws no controls of its own (LOCKED, Garrett 2026-10-25)
+
+The HUD is the five standard cards (four elemental + the omni crystal's); any other active control is a CORE card left
+of them with a glyph chip (`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`). The Jacks' herding view drew a zoom and a call
+button top right for rounds 2-9 and they were removed. Put the control on a card instead. A mode that pauses the
+flight's buttons (a crew seat, the Jacks' herding) still hears card taps by subscribing to the input status's
+`OnButtonPressed` while paused (`JacksExecutor.ListenToCards`). A card is only pressable if its map `Input` is BOUND
+on the prefab (`AbilityCardPress` asks `ResolvesOnActiveDevice`), so keep the binding even when one mode ignores it.
+
 ### 4.ad Porting a vessel from its studio — the settings, the CAMERA, and the AI's hand-over
 
 The studio (`/vessel-studio`) is where a vessel's numbers are decided; the Unity port is a COPY of them, and
@@ -1309,7 +1452,7 @@ the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. D
    `framingFieldOfView` to the studio's FOV (68): the camera moves nearer by tan(68°/2)/tan(fov/2) and turns
    its look so the hull reads the same size AND sits at the same height on screen at whatever FOV the player
    chose (`CustomCameraController.FramedLook`, `CameraLookAheadTests`). A per-vessel FOV was tried first and
-   reverted: `CameraSettingsApplier` re-applies the player's value on every settings change.
+   reverted: `CameraSettingsApplier` re-applied the player's value on every settings change (that class was on no scene and was retired 2026-10-25).
 4. **The studio's look has no owner tint.** A slung hole's `DomainTintAmount` filled the black hole's shadow
    with the owner's dark domain colour (it read as JADE, not black). The studio draws a pure black shadow, a
    warm photon ring and a white-hot core; the Stoat's config ships the tint at 0, and the lens draws the ring
@@ -1393,7 +1536,8 @@ but not CLAUDE.md — don't repeat that), the map asset's `UpgradeLabel`/`Upgrad
 a co-located design doc `Assets/_Scripts/Controller/Vessel/R_VesselActions/{FEATURE}.md`
 (overview + Files table + tuning-knobs table + "## In-editor verification" + "## Follow-ups";
 `RHINO_SHIELD_SWIPE.md` is the exemplar). Delete stale serialized blocks left by script-field
-renames, and use `[FormerlySerializedAs]` when renaming container fields.
+renames, and use `[FormerlySerializedAs]` when renaming container fields. Once it lands on bleeding-edge, refresh the
+**Fleet Codex** artifact with `/fleet-codex` §1 (the daily refresh catches it otherwise); never edit the codex by hand.
 
 ## 7. Growing the contract (how a vessel requirement becomes enforced)
 
@@ -1427,3 +1571,12 @@ runtime symptoms.
 Conventional commits per `GIT_RULES.md` (`type(scope): summary`, imperative, ≤72 chars, .meta
 files included); one logical change per branch; develop on the feature branch; open a PR only
 when asked.
+
+
+## The design brief comes first (2026-11-07)
+
+Before a new vessel mechanic, ability, camera or control change, write the one-page design brief (`Docs/claude/DESIGN_BRIEF.md`): the fundamental it serves,
+the principles it obeys by id (`python3 Tools/Build/principles.py --area vessel`; `Docs/claude/PRINCIPLES.md` holds
+the owners' rules in their words, drafted on 2026-11-07 and waiting on each owner to confirm or strike), the one it
+comes closest to breaking, the cheapest prototype, who judges it and where, and the retire condition. A design that
+breaks a drafted principle is a proposal to that principle's owner first, not a build. The hull's look is `/vessel-model`'s and its icons `/ability-icon`'s; this brief is for what the vessel DOES.

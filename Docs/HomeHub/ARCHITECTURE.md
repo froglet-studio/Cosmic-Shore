@@ -232,6 +232,36 @@ press itself, because a disabled button is never the whole gate.
 Two things the window does NOT draw: the objective box and the controls block. The panel's
 `objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
 
+### 3.2.1 One shared vessel panel for every seat (2026-10-25)
+
+Yash asked for one place to choose every hull - your own and each AI's - instead of a control on every
+seat: "use the vessel panel to choose the AI vessels and owner vessels together", with the intensity on
+top and the vessel panel below. So the configure window's settings column now reads **Intensity, Pilots,
+Vessel**, top to bottom (the Arcade's view takes the same order; its vessel section only shows the card's
+hull). On the Arena the vessel section is the **shared vessel panel**: `<`, seven hull tiles, `>`, then
+the class line and CLAIM. It picks the hull of whichever seat is selected:
+
+- **Your own row** (the default, and on every open): the panel works as it always did. A tile shows a
+  hull, the arrows step it, CLAIM takes it, and Start waits for the claim.
+- **An AI's row**: tap it and the caption reads "Ruby AI's vessel". The section's own labels show that
+  AI's hull ("Auto" while none is picked), and a tile or an arrow puts the AI in that hull at once. There
+  is no CLAIM for an AI. Tap the same row again, or your own row, to go back to your own hull. The row being
+  edited turns the Selection colour (`DomainAvatarChip.SetEditing`). Your summary chips, the FLY row and
+  the controls keep naming YOUR hull while an AI is selected.
+- **Who may pick** is unchanged (`AIHullSeating.MayPick`): the host any seat, opponents included; a guest
+  only their own team's allies. A guest's row taps go nowhere else.
+- **The host decides.** An arrow sends the existing `RequestAllyVesselCycle`. A tile sends the new
+  `RequestAIVessel` (protocol 14). The host refuses a hull another pilot has claimed or another AI already
+  flies (`TakenHullsForAiSeat`, the same set the strip draws locked), then re-broadcasts the roster, which
+  is how a guest's panel learns the pick.
+- **A tap on an AI row used to step its hull.** It now selects the seat; the stepping moved to the panel's
+  arrows.
+
+The arrows and the tiles are authored by `Tools/Build/author_menu_configure.py` (`hull_body`): 74-px
+tiles centred in the panel, and 32 x 56 arrows level with the tiles' middle, inset from the panel's edges.
+The arrows first landed as a hand edit of `ConfigureArenaView.prefab` (`d9b7305b1`), which left the
+generator's `--check` red; the generator now owns them.
+
 ### 3.3 What the carousel offers: the card's list, never the Hangar's lock
 
 **A card's `Vessels` list is the authority on what a mode admits. The Hangar's purchase lock
@@ -433,7 +463,7 @@ the mode preview's scale model is (`CellMiniatureBuilder`, `ModePreviewPlantingM
 by RUNNING that data. `Tools/Build/render_card_backgrounds.py` resolves each live card's arena off
 its own scene (`Cell.CellConfigs`, IntensityWise index 1; the preview definition as fallback),
 and `Tools/Build/card_art_harness/` compiles and runs the shipped generators against a faithful
-UnityEngine shim and rasterizes what they lay in the live palette (`OriginalColorSetSO`, base face
+UnityEngine shim and rasterizes what they lay in the live palette (`PhoticColorSetSO`, base face
 lerped to rim by fresnel - the prism shader's defining read). Every card states its **tier**:
 
 | tier | cards | what is drawn |
@@ -638,6 +668,55 @@ replicate, so a hull that changes machines keeps the levels its new owner's repl
 elements plus whatever it saw) - crystal-earned levels the previous owner simulated do not travel.
 There is no toast for a swap yet (a `GameToastSituation` is a per-mode asset edit); the camera
 retarget is the only feedback. None of this has been run in the editor.
+
+### 3.10 The Vessels row: Pick, Random, Draft, Squad (2026-11-07)
+
+Garrett, 2026-11-06: "remove intensities from arena games and replace with 4 new options for vessel selection: draft,
+random, pick (the current) and random from a squad". Arena cards (`ArenaRules`) have no intensity row any more; they
+always play **`SO_ArcadeGame.ArenaIntensity` = 2**, so whatever intensity used to choose on them (Astro League's arena
+scale, a starting-elements row, a per-intensity score target, crystal counts) is frozen at its intensity-2 value. The
+four cards' `MinIntensity`/`MaxIntensity` are 2/2 (`VesselSelectionRulesTests` holds every `ArenaGames` card to it), and
+the modal forces it too, because `LaunchPreferenceRules.ResolveIntensity` would clamp to a player's unlocked ceiling.
+The platform autopilot's skill on an arena card follows the AI difficulty (Easy 0.25 .. Legendary 1) instead of
+intensity x 0.25. Arcade cards keep I1-I4: every AI trains on them (`Docs/AI_SYSTEM/AI_PLAN.md`). Regatta's course no
+longer follows intensity either: it is drawn per match from a course pool (`claude/project-thread-pnwryl`, `REGATTA.md`).
+
+In the intensity section's place the panel shows the **Vessels** row: LB / RB (or the copied arrows) step the mode,
+host only, and the section's hint line says what the mode does or whose draft turn it is. The configure window is a
+generated prefab (`author_menu_configure.py`, which drifts from the committed prefabs as of this writing), so
+`ArenaLaunchPanel.ResolveSelectionRow` builds the row at runtime from parts already there: the stepper's LB / RB
+buttons, copied, and a label in the section caption's font. Every word is a serialized field on the panel or the modal.
+
+| Mode | Humans | AI on a human's team | AI on an all-AI team |
+|---|---|---|---|
+| Pick (1) | claim any free hull (unchanged) | teammates pick, or Auto | dealt at spawn, or the host picks |
+| Random (2) | the server deals each a random free hull | dealt by the host | dealt by the host |
+| Draft (3) | pick on their own turn | a human on that team picks on the seat's turn | random on its turn, after 1 s |
+| Squad (4) | choose a saved squad with the vessel arrows, SELECT deals one of its vessels at random (never its element) | dealt by the host | dealt by the host |
+
+How it is enforced, all on the host:
+
+- **The mode and the draft's turn** ride in `LobbySnapshot` (`VesselSelection`, `DraftTurn`, `DraftSeatIsAi`,
+  `DraftClient`, `DraftAiOrdinal`, `DraftTurnEndsAt`; protocol 27). Changing the mode gives every seat's hull back.
+- **Human claims** pass `Player.ServerArenaClaimGate`, which the modal sets while an arena card is open: a chosen hull
+  only in Pick or on the pilot's own draft turn (and never one a drafted AI holds), a dealt hull only in Random and
+  Squad. A deal is `Player.RequestArenaDealtClaim` (preferred hulls, then the card's), drawn on the server. Each
+  pilot's machine asks for its own deal and adopts whatever claim lands, so the panel shows the server's truth.
+- **AI picks** pass `MaySetAiHullUnderSelection`: any time in Pick, only on that seat's draft turn and from its own team
+  in Draft, never in Random or Squad, where the host deals every AI (and re-deals one a human's deal landed on).
+- **The draft** is a snake (Garrett agreed, 2026-11-06): teams in domain order, A B B A A B, within a team its humans
+  first, then its AI. A seat has 20 s (`draftTurnSeconds`), then it is dealt a random free hull. Adding an AI, a pilot
+  joining or anyone moving team restarts it. Start waits until the draft is done.
+- **Regatta's opponents are no longer pinned** (the `OpponentAIVessel` Squirrel pin retired 2026-11-17, Garrett): those
+  seats are dealt and drafted like any other. A card that sets the field still pins them.
+
+Squad mode reads the squads from the cloud save (`SquadRepo.Data.Book`), opening on the squad taken in from the Ark
+(`SquadLaunchIntent`) or the active one. Only the vessel comes; the pilot may come later (Garrett: "the element no, but
+we can consider the pilot coming"). A pilot with no saved squad is dealt at random. Arenas and voyages stay separate
+experiences, so nothing here reads or writes voyage state.
+
+**Not run in the editor yet.** The row's look (a runtime copy of the stepper's buttons) and the whole draft flow need a
+hand test in a two-machine lobby; `Docs/UNITY_VERIFICATION_CHECKLIST.md` lists the steps.
 
 ## 4. The Toy Box drives the LIVE toys
 
@@ -1302,11 +1381,10 @@ tonemapper, so without it a shark is a blown-out white shape with no colour in i
 `volumeLayerMask` (the shape `ConnectingArenaPreview.AdoptUrpSettings` already uses); shadows and
 AA stay off, which is where the cost was.
 
-**The portraits ARE low-poly, and it is the bake, not the display.** `ToolPortraitBuilder.AddRing`
-rebuilt the toy's own 12 × 6 torus — sized for a ring seen from a vessel in flight — and drawn as a
-still at 330 px it is a dodecagon. The bake now tessellates at 48 × 12. **The portraits are baked
-assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > UI > Codex
-bake; nothing changes on screen until it is run.
+**The portraits were low-poly, and it was the bake, not the display** (superseded 2026-10-26).
+`ToolPortraitBuilder.AddRing` rebuilt the toy's own 12 × 6 torus, a dodecagon as a 330 px still.
+The baked emblem is gone now: a toy's portrait is a 2D glyph drawn at 512 px by
+`Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4), with no tessellation to get wrong.
 
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 

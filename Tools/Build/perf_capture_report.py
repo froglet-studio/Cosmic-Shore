@@ -85,6 +85,16 @@ def validity(b):
         n = 0
     if n > 1:
         out.append(f"WARN   {n} cameras were enabled ({cams[:120]}) - every extra camera (Third Eye, a preview, a Scene view) renders the world again; close them and re-capture to measure the game's frame")
+    # An editor window's own work runs on the main thread between the game's frames (EditorLoop): the
+    # game's markers and CPU busy never see it, but the player feels it as a jerk. Yash's 10-26 Menu_Main
+    # captures froze ~100 ms every 0.5 s this way (the Third Eye's pilot scan), with one camera listed.
+    loop = max((r.get("maxTotalMs", 0) for r in (p.get("tree") or [])
+                if r.get("depth") == 0 and r.get("name") == "EditorLoop"), default=0)
+    stalls = [s for s in (d.get("spikes") or []) if s.get("ms", 0) - s.get("cpuMs", 0) > 20]
+    if loop > 25:
+        out.append(f"WARN   editor stall: EditorLoop up to {loop:.0f} ms in a frame, {len(stalls)} spike frame(s) "
+                   "where the frame outlasted CPU busy by 20+ ms - an editor window's work (open OR docked "
+                   "behind a tab), not the game; close the Third Eye and other live windows and re-capture")
     ed = editor_state(b)
     if ed.get("deepProfile"):
         out.append("ERROR  the Profiler was DEEP profiling - every C# call is instrumented and the frame is several times too slow; turn Deep Profile off and re-capture")

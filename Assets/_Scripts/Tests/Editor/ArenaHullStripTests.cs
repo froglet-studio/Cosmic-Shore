@@ -1,5 +1,7 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CosmicShore.Tests
 {
@@ -45,6 +47,31 @@ namespace CosmicShore.Tests
             {
                 offset = ArenaLaunchPanel.StripOffset(offset, pick, 9, 7);
                 Assert.That(pick - offset, Is.InRange(0, 6), $"hull {pick} has no tile at offset {offset}");
+            }
+        }
+
+        [Test]
+        public void AnArenaRulesCardIsHandled_EvenOffEveryRoster()
+        {
+            // Tandava is a voyage: on no grid, so not on the Arena roster. Routed by the roster alone it fell to the
+            // arcade's one-hull panel and its pilots could not pick a vessel (2026-10-26).
+            var go = new GameObject("ArenaLaunchPanelTest");
+            var panel = go.AddComponent<ArenaLaunchPanel>();
+            var voyage = ScriptableObject.CreateInstance<SO_ArcadeGame>();
+            var arcade = ScriptableObject.CreateInstance<SO_ArcadeGame>();
+            try
+            {
+                voyage.ArenaRules = true;
+                arcade.ArenaRules = false;
+                Assert.IsTrue(panel.Handles(voyage), "an ArenaRules card opens the arena launch panel with its hull picker");
+                Assert.IsFalse(panel.Handles(arcade), "an arcade card off the roster stays with the arcade panel");
+                Assert.IsFalse(panel.Handles(null));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+                Object.DestroyImmediate(voyage);
+                Object.DestroyImmediate(arcade);
             }
         }
     }

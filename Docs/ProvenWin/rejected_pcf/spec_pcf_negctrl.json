@@ -1,0 +1,24 @@
+{
+ "material": "Assets/_Graphics/Materials/ProjectileChargeFieldMaterial.mat",
+ "mesh": "Assets/_Models/Primitives/PrimitiveSphere.asset",
+ "swapFile": "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.hlsl",
+ "clockSpan": 20,
+ "width": 2560,
+ "height": 1440,
+ "cameraDistance": 1.25,
+ "fov": 60,
+ "timepoints": 48,
+ "drawsPerBatch": 48,
+ "chain": 8,
+ "samples": 200,
+ "warmupSeconds": 3,
+ "floats": [],
+ "colors": [],
+ "randomPerMoment": [
+  "_RoundSeed"
+ ],
+ "driveGlobalTime": true,
+ "variantA": "D:/ABLab/variants/pcf/A.hlsl",
+ "variantB": "D:/ABLab/variants/pcf/C.hlsl",
+ "outDir": "D:/ABLab/out/pcf/negctrl"
+}

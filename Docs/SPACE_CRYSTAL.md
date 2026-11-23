@@ -106,7 +106,9 @@ reports false errors of 6–25°.
 ## 4. Materials
 
 **`CrystalSpace` (2026-10-07):** it renders `BlueCrystalFresnelMateriall` (inactive) and uses
-`LimeCrystalFresnelMaterial` as its default. Both are on `Custom/SpreadFresnelShader`. Flora that
+`LimeCrystalFresnelMaterial` as its default (since 2026-10-27 its own clone of it,
+`SpaceCrystalFresnelMaterial`, in the Space shade of lime: `Docs/PALETTE.md` §2.11). Both are on
+`Custom/SpreadFresnelShader`. Flora that
 nest `CrystalSpace` inherit these: their `inactiveCrystalMaterial` overrides name a field
 `Crystal` no longer has, so they are dead. That shader pushes each vertex out along its normal by
 `_Spread`. It now normalizes that normal first, because the blended normal here is up to 2× unit

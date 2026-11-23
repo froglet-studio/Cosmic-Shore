@@ -1,5 +1,9 @@
 # Broadside — the arena brawl
 
+> **2026-11-19: the roster is the real-game judge's, and nobody starts handicapped.** `Tools/Compute/evaluators/broadside_judge.py` (4v4 timed brawls in Amoebius, every hull flown by its own AI, a hull's share of the match's points) judged all 23 Charge hulls. The card now seats six hulls: Stoat, Brittle Star, Meerkat, Angler (lockBiteCooldown 1 -> 5.25 s) and Jacks (Charge dangerShare 0.25 -> 0.06), which pooled 0.89-1.04 over 120 matches each across both starts, plus Scarab with its plate cooldown 2.5 -> 4.25 s (1.05 rest / 1.07 L5 over 3 seeds each; at 2.5 s it rose to 1.27 once the strong hulls came down). The Grizzly stays off: blast 15/60 balances it here but inverts its own Grizzly Time ladder. The per-hull Time starting rows are gone (Garrett 2026-11-18: no per-mode handicaps). The tables and the fleet below are history; the per-hull results and what each hull needs are in `regatta-flywheel/night3/broadside/RESULT.md` (project files).
+
+> **2026-11-07: the SWORDFISH has the Rhino's seat.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the plough-only Rhino has no vessel-hit verb, so the sword hull is the Swordfish (`broadside_balance.py`, `author_broadside_assets.py`; its starting Time rows carried over unchanged). Read "the Rhino" below as "the Swordfish".
+
 `GameModes.Broadside = 57` · `MinigameBroadside.unity` · `BroadsideController`
 
 ## Overview
@@ -390,7 +394,7 @@ a volley, and everything about feel.
   FASTER than its victim. The blade lands a Strike and drains nothing. Arming it is a Rhino kit
   decision (a skimmer drain SO the sword's container carries), not a number — see
   *The drain follows the price*.
-  **Stale (noted 2026-10-16):** the sword DOES steal. `RhinoSwordStealBySkimmerEffect` (a
+  **Stale (noted 2026-10-16):** the sword DOES steal. `SwordfishSwordStealBySkimmerEffect` (a
   `VesselOvertakeBySkimmerEffectSO`, landed with #928) sits in the sword's container at the Strike
   price — debuff −0.08 / buff +0.08 per element for 3 s, cooldown 1 s, `stealScale` authored disabled
   (base magnitude) — and runs only for a hit `VesselCombatHitBySword` admits, so it inherits the
@@ -399,7 +403,7 @@ a volley, and everything about feel.
 - **2026-10-16 Rhino kit — needs a playtest.** The AI Rhino now ramps (`RampBoostAIPolicySO`;
   before this only a human strategy raised the gesture, so a bot Rhino never reached the
   faster-than-victim speed the sword now requires) and swings/energizes its blade
-  (`RhinoSwordAutopilot`), so the fleet table's "AI can fight? yes — same" is newly true in a way it
+  (`SwordfishSwordAutopilot`), so the fleet table's "AI can fight? yes — same" is newly true in a way it
   was not measured against. Afterimages (5 s of blade-shaped prisms after an energize; danger at
   Mass L5) add mass to cut and, at L5, danger traps. A Danger Afterimage used to trigger
   `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly containers — muted Button2 for 5 s);

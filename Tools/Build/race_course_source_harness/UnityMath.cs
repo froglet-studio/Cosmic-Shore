@@ -11,8 +11,10 @@ namespace UnityEngine
         public static Vector3 zero => new(0,0,0);
         public static Vector3 one => new(1,1,1);
         public static Vector3 up => new(0,1,0);
+        public static Vector3 down => new(0,-1,0);
         public static Vector3 forward => new(0,0,1);
         public static Vector3 right => new(1,0,0);
+        public static Vector3 left => new(-1,0,0);
         public static Vector3 back => new(0,0,-1);
         public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.x+b.x, a.y+b.y, a.z+b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x-b.x, a.y-b.y, a.z-b.z);
@@ -65,6 +67,13 @@ namespace UnityEngine
             else { float s = Mathf.Sqrt(1f+m22-m00-m11)*2f; q = new((m02+m20)/s,(m12+m21)/s,0.25f*s,(m10-m01)/s); }
             return q;
         }
+        // TigerMothDropMath.CameraFrame only has to compile here (WaystationTower reads Ease01 alone): a normalised lerp.
+        public static Quaternion Slerp(Quaternion a, Quaternion b, float t)
+        {
+            float d = a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; float sg = d < 0f ? -1f : 1f;
+            var q = new Quaternion(a.x + (sg*b.x - a.x)*t, a.y + (sg*b.y - a.y)*t, a.z + (sg*b.z - a.z)*t, a.w + (sg*b.w - a.w)*t);
+            float m = Mathf.Sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w); return new(q.x/m, q.y/m, q.z/m, q.w/m);
+        }
         public static Quaternion AngleAxis(float deg, Vector3 axis) { axis = axis.normalized; float h = deg*Mathf.Deg2Rad*0.5f; float s = Mathf.Sin(h); return new(axis.x*s, axis.y*s, axis.z*s, Mathf.Cos(h)); }
         public static Quaternion FromToRotation(Vector3 from, Vector3 to)
         {
@@ -87,11 +96,13 @@ namespace UnityEngine
         public static float Acos(float v) => (float)Math.Acos(v); public static float Sqrt(float v) => (float)Math.Sqrt(v); public static float Abs(float v) => Math.Abs(v);
         public static float Max(float a, float b) => Math.Max(a,b); public static int Max(int a, int b) => Math.Max(a,b);
         public static float Min(float a, float b) => Math.Min(a,b); public static int Min(int a, int b) => Math.Min(a,b);
+        public static float Min(params float[] v) { float m = v[0]; for (int i = 1; i < v.Length; i++) m = Math.Min(m, v[i]); return m; }
         public static float Clamp(float v, float a, float b) => v < a ? a : (v > b ? b : v); public static int Clamp(int v, int a, int b) => v < a ? a : (v > b ? b : v);
         public static float Clamp01(float v) => Clamp(v, 0f, 1f); public static float Lerp(float a, float b, float t) => a + (b-a)*Clamp01(t);
         public static float LerpUnclamped(float a, float b, float t) => a + (b-a)*t;
         public static int RoundToInt(float v) => (int)Math.Round(v, MidpointRounding.ToEven); public static int CeilToInt(float v) => (int)Math.Ceiling(v); public static int FloorToInt(float v) => (int)Math.Floor(v);
         public static float Pow(float a, float b) => (float)Math.Pow(a, b);
+        public static float Exp(float v) => (float)Math.Exp(v); public static float Log(float v) => (float)Math.Log(v);
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Asin(float v) => (float)Math.Asin(v);
         public static float Floor(float v) => (float)Math.Floor(v);

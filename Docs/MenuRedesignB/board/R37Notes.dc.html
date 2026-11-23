@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 37 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA;box-sizing:border-box}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes r33Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA;box-sizing:border-box}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes r33Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.abs{position:absolute}
+.frame{position:absolute;padding:1px;background:#2B3266}
+.frame>div{width:100%;height:100%;background:rgba(5,10,46,.94)}
+.steps label{cursor:pointer}
+.stage{position:absolute;inset:0;display:none}
+@keyframes r36Pan{from{transform:scale(1.06) translateX(-12px)}to{transform:scale(1.06) translateX(12px)}}
+@keyframes r36In{from{opacity:0}to{opacity:1}}
+@keyframes r36Up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes r36Type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes r36Ring{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.18)}}
+@keyframes r36Open{from{transform:scaleY(.02);opacity:.4}to{transform:none;opacity:1}}
+@keyframes r36Wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+@keyframes r36FromL{from{transform:translateX(-120%)}to{transform:none}}
+@keyframes r36FromR{from{transform:translateX(120%)}to{transform:none}}
+@keyframes r36Draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes r36Fly{from{offset-distance:0%}to{offset-distance:100%}}
+@keyframes r36Out{to{opacity:0}}
+
+@keyframes r37Run{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+@keyframes r37Drain{from{width:100%}to{width:0%}}
+@keyframes r37Pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes r37Fade{0%,70%{opacity:1}100%{opacity:0}}
+.states label{cursor:pointer}
+</style>
+</helmet>
+<div style="width:1920px;height:900px;position:relative;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich','Chakra Petch',sans-serif"><div class="abs disp" style="left:80px;top:54px;font-size:34px">Rev 37 notes - connection states and rejoin</div><div class="abs" style="left:80px;top:124px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Asked.</b> "Where are the others like the connection lost and reconnect ones?" and "If someone leaves a game and then they boot up while the game is running the game should ask the user if they want to rejoin that game."</div><div class="abs" style="left:80px;top:220px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Built already (section 100.2).</b> Lost, Reconnecting and Back online are the DisconnectNoticeView built from the boot Retry window; these boards show them for the first time. Every word is in DisconnectNoticeConfig.</div><div class="abs" style="left:80px;top:316px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>New.</b> Dropped out of a match: a guest whose link breaks lands back on their own Home while an AI pilot takes their vessel on the host (the game does both today); this window says so and offers REJOIN. The host left: one honest line and BACK TO HOME (the host is a player, so the match ends with them; no rejoin). Rejoin on boot: after sign-in, if the match you left is still running, Home opens with the mode's card, who is in it, REJOIN (lime, A, selected) and NOT NOW (B).</div><div class="abs" style="left:80px;top:442px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Rules.</b> Lime only on the one action that puts you back (Reconnect, Rejoin); nothing red, because losing a connection is not the player's fault. A pad lands on the lime button; B always means 'not now'. If the match ends while the window is up, it turns into 'The match moved on' with BACK TO HOME.</div><div class="abs" style="left:80px;top:568px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>For the build.</b> The client remembers the match it is in (session id, mode); on boot it asks presence whether a party mate still advertises that match; REJOIN joins by session id with a rejoin token, and the host hands the AI-flown vessel back to the returning player instead of spawning a second one. Section 103 has the details.</div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

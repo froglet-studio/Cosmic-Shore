@@ -36,6 +36,9 @@ namespace CosmicShore.UI
         ButtonMode Mode = ButtonMode.Free;
         string LastFreeClaimedDatePrefKey = "DailyRewardLastFreeClaimedDate";
 
+        // The countdown second last written to TimeRemaining; -1 forces the next write.
+        int _shownSecond = -1;
+
         void Start()
         {
             if (AdButton) AdButton.gameObject.SetActive(false);
@@ -59,10 +62,17 @@ namespace CosmicShore.UI
                 if (secondsUntilMidnight > 0)
                 {
                     TimeSpan timespan = TimeSpan.FromSeconds(secondsUntilMidnight);
-                    TimeRemaining.text = string.Format("<mspace=.6em>{0:D2}:{1:D2}:{2:D2}",
-                                    timespan.Hours,
-                                    timespan.Minutes,
-                                    timespan.Seconds);
+                    // The label shows whole seconds: format it (a string and three boxed ints) only when
+                    // that second changes, not on every menu frame (#1485).
+                    int shown = timespan.Hours * 3600 + timespan.Minutes * 60 + timespan.Seconds;
+                    if (shown != _shownSecond)
+                    {
+                        _shownSecond = shown;
+                        TimeRemaining.text = string.Format("<mspace=.6em>{0:D2}:{1:D2}:{2:D2}",
+                                        timespan.Hours,
+                                        timespan.Minutes,
+                                        timespan.Seconds);
+                    }
                 }
                 else
                 {
@@ -83,6 +93,7 @@ namespace CosmicShore.UI
         void EnterClockMode()
         {
             Mode = ButtonMode.Clock;
+            _shownSecond = -1;
             BackgroundImage.sprite = ClockButtonBackgroundSprite;
             ClockButton.gameObject.SetActive(true);
             FreeButton.gameObject.SetActive(false);

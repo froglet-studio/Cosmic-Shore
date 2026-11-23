@@ -136,6 +136,15 @@ the explode payload the crystal manager already broadcasts (`NetworkExplodeParam
 every `ExplodeParams` field, by reflection test). `CrystalImpactData` grew by one
 `CrystalForgeOrigin` (45 bytes on a crystal-collect RPC).
 
+**One run per machine, carried by the owner.** Every peer's physics sees the hull touch the
+crystal, but only the vessel's OWNER reports it (`VesselImpactor.RouteCrystalPickup`); a spawned
+copy of another pilot's vessel stands down and waits for that broadcast. Until 2026-10-25 the copy's
+own contact fell into the offline branch and ran the chain too, so every watcher ran it twice: the
+first morph took the ring the first run laid, the second found none (the 0.15 s anti-spam below
+swallowed its ring), held the crystal's body for `targetGraceSeconds` and faded it out — a ghost
+omni crystal with no collider on every screen but the collector's (seen host-side when a joined
+client's Squirrel collected). Elemental crystals took the same path and had the same double run.
+
 **The morph does not lay the ring, and must not.** One authority for the ring; if it never comes
 (the explosion effect's 0.15 s anti-spam cooldown swallows a second pickup), the morph holds the
 crystal still for `targetGraceSeconds`, then fades it out with a warning that names the sibling.

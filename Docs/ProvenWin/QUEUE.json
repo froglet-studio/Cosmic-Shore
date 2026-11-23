@@ -1,0 +1,313 @@
+{
+ "entries": [
+  {
+   "id": "w1-charge-crystal-silenced-skip",
+   "title": "Charge crystal body skips its silenced crawl",
+   "status": "won",
+   "outcomeReason": "3.06-3.32x, bit-identical on D3D12/Vulkan/D3D11 (WINS W1)",
+   "lens": "silenced-but-computed",
+   "exactness": "bit-identical",
+   "owner": "Garrett",
+   "lane": "world-look",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "w2-spindle-voronoi6",
+   "title": "Spindle lace searches 6 Voronoi cells, not 9",
+   "status": "won",
+   "outcomeReason": "1.21-1.24x, within one display level, signed off (WINS W2)",
+   "lens": "narrowable-search",
+   "exactness": "display-identical",
+   "owner": "Garrett",
+   "lane": "world-look",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "w3-sky-dust-core",
+   "title": "HyperSea sky dust and core early-outs",
+   "status": "won",
+   "outcomeReason": "1.09x, bit-identical on all APIs (WINS W3)",
+   "lens": "multiplied-by-zero",
+   "exactness": "bit-identical",
+   "owner": "Shombith",
+   "lane": "world-look",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "w4-sky-stars",
+   "title": "HyperSea sky star pre-test",
+   "status": "won",
+   "outcomeReason": "1.06-1.09x on top of W3, bit-identical (WINS W4)",
+   "lens": "multiplied-by-zero",
+   "exactness": "bit-identical",
+   "owner": "Shombith",
+   "lane": "world-look",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "w5-space-hearts",
+   "title": "Space hearts stop re-deforming off screen",
+   "status": "won",
+   "outcomeReason": "MeshSkinning.Update 0.15 -> 0.05 ms with 200 off-screen hearts, identical (WINS W5)",
+   "lens": "unseen-work",
+   "exactness": "bit-identical",
+   "owner": "Yash",
+   "lane": "ecology",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "charge-crystal-envelope-cull",
+   "title": "ChargeCrystal envelope cull (#1880) on top of W1",
+   "status": "rejected",
+   "outcomeReason": "costs 1.6 % on D3D11 in the silenced state",
+   "lens": "multiplied-by-zero",
+   "exactness": "display-identical",
+   "owner": "Garrett",
+   "lane": "world-look",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "projectile-charge-field-cull",
+   "title": "ProjectileChargeField early-out (#1880)",
+   "status": "rejected",
+   "outcomeReason": "4 px differ at 8 bits; B faster in only 85 % of pairs",
+   "lens": "multiplied-by-zero",
+   "exactness": "approximate",
+   "owner": "",
+   "lane": "",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "spindle-voronoi4-poly",
+   "title": "Spindle 2x2 Voronoi with polynomial trig (#1878)",
+   "status": "rejected",
+   "outcomeReason": "1.5x but pixels move up to 140 levels",
+   "lens": "narrowable-search",
+   "exactness": "approximate",
+   "owner": "",
+   "lane": "",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "sky-nebula-skip",
+   "title": "Sky nebula region-mask early-out (S1, N1a, N1b)",
+   "status": "rejected",
+   "outcomeReason": "Vulkan moves 2.9-3.3 M px by up to 3 levels whether the skip is in place or at the call site",
+   "lens": "multiplied-by-zero",
+   "exactness": "bit-identical",
+   "owner": "Shombith",
+   "lane": "world-look",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "sealines-early-out",
+   "title": "SeaLines wave-line early-out (U1)",
+   "status": "rejected",
+   "outcomeReason": "bit-identical but 1.000x on desktop (fill/bandwidth-bound); phone untested",
+   "lens": "multiplied-by-zero",
+   "exactness": "bit-identical",
+   "owner": "Shombith",
+   "lane": "ui",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "doors-animator-sleep",
+   "title": "Scene-transition doors Animator sleep (UI-1)",
+   "status": "rejected",
+   "outcomeReason": "no change in GameCanvas or Menu_Main canvas cost",
+   "lens": "every-frame-writes",
+   "exactness": "bit-identical",
+   "owner": "Shombith",
+   "lane": "ui",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "menu-canvas-dirtiers",
+   "title": "Freeze Menu_Main's canvas writers (P1) / nest hidden screens (P3)",
+   "status": "inconclusive",
+   "outcomeReason": "freezing 42 writers changed nothing; BuildBatch runs on ~0.1 of frames; P3 read worse and looks suspect; needs a player measurement (P4)",
+   "lens": "every-frame-writes",
+   "exactness": "bit-identical",
+   "owner": "Shombith",
+   "lane": "ui",
+   "finished": "2026-11-12",
+   "added": "2026-11-12"
+  },
+  {
+   "id": "creature-bloom-pulse-skip",
+   "title": "Creature bodies skip the bloom pulse's Newton solve when openness is 0",
+   "where": [
+    "Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl:276-292"
+   ],
+   "runtimeWriters": "_IncorporealSpread from IncorporealDepth.Publish (Resources/IncorporealDepth.asset); _SpindleLodStrength 0.005/0.01 per body (SpindleLodSystem.cs:645); _SpindleLodLook2.y = 1 (Overt)",
+   "inUse": "Creature bodies under SpindleLodSystem (SpindleDepthGraph), ~50 per Garland/Lattice match",
+   "waste": "~9 sin/cos and 13 divides per body pixel multiplied by an exact 0 for bodies nearer than ~313 u or farther than ~700 u",
+   "change": "insert `[branch] if (!(openness > 0.0)) return 0.0;` after openness, nothing moved",
+   "exactness": "bit-identical",
+   "bench": "shader",
+   "probes": "probe_reach: return 1 always; probe_guard: return 1 when openness <= 0. The 2026-11-12 material bench never reached openness 0: set _WorldSpaceCameraPos explicitly and place the body 150 u from the eye (shaders_pass2.md SG-1)",
+   "negativeControl": "guard openness < 0.5 at 450 u",
+   "otherStates": "a body at 450 u (open band): identical and not slower",
+   "owner": "Garrett",
+   "lane": "world-look",
+   "gain": "20-30 % of body pixel ALU",
+   "confidence": "medium",
+   "lens": "multiplied-by-zero",
+   "status": "queued",
+   "added": "2026-11-12",
+   "baseCommit": "3479a8e3ba",
+   "fileHashes": {
+    "Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl": "70fc17291febd8dd517b2b81b35f4a1fbb108efe"
+   }
+  },
+  {
+   "id": "switch-ring-lace-skip",
+   "title": "Switch/race-gate rings compute the Voronoi lace only when its weight is above 0",
+   "where": [
+    "Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl:289-305"
+   ],
+   "runtimeWriters": "lace = IncorporealDepth_Openness(v.metric, _IncorporealSpread) when Overt; rings from ToyFactory.WireRingMaterial (girth 0.076, _Distance 2e8)",
+   "inUse": "Every gate race, Regatta, Serpent Time, Tandava, Menu_Main mode preview",
+   "waste": "3x3 Voronoi + fresnel^4 + pow per ring pixel multiplied by 0 for rings nearer than ~184 u or farther than ~700 u",
+   "change": "move the lace into the custom function behind `[branch] if (lace > 0.0)` (graph surgery: one Custom Function rewired)",
+   "exactness": "bit-identical",
+   "bench": "shader",
+   "probes": "probe_reach and probe_guard on the lace term",
+   "negativeControl": "gate on lace > 0.5 (must differ at 300-500 u)",
+   "otherStates": "",
+   "owner": "Garrett",
+   "lane": "world-look",
+   "gain": "2-3x per ring pixel; rings are thin",
+   "confidence": "medium",
+   "lens": "multiplied-by-zero",
+   "status": "queued",
+   "added": "2026-11-12",
+   "baseCommit": "3479a8e3ba",
+   "fileHashes": {
+    "Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl": "8406af98e141dc3498c5683078ae09d00ea2e87a"
+   }
+  },
+  {
+   "id": "paper-burn-ember-skip",
+   "title": "PrismPaperBurn skips the ember flicker noise outside the char band",
+   "where": [
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurn.shader:181-185"
+   ],
+   "runtimeWriters": "PrismBurnFxConfigSO (Resources/PrismBurnFxConfig.asset) holds PrismPaperBurnNear/Mid.mat; the burn stamp per prism",
+   "inUse": "Prisms while they burn (rare: prevalence ~0.05)",
+   "waste": "one valueNoise (8 hashes) per burning-paper pixel outside the char band, where the ember term is exactly 0",
+   "change": "wrap the flicker/ember block in `if (charT > 0.0 && burn.x >= 0.001)`",
+   "exactness": "bit-identical",
+   "bench": "shader",
+   "probes": "needs a fixed _Burn stamp in spec.floats so the char band exists in the bench",
+   "negativeControl": "branch on rim > 0 only (drops the char glow; must differ)",
+   "otherStates": "",
+   "owner": "Garrett",
+   "lane": "world-look",
+   "gain": "~30 % of the burn fragment while burning; ~0 of most frames",
+   "confidence": "high",
+   "lens": "multiplied-by-zero",
+   "status": "queued",
+   "added": "2026-11-12",
+   "baseCommit": "3479a8e3ba",
+   "fileHashes": {
+    "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurn.shader": "20b583633230225697a8bbb46b5fd929548c0d30"
+   }
+  },
+  {
+   "id": "membrane-frustum-cull",
+   "title": "CapsuleMembrane draws only the capsules the camera can see",
+   "where": [
+    "Assets/_Scripts/Game/Environment/CapsuleMembrane.cs:205-243"
+   ],
+   "runtimeWriters": "subdivisions 4 (2,562 capsules) on Desktop/MobileHigh (PlatformProfile membraneMaxSubdivisions -1); renderParams.camera never set; matrices at 20 Hz",
+   "inUse": "104 cell configs incl. Garland (the menu world) and Skim Race",
+   "waste": "63-87 % of 2,562 capsules vertex-shaded and clipped every frame from inside the sphere",
+   "change": "order-preserving per-camera sphere-frustum cull before RenderMeshInstanced, behind a static toggle the scene bench can flip",
+   "exactness": "bit-identical",
+   "bench": "scene",
+   "probes": "",
+   "negativeControl": "cull radius 0 (centre-point test): edge capsules vanish",
+   "otherStates": "every camera that renders the cell (mode preview, hangar stage): per-camera submission",
+   "owner": "Yash",
+   "lane": "ecology",
+   "gain": "1.5-1.85 M fewer triangles per frame at the menu; 0.1-0.3 ms on an RTX 3080, more on a phone",
+   "confidence": "medium",
+   "lens": "unseen-work",
+   "status": "queued",
+   "added": "2026-11-12",
+   "baseCommit": "3479a8e3ba",
+   "fileHashes": {
+    "Assets/_Scripts/Game/Environment/CapsuleMembrane.cs": "db7d4d2b19629d6f75f1892573bb76a997890b22"
+   }
+  },
+  {
+   "id": "jet-root-emission-off",
+   "title": "Vessel jets stop simulating their invisible root particle system",
+   "where": [
+    "Assets/Effects Library/Froglet Stuff/Prefabs/vfx_Projectile_02.prefab:1"
+   ],
+   "runtimeWriters": "No script touches jet particle systems; the root PS (fileID 2513661457047019541) loops at rate 10 with its renderer disabled; no overrides",
+   "inUse": "Every vessel jet on every machine (VesselJet.prefab): ~16-24 root systems in a 4-seat match",
+   "waste": "a particle system that spawns and ages ~10 particles nobody can ever see",
+   "change": "root EmissionModule.enabled = 0 (keep the component so Play/Stop cascade)",
+   "exactness": "bit-identical",
+   "bench": "scene",
+   "probes": "FIRST log root.particleCount for 60 frames in Play: if it never changes, reject (already free). The scene bench toggles Behaviours; a ParticleSystem emission toggle needs a small bench extension",
+   "negativeControl": "disable emission on the Particles child instead (sparkles vanish)",
+   "otherStates": "",
+   "owner": "Garrett",
+   "lane": "vessels",
+   "gain": "20-100 us per match frame, if the system is not already culled",
+   "confidence": "low",
+   "lens": "unseen-work",
+   "status": "queued",
+   "added": "2026-11-12",
+   "baseCommit": "3479a8e3ba",
+   "fileHashes": {
+    "Assets/Effects Library/Froglet Stuff/Prefabs/vfx_Projectile_02.prefab": "8a795d719c2403b4481c1c5a4ec2b95e49c1c51c"
+   }
+  },
+  {
+   "id": "auth-cameras-under-cover",
+   "title": "Authentication screen: park the cameras rendering behind the opaque background",
+   "where": [
+    "Assets/_Scenes/Authentication.unity:1"
+   ],
+   "runtimeWriters": "3 Bootstrap CM cameras with post + the Auth main camera, all under a full-screen opaque Background",
+   "inUse": "Authentication.unity (short exposure, every launch)",
+   "waste": "3 post stacks and 4 sky renders per frame nobody can see",
+   "change": "disable the cameras' rendering while the opaque cover is up",
+   "exactness": "bit-identical",
+   "bench": "scene",
+   "probes": "",
+   "negativeControl": "park one camera that IS visible (the picture must change)",
+   "otherStates": "",
+   "owner": "Shombith",
+   "lane": "ui",
+   "gain": "most of the GPU frame while on the Auth screen",
+   "confidence": "high",
+   "lens": "unseen-work",
+   "status": "inconclusive",
+   "added": "2026-11-12",
+   "baseCommit": "3479a8e3ba",
+   "fileHashes": {
+    "Assets/_Scenes/Authentication.unity": "cff6d4ab2e1d038c83da5d364921ef869a7705af"
+   },
+   "taken": "2026-11-12",
+   "outcomeReason": "the Authentication scene loads Menu_Main by itself within seconds of Play, so the scene bench cannot measure it standalone (HOLD)",
+   "finished": "2026-11-12"
+  }
+ ]
+}

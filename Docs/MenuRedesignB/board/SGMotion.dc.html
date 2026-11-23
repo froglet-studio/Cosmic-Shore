@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:0;padding:0 28px;height:52px;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.src{font-family:'Aldrich',sans-serif;font-size:14px;color:#747BAD;margin:0}
+.do{color:#99FF80}
+.dont{color:#FF4B3A}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 64px 72px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px"><span class="lab">7 · Motion</span><h1 class="h1">Short, useful, and rationed</h1><p class="body" style="color: #747BAD; max-width: 1500px">Anything the player triggers answers in under 200 ms. Ceremony is kept for two moments. Lists stagger 40 ms an item, eight at most. Nothing moves for its own sake while someone is reading or playing.</p></div><div style="display: flex; flex-direction: column; gap: 18px"><div style="display: grid; grid-template-columns: 160px 90px 1fr; align-items: center; gap: 20px"><span class="lab" style="color: #E6E9FF">micro</span><span class="small num">120 ms</span><div style="display: flex; align-items: center; gap: 16px"><span style="height: 14px; width: 192.0px; background: #00D4FF"></span><span class="small">Hover, tint, focus</span></div></div><div style="display: grid; grid-template-columns: 160px 90px 1fr; align-items: center; gap: 20px"><span class="lab" style="color: #E6E9FF">std</span><span class="small num">200 ms</span><div style="display: flex; align-items: center; gap: 16px"><span style="height: 14px; width: 320.0px; background: #00D4FF"></span><span class="small">Press, toggle, tab change</span></div></div><div style="display: grid; grid-template-columns: 160px 90px 1fr; align-items: center; gap: 20px"><span class="lab" style="color: #E6E9FF">panel</span><span class="small num">320 ms</span><div style="display: flex; align-items: center; gap: 16px"><span style="height: 14px; width: 512.0px; background: #00D4FF"></span><span class="small">A window, a screen slide, a toast</span></div></div><div style="display: grid; grid-template-columns: 160px 90px 1fr; align-items: center; gap: 20px"><span class="lab" style="color: #E6E9FF">ceremony</span><span class="small num">500 ms</span><div style="display: flex; align-items: center; gap: 16px"><span style="height: 14px; width: 800.0px; background: #00D4FF"></span><span class="small">Quest claim and end-of-match reveal only</span></div></div></div><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px"><div class="sl panel" style="padding: 22px 26px; display: flex; flex-direction: column; gap: 10px"><span class="lab">Allowed to move</span><p class="small"><span class="do">Moves</span> The sea lines behind a window, one loop in 45 s or slower</p><p class="small"><span class="do">Moves</span> A game card&#x27;s picture drift, at most 5 x 3 units</p><p class="small"><span class="do">Moves</span> A spinner while something loads or connects</p><p class="small"><span class="do">Moves</span> The hint that teaches the next control</p><p class="small"><span class="do">Moves</span> Window entrances and the START sweep</p></div><div class="sl panel" style="padding: 22px 26px; display: flex; flex-direction: column; gap: 10px"><span class="lab">Always still</span><p class="small"><span class="dont">Still</span> Tab underlines</p><p class="small"><span class="dont">Still</span> Panel backgrounds, lattices, halos</p><p class="small"><span class="dont">Still</span> The presence orb and party bonds</p><p class="small"><span class="dont">Still</span> Avatars, art, the settings gear</p></div></div><p class="src">Docs/UI_COLOR_RULES.md "Attention economy"; author_ui_lattice.py fails a sea faster than 40 s a loop.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

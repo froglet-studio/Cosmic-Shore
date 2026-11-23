@@ -430,6 +430,45 @@ namespace CosmicShore.Tests
             Assert.IsFalse(BrittleStarRules.DiskReaches(tilted * 5f, tilted, half, radius, 0f, 0f));
         }
 
+        // ------------------------------------------------------------------ level-5 upgrades (2026-11-03)
+
+        [Test]
+        public void ThrownSabers_NeedTheUpgradeChargeModeRigidCordsAndNoRegrowPending()
+        {
+            Assert.IsTrue(BrittleStarRules.CanThrowSabers(true, true, true, 1f, 0f));
+            Assert.IsFalse(BrittleStarRules.CanThrowSabers(false, true, true, 1f, 0f), "no upgrade");
+            Assert.IsFalse(BrittleStarRules.CanThrowSabers(true, false, true, 1f, 0f), "not in Charge Mode");
+            Assert.IsFalse(BrittleStarRules.CanThrowSabers(true, true, false, 1f, 0f), "whips (RT released) are not thrown");
+            Assert.IsFalse(BrittleStarRules.CanThrowSabers(true, true, true, 0.5f, 0f), "cords still growing out");
+            Assert.IsFalse(BrittleStarRules.CanThrowSabers(true, true, true, 1f, 0.3f), "new cords still regrowing");
+        }
+
+        [Test]
+        public void SpeedRoll_IsNothingInTheDeadzoneAndProportionalOutsideIt()
+        {
+            Assert.AreEqual(Vector2.zero, BrittleStarRules.SpeedRollRates(new Vector2(0.1f, 0.05f), 0.2f, 220f, 90f));
+            var full = BrittleStarRules.SpeedRollRates(new Vector2(1f, 0f), 0.2f, 220f, 90f);
+            Assert.AreEqual(220f, full.x, 1e-3f);
+            Assert.AreEqual(0f, full.y, 1e-3f);
+            var half = BrittleStarRules.SpeedRollRates(new Vector2(-0.5f, 0.5f), 0.2f, 220f, 90f);
+            Assert.AreEqual(-110f, half.x, 1e-3f);
+            Assert.AreEqual(45f, half.y, 1e-3f);
+            // An over-long stick is clamped to the rim, never faster than the authored rate.
+            Assert.LessOrEqual(BrittleStarRules.SpeedRollRates(new Vector2(2f, 0f), 0.2f, 220f, 90f).x, 220f + 1e-3f);
+        }
+
+        [Test]
+        public void Burst_ReachesBodiesWithinItsRadiusPlusTheirExtent()
+        {
+            Assert.IsTrue(BrittleStarRules.SphereReaches(new Vector3(0f, 39f, 0f), 40f, 0f));
+            Assert.IsFalse(BrittleStarRules.SphereReaches(new Vector3(0f, 45f, 0f), 40f, 0f));
+            Assert.IsTrue(BrittleStarRules.SphereReaches(new Vector3(0f, 45f, 0f), 40f, 6f));
+            // Off the ring's plane, where the flat disk misses (DiskReaches_...): the core still reaches.
+            Assert.IsFalse(BrittleStarRules.DiskReaches(new Vector3(10f, 0f, 20f), Vector3.forward, 0.88f, 392f, 0.5f, 0f));
+            Assert.IsTrue(BrittleStarRules.SphereReaches(new Vector3(10f, 0f, 20f), 40f, 0.5f));
+            Assert.IsFalse(BrittleStarRules.SphereReaches(Vector3.zero, 0f, 1f), "radius 0 = no burst");
+        }
+
         [Test]
         public void Range_IsSpeedTimesTwoTOverPi()
         {

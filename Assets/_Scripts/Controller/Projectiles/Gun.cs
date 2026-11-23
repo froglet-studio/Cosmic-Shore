@@ -51,6 +51,26 @@ namespace CosmicShore.Gameplay
         public void Initialize(IVesselStatus vesselStatus)
         {
             _vesselStatus = vesselStatus;
+            PaintOwnDomain();
+        }
+
+        Renderer _renderer;
+        bool _rendererResolved;
+
+        /// <summary>
+        /// A gun that draws a body of its own (the AI Gunner's) is authored with the domain placeholder: it wears its
+        /// vessel's domain ship material, read live like the domain a round is fired in (ThemeManagerDataContainerSO
+        /// .PaintDomainPlaceholders).
+        /// </summary>
+        void PaintOwnDomain()
+        {
+            if (_vesselStatus == null || !ThemeManager.Data) return;
+            if (!_rendererResolved)
+            {
+                TryGetComponent(out _renderer);
+                _rendererResolved = true;
+            }
+            if (_renderer) ThemeManager.Data.PaintDomainPlaceholders(_renderer, _vesselStatus.Domain);
         }
 
         /// <summary>
@@ -292,6 +312,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("Gun.FireSingle - VesselStatus is null!");
                 return;
             }
+            PaintOwnDomain();   // domains re-pick at runtime: the body follows, as the round's colour does
 
             Vector3 direction = customDirection ?? containerTransform.forward;
             Vector3 spawnPos  = containerTransform.position;   // using container for spawn point

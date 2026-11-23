@@ -42,53 +42,81 @@ namespace CosmicShore.ScriptableObjects
                  "ElementalBarsView.Build() stamps these values onto its own RectTransform, so " +
                  "the display is identical across the fleet regardless of how a vessel's HUD " +
                  "authored the container. Turn off only for a deliberate per-vessel layout.")]
-        public bool enforceStandardPlacement = true;
+        [SerializeField] bool enforceStandardPlacement = true;
+        public bool EnforceStandardPlacement => enforceStandardPlacement;
         [Tooltip("Anchors on the HUD root (default: screen centre).")]
-        public Vector2 standardAnchorMin = new(0.5f, 0.5f);
-        public Vector2 standardAnchorMax = new(0.5f, 0.5f);
-        public Vector2 standardPivot = new(0.5f, 0f);
+        [SerializeField] Vector2 standardAnchorMin = new(0.5f, 0.5f);
+        public Vector2 StandardAnchorMin => standardAnchorMin;
+        [SerializeField] Vector2 standardAnchorMax = new(0.5f, 0.5f);
+        public Vector2 StandardAnchorMax => standardAnchorMax;
+        [SerializeField] Vector2 standardPivot = new(0.5f, 0f);
+        public Vector2 StandardPivot => standardPivot;
         [Tooltip("Offset from the anchor — the Squirrel's reference placement (bottom-right cluster).")]
-        public Vector2 standardAnchoredPosition = new(727.2f, -332f);
-        public Vector2 standardSize = new(464.5f, 100f);
+        [SerializeField] Vector2 standardAnchoredPosition = new(727.2f, -332f);
+        public Vector2 StandardAnchoredPosition => standardAnchoredPosition;
+        [SerializeField] Vector2 standardSize = new(464.5f, 100f);
+        public Vector2 StandardSize => standardSize;
 
         [Header("Per-element petal sprites")]
         [Tooltip("One white petal silhouette per element. Looked up by element; order does not matter.")]
         [SerializeField] private ElementPetal[] petals;
 
         [Header("Element tick colours (per-petal value)")]
-        [Tooltip("-1 : fire")]  public Color fireColor  = new(1f,    0.33f, 0.10f, 1f);
-        [Tooltip(" 0 : grey")]  public Color greyColor  = new(0.51f, 0.51f, 0.54f, 1f);
-        [Tooltip(" 1 : white")] public Color whiteColor = new(0.96f, 0.96f, 1f,    1f);
-        [Tooltip(" 2 : blue")]  public Color blueColor  = new(0.22f, 0.51f, 1f,    1f);
-        [Tooltip(" 3 : lime")]  public Color limeColor  = new(0.59f, 0.92f, 0.16f, 1f);
+        [SerializeField, Tooltip("-1 : fire")] Color fireColor  = new(1f,    0.33f, 0.10f, 1f);
+        public Color FireColor => ColorTrace.Retrace(ColorTrace.Ui, fireColor);
+        [SerializeField, Tooltip(" 0 : grey")] Color greyColor  = new(0.51f, 0.51f, 0.54f, 1f);
+        public Color GreyColor => ColorTrace.Retrace(ColorTrace.Ui, greyColor);
+        [SerializeField, Tooltip(" 1 : white")] Color whiteColor = new(0.96f, 0.96f, 1f,    1f);
+        public Color WhiteColor => ColorTrace.Retrace(ColorTrace.Ui, whiteColor);
+        [SerializeField, Tooltip(" 2 : blue")] Color blueColor  = new(0.22f, 0.51f, 1f,    1f);
+        public Color BlueColor => ColorTrace.Retrace(ColorTrace.Ui, blueColor);
+        [SerializeField, Tooltip(" 3 : lime")] Color limeColor  = new(0.59f, 0.92f, 0.16f, 1f);
+        public Color LimeColor => ColorTrace.Retrace(ColorTrace.Ui, limeColor);
         [Tooltip("Flash colour on a petal that downgrades, before it settles to its tick colour.")]
-        public Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
+        [SerializeField] Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
+        public Color DebuffFlashColor => ColorTrace.Retrace(ColorTrace.Ui, debuffFlashColor);
 
         [Header("Juice - petal transitions")]
-        public float buffPopScale        = 1.3f;
-        public float buffPopDuration     = 0.22f;
-        public float debuffShakeDuration = 0.20f;
-        public float debuffShakeStrength = 8f;
+        [SerializeField] float buffPopScale        = 1.3f;
+        public float BuffPopScale => buffPopScale;
+        [SerializeField] float buffPopDuration     = 0.22f;
+        public float BuffPopDuration => buffPopDuration;
+        [SerializeField] float debuffShakeDuration = 0.20f;
+        public float DebuffShakeDuration => debuffShakeDuration;
+        [SerializeField] float debuffShakeStrength = 8f;
+        public float DebuffShakeStrength => debuffShakeStrength;
 
         [Header("Juice - haptics")]
-        public bool  hapticOnDebuff        = true;
-        public float debuffHapticAmplitude = 0.6f;
-        public float debuffHapticFrequency = 0.5f;
-        public float debuffHapticDuration  = 0.15f;
+        [SerializeField] bool hapticOnDebuff        = true;
+        public bool HapticOnDebuff => hapticOnDebuff;
+        [SerializeField] float debuffHapticAmplitude = 0.6f;
+        public float DebuffHapticAmplitude => debuffHapticAmplitude;
+        [SerializeField] float debuffHapticFrequency = 0.5f;
+        public float DebuffHapticFrequency => debuffHapticFrequency;
+        [SerializeField] float debuffHapticDuration  = 0.15f;
+        public float DebuffHapticDuration => debuffHapticDuration;
 
         [Header("Juice - label icon punch")]
-        public float iconPunchDuration  = 0.25f;
-        public float iconPunchScale     = 1.4f;
-        public float colorTweenDuration = 0.35f;
+        [SerializeField] float iconPunchDuration  = 0.25f;
+        public float IconPunchDuration => iconPunchDuration;
+        [SerializeField] float iconPunchScale     = 1.4f;
+        public float IconPunchScale => iconPunchScale;
+        [SerializeField] float colorTweenDuration = 0.35f;
+        public float ColorTweenDuration => colorTweenDuration;
 
         [Header("Juice - joust")]
-        public Color joustFlashColor = Color.red;
+        [SerializeField] Color joustFlashColor = Color.red;
+        public Color JoustFlashColor => ColorTrace.Retrace(ColorTrace.Ui, joustFlashColor);
 
         [Header("Juice - drift")]
-        public float  driftRotationAngle    = 15f;
-        public float  driftRotationDuration = 0.2f;
-        public Color  driftTintColor        = new(0.7f, 0.9f, 1f, 1f);
-        public Sprite doubleDriftSprite;
+        [SerializeField] float driftRotationAngle    = 15f;
+        public float DriftRotationAngle => driftRotationAngle;
+        [SerializeField] float driftRotationDuration = 0.2f;
+        public float DriftRotationDuration => driftRotationDuration;
+        [SerializeField] Color driftTintColor        = new(0.7f, 0.9f, 1f, 1f);
+        public Color DriftTintColor => ColorTrace.Retrace(ColorTrace.Ui, driftTintColor);
+        [SerializeField] Sprite doubleDriftSprite;
+        public Sprite DoubleDriftSprite => doubleDriftSprite;
 
         /// <summary>Number of petals per flower (5-fold symmetry).</summary>
         public const int PetalCount = 5;
@@ -99,14 +127,14 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Highest element level - all petals lime.</summary>
         public const int MaxLevel = PetalCount * 3;
 
-        /// <summary>Maps a per-tick value {-1..3} to its spec colour.</summary>
+        /// <summary>Maps a per-tick value {-1..3} to its spec colour, as the worn colour set paints it.</summary>
         public Color ColorForTick(int v) => v switch
         {
-            <= -1 => fireColor,
-            0     => greyColor,
-            1     => whiteColor,
-            2     => blueColor,
-            _     => limeColor, // >= 3
+            <= -1 => FireColor,
+            0     => GreyColor,
+            1     => WhiteColor,
+            2     => BlueColor,
+            _     => LimeColor, // >= 3
         };
 
         /// <summary>Returns the petal sprite for an element, or null if none is configured.</summary>

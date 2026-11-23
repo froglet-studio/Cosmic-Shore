@@ -170,7 +170,10 @@ namespace CosmicShore.Gameplay
             // The reconstruction path re-enters here with a pinned pose, so it must NOT be gated
             // out - it passes an explicit domainOverride, which is exactly what a decision that
             // came off the wire looks like and what a local roll never has.
-            if (config && config.NetworkSynced && !fromReplication && !FloraNetworkSync.IsSimAuthority)
+            // A SATELLITE cell (a voyage corridor's world, a mode preview) is stood by each peer for itself and has no
+            // network identity (CellConveyor strips it), so every peer seeds every species there, replicated or not
+            // (Docs/Voyages/PARTY.md §2; Garrett's claude/voyage-coop).
+            if (config && config.NetworkSynced && !fromReplication && !FloraNetworkSync.IsSimAuthority && !host.IsSatellite)
                 return null;
 
             // IsRecording-guarded label: this runs for EVERY gameplay spawn, so the disarmed
@@ -333,6 +336,13 @@ namespace CosmicShore.Gameplay
             pop.domain = domain;
             pop.Goal = goal;
 
+            // Per-world species data (FaunaConfigurationSO.SpeciesDataOverride) is bound BEFORE
+            // Initialize: a colony builds its chain, a substrate claims its block and a builder
+            // seeds its lattice in there, all off the data asset. Same seam argument as the
+            // lineage bind below - this is the one Instantiate every producer reaches.
+            if (cfg && pop is ISpeciesDataOverride speciesData)
+                speciesData.BindSpeciesData(cfg);
+
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
@@ -477,6 +487,9 @@ namespace CosmicShore.Gameplay
         public static Flora PlantFlora(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
         {
             if (!host || !floraCfg) return null;
+            // A scattering satellite (a voyage cell, Cell.ScatterLifeSpawns) roots every plant somewhere in its open water.
+            if (host.IsSatellite && host.ScatterLifeSpawns)
+                return SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, RandomPointInCytoplasm(host));
             return host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up)
                 ? SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up)
                 : SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
@@ -503,7 +516,8 @@ namespace CosmicShore.Gameplay
             // the banded placement is here - a gate added to one spawner is dead code in every
             // cell that runs the other. Unreplicated species (the default) fall straight through
             // and every peer seeds its own, exactly as today.
-            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return null;
+            // A satellite cell is each peer's own (see SpawnFlora): every peer seeds it, nothing there replicates.
+            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority && !host.IsSatellite) return null;
 
             Vector3 goal = fallbackGoal;
             Vector3? position = fallbackPosition;
@@ -517,13 +531,22 @@ namespace CosmicShore.Gameplay
                     goal + UnityEngine.Random.insideUnitSphere * BandSpawnJitter);
             }
 
+            // A scattering satellite (a voyage cell, Cell.ScatterLifeSpawns): an unbanded, unpenned creature is born at
+            // its own fresh point in the cell's open water and seeks it first, so a wave spreads through the whole cell
+            // instead of landing on one feeding ground. Its later goals are its own, as everywhere.
+            else if (host.IsSatellite && host.ScatterLifeSpawns && !host.HasFaunaPen)
+            {
+                goal = RandomPointInCytoplasm(host);
+                position = goal;
+            }
+
             // The CELL's own pen (outer containment + inner exclusion) applies to the birth
             // POSITION too. Fauna.Goal clamps itself in its setter, but a creature born inside a
             // closed pen would already be standing where it is not allowed to be - which reads as
             // the pen leaking. Applied here, at the one spawn call both spawners share, for the
             // same reason banded placement lives here (see the warning above). No-op for every
             // biome that authors no pen.
-            if (host.FaunaExclusionRadius > 0f || host.FaunaContainmentRadius > 0f)
+            if (host.HasFaunaPen)
             {
                 // No explicit position means "the cell centre", which is the one point a closed
                 // inner pen definitely forbids - so resolve it here rather than letting the

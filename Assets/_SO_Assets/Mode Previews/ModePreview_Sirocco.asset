@@ -15,7 +15,7 @@ MonoBehaviour:
   Mode: 61
   Notes: 'Reuses Rampage''s cactus forest outright - referenced, not forked, exactly as the mode
     does; intensity is the forest''s density. What the preview teaches is Dust mode over the
-    forest. Vessel pinned to Butterfly(13).'
+    forest. Vessel pinned to TigerMoth(29).'
   PreviewCell: {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
@@ -26,7 +26,7 @@ MonoBehaviour:
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
-  Vessel: 13
+  Vessel: 29
   ObjectiveText: Skim low over the forest in Dust mode
   ObjectiveMetric: 5
   ObjectiveTarget: 0

@@ -13,6 +13,40 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public DomainColorSet BlueColors;
         [SerializeField] public EnvironmentColorSet EnvironmentColors;
 
+        [Header("Traced colours")]
+        [Tooltip("Every colour the game draws outside the blocks above (the sky, materials, particles, the UI's own " +
+                 "colours, configs and code), keyed by the role it is drawn in and its Photic value " +
+                 "(Docs/VesselModels/COLOR_TRACE.md). Photic holds the baked values and every other set its own, written " +
+                 "by Tools/Build/author_colour_set_assets.py from colour_trace.json. To retune one for this set, put it in " +
+                 "colour_sets.json's set.traced and run the writer (an edit here is drift the writer's --check reports).")]
+        [SerializeField] public TracedColor[] TracedColors = System.Array.Empty<TracedColor>();
+
+        System.Collections.Generic.Dictionary<string, Color> _traced;
+        int _tracedCount = -1;
+
+        /// <summary>
+        /// This set's colour for the traced colour <paramref name="id"/> (<see cref="ColorTrace"/> ids: a role and a
+        /// Photic value, or a UI theme token). False when the set does not trace it.
+        /// </summary>
+        public bool TryGetTracedColor(string id, out Color color)
+        {
+            var list = TracedColors ?? System.Array.Empty<TracedColor>();
+            if (_traced == null || _tracedCount != list.Length)
+            {
+                _traced = new System.Collections.Generic.Dictionary<string, Color>(list.Length);
+                foreach (var t in list)
+                    if (!string.IsNullOrEmpty(t.Id)) _traced[t.Id] = t.Color;
+                _tracedCount = list.Length;
+            }
+            return _traced.TryGetValue(id ?? string.Empty, out color);
+        }
+
+        void OnValidate()
+        {
+            _traced = null;
+            ColorTrace.Invalidate();
+        }
+
         public bool TryGetColorSetByDomain(Domains domain,  out DomainColorSet colorSet)
         {
             colorSet = domain switch
@@ -47,8 +81,8 @@ namespace CosmicShore.ScriptableObjects
         /// mass around it.
         ///
         /// <para><b>Do not reach for a crystal colour to say "this belongs to domain X".</b>
-        /// <c>DullCrystalColor</c> is authored (0,0,0) on Jade, Ruby AND Gold in the shipped
-        /// <c>OriginalColorSetSO</c> — the domain crystals are deliberately near-black bodies with a
+        /// <c>DullCrystalColor</c> is authored (0,0,0) on Jade, Ruby AND Gold in the
+        /// <c>PhoticColorSetSO</c> — the domain crystals are deliberately near-black bodies with a
         /// bright fresnel rim, which is right on a faceted crystal in the world and renders as a
         /// black square in a UI slot. <c>BrightCrystalColor</c> tops out at 0.75 value. The domain UI
         /// colour is the palette's answer to "what colour is this team", and this is that colour at
@@ -75,7 +109,7 @@ namespace CosmicShore.ScriptableObjects
         /// (<c>Docs/PALETTE.md §2.2</c>). Anything that is NOT a crystal — a prism, a UI chip —
         /// has no such composition, so painting it with the dull half alone gives it a dark olive
         /// where the player expects the free-pickup lime. The shipped
-        /// <c>OriginalColorSetSO</c> authors <c>DarkCTA</c> at (0.28, 0.50, 0.08).</para>
+        /// <c>PhoticColorSetSO</c> authors <c>DarkCTA</c> at (0.28, 0.50, 0.08).</para>
         ///
         /// <para>Returns the CTA hue with its brightest channel driven to 1, exactly as the domain
         /// sibling does. Alpha 0 when the palette does not author a CTA at all (both inactive
@@ -100,8 +134,8 @@ namespace CosmicShore.ScriptableObjects
         /// <para><b>The danger tier has no colour fields of its own</b> (see
         /// <see cref="GetPrismKindColors"/>): it is the domain's SHIELDED base face under the
         /// shared, domain-independent <see cref="EnvironmentColorSet.Danger"/> rim, and the RIM is
-        /// the half that says dangerous. So this returns that rim - which the shipped
-        /// <c>OriginalColorSetSO</c> authors HDR at (1.498, 0.006, 0.007) with <b>alpha 0</b>, the
+        /// the half that says dangerous. So this returns that rim - which the
+        /// <c>PhoticColorSetSO</c> authors HDR at (1.498, 0.006, 0.007) with <b>alpha 0</b>, the
         /// same trap <see cref="GetCtaSignalColor"/> records. Normalised here to the hue with its
         /// brightest channel driven to 1 and alpha 1.</para>
         ///
@@ -252,6 +286,23 @@ namespace CosmicShore.ScriptableObjects
         }
     }
 
+    /// <summary>
+    /// One colour the game draws outside a colour set's domain and environment blocks, as this set paints it. The id
+    /// (<see cref="ColorTrace"/>) is <c>role:RRGGBB</c>: the role it is drawn in (ui or world) and its Photic value,
+    /// the colour found on screen; or <c>ui-token:&lt;Token&gt;</c>, a UI theme token the set gives directly.
+    /// </summary>
+    [System.Serializable]
+    public struct TracedColor
+    {
+        [Tooltip("The colour's id: its role (ui or world) and its Photic value as RRGGBB (xN.NN when HDR), or ui-token:<Token>.")]
+        public string Id;
+        [Tooltip("This set's colour for it, stored as the place it is drawn stores colours (materials and UI: sRGB, HDR " +
+                 "kept). Photic's is the baked value the game was authored with.")]
+        [ColorUsage(true, true)] public Color Color;
+        [Tooltip("Where it is drawn (written by Tools/Build/colour_trace.py, for people tuning it).")]
+        public string Note;
+    }
+
     [System.Serializable]
     public class DomainColorSet
     {
@@ -296,13 +347,35 @@ namespace CosmicShore.ScriptableObjects
         [ColorUsage(true, true)] [SerializeField] public Color DarkCTA;
 
         [Tooltip("Scales the CTA pair for the four ELEMENTAL crystals so the omni reads as the hero " +
-                 "pickup. A pure scalar, deliberately: it cannot move the hue, so all five crystals " +
-                 "stay in one lime family by construction - which a second authored colour pair " +
-                 "could silently break. It also dims correctly whichever role each colour plays " +
+                 "pickup. A pure scalar: it changes brightness only. The hue each element wears comes " +
+                 "from ElementalCrystalColors. It also dims correctly whichever role each colour plays " +
                  "(TimeCrystalGraph swaps body and rim relative to the other graphs).")]
         [Range(0f, 1f)] [SerializeField] public float ElementalCrystalDimming = 0.45f;
 
+        [Tooltip("Each free ELEMENTAL crystal's lime, sRGB, in the HUD's order (Charge, Mass, Space, " +
+                 "Time; index = Element - 1). The Wrasse's four lasso shades: four distinct hues, " +
+                 "saturations and values inside lime's boundary against Jade, Ruby, Gold, Blue and " +
+                 "Fire, so the Mass crystal no longer wears the omni's lime (Garrett, 2026-10-27). A " +
+                 "tinted crystal takes this colour at the CTA pair's brightness (max channel), then " +
+                 "ElementalCrystalDimming; Mass, Space and Time wear it on their own materials. " +
+                 "WRITTEN by Tools/Build/kite_mote_colors.py, which derives them from the live " +
+                 "palette; --check fails if they drift. Alpha 0 = unauthored: that element wears the CTA.")]
+        [SerializeField] public Color[] ElementalCrystalColors = new Color[4];
+
         [ColorUsage(true, true)] [SerializeField] public Color Danger;
+
+        /// <summary>
+        /// The authored colour of an elemental crystal (<see cref="ElementalCrystalColors"/>), or false
+        /// when the element has none (not one of the four, or alpha 0).
+        /// </summary>
+        public bool TryGetElementalCrystalColor(Element element, out Color color)
+        {
+            int i = (int)element - 1;
+            color = ElementalCrystalColors != null && i >= 0 && i < ElementalCrystalColors.Length
+                ? ElementalCrystalColors[i]
+                : default;
+            return color.a > 0f;
+        }
     }
 
     public static class EnvironmentColorSetExtensions
@@ -312,5 +385,17 @@ namespace CosmicShore.ScriptableObjects
         /// crystal tint would quietly fade the mesh out instead of dimming it.
         /// </summary>
         public static Color ScaleRGB(this Color c, float k) => new(c.r * k, c.g * k, c.b * k, c.a);
+
+        /// <summary>
+        /// <paramref name="hue"/>'s colour at <paramref name="c"/>'s brightness: the hue's RGB scaled by
+        /// <paramref name="c"/>'s brightest channel, with <paramref name="c"/>'s alpha. A hue whose
+        /// brightest channel is 1 lands exactly on <paramref name="c"/>'s peak (so a bloom tuned on that
+        /// peak still holds), and a darker hue stays darker by the same ratio.
+        /// </summary>
+        public static Color WithHueOf(this Color c, Color hue)
+        {
+            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            return new Color(hue.r * peak, hue.g * peak, hue.b * peak, c.a);
+        }
     }
 }

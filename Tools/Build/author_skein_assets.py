@@ -74,6 +74,7 @@ def emit(path: str, text: str):
     success. A --check that never compares is a false green - it reports what the script would
     do rather than whether the tree matches it."""
     full = rel(path)
+    text = aml.placeholder_sounds(path, text)  # listed placeholder sounds survive a re-run
     existing = open(full, encoding="utf-8").read() if os.path.exists(full) else None
     state = "same" if existing == text else ("new" if existing is None else "DIFFERS")
     WRITES.append((path, state))
@@ -373,7 +374,7 @@ def arcade_card(icon_active, icon_inactive, card_bg) -> str:
             + f"  CardBackground: {{fileID: 21300000, guid: {card_bg}, type: 3}}\n"
             + "  GolfScoring: 1\n  SceneName: MinigameSkein\n"
             + f"  Vessels:\n  - {{fileID: 11400000, guid: {EXISTING['SO_Class_Urchin']}, type: 2}}\n"
-            + "  MinPlayersAllowed: 2\n  MaxPlayersAllowed: 4\n"
+            + "  MinPlayersAllowed: 2\n  MaxPlayersAllowed: 9\n"
             + "  MinDomainsAllowed: 2\n  MaxDomainsAllowed: 3\n"
             + "  MinIntensity: 1\n  MaxIntensity: 4\n"
             + "  ViewUserAction: 0\n  PlayUserAction: 0\n"

@@ -114,7 +114,7 @@ a 4-decimal match, so the collider was fitted to THIS mesh at THIS import scale)
      geometry keeps its name, so it keeps its Unity fileID; the file keeps its guid … the prefab and the .meta did not change";
      step 10 (`:5700-5704`) adds "It resolves by fileID, which `fileIdsGeneration: 2` derives from the mesh NAME — unchanged
      — but that is reasoning, not a test."
-2. **The id is NOT derivable offline, and cannot be borrowed.** `.claude/skills/asset-surgery/SKILL.md:389-396`: MD4 over
+2. **The id is NOT derivable offline, and cannot be borrowed.** `.claude/skills/asset-surgery/references/YAML_SURGERY.md:212-219`: MD4 over
    name/class, both byte orders, all offsets, seven known meshes → zero hits; renaming a node in ANOTHER file to match a
    name whose id a different FBX records (the two manta files made it look safe) was tried on the omni crystal's triangle
    shells (2026-10) and "Unity did not reproduce the id and the shells rendered nothing". Reproduced here: MD4 (verified

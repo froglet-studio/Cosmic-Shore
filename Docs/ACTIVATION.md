@@ -38,7 +38,7 @@ the gate; the later quest phases still wait for it.
 | **Breadcrumb / call-to-action** | same doc | **Retired 2026-09-08** (`retire_call_to_action.py --check` guards it). The training branch's spotlight is its replacement; it follows the guided-path rule below |
 | **Arcade card teaching** — controls panel, `GameBriefingView` tips | `Docs/ArcadeLaunch/ARCHITECTURE.md` | Controls panel live. **`SO_ArcadeGame.Tips` is authored on 2 of 56 cards** |
 | **In-match guidance** — objective arrows, `GoalStack`, idle-hint toasts | `Assets/_Scripts/UI/GameToastSystem/GAME_TOASTS.md` | Live |
-| **Activation analytics** | `Docs/Analytics/event-taxonomy.md` §4 | `ftue_step_completed` / `ftue_phase_completed` / `ftue_completed` **landed 2026-10-15** (§5). `session_started`, `game_quit_midway`, `network_disconnected` still unbuilt. PostHog funnel + D1/D7 dashboards **not built** |
+| **Activation analytics** | `Docs/Analytics/event-taxonomy.md` §4 | `ftue_step_completed` / `ftue_phase_completed` / `ftue_completed` **landed 2026-10-15** (§5). `session_started`, `game_quit_midway`, `network_disconnected` still unbuilt. Funnel + D1/D7 dashboards: in the Froglet Analytics console (Funnels, Retention) |
 | **First-session validation** — watch 3-5 first-timers | `STEAM_EA_INVESTOR_CHECKPOINT.html` C2 / E7 | Not run (nothing to watch while the gate hides the FTUE) |
 | **Starter economy** | `Docs/ECONOMY_AND_PRICING.md` | Open: "a new player who loses their first several games earns zero, sees a 4000-crystal price tag, and has no visible path to it" |
 
@@ -68,13 +68,16 @@ System's `ReleaseCompanion` (`Docs/HomeHub/ARCHITECTURE.md`).
 
 ## 4. Who is on what (avoid collisions)
 
+**Shombith leads activation; Caleb heads FTUE with him; no one else is on it** (Shombith, 2026-10-26). Every
+activation task on `Docs/TEAM_TASKS.md` names them; the rows below are the branches the work touches, not owners.
+
 | Work | Branch / PR | Collides on |
 |---|---|---|
 | Microgame Training + first-login guide | merged into `Ys-bleeding-edge` 2026-10-15 from `claude/exciting-bell-69b398` (no PR of its own; last commit 2026-10-13) | `QuestGraphRunner`, quest nodes, `Menu_Main.unity`, `ArcadeExploreView`, `ScreenSwitcher`, `ModalWindowManager`, `MenuHubButton`, `GateRaceController` (the course-source refactor) |
 | Menu Redesign B — every Menu_Main screen re-styled (Shombith owns Menu_Main UI, per the team roster) | `claude/new-session-76hnyc` (no PR) | `Menu_Main.unity` (heavy), `QuestTrackView`, `ProfileScreen`, `ArcadeExploreView`, `ArcadeGameConfigureModal`; adds a `tooltip` colour token to `UIThemeSO` |
 | Regatta AI seats, racing AI | PR #1098 (`Ys-bleeding-edge`) | `ServerPlayerVesselInitializerWithAI`, `ArcadeGameConfigureModal`; the AI seating any new-player bot would use |
 | Quest dialogue copy (C9) | Caleb, Garrett, Shombith | `QuestDialogueNode` content |
-| Funnel dashboards (C3) | Ian | PostHog |
+| Funnel dashboards (C3) | Ian | Froglet Analytics console |
 
 **What the merge cost (2026-10-15)**, for whoever brings `Ys-bleeding-edge` into `bleeding-edge`: three
 text conflicts (`CLAUDE.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md`, `Tools/Build/check_generated_assets.py`,
@@ -99,7 +102,7 @@ The quest graph raises `FTUEEventManager.OnQuestNodeCompleted` at the moment eac
 | `ftue_completed` | `quest_id`, `seconds_since_launch` (int) |
 
 **Declare all three, and every parameter, in the UGS dashboard Event Manager**, or UGS discards them
-silently (PostHog receives them either way). A debug single-phase run (`debugPhaseOverride`) persists
+silently (Froglet Analytics receives them either way). A debug single-phase run (`debugPhaseOverride`) persists
 nothing and raises nothing. On `Ys-bleeding-edge` the first-login phase runs under the master unlock,
 so its steps and its `ftue_phase_completed` (phase 0) fire in a default build - the guide's funnel is
 measurable now. The later phases wait for the gate, and stay at zero until it flips.
@@ -108,9 +111,9 @@ measurable now. The later phases wait for the gate, and stay at zero until it fl
 
 ## 6. The path to activation, in order
 
-**Every step below that needs a person is a ticket on Froglet Tasks** (GitHub issues labelled `team-task`;
-`python3 Tools/Build/team_tasks.py list --area Activation`). Tickets name nobody; take one, naming your branch,
-before starting it.
+**Every step below that needs a person is on the swim lanes board** (`/swimlanes`; hand-offs through
+`/handoff-open` and `/handoff-for-test`). Hand-offs name nobody; claim the lane (`handoff.py claim <lane>`) before
+starting it.
 
 1. ~~**Land the training branch.**~~ Merged into `Ys-bleeding-edge` 2026-10-15 (§4). It reaches
    `bleeding-edge` with this branch's next PR.

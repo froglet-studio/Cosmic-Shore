@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class TandavaGoldBurst
     {
-        // a fallback gold for a theme with no Gold colour set (the shipped OriginalColorSetSO's gold, normalised)
+        // a fallback gold for a theme with no Gold colour set (the shipped PhoticColorSetSO's gold, normalised)
         static readonly Color s_bright = new(1f, 0.82f, 0.25f), s_dark = new(0.42f, 0.27f, 0.04f);
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
         public static int Burst(ThemeManagerDataContainerSO theme, Vector3 centre, IReadOnlyList<Vector3> from, int shards,
                                 float speed, float scale, PrismKind kind = PrismKind.Plain)
         {
-            Color bright = s_bright, dark = s_dark;
+            Color bright = ColorTrace.Retrace(ColorTrace.World, s_bright), dark = ColorTrace.Retrace(ColorTrace.World, s_dark);
             if (theme && theme.ColorSet && theme.ColorSet.TryGetPrismKindColors(Domains.Gold, kind, out var b, out var d))
             {
                 bright = b; dark = d;

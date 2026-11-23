@@ -32,8 +32,10 @@ namespace CosmicShore.Tests
         // what its absence cost - the pre-fix answer sat 8 degrees away at 217.3 and that gap was
         // written down as an ACES hue shift. Brightness deliberately is NOT asserted: the prisms
         // read brighter because a bright HDR rim sits over the base and blooms, and inventing a
-        // lift to match it is the mistake this test exists to prevent.
+        // lift to match it is the mistake this test exists to prevent. The screenshot is of PHOTIC's
+        // prisms (the default until 2026-11-03), so this one assertion reads that palette by path.
         const float MeasuredRenderedHue = 209.4f;
+        const string MeasuredPalettePath = "Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset";
         const float HueTolerance = 5f;
 
         // Below this the icon and a petal read as the same colour at the ~60px the row draws at.
@@ -83,23 +85,23 @@ namespace CosmicShore.Tests
             // The refusal belongs to the CALLER, not to the accessor (Docs/PALETTE.md §2.8): "no
             // pilot can fly Blue" is a fact about pilots, and a neutral mine or an uncommitted
             // crystal legitimately asks the palette what colour no-team is. So this drives the
-            // HUD that paints the shielded signal - SquirrelVesselHUDController.ResolveShieldedColor
+            // HUD that paints the shielded signal - SquirrelHUDController.ResolveShieldedColor
             // - over the LIVE palette, with Jade as the positive control proving the read is wired
             // (an unwired gameData would also return alpha 0 and pass vacuously).
             const System.Reflection.BindingFlags Private =
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
-            var hudType = typeof(CosmicShore.UI.SquirrelVesselHUDController);
+            var hudType = typeof(CosmicShore.UI.SquirrelHUDController);
             var gameDataField = hudType.GetField("gameData", Private);
             var resolve = hudType.GetMethod("ResolveShieldedColor", Private);
-            Assert.IsNotNull(gameDataField, "SquirrelVesselHUDController no longer has its injected gameData field.");
-            Assert.IsNotNull(resolve, "SquirrelVesselHUDController no longer has ResolveShieldedColor(Domains).");
+            Assert.IsNotNull(gameDataField, "SquirrelHUDController no longer has its injected gameData field.");
+            Assert.IsNotNull(resolve, "SquirrelHUDController no longer has ResolveShieldedColor(Domains).");
 
             var go = new GameObject("ShieldedSignalColorTests.SquirrelHUD");
             var gameData = ScriptableObject.CreateInstance<CosmicShore.Utility.GameDataSO>();
             try
             {
                 gameData.ThemeManagerData = Container();
-                var hud = go.AddComponent<CosmicShore.UI.SquirrelVesselHUDController>();
+                var hud = go.AddComponent<CosmicShore.UI.SquirrelHUDController>();
                 gameDataField.SetValue(hud, gameData);
 
                 var jade = (Color)resolve.Invoke(hud, new object[] { Domains.Jade });
@@ -121,7 +123,9 @@ namespace CosmicShore.Tests
         [Test]
         public void JadeMatchesTheHueShieldedPrismsRenderAs()
         {
-            float h = Hue(Palette().GetShieldedSignalColor(Domains.Jade));
+            var measured = UnityEditor.AssetDatabase.LoadAssetAtPath<SO_ColorSet>(MeasuredPalettePath);
+            Assert.IsNotNull(measured, MeasuredPalettePath);
+            float h = Hue(measured.GetShieldedSignalColor(Domains.Jade));
             Assert.Less(Mathf.Abs(Mathf.DeltaAngle(h, MeasuredRenderedHue)), HueTolerance,
                 $"Jade's shielded signal is hue {h:F1}; shielded prisms MEASURE {MeasuredRenderedHue:F1} " +
                 "on screen. A gap here means the linear->gamma conversion is missing or has been " +
@@ -154,8 +158,8 @@ namespace CosmicShore.Tests
             var ladder = Ladder();
             var ladderColors = new[]
             {
-                ("fire", ladder.fireColor), ("grey", ladder.greyColor), ("white", ladder.whiteColor),
-                ("blue", ladder.blueColor), ("lime", ladder.limeColor),
+                ("fire", ladder.FireColor), ("grey", ladder.GreyColor), ("white", ladder.WhiteColor),
+                ("blue", ladder.BlueColor), ("lime", ladder.LimeColor),
             };
 
             foreach (var domain in Playable)

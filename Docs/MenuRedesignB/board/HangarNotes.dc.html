@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hangar notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+li{font-size:17px;line-height:1.45}
+li span{color:#747BAD}
+</style>
+</helmet>
+<div style="width: 1100px; height: 1080px; box-sizing: border-box; padding: 40px 48px; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif; display: flex; flex-direction: column; gap: 26px; border: 1px solid #222645">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span class="lab">Item 2 / Hangar</span>
+    <h1 style="margin: 0; font-weight: 400; font-size: 32px; line-height: 1.15">What this mockup changes</h1>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span class="lab" style="color: #E6E9FF">One view, three zones (D5)</span>
+    <ul>
+      <li>Vessel list, selected vessel, abilities, all on screen. No grid then detail hop and no Back button: picking a tile updates the other two zones.</li>
+      <li>Gamepad: moving focus down the list selects as it goes, so focus never lands on a hidden panel <span>(today grid to detail and Back both drop focus)</span>.</li>
+      <li>All four abilities at once, replacing the General / Ability tabs.</li>
+      <li>Newly shown: the hangar preview image <span>(7 of 11 vessels have one; the scene leaves the field empty)</span>, the price on the unlock button <span>(today a baked "UNLOCK VESSEL" sprite)</span>, the crystal balance in the header.</li>
+      <li>Retired: the Vibe tile <span>(unwired, reads "General")</span>, the Overview / Elements / Progress images <span>(captions baked in, not buttons)</span>, the "Vessel Names" eye toggle <span>(names are always on the tiles)</span>.</li>
+      <li>Spend crystals is the kit popup. Short of crystals: Confirm shows disabled with how many more you need <span>(today the button just disappears)</span>.</li>
+    </ul>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span class="lab" style="color: #E6E9FF">State shown</span>
+    <ul>
+      <li>Shipping configuration: Squirrel owned and listed first, the other ten locked at their authored prices. With the editor's developer unlock gate on, every vessel reads owned.</li>
+      <li>The interactive board's Confirm unlocks the vessel. Today the progression gate refuses every paid unlock and the popup stays open with no message; that is not changed here.</li>
+    </ul>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span class="lab" style="color: #E6E9FF">Content flagged, not changed by this item</span>
+    <ul>
+      <li>Characters the 97-glyph fonts do not have: a curly apostrophe in the Squirrel description and in Skyburst Rockets, an em dash in the Butterfly description.</li>
+      <li>Urchin's four abilities reuse the Serpent's text.</li>
+      <li>Stoat uses the Squirrel icon. Butterfly, Thresher, Scarab and Stoat have no preview image (the hero shows the icon) and no abilities.</li>
+      <li>Stoat costs 0, so its button reads "Unlock - Free" instead of "UNLOCK - 0".</li>
+      <li>B / Esc does not close the popup: the menu has no Cancel handling.</li>
+    </ul>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

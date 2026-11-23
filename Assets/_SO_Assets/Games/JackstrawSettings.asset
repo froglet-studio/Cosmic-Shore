@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60ccfa5546eb8edbf0eee641f47a49da, type: 3}
+  m_Name: JackstrawSettings
+  m_EditorClassIdentifier:
+  progressSampleSeconds: 0.5
+  crystalsPerClearing: 3
+  clearingFill: 0.5
+  crystalRegrowSeconds: 8
+  crystalSeed: 84
+  aiRetargetSeconds:
+  - 1.2
+  - 0.9
+  - 0.6
+  - 0.4
+  aiHuntRange:
+  - 600
+  - 800
+  - 1000
+  - 1400
+  aiLeadSeconds:
+  - 0
+  - 0.15
+  - 0.3
+  - 0.45
+  aiMissRadius:
+  - 45
+  - 30
+  - 15
+  - 5
+  aiRefuelWhenSilencedChance:
+  - 0
+  - 0.5
+  - 1
+  - 1
+  aiSilencedPreyFocus:
+  - 1
+  - 1
+  - 1.5
+  - 2
+  aiOvershoot: 60
+  aiHumanFocus: 2

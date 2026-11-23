@@ -4,6 +4,9 @@
 
 ### FTUE (First-Time User Experience) — the QUEST GRAPH
 
+> **Shombith leads activation; Caleb heads FTUE with him; no one else is on it** (Shombith, 2026-10-26). Name them on any
+> FTUE or activation task.
+>
 > **Activation work starts at `Docs/ACTIVATION.md`**: every onboarding plan and its status, who is on
 > what, the `ftue_*` analytics events, and the redesign (first-login spotlight guide, Lesson, Mentor,
 > ghost demo) - `Docs/ModePreview/TRAINING_PLAN.md`, merged into `Ys-bleeding-edge` 2026-10-15.
@@ -88,7 +91,7 @@ whether it is ENFORCED.
 Custom dialogue system spanning two locations:
 
 - **Editor & assets**: `Assets/_Scripts/DialogueSystem/` — animation controllers, shader graphs (SpriteAnimation, UI_NoiseDissolve), SO dialogue data assets, prefab
-- **Runtime code**: `Assets/_Scripts/System/Runtime/` — `DialogueManager`, `DialogueEventChannel`, `DialogueUIAnimator`, `DialogueViewResolver`, `DialogueAudioBatchLinker`
+- **Runtime code**: `Assets/_Scripts/System/Runtime/` — `DialogueEventChannel`, `DialogueUIAnimator`, `DialogueViewResolver`, `DialogueAudioBatchLinker`
 - **Models**: `Assets/_Scripts/System/Runtime/Models/` — `DialogueLine`, `DialogueSet`, `DialogueSetLibrary`, `DialogueSpeaker`, `DialogueVisuals`, `DialogueModeType`, `IDialogueService`, `IDialogueView`, `IDialogueViewResolver`
 - **Views**: `InGameRadioDialogueView`, `MainMenuDialogueView`, `RewardDialogueView`
 - **Editor tools**: `DialogueEditorWindow`, `DialogueLineDrawer` (in `_Scripts/Editor/`)
@@ -108,13 +111,15 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 
 | AI | Code | Read first |
 |---|---|---|
-| The platform autopilot every hull flies by default | `AIPilot`, `AIPilotBelief` (lobby difficulty on the Arena cards), `PursuitReachability`, `AIObjectiveScoring` | `AI_ORBIT_BREAK.md` (below), `AI_BOOST.md` (per-hull boost policies: `AIPilot.boostPolicy`, one `AIBoostPolicySO` per boost mechanic, each listing the modes where it stands down) |
+| The platform autopilot every hull flies by default | `AIPilot`, `AIPilotBelief` (the lobby difficulty on every mode without a handicap of its own), `PursuitReachability`, `AIObjectiveScoring` | `AI_ORBIT_BREAK.md` (below), `AI_BOOST.md` (per-hull boost policies: `AIPilot.boostPolicy`, one `AIBoostPolicySO` per boost mechanic, each listing the modes where it stands down) |
 | **The Skim Race pilot** (the Squirrel in Skim Race, and Regatta's rings) | `Controller/AI/SkimRace/`: `SkimRacePilot` (lifecycle, sensing, actuation), `SkimRaceDriver` (the decision core, pure C#), `SkimRaceObjective` (`CrystalTrackObjective` / `RegattaRingObjective` - the only mode-aware part), `SkimRaceTeamPlan` (AI teammates split the crystals), `SkimRaceHandicap` (Easy / Medium mistakes), `SkimRaceReplanGate` (one planner re-plan per frame) | `Docs/SKIM_RACE_AI.md` - §3 architecture, §10 the host's difficulty row, §11 map fingerprints and `skimrace_retune.py`, §12 per-frame cost and Profiler markers, §13 team play, §14 frame rate (policies are tuned across 62/36/20 fps with the game's 0.04 s contact step) and the editor-mode cost; §8.0f-i the editor measurements |
 | The Urchin autopilot (Hijack, Skein, Regatta) | `Controller/AI/Urchin/`: `UrchinAutopilotDriver`, `UrchinRailAssessment`, `UrchinAutopilotConfigSO` | `Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md`, `Arcade/REGATTA.md` §6 |
 | The Rhino drive (Regatta and every mode the Rhino races) | `Controller/AI/Boost/RampBoostAIPolicySO`: ramp on a straight that pays back, brake ON the ramp to a corner speed (`AIBoostContext.CornerDegrees`, `AIBoostDriver.Throttle`), let go at the corner | `AI_BOOST.md` (Ramp); offline model `Tools/Build/rhino_drive_sim.py` |
 | The Dolphin drive | `Controller/AI/Boost/ChargeBoostAIPolicySO`: discharge the commit drift's charge on a straight, drift again at the discharge's peak (2026-10-17) | `AI_BOOST.md` (Charge); `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`; model `Tools/Build/dolphin_drive_sim.py` |
+| The Switchback Blast Run AI (the Dolphin in Switchback) | `Controller/Arcade/Switchback/`: `SwitchbackBlastPlanner` (Direct / Thread / Blast at each blocked gate), `SwitchbackBlastAI` (server only: strike the key crystal straight with the drift aiming the blast, the prism sense and emergency sweep, Danger prisms only), `SwitchbackPrismAvoidance`, `SwitchbackSenseBatch`; difficulty by AI nose lag per intensity (`aiNoseFollowByIntensity`, 2026-11-02) | `Arcade/SWITCHBACK.md` ("AI: the blast planner" to "Lag by difficulty"); simulator `Tools/Build/switchback_sim_harness`; soak `SwitchbackSoakLauncher` |
+| The Thresher sling and aimed launch (Thresher Time) | `Controller/AI/Boost/ThresherSlingAIPolicySO` + `ThresherExecutor.AimAutopilotLaunch` (2026-11-02: under the launch view it aims at the ring and lets go, as Garrett launches) | `Arcade/THRESHERTIME.md` §4; soak `ThresherTimeSoakLauncher` |
 | The Stoat autopilot (Slingshot, Warpline, Regatta) | `StoatModeExecutor`, `StoatDipoleExecutor`, `StoatSlingExecutor` (autopilot numbers on their config SOs, per mode through `AIModeTuning`) | `R_VesselActions/STOAT.md`, `STOAT_DIPOLE.md`, `Arcade/REGATTA.md` §6 |
-| Gate-race difficulty (Slingshot, Warpline, Regatta) | `Controller/AI/GateRaceHandicap`, applied in `GateRaceController`, which also reports each AI's phase / ring / lap to the Third Eye (`AIPilot.ReportObjective`) | `Docs/AI_SYSTEM/ARCHITECTURE.md` §2 |
+| Gate-race difficulty (every `GateRaceController` mode: Slingshot, Warpline, Regatta, Switchback, Skein, Headlong, ...) | `Controller/AI/GateRaceHandicap`, applied in `GateRaceController`, which also reports each AI's phase / ring / lap to the Third Eye (`AIPilot.ReportObjective`) | `Docs/AI_SYSTEM/ARCHITECTURE.md` §2 |
 | Learning from editor flights | `HumanFlightRecorder` (records), `Tools/Build/learn_from_flights.py` (the Squirrel), `learn_drives_from_flights.py` (Rhino, Dolphin, Manta, Stoat; per-mode variants `Resources/AIBoostPolicies/<asset>_<mode>`) | `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §8-9, `RACING_LINE.md` |
 
 Rules every AI shares: **input-only** - an AI reads what a pilot can see and writes only the vessel's
@@ -124,10 +129,15 @@ per-frame code (`MathfNoAlloc`; `check_mathf_params_alloc.py`); a per-frame cost
 (`Tools/Build/skimrace_sim_harness/run.sh`: it compiles the shipped driver; `SKIMRACE_RUNTIME=mono` predicts
 the editor's cost), an in-editor benchmark (`FrogletTools > AI > Skim Race AI Benchmark`), and a recorder
 that saves every hand-played editor race with its frame time (`BenchmarkResults/SkimRaceAI/manual_*.jsonl`).
-The host picks the AI difficulty on every card `AIDifficultyRules.IsOfferedFor` names: Skim Race, the gate races
-(Slingshot, Warpline, Regatta) and the Arena cards (Astro League, Brood Rush, Broadside) (`AIDifficulty`,
-replicated in `LobbySnapshot.AIDifficulty`); AI seats are placed per `ServerPlayerVesselInitializerWithAI.GetBalancedDomain`
+The host picks the AI difficulty - Easy, Medium, Hard or Legendary - on **every** card (`AIDifficultyRules.IsOfferedFor`,
+Yash 2026-10-26: "a generic rule"; `AIDifficulty`, replicated in `LobbySnapshot.AIDifficulty`). Each AI reads it through one
+handicap: the Skim Race pilot's, a gate race's ring handicap, or the platform autopilot's `AIPilotBelief`; AI seats are placed per `ServerPlayerVesselInitializerWithAI.GetBalancedDomain`
 (fewest pilots first) and the host moves them with **Add AI** (`Docs/SKIM_RACE_AI.md` §13 lists every 4-seat shape).
+**Each AI can also carry its own level** (Shombith and Yash, 2026-10-27): on every card with the AI row, Arcade and Arena,
+the host presses an AI's podium and the row then sets that AI only; with no AI selected it sets every AI. Each level
+rides the roster (`LobbySnapshot.AiD0..AiD5`, protocol 19) and reaches the AI as it spawns (`GameDataSO.AIDifficultyFor`).
+Design and code map: `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3. Not yet run in the Unity editor: the hand test is the
+2026-10-27 "Each AI seat its own difficulty" entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 **A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather
 than tuning** (`AI_ORBIT_BREAK.md`, `PursuitReachability`). A vessel at speed `v` with max turn

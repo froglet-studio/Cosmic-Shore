@@ -67,8 +67,10 @@ SPAWN_RING = {1: 3150.0, 2: 3150.0, 3: 1050.0, 4: 1050.0}
 MEMBRANE_RADIUS = {1: 3600.0, 2: 3600.0, 3: 1200.0, 4: 1200.0}
 
 # Hostile mass a rung's arena must hold per prism of its own destruction target
-# (EndConditionOverridesSO.cleavePrismTargetByIntensity). See check 1.
-TARGET_BY_INTENSITY = {1: 1200, 2: 1200, 3: 1500, 4: 1500}
+# (EndConditionOverridesSO.cleavePrismTargetByIntensity). See check 1. 1200/1200/1500/1500 until
+# 2026-10-26: a solo human took 152.7 s to clear 1500 on rung 4, so the ladder came down to aim an
+# experienced match near 90-100 s. 950 is the lowest the rung-1 arena allows under the 12x ceiling.
+TARGET_BY_INTENSITY = {1: 950, 2: 950, 3: 1000, 4: 1000}
 MIN_ARENA_TARGET_MULTIPLE = 4.0
 MAX_ARENA_TARGET_MULTIPLE = 12.0
 

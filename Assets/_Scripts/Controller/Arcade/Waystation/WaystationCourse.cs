@@ -37,22 +37,27 @@ namespace CosmicShore.Gameplay
         /// <summary>How far the exit gate sits ahead of the last coil ring.</summary>
         public float ExitLead;
 
-        /// <summary>How far the exit gate's POSITION may turn off the last coil leg. This bounds
+        /// <summary>How far the exit gate's POSITION may turn off the last coil leg, toward the heading square to the
+        /// next cluster. This bounds
         /// the corner into the exit gate, so it is measured against the hull's turning circle -
         /// it is deliberately clamped against the last coil CHORD rather than that ring's
         /// TANGENT, because a corner is measured on chords and clamping the tangent bounded the
         /// wrong angle (measured: the real corner ran 45% under the cap).</summary>
         public float ExitApproachDegrees;
 
-        /// <summary>Distance between consecutive CLUSTER CENTRES, as a chord. Crossed by a FOLD,
-        /// so the ceiling is the fold's own reach and the floor is far enough that flying it
-        /// instead is a real loss.</summary>
+        /// <summary>Distance between consecutive CLUSTER CENTRES, as a chord. Crossed by a DROP (the
+        /// Fold's, before it), so the floor is far enough that flying it instead is a real loss.</summary>
         public float MinHop, MaxHop;
 
-        /// <summary>How far the exit gate may FACE from the direction to the next cluster's
-        /// centre. Exact: the gate's facing is that direction deflected by this and nothing
-        /// else. It is the mode's difficulty — at 0 the fold would aim itself.</summary>
-        public float ExitConeDegrees;
+        /// <summary>
+        /// The exit gate FACES square to the next cluster (Garrett, 2026-10-29: "the last ring in a cluster is oriented
+        /// so you can keep your flow by dropping to the next cluster"): fly through it and the next cluster is under the
+        /// hull's belly, a drop falls straight at it, and the landing turn leaves the hull flying into it. Of all the
+        /// facings square to the next cluster, it takes the one nearest the line the pilot arrives on, then TWISTS it
+        /// about the drop line by up to this many degrees - the twist keeps it square, so it is the mode's difficulty
+        /// (how far the ring turns off your approach) without ever costing the drop its aim.
+        /// </summary>
+        public float ExitTwistDegrees;
 
         /// <summary>How far the chain of cluster centres may wander off its own heading per
         /// hop.</summary>
@@ -87,15 +92,20 @@ namespace CosmicShore.Gameplay
         /// circle, the wander by "a fold is never behind you". A table there would be four copies
         /// of one constraint.</para>
         ///
+        /// <para>The exit twist (10 -> 40) replaced the Fold-era exit CONE (40 -> 90), which turned the gate toward the next
+        /// cluster: the Fold jumped along the nose, the Tiger Moth's Drop falls along the belly (2026-10-29).</para>
+        ///
         /// <para><b>Every number is MEASURED, not chosen.</b>
         /// <c>Tools/Build/waystation_course.py</c> mirrors this file, sweeps 200 seeds x 4
-        /// intensities and FAILS the build unless: every corner clears the Butterfly's own
+        /// intensities and FAILS the build unless: every corner clears the Tiger Moth's own
         /// turning circle by 20% (measured 1.21x-1.70x), every ring's whole MOUTH stays inside
-        /// the cell's shell (measured [502, 1057] against [412, 1060]), every fold gap is inside
-        /// the fold's RESTING reach (measured up to 1332 against 1800 — a mode whose top rung
-        /// needed a crystal would play differently depending on one), every fold gap is LONGER
+        /// the cell's shell (measured [472, 1042] against [412, 1060]; the centre sphere came in
+        /// from 0.68 to 0.66 of the shell when the exit gate turned square, which carries it up to
+        /// 120 u sideways), every gap is inside the jump's resting reach (the Drop has no longest
+        /// fall; the gaps run up to 1322 u), every gap is LONGER
         /// than the cluster it leaves (so folding always beats flying it), no two clusters
-        /// interpenetrate, and the exit gate's facing is within the authored cone exactly.</para>
+        /// interpenetrate, and the exit gate faces square to the next cluster and within the authored
+        /// twist of the line it is approached on.</para>
         /// </summary>
         public static WaystationCourseSettings ForIntensity(int intensity)
         {
@@ -109,12 +119,12 @@ namespace CosmicShore.Gameplay
                 CoilPitch = new[] { 70f, 70f, 60f, 55f }[i],
                 MinHop = new[] { 700f, 760f, 820f, 880f }[i],
                 MaxHop = new[] { 950f, 1000f, 1080f, 1150f }[i],
-                ExitConeDegrees = new[] { 40f, 55f, 72f, 90f }[i],
+                ExitTwistDegrees = new[] { 10f, 20f, 30f, 40f }[i],
 
                 ExitLead = 120f,
                 ExitApproachDegrees = 45f,
                 WanderDegrees = 80f,
-                CentreSphereOuterFraction = 0.68f,
+                CentreSphereOuterFraction = 0.66f,
                 FirstClusterDirection = Vector3.up,
             };
         }
@@ -152,6 +162,15 @@ namespace CosmicShore.Gameplay
     /// FACING the next cluster's centre from ITS OWN POSITION (a fold starts where the pilot is,
     /// so facing it from the cluster's centre would have been the wrong question), which makes
     /// the offset exactly the authored cone rather than approximately it.</para>
+    ///
+    /// <para><b>Since the Tiger Moth (2026-10-29) the exit gate faces SQUARE to the next cluster.</b>
+    /// The Fold jumped along the nose, so the gate pointed at the jump; the Drop falls along the
+    /// belly, so the gate stands across it: thread the ring with the next cluster under you and the
+    /// drop is one press, and its landing turn leaves the hull flying into the next coil - the flow
+    /// is kept (Garrett: "the last ring in a cluster is oriented so you can keep your flow by dropping
+    /// to the next cluster"). The construction is the same one-bounded-turn exit gate, aimed square
+    /// to the drop line from its own position; only the roll about the nose is the pilot's to make
+    /// (<c>WaystationController</c>'s autopilot rolls its belly on).</para>
     /// </summary>
     public static class WaystationCourse
     {
@@ -217,12 +236,12 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
-                    // The terminal cluster still lays an exit gate - there is nothing to fold to,
-                    // so it is aimed STRAIGHT ON. A gate aimed back into its own coil is unflyable.
+                    // The terminal cluster still lays an exit gate - there is nothing to drop to,
+                    // so it is laid STRAIGHT ON (LayCluster). A gate aimed back into its own coil is unflyable.
                     next = centre + coilAxis * s.MinHop;
                 }
 
-                LayCluster(ref rng, gates, centre, next, coilAxis, coilRings, coilStep, s);
+                LayCluster(ref rng, gates, centre, next, hasNext, coilAxis, coilRings, coilStep, s);
 
                 if (hasNext)
                 {
@@ -243,7 +262,7 @@ namespace CosmicShore.Gameplay
         /// travelling when they reach it.
         /// </summary>
         static void LayCluster(ref RaceCourseGeometry.Rng rng, List<RaceGate> into, Vector3 centre,
-                               Vector3 next, Vector3 coilAxis, int coilRings, float coilStep,
+                               Vector3 next, bool hasNext, Vector3 coilAxis, int coilRings, float coilStep,
                                in WaystationCourseSettings s)
         {
             Vector3 axis = RaceCourseGeometry.SafeNormalize(coilAxis, Vector3.up);
@@ -273,10 +292,29 @@ namespace CosmicShore.Gameplay
             if (coilRings == 1) lastLeg = axis;
 
             Vector3 toNext = RaceCourseGeometry.SafeNormalize(next - last, lastLeg);
-            Vector3 exit = last + RaceCourseGeometry.ClampTurn(lastLeg, toNext, s.ExitApproachDegrees)
-                                  * s.ExitLead;
-            Vector3 facing = RaceCourseGeometry.Deflect(
-                ref rng, RaceCourseGeometry.SafeNormalize(next - exit, toNext), s.ExitConeDegrees);
+            if (!hasNext)
+            {
+                // The terminal cluster: nothing to drop to, so its exit gate is laid straight on, on the line it is
+                // approached by. A gate aimed back into its own coil is unflyable.
+                Vector3 straight = RaceCourseGeometry.ClampTurn(lastLeg, toNext, s.ExitApproachDegrees);
+                into.Add(new RaceGate(last + straight * s.ExitLead, straight, s.RingRadius));
+                return;
+            }
+
+            // Leave the coil toward the heading SQUARE to the next cluster that is nearest the last leg, turning no more
+            // than the approach cap (a corner the hull can fly).
+            Vector3 squareLeg = RaceCourseGeometry.SafeNormalize(lastLeg - toNext * Vector3.Dot(lastLeg, toNext),
+                                                                RaceCourseGeometry.Perpendicular(toNext));
+            Vector3 approach = RaceCourseGeometry.ClampTurn(lastLeg, squareLeg, s.ExitApproachDegrees);
+            Vector3 exit = last + approach * s.ExitLead;
+
+            // Face square to the drop line FROM THE GATE (a drop starts where the pilot is), nearest the approach, then
+            // twist about that line: still square, so the belly is on the next cluster whatever the twist.
+            Vector3 drop = RaceCourseGeometry.SafeNormalize(next - exit, toNext);
+            Vector3 square = RaceCourseGeometry.SafeNormalize(approach - drop * Vector3.Dot(approach, drop),
+                                                             RaceCourseGeometry.Perpendicular(drop));
+            float twist = rng.Range(-s.ExitTwistDegrees, s.ExitTwistDegrees) * Mathf.Deg2Rad;
+            Vector3 facing = RaceCourseGeometry.SafeNormalize(RaceCourseGeometry.RotateAbout(square, drop, twist), square);
 
             into.Add(new RaceGate(exit, facing, s.RingRadius));
         }

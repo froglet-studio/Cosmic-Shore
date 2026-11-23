@@ -33,11 +33,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OUT_DIR = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Jacks")
 DONOR_META = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Thresher", "Thresher_Plant.png.meta")
 SIZE = T.SIZE
+# The ability-icon kit draws the PNGs now (Tools/Build/icon_kit/specs/jacks.py, the 2026-11-07 roster pass: the real
+# Jack.fbx, and the round-10 kit - The Call, Wide, Decoys - where these glyphs still drew the retired Breeding, Herding
+# Ring and Herd Speed). This tool keeps the guids Jacks.prefab names and checks the files are there; the drawings below
+# stay only as the record of what the kit replaced.
+KIT_OWNS_PNGS = True
 GUIDS = {
     "Jacks_DangerShare.png": "c3a91e5d7b2f4c68a0e4d1b9f6c2a873",
-    "Jacks_Breeding.png": "5e8b2d6a1f9c4b37a2d0e7c4b1f9a645",
-    "Jacks_HerdingRing.png": "9f1c4a7e3b6d4e82b5a0c8d2e7f1b396",
-    "Jacks_HerdSpeed.png": "2b7d5f9a4c1e4a63b8f2d0e6a9c5b718",
+    "Jacks_TheCall.png": "5e8b2d6a1f9c4b37a2d0e7c4b1f9a645",
+    "Jacks_Wide.png": "9f1c4a7e3b6d4e82b5a0c8d2e7f1b396",
+    "Jacks_Decoys.png": "2b7d5f9a4c1e4a63b8f2d0e6a9c5b718",
 }
 
 
@@ -101,9 +106,9 @@ def herd_speed(d):
 
 ICONS = {
     "Jacks_DangerShare.png": danger_share,
-    "Jacks_Breeding.png": breeding,
-    "Jacks_HerdingRing.png": herding_ring,
-    "Jacks_HerdSpeed.png": herd_speed,
+    "Jacks_TheCall.png": breeding,
+    "Jacks_Wide.png": herding_ring,
+    "Jacks_Decoys.png": herd_speed,
 }
 
 
@@ -132,6 +137,10 @@ def main(argv):
             guid = GUIDS[name]
         if guid != GUIDS[name]:
             errors.append(f"{name}: its .meta guid is not {GUIDS[name]} (Jacks.prefab's HUD names it)")
+            continue
+        if KIT_OWNS_PNGS:
+            if not os.path.exists(path):
+                errors.append(f"{name}: missing (run python3 Tools/Build/icon_kit/author.py jacks)")
             continue
         img = T.render(fn)
         alpha = img.getchannel("A")

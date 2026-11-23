@@ -87,6 +87,14 @@ leaves evidence.
    no longer stands down at `beforeAssemblyReload` — it stamps the sentinel `DomainReload` and
    keeps running until the domain unload aborts it (handled; the journal flushes in `finally`),
    so a reload that wedges in "Run managed callbacks" still gets dumped.
+8. **Only the editor runs it** (2026-10-25). Unity's asset import workers are separate editor
+   processes in the same project that also run `[InitializeOnLoad]`, but never tick the editor
+   loop. Each one used to start a detector session of its own, read as "unresponsive" from its
+   first heartbeat, and when Unity retired the idle worker the next launch reported a crash
+   (yskha's Crash-20261026-034810: pid 16260 "unresponsive for ~5324s" while the editor, pid
+   7240, played on). The detector and the Bug Ledger both return at once when
+   `AssetDatabase.IsAssetImportWorkerProcess()` is true; reports written before this from a
+   worker read as long hangs in EditMode from a session nobody played in.
 
 Guard rails: an error storm is rate-capped (20/s, excess collapsed to one count), the journal is
 size-capped (drops with one marker past the cap), reports are pruned to a count, and the whole
@@ -244,12 +252,19 @@ occurrence.
 - **Marked fixed by whoever fixed it** — in practice a Claude session, `bug_ledger.py mark-fixed`,
   which writes VALIDATING plus the fix commit onto the sender's `bugledger/<user>` branch. The
   editor adopts it only once that commit is in its HEAD (§ "Send to Claude").
+- **Compile errors close themselves.** An open `error CSnnnn:` issue is resolved at the first editor
+  load where the scripts compiled clean (`EditorUtility.scriptCompilationFailed` false): Unity loads no
+  new scripts while a compile error stands, so the load is the compiler's proof. A half-finished pull
+  or a branch switch had left 61 of them open across the shared ledgers. One that comes back is filed
+  again.
 - **Validation evidence** is scope-matched, and only counts while auto-capture is ON (a clean
   session proves nothing while nothing listens):
   - `PlayMode` issues: each play run ≥ the minimum length where the signature stays silent
     counts one clean session (a bounded queue drain runs before the verdict so an in-flight
     error can't be miscounted);
-  - `EditMode` issues: a full editor session ≥ the minimum length, credited at clean quit;
+  - `EditMode` issues: an editor span ≥ the minimum length, credited at clean quit and at each
+    script reload (a shorter span runs on into the next one; a credited span starts a new one, so
+    an error the reload itself raises lands in the new span and reopens the fix);
   - `Tool` issues: **the tool that filed it is the validator** — a FULL clean re-run of that tool
     resolves its validating findings (quota 1: a deterministic re-run is stronger evidence than
     any number of play sessions). Partial sweeps must not call `ReportToolFindings`.
@@ -510,7 +525,7 @@ a clean run. Copy that shape.
 | The window (Crash Detector + Compile Timing tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
 | On-screen UI report (reader, play mode only) | `Assets/_Scripts/Editor/Diagnostics/OnScreenUIReport.cs` |
 | Live-store gitignore (committed, self-healed by the tool) | `BugLedger/.gitignore` |
-| Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/BugSignature.cs` |
+| Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/Foundation/BugSignature.cs` |
 | Signature determinism tests (edit mode) | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |
 | Committed store contract | `BugLedger/README.md` (project root) |
 | Crash logs / reports (machine-local) | `Logs/CrashDetector/` (gitignored) |

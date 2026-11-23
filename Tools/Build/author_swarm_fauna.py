@@ -90,7 +90,7 @@ ROOT_TR_FID = "4174204561870355103"
 TADPOLE_MB_FID = "5945480239701989318"     # TadPoleFauna's Boid MB fileID, kept for the member
 
 # ── the sim (research units; Docs/SWARM_FAUNA.md "Findings for the research") ─────────────
-UNIT_SCALE = 2.0          # world units per voxel
+RESEARCH_UNIT_SCALE = 2.0 # world units per voxel, as the research ran and the bodies were first sized
 TICK_HZ = 10.0
 SEED_MEMBERS = 48         # per plan DENSITY unit (x PLAN_DENSITY in code): 240 tadpoles, a sparse ghost of the creature
 TOTAL_SWARMS = 3          # ROUND 7: three big sort swarms (Docs/SWARM_FAUNA.md §14) - was 24 small ones on four models
@@ -105,6 +105,24 @@ LINEAGE_DRIFT = 0.01      # chance a child laid into unowned body tissue founds 
 FORAGE = (0.5, 0.9, 10, 60)   # ROUND 9 §17.1: ForageBelow, SatedAbove, GiveUpSeconds, PlantRestSeconds
 HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Tadpole Fauna * (read below)
 
+# ── the body matches the one heart size (Docs/ECOSYSTEM.md 64.4) ─────────────────────────────
+# Every heart is ElementalCrystalSetSO.CrystalWorldScale (3.55); HEARTS above are the retired sizes the bodies were
+# designed against, so each element's body grows by K = 3.55 / its retired heart. UnitScale is ONE number for a swarm
+# (its members share one position field): it takes the LARGEST K, so member spacing still clears the biggest body, and
+# an element that grows less scales its prism back down (ElementBodyScale). Every voxel length - spacing, wells,
+# adhesion, the creature's whole extent - therefore grows by K_SWARM. SPEEDS stay in world units (Cruise and the sort
+# VMax are divided by K_SWARM), so a member swims as fast as it did and a jouster outruns it as before.
+CRYSTAL_WORLD_SCALE = 3.55
+BODY_K = {e: CRYSTAL_WORLD_SCALE / h for e, h in HEARTS.items()}
+K_SWARM = max(BODY_K.values())
+UNIT_SCALE = round(RESEARCH_UNIT_SCALE * K_SWARM, 3)
+ELEMENT_BODY = {e: round(k / K_SWARM, 3) for e, k in BODY_K.items()}
+RESEARCH_ORDER = ["Charge", "Mass", "Space", "Time"]   # research element index 0..3
+HEART_PRISM_GAP = round(0.6 * K_SWARM, 3)
+BITE_RADIUS = round(10 * K_SWARM, 3)
+CRUISE = round(0.35 / K_SWARM, 3)
+SORT_VMAX_SCALE = round(1 / K_SWARM, 3)
+
 # ── the three populations ────────────────────────────────────────────────────────────────
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 # ROUND 7 (Docs/SWARM_FAUNA.md §14): THREE swarms, all on the SORT model (research sortfeel + the 1-in-8
@@ -116,8 +134,11 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 # precedent: the cell's own generator owns the cell's copies). It is the cheapest family at steady state -
 # no per-frame Update (PhyllotacticFlora's was 11% of the frame in the round-6b capture), and a COMPACT plant
 # that closes and stops: a finished plant's grow tick is one compare. Few plants, sized against the egg bill
-# of the three bodies (report() prints both). Charge is never food (armoured leaves), so the pufferfish band
-# grows Time plants and its Charge majority is paid at the cross-element price - the feeding-ground lever.
+# of the three bodies (report() prints both). Armoured leaves are never food outside a Frenzy, so a band whose
+# swarm's own element is armoured grows Time plants and pays its majority at the cross-element price - the
+# feeding-ground lever. The pufferfish band took it when Charge was the armoured element; since the element law
+# moved the armour to MASS (Docs/ECOSYSTEM.md §65.7) the whale band takes it too (Garrett, 2026-10-28: "graze Time,
+# stay small" - its 3 plants pay about a sixth of a full whale, so the Inner whale stays small; UNDERFED below).
 # flora_band (round 11-10, Docs/SWARM_FAUNA.md §27): where a region's flora is PLANTED, when it is not the swarm's band.
 # The Middle forest reaches into the 625-690 gap, the mobbers' shell: the bestiary's mobbers roost ON a plant
 # (mobber.py: roost = the arena's plants), and penned to a plant-free gap the cell's 40 starved by minute 3 with 0 bites
@@ -134,7 +155,10 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 FLORA_INSET, FLORA_INSET_DEG = 25, 10
 REGIONS = [
     dict(key="Inner", band=(470, 620), start="Mass", plan="whale", model="Sort", swarms=1,
-         flora="Borromean", food="Mass", floor=2, cap=3, flora_band=(470 + FLORA_INSET, 620 - FLORA_INSET)),
+         flora="Borromean", food="Time", floor=2, cap=3, flora_band=(470 + FLORA_INSET, 620 - FLORA_INSET),
+         # its forest pays only part of a full whale (the bill at the cross price is ~6x what 3 plants hold): more plants
+         # breaks the collider ceiling and bigger ones outgrow the band, so the whale stays small by decision
+         underfed="Garrett, 2026-10-28: graze Time, stay small (Docs/ECOSYSTEM.md 65.7)"),
     dict(key="Middle", band=(690, 840), start="Charge", plan="pufferfish", model="Sort", swarms=1,
          flora="Borromean", food="Time", floor=10, cap=13, flora_band=(625 + FLORA_INSET // 2, 840 - FLORA_INSET),
          # (axis about the cell centre or None, half-angle deg, inner u, outer u): the three grazer sector pens of
@@ -318,11 +342,16 @@ def typical_half(plans):
     return out
 
 
-def egg_volumes(plans):
+def egg_volumes(plans, unit_scale=None, element_body=None):
     """An egg costs the WORLD volume of a typical body prism of its element: a swarm converts eaten
-    flora volume into its own body 1:1 (mass is conserved, nothing is minted)."""
-    m = 2 * UNIT_SCALE * PRISM_SCALE
-    return {e: round(h[0] * m * h[1] * m * h[2] * m, 2) for e, h in typical_half(plans).items()}
+    flora volume into its own body 1:1 (mass is conserved, nothing is minted). The defaults are the shipped
+    body; unit_scale=RESEARCH_UNIT_SCALE with element_body=1 is the research body (the forest's design point)."""
+    u = UNIT_SCALE if unit_scale is None else unit_scale
+    out = {}
+    for e, h in typical_half(plans).items():
+        m = 2 * u * PRISM_SCALE * (ELEMENT_BODY[RESEARCH_ORDER[e]] if element_body is None else element_body)
+        out[e] = round(h[0] * m * h[1] * m * h[2] * m, 2)
+    return out
 
 
 # ── prefabs ─────────────────────────────────────────────────────────────────────────────────
@@ -497,16 +526,16 @@ def config_asset(eggs, model="Field"):
         f"  Theme: {{fileID: 11400000, guid: {THEME}, type: 2}}\n"
         f"  EngageRadius: {ENGAGE_RADIUS}\n  MaxProxies: {MAX_PROXIES}\n  ProxyLingerSeconds: 2\n"
         f"  SeedMembers: {SEED_MEMBERS}\n"
-        f"  BiteRadius: 10\n  BitersPerStep: {BITERS_PER_STEP}\n"
+        f"  BiteRadius: {_g(BITE_RADIUS)}\n  BitersPerStep: {BITERS_PER_STEP}\n"
         f"  EggVolume: {v4(egg)}\n"
         f"  CrossElementCost: 2\n  StomachEggs: 240\n"
         f"  ForageBelow: {_g(FORAGE[0])}\n  SatedAbove: {_g(FORAGE[1])}\n  GiveUpSeconds: {_g(FORAGE[2])}\n  PlantRestSeconds: {_g(FORAGE[3])}\n"
         f"  LayRate: 0.2\n  LayMax: 16\n  MaxSpawnsPerFrame: {MAX_SPAWNS_PER_FRAME}\n  KillLayHoldSeconds: 2\n"
         "  StarvationSeconds: 90\n  ShedIntervalSeconds: 1\n  ExtinctLingerSeconds: 10\n"
-        "  Cruise: 0.35\n  TurnPerStep: 0.03\n  WanderReach: 300\n"
+        f"  Cruise: {_g(CRUISE)}\n  TurnPerStep: 0.03\n  SortVMaxScale: {_g(SORT_VMAX_SCALE)}\n  WanderReach: 300\n"
         "  VesselRadius: 9\n  SenseMargin: 400\n  DangerEnter: 0.45\n  DangerExit: 0.15\n"
         f"  HeartWorldScale: {v4(HEARTS)}\n"
-        f"  PrismScale: {_g(PRISM_SCALE)}\n  HeartPrismGap: 0.6\n  BirthBloomSeconds: 0.8\n  MoltHeartSeconds: 0.5\n"
+        f"  PrismScale: {_g(PRISM_SCALE)}\n  ElementBodyScale: {v4(ELEMENT_BODY)}\n  HeartPrismGap: {_g(HEART_PRISM_GAP)}\n  BirthBloomSeconds: 0.8\n  MoltHeartSeconds: 0.5\n"
         + grid + "".join(f"  {k}: {v}\n" for k, v in SORT) +
         f"  EvoRule: {{fileID: 4900000, guid: {guid(rel(evo_rule_path()))}, type: 3}}\n"
         + "".join(f"  {k}: {_g(v)}\n" for k, v in EVO.items()) +
@@ -565,7 +594,7 @@ def flora_band(r):
     return r.get("flora_band", r["band"])
 
 
-def flora_asset(r, c):
+def flora_asset(r, c, lattice=1.0):
     """A FORK of the canonical species config: the species' own plate, budget, quota, heart and shield
     (byte for byte), with only what a CELL owns rewritten - the name, how many (seed floor, live cap) and
     where (the planting band, as the cell-level override pair)."""
@@ -578,6 +607,8 @@ def flora_asset(r, c):
     t = re.sub(r"(?m)^  PlantRadiusCellFraction(Max|Min)Override: .*\n", "", t)
     t = re.sub(r"(?m)^  SpreadPlanting: .*\n", "", t)
     t = re.sub(r"(?m)^  PlantingPens:.*\n(?:  - .*\n|    .*\n)*", "", t)
+    # the plant grows with the swarm it feeds (model(): the band's lattice scale)
+    t = re.sub(r"(?m)^    LatticeScale: .*$", f"    LatticeScale: {_g(lattice)}", t, count=1)
     if not t.endswith("\n"):
         t += "\n"
     t += (f"  PlantRadiusCellFractionMaxOverride: {_g(hi / MEMBRANE_RADIUS)}\n"
@@ -612,13 +643,14 @@ def model(plans):
     always-on collider (a member is GPU-drawn data until a vessel is near), and their bodies are not in
     the cell's LiveVolume (no registered prism) - so the ladder is the forest's."""
     eggs = egg_volumes(plans)
+    research_eggs = egg_volumes(plans, RESEARCH_UNIT_SCALE, 1.0)
     kind = {"whale": "mass", "pufferfish": "charge", "jellyfish": "space", "dragonfly": "time"}
     rows, tot = [], dict(prisms=0, volume=0.0, hearts=0, plants_max=0, tadpoles=0, bill=0.0, food=0.0, forest_at_cap=0.0,
                          bodies=0.0, min_member=1e30)
-    m3 = (2.0 * UNIT_SCALE * PRISM_SCALE) ** 3   # SwarmTickJob.Build: scale = 2 * unit * prismScale * half
+    m3 = (2.0 * UNIT_SCALE * PRISM_SCALE) ** 3   # SwarmTickJob.Build: scale = 2 * unit * prismScale * half * elementBody
+    eb3 = [ELEMENT_BODY[e] ** 3 for e in RESEARCH_ORDER]
     for r in REGIONS:
         c = canon(r)
-        per = c["leaf"][0] * c["leaf"][1] * c["leaf"][2]
         p = plans[kind[r["plan"]]]
         mix = [0] * 4
         for e in p["elem"]:
@@ -626,15 +658,22 @@ def model(plans):
         food_e = {"Charge": 0, "Mass": 1, "Space": 2, "Time": 3}[r["food"]]
         # the egg bill of the full body: own-element eggs at their price, the rest at the cross price (2x)
         bill = sum(PLAN_DENSITY * mix[e] * 0.939 * eggs[e] * (1 if e == food_e else 2) for e in range(4))
+        # the band's forest grows with the bodies it feeds (Docs/ECOSYSTEM.md 64.4): each plant is the same plant at
+        # LatticeScale s (BorromeanFlora scales its site offsets AND leaves together - no new prism, no new collider,
+        # no interpenetration), s^3 = the bill now / the bill at the research body, so every band keeps the margin
+        # its forest was designed with
+        research_bill = sum(PLAN_DENSITY * mix[e] * 0.939 * research_eggs[e] * (1 if e == food_e else 2) for e in range(4))
+        lattice = round((bill / research_bill) ** (1 / 3), 3)
+        per = c["leaf"][0] * c["leaf"][1] * c["leaf"][2] * lattice ** 3
         # round 8: the body's own volume, grown to the sort core's fill (SortBodyFill 0.939) - each tadpole is a
         # body prism of its plan slot's half-extents, as the tick job draws and the cell now counts it
         hf = p["half"]
-        unit_vols = [m3 * abs(hf[3 * k] * hf[3 * k + 1] * hf[3 * k + 2]) for k in range(p["n"])]
+        unit_vols = [m3 * eb3[p["elem"][k]] * abs(hf[3 * k] * hf[3 * k + 1] * hf[3 * k + 2]) for k in range(p["n"])]
         body_volume = PLAN_DENSITY * sum(unit_vols) * 0.939 * r["swarms"]
         tot["min_member"] = min(tot["min_member"], min(unit_vols))
         tot["bodies"] += body_volume
         rows.append(dict(r=r, c=c, per=per, plant_volume=per * c["budget"], body=PLAN_DENSITY * p["n"], bill=bill,
-                         body_volume=body_volume))
+                         body_volume=body_volume, lattice=lattice))
         tot["prisms"] += r["cap"] * c["budget"]
         tot["volume"] += r["cap"] * c["budget"] * per
         tot["plants_max"] += r["cap"]
@@ -819,7 +858,7 @@ def emit():
 
     L = ladder(tot)
     for r, row in zip(REGIONS, rows):
-        for name, text in ((fauna_name(r), fauna_asset(r)), (flora_name(r), flora_asset(r, row["c"]))):
+        for name, text in ((fauna_name(r), fauna_asset(r)), (flora_name(r), flora_asset(r, row["c"], row["lattice"]))):
             out[cell_path(name)] = text
             out[cell_path(name) + ".meta"] = ASSET_META % guid(rel(cell_path(name)))
     for name, text in ((PREFIX + " Cell Spawn Profile", profile_asset()), (PREFIX + " Cell Config", cell_asset(L))):
@@ -907,7 +946,11 @@ def verify(out, tot, rows):
     for row in rows:
         at_cap = row["r"]["cap"] * row["plant_volume"]
         if at_cap < row["bill"]:
-            problems.append(f"{row['r']['key']}: its forest at cap ({at_cap:,.0f}) cannot pay its {row['r']['plan']}'s egg bill ({row['bill']:,.0f})")
+            line = f"{row['r']['key']}: its forest at cap ({at_cap:,.0f}) cannot pay its {row['r']['plan']}'s egg bill ({row['bill']:,.0f})"
+            if row["r"].get("underfed"):
+                print(f"  REPORTED, not gated: {line} - {row['r']['underfed']}")
+            else:
+                problems.append(line)
     # the C# defaults of the sort fields are the authored values (an SO created by hand matches the cell)
     so = read(os.path.join(SCRIPT_DIR, "SwarmFaunaConfigSO.cs"))
     for k, v in SORT:

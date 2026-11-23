@@ -396,7 +396,7 @@ domain-bearing and neither is a legitimate neutral. Measured, not inferred:
 | | `_Color1` (base face) | `_Color2` (fresnel rim — the part that glows) |
 |---|---|---|
 | `GreenAccentVesselMaterial` | (0, 0.0941, 0.1882) | (0, **0.7765**, **1.4980**) |
-| `OriginalColorSetSO.JadeColors.ShipColor1/2` | (0, 0.0490, 0.0941) | (0, **0.3882**, **0.7490**) |
+| `PhoticColorSetSO.JadeColors.ShipColor1/2` | (0, 0.0490, 0.0941) | (0, **0.3882**, **0.7490**) |
 | ratio | ×1.92, ×2.00 | **×2.00, ×2.00, exact to 7 dp** |
 
 `GreenAccentVesselMaterial` is the **Jade ship colour at 2× intensity, welded into the prefab** —
@@ -1096,7 +1096,7 @@ the editor yet.
 | Prefab wiring | `_Prefabs/Spacevessels/Urchin.prefab`: `GunVesselTransformer` + `TrailFollower` (1D) + `BlockscapeFollower` (2D) |
 | The cradle — vessel half | `Controller/Vessel/PrismCradleSource.cs` (ensured by `GunVesselTransformer.Initialize`; reads `IsRiding`; eases strength; measures the radius once) |
 | The cradle — publisher | `Utility/PrismCradle.cs` (4-slot frame-stamped bank → `_PrismCradleCentre[]`, `_PrismCradleWeight[]`, `_PrismCradleParams`, flushed in LateUpdate — AND the residency pass that swaps the high-poly mesh onto the nearest prisms and hands it back) |
-| The cradle — geometry | `Utility/HighPolyPrismMesh.cs` (the identical solid subdivided per face, shared + cached per subdivision, hard edges, face-local UV0, per-face centroid in TEXCOORD1) |
+| The cradle — geometry | `Utility/Foundation/HighPolyPrismMesh.cs` (the identical solid subdivided per face, shared + cached per subdivision, hard edges, face-local UV0, per-face centroid in TEXCOORD1) |
 | The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`: Position, Normal → OutPosition, OutNormal — nothing else), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py`. It is the LAST node on the vertex chain and `PrismClockWiringValidator` asserts both of its feeders, because a second morph spliced after it would ripple the very vertices the drape had just closed onto the hull and re-open the hole — so any future member of the family goes in FRONT of this one |
 | The cradle — tuning | `ScriptableObjects/PrismCradleConfigSO.cs` → `Assets/Resources/PrismCradleConfig.asset` |
 

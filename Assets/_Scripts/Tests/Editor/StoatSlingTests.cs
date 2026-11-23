@@ -9,12 +9,11 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Stoat's slingshot (<c>R_VesselActions/STOAT.md</c>): the pure arithmetic of a squeeze,
-    /// and the shipped registration set read as text — the prefab, its bindings, the map and the
-    /// two spawn lists — so a drift in any of them fails here rather than as a hull that spawns
-    /// nothing. The triggers carry the field dipole since 2026-10-09 (<c>STOAT_DIPOLE.md</c>); the
-    /// sling's math and assets stay, unbound. The offline twin is
-    /// <c>Tools/Build/author_stoat_assets.py --check</c>.
+    /// The Stoat's slingshot, the SWING (<c>R_VesselActions/STOAT.md</c>, <c>STOAT_DIPOLE.md</c> §1b): the pure arithmetic of
+    /// a squeeze and a swing, and the shipped registration set read as text — the prefab, its bindings, the map and the two
+    /// spawn lists — so a drift in any of them fails here rather than as a hull that spawns nothing. The catch orbit, the
+    /// aimed exit, the trampoline, the skim sling, the crystal style and the field dipole were deleted on 2026-11-21; the
+    /// tests at the end fail if any of them comes back. The offline twin is <c>Tools/Build/author_stoat_assets.py --check</c>.
     /// </summary>
     [TestFixture]
     public class StoatSlingTests
@@ -51,116 +50,11 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, StoatSlingMath.Hold01(0f, 0f, false, 0f, false, 0.5f), 1e-6f, "no ramp = full squeeze");
         }
 
-        // ------------------------------------------------------------------ the orbit
-
-        [Test]
-        public void OrbitRadius_SqueezeHarderTurnsTighter()
-        {
-            Assert.AreEqual(150f, StoatSlingMath.OrbitRadius(0f, 150f, 40f, 1.5f), 1e-4f, "a touch is the wide orbit");
-            Assert.AreEqual(40f, StoatSlingMath.OrbitRadius(1f, 150f, 40f, 1.5f), 1e-4f, "buried is the tight one");
-            float half = StoatSlingMath.OrbitRadius(0.5f, 150f, 40f, 1.5f);
-            Assert.Less(half, 150f); Assert.Greater(half, 40f);
-            Assert.AreEqual(150f - 110f * Mathf.Pow(0.5f, 1.5f), half, 1e-3f, "along hold^exponent");
-        }
-
-        [Test]
-        public void OrbitHeading_TurnsTheTangentTowardTheCentre()
-        {
-            var forward = new Vector3(0f, 0f, 1f);
-            var toCentre = new Vector3(-1f, 0f, 0f);           // the attractor to the LEFT
-            var heading = StoatSlingMath.OrbitHeading(forward, toCentre, 10f * Mathf.Deg2Rad);
-            Assert.AreEqual(1f, heading.magnitude, 1e-4f);
-            Assert.AreEqual(10f, Vector3.Angle(forward, heading), 1e-3f, "turned by the step");
-            Assert.Less(heading.x, 0f, "turned toward the centre (left)");
-            // A nose with a radial part is first laid back onto the tangent.
-            var skewed = StoatSlingMath.OrbitHeading(new Vector3(-0.3f, 0f, 1f).normalized, toCentre, 0f);
-            Assert.AreEqual(0f, Vector3.Dot(skewed, toCentre), 1e-4f, "zero step = the tangent itself");
-            Assert.AreEqual(toCentre, StoatSlingMath.OrbitHeading(toCentre, toCentre, 0.2f), "no tangent: the nose comes back unchanged");
-        }
-
         [Test]
         public void Slingshot_TheDeeperSqueezeThrowsHarder()
         {
             Assert.AreEqual(15f, StoatSlingMath.SlingBoost(60f, 0f, 0.25f, 0.9f), 1e-4f);
             Assert.AreEqual(54f, StoatSlingMath.SlingBoost(60f, 1f, 0.25f, 0.9f), 1e-4f);
-        }
-
-        // ------------------------------------------------------------------ Time mode: the catch (STOAT_DIPOLE.md §1b)
-
-        [Test]
-        public void CatchPair_LaysTheAttractorAheadOnThePressedSide_TheRepulsorMirrored()
-        {
-            StoatSlingMath.CatchPair(Vector3.zero, Vector3.forward, Vector3.right, attractorLeft: true, 150f, 45f,
-                out var att, out var rep);
-            Assert.AreEqual(new Vector3(-45f, 0f, 150f), att, "left trigger: ahead and to the left");
-            Assert.AreEqual(new Vector3(45f, 0f, 150f), rep, "the repulsor mirrored");
-            StoatSlingMath.CatchPair(Vector3.zero, Vector3.forward, Vector3.right, attractorLeft: false, 150f, 45f, out att, out _);
-            Assert.AreEqual(new Vector3(45f, 0f, 150f), att, "right trigger: to the right");
-            // In front of the chase camera, never square beside the hull (the 2026-10-13 cut's invisible pole).
-            Assert.Less(Vector3.Angle(Vector3.forward, att), 30f);
-            // The registry's own placement agrees: the attractor sits at -axis × halfGap from the midpoint.
-            var axis = StoatSlingMath.PairAxis(true, Vector3.right);
-            Assert.AreEqual(new Vector3(-45f, 0f, 150f), new Vector3(0f, 0f, 150f) - axis * 45f);
-        }
-
-        [Test]
-        public void Catches_AsYouPassIt_OrInsideTheOrbit_NeverWhileStillDeadAhead()
-        {
-            var att = new Vector3(-45f, 0f, 150f);
-            Assert.IsFalse(StoatSlingMath.Catches(Vector3.zero, Vector3.forward, att, 40f, 60f, 50f), "far and ahead: not yet");
-            Assert.IsTrue(StoatSlingMath.Catches(new Vector3(0f, 0f, 113f), Vector3.forward, att, 40f, 60f, 50f),
-                "within the detection radius and 50° off the nose");
-            Assert.IsFalse(StoatSlingMath.Catches(new Vector3(0f, 0f, 112f), Vector3.forward, new Vector3(-10f, 0f, 160f), 40f, 60f, 50f),
-                "within reach but still ahead: it waits for the pass");
-            Assert.IsTrue(StoatSlingMath.Catches(new Vector3(0f, 0f, 120f), Vector3.forward, new Vector3(-10f, 0f, 160f), 50f, 75f, 50f),
-                "inside the orbit radius it always catches");
-        }
-
-        [Test]
-        public void Catches_AStraightPassAlways_AtEveryShippedSqueeze()
-        {
-            // The user's rule (2026-10-14): Time mode "always catches them". Fly straight past the shipped pair: the
-            // tightest orbit (40 u) with the 1.5× detection radius still reaches the 45 u pass by the time the
-            // attractor is 50° off the nose (45 / sin 50° = 58.7 u ≤ 60 u).
-            var att = new Vector3(-45f, 0f, 150f);
-            foreach (float r in new[] { 40f, 60f, 100f, 150f })
-            {
-                bool caught = false;
-                for (float z = 0f; z <= 300f && !caught; z += 0.5f)
-                    caught = StoatSlingMath.Catches(new Vector3(0f, 0f, z), Vector3.forward, att, r, 1.5f * r, 50f);
-                Assert.IsTrue(caught, $"orbit {r} u: a straight pass is caught");
-            }
-        }
-
-        [Test]
-        public void Ring_IsACircleOfTheRadius_InThePlaneOfThePass()
-        {
-            var points = new Vector3[96];
-            var centre = new Vector3(-45f, 0f, 150f);
-            var normal = StoatSlingMath.RingNormal(Vector3.zero, Vector3.forward, centre, Vector3.up);
-            Assert.AreEqual(1f, Mathf.Abs(Vector3.Dot(normal, Vector3.up)), 1e-4f, "a level pass draws a level ring");
-            int n = StoatSlingMath.Ring(centre, normal, 80f, 96, points);
-            Assert.AreEqual(96, n);
-            for (int i = 0; i < n; i++)
-            {
-                Assert.AreEqual(80f, Vector3.Distance(points[i], centre), 1e-3f, "every point on the ring");
-                Assert.AreEqual(0f, Vector3.Dot(points[i] - centre, normal), 1e-3f, "in the ring's plane");
-            }
-            Assert.AreEqual(Vector3.up, StoatSlingMath.RingNormal(Vector3.zero, Vector3.forward, new Vector3(0f, 0f, 50f), Vector3.up),
-                "flying straight at the centre: the fallback plane");
-            Assert.AreEqual(0, StoatSlingMath.Ring(centre, normal, 0f, 96, points), "no radius, no ring");
-        }
-
-        [Test]
-        public void SettleHeading_EasesOntoTheTangent_NeverSlowerThanTheOrbitsOwnTurn()
-        {
-            var tangent = Quaternion.Euler(0f, -60f, 0f) * Vector3.forward;
-            var h = StoatSlingMath.SettleHeading(Vector3.forward, tangent, 2f, 0.1f);
-            Assert.AreEqual(6f, Vector3.Angle(Vector3.forward, h), 1e-3f, "a tenth of the 60° miss");
-            h = StoatSlingMath.SettleHeading(Vector3.forward, tangent, 10f, 0.1f);
-            Assert.AreEqual(10f, Vector3.Angle(Vector3.forward, h), 1e-3f, "at least the orbit's own step");
-            h = StoatSlingMath.SettleHeading(Vector3.forward, Quaternion.Euler(0f, -1f, 0f) * Vector3.forward, 2f, 0.1f);
-            Assert.AreEqual(1f, Vector3.Angle(Vector3.forward, h), 1e-3f, "never past the tangent");
         }
 
         [Test]
@@ -180,43 +74,6 @@ namespace CosmicShore.Tests
         public void Hold01_AutopilotTakesItsFixedSqueeze()
         {
             Assert.AreEqual(0.5f, StoatSlingMath.Hold01(1f, 99f, true, 1f, autopilot: true, autopilotHold01: 0.5f), 1e-6f);
-        }
-
-        [Test]
-        public void Strength_RunsMinToMaxAlongTheExponent()
-        {
-            Assert.AreEqual(2f, StoatSlingMath.Strength(0f, 2f, 12f, 1.5f), 1e-5f, "a touch is the minimum");
-            Assert.AreEqual(12f, StoatSlingMath.Strength(1f, 2f, 12f, 1.5f), 1e-5f, "buried is the maximum");
-            float half = StoatSlingMath.Strength(0.5f, 2f, 12f, 1.5f);
-            Assert.Less(half, 7f, "exponent > 1 keeps a half squeeze under the linear midpoint");
-            Assert.AreEqual(2f + 10f * Mathf.Pow(0.5f, 1.5f), half, 1e-5f);
-            Assert.AreEqual(7f, StoatSlingMath.Strength(0.5f, 2f, 12f, 1f), 1e-5f, "exponent 1 is linear");
-            Assert.AreEqual(5f, StoatSlingMath.Strength(1f, 5f, 3f, 1f), 1e-5f, "max below min collapses to min");
-        }
-
-        [Test]
-        public void PairAxis_PutsTheBlackHoleOnThePressedSide()
-        {
-            // BlackHolePairMath.Positions lays the black hole at −axis and the white hole at +axis.
-            var right = Vector3.right;
-            var leftAxis = StoatSlingMath.PairAxis(blackOnLeft: true, right);
-            BlackHolePairMath.Positions(Vector3.zero, leftAxis, 10f, out var black, out var white);
-            Assert.Less(Vector3.Dot(black, right), 0f, "left trigger: black on the left");
-            Assert.Greater(Vector3.Dot(white, right), 0f, "left trigger: white on the right");
-
-            var rightAxis = StoatSlingMath.PairAxis(blackOnLeft: false, right);
-            BlackHolePairMath.Positions(Vector3.zero, rightAxis, 10f, out black, out white);
-            Assert.Greater(Vector3.Dot(black, right), 0f, "right trigger: black on the right");
-            Assert.Less(Vector3.Dot(white, right), 0f, "right trigger: white on the left");
-            Assert.AreEqual(0f, black.y, 1e-6f, "the pair lies on the hull's horizontal");
-        }
-
-        [Test]
-        public void Midpoint_IsAheadInHorizonRadii()
-        {
-            var mid = StoatSlingMath.Midpoint(new Vector3(1f, 2f, 3f), Vector3.forward, 5f, 2f);
-            Assert.AreEqual(new Vector3(1f, 2f, 13f), mid);
-            Assert.AreEqual(new Vector3(1f, 2f, 3f), StoatSlingMath.Midpoint(new Vector3(1f, 2f, 3f), Vector3.forward, 5f, -1f), "never behind");
         }
 
         // ------------------------------------------------------------------ the registration set
@@ -245,22 +102,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Prefab_BindsEachTriggerToBothModesXToTheHoldAndBToTheSwitch()
+        public void Prefab_BindsEachTriggerToItsOrbit_XToTheHold_AndNothingToB()
         {
             string text = Read(Prefab);
             string block = Regex.Match(text, @"  _gamepadActionOverrides:\n(?:.*\n)*?(?=  _onButtonPressed:)").Value;
             Assert.IsNotEmpty(block, "gamepad override block");
-            // Each trigger carries its dipole (Mass mode) AND its orbit (Time mode); StoatModeExecutor decides which acts.
-            StringAssert.Contains("  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}\n" +
-                                  "    - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}\n", block, "LT → dipole left + orbit left");
-            StringAssert.Contains("  - InputEvent: 1\n    ShipActions:\n    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}\n" +
-                                  "    - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}\n", block, "RT → dipole right + orbit right");
+            // 2026-11-02: the field dipole and the B mode switch were removed from the kit; each trigger is its orbit alone.
+            StringAssert.Contains("  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}\n" +
+                                  "  - InputEvent: 1\n", block, "LT → the left orbit alone");
+            StringAssert.Contains("  - InputEvent: 1\n    ShipActions:\n    - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}\n" +
+                                  "  - InputEvent: 6\n", block, "RT → the right orbit alone");
             StringAssert.Contains("  - InputEvent: 6\n    ShipActions:\n    - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}\n", block, "X → StoatHoldAction");
-            StringAssert.Contains("  - InputEvent: 7\n    ShipActions:\n    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n", block, "B → StoatModeAction");
-            // On a phone the same four (the owner, 2026-10-21: "the stoat should join the mobile fleet"; STOAT.md "On a phone").
+            foreach (var guid in new[] { "9eacf723b796418caecfe237336b9985", "62ce60a32bef4c70b42fd1f7cd9896ff", "f05e7ded817a4670bb78832c9c879566" })
+                StringAssert.DoesNotContain($"guid: {guid}, type: 2}}\n", block, $"{guid} (a dipole or the mode switch) is still bound");
+            StringAssert.DoesNotContain("  - InputEvent: 7\n", block, "B is bound");
+            // On a phone the same three (the owner, 2026-10-21: "the stoat should join the mobile fleet"; STOAT.md "On a phone").
             string touch = Regex.Match(text, @"  _touchActionOverrides:\n(?:.*\n)*?(?=  _gamepadActionOverrides:)").Value;
             Assert.AreEqual(block.Substring(block.IndexOf('\n') + 1), touch.Substring(touch.IndexOf('\n') + 1),
-                "the touch overrides carry exactly the gamepad's four entries");
+                "the touch overrides carry exactly the gamepad's entries");
             // No DriftActionSO is bound, so the trigger analog the transformer still reads never drifts.
             StringAssert.DoesNotContain("guid: aa095c07c8cd0374698884d1a44dbdec", text, "the Squirrel's drift action must not ride the Stoat's triggers");
         }
@@ -282,6 +141,9 @@ namespace CosmicShore.Tests
             StringAssert.Contains("  - {fileID: 5137264980012345606}\n", registry, "ripple executor registered");
             StringAssert.Contains("  config: {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n", text, "the mode executor's config");
             StringAssert.Contains("  config: {fileID: 11400000, guid: da077e9619f845c388ad5b7baf8da948, type: 2}\n", text, "the ripple executor's config");
+            // The field dipole's executor was deleted on 2026-11-21: nothing on the prefab names it.
+            StringAssert.DoesNotContain("guid: 6eee000b02734120a5138fb645997915", text, "StoatDipoleExecutor is back on the prefab");
+            StringAssert.DoesNotContain("5137264980012345603", text, "the dipole executor's component is still referenced");
         }
 
         [Test]
@@ -293,7 +155,7 @@ namespace CosmicShore.Tests
                      {
                          ("5db69771d02b4c24ca00998adf318137", "the Squirrel model"),
                          ("c1572db06ad4244469ad3f25d86940b8", "SquirrelHUDVariant"),
-                         ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelVesselHUDController"),
+                         ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelHUDController"),
                          ("2b0d487de1554acfad93a158ddac3874", "SquirrelVesselTelemetry"),
                          ("3c3fc507fffc4f5e86ab043ee7543cd2", "the Squirrel's camera settings"),
                          ("769c65db9958c064485be49a2183f263", "the Squirrel's vessel container"),
@@ -313,19 +175,19 @@ namespace CosmicShore.Tests
             StringAssert.Contains($"  vesselClass: {StoatClass}\n", text);
             string Entry(int element) => Regex.Match(text, $@"  - Element: {element}\n(?:    .*\n)*?    UpgradeDescription: .*\n").Value;
             string charge = Entry(1), mass = Entry(2), space = Entry(3), time = Entry(4);
-            StringAssert.StartsWith("  - Element: 3\n    AbilityLabel: Field Dipole\n", space);
-            StringAssert.Contains("    Input: 2\n", space, "the dipole is on the triggers (LT; RT mirrors)");
+            StringAssert.StartsWith("  - Element: 3\n    AbilityLabel: Catch Orbit\n", space);
+            StringAssert.Contains("    Input: 2\n", space, "the swing is on the triggers (LT; RT mirrors)");
             StringAssert.Contains("    UpgradeLabel: Accretion\n", space);
-            StringAssert.StartsWith("  - Element: 4\n    AbilityLabel: Pathfinder / Time Mode\n", time);
-            StringAssert.Contains("    Input: 0\n", time, "the pathfinder is passive; X's hold sits outside the four abilities");
-            StringAssert.Contains("    UpgradeLabel: Foresight\n", time);
+            StringAssert.StartsWith("  - Element: 4\n    AbilityLabel: Timed Slingshot\n", time);
+            StringAssert.Contains("    Input: 0\n", time, "the warp is passive; X's hold sits outside the four abilities");
+            StringAssert.Contains("    UpgradeLabel: \n", time, "Time 5 is open: Foresight was deleted with the old pathfinder (2026-11-21)");
             StringAssert.StartsWith("  - Element: 1\n    AbilityLabel: Ripple\n", charge);
             StringAssert.Contains("    UpgradeLabel: Siphon\n", charge);
-            StringAssert.StartsWith("  - Element: 2\n    AbilityLabel: Mass / Time Mode\n", mass);
-            StringAssert.Contains("    Input: 7\n", mass, "B switches the mode");
+            StringAssert.StartsWith("  - Element: 2\n    AbilityLabel: Heavy Launch\n", mass);
+            StringAssert.Contains("    Input: 0\n", mass, "passive: nothing on B since Mass mode was removed");
             StringAssert.Contains("    UpgradeLabel: Armoured Wake\n", mass);
             Assert.AreEqual(4, Regex.Matches(text, @"  - Element: \d\n").Count, "one entry per element");
-            StringAssert.DoesNotContain("open design slot", text, "every slot is designed");
+            StringAssert.DoesNotContain("open design slot", text, "every ability is designed");
         }
 
         [Test]
@@ -337,7 +199,7 @@ namespace CosmicShore.Tests
             StringAssert.Contains($"guid: {PrefabGuid}", Read(Prefab + ".meta"));
         }
 
-        // ------------------------------------------------------------------ the catch's pace (studio dpWarp, 2026-10-14)
+        // ------------------------------------------------------------------ the swing's warp (studio dpWarp, 2026-10-14)
 
         [Test]
         public void CatchWarp_IsTheFieldsBoostScaledByTheShare()
@@ -347,7 +209,7 @@ namespace CosmicShore.Tests
             {
                 // the shipped share, 1.15 (the studio's dpWarp): the field's ×3 becomes 1 + 2 × 1.15 = 3.3
                 Assert.AreEqual(3.3f, config.CatchWarpTarget(3f), 1e-4f);
-                Assert.AreEqual(1f, config.CatchWarpTarget(1f), 1e-6f, "no field boost, no catch warp");
+                Assert.AreEqual(1f, config.CatchWarpTarget(1f), 1e-6f, "no field boost, no swing warp");
                 Assert.AreEqual(1f, config.CatchWarpTarget(0.5f), 1e-6f, "a boost below 1 never slows the clock");
                 Assert.IsTrue(config.CatchWarpFromPress, "the warp starts at the press (studio dpWarpHeld 1)");
             }
@@ -360,19 +222,17 @@ namespace CosmicShore.Tests
             // StoatDipoleMath.StepBoost is the one rule both modes run: rise toward the target while warped, fade after.
             float b = 1f;
             for (int i = 0; i < 120; i++) b = StoatDipoleMath.StepBoost(b, true, 3.3f, 20f, 0.6f, 1f / 60f);
-            Assert.AreEqual(3.3f, b, 0.01f, "two seconds held reaches the catch's target");
+            Assert.AreEqual(3.3f, b, 0.01f, "two seconds held reaches the swing's target");
             for (int i = 0; i < 36; i++) b = StoatDipoleMath.StepBoost(b, false, 3.3f, 20f, 0.6f, 1f / 60f);
             Assert.AreEqual(1f + 2.3f * Mathf.Exp(-1f), b, 0.02f, "one fade time after the release, 1/e of the warp is left");
         }
 
         [Test]
-        public void Asset_ShipsTheStudiosPaceAndTiming()
+        public void Asset_ShipsTheStudiosPace()
         {
             var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
             StringAssert.Contains("  catchWarpShare: 1.15\n", text, "studio dpWarp");
             StringAssert.Contains("  catchWarpFromPress: 1\n", text, "studio dpWarpHeld");
-            StringAssert.Contains("  sweetSpotDegrees: 90\n", text, "studio dpSweetDeg");
-            StringAssert.Contains("  missKickShare: 0.2\n", text, "studio dpMissShare");
         }
 
         [Test]
@@ -385,8 +245,335 @@ namespace CosmicShore.Tests
                 StringAssert.DoesNotContain("rKey", src, $"{path}: Button2 left R");
                 StringAssert.Contains("tKey", src, $"{path}: Button2 is T");
             }
-            StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
+            StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    padLabel: B\n    keyboardLabel: T\n",
                 Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
+        }
+
+        // ------------------------------------------------------------------ one mode (2026-11-02: Mass and Gate removed)
+
+        [Test]
+        public void TheStoatFliesTimeModeOnly()
+        {
+            var go = new GameObject("StoatModeProbe");
+            try
+            {
+                var mode = go.AddComponent<StoatModeExecutor>();
+                Assert.AreEqual(StoatModeExecutor.Mode.Time, mode.Current);
+                Assert.IsTrue(mode.UsesOrbit);
+                Assert.IsFalse(mode.IsMassMode);
+                Assert.AreEqual(1, (int)StoatModeExecutor.Mode.Time, "recorded in flights: never renumber");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Hud_TheModeCardShowsAnIconPerMode()
+        {
+            var text = Read("Assets/_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab");
+            foreach (var (field, guid) in new[]
+                     {
+                         ("massModeIcon", "707ac0afea37451ef31b5be8eb09cdb2"),
+                         ("timeModeIcon", "fb6ff66c748d7560d236e89894823447"),
+                     })
+            {
+                StringAssert.Contains($"  {field}: {{fileID: 21300000, guid: {guid}, type: 3}}\n", text, field);
+                Assert.IsTrue(File.Exists(AssetDatabasePathOf(guid)), $"{field}'s sprite is missing");
+            }
+        }
+
+        static string AssetDatabasePathOf(string guid)
+        {
+            foreach (var meta in Directory.GetFiles("Assets/_Graphics/Icons/AbilityIcons/Stoat", "*.png.meta"))
+                if (File.ReadAllText(meta).Contains($"guid: {guid}")) return meta.Substring(0, meta.Length - ".meta".Length);
+            return "";
+        }
+
+        [Test]
+        public void Mass_IsTheLaunchsPower_AndArmouredWakeShieldsIt()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            var power = Regex.Match(text, @"  launchPower:\n(?:    .*\n)+").Value;
+            StringAssert.Contains("    Min: 1\n", power);
+            StringAssert.Contains("    Max: 2.5\n", power);
+            StringAssert.Contains("    element: 2\n", power, "Mass");
+            StringAssert.Contains("  massUpgradeShieldsLaunchTrail: 1\n", text);
+        }
+
+        [Test]
+        public void SecondPush_NeverPassesTheCap()
+        {
+            Assert.AreEqual(50f, StoatSlingMath.CappedKick(50f, 160f, 1.6f), 1e-4f, "under the cap: all of it");
+            Assert.AreEqual(96f, StoatSlingMath.CappedKick(500f, 160f, 1.6f), 1e-3f, "never past 1.6 x the speed at the fling");
+            Assert.AreEqual(0f, StoatSlingMath.CappedKick(-5f, 160f, 1.6f), 1e-6f, "never a pull back");
+        }
+
+        [Test]
+        public void ShippedConfig_CarriesAccretionAndTheWarpKickCap()
+        {
+            string cfg = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            StringAssert.Contains("  accretionPerPrism: 0.04\n", cfg);
+            StringAssert.Contains("  accretionMax: 0.4\n", cfg);
+            StringAssert.Contains("  warpKickCapCruise: 3\n", cfg);
+            var config = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            try
+            {
+                Assert.AreEqual(0.04f, config.AccretionPerPrism, 1e-6f);
+                Assert.AreEqual(0.4f, config.AccretionMax, 1e-6f);
+                Assert.AreEqual(3f, config.WarpKickCapCruise, 1e-6f);
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void Map_OmniIsFulmen_AndTheHudSpaceCardIsTheOrbit()
+        {
+            string map = Read(Map);
+            StringAssert.Contains("  omniAbilityLabel: Fulmen\n", map);
+            StringAssert.DoesNotContain("a launch's kick", map, "an apostrophe in a single-quoted YAML string must be doubled");
+            string hud = Read("Assets/_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab");
+            StringAssert.DoesNotContain("guid: 586d56db81bb568c940094830cd59abb", hud, "the Space card no longer shows the field dipole");
+            StringAssert.Contains("  omniAbilityLabel: Fulmen\n", map);
+        }
+
+        [Test]
+        public void WarpTimesKick_NeverPastThreeTimesCruise()
+        {
+            Assert.AreEqual(50f, StoatSlingMath.WarpCappedKick(50f, 1f, 60f, 3f), 1e-4f, "unwarped and under: all of it");
+            Assert.AreEqual(180f, StoatSlingMath.WarpCappedKick(500f, 1f, 60f, 3f), 1e-3f, "3 x cruise");
+            Assert.AreEqual(180f / 5.6f, StoatSlingMath.WarpCappedKick(500f, 5.6f, 60f, 3f), 1e-3f, "Time 10: warp x kick still 3 x cruise");
+            Assert.LessOrEqual(5.6f * StoatSlingMath.WarpCappedKick(1e4f, 5.6f, 60f, 3f), 3f * 60f + 1e-3f);
+            Assert.AreEqual(180f, StoatSlingMath.WarpCappedKick(500f, 0.5f, 60f, 3f), 1e-3f, "a slow clock does not raise it");
+        }
+
+        [Test]
+        public void Accretion_FourPercentAPrism_CappedAtForty()
+        {
+            Assert.AreEqual(0f, StoatSlingMath.AccretionBonus(0, 0.04f, 0.4f), 1e-6f);
+            Assert.AreEqual(0.12f, StoatSlingMath.AccretionBonus(3, 0.04f, 0.4f), 1e-5f);
+            Assert.AreEqual(0.4f, StoatSlingMath.AccretionBonus(10, 0.04f, 0.4f), 1e-5f);
+            Assert.AreEqual(0.4f, StoatSlingMath.AccretionBonus(50, 0.04f, 0.4f), 1e-5f, "never past +40%");
+            Assert.AreEqual(0f, StoatSlingMath.AccretionBonus(-3, 0.04f, 0.4f), 1e-6f);
+        }
+
+        [Test]
+        public void Momentum_IsTheSwingsWarp_FadingToNothing()
+        {
+            Assert.AreEqual(3f, StoatSlingMath.MomentumWarp(3f, 1f, 0f, 2.5f), 1e-5f, "a fling keeps the swing's warp");
+            Assert.AreEqual(1f, StoatSlingMath.MomentumWarp(3f, 0f, 0f, 2.5f), 1e-5f, "an untimed one keeps none");
+            Assert.AreEqual(2f, StoatSlingMath.MomentumWarp(3f, 1f, 1.25f, 2.5f), 1e-5f, "half way through the fade, half of it");
+            Assert.AreEqual(1f, StoatSlingMath.MomentumWarp(3f, 1f, 2.5f, 2.5f), 1e-5f, "gone");
+        }
+
+        [Test]
+        public void SlingConfig_ShipsTheEarnedSpeed_AndAOneSecondPhoneRamp()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            foreach (var row in new[] { "pressWarpShare: 0.5\n", "momentumSeconds: 6\n", "speedCapShare: 1.6\n", "holdRampSeconds: 1\n" })
+                StringAssert.Contains("  " + row, text);
+        }
+
+        // ------------------------------------------------------------------ the swing (Yash, 2026-11-11: "change it to a black hole
+        // only as before, then make the slingshot angle dynamic based on our controller's axis like before... try a better approach
+        // this time")
+
+        [Test]
+        public void SwingHole_LaidAheadOnThePressedSide()
+        {
+            var right = StoatSlingMath.SwingHole(Vector3.zero, Vector3.forward, Vector3.right, true, 150f, 35f);
+            Assert.AreEqual(new Vector3(35f, 0f, 150f), right);
+            var left = StoatSlingMath.SwingHole(Vector3.zero, Vector3.forward, Vector3.right, false, 150f, 35f);
+            Assert.AreEqual(new Vector3(-35f, 0f, 150f), left);
+        }
+
+        [Test]
+        public void SwingStarts_PassingBesideTheHole_NeverFlyingIntoIt()
+        {
+            var hole = new Vector3(35f, 0f, 0f);
+            Assert.IsTrue(StoatSlingMath.SwingStarts(Vector3.zero, Vector3.forward, hole, 55f, 40f), "beside it, close: it starts");
+            Assert.IsFalse(StoatSlingMath.SwingStarts(Vector3.zero, Vector3.forward, new Vector3(35f, 0f, 150f), 55f, 40f), "still far");
+            Assert.IsFalse(StoatSlingMath.SwingStarts(Vector3.zero, Vector3.forward, new Vector3(5f, 0f, 40f), 55f, 40f),
+                "dead ahead: flying into it is not a swing");
+        }
+
+        [Test]
+        public void SwingAxis_TurnsTheNoseTowardTheHole_InAnyPlane()
+        {
+            var axis = StoatSlingMath.SwingAxis(Vector3.forward, Vector3.right * 35f, Vector3.up);
+            var turned = Quaternion.AngleAxis(45f, axis) * Vector3.forward;   // the swing turns the nose about it
+            Assert.Greater(turned.x, 0f, "a hole on the right swings you right");
+            Assert.AreEqual(45f, Vector3.Angle(Vector3.forward, turned), 0.01f);
+            var up = Quaternion.AngleAxis(30f, StoatSlingMath.SwingAxis(Vector3.forward, Vector3.up * 35f, Vector3.up)) * Vector3.forward;
+            Assert.Greater(up.y, 0f, "a hole above swings you up");
+            Assert.AreEqual(Vector3.up, StoatSlingMath.SwingAxis(Vector3.forward, Vector3.forward * 10f, Vector3.up), "dead ahead: the hull's up");
+        }
+
+        [Test]
+        public void SwingTurnDegrees_TheStickPicksTheAngle_TowardTheHoleTheMost()
+        {
+            // The hole on the right (hull frame x = 35): stick right = toward it.
+            Assert.AreEqual(52.5f, StoatSlingMath.SwingTurnDegrees(0f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "at rest: the middle");
+            Assert.AreEqual(90f, StoatSlingMath.SwingTurnDegrees(1f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "toward the hole: the most");
+            Assert.AreEqual(15f, StoatSlingMath.SwingTurnDegrees(-1f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "away: the least");
+            Assert.AreEqual(52.5f, StoatSlingMath.SwingTurnDegrees(0f, 1f, 35f, 0f, 15f, 90f), 1e-4f, "square to the hole: the middle");
+            // A hole above: stick up is toward it.
+            Assert.AreEqual(90f, StoatSlingMath.SwingTurnDegrees(0f, 1f, 0f, 35f, 15f, 90f), 1e-4f);
+            Assert.AreEqual(90f, StoatSlingMath.SwingTurnDegrees(3f, 0f, 35f, 0f, 15f, 90f), 1e-4f, "past full is full");
+        }
+
+        [Test]
+        public void SwingRate_IsSpeedOverDistance_CappedForAiming()
+        {
+            Assert.AreEqual(60f / 35f * Mathf.Rad2Deg, StoatSlingMath.SwingRate(60f, 35f, 720f), 1e-3f, "omega = v / d");
+            Assert.AreEqual(150f, StoatSlingMath.SwingRate(188f, 35f, 150f), 1e-4f, "never faster than the cap");
+        }
+
+        [Test]
+        public void SwingAi_LetsGoFacingItsTarget_OrWhenTheTargetIsNoLongerOnItsSide()
+        {
+            Assert.IsFalse(StoatSlingMath.SwingAiLetsGo(10f, 2f, 15f, 90f, 8f, true), "under the least turn: never");
+            Assert.IsTrue(StoatSlingMath.SwingAiLetsGo(30f, 5f, 15f, 90f, 8f, true), "facing its target");
+            Assert.IsFalse(StoatSlingMath.SwingAiLetsGo(30f, 40f, 15f, 90f, 8f, true), "still turning toward it");
+            Assert.IsTrue(StoatSlingMath.SwingAiLetsGo(30f, 40f, 15f, 90f, 8f, false), "turning on would turn it away (a warp press)");
+            Assert.IsTrue(StoatSlingMath.SwingAiLetsGo(90f, 60f, 15f, 90f, 8f, true), "the most it turns");
+            var axis = StoatSlingMath.SwingAxis(Vector3.forward, Vector3.right, Vector3.up);
+            Assert.IsTrue(StoatSlingMath.OnSwingSide(Vector3.forward, new Vector3(1f, 0f, 1f), axis), "a target to the right of a right swing");
+            Assert.IsFalse(StoatSlingMath.OnSwingSide(Vector3.forward, new Vector3(-1f, 0f, 1f), axis));
+        }
+
+        [Test]
+        public void SlingConfig_ShipsTheSwing()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            foreach (var row in new[] { "swingAhead: 150\n", "swingSide: 35\n", "swingHorizon: 0.8\n", "swingReach: 55\n",
+                         "swingCatchDegrees: 40\n", "swingMinDegrees: 15\n", "swingMaxDegrees: 90\n", "swingDegreesPerSecond: 150\n",
+                         "swingSeconds: 4\n", "aiSwingFaceDegrees: 8\n",
+                         // ONE slingshot (Yash, 2026-11-19): the swing's own speed-up; no second push at the exit.
+                         "swingKickShare: 0\n" })
+                StringAssert.Contains("  " + row, text);
+            // The hull's own AI swings for a turn of 20 deg or more (stoat_orbit_sim.py --swing).
+            StringAssert.Contains("  aiSlingMinTurnDegrees: 20\n", text);
+            // The ripple a collapsing hole throws reads the separation the catch pair used to have (2 x its 45 u side).
+            StringAssert.Contains("  rippleSeparation: 90\n", text);
+        }
+
+        [Test]
+        public void WantsWarp_ALongLegAtAnyBearing_NeverAShortOneOrWithTheRuleOff()
+        {
+            Assert.IsTrue(StoatSlingMath.WantsWarp(new Vector3(0f, 0f, 280f), 280f), "dead ahead, far enough");
+            Assert.IsFalse(StoatSlingMath.WantsWarp(new Vector3(0f, 0f, 279f), 280f), "too near the ring");
+            Assert.IsFalse(StoatSlingMath.WantsWarp(new Vector3(0f, 0f, 9000f), 0f), "0 turns the rule off");
+            Assert.IsFalse(StoatSlingMath.TryAutopilotSide(new Vector3(0f, 0f, 9000f), 7.84f, 120f, out _),
+                "dead ahead the turn press never fires: the hole the warp press closes");
+        }
+
+        [Test]
+        public void AutopilotPress_ToTurn_AndForTheWarpOnlyWhenTheRuleIsOn()
+        {
+            // The hull's own config carries aiWarpMinDistance 0: the AI presses to turn only.
+            Assert.IsFalse(StoatSlingMath.AutopilotPress(new Vector3(0f, 0f, 900f), 50f, 123f, 0f, out _), "dead ahead, rule off");
+            Assert.IsTrue(StoatSlingMath.AutopilotPress(new Vector3(-400f, 0f, 100f), 50f, 123f, 0f, out bool left), "a turn of 76 deg");
+            Assert.IsTrue(left, "the target on the left: the left trigger, the hole on the left");
+            Assert.IsFalse(StoatSlingMath.AutopilotPress(new Vector3(-40f, 0f, 10f), 50f, 123f, 0f, out _), "too near to press");
+            // With the rule on, a long leg dead ahead is a press; a short one is not.
+            Assert.IsTrue(StoatSlingMath.AutopilotPress(new Vector3(0f, 0f, 420f), 50f, 123f, 400f, out bool ahead), "a long leg");
+            Assert.IsFalse(ahead, "dead ahead presses right (TryAutopilotSide's side for x >= 0)");
+            Assert.IsFalse(StoatSlingMath.AutopilotPress(new Vector3(0f, 0f, 399f), 50f, 123f, 400f, out _), "under the warp distance");
+            // The executor's swing autopilot reads it (the source, as the asset tests read the configs).
+            StringAssert.Contains("StoatSlingMath.AutopilotPress(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance,",
+                Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs"));
+        }
+
+        [Test]
+        public void Autopilot_OnARaceLine_JudgesTheRingsRange_WithTheLinesBearing()
+        {
+            // A race line keeps the steering point one look-ahead (60 u at cruise) ahead: judged alone it is inside the
+            // swing's 120 u "far enough to press" test, so the AI would never press; the ring it is after is 500 u away.
+            var steer = new Vector3(20f, 0f, 57f);   // 60 u ahead, a little right
+            Assert.IsFalse(StoatSlingMath.TryAutopilotSide(steer, 15f, 120f, out _),
+                "negative control: the steering point alone never presses");
+            var gauge = StoatDipoleMath.AutopilotGauge(steer, 500f);
+            Assert.AreEqual(500f, gauge.magnitude, 1e-3f);
+            Assert.AreEqual(0f, Vector3.Angle(steer, gauge), 1e-3f, "the bearing stays the line's");
+            Assert.IsTrue(StoatSlingMath.TryAutopilotSide(gauge, 15f, 120f, out bool left));
+            Assert.IsFalse(left, "the line bends right: the right trigger");
+            Assert.AreEqual(Vector3.zero, StoatDipoleMath.AutopilotGauge(Vector3.zero, 500f), "no bearing: no target");
+        }
+
+        [Test]
+        public void TheSink_StripsARival_NeverItsOwnerOrATeammate()
+        {
+            Assert.IsTrue(BlackHoleCrystalStrip.OwesStrip(1f, false, true, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade));
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(1f, true, true, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade), "the owner");
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(1f, false, true, CosmicShore.Data.Domains.Jade, CosmicShore.Data.Domains.Jade), "a teammate");
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(1f, false, false, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade), "domain unknown");
+            Assert.IsFalse(BlackHoleCrystalStrip.OwesStrip(0f, false, true, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade), "share 0");
+        }
+
+        [Test]
+        public void EveryAIStoat_PressesToTurn_SlingshotsAlsoForTheWarp()
+        {
+            // The hull's own AI presses to turn only.
+            StringAssert.Contains("  aiWarpMinDistance: 0\n", Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"));
+            // Slingshot's own AI (Stoat run1, raced in the real game, 2026-11-17, promote_trained_drives.py): a warp press on
+            // almost any leg (11.5 u or more), hardly a turn press (154 deg) - every rung 18-40% faster than the 2026-11-08 rows.
+            var slingshot = Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset");
+            StringAssert.Contains("  aiWarpMinDistance: 11.523\n", slingshot);
+            StringAssert.Contains("  aiSlingMinTurnDegrees: 154.471\n", slingshot);
+            Assert.IsNotNull(Resources.Load<StoatSlingConfigSO>("AIBoostPolicies/StoatSlingConfig_Slingshot"),
+                "Slingshot's Stoat AI copy is missing");
+        }
+
+        // ------------------------------------------------------------------ every AI flies the swing; the old kit is gone (2026-11-21)
+
+        [Test]
+        public void EveryStoatAI_FliesTheSwing_NoOtherSlingshotPathIsLeft()
+        {
+            // Yash, 2026-11-21: "make sure all AI uses our latest slingshot mechanics, and delete all other old pathfinding and
+            // other mechanics". The executor has one press, the swing, and one autopilot, the swing's; no switch picks another.
+            string exec = Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs");
+            StringAssert.Contains("LaySwing(side);", exec);
+            StringAssert.Contains("void AutopilotSwing()", exec);
+            foreach (var gone in new[] { "Trampoline", "StoatSkim", "Skimshell", "CatchPair", "SpawnPair", "SpawnCrystalPair", "AimedExit",
+                                         "StepOrbit", "UsesSwing", "UsesSkim", "UsesTrampoline", "StoatDipoleExecutor" })
+                StringAssert.DoesNotContain(gone, exec, $"the retired {gone} is back in the sling executor");
+            // Every AI copy of the sling config carries no retired row.
+            foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
+                                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset",
+                                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset" })
+            {
+                string text = Read(path);
+                foreach (var row in new[] { "  trampoline", "  skim:", "  aimedExit:", "  catchAhead:", "  orbitRadiusWide:",
+                                            "  aiHoldForWindowDegrees:", "  aiReleaseConeDegrees:", "  halfGapHorizons:" })
+                    StringAssert.DoesNotContain(row, text, $"{path}: a retired row ({row.Trim()}) is back");
+            }
+            // The field dipole's AI copies are gone with it.
+            Assert.IsFalse(File.Exists("Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset"));
+            Assert.IsFalse(File.Exists("Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset"));
+            // Warpline seats the Meerkat only (2026-10-27), so the Stoat's sling copy for it went too (2026-11-23).
+            Assert.IsFalse(File.Exists("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset"));
+        }
+
+        [Test]
+        public void NoStoatDrawsAPathOrARing_ForAnyPilot()
+        {
+            // Yash, 2026-11-21: "I see the pathfinding dotted line in Stoat AIs while playing slingshot"; 2026-11-22: "I dont need
+            // to see the drawing line either". The pathfinder is the flight clock's warp alone: no reach ring, no exit line, no
+            // fling ring, no Foresight, for any pilot.
+            string path = Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatPathfinderExecutor.cs");
+            StringAssert.Contains("transformer.FlightTimeScale = _boost;", path, "the warp (the swing's speed-up) stays");
+            foreach (var gone in new[] { "WorldDots", "DrawRings", "AddSwingRings", "Foresight(", "PredictPath", "StoatPathfinderDots",
+                                         "Camera", "Ring(" })
+                StringAssert.DoesNotContain(gone, path, $"{gone} is back in the pathfinder");
+            string sling = Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs");
+            foreach (var gone in new[] { "SwingExitHeading", "SwingFxAge", "SwingReachRadius" })
+                StringAssert.DoesNotContain(gone, sling, $"{gone} (a drawing input) is back on the sling executor");
+            foreach (var file in new[] { "StoatPathfinderDots.cs", "StoatPathfinderWorldDots.cs" })
+                Assert.IsFalse(File.Exists("Assets/_Scripts/Controller/Vessel/R_VesselActions/" + file), $"{file} is back");
+            foreach (var row in new[] { "  ringDotSpacing:", "  openColor:", "  worldDotMinPixels:" })
+            {
+                StringAssert.DoesNotContain(row, Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"));
+                StringAssert.DoesNotContain(row, Read("Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset"));
+            }
         }
     }
 }

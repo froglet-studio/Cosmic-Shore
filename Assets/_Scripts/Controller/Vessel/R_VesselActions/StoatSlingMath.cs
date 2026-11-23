@@ -3,10 +3,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The pure arithmetic of the Stoat's slingshot (<c>R_VesselActions/STOAT.md</c> §2): what a
-    /// squeeze is worth and where the pair goes. No scene, no time, no input device — every method
-    /// is a function of its arguments, so <c>StoatSlingTests</c> hold it directly and the executor
-    /// only applies it.
+    /// The pure arithmetic of the Stoat's slingshot, the SWING (<c>R_VesselActions/STOAT.md</c> §2, <c>STOAT_DIPOLE.md</c> §1b):
+    /// what a squeeze is worth, where the hole goes, how far and how fast it turns you, and when the autopilot presses and lets
+    /// go. No scene, no time, no input device — every method is a function of its arguments, so <c>StoatSlingTests</c> hold it
+    /// directly and the executor only applies it. The catch orbit's, the aimed exit's, the trampoline's and the crystal
+    /// style's arithmetic was deleted with them (2026-11-21).
     /// </summary>
     public static class StoatSlingMath
     {
@@ -28,188 +29,133 @@ namespace CosmicShore.Gameplay
         /// The squeeze a hold has reached: the DEEPEST sample so far, never the latest. A real trigger
         /// is let go over several frames — its travel sweeps back down through the samples before
         /// it crosses the deadzone and the release edge fires — so the latest sample at release is
-        /// ~the deadzone, and slinging on it would throw every gamepad pair at minimum size. The
-        /// keyboard ramp and the autopilot's fixed squeeze never fall, so for them peak == latest.
+        /// ~the deadzone. The keyboard ramp and the autopilot's fixed squeeze never fall, so for them peak == latest.
         /// </summary>
         public static float Peak(float peakSoFar, float sample) => Mathf.Max(Mathf.Clamp01(peakSoFar), Mathf.Clamp01(sample));
 
-        /// <summary>
-        /// The attractor's strength for a squeeze: <paramref name="minStrength"/> at a touch,
-        /// <paramref name="maxStrength"/> fully buried, along <c>hold^exponent</c> so a light press
-        /// stays a nudge.
-        /// </summary>
-        public static float Strength(float hold01, float minStrength, float maxStrength, float exponent)
-        {
-            float t = Mathf.Pow(Mathf.Clamp01(hold01), Mathf.Max(0.01f, exponent));
-            return Mathf.Lerp(minStrength, Mathf.Max(minStrength, maxStrength), t);
-        }
+        // ------------------------------------------------------------------ the autopilot's press
 
         /// <summary>
-        /// The pair's axis, which runs black → white (<c>BlackHolePairMath.Positions</c> puts the
-        /// attractor at −axis). The attractor lands on the PRESSED side: the left trigger wants
-        /// it on the left, so the axis points right; the right trigger mirrors it.
-        /// </summary>
-        public static Vector3 PairAxis(bool blackOnLeft, Vector3 hullRight) => blackOnLeft ? hullRight : -hullRight;
-
-        /// <summary>
-        /// The autopilot's choice: given its target in the HULL's local frame, sling when the target
+        /// The autopilot's turn: given its target in the HULL's local frame, press when the target
         /// is at least <paramref name="minTurnDegrees"/> off the nose on the hull's horizontal and
-        /// <paramref name="minDistance"/> away, with the ATTRACTOR on the side it wants to turn
-        /// (target to the left, x &lt; 0, → black on the left). A target behind the hull counts as
-        /// a full turn toward its side.
+        /// <paramref name="minDistance"/> away, on the side it wants to turn (target to the left,
+        /// x &lt; 0, → the left trigger). A target behind the hull counts as a full turn toward its side.
         /// </summary>
-        public static bool TryAutopilotSide(Vector3 targetLocal, float minTurnDegrees, float minDistance, out bool blackOnLeft)
+        public static bool TryAutopilotSide(Vector3 targetLocal, float minTurnDegrees, float minDistance, out bool turnLeft)
         {
-            blackOnLeft = targetLocal.x < 0f;
+            turnLeft = targetLocal.x < 0f;
             var flat = new Vector2(targetLocal.x, targetLocal.z);
             if (flat.sqrMagnitude < 1e-6f || targetLocal.magnitude < minDistance) return false;
             float offNose = Mathf.Abs(Mathf.Atan2(targetLocal.x, targetLocal.z)) * Mathf.Rad2Deg;
             return offNose >= minTurnDegrees;
         }
 
-        // ------------------------------------------------------------------ the orbit (drift pair)
+        /// <summary>
+        /// Whether an autopilot presses for the warp alone: its target at least <paramref name="warpDistance"/> away, at any
+        /// bearing (0 = never). <see cref="TryAutopilotSide"/> never fires with the target dead ahead, so without this a
+        /// lined-up AI never earns the swing's warp down a straight.
+        /// </summary>
+        public static bool WantsWarp(Vector3 targetLocal, float warpDistance) =>
+            warpDistance > 0f && targetLocal.magnitude >= warpDistance;
 
         /// <summary>
-        /// The orbit radius a squeeze asks for: <paramref name="wide"/> at a touch, <paramref name="tight"/>
-        /// fully buried, along <c>hold^exponent</c> — squeeze harder, turn tighter.
+        /// Whether the autopilot presses, and on which side the hole goes: for a turn it wants (<see cref="TryAutopilotSide"/>),
+        /// or for the warp alone on a long leg (<see cref="WantsWarp"/>; 0 = never).
         /// </summary>
-        public static float OrbitRadius(float hold01, float wide, float tight, float exponent)
-        {
-            float t = Mathf.Pow(Mathf.Clamp01(hold01), Mathf.Max(0.01f, exponent));
-            float w = Mathf.Max(1f, wide);
-            return Mathf.Lerp(w, Mathf.Clamp(tight, 1f, w), t);
-        }
+        public static bool AutopilotPress(Vector3 targetLocal, float minTurnDegrees, float minDistance, float warpDistance,
+            out bool turnLeft) =>
+            TryAutopilotSide(targetLocal, minTurnDegrees, minDistance, out turnLeft) | WantsWarp(targetLocal, warpDistance);
 
-        /// <summary>
-        /// The next heading on the orbit: <paramref name="forward"/> with its radial part removed (the
-        /// tangent), turned toward the centre (along <paramref name="toCentre"/>) by
-        /// <paramref name="angleRadians"/>. A nose pointed straight at or away from the centre has no
-        /// tangent and is returned as is.
-        /// </summary>
-        public static Vector3 OrbitHeading(Vector3 forward, Vector3 toCentre, float angleRadians)
-        {
-            if (toCentre.sqrMagnitude < 1e-8f) return forward;
-            var u = toCentre.normalized;
-            var t = forward - Vector3.Dot(forward, u) * u;
-            if (t.sqrMagnitude < 1e-8f) return forward;
-            t.Normalize();
-            return Quaternion.AngleAxis(angleRadians * Mathf.Rad2Deg, Vector3.Cross(t, u)) * t;
-        }
+        // ------------------------------------------------------------------ the fling's (optional) push and its momentum
 
-        /// <summary>
-        /// How far to move the hull toward the centre this step to settle on <paramref name="targetRadius"/>
-        /// at <paramref name="rate"/> per second (negative = outward).
-        /// </summary>
-        public static float RadialCorrection(float distance, float targetRadius, float rate, float dt) =>
-            (distance - targetRadius) * (1f - Mathf.Exp(-Mathf.Max(0f, rate) * Mathf.Max(0f, dt)));
-
-        /// <summary>The slingshot on release: <paramref name="speed"/> × lerp(min, max, the deepest squeeze), u/s.</summary>
+        /// <summary>The push at a fling: <paramref name="speed"/> × lerp(min, max, the deepest squeeze), u/s.</summary>
         public static float SlingBoost(float speed, float peak01, float minFraction, float maxFraction) =>
             Mathf.Max(0f, speed) * Mathf.Lerp(Mathf.Max(0f, minFraction), Mathf.Max(0f, maxFraction), Mathf.Clamp01(peak01));
 
+        /// <summary>The push a fling may add: <paramref name="kick"/>, but never past <paramref name="capShare"/> × the speed at
+        /// the fling.</summary>
+        public static float CappedKick(float kick, float releaseSpeed, float capShare) =>
+            Mathf.Clamp(kick, 0f, Mathf.Max(0f, (capShare - 1f) * releaseSpeed));
+
         /// <summary>
-        /// How well a slingshot was TIMED (Time mode, <c>STOAT_DIPOLE.md</c> §1b): 1 inside the window
-        /// <paramref name="fullHalfWidth"/> degrees either side of <paramref name="centreDegrees"/> of orbit swept, easing
-        /// (smoothstep) to 0 over the next <paramref name="falloff"/> degrees on both sides. The playtest's sling paid best
-        /// for a release a quarter-turn round the attractor — out on a tangent square to the heading you came in on.
+        /// The push, capped so <paramref name="flightClock"/> × the push (the speed the world sees it add) is never past
+        /// <paramref name="capCruise"/> × <paramref name="cruiseSpeed"/>. A clock below 1 does not raise the cap.
         /// </summary>
-        public static float SweetSpot(float sweptDegrees, float centreDegrees, float fullHalfWidth, float falloff)
+        public static float WarpCappedKick(float kick, float flightClock, float cruiseSpeed, float capCruise) =>
+            Mathf.Clamp(kick, 0f, Mathf.Max(0f, capCruise) * Mathf.Max(0f, cruiseSpeed) / Mathf.Max(1f, flightClock));
+
+        /// <summary>
+        /// A fling's momentum as a flight-clock warp: the swing's <paramref name="releaseClock"/> × the
+        /// <paramref name="timing01"/>, fading linearly to 1 over <paramref name="seconds"/>.
+        /// </summary>
+        public static float MomentumWarp(float releaseClock, float timing01, float age, float seconds)
         {
-            float off = Mathf.Abs(Mathf.Abs(sweptDegrees) - centreDegrees);
-            float full = Mathf.Max(0f, fullHalfWidth);
-            if (off <= full) return 1f;
-            float fall = Mathf.Max(1e-3f, falloff);
-            float t = Mathf.Clamp01((off - full) / fall);
-            return 1f - t * t * (3f - 2f * t);
+            if (seconds <= 0f || age >= seconds || age < 0f) return 1f;
+            float top = 1f + (Mathf.Max(1f, releaseClock) - 1f) * Mathf.Clamp01(timing01);
+            return 1f + (top - 1f) * (1f - age / seconds);
+        }
+
+        /// <summary>Space-5 Accretion: <paramref name="captured"/> × <paramref name="perPrism"/>, clamped to 0..<paramref name="max"/>.</summary>
+        public static float AccretionBonus(int captured, float perPrism, float max) =>
+            Mathf.Clamp(Mathf.Max(0, captured) * Mathf.Max(0f, perPrism), 0f, Mathf.Max(0f, max));
+
+        // ------------------------------------------------------------------ the swing (STOAT_DIPOLE.md §1b)
+
+        /// <summary>Where the swing's black hole is laid: <paramref name="ahead"/> along the nose and <paramref name="side"/> to
+        /// the pressed side (RT right, LT left), so flying on you pass beside it on that side.</summary>
+        public static Vector3 SwingHole(Vector3 position, Vector3 forward, Vector3 right, bool pressedRight, float ahead, float side)
+        {
+            var f = forward.sqrMagnitude > 1e-8f ? forward.normalized : Vector3.forward;
+            var r = right.sqrMagnitude > 1e-8f ? right.normalized : Vector3.right;
+            return position + f * Mathf.Max(0f, ahead) + r * ((pressedRight ? 1f : -1f) * Mathf.Max(0f, side));
+        }
+
+        /// <summary>The swing starts: within <paramref name="reach"/> of the hole, with the hole at least
+        /// <paramref name="catchDegrees"/> off the nose (passing beside it, not flying into it).</summary>
+        public static bool SwingStarts(Vector3 hull, Vector3 forward, Vector3 hole, float reach, float catchDegrees)
+        {
+            var toHole = hole - hull;
+            return toHole.sqrMagnitude <= reach * reach && Vector3.Angle(forward, toHole) >= catchDegrees;
+        }
+
+        /// <summary>The swing's turn axis, fixed at its start: turning the nose about it by a positive angle turns it toward the
+        /// hole (the plane of the nose and the hole). Dead ahead or behind, the hull's up.</summary>
+        public static Vector3 SwingAxis(Vector3 forward, Vector3 toHole, Vector3 fallbackUp)
+        {
+            var axis = Vector3.Cross(forward, toHole);
+            if (axis.sqrMagnitude < 1e-8f) axis = fallbackUp;
+            return axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.up;
         }
 
         /// <summary>
-        /// The slingshot's kick for a release: the squeeze's boost (<see cref="SlingBoost"/>) scaled by the timing —
-        /// <paramref name="missShare"/> of it for a release outside the window, all of it inside — and by Time's
-        /// <paramref name="rate"/> (the Stoat's boost ratio, ≥ 1).
+        /// The angle a swing turns the hull, read from the stick: the stick's share toward the hole (the stick
+        /// <paramref name="stickX"/> right / <paramref name="stickY"/> up against the hole's direction in the hull's frame,
+        /// <paramref name="holeX"/> / <paramref name="holeY"/>) maps <paramref name="minDegrees"/> (away) .. the middle (at rest)
+        /// .. <paramref name="maxDegrees"/> (toward). Read every frame, so moving the stick moves the exit.
         /// </summary>
-        public static float TimedKick(float squeezeBoost, float sweetSpot01, float missShare, float rate) =>
-            Mathf.Max(0f, squeezeBoost) * Mathf.Lerp(Mathf.Clamp01(missShare), 1f, Mathf.Clamp01(sweetSpot01)) * Mathf.Max(1f, rate);
-
-        // ------------------------------------------------------------------ Time mode: the catch (STOAT_DIPOLE.md §1b)
-
-        /// <summary>
-        /// Where a Time-mode press lays its pair: the ATTRACTOR <paramref name="ahead"/> along the nose and
-        /// <paramref name="side"/> to the pressed side, the repulsor mirrored on the other side (the studio's dipole sling,
-        /// <c>dpAhead</c> / <c>dpSide</c>) — out in front of the hull, where the camera sees it.
-        /// </summary>
-        public static void CatchPair(Vector3 hull, Vector3 forward, Vector3 right, bool attractorLeft, float ahead, float side,
-            out Vector3 attractor, out Vector3 repulsor)
+        public static float SwingTurnDegrees(float stickX, float stickY, float holeX, float holeY, float minDegrees, float maxDegrees)
         {
-            var mid = hull + forward * Mathf.Max(0f, ahead);
-            var toAttractor = (attractorLeft ? -right : right) * Mathf.Max(0f, side);
-            attractor = mid + toAttractor;
-            repulsor = mid - toAttractor;
+            var hole = new Vector2(holeX, holeY);
+            float toward = hole.sqrMagnitude > 1e-8f ? Vector2.Dot(new Vector2(stickX, stickY), hole.normalized) : 0f;
+            return Mathf.Lerp(minDegrees, maxDegrees, 0.5f + 0.5f * Mathf.Clamp(toward, -1f, 1f));
         }
 
-        /// <summary>
-        /// Whether the attractor CATCHES the hull this frame (the studio's dipole sling): as the hull passes it — within
-        /// the <paramref name="detectionRadius"/> and with the attractor at least <paramref name="catchDegrees"/> off the
-        /// nose — or as soon as the hull is inside the <paramref name="orbitRadius"/>. The second rule is what makes it
-        /// ALWAYS catch before the hull can reach the hole: the orbit radius is many horizons wide, so nothing flown at it
-        /// gets near enough to fall in.
-        /// </summary>
-        public static bool Catches(Vector3 hull, Vector3 forward, Vector3 attractor, float orbitRadius, float detectionRadius,
-            float catchDegrees)
-        {
-            var to = attractor - hull;
-            float d = to.magnitude;
-            if (d <= Mathf.Max(0f, orbitRadius)) return true;
-            if (d > Mathf.Max(0f, detectionRadius)) return false;
-            return Vector3.Angle(forward, to) >= Mathf.Clamp(catchDegrees, 0f, 180f);
-        }
+        /// <summary>How fast a swing turns the hull, degrees a second: its speed over its distance from the hole (ω = v / d, as a
+        /// circle round the hole), never faster than <paramref name="maxDegreesPerSecond"/>.</summary>
+        public static float SwingRate(float speed, float distance, float maxDegreesPerSecond) =>
+            Mathf.Min(Mathf.Max(0f, speed) / Mathf.Max(1f, distance) * Mathf.Rad2Deg, Mathf.Max(0f, maxDegreesPerSecond));
 
-        /// <summary>
-        /// The plane a ring round <paramref name="centre"/> is drawn in: the plane of the hull's pass (its offset from the
-        /// centre and its heading), or <paramref name="fallbackUp"/>'s plane when the hull flies straight at the centre.
-        /// Returns the unit normal.
-        /// </summary>
-        public static Vector3 RingNormal(Vector3 hull, Vector3 forward, Vector3 centre, Vector3 fallbackUp)
-        {
-            var n = Vector3.Cross(hull - centre, forward);
-            if (n.sqrMagnitude < 1e-6f) n = fallbackUp;
-            return n.sqrMagnitude > 1e-8f ? n.normalized : Vector3.up;
-        }
+        /// <summary>The autopilot lets the swing throw it once it has turned at least <paramref name="minDegrees"/> and either faces
+        /// its target (within <paramref name="faceDegrees"/>) or has its target no longer on the swing's side
+        /// (<paramref name="targetOnTurnSide"/> false: turning on would turn it away - a press for the warp alone), or once it has
+        /// turned <paramref name="maxDegrees"/>.</summary>
+        public static bool SwingAiLetsGo(float turnedDegrees, float offTargetDegrees, float minDegrees, float maxDegrees, float faceDegrees,
+            bool targetOnTurnSide) =>
+            turnedDegrees >= maxDegrees || (turnedDegrees >= minDegrees && (offTargetDegrees <= faceDegrees || !targetOnTurnSide));
 
-        /// <summary>
-        /// A closed ring of <paramref name="radius"/> round <paramref name="centre"/> in the plane normal to
-        /// <paramref name="normal"/>, as up to <paramref name="segments"/> points (the drawn detection and orbit radii).
-        /// Returns the count written.
-        /// </summary>
-        public static int Ring(Vector3 centre, Vector3 normal, float radius, int segments, Vector3[] points)
-        {
-            if (points == null || radius <= 0f || normal.sqrMagnitude < 1e-8f) return 0;
-            int n = Mathf.Min(points.Length, Mathf.Max(3, segments));
-            var axis = normal.normalized;
-            var u = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right).normalized * radius;
-            for (int i = 0; i < n; i++) points[i] = centre + Quaternion.AngleAxis(360f * i / n, axis) * u;
-            return n;
-        }
-
-        /// <summary>
-        /// The nose a caught hull flies this step: <paramref name="forward"/> turned toward the orbit's
-        /// <paramref name="tangent"/> by at least <paramref name="orbitStepDegrees"/> (the circle's own turn) and by
-        /// <paramref name="settle01"/> of what is left — so a catch from off the tangent eases onto it instead of snapping.
-        /// </summary>
-        public static Vector3 SettleHeading(Vector3 forward, Vector3 tangent, float orbitStepDegrees, float settle01)
-        {
-            float miss = Vector3.Angle(forward, tangent);
-            if (miss <= 1e-4f) return tangent;
-            float step = Mathf.Min(miss, Mathf.Max(Mathf.Max(0f, orbitStepDegrees), miss * Mathf.Clamp01(settle01)));
-            if (step >= miss) return tangent;
-            var axis = Vector3.Cross(forward, tangent);
-            // Antiparallel: no unique plane, so turn about any axis square to the nose.
-            if (axis.sqrMagnitude < 1e-10f) axis = Vector3.Cross(forward, Mathf.Abs(forward.y) < 0.9f ? Vector3.up : Vector3.right);
-            return Quaternion.AngleAxis(step, axis.normalized) * forward;
-        }
-
-        /// <summary>The pair's midpoint: <paramref name="aheadHorizons"/> horizon radii ahead of the hull.</summary>
-        public static Vector3 Midpoint(Vector3 hullPosition, Vector3 hullForward, float horizonRadius, float aheadHorizons)
-            => hullPosition + hullForward * (Mathf.Max(0f, horizonRadius) * Mathf.Max(0f, aheadHorizons));
+        /// <summary>The target is on the swing's side of the nose: turning on about <paramref name="axis"/> brings the nose toward
+        /// it.</summary>
+        public static bool OnSwingSide(Vector3 forward, Vector3 toTarget, Vector3 axis) =>
+            Vector3.Dot(Vector3.Cross(forward, toTarget), axis) > 0f;
     }
 }

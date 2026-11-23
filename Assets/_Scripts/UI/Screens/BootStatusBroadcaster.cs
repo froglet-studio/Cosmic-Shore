@@ -13,6 +13,10 @@ namespace CosmicShore.UI
     /// Open/Closed: adding a new boot phase = new label field + one new
     /// subscription here. The panel and event channels stay closed.
     ///
+    /// Each status also names the <see cref="BootStep"/> it starts: the splash
+    /// bar's percentage (<see cref="BootLoadProgress"/>) counts a step done when
+    /// the next one starts, so a new phase needs a step and a share there too.
+    ///
     /// Retry policy: the retry surface (<see cref="BootStatusMode.Retry"/>) is
     /// reserved for idle/boot contexts where no other recovery driver is
     /// active - auth-scene retry exhaustion, or lobby-refresh escalation while
@@ -95,7 +99,7 @@ namespace CosmicShore.UI
             // Initial state: the splash is opaque, no auth/HCS events have
             // fired yet - show "Connecting…" so the surface is informative
             // from the very first frame.
-            requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelConnecting));
+            requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelConnecting, BootStep.Connecting));
         }
 
         void OnDisable()
@@ -133,7 +137,7 @@ namespace CosmicShore.UI
         }
 
         private void HandleSignedIn()
-            => requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelJoiningLobby));
+            => requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelJoiningLobby, BootStep.JoiningLobby));
 
         private void HandleHostConnectionEstablished()
         {
@@ -143,11 +147,11 @@ namespace CosmicShore.UI
             if (!_hostReadyReached && nm != null && nm.IsListening)
             {
                 _hostReadyReached = true;
-                requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelHostReady));
+                requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelHostReady, BootStep.HostReady));
             }
             else
             {
-                requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelCreatingSession));
+                requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelCreatingSession, BootStep.CreatingSession));
             }
         }
 

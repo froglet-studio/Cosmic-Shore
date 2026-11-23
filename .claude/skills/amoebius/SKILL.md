@@ -142,5 +142,34 @@ the engine.
      text-asset case. A game feature that ships data in `Resources/` as text or bytes is worth one boot to confirm
      Amoebius finds it; the miss reads as "the feature quietly falls back".
 
+16. **Traps from the Settings > REGION session (2026-11-12, `claude/ecstatic-curie-fjt6ep`).**
+   - **A game file that opens a NEW `Unity.Services.*` namespace breaks the live compile unless the sync maps it.**
+     `SyncUnitySources.targets` rewrites only the namespaces in its table; `using Unity.Services.Relay;` and
+     `Unity.Services.Qos` were not there, so `RelayRegionProbe.cs` failed with CS0234 "'Services' does not exist in
+     'Unity'". The fix is a map row plus a stand-in with Unity's shape (`Services/RelayQosSdk.cs`), in its own
+     Port-only commit. A sub-namespace (`.Models`) follows its root's row by itself.
+   - **When the live build is already red, compare error SETS, not exit codes.** `grep "error CS" | sed 's/ \[.*//'
+     | sort -u` before and after: identical sets mean the change adds nothing. Then remove the new map rows and build
+     again to prove the comparison can fail (here it named `RelayRegionProbe.cs` twice).
+
+17. **Traps from the weeks-red compile (2026-11-13, `claude/great-pascal-gelycr`).**
+   - **CI's error count is a floor, not the size.** The parity build listed 6 errors (four missing types); adding
+     them surfaced 103 more in 29 game files, all hidden behind the declaration errors (item 14). Budget for the
+     full set and build locally until 0.
+   - **A look-alike named like a renderer type collides in the renderer.** `UnityEngine.GL` (debug lines) became
+     `CosmicShore.Engine.GL`, and every Render, Client and Player file that imports both namespaces hit CS0104 against
+     Silk's `GL`. The fix is one project-level alias, `<Using Include="Silk.NET.OpenGL.GL" Alias="GL" />` in those
+     csprojs (Mobile too), not a rename of either type.
+   - **Two Unity namespaces mapped onto one port namespace leak names Unity keeps apart.** Unity.Netcode and
+     Unity.Services.Multiplayer both map to `CosmicShore.Engine.Networking`, so a file importing only Netcode also
+     saw Multiplayer's `IPlayer` and clashed with the game's (`AnalyticsServiceFacade`). The sync adds a
+     `using IPlayer = global::CosmicShore.Gameplay.IPlayer;` alias for exactly that shape (`SyncUnitySources.targets`).
+   - **An engine type that returns a JobHandle or NativeArray lives in Compat** (those are Compat types), in
+     `namespace CosmicShore.Engine`, beside `Jobs/TransformJobs.cs`: `Jobs/PhysicsCommands.cs`
+     (SpherecastCommand, OverlapCapsuleCommand), `Collections/TexturePixelData.cs` (`Texture2D.GetPixelData`).
+   - **Once the build is green, the content tests report game-data drift, not engine bugs.** Read each failure's
+     asset history before touching the test: `UnreliableDeltasPrefabTests.NoVessel_OptsIn` failed because 17 vessel
+     prefabs opted in on 2026-11-01 and 6 did not. That is a question for the multiplayer owner, not a test to flip.
+
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

@@ -99,7 +99,7 @@ MonoBehaviour:
   - {fileID: 37680402134246900}
   unselectedPrimaryToken: 7
   secondaryGraphics: []
-  lockedSecondaryToken: 11
+  lockedSecondaryToken: 7
   artGraphics: []
   lockGraphic: {fileID: 0}
   lockLabel: {fileID: 0}

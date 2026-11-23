@@ -1,5 +1,18 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> **2026-11-07: this is the SWORDFISH's now.** The Rhino split in two (Garrett: "the sword fish will be all about the sword. the rhino will be all about the plow"): everything here moved to the Swordfish (`VesselClassType.Swordfish`, `SWORDFISH.md`) unchanged, and the Rhino has no sword. Read "the Rhino" below as "the Swordfish". The code keeps its `Rhino*` names.
+
+> **2026-11-08: the Swordfish's sword is its BILL** (`SWORDFISH.md` § "A swordfish, and the sword is its bill"). The
+> config's `poseMapping` is `Bill`: the blade rests straight ahead off the snout, one trigger lays it out to that side,
+> both stand it straight up, and the camera pans to keep it centred. The `Chop` control model below is kept in the code
+> (`SwordPoseMapping.Chop`) and no longer flown.
+
+> **2026-10-26 (Garrett): the Rhino has NO ENERGY.** The meter, the energy banked per cut, the energize
+> cost and the surge's fill and element buff are gone; **Charge** scales the sword's petal STEAL
+> (×1 → ×2.5); **Space alone** sets the blade length (24 → 40) and the camera follows it; the omni-crystal
+> Surge is an 8 s energized sword ring. Energy passages below are history - the current rules are
+> `RHINO_ENERGY_SWORD.md` § "No energy (2026-10-26) — and Length: Space alone".
+
 > **2026-10-16:** every peer now poses the blade from `InputStatus`' replicated analog trigger
 > mirrors (remote peers used to replay binary press/release swings); the press/release path
 > survives only for touch. The sword's `CapsuleCollider` is a TRIGGER again (the PR #928 merge
@@ -11,7 +24,7 @@
 > full blade FX pass — live in **`RHINO_ENERGY_SWORD.md`**. This file covers only the
 > pose/analog-swipe control model, though the two now share the triggers: the same
 > reparameterized sum/difference that poses the blade also feeds the energize stance
-> (`FeedSwordStance` → `IRhinoSwordState.SetInStance`). The `ShieldSkimmerScaleDriver`
+> (`FeedSwordStance` → `ISwordfishSwordState.SetInStance`). The `ShieldSkimmerScaleDriver`
 > "Sword dimensions & scale ownership" section below is driven by that energy meter (no
 > tick decay).
 
@@ -36,7 +49,7 @@ The raised rest pose is authored on the ForceFieldSkimmer instance transform in
 axis has meaningful travel). Its MOUNT sits at local (0, **−1**, 20.7) — lowered from
 9.38, which perched the grip ~3 units above the hull's top, to about the hull's own
 vertical centre (the hull box spans y ≈ −8.9…+6.4, centred −1.2). Both numbers are one edit on that instance: y is how high
-the sword is *held*, the pitch is how far it is *raised*, and on a 60–240-unit blade
+the sword is *held*, the pitch is how far it is *raised*, and on a 48–192-unit blade
 the PITCH is much the stronger lever for "it towers overhead". The executor captures whatever local pose is authored
 as its zero point, and pivots rotation **and mount position** about the Fusilage
 origin so the blade carves a real arc instead of spinning in place. On top of that
@@ -51,6 +64,31 @@ Sign conventions (Unity, verified): positive about up = yaw right; positive abou
 maps right→up). Note `BarrelRollController`'s header comment states this backwards —
 do not copy it (follow-up below).
 
+### The wings swing with the sword (Garrett, 2026-10-26: "bring the wings into the rhino's sword animations")
+
+`RhinoAnimation` lays a SWORD LAYER on both front wings (and so on the pods and back plates
+they carry) after the flight puppetry has run: it reads the pose the executor last wrote
+(`ShieldSwipeActionExecutor.CurrentPose`, the same channels a combo flourish fills) and turns
+each wing about its own pivot by `swordFollowYawDegrees · sin(yaw)` (20), `swordFollowRollDegrees ·
+sin(roll)` (30) and `swordFollowPitchDegrees · sin(pitch)` (25), composed in the blade's order
+and in the blade's own frame (`PoseFrame`, the fuselage), so the wings swing, bank and bow the
+way the blade does; a lunge (`thrust`) sweeps both wings back by `swordLungeSweepDegrees` (20)
+per unit, mirrored. The sines keep the lean continuous through a flourish that spins the blade
+a full turn and through the wrap at its end. The layer is lifted off before the puppetry eases
+the wings and laid back on after, so the flight pose never smooths toward the sword's. Every peer
+poses the blade from the same mirrors, so every peer leans the same wings. A hull with
+`RhinoAnimation` and no swipe executor (the Jacks) has no layer. The four numbers are fields on
+`RhinoAnimation` in `Rhino.prefab`.
+
+### Framing: the Rhino sits low in its camera (2026-10-26)
+
+The chase camera looks at the vessel's root, and a blade standing up off the nose filled the
+top of the frame. `RhinoCameraSettingsSO.lookAheadLift` is **18** (12 on the first pass, then
+"move the rhino down a little more"): the camera looks 18 units above the hull, so the Rhino
+sits about 14° below the centre of the frame and the resting 48-unit blade spans roughly −15° to
++8° about it (from −70, 60° FOV). The hull itself is not moved: the
+prism trail, the hull colliders, the AI's aim and the sword's pivot all stay on the root.
+
 ## Input paths
 
 - **Mirrors (every peer, every device but touch — 2026-10-16)**:
@@ -62,7 +100,7 @@ do not copy it (follow-up below).
   hardware — the same value it writes into the mirror, minus the netvar latency. Gamepad and
   DualMouse (binary RMBs, tracked) are followed continuously; **keyboard** (Left/Right Shift
   write 0/1 mirrors) is the rate-limited swing (`swipeOutSeconds` / `returnSeconds`), so a
-  keyboard Rhino now has a swipe pose on every peer. An AI Rhino's `RhinoSwordAutopilot`
+  keyboard Rhino now has a swipe pose on every peer. An AI Rhino's `SwordfishSwordAutopilot`
   writes the mirrors on its owning machine, so its blade replicates the same way.
   *Why it changed:* each peer cuts prisms against its OWN copy of the blade, so a remote peer
   posing from binary events swung a full ±1 the instant a trigger crossed its deadzone — a
@@ -72,7 +110,7 @@ do not copy it (follow-up below).
   posed the blade until 2026-10-16; the event path now drives the pose only for a device that
   writes no mirrors (touch), and is inert everywhere else.* The gamepad strategy's trigger edges raise
   `RightStickAction(1)` / `LeftStickAction(2)`, bound in the Rhino's
-  `_gamepadActionOverrides` to `RhinoShieldSwipeRight/LeftAction.asset`. On the local
+  `_gamepadActionOverrides` to `SwordfishShieldSwipeRight/LeftAction.asset`. On the local
   analog pilot these events are inert (the analog drive owns the pose) but they
   replicate through `R_VesselActionHandler`'s RPC chain, so **remote peers animate an
   event-driven approximation**: press = full stance + half chop (rate-limited by
@@ -93,15 +131,15 @@ do not copy it (follow-up below).
 | Role | File |
 |---|---|
 | Executor (all runtime state + analog drive) | `Executors/ShieldSwipeActionExecutor.cs` |
-| Shared tuning (single source, both directions) | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
-| Swing velocity model (tip-vs-hilt impact speed) | `_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs` + `SkimmerSwingKinematicsConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoSwordSwingKinematicsConfig.asset`; component added on `ForceFieldSkimmer Variant.prefab` |
-| Impact composition (vessel velocity + contact-point swing) | `PrismEffectHelper.ContactVelocity` → `SkimmerDamagePrismEffectSO` / `RhinoSkimmerDamagePrismEffectSO` |
+| Shared tuning (single source, both directions) | `Data Containers/SwordfishShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeConfig.asset` |
+| Swing velocity model (tip-vs-hilt impact speed) | `_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs` + `SkimmerSwingKinematicsConfigSO.cs` → `_SO_Assets/VesselActions/Swordfish/SwordfishSwordSwingKinematicsConfig.asset`; component added on `ForceFieldSkimmer Variant.prefab` |
+| Impact composition (vessel velocity + contact-point swing) | `PrismEffectHelper.ContactVelocity` → `SkimmerDamagePrismEffectSO` / `SwordfishSkimmerDamagePrismEffectSO` |
 | Accurate debris magnitude (velocity passed through as final + per-impact ceiling) | `PrismEffectHelper.DamageProportional` → `Prism.Damage`/`Explode` → `PrismEventData.DebrisSpeedLimit` → `PrismFactory` → `PrismExplosion.TriggerExplosion` |
 | Model tests | `_Scripts/Tests/Editor/SkimmerSwingKinematicsTests.cs` |
-| Per-direction event bindings | `Data Containers/RhinoShieldSwipeActionSO.cs` → `RhinoShieldSwipeRight/LeftAction.asset` (direction only) |
+| Per-direction event bindings | `Data Containers/SwordfishShieldSwipeActionSO.cs` → `SwordfishShieldSwipeRight/LeftAction.asset` (direction only) |
 | Prefab wiring | `Rhino.prefab`: `ShieldSwipeActionRegistry` GO under ShipActions, registered in `ActionExecutorRegistry._executors`; `_gamepadActionOverrides` events 1/2; skimmer transform rest pose |
 
-Config knobs (`RhinoShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollDegrees`
+Config knobs (`SwordfishShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollDegrees`
 90, `chopPitchDegrees` 65, `analogSmoothingSeconds` 0.04, `swipeOutSeconds` 0.18,
 `returnSeconds` 0.3, `swipeCooldownSeconds` 0.35, `swipeEngageThreshold` 0.4,
 `stanceSumThreshold` 1.5, `stanceCenterEpsilon` 0.4.
@@ -115,8 +153,15 @@ the rejected v1 slash cooldown, which gated DAMAGE; see `RHINO_ENERGY_SWORD.md`
 
 ## Sword dimensions & scale ownership
 
+**Shortened 20 % on 2026-10-26** (Garrett: "make the sword a bit shorter"): rest 30 → **24**,
+Space level 10 50 → **40**, full energy 120 → **96** (blade 60 → 48 long at rest, 192 at full).
+The Space float is overridden on the Rhino's OWN instance of `ForceFieldSkimmer Variant.prefab`
+(`Scale.Min/Max/Value` + `element` restated so `element_ability_table.py` reads it), not on the
+variant, because the Jacks nest the same variant with its float disabled and inherit its `Value`.
+`ShieldSkimmerScaleConfig.baseScale` (the no-skimmer fallback) is 24 to match.
+
 The sword's silhouette is the authored local scale on the ForceFieldSkimmer instance
-in `Rhino.prefab` — (1.5, 30, 4.8). Resting-length scaling elongates local Y only
+in `Rhino.prefab` — (1.5, 24, 4.8). Resting-length scaling elongates local Y only
 (`Skimmer.elongateYOnly`, set on `ForceFieldSkimmer Variant.prefab`; spherical
 skimmers on other vessels keep the legacy uniform XYZ path). The one exception is the
 transient **surge burst** on an omni-crystal pickup (`RHINO_ENERGY_SWORD.md`), which deliberately
@@ -131,11 +176,11 @@ Exactly one component writes the sword's scale at runtime:
 - **`ShieldSkimmerScaleDriver`** (on `ScaleSkimmerObject`) owns the transform — it
   sets `Skimmer.HasExternalScaleDriver` in `OnEnable`, which stands the Skimmer's own
   elemental scale write down. Each frame it tweens world Y between its resting base
-  and `ShieldSkimmerScaleConfig.asset` `maxScale` (120) from the Shield resource
+  and `ShieldSkimmerScaleConfig.asset` `maxScale` (96) from the Shield resource
   (index 1), preserving the authored X/Z via `Skimmer.AuthoredShape`.
 - **SPACE element sets the resting base**: the driver reads
   `Skimmer.LiveElementalScale` — the Skimmer's `Scale` ElementalFloat, authored on
-  the variant prefab as Space 30 → 50 — as its live `BaseScale`, so Space levels
+  the Rhino's instance as Space 24 → 40 — as its live `BaseScale`, so Space levels
   lengthen the sword's resting length and shield growth composes on top. A Space
   deficit (negative levels) shortens it below 30 via the usual unclamped lerp.
 - *(Until 2026-10-16 an inactive `GrowSkimmerActionRegistry` sat in `Rhino.prefab`,
@@ -158,7 +203,7 @@ OVERLAP rather than any one effect, so it outlives whatever the container carrie
 own skimmer never impact each other.**
 *(This paragraph used to add "enemy-Rhino skims still mute the victim's right trigger". They do
 not: that mute was the same removed effect. What the sword takes from another pilot is their
-petals — `RhinoSwordStealBySkimmerEffect`, `RHINO_ENERGY_SWORD.md`.)*
+petals — `SwordfishSwordStealBySkimmerEffect`, `RHINO_ENERGY_SWORD.md`.)*
 
 ## Swing velocity model — the tip hits harder than the hilt
 
@@ -206,8 +251,8 @@ authored, so re-posing or re-parenting the sword cannot invert them.
 
 `PrismEffectHelper.ContactVelocity` composes it, and both
 `SkimmerDamagePrismEffectSO` (the generic effect, wired on every other skimmer) and
-`RhinoSkimmerDamagePrismEffectSO` (wired on the sword itself — the energy-sword branch swapped
-`RhinoForceFieldSkimmerImpactorDataContainer`'s prism slot from the generic effect to this one,
+`SwordfishSkimmerDamagePrismEffectSO` (wired on the sword itself — the energy-sword branch swapped
+`SwordfishForceFieldSkimmerImpactorDataContainer`'s prism slot from the generic effect to this one,
 see `RHINO_ENERGY_SWORD.md`; both assets carry identical swing-model values, so the velocity
 model is unchanged by that swap) call it before
 `PrismEffectHelper.Damage(..., Vector3 velocity)` → `Prism.Damage` → `Prism.Explode`
@@ -222,8 +267,8 @@ spherical skimmer is byte-for-byte unchanged.
 | `swingVelocityScale` | the damage effect SO, next to `inertia` | 1 (the physical model); 0 restores pre-model behaviour |
 | `maxImpactSpeed` | the damage effect SO | 0 = unclamped |
 | `proportionalDebris` / `restitution` / `debrisSpeedLimit` | the damage effect SO (skimmer AND hull) | on / 1/3 / 200 (see the retune group below) |
-| `restDeadbandSpeed` | `RhinoSwordSwingKinematicsConfig.asset` | 1.5 — below this a parked sword adds exactly nothing |
-| `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `RhinoSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / **off** |
+| `restDeadbandSpeed` | `SwordfishSwordSwingKinematicsConfig.asset` | 1.5 — below this a parked sword adds exactly nothing |
+| `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `SwordfishSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / **off** |
 
 ### Making the magnitude survive to the screen
 
@@ -434,6 +479,11 @@ there but a stepped sword falsifies this analysis; 0/1 there confirms the driver
    owner is feathering (analog pose from the replicated mirrors, since 2026-10-16 — it used to
    show full binary swings). A keyboard Rhino shows its rate-limited swing on both clients.
 4. Turn end / vessel swap mid-pull: sword snaps back to its authored rest pose.
+5. Wings follow the sword: feather RT then LT and both. The front wings (with the pods) swing
+   and bank with the swipe and bow with the chop; a tap combo (RR, RLR, …) carries them through
+   the flourish and back. Flying without the triggers, the wings fold exactly as before.
+6. Framing: the Rhino sits below the centre of its chase camera and the resting blade reads
+   roughly centred. Too low or too high is `lookAheadLift` on `RhinoCameraSettingsSO`.
 
 ### Swing velocity model + debris retune (this branch — needs a human at the editor)
 

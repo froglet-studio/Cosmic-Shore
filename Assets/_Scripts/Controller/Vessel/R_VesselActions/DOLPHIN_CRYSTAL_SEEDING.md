@@ -179,7 +179,7 @@ placement from the binding, so nothing is hand-positioned.
 | Highlight shader | `_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` |
 | Graph splice tool | `Tools/Shaders/wire_prism_destruction_sight.py` |
 | Shared blast geometry | `ImpactEffects/EffectsSO/Helpers/ExplosionHelper.cs` (`BlastVolume`, `TryResolveConicVolume`) |
-| HUD | `UI/View/DolphinVesselHUDView.cs`, `Data Containers/DolphinVesselHUDController.cs` |
+| HUD | `UI/View/DolphinVesselHUDView.cs`, `Data Containers/DolphinHUDController.cs` |
 | Assets | `_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset`, `EchoSightAction.asset` |
 
 ## 5. Tuning knobs
@@ -271,7 +271,7 @@ of that single act**, so the row reads left to right as the whole weapon.
 | **Charge** | Echo Sight (RT) | blast capsule **THICKNESS**, `0.75×` → `1.5×` | **Pilot Echo** — vessels in the volume light up |
 | **Mass** | Crystal Seeding (passive) | recharge `×0.5` at level 10 | **Claimed Seed** — omni seed → team seed |
 | **Space** | Echo Obliteration (crystal impact) | **REACH** `×2` at level 10 | **Clean Blast** — spares own domain |
-| **Time** | Charge Fill Rate (drift) | boost fill `×1.5` at level 10 | **Drift Ward** — no DANGER-PRISM elemental debuff while drifting (an opposing pilot's blast still lands) |
+| **Time** | Drift Charge (drift) | boost fill `×2.5` at level 10 | **Drift Ward** — no DANGER-PRISM elemental debuff while drifting (an opposing pilot's blast still lands) |
 
 ### Charge → thickness, and the first un-anchored elemental multiplier
 
@@ -451,7 +451,7 @@ Three playtest findings, all of them cases where a change was *correct* and stil
 ### The Mass slot rendered black
 
 `DullCrystalColor` is authored **(0, 0, 0)** on Jade, Ruby and Gold in the live
-`OriginalColorSetSO`. §9 picked it on the reasoning that the icon should wear the colour the crystal
+`PhoticColorSetSO`. §9 picked it on the reasoning that the icon should wear the colour the crystal
 wears, and that reasoning was sound — the near-black body with a bright fresnel rim is exactly what
 makes a faceted domain crystal read as a dark gem. It is simply not a colour a UI element can be.
 
@@ -1073,3 +1073,10 @@ Asserted from assets by `PrismLitTests.TheSuperShieldMarkReachesTheSightFromTheS
 prisms), swap to the Dolphin with the Vessel Changer and hold the Echo Sight across a super-shield: it glows red while
 the plain mass around it takes the pale cast. Fire through it and confirm the blast stops there.
 Let it drop (a Rhino sword break) and confirm it stops glowing red on the next sweep.
+
+## 2026-11-16: a faster recharge (the weakest-abilities pass)
+
+The seed stays at a random point of the cytoplasm (Garrett, 2026-11-16: "the dolphin's crystals are intended to be
+random with in the cytoplasm"; a seed-ahead variant was built and removed the same day). The base recharge moved
+30 s -> 15 s so seeds come often enough to matter. The Time card's label moved "Charge Fill Rate" -> "Drift Charge",
+and its fill multiplier at Time 10 from x1.5 to x2.5 (authored on the Dolphin's ChargeBoostAction).

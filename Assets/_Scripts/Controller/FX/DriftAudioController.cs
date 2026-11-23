@@ -256,9 +256,15 @@ namespace CosmicShore.Gameplay.Audio
         float driftHapticInterval = 0.1f;
 
         [SerializeField, Range(0f, 1f), Tooltip(
-            "Rumble strength at the lightest drift (single trigger / feathered " +
-            "pull). Scales up to 1 at full drift depth.")]
-        float driftHapticFloor01 = 0.3f;
+            "Rumble strength at zero slip angle. The rumble follows the slip " +
+            "angle exactly like the loop's volume (quietSlipDegrees to " +
+            "fullSlipDegrees, linear), from this floor up to driftHapticMax01.")]
+        float driftHapticFloor01 = 0f;
+
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Rumble strength at full slip (fullSlipDegrees). Kept low: the " +
+            "drift rumble is a subtle texture under the Squirrel's flow.")]
+        float driftHapticMax01 = 0.3f;
 
         [Header("Debug")]
         [SerializeField] bool debugLog = false;
@@ -392,7 +398,7 @@ namespace CosmicShore.Gameplay.Audio
 
         /// <summary>
         /// Drift haptics: a kick on trigger press, a kick on let-go, and (optionally) the drift
-        /// rumble while held, strength following drift depth. Independent of the FMOD phase so
+        /// rumble while held, strength following the slip angle like the loop's volume. Independent of the FMOD phase so
         /// it still works if the drift event is missing or fails to start.
         /// </summary>
         void TickHaptics(bool drifting, float dt)
@@ -430,7 +436,8 @@ namespace CosmicShore.Gameplay.Audio
             if (_hapticTimer > 0f) return;
             _hapticTimer = driftHapticInterval;
 
-            HapticController.PlayDrift(Mathf.Lerp(driftHapticFloor01, 1f, ComputeTargetAmount()));
+            float slip01 = Mathf.InverseLerp(quietSlipDegrees, fullSlipDegrees, SlipDegrees());
+            HapticController.PlayDrift(Mathf.Lerp(driftHapticFloor01, driftHapticMax01, slip01));
         }
 
         bool _warnedEmptyDriftEvent;

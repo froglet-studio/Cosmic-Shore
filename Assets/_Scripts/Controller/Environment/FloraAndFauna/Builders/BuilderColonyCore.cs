@@ -46,8 +46,10 @@ namespace CosmicShore.Gameplay
         public float Sense = 220f;                // nest.py passes sense 220 to the colony
         public int ForageFraction = 4;            // 1 in 4 workers re-forages per step
         public float TrailPreference = 0.25f;     // distance multiplier for a pilot's trail (4x preferred)
-        public float PickupReach = 6f;
-        public float CarryDrop = 4f;              // the carried prism hangs 4 u below its carrier
+        // Body lengths are the research's x 3.55/1.737 (the fortress is Mass): the worker's body matches the one heart
+        // size, so everything measured from that body grows with it (Docs/ECOSYSTEM.md 64.4). Speeds stay world units.
+        public float PickupReach = 12.26f;
+        public float CarryDrop = 8.18f;           // the carried prism hangs below its carrier (research 4 u)
         public float Rc = 40f, W = 7f;            // fortress template (nest: 36/9; PORT §2 suggests 44/30 for a nest)
         public float KCement = 0.6f;
         public float Nucleate = 0.02f;            // fortress 0.02 (nest 0.01)
@@ -61,9 +63,9 @@ namespace CosmicShore.Gameplay
         /// <summary>0 = every unladen worker answers the alarm; 0.3 = a 30% defender caste (round 3's design dial, and the
         /// research's recommended fortress: without it defence starves repair - t50 17.8 s vs 5.6 s).</summary>
         public float DefendCaste = 0.3f;
-        public float WorkerRadius = 3f;           // agent_size
-        public float RamExtra = 1f;               // a pilot kills a worker inside radius + size + 1
-        public float StingReach = 4f;
+        public float WorkerRadius = 6.13f;        // agent_size (research 3)
+        public float RamExtra = 2.04f;            // a pilot kills a worker inside radius + size + this (research 1)
+        public float StingReach = 8.18f;          // research 4
         /// <summary>GAME: PrismSpatialIndex.TryReserve clear radius at a deposit (claim-before-place). 0 = no claim.</summary>
         public float ReserveClear = 3.6f;
         /// <summary>

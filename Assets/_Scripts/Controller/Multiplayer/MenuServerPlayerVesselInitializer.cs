@@ -134,6 +134,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The MENU does not adopt a departed player's vessel. There is no match to finish, so an
+        /// abandoned menu ship would just accumulate as another autopilot vessel in the lava lamp -
+        /// and a player who leaves the party here is going back to their own menu, where they get a
+        /// fresh vessel anyway.
+        /// </summary>
+        protected override bool ConvertDepartedPlayersToAI => false;
+
+        /// <summary>
         /// Menu override: reset the player's domain to the menu domain BEFORE the base
         /// spawns + paints the vessel, then activate autopilot after.
         /// Server-authoritative - the ONLY menu domain reset. Runs on every menu entry
@@ -143,23 +151,21 @@ namespace CosmicShore.Gameplay
         /// delta reaches a client after its pair-init instead, Player.OnNetDomainChanged
         /// re-syncs the mirrors and repaints (ShipHelper.SetShipProperties).
         /// </summary>
-
-        /// <summary>
-        /// The MENU does not adopt a departed player's vessel. There is no match to finish, so an
-        /// abandoned menu ship would just accumulate as another autopilot vessel in the lava lamp -
-        /// and a player who leaves the party here is going back to their own menu, where they get a
-        /// fresh vessel anyway.
-        /// </summary>
-        protected override bool ConvertDepartedPlayersToAI => false;
-
         protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            if (!player.NetIsAI.Value && player.NetDomain.Value != menuVesselDomain)
-                player.NetDomain.Value = menuVesselDomain;
+            // The voyage scene runs this initializer too: there every person flies the Ark's one domain, the host's pick
+            // (VoyageLobbyLink.ArkDomain; Shombith, 2026-11-21), so the vessels and the Ark, which wears its pilot's
+            // vessel's domain, agree.
+            var domain = InVoyageScene() ? VoyageLobbyLink.ArkDomain : menuVesselDomain;
+            if (!player.NetIsAI.Value && player.NetDomain.Value != domain)
+                player.NetDomain.Value = domain;
 
             await base.OnPlayerReadyToSpawnAsync(player, ct);
             ActivateAutopilot(player);
         }
+
+        /// <summary>True when this initializer stands in the voyage scene (loaded, whether or not it is active yet).</summary>
+        bool InVoyageScene() => gameObject.scene.name == VoyageLaunch.SceneName;
 
         // ---------------------------------------------------------
         // VESSEL SWAP (server-side)
@@ -360,7 +366,10 @@ namespace CosmicShore.Gameplay
         /// server, and replicates to everyone (a locally-spawned one would be invisible to the
         /// rest of the party).
         /// </summary>
-        public void RequestSpawnAiCompanion(VesselClassType vesselClass, Domains domain, Pose pose)
+        /// <param name="onSpawned">Host only: handed the companion's vessel once it is flying (a voyage seats it in its
+        /// squad slot, Docs/Voyages/SLICE.md §2). A party client's request is answered on the host, so it gets no call.</param>
+        public void RequestSpawnAiCompanion(VesselClassType vesselClass, Domains domain, Pose pose,
+            System.Action<IVessel> onSpawned = null)
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _cts == null)
             {
@@ -369,7 +378,7 @@ namespace CosmicShore.Gameplay
             }
 
             if (NetworkManager.Singleton.IsServer)
-                SpawnAiCompanionAsync(vesselClass, domain, pose, _cts.Token).Forget();
+                SpawnAiCompanionAsync(vesselClass, domain, pose, _cts.Token, onSpawned).Forget();
             else
                 clientPlayerVesselInitializer.RequestAiCompanion_ServerRpc(
                     vesselClass, domain, pose.position, pose.rotation);
@@ -381,6 +390,21 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Host only: take back a companion this machine released (a voyage's AI wingmate, once the squad is
+        /// recalled), its vessel and its Player both. False off the host or for a vessel that is already gone.
+        /// </summary>
+        public bool DespawnAiCompanion(IVessel vessel)
+        {
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return false;
+            if (vessel is not Component c || !c) return false;
+            var player = vessel.VesselStatus?.Player as Component;
+            bool any = false;
+            if (c.TryGetComponent(out NetworkObject vesselNO) && vesselNO.IsSpawned) { vesselNO.Despawn(true); any = true; }
+            if (player && player.TryGetComponent(out NetworkObject playerNO) && playerNO.IsSpawned) { playerNO.Despawn(true); any = true; }
+            return any;
+        }
+
+        /// <summary>
         /// The server-side release. Deliberately the SAME chain a backfill AI goes through in
         /// <see cref="ServerPlayerVesselInitializerWithAI"/> - spawn the Player NetworkObject,
         /// stamp its NetworkVariables, spawn its vessel, initialize the pair, configure the pilot,
@@ -388,7 +412,8 @@ namespace CosmicShore.Gameplay
         /// second, parallel kind of bot.
         /// </summary>
         async UniTaskVoid SpawnAiCompanionAsync(
-            VesselClassType vesselClass, Domains domain, Pose pose, CancellationToken ct)
+            VesselClassType vesselClass, Domains domain, Pose pose, CancellationToken ct,
+            System.Action<IVessel> onSpawned = null)
         {
             var playerPrefab = ResolveAiPlayerPrefab();
             if (!playerPrefab)
@@ -461,6 +486,7 @@ namespace CosmicShore.Gameplay
             // AIPilot.StopAIPilot cannot clean the duplicate up. ActivateAutopilot exists for the
             // menu's HUMAN vessel, where StartPlayer deliberately does not touch autopilot.
             aiPlayer.StartPlayer();
+            onSpawned?.Invoke(vessel);
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
                         $"({vesselClass}, {domain}) at {pose.position}.");

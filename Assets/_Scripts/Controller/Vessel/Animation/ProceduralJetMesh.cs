@@ -5,11 +5,16 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class ProceduralJetMesh : MonoBehaviour
     {
-        public int segments = 8;
-        public float length = 5f;
-        public AnimationCurve radiusCurve = AnimationCurve.Linear(0, 1, 1, 0);
-        public float uvScale = 1f;
-        public float uvScrollSpeed = 1f;
+        [SerializeField] int segments = 8;
+        public int Segments => segments;
+        [SerializeField] float length = 5f;
+        public float Length => length;
+        [SerializeField] AnimationCurve radiusCurve = AnimationCurve.Linear(0, 1, 1, 0);
+        public AnimationCurve RadiusCurve => radiusCurve;
+        [SerializeField] float uvScale = 1f;
+        public float UvScale => uvScale;
+        [SerializeField] float uvScrollSpeed = 1f;
+        public float UvScrollSpeed => uvScrollSpeed;
 
         private Mesh mesh;
         private Vector3[] vertices;

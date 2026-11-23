@@ -23,7 +23,9 @@ WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-
             * the hull's input bindings are the Goby's two buttons (CrewButtonActionSO): Dart on Button3Action and Lock
               on Button4Action (a pad's X / Y, keys Q / F, the Goby's phone buttons), and on a pad also RT (Dart) and LT
               (Lock); the Squirrel's thumb-lift overrides are gone, so lifting a thumb while aiming fires nothing;
-            * Resources/ElementalAbilityMaps/Goby.asset is the Goby & Pistol's own four cards (GOBY_MAP).
+            * Resources/ElementalAbilityMaps/Goby.asset is the Goby & Pistol's own four cards (GOBY_MAP);
+            * the HUD is the Goby & Pistol's own, each seat's four cards (author_goby_hud.py: the Squirrel's HUD
+              instance and controller swapped for GobyHUDVariant and GobyPistolHUDController).
           NOT stripped (it needs the editor): the Squirrel's skimmer, which still collects crystals and carries the
           Squirrel's passive skimmer effects (team task in Docs/TEAM_TASKS.md).
     Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewButton0.asset, CrewButton1.asset (+ .meta).
@@ -47,6 +49,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from author_stoat_assets import global_object_id_hash, replace_once  # noqa: E402  (the shared Netcode hash)
 from studio_to_unity import parse_shipped  # noqa: E402  (the lab's SHIPPED block: the Goby's own cruise)
+import author_goby_hud  # noqa: E402  (each seat's own cards: the HUD swap the retrofit applies)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 VESSELS = os.path.join(ROOT, "Assets", "_Prefabs", "Spacevessels")
@@ -139,7 +142,24 @@ def goby_container(squirrel_text: str, drop) -> str:
             continue
         out.append(line)
     text = "".join(out).replace("m_Name: Squirrel", "m_Name: Goby", 1)
-    return re.sub(r"^(  \w+):\n(?=  [a-zA-Z_])", r"\1: []\n", text, flags=re.M)   # an emptied list prints as []
+    text = re.sub(r"^(  \w+):\n(?=  [a-zA-Z_])", r"\1: []\n", text, flags=re.M)   # an emptied list prints as []
+    for field, name in GOBY_ADDS.get(drop_key(drop), ()):
+        ref = f"  - {{fileID: 11400000, guid: {asset_guid(name)}, type: 2}}\n"
+        m = re.search(rf"^  {field}:(?: \[\])?\n((?:  - [^\n]*\n)*)", text, flags=re.M)
+        text = text[:m.start()] + f"  {field}:\n{m.group(1)}{ref}" + text[m.end():]
+    return text
+
+
+def drop_key(drop) -> str:
+    return drop[0] if drop else ""
+
+
+# Effects the Goby's container ADDS to what it keeps of the Squirrel's (keyed by the first effect its row drops).
+GOBY_ADDS = {
+    # the pair's omnicrystal ability, "restocks the pair" (2026-11-17, #2194): GobyPistolDuo.OnOmniCrystal
+    "SquirrelVesselHapticsByPrismEffect": [("vesselCrystalEffects", "GobyOmniCrystalEffect")],
+}
+GOBY_OMNI_LABEL = "restocks the pair"
 
 
 def swap_containers(text: str) -> str:
@@ -177,17 +197,20 @@ def check_containers(prefab_text: str):
 # The Goby & Pistol's four cards (Garrett, 2026-10-22). Passive cards (Input 0): what each element scales happens in the
 # seat (GobyPistolDuo), read from GobyPistolConfig.asset's ElementalFloats and gated by IsUpgradeActive at level 5.
 GOBY_KIT = [
-    (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes petals from each of its elements; Charge "
-        "raises how many (GobyPistolConfig ringPetals, 1 at rest -> 3 at level 10). While the Goby holds a lock on a rival that "
-        "is on the Pistol's screen, the ring flies at it.", "", ""),
+    (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes a petal from each of its elements. "
+        "While the Goby holds a lock on a rival that is on the Pistol's screen, the ring flies at it, and Charge sets how hard it "
+        "homes (GobyPistolConfig ringHomingScale, x1 at rest -> x2.5 at level 10).", "Vortex Steal",
+        "A ring's hit steals the petals it takes: they land on the pair instead of being knocked loose (GobyPistolDuo."
+        "ScoreRingHit, IsUpgradeActive(Charge))."),
     (2, "Dens", "At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled "
         "since its last den and Mass make (denMassScale, x1 at rest -> x2.5 at level 10). It can ride back to an old den to add "
         "to it.", "Fortress", "Dens also grow danger prisms and super-shielded prisms."),
     (3, "Undertow", "Mass either side of the Pistol's plane is pulled into it, from further with Space (pullReach, 40 u at rest -> "
         "200 u at level 10). Danger, super-shielded and the pair's own prisms never move.", "Deep Undertow",
         "Shielded prisms are pulled in too."),
-    (4, "Quick Jump", "Time shortens the cooldown of the Pistol's jump, the burst of speed that flings it off its ground "
-        "(jumpCooldown, 9 s at rest -> 3 s at level 10).", "Phase Dart",
+    (4, "Dart", "Time is the Goby's dart: how fast it flies and how soon the next is ready (dartPace, x1 at rest -> x2.2 at "
+        "level 10 - a full dart takes 1 s at rest, under half a second at level 10). Darts lay the Pistol's ground, so a "
+        "quick Goby keeps the Pistol fed.", "Phase Dart",
         "The Goby's darts pass through prisms."),
 ]
 
@@ -206,7 +229,8 @@ def goby_map() -> str:
     return head + "".join(
         f"  - Element: {e}\n    AbilityLabel: {yaml_quote(label)}\n    AbilityDescription: {yaml_quote(desc)}\n    Input: 0\n"
         f"    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: {yaml_quote(ul)}\n"
-        f"    UpgradeDescription: {yaml_quote(ud)}\n" for e, label, desc, ul, ud in GOBY_KIT)
+        f"    UpgradeDescription: {yaml_quote(ud)}\n" for e, label, desc, ul, ud in GOBY_KIT) + \
+        f"  omniAbilityLabel: {GOBY_OMNI_LABEL}\n"
 
 
 def guid_of(meta_path: str) -> str:
@@ -386,7 +410,7 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
 
 def retrofit(text: str) -> str:
     """The Goby's own kit onto a Squirrel-derived prefab (the strip, then the bindings). Idempotent."""
-    return swap_containers(bind_buttons(strip_squirrel_kit(text)))
+    return author_goby_hud.swap_hud(swap_containers(bind_buttons(strip_squirrel_kit(text))))
 
 
 def swap_model(text: str) -> str:
@@ -531,6 +555,7 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     left, dangling = squirrel_kit_left(text)
     want(not left, f"Goby.prefab: the Squirrel's kit is still on it: {left}")
     want(not dangling, f"Goby.prefab: local references that name no object: {dangling[:5]}")
+    errs += author_goby_hud.check_hud(text)
     return errs
 
 
@@ -575,6 +600,7 @@ def check_all():
         return ["Goby.prefab (+ .meta) is missing: run Tools/Build/author_goby_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Goby.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid, config_guid)
+    errs += [f"author_goby_hud: {d} drifted (run Tools/Build/author_goby_hud.py)" for d in author_goby_hud.sync(check=True)]
     errs += check_crew_buttons()
     errs += check_containers(read(PREFAB))
     for path in (CLASS_ASSET, MAP):
@@ -588,6 +614,8 @@ def check_all():
 
 def author():
     script_guid, config_guid = guid_of(DUO_SCRIPT_META), guid_of(CONFIG_META)
+    for rel in author_goby_hud.sync(check=False):   # each seat's icons and the HUD variant, before the prefab names them
+        print("wrote", rel)
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR), script_guid, config_guid))
         write(PREFAB + ".meta", prefab_meta())
@@ -628,6 +656,9 @@ def self_test():
     expect(check_prefab(good.replace(GOBY_BINDINGS["_inputEventShipActions"], "  _inputEventShipActions: []\n"), script_guid, config_guid), 1, "the seat's buttons unbound")
     expect(check_prefab(good.replace(GOBY_BINDINGS["_touchActionOverrides"], "  _touchActionOverrides:\n  - InputEvent: 12\n    ShipActions:\n    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}\n"), script_guid, config_guid), 1, "the Squirrel's drift on a thumb lift")
     expect(check_prefab(bind_buttons(swap_model(read(DONOR))) + duo_block(script_guid, config_guid), script_guid, config_guid), 1, "the Squirrel's executors left on")
+    expect(check_prefab(good.replace(author_goby_hud.VARIANT_GUID, author_goby_hud.SQUIRREL_HUD_VARIANT_GUID), script_guid, config_guid), 1, "the Squirrel's HUD")
+    if retrofit(good) != good:
+        fails.append("retrofit (the HUD swap included) is not idempotent")
     if not check_containers(read(DONOR)):
         fails.append("the containers check did not fire on the Squirrel's own prefab")
     if bind_buttons(good) != good:

@@ -6,7 +6,8 @@ their real paths, never copied — against Unity-shaped stubs with real vector m
 including the dozen lines of NUnit the suite uses), then prints the feel table recorded in
 `R_VesselActions/THRESHER.md` §4 (chain physics) and §5a (camera distances and spin rates).
 Also compiled: `ThresherTouchLaunch.cs` (the phone's both-thumbs-off launch, 2026-10-21) and
-`ThresherAnalogTriggerTests.cs`, whose `Touch_*` tests fly it with the solver.
+`ThresherAnalogTriggerTests.cs`, whose `Touch_*` tests fly it with the solver, and `ThresherSnapAim.cs` (both
+triggers pulled fast keeps the pre-pull heading, 2026-10-30), flown by the same file's `Snap_*` tests.
 
 ```
 bash Tools/Build/thresher_chain_harness/run.sh

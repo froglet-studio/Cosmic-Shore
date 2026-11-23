@@ -98,6 +98,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // anonymous Driver.LateUpdate self time - 2.7 ms average, 88 ms spikes - until these existed (2026-10-18).
             "BlackHole.Tick",
             "BlackHole.Field",
+            // Inside the field (2026-10-26: 2.47 ms/frame of Field self time, unsplit, with a Stoat dipole in Menu_Main).
+            "BlackHole.GravityField.Jobs",
+            "BlackHole.GravityField.BoxContacts",
+            "BlackHole.GravityField.IndexWrite",
+            "BlackHole.GravityField.Contacts",
             "BlackHole.Pairs",
             "BlackHole.VesselPull",
             "BlackHole.Waves",

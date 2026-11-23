@@ -23,7 +23,12 @@ namespace CosmicShore.Gameplay
     /// Never Release a live environment prism during gameplay. Live mass stays
     /// until an active sink (fauna, vessel ability, or cell-swap drain of the
     /// authored environment gathered under the retiring root). Consumed/exploded
-    /// prisms Destroy and ForgetDestroyed drops them; they do not return.
+    /// prisms mostly stay destroyed in place until that drain (Destroy, and
+    /// ForgetDestroyed drops them). The one exception is DEAD free mass whose
+    /// owner opted in: a natural-death skeleton (Prism.RecyclesWhenDestroyed)
+    /// that is later destroyed comes back here through PrismRecycler once its
+    /// death effect has played (Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-29).
+    /// Live mass is still never released.
     ///
     /// PrepareForLay snaps Domains.Blue materials even on first mint so
     /// ChangeTeam(final domain) is a real Blue → domain clock lerp. A raw
@@ -119,20 +124,29 @@ namespace CosmicShore.Gameplay
                     long insightT0 = LoadInsights.AccumulateStart();
                     var op = UnityEngine.Object.InstantiateAsync(prefab, shortfall, parent);
                     float waitStart = Time.unscaledTime;
-                    while (!op.isDone)
+                    // Instrumentation only (B45): a frozen frame names how many batches were waiting on the engine.
+                    FrameStallWatch.BeginAsyncClone();
+                    try
                     {
-                        await UniTask.Yield(PlayerLoopTiming.Update);
-                        LoadInsights.Count("Frames an async clone batch waited to integrate");
-                        if (!parent) return (null, batchedFailed);
-                        if (Time.unscaledTime - waitStart > stallSeconds)
+                        while (!op.isDone)
                         {
-                            CSDebug.LogWarning(
-                                $"[EnvironmentPrismPool] Async clone batch ({shortfall} prisms) not " +
-                                $"integrated after {stallSeconds:F0}s — forcing WaitForCompletion. " +
-                                "The engine's async-instantiate budget is being starved by other loading.");
-                            op.WaitForCompletion();
-                            break;
+                            await UniTask.Yield(PlayerLoopTiming.Update);
+                            LoadInsights.Count("Frames an async clone batch waited to integrate");
+                            if (!parent) return (null, batchedFailed);
+                            if (Time.unscaledTime - waitStart > stallSeconds)
+                            {
+                                CSDebug.LogWarning(
+                                    $"[EnvironmentPrismPool] Async clone batch ({shortfall} prisms) not " +
+                                    $"integrated after {stallSeconds:F0}s — forcing WaitForCompletion. " +
+                                    "The engine's async-instantiate budget is being starved by other loading.");
+                                op.WaitForCompletion();
+                                break;
+                            }
                         }
+                    }
+                    finally
+                    {
+                        FrameStallWatch.EndAsyncClone();
                     }
 
                     LoadInsights.AccumulateSample("Prism clone: InstantiateAsync batch, call to integrated (wall time)", insightT0);

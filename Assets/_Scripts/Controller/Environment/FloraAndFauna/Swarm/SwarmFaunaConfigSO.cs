@@ -228,12 +228,16 @@ namespace CosmicShore.Gameplay
         [Min(0.1f)] public float LocustPhaseSeconds = 2f;
 
         [Header("Hearts and body prisms (per element: x Charge, y Mass, z Space, w Time)")]
-        [Tooltip("World scale of each element's heart - the canonical Tadpole species' own band values " +
-                 "(Assets/_SO_Assets/Lifeforms/Tadpole Fauna *), so a swarm member pays exactly what a " +
-                 "tadpole pays.")]
+        [Tooltip("RETIRED, not read (2026-10-26): every heart is the one elemental crystal size, " +
+                 "ElementalCrystalSetSO.CrystalWorldScale. Still written by author_swarm_fauna.py.")]
         public Vector4 HeartWorldScale = new(2.298f, 1.737f, 2.298f, 1.737f);
         [Tooltip("Body prism size multiplier on the research half-extents (x2, x UnitScale).")]
         [Min(0.05f)] public float PrismScale = 1f;
+        [Tooltip("Per-element body prism multiplier on top of PrismScale (x Charge, y Mass, z Space, w Time). " +
+                 "UnitScale is one number for the whole swarm (its members share one position field), so " +
+                 "an element whose body grows less than UnitScale's scales its prism down here: every member " +
+                 "keeps its proportion to the one heart size (Docs/ECOSYSTEM.md 64.4). 1 = UnitScale alone.")]
+        public Vector4 ElementBodyScale = Vector4.one;
         [Tooltip("World gap between the heart and the body prism behind it.")]
         [Min(0f)] public float HeartPrismGap = 0.6f;
         [Tooltip("Seconds a newborn tadpole takes to grow in from nothing (continuity of existence).")]

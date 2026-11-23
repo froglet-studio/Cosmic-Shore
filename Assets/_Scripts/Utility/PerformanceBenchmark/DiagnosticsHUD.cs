@@ -179,7 +179,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             get
             {
-                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                // A phone has no user Documents folder: Android hands back a path on a read-only volume, so
+                // every report failed with "Read-only file system" and no diag ever left a phone.
+                string docs = Application.isMobilePlatform
+                    ? null
+                    : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                 if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
                 return Path.Combine(docs, OutputFolderName);
             }
@@ -715,9 +719,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             try
             {
-                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
-                string dir = Path.Combine(docs, OutputFolderName);
+                string dir = OutputDirectory;
                 Directory.CreateDirectory(dir);
 
                 string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
@@ -1307,9 +1309,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             try
             {
-                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
-                string dir = Path.Combine(docs, OutputFolderName);
+                string dir = OutputDirectory;
                 Directory.CreateDirectory(dir);
 
                 string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
@@ -1565,8 +1565,28 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _cmdInput.ActivateInputField(); // keep focus for repeated commands
         }
 
+        /// <summary>
+        /// Runs one console line from outside the HUD (the AI Diagnose panel's command field): the same commands as the
+        /// HUD's own input field. With the HUD up, the result also shows on its overlay.
+        /// </summary>
+        public static string RunCommand(string raw) =>
+            _instance != null ? _instance.ExecuteCommand(raw) : Dispatch(raw);
+
+        /// <summary>The registered console command names (for a "help" listing).</summary>
+        public static IEnumerable<string> CommandNames => s_commands.Keys;
+
         /// <summary>Runs one console line and returns what the handler answered (also shown on the overlay).</summary>
         string ExecuteCommand(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            string result = Dispatch(raw);
+            SetStat("Console", "›", result);
+            Debug.Log($"[DiagnosticsHUD] {DeviceLogFormat.MaskTokens(raw)} → {result}");
+            if (_visible) RefreshText();
+            return result;
+        }
+
+        static string Dispatch(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return null;
 
@@ -1587,10 +1607,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     ? $"unknown '{name}' — commands: {string.Join(", ", s_commands.Keys)}"
                     : "no commands registered";
             }
-
-            SetStat("Console", "›", result);
-            Debug.Log($"[DiagnosticsHUD] {raw} → {result}");
-            if (_visible) RefreshText();
             return result;
         }
 

@@ -378,11 +378,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// How big the arena is, for framing: the membrane first (it is the playfield boundary, so
-        /// it is what "the arena" means), then the nucleus, then a default the size of the menu's
-        /// own membrane.
-        /// </summary>
-        /// <summary>
         /// Keep the camera INSIDE the cell.
         ///
         /// <para>A camera outside the membrane is looking at the arena through its own boundary
@@ -405,6 +400,11 @@ namespace CosmicShore.UI
             return cellCentre + fromCentre.normalized * ceiling;
         }
 
+        /// <summary>
+        /// How big the arena is, for framing: the membrane first (it is the playfield boundary, so
+        /// it is what "the arena" means), then the nucleus, then a default the size of the menu's
+        /// own membrane.
+        /// </summary>
         static float FramingRadius(Cell cell)
         {
             if (cell)

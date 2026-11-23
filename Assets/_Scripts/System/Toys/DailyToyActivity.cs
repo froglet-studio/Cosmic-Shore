@@ -287,10 +287,8 @@ namespace CosmicShore.Core
             string id = RewardIdFor(TodayKey);
             if (data.IsRewardUnlocked(id)) return 0;
 
-            data.UnlockReward(id);
-
             int amount = RewardCrystals;
-            if (amount > 0) data.AddCrystals(amount, "daily_toy_activity");
+            data.ClaimReward(id, amount, "daily_toy_activity");
 
             CSDebug.LogVerbose(CSLogChannel.ToyBox,
                 $"[DailyToyActivity] Claimed {id} for {amount} crystals.");

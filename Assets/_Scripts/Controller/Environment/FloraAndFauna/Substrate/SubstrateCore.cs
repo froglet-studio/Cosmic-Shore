@@ -28,6 +28,10 @@ namespace CosmicShore.Gameplay
         public float Radius;
         /// <summary>Stable per vessel across ticks (a bite cooldown is per pilot).</summary>
         public int Id;
+        /// <summary>1 = a hull only a CLINGING species sees (the Ark escort's Ark, SubstrateCellHost.SenseVessels): a
+        /// leech latches onto it and sips its plates; no other species hunts, rings, dives at or engages it, so it is
+        /// never an "attack the Ark" weighting - the riders reach it the way they reach a vessel. 0 = a vessel.</summary>
+        public byte ClingOnly;
     }
 
     public enum SubstrateEventKind
@@ -767,11 +771,6 @@ namespace CosmicShore.Gameplay
             if (P.RingHoldSeconds > 0f) RingHoldClock(pop);
         }
 
-        /// <summary>The opt-in ring hold (<see cref="SubstrateSpeciesParams.RingHoldSeconds"/>): one clock per pilot. It
-        /// runs while the closure around that pilot is saturated (>= q_up), waits while the ring loosens (q_down..q_up),
-        /// and resets when the pilot breaks out (below q_down) or a packmate around it is resting (a fresh ring must hold
-        /// again). Closure is a per-pilot moment, so every hunter around one pilot reads the same clock: they release
-        /// together.</summary>
         /// <summary>During the ring hold a hunter's phase is held at or below this fraction of its danger phase.</summary>
         public const float HoldPhase = 0.4f;
 
@@ -779,6 +778,11 @@ namespace CosmicShore.Gameplay
         /// fraction of the danger phase (bestiary pack.py: intent below 0.2 against the 0.5 it shows at).</summary>
         public const float WindupResetFrac = 0.4f;
 
+        /// <summary>The opt-in ring hold (<see cref="SubstrateSpeciesParams.RingHoldSeconds"/>): one clock per pilot. It
+        /// runs while the closure around that pilot is saturated (>= q_up), waits while the ring loosens (q_down..q_up),
+        /// and resets when the pilot breaks out (below q_down) or a packmate around it is resting (a fresh ring must hold
+        /// again). Closure is a per-pilot moment, so every hunter around one pilot reads the same clock: they release
+        /// together.</summary>
         void RingHoldClock(SubstratePopulation pop)
         {
             var P = pop.P;
@@ -1148,7 +1152,7 @@ namespace CosmicShore.Gameplay
             {
                 int i = pop.Live[q];
                 if (Host[i] != 0 || Rest[i] > 0f) continue;
-                int j = NearestPilot(Pos[i], out float d);
+                int j = NearestHost(Pos[i], out float d);   // a cling-only hull (the Ark) is a host too
                 if (j < 0 || _load[j] >= P.ClingMax) continue;
                 var pil = _pilots[j];
                 if (d >= P.BiteR + pil.Radius) continue;
@@ -1418,12 +1422,19 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        internal int NearestPilot(Vector3 p, out float dist)
+        /// <summary>The nearest VESSEL (a cling-only hull, the Ark, is not a pilot to the pack, the ramp or the ring).</summary>
+        internal int NearestPilot(Vector3 p, out float dist) => NearestPilot(p, false, out dist);
+
+        /// <summary>The nearest hull a rider may latch onto: vessels and cling-only hulls alike.</summary>
+        internal int NearestHost(Vector3 p, out float dist) => NearestPilot(p, true, out dist);
+
+        int NearestPilot(Vector3 p, bool includeClingOnly, out float dist)
         {
             dist = 1e9f;
             int best = -1;
             for (int j = 0; j < _npil; j++)
             {
+                if (!includeClingOnly && _pilots[j].ClingOnly != 0) continue;
                 float d = Vector3.Distance(p, _pilots[j].Pos);
                 if (d < dist) { dist = d; best = j; }
             }

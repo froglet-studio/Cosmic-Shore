@@ -111,8 +111,9 @@ about 4.7 ms on CoreCLR. It runs on a worker thread; see §6 for players.
 **Heart.**
 - One elemental crystal (`ProvisionHeart`), seated `HeartSeatDepthVoxels` behind the head's front plane on the
   head's centre line, and it follows the head.
-- Its size is `HeartWorldScale`, which the generator computes as `K·bodyLength^0.5` with the K that
-  `author_lifeform_heart_sizes.py` solves (the lizard is 52.8 u long, so 2.89).
+- Its size is the one elemental crystal size, 3.55 (`Docs/ECOSYSTEM.md` §64). `HeartWorldScale` is retired and
+  frozen at the 2.89 the band last solved, and the BODY was scaled by 3.55 / 2.89 to keep that proportion:
+  `VoxelSize` 1.2 -> 1.474, so the lizard is 64.9 u long (was 52.8) and `BodyVolume` 3,660.5 (was 1,975.1) (§64.4).
 
 ## 3. Budgets
 

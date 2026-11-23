@@ -5,7 +5,7 @@ using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using UnityEngine;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
@@ -42,7 +42,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] public int NumberOfSegments = 1;
 
         [Header("Segment Layout")]
-        [SerializeField] public Vector3 origin = Vector3.zero;
+        [SerializeField] Vector3 origin = Vector3.zero;
+        public Vector3 Origin => origin;
         [SerializeField] public float Radius;
         [SerializeField] public float StraightLineLength;
         [SerializeField] public float RotationAmount;

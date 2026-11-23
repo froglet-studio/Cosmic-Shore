@@ -20,7 +20,9 @@ namespace CosmicShore.Gameplay
     /// "Superseded" note in SCARAB.md §5.1.</para>
     ///
     /// <para><b>The payout is a scarab-wing DAIS.</b> A struck switch does not scatter prisms —
-    /// it lays a <see cref="ScarabWingDais"/>: super-shielded SUN CORES ringing the spent switch,
+    /// it lays a <see cref="ScarabWingDais"/>: SUN CORES ringing the spent switch (MASS 5, "Sun
+    /// Cores", 2026-10-29: the super-shielded suns are laid only when the placer's Mass upgrade was
+    /// active as the switch was placed; without it the wings rise round empty crooks),
     /// each WRAPPED by a mirrored pair of wings and each aiming one of its spikes back at the
     /// switch. The wings BEGIN at this ring — their first blades are long spars running back to it
     /// — and sweep out and around their sun, closing into a C that opens away from the switch.
@@ -62,6 +64,7 @@ namespace CosmicShore.Gameplay
 
         ScarabWingDaisSettings _dais;
         int _daisPrismsPerFrame;
+        bool _sunCores;
 
         GameObject _ring;
         readonly List<ScarabWingDais.Element> _daisElements = new();
@@ -121,6 +124,9 @@ namespace CosmicShore.Gameplay
             _growthRate = growthRate;
             _dais = dais;
             _daisPrismsPerFrame = Mathf.Max(1, daisPrismsPerFrame);
+            // MASS 5 — "Sun Cores". Snapshot at placement, like the ring radius Mass also sets.
+            _sunCores = status.ElementalAbilityHandler != null
+                        && status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
 
             transform.position = center;
             _axis = axis.sqrMagnitude > 1e-6f ? axis.normalized : Vector3.forward;
@@ -351,6 +357,13 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// MASS 5, "Sun Cores": the dais's super-shielded suns rise only when the placer had the
+        /// upgrade; the wings always rise. Pure so a test can pin it.
+        /// </summary>
+        public static bool LaysDaisElement(PrismKind kind, bool sunCores)
+            => kind != PrismKind.SuperShielded || sunCores;
+
+        /// <summary>
         /// Raise the rosette over several frames. Budgeted because the dais is an order of
         /// magnitude more prisms than the old outward burst (255 at the shipped shape), and
         /// because a structure that draws itself outward from the spent ring reads as a monument
@@ -366,7 +379,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _daisElements.Count; i++)
             {
                 var e = _daisElements[i];
-                if (TryLay(e.Position, e.Rotation, e.Scale, e.Kind, out _)) placed++;
+                if (LaysDaisElement(e.Kind, _sunCores) && TryLay(e.Position, e.Rotation, e.Scale, e.Kind, out _))
+                    placed++;
 
                 if ((i + 1) % _daisPrismsPerFrame != 0) continue;
                 // Sequencing only, never thread marshaling (Docs/THREADING.md). Cancellation is

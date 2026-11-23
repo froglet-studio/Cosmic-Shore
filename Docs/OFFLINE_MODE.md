@@ -2,7 +2,7 @@
 
 **Status: IMPLEMENTED (2026-08-26).** The boot fallback, the offline local host, the local
 last-known-good data cache, the online-only UI gating and the in-place reconnect are in. §6
-records what shipped, §7 the reconnect design. Short version: `Docs/OFFLINE_MODE_SUMMARY.md`.
+records what shipped, §7 the reconnect design.
 §§0–3 are kept as the diagnosis of the world before the fix — the "today" they describe is the
 pre-implementation state. Read this before touching any offline code.
 

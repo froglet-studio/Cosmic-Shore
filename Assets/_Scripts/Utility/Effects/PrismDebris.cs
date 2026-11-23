@@ -248,6 +248,18 @@ namespace CosmicShore.Utility
             return s_configured;
         }
 
+        /// <summary>
+        /// The implosion's authored life (the pool prefab's <c>implosionDuration</c>), for the one other consumption
+        /// visual: the suction drawn as the destruction's cut (<c>PrismInteractionLod.TrySuction</c>), which must be
+        /// over exactly when the implosion it stands in for would have been. False while unconfigured — the suction
+        /// then refuses and the factory draws the implosion.
+        /// </summary>
+        internal static bool TryGetImplosionDuration(out float duration)
+        {
+            duration = s_impDuration;
+            return s_impConfigured;
+        }
+
         /// <summary>Implosion counterpart of <see cref="Configure"/> — same contract,
         /// reading the mesh/material/timings off the pooled implosion prefab so the
         /// batched suction is visually identical to the pooled one.</summary>

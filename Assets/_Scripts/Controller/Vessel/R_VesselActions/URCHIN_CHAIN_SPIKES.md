@@ -220,7 +220,7 @@ would throw if it came up this frame — not a second copy of the arithmetic:
 | `IsChargeArmed` | the hold has passed `minChargeSeconds` — a release NOW throws a burst |
 | `ChargeProgress01` | `Charge01(held)`: 0 at (and below) the minimum, 1 at `maxChargeSeconds`; 0 when idle |
 
-`UrchinVesselHUDController` polls them each frame (a charge is a clock with no event, exactly like
+`UrchinHUDController` polls them each frame (a charge is a clock with no event, exactly like
 the Track recharge it already polls) off its OWN serialized `spikeExecutor` — never a type search
 (vessel skill rule 14) — and hands `IsChargeArmed` + `ChargeProgress01` to
 `UrchinVesselHUDView.SetSpikeCharge`. The view draws them as **`SpikeChargeRing`**, a radial ring
@@ -346,7 +346,7 @@ checked once per tick, so the two cases are not conflated into one early return.
 | Frame brake | `Controller/Projectiles/ChainReactionBudget.cs` |
 | Ability config (one asset, both shots) | `R_VesselActions/Data Containers/UrchinSpikeActionSO.cs` → `_SO_Assets/VesselActions/Urchin/UrchinSpikeAction.asset` (`UrchinSpikeVolleyAction` / `UrchinSpikeBarrageAction` retired 2026-08-18) |
 | Executor (all per-vessel state) | `R_VesselActions/Executors/UrchinSpikeActionExecutor.cs` — also the read-only charge readout (`IsCharging`, `IsChargeArmed`, `ChargeProgress01`) |
-| HUD charge ring | `UI/Controller/UrchinVesselHUDController.cs` (`spikeExecutor`) → `UI/View/UrchinVesselHUDView.cs` (`SetSpikeCharge`, `chargeRing`), authored by `Tools/Build/author_urchin_hud.py` |
+| HUD charge ring | `UI/Controller/UrchinHUDController.cs` (`spikeExecutor`) → `UI/View/UrchinVesselHUDView.cs` (`SetSpikeCharge`, `chargeRing`), authored by `Tools/Build/author_urchin_hud.py` |
 | Element map | `Assets/Resources/ElementalAbilityMaps/Urchin.asset` |
 | Spike prefabs (pool tiers) — **the live ones** | `_Prefabs/Projectile/UrchinSpikeProjectile.prefab` (`energy 0`, speed 40) · `UrchinSpikeProjectileEnergized.prefab` (1) · `UrchinSpikeProjectileSuperEnergized.prefab` (2). Fully wired: trigger SphereCollider (r 0.25) + `Rigidbody` + `Projectile` + `ProjectileImpactor` → `UrchinSpikeProjectileImpactContainer` + `ImpactCollider` + `LoadedGun`. |
 | Spike prefabs — **the 2023 originals, historical only** | `_Prefabs/Environment/SpikeProjectile.prefab` (`energy 0`, speed 40) · `EnergizedSpikeProjectile.prefab` (1, 60) · `SuperEnergizedSpikeProjectile.prefab` (2, 80) · `RecursiveSpikeProjectile.prefab` (0, 40). No collider, no impactor; three still carry the orphaned `[Stop, Steal, Fire]` YAML. Nothing points at them. |

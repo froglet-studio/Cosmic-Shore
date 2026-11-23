@@ -9,11 +9,11 @@ namespace CosmicShore.Gameplay
     /// mode's external target (an Astro League strike), a chased opponent (Broadside), or the crystal its
     /// own seeking picked (Brood Rush). Installed by
     /// <c>ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode</c> on the modes
-    /// <c>AIDifficultyRules.UsesPilotBelief</c> names; Hard installs none.
+    /// <c>AIDifficultyRules.UsesPilotBelief</c> names; Legendary installs none.
     ///
     /// <para><b>It changes what the pilot BELIEVES, never what it does with a belief.</b> AIPilot steers,
     /// breaks orbits, boosts and fires exactly as it always does, on the point this class hands back, so
-    /// Hard (no belief) is the shipped pilot byte for byte.</para>
+    /// Legendary (no belief) is the shipped pilot byte for byte.</para>
     /// <list type="bullet">
     /// <item><b>Late notice.</b> A target is perceived when it is NOTICED, and noticed again only
     /// <see cref="SkimRaceHandicapLevel.ReactionSeconds"/> later (x 0.5-1.5 per look). A new target (a

@@ -166,7 +166,8 @@ namespace CosmicShore.ScriptableObjects
                  "default: the tab reports that no regional board is configured rather than " +
                  "showing the world board under a regional heading. A player whose region matches " +
                  "no row submits to the world board only.")]
-        public List<RegionalBoard> regionalLeaderboards = new();
+        [SerializeField] List<RegionalBoard> regionalLeaderboards = new();
+        public List<RegionalBoard> RegionalLeaderboards => regionalLeaderboards;
 
         /// <summary>
         /// The board id for a region key, or null when that region has none. Case-insensitive, and

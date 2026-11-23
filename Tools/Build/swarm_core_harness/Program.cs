@@ -90,6 +90,10 @@ static class Program
         if (args.Length > 1 && args[1] == "lineage") return LineageHarness.RunAll(plans, args.Length > 2 ? args[2] : null) == 0 ? 0 : 1;
         // Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md §8): the scripted-plan sort core + the stage director
         if (args.Length > 2 && args[1] == "tandava") return TandavaHarness.Run(plans, args[2]) == 0 ? 0 : 1;
+        // Tandava: Severing (Assets/_Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md): the fork's director over
+        // Tandava's ladder plans and its own four
+        if (args.Length > 3 && args[1] == "tandava-severing")
+            return TandavaSeveringHarness.Run(plans, args[2] + Path.PathSeparator + args[3]) == 0 ? 0 : 1;
         string plansDir = args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans";
         if (args.Length > 1 && args[1] == "evo") return EvoHarness.Run(plans, plansDir) == 0 ? 0 : 1;
         Console.WriteLine("plans: " + string.Join(", ", plans.Select(p => $"{p.Kind} N={p.N} mix=[{string.Join(",", p.Mix)}] R={p.Radius:F1}")));

@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
                         CSDebug.LogWarning($"[BlackHole] The lens cannot draw: {reason}. Holes draw as plain black spheres.");
                         s_material = null;
                     }
+                    WorldColorTrace.Paint(s_material);   // loaded after the scene's repaint: born in the worn colour set
                     s_materialResolved = true;
                 }
                 return s_material;
@@ -259,8 +260,8 @@ namespace CosmicShore.Gameplay
             if (hole == null) return false;
             bool smooth = hole.IsSmooth;
             float radius = (smooth ? hole.Softening : hole.HorizonRadius) * hole.WarpWeight;
-            // A horizon hole's lens follows its Amplitude (1 for every hole but one being neutralized: the Stoat's
-            // slamming pair, StoatDipoleExecutor.StepCollapses). The shadow, the bend and the ring all scale with the
+            // A horizon hole's lens follows its Amplitude (1 for every hole but one being neutralized, as the
+            // Stoat's retired field dipole's slamming pair was). The shadow, the bend and the ring all scale with the
             // radius, so the pair sinks to a point as its fields cancel. A smooth well's amplitude rides its
             // LensStrength below instead, so it is not applied twice.
             if (!smooth) radius *= Mathf.Clamp01(hole.Amplitude);
@@ -421,6 +422,8 @@ namespace CosmicShore.Gameplay
             /// <summary>Called every frame by the registry's driver while holes are live.</summary>
             internal static void Maintain()
             {
+                // Shared with the Goby's vortex lens and the Meerkat's original lens, so it is NOT gated on the hole look:
+                // the Mobile look simply never creates a BlackHoleLens, so holes never acquire it (Docs/BLACK_HOLE.md §5.4).
                 if (s_users == 0) { Restore(); return; }
 
                 // A camera switched on since last frame (a vessel spawn, the death or end camera)

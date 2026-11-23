@@ -98,6 +98,71 @@ namespace CosmicShore.Tests
             Assert.IsFalse(ScoreboardLadder.TryLeadingNumber("Jousts: 3", out _));
             Assert.IsFalse(ScoreboardLadder.TryLeadingNumber(null, out _));
         }
+
+        // Rev 23 D, the board: Ruby (Kai, Kestrel) beats Jade (Bob, Cassian) - listed loser-first to prove the winner
+        // still takes the left.
+        static List<ScoreResult> TwoVTwo() => new()
+        {
+            R(3, "Bob", Domains.Jade, "7", "9 Crystals"),
+            R(4, "Cassian", Domains.Jade, "5", "7 Crystals"),
+            R(1, "Kai", Domains.Ruby, "9", "14 Crystals"),
+            R(2, "Kestrel", Domains.Ruby, "8", "12 Crystals"),
+        };
+
+        [Test]
+        public void Versus_PutsTheWinnerOnTheLeftWithItsRows()
+        {
+            var v = ScoreboardLadder.BuildVersus(TwoVTwo(), Domains.Ruby);
+            Assert.IsNotNull(v);
+            Assert.AreEqual(Domains.Ruby, v[0].Domain);
+            Assert.IsTrue(v[0].Won);
+            Assert.IsFalse(v[1].Won);
+            CollectionAssert.AreEqual(new[] { 2, 3 }, v[0].Rows.ConvertAll(r => r.ResultIndex));
+            CollectionAssert.AreEqual(new[] { 0, 1 }, v[1].Rows.ConvertAll(r => r.ResultIndex));
+        }
+
+        [Test]
+        public void Versus_AddsWholeNumberScoresAndSplitsTheCount()
+        {
+            var v = ScoreboardLadder.BuildVersus(TwoVTwo(), Domains.Ruby);
+            Assert.AreEqual("17", v[0].Score);
+            Assert.AreEqual("12", v[1].Score);
+            Assert.IsTrue(v[0].Rows[0].ShowsScore, "members with their own scores keep them");
+            Assert.AreEqual(26f / 42f, v[0].Share, 1e-4f);
+            Assert.AreEqual(16f / 42f, v[1].Share, 1e-4f);
+        }
+
+        [Test]
+        public void Versus_SaysASharedTeamTimeOnceAndLeavesATimeUnadded()
+        {
+            var v = ScoreboardLadder.BuildVersus(SkimRace(), Domains.Jade);
+            Assert.IsNotNull(v, "3 v 1 is still two teams");
+            Assert.AreEqual("00:44:93", v[0].Score);
+            Assert.IsFalse(v[0].Rows[0].ShowsScore);
+            Assert.IsNull(v[1].Score, "a lone time is not added up");
+        }
+
+        [Test]
+        public void Versus_StaysTheLadderForFreeForAllOneVOneAndThreeTeams()
+        {
+            var ffa = new List<ScoreResult> { R(1, "A", Domains.Jade, "3", ""), R(2, "B", Domains.Ruby, "2", ""), R(3, "C", Domains.Gold, "1", "") };
+            Assert.IsNull(ScoreboardLadder.BuildVersus(ffa, Domains.Jade));
+            var oneVOne = new List<ScoreResult> { R(1, "A", Domains.Jade, "3", ""), R(2, "B", Domains.Ruby, "2", "") };
+            Assert.IsNull(ScoreboardLadder.BuildVersus(oneVOne, Domains.Jade));
+            var three = new List<ScoreResult> { R(1, "A", Domains.Jade, "3", ""), R(2, "B", Domains.Jade, "2", ""),
+                                                R(3, "C", Domains.Ruby, "1", ""), R(4, "D", Domains.Gold, "0", "") };
+            Assert.IsNull(ScoreboardLadder.BuildVersus(three, Domains.Jade));
+        }
+
+        [Test]
+        public void Versus_HidesTheShareBarWhenALineHasNoNumber()
+        {
+            var r = TwoVTwo();
+            r[1] = R(4, "Cassian", Domains.Jade, "5", "Left early");
+            var v = ScoreboardLadder.BuildVersus(r, Domains.Ruby);
+            Assert.AreEqual(-1f, v[0].Share);
+            Assert.AreEqual(-1f, v[1].Share);
+        }
     }
 }
 #endif

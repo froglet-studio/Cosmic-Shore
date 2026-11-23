@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-11-garrett-decided-the-colour-rule-is-unive-5747a0",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T00:14:27+00:00",
+  "area": "the Voyages map and the UI theme",
+  "summary": "Garrett decided the colour rule is universal (2026-11-10, LOCKED: every colour comes from the colour set; not an owner's call), so the held-back Voyage map edits are applied: VoyageMapGraphic, VoyageMapSky, VoyageWindowTabs, VoyageCellDraw, VoyageEdgeGraphic, ArkwayVoyageHud and VoyageToyDefinitionSO read their colours through ColorTrace.Retrace (a trial merge with claude/epic-fermat-6c7n2l has no conflicting lines). And Photic's UI is now exactly the authored theme: every colour set carries all 18 UI tokens and the sea's four colours as ui-token ids, Photic's the authored UITheme (selection Jade as D3 decided) and Sea_Window's own colours; ColorSetUITheme.Build reads them; make_themes.py and author_editor_themes.py give Photic the authored Deep Sea (its soft text 3.6:1 and danger 4.4:1 on a panel, as authored).",
+  "why": "Garrett, 2026-11-10: 'this is not anyone elses call. this is a fundamental that should be respected universally ... if that rule is broken then it is a sign of incompleteness or a bug'.",
+  "branch": "cece/nifty-cray-41hy43",
+  "lane": "voyages",
+  "commit": "15709b3b5",
+  "paths": [
+    "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+    "Assets/_Scripts/UI/ColorSetUITheme.cs",
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
+    "Assets/_Scripts/UI/Views/VoyageMapGraphic.cs",
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
+    "Assets/_Scripts/UI/Views/VoyageWindowTabs.cs",
+    "Tools/Analytics/console/make_themes.py",
+    "Tools/Build/author_editor_themes.py"
+  ]
+}

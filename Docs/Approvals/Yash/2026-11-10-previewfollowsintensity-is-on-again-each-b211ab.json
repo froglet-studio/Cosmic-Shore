@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-10-previewfollowsintensity-is-on-again-each-b211ab",
+  "to": "Yash",
+  "by": "Shombith",
+  "date": "2026-11-10T18:48:33+00:00",
+  "area": "Arcade configure modal preview (ModePreviewSession / ArcadeGameConfigureModal)",
+  "summary": "previewFollowsIntensity is on again: each intensity press re-stands the card's scale model (a mesh, no cell build) so the window shows that intensity's world; a gate race's model now includes its course rings, and a model showing a gate race re-stands on an intensity change. Flight behaviour is unchanged (the cell is still built only on the tap).",
+  "branch": "claude/great-meitner-72uziq",
+  "commit": "385d3018c"
+}

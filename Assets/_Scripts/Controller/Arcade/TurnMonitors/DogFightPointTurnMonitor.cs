@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
@@ -11,7 +12,9 @@ namespace CosmicShore.Gameplay
     /// condition to the mode's own ScoringRule.
     ///
     /// The one thing this mode owns is WHICH target it races to: gunnery points, where a bullet
-    /// hit is 1 and a missile hit is 50 (see <see cref="DogFightScoringRuleSO"/>).
+    /// hit is 1 and a rocket pays its best tier, 10/20/30 (see <see cref="DogFightScoringRuleSO"/>).
+    /// Grizzly Charge races on this same monitor and price list but has its own target key, so
+    /// Dog Fight's length can move without moving it.
     /// </summary>
     public class DogFightPointTurnMonitor : CombatPointTurnMonitorBase
     {
@@ -19,10 +22,15 @@ namespace CosmicShore.Gameplay
 
         protected override int ResolvePointTarget()
         {
+            bool grizzlyCharge = gameData != null && gameData.GameMode == GameModes.GrizzlyCharge;
             var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetDogFightPointTarget()
-                : EndConditionOverridesSO.DefaultDogFightPointTarget;
+            if (overrides == null)
+                return grizzlyCharge
+                    ? EndConditionOverridesSO.DefaultGrizzlyChargePointTarget
+                    : EndConditionOverridesSO.DefaultDogFightPointTarget;
+            return grizzlyCharge
+                ? overrides.GetGrizzlyChargePointTarget()
+                : overrides.GetDogFightPointTarget();
         }
     }
 }

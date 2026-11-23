@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < n_Slots.Count; i++)
             {
                 var domain = Domains.Blue;
-                if (spawnCrystalWithPlayerDomain && i < gameData.Players.Count)
+                if (!UsesCourseKeys && spawnCrystalWithPlayerDomain && i < gameData.Players.Count)
                     domain = gameData.Players[i].Domain;
 
                 // Write position + domain atomically in a single struct.
@@ -212,6 +212,40 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The course keys arrived (or went) after the initial batch was laid: re-size the slot list to them and
+        /// re-lay every slot at its key (or, keys cleared, back on the authored placement). Before the turn starts
+        /// there is nothing to do - <see cref="OnTurnStarted"/> lays the keys when it lays the batch.
+        /// </summary>
+        protected override void OnCourseKeysChanged()
+        {
+            if (!IsServer || !_initialBatchStarted) return;
+
+            EnsureListSizedToSelectedPlayerCount();
+            bool hasAnchors = HasAuthoredAnchors();
+            for (int i = 0; i < n_Slots.Count; i++)
+            {
+                var domain = Domains.Blue;
+                if (!UsesCourseKeys && spawnCrystalWithPlayerDomain && i < gameData.Players.Count)
+                    domain = gameData.Players[i].Domain;
+                n_Slots[i] = new CrystalSlotData
+                {
+                    Position = InitialSpawnPointFor(i + 1, _initialBatchAnchor, hasAnchors),
+                    Domain = (int)domain
+                };
+            }
+            RetireCrystalsBeyondSlots();
+        }
+
+        /// <summary>A slot the list dropped still has its crystal standing: retire it. Course keys only - the
+        /// authored placement has always left a shrunk roster's crystals where they were.</summary>
+        void RetireCrystalsBeyondSlots()
+        {
+            if (!UsesCourseKeys) return;
+            for (int id = n_Slots.Count + 1; cellData.TryGetCrystalById(id, out var extra); id++)
+                if (extra) extra.DestroyCrystal();
+        }
+
         // ---------------- Anchor Helpers ----------------
 
         private int serverBatchAnchorIndex;
@@ -256,6 +290,12 @@ namespace CosmicShore.Gameplay
 
         private void OnSlotsChanged(NetworkListEvent<CrystalSlotData> e)
         {
+            if (e.Type == NetworkListEvent<CrystalSlotData>.EventType.RemoveAt ||
+                e.Type == NetworkListEvent<CrystalSlotData>.EventType.Remove)
+            {
+                RetireCrystalsBeyondSlots();
+                return;
+            }
             if (e.Type != NetworkListEvent<CrystalSlotData>.EventType.Add &&
                 e.Type != NetworkListEvent<CrystalSlotData>.EventType.Insert &&
                 e.Type != NetworkListEvent<CrystalSlotData>.EventType.Value)
@@ -302,6 +342,16 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        public override void RelocateCrystal(int crystalId, Vector3 position) => RelocateCrystal_ServerRpc(crystalId, position);
+
+        [ServerRpc(RequireOwnership = false)]
+        private void RelocateCrystal_ServerRpc(int crystalId, Vector3 position)
+        {
+            int idx = crystalId - 1;
+            if (idx < 0 || idx >= n_Slots.Count || n_Slots[idx].IsEmpty) return;
+            n_Slots[idx] = new CrystalSlotData { Position = position, Domain = n_Slots[idx].Domain };
+        }
+
         /// <summary>
         /// A ring is threaded on the machine that SIMULATES the pilot (see
         /// <see cref="CrystalRaceRing"/>), but credited only here on the server - the same split
@@ -339,8 +389,20 @@ namespace CosmicShore.Gameplay
             CreditRingThreaded(crystalId, ringPosition, collector);
         }
 
-        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams) =>
+        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
+        {
+            // No session (the host dropped, or the frames of leaving a match while the arena still stands): there
+            // is nobody to tell, and Netcode refuses the ServerRpc ("Rpc methods can only be invoked after starting
+            // the NetworkManager!"), so the crystal was taken with no explosion. This peer plays it for itself,
+            // the same split ReportRingThreaded makes.
+            if (!IsSpawned)
+            {
+                if (cellData.TryGetCrystalById(crystalId, out var crystal)) crystal.Explode(explodeParams);
+                return;
+            }
+
             ExplodeCrystal_ServerRpc(crystalId, NetworkExplodeParams.FromExplodeParams(explodeParams));
+        }
 
         [ServerRpc(RequireOwnership = false)]
         private void ExplodeCrystal_ServerRpc(int crystalId, NetworkExplodeParams explodeParams)

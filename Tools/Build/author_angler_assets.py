@@ -43,8 +43,9 @@ WHAT IT MAKES
     NOT here (code, held by tests): the enum member, ToyVesselRoster.Default, EnumIntegrityTests.
     THE ELEMENT MAP (Assets/Resources/ElementalAbilityMaps/Angler.asset) is owned outright since the designer approved it on
     2026-10-16 (ANGLER.md §7): Charge = Erase / Lock-on, Mass = Lure, Tame & Grow (L5 Steal Fauna), Space = Paint (L5 Paint
-    Shields), Time = Dash to the School. Charge and Time have no level-5 upgrade yet; their labels stay empty (vessel skill
-    §3: never invent one to fill a slot). No element SCALES anything yet: every ability is at its authored number.
+    Shields), Time = Dash to the School. The fundamentals pass (Garrett, 2026-11-12, ANGLER.md §1n) gave Charge L5 Swallow
+    and Time L5 Riptide, and made every element scale a number: Charge the bite rate, Mass the lure's size, Space the
+    brush's width, Time the tamed fauna's speed.
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md: "a spent one-shot must stand down, not abort").
 The prefab and the HUD variant are built ONLY while absent; --check validates the SHIPPED files' invariants. To
@@ -149,6 +150,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
     "Controller/Environment/FloraAndFauna/PaintedPrey.cs",
     "Controller/Animation/AnglerAnimation.cs",
+    "Controller/AI/Boost/AnglerLeapfrogAIPolicySO.cs",
 ))
 SCRIPT = {os.path.basename(rel)[:-3]: guid for rel, guid in NEW_SCRIPTS}
 
@@ -184,7 +186,11 @@ EXECUTOR_ID = "4417001122334455001"
 
 # ---- fleet guids ---------------------------------------------------------------------------------------------------
 TURN_END_CHANNEL = "498a06d44bde9184f985c938c803b2a1"
-SKIM_RING_POLICY = "c691910cb0114ea7aeb572bc51b71a6a"         # StoatAIBoostPolicy.asset (SkimRingAIPolicySO)
+SKIM_RING_POLICY = "c691910cb0114ea7aeb572bc51b71a6a"         # StoatAIBoostPolicy.asset (SkimRingAIPolicySO), the donor's
+# The Angler's own autopilot drive (2026-10-29, Lantern Run): paint, throw, dash after the school. Replaces the donor's
+# skim-ring policy, which binds nothing on an Angler (ANGLER.md follow-up 2).
+LEAPFROG_POLICY = A("_SO_Assets", "AI Boost Policies", "AnglerAIBoostPolicy.asset")
+LEAPFROG_POLICY_GUID = guid_for("AnglerAIBoostPolicy.asset")
 SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
 CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
 # The Stoat's four icon sprites (charge, mass, space, time) and the Angler's that replace them in the HUD variant.
@@ -192,6 +198,13 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": I.guid_for("Angler_Command.png"
              "783faf75777a15c5b2241cfc3e2691d3": I.guid_for("Angler_Leash.png"),
              "586d56db81bb568c940094830cd59abb": I.guid_for("Angler_Lure.png"),
              "669089ec7ad29ed295eccc53d8615225": I.guid_for("Angler_Tame.png")}
+# A card the icon kit has recut (Tools/Build/icon_kit/specs/angler.py, Garrett's ability icon polish) wears kit PARTS on
+# child Images and its slot Image carries no sprite, so the round-1 sprite is gone on purpose: the first part's view
+# field stands in (the BrittleStar's KIT_RECUT, author_brittlestar_assets.py).
+KIT_RECUT = {"ebdd346798d474b5a5ab2364683a8725": "lockSchoolIcon",    # Charge (was Angler_Command): the lock-on parts
+             "783faf75777a15c5b2241cfc3e2691d3": "lureHullIcon",      # Mass (was Angler_Leash): the lure parts
+             "586d56db81bb568c940094830cd59abb": "paintGroupAIcon",   # Space (was Angler_Lure): the paint parts
+             "669089ec7ad29ed295eccc53d8615225": "dashGroupAIcon"}    # Time (was Angler_Tame): the dash parts
 CARD_ACTIVE, CARD_INACTIVE = I.guid_for(I.CARD_ACTIVE), I.guid_for(I.CARD_INACTIVE)
 # the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
 # names a new PNG md5("cosmic-shore-card:" + its repo path); Angler.png / Angler_Inactive.png keep the guids above
@@ -371,6 +384,8 @@ def patch_prefab(text: str) -> str:
                         f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}")
     text = re.sub(r"  _inputEventShipActions:(?:.*\n)*?(?=  _onButtonPressed:)", lambda _: bindings(), text, count=1)
     text = re.sub(r"  squadLabelTemplate: .*\n", "", text)   # the retired squad label (2026-10-21)
+    text = text.replace(f"boostPolicy: {{fileID: 11400000, guid: {SKIM_RING_POLICY}, type: 2}}",
+                        f"boostPolicy: {{fileID: 11400000, guid: {LEAPFROG_POLICY_GUID}, type: 2}}")
     head, docs = S.split_docs(text)
     if any(fid == EXECUTOR_ID for fid, _ in docs):
         S.set_doc(docs, EXECUTOR_ID, executor_block())
@@ -443,6 +458,11 @@ def config_asset() -> str:
             "  lureGrowth: 3\n"
             "  faunaSpeed:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 4\n    UseFloor: 1\n    Floor: 1\n"
             "  lockBiteCooldown: 1\n"
+            "  biteRate:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2.5\n    element: 1\n    UseFloor: 1\n    Floor: 1\n"
+            "  swallowUpgradeElement: 1\n"
+            "  lureScale:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 2\n    UseFloor: 1\n    Floor: 1\n"
+            "  brushScale:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 3\n    UseFloor: 1\n    Floor: 1\n"
+            "  riptideUpgradeElement: 4\n"
             "  lockBiteReach: 6\n"
             "  omniFauna:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_FAUNA) +
             f"  companionFauna: {{fileID: 11400000, guid: {KEEPER_SPECIES}, type: 2}}\n"
@@ -463,8 +483,8 @@ def impact_container_asset() -> str:
 
 
 def map_asset() -> str:
-    """The element map the designer approved on 2026-10-16 (ANGLER.md §7). Charge and Time have no level-5 upgrade yet:
-    their UpgradeLabel stays empty, the honest state of an open design slot (vessel skill §3)."""
+    """The element map the designer approved on 2026-10-16 (ANGLER.md §7), with the fundamentals pass of 2026-11-12
+    (ANGLER.md §1n): every element scales a number, Charge 5 is Swallow and Time 5 is Riptide."""
     def entry(element, label, desc, inp, up_label, up_desc):
         q = lambda t: "'" + t.replace("'", "''") + "'"
         return (f"  - Element: {element}\n    AbilityLabel: {label}\n    AbilityDescription: {q(desc)}\n    Input: {inp}\n"
@@ -476,11 +496,16 @@ def map_asset() -> str:
                   "LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Each "
                   "time the beam comes onto a rival vessel - another one, or the same one again - it LOCKS, and the lock "
                   "SPENDS one creature: it leaves your school (your count drops by one) and chases that vessel until it "
-                  "dies, each bite a scored contact Strike that takes petals. R_VesselActions/ANGLER.md.", 2, "", "") +
+                  "dies, each bite a scored contact Strike that takes petals. Charge sets how often a hunter bites: once a "
+                  "second at Charge 0, every 0.4 s at Charge 10 (AnglerConfigSO.biteRate). R_VesselActions/ANGLER.md.", 2,
+                  "Swallow",
+                  "A hunter's bite no longer knocks the petals loose: they land on you. Gated on "
+                  "IsUpgradeActive(Charge).") +
             entry(2, "Lure, Tame & Grow",
                   "A (Space on a keyboard), held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the "
                   "light for the taming time joins your school (the count on this card). Plants in the light grow three "
-                  "times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain.", 6,
+                  "times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain. Mass "
+                  "sets the light's size: its reach and hold grow x1 at Mass 0 to x2 at Mass 10 (AnglerConfigSO.lureScale).", 6,
                   "Steal Fauna",
                   "The lure takes creatures from other holders too: another Angler's tamed fauna can be lured, tamed and "
                   "kept. Gated on IsUpgradeActive(Mass).") +
@@ -488,14 +513,18 @@ def map_asset() -> str:
                   "RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every "
                   "creature prefers them; half your school balls up ahead, any of that half still in flight included. Let "
                   "go: each creature of that half flies at the most recently painted prisms first, at any distance, and "
-                  "eats them, and the next paint sends the other half. Lit prisms stay lit until eaten or erased.", 1,
+                  "eats them, and the next paint sends the other half. Lit prisms stay lit until eaten or erased. Space "
+                  "sets the brush's width: x1 at Space 0 to x2 at Space 10 (AnglerConfigSO.brushScale).", 1,
                   "Paint Shields",
                   "The brush paints shielded prisms too, and the squad cracks a painted prism's shield off when it arrives, "
                   "so it can be eaten. Gated on IsUpgradeActive(Space).") +
             entry(4, "Dash to the School",
                   "B (T on a keyboard): the hull dashes 75% of the way to the centre of one half of your school, measured "
                   "when pressed, in 0.35 s; the next dash goes to the other half, so you fly between your two groups. "
-                  "Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).", 7, "", ""))
+                  "Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).", 7,
+                  "Riptide",
+                  "A dash pressed while one is in flight is kept and fires the moment it lands, at your other group, so "
+                  "you chain between your two groups. Gated on IsUpgradeActive(Time)."))
 
 
 def control_asset(name: str, value: int) -> str:
@@ -581,6 +610,17 @@ def prefab_meta(guid: str) -> str:
     return S.prefab_meta().replace(S.PREFAB_GUID, guid)
 
 
+def leapfrog_policy_asset() -> str:
+    """The Angler's autopilot drive (AnglerLeapfrogAIPolicySO). The base straight/runway fields are unused by this
+    policy and stay at their defaults; requireAIPlayer keeps it off the menu's lava-lamp autopilot (a throw leaves
+    creatures in the world)."""
+    return (S.so_header(SCRIPT["AnglerLeapfrogAIPolicySO"], "AnglerAIBoostPolicy") +
+            "  alignDegrees: 12\n  releaseAlignDegrees: 25\n  stickBand: 0.35\n  releaseStickBand: 0.6\n"
+            "  engageRunwaySeconds: 1.5\n  releaseRunwaySeconds: 0.5\n  disabledInModes: []\n  requireAIPlayer: 1\n"
+            "  throwAlignDegrees: 4\n  minThrowDistance: 120\n  holdSeconds: 0.45\n  throwIntervalSeconds: 0.6\n"
+            "  minDashDistance: 40\n  dashAheadDegrees: 50\n")
+
+
 def owned_files() -> "dict[str, str]":
     out = {
         CLASS_ASSET: class_asset(), CLASS_ASSET + ".meta": S.asset_meta(CLASS_GUID),
@@ -593,6 +633,7 @@ def owned_files() -> "dict[str, str]":
         OMNI_EFFECT: omni_effect_asset(), OMNI_EFFECT + ".meta": S.asset_meta(OMNI_EFFECT_GUID),
         IMPACT_CONTAINER + ".meta": S.asset_meta(IMPACT_CONTAINER_GUID),
         MAP: map_asset(), MAP + ".meta": S.asset_meta(MAP_GUID),
+        LEAPFROG_POLICY: leapfrog_policy_asset(), LEAPFROG_POLICY + ".meta": S.asset_meta(LEAPFROG_POLICY_GUID),
     }
     for name, value, _ in CONTROLS + TOUCH_CONTROLS:
         path = os.path.join(ACTIONS_DIR, name + ".asset")
@@ -699,8 +740,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(omni and f"guid: {OMNI_EFFECT_GUID}" in omni.group(1) and STOAT_OVERCLOCK not in container,
          "AnglerImpactorDataContainer's omni list does not run the Angler's mass tame (or still runs the Stoat's Overclock)")
     need("  abilities: []\n" in d.get(AI_PILOT_ID, ""), "the AIPilot runs a blind ability cycle (the Angler has no autopilot yet)")
-    need(f"boostPolicy: {{fileID: 11400000, guid: {SKIM_RING_POLICY}, type: 2}}" in d.get(AI_PILOT_ID, ""),
-         "the AIPilot's boost policy is not the donor's SkimRingAIPolicy (inert without a Squirrel tube; the shared-channel gate wants it wired)")
+    need(f"boostPolicy: {{fileID: 11400000, guid: {LEAPFROG_POLICY_GUID}, type: 2}}" in d.get(AI_PILOT_ID, ""),
+         "the AIPilot's boost policy is not AnglerAIBoostPolicy (AnglerLeapfrogAIPolicySO: paint, throw, dash)")
     handler = d.get(HANDLER_ID, "")
     for name, _, event in CONTROLS:
         need(re.search(r"  - InputEvent: %d\n    ShipActions:\n    - \{fileID: 11400000, guid: %s, type: 2\}" % (event, CONTROL_GUID[name]), handler),
@@ -728,7 +769,9 @@ def check(files: "dict[str, str]") -> "list[str]":
             # the round-2 key until Unity re-saves the variant, the element-named one after (FormerlySerializedAs)
             need(re.search(r"  (%s|%s): \{fileID: [1-9]\d*\}" % (field, renamed), hud), f"HUD view field {renamed} is not wired")
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            recut = KIT_RECUT.get(old)
+            done = new in hud or (recut and re.search(r"  %s: \{fileID: [1-9]\d*\}" % recut, hud))
+            need(old not in hud and done, f"HUD icon {new} not swapped in")
         need(f"  seedSprite: {{fileID: 21300000, guid: {SEED_SPRITE}, type: 3}}\n" in hud,
              "AnglerHUDView.seedSprite is not wired (the omni card's seed, round 4)")
 
@@ -738,7 +781,7 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n" in files.get(CAMERA, ""),
          f"AnglerCameraSettingsSO.followOffset is not the lab's chase (0, {CHASE_UP}, -{CHASE_BACK})")
     cfg = files.get(CONFIG_PATH, "")
-    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach",
+    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "biteRate", "swallowUpgradeElement", "lureScale", "brushScale", "riptideUpgradeElement", "lockBiteReach",
                 "tameHueLean"):
         need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4, the school's mark; re-seed it or add the line)")
     need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,
@@ -846,6 +889,7 @@ def self_test() -> int:
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
         "the element map drifted": (MAP, lambda t: t.replace("Input: 7", "Input: 14")),
         "the combat-hit channel unwired": (PREFAB, lambda t: t.replace(f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}", "  onCombatHitLanded: {fileID: 0}")),
+        "a recut card's parts unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  lureHullIcon: \{fileID: \d+\}", "  lureHullIcon: {fileID: 0}", t)),
         "the seed sprite unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  seedSprite: .*\n", "", t)),
         "the camera back in": (CAMERA, lambda t: t.replace(f"z: -{CHASE_BACK}", "z: -40")),
         "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 7\n", "  - InputEvent: 13\n")),

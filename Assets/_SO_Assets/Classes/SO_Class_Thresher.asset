@@ -35,6 +35,10 @@ MonoBehaviour:
   Abilities: []
   Games: []
   TrainingGames: []
+  keywords:
+  - 1
+  - 4
+  - 7
   gameplayParameter1:
     LeftHandLabel: Casual
     RightHandLabel: Challenging

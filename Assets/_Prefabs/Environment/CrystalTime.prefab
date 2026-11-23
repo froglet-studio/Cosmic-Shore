@@ -32,7 +32,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_LocalScale: {x: 3.55, y: 3.55, z: 3.55}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 441863464924063366}
@@ -95,7 +95,7 @@ MonoBehaviour:
     type: 3}
   crystalModels:
   - model: {fileID: 3792360532212070197}
-    defaultMaterial: {fileID: 2100000, guid: 3fbc5051c8a40814186ae69a0cba15ff, type: 2}
+    defaultMaterial: {fileID: 2100000, guid: 51138c6af7b139ab085f10920a2faeb9, type: 2}
     explodingMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 8e9bcad022cf0e543937d40129bc918e, type: 2}
     spaceCrystalAnimator: {fileID: 0}

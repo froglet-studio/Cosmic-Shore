@@ -24,3 +24,8 @@ MonoBehaviour:
   requireAIPlayer: 0
   minHoldSeconds: 0.6
   minRestSeconds: 0.4
+  clearWayRocket: {fileID: 0}
+  rocketMaxRange: 220
+  rocketMinRange: 60
+  rocketAimDegrees: 4
+  rocketCooldownSeconds: 1

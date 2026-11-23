@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -30,6 +31,13 @@ namespace CosmicShore.Gameplay
                  "length, so the circuit is laid with target/laps rings - one number authored " +
                  "once, in the end-condition overrides, and the two can never disagree.")]
         [SerializeField, Min(1)] int laps = WrasseRunCourseSource.DefaultLaps;
+
+        [Header("AI nose")]
+        [Tooltip("The AI nose lead and follow rate per hull in this mode (GateRaceController.AINoseLeadRow). Empty: the " +
+                 "fleet nose lag, as before. Filled by a trained pair (time_ai_search.py, the Wrasse's own Time game).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Wrasse, 0.69f, noseFollow: 4.37f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
         protected override string ModeName => "Wrasse Run";
 

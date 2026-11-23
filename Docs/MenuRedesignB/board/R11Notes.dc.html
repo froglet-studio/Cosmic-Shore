@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 11 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+@property --r11ph{syntax:'<length>';inherits:false;initial-value:0px}
+@keyframes r11Wave{from{--r11ph:-862px}to{--r11ph:0px}}
+@keyframes r11Tide{0%,100%{transform:translateY(-30%)}50%{transform:translateY(30%)}}
+@keyframes r11Ribbon{0%,100%{transform:translateX(-6%) skewY(-4deg)}50%{transform:translateX(6%) skewY(4deg)}}
+@keyframes r11Breathe{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes r11Rise{from{transform:translateY(0);opacity:0}15%{opacity:var(--o)}85%{opacity:var(--o)}to{transform:translateY(-520px);opacity:0}}
+@keyframes r11Drift{0%,100%{transform:translate(0,0)}50%{transform:translate(4%,-3%)}}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.wave{-webkit-mask-image:repeating-radial-gradient(circle at 50% 46%,transparent var(--r11ph),transparent calc(var(--r11ph) + 330px),#000 calc(var(--r11ph) + 431px),transparent calc(var(--r11ph) + 532px),transparent calc(var(--r11ph) + 862px));mask-image:repeating-radial-gradient(circle at 50% 46%,transparent var(--r11ph),transparent calc(var(--r11ph) + 330px),#000 calc(var(--r11ph) + 431px),transparent calc(var(--r11ph) + 532px),transparent calc(var(--r11ph) + 862px));animation:r11Wave 5.2s linear infinite}
+</style>
+</helmet>
+<div style="width:1920px;height:1080px;box-sizing:border-box;padding:80px 110px;background:#00041F;color:#E6E8F2"><h1 style="margin:0;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:44px">Rev 11 - backgrounds</h1><p style="margin:14px 0 0;font-family:'Chakra Petch',sans-serif;font-size:20px;line-height:1.45;color:#C9CDE6"><b>What goes:</b> the line lattice behind every window and panel today (Lattice_Window / Lattice_Panel). Seen up close it reads as a grid.</p><p style="margin:14px 0 0;font-family:'Chakra Petch',sans-serif;font-size:20px;line-height:1.45;color:#C9CDE6"><b>Option 1 - Amoebius's lattice:</b> the launcher's LATTICE background, as Amoebius draws it: pointy-top hexagons (radius 34 at 1080p) and one bright ring rippling out from the centre about every 5 s. It is drawn here in the menu's blues (SurfaceLight lines, a light-blue ring). Amoebius itself draws it violet to cyan, but violet is close to an element colour, which the new colour rules keep out of the UI.</p><p style="margin:14px 0 0;font-family:'Chakra Petch',sans-serif;font-size:20px;line-height:1.45;color:#C9CDE6"><b>Option 2 - see-through glass</b> (you asked for the transparency back; the solid surfaces at the bottom are kept only for comparison): G clear veil + lattice, H frosted glass, I edge veil, J hex stained glass, K tide glass, L current glass. Full screens: Arcade (G), Toy Box (H), Profile (I + tide). The world behind is a rendered Broadside arena, the busiest scene we have.</p><p style="margin:22px 0 0;font-family:'Chakra Petch',sans-serif;font-size:18px;line-height:1.45;color:#9AA0C8"><b>How it would be built in Unity:</b> one UI shader per background (like today's lattice shader, animated by time alone, so it never re-draws the canvas), a material per option, and the window generators swap the backdrop material. The panel version is the same shader at lower alpha.</p><p style="margin:14px 0 0;font-family:'Chakra Petch',sans-serif;font-size:18px;line-height:1.45;color:#9AA0C8"><b>Note on Garrett's attention rule:</b> he asked that nothing move for its own sake. Every option here is slow, low contrast and sits behind opaque panels. If he objects, each one also has a still frame.</p><p style="margin:30px 0 0;font-family:'Chakra Petch',sans-serif;font-size:22px;line-height:1.45;color:#E6E8F2"><b>Questions for you:</b></p><p style="margin:14px 0 0;font-family:'Chakra Petch',sans-serif;font-size:20px;line-height:1.45;color:#C9CDE6">1. Which see-through background for the windows (Arcade, Arena, Toy Box, Mission, Hangar, Ark, Profile, Settings): G, H, I, J, K or L?</p><p style="margin:14px 0 0;font-family:'Chakra Petch',sans-serif;font-size:20px;line-height:1.45;color:#C9CDE6">2. One background everywhere, or one for the hub windows (e.g. G) and a calmer one for Profile and Settings (e.g. I)?</p><p style="margin:14px 0 0;font-family:'Chakra Petch',sans-serif;font-size:20px;line-height:1.45;color:#C9CDE6">3. How see-through: the veil is 45-62 % today in these boards; more world, or more readability?</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

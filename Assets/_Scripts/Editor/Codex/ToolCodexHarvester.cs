@@ -19,7 +19,8 @@ namespace CosmicShore.Editor.Codex
     /// <see cref="ToyFactory"/> from its <see cref="ToyDefinitionSO"/>, so the DEFINITION is the
     /// asset that exists. Entries therefore carry <see cref="CodexEntry.SourceConfig"/> instead of
     /// <see cref="CodexEntry.SourcePrefab"/>, and their portrait is drawn rather than harvested
-    /// (<see cref="ToolPortraitBuilder"/>).</para>
+    /// (a 2D glyph from <see cref="CodexImageBaker.ToolPortraitAuthor"/>; the baker stands down on
+    /// Tool pages).</para>
     ///
     /// <para><b>Facts are read per TYPE, by pattern match, not by name.</b> Two things follow from
     /// that and both are deliberate. A field rename is a compile error here rather than a silently

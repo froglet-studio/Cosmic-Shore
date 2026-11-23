@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6355784b800a45eaa05236b6d4950bc6, type: 3}
+  m_Name: FairPlayNoticeConfig
+  m_EditorClassIdentifier:
+  eyebrow: 'Fair play'
+  automatedLine: 'This was found by our automated checks.'
+  restrictedLine: 'A member of our team reviewed your account and restricted ranked and public play until {until}.'
+  paidContentLine: 'Everything you paid for stays playable on your own and with AI teammates.'
+  cheatingTitle: 'Your matches are being played separately'
+  cheatingBody: 'Our checks found play that breaks rule {rule} of the Code of Conduct (play the game as it was made). For now you are matched with other accounts flagged the same way.'
+  automatedTitle: 'Your matches are being played separately'
+  automatedBody: 'Our checks found play that looks automated, which breaks rule {rule} of the Code of Conduct (play yourself). For now you are matched with other accounts flagged the same way.'
+  quittingTitle: 'Your matches are being played separately'
+  quittingBody: 'You have left many matches early, which breaks rule {rule} of the Code of Conduct (finish what you start). For now you are matched with other players who do the same; finishing matches brings you back.'
+  appealPrompt: 'If you think we got this wrong, tell us in a few words and a person will look at it.'
+  appealPlaceholder: 'What happened? (optional)'
+  appealButton: 'Appeal'
+  appealOpenLine: 'Your appeal is with our team. We will look at it as soon as we can.'
+  appealRefusedLine: 'We looked at your appeal and the measure stays in place.'
+  appealFailedLine: 'The appeal could not be sent. Please try again later.'
+  closeButton: 'OK'
+  primaryKeycap: 'A'
+  secondaryKeycap: 'B'
+  codeOfConductUrl: 
+  codeOfConductLabel: 'Read the Code of Conduct'

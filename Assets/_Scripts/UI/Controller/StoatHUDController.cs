@@ -1,4 +1,6 @@
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -19,20 +21,24 @@ namespace CosmicShore.UI
         [Header("Stoat")]
         [SerializeField] StoatHUDView view;
 
-        [Tooltip("This vessel's mode switch (Mass / Time).")]
+        [Tooltip("This vessel's mode (Time only since 2026-11-02).")]
         [SerializeField] StoatModeExecutor mode;
-        [Tooltip("This vessel's field dipole (the ripple a let-go would throw; Space-5 Accretion).")]
-        [SerializeField] StoatDipoleExecutor dipole;
-        [Tooltip("This vessel's orbit slingshot (Time mode's timing).")]
+        [Tooltip("This vessel's slingshot, the swing (the ripple, Space-5 Accretion, the Time card).")]
         [SerializeField] StoatSlingExecutor sling;
-        [Tooltip("This vessel's pathfinder (the warp boost).")]
+        [Tooltip("This vessel's flight clock (the warp) and rings.")]
         [SerializeField] StoatPathfinderExecutor pathfinder;
 
+        [Tooltip("Seconds after a let-go that the Mass and Time cards show the launch.")]
+        [SerializeField, Min(0f)] float launchShownSeconds = 1.2f;
+
+        [Inject] GameDataSO _gameData;
+        IVesselStatus _status;
         bool _isLocalPilotHud;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
+            _status = vesselStatus;
 
             if (!view) view = GetComponentInChildren<StoatHUDView>(true);
 
@@ -45,22 +51,32 @@ namespace CosmicShore.UI
         void Update()
         {
             if (!_isLocalPilotHud || !view) return;
-            if (dipole)
+            // Charge and Space read the swing: the ripple the open hole would throw and Space-5 Accretion on it.
+            if (sling)
             {
-                view.SetRipple(dipole.RippleCharge01);
-                view.SetAccretion(dipole.Accretion01);
+                view.SetRipple(sling.RippleCharge01);
+                view.SetAccretion(sling.Accretion01);
             }
-            if (mode) view.SetMode(mode.MassMode01);
+            // The Mass card is Heavy Launch now: it keeps its authored icon (no mode swap) and its gauge rests.
+            if (mode) view.SetMode(0f);
 
-            bool timeMode = mode && mode.IsTimeMode;
-            if (timeMode && sling && sling.IsOrbiting)
-                view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);
-            else if (!timeMode && pathfinder)
-            {
-                float top = pathfinder.BoostTarget;
-                view.SetTime(top > 1.001f ? (pathfinder.BoostMultiplier - 1f) / (top - 1f) : 0f, pathfinder.IsWarped);
-            }
+            // Time: how far through the turn the stick asks for the swing is, the domain while it swings you.
+            if (sling && sling.IsOrbiting) view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);
             else view.SetTime(0f, false);
+
+            view.SetDomainColor(ResolveDomainSignalColor());
+            if (sling)
+                view.SetOrbitState(sling.IsSwingUp || sling.IsHoldingAny, sling.IsOrbiting, sling.Timing01 >= 0.999f,
+                                   sling.SinceLaunch < launchShownSeconds);
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Manta's and
+        /// the Brittle Star's HUDs read it; alpha 0 until the palette resolves (the view keeps its last colour).</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
     }
 }

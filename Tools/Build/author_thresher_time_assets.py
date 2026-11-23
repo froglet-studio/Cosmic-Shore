@@ -24,7 +24,7 @@ GateRaceScoringRuleSO. The clone swaps FIVE things and inherits the rest:
   1. the controller script (ThresherTimeController), keeping the donor's `laps` field (3).
   2. its scoring rule ASSET (another asset on the same GateRaceScoringRuleSO script).
   3. the AI approach numbers and the plausible-speed clamp - the approach sized to the only
-     circle an AI Thresher flies (cruise: it never slings), the clamp to cover a boosted aimed launch.
+     circle an AI Thresher flies (cruise; since 2026-10-26 it also slings sharp corners, ThresherSlingAIPolicySO), the clamp to cover a boosted aimed launch.
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh so no in-scene NetworkObject
      shares an id with its donor.
   5. the arcade card's Vessels list: Thresher, not Grizzly.
@@ -55,6 +55,16 @@ SCRIPT_PATHS = {
     "ThresherTimeController":  f"{MODE_DIR}/ThresherTimeController.cs",
     "ThresherTimeCourse":      f"{MODE_DIR}/ThresherTimeCourse.cs",
     "ThresherTimeCourseTests": "Assets/_Scripts/Tests/Editor/ThresherTimeCourseTests.cs",
+    # The targets (2026-11-04, Yash: "it should not have rings, it should have objects that it can break").
+    "ThresherTimeNest":        f"{MODE_DIR}/ThresherTimeNest.cs",
+    "ThresherTimeNestTests":   "Assets/_Scripts/Tests/Editor/ThresherTimeNestTests.cs",
+    # The Belfry (2026-11-07, Yash: "it should be about the time element"): the clockwork course.
+    "ThresherBelfry":          f"{MODE_DIR}/ThresherBelfry.cs",
+    "ThresherBelfryTests":     "Assets/_Scripts/Tests/Editor/ThresherBelfryTests.cs",
+    # The Belfry's AI (2026-11-07, plan step time-arcade): lead the swinging ring, duck the maces. Its own folder so
+    # check_ai_no_state_writes.py walks it.
+    "ThresherBelfryAI":        f"{MODE_DIR}/AI/ThresherBelfryAI.cs",
+    "ThresherBelfryAITests":   "Assets/_Scripts/Tests/Editor/ThresherBelfryAITests.cs",
 }
 DOC = "Assets/_Scripts/Controller/Arcade/THRESHERTIME.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameThresherTime.asset"
@@ -94,6 +104,125 @@ EXISTING = {
 }
 assert lib.existing_guid("Assets/_SO_Assets/Classes/SO_Class_Thresher.asset") == EXISTING["Vessel_Thresher"], \
     "arcade_mode_lib.VESSELS['Thresher'] is not SO_Class_Thresher.asset's guid"
+# The environment prism every nest is laid from (ThresherTimeController.nestPrefab), Serpentine's debris prism:
+# Assets/_Prefabs/Trails/SpawnablePrism.prefab, whose Prism component is fileID 4563009547826722997.
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+
+# ── The targets (ThresherTimeController's "Targets" and "Rewards" fields) ─────
+# A nest at every gate (ThresherTimeNest); the rings are hidden. On I1-I4: how near a pilot must be to an opened
+# nest to clear its gate, and how long it stays open before it grows back - shorter and tighter at the top, so the
+# high intensities are a race to break your OWN target. A crystal sits in every third nest's core.
+CREDIT_RADIUS_BY_INTENSITY = (320, 280, 240, 200)
+REGROW_SECONDS_BY_INTENSITY = (3, 3, 2.5, 2)
+CRYSTAL_EVERY_NTH_TARGET = 3
+
+# ── The places: the race's OWN cells, one per intensity (2026-11-04) ─────────
+# Yash: "some floras to destroy, some faunas to kill" - and "never break Garrett's rule". So the plants and creatures
+# are the CELL's, grown by its own spawner under the locked ecology law, never laid by the mode: plants roll Jade, Ruby
+# or Gold, creatures take the cell's controlling colour, both bloom in and wither out, populations are held by
+# consumption and starvation. The mode only chooses WHICH cell each intensity flies in, the way Serpentine
+# (author_serpent_time_assets.py) and Tollway already do. A pilot meets them with the kit as it is: the ball takes a
+# rival-coloured plant or creature apart and its heart is a crystal; one of its own colour is a bumper the ball
+# bounces off. The gates never depend on a colour roll - the nests are the gates (ThresherTimeNest).
+#
+# Every config is an EXISTING one copied with only its name and numbers changed, re-read from its source every run,
+# so no other mode's cell, plant or creature is touched: the cell and spawn profile are Skim Race's (the cell this
+# mode flew until now), the creatures are Serpentine's four (Skim Race's tadpole and brittlestar, Garland's shark,
+# Scarab Scramble's piranha; live caps sum to <= 25, Shombith's number for Serpentine), and the plants are Tollway's
+# networked race-court species (Spire and Cacti at a 40-prism budget, the Gyroid at its own). The plants grow in the
+# shell the course is cut through (480-1080 u of the 1,200 u CapsuleMembrane), so they line the track.
+OWN_CELL_DIR = "Assets/_SO_Assets/Cell Configs/Thresher Time Cell"
+SKIM_CELL_DIR = "Assets/_SO_Assets/Cell Configs/Skim Race Cell"
+TOLLWAY_CELL_DIR = "Assets/_SO_Assets/Cell Configs/Tollway Cell"
+FAUNA_SOURCES = {
+    "Tadpole": f"{SKIM_CELL_DIR}/Skim Race Tadpole Fauna Config Data.asset",
+    "Brittlestar": f"{SKIM_CELL_DIR}/Skim Race Brittlestar Fauna Config Data.asset",
+    "Shark": "Assets/_SO_Assets/Cell Configs/Garland Cell/Garland Shark Fauna Config Data.asset",
+    "Piranha": "Assets/_SO_Assets/Cell Configs/Scarab Scramble Cell/Scarab Scramble Piranha Fauna Config Data.asset",
+}
+FLORA_SOURCES = {sp: f"{TOLLWAY_CELL_DIR}/Tollway Anchor Flora {sp}.asset" for sp in ("Spire", "Gyroid", "Cacti")}
+MEMBRANE_RADIUS = 1200.0                       # CapsuleMembrane.prefab, the Skim Race cell's membrane
+PLANT_BAND = (480.0 / MEMBRANE_RADIUS, 1080.0 / MEMBRANE_RADIUS)   # the course shell (courseInnerRadiusFallback..Outer)
+# intensity: (place, plants [(species, count)], creatures [(creature, InitialSpawnCount, PopulationSize, MaxLive)]).
+# More of both as the intensity rises; I3 brings the predators and I4 is the thickest of everything.
+PLACES = {
+    1: ("Shallows", [("Spire", 8)],
+        [("Tadpole", 6, 6, 10)]),
+    2: ("Kelp Line", [("Spire", 8), ("Gyroid", 4)],
+        [("Tadpole", 8, 8, 14), ("Brittlestar", 3, 3, 6)]),
+    3: ("Hunting Grounds", [("Cacti", 10), ("Gyroid", 6)],
+        [("Shark", 2, 2, 3), ("Piranha", 6, 6, 10), ("Tadpole", 6, 6, 10)]),
+    4: ("The Thicket", [("Cacti", 14), ("Spire", 8), ("Gyroid", 6)],
+        [("Shark", 2, 2, 3), ("Piranha", 8, 8, 12), ("Brittlestar", 2, 2, 4), ("Tadpole", 4, 4, 6)]),
+}
+
+
+def _read_src(rel):
+    return open(os.path.join(ROOT, rel), encoding="utf-8").read()
+
+
+def _set_fields(text, src, pairs):
+    for key, value in pairs:
+        text, n = re.subn(rf"^  {key}: -?[0-9.]+$", f"  {key}: {value}", text, flags=re.M)
+        assert n == 1, f"{src}: {key} not found once"
+    return text
+
+
+def _renamed(text, name):
+    return re.sub(r"^  m_Name: .*$", f"  m_Name: {name}", text, count=1, flags=re.M)
+
+
+def _listing(key, guids):
+    return f"  {key}:\n" + "".join(f"  - {{fileID: 11400000, guid: {x}, type: 2}}\n" for x in guids)
+
+
+def own_cell_assets():
+    out, cells = [], []
+    for intensity, (place, plants, creatures) in PLACES.items():
+        flora_guids, fauna_guids = [], []
+        for species, count in plants:
+            src = FLORA_SOURCES[species]
+            text = _set_fields(_read_src(src), src, (
+                ("InitialSpawnCount", count), ("PopulationSize", count), ("MaxLivePopulation", count),
+                ("PlantRadiusCellFractionMinOverride", round(PLANT_BAND[0], 4)),
+                ("PlantRadiusCellFractionMaxOverride", round(PLANT_BAND[1], 4))))
+            name = f"Thresher Time I{intensity} {species} Flora"
+            flora_guids.append(guid(f"asset/{name}"))
+            out.append((f"{OWN_CELL_DIR}/{name}.asset", flora_guids[-1], _renamed(text, name)))
+        for creature, initial, population, cap in creatures:
+            src = FAUNA_SOURCES[creature]
+            text = _set_fields(_read_src(src), src, (
+                ("InitialSpawnCount", initial), ("PopulationSize", population), ("MaxLivePopulation", cap)))
+            name = f"Thresher Time I{intensity} {creature} Fauna Config Data"
+            fauna_guids.append(guid(f"asset/{name}"))
+            out.append((f"{OWN_CELL_DIR}/{name}.asset", fauna_guids[-1], _renamed(text, name)))
+
+        profile = _read_src(f"{SKIM_CELL_DIR}/Skim Race Spawn Profile.asset")
+        for key, guids in (("SupportedFloras", flora_guids), ("SupportedFaunas", fauna_guids)):
+            profile, n = re.subn(rf"^  {key}:(?: \[\])?\n(?:  - \{{[^\n]*\}}\n)*", _listing(key, guids), profile,
+                                 flags=re.M)
+            assert n == 1, f"Skim Race Spawn Profile: {key} not found once"
+        pname = f"Thresher Time Spawn Profile {intensity}"
+        g_profile = guid(f"asset/{pname}")
+        out.append((f"{OWN_CELL_DIR}/{pname}.asset", g_profile, _renamed(profile, pname)))
+
+        cell = _read_src(f"{SKIM_CELL_DIR}/Skim Race Cell Config.asset")
+        old_profile = lib.existing_guid(f"{SKIM_CELL_DIR}/Skim Race Spawn Profile.asset")
+        assert cell.count(old_profile) == 1, "Skim Race Cell Config: spawn profile not referenced once"
+        cname = f"Thresher Time Cell Config {intensity}"
+        cell = _renamed(cell.replace(old_profile, g_profile), cname)
+        cell = re.sub(r"^  CellName: .*$", f"  CellName: Thresher Time - {place}", cell, count=1, flags=re.M)
+        cell = re.sub(r"^  Description: .*$", f"  Description: Thresher Time at intensity {intensity} - {place}",
+                      cell, count=1, flags=re.M)
+        g_cell = guid(f"asset/{cname}")
+        out.append((f"{OWN_CELL_DIR}/{cname}.asset", g_cell, cell))
+        cells.append(g_cell)
+    return out, cells
+
+
+OWN_CELL_ASSETS, OWN_CELLS = own_cell_assets()
+# The scene Cell's config list: four, IntensityWise (list order = intensity).
+CELL_BLOCK = (_listing("CellConfigs", OWN_CELLS) + "  cellTypeChoiceOptions: 1\n")
 
 # ── Tuning ───────────────────────────────────────────────────────────────────
 
@@ -101,13 +230,13 @@ assert lib.existing_guid("Assets/_SO_Assets/Classes/SO_Class_Thresher.asset") ==
 # to size the circuit and the turn monitor asks the controller for the target, so the finish line
 # and the course cannot be different lengths. Kept in sync with
 # EndConditionOverridesSO.DefaultThresherTimeGateTarget.
-LAPS = 3
+LAPS = 2
 RINGS_PER_LAP = 8                 # ThresherTimeCourse.GatesPerLap
 GATE_TARGET = LAPS * RINGS_PER_LAP
 BASE_RADIUS = 800                 # ThresherTimeCourse.BaseRadius
 
-# AI approach geometry. An AI Thresher NEVER SLINGS (AIPilot writes the sticks and the throttle and
-# no trigger, and the Thresher's sling is LT + RT), so it races at cruise - at most 0.9 throttle,
+# AI approach geometry. An AI Thresher races at cruise between its slings (ThresherSlingAIPolicySO presses
+# LT + RT only at a 70+ deg corner, 2026-10-26; before that it never slung), so it races at cruise - at most 0.9 throttle,
 # 114 u/s, on a <= 60 u circle - and the approach is sized to THAT circle, not to the 229 u
 # full-sling circle the course is cut against: Slingshot's ratios (commit 2.2x, lead 2.5x, through
 # 1.7x its 72 u circle) on the Thresher's 60 u cruise circle. Grizzly Time's 380 / 420 / 285 were
@@ -126,11 +255,11 @@ AI_THROUGH_DISTANCE = 100
 MAX_PLAUSIBLE_SPEED = 4600
 BOOSTED_SLING_SPEED = 2600 * 70 / 380 * 4.8
 
-# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.3 a
-# quarter-of-race deficit (6 gates) buys 1.8 element levels, Grizzly Time's number on the same
-# 24-gate race. The Thresher's Time element scales the Plant's spin-up rate and cap (x1 -> x1.75),
+# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.45 a
+# quarter-of-race deficit (4 gates) buys 1.8 element levels, Grizzly Time's number on the same
+# 16-gate race (0.3 on the old three-lap, 24-gate race; cut to two laps for a ~90 s race, 2026-10-26). The Thresher's Time element scales the Plant's spin-up rate and cap (x1 -> x1.75),
 # so a trailing pilot winds a sling up to the ceiling sooner - the buff lands on the mode's axis.
-COMEBACK_RATE = 0.3
+COMEBACK_RATE = 0.45
 
 # Fresh Netcode ids for the clone's in-scene NetworkObjects (rule 4 above).
 HASH_SALT = "MinigameThresherTime"
@@ -144,6 +273,7 @@ def header(script_guid: str, name: str) -> str:
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
 g.folder_meta(MODE_DIR)
+g.folder_meta(f"{MODE_DIR}/AI")
 g.text_meta(DOC)
 
 # ── 2. Scoring rule ──────────────────────────────────────────────────────────
@@ -159,10 +289,11 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "ThresherTi
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameThresherTime") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Thresher Time
-  Description: Threshers only, against the clock. Your speed is your sling - pull LT all
-    the way to plant the ball and swing round it, pull RT to wind the chain in and spin up,
-    let go to fly off at up to nearly four times cruise. A sling is your own momentum, so
-    every corner asks how much of it you can carry. Three laps. Fastest domain home wins.
+  Description: Threshers only, in the Belfry. Every ring swings on a chain - fly through
+    them in order, your next one glows lime, and time your sling to meet it. Pull LT all the
+    way to plant the ball and swing round it, RT to wind the chain in and spin up, let go to
+    fly. Higher levels swing faster, hang maces across the straights and slide shutters across
+    every ring. Two laps. Fastest domain home wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('ThresherTime')}, type: 3}}
@@ -171,7 +302,7 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameThresher
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Thresher']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -262,21 +393,89 @@ def clone_scene() -> str:
 scene, scene_errors = lib.committed_scene(
     SCENE, clone_scene,
     authored_blocks=(NEW_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
+
+
+def floats(values) -> str:
+    return "".join(f"  - {v}\n" for v in values)
+
+
+# The controller's target fields, authored into the committed scene (2026-11-04). The block is the generator's: on
+# the first run it goes in right after the controller's field block; after that it is replaced in place, so a re-tune
+# here is one edit plus a re-run (never a hand edit of the scene).
+# NESTS_AT_GATES: off since 2026-11-07 (Yash: "I dont wanna break anything in here, just pass through waypoints, and win
+# the track"). The rings are the gates again - thread one, your next one lime - and the nest code stays behind this switch.
+NESTS_AT_GATES = 0
+# THE BELFRY: on since 2026-11-07. Every ring swings on a chain, maces cross the straights from I2, danger shutters slide
+# across every mouth at I4 - all a closed-form function of the shared clock (ThresherBelfry.SpecFor holds the ladder,
+# ThresherBelfryTests holds it to its promises). A broken chain link, mace or shutter bar grows back after
+# BELFRY_REGROW_SECONDS where its part now is.
+BELFRY = 1
+BELFRY_REGROW_SECONDS = 6
+NEXT_TARGET_BLOOM_SECONDS = 0.35
+# THE BELFRY AI (ThresherBelfryAI, plan step time-arcade): authored here, in the controller's declaration order, because
+# they sit inside this generator's block of the scene - an editor save writes them there, and a block that left them out
+# would strip them on the next run. The C# defaults are the same numbers (checked below).
+BELFRY_AI_FIELDS = (
+    ("belfryAILead", 1), ("belfryAIDuck", 1), ("belfryAIDodgePlain", 0),
+    ("belfryAILeadMinSpeed", 125), ("belfryAILeadMaxSpeed", 5000),
+    ("belfryAILatchRadius", 135), ("belfryAIRelatchSeconds", 0.3),
+    ("belfryAIDuckHorizon", 1.6), ("belfryAIDuckHullRadius", 8), ("belfryAIDuckMargin", 8),
+    ("belfryAIDuckCarrot", 20), ("belfryAINoDuckNearRing", 120),
+)
+TARGET_FIELDS = (
+    f"  nestsAtGates: {NESTS_AT_GATES}\n"
+    f"  nestPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
+    f"  creditRadiusByIntensity:\n{floats(CREDIT_RADIUS_BY_INTENSITY)}"
+    f"  regrowSecondsByIntensity:\n{floats(REGROW_SECONDS_BY_INTENSITY)}"
+    "  nestBurstPerFrame: 48\n"
+    "  nestBurstSpeed: 40\n"
+    "  nestRegrowPerFrame: 40\n"
+    f"  nextTargetBloomSeconds: {NEXT_TARGET_BLOOM_SECONDS}\n"
+    f"  belfry: {BELFRY}\n"
+    f"  belfryPrismPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
+    f"  belfryRegrowSeconds: {BELFRY_REGROW_SECONDS}\n"
+    + "".join(f"  {k}: {v}\n" for k, v in BELFRY_AI_FIELDS) +
+    f"  crystalEveryNthTarget: {CRYSTAL_EVERY_NTH_TARGET}\n")
+
+
+def with_target_fields(text: str) -> str:
+    start = text.find("  nestsAtGates: ")
+    if start < 0: start = text.find("  nestPrefab: ")
+    if start < 0:
+        assert text.count(NEW_FIELDS) == 1, "the controller's field block is not in the scene exactly once"
+        return text.replace(NEW_FIELDS, NEW_FIELDS + TARGET_FIELDS, 1)
+    end_key = text.find("  crystalEveryNthTarget: ", start)
+    assert end_key > start, "the scene's target block has nestPrefab but no crystalEveryNthTarget"
+    end = text.index("\n", end_key) + 1
+    return text[:start] + TARGET_FIELDS + text[end:]
+
+
+scene = with_target_fields(scene)
+
+# The places: the cells are the mode's own (new) folder, then the scene Cell's config list is rewritten in place.
+g.folder_meta(OWN_CELL_DIR)
+for _rel, _g, _content in OWN_CELL_ASSETS:
+    g.emit_asset(_rel, _g, _content)
+if CELL_BLOCK not in scene:
+    _found = re.findall(r"^  CellConfigs:\n(?:  - \{[^\n]*\}\n)+  cellTypeChoiceOptions: \d+\n", scene, re.M)
+    assert len(_found) == 1, f"expected one Cell CellConfigs block in the scene, found {len(_found)}"
+    scene = scene.replace(_found[0], CELL_BLOCK)
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
 g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "ModePreview_ThresherTime") + f"""  Mode: {MODE_ID}
   Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Thresher''s full-sling circle, laid
-    as rings at match start, so a preview has no gates. It teaches the Barren cell and the
-    plant - wind in - let go sling. One cell serves every intensity.'
-  PreviewCell: {{fileID: 11400000, guid: {EXISTING['PreviewCell']}, type: 2}}
-  PreviewCellsByIntensity: []
+    as rings at match start, so a preview has no gates. It teaches the
+    plant - wind in - let go sling in each intensity''s own place, its plants and creatures grown
+    by the cell.'
+  PreviewCell: {{fileID: 11400000, guid: {OWN_CELLS[1]}, type: 2}}
+{_listing("PreviewCellsByIntensity", OWN_CELLS).rstrip(chr(10))}
   StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {lib.VESSEL_CLASS_ID['Thresher']}
-  ObjectiveText: Plant, wind in, let go - sling down the straights
+  ObjectiveText: Time your sling - meet the swinging lime ring
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -348,6 +547,54 @@ _laps = lib.cs_field_default(_ctrl, "laps")
 if _laps is None or int(float(_laps)) != LAPS:
     errors.append(f"ThresherTimeController.laps default is not {LAPS}")
 
+# The targets: every authored key is a field the controller serializes (a renamed field would leave the scene's value
+# silently unread), the block is in the scene, and the ladder only gets harder.
+for key in re.findall(r"^  (\w+):", TARGET_FIELDS, re.M):
+    if not re.search(rf"\b{key}\b\s*[=;]", _ctrl):
+        errors.append(f"ThresherTimeController has no serialized field '{key}' for the scene's target block")
+if TARGET_FIELDS not in scene:
+    errors.append("the scene's controller block does not carry the authored target fields")
+if not SPAWNABLE_PRISM:
+    errors.append("Assets/_Prefabs/Trails/SpawnablePrism.prefab has no guid - the nests have no prism to lay")
+for name, ladder in (("credit radius", CREDIT_RADIUS_BY_INTENSITY), ("regrow seconds", REGROW_SECONDS_BY_INTENSITY)):
+    if len(ladder) != 4 or list(ladder) != sorted(ladder, reverse=True):
+        errors.append(f"the {name} ladder {ladder} must be four values that never grow with the intensity")
+# The Belfry AI's authored numbers are its C# defaults (a field reset in the inspector lands where the scene says).
+for _k, _v in BELFRY_AI_FIELDS:
+    _m = re.search(rf"\b{_k}\s*=\s*(true|false|[0-9.]+)f?\s*;", _ctrl)
+    _code = None if not _m else (1 if _m.group(1) == "true" else 0 if _m.group(1) == "false" else float(_m.group(1)))
+    if _code is None and isinstance(_v, int) and _v == 0 and re.search(rf"\bbool {_k};", _ctrl):
+        _code = 0   # a bool with no initializer is false
+    if _code is None or float(_code) != float(_v):
+        errors.append(f"ThresherTimeController.{_k}: the C# default ({_code}) is not the authored {_v}")
+if not os.path.exists(os.path.join(ROOT, SCRIPT_PATHS["ThresherBelfry"])):
+    errors.append("ThresherBelfry.cs is missing - the controller builds the clockwork from it")
+if not os.path.exists(os.path.join(ROOT, SCRIPT_PATHS["ThresherTimeNest"])):
+    errors.append("ThresherTimeNest.cs is missing - the controller lays its nests from it")
+
+# The places: four cells, IntensityWise, in the scene; every plant replicated (a peer that grew its own forest would
+# race through different plants); the creature caps inside Serpentine's ~25; plants and creatures that only grow.
+if CELL_BLOCK not in scene:
+    errors.append("the scene's Cell does not carry the four Thresher Time cells, IntensityWise")
+_assets = {rel: content for rel, _, content in OWN_CELL_ASSETS}
+for _i, (_place, _plants, _creatures) in PLACES.items():
+    if sum(cap for _, _, _, cap in _creatures) > 25:
+        errors.append(f"I{_i} {_place}: more than 25 live creatures")
+    for _sp, _n in _plants:
+        if "  NetworkSynced: 1\n" not in _assets[f"{OWN_CELL_DIR}/Thresher Time I{_i} {_sp} Flora.asset"]:
+            errors.append(f"I{_i} {_sp}: the plant is not NetworkSynced - every peer would grow a different forest")
+_plants_by = [sum(n for _, n in PLACES[i][1]) for i in range(1, 5)]
+_creatures_by = [sum(c for _, _, _, c in PLACES[i][2]) for i in range(1, 5)]
+for _what, _ladder in (("plant", _plants_by), ("creature cap", _creatures_by)):
+    if _ladder != sorted(_ladder):
+        errors.append(f"the {_what} ladder {_ladder} shrinks as the intensity rises")
+if not (0.0 < PLANT_BAND[0] < PLANT_BAND[1] <= 1.0) or PLANT_BAND[1] * MEMBRANE_RADIUS != 1080.0:
+    errors.append(f"the plant band {PLANT_BAND} is not the course shell (480-1080 u of {MEMBRANE_RADIUS:.0f})")
+_capsule = lib.existing_guid("Assets/_Prefabs/Environment/CapsuleMembrane.prefab")
+for _rel, _content in _assets.items():
+    if os.path.basename(_rel).startswith("Thresher Time Cell Config") and f"guid: {_capsule}," not in _content:
+        errors.append(f"{_rel}: the membrane is no longer CapsuleMembrane - re-derive PLANT_BAND")
+
 _tests = read_or_empty(SCRIPT_PATHS["ThresherTimeCourseTests"])
 for const, want in (("Inner", 480.0), ("Outer", 1080.0)):
     m = re.search(rf"const float {const} = ([0-9.]+)f;", _tests)
@@ -387,6 +634,12 @@ _ai = re.search(r"  m_Enabled: (\d)\n  m_EditorHideFlags: 0\n  m_Script: \{fileI
                 r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _thresher)
 if not _ai or _ai.group(1) != "1":
     errors.append("Thresher.prefab's AIPilot is not enabled - an AI Thresher cannot race")
+# ...and slings with its own policy (2026-10-26): the Squirrel's inherited SkimRingAIPolicySO bound nothing here.
+_policy_meta = read_or_empty("Assets/_SO_Assets/AI Boost Policies/ThresherAIBoostPolicy.asset.meta")
+_policy_guid = re.search(r"^guid: ([0-9a-f]{32})", _policy_meta, re.M)
+if not _policy_guid or f"  boostPolicy: {{fileID: 11400000, guid: {_policy_guid.group(1)}, type: 2}}" not in _thresher:
+    errors.append("Thresher.prefab's AIPilot does not name ThresherAIBoostPolicy (ThresherSlingAIPolicySO) - "
+                  "an AI Thresher would never sling")
 # The sling's ceiling (the number the whole cut rests on) must still be the ball's: maxBall in the
 # config, scaled by gameCruise / sandboxCruise. ThresherTimeCourseTests reads it too; this names it
 # at generation time.

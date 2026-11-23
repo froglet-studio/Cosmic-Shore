@@ -3,7 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -126,7 +126,8 @@ namespace CosmicShore.Gameplay
         readonly List<FloraConfigurationSO> _floraSeeds = new();   // omni crystals' flora, planted on the next lure release
         uint _seedSerial;
         float _vesselScanAt;       // when the eraser last listed the vessels it can lock on to
-        float _dashUntil;          // Time: a dash in flight ignores another press until it lands
+        float _dashUntil;          // Time: a dash in flight ignores another press until it lands (but see Riptide)
+        bool _dashQueued;          // Time 5 'Riptide': a press during a dash, fired the moment it lands
         float _camLift01;          // the chase camera's rise while luring or dashing, 0..1 (eased on use)
         float _camBaseY;           // the follow offset's own height when the rise began (the level camera's 0)
         CustomCameraController _camera;
@@ -159,6 +160,10 @@ namespace CosmicShore.Gameplay
         public FloraConfigurationSO NextFloraSeed => _floraSeeds.Count > 0 ? _floraSeeds[0] : null;
         /// <summary>True when the Time ability can dash: a school to dash toward, and no dash in flight.</summary>
         public bool DashReady => _tamed.Count > 0 && Time.time >= _dashUntil;
+        /// <summary>The group the next dash goes to (0 or 1); a group with nobody in it is passed over, as Dash does.</summary>
+        public int DashGroup => ResolveGroup(_dashGroup);
+        /// <summary>A dash is in flight (it ignores another press until it lands).</summary>
+        public bool Dashing => Time.time < _dashUntil;
         /// <summary>The furthest-along taming in the light right now, 0..1.</summary>
         public float StrongestTame01
         {
@@ -189,6 +194,7 @@ namespace CosmicShore.Gameplay
             _floraSeeds.Clear();
             _vesselScanAt = -1f;
             _dashUntil = 0f;
+            _dashQueued = false;
             _throwSerial = 0;
             if (config) PaintedPrey.Preference = config.PaintedPreference;
             if (!config)
@@ -257,7 +263,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void Dash()
         {
-            if (_status == null || !config || !_status.Transform || _tamed.Count == 0 || Time.time < _dashUntil) return;
+            if (_status == null || !config || !_status.Transform || _tamed.Count == 0) return;
+            if (Time.time < _dashUntil)
+            {
+                if (RiptideUnlocked()) _dashQueued = true;   // Time 5: kept, and fired on landing at the other group
+                return;
+            }
             if (!ElementalTransfer.IsDecidedHere(_status)) return;   // the hull's transform is its owner's to move
             var transformer = _status.VesselTransformer;
             if (!transformer) return;
@@ -275,6 +286,30 @@ namespace CosmicShore.Gameplay
                 _dashGroup = 1 - group;
                 return;
             }
+        }
+
+        /// <summary>Time 5 'Riptide' (<see cref="AnglerConfigSO.RiptideUpgradeElement"/>): a press during a dash is kept.</summary>
+        public bool RiptideUnlocked() => config && config.RiptideActive(_status);
+
+        /// <summary>
+        /// Where the next <see cref="Dash"/> would carry the hull, without dashing: the same group choice (this group's turn,
+        /// else the other) and the same <see cref="AnglerCommandMath.DashPoint"/>. A READ for the autopilot
+        /// (<see cref="AnglerLeapfrogAIPolicySO"/>) to decide whether the dash is worth pressing. False with no school, or
+        /// with every group already round the hull.
+        /// </summary>
+        public bool TryGetDashPoint(out Vector3 point)
+        {
+            point = default;
+            if (_status == null || !config || !_status.Transform || _tamed.Count == 0) return false;
+            Vector3 from = _status.Transform.position;
+            for (int tries = 0; tries < 2; tries++)
+            {
+                int group = tries == 0 ? _dashGroup : 1 - _dashGroup;
+                if (!TryGroupCentroid(group, out Vector3 centroid)) continue;
+                point = AnglerCommandMath.DashPoint(from, centroid, config.DashFrac);
+                if ((point - from).sqrMagnitude >= 1f) return true;
+            }
+            return false;
         }
 
         bool TryGroupCentroid(int group, out Vector3 centroid)
@@ -313,9 +348,11 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < pool.Count && !cfg; i++)
                 if (IsMorphable(pool[i]) && pick-- == 0) cfg = pool[i];
             if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return false;
-            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            if (cell.HasFaunaPen) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
-            if (!f || !f.TryLeash(this)) return false;
+            if (!f) return false;
+            CrystalFaunaBirth.Announce(_status, f);   // the omni crystal folds into its heart (FAUNA_BIRTH_CRYSTAL_MORPH.md)
+            if (!f.TryLeash(this)) return false;
             var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };
             _members[f] = m;
             JoinSchool(m);
@@ -430,16 +467,28 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The Strike's fleet price per element, in normalized level units (what ApplyPriced takes).</summary>
+        static float StrikePerElement =>
+            CombatHitDrain.PointsFor(CombatHitClass.Strike) / CombatHitDrain.PointsPerLevel * CombatHitDrain.NormalizedPerLevel;
+
+        /// <summary>Charge 5 'Swallow' (<see cref="AnglerConfigSO.SwallowUpgradeElement"/>): a bite's petals land on the Angler.</summary>
+        public bool SwallowUnlocked() => config && config.SwallowActive(_status);
+
         void Bite(IVesselStatus victim, Vector3 approach)
         {
             if (!ElementalTransfer.IsDecidedHere(_status)) return;
             if (_status.Player is { IsNetworkOwner: false }) return;
             if (victim.Player == null || victim.Domain == _status.Domain) return;
-            if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.LockBiteCooldown,
+            if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.BiteCooldownFor(_status),
                                          ElementalDebuffSources.VesselContact, out int supersededRank))
                 return;
-            CombatHitDrain.ApplyPriced(victim, _status, CombatHitClass.Strike, supersededRank,
-                                       approach.normalized * config.SlingSpeed * 0.2f, ElementalDebuffSources.VesselContact);
+            if (SwallowUnlocked())
+                // Charge 5 'Swallow': the Strike's fleet price, landing on the Angler instead of coming loose.
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, victim, _status, StrikePerElement,
+                                                        Vector3.zero, ElementalDebuffSources.VesselContact);
+            else
+                CombatHitDrain.ApplyPriced(victim, _status, CombatHitClass.Strike, supersededRank,
+                                           approach.normalized * config.SlingSpeed * 0.2f, ElementalDebuffSources.VesselContact);
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = _status.PlayerName,
@@ -466,7 +515,7 @@ namespace CosmicShore.Gameplay
             _hasteAt = Time.time + HasteRefresh;
             var t = _status.Transform;
             Vector3 lure = AnglerCommandMath.LurePoint(t.position, t.forward, t.up, config.LureAhead);
-            float r2 = config.LureRadius * config.LureRadius;
+            float reach = LureReach, r2 = reach * reach;
             var live = FloraHeartRegistry.Live;
             for (int i = 0; i < live.Count; i++)
             {
@@ -576,7 +625,9 @@ namespace CosmicShore.Gameplay
             if (_brushOwed >= config.BrushInterval)
             {
                 _brushOwed = 0f;
-                float eraseScale = AnglerCommandMath.BrushScale(lt, config.BrushMin), paintScale = AnglerCommandMath.BrushScale(rt, config.BrushMin);
+                // Space widens the paint brush (BrushScaleFor: x1 -> x2), not the eraser, which is Charge's beam.
+                float eraseScale = AnglerCommandMath.BrushScale(lt, config.BrushMin),
+                      paintScale = AnglerCommandMath.BrushScale(rt, config.BrushMin) * config.BrushScaleFor(_status);
                 if (erasing) BrushStroke(config.EraseCone * eraseScale, false, config.BrushNear * eraseScale);
                 else if (held) BrushStroke(config.PaintCone * paintScale, true, config.BrushNear * paintScale);
             }
@@ -600,6 +651,7 @@ namespace CosmicShore.Gameplay
             UpdateFlights(dt);
             UpdateOrders();
             UpdateHunt();
+            if (_dashQueued && Time.time >= _dashUntil) { _dashQueued = false; Dash(); }   // Riptide: the kept press
             AssignSlots();
             DrawMarks();
             UpdateCameraLift(dt);
@@ -837,7 +889,7 @@ namespace CosmicShore.Gameplay
             if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return;   // a client never originates a replicated species
 
             Vector3 at = AnglerCommandMath.FormationSlot(0, t.position, t.forward, t.right, t.up, config.FormBack);
-            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            if (cell.HasFaunaPen) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
             if (!f || !f.TryLeash(this)) return;   // born wild: an ordinary creature of the cell from here on
             var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };
@@ -877,10 +929,11 @@ namespace CosmicShore.Gameplay
         public bool Sustains(Fauna creature) => _tamed.Count > 0 && _tamed[0].Creature == creature;
 
         /// <summary>The school's mark: a tamed creature's spindles lean toward the Angler's domain hue (<c>tameHueLean</c>).</summary>
-        public bool TryGetLeashMark(out Domains domain, out float lean)
+        public bool TryGetLeashMark(out Domains domain, out float lean, out float glow)
         {
             domain = _status != null ? _status.Domain : default;
             lean = config ? config.TameHueLean : 0f;
+            glow = 0f;
             return _status != null && lean > 0f;
         }
 
@@ -979,6 +1032,10 @@ namespace CosmicShore.Gameplay
 
         // ---- the lure: wild creatures in the light are leashed, held, and tamed ----
 
+        /// <summary>Mass: the lure's reach and hold radius grow with the lure's size (x1 at rest, x2 at Mass 10).</summary>
+        float LureReach => config.LureRadius * config.LureScaleFor(_status);
+        float HoldReach => config.TameRadius * config.LureScaleFor(_status);
+
         void UpdateLure(float dt)
         {
             var t = _status.Transform;
@@ -988,7 +1045,7 @@ namespace CosmicShore.Gameplay
             {
                 var abilities = _status.ElementalAbilityHandler;
                 bool steal = abilities && abilities.IsUpgradeActive(Element.Mass);   // Mass 5: the lure takes other holders' creatures too
-                float reach2 = config.LureRadius * config.LureRadius;
+                float reach2 = LureReach * LureReach;
                 var cells = Cell.ActiveCellsSnapshot;
                 for (int ci = 0; ci < cells.Count; ci++)
                 {
@@ -1015,7 +1072,7 @@ namespace CosmicShore.Gameplay
                 var m = _lured[i];
                 var f = m.Creature;
                 float dL = Vector3.Distance(f.transform.position, lure);
-                if (!_luring || dL > config.LureRadius * 1.3f)
+                if (!_luring || dL > LureReach * 1.3f)
                 {
                     // Slipped out of the light: back to the wild, its taming fading.
                     _lured.RemoveAt(i);
@@ -1024,7 +1081,7 @@ namespace CosmicShore.Gameplay
                     if (m.Tame > 0f) _slipped[f] = m.Tame;
                     continue;
                 }
-                m.Tame = AnglerCommandMath.TameStep(m.Tame, dL < config.TameRadius, dt, config.TameTime, config.TameDecay);
+                m.Tame = AnglerCommandMath.TameStep(m.Tame, dL < HoldReach, dt, config.TameTime, config.TameDecay);
                 if (m.Tame >= 1f && _tamed.Count < config.SquadCap)
                 {
                     _lured.RemoveAt(i);
@@ -1228,14 +1285,17 @@ namespace CosmicShore.Gameplay
             if (!cam) return;
             _marks ??= new AnglerWorldMarks();
             if (!_marks.Begin(cam)) return;
+            // The marks in the worn colour set (ColorTrace): four lookups a frame, for the local pilot only.
+            Color esca = ColorTrace.Retrace(ColorTrace.World, escaColor), taming = ColorTrace.Retrace(ColorTrace.World, tamingColor);
+            Color paint = ColorTrace.Retrace(ColorTrace.World, paintColor), erase = ColorTrace.Retrace(ColorTrace.World, eraseColor);
             var t = _status.Transform;
             Vector3 lure = AnglerCommandMath.LurePoint(t.position, t.forward, t.up, config.LureAhead);
-            _marks.Dot(lure, escaColor, _luring ? 2.4f : 1.2f, 6f);
-            if (_luring) _marks.Ring(lure, t.right, t.up, config.TameRadius, 24, escaColor * new Color(1f, 1f, 1f, 0.6f), 0.6f, 2f);
+            _marks.Dot(lure, esca, _luring ? 2.4f : 1.2f, 6f);
+            if (_luring) _marks.Ring(lure, t.right, t.up, HoldReach, 24, esca * new Color(1f, 1f, 1f, 0.6f), 0.6f, 2f);
             for (int i = 0; i < _lured.Count; i++)
             {
                 var c = _lured[i].Creature;
-                if (c) _marks.Dot(c.transform.position + t.up * 3f, Color.Lerp(tamingColor, escaColor, _lured[i].Tame), 1.2f, 4f);
+                if (c) _marks.Dot(c.transform.position + t.up * 3f, Color.Lerp(taming, esca, _lured[i].Tame), 1.2f, 4f);
             }
             // Painted prisms are not dotted here: they are drawn LIT (Prism.SetColorLift, BrushStroke). A dot at a prism's
             // centre sat inside the prism and was never seen.
@@ -1243,20 +1303,21 @@ namespace CosmicShore.Gameplay
             if (_cmdHeld || erasing)
             {
                 // The brush's rim at its reach, so the pilot sees what the beam covers.
+                float space = erasing ? 1f : config.BrushScaleFor(_status);   // Space widens the paint brush only
                 float cone = erasing ? config.EraseCone * AnglerCommandMath.BrushScale(_eraseDepth, config.BrushMin)
-                                     : config.PaintCone * AnglerCommandMath.BrushScale(_cmdDepth, config.BrushMin);
+                                     : config.PaintCone * AnglerCommandMath.BrushScale(_cmdDepth, config.BrushMin) * space;
                 // The rim is drawn where it can be seen (60 u out), at the brush's width there; the beam itself reaches 3200 u.
                 const float RimAt = 60f;
-                float near = config.BrushNear * AnglerCommandMath.BrushScale(erasing ? _eraseDepth : _cmdDepth, config.BrushMin);
+                float near = config.BrushNear * AnglerCommandMath.BrushScale(erasing ? _eraseDepth : _cmdDepth, config.BrushMin) * space;
                 float r = Mathf.Max(near, Mathf.Tan(cone * Mathf.Deg2Rad) * RimAt);
-                _marks.Ring(t.position + t.forward * RimAt, t.right, t.up, r, 32, erasing ? eraseColor : paintColor, 1f, 3f);
+                _marks.Ring(t.position + t.forward * RimAt, t.right, t.up, r, 32, erasing ? erase : paint, 1f, 3f);
             }
-            if (_cmdHeld) _marks.Dot(t.position + t.forward * config.SlingAhead, paintColor, 1.4f, 5f);
+            if (_cmdHeld) _marks.Dot(t.position + t.forward * config.SlingAhead, paint, 1.4f, 5f);
             for (int i = 0; i < _hunters.Count; i++)   // the Charge locks: a ring round every hunted hull
             {
                 var prey = _hunters[i].Prey;
                 if (prey != null && prey is Object po && po && prey.Transform)
-                    _marks.Ring(prey.Transform.position, t.right, t.up, 12f, 24, eraseColor, 1.2f, 3f);
+                    _marks.Ring(prey.Transform.position, t.right, t.up, 12f, 24, erase, 1.2f, 3f);
             }
             _marks.End();
         }

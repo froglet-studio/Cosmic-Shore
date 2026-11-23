@@ -56,11 +56,15 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Chip presentation")]
         [Tooltip("Colour of a glyph at rest.")]
-        public Color restColor = new(0.65f, 0.65f, 0.7f, 1f);
+        [SerializeField] Color restColor = new(0.65f, 0.65f, 0.7f, 1f);
+        /// <summary>The rest colour as the worn colour set paints it (ColorTrace); the field keeps the authored one.</summary>
+        public Color RestColor => ColorTrace.Retrace(ColorTrace.Ui, restColor);
         [Tooltip("Colour while the control is held.")]
-        public Color heldColor = Color.white;
+        [SerializeField] Color heldColor = Color.white;
+        public Color HeldColor => heldColor;
         [Tooltip("Point size of the keyboard label.")]
-        [Min(1f)] public float keyboardLabelSize = 14f;
+        [SerializeField, Min(1f)] float keyboardLabelSize = 14f;
+        public float KeyboardLabelSize => keyboardLabelSize;
 
         /// <summary>
         /// The artwork for a control, or null when the fleet authors none for it.

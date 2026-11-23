@@ -579,7 +579,7 @@ MonoBehaviour:
   ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 1
   TickSyncChildren: 0
-  UseUnreliableDeltas: 0
+  UseUnreliableDeltas: 1
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -592,9 +592,9 @@ MonoBehaviour:
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 1
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
@@ -718,7 +718,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 1.35
+    Value: 0.0675
     Min: 1
     Max: 2.5
     element: 0
@@ -895,9 +895,6 @@ MonoBehaviour:
   - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: 93d8c998e7596ddc7afeb72a0fa4bc0e, type: 2}
-  - InputEvent: 3
-    ShipActions:
-    - {fileID: 11400000, guid: dfa0585d0972719a2ba8990536835324, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: dd6c70c64010dfc7ffffe5e0ff83631b, type: 2}
@@ -907,6 +904,9 @@ MonoBehaviour:
   - InputEvent: 8
     ShipActions:
     - {fileID: 11400000, guid: b193b34cecdde527eef26aeed5162ea2, type: 2}
+  - InputEvent: 14
+    ShipActions:
+    - {fileID: 11400000, guid: dfa0585d0972719a2ba8990536835324, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
@@ -1540,6 +1540,16 @@ PrefabInstance:
         type: 3}
       propertyPath: Scale.Min
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 7.5
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

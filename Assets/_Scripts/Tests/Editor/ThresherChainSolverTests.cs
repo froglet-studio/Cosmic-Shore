@@ -697,6 +697,82 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AutopilotAim_TurnsThePlaneNoFasterThanAPilotsStick()
+        {
+            Vector3 up = Vector3.up;
+            Vector3 target = Quaternion.AngleAxis(-60f, Vector3.right) * Vector3.forward;   // 60 degrees above the plane
+            float max = 120f * Mathf.Deg2Rad * Dt;                                           // ThresherConfig aimPitchRate
+            Vector3 before = up;
+            ThresherCameraFraming.LayAimTowards(ref up, target, max);
+            Assert.AreEqual(max * Mathf.Rad2Deg, Vector3.Angle(before, up), 1e-3f, "one call tilts the plane by its limit");
+            Assert.AreEqual(1f, up.magnitude, 1e-5f);
+            for (int f = 0; f < 60; f++) ThresherCameraFraming.LayAimTowards(ref up, target, max);
+            Assert.AreEqual(0f, Vector3.Dot(up, target), 1e-4f, "half a second at 120 deg/s lays the plane through the target");
+            Assert.AreEqual(0f, Vector3.Angle(ThresherCameraFraming.LayAimTowards(ref up, target, max), target), 0.05f);
+            Assert.AreEqual(Vector3.zero, ThresherCameraFraming.LayAimTowards(ref up, Vector3.zero, max), "no target, no aim");
+        }
+
+        [Test]
+        public void AutopilotAim_TheArmedLaunchLeavesAlongARingOffTheOrbitsPlane()
+        {
+            var s = Defaults();
+            const float boost = 4.8f;   // ThresherConfig.asset launchBoost
+            var solver = new ThresherChainSolver(s);
+            PlantFrom(solver, s, out Vector3 pos, out Vector3 vel);
+            // The ring: ahead and 40 degrees up, out of the planted orbit's (horizontal) plane.
+            Vector3 target = Quaternion.AngleAxis(-40f, Vector3.right) * Vector3.forward;
+            Vector3 up = solver.OrbitNormal(pos);
+            Vector3 aim = Vector3.zero;
+            float max = 120f * Mathf.Deg2Rad * Dt;
+            for (int f = 0; f < 60; f++)
+            {
+                aim = ThresherCameraFraming.LayAimTowards(ref up, target, max);
+                solver.SteerOrbitPlane(up);
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            Assert.AreEqual(ThresherMode.Pivot, solver.Mode, "tilting the spin onto the ring never drops the plant");
+            Assert.Less(Vector3.Angle(aim, target), 0.5f, "the aim is laid on the ring");
+
+            float orbit = solver.LockSpeed;
+            solver.ArmLaunch(aim, boost);
+            ThresherStepResult r = default;
+            Vector3 before = vel;
+            float frameTurn = 0f;   // degrees the orbit turns the velocity in one frame: the launch is within one of its point
+            for (int f = 0; f < 4000 && !r.Launched; f++)
+            {
+                orbit = solver.LockSpeed;
+                before = vel;
+                frameTurn = orbit / Mathf.Max(1e-3f, (pos - solver.Pivot).magnitude) * Dt * Mathf.Rad2Deg;
+                r = solver.Step(pos, vel, false, s.CruiseSpeed, Dt);
+                vel = r.ShipVelocity;
+                pos += vel * Dt;
+            }
+            Assert.IsTrue(r.Launched, "the armed launch comes round within a lap");
+            Assert.Less(Vector3.Angle(r.ShipVelocity, target), 1f, "it leaves along the ring, off the old plane");
+            Assert.AreEqual(orbit * boost, r.ShipVelocity.magnitude, orbit * 0.05f, "with the pilot's launch boost");
+            Assert.Less(Vector3.Angle(before, r.ShipVelocity), 2f * frameTurn + 0.5f,
+                "from the point where the tilted circle already faces the ring: the turn of a frame, no kink");
+
+            // Negative control: the same plant armed at the ring without laying the plane. The launch still leaves along
+            // the aim (the solver flies any aim), but from the flat circle's point, so the flight line kinks by the tilt.
+            var plain = new ThresherChainSolver(s);
+            PlantFrom(plain, s, out Vector3 p2, out Vector3 v2);
+            plain.ArmLaunch(target, boost);
+            ThresherStepResult r2 = default;
+            Vector3 before2 = v2;
+            for (int f = 0; f < 4000 && !r2.Launched; f++)
+            {
+                before2 = v2;
+                r2 = plain.Step(p2, v2, false, s.CruiseSpeed, Dt);
+                v2 = r2.ShipVelocity;
+                p2 += v2 * Dt;
+            }
+            Assert.IsTrue(r2.Launched);
+            Assert.Greater(Vector3.Angle(before2, r2.ShipVelocity), 35f, "an unlaid plane kinks the launch by its tilt");
+        }
+
+        [Test]
         public void Launch_EveryAimedLaunchTakesTheBoost_HoweverLongItWaited()
         {
             var s = Defaults();

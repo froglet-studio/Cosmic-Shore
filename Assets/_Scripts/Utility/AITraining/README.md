@@ -479,6 +479,24 @@ Crystal Capture defaults to Squirrel (the card also allows Manta and
 Sparrow). Nucleus Rush defaults to Squirrel. Astro League defaults to
 Rhino (the card also allows Scarab).
 
+**The other 22 cards (added 2026-10-28, for Froglet Compute).** Every
+remaining multiplayer card with a scoring rule has a scenario now:
+13 gate races (Regatta, Headlong, Redline, Switchback, Breakwater,
+Skein, Waystation, Grizzly Time, Slingshot, Warpline, Thresher Time,
+Wrasse Run, Burrow Run), Broadside, Dustup, Undertow, Sirocco, Wrecking
+Ball, Bloomrush, Hijack, Tapestry and Tollway. Their recipes are one
+table, `FitnessProfileSO.MetricRecipes`: the mode's own `ScoringMetric`
+(read through `ScoringMetrics.Read`, the same reader the ScoringRule
+scores with: three new component kinds, `SwitchesThreaded` 20,
+`PrismsStolen` 21, `VolumeRemaining` 22) plus the time penalty, and no
+`Score` row. Gate races seek `TargetSensor.TargetMode.NextGate` (4): the
+ring `GateRaceController.TryGetNextRing` says this pilot threads next.
+Regatta and Broadside default to Manta and let the hull change. The
+assets are written by `Tools/Build/author_training_scenarios.py`
+(`--check` is the drift gate: every row's pair matches the C#). Weights
+and seek modes are first passes; none has been flown in the editor yet.
+Wrasse Run's hull is a crew vessel: the trainer flies the pilot seat.
+
 ## BACKLOG
 
 These modes have no scenario yet. They are outside the start list, or
@@ -490,6 +508,7 @@ already write.
   fallback recipe.)
 - Tournament / Maelstrom. It chains other modes; it is not its own
   scoring surface.
+- Grizzly Charge. In development: no scoring rule and no controller yet.
 - Single-player arcade cards whose scenes are gone.
 - Nucleus Rush attribution. `GoalsScored` increments on one
   representative player of the controlling domain, then the mode sums

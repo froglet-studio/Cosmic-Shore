@@ -419,14 +419,14 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `read_prisms()` in `Tools/Build/author_omni_combine_asset.py` and its "wrong baked thickness is refused" self-test; `depth.massThickness` / `depth.omniThickness`; `OmniCombinePlayer.DepthShape.Of(..., baked)`. The recovered thin Mass matched the pre-bake data to 1e-5.
 - Promoted: no
 
-### L-STU-41 — A brief names a cause; measure the mechanism before building the cure
+### L-STU-175 — A brief names a cause; measure the mechanism before building the cure
 - Lab: Omni Motion Lab (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
 - What happened: the brief was to time the squares' moves and the rhombi's flips so they never move at once, "so their movements never clip". The lab built that scheduler. It also added a convex-plate interpenetration test that records what was moving on each clipping frame (`clipTimeline`). The overlap fell from 87% to 0, but visible clips only fell from 66.7% to 28.6% of frames, and every remaining clip happened with the rhombi STILL. A square turning round its pentagon cuts through the still rhombus beside it, on the art's own keys and on a rigid turn alike. What reached 0 was a rigid turn that hops off the shell. A lift sweep found the edge: 0.14 R on the pentagon turn, 2.2× the art's lift on the triangle turn.
 - Do instead: when a brief says "do X so that Y", build Y's METRIC as well as X. Have it record the state that was active when Y fails, so the lab can say whether X is the cause. Ship the requested change AND the measured fix as separate styles, so the designer sees both.
 - Evidence: `runFullBatch()` rows "Proposal: the brief, as keys" (overlap 0, clips 28.6) vs "Proposal: rigid arcs that hop clear" (0, 0); `clipTimeline`; `OMNI_MOTION_LAB.md` Found 1.
 - Promoted: no
 
-### L-STU-42 — "Make it more" can be capped by a rule, not by the knob the designer named; measure what caps it
+### L-STU-176 — "Make it more" can be capped by a rule, not by the knob the designer named; measure what caps it
 - Lab: Omni Motion Lab round 3 (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
 - What happened: "more Mass prisms out, and further out". The obvious knob, column height, moved the visible count from 2.2 to at most about 2.4. The ratchet was the cap: it holds a prism moving away sealed until the deep reseat. Taller columns made it worse, because they need a deeper reseat to stay hidden. Changing the RULE fixed it: a prism may rise whenever its column top is hidden. Visible height went 1.5 → 7.4 plate radii, with zero rises seen, and a planted "rise anywhere" control reads 100% so the check is live.
 - Do instead: before sweeping the named knob, add the metric for what the designer wants to SEE (here, height seen = how far × how many). Sweep the knob, and if it plateaus, find the invariant that caps it. A new rule needs its own never-seen check and a planted control that breaks it.
@@ -905,7 +905,78 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   `holdHorizon` / `shieldDirs` / `flyMissile`; `OrcaTurret.HoldHorizon`; `Tools/Build/orca_crew_lab/parity.cjs`.
 - Promoted: no
 
+### L-STU-144 — A gather that chases a moving leader at its own speed never docks: dock kinematically
+- Lab: Omega Crews Studio (`Docs/Studios/VesselStudio/omega.html`) · Branch: `Ys-bleeding-edge` · By: the combiner-crew session (session_01JZzEha3L2L4aMuJYzunPm3) · Date: 2026-10-26
+- What happened: the combine was written as "each member flies to its slot round the caller"; the caller kept flying at cruise and the members, at the same cruise, circled it "gathering" for the whole 540 s limit (the trace showed form gather / mega flapping, spread 50-150 u, zero combines). A completion threshold of 8 u on a target moving at 60 u/s is never met by a steered body.
+- Do instead: once a gather is called and everyone is in range, the dock is an ANIMATION on a clock (1.6 s): the caller flies, the others are carried onto their slots (lerp position, slerp attitude, inherit the caller's velocity) and the form switches when the clock runs out. The steered approach is only for closing to gather range; while calling, the AI caller holds back at half cruise so the followers can close.
+- Evidence: `omega-studio.js` part B `stepWorld` (form 'gather'); the 10 s trace (`omega_trace.cjs`, scratch) before and after.
+- Promoted: no
+
+### L-STU-145 — An objective window that skips a gate lets the crew do everything else first and leaves the gates for one long run
+- Lab: Omega Crews Studio · Branch: `Ys-bleeding-edge` · By: the same session · Date: 2026-10-26
+- What happened: "three crystals lit = the first three untaken" let the members collect every open crystal round the whole course while the locked ones (behind walls) stayed lit and untouched; the crew then faced eight walls in a row with one omega and a draining meter, and the "combine only when near the locked crystal" rule never fired because nobody flew toward it. Scorecards read DNF across the board, and it looked like an AI bug.
+- Do instead: anchor the window at the first untaken objective (lit = the next three in order), so a gated objective gates the course; send idle members to the gate's approach point; decide the combine from "the locked one is near, or is all that is lit".
+- Evidence: `relight`, `assignTargets` (`toWall`), `wantCombine` in `omega-studio.js`; CONCEPT_FLEET.md section 10.1.
+- Promoted: no
+
+### L-STU-164 — A "normalized" average of n copies on an 8-bit canvas is not normalized: rounding brightens it
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `cece/elegant-shannon-e7nrb2` · By: Garrett's session · Date: 2026-11-03
+- What happened: the motion-smear scope drew n ghost copies with `lighter` at weights summing to 1.5 (+25..+58% brighter than the still ring). Fixing the weights to 1/n still left +2% at 4 copies, +9% at 15 and +18% at 24: the SAME image stacked n times at `globalAlpha = 1/n` brightens, because every small 8-bit contribution rounds up. Composite mode `lighter` also summed each copy's OWN overlapping parts (a glow under its beam, a dark pod hole), which a normal draw stacks.
+- Do instead: draw each copy whole (normal compositing) on a scratch layer, then average the copies in FLOAT (WebGL2 with an `EXT_color_buffer_float` target, or a Float32Array over the object's box) and quantize once. Prove it with a stack-the-same-image control: n copies of one image at 1/n must equal the image.
+- Evidence: the page's `lum.js` / `q.js` measurements (scratch), round 2 publish; the Unity port (`BrittleStarRingSmear.shader`) averages in the shader's registers for the same reason.
+- Promoted: no
+
+### L-STU-165 — Port the control's rule line for line into JS first, then write the C# tests from what it measured
+- Lab: Brittle Star Ring Spin · Branch: `cece/elegant-shannon-e7nrb2` · Date: 2026-11-03
+- What happened: with no Unity and no .NET in the container, the C# `BrittleStarRules.ForwardTurn` was transliterated to JS (Mathf.DeltaAngle / Repeat / MoveTowards included) and run against the old rule: 0 difference frame for frame below the turn rate (0.25..2 rev/s), exactly the cap and 0 backward frames above it, and the old rule's 13..30 backward frames a second. The EditMode tests assert those numbers, so they were measured before they were written, not guessed.
+- Do instead: when the tests cannot run here, run a line-for-line copy of the code under test and assert only what it produced; say in the PR that the C# itself did not run.
+- Evidence: `BrittleStarRingSpinTests` (written, not run in Unity).
+- Promoted: no
+
+
+### L-STU-168 — Judge a look on the game's own render: round 2 picked a smear on a stand-in ring and measured total light
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: round 2 drew the ring as a 0.44-unit neon beam with a white core and a glow, 19 units away in a three-quarter view (about 2.6 times the game's size). The game's ring is a near-black `VesselGraph` body whose light comes from thin domain plates, seen from 38 units straight behind through the gameplay bloom. Round 2's brightness check summed the smear's light (−1.2%..−0.3% of the still ring), which an average keeps by construction, so it could never say no. When the ring went "too dark to see" in Unity, the page had no way to tell a look problem from a port bug.
+- Do instead: render the shipped FBX with the shader's own formula on the shipped materials and colour set, through the profile's post (L-SIM-2), from the shipped camera, and measure what the eye reads: the 99th-percentile lightness of the rendered frame against the object at rest. Give the scorecard a row that must fail (round 3's "bleeding-edge today": the ring hidden and nothing drawn reads about 6%), so the column is known to say no.
+- Evidence: round 3's game look (`GR` in the page, mesh from `BrittleStar.fbx` by axis swap file (x, z, y)); scorecard at 60 fps Nocturne Jade: averaged smear 90% at 3 rev/s, the bug row 6%.
+- Promoted: no
+
+### L-STU-169 — A port that hides the original must count its replacement as drawn only when something landed in it
+- Lab: Brittle Star Ring Spin (port: `BrittleStarRingSmearPass`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: the smear pass redrew the ring into a layer with the hull's materials, picking each material's pass by LightMode (UniversalForward / UniversalForwardOnly / SRPDefaultUnlit). `VesselGraph` is an Unlit Shader Graph, and URP 17.3 writes its forward pass with NO LightMode tag (`UniversalUnlitSubTarget` sets none; ShaderGraph's `Generator.cs` writes `// LightMode: <None>`), so `FindPassTagValue` answered `ShaderTagId.none` and no material matched. The layer was empty, the hull had already hidden its ring, and the fallback ("a smear no camera drew shows the ring") never fired, because `DrawnFrame` was set when the pass was recorded. The ring vanished whenever it turned more than 1.5° a frame. The port was never compiled or run before merge.
+- Do instead: treat an untagged pass as the forward pass when no tagged one exists (URP draws it as SRPDefaultUnlit). Decide "drawn" from the replacement's actual draw list, and skip, without marking drawn, a request with nothing to draw. Add an edit-mode test that every material the replacement draws has a pass (`BrittleStarRingSpinTests.TheSmearLayer_FindsTheForwardPassOnEveryHullMaterial`, with a negative control).
+- Evidence: Unity-Technologies/Graphics `6000.3/staging` 4064d5b: `UniversalUnlitSubTarget.UnlitPasses.Forward` (no `lightMode`), `Generator.cs` (the `<None>` splice); `BrittleStarRingSmearPass.ForwardPass` / `HasDrawableSubmesh`.
+- Promoted: no
+
+### L-STU-170 — Verify a lab kept as an artifact FRAGMENT in its published form, and A/B its failures against the last round
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: the repo copy is the artifact's fragment (it starts at `<title>`; the Artifact tool adds the doctype, viewport and body when it publishes). `verify_lab.cjs` on the fragment ran it in quirks mode with no viewport, so the emulated iPhone 13 laid the page out 980 px wide, and the full-page phone screenshot timed out at 30 s on both tries after the desktop half had run. Wrapped in a publish skeleton the same page finished in 45 s with both screenshots. In a cloud session the egress proxy refuses the page's Google Fonts, which the verifier reports on every load as `console/page error: Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED`.
+- Do instead: wrap a fragment in a skeleton (doctype, charset, `width=device-width` viewport, body) before verifying it, and run the verifier on the lab's previous round too (`git show <merge-base>:<lab.html>`), so a failure is attributed to the round that caused it. Read the font error as the sandbox's.
+- Evidence: this session: the fragment (TimeoutError at the phone screenshot, twice) against the wrapped page (45 s, `desktop.png` + `phone.png`); round 2 from `385d3018c` fails the same font check and scrolls 1727 px on desktop (round 3: 2590 px), so the ring lab has never been on §2.7's no-scroll layout.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
+
+### L-STU-146 — A combine bolted onto autonomous vessels has no loop; design the parts so neither phase can do the other's work
+- Lab: Omega Crews Studio (Docs/Studios/VesselStudio/omega.html) and Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Omega lab assembled three shipped vessels (each with a complete loop) into a combiner; its scorecard found the Warden's omega never had a reason to split (always combined beat its crew), and the only lever was a meter. Yash's principle the next day: a Voltron vessel is designed from the ground up to be many vessels and one vessel at alternating parts of its own loop. The Siphonophore gives each part ONE verb (light, open, net) and the colony the only scoring verb (digest); both scorecard controls (never fuse, always fused) DNF on every course for the designed reason, with no meter at all.
+- Do instead: before building a combiner, write the two controls first and ask what each form CANNOT do; if a meter is the only thing that forces the alternation, the design is assembled, not designed. The three Unity crews built from the assembled design were removed the same day (CONCEPT_FLEET.md section 10.5).
+- Evidence: CONCEPT_FLEET.md sections 10.1, 10.4, 11.3; siphonophore-studio.js wantFuse / stepColony; the scorecard rows I1 / I2.
+- Promoted: no
+
+### L-STU-147 — A slow turner that orbits its target inside its own turn radius never lines a shot up: stand off, then attack straight
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Sting (turn 85 deg/s, slowed to 33 u/s over its crystal) circled 5-45 u from the crystal for 500 s with a heading error of 23-149 deg and fired nothing; a "come round" aim beyond the crystal only tightened the orbit.
+- Do instead: an AI that must align a line on a target keeps a standoff state: closer than 45 u and more than 12 deg off, fly AWAY to 95 u, then come back straight and fire within 12 deg; the omega lab's cannon AI (L-STU-145's neighbour) had the same shape.
+- Evidence: siphonophore-studio.js zooidAI (B.K.standoff); the trace before and after (siph_dbg.cjs in the session's scratch: uses 19 for 60 s, then crystal 5 freed in 3 s).
+- Promoted: no
+
+### L-STU-148 — The second lab that needs a shell copied it; the shell is owed to studio-crew.js
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: siphonophore-studio.js copies the Omega page's track, grid, prism, rendering, camera, input, panel and hook parts (about 60 percent of 900 lines) and rewrites the design parts, because extracting a shared shell from a page another session was publishing the same hour risked both. SKILL.md section 7 says the SECOND lab extracts the shell; this is that lab and it did not.
+- Do instead: the next session that touches either page moves the generic five parts (course, grid, prisms, bodies' rendering, cameras, input, transport, decision log) into a shared studio-crew.js listed under `shared` in studios.json, and both pages load it; until then a bug fixed in one page's shell is fixed in the other by hand.
+- Evidence: diff omega-studio.js siphonophore-studio.js (parts A tail, D and E are near-identical).
+- Promoted: no
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
 - Lab: NCA swarm labs (`Tools/NCA/`) · Branch: `cece/swarm-x-live2` (DISCOVERIES D6, D7, D23, D25; summary item 6) · Date: 2026-10-01
@@ -991,6 +1062,76 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-STU-149 — An AI that holds a tap button down after a miss never presses again
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Bract's net casts on a fresh RT press. Its AI held RT while "want" stayed true, so after one cast that caught nothing (a misjudged crystal) it never cast again: a run stalled at 6 of 24 crystals for 450 s, the Bract circling its freed crystal 10 u away with RT held.
+- Do instead: for any edge-triggered ability, the AI's "want" includes the cooldown (or releases for a frame after each press), so a miss is followed by a new press. Look for "rt held, cool 0, never fires" when a run stalls.
+- Evidence: siphonophore-studio.js zooidAI ("a cast is a tap"); the stall probe in the round 2 commit 1039d5ecdc.
+- Promoted: no
+
+### L-STU-150 — Count how often the AI USES an ability, not only the finish time; a rule from another ability can starve it
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Pulse Jet changed nothing in the scorecard. Its use count showed why: the AI Bell jetted 8 times a run, because Slipstream (built one step earlier) blocked the pulse while leading and the Bell led most of its travel. Allowing the jet while leading took it to ~115 jets a run and I1 Hard from 343 to 332 s. The Ram Spool's count (about one ram a run, no red ram) showed the Lance makes the ram redundant.
+- Do instead: every ability added to a lab reports its own use count (and hits, chains, steals) in the headless result next to the finish time; a flat finish time with a near-zero count is an unused ability, not a neutral one.
+- Evidence: runHeadless extra { jets, onBeat, chainTop, lashes, hits, stolen, rams, redRams }; CONCEPT_FLEET.md 11.5 steps 3 and 4.
+- Promoted: no
+
+### L-STU-151 — A crew loop is chaotic: two or three seeds mislead; use eight and quote mean and spread
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: with three seeds, Mass level 5 plus the lash read 60 s faster than Mass 5 alone (392/356/354 against 433/421/415); with eight seeds and the coiled-steering fix the two were 344 and 350, inside one standard deviation. Three AIs, a fuse policy and a wall rhythm make tiny changes move whole runs by 30-60 s.
+- Do instead: compare variants in the same build behind a run option, on eight seeds, and quote mean and standard deviation; a difference smaller than the spread is a plateau. Remove the option once decided.
+- Evidence: scratch siph_mean.cjs; CONCEPT_FLEET.md 11.5 step 2.
+- Promoted: no
+
+### L-STU-152 — A "clean run" measured in seconds punishes the fast player; measure it in distance
+- Lab: Sea Turtle (seaturtle.html, kind `tide`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Rapids burst needed 0.8 s through the Rapids without touching a rock. The AI flying the mechanic (tucked, fast) earned 0 bursts a run; the control without the mechanic (slower) earned 6.5. A tucked turtle crossed the Rapids in about 0.5 s.
+- Do instead: a reward for getting THROUGH something is measured in distance (here 30 u), never in time, or the better pilot is the one it stops paying.
+- Evidence: studio-kinds.js K.tide (`rapidsLen`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
+### L-STU-153 — When a side mechanic loses to doing nothing, tie its reward to its story before tuning its numbers
+- Lab: Seahorse (seahorse.html, kind `tend`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: holding a plant to call the crystal in was slower than swimming (282 s against 179); doubling and nearly tripling the call speed barely moved it, because the cost was the 111 s spent flying to plants beside the course. Making a crystal a plant calls in count two (it grew in the garden, which is the vessel's story) took it to 155 s against 179.
+- Do instead: split the mechanic's time (the probe: holding / going to it / everything else) before touching its numbers; if the cost is the detour, no speed number fixes it, and the reward has to be worth the detour.
+- Evidence: studio-kinds.js K.tend (`gardenWorth`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
+### L-STU-154 — Adding choices to someone else's lab: every default theirs, the baseline proven identical, and a copier for the hub
+- Lab: Crew of Four Lab round 9 (CrewOfFourLab.html, the Orca, Garrett's) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: play-style options went into a lab another collaborator owns and ported to C#. Each option is a dropdown whose first entry is the shipped behaviour (`styleBoost: 0`, `styleShield: 0`, `styleMissile: 0`), and every new branch in the step is gated on a non-zero value, so the shipped preset's 4-game batch was re-run after each change and stayed byte-identical. A self-contained lab also failed the hub's page rules (no `studio-theme.js`, no Sync tag, the header naming the host shell), so the hub page is a COPY made by `copy_orca.py` (the `copy_stoat.py` pattern) with `--check`, never a hand edit of the owner's page.
+- Do instead: for options in a collaborator's lab, gate on an opt-in key, prove the baseline unchanged, and read rows where the AI never uses the option (the breath where the helm AI never boosts) as "no data", not "no difference". To list such a lab in the hub, copy it with a checked copier.
+- Evidence: CrewOfFourLab.html `STYLES`, `styleBoostStep`, `dockStep`, `seekLock`; .claude/skills/vessel-studio/copy_orca.py; CREW_OF_FOUR_LAB.md round 9.
+- Promoted: no
+
+### L-STU-156 — An AI's dirty object laid ON a rival traps the rival bouncing in place; lay it behind you and route the AI round walls
+- Lab: Serpent Studio (`Docs/Studios/VesselStudio/serpent.html`) · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: round 1's first AI cloaked with the seed at its own hull. A rival right behind flew into the super-shielded seed and bounced against it for seconds, and the first scorecard read that as walls being wildly strong.
+- Do instead: put the dropped object where the vessel really leaves it (the seed is the latest trail prism, behind the hull) and give every AI a wall-avoidance route before scoring what walls are worth.
+- Evidence: `serpent.html` round 1, `SERPENT_TIME.md` §6 (a).
+- Promoted: no
+
+### L-STU-157 — A sniper AI that waits for a perfect aim never fires; fire inside half the cone, ease the throttle, back off for range
+- Lab: Serpent Studio · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: lining up from 280 u for a 0.35° aim, the sniper AI never fired; the stick mix never settles that fine.
+- Do instead: fire when the believed target sits inside half the cone at that distance, lift the throttle while lining up, and back away when too close. The game's port fires when the wall's centre is inside the rifle's own cone (radius floored at 6 u), after the scope has settled.
+- Evidence: `serpent.html` `aiInput`; `SerpentTimeController.OnTarget`.
+- Promoted: no
+
+### L-STU-158 — An InstancedMesh needs its instance colour attribute before its first render, or it draws white forever (three r128)
+- Lab: Serpent Studio · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: every wall brick drew white. The colour buffer was created by the first `setColorAt` call, after the mesh had already rendered once, and r128 never rebinds it.
+- Do instead: call `setColorAt(0, …)` (and set `count`) when the mesh is created, before the first frame.
+- Evidence: `serpent.html` (`prismMesh.setColorAt(0, DEBRIS)` at creation).
+- Promoted: no
+
+### L-STU-155 — A lab that reads part of a shipped look shows a HALF-updated object when the look changes, and its --check stays green
+- Lab: Omni Shepard Lab (`Docs/Studios/OmniShepardLab.html`) · Branch: `cece/serene-cannon-93olp5` · By: the 2026-10-28 omni-shades session · Date: 2026-10-28
+- What happened: the omni crystal moved from one lime to four per-element shades (`Docs/PALETTE.md` §2.12). The lab's baker reads `OmniDepthPrisms._BrightColor` and the body's `_BrightColor`, so the re-bake moved the triangle prisms to the Mass shade while the body, whose new colours ride a per-vertex element channel and four new properties the baker never reads, stayed one lime. `omni_shepard_lab_assets.py --check` and `verify_lab.cjs` both passed: the page truthfully shows what it reads and nothing says what it does not.
+- Do instead: when a shipped look gains a dimension (a per-vertex channel, a new property family), re-bake, then LOOK at the lab's screenshot for an object that is now half old and half new, and write the gap into the lab's "not modelled" list and the owning doc in the same branch. A green baker `--check` proves the fields it reads, never that it reads all of them.
+- Evidence: the `depth.omni.bright` diff in the lab's `ASSETS` block (lime → `0.3639, 0.7673, 0`); the `verify_lab.cjs` desktop screenshot (Mass-shade prisms on a one-lime body); `Docs/PALETTE.md` §2.12 "Not modelled".
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it
@@ -1074,7 +1215,42 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: Tools/ecosim/README.md.
 - Promoted: §0
 
+### L-SIM-2 — Model URP's bloom from its source, not from a doc's table: the threshold is gamma, the clamp per channel
+- Lab: crystal bloom preview (`Tools/Build/crystal_bloom_preview.py`) · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: the question was whether the free crystals still read as distinct limes after the gameplay bloom. URP 17's `PostProcessPassRenderGraph` passes `Mathf.GammaToLinearSpace(threshold)` (0.2 → 0.033 linear), hard-codes the knee at half that, and `Bloom.shader` clamps each channel to `clamp` (0.5) BEFORE the threshold. The per-channel clamp is what pushes a yellow-green toward yellow in its glow; a luminance clamp would not. The URP source was already on disk in the reference-compile cache (`/tmp/unity_refcompile_cache/graphics/Packages/com.unity.render-pipelines.universal`).
+- Do instead: port the effect's passes from the package source (prefilter, the mip chain with its sizes from the FRAME, the scatter lerp, the composite), read the profile's overridden values from its asset, and convert material and property-block colours gamma → linear as Unity does in a Linear project.
+- Evidence: `crystal_bloom_preview.py` `bloom()`; `Docs/PALETTE.md` §2.11.
+- Promoted: no
+
+### L-SIM-3 — Judge a glow's colour from the light it ADDS, and take its hue in sRGB
+- Lab: crystal bloom preview · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: two wrong measurements, each of which flipped the verdict. Classifying the composite pixels called every crystal's far halo green, because a dim glow over the navy sky borrows its blue. Taking HSV on LINEAR values called the omni 100% green (`#7cfc00` is 90° in sRGB HSV and 108° in linear). The lime window (75-105°) is defined on sRGB colours.
+- Do instead: subtract the backdrop, weight by the added luminance, normalise each pixel's added light to its peak, encode to sRGB, then take the hue. Sanity-check the classifier on a colour whose answer you know before trusting a table of them.
+- Evidence: `crystal_bloom_preview.py` `classify()`.
+- Promoted: no
+
+### L-SIM-4 — A render that is linear in its colours is three renders; search over the table, cached
+- Lab: crystal bloom preview · Branch: `cece/charming-bell-m70ac8` · Date: 2026-10-27
+- What happened: the shade search needed each crystal at hundreds of candidate colours. The shading is linear in the bright and dark colours and the supersample is a mean, so `img = B + Ab·bright + Ad·dark` from three renders gives every candidate before the (non-linear) bloom. The first full search still took about 20 minutes, and each change to the search's RULES (characters, distinctness) re-ran it, until the per-candidate measurements were cached keyed on the candidates, the bloom settings and the looks; after that a rule change runs in seconds.
+- Do instead: separate the expensive per-candidate measurement from the cheap combination search, cache the first, and expect the rules to change more often than the renders.
+- Evidence: `crystal_bloom_preview.py` `_components()`, `proposal_cache.json`.
+- Promoted: no
+
 ---
+
+### L-SIM-5 — A model's asset generator that tunes an element ON TOP of a fleet law applies the element twice
+- Lab: ecosim's Hesperides generator (`Tools/ecosim/gen_hesperides_assets.py`) · Branch: `cece/keen-feynman-unrdda` · Date: 2026-10-28
+- What happened: the model's intensity ladder authored Mass x1.35 and Charge x0.85 leaf cross-sections. Those rungs predated the fleet-wide element law (Docs/ECOSYSTEM.md §65), which already sizes every element's leaf. Once the law landed, a Mass Hesperides plant was enlarged twice: by the law and by the rung. Nothing failed. The generator's own output matched its recipe, and the game's law tests do not read a lab's assets.
+- Do instead: when a platform law takes over a dimension, every lab that tuned that dimension per element sets its rungs to 1 (the species' own leaf), edits only the lines it owns, and says in its docstring which law now owns the number. Grep the labs' generators for the law's element keys whenever a law lands.
+- Evidence: `gen_hesperides_assets.py` (ladder Mass/Charge rungs -> 1, shield Mass 1 / Charge 0); Docs/ECOSYSTEM.md §65.6.
+- Promoted: no
+
+### L-SIM-6 — Fly the SHIPPED solver round the arena before you lay it: a trailing weapon cuts only its own path
+- Lab: Harvest Stalk Lab (`Tools/Build/harvest_stalk_lab/`) · Branch: `claude/keen-rubin-rw7p6q` · By: the Harvest session · Date: 2026-11-10
+- What happened: Harvest's arena (sheaves: a core with stalks in every direction) was designed on the premise that a Thresher circling a sheaf sweeps its stalks with the chain while the ball swings clear. The mode was built, gated and merged-ready before anyone flew it. Compiling `ThresherChainSolver.cs` against the card harness's `UnityShim.cs` in a 40-line console project and flying it round one sheaf with the executor's contact rules showed the chain TRAILS (21-60 u behind at cruise), so it cuts only what the path crosses: 0-11 cuts a lap, a blast clearing 2-11 of 160 core blocks. The same harness found the fix in minutes (stalks as a wheel, strike down the axle: 38-92 cuts, half a core in one blast).
+- Do instead: when a mode's loop rests on how a vessel's verb meets the arena, compile the vessel's pure solver (most hulls have one) into a console harness and fly the arena's geometry BEFORE writing the spawnable; load the dials from the shipped asset by reflection, not from the class initializers. Put the arena's question in the brief as a measurable number (cuts a lap, bank at the core) and run it.
+- Evidence: `bash Tools/Build/harvest_stalk_lab/run.sh` vs `run.sh wheel 0 axis`; THRESHER_SPACE.md section 10.
+- Promoted: no
 
 ## EDT — in-editor lab windows
 
@@ -1408,7 +1584,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - When the designer remaps buttons, check what the OLD button did. A habit press is how a hidden mode gets entered.
 - Evidence: `R_VesselActions/ANGLER.md` §1k; `ANGLER_COMMAND_LAB.md` round 7.
 
-### L-STU-102 — One cooldown for the skim and the hull hides every hull contact
+### L-STU-177 — One cooldown for the skim and the hull hides every hull contact
 - Lab: Concept fleet (`Docs/Studios/VesselStudio/studio-vessel.js`) · Branch: `Ys-bleeding-edge` · By: the concept-fleet session · Date: 2026-10-17
 - What happened: the platform baseline inherited from the Squirrel studio cooled a prism for 0.6 s per pilot on a SKIM (12 u out) and used the same cooldown for the HULL contact, so a hull flying through a prism it had just skimmed registered nothing. Invisible in every studio whose hull avoids prisms; the Flea, whose mechanic IS the contact, never bounced (uses 2 in 300 s), and every concept's contact count read 0.
 - Do instead: keep two cooldowns (`p.cool` for the skim, `p.hull` for the contact) and test the hull branch with a vessel that wants to hit things. The game's `SkimmerImpactor` / `VesselImpactor` are separate components; worth confirming they never share a cooldown.
@@ -1670,3 +1846,226 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: retire a drawn option with a list next to the lab's shipped settings and a matching list on the game's config, held equal by the generator's `--check`. Never delete the key or the enum member. When a game test plays the shipped config, recompute its golden by running the real C# core on the real asset as well as the page, and the two must agree.
 - Evidence: `abilityPool` in the page's dynamo-core block; `DynamoSettings.Abilities`, `HoneyguideConfigSO.retiredAbilities`; `author_honeyguide_assets.py` check "retiredAbilities is not the lab's RETIRED_ABILITIES"; `HoneyguideTests.Ratel_NeverDrawsPrinter_WhileItIsRetired`.
 - Promoted: no
+
+### L-STU-159 — Independent pairwise boundaries do not tile space: fit one partition for every family at once
+- Lab: Colour Domains Lab (`Docs/Studios/ColourDomainsLab.html`) · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: Garrett asked for convex regions that "encroach on each other's territory, but respect the thickness of the forbidden band". Round 3 put a band in the middle of each pair's gap, one pair at a time. Fifteen bands chosen independently leave pockets that no family owns; Garrett's saved proposal ended with 65.5% of the gamut as band, and he reported regions "not encroaching in order to fill in". Round 4 gave every family one score `A_f = n_f·x + c_f` and the colour to the highest: the cells are convex and tile the space by construction, and the band is the same thickness on every border.
+- Do instead: when regions must be convex AND fill a space, fit them TOGETHER as a max-affine partition (a multiclass maximum-margin fit, then a refinement on the true distance to each border). Never place pairwise boundaries one by one.
+- Evidence: `fitAffine` / `refineCells` in the page; `Tools/Build/colour_domains.py classify`.
+- Promoted: no
+
+### L-STU-160 — A tool that cuts space when it cannot hand it over creates the gaps it exists to prevent
+- Lab: Colour Domains Lab · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: the eraser removed a colour from its family, and when no neighbour could take it, cut a flat face through it. Behind a cut the space was empty however deep it went: 17.1% of the gamut, and a Jade/Ruby gap visibly thicker than every other band. Garrett: "i was still able to create large gaps and the starting config has gaps that are thicker than others". Measured by walking a line from Jade's signal to Ruby's and printing the owner of each step (`JJJJJJJ..xxxxBBBB....RRRR`, x = cut), which named the cause in one line.
+- Do instead: an edit that cannot be honoured without breaking the invariant (here: the only empty space is the band) must leave the colour where it is and SAY so, never fall back to something that silently breaks the invariant. When a user reports an uneven result, print a 1-D walk through the space with the owner at each step before theorising.
+- Evidence: `handOff` in the page (no cuts); `COLOR_DOMAINS.md` § How the lab got here.
+- Promoted: no
+
+### L-STU-161 — When a shaped result comes from a fit that is not unique, freeze the RESULT, not the inputs
+- Lab: Colour Domains Lab · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: Garrett liked the boundaries of his "shaped by eye" save and asked for them as the source of truth. Refitting the same inputs from a different starting point agreed on only 84% of a 41³ grid, and restoring two anchors he had dragged by accident moved 7% of all colours. Replaying the page's exact path (start from the previous adopted fit, 400 steps) reproduced the saved shares to within 0.05 points, so those boundaries were frozen as the truth's `cells`, and the anchors became a CHECK against them (all inside, one named exception) rather than the input.
+- Do instead: for anything shaped by eye on top of an optimiser, store the optimiser's output as the definition, prove it by replaying the page's path against numbers saved with the shape, and turn the inputs into assertions. Ask which part the person liked before "fixing" an accidental input: here it was the boundaries, not the anchors.
+- Evidence: `colour_domains.json` `cells`; `colour_domains.py --check` / `--self-test` (seven planted failures); the page's `__lab.runBatch()` matches the Python checker to 0.01 points.
+- Promoted: no
+
+### L-STU-162 — A comparison page the person will PICK on needs a save path on its first publish
+- Lab: Lime Element Shades (`Docs/Studios/LimeElementShades.html`) · Branch: `cece/funny-archimedes-hinjr4` · By: the 2026-10-31 colour-domains session · Date: 2026-10-31
+- What happened: the first publish compared ladders with sliders but kept their state only in the viewer's browser. Garrett set his values and asked "can you retrieve them?"; they could not be read, a republish added a db-backed "Save my pick" and a copyable text line, and he had to set them again. Three saves then landed (two identical), so the latest by `savedAt` is the pick.
+- Do instead: any page whose purpose is a CHOICE (a pick, a tuning, a vote) declares `db` and carries a save button and a plain-text readout from its first publish; read the latest save by `savedAt`, and say which one you took.
+- Evidence: the page's `picks` collection (three documents, 2026-10-31 20:31-20:33); `kite_mote_colors.py` `PICKED`.
+- Promoted: no
+
+### L-STU-163 — Judge a colour by the share of the object it paints, not by its swatch
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `claude/nocturne-colour-set` · By: the 2026-11-03 colour-sets session · Date: 2026-11-03
+- What happened: Dart Frog passed every rule, and its lab showed rim and face as equal swatches with a glowing edge drawn wide. In Unity it was "not quite there": a prism's body is the face and the rim is a thin fresnel line, so Jade read as tan, Ruby as teal and Blue as green. Nothing in the page could show that. A small numpy render of the shader's real formula, lerp(face, rim, fresnel) with bloom and ACES, showed it at once. Darkening Dart Frog's faces barely helped; designing faces in one night-dark band from the start gave Nocturne, which Garrett made the default the same day.
+- Do instead: before tuning colours on a page, render them with the shipped shader's formula, on the real shape, beside what ships today. Weight every colour by the area it covers. Use the rule gate to prove a palette is legal, and the render to judge whether it reads.
+- Evidence: `author_colour_set_assets.py` (face fields take the pigment's own lightness); `colour_sets.json` `nocturne`.
+- Promoted: no
+
+### L-STU-166 — Measure a palette for a viewer on the colours the asset PAINTS, not on the swatches
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nice-lamport-56824k` · By: the 2026-11-05 vision-sets session · Date: 2026-11-05
+- What happened: the lab's colour-blind report measured swatches at mid L and called two domains apart when EITHER rim or face differed, and put Nocturne at 4.4-4.7 just-noticeable steps for protan, deutan and tritan viewers. But the palette writer pins every rim at the original's bloom-sized brightness (brightest channel about 1), so a rim's lightness comes from its hue and the pigment's L range never reaches the game; and the HUD, trails, danger and pickups read the rim alone. Measured on what is painted, rims alone and faces alone, Nocturne is 0.9-1.1 steps for those viewers and 0.2 with no colour vision.
+- Do instead: before scoring colours for a viewer, run them through the writer's own transform (`colour_sets.painted`) and score each surface a player reads on its own. A searched set then reached 8.8-13.6 steps for its viewer (`colour_sets.py` rule 5).
+- Evidence: `colour_sets.py --report` (the "rule 5 measure" table, every set by every vision); `colour_sets.json` vision sets.
+- Promoted: no
+
+### L-STU-167 — A pigment greyer than its own spread claims grey, and every whitened field falls into it
+- Lab: Colour Sets Lab · Branch: `cece/nice-lamport-56824k` · By: the 2026-11-05 vision-sets session · Date: 2026-11-05
+- What happened: the first search for the vision sets passed rules 1-5 with near-grey faces (sat 0.03-0.08 against rho 0.035), and the palette writer then failed seven fields: the shielded tiers are whitened toward grey, and a pigment whose chroma disc reaches the neutral axis owns that grey, so a Jade shield read as Fire's face.
+- Do instead: keep every pigment's sat at least about 0.1 (grey stays unclaimed), and put the writer's field check (`author_colour_set_assets.field_problems`) inside any search's score, not after it.
+- Evidence: `author_colour_set_assets.py --check` (the failures, then clean on the re-search); the six vision sets' sat values.
+- Promoted: no
+
+### L-STU-171 — The HUD reads a rim's numbers as sRGB: measure every rim as light AND as paint
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: the palette writer paints `TrailHighlightColor` in linear light, but `GetDomainUIColor`, the score panels and the vessel tails (`TailGradient`) read those floats as sRGB, which darkens the middle channel and turns an orange gold into Fire. Nocturne's honey showed on the HUD as `#FF8F11` (the Gold/Fire band), and every vision set's Gold read as Fire. Rule 5 had measured the rims only as light, so an achromat could tell Gold's and Ruby's HUD colours apart by 1.5 JND and a deutan Fire's and Gold's by 2.4.
+- Do instead: judge a rim in every reading the game shows it (`colour_sets.readings`: swatch, light, paint) and count the HUD in any per-viewer measure. The window that survives both readings for Gold is hue 82-96 (`colour_set_maker.py atlas`).
+- Evidence: `colour_sets.py` rules 4 and 5; Nocturne's Gold hue 83 to 87; the vision sets' rule 5 before and after in `colour_sets.json`.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §1, §2, §8
+
+### L-STU-172 — A face above the night line names its domain: make it its family's, its rim's paint, or quiet
+- Lab: Colour Sets Lab · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: every set passed the old four rules, yet Dart Frog's faces (mid L 0.39-0.45, bronze, indigo, forest, petrol) made a Jade prism read as bronze, a Blue one as green, and Nacre's light faces (a lavender Jade, a periwinkle Gold) named other domains outright. Below L 0.40 the six-family truth holds only Fire and Blue, which is why Nocturne's dark jewel faces of any hue read as night under their rims.
+- Do instead: give each face a voice (rule 6): its family's own colour, its rim's own paint (the two cones overlap, as Photic does), or quiet, wholly at or below L 0.40 (as Nocturne does). A contrasting second colour from an inspiration goes quiet; a light body must be its family's.
+- Evidence: `colour_sets.py voices`; `colour_set_maker.py preview` sheets of the old and new Dart Frog and Nacre.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §3
+
+### L-STU-173 — The gameplay bloom turns light faces white: paint a pastel set's faces at L 0.5-0.7 and let the bloom lift them
+- Lab: Colour Sets Lab · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: Nacre's first faces were painted at L 0.70-0.79 (brightest channel up to 0.93). The gameplay profile blooms from 0.2, clamped at 0.5, intensity 2.5, so a model of the block shader with that bloom drew every Nacre prism, and every shielded tier, as near-white: the domains vanished. The writer's face fields take the pigment's own L, so the pigment decides it.
+- Do instead: render a set with the bloom before judging it (`colour_set_maker.py preview`, `hero`), and keep a light set's faces at mid L 0.50-0.74 (the Nacre style) so the bloom carries them to pastel; check the shielded tiers too, which the writer paints brighter and whiter.
+- Evidence: `colour_set_maker.py preview photic nacre`; `colour_sets.json` `styles.nacre`.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §4, §8
+
+### L-STU-174 — A colour-blind set keeps the rules as its viewer sees them: measure its names on the game's own colours through that viewer's eyes, never waive them
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-trace session · Date: 2026-11-10
+- What happened: the six vision sets (2026-11-05) switched rules off with waivers (`waive.paint`, `waive.voice`, `waive.apart`), because the six-family truth is a partition for typical vision: a set made for a protan's eyes cannot keep its rims in the cells a typical viewer names. Garrett: "we want the colour-blind sets to fulfill their version of the same criteria". The names a viewer has learned are the game's own colours of each family as their eyes show them, so the truth's anchors through the same vision model (Machado 2009, Rec. 709 luminance, half chroma) make rules 4 and 6 measurable for that viewer: a rim, as light and on the HUD, and a face must sit nearer their own family's anchors than any other family's. Deuteranopia and achromatopsia cannot reach zero: for those eyes the game's own Fire, Gold and Lime anchors (deutan) or all six (achromat) crowd one line, so they declare the shortfall they measured (-0.021 and -0.045 at the 2026-11-10 re-balance, `colour_sets.py --report`).
+- Do instead: give a set made for another viewer every rule through that viewer's model (`colour_sets.vision_prototypes`, `name_margin`); where the game's own colours make a rule unreachable for those eyes, declare the measured shortfall on the set (its `name_margin`) so the gate still holds it to a number, never a waiver that turns the rule off.
+- Evidence: `colour_sets.py --check` (rules 4 and 6 per vision set) and `--self-test`; `colour_sets.json` `name_margin` on deuteranopia and achromatopsia; the lab's rule panel for each vision set.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §1 ("No rule is waived")
+
+### L-STU-178 — A worked example is not ready until the palette writer's field check passes, and a lab's examples are not shipped
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-11 colour-set promotion session · Date: 2026-11-11
+- What happened: Garrett tried bleeding-edge after #1895 and the lab's new sets (Blue-ringed Octopus, Neon Noir, Ukiyo-e, Dusk) were not there. They were the `/colour-set` skill's worked examples, which by design are never written to the game, and the ship report never said so. Taking them in, Dusk failed the palette writer's field check: its Ruby `AOEConicEdgeColor`, a whitened tier of the Wild Plum rim (hue 318), landed in the Lime face Heather, a quiet purple at hue 316. The seven rules compare pigments; the writer compares every field it paints, and whitening walks a rim toward grey along its own hue. Heather's lawful window was hue 313-316 at sat 0.21-0.22, between the band (Rosewood, Twilight Slate), rule 2 (Wild Plum) and the writer's fields; hue 315 at sat 0.212 is the point whose neighbours all pass.
+- Do instead: hold an example to everything a set is held to, the writer's field check included (`author_colour_set_assets.py --check` now does), so promoting one is a move in `colour_sets.json`. When a lab shows sets beside the game's, a ship report names the ones that are not shipped and offers to take them in: a person reads the lab's rail as the game's.
+- Evidence: `author_colour_set_assets.py --self-test` (Dusk's old Heather, planted as an example, is caught); the window scan in the promotion commit.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §7, §9
+
+### L-STU-179 — A per-lay loop that waits on UniTask.Delay is frame-bound at speed: the spacing is speed × frame time, not the authored wavelength
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-11
+- What happened: `VesselPrismController.SpawnLoopAsync` lays, then waits `wavelength / speed` (10 m / speed). A `UniTask.Delay` ends on a frame, so once the wait is shorter than a frame the lay is one per frame. At the Manta's Soar (~600-700 u/s at 60 fps) the rail spacing is ~11 m, not 10, and it grows with speed and with a lower frame rate. A first lab that stepped the lay with sub-frame timing would have shown a Soar ribbon that the game never lays: Soar fill read 0.45 for the shipped 5.5 m prism, and a "Z fills the wavelength" rule left gaps at Soar until its cap used `max(wavelength, speed × dt)`.
+- Do instead: step any per-lay or per-tick async loop the way the game's awaiter resolves (one firing per frame at most, the next wait measured from that frame), and give the lab a frame-rate dial so a phone's 30 fps is scored too.
+- Evidence: `VesselPrismController.SpawnLoopAsync`; the lab's `simStep` lay timer and `shFrameAware` dial; scorecard "Soar fill" column.
+- Promoted: no
+
+### L-STU-180 — A lab that lays "after the move" hides a loop that runs before it: port the ORDER, not only the formula
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-12
+- What happened: the lab and the C# shared one pacing rule (lay by distance, back to the exact spacing point), and every lab check passed. In the editor the prisms still bunched at top speed. The game's loop runs at UniTask's Update timing, BEFORE `VesselTransformer.Update` moves the hull, so counting Speed x deltaTime as flown placed each prism a frame's flight too far back; a 0.1 s editor hitch (108 m at 1080 u/s) put one against its neighbour. The lab's `simStep` moves first and lays second, so it could not show it. Two earlier rounds on the same trail were the same shape: a timer that ends on a frame (L-STU-179), and sizing a prism to one frame's wobbling flight.
+- Do instead: in the game, read what actually happened (the hull's displacement since the last loop), never a rate times dt; when the lab models a loop, put its update order in the model (`/labmaker` §2), and feed the pacing tests long frames (a hitch every ~100 frames), not just jitter.
+- Evidence: `VesselPrismController.ShapedSpawnLoopAsync`; `TrailSpeedShape.StepLay` / `NextLay`; `TrailSpeedShapeTests.StepLay_LaysEvenlyAtEverySpeed_ThroughJitterAndHitches`; `Docs/Manta/POLISH.md` fly tests 1-3.
+- Promoted: no
+
+### L-STU-181 — Three seeds can be one run three times: check that the seed reaches what the column measures
+- Lab: Fauna Possession Lab (`Docs/Studios/FaunaLab.html`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the scorecard averaged seeds 1-3. In the vessel, Ark-approach and slalom games the seed only shuffled the prism cluster and the Ark's socket kinds, which those games never read, so every seed gave the same number to the decimal (slalom 27.6, 27.6, 27.6) and a 0.1 s lead looked like a result. With the host's start seeded (up to 30 u and 12 degrees off) the same columns spread 0.8 to 4, and the "lead" was inside it.
+- Do instead: print each column per seed before quoting it. A spread of exactly 0 across seeds means the seed does not reach the column: seed the start conditions of the thing being scored. `verify_lab.cjs` checks a batch is repeatable, never that its seeds differ.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 1, Found 4; `playGame` in the page (the seeded `placeCreature`).
+- Promoted: no
+
+### L-STU-182 — A pilot that holds the trigger measures the trigger rule, not the creature
+- Lab: Fauna Possession Lab · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the wasp's RT attacks a vessel within three reaches, the strike lands only 35% to 100% of the way through a 0.6 s attack and only within one reach, and the recharge is spent on the press. The first scorecard pilot held RT, so a creature with a LONGER reach attacked earlier, missed, and scored 1 where a short-reach one scored 5: the design looked worse for being better. The pilot now presses when the gap will have closed by the strike (it watches the gap), and the rookie setting keeps the held trigger.
+- Do instead: when an ability has a commit window, give the skilled pilot the timing a person would learn and keep the naive press as the rookie column. Fix the pilot before the creature (section 2.4), and write the rule the pilot exposed into Found: it is a design fact about the game.
+- Evidence: `pilot()` in the page; `Docs/Studios/FAUNA_LAB.md` round 1, Found 3.
+- Promoted: no
+
+### L-STU-183 — A stand-in opponent that chases will orbit: give it committed passes
+- Lab: Fauna Possession Lab · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-15
+- What happened: the "vessel attacks you" stand-in steered at the host every frame with a capped turn. Against a slow host it settled into a circle of its own turn radius (80 u/s at 1.6 /s is 50 u), outside every strike reach, so the brawl column read 1 for most creatures and rewarded the ones erratic enough to break the orbit. A pass it commits to (line up, fly straight through a point beside the host and 240 u past, come about) gives every creature the same six chances a minute.
+- Do instead: a stand-in that must come within a distance flies a path that provably does, and the write-up says it is a stand-in. Print the closest approach per run before trusting a contact column.
+- Evidence: `stepVessel` level 3 in the page; `Docs/Studios/FAUNA_LAB.md` round 1, Found 6.
+- Promoted: no
+
+### L-STU-184 — A shape measure that fits each view to the frame turns a dot into a disc: one scale per body, and plant the pair that must differ
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/silhouette.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-16
+- What happened: the silhouette comparison scaled every view so its longest side filled the 40 x 40 grid. A dart seen end-on (a dot) then filled the grid and matched a disc, so the tool's own negative control ("a dart and a disc must not read alike") failed at 0.31 the moment a second alignment search (the travel axis) gave the two shapes a view in common. Before the fix it had called the Marlin and the Bee the closest pair in the game (0.16); after it, 0.3. A table had already been read with the wrong scale.
+- Do instead: normalise a body once (its longest extent) and use that scale in every view. Keep a planted pair that must differ and a planted pair that must match (a rolled, flipped, scaled copy) in the self-test, and re-run it after every change to the alignment search: more freedom to align is more ways for two different shapes to agree.
+- Evidence: `silhouette.py --self-test`; `Docs/Studios/FAUNA_LAB.md` round 2, Found 1.
+- Promoted: no
+
+### L-STU-185 — Compare shapes in ONE pose across all views, pooled by outline: per-view best matches call every flat body the same
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/silhouette.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-16
+- What happened: the silhouette distance took each view's smallest difference over all alignments separately. Two flat bodies are both a line edge-on, so a woven manta read 0.03 from the Brittlestar. Comparing the three views of one pose fixed that, but a plain mean still let the two edge-on line views outvote the outline from above (0.30); pooling the overlap over the three views, so a view counts by the outline it holds, gave 0.44. The table published the round before was wrong and had to be marked superseded.
+- Do instead: an alignment is one pose, and every view of it is scored together; weight views by the area they carry. Add the shape that breaks the measure (two different flat bodies) to its self-test before quoting a table, and mark an earlier table superseded rather than leaving it.
+- Evidence: `silhouette.py` (`views`, `_one_way`); `Docs/Studios/FAUNA_LAB.md` round 3, Measured.
+- Promoted: no
+
+
+### L-STU-186 — Port the game's own transform of your body before you ship the body: a per-part rule tears what you cut into parts
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/erosion.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray went to Unity as a wing cut into jointed pieces, with a Space config that turns on the game's spindle erosion like every species. The erosion thins each mesh about its own principal axis. Nobody could see it without the editor, and the earlier check ("the gap between two pieces did not grow") passed because crumpled pieces overlap. Porting `SpindleErosion` to Python and measuring how far apart two vertices that TOUCHED end up showed 6.7 u.
+- Do instead: when the game transforms a body at spawn (erosion, scaling, armour), port that transform, pin the port to the numbers the game's own tests pin, run it on the asset you wrote, and DRAW the result. Measure tearing as the distance between points that were together, never as the smallest gap between two parts.
+- Evidence: `erosion.py` (`runtime`, `self_test`); `Docs/Studios/FAUNA_LAB.md` round 8.
+- Promoted: `/fauna-maker` Into Unity step A; `/fauna-creation` section 12; `Docs/ECOSYSTEM.md` 64.9
+
+### L-STU-187 — "The smallest value that passes the law" is a default that can contradict the law's intent: state the floor
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/specs/_kit.py` (`elements`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the law says a Mass body is grown until its heart's swing clears its shields. The helper returned the smallest scale that clears them. For bodies whose prisms sit far from the heart that is under 1, so the "gentle giant" came out at 0.58 of the base body and Space under the base body too, on five creatures, with every gate green.
+- Do instead: when a helper solves a law's inequality, write the direction the law intends as a second clause (never under the base body) and plant a case on the far side of it in the self-test.
+- Evidence: `specs/_kit.py` `elements`; `celestial.py` L8; `Docs/Studios/FAUNA_LAB.md` round 8.
+- Promoted: `/fauna-creation` law L8
+
+### L-STU-188 — A variant that adds detail can erase the outline: measure every variant against the roster, not only the base
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/elements.py` (`silhouettes`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray's Space form hung a veil along its whole hind edge. It looked the most different of the four, and it was the one that failed: the veil filled the outline into a delta and read as the Sparrow hull (0.35 under a 0.41 bar) while the base Ray stood at 0.49.
+- Do instead: run the distinctness measure on each variant against every OTHER body (its own kin excluded), and shape additions so they leave gaps in the outline.
+- Evidence: `elements.py --silhouette ray`; `specs/ray.py` `ghost`.
+- Promoted: `/fauna-maker` step 6.5
+
+### L-STU-189 — Test a skill by giving it to a smaller model and reading what it did, not what it reports passing
+
+- Lab: Fauna Possession Lab, `.claude/skills/fauna-maker` step 6.5 · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: four sessions on a smaller model each followed the element-forms step on one creature and reported where the skill failed them. All four "passed". Reading the pictures showed the Plume had passed its outline check by cutting its arms' barbs from 16 to 3: it was no longer a feather creature. Nothing in the skill or the tools said the barbs were the species. The same four reports found one real bug (`barbs: False` handed a limb its design's barbs back, tripling a mesh) and that every tester had worked out "spread outward" by trial.
+- Do instead: after writing a skill, hand it to a smaller model with one concrete task, a hard file limit and "report every place the skill failed you". Then LOOK at what it made. Turn each failure into a refusal in the tool with its fix in the message (not a sentence in the skill), and run the task again: the second Plume took 2 rounds and 11 tool calls against 19, and kept its feathers.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 9; `elements.form` (the refusals), `fauna.py` `FORM_FIX`.
+- Promoted: `/fauna-maker` step 6.5; `/fauna-creation` section 12
+
+### L-STU-190 — A process a small model can complete is not a design a small model can make: say which one a check proves
+
+- Lab: Fauna Possession Lab, `.claude/skills/fauna-maker` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the smallest model took "make a seahorse" from nothing to four element forms in about nine rounds, every law, budget and outline check green, without reading kit source. The body was a ribbed column with fans. The no-up law had turned the animal's one curl into three, and no step had made it decide what a three-fold seahorse should look like before drawing.
+- Do instead: put the design question the laws will force (what happens to this animal's one-sided feature when it must repeat round the axis?) in step 1, before any geometry, and give the maker a line that stops it going on ("would a person name the animal from this picture alone?"). In the hand-back, separate "the process ran" from "the result is good", and do not keep a trial body that only did the first.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 9 (round 3 of the trial); `/fauna-maker` step 1, question 4.
+- Promoted: `/fauna-maker` step 1
+
+### L-STU-191 — A shader that computes from a vertex's own position tears anything you cut into pieces with their own origins
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/unity_port.py` (`joints_of`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: the Ray's wing and tail were cut into jointed pieces, each mesh in its joint's own space. The shared spindle shader sways a vertex by its own z. Two vertices that touch across a cut had z measured from different origins, so the tail would have opened 2.6 u at its first hinge with nothing wrong in any asset.
+- Do instead: when a body is split for a rig, keep every piece's mesh in the BODY's space and set the piece's transform back by its joint's place; then any position-driven shader is one function across the cut. Evaluate the shader's own formula on both sides of each cut as a check.
+- Evidence: `unity_port.joints_of` and the skin transforms in `prefab`; `Docs/ECOSYSTEM.md` 47.8.
+- Promoted: `.claude/skills/fauna-maker/references/RAY.md`
+
+### L-STU-192 — Run the game's own code on what you built before you call it done: file checks cannot see order
+
+- Lab: Fauna Possession Lab, the Ray's Unity port · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-17
+- What happened: four element prefabs had passed every file check (laws, budgets, mesh contents, prism seats, guids) and a reference compile. Spawning each element's config in Amoebius through the spawner's own calls showed the Mass form unshielded and the Charge form harmless. The cause was not in the new assets: the game arms a body in `Initialize`, before `AssignLineage` rolls the element, and the shipped QuadFish had the same fault (0 of 4 shielded) with every gate green for weeks.
+- Do instead: after a headless port, spawn the thing with the engine's real spawn order and read back the BEHAVIOUR the design promises (counts of shielded and danger prisms, a scale, a position over time). When it fails, run the same probe on a shipped sibling first: it tells you whether the fault is yours or the game's.
+- Evidence: `Docs/ECOSYSTEM.md` 65.4 (the added paragraph); `Docs/Studios/FAUNA_LAB.md` round 9; `Fauna.AssignLineage`.
+- Promoted: `/fauna-maker` Into Unity step A; `.claude/skills/fauna-maker/references/RAY.md`
+
+### L-STU-193 — A body that only rotates is a model on a stick: derive its motion from its own angular velocity, mirrored
+
+- Lab: Fauna Possession Lab, `stepTurn` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-18
+- What happened: the Ray's ripple was right flying straight, and Garrett's first words after turning it were "its rotations just happen and the fauna movement doesn't match it ... i want the wings to take on chiral movements that match their rotations". A clock-driven wave is the same in a turn as on a straight line, so nothing in the body said it was turning. No check could have found this: every number was right.
+- Do instead: for any body a person steers or watches turn, measure its angular velocity in its own frame and give it at least: a lag of the far parts (a spring, so it overshoots and settles), an asymmetry of the cycle between the inside and outside of the turn, and a bank. State each as a function of position so one formula serves the shader, the CPU riders and the lab, and expose multipliers in the lab so the person tunes feel, not code.
+- Evidence: `Docs/Studios/FAUNA_LAB.md` round 10; `elements.TURN`; `SpindleGrownSway.hlsl`; `GrownLimbDriver.AnswerTheTurn`.
+- Promoted: `/spindle` section 3
+
+### L-STU-194 — A variant's identity must change the OUTLINE: measure the variants against each other, not only against the world
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/elements.py` (`silhouettes`, `KIN`) · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: four creatures were each given four element forms by smaller models following the skill. Every form passed the check against other species. Three of the four Charge forms were then found 0.13 to 0.15 from another form of their OWN species: thorns and a small pair of tines read as detail, and at a distance the Charge creature was the Time or Mass one. Nothing had measured kin against kin.
+- Do instead: when a thing has variants a player must tell apart, measure every pair of variants with the same distinctness measure and set a floor from the reference set (here 0.18, under the flagship's closest pair). State the fix in terms of the measure ("one thing 15 u or longer that leaves the body"), not taste.
+- Evidence: `elements.py --silhouette <name>` (`ALIKE`); `specs/nettle.py` `thornbell`, `specs/lantern.py` `corona`, `specs/ammon.py` `corona`; `Docs/Studios/FAUNA_LAB.md` round 11.
+- Promoted: `/fauna-maker` step 6.5
+
+### L-STU-195 — Generalise at the second instance, and let the tool derive what a person would have had to author
+
+- Lab: Fauna Possession Lab, `Tools/Build/fauna_kit/unity_port.py` · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: the first creature in Unity had its own class and a hand-written block saying where to cut its limbs. Bringing four more to the same standard would have meant four classes and four blocks, three of them for limbs a plane cannot cut (coils, curved arms). Instead the class became one class reading the spec's existing "how it feels" numbers, and the tool derives the whip limbs from the same rule the lab already used and cuts each along its own path. The four ports needed no C#, no block and no hand edit.
+- Do instead: when the second instance of a hand-made thing arrives, look for the data that already states the intent (the lab's own numbers, the rule the lab already runs) and make the tool read it, before writing a second copy of the hand-made thing. A port that needs per-instance code will not be repeated by a smaller model.
+- Evidence: `GrownFauna.cs`; `unity_port.whip_limbs`, `joints_of` (the `along` cut); `Docs/Studios/FAUNA_LAB.md` round 11.
+- Promoted: `/fauna-maker` Into Unity
+
+### L-STU-196 — A check you wrote proves what you thought of: before shipping, hand the code to a reader told to break it
+
+- Lab: Fauna Possession Lab, the grown creatures in Unity · Branch: `cece/peaceful-babbage-tsg0kd` · By: Garrett's session · Date: 2026-11-21
+- What happened: five creatures passed every gate the kit has, a clang proof of the shader and a run of the game's own code on all twenty configs. A second reader, given only the diff and told to find what breaks, found four things none of those could: a dead creature's prisms are handed to the cell and the driver kept writing their local positions (the skeleton would have jumped to the cell's centre); the prefab stated one field twice (the tool inserted a list beside the donor's empty one); an all-round aim cone kept a rider from feeding whenever a rival was within three strike-reaches; and the turn response was thrown away, not clamped, in the hardest turns. Each was in a state the checks never visited: death, a second reading of a YAML key, a rival out of reach, a turn faster than the test's.
+- Do instead: after the checks pass, give the diff to a reader with no stake in it and ask what breaks at the lifecycle edges (death, pooling, reparenting, the hardest input, the widest setting). Then turn each finding that a file can show into a check with a planted defect (here: `unity_port.py --check` fails on any object that states a field twice), and each that needs the running game into a hand test.
+- Evidence: `GrownLimbDriver.CarryRiders` (the parent test), `AnswerTheTurn` (`FastestTurn`, `placed`); `JewelWaspExecutor.HostRight`; `unity_port.verify` (duplicate keys) and `self_test` (six planted defects); `.claude/skills/fauna-maker/references/RAY.md` section 5.
+- Promoted: `/fauna-maker` Into Unity
+

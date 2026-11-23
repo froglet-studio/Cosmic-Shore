@@ -26,9 +26,10 @@ namespace CosmicShore.UI
     /// <see cref="KitMotion.StaggerDelay"/>; set <see cref="staggerBySibling"/> on a row template and
     /// every spawned row picks its own delay from where it lands.
     ///
-    /// <para>Alpha goes through this object's own <see cref="CanvasGroup"/>. If a <see cref="KitVisibility"/>
-    /// owner drives that same group, the owner must <see cref="Finish"/> the entrance before hiding
-    /// (a hide that lands mid-entrance is adopted anyway, see <see cref="ReconcileAlpha"/>).
+    /// <para>Alpha goes through this object's own <see cref="CanvasGroup"/>. A <see cref="KitVisibility"/>
+    /// hide finishes the entrance before it writes (a hide that lands mid-fade would be adopted by
+    /// <see cref="ReconcileAlpha"/>, but one that lands in the delay, while the entrance itself holds
+    /// alpha at 0, would not). Any other code that zeroes the group must call <see cref="Finish"/> first.
     /// Position and scale are offsets from the pose the object had when the entrance started, so a
     /// layout group that placed it is not fought. Alpha works the same way: the entrance fades up to
     /// the alpha the group had when it started, so a tile its owner dimmed or a part its owner hid
@@ -73,6 +74,12 @@ namespace CosmicShore.UI
         private float _clock = -1f;
 
         public bool IsPlaying => _clock >= 0f;
+
+        /// <summary>Where the object stands at rest: the pose the entrance is bringing it to while it
+        /// plays, otherwise where it is. Read this, not anchoredPosition, to learn an authored position
+        /// that an entrance may be offsetting right now.</summary>
+        public Vector2 RestPosition => IsPlaying ? _restPosition
+            : transform is RectTransform rect ? rect.anchoredPosition : Vector2.zero;
 
         private static readonly List<KitEntrance> s_Replay = new();
 
@@ -122,9 +129,17 @@ namespace CosmicShore.UI
         {
             if (!IsPlaying || !_rect) return;
             _clock = -1f;
-            if (mode == KitEntranceMode.Rise || mode == KitEntranceMode.Drop)
+            // Only an entrance that MOVES the object puts it back. A Pop / Grow / Fade never wrote the
+            // position, so writing it here would only overwrite whatever placed the object since Play()
+            // captured it - which, inside a layout group, is the layout itself: the in-game score column
+            // (DomainScorePanel, a Pop) was snapped back to its pre-layout (0,0) under the anchors the
+            // bar's HorizontalLayoutGroup had just given it, so its CENTRE sat on the bar's top-left
+            // corner, half off the top of the screen, in every mode (2026-10-31).
+            if (MovesPosition(mode))
+            {
                 _restPosition = ReconcileRest(_rect.anchoredPosition, _lastWritten, _restPosition);
-            _rect.anchoredPosition = _restPosition;
+                _rect.anchoredPosition = _restPosition;
+            }
             _rect.localScale = _restScale;
             if (_group) _group.alpha = _restAlpha = ReconcileAlpha(_group.alpha, _lastAlpha, _restAlpha);
         }
@@ -140,6 +155,12 @@ namespace CosmicShore.UI
             if (t >= 1f) { Finish(); return; }
             Apply(Mathf.Max(0f, t));
         }
+
+        /// <summary>True for the entrances that offset the object's position (Rise, Drop) - the only ones
+        /// that may write it, while playing or when they finish. Every other mode leaves the position to
+        /// whatever owns it (a layout group, a view).</summary>
+        public static bool MovesPosition(KitEntranceMode mode) =>
+            mode == KitEntranceMode.Rise || mode == KitEntranceMode.Drop;
 
         /// <summary>
         /// Where the object should come to rest, given where it is now and where this entrance last

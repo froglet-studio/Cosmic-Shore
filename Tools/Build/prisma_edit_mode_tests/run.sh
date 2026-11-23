@@ -19,11 +19,14 @@
 # worktree only (gapfill.py - Port/CLAUDE.md: the engine changes only in a port session), builds
 # a test project from PortTests.csproj.in in the same temp folder, and removes the worktree.
 #
-# WHAT IT CANNOT TELL YOU (each seen 2026-10-08, none of them a game defect):
-#   - Unity-Editor-only semantics: a test that LogAssert.Expects "Destroy may not be called from
-#     edit mode" fails, because the engine lets Destroy run.
-#   - Main-thread identity: MainThreadDispatcher.IsOnMainThread is false on NUnit's worker thread,
-#     so code that guards on it (SceneTransitionManager.SetFadeImmediate) bails out.
+# WHAT IT CANNOT TELL YOU (each seen 2026-10-08, none of them a game defect). Prisma has no Edit
+# Mode - its engine always behaves like Play Mode - so known_divergences.txt lists the tests this
+# breaks, with the reason; they still run, but do not fail the run (and fail it if they pass):
+#   - Destroy: a test that LogAssert.Expects "Destroy may not be called from edit mode" fails,
+#     because the engine lets Destroy run.
+#   - AddComponent runs Awake, which Unity's edit mode does not, so a test that then drives Awake
+#     by hand runs it twice (SceneTransitionManager builds two fade overlays). Main-thread
+#     identity is NOT the issue: EditModeLifecycle.EnsureMainThreadDispatcherInitialized works here.
 #   - Anything that needs a second process, a socket, UGS or Relay: use MPPM for those.
 # The shim's LogAssert follows Unity's rule: an Error/Assert/Exception log a test did not Expect
 # FAILS that test, and an Expect'ed log that never arrives fails it too.
@@ -98,5 +101,10 @@ PORTTESTS_PROJECT_ROOT="$WT" dotnet test "$PROJ" --no-build -c Debug ${FILTER:+-
 RC=$?
 set -e
 grep -E '^(Failed!|Passed!)' "$WORK/test.log" || tail -20 "$WORK/test.log"
-[ -f "$TRX" ] && python3 "$HERE/summarize.py" "$TRX" --table
+# A run that produced results is judged by summarize.py, which keeps known_divergences.txt (tests
+# correct in the Editor that Prisma cannot model) out of the verdict; no TRX keeps dotnet's code.
+if [ -f "$TRX" ]; then
+  python3 "$HERE/summarize.py" "$TRX" --table --known "$HERE/known_divergences.txt" || exit 1
+  exit 0
+fi
 exit $RC

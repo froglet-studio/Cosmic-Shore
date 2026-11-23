@@ -66,12 +66,15 @@ namespace CosmicShore.Engine.Rendering
         public bool active = true;
         public virtual bool IsActive() => active;
         public string displayName { get; set; } = string.Empty;
-        public IEnumerable<VolumeParameter> parameters
+        /// <summary>Original contract: every public VolumeParameter field, in declaration order (read fresh each time).</summary>
+        public System.Collections.ObjectModel.ReadOnlyCollection<VolumeParameter> parameters
         {
             get
             {
+                var list = new List<VolumeParameter>();
                 foreach (var f in GetType().GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
-                    if (f.GetValue(this) is VolumeParameter p) yield return p;
+                    if (f.GetValue(this) is VolumeParameter p) list.Add(p);
+                return list.AsReadOnly();
             }
         }
         public void SetAllOverridesTo(bool state) { foreach (var p in parameters) p.overrideState = state; }
@@ -127,7 +130,9 @@ namespace CosmicShore.Engine.Rendering
     /// <summary>A post-process volume in the scene (global or bounded by colliders).</summary>
     public class Volume : MonoBehaviour
     {
-        [SerializeField] VolumeProfile sharedProfile;
+        /// <summary>The profile asset, shared by every volume that names it (original contract: a public field; setting it
+        /// is how PilotSightSuppression hands its runtime profile to its volume).</summary>
+        [SerializeField] public VolumeProfile sharedProfile;
         VolumeProfile _instance;
         public bool isGlobal = true;
         public float priority;

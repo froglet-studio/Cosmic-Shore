@@ -542,6 +542,87 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// The wide-radius fallback of <see cref="PrismSpatialIndex.QuerySphere"/> and
+    /// <see cref="PrismSpatialIndex.QuerySegment"/>: one pass over the packed hot array, the same
+    /// flag test and the same capsule distance (<see cref="PrismSpatialIndex.DistanceToSegmentSq"/>,
+    /// a zero-length segment for a sphere) as the managed loop it replaces, writing the matching slots
+    /// in ascending order. That managed loop read every slot through the NativeArray indexer; Fulmen's
+    /// burn (200 u radius, up to 128 segment queries a frame) paid ~1.3 ms a query on a 12-15k
+    /// index and froze Yash's menu for 126-162 ms a frame (10-30). Runs synchronously (.Run()).
+    /// </summary>
+    [BurstCompile]
+    public struct LinearCapsuleScanJob : IJob
+    {
+        [ReadOnly] public NativeArray<PrismSpatialData> Spatial;
+        public int Count;
+        public float3 A;
+        public float3 AB;
+        public float AbLenSq;
+        public float RadiusSq;
+        public NativeList<int> Hits;
+
+        public void Execute()
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                var s = Spatial[i];
+                if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                if (PrismSpatialIndex.DistanceToSegmentSq(s.Position, A, AB, AbLenSq) > RadiusSq) continue;
+                Hits.Add(i);
+            }
+        }
+    }
+
+    /// <summary>
+    /// <see cref="PrismSpatialIndex.SegmentsOccupied"/>'s kernel: per capsule, QuerySegment's bucket walk and test
+    /// (the same AABB, bucket size, flag test and <see cref="PrismSpatialIndex.DistanceToSegmentSq"/>), stopping at
+    /// the first live entry inside. A capsule whose bucket walk QuerySegment would refuse (more buckets than slots,
+    /// its linear path) is answered 1 - unknown, so the caller asks QuerySegment itself.
+    /// </summary>
+    [BurstCompile]
+    public struct SegmentOccupancyJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<PrismSpatialData> Spatial;
+        [ReadOnly] public NativeParallelMultiHashMap<int3, int> Buckets;
+        [ReadOnly] public NativeArray<float3> A;
+        [ReadOnly] public NativeArray<float3> AB;
+        [ReadOnly] public NativeArray<float> Radius;
+        public int HighWaterMark;
+        [WriteOnly] public NativeArray<byte> Occupied;
+
+        public void Execute(int i)
+        {
+            float3 a = A[i];
+            float3 ab = AB[i];
+            float r = Radius[i];
+            float rSq = r * r;
+            float abLenSq = math.lengthsq(ab);
+            float3 b = a + ab;
+
+            int3 min = (int3)math.floor((math.min(a, b) - r) / PrismSpatialIndex.BucketSizeMeters);
+            int3 max = (int3)math.floor((math.max(a, b) + r) / PrismSpatialIndex.BucketSizeMeters);
+            long volume = (long)(max.x - min.x + 1) * (max.y - min.y + 1) * (max.z - min.z + 1);
+            if (volume > HighWaterMark) { Occupied[i] = 1; return; }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!Buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it)) continue;
+                do
+                {
+                    var s = Spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (PrismSpatialIndex.DistanceToSegmentSq(s.Position, a, ab, abLenSq) > rSq) continue;
+                    Occupied[i] = 1;
+                    return;
+                } while (Buckets.TryGetNextValue(out idx, ref it));
+            }
+            Occupied[i] = 0;
+        }
+    }
+
+    /// <summary>
     /// Burst-compiled per-cell volume summation over the packed arrays - the
     /// compute half of Cell.EnsureVolumeFresh ("volume is the spine"). One linear
     /// pass filters slots bound to the target cell (live, not destroyed) and
@@ -597,6 +678,36 @@ namespace CosmicShore.Gameplay
                     Results[PrismSpatialIndex.CellExteriorEnvVolumeTotal] += v;
             }
         }
+    }
+
+    /// <summary>
+    /// Owner of "virtual" spatial-index entries: data-driven prisms (e.g. swarm members
+    /// simulated in a job) that have no GameObject <see cref="Prism"/> until something
+    /// actually needs one. Queries that only DETECT see the entry by slot id
+    /// (<see cref="PrismSpatialIndex.QuerySphereIds"/>); anything that must APPLY gameplay
+    /// to it (AOE damage) calls <see cref="MaterialiseVirtualPrism"/>, which returns a
+    /// real, registered Prism (or null when the member is gone / cannot materialise).
+    /// The index suspends the virtual slot as soon as a materialisation succeeds, so a
+    /// member is counted exactly once; the owner calls
+    /// <see cref="PrismSpatialIndex.SetVirtualSuspended"/>(id, false) when its proxy retires.
+    /// </summary>
+    public interface IVirtualPrismOwner
+    {
+        Prism MaterialiseVirtualPrism(int slot);
+    }
+
+    /// <summary>
+    /// Optional companion of <see cref="IVirtualPrismOwner"/>: a per-frame budget on how many of the
+    /// owner's entries BULK paths may materialise (each materialisation is an Instantiate). Asked by
+    /// the AOE resolve (an over-budget virtual hit is deferred into the blast's backlog, never lost)
+    /// and by <see cref="VirtualFauna"/>'s prey searches. A single targeted hit (a hitscan round, a
+    /// projectile's own contact) resolves through <see cref="PrismSpatialIndex.ResolvePrism"/> and is
+    /// never refused - the shot must land on the frame it is fired. Owners without a budget are
+    /// always materialised. Docs/SWARM_FAUNA.md §19.
+    /// </summary>
+    public interface IVirtualPrismBudget
+    {
+        bool HasMaterialiseBudget(int slot);
     }
 
     /// <summary>
@@ -664,36 +775,6 @@ namespace CosmicShore.Gameplay
     ///                                steering, fauna body prisms swimming) must
     ///                                keep the stored position honest
     /// </summary>
-    /// <summary>
-    /// Owner of "virtual" spatial-index entries: data-driven prisms (e.g. swarm members
-    /// simulated in a job) that have no GameObject <see cref="Prism"/> until something
-    /// actually needs one. Queries that only DETECT see the entry by slot id
-    /// (<see cref="PrismSpatialIndex.QuerySphereIds"/>); anything that must APPLY gameplay
-    /// to it (AOE damage) calls <see cref="MaterialiseVirtualPrism"/>, which returns a
-    /// real, registered Prism (or null when the member is gone / cannot materialise).
-    /// The index suspends the virtual slot as soon as a materialisation succeeds, so a
-    /// member is counted exactly once; the owner calls
-    /// <see cref="PrismSpatialIndex.SetVirtualSuspended"/>(id, false) when its proxy retires.
-    /// </summary>
-    public interface IVirtualPrismOwner
-    {
-        Prism MaterialiseVirtualPrism(int slot);
-    }
-
-    /// <summary>
-    /// Optional companion of <see cref="IVirtualPrismOwner"/>: a per-frame budget on how many of the
-    /// owner's entries BULK paths may materialise (each materialisation is an Instantiate). Asked by
-    /// the AOE resolve (an over-budget virtual hit is deferred into the blast's backlog, never lost)
-    /// and by <see cref="VirtualFauna"/>'s prey searches. A single targeted hit (a hitscan round, a
-    /// projectile's own contact) resolves through <see cref="PrismSpatialIndex.ResolvePrism"/> and is
-    /// never refused - the shot must land on the frame it is fired. Owners without a budget are
-    /// always materialised. Docs/SWARM_FAUNA.md §19.
-    /// </summary>
-    public interface IVirtualPrismBudget
-    {
-        bool HasMaterialiseBudget(int slot);
-    }
-
     public class PrismSpatialIndex : Singleton<PrismSpatialIndex>
     {
         private const int INITIAL_CAPACITY = 4096;
@@ -832,6 +913,16 @@ namespace CosmicShore.Gameplay
         private float[] _virtualRadius;
         public int VirtualCount { get; private set; }
 
+        /// <summary>
+        /// Bumped by every write that can put a live entry somewhere it was not: a bucket add (register, restore,
+        /// a virtual register, a bucket crossing) and every position write (<see cref="UpdatePosition"/>,
+        /// <see cref="UpdatePositionsBatch"/>). Removals do not bump it - an entry leaving can only make a query
+        /// find less. A caller that answered "is anything near here?" earlier in the frame
+        /// (<see cref="SegmentsOccupied"/>, read by <c>ProjectileSweepBatch</c>) may trust a "no" only while this
+        /// is unchanged.
+        /// </summary>
+        public int WriteStamp { get; private set; }
+
         // Per-slot occupancy stamp, incremented on every Register. A slot index is
         // only a valid handle while its generation is unchanged, so anything that
         // holds an index across frames (the explosion backlog) can detect BOTH a
@@ -874,6 +965,7 @@ namespace CosmicShore.Gameplay
         private static readonly ProfilerMarker s_burstJobSchedule = new("AOE.BurstJob.Schedule");
         private static readonly ProfilerMarker s_resolveDamage = new("AOE.ResolveDamage");
         private static readonly ProfilerMarker s_shellQuery = new("ShellContact.Query");
+        private static readonly ProfilerMarker s_linearScan = new("PrismSpatialIndex.LinearScan");
 
         public bool IsAvailable => _spatial.IsCreated;
         public int HighWaterMark => _highWaterMark;
@@ -913,6 +1005,7 @@ namespace CosmicShore.Gameplay
             _lodCenters = new NativeArray<float3>(16, Allocator.Persistent);
             _lodBecameNear = new NativeList<int>(512, Allocator.Persistent);
             _lodBecameFar = new NativeList<int>(512, Allocator.Persistent);
+            _linearHits = new NativeList<int>(512, Allocator.Persistent);
         }
 
         #region Prism motion (PrismMotion's contact rule)
@@ -951,6 +1044,7 @@ namespace CosmicShore.Gameplay
 
         private void AddToBucket(int index, float3 position)
         {
+            WriteStamp++;
             if (_bucketEntryCount >= _buckets.Capacity)
                 _buckets.Capacity = _buckets.Capacity * 2;
             _buckets.Add(BucketKey(position), index);
@@ -1048,17 +1142,7 @@ namespace CosmicShore.Gameplay
             int3 max = (int3)math.floor((c + radius) / BucketSizeMeters);
 
             if (BucketWalkCostsMoreThanLinearScan(min, max))
-            {
-                for (int i = 0; i < _highWaterMark; i++)
-                {
-                    var s = _spatial[i];
-                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
-                    if (math.distancesq(s.Position, c) > radiusSq) continue;
-                    var prism = _prisms[i];
-                    if (prism) results.Add(prism);
-                }
-                return results.Count;
-            }
+                return LinearCapsuleScan(c, float3.zero, 0f, radiusSq, results);
 
             for (int x = min.x; x <= max.x; x++)
             for (int y = min.y; y <= max.y; y++)
@@ -1119,17 +1203,7 @@ namespace CosmicShore.Gameplay
             int3 max = (int3)math.floor(hi / BucketSizeMeters);
 
             if (BucketWalkCostsMoreThanLinearScan(min, max))
-            {
-                for (int i = 0; i < _highWaterMark; i++)
-                {
-                    var s = _spatial[i];
-                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
-                    if (DistanceToSegmentSq(s.Position, p0, ab, abLenSq) > radiusSq) continue;
-                    var prism = _prisms[i];
-                    if (prism) results.Add(prism);
-                }
-                return results.Count;
-            }
+                return LinearCapsuleScan(p0, ab, abLenSq, radiusSq, results);
 
             for (int x = min.x; x <= max.x; x++)
             for (int y = min.y; y <= max.y; y++)
@@ -1353,6 +1427,71 @@ namespace CosmicShore.Gameplay
             return math.distancesq(p, a + ab * t);
         }
 
+        static readonly ProfilerMarker s_SegmentsOccupiedMarker = new("PrismSpatialIndex.SegmentsOccupied");
+
+        /// <summary>
+        /// MANY segments at once: for each capsule <c>a[i]..a[i]+ab[i]</c> of radius <c>radius[i]</c>, writes 1 when
+        /// <see cref="QuerySegment"/> on it COULD return a prism and 0 when it certainly returns none. One parallel
+        /// Burst job (<see cref="SegmentOccupancyJob"/>) with QuerySegment's own bucket walk and test, so a 0 is exact
+        /// for these arrays at this <see cref="WriteStamp"/>. It errs only towards 1: a virtual entry counts (it has
+        /// no Prism, so QuerySegment would drop it), and a capsule wide enough that QuerySegment would take its linear
+        /// path is answered 1 without looking. Main thread; completes before it returns.
+        /// <para>Built for the held guns (<c>ProjectileSweepBatch</c>): a Brittle Star keeps up to ~2000 rounds in
+        /// the air and each one asked QuerySegment every frame, ~3.6 us apiece in the editor, almost always for
+        /// nothing in open space.</para>
+        /// </summary>
+        public void SegmentsOccupied(NativeArray<float3> a, NativeArray<float3> ab, NativeArray<float> radius,
+            NativeArray<byte> occupied, int count)
+        {
+            using var _ = s_SegmentsOccupiedMarker.Auto();
+            if (count <= 0) return;
+            if (!_buckets.IsCreated || !_spatial.IsCreated || _highWaterMark == 0)
+            {
+                for (int i = 0; i < count; i++) occupied[i] = 0;
+                return;
+            }
+
+            new SegmentOccupancyJob
+            {
+                Spatial = _spatial,
+                Buckets = _buckets,
+                A = a,
+                AB = ab,
+                Radius = radius,
+                HighWaterMark = _highWaterMark,
+                Occupied = occupied,
+            }.Schedule(count, 64).Complete();
+        }
+
+        /// <summary>
+        /// Every live prism within <paramref name="radiusSq"/> of the segment a..a+ab (a sphere when ab is zero),
+        /// by one Burst pass over the whole hot array (<see cref="LinearCapsuleScanJob"/>), appended to
+        /// <paramref name="results"/> in slot order - the order the managed scan it replaced produced.
+        /// </summary>
+        int LinearCapsuleScan(float3 a, float3 ab, float abLenSq, float radiusSq, List<Prism> results)
+        {
+            using (s_linearScan.Auto())
+            {
+                _linearHits.Clear();
+                new LinearCapsuleScanJob
+                {
+                    Spatial = _spatial,
+                    Count = _highWaterMark,
+                    A = a,
+                    AB = ab,
+                    AbLenSq = abLenSq,
+                    RadiusSq = radiusSq,
+                    Hits = _linearHits,
+                }.Run();
+                for (int k = 0; k < _linearHits.Length; k++)
+                {
+                    var prism = _prisms[_linearHits[k]];
+                    if (prism) results.Add(prism);
+                }
+            }
+            return results.Count;
+        }
+
         #endregion
 
         #region Reservations
@@ -1543,6 +1682,9 @@ namespace CosmicShore.Gameplay
         NativeArray<float3> _lodCenters;
         NativeList<int> _lodBecameNear;
         NativeList<int> _lodBecameFar;
+
+        // Wide-radius query scratch (LinearCapsuleScanJob's output, persistent, reused per query).
+        NativeList<int> _linearHits;
 
         /// <summary>
         /// Collider-LOD classification view: one Burst pass over the packed hot
@@ -1860,6 +2002,33 @@ namespace CosmicShore.Gameplay
         #region Registration
 
         /// <summary>
+        /// Who is watching prism lives - the match replay's world recorder (<c>TheaterWorldRecorder</c>,
+        /// <c>Docs/REPLAYS.md</c>), or nobody. Every real prism's birth (<see cref="Register"/>), death
+        /// (<see cref="MarkDestroyed"/>, <see cref="Unregister"/>), restoration and movement passes
+        /// through this index, so one observer here records the whole prism world without a hook in
+        /// <see cref="Prism"/>. Null costs one comparison per call.
+        /// </summary>
+        public static IPrismLifeObserver LifeObserver;
+
+        /// <summary>Hand every live real prism to <paramref name="observer"/> as a birth - the world as it stands now.</summary>
+        public void VisitLive(IPrismLifeObserver observer)
+        {
+            if (observer == null || !_spatial.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                var flags = _spatial[i].Flags;
+                if ((flags & PrismFlags.IsActive) == 0 || (flags & PrismFlags.Destroyed) != 0) continue;
+                var prism = _prisms[i];
+                if (prism != null) observer.OnPrismBorn(i, prism);
+                else if (_virtualOwners[i] != null) VisitVirtual(observer, i);
+            }
+        }
+
+        void VisitVirtual(IPrismLifeObserver observer, int index) =>
+            observer.OnVirtualBorn(index, _spatial[index].Position, (Domains)_damage[index].Domain, _virtualRadius[index],
+                                   (_spatial[index].Flags & (PrismFlags.IsShielded | PrismFlags.IsSuperShielded)) != 0);
+
+        /// <summary>
         /// Registers a prism for batch AOE processing, growth occupancy, and the
         /// containing cell's density grids. Returns the registry index which
         /// should be stored on the Prism for O(1) updates and unregistration.
@@ -1926,6 +2095,7 @@ namespace CosmicShore.Gameplay
             // publish their shell here — the flags above are the source of truth.
             RefreshShellData(index);
 
+            LifeObserver?.OnPrismBorn(index, prism);
             return index;
         }
 
@@ -1937,6 +2107,7 @@ namespace CosmicShore.Gameplay
             // Already freed (e.g. OnDisable then ResetState both fire) - don't
             // double-push the slot onto the free list.
             if (s.Flags == 0 && _prisms[index] == null) return;
+            LifeObserver?.OnPrismGone(index);
             // Live entries hold a bucket slot; destroyed ones were already removed.
             if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
             {
@@ -1970,6 +2141,7 @@ namespace CosmicShore.Gameplay
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             if ((s.Flags & PrismFlags.Destroyed) != 0) return; // already destroyed
+            LifeObserver?.OnPrismGone(index);
             // Destroyed mass no longer occupies space - growth may fill the site.
             if ((s.Flags & PrismFlags.IsActive) != 0)
             {
@@ -2014,6 +2186,8 @@ namespace CosmicShore.Gameplay
             // Shell view: a restored prism that is still shielded re-captures its
             // shell at the restored pose (stale data from before destruction).
             RefreshShellData(index);
+            // A virtual entry has no Prism: the observer brings back the pose it last recorded.
+            LifeObserver?.OnPrismRestored(index, prism ? prism : null);
         }
 
         /// <summary>
@@ -2027,6 +2201,7 @@ namespace CosmicShore.Gameplay
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             float3 newPosition = position;
+            WriteStamp++;
             if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
             {
                 int3 oldKey = BucketKey(s.Position);
@@ -2039,6 +2214,7 @@ namespace CosmicShore.Gameplay
             }
             s.Position = newPosition;
             _spatial[index] = s;
+            LifeObserver?.OnPrismMoved(index, position);
         }
 
         public void UpdateShieldState(int index, bool shielded, bool superShielded)
@@ -2212,13 +2388,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Shell-contact query: one synchronous Burst pass over the hot array that
-        /// tests every shield-flagged slot's analytic shell against the probe set
-        /// and appends overlaps to <paramref name="hits"/>. Same
-        /// Schedule-then-Complete discipline as ProcessExplosionFrame — the caller
-        /// dispatches from the results afterwards, never during the scan.
-        /// </summary>
-        /// <summary>
         /// Rebuilds every slot's shell entry. Called when
         /// <see cref="PrismShellContactManager.ExtendToUnshieldedPrisms"/> is toggled:
         /// the shell view is maintained incrementally (register / shield change /
@@ -2260,6 +2429,13 @@ namespace CosmicShore.Gameplay
             return _shell[index].Kind != ShellKind.None;
         }
 
+        /// <summary>
+        /// Shell-contact query: one synchronous Burst pass over the hot array that
+        /// tests every shield-flagged slot's analytic shell against the probe set
+        /// and appends overlaps to <paramref name="hits"/>. Same
+        /// Schedule-then-Complete discipline as ProcessExplosionFrame — the caller
+        /// dispatches from the results afterwards, never during the scan.
+        /// </summary>
         public void CollectShellContacts(NativeArray<ShellProbe> probes, int probeCount, NativeList<ShellContactHit> hits)
         {
             hits.Clear();
@@ -2355,6 +2531,7 @@ namespace CosmicShore.Gameplay
 
             AddToBucket(index, position);
             LiveCount++;
+            if (LifeObserver != null) VisitVirtual(LifeObserver, index);
             return index;
         }
 
@@ -2405,6 +2582,7 @@ namespace CosmicShore.Gameplay
             if (!_spatial.IsCreated) return;
             int n = count < 0 ? math.min(indices.Length, positions.Length) : count;
             if (n <= 0) return;
+            WriteStamp++;
 
             // Burst, inline (Docs/SWARM_FAUNA.md §19.4): an entry whose point did not move is skipped before anything is
             // touched, one that stayed in its 8 u bucket gets a field write, and only a bucket CROSSING (~10% of swarm
@@ -2446,6 +2624,14 @@ namespace CosmicShore.Gameplay
                 }
                 s.Position = p;
                 _spatial[index] = s;
+            }
+
+            var observer = LifeObserver;
+            if (observer == null) return;
+            for (int i = 0; i < n; i++)
+            {
+                int index = indices[i];
+                if (index >= 0 && index < _highWaterMark) observer.OnPrismMoved(index, positions[i]);
             }
         }
 
@@ -3454,6 +3640,7 @@ namespace CosmicShore.Gameplay
             if (_lodCenters.IsCreated) _lodCenters.Dispose();
             if (_lodBecameNear.IsCreated) _lodBecameNear.Dispose();
             if (_lodBecameFar.IsCreated) _lodBecameFar.Dispose();
+            if (_linearHits.IsCreated) _linearHits.Dispose();
             LiveCount = 0;
         }
 

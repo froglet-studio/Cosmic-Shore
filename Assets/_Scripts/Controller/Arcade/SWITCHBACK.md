@@ -7,6 +7,12 @@
 
 ## Overview
 
+> **Current state (2026-11-01).** Every intensity is **Blast Run** ("Switchback is Blast Run" below): prism block
+> fields, clock-driven movers, 100 fps budgets, fixed seeds and the seed picker; flora/fauna, worlds, sweepers, jaws and
+> hunter packs are removed. The AI is the blast planner + prism sense + per-frame emergency sweep (below), watched in
+> the in-game AI Diagnose panel. The overview that follows describes the original random-gate race; its course,
+> scoring and replication rules still hold, but read the Blast Run sections for the layout.
+
 Switchback is the **Dolphin-only gate race**. A course of **randomly placed and randomly
 oriented** switch rings is scattered through the cell, and every pilot flies the **same course in
 order**: thread your next gate, or turn around and go back for it. The first **DOMAIN** whose
@@ -113,7 +119,8 @@ That is wrong: two 55° rotations compose into a 110° corner between two **plac
 course generates, every gate is inside the shell, gate 1 is on the pole, no two mouths come
 within a ring diameter, and **every corner clears the Dolphin's turning circle at BOOST** — the
 Dubins condition `leg > 2R·sin(turn)` at `R = 180.7u` (347 u/s over 110°/s), the state in which a
-racer is least able to correct.
+racer is least able to correct. The hairpins of intensity 2-4 are the exception by design: they
+are checked against their own band instead, because a drift is how they are flown.
 
 ## The start is provably fair
 
@@ -195,30 +202,45 @@ grants no domain, and it makes two pilots flying side by side see different worl
 
 ## Intensity is the COURSE, not the arena
 
-One cell at every level. What climbs is how hard the gates are to fly:
+One cell at every level. Since 2026-10-26 (Yash, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.3) each level
+adds ONE demand on the Dolphin's three verbs - drift, skim, discharge - instead of only shrinking the mouth:
 
-| intensity | ring radius | mouth ⌀ | leg length | max corner | axis jitter | presentation cap |
+| intensity | name | mouth radius (⌀) | legs | ordinary corner | hairpins | course features (2026-10-26; replaced by Blast Run 2026-10-29) |
 |---|---|---|---|---|---|---|
-| 1 | 72.00 | 144.0 | 420–680 | 45° | 30° | 50° |
-| 2 | 28.12 | 56.2 | 400–650 | 50° | 40° | 55° |
-| 3 | 10.98 | 22.0 | 380–620 | 55° | 50° | 60° |
-| 4 | 4.29 | 8.6 | 360–580 | 60° | 60° | 65° |
+| 1 | Learn to fly | 72 (144) | 420–620 | ≤ 40° | none | none |
+| 2 | Carve | 48 (96) | 400–650 | ≤ 45° | every 2nd corner, 90–150° | none |
+| 3 | Charge economy | 32 (64) | 460–720 | ≤ 50° | every 3rd corner, 90–130° | **skim walls** on every 2nd leg |
+| 4 | Gauntlet | 20 (40) | 360–520 | ≤ 55° | every 2nd corner, 110–150° | **danger prisms** just off every leg's line |
 
-**The mouth ladder is derived, not tabled.** Both ends are anchored and the middle is
-interpolated geometrically (each level 2.56× tighter than the last). Level 1 stays at the
-play-tested 72. Level 4 is `DolphinHullRadius × NarrowestMouthClearance` = 2.86 × 1.5 = **4.29** —
-barely bigger than the ship, which is what intensity means here. `DolphinHullRadius` is
-**measured**, not guessed: the eight corners of all eleven hull box colliders on `Dolphin.prefab`,
-pushed through their transform chains to the vessel root (root scale 1), give a hull of
-5.29 × 1.23 × 5.30 and a worst-corner distance of **2.860** on `TopNose`. The circumscribing
-radius rather than the half-width, because a pilot may be rolled to any angle when they arrive.
+Axis jitter climbs 15 / 25 / 30 / 40° and the presentation cap 40 / 50 / 55 / 60°. The numbers live in
+`SwitchbackCourseSettings.ForIntensity` and `SwitchbackCourseSettings.RingRadiusForIntensity`.
 
-Geometric rather than linear because the ends are an order of magnitude apart: linear would spend
-three levels barely narrowing and then fall off a cliff, where a constant ratio makes every step
-the same increment. The cost of anchoring both ends is that **level 2 is a big drop from level 1**
-(72 → 28) — arithmetic rather than a judgement. `NarrowestMouthClearance` is the one dial to
-retune if that reads as a cliff. `SwitchbackCourseTests` asserts the ladder's shape and that every
-level still clears the ship, rather than restating the numbers.
+- **I1 teaches steering** through gates. 30° corners were tried first and failed all 400 seeds: a course that
+  gentle cannot stay inside the 480–1080 shell. 40° with 420–620 u legs generates every seed.
+- **I2 teaches the drift.** A hairpin (`SwitchbackCourse.IsHairpinCorner`) is a corner the Dolphin's 110°/s cannot
+  make at boost; only a drift carves it. The hairpin is drawn inside its band rather than steered back off the shell
+  wall, and its gate faces the leg you arrive on (a hairpin's flow bisector would stand the gate edge-on to it).
+  Hairpins are exempt from the boost-circle test, which is the point of them.
+> **2026-10-29:** the skim walls and danger prisms below are RETIRED. The course ladder (mouths, legs, corners,
+> hairpins) is kept unchanged; what sits on it at every intensity is now Blast Run's doors and block fields (see
+> "Switchback is Blast Run" and "Blast Run" below).
+
+- **I3 teaches charge economy**: a wall of plain prisms 26 u beside the line over the middle half of every second
+  leg - skim along it to bank charge, spend it down the straight after.
+- **I4 is risk against reward**: three danger prisms 12 u off the straight line at the middle of every leg, on
+  alternating sides. The shortest line brushes them; a wider one is safe and slower.
+
+The mouths keep the same order without the old cliff (the geometric ladder went 72 → 28 → 11 → 4.3, and the I4 mouth
+was 1.5 hull radii - no room to drift through it). The tightest is now 7 hull radii; `SwitchbackCourseTests` asserts it
+stays between 5 and 10 and that no step tightens by more than 0.6×.
+
+**The course features are a pure function of the course.** (Historical: now `SwitchbackBlastRun.Layout(course,
+intensity, centre, clearRadius)`.) `SwitchbackFeatures.Layout(course, intensity, centre, clearRadius)` returned the prisms, `SpawnableSwitchbackFeatures` (prefab `_Prefabs/Spawnables/SpawnableSwitchbackFeatures`,
+`featuresPrefab` on the controller) lays them in `OnCourseRaised` on every peer, from the course every peer received -
+Breakwater's stations are the same shape. Everything is `Domains.Blue`. The course is random, so another leg or gate can
+pass anywhere near a feature: a prism is dropped when it would sit within 30 u of a gate's rim, closer to ANY leg's line
+than 0.9 of its own offset, or inside the nucleus plus 30 u. Over 400 seeds: I3 lays 165–219 wall prisms (mean 190),
+I4 48–54 danger prisms. `SwitchbackFeaturesTests` held all of it (deleted 2026-10-29 with the walls).
 
 Gate **count** is deliberately constant, because it is the end-game target and is authored in one
 place — so a match is the same length at every level and the four are comparable. Same reasoning as
@@ -255,9 +277,16 @@ Cleave and Dog Fight record. Which side is "behind" is **latched** when the gate
 not recomputed: a pilot that drifts just past the plane without threading would otherwise see the
 sides swap and swing away (Dog Fight's break-off lesson).
 
+**Since 2026-10-26 the AI flies Regatta's gate steering**: see "The Regatta steering, on since 2026-10-26" below.
+
 Switchback is **not** in `ServerPlayerVesselInitializerWithAI`'s seek-players set. Installing the
 steering hook is correct here — unlike Rampage and Salvo, whose objective IS a crystal and whose
 AI must keep the platform's crystal seeking.
+
+> **Retired 2026-10-26 (Yash):** *"while playing any racing game mode, AI should not go for crystals. It should only
+> focus on waypoints. If the crystals are the waypoints, then go for crystals."* No gate race detours for a crystal now:
+> `GateRaceController.AIDetoursForCrystals` is false in code, so the scene's `aiCrystalDetourSlack` is read only by a
+> mode that opts in (none does). Test: `RaceAIWaypointsOnlyTests`. The paragraph below is the history.
 
 **But the hook still disarms the blast, so the AI gets a crystal detour.** Installing an external
 target provider *replaces* `AIPilot`'s own crystal seeking outright — the trap The Bends records —
@@ -271,6 +300,24 @@ the way" is monotone in progress and stops holding the instant the pilot is past
 the detour cannot become an orbit. The registry scan is throttled to `aiCrystalScanSeconds`
 (0.5s) and filters to `Crystal.CrystalManager != null`, the same filter `RampageObjectiveProvider`
 records: `Crystal.Active` also holds every lifeform heart the food web drops.
+
+### The Regatta steering, on since 2026-10-26 (the Dolphin's training minigame)
+
+`SwitchbackController` overrides `AICommitFromApproachPoint` to true (the scene switch stays as it was). In people's
+races the AI Dolphins threaded 0-2 of 20 rings, and two things caused it:
+- **The approach point sat outside the commit radius.** On any leg over 650 u the point behind the ring is the full
+  `aiApproachLead` (300 u) out, beyond `aiCommitDistance` (260 u). A pilot reaching it was still "approaching" and
+  steered at the point it sat on. The Dolphin's 35 u turning circle kept it 265-335 u out, so it never committed: it
+  circled gate 0 for the whole race. With the switch on, `GateRaceController.ApproachLeadFor` keeps the approach point
+  at most 0.8 of the commit radius.
+- **A drift committed off-axis missed the mouth.** The far-side point on the ring's axis is off the line from where the
+  Dolphin commits, and a commit drift locks its course on it. The switch puts the through point on the line from the
+  pilot through the ring's CENTRE, and re-attacks at once after a missed mouth (`Arcade/REGATTA.md` §6, 2026-10-17).
+
+Offline on the six recorded courses (`Tools/Build/switchback_dolphin_sim.py`): 0 rings on every one before, 20 of 20
+on every one after. The Dolphin's charge drive in Switchback uses numbers learned from Yash's races
+(`DolphinAIBoostPolicy_Switchback`, `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`); the plan is
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`. Garrett's other gate races keep their scene switch.
 
 ## Crystals, and the interference they buy
 
@@ -323,6 +370,8 @@ wedge on a build that will not happen.
 | Launch-panel objective icon | `Assets/Resources/ModeControlsLibrary.asset` metric 9 |
 | Objective glyph | `_Graphics/UI/Objectives/objective_switches_threaded.png` |
 | Cell / spawn profile | The Skim Race cell's assets, referenced verbatim — **not** forked |
+| Course features (Blast Run doors and block fields) | `_Prefabs/Spawnables/SpawnableSwitchbackFeatures.prefab` |
+| The AI's boost numbers in this mode | `Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset` (written by `learn_drives_from_flights.py --mode Switchback`) |
 
 Every Switchback-owned asset is authored by `Tools/Build/author_switchback_assets.py`
 (deterministic GUIDs, idempotent, validates before writing). **Re-tune there and re-run** rather
@@ -381,8 +430,12 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
    Their domain's score climbs.
 10. **Comeback.** Let one domain fall ~5 gates behind: the trailing pilots' element flowers fill
     ~2 levels.
-11. **Intensity.** Compare 1 and 4: the rings are visibly smaller and the course visibly twistier
-    at 4, and the gate count is the same 20 at both.
+11. **Intensity (the 2026-10-26 ladder).** I1: wide rings, gentle corners, nothing else. I2: every
+    second corner is a hairpin you need a drift for. Every level also carries Blast Run's doors and block
+    fields (since 2026-10-29; see "Blast Run"). The gate count is 20 at every level, and the console is silent (a
+    missing `featuresPrefab` logs `[Switchback] No features prefab assigned`).
+16. **The AI Dolphins race.** At I2 with two Medium AI Dolphins, they thread most of the 20 rings
+    (they threaded 0–2 before the steering fix) and drift through the hairpins.
 12. **Interference.** Collect a seeded omni crystal and put the blast cone on a rival: they take
     the all-element debuff for 4s. It does not change either pilot's gate count.
 13. **Regression — Rampage unchanged.** Launch Rampage: cactus forest, four intensity configs,
@@ -396,6 +449,473 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
     and the last card OPENS its launch panel. Then favourite a mode and repeat — the card that
     moves into last place must also open. The console must be silent: any
     `ArcadeExploreView - the … card sits N units past …` error means the fit did not settle.
+
+## Switchback is Blast Run (2026-10-29)
+
+Yash, 2026-10-29: "Keep Blast Run, remove all other intensity types. We will go with Blast Run." Every Switchback
+match at I1-I4 - Arcade, the weekly challenge, the tutorial quest funnel, a replay, every guest - flies Blast Run (below).
+There is no fun-type picker and no `SwitchbackFunType` enum any more.
+
+**Retired** (2026-10-28 to 2026-10-29, a test surface): the CLASSIC (`Baseline`, the shipped I3 skim walls / I4 danger
+prisms), LEVEL SHAPES (`Plan1_LevelShapes`: corner patterns, needle rings), LIVE FEATURES (`Plan2_LiveFeatures`: charge
+ribbons, shortcut rings, moving danger clusters), PAR & MEDALS (`Plan3_ParMedals`: `SwitchbackPar`, split/medal toasts,
+personal bests) and COMBINED fun types, with their code (`SwitchbackLiveFeatures`, `SwitchbackPar`, the Plan 1 course
+fields, `SwitchbackFeatures.Layout`'s walls/danger, `SwitchbackFunTypeTests`, `SwitchbackFeaturesTests`) and the generic
+`GateRaceController` hooks only they used (`PrepareCourseSource`, `CourseVariant` / `ReceivedCourseVariant`,
+`ThreadsAlternate`). The Classic course LADDER stays: Blast Run's course is it, bit-identical.
+
+**How it travels.** The server builds the course (`SwitchbackCourseSource`, `SwitchbackCourseSettings.ForIntensity(i)`)
+and `SyncCourse_ClientRpc` carries every gate; each peer then lays the same Blast Run layout from it
+(`SwitchbackController.OnCourseRaised`). The only Switchback launch-panel control left is `SEED: RANDOM / FIXED`
+(`ArcadeGameConfigureModal.SwitchbackSeedPicker.cs`, host only, PlayerPrefs `Switchback.FixedSeed`). A weekly challenge
+and the quest funnel hide it and fly a random seed. Stale PlayerPrefs from the picker (`Switchback.FunType`,
+`Switchback.PB.<type>.I<n>`) are deleted the first time the panel loads.
+
+**Every run logs one line** (all builds, `CSDebug.Log`):
+`[Switchback] RUN blastRun intensity=... seed=... time=... gates=... prismsDestroyed=... stations=... keys=... movers=...`
+(a client's line has `seed=0`: the seed is not broadcast; the course is). No par, medal or personal best.
+
+**Flight recordings** name the family: a Switchback flight has `"funType":"BlastRun"`; one without the field flew the
+retired Classic ladder, and `learn_drives_from_flights.py` (`SHIPPED_FAMILY = {"Switchback": "BlastRun"}`) learns the
+Dolphin's Switchback drives from Blast Run races only.
+
+## Blast Run (2026-10-29) - NOT editor-verified
+
+Yash, 2026-10-29: obstacles that disturb the race and hurt the Dolphin, and environmental mass the Dolphin has to BLAST
+through to reach its rings - "like the Sparrow's time game, just in the Dolphin way". Revised the same day: "3D grids
+of prisms with movable area that are challenging, cubes, cuboids, spheres, big and small objects, remove flora and
+faunas for now ... keep the things that are easy to sync in multiplayer ... target 100fps". So the Garden / Maze /
+Membrane / Menger worlds, the sweepers, the snap-trap jaws and the hunter packs (`BlastRunHunters`, its
+`NetworkList`, toasts and tests) are GONE; what remains is block fields whose only motion is a pure function of the
+shared clock. The course is the Classic ladder unchanged (`SwitchbackCourseSettings.ForIntensity(i)`); what changes is what sits on it.
+
+**A blocked station** (`SwitchbackBlastRun.IsBlocked`, `Layout`): on the leg INTO a blocked gate -
+
+1. a **key crystal** on the leg line, `KeyLeadFor(leg)` = 0.62 x the leg clamped to 230-384 u upstream of the ring
+   (the door hangs 8 u past the ring, so the door stays inside the explosion's 400 u minimum length, no farther from
+   its key than before 2026-11-14, and a blast fired at the key reaches it). Keys are ordinary
+   `Domains.Blue` crystals (any domain may take them) laid by the server's `CrystalManager.SetCourseKeys`; they
+   replace the passive crystal field for the match (`RetireCrystalsBeyondSlots`), and `ClearCourseKeys` runs at
+   despawn. A key's explosion core is 1.25 x (`BlastRunKeyCrystals.KeyCoreMultiplier`, matched within 4 u of the
+   explosion origin in `VesselExplosionByCrystalEffectSO` - CODE only; the shared
+   `DolphinVesselExplosionByCrystalEffect` asset is untouched, so every other crystal is unchanged).
+2. a **door**: `BreakwaterStationBuilder.BuildDoor` - danger rakes round an always-open 18 u eye (`PortFor(i)`),
+   **8 u downstream of the ring plane** (`DoorSetback`); I4 adds a second door 24 u downstream (`SecondDoorSetback`).
+   The door hung 8 u in front of the ring until 2026-11-14: its plug reaches past the ring's rim, so it hid the lime
+   ring from the ring you leave on 12% / 14% / 67% of legs at I2 / I3 / I4 (Garrett: "respect sight lines from one
+   ring to another", `Docs/Reports/SIGHT_LINES.md`). Behind the ring, the ring is in sight and the door still stops a
+   pilot who neither blasted it nor threaded its eye; `TheDoorsHangBehindTheirRing` holds every door prism past its
+   ring's plane. The planner's thread and blast lanes run on through the doors (`SwitchbackBlastPlanner.Decide`).
+3. a **block field** (`BlastRunWorld.Blocks` family, `EmitField`) between the door's keepout and 40 u short of the key:
+   a 3D grid of 24 u cells in the leg's frame (`Frame`: s1, s2 across, z upstream), `CellsHalf` cells each side
+   across and up to `CellsDeep` cells deep (a field under 2 cells deep is skipped). Every cell is filled with
+   probability `Fill(i)` (hash of the gate's rounded position and the station) by a weighted shape:
+   small cubes (8-14 u, jittered), 22 u blocks, 6 x 6 x 22 pillars, 22 x 22 x 4 slabs, small voxel spheres (19 x 6.2 u),
+   46 u big cubes (2x2x2 cells), big voxel spheres (26 x 8.4 u, I2+), 46 x 46 x 4 panels, 70 u long pillars along the
+   leg, and 70/94 u beams across it (I3+). A **bore** of `BoreRadius(i)` round the leg's line is never entered by any
+   field prism laid or moving, so the eye is always reachable straight down the leg (the AI's lane); the challenge is
+   that the bore narrows and the field round it thickens. Field prisms keep off every other leg's line, the keys, the
+   doors and other stations' fields (sampled spheres), and a spatial-hash counter (`Density`) refuses anything that
+   would push the 200 u neighbourhood over `ColliderCap`. `DangerShare(i)` of the small/thin shapes are danger.
+
+**Movers** (`BlastRunMover`, laid FIRST in each field so they get the cleanest cells; posed every frame on every peer
+by `SwitchbackBlastRunRuntime.TickMovers` from `NetworkManager.ServerTime`):
+
+- **Slider** (I2+): 4 x 10 u cubes in a 2 x 2 block, sliding +-24 u along a 3-cell track across the leg
+  (`SlidePeriod` 4 / 3.2 / 2.6 s). The whole track box is reserved, so nothing static sits in its way.
+- **Opposed slider pair** (I4): two adjacent tracks half a cycle apart - a closing gate.
+- **Rotor** (I3+): a 6 u hub and four 16 x 4 x 4 danger arms (5-21 u out) spinning about the leg's direction in a
+  2 x 2-cell disc (90 / 135 deg/s, either sense, hashed phase); swept radius 21.1 u, reserved.
+
+`PoseAt(t)` is closed form (slide `A (sin(wt + phi) - sin phi)`, spin `AngleAxis(repeat(wt, 2 pi))`), so t = 0 is the
+laid pose and any peer, late joiner or replay gets the same pose from the clock alone. There is NO per-prism network
+state, no physics and nothing reacts to players; a blasted mover prism simply stops being posed.
+
+| Intensity | Bore | Cells (across x deep) | Fill | Shapes added | Movers |
+|---|---|---|---|---|---|
+| I1 | 30 u | 7 x 7 x 5 | 30 % | cubes, blocks, pillars, slabs, small spheres, big cubes, long pillars | none (static) |
+| I2 | 26 u | 7 x 7 x 6 | 40 % | + big spheres, panels | sliders (<= 10 groups / 40 prisms) |
+| I3 | 22 u | 9 x 9 x 7 | 50 % | + beams | + rotors (<= 20 / 100) |
+| I4 | 18 u | 9 x 9 x 8 | 60 % | (more beams and panels) | + opposed slider pairs (<= 28 / 140), double door |
+| I4 gauntlet (since 2026-11-03) | none | 11 x 11 x 12 (240 u across) | 70 % | + frames, jacks, hoops, ziggurats; tunnels on the route | <= 42 / 210; sealed double door; 2-3 keys a gate ("The I4 gauntlet" below) |
+
+The I4 row is now the field of a mode that turns the gauntlet off (Scarab Rally, `BlastRunGauntlet`); Switchback's own
+I4 is the gauntlet row and its section below. Since 2026-11-14 that row hangs no doors and keeps a sight bore of the
+bigger mouth + 12 u (`LaysDoors`, `SightBore`; SCARABRALLY.md "I4 keeps the sight line"); Switchback's rows are unchanged.
+
+Stations closer than `StationSpacing` = 280 u door to door are skipped (hairpins fold the course back on itself).
+
+**100 fps budgets** (10 ms a frame; CHOSEN from code reasoning and Breakwater's headless counts - NOTHING was measured
+in Unity; `BudgetsHold` asserts them on 60 seeds + the four fixed seeds per intensity):
+
+| | I1 | I2 | I3 | I4 | why |
+|---|---|---|---|---|---|
+| `ColliderCap` (prisms within 200 u of any prism) | 300 | 340 | 370 | 400 (gauntlet 600) | the physics/trail-collision cost near a Dolphin; all under Breakwater I1's shipped worst 568 (Breakwater 568 / 464 / 322 / 276); the gauntlet's 600 is about that worst and the one budget the soak must confirm |
+| `TotalCap` (prisms laid) | 1800 | 2400 | 3000 | 3400 (gauntlet 5100) | instanced draw + spatial index memory; below the old Blast Run caps (4600-3000) and `LayCapacity` (6144 since the gauntlet) |
+| `StationCap` (field prisms a gate) | 150 | 170 | 190 | 210 (gauntlet 315 a key) | one blast clears one station's mass |
+| `MovingPrismCap` / `MovingGroupCap` | 0 / 0 | 40 / 10 | 100 / 20 | 140 / 28 (gauntlet 210 / 42) | per-frame CPU: one closed-form pose per group, then a transform write + `NotifyPositionChanged` (spatial index, shell, render matrix) per prism - ~210 cheap writes at most, no physics bodies, no allocation |
+
+Network cost per frame: zero for the fields (static prisms are deterministic from the course seed; movers from the
+clock). Only the key crystals (existing `CrystalManager` path) and prism destruction (existing path) replicate.
+
+**The AI** detours for crystals in Switchback (`AIDetoursForCrystals => true`, the scene's 220 u slack), so an AI
+Dolphin takes the keys. Regatta and the other gate races keep the waypoints-only rule.
+
+**Fixed seeds** (`SEED: FIXED`, `SwitchbackBlastRun.FixedSeed(i)` = 45_500 + i): 45_501-45_504. On the shipped shell (20 gates, 480-1080 u) those lay (sb_harness,
+headless):
+
+| Seed | Stations (keys) | Prisms | Field | Danger in field | Colliders / 200 u | Movers (slide / spin) | Moving prisms |
+|---|---|---|---|---|---|---|---|
+| 45_501 (I1) | 6 | 1173 | 597 | 9 | 250 | 0 | 0 |
+| 45_502 (I2) | 9 | 1998 | 1404 | 21 | 339 | 10 (10 / 0) | 40 |
+| 45_503 (I3) | 17 | 2988 | 2070 | 76 | 325 | 20 (12 / 8) | 88 |
+| 45_504 (I4, gauntlet off) | 12 | 3349 | 2341 | 140 | 400 | 28 (16 / 12) | 124 |
+| 45_504 (I4 gauntlet) | 12 gates, 26 keys | 5036 | 3812 (916 tunnel, 2896 field) | 242 | 600 | 42 (14 / 28) | 196 |
+
+Averages over seeds 1-60 + 45_501-45_504: stations 5.8 / 8.2 / 17.0 / 13.1, prisms 1226 / 1757 / 2990 / 3239,
+moving groups 0 / 9.9 / 20 / 27.9 (the I4 of before the gauntlet; the gauntlet's averages are in its section). I3 and I4 are `TotalCap`-bound; I4 trades a few gates (station spacing, double
+doors) for thicker fields.
+
+**Logs:** `[Switchback] BLAST RUN intensity N: G gates, S blocked gates, M movers, X prisms.` (verbose,
+ArcadeMatch), and the RUN line above. A scene with no
+CrystalManager logs `[Switchback] BLAST RUN: no CrystalManager in the scene ...` as an error and lays no keys.
+`SpawnableSwitchbackFeatures`' layout revision is 7 since the plain I4 seals (6 was the I4 gauntlet; it lays Blast Run only; older caches are invalid).
+
+**Held headless:** `SwitchbackBlastRunTests` (EditMode; 60 seeds + the fixed seed per intensity, plus all four fixed
+seeds for budgets/clipping): Classic course, determinism (positions, scales, kinds, movers), the ladder (per station
+and `EveryStepUpTheLadderIsHarder`), keys inside the blast, budgets (total, colliders/200 u, moving groups and prisms,
+danger <= 15 % of the field), nothing in a mouth or the nucleus, the bore clear at 8 clock samples, movers as pure
+functions of time (t = 0 laid, periodic, on track / constant radius), no prism clips another by SAT laid AND at 16
+times through the movers' cycle, the shape mix, the key multiplier. `audit_prism_clipping.py` POSES
+`SpawnableSwitchbackFeatures` as Blast Run at 45_501-45_504 (laid pose; flush, 0 clipping).
+
+**Minimal / not done:** at I1-I3 nothing stops a pilot threading a blocked ring from the downstream side; the AI does
+not aim its blast at doors (it takes the key and the blast fires down its heading); key crystals replace the passive
+crystal field for the match; the movers use `ServerTime.TimeAsFloat` (float precision is fine for hours, not days);
+nothing about frame time was measured in Unity.
+
+## The I4 gauntlet (2026-11-03) - NOT editor-verified
+
+Yash, 2026-11-03: "The intensity 4 of switchback is too empty, increase object counts by 50 percent, and make more object
+types, things need to be random, there can be tunnels pipe like, large 3D structures, different shapes, through which
+players have to pass, the pathway can be highlighted with some rays.. player should feel that they need to destroy a lot
+of objects in order to cross each ring, they cannot just simply fly into the rings, they have to use both drifting and
+blasting multiple times to pass the rings. Pro players can time their drifting and blasting to get a faster trajectory,
+but that need to be preety hard."
+
+**What a blocked I4 gate is now** (`SwitchbackBlastRun.HasGauntlet`; I1-I3 are bit-identical to before, checked over 64
+seeds a level):
+
+1. **No bore, sealed eyes.** The field fills the leg's line (`BoreRadius(4)` = 0), and each of the two doors' 18 u eyes
+   holds a SEAL: a 3 x 3 of 7 u plain cubes (`EmitSeal`; corner reach 16.3 u, clear of every bar). Flying straight in
+   means ramming the field and both seals. (Until 2026-11-13 the seal's middle was a Danger heart, two dead stops a gate
+   for every missed blast; see "The I4 gauntlet, softened" below.)
+2. **A zig-zag of keys** (`GauntletKeys`): two keys a gate (first key under 300 u out) or three, upstream first. The
+   last sits on the line `GauntletFinalLead` = 120 u out, aimed at the door; the others step off the line to a hashed
+   side by `GauntletZigZag` = 40 u (two keys: +1.5 x; three: +1 x, -1 x) and are each aimed at the NEXT key. Each key is
+   its own `BlastRunStation` (`Stage`, `Stages`, `Target`), consecutive per gate. The turn at a key is 16-66 deg (median 24, over 61 courses; every one past the planner's 15 deg drift-free turn), so a
+   blast down the next segment needs the nose swung onto it as the key is taken - a DRIFT - and the drift's release
+   snaps the course onto the lane the blast just cut. A pro times the swing so the nose arrives exactly at contact; a
+   late swing cuts a lane beside the tunnel, an early one changes the course and misses the 12 u key.
+3. **A tunnel on every segment** (`EmitTunnel`, kind hashed per key, all five equally likely): **Pipe** (octagon of wall
+   tiles, every other 18 u section turned half a facet), **Duct** (square tube of slabs), **Hoops** (eight-tile rings every
+   20 u), **Helix** (a block every 30 deg round, 2.4 u along: a corkscrew), **Cage** (six rails). Walls stand outside
+   `TunnelRadius` = 15 u; inside, a **plug wall** every 22 u from 34 u past the key: a plus of five 6.5 u cubes, every
+   other wall turned 45 deg so no straight line threads two, a Danger heart on every second wall. The key's blast clears
+   the plugs (the cone is narrow near the key, so the first wall wants the aim dead on); ramming costs about a plain hit
+   a wall and a dead stop every second wall.
+4. **More shapes in the field** (I4's shape menu): frames (a hollow 46 u cube's twelve 4 u edges), jacks (an 8 u cube
+   with six 18 u arms), hoops (twelve tiles round a 16 u hole, facing down the leg) and ziggurats (four stacked slabs),
+   on top of every earlier shape. The field is 11 x 11 cells across (240 u), up to 12 deep, 70 % fill, and keeps
+   `RouteClearance` = 24 u off every route segment so the tunnels stay the way through.
+5. **Rays** (`SwitchbackPathRays`, from `SwitchbackBlastRun.RaySegments`): a 1.2 u lit, faceted hexagonal beam
+   (`Resources/SwitchbackPathRay.mat`: URP Lit with emission, #E8F6FF, the Blue family's white) down the leg to the
+   first key (90 u), key to key, the last key to the door, and on through the ring. One static mesh and one draw for the
+   course, no collider, built on every peer from the broadcast course. `pathRayRadius` on the controller (0 = none).
+
+**Counts** (+50 %, Yash's number): `TotalCap(4)` 3400 -> 5100, `ColliderCap(4)` 400 -> 600, `StationCap(4)` 210 -> 315
+(a key's tunnel; the last key's tunnel and the gate's field), movers 28 / 140 -> 42 / 210, `LayCapacity` 4096 -> 6144.
+Over seeds 1-60 and 45_504 an I4 course lays **4,933 prisms on average (3,231 before, +53 %)** on the same 13 gates with
+29 keys; the fixed seed 45_504 lays 5,036 (3,349 before), its field 2,896 prisms (2,341) plus 916 of tunnels.
+
+**Scarab Rally keeps the I4 of before.** It reuses Switchback's controller and course for the Scarab, which has no key
+blast, so `SwitchbackController.BlastRunGauntlet` (true) is overridden false in `ScarabRallyController`, and
+`SwitchbackBlastRun.Layout(..., gauntlet: false)` lays exactly the pre-gauntlet I4 (the table's I4 row; held bit for
+bit). Affects: Shombith's Scarab Rally (unchanged by design).
+
+**The AI** flies it with three changes, server only, nothing networked:
+- `SwitchbackBlastPlanner.StageFor(gate, self)`: the key a pilot works on is the first of its gate's keys it has not
+  passed (5 u past the key along its fire line); `Decide` plans that key, aimed at its `Target`. The executor
+  (`SwitchbackBlastAI.TryAim`) replans when the stage changes, and the drift look starts no more than 60 % of the way
+  from the previous key (`LookRangeFor`).
+- At a gauntlet key the strike flies THROUGH the key along its approach (a commit drift locks the course there) and the
+  drift look swings the nose onto the next segment; aiming past the key along the fire line passed the off-line keys
+  13-24 u wide offline.
+- Costs: threading at I4 pays every standing prism on the straight line to the ring (`PathPenalty`), and a gauntlet
+  key's blast plan pays the route through the gate's later keys and what still stands on the way to the key (no
+  "key-blocked" veto: the last blast should have opened it).
+
+**Offline** (`switchback_sim_harness`, one AI alone, 12 courses, 26 gates, median seconds; the planner's narrow slot,
+then `cone=1`, closer to the asset's cone):
+
+| I4 | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| Before the gauntlet | 140 | 129 | 122 | 112 |
+| Gauntlet, planner slot | 197 | 187 | 172 | 155 |
+| Gauntlet, `cone=1` | 193 | 179 | 159 | 132 |
+
+Every race finishes. Legendary takes about 33 keys a race and hits 50-100 prisms (4-12 Danger); Easy (decision quality
+0.30, its habit is to thread) rams the line and takes about 45 Danger hits. These are model seconds (the step 1 soak ran
+about 1.6x the model), on the old I4 nose-lag row; the gauntlet has its own row since (next paragraph).
+
+**The gauntlet's difficulty row** (Yash, 2026-11-03: "yes", to new I4 bands): the old I4 bands no longer fit a slower
+course, so the gauntlet's bands keep their shape - 20 s wide, each level 10 s from the next - and move with it:
+**Easy 175-195 s, Medium 165-185, Hard 155-175, Legendary 145-165.** `SwitchbackController.aiNoseFollowGauntlet` = 1.9 /
+2.8 / 3.5 / 5 per second lands them, offline on 48 courses a level (slowest 10 % in brackets): **185 (200), 173 (190),
+165 (182), 155 (164)**, every race finished. As before, the nose rate is the lever: at the SAME rate the four levels
+finish within a few seconds of each other (at 3/s: 170 / 176 / 174 / 168 s on 12 courses). `aiNoseFollowByIntensity`'s
+I4 row (1.8 / 2.2 / 3.5 / 6) stays for a mode without the gauntlet (Scarab Rally); the simulator's I4 row is the
+gauntlet's (`noseFollowI4=` retunes it).
+
+**Tests** (headless: `bash Tools/Build/switchback_sim_harness/run.sh tests` runs the shipped `SwitchbackBlastRunTests`
+and `SwitchbackBlastPlannerTests` through `NUnitShim.cs` and `TestRunner.cs`, 76 cases): `TheGauntletZigZagsKeyToKeyToTheDoor`,
+`TheGauntletRouteIsPluggedNotFilled`, `TheEyesAreSealed`, `TheTunnelsMixKinds`, `TheRaysFollowTheRoute`,
+`ARayIsAFacetedVolumeFacingOut`, `WithoutTheGauntlet_I4IsTheFortressOfBefore`, `AtAGauntlet_TheKeysFollowOneAnother`;
+the budgets, clipping (laid and movers over a cycle), mouths and shape-mix tests cover I4 as before. Negative controls
+(the field ignoring the route, no seals, no zig-zag, plugs reaching the walls) each fail the test written for them.
+
+**Not done / to check in the editor:** nothing was run in Unity. The collider count near the path (600 within 200 u) is
+the budget a real soak must confirm (`SwitchbackSoakRunner` at I4, `Docs/perf/SWITCHBACK_PRISM_BUDGET.md`); the rays'
+brightness and thickness are a first pick; whether a person can thread a tunnel at full speed after a well-aimed blast
+is the feel the playtest decides.
+
+### The I4 gauntlet, softened (2026-11-13, elemental loop step 2) - NOT editor-verified
+
+The Dolphin's Time ladder check (`Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md`) found I4 a cliff over I3, not one more
+demand: with one pilot pace on every rung (nose follow 2.2/s everywhere, 24 courses) a race paid about 23 prism hits at
+I3 and 140 at I4, and 3.5 dead stops against 28. No person had finished a gauntlet race (0 of 6 Blast Run I4 flights on
+the ledger; Garrett left two I4 runs early). Taking pieces out one at a time offline showed where the dead stops came
+from: the seals' Danger hearts were about nine in ten of them (Easy 40 a race to 2), the plug walls' hearts, the field's
+danger share and the plugs themselves each moved little. So the one change is **the seal is nine plain cubes**: a missed
+blast still means ramming two seals at a plain hit's slow per cube, never two 3 s dead stops a gate. Everything else in
+the gauntlet (no bore, the zig-zag keys, tunnels, plug walls and their hearts, the counts) is unchanged.
+
+With ramming cheaper, the Easy AI (which threads) overtook Medium, so `aiNoseFollowGauntlet` was retuned from 1.9 / 2.8 /
+3.5 / 5 to **1.5 / 2.2 / 3.5 / 6** (Easy on the fleet lag). Offline, 48 courses a level, median (slowest 10 %):
+
+| I4 gauntlet | Easy | Medium | Hard | Legendary | Danger hits a race (Easy / Medium / Legendary) |
+|---|---|---|---|---|---|
+| Before (24 courses) | 185 (197) | 172 (189) | - | 157 (165) | 40 / 24 / 12 |
+| After | 176 (202) | 167 (174) | 155 (166) | 141 (151) | 3.5 / 5 / 3.3 |
+
+I4 is still the hardest rung by far (Medium about 40 % slower than I3, five times its plain hits). Scarab Rally, which
+turns the gauntlet off, has no seals and is unchanged (`WithoutTheGauntlet_I4IsTheFortressOfBefore`). Affects: Yash's
+gauntlet and bands (queued for his `/approve`).
+
+## AI: the blast planner (2026-10-29) - NOT editor-verified
+
+An AI Dolphin plays a blocked gate the way a good player does. Each gate has three points: the **key crystal** (on the
+leg line, 230-400 u before the ring), the **obstacle** (the door and its block field), and the **ring**. At every
+blocked gate the AI picks one of three plans:
+
+| Plan | When | What it flies |
+|---|---|---|
+| **Direct** | the gate has no obstacle, or 95%+ of it (all but 2 prisms) is already blasted | the gate race's ring steering |
+| **Thread** | threading the eye is cheaper, or the key is gone (a rival took it), behind, too far, or something stands in the way to it; or (since 2026-11-17, "AI: speed over breaking") the ring can already be flown and the key is off the pilot's way | the ring steering through the centre: the bore, which the layout never fills (on a pass: through the point the clear line runs through) |
+| **Blast** | taking the key and blasting is cheaper | approach the key on the fire line, with the nose (drift look) on the obstacle at contact, then fly the lane it cleared |
+
+**Code.** `Switchback/SwitchbackBlastPlanner.cs` is pure C#: the plan, the costs and the aim, all headless-tested.
+`Switchback/SwitchbackBlastAI.cs` is the server-only executor. `SwitchbackController` wires it into the gate race's
+hooks: `TryOverrideAim` for the approach to the key, and the new `GateRaceController.TryOverrideDriftLook` for the nose
+at contact. With the planner on, `AICrystalDetourSlack` is 0, so the planner decides which key to take. The planner is
+on by default; untick **`aiBlastPlanner`** on the controller to fall back to the blind crystal detour.
+
+**Costs, in seconds.**
+- **Thread** = ETA × (1 + the eye's slow-down: 0.35 at an 18 u eye, scaled by 18/eye, plus 0.15 for a double door)
+  \+ 0.6 s for each standing prism within 8 u of the line (1.5 s for a Danger prism). Movers are posed with the
+  closed-form `BlastRunMover.PoseAt` at the shared clock, at ETA ± the skill's timing error.
+- **Blast** = (ETA + the detour to the key + drift alignment (turn beyond 15° at 110°/s, + 0.6 s if over 45°) + 0.2 s
+  of contact + 0.6 s for each lane prism within 20 u that the planned slot does **not** cover) × the skill's blast bias.
+
+**The aim.** The Dolphin's blast is a cone along the nose, stretched along the vessel's up axis into a slot.
+- The nose points from the key to the door.
+- The gape (up) lies along the standing obstacle's principal axis across the leg, so a slab, beam or slider track is
+  cut along its length.
+- The planner's slot model (`SwitchbackBlastSlot.Default`: reach 400 u, core tan 0.12, gape tan 0.22) is deliberately
+  narrower than the asset's cone, so a planned blast under-promises.
+
+**Replanning.** The AI plans when it starts a gate and every `ReplanSeconds` (not once its strike has begun). It replans
+at once when its key vanishes; if that happens within 30 u of the key, it took the key itself. It reads the key from
+`Crystal.Active` (managed crystals within 4 u of the key) at 10 Hz. It reads whether a prism still stands from
+`SwitchbackBlastRunRuntime.PrismStanding`: on the server, every layout prism is matched to its spawned prism by laid
+position through a position hash. An unmatched prism reads as standing, so the planner can over-count an obstacle but
+never under-count it.
+
+**Difficulty** (`SwitchbackAISkill.ForLevel`, by the lobby's `AIDifficulty` per pilot; override per level on the
+controller with `aiSkillOverride` / `aiSkills`):
+
+| Lobby level | Plays as | Decision quality | Blast bias | Aim error | Roll error | Timing error | Replan | Key search radius |
+|---|---|---|---|---|---|---|---|---|
+| Easy | rarely blasts | 0.30 | 1.60 | 14° | 70° | 0.60 s | 3 s | 170 u |
+| Medium (default) | blasts when it is convenient | 0.60 | 1.15 | 8° | 35° | 0.35 s | 1.5 s | 360 u |
+| Hard ("medium-hard") | good cost choices | 0.85 | 1.05 | 4° | 15° | 0.15 s | 0.75 s | 520 u |
+| Legendary ("hard") | near-perfect | 1.00 | 1.00 | 0.75° | 3° | 0.03 s | 0.25 s | 700 u |
+
+What the columns mean:
+- **Decision quality** is the chance the AI takes the cheapest plan; otherwise it falls back on its habit, threading.
+- **Blast bias** multiplies the blast's cost: above 1, the pilot undervalues the blast.
+- **Aim and roll error** are seeded per pilot, gate and plan, so they are deterministic.
+
+Headless, on the four fixed-seed courses (12-17 stations each, pilots at 60-400 u before each key, 8 seats), the AI
+chooses to blast on 1% / 12% / 38% / 73% of these decisions. When it blasts, its slot covers 94% / 88% / 94% / 97% of
+the lane. Easy's figure is high because it only blasts the easiest, best-covered shots. Legendary never picks a costlier
+plan.
+
+**Known limits.**
+- **Roll is planned, not flown.** `AIPilot` has no roll hook. The gape axis is logged and drawn, but the blast fires
+  along the hull's actual up axis. The nose is flown, through drift look.
+- The slot model is an approximation of `AOEConicExplosion`.
+- Movers are only sampled at the ETA, so a fast rotor can still clip a threading pilot.
+
+**Debug.**
+- With the controller selected, gizmos show each AI's plan: magenta to its key, a yellow fire line to the aim point, a
+  cyan gape axis; orange means Thread and green means Direct.
+- Verbose ArcadeMatch log lines are written when a plan is made or changes, and when the pilot leaves the gate:
+  `[Switchback AI] gate=7 plan=Blast crystal=212u aimErr=3.9 roll=-11 cover=94% cost thread=5.41 blast=4.37 why=cheapest result=planned pilot=3`
+  then `[Switchback AI] gate=7 plan=Blast crystal=taken aimErr=3.9 result=blasted standing 170->41 pilot=3`
+  (other results: `missed-key`, `threaded`, `rival-took-key threaded`).
+
+**Network and performance.** It runs on the server only and adds no networked data: the pilots it steers are server
+AIs, and the movers and keys are read off the shared clock and the crystal manager. It plans per gate, on a replan, or
+when a key changes. A decision scans that station's obstacle (about 150-300 prisms) and a box-culled pass over the
+layout for the way to the key. Per frame it does only a dictionary lookup and a few vector operations, with no
+allocation.
+
+**Tests.** `Tests/Editor/SwitchbackBlastPlannerTests.cs` (24 cases, headless) covers:
+- open gate → Direct;
+- key close → Blast, or an honest refusal, on at least half the stations;
+- key far → Thread; way to the key blocked → Thread;
+- already blasted → Direct; rival took the key → Thread;
+- Legendary's erred slot covers the door, and the lane as well as a perfect aim does;
+- the roll solve lies along a slab's long axis;
+- the difficulty ladder (more blasts, less regret, better aim at each step; Easy rarely blasts; Legendary is never suboptimal);
+- determinism; movers posed at the pilot's time; unset difficulty → Medium.
+
+## AI: any prism in the way (2026-10-29) - NOT editor-verified
+
+Yash's report: AI Dolphins kept flying into RIVAL trails at the same spots, as if following the exact path the rival flew.
+
+**Root cause.** Every AI aimed at the same points. `GateRaceController.ArmRacer` hands each AI the ring centre
+(`ringAt = gate.Position`), then the approach point `ringAt + gate.Axis * side * approachLead` and, inside commit range,
+`throughPoint = ringAt + (ringAt - self).normalized * aiThroughDistance`. No per-pilot term, so every Dolphin converges
+on one line per leg, and the Dolphin ahead has just laid its trail down that line. Nothing saw it: `AIPilot`'s
+`CornerBehaviors` raycast avoidance is declared and built but never read (dead code), and the blast planner only knows
+the course's own layout prisms (`ISwitchbackAIWorld.PrismStanding`), never trails.
+
+**Fix (server only, `SwitchbackBlastAI.Sense` + pure `SwitchbackPrismAvoidance`).**
+- *Lanes:* new `GateRaceController.AILaneOffset` hook (zero by default). Switchback gives each AI a fixed, seeded point
+  inside the mouth of every OPEN ring (`LaneShare` of the radius; zero at blocked gates, where the eye/blast lane rules).
+- *Sense:* every `ReactionSeconds` (jittered per pilot) one `Physics.OverlapCapsuleNonAlloc` down the line to the goal
+  on the `TrailBlocks` layer (every prism: course blocks, rival trails, own trail), into static 128-slot buffers. Bounds
+  centre + extent (capped 12 u) per hit. No allocation per look; strings only on a decision.
+- *Decide:* line clear -> nothing. Blocked -> `ChooseCorridor` (rings x 8 directions round the goal, max air for least
+  turn). If that dodge is poor (air < Clearance or turn > 25 deg) and a managed crystal ahead and nearer than the blocker
+  has a slot (fired at the blocker, gape along its widest spread) covering >= `BlastMinCoverage` of it -> **Blast**: fly
+  through the crystal with the drift-look on the blocker (same execution as the gate blast). Else **Avoid**.
+- Not used while a gate blast is on its strike (the obstacle is the point).
+
+| Level | SenseRange | Reaction | Clearance | Rings | BlastMinCoverage | Crystal range | LaneShare |
+|---|---|---|---|---|---|---|---|
+| Easy | 70 | 0.45 s | 5 | 1 | never | - | 0.35 |
+| Medium | 110 | 0.30 s | 7 | 2 | 0.70 | 110 | 0.40 |
+| Hard | 150 | 0.18 s | 9 | 3 | 0.55 | 160 | 0.45 |
+| Legendary | 200 | 0.10 s | 10 | 4 | 0.45 | 220 | 0.50 |
+
+Log: `[Switchback AI] prism gate=.. action=Avoid|Blast|Clear ahead=..u blocking=.. ... avoids=.. blasts=.. pilot=..`.
+Headless (point mass, 100 u/s, 110 deg/s): straight down a rival trail 90/90 prisms hit without the sense, 0 at every
+level; a weaving trail 8 -> 0. Real hull/turn dynamics are not modelled - verify in editor.
+
+## AI: speed over breaking (2026-11-17)
+
+Yash, after watching a race: an AI Dolphin heading for a blocked ring took a crystal, blew part of the obstacle open,
+and then turned away to another crystal nearby when it could already have flown through. "We should always prioritize
+speed over breaking as it is time game. This is the general rule for AI training in Time Game Modes." The rule for
+every Time-mode AI is in `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` section 6.2; this is how Switchback holds it.
+
+**Why it happened.** Two decisions sent the AI to a crystal, and neither asked whether the ring could already be flown:
+- the blast planner (`Decide`) compared "thread" and "blast" by cost, and its thread cost counts every prism whose
+  bounding sphere comes within 8 u of the line, so a hole the hull fits still read as a crowded lane; at an I4
+  gauntlet the next key (40-60 u off the line) then won;
+- the any-prism sense blasted a sensed obstacle from any crystal ahead whenever the dodge was "poor" (less air than the
+  skill wants, or a turn over 25 deg), also when a narrower corridor was there.
+
+**What it does now** (server only, nothing networked, no vessel or ability changed):
+
+| Piece | What |
+|---|---|
+| `SwitchbackBlastPlanner.Passable(gate, world, self, ring, mouthRadius, clock, speed, holding, heldThrough, out through)` | Can the hull fly from `self` through the ring and on past its doors? A straight line of the hull's radius (3 u) plus 2 u of air (5 u off a Danger prism; 0.5 u to KEEP a pass it is already on) against every standing layout prism's real box (the slab test in the box's frame; a mover where it is when the pilot arrives, and 0.25 s either side). Tried through the mouth's centre and twelve points round it, no further out than 0.6 of the mouth's usable radius (and the door's eye). False when the pilot is downstream or more than 60 deg off the ring's axis. One box-culled pass over the layout, then at most 14 lines over the prisms near the corridor (a 384-slot scratch buffer: no allocation). Runs at the replan rate, never per frame |
+| `KeyOnTheWay` / `KeyDetourSeconds` | A key is on the way when flying through it costs 0.15 s or less: the extra distance at the hull's speed plus the bend at the key beyond 15 deg at 110 deg/s. A key behind the pilot or past the ring is never on the way |
+| `Decide` | With the ring passable and the key off the way, the key is refused: `Thread`, `why=passable`, at every difficulty (before the decision-quality roll). `SwitchbackAIDecision.Pass` / `PassThrough` / `KeyOnWay` carry the answer. A key on the way is still judged by cost as before, so a Dolphin on its leg takes the key on its line exactly as it did |
+| The commitment | The executor hands `Decide` the pilot's last decision while it is on a pass (`held`): a later look that finds the line crossed still refuses the key (`why=committed`). The pass ends when the ring is threaded or the pilot has flown 80 u back out from its closest point (a missed mouth) |
+| The line it flies | On a pass the pilot's lane through the mouth (`LaneOffset`) is the point the clear line runs through, so the gate race's own steering (approach point, commit, missed-mouth recovery) flies it |
+| On a strike | A pilot flying for a key it chose because its ring was NOT passable looks at the ring at its replan rate; if the ring has opened and the key is still off the way and more than a second off (`StrikeKeepSeconds`), it replans and lets the key go. A key chosen while the ring was already passable was on the way: that strike stands |
+| The sense (`SwitchbackPrismAvoidance.BlastsBlocker`) | A sensed obstacle is blasted only when the best corridor keeps less than the hull's width of air (`PassClearance` 4 u) and the ring is not passable. Otherwise the corridor is flown |
+| `TryBlast` | Of several crystals whose slot covers the blocker, the one that costs the least extra flying wins (within 1 u, the better cover) |
+| `SwitchbackController.aiSpeedOverBreaking` | On. Off = the AI of before 2026-11-17 |
+
+**The counter.** The race summary and the soak's JSONL carry two new numbers per pilot: `passes` (blocked gates where
+the rule kept the pilot on its ring) and `turnAways` (runs at a crystal that was off the way while the ring could be
+flown). With the rule on, `turnAways` is 0 by construction; a "before" soak (`SwitchbackSoakRunner.Settings.BreakFirst`,
+`-sbSoakBreakFirst`) flies the old AI and counts them.
+
+**Offline** (`switchback_sim_harness`, `speedOverBreaking=0` is before; one AI alone, 24 courses a cell). Turn-aways
+per 24 races before, Medium / Hard / Legendary: I1 0 / 11 / 2, I2 1 / 5 / 0, I3 8 / 41 / 2, I4 19 / 21 / 23 (Easy never
+blasts: 0). After: 0 everywhere. Every race finishes; medians within about 2 s at I1-I3 (I1 Hard 70.2 -> 64.3 s) and
+1-3 s faster at I4 (Legendary 147.2 -> 144.4 s). So the fault was mostly the I4 gauntlet, about once a race (the
+zig-zag's next key after a blast had already opened the way), and Hard at I1 and I3 (a re-rolled choice swinging a
+threading pilot out to the key beside it). The full table is in `MINIGAME_TRAINING_PLAN.md` section 6.2.
+
+**In the editor** (2026-11-17, the open Unity editor, `SwitchbackSoakRunner`: I4 gauntlet, fixed seed 45_504, three AI
+Dolphins at Medium, offline host, time scale 1, the same build both sides; "before" is `BreakFirst`). Six races a side,
+in two batches with the order swapped (before, after; then after, before):
+
+| | Winner's finish, s | Turn-aways (18 pilot-races) | Passes | Hits: course / rival trail / own trail | Gates threaded (18 pilots) |
+|---|---|---|---|---|---|
+| Before | 189.6, 190.4, 184.1, 183.7, 202.5, 215.1 (mean 194.2, sd 12.3) | 17 (1 to 5 a race) | - | 912 / 463 / 14 | 417 |
+| After | 190.5, 204.7, 197.4, 209.1, 202.5, 188.7 (mean 198.8, sd 8.1) | 0 | 31 | 1061 / 581 / 76 | 423 |
+
+Every race finished (the winner threaded 26 of 26). The turn-aways are gone: the old AI left a flyable ring for a
+crystal about three times a race here. The clock is NOT shown to move: 4.6 s between the means, with 8-12 s between
+one race and the next on the same course (after the first three races a side the gap read 9.5 s; the next three took
+it back). The "after" pilots hit about 16% more course prisms, which is also inside the spread (22 hits either way per
+pilot). So the editor shows the rule holding and does not show it faster or slower; the offline table (24 courses)
+says unchanged to 3 s faster at I4. The lever, if it is ever shown to cost time, is how much air a line needs to count
+as a pass (`PassMargin`, 2 u), not the rule.
+
+A wider lane was tried the same day and not kept: `PassMargin` 5 u (the 8 u lane the planner gives a threading pilot,
+11 u off a Danger prism), three races: 205.4, 217.8, 186.1 s (mean 203.1), 11 passes, no turn-aways. No better, and it
+would not call the opening Yash described a pass (a seal is a 3 x 3 of 7 u cubes: two cubes gone is a 14 u hole, a
+pass at 2 u of air and not at 5). The raw rows of all 15 races are kept beside the session's hand-over note.
+
+**Three things the first drafts got wrong** (all caught offline before any editor time): pass points spread across the
+door's eye (42 u at I4) instead of the ring's mouth (20 u) made the AI miss 73 rings in 24 races where it had missed 4;
+"on the way" judged by distance off the line refused keys the hull brushes anyway (I2 Legendary 5 s slower); and a
+strike was let go whenever the bore read as a pass, a second short of a key the pilot had chosen for good reason (up to
+9 s slower on the fixed-seed courses). Hence `mouthRadius`, `PassMouthShare`, `KeyDetourSeconds` and the two limits on
+letting a strike go.
+
+**Tests** (`SwitchbackSpeedOverBreakingTests`, 21 cases, headless through `run.sh tests`): a blocked ring with a crystal
+ahead takes the crystal; a ring partly opened and passable is flown at every difficulty and seed even with another
+crystal nearby, and the same case with the rule off flies for the crystal (the control); a hole too small for the hull,
+or ringed by Danger prisms, is not a pass; a hole off the centre is flown where it is, inside the mouth; a pilot on a
+pass keeps it; an open or cleared ring is never left; the sense's rule; "on the way" as a time; the crystal on the way
+wins; the slab test; and on the shipped fixed-seed courses the bore and eye read as a pass at I1-I3 while the sealed I4
+gauntlet does not until it is broken.
+
+**Limits.** A pass is a STRAIGHT line from the pilot: a way through that needs a turn inside the field is not seen
+(the pilot then plans as before). Trails are not in the layout, so a rival's trail across a pass is not counted (a
+plain hit, flown through as everywhere else). After its own gate blast the pilot still flies the mouth's centre: it
+does not look for an off-centre hole there.
 
 ## Known limitations / follow-ups
 
@@ -580,3 +1100,324 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   keys, inherited from a mode whose vessel lays a different trail. A Dolphin trail here has not
   been measured against that ladder; if fauna never hunt, or the cell pins at Frenzy, that is
   where to look.
+  *(Note 2026-11-01: Blast Run spawns no flora/fauna, so this only applies if they come back.)*
+
+### AI: the emergency sweep (2026-10-29, "dolphins eat prisms stupidly")
+
+Playtest of 9ff5d38b5: the sense ran but the hulls still flew into prisms. Root causes:
+
+1. **A drift locks the course.** `AIPilot.Update` keeps a commit drift while `Dot(desired, VesselStatus.Course) >= .9`
+   (any dodge under ~26° changes nothing - the hull keeps travelling the locked course while only the nose turns), and
+   during that drift `desiredDirection` is replaced by the drift LOOK. The Dolphin drifts most of the race.
+2. **The sense looked down the line to the goal, not the velocity**, on a 0.10-0.45 s tick with a fixed 70-200 u range
+   (under a second of warning at boost speed).
+3. **No sense at all on a course without a blocked gate**: `_blastAI` was only built when `layout.Stations.Count > 0`.
+4. **The strike ignored everything** ("on the strike the obstacle ahead IS the point") - rival trails included.
+5. The boost driver's `HoldsLine` (`CentreStick`) and `RotationLimit` could flatten a dodge; the orbit break replaced
+   the target.
+
+Fix: `AIPilot.SetEmergencySteerProvider` - asked every frame with the real velocity; a hit lets the drift go, beats the
+orbit break, and stands the boost driver's line-hold down. `SwitchbackBlastAI.Emergency` sweeps
+`SphereCastNonAlloc` at hull radius (3 u + 0.3 x clearance) down the velocity, reach = speed x 0.35/0.5/0.7/0.9 s
+(Easy..Legendary, min 25 u), plus the nose while turning; every other frame (staggered) when cold, every frame for 0.6 s
+after a hit; the dodge is held 0.18 s. On a strike only hits before the crystal count. The sense range is now
+max(SenseRange, speed x (1.2 + reaction)). The sense runs on every course. Controller `aiSenseDebug` draws it
+(sense tube green/yellow, sweep cyan/red, hit magenta, dodge white, avoid orange) and logs dodges at Info level.
+Startup: `[Switchback AI] sense active mask=2048 layer=11 stations=N`.
+
+Tuning: the hull radius is `SwitchbackPrismAvoidance.ShipRadius = 3f`; the sweep radius is ShipRadius + 0.3 x the
+difficulty's clearance. Raise it if hulls still clip prism edges, lower it if they dodge gaps they fit through.
+
+### Inspector flags (SwitchbackController)
+
+| Flag | Default | Does |
+|---|---|---|
+| `aiBlastPlanner` | on | Server AIs use the Direct / Thread / Blast planner (off = the generic gate AI) |
+| `aiSkillOverride` + `aiSkills` | off | Replace the intensity-to-skill mapping with four hand-set skills (I1-I4) |
+| `aiPlanGizmos` | on | Scene-view plan lines (select the controller) |
+| `aiSenseDebug` | off | Sense / sweep / dodge lines and Info-level dodge logs |
+| `aiDodgeDangerOnly` | on | Dodge only Danger prisms; plain ones are flown through (Step 1) |
+| `aiNoDodgeNearRing` | 200 | u from the ring inside which nothing is dodged (Step 1); 0 = dodge up to the ring |
+| `aiStrikeSetupLeg` | off | Before a blast, fly to a point behind the key onto the fire line (the old strike, Step 2) |
+| `aiNoseFollowGauntlet` | 1.9/2.8/3.5/5 | The I4 gauntlet's own nose follow rates, Easy/Medium/Hard/Legendary ("The I4 gauntlet") |
+| `aiNoseFollowByIntensity` | I1 1.9/2.2/3/5, I2 2/2.4/3/5, I3 2.1/2.2/2.8/6, I4 1.8/2.2/3.5/6 (I4 without the gauntlet) | The AI nose's follow rate per second, per intensity, Easy/Medium/Hard/Legendary: 1.5 = the fleet lag, 0 = none ("Lag by difficulty") |
+
+## Offline: the Blast Run simulator (2026-11-01)
+
+**Also the Dolphin's compute search (2026-11-02).** `run.sh races` prints one line per race (`RACE I level seed FIN|DNF
+seconds gates/total cruise-seconds`), and `drive.<field>=` (the `ChargeBoostAIPolicySO` field names: `alignDegrees`,
+`engageRunwaySeconds`, `spendAtCharge01`, `peakMarginUnits`, `minDischargeSeconds`, `minPulseGainUnits`,
+`maxHoldOffSeconds`) races ONE drive at every intensity. Froglet Compute's `switchback-dolphin-time` job
+(`Tools/Compute/evaluators/switchback_fit.py`, `AI_PLAN.md` step `time-arcade`) searches that drive with the four
+shipped Switchback drives as its first generation; `MINIGAME_TRAINING_PLAN.md` §9.1 has its first result.
+
+`Tools/Build/switchback_sim_harness/run.sh` (eval / trace / selftest, and `tests`: the shipped Blast Run and planner
+EditMode tests, headless) compiles the SHIPPED `SwitchbackCourse`,
+`SwitchbackBlastRun` (keys, doors, block fields, movers posed off the clock), `SwitchbackBlastPlanner` and
+`SwitchbackPrismAvoidance` against the Skim Race harness's Unity shim, and races one AI Dolphin through them with the
+executor ported from `SwitchbackBlastAI` (plan, setup / strike, drift look, the sense, the emergency sweep),
+`GateRaceController` (the Regatta steering, lanes at open gates), `AIPilot` (commit drift, orbit break, nose lag) and
+`ChargeBoostAIPolicySO` (the `DolphinAIBoostPolicy_Switchback_I<n>` numbers). Prism hits are what
+`DolphinImpactorDataContainer` applies: a plain prism x0.5 easing back over 1 s, a Danger prism a dead stop easing back
+over 3 s, the charge halved, the prism destroyed, no bounce. A key is taken within 12 u (the 10 u skimmer); its blast
+destroys what `SwitchbackBlastSlot.Default` covers from the key down the nose, gape along the hull's up (roll is not
+flown). 20 gates on the shipped shell; seeds 45501-45504 (the fixed seeds) and 1-8.
+
+`trace` prints a line per prism hit since 2026-11-03, naming what was hit (d door, s an I4 eye seal, t tunnel wall,
+p plug, f field, m mover), the plan and phase, and whether the hull was drifting.
+
+**Not modelled:** rivals and trails (the AI is alone), the danger prism's elemental debuff, the asset's real cone (the
+planner's narrower slot is used; `cone=1` widens it), physics contact shapes (a 3 u hull sphere against each prism's box).
+It is a model: Unity decides. Since 2026-11-02 (step 4) the drift is modelled as the game flies it: the Dolphin's 1.5x drift turn
+rate, the course frozen while drifting, and the AI's 1.5/s nose lag on the drift too (`driftLag`, `noseLag`).
+
+**What it found (one AI alone, median seconds over 12 courses; 2026-11-01, the AI as shipped that day):**
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Shipped AI: Easy / Medium / Hard / Legendary | 93 / 89 / 95 / 99 | 146 / 160 / 192 / 183 | 198 / 201 / 245 / 254 | 257 / 210 / 411 (10 of 12 finish) / 541 (4 of 12) |
+| Sense and emergency sweep off (Easy / Legendary) | 74 / 80 | 121 / 128 | 133 / 135 | 128 / 144 |
+| Planner, sense and sweep all off (Easy / Legendary) | 74 / 77 | 121 / 124 | 133 / 135 | 128 / 120 |
+| Sense and sweep see only Danger prisms (Easy / Legendary) | 71 / 94 | 124 / 137 | 156 / 176 | 141 / 232 |
+
+1. **The dodging costs the most, and more the harder the AI.** Each dodge pulls the Dolphin off its line; it then
+   misses the ring (18 u eye at a blocked gate) and loops back. A harder level senses further and dodges more, so it is
+   SLOWER: at I4 Legendary 1,084 emergency dodges and 598 missed rings over 12 races.
+2. **A plain prism hit is cheap** (about 0.25 s of lost distance), a Danger one about 1.5 s. Flying straight through a
+   field costs less than going round it.
+3. **The blast, as flown, does not pay yet.** With dodging off, the planner on and off finish within a few seconds
+   of each other: the blasts remove prisms (fewer hits), and the setup turn behind the key costs about as much. The
+   planner's `HitPenalty` (0.6 s a prism) is over twice the measured plain-hit cost, which makes it blast and dodge more
+   than it should.
+
+### Step 1: dodge only what costs (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead, start with step 1". `SwitchbackPrismAvoidance.Dodges(isDanger, distanceToRing, dangerOnly,
+noDodgeNear)` decides, for the sense and for the emergency sweep alike, whether a prism is dodged. With the
+controller's defaults (`aiDodgeDangerOnly` on, `aiNoDodgeNearRing` 200 u) the AI dodges only Danger prisms, and nothing
+at all in the last 200 u to its ring: there the line to the mouth (a blocked gate's eye, ringed by Danger rakes) is the
+line. It flies straight through plain prisms, which cost it about 0.25 s each. Untick `aiDodgeDangerOnly` and set
+`aiNoDodgeNearRing` to 0 for the old dodge-everything AI. Gate blasts (the planner) are unchanged; the sense's crystal
+blast now fires only at Danger obstacles. Rival and own trails are plain prisms, so they are flown through too; the
+per-AI lanes at open rings still keep the AIs off each other's lines.
+
+Why: in the real soak (`soak_results.md`, I1, Unity) 35 of the 38 course hits were side-swipes taken WHILE dodging,
+and Legendary raced slower than Easy. Offline (24 courses a cell, 26 gates, one AI alone), median seconds:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Before (Easy / Legendary) | 126 / 136 | 198 / 225 | 269 / 326 | 288 / never finishes (0 of 24) |
+| Step 1 (Easy / Legendary) | 96 / 94 | 168 / 175 | 177 / 189 | 172 / 205 (24 of 24) |
+
+Every intensity and level now finishes all 24 courses; ring misses at I4 Legendary fell from 1,299 to 200, emergency
+dodges from 2,247 to 112. The AI hits more plain prisms (at I3 about 30-40 a race), which is the trade.
+`soak_SwitchbackBlastAI.fix.diff` (Yash's session, not applied) makes each dodge more accurate and is compatible.
+Tests: `SwitchbackPrismAvoidanceTests.Dodges_OnlyDangerPrisms_AndNothingInTheLastStretchToTheRing`.
+
+### Step 2: the lane fan, batched on Jobs + Burst (2026-11-02) - real Unity soak
+
+Step 1 stopped the Dolphins dodging plain prisms, so they ploughed through rival trails (85 of 108 hits at I1 D1).
+`SwitchbackBlastAI.Emergency` now runs the Danger sweep first (step 1, unchanged) and then, if that has nothing,
+the **lane fan** (`SwitchbackSenseBatch`):
+
+- Every AI writes its pose in its Update. At LateUpdate (`SwitchbackBlastRunRuntime.LateTick`), one Burst
+  `IJobParallelFor` builds 11 `SpherecastCommand`s per AI: straight down the velocity, short taps of 8 deg and
+  16 deg right/left/up/down, and two 6 u flank casts (pure right and left). It runs as one `ScheduleBatch`, and a
+  Burst pick job then chooses each AI's answer on the workers. The next frame's first read completes the batch,
+  so the answer is one frame old. The NativeArrays are persistent and there is no GC after construction.
+- When something (rival or own trail, plain prism) is on the line within 0.8 s (radius ship + 1 u), the AI makes
+  a short tap (held for 0.12 s, then re-judged) to the clear tap that is innermost and closest to the nose. It
+  avoids a tap toward a flank that already has a trail within 4.5 u.
+- If the line ahead is clear but a trail runs alongside within 4.5 u, the AI makes a short tap away from it.
+- If no tap is clear, the AI takes the farthest tap only if it reaches 1.5x further than the straight line;
+  otherwise it holds the line. Big swerves into the next trail were fix 2's failure.
+- In the last 200 u before a ring, it reacts only to a hit closer than 0.35 s. It never nudges while striking a
+  crystal.
+- Editor only: `SB_NOFAN=1` turns the fan off, for A/B soaks on one build.
+- `SwitchbackAIClock` times the AI hooks on the main thread. It adds the Profiler marker `Switchback.AI` and appends
+  `aiMs/frame=` to the race summary.
+
+Soak (headless Unity, 3 AIs, totals over 2 races per cell; "before" is step 1 with `SB_NOFAN=1`):
+
+| Cell | Before: course/rival/own = total | After: course/rival/own = total | Winner time (s), before -> after |
+|---|---|---|---|
+| I1 D1 | 19/85/4 = 108 | 21/34/0 = 55 | 153, 166 -> 172, 176 |
+| I1 D4 | 27/120/1 = 148 | 13/56/3 = 72 | 166, 157 -> 165, 172 |
+| I3 D4 | 79/185/5 = 271 (mover 2) | 51/118/2 = 173 (mover 2) | 209, 216 -> 237, 228 |
+
+Across all three cells, hits went from 527 to 300 (-43%), and every race finished. AI main-thread cost went from
+0.037-0.051 ms per frame to 0.039-0.064 ms per frame (all AIs together; the casts run on workers).
+
+Not done yet (the pt21u spec):
+- human-style left/right drift-tap spamming toward the ring (the taps are stick steering; the emergency hook still
+  releases the commit drift);
+- a crystal detour that blasts a blocker found near the next ring, with a forward-simulated drift arc and timed aim
+  (the existing Blast plan and its strike aim are unchanged);
+- no human play data exists on the box, since every recording is from a soak.
+- Winners are slower by about 0-14% for now.
+
+### Step 2: the strike without a setup leg (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead with step 2". Before, a blast whose key lay more than 25 deg off the fire line first flew to a point up
+to 120 u behind the key and turned the COURSE onto the fire line (`SwitchbackBlastAI.GateBlastAim`'s Setup phase). Now
+the hull flies straight at the key and the drift look swings the NOSE onto the obstacle in the last `LookRange` (160 u),
+which is what aims the blast: Yash's "drift towards the crystal while aiming at the obstacle". The old strike is
+`SwitchbackController.aiStrikeSetupLeg` (off). The planner and its costs are unchanged.
+
+Offline (`switchback_sim_harness`, 24 courses a cell, 26 gates, one AI alone, step 1 in both), median seconds:
+
+| | I3 Medium | I3 Hard | I3 Legendary | I4 Hard | I4 Legendary |
+|---|---|---|---|---|---|
+| Setup leg (before) | 175 | 173 | 189 | 195 | 205 |
+| No setup leg (now) | 165 | 161 | **156** | 171 | 175 |
+| No blast planner at all | 178 | 177 | 176 | 172 | 175 |
+
+Easy (which never blasts), I1 and I2 are unchanged to within a few seconds. At I3 the blasting levels are now
+faster than not blasting, and the levels finally order (Easy 177, Medium 165, Hard 161, Legendary 156); at I4 they
+break even. What the measurements say about WHY:
+- **Most of the gain is the line, not the blast.** With blasts that destroy nothing (`blastHarmless=1`) I3 Legendary
+  runs 162 s: flying at the key puts the hull on the leg's line straight into the gate. The blast itself is worth
+  about 6 s a race at I3.
+- **The AI still takes fewer than half its keys** (I3 Legendary: 159 of 360 planned): the commit drift locks the course
+  once the aim is within 26 deg, so the hull slides past the key while the nose swings. Aiming at the key itself
+  (`strikeAtKey=1`) doubles the keys taken but is SLOWER (171 s, the line after the key leaves the leg); a tight commit
+  on the strike (`strikeCommit=0.995`) slower still (198 s). Not shipped; a better strike line is the next lever.
+- Charging the planner nothing for the old alignment turn changes nothing measurable, so its costs stay.
+
+Test: `SwitchbackAISteeringTests.Switchback_BlastAI_Defaults_AreSteps1And2`.
+
+### Step 3: the planner's hit costs from the measured ones (2026-11-02) - NOT editor-verified
+
+Yash: "go ahead with step 3". `SwitchbackBlastPlanner.HitPenalty` (seconds a standing prism in the lane costs) is now
+0.25 (was 0.6): what `DolphinVesselChangeSpeedByPrism` does to the Dolphin, x0.5 speed easing back over 1 s. The Danger
+cost was already right (1.5 s: a dead stop easing back over 3 s).
+
+**It changes nothing measurable.** Offline (24 courses a cell, levels Medium to Legendary) every cell's median stays
+within about 2 s for any value from 0.1 to 0.6, and the plans barely change: the thread line runs down the bore, which
+the layout keeps clear, and the blast lane's prisms are mostly covered by the blast. It ships because the planner's costs
+should be the game's, not because it is faster.
+
+**Where the time is (I4):** about 8 missed rings a race, 53 of 54 of them at OPEN gates (20 u radius at I4), not at
+the blocked gates' eyes, and repeatedly at the same few hairpins (gate 1 at every level, then 22 and 25): a 90-150 deg
+turn into a short leg that the stick's 110 deg/s cannot make at 68-107 u/s (a 35-56 u circle), so the AI overshoots,
+loops back and often misses again. A person carves those with drift taps (Yash's drift-spam), which is the next step.
+The simulator's trace now logs each miss (`MISS gate ... by ... u`).
+
+### Step 4: drift carving - measured, NOT shipped (2026-11-02); the nose lag it hinged on is now set per difficulty (next section)
+
+Yash: "go ahead with step 4" (carve the I4 hairpins with drift taps, as a person spams drift). Measured offline; no
+game code changed. Two facts from the code decide it:
+- **The drift:** `DolphinDriftAction` multiplies the turn rate by 1.5 (165 deg/s) and its grip is 0, so the course is
+  frozen while the nose swings, and on release the course snaps to the nose (`VesselTransformer.EndDrift`).
+- **The AI's nose lags its command at 1.5/s ALWAYS, drifting included** (`VesselTransformer.NoseFollowFraction`): only a
+  local human pilot has no lag (Garrett, 2026-10-21, "get rid of all steering lag"; AI, autopilot and remote hulls kept it
+  because the autopilots were trained against it). That is why drift-spam is fast for a person and not for the AI.
+
+The simulator now models the lag in the drift too (`driftLag`, on by default as in the game; before 2026-11-02 its drift
+swung the nose with no lag). Re-measured, steps 1 and 2 hold: I3 Legendary 334 s before step 1 -> 156 s, I4 Legendary
+never finishing -> 172 s, and the step 2 strike is still 27-28 s faster than the setup leg at Legendary.
+
+Median seconds, 24 courses a cell (steps 1-3 shipped in every row):
+
+| | I1 | I3 | I4 |
+|---|---|---|---|
+| Today (the AI's nose lags) | 94-103 | 156-175 | 169-172 |
+| + drift carving (25 deg in, 15 deg out, 0.8 s max) | 187-235 | 268-329 | 254-366 (hundreds of missed rings) |
+| AI nose with no lag (`noseLag=0`) | 51-53 | 82-92 | 93-104 |
+| No lag + drift carving | 52-53 | 80-81 | 83-86 |
+
+AI-side ways round the lag were tried and lose: judging the stick from the COMMANDED heading
+(`VesselTransformer.CommandedRotation`) instead of the nose (I4 236-260 s), and leading the command past the aim
+(most races never finish). The AI's nose-judged stick already gets the most out of the lag.
+
+**The decision (not a Switchback change: a game mode never changes the vessel, LOCKED):** whether AI hulls keep the
+fleet nose lag. Removing it halves every Switchback time in the model and makes drift carving worth another ~10 %; it
+also changes every AI in every mode, and `SkimRacePilot` was trained against the lag. Owners: Garrett's 2026-10-21
+steering-lag rule, `VesselTransformer` (`who_works_where.py`). The simulator's `noseLag=0` and `carve=...` reproduce
+the rows above; the `cmdSteer=1` / `cmdLead=...` what-ifs of that day (a 60 deg cap, no rate scaling) were retired on
+2026-11-07 for the game's own rule, `AIPilot.NoseLeadGain` (PR #1786), as `noseLead=<gain> noseLeadExtra=<deg>` (default
+0, off). With the gain scaled to each level's nose rate (`EffectiveNoseLeadGain`: 1.97 on I1 Easy, 1 on every Legendary),
+the lead at 2.5 moves the job composite 1.936 -> 1.883 over I1-I4 x four levels, 12 of 16 cells faster, I1 Hard /
+Legendary and I4 Hard slower; the no-lag ceiling is 1.436. The gain for Switchback's ladder is Yash's call.
+
+### Lag by difficulty (2026-11-02): option 2 of step 4, shipped, then set to Yash's time bands
+
+Yash: "go with option 2, lag by difficulty". Switchback's AI nose follows its command at a rate set per intensity and
+difficulty, `SwitchbackController.aiNoseFollowByIntensity` (rates per second; 1.5 = the fleet lag every AI has elsewhere,
+higher = faster, 0 = none):
+
+| | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| I1 | 1.9 | 2.2 | 3 | 5 |
+| I2 | 2 | 2.4 | 3 | 5 |
+| I3 | 2.1 | 2.2 | 2.8 | 6 |
+| I4 | 1.8 | 2.2 | 3.5 | 6 |
+
+**The bands (Yash, 2026-11-02):** "difference should be 20 seconds max ... I4, easy 150 - 130, medium 140 - 120, hard
+130 - 110, legendary 120 - 100. Other intensities should also be grouped in similar differences." So each level sits
+about 10 s from the next, in a 20 s band, at every intensity. The first ladder (1.5 / 2 / 3 / 0 for every intensity)
+spread I4 from 172 s to 100 s and was replaced the same day.
+
+Why the nose rate is the lever: at the SAME rate the four levels finish within a few seconds of each other (at I4,
+3/s gives 118 / 119 / 125 / 124 s), so the lag, not the rest of the skill, sets the time. One ladder for every intensity
+could not hold the bands (1.8 / 2.2 / 3 / 5 fits I4 but spreads I3 from 149 s to 103 s), hence a row per intensity.
+
+Median seconds offline (48 courses a cell; slowest 10 % in brackets) and the bands they sit in:
+
+| | Easy | Medium | Hard | Legendary |
+|---|---|---|---|---|
+| I1 (bands 80-100 / 70-90 / 60-80 / 50-70) | 88 (102) | 82 (101) | 69 (83) | 61 (72) |
+| I2 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (143) | 117 (131) | 109 (118) | 99 (105) |
+| I3 (bands 120-140 / 110-130 / 100-120 / 90-110) | 130 (148) | 120 (136) | 111 (125) | 101 (109) |
+| I4 (Yash's bands 130-150 / 120-140 / 110-130 / 100-120) | 140 (149) | 129 (138) | 120 (127) | 112 (119) |
+| I4 gauntlet since 2026-11-03 (bands 175-195 / 165-185 / 155-175 / 145-165; `aiNoseFollowGauntlet`) | 185 (200) | 173 (190) | 165 (182) | 155 (164) |
+| I4 gauntlet, plain seals since 2026-11-13 (`aiNoseFollowGauntlet` 1.5 / 2.2 / 3.5 / 6) | 176 (202) | 167 (174) | 155 (166) | 141 (151) |
+
+The I1-I3 bands are this doc's reading of "similar differences" (10 s steps, 20 s wide); retune a row with
+`noseFollowI<n>=e,m,h,l` in the simulator. All 768 races finished. **These are simulator seconds:** in the step 1 soak
+real races ran about 1.6x the model's times, so the soak decides whether the rows need scaling for the real game.
+
+How it reaches the hull, without changing the vessel:
+- `VesselTransformer.AINoseFollowPerSecond` (new, default -1): unset = the fleet lag (`LERP_AMOUNT` 1.5/s), exactly as
+  before for every AI in every mode; a positive rate; 0 = no lag (the human's catch-up-capped follow). Only AI hulls read
+  it. A local human pilot is unchanged.
+- `GateRaceController.OnRacerArmed` (new, empty) runs for every racer it arms; Switchback overrides it and writes the
+  pilot's rate from the selected intensity and `AIDifficultyFor`. The AI flies on the server only, so the rate is set there.
+- Every other mode never sets it, so `SkimRacePilot` and the other trained autopilots keep the lag they were trained
+  against. This is the AI's skill (how well it steers), not a vessel change: the hull's turn rate, drift and abilities
+  are the same for every pilot.
+
+## Watching the AI: the AI Diagnose panel (2026-11-01)
+
+The old FrogletTools ▸ AI ▸ Third Eye window (a second camera, rendered twice) is gone. The code still lives in
+`Controller/Camera/ThirdEye/`, but the tool is now the in-game **AI Diagnose panel** (editor + development builds only):
+
+- **F2 is the only hotkey**: open / close. Everything else is a panel button or a console command (`aidiag cam on`,
+  `aidiag fly`, `aidiag next`, `aidiag overlay ...`; `help` lists them).
+- Cameras (Chase / Follow / Free fly / Orbit) drive the MAIN camera only while the panel is open. Free fly is
+  `FreeFlyCamera`, the same class Lavalamp god mode uses. The default gameplay chase camera is unchanged and is what
+  every match starts on.
+- Switchback registers two overlays: **AI plan (Switchback)** (= `aiPlanGizmos` in the Game view) and **AI sense
+  (Switchback)** (turns on `aiSenseDebug` lines and logs).
+- Closing the panel (F2, scene unload at match end, quit, Play stop) restores the default camera and turns every
+  overlay off. Only slider tuning persists; nothing else survives a session or domain reload. Full controls:
+  `/vessel-ai` §4.1.
+
+## Performance (2026-10-30 .. 11-01, "make Switchback very performant")
+
+Targets for a Release capture of Switchback I2 / Blast Run I4 (`perf_hunt.py` scenarios `Switchback`,
+`SwitchbackBlast`): **CPU busy under 10 ms, about 300 draw calls, GC under 50 KB** per capture window.
+
+What was found:
+- **The Third Eye window rendered the world a second time** (post, shadows, AA). Fixed by moving it into the game
+  (it drives the main camera; no second render).
+- **Editor GC** is the editor's, not the game's: Debug code optimization, deep profile, a visible Scene view and
+  inspector repaint all allocate. Judge GC only from a clean capture.
+- **Background creatures** (flora/fauna) cost CPU every frame for nothing the race uses; Blast Run spawns none.
+- Code: the mover scan matches prisms through a laid-position hash and a reused buffer, with profiler markers on
+  `TickMovers` and the scan (414581980); AI log strings are built only while ArcadeMatch verbose is on, through
+  `CSDebug` (d9816f400).
+
+**Clean capture:** Code Optimization = Release; Profiler deep profile off; no visible Scene view; Game view <= 1440p
+and focused; AI Diagnose panel closed (camera and overlays off); `aiSenseDebug` off; fps uncapped; 2 AI at I2 (or
+3 AI at I4), 90 s, and let the editor auto-capture. Then `python3 Tools/Build/perf_capture_report.py`.

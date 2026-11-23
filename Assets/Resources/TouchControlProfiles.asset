@@ -16,12 +16,12 @@ MonoBehaviour:
   - vessel: 6
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
-    tiltSteersWhileIdle: 0
-    flipTiltSteerPitch: 0
+    gyroRollOnOneThumb: 1
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
     oneThumbResponseCurve: 0
-    idlePullsBothTriggers: 0
+    idlePullsBothTriggers: 1
     idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
@@ -37,7 +37,7 @@ MonoBehaviour:
   - vessel: 2
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 1
+    gyroRollOnOneThumb: 1
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -58,7 +58,7 @@ MonoBehaviour:
   - vessel: 1
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 1
     flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
@@ -76,12 +76,12 @@ MonoBehaviour:
     - element: 4
       glyph: 4
     coreGlyphs: []
-  - vessel: 3
+  - vessel: 30
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
-    tiltSteersWhileIdle: 0
-    flipTiltSteerPitch: 0
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
     oneThumbResponseCurve: 0
     idlePullsBothTriggers: 1
@@ -101,15 +101,36 @@ MonoBehaviour:
     - element: 4
       glyph: 5
     coreGlyphs: []
-  - vessel: 13
+  - vessel: 3
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
-    tiltSteersWhileIdle: 0
-    flipTiltSteerPitch: 0
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
     oneThumbResponseCurve: 0
-    idlePullsBothTriggers: 0
+    idlePullsBothTriggers: 1
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 3
+      glyph: 3
+    - element: 4
+      glyph: 5
+    coreGlyphs: []
+  - vessel: 29
+    scheme: 0
+    liftDeferSeconds: 0
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 1
     idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
@@ -125,7 +146,7 @@ MonoBehaviour:
   - vessel: 14
     scheme: 0
     liftDeferSeconds: 0.12
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 1
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -146,12 +167,12 @@ MonoBehaviour:
   - vessel: 19
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
-    tiltSteersWhileIdle: 0
-    flipTiltSteerPitch: 0
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
     oneThumbResponseCurve: 0
-    idlePullsBothTriggers: 0
+    idlePullsBothTriggers: 1
     idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
@@ -165,12 +186,12 @@ MonoBehaviour:
   - vessel: 20
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
-    tiltSteersWhileIdle: 0
-    flipTiltSteerPitch: 0
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
     oneThumbResponseCurve: 0
-    idlePullsBothTriggers: 0
+    idlePullsBothTriggers: 1
     idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
@@ -186,12 +207,12 @@ MonoBehaviour:
   - vessel: 18
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
-    tiltSteersWhileIdle: 0
-    flipTiltSteerPitch: 0
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
     oneThumbResponseCurve: 0
-    idlePullsBothTriggers: 0
+    idlePullsBothTriggers: 1
     idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
@@ -203,7 +224,7 @@ MonoBehaviour:
   - vessel: 23
     scheme: 0
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -218,13 +239,32 @@ MonoBehaviour:
     glyphs:
     - element: 1
       glyph: 1
-    - element: 2
+    - element: 3
       glyph: 2
+    coreGlyphs: []
+  - vessel: 28
+    scheme: 0
+    liftDeferSeconds: 0.12
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 1
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 3
+      glyph: 1
     coreGlyphs: []
   - vessel: 4
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -241,7 +281,7 @@ MonoBehaviour:
   - vessel: 11
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -258,7 +298,7 @@ MonoBehaviour:
   - vessel: 7
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -276,7 +316,7 @@ MonoBehaviour:
   - vessel: 5
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -284,7 +324,8 @@ MonoBehaviour:
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
-    displayOnlyElements: []
+    displayOnlyElements:
+    - 3
     extraButtons:
     - input: 2
       behaviour: 0
@@ -307,7 +348,7 @@ MonoBehaviour:
   - vessel: 12
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -332,7 +373,7 @@ MonoBehaviour:
   - vessel: 10
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -363,7 +404,7 @@ MonoBehaviour:
   - vessel: 16
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -394,7 +435,39 @@ MonoBehaviour:
   - vessel: 15
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements:
+    - 3
+    extraButtons:
+    - input: 2
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: 25d5c2bb6133b58ae02adde77bd01744, type: 3}
+      tint: 3
+      label: 
+      primary: 1
+    - input: 1
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: 0502a91604f91e537779ecec3619bef8, type: 3}
+      tint: 3
+      label: 
+      primary: 1
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 17
+    scheme: 1
+    liftDeferSeconds: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0
@@ -403,29 +476,15 @@ MonoBehaviour:
     idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
-    extraButtons:
-    - input: 1
-      behaviour: 0
-      aimsWhileHeld: 0
-      icon: {fileID: 21300000, guid: 44138545f892d3e6c7a3f0d1b19255c2, type: 3}
-      tint: 3
-      label: 
-      primary: 1
-    - input: 6
-      behaviour: 0
-      aimsWhileHeld: 0
-      icon: {fileID: 21300000, guid: 15328e6bb0f2cce90c3e7202bb49abbf, type: 3}
-      tint: 2
-      label: 
-      primary: 0
+    extraButtons: []
     throttleSlider: 0
     throttleSliderStart: 0.5
     glyphs: []
     coreGlyphs: []
-  - vessel: 17
+  - vessel: 31
     scheme: 1
     liftDeferSeconds: 0
-    tiltRollOnOneThumb: 0
+    gyroRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     flipTiltSteerPitch: 0
     flipTiltSteerYaw: 0

@@ -88,6 +88,13 @@ own parameter.
 hull)`.** That is how the Scarab's "Armored Switch" — retired in code on 2026-08-24 and still
 named by the map — was finally caught.
 
+**The table finds a gate by the LITERAL `IsUpgradeActive(Element.X)`.** A helper that takes the
+element as a parameter (`UpgradeActive(status, Element.Charge)` forwarding to
+`IsUpgradeActive(element)`) is a real gate the table cannot attribute, so the row reads
+`UPGRADE IS PROSE` while the upgrade works (`cece/keen-lovelace-cyci91`, 2026-10-29: the Tiger
+Moth's Toll Gate and Afterburn read 2/4 until each accessor named its element in the call). Write
+one accessor per upgrade with the element spelled out, and re-run the table after wiring one.
+
 ## The gate that still applies
 
 **Never invent an element→ability→input mapping or an L5 upgrade to fill an open slot or to
@@ -95,3 +102,6 @@ clear a flag.** Open slots on Rhino / Serpent are blocked on design; proposals l
 `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 and are un-implemented until Garrett marks them
 up. A flagged row is a finding to REPORT, not a defect to silently fix — several are shipped,
 play-tested behaviour. For any actual edit, use the `/vessel` skill.
+
+Stage 3 of `/regatta-balance` searches one Time level per hull as a new mobility baseline: before anyone agrees
+to a searched level, use this table to say what that level does on that hull (which ability, which channel).

@@ -341,7 +341,7 @@ namespace CosmicShore.Editor
             if (set != null && (_linesList == null || _linesListTarget != set))
             {
                 _linesListTarget = set;
-                _linesList = new ReorderableList(set.lines, typeof(DialogueLine), true, true, true, true)
+                _linesList = new ReorderableList(set.Lines, typeof(DialogueLine), true, true, true, true)
                 {
                     drawHeaderCallback = rect =>
                     {
@@ -365,7 +365,7 @@ namespace CosmicShore.Editor
 
                 _linesList.drawElementCallback = (rect, idx, isActive, isFocused) =>
                 {
-                    var line = set.lines[idx];
+                    var line = set.Lines[idx];
                     rect.y += 2;
                     float h = EditorGUIUtility.singleLineHeight;
 
@@ -515,7 +515,7 @@ namespace CosmicShore.Editor
                 GUILayout.Space(16);
 
                 // 3) If no line selected, placeholder
-                if (selectedLineIndex < 0 || selectedLineIndex >= selectedSet.lines.Count)
+                if (selectedLineIndex < 0 || selectedLineIndex >= selectedSet.Lines.Count)
                 {
                     EditorGUILayout.LabelField(
                         "Add or select a line to see its text.",
@@ -525,7 +525,7 @@ namespace CosmicShore.Editor
                 else
                 {
                     // 4) Show the actual speakerName as heading
-                    var line = selectedSet.lines[selectedLineIndex];
+                    var line = selectedSet.Lines[selectedLineIndex];
                     EditorGUILayout.LabelField(line.speakerName, titleStyle);
 
                     // 5) Small gap before body text
@@ -556,18 +556,18 @@ namespace CosmicShore.Editor
                 GUILayout.Space(16);
 
                 // --- Determine which line to show ---
-                if (selectedSet.lines == null || selectedSet.lines.Count == 0)
+                if (selectedSet.Lines == null || selectedSet.Lines.Count == 0)
                 {
                     EditorGUILayout.LabelField("No dialogue lines.", EditorStyles.centeredGreyMiniLabel);
                     EditorGUILayout.EndVertical();
                     return;
                 }
                 int idx = selectedLineIndex;
-                if (idx < 0 || idx >= selectedSet.lines.Count)
+                if (idx < 0 || idx >= selectedSet.Lines.Count)
                     idx = 0;   // fallback to the first line
 
                 // 3) Get that line
-                DialogueLine line = selectedSet.lines[idx];
+                DialogueLine line = selectedSet.Lines[idx];
 
                 // 4) Heading: use the line�s speakerName (or setId if you prefer)
                 EditorGUILayout.LabelField(line.speakerName + ":", titleStyle);

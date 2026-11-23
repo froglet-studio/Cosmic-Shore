@@ -1,11 +1,12 @@
 {
-  "_readme": "MEASURED by Tools/Build/regatta_course_harness/run.sh from the shipped C# (Roslyn-compiled, run for real). sourceHash covers the three pure course files; author_regatta_assets.py --check fails when it is stale. Regenerate with the harness, never by hand.",
+  "_readme": "MEASURED by Tools/Build/regatta_course_harness/run.sh from the shipped C# (Roslyn-compiled, run for real). sourceHash covers the pure course files in sources; author_regatta_assets.py --check fails when it is stale. Regenerate with the harness, never by hand.",
   "sources": [
     "Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs",
     "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs",
-    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs"
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourseFeatures.cs"
   ],
-  "sourceHash": "8f28c3b4d5e56d6644ebc4a8f8f0f757c45eccf023eb8d65c26562ec88ba1d3a",
+  "sourceHash": "3bc583a00eafaf3cc11f55015abaa0353b9c12fa88b9eee466d425ed116b6e09",
   "intensities": {
     "1": {
       "seed": 20268834,

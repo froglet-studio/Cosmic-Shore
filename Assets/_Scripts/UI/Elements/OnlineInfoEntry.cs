@@ -143,6 +143,15 @@ namespace CosmicShore.UI
 
         public string PlayerId => _playerId;
 
+        /// <summary>The status the row last drew (FriendsListPanel groups rows by it, Rev 40 E).</summary>
+        public Status CurrentStatus => _lastStatus;
+
+        /// <summary>What the row's join / spectate button does now.</summary>
+        public JoinMode CurrentJoinMode => _joinMode;
+
+        /// <summary>True while our invite to this pilot is out (the row shows its cancel).</summary>
+        public bool IsInvitePending => _isPending;
+
         /// <summary>Raised after the row's pilot, status or invite state changes (the profile popup follows it).</summary>
         public event Action ProfileChanged;
 

@@ -7,7 +7,7 @@ remake; its superseded "Reaper Ray" table is kept below as history); their rows 
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
 them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
 re-cut; its Mass row and its Time L5 are still proposals). The **Rhino joined it on 2026-10-16**:
-all four rows — Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker
+all four rows — Sword Steal / Live Wire (was Sword Energy until 2026-10-26), Afterimage / Danger Afterimages, Blade Reach / Breaker
 (Breaker shipped first, 2026-10-13), Ramp Spool / Momentum — are **APPROVED + SHIPPED** (Garrett's
 design calls in the 2026-10-16 session; nothing on that branch has run in the Unity editor yet). Its
 old forcefield/slab proposals are kept below as superseded history. For any row still a proposal,
@@ -62,27 +62,28 @@ day after the channel it referred to had been deleted.
 |---|---|---|---|
 | Dolphin | 4/4 | 4/4 | 4/4 |
 | Sparrow | 4/4 | 4/4 | 4/4 |
-| Squirrel | 4/4 | 4/4 | 4/4 |  *(Charge scaling filled 2026-09-28 — the joust's STEAL; see the re-cut below)*
+| Squirrel | 4/4 | 4/4 | 4/4 |  *(Charge scaling filled 2026-09-28 — the joust's STEAL; since 2026-11-11 the least speed a joust needs, `SquirrelJoustSpeed.asset`; see the re-cut below)*
 | Urchin | 4/4 | 4/4 | 4/4 |
-| Manta | 4/4 | 4/4 | 3/4 |
+| Manta | 4/4 | 4/4 | 4/4 |  *(re-measured 2026-11-10: Charge now scales the fuse, `fuseScale` on `MantaStingConfig.asset`, which the tool reads; Soar fills Time L5 since the 2026-11-07 overhaul)*
 | Serpent | 4/4 | 4/4 | 3/4 |  *(Mass filled 2026-10-09 — Seed Wall / Lockdown; Time L5 still open)*
-| Scarab | 4/4 | 4/4 | 2/4 |
+| Scarab | 4/4 | 4/4 | 4/4 |  *(recut 2026-10-29: Sun Cores and Core Breaker fill Mass and Space)*
 | Rhino | 4/4 | 4/4 | 4/4 | *(was 2/4 · 3/4 · 1/4 — Breaker landed 2026-10-13 on a row with no ability; the other three rows and both missing abilities were designed and shipped 2026-10-16, 0 disagreements)* |
 | Grizzly | 4/4 | 3/4 | 3/4 | *(the one vessel `--gaps` still lists — see below)* |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22; `Butterfly.prefab` shipped afterwards and its one-shot builder was retired 2026-10-14)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
-| **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
+| **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13; the swing alone since 2026-11-21, nothing drawn since 2026-11-22 — Space = **Catch Orbit** (the swing; L5 **Accretion**: stolen prisms grow the ripple +4% each, to +40%), Time = **Timed Slingshot** (the warp; L5 open: **Foresight** was deleted with the old pathfinder), Charge = **Ripple** (L5 **Siphon**), Mass = **Heavy Launch** passive (L5 **Armoured Wake**); omni = **Fulmen**; `R_VesselActions/STOAT.md`, `STOAT_DIPOLE.md` §1e)* |
 | **Goby** | 4/4 *(its own, 2026-10-22)* | 4/4 | 3/4 *(Charge has no upgrade yet: open)* | *Garrett, 2026-10-22 (the Goby & Pistol's own kit, no longer the Squirrel's): Charge **Vortex Sting** (ring petals 1 -> 3), Mass **Dens** (x1 -> x2.5; L5 **Fortress**: danger and super-shielded den prisms), Space **Undertow** (pull reach 40 -> 200 u; L5 **Deep Undertow**: shielded too), Time **Quick Jump** (jump 9 s -> 3 s; L5 **Phase Dart**: darts pass through prisms). Written by `author_goby_assets.py` (GOBY_KIT).* |
-| **Brittle Star** | **4/4** | **4/4** | **0/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); the document names no level 5, so all four are OPEN, proposals below; `R_VesselActions/BRITTLE_STAR.md`)* |
+| **Brittle Star** | **4/4** | **4/4** | **4/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); level 5 designed by Shombith 2026-11-03 and wired: Charge Thrown Sabers, Mass Shielded Trail, Space Explosive Rounds, Time Speed Roll — `Docs/Studios/BRITTLE_STAR.md` "Level-5 upgrades")* |
 | **Wrasse** | 4/4 | 4/4 | 4/4 | *(added 2026-10-17 as the Kite, renamed the Wrasse, card "Wrasse and Grouper", 2026-10-18 — `ElementalAbilityMaps/Wrasse.asset`, the Sparrow's map unchanged: the Wrasse is the Sparrow hull with the navigator seat, `Controller/Vessel/Crew/KITE_NAVIGATOR.md`; the navigator's own elements are its motes, not this map)* |
+| **Meerkat** | **4/4** | **4/4** | **4/4** | *(approved + shipped 2026-10-28: Garrett's design, approved by Yash 2026-10-28 - Space = **Soliton** on RT (the wormhole: its surface area by Space; it swallows prisms at its way in and fires them out as moving prisms; L5 **Steal**), Time = **Faster Ride** passive (every soliton's rush; L5 **Boost Out**), Mass = **Exit Portal** passive (six prisms on a hexagon; L5 **Danger Portal**), Charge = **Sentinel Mode** on Y (sentinels that zap rivals and shield their own prisms; L5 **Six Sentinels**). `R_VesselActions/MEERKAT.md` §8)* |
 
 Everything the tool still flags (`--gaps`, 2026-10-16) is on **one vessel, the Grizzly** — all four
 of its rows: every one still carries the RETIRED generic map multiplier (`ELEMENT_SCALING_UNIFICATION.md`),
 its Mass (Weapon Systems) changes no number, and its Charge L5 (Battle Sight) is prose with no live
 `IsUpgradeActive` gate. The Rhino's Charge and Space rows and the Serpent's Mass, which this paragraph
 used to list as the open design gaps, are filled (Rhino 2026-10-16, Serpent 2026-10-09). The open
-slots the tool does NOT flag — an `L5 -` on the Serpent's and Manta's Time and the Scarab's Mass and
-Space — are declared-empty upgrades, not disagreements. The full list, with what each one would cost
+slots the tool does NOT flag — an `L5 -` on the Serpent's and Manta's Time (the Scarab's Mass and Space were
+filled 2026-10-29) — are declared-empty upgrades, not disagreements. The full list, with what each one would cost
 to fill, is **`FLEET_GAPS.md`**.
 
 **Re-run the tool rather than reading this table** — it is a transcription and it went stale
@@ -219,17 +220,28 @@ kept as history — superseded, do not re-litigate). The shipped map is
 `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`, and the mode built on it in
 `_Scripts/Controller/Arcade/BLOOMRUSH.md`.
 
+The map as it stands (the 2026-11-07 overhaul, Charge re-cut 2026-11-10; `MANTA_STING_KABLOOM.md` §0 and §0a):
+
+| Element | Ability | Quantitative (authoring home) | L5 upgrade (shipped) |
+|---|---|---|---|
+| Charge | Sting (passive) | how long the shared fuse runs when a plant resets it: 20 s at rest → 30 s at Charge 10 (`fuseSeconds` × `fuseScale` 1 → 1.5, `MantaStingConfig.asset`). Until 2026-11-10 it was the petals a bloom knocks out of a rival (×2 at Charge 10), retired as too coarse to tune | **Contagion** — anything caught in a bloom is itself bombed, free |
+| Mass | Decoy (passive) | how long a decoy stands (`decoyLifetimeAtFullMass` 2×, `MantaStingConfig.asset`) | **Omni Decoy** — the omni crystal leaves a decoy too |
+| Space | Skim (passive) | the skimmer's size (`Manta.prefab` `Skimmer.Scale`, 20 → 40) | **Shield Breaker** — skimming a shielded rival prism pops its shield and makes it explosive |
+| Time | Yawstery (Input 12) | cruise ×1.5 (`ThrottleScalerMultiplier`) and soaring ×1.3 (`BoostSpeedMultiplier`) at Time 10 | **Soar** — the boost stays dark until Time 5 |
+
+The table the remake shipped with (2026-08-26), kept as history:
+
 | Element | Ability | Quantitative (authoring home) | L5 upgrade (shipped) |
 |---|---|---|---|
 | Charge | Sting (passive) | bomb-bay capacity 3→5 at Charge 15 + skim-charge rate (`MantaStingConfig.asset`) | **Contagion** — anything caught in a bloom is itself bombed, free |
-| Mass | Yastri (Input 12) | trail prism VOLUME (`trailVolume` 1→2.5 on the prism controller); turn rate deliberately unscaled | **Shielded Turn Trails** — hard-turn prisms come out shielded |
+| Mass | Yawstery (Input 12) | trail prism VOLUME (`trailVolume` 1→2.5 on the prism controller); turn rate deliberately unscaled | **Shielded Turn Trails** — hard-turn prisms come out shielded |
 | Space | Kabloom (passive) | every bloom's scale (`blastScaleAtFullSpace` 1.6) | **No Friendly Fire** — blooms spare allies and allied prisms |
-| Time | Soar (Input 13) | max soaring speed (map 1.3 — the authoring home) | *(open)* — **Wake Highway** (boost rings laid while soaring, allies ride them at L5) shipped and was CUT 2026-09 on design direction; proposal below, un-approved |
+| Time | Soar (Input 13) | max soaring speed (map 1.3 — the authoring home) | *(open)* — **Wake Highway** (boost rings laid while soaring, allies ride them at L5) shipped and was CUT 2026-09 on design direction |
 
 Sting and Kabloom are PASSIVE (Input 0 by design, not unset): planting is grazing, detonation is
 a crystal pickup.
 
-Open Time L5 — candidates, none approved: **Slipstream** (Soar's wake is a drag-free corridor
+*(Filled 2026-11-07: Soar is now the Time L5, so this list is history.)* Open Time L5 — candidates, none approved: **Slipstream** (Soar's wake is a drag-free corridor
 allies gain speed inside for a few seconds — the highway idea without a laid ring), **Afterglow**
 (a Kabloom cashed while soaring pays a short Soar top-speed surge), or reinstating Wake Highway
 once the ring reads as a Manta artefact rather than a track feature. Superseded history:
@@ -330,6 +342,26 @@ Superseded proposal (kept for the record): Charge→charge-boost peak / "Shockwa
 Mass→trail scale while discharging / "Solid Wake", Space→skimmer scale / "Slipstream",
 Time→charge fill rate / "Instant Draw".
 
+### Rhino and Swordfish — the split — APPROVED + SHIPPED 2026-11-07 (unplayed)
+
+Garrett, 2026-11-07: "split the rhino into two vessels: the rhino and a swordfish. the sword fish will be all about
+the sword. the rhino will be all about the plow." The **Swordfish** (class 30) carries the whole sword kit of the
+section below, unchanged (Energize / Sword Steal, Afterimage / Danger Afterimages, Blade Reach / Shield Breaker, Ramp
+Spool / Momentum, the Surge); its hull rams instead of ploughing. The **Rhino** (class 3) is the plough, approved the
+same day from the proposal Garrett picked:
+
+| Element | Ability | Parameter | L5 |
+|---|---|---|---|
+| Charge | **Carry** | how far past its landing point a thrown prism still strikes (0 → 40 u) | **Avalanche** — a strike throws the next prism down the line on, up to 3 more |
+| Mass | **Blade** | the plough blade's width across the nose (14 → 40 u) | **Berm** — ploughed prisms land shielded |
+| Space | **Furrow** | added to every throw (0 → 20 u); LT / RT steer it (a pull shoves, a hold steers) | **Unstoppable** — the plough moves super-shielded mass |
+| Time | **Ramp Spool** | unchanged | **Momentum**, unchanged |
+
+Design + files: `R_VesselActions/RHINO_PLOUGH.md` § "The plough kit", `R_VesselActions/SWORDFISH.md`. Gates
+(`element_ability_table.py Rhino` / `Swordfish`): 4/4 scaling and 4/4 L5 gates on both.
+
+**The section below describes the SWORDFISH since 2026-11-07** (it was written for the Rhino).
+
 ### Rhino — "Bulldozer" (sword + afterimages + plough + ramp) — APPROVED + SHIPPED 2026-10-16
 
 Garrett's design calls, 2026-10-16 (Breaker on Space 5 was approved and shipped first, 2026-10-13).
@@ -337,15 +369,15 @@ All four abilities are passive or gesture-driven. Since 2026-10-17 Charge, Mass 
 authored `Input: 13` (`BothSticksAction` — hold both triggers to energize; the swing; the
 afterimages follow the energize) so their cards draw the two-trigger chip, and the energize press
 lights Charge (the first map entry bound to that input); Time stays `Input: 0` (the passive
-sentinel) and its sticks-apart chip is set by `RhinoVesselHUDController`. Nothing here has run in
+sentinel) and its sticks-apart chip is set by `RhinoHUDController`. Nothing here has run in
 the Unity editor yet. Detail: `R_VesselActions/RHINO_ENERGY_SWORD.md`,
 `RHINO_SWORD_AFTERIMAGE.md`, `RHINO_RAMP_BOOST.md`, `RHINO_PLOUGH.md`.
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | **Sword Energy** — energy banked per cut ×1 at rest → ×2 at level 10, floored ×0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, new 2026-10-16) on 0.04 per prism kill and 0.12 per super-shield pop. Energy lengthens the blade toward `MaxScale` 120 and pays for the energize (cost 0.1, hold the both-triggers chop stance 1 s, 5 s tail after release, 5 s cooldown) | **Live Wire** — once the stance is let go the energized tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it (`ShieldSkimmerScaleConfigSO.liveWireUpgradeElement`, gated on `IsUpgradeActive(Charge)` in `ShieldSkimmerScaleDriver`). Without the upgrade there is no longer any refresh: the ungated one that kept a blade lit forever was removed the same day |
-| Mass | **Afterimage** — for 5 s after the energized blade goes out the sword lays prisms in its own shape and pose (one per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window, the blade cut into ≤ 6 segments of ≤ 10 u covering 90% of it; `RhinoSwordAfterimageConfig.asset`, first pass, never played). Mass scales their VOLUME ×1 → ×2.5, floored ×0.25 (`massVolumeMultiplier`), read at the REPLICATED level so every peer lays the same mass. Since 2026-10-17 the Rhino's own blade cuts its own afterimages like any prism once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett: *"not immune to our destruction"*); the hull still ploughs them. Tuning watch: one energize (0.1) plus self-cuts (≤ 16 × ≤ 6 × 0.04) can refill the meter — if playtest finds the loop too strong the lever is energy-per-own-afterimage, not immunity | **Danger Afterimages** — the afterimages are laid as DANGER prisms (`RhinoSwordAfterimageConfigSO.dangerUpgradeElement`, gated on `IsUpgradeActive(Mass)`, snapshotted per afterimage). A pilot flying into them takes what any danger prism does — the slow, the burn (opposing domain) or 4 s debuff (own), the boost reset; the input mute this row once flagged was deleted 2026-10-17 (`BACKLOG.md`) |
-| Space | **Blade Reach** — the blade's resting length 30 at rest → 50 at level 10 (`Skimmer.Scale` ElementalFloat on `ForceFieldSkimmer Variant`, read live by `ShieldSkimmerScaleDriver`); energy grows it on top toward 120 | **Breaker** — APPROVED + SHIPPED 2026-10-13: the sword cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaced the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 |
+| Charge | **Energize** (2026-10-26; was *Sword Steal*, and *Sword Energy* before it) — the both-triggers energize, plus how many petals a sword hit takes from a rival vessel, ×1 at rest → ×2.5 at level 10, floored ×1 (`SwordfishSwordStealBySkimmerEffect.stealScale`) | **Sword Steal** (2026-10-26, replaced *Live Wire*) — a sword hit on a rival vessel STEALS its petals; without the upgrade the same petals are ejected as crystals at the strike, so the hit still scores (`VesselOvertakeBySkimmerEffectSO.stealUpgradeElement` = Charge on the Rhino's asset, gated on `IsUpgradeActive`) |
+| Mass | **Afterimage** — for 5 s after the energized blade goes out the sword lays prisms in its own shape and pose (one per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window, the blade cut into ≤ 6 segments of ≤ 10 u covering 90% of it; `SwordfishSwordAfterimageConfig.asset`, first pass, never played). Mass scales their VOLUME ×1 → ×2.5, floored ×0.25 (`massVolumeMultiplier`), read at the REPLICATED level so every peer lays the same mass. Since 2026-10-17 the Rhino's own blade cuts its own afterimages like any prism once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett: *"not immune to our destruction"*); the hull still ploughs them. Tuning watch: one energize (0.1) plus self-cuts (≤ 16 × ≤ 6 × 0.04) can refill the meter — if playtest finds the loop too strong the lever is energy-per-own-afterimage, not immunity | **Danger Afterimages** — the afterimages are laid as DANGER prisms (`SwordfishSwordAfterimageConfigSO.dangerUpgradeElement`, gated on `IsUpgradeActive(Mass)`, snapshotted per afterimage). A pilot flying into them takes what any danger prism does — the slow, the burn (opposing domain) or 4 s debuff (own), the boost reset; the input mute this row once flagged was deleted 2026-10-17 (`BACKLOG.md`) |
+| Space | **Blade Reach** — Space ALONE grows the blade: 24 at rest → 40 at level 10 (`Skimmer.Scale` ElementalFloat on the Rhino's own `ForceFieldSkimmer Variant` instance, eased in by `ShieldSkimmerScaleDriver`); nothing else resizes it since 2026-10-26 (no energy length, no surge burst), and the local pilot's camera pulls back in proportion (`cameraFollowsBladeLength`) | **Shield Breaker** (2026-10-26, replaced *Breaker*, which cut a shielded prism in one slice) — the sword can pop super-shielded prisms at all, still with an energized blade; without it the blade binds (`ShieldSkimmerScaleConfigSO.superShieldUpgradeElement` = Space, gated on `IsUpgradeActive`) |
 | Time | **Ramp Spool** — ramp wind-up `accelerationPerSecond` 220 at rest → 550 at level 10, 110 at the −5 floor (`RampBoostActionSO.timeAccelerationMultiplier`, ×1 → ×2.5, floored ×0.5, read live since 2026-10-16 — it was snapshotted at first engage). Time does not raise the ceiling: cruise 50 × `maxBoostMultiplier` 16.8 = 840 u/s | **Momentum** — above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino's elements (`VesselElementalImmunity` on the root, `condition: WhileAboveTopSpeedFraction`, `upgradeGate: Time`, `wardedSources: DangerPrism`), so an opposing pilot's blast still lands. The Time card lights while the ramp is boosting and flashes once when Momentum takes hold (2026-10-17; it was lit only while the ward held) |
 
 **The bulldozer ignores mass — a design statement, not a gap.** The hull carries no
@@ -353,7 +385,7 @@ the Unity editor yet. Detail: `R_VesselActions/RHINO_ENERGY_SWORD.md`,
 — it PLOUGHS prisms aside (`RhinoPloughPrismEffect`, 2026-10-13) and the ramp keeps climbing
 through them. This is recorded in the Time row's description on the map, so it reads as intent.
 
-**Omni crystal — the Surge** (`RhinoVesselSurgeByCrystalEffect`, replaced
+**Omni crystal — the Surge** (`SwordfishVesselSurgeByCrystalEffect`, replaced
 `RhinoVesselChangeResourceByCrystalEffect` 2026-10-16): fills sword energy to 1, bursts the blade,
 holds it ENERGIZED for 6 s with no stance and no cost (overriding a cooldown), lends +0.2 normalized
 (two levels) to all four elements decaying over the 6 s, and lays afterimages throughout. When it
@@ -381,10 +413,10 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
-| Mass | **Seed Wall** — the cloak's super-shielded seed (or the stopped stance's plain-shielded one) grows a symmetric herringbone of 2:1 bricks spaced so shielded octahedra point long vertex at short vertex with half a short side of air; it steals from its EDGE (Space sets the reach; the Space upgrade takes shielded prisms) and keeps growing until the cloak seed's super-shield breaks, or, for the stance's wall, until the Serpent flies again; MASS sets brick SIZE and SPACING together, snapshotted at placement (`SeedWallAction.asset`, ×2 at Mass 10). Every crystal beams to every growing wall's seed and ripples a shield through its wall. Garrett, 2026-10-09 (`R_VesselActions/SERPENT_SEED_WALL.md`) | **Lockdown** — a crystal collected while the Mass upgrade is active seals every square hole of every live wall with a same-size flat danger panel, an even crack short of the shields (no twist since 2026-10-13; replaces the Fortified Wall proposal) |
-| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`); it also lets the Seed Wall steal opponents' SHIELDED prisms (2026-10-13, `SERPENT_SEED_WALL.md`) |
-| Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | *(open)* — the old **Endless Coil** proposal ("chains without the reload pause") is void: the reload no longer exists |
+| Charge | **Scope** on LT (the eyepiece; one fixed 12° zoom, no element scaling) — Charge sets the SNIPER's RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`). Recut by Garrett 2026-10-30 | **Hunter's Sight** — while scoped, every rival in range leaves afterimages (one per 0.25 s, each standing 1 s); a sniper round through one strips the real pilot (`ScopeAfterimages`, gated on `IsUpgradeActive(Charge)`). Replaces Pierce: armour is a target from the start |
+| Mass | **Seed Wall** — the cloak's super-shielded seed (or the stopped stance's plain-shielded one) grows a symmetric herringbone of 2:1 bricks spaced so shielded octahedra point long vertex at short vertex with half a short side of air; it steals from its EDGE (Space sets the reach; the Space upgrade takes shielded prisms) and keeps growing until the cloak seed's super-shield breaks, or, for the stance's wall, until the Serpent flies again; MASS sets brick SIZE and SPACING together, snapshotted at placement (`SeedWallAction.asset`, ×2 at Mass 10). Every crystal beams to every growing wall's seed and ripples a shield through its wall. Garrett, 2026-10-09 (`R_VesselActions/SERPENT_SEED_WALL.md`) | **Lockdown** — every square hole whose four surrounding bricks have closed is sealed with a flat danger panel the moment its fourth brick lands, an even crack short of the shields (Garrett 2026-10-29; crystals only shield the wall now; replaces the Fortified Wall proposal) |
+| Space | **Cloak / Sniper Shot** on RT — the card shows the cloak unscoped and the sniper while the scope is held. The round destroys every hostile prism in its 1.5° cone, super-shielded mass included. Space sets the Seed Wall's steal reach (×1 → ×2) | **Shield Steal** — the Seed Wall also steals opponents' SHIELDED prisms (kept from Deep Focus, whose zoom step was retired; the Space 5 choice is open with Garrett, 2026-10-30) |
+| Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | **Fifth Pellet** — the pellet costs 0.2 of the tank instead of 0.25, so it holds five; each burns and boosts as before (`ConsumeBoostAction.asset` `upgradeResourceCost`, gated on `IsUpgradeActive(Time)`; Garrett 2026-10-30) |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
 proposal *skimmer scale* / **Coil Reach**. `VesselPrismController.EnableDangerMode` is still
@@ -411,7 +443,7 @@ mechanic, not merely when magnification is.
 
 **One fleet-wide UI fix came out of the same round.** `AbilityLockupView.SetAbilityCooldown`
 refused a LOCKED card, so this vessel's recharge — pushed correctly from
-`SerpentVesselHUDController` from the day the ability shipped — landed nowhere for three rounds of
+`SerpentHUDController` from the day the ability shipped — landed nowhere for three rounds of
 playtest, because the Serpent binds 0/4 icons. It now draws (the veil sizes itself on the ability
 PLATE, which a locked card has). *An indicator that refuses to draw because its decoration is
 missing is indistinguishable from an indicator nobody is driving.*
@@ -444,7 +476,7 @@ lifeform, Space is how far your steal reaches.**
 
 | Element | Ability | Input | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|---|---|
-| **Charge** | **Crystal Joust** | passive | **Petals stolen per overtake ×1 → ×2.5** (`VesselOvertakeBySkimmerEffectSO.stealScale`, added 2026-09-28 by design request). Read off the THIEF's REPLICATED level, so every peer moves the same petals. ×1 at rest keeps the priced Strike (0.8 petal per element); ×2.5 at level 10 is 2 whole petals per element. Opponent branch only — the ally buff keeps the base. The Rhino's sword shares the type and authors it disabled | **Shepherd** (moved from Space) — `SquirrelVesselWitherLifeformByCrystalEffect.allyUpgradeElement: 3 → 1`. The upgrade now sits on the ability it upgrades |
+| **Charge** | **Crystal Joust** | passive | **Since 2026-11-11: the least speed a joust needs, vessel or lifeform, 90 u/s at rest → 45 u/s at level 10** (`SquirrelJoustSpeed.asset` `minimumSpeed`, read at the replicated level; the Charge card's speed gauge marks it; `SQUIRREL_ELEMENT_RECUT.md`). The steal is flat (`stealScale` disabled). Before that: **petals stolen per overtake ×1 → ×2.5** (`VesselOvertakeBySkimmerEffectSO.stealScale`, added 2026-09-28 by design request). Read off the THIEF's REPLICATED level, so every peer moves the same petals. ×1 at rest keeps the priced Strike (0.8 petal per element); ×2.5 at level 10 is 2 whole petals per element. Opponent branch only — the ally buff keeps the base. The Rhino's sword shares the type and authors it disabled | **Shepherd** (moved from Space) — `SquirrelVesselWitherLifeformByCrystalEffect.allyUpgradeElement: 3 → 1`. The upgrade now sits on the ability it upgrades |
 | **Mass** | **Boost Ring** (moved from Time) | RT | deploy cooldown ×1 → ×0.5 (`SquirrelTubeActionSO.cooldownMultiplierAtFullMass`, renamed with `[FormerlySerializedAs]`) | **Twin Rings** — `IsUpgradeActive(Element.Time)` → `Element.Mass` in `SquirrelTubeActionExecutor` |
 | **Space** | **Steal** | passive | skimmer `Scale` ElementalFloat 15 → 30, **unchanged** — the sphere IS the steal reach, so the number did not have to move with the label | **Iron Grip** (NEW) — a shielded prism is stolen OUTRIGHT and keeps its armour, instead of only being stripped of the shield |
 | **Time** | **Skimming** (moved from Charge) | passive | skim energy per collision ×1 → ×2 (`SkimmerBoostPrismEffectSO.energyMultiplier`, renamed with `[FormerlySerializedAs]`, `element: 1 → 4`) | **Live Wire** — the danger 10× bonus, now element-addressed by the new authored `dangerBonusElement: 4` instead of a hardcoded `Element.Charge` |
@@ -481,7 +513,7 @@ nothing here touches it.
    mechanic was deleted, so that card had been showing a gauge nothing drove. ⚠ **Stated cost:
    the Squirrel now has no drift readout on the HUD at all** — `ElementalBarsView.JuiceDriftStart`
    exists, is fully written and is ALSO dead (no callers anywhere), so if drift feedback is wanted
-   back it is one line in `SquirrelVesselHUDController` pointing at the petal flowers instead of
+   back it is one line in `SquirrelHUDController` pointing at the petal flowers instead of
    at an ability icon.
 
 HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
@@ -569,12 +601,16 @@ no serialized field, so its carrier is a `static readonly ElementalFloat` in C#
 (`BallSizeScale`, ×1 → ×4 floored ×0.5). It is the one row `element_ability_table.py` cannot see,
 because that tool reads assets.
 
-| Element | Quantitative | L5 upgrade |
-|---|---|---|
-| Charge | cavitation-blast **cooldown** (`ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at L10 — the authored-cooldown idiom) | **Cavitation Shear** — the blast destroys SHIELDED prisms outright instead of only shedding shields (`AOEExplosion.InitializeStruct.DevastatingOverride`, per-use snapshot) |
-| Mass | switch structure size — ring aperture + interior fill span (`switchScale` ElementalFloat 1→2.5) | **Armored Switch** — the switch is built from SHIELDED prisms, snapshotted at placement, so an opposing ball caroms off and sheds one shield per prism |
-| Space | forged **ball size**, ×1 → **×4 at L10** (`ScarabBallForge.BallSizeScale`, floored ×0.5; stamped once at forge time) | *(open — the notes name no Space upgrade; do not invent one)* |
-| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled). **Shipped band 216 → 324** (`ScarabVesselTransformer.baseTopSpeed` 216, raised 20% from 180 on 2026-09-09); note that base is authored in the C# INITIALIZER, because the prefab's transformer block predates the field and carries no override for it — `SCARAB.md §13` | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
+> **RECUT 2026-10-29 (Garrett).** The table below is the shipped map now; the 2026-08-15 rows it replaced
+> (Charge = blast cooldown + Cavitation Shear, Space = forged ball size, Mass 5 = Armored Switch) are in git history.
+> The Ball Forge is the OMNI crystal ability (no element sizes a forged ball) and the Drift has a core card.
+
+| Element | Ability | Quantitative | L5 upgrade |
+|---|---|---|---|
+| Charge | **Shove** (the dash's plate; the class is still `ScarabCavitationBlast`) | **since 2026-11-11 the shove's cooldown**, 4.25 s at rest → **2.125 s at L10** (2.5 → 1.25 until 2026-11-19, when the Broadside judge put the knee at 4.25 s) (`cooldownSeconds` × `cooldownScale` ×1 → ×0.5, floored ×0.25, on `Scarab.prefab`'s `ScarabCavitationBlast`, read at the replicated level and snapshotted when the plate fires); the debuff is the flat price. 2026-10-29 to 2026-11-10 it was the debuff, ×1 → ×2.5 (`magnitudeAtFullCharge`), retired as too coarse to tune | **Backdraft** — the plate claims its mirror image behind the hull: push AND pull, the cylinder doubled (`ScarabCavitationBlast.PlateMirrors`, per fire) |
+| Mass | **Switch** | ring aperture (`switchScale` ElementalFloat 1→2.5) | **Sun Cores** — a scored switch's dais rises WITH its super-shielded suns (`ScarabSwitch.LaysDaisElement`, snapshot at placement) |
+| Space | **Nucleus Seeding** (balls of your domain embedded in the nucleus membrane) | seeded **ball size**, ×1 → **×4 at L10** (`ScarabBallForge.SizeScaleFor`, a `static readonly ElementalFloat`) | **Core Breaker** — your balls destroy super-shielded prisms and fly on (`AstroLeagueBall` replicated stamp, set when the ball is seeded or forged) |
+| Time | **Throttle** | top speed of the throttle ramp (`ThrottleScalerMultiplier` 1→1.5; shipped band 216 → 324) | **Snap Dash** — double-tap the throttle: 500 u/s along the nose (5× the old 100), 5 s cooldown |
 
 **The right-stick dash is base kit and has no cooldown** — it is not a map row. Only the
 cavitation blast riding it is paced, which is the Charge row. Snap Dash is the *throttle's*
@@ -612,6 +648,8 @@ lifeform wither, danger skim bonus). The Thresher runs forked containers
 
 ### Stoat — the field dipole + pathfinder (round 15) — ALL FOUR APPROVED + SHIPPED (2026-10-13)
 
+> **Removed 2026-11-02 (Yash): the Stoat flies the orbit alone; Mass and Gate mode are gone from the kit** (`Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`). Today's map: Space = Catch Orbit (orbit radius ×1 → ×1.4), Time = Timed Slingshot (the warp ×2.7 → ×5.6), Charge = Ripple (reach ×1 → ×2), Mass = **Heavy Launch** (the launch's kick ×1 → ×2.5; L5 Armoured Wake shields the launch's trail). Space's L5 Accretion is re-homed onto the orbit (`stoat/complete`, 2026-11-02): rival prisms that fall into the attractor while you orbit are stolen, each +4% to that pair's ripple reach, to +40% — **awaiting Garrett's sign-off**. The omni crystal is Fulmen (Overclock's code and asset are parked, not deleted: `author_stoat_assets.py` / `author_angler_assets.py` still reference its guid). This section is the removed kit's record.
+
 Approved 2026-10-09: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **Time = Pathfinder**
 (passive; Time scales the warp boost ×2.5 → ×5). The rest was decided by Garrett on 2026-10-13 against the
 proposals below, and shipped the same day (`_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1a–§1e):
@@ -630,7 +668,7 @@ Claude's calls inside those decisions, each recorded in STOAT_DIPOLE.md and open
 (±15°, 30° falloff, a fifth of the kick outside it), the Mass-mode thickness numbers, the ripple's reach formula and
 its one petal per element, B as the mode button, Siphon and Armoured Wake as the two L5s the brief left open.
 
-### Brittle Star — modes + five turrets + ring detonation — ABILITIES SHIPPED, L5 OPEN (2026-10-14)
+### Brittle Star — modes + five turrets + ring detonation — ABILITIES SHIPPED, L5 WIRED (designed by Shombith 2026-11-03; the proposals below predate it)
 
 The four abilities are the class document's (Notion "Class - Brittle Star"), mapped by its own element personas:
 **Charge = Ring Detonation** (Rolling Thunder: "larger projectile size and larger AOE on support ring detonation"),
@@ -645,6 +683,53 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Mass L5 | **Shielded Corners** — the corner trails arrive shielded | **Webbing** — every fifth block bridges to the next corner |
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
+
+### Meerkat ("Meerkats") — the soliton maker, a dynamic-seat crew vessel — element definition LOCKED (Garrett, 2026-10-28); building it is Yash's
+
+Garrett, 2026-10-28: *"lock in the elemental definition so yash builds upon them."* The element → ability → level →
+L5 rows below are decided (`Docs/Studios/MEERKAT.md` § Garrett's direction). How each is built, tuned and drawn, every
+number, and the seat machinery stay Yash's. **Shipped 2026-10-28** (below, "approved + shipped"): the map
+(`ElementalAbilityMaps/Meerkat.asset`) carries the four rows; the surface area and the swallow are Yash's round 23; the
+seats, the hop and the element-holder rule are not built yet.
+- **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
+  included, and fires them out. L5 **Steal**: what passes through is stolen, the steal starting as each prism starts
+  its run.
+- **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
+- **Charge · Sentinel mode** (Y / F, an active toggle): new tunnels leave a sentinel at their entrance, from a pool of
+  3; with the pool used up, the oldest retires with its soliton.
+  - A sentinel guards 1.5 × the opening radius, zaps enemy vessels' elements (Charge sets the petals per zap) and
+    shields same-domain prisms.
+  - It is a seat any teammate can take: tap or click, with no cooldown, to shield any prism or attack. The empty seat's
+    AI zaps a little slower than an average person taps.
+  - The button hops: the sentinel rides through its soliton and takes the flyer, and the old flyer becomes a sentinel
+    at a new soliton where it was.
+  - A zap is a sub-petal tick (0.1 → 0.25 of a petal by Charge, through `AccrueElementalLoss`).
+  - One element meter, held by the person seated longest aboard the Meerkats. Only that person's meerkat takes element
+    damage; any other dies instead. A dead flyer is replaced by the next hop's hopper.
+  - A soliton lasts as long as its sentinel. The vessel enters with one seat and never adds players.
+  - L5 **Six sentinels**.
+- **Mass · passive**: a minimal exit portal, a few low-mass prisms in a hexagon round the outside of the exit, once
+  per soliton, sized by Mass. L5 **Danger prisms**.
+
+Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are archived in the same doc, and the round-18
+Mix's L5 swaps (Chain Dig on Time, Cave-in on Space) give way to these rows.
+
+#### Meerkat — APPROVED + SHIPPED (Garrett's design, Yash 2026-10-28)
+
+Yash, 2026-10-28: *"Garrett has already defined all the elemental abilities, so we're gonna implement those, and it also
+has the Space ability, which pulls prisms inside the tube."* Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's
+direction, on `cece/lucid-brown-ykcmhu`), ported from the artifact's Kit "Garrett's kit" (`R_VesselActions/MEERKAT.md` §8-§9):
+
+| Element | Ability (input) | What the level scales | L5 (gate) |
+|---|---|---|---|
+| **Space** | **Soliton** (RT): the wormhole is a standing tunnel any Meerkat may ride; it swallows prisms (and crystals) at its way in and fires them out of its way out as moving prisms (`MeerkatSwallow`, round 23) | `areaL0` / `areaL10` 6,000 → 18,000 u²: throat b = A / (2π L g(k)), floor 0.25 u (`SolitonTunnelShapeMath.SurfaceAreaThroat`, round 23) | **Steal**: what it swallows is stolen into the Meerkat's domain as its run starts (`MeerkatSolitonKit.StealUnlocked`, stolen in `MeerkatSwallow.Swallow`) |
+| **Time** | **Faster Ride** (passive): the ride through every soliton, its own or anyone's | `rush` 1 → 1.4 × the throat's multiplier | **Boost Out**: every soliton is left at `boostOut` 1.5 × the exit (`BoostOutUnlocked`) |
+| **Mass** | **Exit Portal** (passive): six prisms on a hexagon at 1.5 × the exit radius, once per soliton (`MeerkatExitPortal`) | `portalSize` 0.4 → 0.9 × the hull's trail prism | **Danger Portal**: danger prisms (`DangerPortalUnlocked`) |
+| **Charge** | **Sentinel Mode** (Y, `Button4Action`): each new soliton leaves a sentinel that holds it, zaps rivals in its guard (1.5 × the opening) at 5 a second and shields its own prisms there (`MeerkatSentinels`); pool 3 | `zapPetals` 0.1 → 0.25 of a petal a zap, each element, ejected, a scored hit that silences | **Six Sentinels**: the pool is 6 (`SixSentinelsUnlocked`) |
+
+Not built: the sentinel seats and the hop (they need dynamic crew seats), a sentinel zapping another's sentinel, and a
+non-Meerkat hull riding a soliton. Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) and the Mix
+stay in the artifact only.
 
 ## 3. Implementation notes for approved rows
 

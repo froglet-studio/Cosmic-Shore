@@ -283,6 +283,10 @@ namespace CosmicShore.Tests
                 "the lens shader no longer reads the depth texture and BlackHoleLensPass's scene copy.");
             Assert.IsTrue(shader.Contains($"\"LightMode\" = \"{BlackHoleLensPass.LightModeName}\""),
                 "the lens pass must carry LightMode BlackHoleLens, so URP's own passes never draw it.");
+            Assert.IsTrue(shader.Contains($"\"LightMode\" = \"{BlackHoleLensPass.WaveLightModeName}\"") &&
+                          shader.Contains("BlackHoleWaveLightFrag") && shader.Contains("LinearToSRGB"),
+                "the waves' light must be its own pass, added AFTER post-processing in display values — added to the lens " +
+                "pass before bloom, a light shell's glow blooms into a white flash (2026-10-14).");
             Assert.IsFalse(shader.Contains("SampleSceneColor") || shader.Contains("DeclareOpaqueTexture"),
                 "the lens reads URP's opaque copy again — taken before the transparents, it has no shards in it.");
             Assert.IsTrue(shader.Contains("GetFullScreenTriangleVertexPosition") && shader.Contains("BlackHoleLensWell("),
@@ -411,7 +415,7 @@ namespace CosmicShore.Tests
             string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
             Assert.IsTrue(shader.Contains("BlackHoleLensWave(") && shader.Contains("BlackHoleLensViewStretch("),
                 "the lens no longer draws the waves (the gravitational wave, the light shells, the view stretching).");
-            Assert.IsTrue(hlsl.Contains("squeeze += 0.14 * gwGlow") && hlsl.Contains("float3(1.0, 0.96, 0.86) * shellWash"),
+            Assert.IsTrue(hlsl.Contains("squeeze += 0.14 * gwGlow") && hlsl.Contains("_BHShellColour.rgb * shellWash"),
                 "the wave's crests, troughs or a shell's wash are gone.");
             string warp = File.ReadAllText(HlslPath);
             Assert.IsTrue(warp.Contains("PrismGravityWaveStrain(") && warp.Contains("_PrismGravityWaveParams"),

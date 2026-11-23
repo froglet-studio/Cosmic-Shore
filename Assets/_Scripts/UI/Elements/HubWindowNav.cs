@@ -9,7 +9,7 @@ namespace CosmicShore.UI
     /// The way between the home hub's windows (Rev 7, Docs/MENU_REDESIGN_B.md §47.2; the owner, 2026-10-17: "pressing
     /// lt rt or pressing a new left right button should slide between the menus"): a strip under the top nav naming the
     /// four windows with the shown one underlined, and an arrow on each screen edge naming the neighbour it slides to.
-    /// LT / RT do the same from the pad (<see cref="ScreenSwitcher"/> reads them). The slide stops at the ends, so the
+    /// LB / RB do the same from the pad (<see cref="ScreenSwitcher"/> reads them; LT / RT page the top bar). The slide stops at the ends, so the
     /// first window has no left arrow and the last no right arrow.
     ///
     /// <para>One instance over every window: it shows while a hub window is the TOP modal and hides under a configure,

@@ -24,3 +24,5 @@ MonoBehaviour:
   Variant:
     Enabled: 1
     HeartWorldScale: 2.568
+    BaseBodyScale: 2.277
+    ErodeSpindle: 1

@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(25, values.Length,
+            Assert.AreEqual(28, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -62,6 +62,10 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Starling, 21)]
         [TestCase(VesselClassType.Jacks, 22)]
         [TestCase(VesselClassType.Honeyguide, 23)]
+        [TestCase(VesselClassType.Meerkat, 28)]
+        [TestCase(VesselClassType.TigerMoth, 29)]
+        [TestCase(VesselClassType.Swordfish, 30)]
+        [TestCase(VesselClassType.JewelWasp, 31)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -174,9 +178,60 @@ namespace CosmicShore.Tests
             // 62 -> 63 on 2026-10-20: WrasseRun (68), the Wrasse and Grouper's race (67 is SerpentCharge's,
             // in flight on another branch).
             // 63 -> 64 on 2026-10-25: Tandava (69), the co-op swarm hunt - authored as 62 on its branch, renumbered at
-            // the merge (the seventh collision). When SerpentCharge (67) lands this becomes 65.
+            // the merge (the seventh collision).
+            // 64 -> 65 on 2026-10-26: TandavaSevering (70), Voyage 2 - Tandava's fork with the severing work. When
+            // SerpentCharge (67) lands this becomes 66.
+            // 65 -> 66 on 2026-10-27: BurrowRun (71), the Meerkat's time race (67 is still SerpentCharge's, in flight).
+            // 66 -> 69 on 2026-10-27: ScarabRally (72), SerpentTime (73), BrittleStarTime (74) - Time races for
+            // three hulls that had none (merged with BurrowRun from Ys-bleeding-edge).
+            // 69 -> 70 on 2026-10-31: WaystationPrototype (76), the Tiger Moth's Drop Tower race beside Waystation
+            // (72-74 are ScarabRally, SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight).
+            // 70 -> 71 on 2026-10-31: SerpentGulag (77, renamed SerpentHood 2026-11-09), the Serpent's sniper duel (67 is still SerpentCharge's and
+            // 75 LanternRun's, both in flight).
+            // 71 -> 70 on 2026-11-01: WaystationPrototype (76) folded into Waystation (58); 76 is retired and reserved.
+            // 70 -> 71 on 2026-11-01: LanternRun (75), the Angler's Time race.
+            // 71 -> 72 on 2026-11-07: Thornline (79), the Shrike's Time race (78 was SpeedPainter's on its branch).
+            // 72 -> 73 on 2026-11-07: DecoyRun (80), the Jacks' Time race.
+            // 73 -> 74 on 2026-11-07: PerchRun (81), the Goby's Time race.
+            // 74 -> 75 on 2026-11-07: SlipLine (82), the Honeyguide's Time race.
+            // 75 -> 76 on 2026-11-07: Breach (83), the Orca's Time race.
+            // 76 -> 77 on 2026-11-09: Jackstraw (85), the Thresher's Charge game. It first took 84, which the Brittle Star's
+            // Flatline (84, claude/great-rubin-rur3xs, in flight) had claimed; Shombith gave 84 to Flatline. When both land
+            // this becomes 78.
+            // 77 -> 78 on 2026-11-09: Flatline (84), the Brittle Star's charge game (Shombith gave it 84 after both claimed it).
+            // 78 -> 79 on 2026-11-09: Kelpwood (86), the Angler's Charge game.
+            // 79 -> 80 on 2026-11-10: Corona (87), the Manta's Charge game (87 free on every branch that day).
+            // 80 -> 81 on 2026-11-10: Harvest (88), the Thresher's Space game (88 free on every recent branch that day).
+            // 81 -> 82 on 2026-11-10: Shatterplane (90), the Brittle Star's Space game. It first took 88, which Harvest
+            // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
+            // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
+            // pushed first; 89 was free on every branch.
+            // 83 -> 86 on 2026-11-15: Larder (102), Thornbush (103) and Lancefall (104), the Shrike's Charge, Mass and
+            // Space games, on the ids GAME_KIT_ROSTER.md reserved for them (other roster games land beside them).
+            // 86 -> 88 on 2026-11-15: Shockfront (119) and Fulmen (120), the Stoat's Charge and Space games, on its reserved ids.
+            // 88 -> 91 on 2026-11-15: Spearline (96), Riposte (97) and Palisade (98), the Swordfish's Time, Charge and
+            // Mass games, on their reserved ids.
+            // 91 -> 94 on 2026-11-15: the Honeyguide's Flitstrike (108), Honeycomb (109) and Woodpecker (110), on its reserved ids.
+            // 94 -> 96 on 2026-11-15: Stingherd (117) and Trawl (118), the Jacks' Charge and Space games.
+            // 96 -> 99 on 2026-11-15: PodHunt (99), IceShelf (100), DepthCharge (101), the Orca's Charge, Mass and Space
+            // games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them (parallel sessions build the
+            // other rows' games at the same time; each adds its own count).
+            // 99 -> 100 on 2026-11-15: Railrush (124), the Urchin's Charge game, on its reserved id.
+            // 100 -> 103 on 2026-11-15: Bullrush (121), Windrow (122) and Landslide (123), the Rhino's Charge, Mass and
+            // Space games, on their reserved ids.
+            // 103 -> 108 on 2026-11-15: Chum (91), Starweave (92), Haul (93), Hedgerow (94) and Longshot (95), rows 1-5 of
+            // GAME_KIT_ROSTER.md's reserved ids.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(64, values.Length,
+
+            // 108 -> 111 on 2026-11-15: Sentry (105), Warren (106) and CaveIn (107), the Meerkat's Charge, Mass and Space
+            // games, on their reserved ids.
+            // 111 -> 112 on 2026-11-15: Standoff (125), the Grizzly's Charge game, on the id GAME_KIT_ROSTER.md reserved (row 35).
+            // 112 -> 115 on 2026-11-15: CleanerRam (111), Reefbuild (112) and Blastline (113), the Wrasse's Charge, Mass
+            // and Space games, on the ids GAME_KIT_ROSTER.md reserved for them (rows 21-23).
+            // 115 -> 118 on 2026-11-15: Snap (114), DenBuilder (115), Riptide (116), the Goby & Pistol's Charge, Mass and
+            // Space games, on the ids Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for them.
+            // 118 -> 120 on 2026-11-16: Marionette (126) and Gorge (127), the Jewel Wasp's Charge and Space games (rows 36-37).
+            Assert.AreEqual(120, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -218,6 +273,34 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Warpline, 65)]
         [TestCase(GameModes.ThresherTime, 66)]
         [TestCase(GameModes.WrasseRun, 68)]
+        [TestCase(GameModes.BurrowRun, 71)]
+        [TestCase(GameModes.ScarabRally, 72)]
+        [TestCase(GameModes.SerpentTime, 73)]
+        [TestCase(GameModes.BrittleStarTime, 74)]
+        [TestCase(GameModes.Thornline, 79)]
+        [TestCase(GameModes.DecoyRun, 80)]
+        [TestCase(GameModes.PerchRun, 81)]
+        [TestCase(GameModes.SlipLine, 82)]
+        [TestCase(GameModes.Breach, 83)]
+        [TestCase(GameModes.Flatline, 84)]
+        [TestCase(GameModes.Corona, 87)]
+        [TestCase(GameModes.Shatterplane, 90)]
+        [TestCase(GameModes.Chum, 91)]
+        [TestCase(GameModes.Starweave, 92)]
+        [TestCase(GameModes.Haul, 93)]
+        [TestCase(GameModes.Hedgerow, 94)]
+        [TestCase(GameModes.Longshot, 95)]
+        [TestCase(GameModes.Spearline, 96)]
+        [TestCase(GameModes.Riposte, 97)]
+        [TestCase(GameModes.Palisade, 98)]
+        [TestCase(GameModes.Shockfront, 119)]
+        [TestCase(GameModes.Fulmen, 120)]
+        [TestCase(GameModes.Sentry, 105)]
+        [TestCase(GameModes.Warren, 106)]
+        [TestCase(GameModes.CaveIn, 107)]
+        [TestCase(GameModes.Standoff, 125)]
+        [TestCase(GameModes.Marionette, 126)]
+        [TestCase(GameModes.Gorge, 127)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

@@ -84,6 +84,9 @@ LOCKUP_FIELDS = {
     "slantEdgeColor": "{r: 0.455, g: 0.482, b: 0.678, a: 0.85}",  # Neutral Lightest #747BAD at 85%
     "lockedPlateColor": "{r: 0, g: 0.016, b: 0.122, a: 0.55}",    # the same surface, dimmer
 }
+# Elements carry no colour in any UI (Garrett's palette, 2026-10-24; Docs/UI_COLOR_RULES.md): the rev 3 lava lamp is
+# off, so a card shows its element by its flower and glyph, not by a coloured plate, and nothing drifts behind it.
+NO_ELEMENT_COLOUR_FIELDS = [("elementColour", "0"), ("lavaMotion", "0")]
 KEYCAP_FIELDS = [
     ("keycapChips", "1"),
     ("keycapFillSprite", K.sprite_ref(K.kit_sprite("kit_sliver10_fill"))),
@@ -157,6 +160,10 @@ def lockup_text(text_):
         text_ = C.field_set(text_, k, v)
     after = "bloomPadding"
     for k, v in KEYCAP_FIELDS:
+        text_ = insert_after_field(text_, after, k, v)
+        after = k
+    after = "plateColor"
+    for k, v in NO_ELEMENT_COLOUR_FIELDS:
         text_ = insert_after_field(text_, after, k, v)
         after = k
     return text_
@@ -241,7 +248,8 @@ READY_POS = (0, -200)
 WAIT_W, WAIT_H = 600, 84
 WAIT_POS = (0, -222)
 CHIP_W, CHIP_H, CHIP_RING = 60, 80, 52
-BEAT_SIZE = 260
+BEAT_SIZE = 168        # Rev 33 board A: the numbers in their hex (CountdownTimer.numberSize; GO is goSize, 132)
+BEAT_HEX_R = 124       # the count's hex, centre to corner
 READY_CAPTION = "The match starts when every pilot is ready."
 WAIT_TITLE = "Waiting for pilots"
 WAIT_NOTE = "You are ready. The countdown starts with the last pilot."
@@ -257,13 +265,14 @@ S.update(kitbutton=K.kit_script("KitButton"), button=A.BUTTON, cbp=script_guid(n
 
 def ready_nodes():
     """FocusRing, Fill, Border, KeycapSlot, Label, Caption - under the Ready button's own RT."""
-    border, fillc, content = K.button_palette("Play", True)
+    # READY is Play / Ready on Frogma's Style Guide 5: the commit Ruby, no way back (Docs/UI/specs/sg5-play-ready.md Q2).
+    border, fillc, content = K.button_palette("Commit", True)
     ring = N("Ready/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10)))
     ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
         .add("le", 114, H.le(ignore=True))
     fill = N("Ready/Fill", "Fill", STRETCH)
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
-        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n")) \
+        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n", enabled=False)) \
         .add("le", 114, H.le(ignore=True))
     bord = N("Ready/Border", "Border", STRETCH)
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
@@ -289,7 +298,7 @@ def ready_button_doc(old, ctx):
     doc = re.sub(r"\n  theme: .*\Z", "\n", doc, flags=re.S)          # re-run: drop the KitButton tail
     return (doc.rstrip("\n") + "\n"
             + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: {ctx.c('Ready/FocusRing', 'img')}}}\n"
-            + f"  variant: {K.VARIANTS['Play']}\n  fill: 1\n"
+            + f"  variant: {K.VARIANTS['Commit']}\n  fill: 1\n"
             + f"  fillGraphic: {{fileID: {ctx.c('Ready/Fill', 'img')}}}\n"
             + f"  borderGraphic: {{fileID: {ctx.c('Ready/Border', 'img')}}}\n"
             + K.refs_list("contentGraphics", [ctx.c("Ready/Label", "tmp")])
@@ -353,7 +362,7 @@ def waiting_node():
     n = N("Wait", "ReadyWaiting", R((0.5, 0.5), (0.5, 0.5), WAIT_POS, (WAIT_W, WAIT_H)))
     n.add("cg", 225, H.canvas_group(False)).add("in", 114, HM.M.entrance("Rise", distance=18, play_on_enable=False))
     H.framed(n, "Wait", 14, "SurfaceVeryDark", "SurfaceLight", fill_alpha=0.92)
-    dia = A.image_node(n, "Wait/Diamond", "Diamond", HM.TL(26, 37, 12, 12), "Cta", K.chrome_sprite("chrome_diamond"), preserve=True)
+    dia = A.image_node(n, "Wait/Diamond", "Diamond", HM.TL(26, 37, 12, 12), "NeutralLightest", K.chrome_sprite("chrome_diamond"), preserve=True)
     dia.add("breathe", 114, HM.M.ambient("Breathe", period=1.6, amplitude=0.6))
     H.label(n.child(N("Wait/Title", "Title", HM.TL(54, 18, 420, 20))), WAIT_TITLE, "Label", "TextLight")
     H.label(n.child(N("Wait/Note", "Note", HM.TL(54, 44, 440, 22))), WAIT_NOTE, "BodySmall", "NeutralLightest")
@@ -378,11 +387,26 @@ def beat_node():
     n = N("Beat", "Beat", R((0.5, 0.5), (0.5, 0.5), (0, 0), (600, 400)))
 
     def body(ctx, go):
+        # No auto-size: it would cap the beat at the Display role's 48 px (it did, until Rev 33), and CountdownTimer
+        # sets the size per beat (numberSize, goSize).
         b = H.text("3", "Display", tok("TextLight"), align="center")(ctx, go)
-        return b.replace(f"  m_fontSize: {K.f32(48)}\n  m_fontSizeBase: {K.f32(48)}\n",
-                         f"  m_fontSize: {BEAT_SIZE}\n  m_fontSizeBase: {BEAT_SIZE}\n")
+        b = sub1(b, f"  m_fontSize: {K.f32(48)}\n  m_fontSizeBase: {K.f32(48)}\n",
+                 f"  m_fontSize: {BEAT_SIZE}\n  m_fontSizeBase: {BEAT_SIZE}\n")
+        return sub1(b, f"  m_enableAutoSizing: 1\n  m_fontSizeMin: {K.f32(K.fit_min(48))}\n  m_fontSizeMax: {K.f32(48)}\n",
+                    f"  m_enableAutoSizing: 0\n  m_fontSizeMin: {BEAT_SIZE}\n  m_fontSizeMax: {BEAT_SIZE}\n")
     n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, body)
     return n
+
+
+def beat_hex_nodes():
+    """The count's hex (fills through each number; bursts at GO) and the lime ring that leaves it at GO."""
+    s = round(BEAT_HEX_R / 0.4, 2)
+    hexn = N("Beat/Hex", "BeatHex", R((0.5, 0.5), (0.5, 0.5), (0, 0), (s, s)))
+    hexn.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic(
+        (1, 1, 1, 1), glass=tok("SurfaceVeryDark", 0.86), width=3, fill_alpha=1)).add("cg", 225, H.canvas_group(False))
+    ring = N("Beat/GoRing", "GoRing", R((0.5, 0.5), (0.5, 0.5), (0, 0), (s, s)))
+    ring.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic(tok("Cta"), width=4, color=(1, 1, 1, 0)))
+    return [hexn, ring]
 
 
 def countdown_instance(p):
@@ -422,11 +446,18 @@ def patch_waiting_and_countdown(p):
     assert disp, "the CountdownTimer's display is unwired"
     disp_go = p.sc.go_of(disp)
     disp_rt = p.sc.rect_of(disp_go)
-    beat_rt = p.emit(beat_node(), disp_rt, disp)
-    p.children(disp_rt, [k for k in p.kids(disp_rt) if k != beat_rt] + [beat_rt])
+    hex_ids, after = [], disp
+    for n in beat_hex_nodes():
+        hex_ids.append(p.emit(n, disp_rt, after))
+        after = HM._last_doc(p, n)
+    beat_rt = p.emit(beat_node(), disp_rt, after)
+    p.children(disp_rt, [k for k in p.kids(disp_rt) if k not in hex_ids and k != beat_rt] + hex_ids + [beat_rt])
     p.rect(disp_rt, R((0.5, 0.5), (0.5, 0.5), (0, 0), (600, 400)))
     set_instance_ref(p, pi, COUNTDOWN_COMP, "countdownText", p.ctx.c("Beat", "tmp"))
     set_instance_ref(p, pi, COUNTDOWN_COMP, "waitingPanel", p.ctx.c("Wait", "panel"))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "beatHex", p.ctx.c("Beat/Hex", "hex"))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "beatHexGroup", p.ctx.c("Beat/Hex", "cg"))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "goRing", p.ctx.c("Beat/GoRing", "hex"))
 
 
 # --------------------------------------------------------------------------------------------
@@ -484,7 +515,8 @@ def kit_button(k, name, r, variant, opaque, caption, cap, pad, group_key=None, k
         .add("le", 114, H.le(ignore=True))
     fill = n.child(N(f"{k}/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
-        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n", enabled=opaque)) \
+        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n",
+                                                   enabled=opaque and variant != "Commit")) \
         .add("le", 114, H.le(ignore=True))
     bord = n.child(N(f"{k}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
@@ -572,19 +604,104 @@ def pause_text(text_):
 
 
 # --------------------------------------------------------------------------------------------
-# 12c - the connecting panel (ConnectingPanel.prefab, nested in GameCanvas)
+# 12c - the connecting panel (ConnectingPanel.prefab, nested in GameCanvas): Rev 91 F, THE TOUR
+# (Docs/MENU_REDESIGN_B.md section 173, board F; the drawing is Docs/MenuRedesignB/rounds/r91_loading.py), on the
+# Rev 33 cover (section 99): it COVERS the arena (no camera renders behind it, so the build runs at the cell-change
+# screen's tempo). ENTERING and the mode's name sit top left; the parts of the game are shown one chapter at a time
+# (a picture left of centre, a counter, a title and one line on the right, a five-word index top right), the chapter
+# following the load (ConnectingTourView); one bar cut into the load's real steps runs along the bottom (KitStepBar).
+# At the end the bar reads Ready in Lime and a hex opens from the centre into the arena (ConnectingGateView.Open).
+#
+# What F no longer draws is removed here, never by hand: the Omni crystal, the tagline and chips, the steps panel,
+# the pilots panel and the footer. Three things are KEPT because something outside this prefab points at them:
+#   - the old Slider's objects are the bar's track and fill (GameCanvas overrides the Fill's anchor); the Slider
+#     component itself is gone, KitStepBar anchors the fill;
+#   - the roster (ConnectingPlayerRoster) and its list and template row (GameCanvas overrides the row) stay under a
+#     zero-alpha CanvasGroup: the load still waits on every human pilot through it, and their count is the bar's last
+#     share, but F draws no pilot rows.
 # --------------------------------------------------------------------------------------------
 
 CONNECT = "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab"
 WHITRABT = K.meta_guid("Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/whitrabt SDF.asset")
 CN = dict(comp="6370090134550638757", root_go="470661231859203382", root_rt="5402023128368193864",
-          root_img="2388631188305556708", safe_rt="268860854097267997", status_rt="7647039353653187114",
-          status_tmp="5105126948944046106", mode_rt="7234322143272291273", mode_tmp="6280339008487199906",
-          rank_tmp="1901962995261546283", preview_rt="4036379287790713793", slider_rt="4629373923633661124",
-          track_go="5177954019794184100", track_img="8125581187658145292", fill_go="8684485316077403885",
-          fill_img="6946419630781211910")
-S.update(connect=script_guid("Assets/_Scripts/UI/ConnectingPanelController.cs"))
-COL_X = 1000           # the readout column: 1000 wide, centred, as the board draws it
+          root_img="2388631188305556708", safe_go="668988761015778786", safe_rt="268860854097267997",
+          status_go="917125772582838926", mode_go="5753793761074810139", mode_rt="7234322143272291273",
+          mode_tmp="6280339008487199906", rank_rt="6369488707559300757", rank_tmp="1901962995261546283",
+          camera_go="6872256739989315075", preview_go="6537181835104226913",
+          slider_go="6508048406648284931", slider_rt="4629373923633661124", track_go="5177954019794184100",
+          track_rt="7173161466604345517", track_img="8125581187658145292", fillarea_rt="8176116645415605081",
+          fill_go="8684485316077403885", fill_rt="4280864247464791669", fill_img="6946419630781211910",
+          icons_go="9124959156195794125", icons_rt="3593977903660026307", roster="4166936055535670324",
+          row_go="1082109306432636569", row_rt="5898718248706178780", row_img="2786987675188890769",
+          avatar_rt="2055132934474971526", avatar_img="2038959525692544740")
+S.update(connect=script_guid("Assets/_Scripts/UI/ConnectingPanelController.cs"),
+         gate=script_guid("Assets/_Scripts/UI/Elements/ConnectingGateView.cs"),
+         tour=script_guid("Assets/_Scripts/UI/Elements/ConnectingTourView.cs"),
+         drift=script_guid("Assets/_Scripts/UI/Screens/PosterDrift.cs"),
+         stepbar=K.kit_script("KitStepBar"),
+         aperture=script_guid("Assets/_Scripts/UI/Elements/HexApertureGraphic.cs"),
+         crystal=script_guid("Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs"),
+         roster=script_guid("Assets/_Scripts/UI/Elements/ConnectingPlayerRoster.cs"),
+         hlg=K.HLAYOUT, vlg=K.VLAYOUT)
+ARCADE_GAMES = "402ca7eefc2aeb64baaa140c43312bcd"   # ArcadeGames.asset (SO_GameList)
+INTRO_LIBRARY = K.meta_guid("Assets/Resources/IntroCameraLibrary.asset")
+VEIL_WORDS = K.meta_guid("Assets/Resources/UI/EnvironmentLoadVeilContent.asset")
+RECT_MASK_2D = "3312d7739989d2b4e91e6319e9a96d76"
+# Every node this section ever generated. All are deleted on the way in and the current ones re-emitted, so a re-run
+# is a no-op and a retired look leaves nothing behind. (Rev 3 readout column, the section 28 backdrop, the Rev 33
+# cell gate's crystal, brief, panels and footer, then Rev 91 F's own.)
+RETIRED_CONNECT_KEYS = ("Connect/Diamond", "Connect/Progress", "Connect/Elapsed", "Connect/Backdrop", "Connect/Dim",
+                        "Connect/BottomFade", "Connect/Phase", "Gate/Crystal", "Gate/Tagline", "Gate/Chips",
+                        "Gate/Steps", "Gate/Pilots", "Gate/Footer", "Gate/Row/Rule", "Gate/Row/Stripe",
+                        "Gate/Row/Frame", "Gate/Row/NameRow", "Gate/Row/Line", "Gate/Row/Pip", "Gate/Row/State")
+GATE_RING_W = 3
+
+# --- Rev 91 F: the board's geometry (1920 x 1080) and its words ------------------------------
+EDGE = 96                         # the board's side margin
+SHOW = (180, 250, 900, 500)       # the picture's box (board left, top, width, height)
+WORDS = (1180, 400, 644, 220)     # the counter, title and line
+BAR_BOTTOM, BAR_H, TRACK_H = 64, 132, 8
+TOUR_FADE = 0.4
+COUNTER_TEMPLATE = "{n} of {total}"
+# The tour, in order: (title, line, picture). Every word here lands in an authored field on ConnectingTourView.
+TOUR = (("Squad", "Three seats, each a vessel and a pilot."),
+        ("The Ark", "Converter, Squads, Artifacts and Decor are aboard."),
+        ("Pilots", "Eighteen pilots, each known by a callsign."),
+        ("Vessels", "Four abilities each: Charge, Mass, Space and Time."),
+        ("Toy Box", "Seven toys. Fly one to use it."))
+
+
+def pilot_portrait(callsign):
+    """The painted portrait a roster pilot wears (its PilotSO's own sprite, so the tour and the roster agree)."""
+    text_ = open(os.path.join(REPO, f"Assets/_SO_Assets/Pilots/Roster/Pilot_{callsign}.asset"), encoding="utf-8").read()
+    m = re.search(r"^  portrait: \{fileID: 21300000, guid: ([0-9a-f]{32}), type: 3\}", text_, re.M)
+    assert m, f"Pilot_{callsign} has no portrait"
+    return m.group(1)
+
+
+SQUAD_PILOTS = ("Needle", "Galleon", "Anvil")
+PORTRAIT = {c: pilot_portrait(c) for c in SQUAD_PILOTS}
+HULL_CARD = {h: K.meta_guid(f"Assets/_Graphics/CardImages/{h}_large.png") for h in ("Sparrow", "Dolphin")}
+# The Ark has no picture among the game's sprites (HomeScreen/Ark.png is the nav button's label), so the board's own
+# cut of it (Docs/MenuRedesignB/build_refs/ark_chase.png, from Docs/VesselModels/ArkReverse_sheet.png) is imported.
+ARK_ART = K.meta_guid("Assets/_Graphics/UI/Loading/loading_tour_ark.png")
+
+# The bar's steps are ArenaLoadProgress's measured shares, read from the C# so the two can never disagree: laying
+# ends at LayCeiling, growing at GrowCeiling, the pilots' share at 1. The board drew a fourth, "Connecting to shore",
+# first; nothing measures it (the model starts at laying), so it would be a segment of no length - it is not built.
+_ALP = open(os.path.join(REPO, "Assets/_Scripts/UI/Elements/ArenaLoadProgress.cs"), encoding="utf-8").read()
+
+
+def _share(name):
+    m = re.search(r"public const float %s = ([0-9.]+)f;" % name, _ALP)
+    assert m, f"ArenaLoadProgress.{name} is not a literal share any more"
+    return float(m.group(1))
+
+
+STEP_ENDS = (_share("LayCeiling"), _share("GrowCeiling"), 1.0)
+STEP_NAMES = ("Building the arena", "Settling the arena", "Waiting for pilots")
+DONE_WORD = "Ready"
+PERCENT_TEMPLATE = "{pct}"
 
 
 def tmp_restyle(doc, face, size, upper, spacing, align, token):
@@ -602,76 +719,439 @@ def tmp_restyle(doc, face, size, upper, spacing, align, token):
     return doc
 
 
+def sub1(s, old, new):
+    assert s.count(old) == 1, f"expected one {old.strip()!r}"
+    return s.replace(old, new)
+
+
+def ctext(t, token, size, face="Chakra", spacing=0, upper=True, align="left", alpha=1.0):
+    """A TMP at any size in one of the two kit faces, without KitText (which would force its role's size)."""
+    role = "Label" if face == "Chakra" else "Body"
+    base = H.text(t, role, tok(token, alpha), align=align)
+    _, _, rsize, rspacing, rupper, _ = K.ROLES[role]
+
+    def body(ctx, go):
+        b = base(ctx, go)
+        b = sub1(b, f"  m_fontSize: {K.f32(rsize)}\n  m_fontSizeBase: {K.f32(rsize)}\n",
+                 f"  m_fontSize: {K.f32(size)}\n  m_fontSizeBase: {K.f32(size)}\n")
+        b = sub1(b, f"  m_fontSizeMin: {K.f32(K.fit_min(rsize))}\n  m_fontSizeMax: {K.f32(rsize)}\n",
+                 f"  m_fontSizeMin: {K.f32(K.fit_min(size))}\n  m_fontSizeMax: {K.f32(size)}\n")
+        b = sub1(b, f"  m_fontStyle: {16 if rupper else 0}\n", f"  m_fontStyle: {16 if upper else 0}\n")
+        return sub1(b, f"  m_characterSpacing: {K.f32(rspacing)}\n", f"  m_characterSpacing: {K.f32(spacing)}\n")
+    return body
+
+
+def graphic_fields(color, material=None, raycast=False):
+    mat = f"{{fileID: 2100000, guid: {material}, type: 2}}" if material else "{fileID: 0}"
+    return (f"  m_Material: {mat}\n  m_Color: {K.col(color)}\n  m_RaycastTarget: {1 if raycast else 0}\n"
+            "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
+            "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n")
+
+
+def aperture(color, material=None):
+    return lambda ctx, go: K.mono(go, S["aperture"], graphic_fields(color, material))
+
+
+def crystal_graphic(outline, glass=(0, 0, 0, 0), spokes=False, spoke_alpha=0.35, fill_alpha=0.6, width=2.0, enabled=True,
+                    color=(1, 1, 1, 1)):
+    return lambda ctx, go: K.mono(go, S["crystal"], graphic_fields(color)
+                                  + f"  outline: {K.col(outline)}\n  glass: {K.col(glass)}\n  spokes: {1 if spokes else 0}\n"
+                                  f"  spokeAlpha: {K.f32(spoke_alpha)}\n  fillAlpha: {K.f32(fill_alpha)}\n"
+                                  f"  outlineWidth: {K.f32(width)}\n", enabled=enabled)
+
+
+def off(body):
+    """A component authored disabled."""
+    return lambda ctx, go: sub1(body(ctx, go), "  m_Enabled: 1\n", "  m_Enabled: 0\n")
+
+
+def gimg(node, key, name, r, color, sprite=None, preserve=False):
+    n = node.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(color, sprite, preserve=preserve))
+    return n
+
+
+def gtext(node, key, name, r, body):
+    n = node.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, body)
+    return n
+
+
+def arrives(node, mode="Rise", delay=0.0, distance=14):
+    node.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance(mode, delay=delay, distance=distance))
+    return node
+
+
+def centred(box):
+    """A board box (left, top, width, height on the 1920 x 1080 board) as a rect anchored on the screen's centre."""
+    x, y, w, h = box
+    return R((0.5, 0.5), (0.5, 0.5), (x + w / 2 - 960, 540 - (y + h / 2)), (w, h))
+
+
+# --- the cover and the ring (root children) -------------------------------------------------
+
+def motion(seconds, offset=((0, 0), (0, 0)), turn=(0, 0), scale=(1, 1), phase=0.0):
+    """PosterDrift: between two poses and back, eased both ways, seconds one way (the board's CSS `alternate`).
+    Offsets are canvas units with y UP; the board's CSS translates are y DOWN, so their y is negated here."""
+    return lambda ctx, go: K.mono(go, S["drift"],
+                                  f"  offsetFrom: {K.v2(*offset[0])}\n  turnFrom: {K.f32(turn[0])}\n  scaleFrom: {K.f32(scale[0])}\n"
+                                  f"  offsetTo: {K.v2(*offset[1])}\n  turnTo: {K.f32(turn[1])}\n  scaleTo: {K.f32(scale[1])}\n"
+                                  f"  seconds: {K.f32(seconds)}\n  phase: {K.f32(phase)}\n")
+
+
+# The board's sea (r91_loading.py `sea()`): three soft fields drifting slowly under the sea lines. Each is (token, alpha,
+# the board's box left/top/width/height, seconds one way, the CSS translate pair, the CSS scale pair). The board's two
+# indigos are not theme colours, so the fields wear the theme's blue family (SurfaceLight, NeutralLightest) and follow
+# the worn colour set like every other token.
+SEA_FIELDS = (("SurfaceLight", 0.50, (-300, -260, 1500, 1100), 26, ((-260, -120), (340, 140)), (1.0, 1.25)),
+              ("NeutralLightest", 0.30, (760, 120, 1500, 1100), 34, ((220, 90), (-320, -160)), (1.2, 1.0)),
+              ("SurfaceLight", 0.46, (260, 380, 1500, 1100), 42, ((-120, 160), (260, -80)), (1.1, 1.3)))
+# The board's chapter motions: the Ark drifts (16 s, a slight turn), the Vessels chapter's hull bobs (6 s).
+ARK_DRIFT = dict(seconds=16, offset=((-40, -14), (110, 22)), turn=(1, -1.5))
+HULL_BOB = dict(seconds=6, offset=((0, 10), (0, -12)))
+
+
+def sea_fields_node():
+    """The drifting fields, in their own group: the gate fades it with the content (it has no hole of its own)."""
+    n = N("Gate/Cover/Fields", "CoverFields", STRETCH)
+    n.add("cg", 225, H.canvas_group(True))
+    for i, (token, alpha, box, seconds, moves, scale) in enumerate(SEA_FIELDS):
+        f = gimg(n, f"Gate/Cover/Fields/Field{i}", f"Field{i + 1}", centred(box), tok(token, alpha), K.kit_sprite("kit_ring_glow"))
+        f.add("th", 114, H.themed(token, alpha))
+        f.add("drift", 114, motion(seconds, offset=tuple((x, -y) for x, y in moves), scale=scale))
+    return n
+
+
+def cover_nodes():
+    base = N("Gate/Cover/Base", "CoverBase", STRETCH)
+    base.add("cr", 222, K.canvas_renderer()).add("hole", 114, aperture(tok("SurfaceBlack")))
+    sea = N("Gate/Cover/Sea", "CoverSea", STRETCH)
+    sea.add("cr", 222, K.canvas_renderer()).add("hole", 114, aperture((1, 1, 1, 1), HM.M.SEA_WINDOW_MAT))
+    return [base, sea_fields_node(), sea]
+
+
+def ring_node():
+    n = N("Gate/Ring", "GateRing", R((0.5, 0.5), (0.5, 0.5), (0, 0), (100, 100)))
+    n.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic((1, 1, 1, 1), width=GATE_RING_W, enabled=False))
+    return n
+
+
+# --- the brief: ENTERING over the mode's name, top left (Safe Area) --------------------------
+
+def entering_node():
+    n = N("Gate/Entering", "Entering", R((0, 1), (0, 1), (EDGE, -64), (600, 18), (0, 1)))
+    n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ctext("Entering", "NeutralLightest", 14, spacing=18))
+    return arrives(n, "Fade", delay=0.05)
+
+
+# --- the tour: a picture, its words and the index --------------------------------------------
+
+def show_node(i):
+    """Chapter i's picture, laid out in the board's 900 x 500 box."""
+    n = N(f"Tour/Show{i}", f"Show{i + 1}", centred(SHOW))
+    n.add("cg", 225, H.canvas_group(i == 0))
+    white = (1, 1, 1, 1)
+    if i == 0:      # Squad: three pilots side by side
+        for j, callsign in enumerate(SQUAD_PILOTS):
+            gimg(n, f"Tour/Show0/Pilot{j}", callsign, HM.TL(30 + j * (264 + 24), 60, 264, 336), white, PORTRAIT[callsign], preserve=True)
+    elif i == 1:    # The Ark
+        gimg(n, "Tour/Show1/Ark", "Ark", HM.TL(40, 60, 800, 375), white, ARK_ART, preserve=True) \
+            .add("drift", 114, motion(**ARK_DRIFT))
+    elif i == 2:    # Pilots: one, large
+        gimg(n, "Tour/Show2/Pilot", "Galleon", HM.TL(260, 0, 380, 484), white, PORTRAIT["Galleon"], preserve=True)
+    elif i == 3:    # Vessels: a hull's class card
+        gimg(n, "Tour/Show3/Hull", "Sparrow", HM.TL(190, -20, 520, 520), white, HULL_CARD["Sparrow"], preserve=True) \
+            .add("drift", 114, motion(**HULL_BOB))
+    else:           # Toy Box: a hull in the Vessel Changer's hex
+        gimg(n, "Tour/Show4/HexFill", "HexFill", HM.TL(190, 20, 520, 450), tok("SurfaceVeryDark", 0.88), K.kit_sprite("kit_hex_fill"))
+        gimg(n, "Tour/Show4/HexLine", "HexLine", HM.TL(190, 20, 520, 450), tok("SurfaceLight"), K.kit_sprite("kit_hex_line2"))
+        gimg(n, "Tour/Show4/Hull", "Dolphin", HM.TL(280, 75, 340, 340), white, HULL_CARD["Dolphin"], preserve=True)
+    return n
+
+
+def words_node(i):
+    title, line = TOUR[i]
+    w = WORDS[2]
+    n = N(f"Tour/Words{i}", f"Words{i + 1}", centred(WORDS))
+    n.add("cg", 225, H.canvas_group(i == 0))
+    counter = COUNTER_TEMPLATE.replace("{n}", str(i + 1)).replace("{total}", str(len(TOUR)))
+    gtext(n, f"Tour/Words{i}/Counter", "Counter", HM.TL(0, 0, w, 18), ctext(counter, "NeutralLightest", 14, spacing=18))
+    gtext(n, f"Tour/Words{i}/Title", "Title", HM.TL(0, 30, w, 54), ctext(title, "TextLight", 48, face="Aldrich", upper=False))
+    gtext(n, f"Tour/Words{i}/Line", "Line", HM.TL(0, 96, w, 28), ctext(line, "TextLight", 18, face="Aldrich", upper=False))
+    return n
+
+
+def index_node():
+    n = N("Tour/Index", "Index", R((1, 1), (1, 1), (-EDGE, -72), (900, 34), (1, 1)))
+    n.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 32, 5, (1, 0), (0, 0)))
+    for i, (title, _line) in enumerate(TOUR):
+        word = gtext(n, f"Tour/Index{i}", f"Index{i + 1}", R(size=(100, 34)),
+                     ctext(title, "TextLight" if i == 0 else "NeutralLightest", 18, face="Aldrich", upper=False))
+        rule = word.child(N(f"Tour/Index{i}/Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 2), (0.5, 0))))
+        img = K.image(tok("TextLight"))
+        rule.add("cr", 222, K.canvas_renderer()).add("img", 114, img if i == 0 else off(img))
+    return arrives(n, "Fade", delay=0.1)
+
+
+def tour_view():
+    def body(ctx, go):
+        chapters = "".join(
+            f"  - title: {K.yaml_scalar(title)}\n    line: {K.yaml_scalar(line)}\n"
+            f"    show: {{fileID: {ctx.c(f'Tour/Show{i}', 'cg')}}}\n    words: {{fileID: {ctx.c(f'Tour/Words{i}', 'cg')}}}\n"
+            f"    counterText: {{fileID: {ctx.c(f'Tour/Words{i}/Counter', 'tmp')}}}\n"
+            f"    titleText: {{fileID: {ctx.c(f'Tour/Words{i}/Title', 'tmp')}}}\n"
+            f"    lineText: {{fileID: {ctx.c(f'Tour/Words{i}/Line', 'tmp')}}}\n"
+            f"    indexText: {{fileID: {ctx.c(f'Tour/Index{i}', 'tmp')}}}\n"
+            f"    indexRule: {{fileID: {ctx.c(f'Tour/Index{i}/Rule', 'img')}}}\n"
+            for i, (title, line) in enumerate(TOUR))
+        return K.mono(go, S["tour"], "  chapters:\n" + chapters
+                      + f"  counterTemplate: {K.yaml_scalar(COUNTER_TEMPLATE)}\n"
+                      f"  indexOnToken: {K.TOKEN_INDEX['TextLight']}\n  indexOffToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
+                      f"  fadeSeconds: {K.f32(TOUR_FADE)}\n")
+    return body
+
+
+def tour_node():
+    n = N("Tour", "Tour", STRETCH)
+    gimg(n, "Tour/Glow", "Glow", centred((140, 420, 1000, 340)), tok("TextLight", 0.14), K.kit_sprite("kit_ring_glow"))
+    for i in range(len(TOUR)):
+        n.child(show_node(i))
+    for i in range(len(TOUR)):
+        n.child(words_node(i))
+    n.child(index_node())
+    n.add("tour", 114, tour_view())
+    return n
+
+
+# --- the bar: the step's name and the percentage over an 8 px track, the steps named under it --
+
+def step_label(bar, i):
+    start = STEP_ENDS[i - 1] if i else 0.0
+    width = min(420, round((STEP_ENDS[i] - start) * (1920 - 2 * EDGE)) - 6)
+    on = i == 0
+    n = bar.child(N(f"Gate/Bar/Label{i}", f"Step{i + 1}", R((start, 1), (start, 1), (0, -104), (width, 20), (0, 1))))
+    # The marker: a diamond (a square turned 45 degrees in mark_rotations). Lit once its step starts; the dark
+    # centre makes it an outline until the step is done, when the fill covers it.
+    mark = gimg(n, f"Gate/Bar/Label{i}/Mark", "Mark", R((0, 0.5), (0, 0.5), (6, 0), (8, 8)), tok("TextLight" if on else "NeutralLightest"))
+    gimg(mark, f"Gate/Bar/Label{i}/Hole", "Hole", R(size=(6, 6)), tok("SurfaceVeryDark"))
+    fill = mark.child(N(f"Gate/Bar/Label{i}/MarkFill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, off(K.image(tok("TextLight"))))
+    gtext(n, f"Gate/Bar/Label{i}/Text", "Text", R((0, 0), (1, 1), (11, 0), (-22, 0)),
+          ctext(STEP_NAMES[i], "TextLight" if on else "NeutralLightest", 15, face="Aldrich", upper=False))
+    return n
+
+
+def step_bar():
+    n = len(STEP_ENDS)
+    return lambda ctx, go: (lambda c: K.mono(go, S["stepbar"],
+        f"  fill: {{fileID: {CN['fill_rt']}}}\n  fillGraphic: {{fileID: {CN['fill_img']}}}\n"
+        f"  glint: {{fileID: {ctx.rt('Gate/Bar/Glint')}}}\n  glintSeconds: 2.4\n"
+        "  stepEnds:\n" + "".join(f"  - {K.f32(e)}\n" for e in STEP_ENDS)
+        + "  stepNames:\n" + "".join(f"  - {K.yaml_scalar(s)}\n" for s in STEP_NAMES)
+        + K.refs_list("stepLabels", [c(f"Gate/Bar/Label{i}/Text", "tmp") for i in range(n)])
+        + K.refs_list("stepMarkers", [c(f"Gate/Bar/Label{i}/Mark", "img") for i in range(n)])
+        + K.refs_list("stepMarkerFills", [c(f"Gate/Bar/Label{i}/MarkFill", "img") for i in range(n)])
+        + f"  stepText: {{fileID: {c('Gate/Bar/Step', 'tmp')}}}\n  percentText: {{fileID: {c('Gate/Bar/Percent', 'tmp')}}}\n"
+        f"  percentTemplate: {K.yaml_scalar(PERCENT_TEMPLATE)}\n  doneWord: {K.yaml_scalar(DONE_WORD)}\n"
+        f"  fillToken: {K.TOKEN_INDEX['TextLight']}\n  doneToken: {K.TOKEN_INDEX['Cta']}\n"
+        f"  stepOnToken: {K.TOKEN_INDEX['TextLight']}\n  stepOffToken: {K.TOKEN_INDEX['NeutralLightest']}\n"))(ctx.c)
+
+
+def bar_node():
+    n = N("Gate/Bar", "Bar", R((0, 0), (1, 0), (0, BAR_BOTTOM), (-2 * EDGE, BAR_H), (0.5, 0)))
+    gtext(n, "Gate/Bar/Loading", "Loading", HM.TL(0, 0, 400, 18), ctext("Loading", "NeutralLightest", 14, spacing=18))
+    gtext(n, "Gate/Bar/Step", "Step", HM.TL(0, 26, 900, 34), ctext(STEP_NAMES[0], "TextLight", 28, face="Aldrich", upper=False))
+    gtext(n, "Gate/Bar/Percent", "Percent", HM.TR(26, 6, 200, 54), ctext("0", "TextLight", 44, face="Aldrich", upper=False, align="right"))
+    gtext(n, "Gate/Bar/Unit", "Unit", HM.TR(0, 26, 22, 28), ctext("%", "NeutralLightest", 20, face="Aldrich", upper=False, align="right"))
+    for i in range(len(STEP_ENDS)):
+        step_label(n, i)
+    n.add("steps", 114, step_bar())
+    return arrives(n, delay=0.15, distance=16)
+
+
+def glint_node():
+    """A dark band that keeps crossing the fill (KitStepBar moves it), so a slow step never looks frozen."""
+    n = N("Gate/Bar/Glint", "Glint", R((0, 0), (0.12, 1), (0, 0), (0, 0)))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.55), K.kit_sprite("kit_spark")))
+    return n
+
+
+def cut_nodes():
+    """The breaks between the steps: the ground's colour over the track, at each step's end but the last."""
+    out = []
+    for i, e in enumerate(STEP_ENDS[:-1]):
+        n = N(f"Gate/Bar/Cut{i}", f"Cut{i + 1}", R((e, 0), (e, 1), (0, 0), (4, 0)))
+        n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark")))
+        out.append(n)
+    return out
+
+
+GENERATED_CONNECT_KEYS = (("Gate/Cover/Base", "Gate/Cover/Fields", "Gate/Cover/Sea", "Gate/Ring", "Gate/Entering", "Tour", "Gate/Bar", "Gate/Bar/Glint")
+                          + tuple(f"Gate/Bar/Cut{i}" for i in range(len(STEP_ENDS) - 1)))
+
+
+def gate_view(p):
+    c = p.ctx.c
+    return lambda ctx, go: K.mono(go, S["gate"],
+        f"  veilWords: {K.ref(11400000, VEIL_WORDS, 2)}\n"
+        + K.refs_list("cover", [c("Gate/Cover/Base", "hole"), c("Gate/Cover/Sea", "hole")])
+        + f"  gateRing: {{fileID: {c('Gate/Ring', 'hex')}}}\n"
+        f"  enteringText: {{fileID: {c('Gate/Entering', 'tmp')}}}\n  loadingLabel: {{fileID: {c('Gate/Bar/Loading', 'tmp')}}}\n"
+        f"  tour: {{fileID: {c('Tour', 'tour')}}}\n"
+        f"  content: {{fileID: {p.ctx.fid(CN['safe_go'] + '#cg')}}}\n"
+        f"  backdrop: {{fileID: {c('Gate/Cover/Fields', 'cg')}}}\n  gateSeconds: 1.7\n  gateSettleRadius: 452\n")
+
+
+def controller_doc(p, gate_fid):
+    old = p.doc(CN["comp"])
+    head = old[:old.index("  m_EditorClassIdentifier:")]
+    keep = {f: re.search(r"^  %s: (.*)$" % f, old, re.M).group(1)
+            for f in ("gameData", "tournamentData", "canvasGroup", "playerRoster", "maelstromRankText", "rankHeader")}
+    return (head + "  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ConnectingPanelController\n"
+            f"  gameData: {keep['gameData']}\n  tournamentData: {keep['tournamentData']}\n"
+            f"  canvasGroup: {keep['canvasGroup']}\n  gate: {{fileID: {gate_fid}}}\n"
+            f"  gameModeText: {{fileID: {CN['mode_tmp']}}}\n  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n"
+            f"  introWords: {K.ref(11400000, INTRO_LIBRARY, 2)}\n"
+            f"  stepBar: {{fileID: {p.ctx.c('Gate/Bar', 'steps')}}}\n  barSmoothing: 0.25\n"
+            "  coveredLayBudgetMs: 80\n  coveredCreationBudgetMs: 0\n  parkedBackdrop: {r: 0, g: 0, b: 0, a: 1}\n"
+            f"  playerRoster: {keep['playerRoster']}\n  peerWaitTimeoutSeconds: 45\n"
+            f"  maelstromRankText: {keep['maelstromRankText']}\n  rankHeader: {keep['rankHeader']}\n  dwellSeconds: 1\n")
+
+
+ROSTER_ROW_FIELDS = (  # ConnectingPlayerRoster's row mode, in its declaration order (after builtEntrySize)
+    "domainHalo", "showAI", "templateNameText", "templateBadgeText", "templateLineText", "templateStateText",
+    "templatePip", "vessels", "youWord", "aiWord", "waitingWord", "readyWord", "lineTemplate", "countText",
+    "countTemplate", "readyToken", "waitingToken", "youToken", "otherBadgeToken")
+
+
+def roster_doc(p):
+    """The roster counts the pilots the load waits on; F draws none of them, so its row's words are unwired (an
+    unwired part is simply not drawn) and only the humans the wait is about are tracked."""
+    none = "{fileID: 0}"
+    vals = dict(domainHalo="0", showAI="0", templateNameText=none, templateBadgeText=none, templateLineText=none,
+                templateStateText=none, templatePip=none, vessels=none,
+                youWord="You", aiWord="AI", waitingWord="Loading", readyWord="Ready", lineTemplate="'{hull}'",
+                countText=none, countTemplate="'{ready} / {total} Ready'",
+                readyToken=str(K.TOKEN_INDEX["Cta"]), waitingToken=str(K.TOKEN_INDEX["NeutralLightest"]),
+                youToken=str(K.TOKEN_INDEX["Selection"]), otherBadgeToken=str(K.TOKEN_INDEX["NeutralLightest"]))
+    d = p.doc(CN["roster"])
+    d = set_field(d, "templateDomainImage", none)
+    after = "builtEntrySize"
+    for f in ROSTER_ROW_FIELDS:
+        d = insert_after_field(d, after, f, vals[f])
+        after = f
+    return d
+
+
+def reparent(p, rt, parent_rt):
+    old = re.search(r"^  m_Father: \{fileID: (-?\d+)\}", p.doc(rt), re.M).group(1)
+    if old != parent_rt and p.sc.has(old):
+        p.children(old, [k for k in p.kids(old) if k != rt])
+    p.field(rt, "m_Father", f"{{fileID: {parent_rt}}}")
+
+
+def emit_all(p, nodes, parent_rt, after):
+    ids = []
+    for n in nodes:
+        ids.append(p.emit(n, parent_rt, after))
+        after = HM._last_doc(p, n)
+    return ids, after
+
+
+def drop_slider(p):
+    """The Slider component leaves its object (KitStepBar anchors the fill); the object, track and fill stay."""
+    for fid in p.comp_ids(CN["slider_go"]):
+        if p.sc.has(fid) and re.search(r"^  m_FillRect:", p.doc(fid), re.M):
+            p.sc.remove(fid)
+            p.replace(CN["slider_go"], p.doc(CN["slider_go"]).replace(f"  - component: {{fileID: {fid}}}\n", ""))
+
+
+def mark_rotations(p):
+    for i in range(len(STEP_ENDS)):
+        rt = str(p.ctx.rt(f"Gate/Bar/Label{i}/Mark"))
+        p.field(rt, "m_LocalRotation", K.rot_z(45))
+        p.field(rt, "m_LocalEulerAnglesHint", "{x: 0, y: 0, z: 45}")
+
+
 def connect_text(text_):
     p = Patch(text_, "ConnectingPanel/Item12")
     assert p.sc.script(CN["comp"]) == S["connect"], "ConnectingPanelController moved"
-    # Status: a quiet top-left line beside a breathing diamond (the board's "Connecting to Shore").
-    p.rect(CN["status_rt"], R((0, 1), (0, 1), (64, -36), (600, 20), (0, 1)))
-    p.replace(CN["status_tmp"], tmp_restyle(p.doc(CN["status_tmp"]), "Chakra", 14, True, 14, "left", "TextLight"))
-    dia = N("Connect/Diamond", "Diamond", R((0, 1), (0, 1), (40, -40), (12, 12), (0, 1)))
-    dia.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"), K.chrome_sprite("chrome_diamond"), preserve=True)) \
-        .add("th", 114, H.themed("ControlActive")).add("breathe", 114, HM.M.ambient("Breathe", period=1.6, amplitude=0.6))
-    # The readout column, bottom centre: mode, phase headline, bar, counts and seconds.
-    p.rect(CN["mode_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -190), (COL_X, 22)))
-    p.replace(CN["mode_tmp"], tmp_restyle(p.doc(CN["mode_tmp"]), "Chakra", 15, True, 14, "left", "NeutralLightest"))
-    title = N("Connect/Phase", "PhaseTitle", R((0.5, 0.5), (0.5, 0.5), (0, -232), (COL_X, 58)))
-    H.label(title, "Connecting", "Display", "TextLight")
-    title.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", distance=10))
-    p.rect(CN["slider_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -282), (COL_X, 6)))
-    p.body(CN["track_img"], HM.img_body(tok("TextLight", 0.16)), CN["track_go"])
-    p.body(CN["fill_img"], HM.img_body(tok("ControlActive")), CN["fill_go"])
-    prog = N("Connect/Progress", "ProgressText", R((0.5, 0.5), (0.5, 0.5), (0, -308), (COL_X, 26)))
-    H.label(prog, "", "Data", "TextLight")
-    secs = N("Connect/Elapsed", "ElapsedText", R((0.5, 0.5), (0.5, 0.5), (0, -308), (COL_X, 26)))
-    H.label(secs, "", "Data", "NeutralLightest", align="right")
-    p.rect(CN["preview_rt"], R((0.5, 0.5), (0.5, 0.5), (0, 110), (960, 540)))
+    # Out with the camera window and every generated node: they are re-emitted below, so a re-run is a no-op.
+    if p.sc.has(CN["camera_go"]):           # a plain Transform (no RectTransform), with no children
+        for fid in [CN["camera_go"]] + [c for c in p.comp_ids(CN["camera_go"]) if p.sc.has(c)]:
+            p.sc.remove(fid)
+    for go in (CN["preview_go"], CN["status_go"]):
+        if p.sc.has(go):
+            p.remove_subtree(go)
+    # The bar's track and the roster's list live inside generated nodes: lift them out before those go.
+    for rt in (CN["slider_rt"], CN["icons_rt"]):
+        reparent(p, rt, CN["safe_rt"])
+    for key in RETIRED_CONNECT_KEYS + GENERATED_CONNECT_KEYS:
+        go = str(p.ctx.go(key))
+        if p.sc.has(go):
+            parent = re.search(r"^  m_Father: \{fileID: (-?\d+)\}", p.doc(str(p.ctx.rt(key))), re.M).group(1)
+            p.remove_subtree(go)
+            if p.sc.has(parent):
+                p.children(parent, [k for k in p.kids(parent) if p.sc.has(k)])
+
+    # The root: no backdrop of its own (the cover draws it, with the hole), still blocking input while it is up.
+    p.body(CN["root_img"], HM.img_body((0, 0, 0, 0), raycast=True), CN["root_go"])
+    root_ids, _ = emit_all(p, cover_nodes() + [ring_node()], CN["root_rt"], CN["comp"])
+    p.children(CN["root_rt"], root_ids + [CN["safe_rt"]])
+
+    # The Safe Area is the gate's content, faded as the gate opens: the brief, the tour and the bar.
+    p.add_comp(CN["safe_go"], "cg", 225, H.canvas_group(True))
+    p.rect(CN["mode_rt"], R((0, 1), (0, 1), (EDGE, -88), (900, 36), (0, 1)))
+    m = tmp_restyle(p.doc(CN["mode_tmp"]), "Aldrich", 28, False, 0, "left", "TextLight")
+    p.replace(CN["mode_tmp"], C.field_set(m, "m_TextWrappingMode", "0"))
+    p.add_comp(CN["mode_go"], "cg", 225, H.canvas_group(True))
+    p.add_comp(CN["mode_go"], "in", 114, HM.M.entrance("Rise", delay=0.08, distance=12))
+    # The tournament's rank, top centre: clear of the brief on its left and the index on its right.
+    p.rect(CN["rank_rt"], R((0.5, 1), (0.5, 1), (0, -56), (480, 120), (0.5, 1)))
     rank = p.doc(CN["rank_tmp"])
     rank = C.field_set(rank, "m_fontAsset", K.ref(11400000, K.ALDRICH[0], 2))
-    p.replace(CN["rank_tmp"], C.field_set(rank, "m_sharedMaterial", K.ref(K.ALDRICH[1], K.ALDRICH[0], 2)))
-    added = []
-    for n in (dia, title, prog, secs):
-        added.append(p.emit(n, CN["safe_rt"], CN["comp"]))
-    p.children(CN["safe_rt"], [k for k in p.kids(CN["safe_rt"]) if k not in added] + added)
-    comp = p.doc(CN["comp"])
-    comp = set_field(comp, "statusBaseText", "Connecting to Shore")
-    comp = insert_after_field(comp, "gameModeText", "phaseTitle", f"{{fileID: {p.ctx.c('Connect/Phase', 'tmp')}}}")
-    comp = insert_after_field(comp, "phaseTitle", "progressText", f"{{fileID: {p.ctx.c('Connect/Progress', 'tmp')}}}")
-    comp = insert_after_field(comp, "progressText", "elapsedText", f"{{fileID: {p.ctx.c('Connect/Elapsed', 'tmp')}}}")
-    comp = insert_after_field(comp, "elapsedText", "phaseTitleEntrance", f"{{fileID: {p.ctx.c('Connect/Phase', 'in')}}}")
-    comp = insert_after_field(comp, "gameModeText", "backdropArt", f"{{fileID: {p.ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}")
-    comp = insert_after_field(comp, "backdropArt", "games", K.ref(11400000, ARCADE_GAMES, 2))
-    p.replace(CN["comp"], comp)
-    # The backdrop (section 28): the mode's card art drifting under a dim, over a solid base, in
-    # place of the flat purple-blue sprite. It bleeds; the readout stays in the safe area.
-    p.body(CN["root_img"], HM.img_body(tok("SurfaceBlack"), raycast=True), CN["root_go"])
-    backs = backdrop_nodes()
-    added = []
-    after = CN["comp"]
-    for n in backs:
-        added.append(p.emit(n, CN["root_rt"], after))
-        after = HM._last_doc(p, n)
-    p.children(CN["root_rt"], added + [k for k in p.kids(CN["root_rt"]) if k not in added])
+    rank = C.field_set(rank, "m_sharedMaterial", K.ref(K.ALDRICH[1], K.ALDRICH[0], 2))
+    p.replace(CN["rank_tmp"], C.field_set(rank, "m_HorizontalAlignment", "2"))
+    safe_ids, _ = emit_all(p, [entering_node(), tour_node(), bar_node()], CN["safe_rt"], CN["safe_go"])
+    p.children(CN["safe_rt"], [safe_ids[0], CN["mode_rt"], safe_ids[1], safe_ids[2], CN["icons_rt"], CN["rank_rt"]])
+    mark_rotations(p)
+
+    # The bar's track: the old Slider's objects, under the bar. An 8 px track, a light fill that KitStepBar anchors,
+    # a glint clipped to the fill, and a break at each step's end.
+    bar_rt = str(p.ctx.rt("Gate/Bar"))
+    drop_slider(p)
+    reparent(p, CN["slider_rt"], bar_rt)
+    p.field(CN["slider_go"], "m_Name", "Track")
+    p.rect(CN["slider_rt"], R((0, 1), (1, 1), (0, -76), (0, TRACK_H), (0.5, 1)))
+    p.children(bar_rt, p.kids(bar_rt) + [CN["slider_rt"]])
+    p.rect(CN["track_rt"], STRETCH)
+    p.rect(CN["fillarea_rt"], STRETCH)
+    p.rect(CN["fill_rt"], R((0, 0), (0, 1), (0, 0), (0, 0)))
+    p.body(CN["track_img"], HM.img_body(tok("SurfaceLight", 0.55)), CN["track_go"])
+    p.body(CN["fill_img"], HM.img_body(tok("TextLight")), CN["fill_go"])
+    clip = p.add_comp(CN["fill_go"], "clip", 114, lambda ctx, go: K.mono(go, RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n"))
+    glint_ids, after = emit_all(p, [glint_node()], CN["fill_rt"], str(clip))
+    p.children(CN["fill_rt"], glint_ids)
+    cut_ids, _ = emit_all(p, cut_nodes(), CN["slider_rt"], after)
+    p.children(CN["slider_rt"], [CN["track_rt"], CN["fillarea_rt"]] + cut_ids)
+
+    # The pilots: the roster keeps counting who the load waits on, and draws nothing (a zero-alpha group).
+    p.rect(CN["icons_rt"], R((0.5, 0), (0.5, 0), (0, 0), (400, 64), (0.5, 0)))
+    p.add_comp(CN["icons_go"], "hide", 225, H.canvas_group(False))
+    icons_img = next(f for f in p.comp_ids(CN["icons_go"]) if f"guid: {K.IMAGE}" in p.doc(f))
+    p.body(icons_img, HM.img_body((1, 1, 1, 0), enabled=False), CN["icons_go"])
+    layout = next(f for f in p.comp_ids(CN["icons_go"]) if f"guid: {S['hlg']}" in p.doc(f) or f"guid: {S['vlg']}" in p.doc(f))
+    p.body(layout, K.hv_layout(True, (0, 0, 0, 0), 0, 0, (1, 0), (1, 0)), CN["icons_go"])
+    p.field(CN["row_go"], "m_Name", "PilotRow")
+    p.rect(CN["row_rt"], R((0, 0), (0, 0), (0, 0), (64, 64)))
+    p.body(CN["row_img"], HM.img_body((1, 1, 1, 0), enabled=False), CN["row_go"])
+    p.rect(CN["avatar_rt"], R((0.5, 0.5), (0.5, 0.5), (0, 0), (44, 44)))
+    p.children(CN["row_rt"], [CN["avatar_rt"]])
+    p.replace(CN["roster"], roster_doc(p))
+
+    gate_fid = p.add_comp(CN["root_go"], "gate", 114, gate_view(p))
+    p.replace(CN["comp"], controller_doc(p, gate_fid))
     return p.text()
-
-
-ARCADE_GAMES = "402ca7eefc2aeb64baaa140c43312bcd"   # ArcadeGames.asset (SO_GameList)
-
-
-def backdrop_nodes():
-    clip = N("Connect/Backdrop", "Backdrop", STRETCH)
-    clip.add("rmask", 114, A.rect_mask())
-    drift = clip.child(N("Connect/Backdrop/Drift", "Drift", R((0, 0), (1, 1), (0, 0), (160, 90))))
-    drift.add("cover", 114, lambda ctx, go: K.mono(go, K.kit_script("KitCoverImage"),
-              f"  image: {{fileID: {ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}\n")) \
-        .add("pan", 114, HM.M.ambient("Pan", period=28, amplitude=0.06))
-    art = drift.child(N("Connect/Backdrop/Drift/Art", "Art", STRETCH))
-    art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
-    dim = N("Connect/Dim", "Dim", STRETCH)
-    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.55))).add("th", 114, H.themed("SurfaceBlack", 0.55))
-    fade = N("Connect/BottomFade", "BottomFade", R((0, 0), (1, 0), (0, 240), (0, 480)))
-    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.92), K.kit_sprite("kit_fade_v"))) \
-        .add("th", 114, H.themed("SurfaceBlack", 0.92))
-    return [clip, dim, fade]
 
 
 # --------------------------------------------------------------------------------------------
@@ -760,21 +1240,25 @@ GAMEOVER_GUID = K.meta_guid("Assets/_Prefabs/UI Elements/Panels/GameOverPanel.pr
 ANIM_SETTINGS = "e1e99ce577ae9be408463160f475ed8d"
 LIST_W, ROW_HT, LIST_H = 1400, 84, 500
 HEAD_HT = 30
-SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), width, rim element
-    ("PlayAgain", "Play again", "Play", "A", 6, 300, "Charge"),
-    ("Continue", "Continue", "Play", "A", 6, 300, "Charge"),
-    ("MainMenu", "Main menu", "Mass", "B", 5, 260, "Mass"),
-    ("LeaveLobby", "Leave lobby", "Mass", "B", 5, 260, "Mass"),
+SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), width
+    ("PlayAgain", "Play again", "Commit", "A", 6, 300),   # launches a game: the commit Ruby (sg5-play-ready Q2)
+    ("Continue", "Continue", "Play", "A", 6, 300),
+    ("MainMenu", "Main menu", "Default", "B", 5, 260),
+    ("LeaveLobby", "Leave lobby", "Default", "B", 5, 260),
 ]
 SB_HEADER = "ScoreboardTeamHeader"
-P.PREFABS = tuple(P.PREFABS) + (SB_HEADER,)
+SB_VSROW = "ScoreboardVersusRow"           # Rev 23 D: a team's row, half the ladder's width
+P.PREFABS = tuple(P.PREFABS) + (SB_HEADER, SB_VSROW)
+VS_ROW_W, VS_COL_GAP = 660, 80             # two columns of 660 and the VS between them fill the ladder's 1400
+VS_HEAD_H = 92                             # the team's head above its rows: name, status, score and its rule
 S.update(header=script_guid("Assets/_Scripts/UI/ScoreboardTeamHeader.cs"),
+         versus=script_guid("Assets/_Scripts/UI/ScoreboardVersusView.cs"),
          strip=script_guid("Assets/_Scripts/UI/ScoreboardRewardStrip.cs"),
          roster=script_guid("Assets/_Scripts/UI/Elements/RematchVoteRoster.cs"))
-SELECTION_RIM_MAT = HM.M._lattice_guid("selection_rim_mat")
-# Rev 8 option B (Docs/MENU_REDESIGN_B.md section 49): a winner's row runs Time's light, every other team's Space's,
-# the local pilot's the selection; PLAY AGAIN is Charge, MAIN MENU Mass; the reward strip is Mass.
-ROW_RIMS = dict(won="Time", lost="Space")
+# Docs/UI_COLOR_RULES.md (Garrett, 2026-10-24): no element colours and no element rims anywhere in the UI, and the
+# selection blue only on what is actually selected. A row's border is a still hairline (TextLight for you, SurfaceDark
+# for the rest), PLAY AGAIN is the lime call to action, MAIN MENU / LEAVE LOBBY are neutral, the reward strip is plain.
+NO_ROW_RIM = "{fileID: 0}"
 
 
 def sb_path(name):
@@ -787,18 +1271,17 @@ def mat_ref(guid):
 
 def build_row():
     """Rev 8 option B: a dark glass row with a thin team stripe, the pilot's share of the team's count along its foot,
-    and an element rim (Time for the winning team, Space for the others, the selection blue for you)."""
+    and a still hairline border (brighter for you)."""
     root = N("root", SB_ROW, R(size=(LIST_W, ROW_HT)))
     root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=LIST_W))
     glass = root.child(N("Glass", "Glass", STRETCH))
     glass.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.8), K.kit_sprite("kit_sliver14_fill"), True))
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True))
-    HM.M.rim_border(bord, ROW_RIMS["won"])
     stripe = root.child(N("Stripe", "TeamStripe", HM.TL(0, 12, 4, ROW_HT - 24)))
     stripe.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
     share = root.child(N("Share", "Share", R((0, 0), (0.5, 0), (0, 0), (0, 3), (0, 0))))
-    share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementTime"))).add("th", 114, H.themed("ElementTime"))
+    share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"))).add("th", 114, H.themed("NeutralLightest"))
     rank = root.child(N("Rank", "Rank", HM.TL(28, 21, 44, 42)))
     rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight")))
     ring = root.child(N("Ring", "Ring", HM.TL(84, 16, 52, 52)))
@@ -815,15 +1298,21 @@ def build_row():
     sec = root.child(N("Secondary", "Secondary", HM.TL(620, 21, 260, 42)))
     sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Data", tok("TextLight")))
     score = root.child(N("Score", "Score", HM.TR(210, 21, 300, 42)))
-    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("ElementTime"), align="right"))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right"))
     data = root.child(N("Data", "DataPanels", HM.TR(26, 21, 170, 42)))
     data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
     glyph = data.child(N("Data/Glyph", "Glyph", R(size=(20, 20))))
-    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementMass"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
-        .add("th", 114, H.themed("ElementMass")).add("le", 114, H.le(pw=20, ph=20))
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=20, ph=20))
     amt = data.child(N("Data/Amount", "Amount", R(size=(110, 36))))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("ElementMass"), align="right")).add("le", 114, H.le(pw=110, ph=36))
-    root.add("card", 114, lambda ctx, go: K.mono(go, S["card"],
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=110, ph=36))
+    root.add("card", 114, card_body)
+    return root
+
+
+def card_body(ctx, go):
+    """PlayerScoreCard on a row (the ladder's and the versus row): the same parts under the same keys."""
+    return (K.mono(go, S["card"],
         f"  playerAvatarImage: {{fileID: {ctx.c('Ring/Clip/Avatar', 'img')}}}\n"
         f"  playerNameText: {{fileID: {ctx.c('Name', 'tmp')}}}\n  playerScoreText: {{fileID: {ctx.c('Score', 'tmp')}}}\n"
         "  backgroundImage: {fileID: 0}\n"
@@ -833,15 +1322,55 @@ def build_row():
         f"  crystalRewardRoot: {{fileID: {ctx.go('Data')}}}\n  crystalRewardText: {{fileID: {ctx.c('Data/Amount', 'tmp')}}}\n"
         f"  rankText: {{fileID: {ctx.c('Rank', 'tmp')}}}\n  domainText: {{fileID: {ctx.c('Domain', 'tmp')}}}\n"
         f"  borderImage: {{fileID: {ctx.c('Border', 'img')}}}\n"
-        f"  localBorderToken: {K.TOKEN_INDEX['Selection']}\n  otherBorderToken: {K.TOKEN_INDEX['SurfaceDark']}\n"
+        f"  localBorderToken: {K.TOKEN_INDEX['TextLight']}\n  otherBorderToken: {K.TOKEN_INDEX['SurfaceDark']}\n"
         f"  leaderRankToken: {K.TOKEN_INDEX['TextLight']}\n  rankToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
         f"  teamStripe: {{fileID: {ctx.c('Stripe', 'img')}}}\n  shareBar: {{fileID: {ctx.rt('Share')}}}\n"
         f"  glassFill: {{fileID: {ctx.c('Glass', 'img')}}}\n  glassToken: {K.TOKEN_INDEX['SurfaceVeryDark']}\n"
         "  glassAlpha: 0.8\n  localGlassTint: 0.35\n"
-        f"  wonBorderMaterial: {mat_ref(HM.M.rim_material(ROW_RIMS['won']))}\n"
-        f"  lostBorderMaterial: {mat_ref(HM.M.rim_material(ROW_RIMS['lost']))}\n"
-        f"  localBorderMaterial: {mat_ref(SELECTION_RIM_MAT)}\n"
+        f"  localGlassTintToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
+        f"  wonBorderMaterial: {NO_ROW_RIM}\n  lostBorderMaterial: {NO_ROW_RIM}\n  localBorderMaterial: {NO_ROW_RIM}\n"
         f"  animSettings: {K.ref(11400000, ANIM_SETTINGS, 2)}\n"))
+
+
+def build_versus_row():
+    """Rev 23 D: a team's row in the versus layout - the ladder row's parts at half its width: rank, face, the name with
+    the pilot's line and counts stacked under it, the score, the reward."""
+    w = VS_ROW_W
+    root = N("root", SB_VSROW, R(size=(w, ROW_HT)))
+    root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=w))
+    glass = root.child(N("Glass", "Glass", STRETCH))
+    glass.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.8), K.kit_sprite("kit_sliver14_fill"), True))
+    bord = root.child(N("Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True))
+    stripe = root.child(N("Stripe", "TeamStripe", HM.TL(0, 12, 4, ROW_HT - 24)))
+    stripe.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    share = root.child(N("Share", "Share", R((0, 0), (0.5, 0), (0, 0), (0, 3), (0, 0))))
+    share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"))).add("th", 114, H.themed("NeutralLightest"))
+    rank = root.child(N("Rank", "Rank", HM.TL(18, 21, 40, 42)))
+    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight")))
+    ring = root.child(N("Ring", "Ring", HM.TL(64, 16, 52, 52)))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_oct_fill"), True))
+    clip = ring.child(N("Ring/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)).add("mask", 114, A.mask(False))
+    av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
+    av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
+    name_w = w - 132 - 270
+    name = root.child(N("Name", "Name", HM.TL(132, 8, name_w, 30)))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("Pilot", "H3", tok("TextLight"))))
+    dom = root.child(N("Domain", "Domain", HM.TL(132, 40, name_w, 16)))
+    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "Label", tok("NeutralLightest"))))
+    sec = root.child(N("Secondary", "Secondary", HM.TL(132, 58, name_w, 18)))
+    sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "BodySmall", tok("TextLight"))))
+    score = root.child(N("Score", "Score", HM.TR(118, 21, 150, 42)))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right"))
+    data = root.child(N("Data", "DataPanels", HM.TR(16, 21, 96, 42)))
+    data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 5, (0, 0), (0, 0)))
+    glyph = data.child(N("Data/Glyph", "Glyph", R(size=(18, 18))))
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=18, ph=18))
+    amt = data.child(N("Data/Amount", "Amount", R(size=(70, 36))))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=70, ph=36))
+    root.add("card", 114, card_body)
     return root
 
 
@@ -879,21 +1408,21 @@ def build_stat():
 
 
 def reward_strip(root):
-    """What you earned and the wallet counting up, in a Mass-rimmed glass panel bottom right."""
+    """What you earned and the wallet counting up, in a plain glass panel bottom right (the amount in the lime of a
+    good outcome, the crystal in gold)."""
     w, h = 560, 92
     strip = root.child(N("Reward", "RewardStrip", R((0.5, 1), (0.5, 1), (LIST_W / 2 - w / 2, -770), (w, h), (0.5, 1))))
     strip.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.7))
     _, bord = H.framed(strip, "Reward", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.86)
-    HM.M.rim_border(bord, "Mass")
     glyph = strip.child(N("Reward/Glyph", "Glyph", HM.TL(24, 30, 32, 32)))
-    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementMass"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
-        .add("th", 114, H.themed("ElementMass"))
-    H.label(strip.child(N("Reward/Earned", "Earned", HM.TL(72, 18, 200, 16))), "You earned", "Label", "ElementMass")
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase"))
+    H.label(strip.child(N("Reward/Earned", "Earned", HM.TL(72, 18, 200, 16))), "You earned", "Label", "NeutralLightest")
     amt = strip.child(N("Reward/Amount", "Amount", HM.TL(72, 36, 180, 42)))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H1", tok("TextLight")))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H1", tok("Cta")))
     H.label(strip.child(N("Reward/Balance", "Balance", HM.TR(24, 20, 200, 16))), "Balance", "Label", "NeutralLightest", align="right")
     to = strip.child(N("Reward/To", "To", HM.TR(24, 42, 120, 32)))
-    to.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("ElementMass"), align="right"))
+    to.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("TextLight"), align="right"))
     chev = strip.child(N("Reward/Arrow", "Arrow", HM.TR(152, 50, 16, 16)))
     chev.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_chevron"), preserve=True))
     frm = strip.child(N("Reward/From", "From", HM.TR(176, 42, 120, 32)))
@@ -904,12 +1433,64 @@ def reward_strip(root):
     return strip
 
 
+def versus_side(vs, key, right):
+    """One team: its name in its colour and WINNER (or nothing) under it, its score on the right, a rule in its colour,
+    then its rows."""
+    col = vs.child(N(key, key.rsplit("/", 1)[-1], HM.TR(0, 56, VS_ROW_W, LIST_H - 56) if right else HM.TL(0, 56, VS_ROW_W, LIST_H - 56)))
+    name = col.child(N(f"{key}/Name", "Name", HM.TL(0, 0, 340, 50)))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("JADE", "H1", "TextLight", 40, align="left"))
+    H.label(col.child(N(f"{key}/Status", "Status", HM.TL(2, 52, 300, 18))), "Winner", "Label", "NeutralLightest")
+    score = col.child(N(f"{key}/Score", "Score", HM.TR(0, 4, 300, 60)))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("", "H1", "TextLight", 48, align="right"))
+    rule = col.child(N(f"{key}/Rule", "Rule", R((0, 1), (1, 1), (0, -(VS_HEAD_H - 14)), (0, 2), (0.5, 1))))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    rows = col.child(N(f"{key}/Rows", "Rows", R((0, 1), (1, 1), (0, -VS_HEAD_H), (0, 0), (0.5, 1))))
+    rows.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
+    return col
+
+
+def versus_layout(root):
+    """Rev 23 D (Shombith, 2026-10-26: "For scoreboard I liked D"): where the ladder sits, the two teams face to face -
+    the winner on the left - with the share bar across the top and VS between them. Hidden until a two-team match
+    (ScoreboardVersusView); the ladder keeps every other match."""
+    vs = root.child(N("Versus", "Versus", R((0.5, 1), (0.5, 1), (0, -196), (LIST_W, LIST_H), (0.5, 1))))
+    vs.add("cg", 225, H.canvas_group(False))
+    share = vs.child(N("Versus/Share", "Share", HM.TL(0, 0, LIST_W, 40)))
+    share.add("cg", 225, H.canvas_group(True))
+    track = share.child(N("Versus/Share/Bar", "Bar", HM.TL(0, 0, LIST_W, 10)))
+    for side, r in (("Left", R((0, 0), (0.5, 1), (-1, 0), (-2, 0))), ("Right", R((0.5, 0), (1, 1), (1, 0), (-2, 0)))):
+        track.child(N(f"Versus/Share/Bar/{side}", side, r)).add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    H.label(share.child(N("Versus/Share/LeftLine", "LeftLine", HM.TL(0, 18, 600, 18))), "Ruby 52%", "Label", "TextLight")
+    H.label(share.child(N("Versus/Share/RightLine", "RightLine", HM.TR(0, 18, 600, 18))), "Jade 48%", "Label", "NeutralLightest",
+            align="right")
+    vs_word = vs.child(N("Versus/Vs", "Vs", HM.TL(VS_ROW_W, 56 + 14, VS_COL_GAP, 40)))
+    vs_word.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("VS", "H2", tok("NeutralLightest"), align="center"))
+    versus_side(vs, "Versus/Left", False)
+    versus_side(vs, "Versus/Right", True)
+
+    def body(ctx, go):
+        sides = ""
+        for side in ("Left", "Right"):
+            k = f"Versus/{side}"
+            sides += (f"  - nameText: {{fileID: {ctx.c(f'{k}/Name', 'tmp')}}}\n    statusText: {{fileID: {ctx.c(f'{k}/Status', 'tmp')}}}\n"
+                      f"    scoreText: {{fileID: {ctx.c(f'{k}/Score', 'tmp')}}}\n    rule: {{fileID: {ctx.c(f'{k}/Rule', 'img')}}}\n"
+                      f"    rows: {{fileID: {ctx.rt(f'{k}/Rows')}}}\n    shareFill: {{fileID: {ctx.c(f'Versus/Share/Bar/{side}', 'img')}}}\n"
+                      f"    shareText: {{fileID: {ctx.c(f'Versus/Share/{side}Line', 'tmp')}}}\n")
+        return K.mono(go, S["versus"],
+                      f"  group: {{fileID: {ctx.c('Versus', 'cg')}}}\n  ladderGroup: {{fileID: {ctx.c('List', 'cg')}}}\n"
+                      "  sides:\n" + sides
+                      + f"  shareGroup: {{fileID: {ctx.c('Versus/Share', 'cg')}}}\n  shareGap: 4\n  loserShareAlpha: 0.6\n"
+                      "  winnerWord: Winner\n  loserWord: \n  shareTemplate: '{domain} {percent}%'\n")
+    vs.add("versus", 114, body)
+    return vs
+
+
 def build_panel():
     root = N("root", SB_PANEL, STRETCH)
     scrim = root.child(N("Scrim", "Scrim", STRETCH))
     scrim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.86), raycast=True)).add("th", 114, H.themed("SurfaceBlack", 0.86))
     scrim.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Fade", duration=0.2))
-    root.children.append(HM.M.window_lattice_node("Lattice"))
+    root.children.append(HM.M.window_sea_node("Lattice", name="Sea"))
     head = root.child(N("Header", "Header", R((0.5, 1), (0.5, 1), (0, -56), (LIST_W, 120), (0.5, 1))))
     head.add("in", 114, HM.M.entrance("Rise", distance=14))
     mode = head.child(N("Header/Mode", "Mode", HM.TL(0, 0, LIST_W, 22)))
@@ -922,25 +1503,26 @@ def build_panel():
         .add("in", 114, HM.M.entrance("GrowX", delay=0.3))
     view = root.child(N("List", "List", R((0.5, 1), (0.5, 1), (0, -196), (LIST_W, LIST_H), (0.5, 1))))
     view.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("rmask", 114, A.rect_mask()).add("scroll", 114, A.scroll_rect("List/Content", "List", 30))
+        .add("rmask", 114, A.rect_mask()).add("scroll", 114, A.scroll_rect("List/Content", "List", 30)) \
+        .add("cg", 225, H.canvas_group(True))
     content = view.child(N("List/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
+    versus_layout(root)
     stats = root.child(N("Stats", "Stats", R((0.5, 1), (0.5, 1), (0, -712), (LIST_W, 40), (0.5, 1))))
     stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 24, 3, (1, 1), (0, 0))) \
         .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.5))
     row = root.child(N("Buttons", "Buttons", R((0.5, 1), (0.5, 1), (0, -784), (LIST_W, 52), (0.5, 1))))
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 0))) \
         .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.6))
-    for key, cap, variant, keycap, pad, w, rim in SB_BUTTONS:
+    for key, cap, variant, keycap, pad, w in SB_BUTTONS:
         b = kit_button(f"Sb/{key}", f"{key}Button", R(size=(w, 52)), variant, False, cap, keycap, pad,
                        keycap_key=f"Sb{key}Keycap")
         b.add("le", 114, H.le(pw=w, ph=52))
-        HM.M.rim_border(HM.M.find_node(b, f"Sb/{key}/Border"), rim)
         if key == "PlayAgain":
             strip = b.child(N("Sb/PlayAgain/Avatars", "PlayerAvatars", R((0, 0), (0, 0), (8, -12), (420, 30), (0, 1))))
             strip.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (0, 0), (0, 0))).add("le", 114, H.le(ignore=True))
             cnt = strip.child(N("Sb/PlayAgain/Avatars/Count", "Count", R(size=(300, 30))))
-            cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("ElementSpace"))) \
+            cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"))) \
                 .add("le", 114, H.le(pw=300, ph=30))
             b.add("roster", 114, lambda ctx, go: K.mono(go, S["roster"],
                 f"  container: {{fileID: {ctx.rt('Sb/PlayAgain/Avatars')}}}\n  builtEntrySize: 30\n"
@@ -953,7 +1535,8 @@ def build_panel():
 
 def sb_prefabs():
     out = {}
-    for name, build in ((SB_ROW, build_row), (SB_HEADER, build_header), (SB_STAT, build_stat), (SB_PANEL, build_panel)):
+    for name, build in ((SB_ROW, build_row), (SB_VSROW, build_versus_row), (SB_HEADER, build_header), (SB_STAT, build_stat),
+                        (SB_PANEL, build_panel)):
         out[sb_path(name)] = P.prefab_text(build(), name)
         out[sb_path(name) + ".meta"] = K.PREFAB_META.format(g=P.asset_guid(name))
     return out
@@ -1002,6 +1585,7 @@ def patch_scoreboard(p):
     K.emit_instance(p.ctx, K.Instance("Score", SB_PANEL, guid, "ScoreboardPanel", STRETCH, ()), host_rt, out)
     retired = set()
     C.STUB_KIND.setdefault("strip", (114, S["strip"]))
+    C.STUB_KIND.setdefault("versus", (114, S["versus"]))
 
     def stub(key, kind):
         src = fk(key)
@@ -1025,7 +1609,7 @@ def patch_scoreboard(p):
                              ("playAgainButton", "Sb/PlayAgain#go", "go"), ("playAgainLabel", "Sb/PlayAgain/Label#tmp", "tmp"),
                              ("mainMenuButton", "Sb/MainMenu#go", "go"), ("leaveLobbyButton", "Sb/LeaveLobby#go", "go"),
                              ("continueButton", "Sb/Continue#go", "go"), ("modeText", "Header/Mode#tmp", "tmp"),
-                             ("rewardStrip", "Reward#strip", "strip")):
+                             ("rewardStrip", "Reward#strip", "strip"), ("versusView", "Versus#versus", "versus")):
         fid, doc = stub(key, kind)
         refs[field] = fid
         if doc not in out:
@@ -1045,6 +1629,7 @@ def patch_scoreboard(p):
     d = set_field(d, "statRowPrefab", sb_ref(SB_STAT, "root#stat"))
     d = set_field(d, "playerCardPrefab", sb_ref(SB_ROW, "root#card"))
     d = set_field(d, "teamHeaderPrefab", sb_ref(SB_HEADER, "root#header"))
+    d = set_field(d, "versusRowPrefab", sb_ref(SB_VSROW, "root#card"))
     d = set_field(d, "wireButtonsInCode", "1")
     p.replace(sb, d)
 
@@ -1337,12 +1922,19 @@ def check_local_refs(path, text_):
         assert m.group(1) in anchors, f"{path}: dangling local fileID {m.group(1)}"
 
 
+def p_fid(key):
+    """A deterministic fileID connect_text gives `key` (a node#comp or a go#comp key)."""
+    return str(P.Ctx("ConnectingPanel/Item12").fid(key))
+
+
 def validate(files):
     lk = files[LOCKUP]
     for k, v in LOCKUP_FIELDS.items():
         assert f"  {k}: {v}\n" in lk, f"AbilityLockupStyle: {k} is not the style-B value"
     for k, v in KEYCAP_FIELDS:
         assert f"  {k}: {v}\n" in lk, f"AbilityLockupStyle: {k} is not set"
+    for k, v in NO_ELEMENT_COLOUR_FIELDS:
+        assert f"  {k}: {v}\n" in lk, f"AbilityLockupStyle: {k} must be off - elements carry no colour (Docs/UI_COLOR_RULES.md)"
     # The LOCKED geometry is untouched (VESSEL_HUD_AND_ELEMENTS: changeable only within the asserted limits).
     for k, v in (("plateWidth", "104"), ("cardPitch", "128"), ("abilityCellHeight", "88"), ("petalCellHeight", "88"),
                  ("iconBoxSize", "60"), ("petalFlowerSize", "60"), ("rowMarginRight", "40"), ("rowMarginBottom", "44")):
@@ -1386,7 +1978,7 @@ def validate(files):
     view = next(f for f, d in docs.items() if f"guid: {S['hudview']}" in d)
     btn = re.search(r"  readyButton: \{fileID: (-?\d+)\}", docs[view]).group(1)
     assert f"guid: {S['kitbutton']}" in docs[btn], "the Ready button is not a KitButton"
-    assert f"  variant: {K.VARIANTS['Play']}\n" in docs[btn], "the Ready button is not the Play variant"
+    assert f"  variant: {K.VARIANTS['Commit']}\n" in docs[btn], "the Ready button is not the Ruby Commit variant (Play / Ready)"
     assert "propertyPath: m_text\n      value: A\n" in cv, "the Ready button has no A keycap"
     cbp = [d for d in docs.values() if f"guid: {S['cbp']}" in d and f"m_GameObject: {{fileID: {re.search(r'm_GameObject: {fileID: (-?[0-9]+)}', docs[btn]).group(1)}}}" in d]
     assert len(cbp) == 1 and "  activationButton: 6\n" in cbp[0], "the Ready button no longer answers the pad's A (South)"
@@ -1400,12 +1992,15 @@ def validate(files):
     for f in ("ring", "avatar", "state", "group"):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, docs[chip], re.M), f"ReadyWaitingChip.{f} is not wired"
     pi = next(d for d in docs.values() if d.startswith("--- !u!1001 ") and f"guid: {COUNTDOWN_PREFAB}" in d.split("m_SourcePrefab:")[1])
-    for prop in ("countdownText", "waitingPanel", "countdownDisplay"):
+    for prop in ("countdownText", "waitingPanel", "countdownDisplay", "beatHex", "beatHexGroup", "goRing"):
         m = re.search(r"      propertyPath: %s\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}" % prop, pi)
         assert m and m.group(1) in docs, f"CountdownTimer.{prop} is not wired"
         assert pi.count(f"propertyPath: {prop}\n") == 1, f"CountdownTimer.{prop} is overridden twice"
     beat = re.search(r"      propertyPath: countdownText\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}", pi).group(1)
-    assert f"  m_fontSize: {BEAT_SIZE}\n" in docs[beat], "the countdown beat is not 260 px"
+    assert f"  m_fontSize: {BEAT_SIZE}\n" in docs[beat], f"the countdown beat is not {BEAT_SIZE} px"
+    assert "  m_enableAutoSizing: 0\n" in docs[beat], "the countdown beat auto-sizes - it would be capped at 48 px"
+    hexd = docs[re.search(r"      propertyPath: beatHex\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}", pi).group(1)]
+    assert f"guid: {S['crystal']}, type: 3}}" in hexd, "the count's hex is not a LoadCrystalGraphic (it cannot fill)"
 
     # 12c
     pz = files[PAUSE]
@@ -1439,11 +2034,123 @@ def validate(files):
     check_local_refs(CONNECT, cn)
     assert f"guid: {WHITRABT}" not in cn, "the connecting panel still draws in the off-spec whitrabt face"
     cd = docs_of(cn)
-    for f in ("phaseTitle", "progressText", "elapsedText", "statusText", "gameModeText", "progressSlider", "backdropArt"):
-        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, cd[CN["comp"]], re.M), f"ConnectingPanelController.{f} is not wired"
-    assert f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}" in cd[CN["comp"]], "the connecting backdrop has no game list to find a mode's art in"
-    for key in ("status_tmp", "mode_tmp"):
-        assert f"guid: {K.SEMIBOLD[0]}" in cd[CN[key]], f"the connecting panel's {key} is not Chakra Petch SemiBold"
+    comp = cd[CN["comp"]]
+    for f in ("gate", "gameModeText", "stepBar", "playerRoster"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, comp, re.M), f"ConnectingPanelController.{f} is not wired"
+    for f, v in (("games", K.ref(11400000, ARCADE_GAMES, 2)), ("introWords", K.ref(11400000, INTRO_LIBRARY, 2)),
+                 ("coveredLayBudgetMs", "80"), ("dwellSeconds", "1")):
+        assert f"  {f}: {v}\n" in comp, f"ConnectingPanelController.{f} is not {v}"
+    for f in ("connectingCamera", "arenaPreview", "backdropArt", "statusText", "progressText", "elapsedText", "watchedLayBudgetMs",
+              "progressSlider", "phaseTitle", "phaseTitleEntrance", "connectingTitle", "buildingTitle", "settlingTitle", "waitingTitle"):
+        assert not re.search(r"^  %s:" % f, comp, re.M), f"ConnectingPanelController still carries the retired {f}"
+    # The screen COVERS the arena: nothing behind it renders the world (Docs/MENU_REDESIGN_B.md section 99.2).
+    assert not re.search(r"^--- !u!20 ", cn, re.M), "a camera renders behind the connecting panel again"
+    assert f"guid: {C.script('ConnectingArenaPreview')}" not in cn, "the connecting panel still renders an arena preview"
+    assert "  m_Color: {r: 0, g: 0, b: 0, a: 0}\n" in cd[CN["root_img"]], \
+        "the panel's own Image is opaque again - it would fill the gate's hole before the arena shows through it"
+    gates = [f for f, d in cd.items() if f"guid: {S['gate']}, type: 3}}" in d]
+    assert len(gates) == 1 and re.search(r"^  gate: \{fileID: %s\}" % gates[0], comp, re.M), "the gate view is not the controller's"
+    gv = cd[gates[0]]
+
+    def target(doc, name, script=None, owner="ConnectingGateView"):
+        m = re.search(r"^ +%s: \{fileID: (-?\d+)\}" % name, doc, re.M)
+        assert m and m.group(1) in cd, f"{owner}.{name} is not wired"
+        if script:
+            assert f"guid: {script}, type: 3}}" in cd[m.group(1)], f"{owner}.{name} is not a {script}"
+        return cd[m.group(1)]
+
+    def block(doc, name):
+        m = re.search(r"^  %s:\n((?:  - .*\n)*)" % name, doc, re.M)
+        return m.group(1) if m else ""
+    cover = block(gv, "cover")
+    assert len(re.findall(r"\{fileID: [1-9-]", cover)) == 2, "the gate's cover is not the base and the sea"
+    for fid in re.findall(r"\{fileID: (-?\d+)\}", cover):
+        assert f"guid: {S['aperture']}, type: 3}}" in cd[fid], "a cover layer is not a HexApertureGraphic (no hole to open)"
+    target(gv, "gateRing", S["crystal"])
+    for name in ("enteringText", "loadingLabel"):
+        target(gv, name)
+    assert re.search(r"^  content: \{fileID: %s\}" % p_fid(CN["safe_go"] + "#cg"), gv, re.M), "the gate fades nothing as it opens"
+    assert f"  veilWords: {K.ref(11400000, VEIL_WORDS, 2)}\n" in gv, "the gate's words are not the cell-change screen's"
+
+    # Rev 91 F: what the tour replaced is gone, through this generator.
+    for key in RETIRED_CONNECT_KEYS:
+        assert p_fid(key + "#go") not in cd, f"the retired {key} is still in the loading screen"
+    assert f"guid: {K.meta_guid('Assets/_Graphics/Codex/ethirion_omni.png')}" not in cn, "the Omni crystal is still on the loading screen"
+    assert not re.search(r"^  m_FillRect:", cn, re.M), "the Slider is back on the track - it and KitStepBar would both anchor the fill"
+
+    # The board's sea and motion (section 186): the fields drift between the black base and the sea lines, in a group
+    # the gate fades with its content (they have no hole), and the Ark drifts and the Vessels hull bobs.
+    assert re.search(r"^  backdrop: \{fileID: %s\}" % p_fid("Gate/Cover/Fields#cg"), gv, re.M), \
+        "the gate does not fade the sea's fields - they would cover the arena as the hole opens"
+    order = re.findall(r"^  - \{fileID: (-?\d+)\}", cd[CN["root_rt"]].split("  m_Children:\n", 1)[1].split("  m_Father:", 1)[0], re.M)
+    base_i, fields_i, sea_i = (order.index(p_fid(k + "#rt")) for k in ("Gate/Cover/Base", "Gate/Cover/Fields", "Gate/Cover/Sea"))
+    assert base_i < fields_i < sea_i, "the sea's fields must draw over the black base and under the sea lines"
+    def drift_on(key):
+        go = p_fid(key + "#go")
+        return [d for d in cd.values() if f"guid: {S['drift']}, type: 3}}" in d and f"  m_GameObject: {{fileID: {go}}}" in d]
+    for i, (_, _, _, seconds, _, _) in enumerate(SEA_FIELDS):
+        got = drift_on(f"Gate/Cover/Fields/Field{i}")
+        assert len(got) == 1 and f"  seconds: {K.f32(seconds)}\n" in got[0], f"the sea's field {i + 1} does not drift"
+    for key, what in (("Tour/Show1/Ark", ARK_DRIFT), ("Tour/Show3/Hull", HULL_BOB)):
+        got = drift_on(key)
+        assert len(got) == 1 and f"  seconds: {K.f32(what['seconds'])}\n" in got[0], f"{key} lost the board's motion"
+
+    # The tour: five chapters, each a picture and its words, one on show at rest, every word an authored field.
+    tours = [f for f, d in cd.items() if f"guid: {S['tour']}, type: 3}}" in d]
+    assert len(tours) == 1 and re.search(r"^  tour: \{fileID: %s\}" % tours[0], gv, re.M), "the tour is not the gate view's"
+    tv = cd[tours[0]]
+    assert re.findall(r"^  - title: (.*)$", tv, re.M) == [K.yaml_scalar(t) for t, _l in TOUR], "the tour's chapters are not the board's five, in order"
+    assert re.findall(r"^    line: (.*)$", tv, re.M) == [K.yaml_scalar(l) for _t, l in TOUR], "a chapter's line is not the board's"
+    for f in ("show", "words", "counterText", "titleText", "lineText", "indexText", "indexRule"):
+        ids = re.findall(r"^    %s: \{fileID: (-?\d+)\}" % f, tv, re.M)
+        assert len(ids) == len(TOUR) and len(set(ids)) == len(TOUR) and all(i in cd and i != "0" for i in ids), \
+            f"a chapter's {f} is not wired (or two chapters share one)"
+    shown = [re.search(r"^  m_Alpha: (\S+)", cd[i], re.M).group(1) for i in re.findall(r"^    show: \{fileID: (-?\d+)\}", tv, re.M)]
+    assert shown == ["1"] + ["0"] * (len(TOUR) - 1), "at rest the tour does not show exactly its first chapter"
+    template = re.search(r"^  counterTemplate: (.*)$", tv, re.M).group(1)
+    assert "{n}" in template and "{total}" in template, "the tour's counter template lost a token"
+    for what, guid in [("Squad pilot " + c, g) for c, g in PORTRAIT.items()] + [("the Ark", ARK_ART)] + [(h + "'s card", g) for h, g in HULL_CARD.items()]:
+        assert f"m_Sprite: {{fileID: 21300000, guid: {guid}, type: 3}}" in cn, f"the tour has no picture of {what}"
+    ark_meta = open(os.path.join(REPO, "Assets/_Graphics/UI/Loading/loading_tour_ark.png.meta"), encoding="utf-8").read()
+    assert "  textureType: 8\n" in ark_meta and "  spriteMode: 1\n" in ark_meta, "the Ark's picture is not imported as a sprite"
+
+    # The bar: one KitStepBar on the old slider's track, cut where ArenaLoadProgress's shares end.
+    bars = [f for f, d in cd.items() if f"guid: {S['stepbar']}, type: 3}}" in d]
+    assert len(bars) == 1 and re.search(r"^  stepBar: \{fileID: %s\}" % bars[0], comp, re.M), "the step bar is not the controller's"
+    sb = cd[bars[0]]
+    ends = [float(x) for x in re.findall(r"^  - (\S+)$", block(sb, "stepEnds"), re.M)]
+    assert ends == [float(K.f32(e)) for e in STEP_ENDS], \
+        f"the bar's steps end at {ends}, not at ArenaLoadProgress's measured shares {list(STEP_ENDS)}"
+    assert all(a < b for a, b in zip(ends, ends[1:])) and ends[-1] == 1.0, "the bar's steps do not rise to 1"
+    names = re.findall(r"^  - (.+)$", block(sb, "stepNames"), re.M)
+    assert len(names) == len(ends), "the bar does not name every step"
+    for f in ("stepLabels", "stepMarkers", "stepMarkerFills"):
+        assert len(re.findall(r"\{fileID: [1-9-]", block(sb, f))) == len(ends), f"KitStepBar.{f} does not cover every step"
+    assert f"  fill: {{fileID: {CN['fill_rt']}}}\n" in sb and f"  fillGraphic: {{fileID: {CN['fill_img']}}}\n" in sb, \
+        "the bar does not fill the track GameCanvas overrides"
+    glint = re.search(r"^  glint: \{fileID: (-?\d+)\}", sb, re.M)
+    assert glint and f"  m_Father: {{fileID: {CN['fill_rt']}}}" in cd[glint.group(1)], "the glint does not travel along the fill"
+    assert f"guid: {RECT_MASK_2D}" in cn, "the fill does not clip its glint"
+    for name in ("stepText", "percentText"):
+        target(sb, name, owner="KitStepBar")
+    assert re.search(r"^  doneWord: \S", sb, re.M), "the bar has no done word"
+    assert f"  doneToken: {K.TOKEN_INDEX['Cta']}\n" in sb, "the bar's done state is not Lime"
+    assert f"  fillToken: {K.TOKEN_INDEX['Cta']}\n" not in sb, "the bar is Lime before the load is done"
+    assert f"  m_Color: {K.col(tok('Cta'))}\n" not in cn, "Lime is drawn at rest - on this screen it means done and nothing else"
+    for i, e in enumerate(STEP_ENDS[:-1]):
+        assert f"  m_AnchorMin: {K.v2(e, 0)}\n" in cd[p_fid(f"Gate/Bar/Cut{i}#rt")], f"the break after step {i + 1} is not at its share"
+
+    # The roster still counts who the load waits on; F draws no pilot rows.
+    ro = target(comp, "playerRoster", script_guid("Assets/_Scripts/UI/Elements/ConnectingPlayerRoster.cs"), owner="ConnectingPanelController")
+    assert ro == cd[CN["roster"]], "the controller's roster is not the kept one"
+    assert "  m_Alpha: 0\n" in cd[p_fid(CN["icons_go"] + "#hide")], "the pilot rows are drawn again - Rev 91 F has none"
+    for f in ("templateNameText", "templateStateText", "templatePip", "countText", "templateDomainImage"):
+        assert f"  {f}: {{fileID: 0}}\n" in ro, f"the hidden pilots list's {f} points at a row part that no longer exists"
+    assert "  showAI: 0\n" in ro, "the hidden pilots list builds a row per AI seat for nobody to see"
+    # GameCanvas overrides four objects in this prefab: they must still exist, or the overrides dangle.
+    guid = K.meta_guid(CONNECT)
+    for fid in set(re.findall(r"- target: \{fileID: (-?\d+), guid: %s" % guid, files[CANVAS])):
+        assert fid in cd, f"GameCanvas overrides {fid} in ConnectingPanel, which no longer exists"
     assert "m_Sprite: {fileID: 0}" in cd[CN["fill_img"]], "the connecting bar still wears the legacy loading sprite"
 
     # 12d - reveal
@@ -1479,11 +2186,12 @@ def validate(files):
     check_local_refs(sb_path(SB_PANEL), sp)
     spd = docs_of(sp)
     fk = K.FileIds(SB_PANEL)
-    for key, _, _, _, pad, _, rim in SB_BUTTONS:
+    for key, _, _, _, pad, _ in SB_BUTTONS:
         cbp = spd[str(fk(f"Sb/{key}#cbp"))]
         assert f"  activationButton: {pad}\n" in cbp, f"{key} answers the wrong pad button"
         bd = spd[str(fk(f"Sb/{key}/Border#img"))]
-        assert f"guid: {HM.M.rim_material(rim)}" in bd, f"{key}'s border is not lit with the {rim} rim"
+        assert not any(f"guid: {g}" in bd for g in HM.M.RETIRED_RIM_GUIDS), \
+            f"{key}'s border carries an element rim again (Docs/UI_COLOR_RULES.md)"
     assert {b[4] for b in SB_BUTTONS if b[0] in ("PlayAgain", "Continue")} == {6} and \
            {b[4] for b in SB_BUTTONS if b[0] in ("MainMenu", "LeaveLobby")} == {5}, "A and B share an end-of-match button"
     row = docs_of(files[sb_path(SB_ROW)])[str(K.FileIds(SB_ROW)("root#card"))]
@@ -1492,9 +2200,10 @@ def validate(files):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, row, re.M), f"ScoreboardRow: {f} is not wired"
     # Option B: dark glass and a thin stripe - never a slab of team colour again.
     assert "  backgroundImage: {fileID: 0}\n" in row, "the scoreboard row is a full team fill again (backgroundImage wired)"
-    for f, guid in (("wonBorderMaterial", HM.M.rim_material(ROW_RIMS["won"])), ("lostBorderMaterial", HM.M.rim_material(ROW_RIMS["lost"])),
-                    ("localBorderMaterial", SELECTION_RIM_MAT)):
-        assert f"  {f}: {mat_ref(guid)}\n" in row, f"ScoreboardRow: {f} is not the {guid} rim"
+    for f in ("wonBorderMaterial", "lostBorderMaterial", "localBorderMaterial"):
+        assert f"  {f}: {NO_ROW_RIM}\n" in row, f"ScoreboardRow: {f} lights the border again (no rims, Docs/UI_COLOR_RULES.md)"
+    assert f"  localBorderToken: {K.TOKEN_INDEX['TextLight']}\n" in row and \
+           f"  localGlassTintToken: {K.TOKEN_INDEX['NeutralLightest']}\n" in row, "the local scoreboard row draws in the selection blue again"
     for name in (SB_ROW, SB_STAT, SB_HEADER):
         check_local_refs(sb_path(name), files[sb_path(name)])
     hd = docs_of(files[sb_path(SB_HEADER)])[str(K.FileIds(SB_HEADER)("root#header"))]
@@ -1508,6 +2217,26 @@ def validate(files):
     sbd = next(d for d in docs.values() if f"guid: {S['scoreboard']}" in d)
     assert f"  teamHeaderPrefab: {sb_ref(SB_HEADER, 'root#header')}" in sbd, "Scoreboard.teamHeaderPrefab is not the team header"
     assert re.search(r"^  rewardStrip: \{fileID: [1-9-]", sbd, re.M), "Scoreboard.rewardStrip is not wired"
+    # Rev 23 D: the team-versus layout - the view reached from the Scoreboard, its two sides wired, the ladder's list it
+    # steps aside for, and the half-width row it spawns.
+    m = re.search(r"^  versusView: \{fileID: (-?\d+)\}", sbd, re.M)
+    assert m and m.group(1) in docs and f"guid: {P.asset_guid(SB_PANEL)}" in docs[m.group(1)], \
+        "Scoreboard.versusView is not wired into ScoreboardPanel (every match would stay the ladder)"
+    assert f"  versusRowPrefab: {sb_ref(SB_VSROW, 'root#card')}" in sbd, "Scoreboard.versusRowPrefab is not the versus row"
+    vsd = spd[str(fk("Versus#versus"))]
+    assert f"  ladderGroup: {{fileID: {fk('List#cg')}}}\n" in vsd and f"  group: {{fileID: {fk('Versus#cg')}}}\n" in vsd, \
+        "ScoreboardVersusView does not swap with the ladder's list"
+    for side in ("Left", "Right"):
+        for f, key in (("nameText", f"Versus/{side}/Name#tmp"), ("scoreText", f"Versus/{side}/Score#tmp"),
+                       ("rows", f"Versus/{side}/Rows#rt"), ("shareFill", f"Versus/Share/Bar/{side}#img")):
+            assert f"{f}: {{fileID: {fk(key)}}}" in vsd, f"ScoreboardVersusView's {side} side: {f} is not wired"
+    vrow = files[sb_path(SB_VSROW)]
+    check_local_refs(sb_path(SB_VSROW), vrow)
+    vcard = docs_of(vrow)[str(K.FileIds(SB_VSROW)("root#card"))]
+    for f in ("playerAvatarImage", "playerNameText", "playerScoreText", "rankText", "secondaryStatText", "shareBar"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, vcard, re.M), f"ScoreboardVersusRow: {f} is not wired"
+    assert f"m_SizeDelta: {{x: {VS_ROW_W}, y: {ROW_HT}}}" in vrow and 2 * VS_ROW_W + VS_COL_GAP == LIST_W, \
+        "the versus columns no longer fit the ladder's width"
 
     assert "  m_Name: ThumbCursors\n" not in cv, "the dead ThumbCursors subtree survives"
     # Follow-up - toast container
@@ -1549,7 +2278,7 @@ def validate(files):
         return text_.count(f"guid: {kit_entrance}, type: 3}}")
     for path, at_least, what in ((CANVAS, 3, "Ready button, caption and the waiting panel"),
                                  (PAUSE, 5, "pause scrim, window and the three buttons"),
-                                 (CONNECT, 1, "the connecting headline"), (ENDGAME, 3, "the reveal's three lines"),
+                                 (CONNECT, 4, "the loading screen's brief, title, index and bar"), (ENDGAME, 3, "the reveal's three lines"),
                                  (sb_path(SB_PANEL), 6, "scoreboard scrim, header, banner, rule, stats and buttons"),
                                  (PANEL["path"], 1, "the score column"),
                                  (sb_path(SB_STAT), 1, "the scoreboard stat tiles")):
@@ -1557,7 +2286,6 @@ def validate(files):
     sq = docs_of(files[ENDGAME])[EG["seq"]]
     blk = re.search(r"^  revealEntrances:\n((?:  - .*\n)*)", sq, re.M)
     assert blk and len(re.findall(r"\{fileID: [1-9-]", blk.group(1))) == 3, "the reveal's entrances are not started by the sequencer"
-    assert re.search(r"^  phaseTitleEntrance: \{fileID: [1-9-]", docs_of(files[CONNECT])[CN["comp"]], re.M), "the connecting headline does not replay on a phase change"
     assert re.search(r"^  entrance: \{fileID: [1-9-]", docs[next(f for f, d in docs.items() if f"guid: {S['waiting']}" in d)], re.M), \
         "the waiting panel has no entrance"
 
@@ -1620,8 +2348,41 @@ def self_test(files):
     cases = [
         ("two stand-ins for the scoreboard panel again", second_root_stub),
         ("the scoreboard host a 0x0 point again", point_host),
-        ("the connecting backdrop unwired", lambda f: f.__setitem__(CONNECT, re.sub(
-            r"(  backdropArt: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("the cell gate unwired", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  gate: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("a camera back behind the connecting panel", lambda f: f.__setitem__(CONNECT, f[CONNECT]
+            + "--- !u!20 &7770001\nCamera:\n  m_ObjectHideFlags: 0\n")),
+        ("the connecting panel's own backdrop opaque again", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            docs_of(f[CONNECT])[CN["root_img"]], docs_of(f[CONNECT])[CN["root_img"]].replace(
+                "  m_Color: {r: 0, g: 0, b: 0, a: 0}\n", "  m_Color: {r: 0, g: 0.0039215684, b: 0.039215688, a: 1}\n")))),
+        ("the tour unwired from the gate", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  tour: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("a chapter without its picture", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(    show: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("a chapter's line rewritten off the board", sub(CONNECT, f"    line: {K.yaml_scalar(TOUR[4][1])}\n", "    line: Seven toys.\n")),
+        ("two chapters on show at rest", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            docs_of(f[CONNECT])[p_fid("Tour/Show1#cg")], docs_of(f[CONNECT])[p_fid("Tour/Show1#cg")].replace(
+                "  m_Alpha: 0\n", "  m_Alpha: 1\n")))),
+        ("the Ark's picture missing", sub(CONNECT, f"guid: {ARK_ART}", f"guid: {HULL_CARD['Sparrow']}")),
+        ("the bar cut off the measured shares", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            docs_of(f[CONNECT])[p_fid("Gate/Bar#steps")], docs_of(f[CONNECT])[p_fid("Gate/Bar#steps")].replace(
+                f"  - {K.f32(STEP_ENDS[0])}\n", "  - 0.22\n", 1)))),
+        ("the step bar unwired from the controller", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  stepBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("the bar Lime before the load is done", sub(CONNECT, f"  fillToken: {K.TOKEN_INDEX['TextLight']}\n", f"  fillToken: {K.TOKEN_INDEX['Cta']}\n")),
+        ("the sea's fields left out of the gate's fade", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  backdrop: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("the hull no longer bobs", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            f"  seconds: {K.f32(HULL_BOB['seconds'])}\n", "  seconds: 9\n", 1))),
+        ("the Slider back on the track", lambda f: f.__setitem__(CONNECT, f[CONNECT]
+            + "--- !u!114 &7770002\nMonoBehaviour:\n  m_FillRect: {fileID: 0}\n")),
+        ("the pilot rows drawn again", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            docs_of(f[CONNECT])[p_fid(CN["icons_go"] + "#hide")], docs_of(f[CONNECT])[p_fid(CN["icons_go"] + "#hide")].replace(
+                "  m_Alpha: 0\n", "  m_Alpha: 1\n")))),
+        ("the Omni crystal back on the loading screen", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            f"guid: {PORTRAIT['Anvil']}", f"guid: {K.meta_guid('Assets/_Graphics/Codex/ethirion_omni.png')}", 1))),
+        ("the connecting panel waiting out 4 seconds again", sub(CONNECT, "  dwellSeconds: 1\n", "  dwellSeconds: 4\n")),
+        ("the lava lamp's element colour back on", sub(LOCKUP, "  elementColour: 0\n", "  elementColour: 1\n")),
         ("the lockup plate back to the old near-black", sub(LOCKUP, LOCKUP_FIELDS["plateColor"], "{r: 0.024, g: 0.031, b: 0.063, a: 0.86}")),
         ("the LOCKED card pitch moved", sub(LOCKUP, "  cardPitch: 128\n", "  cardPitch: 140\n")),
         ("RT named wrong", sub(GLYPHS, "    padLabel: RT\n", "    padLabel: R2\n")),
@@ -1630,6 +2391,8 @@ def self_test(files):
         ("the score column a full team fill", sub(PANEL["path"], "  indicatorAlpha: 0.12\n", "  indicatorAlpha: 1\n")),
         ("the Ready button left a plain Button", sub(CANVAS, f"guid: {S['kitbutton']}", f"guid: {S['button']}")),
         ("the waiting panel deaf to PlayerReady", sub(CANVAS, f"  toastChannel: {K.ref(11400000, TOAST_CHANNEL, 2)}", "  toastChannel: {fileID: 0}")),
+        ("the count without its hex", lambda f: f.__setitem__(CANVAS, re.sub(
+            r"(      propertyPath: beatHex\n      value: \n      objectReference: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
         ("the countdown still drawn in sprites", lambda f: f.__setitem__(CANVAS, re.sub(
             r"(      propertyPath: countdownText\n      value: \n      objectReference: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
         ("a pause button on A", sub(PAUSE, "  activationButton: 4\n", "  activationButton: 6\n")),
@@ -1638,8 +2401,6 @@ def self_test(files):
         ("guests lose Resume again", sub(PAUSE, "  replayButton: {fileID: 0}\n", f"  replayButton: {{fileID: {PAUSE_ROOT_GO}}}\n")),
         ("the connecting rank text back in whitrabt", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
             f"guid: {K.ALDRICH[0]}", f"guid: {WHITRABT}", 1))),
-        ("the connecting headline unwired", lambda f: f.__setitem__(CONNECT, re.sub(
-            r"(  phaseTitle: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT]))),
         ("the reveal line overflowing again", lambda f: f.__setitem__(ENDGAME, f[ENDGAME].replace(
             docs_of(f[ENDGAME])[EG["msg_tmp"]], docs_of(f[ENDGAME])[EG["msg_tmp"]].replace("  m_enableAutoSizing: 1\n", "  m_enableAutoSizing: 0\n")))),
         ("Main menu back on A", lambda f: f.__setitem__(sb_path(SB_PANEL), f[sb_path(SB_PANEL)].replace(
@@ -1647,9 +2408,14 @@ def self_test(files):
             docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))].replace("  activationButton: 5\n", "  activationButton: 6\n")))),
         ("the scoreboard row a full team fill", lambda f: f.__setitem__(sb_path(SB_ROW), f[sb_path(SB_ROW)].replace(
             "  backgroundImage: {fileID: 0}\n", f"  backgroundImage: {{fileID: {K.FileIds(SB_ROW)('Glass#img')}}}\n", 1))),
+        ("the versus view unwired", lambda f: f.__setitem__(CANVAS, re.sub(r"(  versusView: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
+        ("the versus layout not stepping the ladder aside", lambda f: f.__setitem__(sb_path(SB_PANEL), re.sub(
+            r"(  ladderGroup: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[sb_path(SB_PANEL)]))),
+        ("a versus side with nowhere for its rows", lambda f: f.__setitem__(sb_path(SB_PANEL), re.sub(
+            r"(    rows: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[sb_path(SB_PANEL)], count=1))),
         ("the reward strip unwired", lambda f: f.__setitem__(CANVAS, re.sub(r"(  rewardStrip: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
-        ("PLAY AGAIN without its Charge light", lambda f: f.__setitem__(sb_path(SB_PANEL), f[sb_path(SB_PANEL)].replace(
-            f"guid: {HM.M.rim_material('Charge')}", f"guid: {HM.M.rim_material('Time')}"))),
+        ("the local scoreboard row lit with the selection rim", lambda f: f.__setitem__(sb_path(SB_ROW), f[sb_path(SB_ROW)].replace(
+            f"  localBorderMaterial: {NO_ROW_RIM}\n", f"  localBorderMaterial: {mat_ref(HM.M._lattice_guid('selection_rim_mat'))}\n"))),
         ("the match feed back bottom-left", sub(CANVAS, "      propertyPath: m_AnchoredPosition.x\n      value: -40\n", "      propertyPath: m_AnchoredPosition.x\n      value: 316.80005\n")),
         ("feed rows vanishing again", sub(TOAST_SETTINGS, "  agedAlpha: 0.5\n", "  agedAlpha: 0\n")),
         ("the feed row without its accent bar", lambda f: f.__setitem__(FEED, re.sub(

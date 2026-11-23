@@ -22,6 +22,7 @@ RULES="$S/Controller/Vessel/StarlingRules.cs"
 DECK="$S/Controller/Vessel/R_VesselActions/Data Containers/StarlingCardDeckSO.cs"
 CONFIG="$S/Controller/Vessel/R_VesselActions/Data Containers/StarlingConfigSO.cs"
 ELEMENT="$S/Data/Enums/Element.cs"
+EFLOAT="$S/Controller/Vessel/ElementalFloat.cs"
 TEST="$S/Tests/Editor/StarlingRulesTests.cs"
 OUT="${TMPDIR:-/tmp}/starling_rules_parity"
 mkdir -p "$OUT"
@@ -29,7 +30,7 @@ mkdir -p "$OUT"
 build_and_run() {   # $1 = rules source, $2 = deck source, $3 = expected (pass|fail), $4 = label
   ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
   printf '%s\n' "$HERE/Stubs.cs" "$HERE/../brittlestar_harness/NUnitShim.cs" "$HERE/../angler_command_parity/Runner.cs" \
-    "$1" "$2" "$CONFIG" "$ELEMENT" "$TEST" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
+    "$1" "$2" "$CONFIG" "$ELEMENT" "$EFLOAT" "$TEST" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632 \
     -target:exe -main:Runner -out:"$OUT/krp.exe" "@$OUT/files.rsp" 1>&2
@@ -60,5 +61,9 @@ if [ "${1:-}" = "--self-test" ]; then
   plant "Hurry Up ignored" rules 's/return _config.PhaseTimer(phase) \* (1f - cut);/return _config.PhaseTimer(phase);/'
   plant "the vessel phase does not end on a debuff" rules 's/(Phase == StarlingPhase.OpposingVessels \&\& DebuffedThisPhase)/false/'
   plant "the hand in the wrong order" rules 's/{ Element.Charge, Element.Mass, Element.Space, Element.Time }/{ Element.Mass, Element.Charge, Element.Space, Element.Time }/'
+  plant "an element hand offers one card" rules 's/HandSize = Mathf.Min(ElementHandSize, _scratch.Count);/HandSize = Mathf.Min(1, _scratch.Count);/'
+  plant "an element hand can offer a card twice" rules 's/(_scratch\[i\], _scratch\[j\]) = (_scratch\[j\], _scratch\[i\]);/_scratch[i] = _scratch[j];/'
+  plant "the first pick sets no draw element" rules 's/if (DrawElement == Element.None) DrawElement = c.Card.Element;//'
+  plant "the draw element changes with a hand up" rules 's/if (HasHand || SlotOf(element) < 0) return false;/if (SlotOf(element) < 0) return false;/'
   echo "starling_rules_parity --self-test: every planted change failed the test"
 fi

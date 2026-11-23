@@ -294,8 +294,8 @@ namespace CosmicShore.Tests
                 // What CustomCameraController actually places the camera at:
                 // position = target.position + target.rotation * followOffset.
                 float distance = settings.followOffset.magnitude;
-                if (settings.enableAdaptiveZoom)
-                    distance = Mathf.Max(distance, Mathf.Abs(settings.adaptiveMaxDistance));
+                if (settings.EnableAdaptiveZoom)
+                    distance = Mathf.Max(distance, Mathf.Abs(settings.AdaptiveMaxDistance));
 
                 if (distance > worst)
                 {

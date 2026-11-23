@@ -52,7 +52,8 @@ namespace CosmicShore.Gameplay
         public float TickHz = 10f;
         [Tooltip("A member's body prism local scale (x wide, y thin, z long).")]
         public Vector3 BodyScale = new(1.4f, 0.9f, 2.6f);
-        [Tooltip("A member's heart world scale per element (x Charge, y Mass, z Space, w Time) - the crystal it drops.")]
+        [Tooltip("RETIRED, not read (2026-10-26): every heart is the one elemental crystal size, " +
+                 "ElementalCrystalSetSO.CrystalWorldScale.")]
         public Vector4 HeartWorldScale = new(2.298f, 1.737f, 2.298f, 1.737f);
         [Tooltip("Gap between the heart and the body prism behind it.")]
         public float HeartPrismGap = 0.6f;
@@ -255,7 +256,7 @@ namespace CosmicShore.Gameplay
             },
         };
 
-        /// <summary>A member's heart world scale for <paramref name="e"/>.</summary>
-        public float HeartScale(Element e) => SwarmFaunaConfigSO.Of(HeartWorldScale, e);
+        /// <summary>A member's heart world scale: the one elemental crystal size, whatever the element.</summary>
+        public float HeartScale(Element e) => CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale;
     }
 }

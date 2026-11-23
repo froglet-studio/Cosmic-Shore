@@ -37,6 +37,44 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        // The helm AI's burn, wherever no race coaches it (Breach found the shipped AI helm never burned, so an AI Orca flew
+        // every mode at cruise). Burn only with the nose on the pilot's target and that target far enough off that the
+        // burning hull's wide turn is spent on the straight; let go on a low tank so it refills (the tank refills only
+        // while the burn is let go). Breach's coach is the same rule plus its hard turns and walls (BREACH.md 5).
+        bool HelmAIWantsBurn()
+        {
+            if (!_cfg.AIBurns || _status == null) return false;
+            var pilot = _status.AIPilot;
+            if (!pilot || !pilot.AutoPilotEnabled) return false;
+            if (!_boosting && _tank < _cfg.AIBurnMinTank) return false;
+            if (RivalInRamLine()) return true;   // prey: charge it however near, the nose already on it
+            var hull = transform;
+            var to = pilot.TargetPosition - hull.position;
+            float distance = to.magnitude;
+            if (distance < _cfg.AIBurnMinDistance) return false;
+            return Vector3.Angle(hull.forward, to) <= _cfg.AIBurnAlignDegrees;
+        }
+
+        // The charge's prey (Garrett 2026-11-20, the helm joins the fight): a rival hull inside aiRamRange with the nose on it.
+        bool RivalInRamLine()
+        {
+            float range = _cfg.AIRamRange;
+            if (range <= 0f || _cfg.ChargeRamReach <= 0f) return false;
+            var players = _cfg.GameData ? _cfg.GameData.Players : null;
+            if (players == null) return false;
+            var hull = transform;
+            foreach (var player in players)
+            {
+                var vessel = player?.Vessel;
+                var st = vessel?.VesselStatus;
+                if (player == _player || st == null || st.Domain == _status.Domain || !UnityLiveness.Alive(vessel.Transform)) continue;
+                var to = vessel.Transform.position - hull.position;
+                if (to.sqrMagnitude > range * range) continue;
+                if (Vector3.Angle(hull.forward, to) <= _cfg.AIBurnAlignDegrees) return true;
+            }
+            return false;
+        }
+
         // The bomb seat's AI bursts its bomb (the lab's aiBurst): a rival hull inside the blast, the bomb at its target, or
         // past it - a bomb nobody bursts would hold the seat's only throw.
         bool AIBurstsBomb()

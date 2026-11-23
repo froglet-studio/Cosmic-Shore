@@ -46,6 +46,14 @@ namespace CosmicShore.Gameplay
             if (Crystal.IsExploding)
                 return;
 
+            // a hull whose touch leaves crystals alone (the Jacks netting, IHullContactGate) does not collect by contact
+            if (!IsSweepDispatch && impactee is VesselImpactor gated && !gated.TakesCrystalsByContact)
+                return;
+
+            // a crystal a Soliton Tunnel carries is not in the world: nobody collects it by touch (SolitonIsolation.Seal)
+            if (!IsSweepDispatch && SolitonIsolation.Sealed(Crystal))
+                return;
+
             // Always enforce domain matching - vessels can only collect
             // crystals that belong to their domain (or unowned crystals).
             if (!IsDomainMatching(impactee.OwnDomain))
@@ -77,12 +85,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// An omni crystal was collected by this vessel, raised wherever its vessel-side effects run: on the machine that
+        /// resolves the collect, and on the collecting pilot's own machine when it replays them (<see cref="ReplayOnRemoteOwner"/>).
+        /// A listener that acts on its own hull checks it is that hull's simulating machine. The Meerkat's Omnicrystal
+        /// ability grows its roots from it (<c>MeerkatSolitonExecutor</c>, MEERKAT.md section 7).
+        /// </summary>
+        public static event Action<IVesselStatus, Vector3> CollectedByVessel;
+
+        /// <summary>
         /// Runs this crystal's vessel-side effects against one vessel, locally. Split out so the
         /// owning client can run the identical list on its own machine (see
         /// <see cref="ReplayOnRemoteOwner"/>) instead of a second, drifting implementation.
         /// </summary>
         public void RunVesselEffects(VesselImpactor shipImpactee)
         {
+            var status = shipImpactee ? shipImpactee.Vessel?.VesselStatus : null;
+            if (status != null) CollectedByVessel?.Invoke(status, Crystal ? Crystal.transform.position : shipImpactee.transform.position);
             if (!DoesEffectExist(omniCrystalShipEffects)) return;
 
             CrystalImpactData data = CrystalImpactData.FromCrystal(Crystal);

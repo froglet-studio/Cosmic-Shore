@@ -1,0 +1,190 @@
+"""STAGE 2 of the Regatta balance plan: the Regatta circuit that levels the field.
+
+Regatta seats every hull on one course, and on today's course the fastest AI finishes long before the slowest. This job
+searches ONE intensity's circuit settings (RegattaCourse.ForIntensity: the corner profile, the mouth, the floors, the
+spread, the lateral swing, the gate presentation, plus which seed lays it) for the course on which the roster's AIs
+finish closest together:
+
+    loss = ln(slowest AI's race / fastest AI's race)                    the DISPARITY, 0 = a dead heat
+         + 0.5 per (gate, lane) whose rail no longer passes the mouth    RegattaCourseTests' coverage rule
+         + 2 x how far the mean race moved outside [0.8, 1.25] x today's (in ln)   a race stays a race
+         + 2 x how far the hardest corner fell under 0.85 x today's (in ln)        an intensity keeps its character
+
+The circuit is the shipped generator (course_port.py, gated against the C# harness); each hull races it with the model
+named in `roster` (race_models.py), with the drive numbers stage 1 promoted (or today's shipped ones).
+
+WHEN TO RUN IT FOR REAL: after stage 1 converges and is promoted, so the roster's drives are the trained ones (the
+plan, Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md). Until then its jobs are `blocked`; a run before that measures today's
+AIs, which is still a useful number but not the one the plan promotes.
+
+THE COURSE FEATURES (VERSION 3, 2026-11-06): with `features: true` in args the space also moves everything about the
+course beyond its rings (regatta_features.py: per-leg rail sections - super-shielded / shielded / plain, neutral colour,
+a detour off the line, a gap of a chosen length - an alternate ring per gate, crystals on the line), each hull's race is
+priced for them (regatta_features.race; exactly race_models.race on an empty set), and the coverage guard becomes
+regatta_features.guard_fails (rails through every mouth over the LAID lanes, and nothing inside the nucleus or out at
+the membrane). The space's init values are today's course, so a featured run starts where an unfeatured one does.
+
+args:
+    features   true to search the course features too (regatta_features.space())
+    intensity  1-4
+    roster     {hull: {"model": race_models model, "drive": {asset field: value} | "asset": repo path,
+                       "nose_rate": ..., "nose_lead": ...}}   (a hull's own nose knobs, over the job's below)
+    limit      seconds before a race counts as not finished
+    nose_rate  the AI nose's follow rate per second for every drive-model hull (VesselTransformer.AINoseFollowPerSecond):
+               absent = today's lag-free models; 1.5 = the game's fleet lag (the line model takes 1.5 only)
+    nose_lead  the AI nose lead on that lagging nose (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py): a gain stated
+               at the fleet lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF (race_models.nose_knobs)
+"""
+import math
+import os
+
+import course_port as cp
+import race_models as rm
+import regatta_features as rf
+
+VERSION = "3"   # 3 (2026-11-06): the course features join the space. (2 is the unmerged overnight branch's neutral share.)
+PATHS = ["Tools/Build/", "Assets/Resources/AIBoostPolicies/", "Assets/Resources/RaceLines/",
+         "Assets/_Prefabs/Spacevessels/", "Assets/_SO_Assets/", "Assets/Resources/"]
+SHIP_SEED = cp.REGATTA_DEFAULT_SEED
+_CTX = {}
+
+
+def inputs(args):
+    out = ["Tools/Build/rhino_drive_sim.py", "Tools/Build/manta_drive_sim.py", "Tools/Build/dolphin_drive_sim.py",
+           "Tools/Build/regatta_line_sim.py", "Tools/Build/regatta_balance.py", "Tools/Build/situation_features.py",
+           "Tools/Build/ai_nose_lead.py", "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs",
+           "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourseFeatures.cs",
+           "Tools/Compute/evaluators/regatta_features.py", "Tools/Build/regatta_course_harness/features.json",
+           "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs"]
+    for h in (args.get("roster") or {}).values():
+        if h.get("asset"):
+            out.append(h["asset"])
+    return out
+
+
+def settings_from(params, intensity):
+    """The job's parameters -> a RegattaCourse.ForIntensity-shaped settings dict and the base seed."""
+    s = cp.regatta_settings(intensity)
+    angles = [max(0.0, float(params.get(f"corner{k}", s["CornerProfile"][k]))) for k in range(8)]
+    total = sum(angles) or 1.0
+    s["CornerProfile"] = [a * 360.0 / total for a in angles]
+    for key in ("RingRadius", "CornerFloorRadius", "AngularSpread", "LateralPerturbation", "AxisJitterDegrees",
+                "MaxPresentDegrees", "RadialSwing"):
+        if key in params:
+            s[key] = float(params[key])
+    base_seed = SHIP_SEED + 104729 * int(params.get("seed", 0))
+    return s, base_seed
+
+
+def _drives(root, roster):
+    out = {}
+    for hull, h in roster.items():
+        d = dict(h.get("drive") or {})
+        if h.get("asset"):
+            d = dict(rm.read_asset_fields(root, h["asset"]), **d)
+        out[hull] = rm.to_sim(h["model"], d) if h["model"] in rm.DRIVE_FIELDS else d
+    return out
+
+
+def race_all(course, intensity, roster, drives, limit, knobs=None):
+    """Every roster hull's race; knobs: the job's args, for the AI nose knobs (race_models.nose_knobs: the job's
+    nose_rate / nose_lead, a hull's own over them, nothing when neither is set)."""
+    times, raw = {}, {}
+    for hull, h in roster.items():
+        c = rm.balance_course(course) if h["model"] == "balance" else course
+        if h["model"] == "balance":
+            c = dict(c, gates=course["gates"])
+        nose = rm.nose_knobs(knobs or {}, h)
+        # regatta_features.race prices the course features and is race_models.race when there are none.
+        t, r = rf.race(hull, h["model"], course, intensity, drive=drives[hull], steering="centre", limit=limit, **nose) \
+            if course.get("features") is not None else \
+            rm.race(hull, h["model"], c, intensity, drive=drives[hull], steering="centre", limit=limit, **nose)
+        times[hull], raw[hull] = t, r
+    return times, raw
+
+
+def setup(ctx):
+    a = ctx["args"]
+    i = int(a["intensity"])
+    _CTX["drives"] = _drives(ctx["root"], a["roster"])
+    ship = cp.regatta_course(i)
+    times, _ = race_all(ship, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)), knobs=a)
+    _CTX["ship_mean"] = sum(times.values()) / len(times)
+    _CTX["ship_hardest"] = max(ship["turnDegrees"])
+
+
+def baseline(args):
+    s = cp.regatta_settings(int(args["intensity"]))
+    p = {f"corner{k}": float(v) for k, v in enumerate(s["CornerProfile"])}
+    p.update({k: float(s[k]) for k in ("RingRadius", "CornerFloorRadius", "AngularSpread", "LateralPerturbation",
+                                       "AxisJitterDegrees", "MaxPresentDegrees", "RadialSwing")})
+    p["seed"] = 0
+    if args.get("features"):
+        p.update(rf.baseline_params())
+    return p
+
+
+def featured_course(params, settings, seed, intensity):
+    """The circuit with the features the params ask for (a gap's length needs the circuit's leg arcs first)."""
+    plain = rf.course(intensity, rf.empty(), settings, seed=seed)
+    feats = rf.features_from_params(params, plain["legArc"])
+    return plain if rf.is_empty(feats) else rf.course(intensity, feats, settings, seed=seed)
+
+
+def evaluate(params, ctx):
+    a = ctx["args"]
+    if "drives" not in _CTX:
+        setup(ctx)
+    i = int(a["intensity"])
+    s, base_seed = settings_from(params, i)
+    if a.get("features"):
+        course = featured_course(params, s, cp.seed_for_intensity(base_seed, i), i)
+    else:
+        course = cp.course(s, cp.seed_for_intensity(base_seed, i))
+    times, raw = race_all(course, i, a["roster"], _CTX["drives"], float(a.get("limit", 400)), knobs=a)
+    fastest, slowest = min(times.values()), max(times.values())
+    disparity = math.log(slowest / fastest)
+    cover = rf.guard_fails(course) if a.get("features") else rm.rail_coverage(course)
+    mean = sum(times.values()) / len(times)
+    drift = abs(math.log(mean / _CTX["ship_mean"]))
+    hardest = max(course["turnDegrees"])
+    soft = max(0.0, math.log(0.85 * _CTX["ship_hardest"] / max(hardest, 1e-6)))
+    loss = disparity + 0.5 * cover + 2.0 * max(0.0, drift - math.log(1.25)) + 2.0 * soft
+    return {"loss": loss, "metrics": {
+        "disparity": round(disparity, 4), "spread_x": round(slowest / fastest, 3),
+        "seconds": {h: round(t, 1) for h, t in times.items()},
+        "dnf": [h for h, r in raw.items() if r.get("time") is None], "rail_fails": cover,
+        "mean_vs_shipped": round(mean / _CTX["ship_mean"], 3), "hardest_turn": round(hardest, 1),
+        "seed": cp.seed_for_intensity(base_seed, i), "settings": s,
+        **({"features": course["features"], "descriptors": rf.descriptors(course)} if a.get("features") else {}),
+        "limits": {h: rm.MODEL_LIMITS[r["model"]] for h, r in a["roster"].items()}}}
+
+
+def self_test():
+    """Today's I2 course scores its own disparity with no penalty (every rail passes, the race is today's length)."""
+    import sys
+    here = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.dirname(os.path.dirname(os.path.dirname(here)))
+    sys.path.insert(0, os.path.join(root, "Tools", "Build"))
+    roster = {"Rhino": {"model": "rhino_drive", "asset": "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta.asset"},
+              "Urchin": {"model": "rail", "drive": {"speed": 300}}}
+    ctx = {"root": root, "args": {"intensity": 2, "roster": roster}}
+    _CTX.clear()
+    r = evaluate(baseline(ctx["args"]), ctx)
+    bad = []
+    m = r["metrics"]
+    if m["rail_fails"] or abs(r["loss"] - m["disparity"]) > 1e-3:
+        bad.append(f"regatta_course: today's I2 course is penalised ({m})")
+    # The featured space at its init values is today's course: the same loss, no guard failure.
+    _CTX.clear()
+    fctx = {"root": root, "args": dict(ctx["args"], features=True)}
+    rf_r = evaluate(baseline(fctx["args"]), fctx)
+    if rf_r["metrics"]["rail_fails"] or abs(rf_r["loss"] - r["loss"]) > 1e-9 or rf_r["metrics"]["features"]["Sections"]:
+        bad.append(f"regatta_course: the featured space's init values are not today's course ({rf_r['loss']} vs {r['loss']})")
+    # Negative control: a neutral rail on every leg must move the rail rider, so the loss sees the features at all.
+    p = dict(baseline(fctx["args"]), **{f"leg{k}_len": 0.6 for k in range(8)}, **{f"leg{k}_neutral": 1 for k in range(8)})
+    moved = evaluate(p, fctx)
+    if moved["metrics"]["seconds"]["Urchin"] <= rf_r["metrics"]["seconds"]["Urchin"] + 1.0:
+        bad.append("regatta_course: a neutral rail on every leg did not slow the Urchin (the features do not reach the loss)")
+    _CTX.clear()
+    return bad

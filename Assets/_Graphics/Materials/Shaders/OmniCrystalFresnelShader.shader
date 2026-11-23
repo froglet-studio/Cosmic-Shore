@@ -19,6 +19,23 @@
 //     is spent as a screen-door clip rather than blending (Docs/PRISM_ANIMATION.md §4.7). At
 //     coverage 1 nothing is clipped.
 //
+//  2b. A SEE-THROUGH variant of that fade, for a morph that lands on something the player has to
+//     keep seeing (the Dolphin's Echo Obliteration cone and the prisms it breaks: Garrett,
+//     2026-11-03, "it should be subtle ... not blocking our view of it"). _BlendOpacity 1 skips the
+//     screen-door and returns _Opacity as alpha; the runner sets it, with the blend and depth state
+//     below, on a CLONE of the material it hands only to the morph's body. The defaults
+//     (_BlendOpacity 0, Blend One Zero, ZWrite On) are exactly the opaque pass above, so every
+//     existing material and every other morph draws bit-identically.
+//
+//  3. Each element's shapes in that element's own shade of lime (Garrett, 2026-10-28: "change the
+//     omnicrystal to retain all four elemental colors of lime in all instances"; Docs/PALETTE.md
+//     §2.12). The mesh names every plate's element in TEXCOORD4.x (CrystalElementPlates: 1 Charge
+//     pentagon, 2 Mass triangle, 3 Space square, 4 Time rhombus, 0 none) and, with _ElementShades
+//     on, a plate's bright colour is its element's (_ChargeColor ... _TimeColor) instead of
+//     _BrightColor. Off (the default: the embedded material, every team clone ThemeManager paints)
+//     or on a mesh that names no element, the body is bit-identical to before. The shades fade into
+//     the morph target's colour on the morph weight, like the formula in 1b.
+//
 // It deliberately does NOT read FadeIn's lowercase _opacity. FadeIn's curve is slow and
 // back-loaded (about 1 s before 10%, 2.3 s to half, 2.9 s to full at 60 fps), and the omni has
 // always appeared at once on respawn - its old ShepardGraph shells only had _Opacity - so wiring
@@ -33,6 +50,16 @@ Shader "Custom/OmniCrystalFresnelShader"
         _FresnelPower ("Fresnel Power", Range(1, 10)) = 5
         _CrystalMorph ("Crystal Morph (start, duration, stagger)", Vector) = (0,0,0,0)
         _Opacity ("Opacity", Range(0, 1)) = 1
+        // 2b in the header: set only on the runner's see-through clone, never on an asset.
+        [HideInInspector] _BlendOpacity ("Blend Opacity (alpha instead of screen-door)", Float) = 0
+        [HideInInspector] _SrcBlend ("Src Blend", Float) = 1
+        [HideInInspector] _DstBlend ("Dst Blend", Float) = 0
+        [HideInInspector] _ZWrite ("ZWrite", Float) = 1
+        [ToggleUI] _ElementShades ("Element Shades (each plate in its element's colour)", Float) = 0
+        [HDR]_ChargeColor ("Charge Color (pentagons)", Color) = (1,1,1,1)
+        [HDR]_MassColor ("Mass Color (triangles)", Color) = (1,1,1,1)
+        [HDR]_SpaceColor ("Space Color (squares)", Color) = (1,1,1,1)
+        [HDR]_TimeColor ("Time Color (rhombi)", Color) = (1,1,1,1)
     }
 
     SubShader
@@ -50,7 +77,8 @@ Shader "Custom/OmniCrystalFresnelShader"
         {
             Name "CustomPass"
             Cull Off
-            ZWrite On
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
 
             CGPROGRAM
             #pragma vertex vert
@@ -77,19 +105,38 @@ Shader "Custom/OmniCrystalFresnelShader"
                 return positionOS + spreadedNormal;
             }
 
-            // The face colour: dark where the face looks at the camera, bright toward the rim.
-            half4 SpreadFresnelColor(float3 worldPos, float3 worldNormal)
+            // The face colour: dark where the face looks at the camera, bright toward the rim. `bright` is
+            // _BrightColor, or the plate's element shade (ElementBright).
+            half4 SpreadFresnelColor(float3 worldPos, float3 worldNormal, float4 bright)
             {
                 float3 viewDir = normalize(_WorldSpaceCameraPos - worldPos);
                 float fresnel = (1.0 + dot(viewDir, worldNormal))/2;
-                half4 col = lerp( _BrightColor, _DarkColor, fresnel);
+                half4 col = lerp( bright, _DarkColor, fresnel);
                 return col;
+            }
+
+            float _ElementShades;
+            float4 _ChargeColor, _MassColor, _SpaceColor, _TimeColor;
+
+            // The bright colour a plate wears: its element's shade (TEXCOORD4.x = Element, see the header)
+            // when the material asks for shades, else _BrightColor. Element 0 - a plate of no element, or a
+            // mesh with no channel 4 - is _BrightColor whatever the toggle.
+            float4 ElementBright(float element)
+            {
+                float4 shade = element < 0.5 ? _BrightColor
+                             : element < 1.5 ? _ChargeColor
+                             : element < 2.5 ? _MassColor
+                             : element < 3.5 ? _SpaceColor
+                             : element < 4.5 ? _TimeColor
+                             : _BrightColor;
+                return _ElementShades > 0.5 ? shade : _BrightColor;
             }
 
             #include "Assets/_Graphics/Materials/Graphs/CrystalMorph.hlsl"
 
             float3 _CrystalMorph;
             float _Opacity;
+            float _BlendOpacity;
             float _PrismClock;   // UNEXPOSED global, published by PrismClock — the clock the stamp uses
 
             struct appdata
@@ -98,6 +145,7 @@ Shader "Custom/OmniCrystalFresnelShader"
                 float3 normal : NORMAL;
                 float4 morphTarget : TEXCOORD2;
                 float4 morphNormal : TEXCOORD3;
+                float4 element : TEXCOORD4;      // x = the plate's Element (CrystalElementPlates)
             };
 
             struct v2f
@@ -107,6 +155,8 @@ Shader "Custom/OmniCrystalFresnelShader"
                 // This vertex's morph progress, constant across a face (the phase is per solid or
                 // per panel), so the colour formula hands over face by face with the geometry.
                 float morphEase : TEXCOORD2;
+                // The plate's bright colour, constant across a plate (every corner names the same element).
+                float4 bright : TEXCOORD3;
                 float4 vertex : SV_POSITION;
             };
 
@@ -137,6 +187,7 @@ Shader "Custom/OmniCrystalFresnelShader"
                                    _PrismClock, _CrystalMorph, positionOS);
                 CrystalMorphNormal_float(v.normal, v.morphNormal, _PrismClock, _CrystalMorph, normalOS);
                 CrystalMorphEase_float(v.morphTarget, _PrismClock, _CrystalMorph, o.morphEase);
+                o.bright = ElementBright(v.element.x);
                 v.vertex.xyz = positionOS;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.worldNormal = normalize(mul((float3x3)UNITY_MATRIX_M, normalOS));
@@ -150,10 +201,17 @@ Shader "Custom/OmniCrystalFresnelShader"
                 // Interleaved gradient noise, nudged strictly inside (0,1): clip(0) KEEPS a
                 // fragment, so a raw 0 threshold would leave confetti at coverage 0.
                 float coverage = saturate(_Opacity);
+                half4 body = SpreadFresnelColor(i.worldPos, i.worldNormal, i.bright);
+                half4 col = lerp(body, PrismFresnelColor(i.worldPos, i.worldNormal), i.morphEase);
+                if (_BlendOpacity > 0.5)
+                {
+                    // 2b: real transparency; the blend state on the clone composites it.
+                    col.a = coverage;
+                    return col;
+                }
                 float n = frac(52.9829189 * frac(dot(i.vertex.xy, float2(0.06711056, 0.00583715))));
                 clip(coverage - (n * 0.998 + 0.001));
-                half4 body = SpreadFresnelColor(i.worldPos, i.worldNormal);
-                return lerp(body, PrismFresnelColor(i.worldPos, i.worldNormal), i.morphEase);
+                return col;
             }
             ENDCG
         }

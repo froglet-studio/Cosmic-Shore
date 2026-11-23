@@ -96,9 +96,12 @@ momentum."*
 - **Release swipes** (2026-11-23: *"make the plasma claw activate with trigger pressure, also deciding the size,
   and make it swipe across on release, so both claws can swipe down and across diagonally"*): the claw still comes
   out the moment the trigger passes its 5% deadzone and live pressure still sizes it. Letting go no longer just
-  hides it: `ReleaseSpray` **slashes** the claw from where it was held `swipeArcDegrees` 80° **down and inward**
-  over `swipeSeconds` 0.22 s, eased out (fastest as it leaves): LT's claw down-right, RT's down-left, mixed by
-  `swipeDiagonalDegrees` 45 (0 = straight down, 90 = straight across), so the pair cross in front of the nose. The
+  hides it: `ReleaseSpray` **slashes** it. Same day, second ask: *"I want each claw to be one side of an X when it
+  swipes, starting up and going down and across."* So each claw draws **one stroke of an X** along its diagonal
+  (`swipeDiagonalDegrees` 45: 0 = straight down, 90 = straight across): for the first `swipeWindupFraction` 0.25 of
+  `swipeSeconds` 0.3 s it **rises up and out** to half of `swipeArcDegrees` 90° above where it was held, then
+  **slashes down and across** the full 90°, past the centre line. LT runs upper-left to lower-right, RT upper-right
+  to lower-left, so releasing both draws the X. Both legs ease out, so the slash is fastest leaving the top. The
   fingers slice and burn the whole way. The swipe is as big as the **hardest pull in the last**
   `swipeSizeMemorySeconds` 0.25 s, because a trigger passes through every lighter pressure on its way out; ease off
   and hold a lighter pull for longer than that and the swipe shrinks to match. Each swipe costs `swipeCellCost` 0.1 of
@@ -280,7 +283,7 @@ config's old `projectileTime` (the 3 s "throw") is retired.
 | LT / right mouse / L-Shift | left bomb / left claw / sniper scope |
 | RT / left mouse / R-Shift | right bomb / right claw / sniper fire |
 | X / Q / middle mouse | nothing (every weapon is on the triggers) |
-| LB / RB / E | cycle weapon (LB raises `IdleAction`; `Grizzly.prefab`'s gamepad override binds it) |
+| Y / F, and LB | cycle weapon (LB raises its own `LeftShoulderAction`, bound only by `Grizzly.prefab`'s gamepad override; RB / E is the Ark payload since 2026-10-27) |
 | A / Space, B / R | Dig In, Rush |
 
 Mouse buttons and the shift keys report no analog value, so every desktop bomb is full size.
@@ -295,9 +298,9 @@ button reaches the shared bindings in the table above.
 | Button | Raises | Does |
 |---|---|---|
 | Dig In card / Rush card | `Button1Action` (A) / `Button2Action` (B) | Dig In, Rush |
-| Weapon Systems card | `FlipAction` (RB) | cycle weapon |
-| Charged Cannon card (held) | `Button3Action` (X) | **nothing on `grizzly-v3`**: X is unbound there (every weapon is on the triggers), so this card is dead until the touch profile drops or rebinds it |
-| **Bomb** buttons, two (held, primary) | `LeftStickAction` (LT) / `RightStickAction` (RT) | the left and right bomb; on `grizzly-v3` they follow the weapon like the triggers (claws, scope / fire) |
+| Weapon Systems card | `Button4Action` (Y) | cycle weapon |
+| Charged Cannon card (held) | `Button3Action` (X) | nothing: X is unbound (every weapon is on the triggers), so the touch profile drops this card |
+| **Bomb** buttons, two (held, primary) | `LeftStickAction` (LT) / `RightStickAction` (RT) | the left and right bomb; they follow the weapon like the triggers (claws, scope / fire) |
 
 A bomb button's press and release are the trigger's, so the whole cycle runs from it: press arms,
 release fires, the next press freezes the flying bomb, its release detonates. A phone writes no

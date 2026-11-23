@@ -13,7 +13,8 @@ namespace CosmicShore.Gameplay
     /// SLICES every enemy prism a finger touches and starts the burn around each cut (<see cref="ContactAlongClaws"/>,
     /// 2026-10-17). There is
     /// NO cone (design ask, 2026-10-17: "get rid of the cone completely, allows the claws to do the work"). Free to
-    /// use - no energy cost by design. Mass-5 state is sampled at IGNITE time: burns started while the upgrade is
+    /// use - no energy cost by design; every prism it lights REFILLS energy instead, by the Mass level (the Grizzly's
+    /// Mass card, 2026-11-18: <see cref="GrizzlyFlamethrowerActionSO.EnergyPerIgniteFor"/>). Mass-5 state is sampled at IGNITE time: burns started while the upgrade is
     /// active convert (steal) on burnout even if the level later drops.
     ///
     /// <para><b>Two claws on the triggers</b> (2026-10-16): LT's claw roots at the LEFT front of the hull and RT's
@@ -30,9 +31,10 @@ namespace CosmicShore.Gameplay
     /// claw out until the trigger is pulled again with charge in it. The fingers' glow dims as the cell empties;
     /// <see cref="CellFill"/> is the HUD read. Simulated on every peer from the replicated presses and analog.</para>
     ///
-    /// <para><b>Release swipes</b> (2026-11-23): letting go of a trigger slashes its claw down and across toward the
-    /// hull's centre line (<see cref="ReleaseSpray"/>), sized by the hardest recent pull, so LT and RT can cross
-    /// in front of the nose. See GRIZZLY_TRIGGER_BOMBS.md.</para>
+    /// <para><b>Release swipes</b> (2026-11-23): letting go of a trigger makes its claw ONE STROKE OF AN X
+    /// (<see cref="ReleaseSpray"/>): it rises up and out, then slashes down and across the hull's centre line, sized
+    /// by the hardest recent pull - LT upper-left to lower-right, RT upper-right to lower-left. See
+    /// GRIZZLY_TRIGGER_BOMBS.md.</para>
     ///
     /// <para>Every spray, and every swipe, ends when the active weapon changes away from the claw.</para>
     /// </summary>
@@ -128,9 +130,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The trigger let go (2026-11-23: "make it swipe across on release, so both claws can swipe down and across
-        /// diagonally"). A held side claw with charge left SLASHES: it keeps its size from the hardest recent pull and
-        /// turns down and inward over <c>swipeSeconds</c> (LT down-right, RT down-left), slicing all the way, then
-        /// ends. Anything else - swipe off, the centred legacy spray, an empty cell, no claw out - just ends.
+        /// diagonally"; then "each claw to be one side of an X when it swipes, starting up and going down and
+        /// across"). A held side claw with charge left SLASHES: it keeps its size from the hardest recent pull, rises
+        /// up and out, then cuts down and across over <c>swipeSeconds</c> (LT upper-left to lower-right, RT upper-right
+        /// to lower-left), slicing all the way, then ends. Anything else - swipe off, the centred legacy spray, an empty cell, no claw out - just ends.
         /// </summary>
         public void ReleaseSpray(GrizzlyBombActionSO.TriggerSide? side)
         {
@@ -268,7 +271,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The release swipe: the claw keeps the size of the hardest recent pull (<paramref name="pressure"/>) and
-        /// turns from its held aim down and inward over <c>swipeSeconds</c>, riding the hull as it flies. The fingers
+        /// draws one stroke of an X from its held aim (<see cref="GrizzlyFlamethrowerActionSO.SwipeRotation"/>: up and
+        /// out, then down and across) over <c>swipeSeconds</c>, riding the hull as it flies. The fingers
         /// slice and burn the whole way (<see cref="ContactAlongClaws"/>), and the rigid cords lag the turn, so the
         /// tips trail like a real slash. Ends the claw when done; a new pull or a weapon change cancels it.
         /// </summary>
@@ -333,6 +337,7 @@ namespace CosmicShore.Gameplay
                            status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
             float radius = so.ClawBurnRadius;
             int sliced = 0;
+            int lit = 0;
             _touchedThisFrame.Clear();
 
             for (int c = 0; c < whips.CordCount; c++)
@@ -370,13 +375,14 @@ namespace CosmicShore.Gameplay
                             if (igniteBudget <= 0) continue;
                             burn.Ignite(prism, status.PlayerName, status.Domain, convert);
                             igniteBudget--;
+                            lit++;
                             continue;
                         }
 
                         if (sliced >= so.SlicesPerFrame) continue;
 
                         // Light the neighbours first: the cut prism is about to be gone.
-                        IgniteAround(onFinger, so, status, burn, convert, prism, ref igniteBudget);
+                        lit += IgniteAround(onFinger, so, status, burn, convert, prism, ref igniteBudget);
 
                         Vector3 v = Vector3.Lerp(cord.NodeVelocity(k), cord.NodeVelocity(k + 1), t);
                         Vector3 cutNormal = Vector3.Cross(ab, v);
@@ -390,13 +396,19 @@ namespace CosmicShore.Gameplay
                 }
             }
             _scratch.Clear();
+
+            // MASS: the claw feeds the Grizzly (2026-11-18). Each prism it lit refills energy.
+            if (lit > 0 && status.ResourceSystem)
+                status.ResourceSystem.ChangeResourceAmount(so.EnergyIndex, lit * so.EnergyPerIgniteFor(status));
         }
 
-        /// <summary>Ignite the enemy prisms within <c>sliceIgniteRadius</c> of a cut, within the budget.</summary>
-        void IgniteAround(Vector3 point, GrizzlyFlamethrowerActionSO so, IVesselStatus status, PrismBurnManager burn,
+        /// <summary>Ignite the enemy prisms within <c>sliceIgniteRadius</c> of a cut, within the budget. Returns how many
+        /// it lit.</summary>
+        int IgniteAround(Vector3 point, GrizzlyFlamethrowerActionSO so, IVesselStatus status, PrismBurnManager burn,
             bool convert, Prism except, ref int igniteBudget)
         {
-            if (igniteBudget <= 0 || so.SliceIgniteRadius <= 0f) return;
+            if (igniteBudget <= 0 || so.SliceIgniteRadius <= 0f) return 0;
+            int lit = 0;
             _neighbours.Clear();
             PrismSpatialIndex.Instance.QuerySphere(point, so.SliceIgniteRadius, _neighbours);
             for (int i = 0; i < _neighbours.Count && igniteBudget > 0; i++)
@@ -406,8 +418,10 @@ namespace CosmicShore.Gameplay
                 if (n.prismProperties is { IsSuperShielded: true }) continue;   // cannot burn; spend nothing
                 burn.Ignite(n, status.PlayerName, status.Domain, convert);
                 igniteBudget--;
+                lit++;
             }
             _neighbours.Clear();
+            return lit;
         }
 
         static void PlayAt(FMODUnity.EventReference ev, Vector3 pos)

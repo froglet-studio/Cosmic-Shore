@@ -285,7 +285,7 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 | `_Scripts/Tests/EditMode/ShipModifierTests.cs` | **+** two tests pinning the exemption flag's default-false and its 4-arg assignment |
 | `_Scripts/UI/View/SparrowHUDView.cs` | `SetBoostState(heat, overheated)` → `SetRollCharge(armed)`; `boostFill` → `rollChargeIndicator` |
 | `_Scripts/UI/Controller/SparrowHUDController.cs` | overheat executor → barrel-roll controller; `Update` poll removed; symmetric detach-first Subscribe/Unsubscribe |
-| `_Scripts/…/Data Containers/SquirrelVesselHUDController.cs` | **−** its `OverheatingActionExecutor` lookup (see Follow-ups — it was always null) |
+| `_Scripts/…/Data Containers/SquirrelHUDController.cs` | **−** its `OverheatingActionExecutor` lookup (see Follow-ups — it was always null) |
 | `_Scripts/…/Data Containers/OverheatingActionSO.cs` | **DELETED** |
 | `_Scripts/…/Executors/OverheatingActionExecutor.cs` | **DELETED** |
 | `_Scripts/Controller/Vessel/VesselActions/OverheatingAction.cs` | **DELETED** (legacy, unreferenced) |
@@ -390,7 +390,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
   "Venom Wake" L5 as exactly this machinery reused ("boost trail becomes a danger trail"). This is
   a capability waiting for a caller, not dead code to delete.
 - **`SquirrelVesselHUDView.SetOverheatHeat` / `JuiceOverheatEngaged` / `JuiceOverheatRecovered` are
-  now uncalled.** They already never fired: `SquirrelVesselHUDController` looked up
+  now uncalled.** They already never fired: `SquirrelHUDController` looked up
   `OverheatingActionExecutor` via `GetComponentInChildren`, and that component only ever existed on
   `Sparrow.prefab`, so the reference was null on every Squirrel and the gauge never moved. Left in
   place (with the serialized fields on `SquirrelHUDVariant.prefab`) rather than ripped out on a

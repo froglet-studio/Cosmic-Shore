@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -8,22 +7,23 @@ using UnityEngine.Rendering;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Round 11a (§19.2): with the unified prism path on, this draws only the HEARTS - the bodies are prism render
-    /// entities. Hearts stay here because a heart is not a prism: several crystal meshes per element, a molt that
-    /// shrinks one element away and re-forms another between ticks, the neutral living tint - none of which the
-    /// prism entity path has, and none of the platform's prism effects (grow, explode, suction, shield morph,
-    /// spread) apply to a crystal. Moving them would add ~2,200 more matrices a frame for no gain.
+    /// Round 11a (§19.2): with the unified prism path on, the bodies are prism render entities and this draws only the
+    /// HEARTS. A heart is not a prism (several crystal models per element, a molt that shrinks one element away and
+    /// re-forms another between ticks, none of the platform's prism effects), so it is drawn as the CRYSTAL it is:
+    /// <see cref="CrystalHeartDraw"/> draws each listed heart with the elemental crystal's own models and materials,
+    /// posed per frame (Docs/ECOSYSTEM.md §65.7). Until 2026-10-28 the member shader drew hearts too, with a look of
+    /// its own that the elemental crystals had moved on from.
     ///
     /// Draws every LIVING member of one swarm from one GPU buffer (Docs/SWARM_FAUNA.md §14). Per TICK the
-    /// swarm hands it the tick job's instance array and heart lists (two <c>GraphicsBuffer.SetData</c>);
-    /// per FRAME it sets ~a dozen per-swarm values and issues one body draw plus one draw per crystal
-    /// model per element. Nothing here is per member: the shader (SwarmMemberInstanced) interpolates
-    /// the pose, blooms newborns, re-forms molting hearts and shows the tier from the instance data.
+    /// swarm hands it the tick job's instance array and heart lists (one <c>GraphicsBuffer.SetData</c>, one copy
+    /// for the hearts); per FRAME it sets ~a dozen per-swarm values and issues one body draw, then the hearts'.
+    /// Nothing in the body draw is per member: the shader (SwarmMemberInstanced) interpolates the pose, blooms
+    /// newborns and shows the tier from the instance data.
     ///
-    /// Meshes are the member's OWN: the body prism's mesh off the tadpole prefab, and each element's
-    /// crystal models off the elemental crystal set, so a member looks the same whether the swarm draws
-    /// it or the platform does (after death). Colours are the palette's (plain / danger / shielded tier
-    /// pairs of the swarm's domain, and the living-heart neutral pair) - read once, at bind.
+    /// Meshes are the member's OWN: the body prism's mesh off the tadpole prefab, and each element's crystal
+    /// models off the elemental crystal set, so a member looks the same whether the swarm draws it or the platform
+    /// does (after death). Colours are the palette's (plain / danger / shielded tier pairs of the swarm's domain, and
+    /// the living-heart pair the crystals' own tint rule takes) - read once, at bind.
     ///
     /// Two carriers, one picture (Docs/SWARM_FAUNA.md §14.8): where the device has vertex-stage structured
     /// buffers (<see cref="Supported"/>) the instances live in a GraphicsBuffer as above; where it does not
@@ -33,39 +33,32 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class SwarmMemberRenderer : System.IDisposable
     {
-        struct Part { public Mesh Mesh; public int Submesh; public Matrix4x4 Local; public int Element; }
+        struct Part { public Mesh Mesh; public int Submesh; public Matrix4x4 Local; }
 
         static readonly int InstancesId = Shader.PropertyToID("_SwarmInstances");
-        static readonly int HeartIdxId = Shader.PropertyToID("_SwarmHeartIdx");
-        static readonly int PartId = Shader.PropertyToID("_SwarmPart");
-        static readonly int BaseId = Shader.PropertyToID("_SwarmBase");
-        static readonly int HeartElementId = Shader.PropertyToID("_SwarmHeartElement");
         static readonly int MeshLocalId = Shader.PropertyToID("_SwarmMeshLocal");
         static readonly int AlphaId = Shader.PropertyToID("_SwarmAlpha");
         static readonly int ClockId = Shader.PropertyToID("_SwarmClock");
         static readonly int BloomId = Shader.PropertyToID("_SwarmBloomTicks");
         static readonly int UpId = Shader.PropertyToID("_SwarmUp");
         static readonly int UpAltId = Shader.PropertyToID("_SwarmUpAlt");
-        static readonly int HeartScaleId = Shader.PropertyToID("_SwarmHeartScale");
         static readonly int RimPowerId = Shader.PropertyToID("_SwarmRimPower");
         // [tier * 3 + domain slot] (Docs/SWARM_FAUNA.md §16.4) - new names: an array property's length is pinned by name
         static readonly int TierDarkId = Shader.PropertyToID("_SwarmTierDark"), TierBrightId = Shader.PropertyToID("_SwarmTierBright");
-        static readonly int HeartDullId = Shader.PropertyToID("_SwarmHeartDull"), HeartBrightId = Shader.PropertyToID("_SwarmHeartBright");
         static readonly int SpreadPlainId = Shader.PropertyToID("_SwarmSpreadPlain");
         static readonly int SpreadDangerId = Shader.PropertyToID("_SwarmSpreadDanger");
         static readonly int SpreadShieldId = Shader.PropertyToID("_SwarmSpreadShield");
 
         readonly Material _mat;
-        readonly GraphicsBuffer _inst, _heart;
+        readonly GraphicsBuffer _inst;
         readonly Part _body;
-        readonly List<Part> _hearts = new();
-        // one block per DRAW (body + each heart part): the per-part values are set once, the per-frame
+        // the body draw's blocks (one; the fallback's per batch): the per-part values are set once, the per-frame
         // ones on every block, so no draw ever depends on when a shared block is read
         readonly List<MaterialPropertyBlock> _mpbs = new();
         readonly int _cap;
-        int _heartTotal;
-        readonly int[] _heartStart = new int[4], _heartCount = new int[4];
         int _layer;
+        // the hearts, as the crystals they are (Docs/ECOSYSTEM.md §65.7)
+        readonly CrystalHeartDraw _hearts;
         // non-null on a device without vertex-stage structured buffers: the SM 3.5 instanced draw (§14.8)
         readonly SwarmMemberFallbackDraw _fallback;
         static bool s_warned;
@@ -121,35 +114,13 @@ namespace CosmicShore.Gameplay
             var bodyPrism = prefab.GetComponentInChildren<HealthPrism>(true);
             var bodyFilter = bodyPrism ? bodyPrism.GetComponent<MeshFilter>() : null;
             if (!bodyFilter || !bodyFilter.sharedMesh) { Warn("the tadpole prefab's body prism has no mesh"); return; }
-            _body = new Part { Mesh = bodyFilter.sharedMesh, Submesh = 0, Local = Matrix4x4.identity, Element = -1 };
-
-            var set = ElementalCrystalSetSO.Load();
-            for (int e = 0; e < 4; e++)
-            {
-                var crystal = set ? set.GetPrefab(SwarmFaunaConfigSO.ToElement(e)) : null;
-                if (!crystal) continue;
-                var root = crystal.transform;
-                // the heart's ROOT is sized at runtime (LifeFormCrystal.SetWorldScale), so the mesh's own
-                // transform is taken under a unit-scale root that keeps the prefab's root rotation
-                var rootBasis = Matrix4x4.Rotate(root.localRotation);
-                var toRoot = root.worldToLocalMatrix;
-                foreach (var r in crystal.GetComponentsInChildren<Renderer>(true))
-                {
-                    Mesh mesh = r is SkinnedMeshRenderer smr ? smr.sharedMesh
-                              : r.TryGetComponent<MeshFilter>(out var mf) ? mf.sharedMesh : null;
-                    if (!mesh) continue;
-                    var local = rootBasis * (toRoot * r.transform.localToWorldMatrix);
-                    for (int sm = 0; sm < mesh.subMeshCount; sm++)
-                        _hearts.Add(new Part { Mesh = mesh, Submesh = sm, Local = local, Element = e });
-                }
-            }
-            if (_hearts.Count == 0) Warn("no elemental crystal model was found - hearts will not be drawn");
+            _body = new Part { Mesh = bodyFilter.sharedMesh, Submesh = 0, Local = Matrix4x4.identity };
+            _hearts = new CrystalHeartDraw(cap, layer, 0xF);
 
             if (fallbackMaterial)
             {
                 _fallback = new SwarmMemberFallbackDraw(fallbackMaterial, cap);
                 _fallback.AddBody(_body.Mesh, _body.Submesh, _body.Local);
-                foreach (var part in _hearts) _fallback.AddHeart(part.Mesh, part.Submesh, part.Local, part.Element);
                 _mpbs.AddRange(_fallback.Blocks);   // the palette / spread setters below write every block
                 SwarmMemberFallbackDraw.Announce("Swarm", forced: Supported);
                 Valid = true;
@@ -158,16 +129,9 @@ namespace CosmicShore.Gameplay
 
             _mat = new Material(shader) { name = "SwarmMemberInstanced (runtime)", hideFlags = HideFlags.DontSave };
             var bodyBlock = new MaterialPropertyBlock();
-            bodyBlock.SetFloat(PartId, 0f); bodyBlock.SetFloat(BaseId, 0f); bodyBlock.SetMatrix(MeshLocalId, _body.Local);
+            bodyBlock.SetMatrix(MeshLocalId, _body.Local);
             _mpbs.Add(bodyBlock);
-            foreach (var part in _hearts)
-            {
-                var b = new MaterialPropertyBlock();
-                b.SetFloat(PartId, 1f); b.SetFloat(HeartElementId, part.Element); b.SetMatrix(MeshLocalId, part.Local);
-                _mpbs.Add(b);
-            }
             _inst = new GraphicsBuffer(GraphicsBuffer.Target.Structured, cap, SwarmInstance.Stride);
-            _heart = new GraphicsBuffer(GraphicsBuffer.Target.Structured, Mathf.Max(1, 2 * cap), sizeof(uint));
             Valid = true;
         }
 
@@ -194,7 +158,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Palette, read once at bind: the body's base face and rim per TIER and per DOMAIN SLOT,
         /// <c>[tier * 3 + slot]</c> (tier 0 plain, 1 danger, 2 shielded). A one-colour swarm repeats its one
-        /// domain in all three slots; a MultiDomain swarm gives each slot its own (§16.4).
+        /// domain in all three slots; a MultiDomain swarm gives each slot its own (§16.4). The living-heart pair
+        /// and each element's heart world scale go to the hearts (<see cref="CrystalHeartDraw.SetLivingTint"/>).
         /// </summary>
         public void SetColours(Vector4[] tierDark, Vector4[] tierBright, Color heartDull, Color heartBright,
                                Vector4 heartScale, float rimPower)
@@ -202,10 +167,9 @@ namespace CosmicShore.Gameplay
             foreach (var b in _mpbs)
             {
                 b.SetVectorArray(TierDarkId, tierDark); b.SetVectorArray(TierBrightId, tierBright);
-                b.SetColor(HeartDullId, heartDull); b.SetColor(HeartBrightId, heartBright);
-                b.SetVector(HeartScaleId, heartScale);
                 b.SetFloat(RimPowerId, rimPower);
             }
+            _hearts?.SetLivingTint(heartDull, heartBright, heartScale);
         }
 
         /// <summary>Once per TICK: the published frame of the swarm's tick job.</summary>
@@ -216,21 +180,9 @@ namespace CosmicShore.Gameplay
         public void Upload(SwarmInstance[] instances, uint[] heartIdx, int[] heartStart, int[] heartCount)
         {
             if (!Valid) return;
-            if (_fallback != null)
-            {
-                _fallback.UploadBodies(instances, 0);
-                _fallback.BeginHearts();
-                for (int e = 0; e < 4; e++) _fallback.UploadHearts(e, instances, 0, heartIdx, heartStart[e], heartCount[e]);
-                return;
-            }
-            _inst.SetData(instances, 0, 0, _cap);
-            _heartTotal = 0;
-            for (int e = 0; e < 4; e++)
-            {
-                _heartStart[e] = heartStart[e]; _heartCount[e] = heartCount[e];
-                _heartTotal = Mathf.Max(_heartTotal, heartStart[e] + heartCount[e]);
-            }
-            if (_heartTotal > 0) _heart.SetData(heartIdx, 0, 0, _heartTotal);
+            _hearts.Upload(instances, 0, heartIdx, heartStart, heartCount);
+            if (_fallback != null) _fallback.UploadBodies(instances, 0);
+            else _inst.SetData(instances, 0, 0, _cap);
         }
 
         /// <summary>A member died between uploads: hide its slot NOW (one 80-byte write, event-driven).</summary>
@@ -240,6 +192,7 @@ namespace CosmicShore.Gameplay
         {
             if (!Valid || i < 0 || i >= _cap) return;
             instances[i].Flags = 0u;
+            _hearts.Hide(i);
             if (_fallback != null) _fallback.Hide(i);
             else _inst.SetData(instances, i, i, 1);
         }
@@ -248,16 +201,17 @@ namespace CosmicShore.Gameplay
         public void Draw(Bounds bounds, float alpha, float clock, float bloomTicks, Vector3 up, Vector3 upAlt, int count)
         {
             if (!Valid || count <= 0) return;
+            _hearts.Draw(bounds, alpha, clock, bloomTicks, up, upAlt);
+            if (!DrawBodies) return;
             if (_fallback != null)
             {
-                _fallback.Draw(bounds, _layer, DrawBodies, count, alpha, clock, bloomTicks, up, upAlt);
+                _fallback.Draw(bounds, _layer, count, alpha, clock, bloomTicks, up, upAlt);
                 return;
             }
             for (int q = 0; q < _mpbs.Count; q++)
             {
                 var b = _mpbs[q];
                 b.SetBuffer(InstancesId, _inst);
-                b.SetBuffer(HeartIdxId, _heart);
                 b.SetFloat(AlphaId, alpha);
                 b.SetFloat(ClockId, clock);
                 b.SetFloat(BloomId, bloomTicks);
@@ -273,24 +227,13 @@ namespace CosmicShore.Gameplay
                 receiveShadows = false,
                 layer = _layer,
             };
-            if (DrawBodies) Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, count);
-
-            for (int q = 0; q < _hearts.Count; q++)
-            {
-                var part = _hearts[q];
-                int n = _heartCount[part.Element];
-                if (n <= 0) continue;
-                var b = _mpbs[q + 1];
-                b.SetFloat(BaseId, _heartStart[part.Element]);
-                rp.matProps = b;
-                Graphics.RenderMeshPrimitives(rp, part.Mesh, part.Submesh, n);
-            }
+            Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, count);
         }
 
         public void Dispose()
         {
             _inst?.Release();
-            _heart?.Release();
+            _hearts?.Dispose();
             if (_mat) Object.Destroy(_mat);
         }
     }

@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-12-three-traps-added-to-ui-redesign-tracker-9297de",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T17:12:54+00:00",
+  "area": "the Claude skills (/ui-redesign-tracker)",
+  "summary": "Four traps added to /ui-redesign-tracker from this branch's skill capture; nothing changes how the skill decides. T21: the game blends UI in linear light, so a see-through dark plate is far thinner over a bright ground than its alpha reads and a web drawing hides it (compute the contrast over white). T22: look at a menu build in Amoebius before calling it built, press the pad there too, and what that look does not tell you. T23: a generator's negative control names the rule that must catch it, and a token list is read from the code that fills it. T24: a window that covers the nav gives its controls an explicit pad path, because the top nav's two arrow buttons stay pad stops under every open window.",
+  "why": "Garrett asked for the pilot scenes in the game; running the merged menu in Amoebius found the profile page's plates too thin over a bright scene, and pressing the pad there found the focus leaving the page. Three rows of Docs/REFACTOR_BACKLOG.md are yours to judge: PP3 lists 38 other see-through dark plates in the menu generators that have never been computed over a bright ground (the replay viewer's bands are the clearest); PP4 is the top nav's LeftArrrow and RightArrow, automatic-navigation Buttons the pad can land on from any open window (worked out from uGUI's rules and the scene file, not seen in Unity); PP5 is Amoebius's Selectable.IsInteractable(), which ignores CanvasGroups, so the engine's pad reaches controls under closed windows.",
+  "branch": "claude/signature-pilot-busts",
+  "pr": 1894,
+  "commit": "eb84f7df3",
+  "paths": [
+    ".claude/skills/ui-redesign-tracker/SKILL.md",
+    "Docs/REFACTOR_BACKLOG.md"
+  ]
+}

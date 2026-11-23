@@ -363,9 +363,9 @@ namespace CosmicShore.Gameplay
                 var pos = centre + new Vector3(ring * Mathf.Cos(theta), y, ring * Mathf.Sin(theta)) * r;
 
                 var crystal = Instantiate(prefab, pos, Quaternion.identity);
-                // Sized BEFORE Start(): Crystal stamps crystalValue from lossyScale, and the
-                // element-level gain reads it too.
-                crystal.transform.localScale *= (float)(rng.NextDouble() * 0.7 + 0.5);
+                // One size, one petal, like every elemental crystal. Sized BEFORE Start():
+                // Crystal stamps crystalValue from lossyScale.
+                crystal.transform.localScale = Vector3.one * ElementalCrystalSetSO.CrystalWorldScale;
                 crystal.enabled = true;
                 crystal.gameObject.SetActive(true);
 
@@ -387,6 +387,13 @@ namespace CosmicShore.Gameplay
         }
 
         // ── AI dogfighters (server) ──────────────────────────────────────────
+
+        /// <summary>
+        /// One AI's dogfight state. A pilot is either closing on someone or deliberately getting
+        /// away from them; there is no third thing, and mixing the two is what produced the
+        /// wrestling match this replaces.
+        /// </summary>
+        enum DogfightPhase { Pursue = 0, Extend = 1 }
 
         /// <summary>
         /// Drives every AI Sparrow as a dogfighter rather than a missile.
@@ -415,15 +422,7 @@ namespace CosmicShore.Gameplay
         /// the AI keeps flying lead pursuit on the pilot it already picked - the provider is
         /// sampled every frame, so the aim point tracks a live position even though the CHOICE
         /// is re-made on a slow cadence.
-        /// </summary>
-        /// <summary>
-        /// One AI's dogfight state. A pilot is either closing on someone or deliberately getting
-        /// away from them; there is no third thing, and mixing the two is what produced the
-        /// wrestling match this replaces.
-        /// </summary>
-        enum DogfightPhase { Pursue = 0, Extend = 1 }
-
-        /// <summary>
+        ///
         /// Gives every AI a committed PURSUE → EXTEND → PURSUE loop.
         ///
         /// <b>Why a state machine and not a distance test.</b> The first version had no state: it

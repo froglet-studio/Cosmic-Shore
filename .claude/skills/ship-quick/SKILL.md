@@ -7,14 +7,20 @@ description: The fast lane of the ship protocol - for a small, low-risk branch t
 
 **Read `.claude/skills/ship/SKILL.md` first.** This file only says what changes.
 
-**§0.05 applies here in full: there is no compiler and no CI in this environment.** Do not
-run `/verify-unity`, do not stand a compiler up, do not treat any `Tools/Build/check_*.py`
-or "CI is green" as a ship requirement, and do not wait on or watch checks. Report
-verification honestly as "not compiled" and name what a human must check in-editor.
+**§0.05 (the verify rule) applies here in full:** C# passes `unity_refcompile` plus `gates.sh`,
+and the `unity` CLI when an editor is open. `/verify-unity` is not required until that skill
+merges. Do not stand up a syntax-only compiler, do not treat "CI is green" as a ship requirement
+(`unity-ci.yml` has no runner), and do not wait on or watch checks. If neither refcompile nor the
+CLI ran, report verification honestly as "not compiled", add the checklist entry, and name what a
+human must check in-editor.
 
 Fast means *less review depth*, not *less verification*. The two things that make a
 branch unsafe to merge — a half-landed editor tool and an unresolved base merge — are
 exactly the things a rushed ship drops, so they are the things this mode keeps whole.
+
+**Start with the triage** (`python3 Tools/Build/ship_triage.py`, `/ship` §0.0): its `depth` line measures the refusal
+rules below for you, and its trap and LAB / CODEX lines say what this branch still needs. Start the gates in the
+background straight away. **End with `/ship` §6.5** (offer the hand-off) on a GO.
 
 ## Refuse the fast lane when
 
@@ -54,6 +60,10 @@ one fired.
    watch CI.
 9. **Fire CI once** — `/ship` §5.5: dispatch `unity-ci.yml` with `mode: static` on the
    branch. Not trimmed by fast mode; it is the branch's only pre-merge CI.
+10. **Refresh the Fleet Codex** — `/ship` §5.6: when the branch touched a vessel, rebuild the codex on bleeding-edge
+   with this branch merged on top (`--pending`) and republish it. Not trimmed by fast mode.
+11. **Merge** — `/ship` §5.7: on the GO, merge the PR into `bleeding-edge` with a merge commit (auto-merge when a
+   review is required), unless the person said "PR only". Not trimmed by fast mode.
 
 ## What you skip
 
@@ -70,6 +80,6 @@ one fired.
 
 ## Report
 
-Two paragraphs: what shipped and the PR link, then the §2.5 verdict (tools classified,
+Two paragraphs: what shipped, the PR link and whether it merged (§5.7), then the §2.5 verdict (tools classified,
 where their output landed), the §3.55 lab line ("no lab touched", or the CATALOG/LEARNINGS
 changes), and anything you deliberately skipped so the prompter can call it back.

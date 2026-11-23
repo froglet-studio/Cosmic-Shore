@@ -30,7 +30,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("Eased chase, per second: the camera's position and look point each close on their target at this " +
                  "rate (k = 1 - e^(-rate*dt)), up tied to the hull's, so the hull swings in the frame through a turn. " +
                  "0 (every vessel that does not set it) = hard-attached, as before. The Stoat's is 7, its studio's chase camera.")]
-        public float chaseEaseRate = 0f;
+        [SerializeField] float chaseEaseRate = 0f;
+        public float ChaseEaseRate => chaseEaseRate;
 
         [Tooltip("The vertical field of view the offset and look-ahead above were framed at, degrees. The camera keeps " +
                  "the player's own field of view (a graphics setting) and moves nearer or further so the hull reads the " +
@@ -47,8 +48,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Used only in dynamic mode, controls the smoothening effect time.")]
         public float followSmoothTime = 0.2f;
         [Tooltip("Used only in dynamic mode, controls the smoothening effect time for vertical movement.")]
-        public float rotationSmoothTime = 5f;
-        public bool  disableSmoothing = false;
+        [SerializeField] float rotationSmoothTime = 5f;
+        public float RotationSmoothTime => rotationSmoothTime;
+        [SerializeField] bool disableSmoothing = false;
+        public bool DisableSmoothing => disableSmoothing;
         
         public float nearClipPlane = 0.3f;
 
@@ -65,11 +68,14 @@ namespace CosmicShore.Gameplay
         public float farClipPlane  = 12000f;
 
         [Tooltip("Enable smooth zoom-out on button hold")]
-        public bool enableAdaptiveZoom;
+        [SerializeField] bool enableAdaptiveZoom;
+        public bool EnableAdaptiveZoom => enableAdaptiveZoom;
 
         [Tooltip("Maximum extra distance (behind target) when Adaptive Zoom is enabled")]
-        public float adaptiveMaxDistance;
+        [SerializeField] float adaptiveMaxDistance;
+        public float AdaptiveMaxDistance => adaptiveMaxDistance;
         
-        public float   orthographicSize      = 5f;            // Used only in Orthographic mode
+        [SerializeField] float orthographicSize      = 5f;            // Used only in Orthographic mode
+        public float OrthographicSize => orthographicSize;
     }
 }

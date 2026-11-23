@@ -472,7 +472,7 @@ namespace CosmicShore.Core
         static FriendData RelationshipToFriendData(Relationship relationship)
         {
             var member = relationship.Member;
-            string displayName = StripUgsDiscriminator(member.Profile?.Name) ?? "Unknown Pilot";
+            string displayName = DisplayNameValidator.ForDisplay(StripUgsDiscriminator(member.Profile?.Name)) ?? "Unknown Pilot";
             int availability = AvailabilityToInt(member.Presence?.Availability ?? Availability.Unknown);
             string activityStatus = "";
 

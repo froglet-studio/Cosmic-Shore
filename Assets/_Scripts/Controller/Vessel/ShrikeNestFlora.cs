@@ -55,6 +55,47 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The octahedral bud, the part a collected crystal folds into (<see cref="ShrikeCrystalMorph"/>).</summary>
+        public Transform Bud => _bud;
+
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int Color1Id = Shader.PropertyToID("_Color1");
+        static readonly int Color2Id = Shader.PropertyToID("_Color2");
+
+        /// <summary>
+        /// Holds the flora's PHOTONS while a morph draws in its place: every part's renderer is forced off, and nothing
+        /// else changes (the executor's missile count and growth carry on). <see cref="Renderer.forceRenderingOff"/>
+        /// composes with anything else that enables or disables a part.
+        /// </summary>
+        public void SetMorphStandIn(bool standIn)
+        {
+            var renderers = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++) renderers[i].forceRenderingOff = standIn;
+        }
+
+        /// <summary>The colour pair the bud draws, read as (dark, bright): <c>_DarkColor</c>/<c>_BrightColor</c> where
+        /// its material has them, else the hull material's <c>_Color1</c>/<c>_Color2</c>. Alpha forced to 1.</summary>
+        public bool TryGetColours(out Color dark, out Color bright)
+        {
+            dark = bright = default;
+            var mat = _bud && _bud.TryGetComponent<Renderer>(out var r) ? r.sharedMaterial : null;
+            if (!mat) return false;
+            if (mat.HasProperty(DarkColorId) && mat.HasProperty(BrightColorId))
+            {
+                dark = mat.GetColor(DarkColorId);
+                bright = mat.GetColor(BrightColorId);
+            }
+            else if (mat.HasProperty(Color1Id) && mat.HasProperty(Color2Id))
+            {
+                dark = mat.GetColor(Color2Id);
+                bright = mat.GetColor(Color1Id);
+            }
+            else return false;
+            dark.a = bright.a = 1f;
+            return true;
+        }
+
         /// <summary>The world position a missile leaves from: the top of the bud.</summary>
         public Vector3 LaunchPoint => _bud ? _bud.position + transform.up * _missileLength * 0.4f : transform.position;
 

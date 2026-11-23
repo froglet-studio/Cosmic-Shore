@@ -545,6 +545,31 @@ namespace CosmicShore.Gameplay
             XferPlan[i] = -1;
         }
 
+        /// <summary>Tandava: Severing's SEVER (TandavaSevering/TANDAVA_SEVERING.md §3.11): member <paramref name="i"/> LEAVES this body - for another body of the
+        /// same creature (a severed piece, or a piece rejoining). Not a death and not a wound: the lay ease, the kill hold and
+        /// every count of the dead are untouched, because nothing died - the member is moving house (<see cref="Graft"/>
+        /// takes it in on the other side). Nothing but Tandava: Severing calls it.</summary>
+        public void Release(int i)
+        {
+            if (i < 0 || i >= Cap || !Active[i]) return;
+            Active[i] = false; Hatched[i] = false; Startle[i] = 0; Vel[i] = Vector3.Zero; Wand[i] = Vector3.Zero; Molt[i] = 0; Fate[i] = 0; FKey[i] = 0;
+            XferPlan[i] = -1;
+        }
+
+        /// <summary>Tandava: Severing's sever: take in a member another body of the same creature released (<see cref="Release"/>),
+        /// HATCHED, where it is, moving as it was. Not a birth: no egg is paid and no Laid event is raised. Returns its slot,
+        /// or -1 when the body is full.</summary>
+        public int Graft(Vector3 pos, Vector3 vel, Vector3 facing, int element, int domain = 0)
+        {
+            int j = -1;
+            for (int i = 0; i < Cap; i++) if (!Active[i]) { j = i; break; }
+            if (j < 0) return -1;
+            Pos[j] = pos; Vel[j] = vel; Wand[j] = Vector3.Zero; Facing[j] = facing.LengthSquared() > 1e-6f ? facing : Vector3.UnitZ;
+            Elem[j] = Math.Clamp(element, 0, 3); Dom[j] = domain; Active[j] = true; Hatched[j] = true; Age[j] = 0;
+            Startle[j] = 0; Molt[j] = 0; MoltTo[j] = 0; Fate[j] = 0; FKey[j] = 0; XferPlan[j] = -1; Energy[j] = 0f;
+            return j;
+        }
+
         public bool TryGetLook(int i, int element, out Vector3 half, out int tier)
         {
             half = default; tier = 0;
@@ -1279,14 +1304,14 @@ namespace CosmicShore.Gameplay
             return -1;
         }
 
-        /// <summary>A member's region: its domain's, unless it TRANSFERRED to another region of the
-        /// current plan (-1: no region in this plan).</summary>
         /// <summary>Member i's body region in the current plan (-1: none) - the harness's view of the regions.</summary>
         public int RegionOf(int i) => EffRole(i);
 
         /// <summary>Round 11d: how far laying has eased back in after the last wound or switch (0..1; 1 = the full LayMax).</summary>
         public float LayEase => _layU;
 
+        /// <summary>A member's region: its domain's, unless it TRANSFERRED to another region of the
+        /// current plan (-1: no region in this plan).</summary>
         int EffRole(int i) => XferPlan[i] == PlanIx && XferPlan[i] >= 0 ? XferRole[i] : RoleOfDom[Math.Clamp(Dom[i], 0, 2)];
 
         void LookOf(int i, int element, out Vector3 half, out int tier, out Vector3 face)

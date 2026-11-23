@@ -1,5 +1,10 @@
 # Regatta AI roadmap — six racing AIs, one way to build them
 
+> **2026-10-27 (Yash): the AIs are not trained in Regatta at all.** Each vessel trains in its own minigames (its Time
+> minigame first); the learning sweep reports Regatta races and learns nothing from them; Regatta and the other arena
+> games are restructured later from the learned skills (`MINIGAME_TRAINING_PLAN.md`). The Stoat's hold (§3.1) is lifted:
+> it trains in Warpline (§7 there).
+>
 > **2026-10-26: AI training moved to each vessel's own racing minigame** (Yash). This roadmap stays as the record of
 > the Regatta work; the plan going forward is `MINIGAME_TRAINING_PLAN.md`: train each hull in its minigame at four
 > intensities (the Dolphin in Switchback first), then rebuild Regatta from what the trained vessels can do.
@@ -88,7 +93,7 @@ started; item 5 is superseded by the 2026-10-16 editor-only decision (§3).
 | 4 | **Rhino**: a NEW drive. Straighten for the ramp only when the runway to the next corner pays back the wind-up; otherwise hold the line | Beats its cruise time on every intensity; misses no corner mouth at 1200 u/s | First cut 2026-10-15; rebuilt 2026-10-17 (brake on the ramp), retuned for centre steering; **2026-10-24 from Yash's six races** (two finished): Regatta corner speed 600 → 333, line 0.80 → 0.676, set by hand; the learner replaces them at the third finished race. Editor checks T-20261016-01ec, T-20261024-2979 |
 | 5 | **Urchin**: measure the lane-stay rate (REGATTA.md §6's open number); fix re-latching rivals' lanes if it is low | Rides its own lane through ≥ N% of the race | **Measured 2026-10-25:** own lane in 15 of 17 recorded races (300 u/s), a rival's in 2 (I4, 42-48 u/s). Fixed: a 4 s dry-crawl cap and a stand-off approach to its own lane (`REGATTA.md` §6); not editor-verified |
 | 6 | **Dolphin**: measure the charge policy in Regatta; tune the discharge runway | Lap times per difficulty | Drift again at the discharge's peak (2026-10-17, `9b064721b`); model only. **2026-10-24:** Yash's one race (I1, unfinished) re-drifts at the peak too; line 0.60 → 0.785 set by hand; the discharge runway waits for three finished races. Editor checks T-20261016-b719, T-20261024-c9ba |
-| 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds | Not started |
+| 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds | Pin cleared 2026-11-17 (Garrett); balance re-run is the flywheel's |
 
 **2026-10-15 status:** an audit of the five racing hulls (all except the Stoat) found and fixed the race-breakers listed in
 `Arcade/REGATTA.md` §6.1. Step 0 is partly done: Regatta now offers difficulty, and every gate-race AI reports its
@@ -123,7 +128,7 @@ falling target. Model (`Tools/Build/dolphin_drive_sim.py`, centre steering), 3 l
 
 **2026-10-17: step 3, the Manta holds Soar deeper into turns.** Soar raises the Manta's turn rate (0.2 v + 30 deg/s), so
 it turns better fast, and the executor's bands (0.35 / 0.75) dropped Soar too early. Regatta now flies `BoostStickBand`
-0.8 and `YastriStickBand` 0.85 through `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta` (the learner's slot,
+0.8 and `YawsteryStickBand` 0.85 through `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta` (the learner's slot,
 written with its writer; every other mode keeps the executor's bands; a person's Manta flights replace these).
 Model (`Tools/Build/manta_drive_sim.py`), 3 laps, default → Regatta bands: I1 26.5 → 25.0, I2 32.8 → 31.0, I3 37.5 →
 35.6, I4 37.6 → 35.5 s. The roadmap's corner look-ahead (drop Soar before a corner, like the Rhino's brake) was modelled
@@ -291,5 +296,5 @@ model instead of `skimrace_sim_harness`'s hand model (`Sim.cs`):
 
 ## 6. What the user tests, per step
 
-The Third Eye (`FrogletTools > AI > Third Eye`) on the hull being built, in Regatta, Easy and Hard. Each step
+The AI Diagnose panel (in game: F2) on the hull being built, in Regatta, Easy and Hard. Each step
 files its script in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

@@ -118,6 +118,7 @@ namespace CosmicShore.Gameplay
         public Trail() { }
         public Trail(bool isLoop) { }
         public void Add(Prism p) { }
+        public List<Prism> TrailList { get; } = new();
     }
 
     /// <summary>Lay-path stand-in. Unreachable from the harness; loud if that ever changes.</summary>
@@ -220,9 +221,24 @@ namespace CosmicShore.Gameplay
             UnityEngine.Debug.LogError("SpawnPrismTrail reached from the card-art harness");
         public virtual GameObject Spawn(int intensity = 1) { UnityEngine.Debug.LogError("Spawn reached from the card-art harness"); return null; }
         public IReadOnlyList<Trail> GetTrails() => trails;
-        protected void InvalidateCache() { }
+        public void InvalidateCache() { }
 
         public SpawnTrailData[] GenerateForHarness() => GenerateTrailData();
+
+        /// <summary>The shipped cached read, uncached (RegattaPlacementBuilder lays a placement's spawnable through it):
+        /// the same seeding, so the trails are the shipped ones.</summary>
+        public SpawnTrailData[] GetTrailData()
+        {
+            rng = seed != 0 ? new System.Random(seed) : new System.Random();
+            return GenerateTrailData();
+        }
+    }
+
+    /// <summary>The shipped bake switch (PrismLayoutBake.Bypass): the harness never loads a bake.</summary>
+    public static class PrismLayoutBake
+    {
+        sealed class Scope : IDisposable { public void Dispose() { } }
+        public static IDisposable Bypass() => new Scope();
     }
 
     /// <summary>Same protected generation surface as the shipped base; Emit records instead of laying.</summary>
@@ -252,6 +268,8 @@ namespace CosmicShore.Gameplay
 
         public IReadOnlyList<PrismLay> CachedLays => _cachedLays;
         public IReadOnlyList<FloraPlantingSite> PlantingSites => _plantingSites;
+        /// <summary>Mirrors the real base: true when the environment sows planting sites (SpawnableRegattaRails).</summary>
+        public virtual bool PreparesPlantingSites => false;
 
         protected override SpawnTrailData[] GenerateTrailData()
         {

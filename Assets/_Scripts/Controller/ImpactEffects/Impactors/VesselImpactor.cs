@@ -14,6 +14,10 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(NetworkVesselImpactor))]
     public class VesselImpactor : ImpactorBase
     {
+        /// <summary>Raised on every hull-to-prism contact that reaches the prism effects (after the self-trail grace
+        /// and the shell guard), on the peer that runs the contact. A diagnostic hook: listeners only read.</summary>
+        public static event System.Action<IVesselStatus, Prism> PrismHullContact;
+
         // Vessels can carry more than one hull collider (the Squirrel has two
         // BoxColliders), so a single crystal pass raises OnTriggerEnter once per
         // collider pair and the whole crystal effect chain used to run twice.
@@ -34,10 +38,23 @@ namespace CosmicShore.Gameplay
         protected override bool isInitialized => Vessel?.VesselStatus?.Player != null;
         public override Domains OwnDomain => Vessel.VesselStatus.Domain;
 
+        IHullContactGate _contactGate;
+
+        /// <summary>
+        /// Whether this hull's TOUCH takes a crystal now (<see cref="IHullContactGate"/>; true for a hull without a gate).
+        /// Read by both halves of a crystal contact, so a gated hull neither runs its pickup nor has the crystal credit it.
+        /// </summary>
+        public bool TakesCrystalsByContact => _contactGate == null || _contactGate.TakesCrystalsByContact;
+
+        /// <summary>Whether this hull's TOUCH meets a prism now (<see cref="IHullContactGate"/>; true without a gate). Read by
+        /// both halves of a prism contact.</summary>
+        public bool TakesPrismsByContact => _contactGate == null || _contactGate.TakesPrismsByContact;
+
         private void Awake()
         {
             Vessel ??= GetComponent<IVessel>();
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
+            TryGetComponent(out _contactGate);
         }
 
         // Shell-tier probes: the hull colliders whose trigger events land on THIS
@@ -107,6 +124,7 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
+                    if (!IsSweepDispatch && !TakesPrismsByContact) return;   // the Jacks' net takes it instead
                     // A pilot does not ram the ribbon still coming out of their own ship. Sits
                     // above the SFX and the whole effect loop, because a self-ram used to cost
                     // real gameplay: VesselDamagePrismEffect shreds your own fresh trail, and on
@@ -125,6 +143,9 @@ namespace CosmicShore.Gameplay
                     if (!IsShellDispatch && PrismShellContactManager.ShellOwnsContact(prismImpactee.Prism))
                         return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
+                    // A real hull contact (past the self-trail and shell guards): modes that count hits listen
+                    // (Switchback's SwitchbackHitStats). Null when nobody listens; reads only.
+                    PrismHullContact?.Invoke(Vessel?.VesselStatus, prismImpactee.Prism);
                     // SkimRace's track is built from indestructible, environment-owned prisms
                     // (no player name) rather than destructible player trails. Hitting the
                     // track gets its own SFX in SkimRace; every other prism collision (and all
@@ -153,19 +174,26 @@ namespace CosmicShore.Gameplay
 
                 case OmniCrystalImpactor omniCrystalImpactee:
                 {
+                    if (!IsSweepDispatch && !TakesCrystalsByContact) break;   // the Jacks' net takes it instead
+                    if (!IsSweepDispatch && SolitonIsolation.Sealed(omniCrystalImpactee.Crystal)) break;   // carried in a tube
                     if (!TryLatchCrystalImpact(omniCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     VesselCameraFeel.Pickup(Vessel?.VesselStatus);
                     var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
-                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
-                        networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
-                    else
-                        ExecuteOmniCrystalImpact(data);
+                    switch (RouteCrystalPickup())
+                    {
+                        case CrystalPickupRoute.Broadcast: networkVesselImpactor.ExecuteOnHitOmniCrystal(data); break;
+                        case CrystalPickupRoute.Local: ExecuteOmniCrystalImpact(data); break;
+                    }
                     break;
                 }
 
                 case ElementalCrystalImpactor elementalCrystalImpactee:
                 {
+                    // A hull inside a Soliton Tunnel touches no crystal, a lifeform's heart included, and a crystal a
+                    // tunnel carries is touched by nobody (SolitonIsolation). A sweep (a race ring) still lands.
+                    if (!IsSweepDispatch && (SolitonIsolation.Sealed(Vessel?.VesselStatus)
+                                             || SolitonIsolation.Sealed(elementalCrystalImpactee.Crystal))) break;
                     // A LIVING lifeform's embedded crystal (its heart) is a JOUST surface, not a
                     // pickup: skip the collect chain and run the lifeform-crystal effects instead
                     // (e.g. Squirrel Space-5 Crystal Joust). Local-only - the ecosystem sim is local.
@@ -190,10 +218,11 @@ namespace CosmicShore.Gameplay
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     VesselCameraFeel.Pickup(Vessel?.VesselStatus);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
-                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
-                        networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
-                    else
-                        ExecuteElementalCrystalImpact(data);
+                    switch (RouteCrystalPickup())
+                    {
+                        case CrystalPickupRoute.Broadcast: networkVesselImpactor.ExecuteOnHitElementalCrystal(data); break;
+                        case CrystalPickupRoute.Local: ExecuteElementalCrystalImpact(data); break;
+                    }
                     break;
                 }
 
@@ -203,6 +232,9 @@ namespace CosmicShore.Gameplay
                     // SkimmerImpactor.AcceptImpactee.
                     if (skimmerImpactee.Skimmer
                         && ReferenceEquals(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
+                    // a hull inside a Soliton Tunnel and a skimmer outside it never meet (SolitonIsolation)
+                    if (skimmerImpactee.Skimmer
+                        && SolitonIsolation.Apart(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
                     var skimmerEffects = vesselImpactorDataContainerSO.VesselSkimmerEffects;
                     if (!DoesEffectExist(skimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
@@ -218,6 +250,39 @@ namespace CosmicShore.Gameplay
                     break;
             }
         }
+
+        /// <summary>
+        /// Where this machine sends its half of a crystal pickup. See <see cref="RouteCrystalPickup(bool, bool)"/>.
+        /// </summary>
+        public enum CrystalPickupRoute
+        {
+            /// <summary>Offline: no network copy exists, so the chain runs here and only here.</summary>
+            Local = 0,
+            /// <summary>This machine owns the vessel: it reports the pickup and every peer runs the chain once.</summary>
+            Broadcast = 1,
+            /// <summary>A spawned copy of someone else's vessel: their owner's broadcast runs it here.</summary>
+            OwnerBroadcasts = 2,
+        }
+
+        CrystalPickupRoute RouteCrystalPickup() =>
+            RouteCrystalPickup(networkVesselImpactor.IsSpawned, networkVesselImpactor.IsOwner);
+
+        /// <summary>
+        /// A crystal pickup's vessel chain runs ONCE per machine, carried by the vessel's owner
+        /// (<see cref="NetworkVesselImpactor"/>'s ServerRpc → ClientRpc reaches every peer).
+        ///
+        /// A non-owner copy also touches the crystal in its own physics, and that contact used to
+        /// fall into the offline branch and run the chain locally as well — so every peer watching
+        /// another pilot ran it TWICE: once from its own contact, once from the owner's broadcast.
+        /// For a Squirrel the first run's morph landed on the ring that run laid, and the second
+        /// found no ring (the explosion effect's 0.15 s anti-spam swallowed it), held the crystal's
+        /// body for <c>targetGraceSeconds</c> and faded it out: a collider-less ghost crystal left
+        /// behind on every screen but the collector's.
+        /// </summary>
+        public static CrystalPickupRoute RouteCrystalPickup(bool isSpawned, bool isOwner) =>
+            !isSpawned ? CrystalPickupRoute.Local
+            : isOwner ? CrystalPickupRoute.Broadcast
+            : CrystalPickupRoute.OwnerBroadcasts;
 
         /// <summary>
         /// True exactly once per crystal per latch window — false for the

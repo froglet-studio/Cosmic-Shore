@@ -418,7 +418,85 @@ float PrismLitFill(float3 samplePos, float3 origin, float3 axis, float3 gape, fl
     return PrismSightFill(samplePos, origin, axis, gape, params);
 }
 
-void PrismDestructionSight_float(
+// -----------------------------------------------------------------------------
+// PILOT VISION — the sight on LB (Docs/Pilots/CALLSIGNS.md). NOT a Lit producer.
+// -----------------------------------------------------------------------------
+//
+// Holding LB lights what your pilot sees and SUPPRESSES everything else. It is a held, personal
+// light, so it never takes a slot in the peer bank above (Docs/LIT.md: a held personal light must
+// not compete with the lights that carry information for everyone), and its globals carry names
+// Unity has never been asked to bind (the bank-rename lesson). It is LOCAL: only the holder's
+// machine publishes these, so no other player's screen changes.
+//
+// Applied AFTER the Lit composition, so every light still reads on the mass the sight keeps lit,
+// and the suppression quiets the rest whatever lit it.
+//
+//   _PilotVisionStrength  0-1, the LB fade. 0 = off: one compare, and the colour is untouched.
+//   _PilotVisionSight     which PRISMS the sight keeps lit (a PilotVision value):
+//                           1 ENSIGN  - mass of domain _PilotVisionDomain
+//                           2 MANGER  - mass inside the sphere _PilotVisionVolume
+//                           9 CITADEL - super-shielded mass
+//                         any other value: no prism is the sight's (a sight of crystals, fauna,
+//                         vessels...), so every prism is suppressed.
+//   _PilotVisionDomain    ENSIGN's domain (a Domains value).
+//   _PilotVisionVolume    MANGER's sphere (centre.xyz, radius).
+//
+// Lit mass keeps its own colour (a prism's colour IS its domain) and brightens; suppressed mass
+// is drained toward grey and dimmed, still there and still solid, just quiet.
+#define PILOT_VISION_ENSIGN  1.0
+#define PILOT_VISION_MANGER  2.0
+#define PILOT_VISION_CITADEL 9.0
+
+#ifndef PILOT_VISION_LIT_GAIN
+#define PILOT_VISION_LIT_GAIN 0.6
+#endif
+#ifndef PILOT_VISION_SUPPRESS_DIM
+#define PILOT_VISION_SUPPRESS_DIM 0.28
+#endif
+#ifndef PILOT_VISION_SUPPRESS_DESATURATION
+#define PILOT_VISION_SUPPRESS_DESATURATION 0.85
+#endif
+
+float  _PilotVisionStrength;
+float  _PilotVisionSight;
+float  _PilotVisionDomain;
+float4 _PilotVisionVolume;
+
+// 1 when the sight keeps this prism lit, 0 when it suppresses it.
+float PilotVisionKeeps(float3 samplePos, float Domain, float SuperShielded)
+{
+    float sight = _PilotVisionSight;
+    if (sight == PILOT_VISION_ENSIGN)
+        return (Domain > 0.0 && Domain == _PilotVisionDomain) ? 1.0 : 0.0;
+    if (sight == PILOT_VISION_CITADEL)
+        return SuperShielded > 0.5 ? 1.0 : 0.0;
+    if (sight == PILOT_VISION_MANGER)
+    {
+        float3 rel = samplePos - _PilotVisionVolume.xyz;
+        float r = _PilotVisionVolume.w;
+        return (r > 0.0 && dot(rel, rel) <= r * r) ? 1.0 : 0.0;
+    }
+    return 0.0;
+}
+
+float3 PilotVisionApply(float3 color, float3 samplePos, float Domain, float SuperShielded)
+{
+    float s = saturate(_PilotVisionStrength);
+    if (s <= 0.0)
+        return color;
+
+    if (PilotVisionKeeps(samplePos, Domain, SuperShielded) > 0.5)
+        return color * (1.0 + PILOT_VISION_LIT_GAIN * s);
+
+    float luma = dot(color, float3(0.299, 0.587, 0.114));
+    float3 quiet = lerp(color, float3(luma, luma, luma), PILOT_VISION_SUPPRESS_DESATURATION)
+                   * PILOT_VISION_SUPPRESS_DIM;
+    return lerp(color, quiet, s);
+}
+
+// The Lit composition: the body PrismDestructionSight_float had before pilot vision existed,
+// unchanged, so verify_prism_sight_composition.py measures the same expressions.
+void PrismLitCompose(
     float3 PositionWS,
     float3 Apex,        // OWN sight: blast apex, world space
     float3 Axis,        // OWN sight: sweep axis (unit)
@@ -523,6 +601,34 @@ void PrismDestructionSight_float(
         return;
 
     Color = BaseColor + (weighted / total) * (peak * PRISM_LIT_PEER_GAIN);
+}
+
+void PrismDestructionSight_float(
+    float3 PositionWS,
+    float3 Apex,
+    float3 Axis,
+    float3 Gape,
+    float3 Params,
+    float  Strength,
+    float3 BaseColor,
+    float  Domain,
+    float  SuperShielded,
+    out float3 Color)
+{
+    PrismLitCompose(PositionWS, Apex, Axis, Gape, Params, Strength, BaseColor, Domain, SuperShielded, Color);
+
+    // Pilot vision: one compare when LB is not held.
+    if (_PilotVisionStrength <= 0.0)
+        return;
+
+#if PRISM_SIGHT_WHOLE_PRISM && !defined(SHADERGRAPH_PREVIEW)
+    float3 samplePos = float3(GetObjectToWorldMatrix()._m03,
+                              GetObjectToWorldMatrix()._m13,
+                              GetObjectToWorldMatrix()._m23);
+#else
+    float3 samplePos = PositionWS;
+#endif
+    Color = PilotVisionApply(Color, samplePos, Domain, SuperShielded);
 }
 
 #endif // PRISM_DESTRUCTION_SIGHT_INCLUDED

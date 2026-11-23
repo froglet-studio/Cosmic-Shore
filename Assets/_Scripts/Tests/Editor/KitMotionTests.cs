@@ -80,6 +80,22 @@ namespace CosmicShore.Tests
             Assert.AreEqual(rest, KitEntrance.ReconcileRest(lastWritten, lastWritten, rest));
         }
 
+        /// <summary>
+        /// Only an entrance that offsets the position may write it. A Pop / Grow / Fade that wrote its
+        /// captured pre-layout position back on Finish() snapped the in-game score column under its new
+        /// layout anchors, centred on the bar's top-left corner and half off screen (2026-10-31).
+        /// Enumerates the enum so a mode added later is covered the day it lands.
+        /// </summary>
+        [Test]
+        public void Entrance_WritesPosition_OnlyForTheModesThatMoveIt()
+        {
+            foreach (KitEntranceMode mode in System.Enum.GetValues(typeof(KitEntranceMode)))
+            {
+                bool moves = mode == KitEntranceMode.Rise || mode == KitEntranceMode.Drop;
+                Assert.AreEqual(moves, KitEntrance.MovesPosition(mode), mode.ToString());
+            }
+        }
+
         [Test]
         public void Entrance_KeepsAnOwnersDim_ThroughAReplay()
         {

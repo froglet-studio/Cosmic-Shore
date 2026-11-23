@@ -29,22 +29,22 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BondPeriod: 0.16
-    - _BondSpeed: 0.22
+    - _BondPeriod: 0
+    - _BondSpeed: 0
     - _BondWidth: 0.022
     - _ColorMask: 15
     - _Dashes: 28
-    - _DotSize: 0.055
-    - _GlowAlpha: 0.32
+    - _DotSize: 0
+    - _GlowAlpha: 0.24
     - _InnerAlpha: 0.34
     - _InnerRadius: 0.66
     - _MemberRadius: 0.66
     - _Online: 0
-    - _OuterAlpha: 0.55
+    - _OuterAlpha: 0.3
     - _OuterRadius: 0.92
     - _RingWidth: 0.012
     - _Soft: 0.03
-    - _SpinSeconds: 40
+    - _SpinSeconds: 0
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
@@ -57,6 +57,6 @@ Material:
     - _Bond2: {r: 0, g: 0, b: 0, a: 0}
     - _BondAngles: {r: 135, g: 45, b: 270, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _SpaceColor: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
+    - _SpaceColor: {r: 0.454902, g: 0.4823529, b: 0.6784314, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

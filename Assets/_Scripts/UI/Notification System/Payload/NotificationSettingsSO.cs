@@ -10,34 +10,50 @@ namespace CosmicShore.UI
     public class NotificationSettingsSO : ScriptableObject
     {
         [Header("Slide Directions")]
-        public SlideDirection inFrom  = SlideDirection.FromRight;
-        public SlideDirection outTo   = SlideDirection.FromRight;
+        [SerializeField] SlideDirection inFrom  = SlideDirection.FromRight;
+        public SlideDirection InFrom => inFrom;
+        [SerializeField] SlideDirection outTo   = SlideDirection.FromRight;
+        public SlideDirection OutTo => outTo;
 
         [Header("Padding (px beyond fully hidden)")]
-        public float inPadding  = 24f;   // extra pixels off-screen for enter
-        public float outPadding = 24f;   // extra pixels off-screen for exit
+        [SerializeField] float inPadding  = 24f;   // extra pixels off-screen for enter
+        public float InPadding => inPadding;
+        [SerializeField] float outPadding = 24f;   // extra pixels off-screen for exit
+        public float OutPadding => outPadding;
 
         [Header("Timing")]
-        public float inDuration   = 0.20f;
-        public float holdDuration = 1.25f;
-        public float outDuration  = 0.20f;
-        public bool  useUnscaledTime = true;
+        [SerializeField] float inDuration   = 0.20f;
+        public float InDuration => inDuration;
+        [SerializeField] float holdDuration = 1.25f;
+        public float HoldDuration => holdDuration;
+        [SerializeField] float outDuration  = 0.20f;
+        public float OutDuration => outDuration;
+        [SerializeField] bool useUnscaledTime = true;
+        public bool UseUnscaledTime => useUnscaledTime;
 
         [Header("Ease")]
-        public Ease inEase  = Ease.OutCubic;
-        public Ease outEase = Ease.InCubic;
+        [SerializeField] Ease inEase  = Ease.OutCubic;
+        public Ease InEase => inEase;
+        [SerializeField] Ease outEase = Ease.InCubic;
+        public Ease OutEase => outEase;
 
         [Header("Alpha")]
-        public bool  fade       = true;
-        public float startAlpha = 0f;
-        public float endAlpha   = 1f;
+        [SerializeField] bool fade       = true;
+        public bool Fade => fade;
+        [SerializeField] float startAlpha = 0f;
+        public float StartAlpha => startAlpha;
+        [SerializeField] float endAlpha   = 1f;
+        public float EndAlpha => endAlpha;
 
         [Header("Scale (optional)")]
         public bool    scale      = false;
-        public Vector3 startScale = Vector3.one * 0.98f;
-        public Vector3 endScale   = Vector3.one;
+        [SerializeField] Vector3 startScale = Vector3.one * 0.98f;
+        public Vector3 StartScale => startScale;
+        [SerializeField] Vector3 endScale   = Vector3.one;
+        public Vector3 EndScale => endScale;
 
         [Header("Queue")]
-        public int maxQueue = 3;
+        [SerializeField] int maxQueue = 3;
+        public int MaxQueue => maxQueue;
     }
 }

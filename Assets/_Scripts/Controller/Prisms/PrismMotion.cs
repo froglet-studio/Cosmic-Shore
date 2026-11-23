@@ -33,8 +33,14 @@ namespace CosmicShore.Gameplay
     /// <para><b>The collision rule.</b> A moving prism that runs into another prism destroys BOTH. "Runs
     /// into" means: over the step, the two prisms' contact shapes go from apart to touching. Prisms that were already touching when the step began are at rest against each other —
     /// a trail's neighbours, a structure being carried whole — and are not a collision. Super-shielded
-    /// mass is the one exception: it is indestructible, so it deflects (<see cref="Prism.AbsorbSuperShieldHit"/>)
-    /// and only the mover is destroyed. An ordinary shield is no answer to a collision (devastating).</para>
+    /// mass is indestructible, so it deflects (<see cref="Prism.AbsorbSuperShieldHit"/>) and an unshielded
+    /// mover is destroyed against it.</para>
+    ///
+    /// <para><b>Shielded prisms bounce</b> (Garrett, 2026-10-27, <see cref="PrismBounce"/>): a collision a
+    /// SHIELDED prism is part of, as the mover or as the prism it runs into, destroys neither. The movers
+    /// rebound off the contact, keeping <see cref="BounceRestitution"/> of the closing speed. A shielded mover
+    /// bounces off super-shielded mass too. Each mover calls <see cref="Bounces(Prism, Prism)"/> before
+    /// <see cref="Annihilate"/> and rebounds its own way (it owns the prism's motion).</para>
     ///
     /// <para><b>The ladder: what a mover can afford, by how many prisms it moves</b>
     /// (<see cref="PrismMotionLevel"/>, <see cref="NextLevel"/>, <c>PrismMotionConfigSO</c>).
@@ -136,6 +142,43 @@ namespace CosmicShore.Gameplay
                 struck.DamageByCollision(impact, domain, playerName, fineDetail, DebrisSpeedLimit);
             if (mover && !mover.destroyed)
                 mover.DamageByCollision(-impact, domain, playerName, fineDetail, DebrisSpeedLimit);
+        }
+
+        /// <summary>
+        /// The same collision inside a black hole's pull: both prisms are destroyed exactly as
+        /// <see cref="Annihilate"/> destroys them (scored to <paramref name="playerName"/>, shields no answer), but each is
+        /// DRAWN as a creature's meal is, consumed into <paramref name="sink"/> (the hole) through
+        /// <see cref="Prism.Consume"/>: the one suction effect for anything that eats prisms (Yash, 2026-11-22: "the
+        /// visuals of black hole sucking prisms need to be same as the fauna devouring the prisms"). Super-shielded mass
+        /// still deflects and survives (<see cref="Prism.Consume"/>'s own gate).
+        /// </summary>
+        public static void AnnihilateInto(Prism mover, Prism struck, Transform sink, Domains domain, string playerName)
+        {
+            if (struck && !struck.destroyed)
+                struck.Consume(sink, domain, playerName, devastate: true);
+            if (mover && !mover.destroyed)
+                mover.Consume(sink, domain, playerName, devastate: true);
+        }
+
+        /// <summary>
+        /// Whether <paramref name="mover"/> running into <paramref name="struck"/> BOUNCES instead of annihilating:
+        /// either is shielded, or the struck prism is super-shielded and the mover shielded (<see cref="PrismBounce.Bounces"/>).
+        /// </summary>
+        public static bool Bounces(Prism mover, Prism struck)
+        {
+            var m = mover ? mover.prismProperties : null;
+            var s = struck ? struck.prismProperties : null;
+            return PrismBounce.Bounces(m is { IsShielded: true }, s is { IsShielded: true }, s is { IsSuperShielded: true });
+        }
+
+        /// <summary>How much of the closing speed a bounce keeps (<c>PrismMotionConfigSO.ShieldBounceRestitution</c>).</summary>
+        public static float BounceRestitution
+        {
+            get
+            {
+                var cfg = PrismMotionConfigSO.Instance;
+                return cfg != null ? cfg.ShieldBounceRestitution : PrismBounce.DefaultRestitution;
+            }
         }
 
         // ------------------------------------------------------------------ the ladder

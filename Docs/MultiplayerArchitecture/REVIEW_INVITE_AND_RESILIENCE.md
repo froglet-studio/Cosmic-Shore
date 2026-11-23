@@ -6,6 +6,8 @@ Netcode + Relay transport settings around it, and every disconnect path — read
 sources actually compiled into this branch (Netcode for GameObjects 2.13.3, Multiplayer Services
 2.3.3, Friends 1.3.0, Unity Transport 2.7.4 on Unity 6000.3.17f1).
 
+> **Status 2026-11-02:** the polling numbers below (1.5 s ticks, 4 s converge) describe the code reviewed on 2026-10-06 and are **superseded**. Now: push events plus a 20 s safety poll (8 s while an online list is open), and converge on safety-poll ticks plus +2 s / +7 s after a join. See [`../PresenceSystem/ARCHITECTURE.md`](../PresenceSystem/ARCHITECTURE.md) § Freshness fixes.
+
 **Constraints honoured:** Unity and package versions are **unchanged**. The two LOCKED decisions
 (two-level Presence-lobby + Party-session model; **EAGER per-user Relay "Always-InParty"**) are
 taken as given and not relitigated — every recommendation below fits inside them.

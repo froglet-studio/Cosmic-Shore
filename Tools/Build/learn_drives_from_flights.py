@@ -38,6 +38,15 @@ not the person's: they are measured separately as "the AI today" for comparison.
 not in Regatta: "in case of Dolphin, we should keep playing that Dolphin minigame, Switchback"). `--mode <GameModes name>`
 reads that mode's flights and writes `<asset>_<mode>` variants, which AIBoostPolicySO.ForMode loads in that mode only;
 the report goes to LEARNED_DRIVES_<mode>.md and counts the flights per intensity. The race lines are Regatta's alone.
+
+**Per intensity** (PER_INTENSITY_MODES, 2026-10-26): in a mode whose intensity IS its course (Switchback: 72 u mouths at
+I1, 20 u at I4) a drive hull's policy is also learned from each intensity's own races alone and written as
+`<policy>_<mode>_I<n>` (AIBoostPolicySO.ForMode(policy, mode, intensity)), started from the mode's variant. The mode-wide
+variant is learned from the fastest races, which are the easiest intensity's, and its numbers threw the I4 mouths
+(switchback_dolphin_sim.py: 232 s and 31 missed mouths on the I4 course, 148 s and 12 with the I4 races' own numbers).
+An intensity learns only from its CURRENT course (on_current_course: the newest flight's mouth radius), never from the
+course a retuned ladder replaced; the mode-wide variant, which the intensities without their own fly, learns from the
+fastest race of each intensity (fastest_each_intensity), not the easiest intensity's three.
 """
 import argparse
 import datetime
@@ -62,7 +71,9 @@ MANTA_SCRIPT = os.path.join(REPO, "Assets", "_Scripts", "Controller", "AI", "Boo
 REPORT_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_DRIVES.md")
 MODE = "Regatta"   # --mode sets it: the GameModes name whose flights are read and whose variants are written
 MIN_FINISHED = 3
+PER_INTENSITY_MODES = {"Switchback"}   # modes whose intensity is the course: one drive per intensity (the header)
 MIN_EPISODES = 6
+MIN_MEAN_SOAR = 0.05   # the Manta: a person who barely Soars has no band to learn
 STATE_BOOSTING, STATE_DISCHARGING, STATE_DRIFTING, STATE_ATTACHED = 1, 2, 4, 16
 PLATEAU = 0.3   # StraightLineGesture.EngageThreshold: the Rhino ramp's full-power steering plateau
 
@@ -74,20 +85,266 @@ HULLS = {
     "Stoat": {"verb": "pair (Mass dipole / Time sling)", "bit": STATE_BOOSTING, "assets": STOAT_ASSETS},
 }
 
+# ---------------------------------------------------------------- every other hull: read from its prefab
+#
+# Yash, 2026-10-26: "build learners for all the other vessels". A hull not in HULLS is learned through the boost policy its
+# prefab's AIPilot names (`boostPolicy`), by the policy's CLASS: which recorded signal is the verb, and which of the
+# policy's fields that verb's measures write. A new vessel with a boost policy is learned from its first races with no
+# edit here; a policy class missing below is reported ("no measure for <class> yet"), never guessed.
+#
+#   signal ("bit", b)       the verb is a run of recorded state bit b (the hull is boosting / discharging)
+#   signal ("press", cls)   the verb is a press of the input bound to an ability of class cls (buttonEvents)
+#   signal ("doubletap",)   the Scarab's Snap Dash: two rising throttle edges inside doubleTapWindowSeconds at TIME 5
+#   fields                  {policy field: measured key}; "drives" is the ability class the policy presses (must be bound)
+POLICY_CLASSES = {
+    "HoldBoostAIPolicySO": {"verb": "boost (held)", "signal": ("bit", STATE_BOOSTING), "drives": "BoostActionSO",
+                            "fields": {"alignDegrees": "alignDegrees", "stickBand": "stickBand",
+                                       "engageRunwaySeconds": "engageRunwaySeconds", "releaseAlignDegrees": "releaseAlignDegrees",
+                                       "releaseStickBand": "releaseStickBand", "releaseRunwaySeconds": "releaseRunwaySeconds",
+                                       "minHoldSeconds": "minHoldSeconds", "minRestSeconds": "minRestSeconds"},
+                            # The "clear the way" rocket (2026-10-26, Yash: shoot the station open to race through it):
+                            # presses of the input bound to the hull's SkyBurst rocket, measured at the press against the
+                            # next ring. Read from EVERY race of the person's (rockets are rare), not only the fastest.
+                            "extra": {"verb": "rocket (clear the way)", "signal": ("press", "FireGunActionSO", "SkyBurst"),
+                                      "fields": {"rocketMinRange": "pressDistLow", "rocketMaxRange": "pressDistHigh",
+                                                 "rocketAimDegrees": "pressNoseMedian"}}},
+    "PelletBoostAIPolicySO": {"verb": "pellet", "signal": ("press", "ConsumeBoostActionSO"), "drives": "ConsumeBoostActionSO",
+                              "fields": {"alignDegrees": "alignDegrees", "stickBand": "stickBand",
+                                         "engageRunwaySeconds": "engageRunwaySeconds",
+                                         "minSecondsBetweenPellets": "minRestSeconds"}},
+    "SnapDashAIPolicySO": {"verb": "snap dash", "signal": ("doubletap",), "drives": None,
+                           "fields": {"alignDegrees": "alignDegrees", "stickBand": "stickBand",
+                                      "engageRunwaySeconds": "engageRunwaySeconds", "dashCooldownSeconds": "minRestSeconds"}},
+    "SkimRingAIPolicySO": {"verb": "boost ring", "signal": ("press", "SquirrelTubeActionSO"), "drives": "SquirrelTubeActionSO",
+                           "fields": {"ringAlignDegrees": "alignDegrees", "ringStickBand": "stickBand"}},
+    # The Thresher's sling (2026-10-26): a press of its PLANT trigger (a ThresherActionSO whose asset is the Plant one).
+    # "aimed" (2026-11-02): each plant is also read for the AIMED launch (aimed_launch), which people mostly fly it with.
+    "ThresherSlingAIPolicySO": {"verb": "sling (plant)", "signal": ("press", "ThresherActionSO", "Plant"),
+                                "drives": "ThresherActionSO", "aimed": True,
+                                "fields": {"plantMinTurnDegrees": "engageAngleLow", "plantMinDistance": "engageDistanceLow",
+                                           "releaseConeDegrees": "releaseAngleMedian", "maxPlantSeconds": "holdHigh",
+                                           "slingIntervalSeconds": "minRestSeconds", "aimedLaunch": "aimedLaunch",
+                                           "aimedHoldSeconds": "aimedHoldMedian"}},
+    # ChargeBoost (Dolphin) and RampBoost (Rhino) are HULLS entries above, with their own extra measures.
+}
+PREFAB_DIR = os.path.join(REPO, "Assets", "_Prefabs", "Spacevessels")
+SCARAB_DOUBLE_TAP = 0.3       # ScarabVesselTransformer.doubleTapWindowSeconds (its initializer: the prefab is silent)
+THROTTLE_EDGE = 0.05          # ScarabVesselTransformer.TriggerDeadzone
+UPGRADE_LEVEL = 5             # a level-5 upgrade gates the Snap Dash (IsUpgradeActive(Element.Time))
+_GUIDS = None
+
+
+def guid_paths():
+    """{guid: asset path} for every .meta under Assets (read once)."""
+    global _GUIDS
+    if _GUIDS is None:
+        _GUIDS = {}
+        for root, _, files in os.walk(os.path.join(REPO, "Assets")):
+            for fn in files:
+                if fn.endswith(".meta"):
+                    try:
+                        m = re.search(r"^guid: ([0-9a-f]{32})", open(os.path.join(root, fn), encoding="utf-8", errors="ignore").read(), re.M)
+                    except OSError:
+                        continue
+                    if m:
+                        _GUIDS[m.group(1)] = os.path.join(root, fn[:-5])
+    return _GUIDS
+
+
+def script_class(asset_path):
+    """The C# class of a .asset (its m_Script's file name)."""
+    try:
+        m = re.search(r"m_Script: \{fileID: 11500000, guid: ([0-9a-f]{32})", open(asset_path, encoding="utf-8", errors="ignore").read())
+    except OSError:
+        return None
+    s = guid_paths().get(m.group(1)) if m else None
+    return os.path.basename(s)[:-3] if s and s.endswith(".cs") else None
+
+
+def bindings(prefab_text):
+    """{InputEvent int: [(ability class, asset name), ...]} from the vessel's action handler: the base list and the pad's."""
+    out = {}
+    for block in ("_inputEventShipActions", "_gamepadActionOverrides"):
+        m = re.search(block + r":\n((?:  - InputEvent: \d+\n    ShipActions:\n(?:    - \{[^}]*\}\n)*)*)", prefab_text)
+        if not m:
+            continue
+        for ie, acts in re.findall(r"  - InputEvent: (\d+)\n    ShipActions:\n((?:    - \{[^}]*\}\n)*)", m.group(1)):
+            for g in re.findall(r"guid: ([0-9a-f]{32})", acts):
+                path = guid_paths().get(g)
+                cls = script_class(path) if path and path.endswith(".asset") else None
+                if cls:
+                    out.setdefault(int(ie), []).append((cls, os.path.basename(path)[:-6]))
+    return out
+
+
+def resolve_hull(hull):
+    """A hull's learnable drive from its prefab, or None when it has no boost policy: {verb, policy, class, signal,
+    fields, input, why}. why is set when the drive cannot be learned (the reason is reported)."""
+    prefab = os.path.join(PREFAB_DIR, hull + ".prefab")
+    if not os.path.exists(prefab):
+        return None
+    text = open(prefab, encoding="utf-8", errors="ignore").read()
+    m = re.search(r"boostPolicy: \{fileID: \d+, guid: ([0-9a-f]{32})", text)
+    path = guid_paths().get(m.group(1)) if m else None
+    if not path:
+        return None
+    policy, cls = os.path.basename(path)[:-6], script_class(path)
+    spec = {"verb": cls or "?", "policy": policy, "class": cls, "why": None, "input": None}
+    if cls not in POLICY_CLASSES:
+        spec["why"] = f"no measure for {cls} yet (its policy {policy})"
+        return spec
+    spec.update({k: v for k, v in POLICY_CLASSES[cls].items()})
+    bound = bindings(text)
+    drives = spec.get("drives")
+    if drives and not any(drives == cls for v in bound.values() for cls, _ in v):
+        spec["why"] = f"its boost policy {policy} ({cls}) presses {drives}, which this hull does not bind - the drive cannot act"
+    def press_input(signal):
+        want_cls, want_name = signal[1], (signal[2] if len(signal) > 2 else "")
+        return next((ie for ie, v in sorted(bound.items()) if any(c == want_cls and want_name in n for c, n in v)), None)
+
+    if spec["signal"][0] == "press":
+        spec["input"] = press_input(spec["signal"])
+    if spec.get("extra"):
+        spec["extra"] = dict(spec["extra"], input=press_input(spec["extra"]["signal"]))
+    return spec
+
+
+def measure_presses(flights, extra, held=False):
+    """A press verb's moment: where the next ring was when the button went down - its distance (low and high) and how
+    far it sat off the NOSE (a round leaves along the nose)."""
+    eps = []
+    for f, S in flights:
+        e, _ = verb_episodes(f, S, extra, held)
+        eps += [ep[0] for ep in e]
+    m = {"episodes": len(eps)}
+    if len(eps) >= MIN_EPISODES:
+        m["pressDistLow"] = pct([x["dist"] for x in eps], 0.1)
+        m["pressDistHigh"] = pct([x["dist"] for x in eps], 0.9)
+        m["pressNoseMedian"] = pct([x["nose"] for x in eps], 0.5)
+    return m
+
+
+def all_hulls():
+    """{hull: spec} for HULLS plus every prefab hull with a boost policy."""
+    out = dict(HULLS)
+    if os.path.isdir(PREFAB_DIR):
+        for fn in sorted(os.listdir(PREFAB_DIR)):
+            hull = fn[:-7] if fn.endswith(".prefab") else None
+            if hull and hull not in out:
+                spec = resolve_hull(hull)
+                if spec:
+                    out[hull] = spec
+    return out
+
+
+def mode_id(mode):
+    """The GameModes value of a mode name, or None."""
+    try:
+        text = open(os.path.join(REPO, "Assets", "_Scripts", "Data", "Enums", "GameModes.cs"), encoding="utf-8").read()
+    except OSError:
+        return None
+    m = re.search(rf"^\s*{re.escape(mode)}\s*=\s*(\d+)", text, re.M)
+    return int(m.group(1)) if m else None
+
+
+def policy_off_in_mode(policy, mode):
+    """True when the policy asset lists this mode in disabledInModes (the AI never runs the drive there)."""
+    path = os.path.join(POLICY_DIR, policy + ".asset")
+    if not os.path.exists(path):
+        return False
+    m = re.search(r"(?m)^  disabledInModes:\n((?:  - \d+\n)*)", open(path, encoding="utf-8").read())
+    ids = [int(x) for x in re.findall(r"\d+", m.group(1))] if m else []
+    mid = mode_id(mode)
+    return mid is not None and mid in ids
+
+
+# Hulls whose AI has no boost policy to learn into: reported with the reason (ai_learn.py shows it), never guessed.
+REPORT_ONLY = {
+    "Wrasse": "its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance "
+              "away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+    "Grizzly": "its AI bombs through GrizzlyTriggerBombConfigSO's autopilot fields, which do not load per mode, and "
+               "jtgjones's grizzly-v3 is reworking the bomb triggers (15 unmerged commits): learn it once that lands",
+    "Butterfly": "its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller "
+                 "(ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet",
+    "Stoat": "its ability is still being made (Yash, 2026-11-10: \"The stoat is not ready, ignore its AI, I'm trying to "
+             "make the Stoat ability better\"): reported, never written, until Yash says the kit is ready",
+}
+
+# A hull's drive in ONE mode that is reported, not written: the mode's own AI decides what the learner would measure
+# against something else. Serpent Gulag (Shombith's mode, GameModes 77) flies its Serpents with SerpentGulagMarksman, which
+# steers to a sniper POST (SetExternalTargetProvider), so the pellet drive's angle and runway are to that post; the
+# learner measures a mode without rings against the nearest CRYSTAL, so its numbers (the person lit pellets 127 deg off
+# the crystal, written clamped as alignDegrees 90 on 2026-11-08) would retune his AI with a measure it does not read.
+# The same holds for every mode whose controller steers the AI itself: Hood (Serpent Gulag rebuilt in place as Hood,
+# GameModes 77, #1865) and Jackstraw (#1864, JackstrawHunter steers each Thresher at its rival and leaves the plant to
+# the shipped ~70 deg sling; its first learned variant, plantMinTurnDegrees 39.8 measured against the nearest crystal,
+# was held back on 2026-11-11). Both are Shombith's.
+_STEERED = ("its controller steers the AI ({}: SetExternalTargetProvider), not at the crystal the learner measures "
+            "against, and the mode's AI is Shombith's: reported, never written")
+REPORT_ONLY_MODES = {
+    ("Serpent", "SerpentGulag"): _STEERED.format("SerpentGulagMarksman, to a sniper post"),
+    ("Serpent", "SerpentHood"): _STEERED.format("SerpentHoodMarksman, round the rim to a perch"),
+    ("Thresher", "Jackstraw"): _STEERED.format("JackstrawHunter, at its rival"),
+}
+
+
+def coverage(hull, mode):
+    """What learns this hull in this mode: ("drives", why-or-None), ("report", reason) or (None, None)."""
+    if hull in REPORT_ONLY:
+        return "report", REPORT_ONLY[hull]
+    if (hull, mode) in REPORT_ONLY_MODES:
+        return "report", REPORT_ONLY_MODES[(hull, mode)]
+    spec = HULLS.get(hull) or resolve_hull(hull)
+    if not spec:
+        return None, None
+    if hull == "Urchin":
+        return "report", "the Urchin's riding is its modes' scene fields, not a drive asset (reported)"
+    if spec.get("why"):
+        return "report", spec["why"]
+    if "policy" in spec and policy_off_in_mode(spec["policy"], mode):
+        return "report", f"{spec['policy']} is switched off in {mode} (disabledInModes)"
+    return "drives", None
+
+
+# Modes whose AI chases a RIVAL rather than a crystal (their controllers' SetExternalTargetProvider); every other mode
+# without rings is measured against the nearest crystal, which is what AIPilot's own seeking flies at.
+RIVAL_TARGET_MODES = {"DogFight", "Bends", "Undertow", "Joust", "GrizzlyCharge", "Broadside"}
+
+
 # The C# ranges ([Range] / [Min]) every written value is held inside.
 RANGES = {
     "alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
     "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 6.0),
     "steeringShareOfPlateau": (0.1, 1.0), "minHoldSeconds": (0.0, 5.0), "minRestSeconds": (0.0, 5.0),
     "minRearmSeconds": (0.0, 5.0), "spendAtCharge01": (0.05, 1.0), "cornerSpeed": (100.0, 1200.0),
-    "BoostStickBand": (0.0, 1.0), "YastriStickBand": (0.0, 1.0),
+    "BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0),
     # the Stoat's autopilot (StoatModeActionSO, StoatDipoleConfigSO, StoatSlingConfigSO)
     "autopilotTimeModeDegrees": (0.0, 180.0), "autopilotModeIntervalSeconds": (0.5, 20.0),
     "autopilotHold01": (0.0, 1.0), "autopilotMinDistance": (0.0, 2000.0), "autopilotIntervalSeconds": (0.0, 20.0),
     "autopilotMinHoldSeconds": (0.0, 3.0), "autopilotMaxHoldSeconds": (1.0, 60.0), "autopilotMaxOrbitDegrees": (0.0, 1080.0),
     "aiSlingMinTurnDegrees": (0.0, 180.0), "aiSlingMinDistance": (0.0, 2000.0), "aiSlingIntervalSeconds": (0.5, 20.0),
     "aiReleaseConeDegrees": (1.0, 90.0),
+    # the generic policies (POLICY_CLASSES)
+    "ringAlignDegrees": (0.5, 10.0), "ringStickBand": (0.0, 1.0), "minSecondsBetweenPellets": (0.0, 5.0),
+    "dashCooldownSeconds": (0.2, 10.0),
+    "plantMinTurnDegrees": (0.0, 180.0), "plantMinDistance": (0.0, 2000.0), "releaseConeDegrees": (1.0, 90.0),
+    "maxPlantSeconds": (0.2, 20.0), "slingIntervalSeconds": (0.0, 20.0),
+    "aimedLaunch": (0, 1), "aimedHoldSeconds": (0.0, 20.0),   # ints keep the bool a 0 / 1 in the YAML
+    "rocketMinRange": (0.0, 2000.0), "rocketMaxRange": (1.0, 2000.0), "rocketAimDegrees": (0.0, 45.0),
 }
+
+
+# Floors a learned value never goes under in one mode, each measured offline. Breakwater's Sparrow: a boosted hull that lets
+# go under 0.9 s from a station reaches it too fast to line up on the 18 u eye and clips the danger weave
+# (switchback_dolphin_sim.py --mode Breakwater, 2026-10-26); people hold the boost all race and steer it by hand.
+FLOORS = {("Sparrow", "Breakwater"): {"releaseRunwaySeconds": 1.25}}
+
+
+def apply_floors(hull, mode, learned):
+    for field, floor in FLOORS.get((hull, mode), {}).items():
+        if field in learned and learned[field] < floor:
+            learned[field] = floor
+    return learned
 
 
 def clamp(key, v):
@@ -104,6 +361,14 @@ def pct(vals, q):
     return vals[lo] + (vals[hi] - vals[lo]) * (k - lo)
 
 
+def yaw_off_nose(fwd, up, to):
+    """The target's bearing off the nose on the hull's own horizontal, in degrees: StoatSlingMath.TryAutopilotSide's
+    |atan2(local.x, local.z)|, with local.x along the hull's right (Unity's up x forward) and local.z along its nose."""
+    right = (up[1] * fwd[2] - up[2] * fwd[1], up[2] * fwd[0] - up[0] * fwd[2], up[0] * fwd[1] - up[1] * fwd[0])
+    x, z = sum(a * b for a, b in zip(to, right)), sum(a * b for a, b in zip(to, fwd))
+    return abs(math.degrees(math.atan2(x, z))) if abs(x) + abs(z) > 1e-9 else 0.0
+
+
 def angle(a, b):
     la, lb = math.sqrt(sum(x * x for x in a)), math.sqrt(sum(x * x for x in b))
     if la < 1e-9 or lb < 1e-9:
@@ -117,6 +382,17 @@ def guid(key):
 
 # ---------------------------------------------------------------- one flight -> samples the AI's way
 
+def ring_index(k, n, target):
+    """The ring a pilot on k crossings flies at, for a course of n rings raced over target crossings
+    (GateRaceController.RingIndexFor): a lapped course loops (Regatta: 24 = 3 x 8); a course with ONE lead-in ring raced
+    1 + (n - 1) x laps times loops past it (Breakwater: 29 = 1 + 14 x 2, station 0 once); an open course is in order."""
+    if n <= 1:
+        return 0
+    if target > n and target % n != 0 and (target - 1) % (n - 1) == 0:
+        return 0 if k == 0 else 1 + (k - 1) % (n - 1)
+    return k % n
+
+
 def rings_of(f):
     """{ring index: (position, radius)} from the flight's own ringList, else the course generator's rings."""
     rl = f.get("ringList") or []
@@ -127,36 +403,162 @@ def rings_of(f):
     return {i: (tuple(g["p"]), g["r"]) for i, g in enumerate(C["gates"])} if C else {}
 
 
+def nearest(p, flat, stride):
+    """The nearest point of a flat [x, y, z, ...] * n list, or None."""
+    best, bd = None, 1e18
+    for k in range(0, len(flat) - 2, stride):
+        q = (flat[k], flat[k + 1], flat[k + 2])
+        d = sum((a - b) ** 2 for a, b in zip(p, q))
+        if d < bd:
+            best, bd = q, d
+    return best
+
+
+def mouth_of(f):
+    """The course's mouth radius (the median ring radius of the flight's ringList, to 0.1 u), or None without one."""
+    radii = sorted(r[7] for r in (f.get("ringList") or []) if len(r) > 7)
+    return round(radii[len(radii) // 2], 1) if radii else None
+
+
+def on_current_course(flights):
+    """The flights flown on the newest course of their intensity: those whose mouth matches the newest flight's. A
+    retuned ladder (Switchback's I2 mouth went from 28 to 48 u and its I4 from 4.3 to 20 on 2026-10-26) is a different
+    race, so an intensity's own variant is never learned from the course it replaced. Flights without a ringList stay."""
+    if not flights:
+        return flights
+    newest = max(flights, key=lambda fs: (str(fs[0].get("date") or ""), fs[0].get("name") or ""))
+    mouth = mouth_of(newest[0])
+    return [fs for fs in flights if mouth is None or mouth_of(fs[0]) in (None, mouth)]
+
+
+# A mode whose course FAMILY changed learns its drives from the shipped family only. Switchback flew five "fun types"
+# side by side (Yash 2026-10-28); since 2026-10-29 ("Keep Blast Run, remove all other intensity types") it is Blast Run
+# only, and Blast Run's block fields make a race about twice as long as a Classic one, so a Classic race teaches the
+# wrong drive. A flight names its family in "funType" (HumanFlightRecorder, 2026-10-29; Switchback now always records
+# "BlastRun"); one without it flew the old Classic ladder ("Baseline"), except the flights below, flown after the
+# families landed and before the recorder named them, that the sweep judged were Blast Run
+# (Docs/Reports/AI_LEARNING.md, 2026-10-29 03:30 UTC).
+SHIPPED_FAMILY = {"Switchback": "BlastRun"}
+UNTAGGED_FAMILY = "Baseline"
+JUDGED_FAMILY = {
+    # Yash, I2, on Ys-bleeding-edge 2d1e8726c6 (the Blast Run's block fields, 6b1bd2f5d1): 288 s where his I2 races take
+    # 120-144 s, and the AIs threaded 1.6 rings a minute where they thread 7-9.
+    "flight_Switchback_Dolphin_20261029_081918.json": "BlastRun",
+}
+
+
+def on_shipped_family(f):
+    """True when the flight raced its mode's shipped course family (or the mode has no families)."""
+    shipped = SHIPPED_FAMILY.get(f.get("mode"))
+    if not shipped:
+        return True
+    family = f.get("funType") or JUDGED_FAMILY.get(os.path.basename(f.get("name") or ""), UNTAGGED_FAMILY)
+    return family == shipped
+
+
+# A hull whose KIT changed learns from the races flown on the new kit only: a race on the old kit measures presses the
+# hull no longer makes the same way, and writing it would undo the owner's tuning of the new one. The Stoat's Time mode
+# became the trampoline (Yash, 8abe1fe83b, 2026-11-04 02:13 IST: no orbit, a white hole's soft shell you bounce off),
+# and the sweep held back the orbit races' numbers twice (Docs/Reports/AI_LEARNING.md, 2026-11-03 and 2026-11-06).
+# A race counts only when its BUILD had the kit: the flight's "gitCommitHash" (HumanFlightRecorder, 2026-11-07) must
+# contain "commit" (git merge-base --is-ancestor). The date cannot say it: the trampoline reached bleeding-edge two days
+# after it was committed and development still lacks it, so 9 Stoat Regatta races flown after the commit raced the orbit
+# (the review of 2026-11-07). A flight from before the recorder named its build is judged by hand in JUDGED_KIT (the
+# nearest load report before it names the build); any other flight without a known build is left out.
+# "unread": the fields the new kit's AI no longer reads, never written (StoatSlingExecutor.AutopilotTrampoline reads
+# aiSlingMinTurnDegrees, aiSlingMinDistance and aiSlingIntervalSeconds, and its press squeezes at autopilotHold01; it
+# presses and lets go at once, so it has no release cone).
+KIT_SINCE = {
+    "Stoat": {"commit": "8abe1fe83b", "kit": "the trampoline (8abe1fe83b)",
+              "unread": {"StoatSlingConfig": ("aiReleaseConeDegrees",)}},
+}
+JUDGED_KIT = {
+    # Yash, I3, 2026-11-07 02:08 IST: the nearest Slingshot load before it is on Ys-bleeding-edge after 8abe1fe83b, and
+    # its presses swept 129 deg where the orbit races' swept 54-81.
+    "flight_Slingshot_Stoat_20261107_020837.json": True,
+}
+_KIT_CACHE = {}
+
+
+def build_has(commit, build):
+    """True / False when the build is known to contain / lack the commit; None when this clone cannot tell."""
+    if not build or build == "unknown":
+        return None
+    key = (commit, build)
+    if key not in _KIT_CACHE:
+        import subprocess
+        git = lambda *a: subprocess.run(["git", "-C", REPO, *a], capture_output=True, text=True).returncode
+        if git("cat-file", "-e", f"{build}^{{commit}}") != 0 or git("cat-file", "-e", f"{commit}^{{commit}}") != 0:
+            _KIT_CACHE[key] = None
+        else:
+            _KIT_CACHE[key] = git("merge-base", "--is-ancestor", commit, build) == 0
+    return _KIT_CACHE[key]
+
+
+def on_current_kit(f):
+    """True when the flight was flown on a build with its hull's current kit (or the hull's kit never changed)."""
+    kit = KIT_SINCE.get(f.get("hull"))
+    if not kit:
+        return True
+    has = build_has(kit["commit"], f.get("gitCommitHash"))
+    if has is not None:
+        return has
+    return bool(JUDGED_KIT.get(os.path.basename(f.get("name") or "")))
+
+
+def is_race(f):
+    """A race: its flight carries the course's rings (or is Regatta, whose old flights have the course generator)."""
+    return bool(f.get("ringList")) or f.get("mode") == "Regatta"
+
+
 def samples_of(f):
-    """Each sample with the AI's own measures. None when the flight cannot be read that way."""
+    """Each sample with the AI's own measures. None when the flight cannot be read that way. A race measures against the
+    next ring; any other mode against the nearest crystal, or the nearest rival in a duel (RIVAL_TARGET_MODES)."""
     cols = f.get("columns") or []
     ix = {c: i for i, c in enumerate(cols)}
-    if not all(k in ix for k in ("t", "x", "y", "z", "speed", "xSum", "ySum", "rings")):
+    if not all(k in ix for k in ("t", "x", "y", "z", "speed", "xSum", "ySum")):
         return None
-    rings = rings_of(f)
-    if not rings:
-        return None
-    n = len(rings)
+    if is_race(f):
+        if "rings" not in ix:
+            return None
+        rings = rings_of(f)
+        if not rings:
+            return None
+    else:
+        rings = None
+        pool = f.get("rivals") if f.get("mode") in RIVAL_TARGET_MODES else f.get("crystals")
+        stride = 4
+        if not pool:
+            return None
+    n = len(rings) if rings else 1
     has_course = all(k in ix for k in ("cx", "cy", "cz"))
     boost_meter = f.get("boostMeter", -1)
     meter = f"m{boost_meter}" if isinstance(boost_meter, int) and 0 <= boost_meter <= 3 else None
     out = []
-    for r in f.get("samples") or []:
+    for j, r in enumerate(f.get("samples") or []):
         g = lambda k, d=0.0: float(r[ix[k]]) if k in ix and ix[k] < len(r) and r[ix[k]] is not None else d
         p = (g("x"), g("y"), g("z"))
-        ring = rings.get(int(g("rings")) % n)
-        if ring is None:
-            continue
-        to = tuple(a - b for a, b in zip(ring[0], p))
+        if rings:
+            ring = rings.get(ring_index(int(g("rings")), n, int(f.get("raceTarget") or n)))
+            if ring is None:
+                continue
+            aim = ring[0]
+        else:
+            aim = nearest(p, pool[j] if j < len(pool) and pool[j] else [], stride)
+            if aim is None:
+                continue
+        to = tuple(a - b for a, b in zip(aim, p))
         course = (g("cx"), g("cy"), g("cz")) if has_course else (g("fx"), g("fy"), g("fz"))
         dist = math.sqrt(sum(x * x for x in to))
         speed = g("speed")
         fwd = (g("fx"), g("fy"), g("fz"))
+        up = (g("ux"), g("uy", 1.0), g("uz"))
         out.append({
-            "nose": angle(fwd, to), "dist": dist, "fwd": fwd, "trig": max(g("lt"), g("rt")), "tm": int(g("timeMode", -1)),
+            "nose": angle(fwd, to), "noseYaw": yaw_off_nose(fwd, up, to), "dist": dist, "fwd": fwd, "trig": max(g("lt"), g("rt")), "tm": int(g("timeMode", -1)),
             "t": g("t"), "angle": angle(course, to), "stick": max(abs(g("xSum")), abs(g("ySum"))),
             "steer": abs(g("xSum")) + abs(g("ySum")) + abs(g("yDiff")), "yaw": g("xSum"),
             "runway": dist / max(speed, 1.0), "speed": speed, "ring": int(g("rings")), "state": int(g("state")), "held": g("held") > 0.5,
+            "throttle": g("throttle"), "lvT": g("lvT", -1.0),
             "lt": g("lt"), "rt": g("rt"), "meter": (min(1.0, max(0.0, g(meter, -1.0))) if meter and g(meter, -1.0) >= 0 else None),
         })
     return out
@@ -175,6 +577,137 @@ def episodes(S, bit, held):
             eps.append((S[start], S[i - 1], S[i - 1]["t"] - S[start]["t"], start, i - 1))
             last_end, start = i - 1, None
     return eps, rests
+
+
+def verb_episodes(f, S, spec, held=False):
+    """(episodes, rests) of a generic hull's verb in one flight (POLICY_CLASSES "signal"), in episodes()'s shape."""
+    kind = spec["signal"][0]
+    if kind == "bit":
+        return episodes(S, spec["signal"][1], held)
+    if not S:
+        return [], []
+    times = [s["t"] for s in S]
+
+    def at(t):
+        lo, hi = 0, len(times) - 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if times[mid] < t:
+                lo = mid + 1
+            else:
+                hi = mid
+        return lo
+
+    eps, starts = [], []
+    if kind == "press":
+        ie = spec.get("input")
+        if ie is None:
+            return [], []
+        down = None
+        for t, k, pressed in f.get("buttonEvents") or []:
+            if int(k) != ie:
+                continue
+            if pressed and down is None:
+                down = t
+            elif not pressed and down is not None:
+                a, b = at(down), at(t)
+                if S[a]["held"] == held:
+                    eps.append((S[a], S[b], max(0.0, t - down), a, b))
+                    starts.append(down)
+                down = None
+    elif kind == "doubletap":
+        last_edge, was = -1e9, False
+        for i, s_ in enumerate(S):
+            on = s_["throttle"] > THROTTLE_EDGE
+            if on and not was and s_["held"] == held:
+                if s_["t"] - last_edge <= SCARAB_DOUBLE_TAP + 0.1 and (s_["lvT"] < 0 or s_["lvT"] >= UPGRADE_LEVEL):
+                    eps.append((s_, s_, 0.0, i, i))
+                    starts.append(s_["t"])
+                    last_edge = -1e9          # a triple tap is not two dashes
+                else:
+                    last_edge = s_["t"]
+            was = on
+    rests = [b - a for a, b in zip(starts, starts[1:])]
+    return eps, rests
+
+
+# The Thresher's AIMED launch (ThresherSlingAIPolicySO.aimedLaunch, 2026-11-02): both triggers full as the plant lets go,
+# then the armed launch leaves within AIMED_WAIT s at the launch boost (ThresherConfig launchBoost x4.8); an unaimed let-go
+# leaves at the orbit's own speed. In Garrett's Thresher Time races the jump was x2.6-x25 within 0.05-1.35 s.
+FULL_PULL = 0.97            # ThresherConfig fullPull
+AIMED_JUMP, AIMED_JUMP_MIN, AIMED_WAIT = 2.5, 150.0, 3.0
+AIMED_SHARE = 0.5           # the person launches aimed on at least this share of plants: the AI does too
+
+
+def aimed_launch(S, ep):
+    """Did this plant episode (verb_episodes' shape) end in an AIMED launch?"""
+    rel, a, b = ep[1], ep[3], ep[4]
+    if S[max(a, b - 1)]["rt"] < FULL_PULL:
+        return False
+    v0 = rel["speed"]
+    for s in S[b:]:
+        if s["t"] - rel["t"] > AIMED_WAIT:
+            break
+        if s["speed"] >= max(AIMED_JUMP * v0, v0 + AIMED_JUMP_MIN):
+            return True
+    return False
+
+
+def measure_generic(flights, spec, held=False):
+    """measure_policy's numbers for a generic hull, the verb found per flight (presses are events, not samples)."""
+    eps, rests, within = [], [], []
+    aimed_eps, plain_eps = [], []
+    for f, S in flights:
+        e, r = verb_episodes(f, S, spec, held)
+        eps += e
+        rests += r
+        within += [x["steer"] for ep in e for x in S[ep[3]:ep[4] + 1]]
+        if spec.get("aimed"):
+            for ep in e:
+                (aimed_eps if aimed_launch(S, ep) else plain_eps).append(ep)
+    m = {"episodes": len(eps), "seconds": round(sum(e[2] for e in eps), 1)}
+    if len(eps) < MIN_EPISODES:
+        return m
+    eng, rel = [e[0] for e in eps], [e[1] for e in eps]
+    m["alignDegrees"] = pct([x["angle"] for x in eng], 0.8)
+    m["stickBand"] = pct([x["stick"] for x in eng], 0.8)
+    m["engageRunwaySeconds"] = pct([x["runway"] for x in eng], 0.2)
+    if spec["signal"][0] == "bit":
+        m["releaseAlignDegrees"] = pct([x["angle"] for x in rel], 0.5)
+        m["releaseStickBand"] = pct([x["stick"] for x in rel], 0.5)
+        m["releaseRunwaySeconds"] = pct([x["runway"] for x in rel], 0.5)
+        m["minHoldSeconds"] = pct([e[2] for e in eps], 0.1)
+    m["minRestSeconds"] = pct(rests, 0.1) if rests else None
+    # Threshold measures (a verb started once the target is AT LEAST this far off / this far away) and the let-go.
+    m["engageAngleLow"] = pct([x["angle"] for x in eng], 0.2)
+    m["engageDistanceLow"] = pct([x["dist"] for x in eng], 0.2)
+    m["releaseAngleMedian"] = pct([x["angle"] for x in rel], 0.5)
+    m["holdHigh"] = pct([e[2] for e in eps], 0.95)
+    if spec.get("aimed"):
+        m["aimedShare"] = round(len(aimed_eps) / len(eps), 2)
+        m["aimedLaunch"] = 1 if m["aimedShare"] >= AIMED_SHARE else 0
+        if len(aimed_eps) >= 3:
+            m["aimedHoldMedian"] = pct([e[2] for e in aimed_eps], 0.5)
+        if m["aimedLaunch"]:
+            # An aimed let-go ARMS the launch (the solver leaves later, from the point facing the aim), so its angle is
+            # not where the hull leaves, and a person who launches aimed lets go plain only to brake or to abort (Garrett's
+            # six in Thresher Time: a 103 degree median, LT taps with the winch slack). Neither is the plain sling's cone,
+            # so it is not learned from them: the variant keeps the one it has (the 62.8 learned before 2026-11-02 came
+            # from his arms and was reset to the base's 15).
+            m["releaseAngleMedian"] = None
+    return m
+
+
+def completed(f):
+    """A race finished, or a match without rings that ran to its end (ended "race over"; flights before the recorder's
+    2026-10-24 fix called every match without rings "left", so one of a minute or more counts too)."""
+    from learn_from_flights import finished_of
+    if is_race(f):
+        return finished_of(f)
+    if f.get("result") or f.get("ended") == "race over":
+        return True
+    rows = f.get("samples") or []
+    return bool(rows) and "left" in str(f.get("ended")) and (rows[-1][0] - rows[0][0]) >= 60.0
 
 
 # ---------------------------------------------------------------- what each hull's numbers are, measured
@@ -234,8 +767,21 @@ def measure_stoat(S, held=False):
                           often you press, and how far round you let it carry you (heading swept while held)
       StoatSlingConfig  - Time mode's catch sling: the turn and distance you sling at, how often, your squeeze, and
                           where the ring is when you let go"""
+    # S may join several flights; each restarts its clock, so a "t" that goes back starts a new flight (seg): an open
+    # press closes at the flight's end and no gap or switch is measured across two flights (a gap there is negative).
+    seg = [0] * len(S)
+    for i in range(1, len(S)):
+        seg[i] = seg[i - 1] + (1 if S[i]["t"] < S[i - 1]["t"] else 0)
     eps, start, peak, swept = [], None, 0.0, 0.0
+
+    def close(end):
+        eps.append({"press": S[start], "release": S[end], "dur": S[end]["t"] - S[start]["t"], "peak": peak,
+                    "swept": swept, "tm": S[start]["tm"], "seg": seg[start]})
+
     for i, s in enumerate(S):
+        if start is not None and seg[i] != seg[start]:
+            close(i - 1)
+            start = None
         on = s["trig"] > TRIGGER_ON and s["held"] == held
         if on and start is None:
             start, peak, swept = i, s["trig"], 0.0
@@ -243,14 +789,17 @@ def measure_stoat(S, held=False):
             peak = max(peak, s["trig"])
             swept += angle(S[i - 1]["fwd"], s["fwd"])
         elif start is not None:
-            eps.append({"press": S[start], "release": S[i - 1], "dur": S[i - 1]["t"] - S[start]["t"], "peak": peak,
-                        "swept": swept, "tm": S[start]["tm"]})
+            close(i - 1)
             start = None
-    switches = [S[i] for i in range(1, len(S)) if S[i]["held"] == held and S[i]["tm"] != S[i - 1]["tm"] and S[i - 1]["tm"] >= 0]
+    if start is not None:
+        close(len(S) - 1)
+    # timeMode: 0 Mass, 1 Time (the catch sling), 2 Drive (the warp pair, its own mode: its squeezes are not slings)
+    switches = [dict(S[i], seg=seg[i]) for i in range(1, len(S))
+                if seg[i] == seg[i - 1] and S[i]["held"] == held and S[i]["tm"] != S[i - 1]["tm"] and S[i - 1]["tm"] >= 0]
     into_time = [s for s in switches if s["tm"] == 1]
 
     def gaps(evts):
-        return [b["t"] - a["t"] for a, b in zip(evts, evts[1:])]
+        return [b["t"] - a["t"] for a, b in zip(evts, evts[1:]) if a.get("seg") == b.get("seg")]
 
     out = {"StoatModeAction": {"switches": len(switches)}, "StoatDipoleConfig": {}, "StoatSlingConfig": {}}
     if len(into_time) >= MIN_EPISODES // 2 + 1:
@@ -263,7 +812,7 @@ def measure_stoat(S, held=False):
         out["StoatDipoleConfig"].update({
             "autopilotHold01": statistics.median(e["peak"] for e in mass),
             "autopilotMinDistance": pct([e["press"]["dist"] for e in mass], 0.2),
-            "autopilotIntervalSeconds": pct(gaps([e["press"] for e in mass]), 0.1),
+            "autopilotIntervalSeconds": pct(gaps([dict(e["press"], seg=e["seg"]) for e in mass]), 0.1),
             "autopilotMinHoldSeconds": pct([e["dur"] for e in mass], 0.1),
             "autopilotMaxHoldSeconds": pct([e["dur"] for e in mass], 0.95),
             "autopilotMaxOrbitDegrees": pct([e["swept"] for e in mass], 0.9),
@@ -273,15 +822,17 @@ def measure_stoat(S, held=False):
     if len(sling) >= MIN_EPISODES:
         out["StoatSlingConfig"].update({
             "autopilotHold01": statistics.median(e["peak"] for e in sling),
-            "aiSlingMinTurnDegrees": pct([e["press"]["nose"] for e in sling], 0.2),
+            # the bearing TryAutopilotSide gates on: off the nose on the hull's horizontal, not the 3D angle (a ring
+            # above the nose is no turn to it)
+            "aiSlingMinTurnDegrees": pct([e["press"].get("noseYaw", e["press"]["nose"]) for e in sling], 0.2),
             "aiSlingMinDistance": pct([e["press"]["dist"] for e in sling], 0.2),
-            "aiSlingIntervalSeconds": pct(gaps([e["press"] for e in sling]), 0.1),
+            "aiSlingIntervalSeconds": pct(gaps([dict(e["press"], seg=e["seg"]) for e in sling]), 0.1),
             "aiReleaseConeDegrees": statistics.median(e["release"]["nose"] for e in sling),
         })
     return out
 
 
-def autopilot_triggers(yaw, stick, boost_band, yastri_band):
+def autopilot_triggers(yaw, stick, boost_band, yawstery_band):
     """MantaAnalogTurnBoostExecutor.AutopilotTriggers, line for line."""
     if boost_band <= 0:
         hold = 0.0
@@ -291,8 +842,8 @@ def autopilot_triggers(yaw, stick, boost_band, yastri_band):
         hold = min(1.0, max(0.0, 1 - (abs(stick) - boost_band) / max(1e-4, 1 - boost_band)))
     lt = rt = hold
     a = abs(yaw)
-    if a > yastri_band:
-        excess = min(1.0, max(0.0, (a - yastri_band) / max(1e-4, 1 - yastri_band)))
+    if a > yawstery_band:
+        excess = min(1.0, max(0.0, (a - yawstery_band) / max(1e-4, 1 - yawstery_band)))
         outer = min(1.0, hold + excess)
         if yaw > 0:
             rt = outer
@@ -311,7 +862,7 @@ def measure_manta(S, held=False):
     best_b = min(grid, key=lambda b: sum((min(s["lt"], s["rt"]) - autopilot_triggers(0, s["stick"], b, 1.0)[0]) ** 2 for s in pts))
     best_y = min([y for y in grid if y >= best_b] or [1.0],
                  key=lambda y: sum(((s["rt"] - s["lt"]) - (lambda t: t[1] - t[0])(autopilot_triggers(s["yaw"], s["stick"], best_b, y))) ** 2 for s in pts))
-    m["BoostStickBand"], m["YastriStickBand"] = best_b, best_y
+    m["BoostStickBand"], m["YawsteryStickBand"] = best_b, best_y
     m["meanSoar"] = statistics.mean(min(s["lt"], s["rt"]) for s in pts)
     return m
 
@@ -338,32 +889,85 @@ def measure_urchin(f, S, held=False):
 
 # ---------------------------------------------------------------- learning per hull
 
-def learn_hull(hull, flights):
-    """flights: [(flight, samples)]. The person's numbers from the fastest MIN_FINISHED finished races, the AI's
-    (held) from all of them, and what would be written."""
-    from learn_from_flights import finished_of
+def fastest_each_intensity(done):
+    """Finished races, fastest first, but the fastest race of EVERY intensity before the second of any. Times are only
+    comparable on one course: ranked plainly, the easiest intensity's races always win. In a PER_INTENSITY_MODES mode the
+    mode-wide variant is what the intensities without their own fly, and learned that way it was how a person flies I1 -
+    in Switchback, a full-charge spend that misses I4's 20 u mouths (2026-10-26). Only those modes rank this way."""
+    seen, firsts, rest = set(), [], []
+    for fs in done:   # already fastest first
+        n = int(fs[0].get("intensity") or 0)
+        (rest if n in seen else firsts).append(fs)
+        seen.add(n)
+    return firsts + rest
+
+
+def learn_hull(hull, flights, each_intensity=False):
+    """flights: [(flight, samples)]. The person's numbers from the fastest MIN_FINISHED finished races (each_intensity:
+    the fastest of every intensity first, fastest_each_intensity), the AI's (held) from all of them, and what would be
+    written."""
     spec = HULLS[hull]
-    done = sorted([fs for fs in flights if finished_of(fs[0])], key=lambda fs: fs[0].get("raceSeconds") or 1e9)
-    used = done[:MIN_FINISHED]
+    done = sorted([fs for fs in flights if completed(fs[0])], key=lambda fs: fs[0].get("raceSeconds") or 1e9)
+    # A race learns from its fastest MIN_FINISHED. A match without rings has no time to rank by: it learns from the
+    # matches the person WON (the flight's "result", recorded since 2026-10-26) once there are MIN_FINISHED of them,
+    # else from every complete one.
+    if all(is_race(f) for f, _ in done):
+        used = (fastest_each_intensity(done) if each_intensity else done)[:MIN_FINISHED]
+    else:
+        won = [fs for fs in done if (fs[0].get("result") or {}).get("youWon")]
+        used = won if len(won) >= MIN_FINISHED else done
     every = [s for _, S in flights for s in S]
     learned, person, ai, why = {}, {}, {}, None
     if hull == "Manta":
         person = measure_manta([s for _, S in used for s in S])
         ai = measure_manta(every, held=True)
-        for k in ("BoostStickBand", "YastriStickBand"):
-            if k in person:
-                learned[k] = clamp(k, person[k])
+        if person.get("meanSoar") is not None and person["meanSoar"] < MIN_MEAN_SOAR:
+            # A person who never Soars here fits a degenerate band that would switch the AI's Soar off.
+            why = f"too little Soar in the races (mean {person['meanSoar']:.2f}, need {MIN_MEAN_SOAR})"
+        else:
+            for k in ("BoostStickBand", "YawsteryStickBand"):
+                if k in person:
+                    learned[k] = clamp(k, person[k])
     elif hull == "Urchin":
         person = {"flights": len(flights)}
         rides = [measure_urchin(f, S) for f, S in flights]
         person["rideShare"] = pct([r["rideShare"] for r in rides], 0.5)
         person["ownRailShare"] = pct([r["ownRailShare"] for r in rides], 0.5)
         why = "report only: the Urchin's Regatta riding is RegattaController's (its scene fields), not a drive asset"
+    elif "signal" in spec:
+        if spec.get("why"):
+            why = spec["why"]
+        elif policy_off_in_mode(spec["policy"], MODE):
+            why = f"{spec['policy']} is switched off in {MODE} (its disabledInModes): the AI never runs this drive here"
+        person = measure_generic(used, spec)
+        ai = measure_generic(flights, spec, held=True)
+        for field, key in spec["fields"].items():
+            if person.get(key) is not None:
+                learned[field] = clamp(field, person[key])
+        extra = spec.get("extra")
+        if extra and extra.get("input") is not None:
+            mine = [(f, S) for f, S in flights]
+            pr, ai_pr = measure_presses(mine, extra), measure_presses(flights, extra, held=True)
+            person.update({"rocket " + k: v for k, v in pr.items()})
+            ai.update({"rocket " + k: v for k, v in ai_pr.items()})
+            for field, key in extra["fields"].items():
+                if pr.get(key) is not None:
+                    learned[field] = clamp(field, pr[key])
+            if "rocketMinRange" in learned and "rocketMaxRange" in learned:
+                learned["rocketMaxRange"] = max(learned["rocketMaxRange"], learned["rocketMinRange"] + 1.0)
+        if "releaseAlignDegrees" in learned:   # hysteresis, as below
+            learned["releaseAlignDegrees"] = max(learned["releaseAlignDegrees"], learned.get("alignDegrees", 0))
+            learned["releaseStickBand"] = max(learned.get("releaseStickBand", 0), learned.get("stickBand", 0))
+            learned["releaseRunwaySeconds"] = min(learned["releaseRunwaySeconds"], learned.get("engageRunwaySeconds", 6))
+    elif "verb" in spec and "bit" not in spec and hull not in ("Manta", "Urchin", "Stoat"):
+        why = spec.get("why") or f"no measure for {spec.get('class')} yet"
     elif hull == "Stoat":
         person = measure_stoat([s for _, S in used for s in S])
         ai = measure_stoat(every, held=True)
+        unread = (KIT_SINCE.get(hull) or {}).get("unread", {})
         for asset, m in person.items():
-            got = {k: clamp(k, v) for k, v in m.items() if k in RANGES and v is not None}
+            got = {k: clamp(k, v) for k, v in m.items()
+                   if k in RANGES and v is not None and k not in unread.get(asset, ())}
             if got:
                 learned[asset] = got
     else:
@@ -396,8 +1000,13 @@ def learn_hull(hull, flights):
             learned["releaseAlignDegrees"] = max(learned["releaseAlignDegrees"], learned.get("alignDegrees", 0))
             learned["releaseStickBand"] = max(learned.get("releaseStickBand", 0), learned.get("stickBand", 0))
             learned["releaseRunwaySeconds"] = min(learned["releaseRunwaySeconds"], learned.get("engageRunwaySeconds", 6))
+    apply_floors(hull, MODE, learned)
+    if why is None and hull in REPORT_ONLY:
+        why = "report only: " + REPORT_ONLY[hull]
+    if why is None and (hull, MODE) in REPORT_ONLY_MODES:
+        why = "report only: " + REPORT_ONLY_MODES[(hull, MODE)]
     if why is None and len(done) < MIN_FINISHED:
-        why = f"{len(done)} finished race(s); nothing is written below {MIN_FINISHED}"
+        why = f"{len(done)} finished race(s) or complete match(es); nothing is written below {MIN_FINISHED}"
     elif why is None and not learned:
         why = f"too few {spec['verb']} moments in the fastest {MIN_FINISHED} races (need {MIN_EPISODES})"
     return {"hull": hull, "flights": len(flights), "finished": len(done), "used": [f.get("name", "") for f, _ in used],
@@ -425,13 +1034,25 @@ def ensure_folder():
                               "DefaultImporter:\n  externalObjects: {}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
 
-def copy_with(base_path, name, learned):
-    """A Regatta copy of an asset: its own text, renamed, with only the fields it HAS overridden."""
-    base = open(base_path, encoding="utf-8").read()
+def copy_with(base_path, name, learned, fallback=None):
+    """A mode copy of an asset: its own text, renamed, with only the fields it HAS overridden. An existing variant is
+    the start, so a field someone set there by hand (SparrowAIBoostPolicy_Breakwater's rocket) is kept; else the
+    fallback variant (an intensity's variant starts from its mode's), else the base."""
+    existing = os.path.join(OUT_DIR, name + ".asset")
+    start = next((c for c in (existing, fallback and os.path.join(OUT_DIR, fallback + ".asset")) if c and os.path.exists(c)), base_path)
+    base = open(start, encoding="utf-8").read()
     text = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {name}", base, count=1)
     for k, v in learned.items():
-        text = re.sub(rf"(?m)^  {re.escape(k)}: [^\n]*$", f"  {k}: {v}", text, count=1)
+        text, n = re.subn(rf"(?m)^  {re.escape(k)}: [^\n]*$", f"  {k}: {v}", text, count=1)
+        if not n:
+            UNWRITTEN.add((name, k))
     return os.path.join(OUT_DIR, name + ".asset"), text
+
+
+# (variant, field) a learner measured but could not write: the asset does not serialize the field (a field still at
+# its code default is not in the YAML until Unity saves it). Reported, so a number never vanishes silently
+# (StoatDipoleConfig.autopilotMaxOrbitDegrees, 2026-10-26).
+UNWRITTEN = set()
 
 
 def variant_texts(hull, learned):
@@ -442,27 +1063,61 @@ def variant_texts(hull, learned):
     return [variant_text(hull, learned)]
 
 
-def variant_text(hull, learned):
-    """(path, text) of the hull's Regatta variant: its own asset with the learned fields, or the Manta's tuning."""
+def variant_text(hull, learned, intensity=None):
+    """(path, text) of the hull's Regatta variant: its own asset with the learned fields, or the Manta's tuning.
+    intensity: the policy's <policy>_<mode>_I<n> variant instead (policy hulls only)."""
     spec = HULLS[hull]
     if "policy" in spec:
-        return copy_with(os.path.join(POLICY_DIR, spec["policy"] + ".asset"), f"{spec['policy']}_{MODE}", learned)
+        name = f"{spec['policy']}_{MODE}"
+        if intensity:
+            return copy_with(os.path.join(POLICY_DIR, spec["policy"] + ".asset"), f"{name}_I{intensity}", learned, fallback=name)
+        return copy_with(os.path.join(POLICY_DIR, spec["policy"] + ".asset"), name, learned)
     name = f"{spec['tuning']}_{MODE}"
     script_guid = re.search(r"guid: ([0-9a-f]{32})", open(MANTA_SCRIPT + ".meta").read()).group(1)
     body = "".join(f"  {k}: {v}\n" for k, v in learned.items())
     return os.path.join(OUT_DIR, name + ".asset"), asset_header(script_guid, name) + body
 
 
-def write_variant(hull, learned):
+# A variant that holds a TRAINED drive (a search's winner, written by promote_trained_drives.py for the AI plan's
+# time-arcade step, c39317a6b6 on 2026-11-08) is never overwritten by numbers learned from people's races: the sweep's
+# relearn of 2026-11-10 would have put the imitation numbers back over four of them. Its learned numbers are reported.
+HELD_BACK = []
+
+
+def promoted_variants():
+    """The variant names promote_trained_drives.py owns (its ROWS), or none when it is not in this checkout."""
+    try:
+        import promote_trained_drives
+        return set(promote_trained_drives.ROWS)
+    except Exception:   # a checkout without it, or its shared results folder missing: nothing is promoted
+        return set()
+
+
+def write_variant(hull, learned, intensity=None):
     ensure_folder()
     paths = []
-    for path, text in variant_texts(hull, learned):
+    promoted = promoted_variants()
+    for path, text in ([variant_text(hull, learned, intensity)] if intensity else variant_texts(hull, learned)):
+        if os.path.basename(path)[:-len(".asset")] in promoted:
+            HELD_BACK.append(os.path.basename(path))
+            continue
         open(path, "w", encoding="utf-8").write(text)
         meta = path + ".meta"
         if not os.path.exists(meta):
             open(meta, "w").write(native_meta(guid("asset/AIBoostPolicies/" + os.path.basename(path))))
         paths.append(path)
     return paths
+
+
+def base_asset_of(variant_file):
+    """The base asset of a variant: <asset>_<mode>.asset, any mode, or <asset>_<mode>_I<n>.asset (an intensity's)."""
+    stem = re.sub(r"_I\d+$", "", variant_file[:-len(".asset")])
+    return stem[:stem.rfind("_")] + ".asset"
+
+
+# A mode variant whose engage runway is this never engages: the mode stands the hull's own boost policy down because
+# something else drives Speed (BrittleStarAIBoostPolicy_BrittleStarTime, whose BrittleStarTimeCoach is the only writer).
+STAND_DOWN_RUNWAY_S = 999.0
 
 
 def check():
@@ -477,7 +1132,7 @@ def check():
         text = open(os.path.join(OUT_DIR, fn), encoding="utf-8").read()
         if not os.path.exists(os.path.join(OUT_DIR, fn + ".meta")):
             problems.append(f"{fn}: no .meta")
-        base = fn[:fn.rfind("_")] + ".asset"   # <asset>_<mode>.asset, any mode
+        base = base_asset_of(fn)
         base_path = next((os.path.join(d, base) for d in (POLICY_DIR, STOAT_DIR) if os.path.exists(os.path.join(d, base))), None)
         if base_path:
             bt = open(base_path, encoding="utf-8").read()
@@ -487,6 +1142,8 @@ def check():
             if extra:
                 problems.append(f"{fn}: fields its base does not have: {sorted(extra)}")
         for k, v in re.findall(r"(?m)^  (\w+): ([-0-9.eE]+)$", text):
+            if k == "engageRunwaySeconds" and float(v) == STAND_DOWN_RUNWAY_S:
+                continue                       # a mode that stands the hull's boost down (BrittleStarTime: its coach drives)
             if k in RANGES and not RANGES[k][0] <= float(v) <= RANGES[k][1]:
                 problems.append(f"{fn}: {k} {v} outside {RANGES[k]}")
     for p in problems:
@@ -504,9 +1161,18 @@ def fmt(v):
 def report(results, wrote):
     lines = []
     for R in results:
-        lines.append(f"### {R['hull']} ({HULLS[R['hull']]['verb']})\n")
+        lines.append(f"### {R['hull']}{' at ' + R['label'] + ' alone' if R.get('label') else ''} ({HULLS[R['hull']]['verb']})\n")
         lines.append(f"{R['flights']} editor flight(s), {R['finished']} finished; learned from: "
                      + (", ".join(os.path.basename(u) for u in R["used"]) or "-") + "\n")
+        if R.get("retired"):
+            lines.append(f"{R['retired']} more race(s) here were flown on a retired course (another mouth radius) and are "
+                         "left out; the variant already written stays until this course has its own.\n")
+        if R.get("old_kit"):
+            lines.append(f"{R['old_kit']} more race(s) here were flown on a build without {KIT_SINCE[R['hull']]['kit']} (or "
+                         "on one no record names) and are left out: they measure presses it no longer makes.\n")
+        if R.get("other_family"):
+            lines.append(f"{R['other_family']} more race(s) here were flown on another course family (one other than "
+                         f"{SHIPPED_FAMILY.get(MODE)}) and are left out: every family is its own world.\n")
         if R.get("intensities"):
             lines.append("By intensity (flights / finished): " + ", ".join(
                 f"I{i} {n} / {d}" for i, (n, d) in sorted(R["intensities"].items())) + "\n")
@@ -521,6 +1187,9 @@ def report(results, wrote):
                 lines.append(f"| `{k}` | {fmt(person.get(k))} | {fmt(ai.get(k))} | {fmt(learned.get(k))} |")
             lines.append("")
     lines.append("Written: " + (", ".join(os.path.relpath(p, REPO) for p in wrote) if wrote else "nothing") + ".")
+    if UNWRITTEN:
+        lines.append("\nNot written, the asset has no such serialized field (serialize it at its code default first): "
+                     + ", ".join(f"`{n}.{k}`" for n, k in sorted(UNWRITTEN)) + ".")
     return "\n".join(lines)
 
 
@@ -602,7 +1271,10 @@ def write_race_lines(learned):
 
 def run(sources, write):
     from learn_from_flights import parse
+    HULLS.update({h: v for h, v in all_hulls().items() if h not in HULLS})
     by_hull = {h: [] for h in HULLS}
+    other_family = {}
+    old_kit = {}
     parsed = []
     for name, text in sources:
         f, err = parse(name, text)
@@ -612,10 +1284,16 @@ def run(sources, write):
         if f.get("hull") not in HULLS:
             continue
         S = samples_of(f)
+        if not on_shipped_family(f):
+            other_family[f["hull"]] = other_family.get(f["hull"], 0) + 1
+            continue
+        if not on_current_kit(f):
+            old_kit[f["hull"]] = old_kit.get(f["hull"], 0) + 1
+            continue
         if S:
             by_hull[f["hull"]].append((f, S))
     if MODE == "Regatta":
-        lines, line_report = learn_race_lines(parsed)
+        lines, line_report = learn_race_lines([f for f in parsed if on_shipped_family(f) and on_current_kit(f)])
         print("race lines (where each hull crosses the rings; Resources/RaceLines):")
         for hull, r in line_report.items():
             print(f"  {hull}: {r}")
@@ -624,16 +1302,46 @@ def run(sources, write):
     from learn_from_flights import finished_of
     results = []
     for h, fl in by_hull.items():
-        if MODE != "Regatta" and not fl:
-            continue   # a hull this mode does not seat: no section
+        if not fl and not old_kit.get(h) and (MODE != "Regatta" or "signal" in HULLS[h] or HULLS[h].get("why")):
+            continue   # a hull with no flights here: no section
         R = learn_hull(h, fl)
+        R["other_family"] = other_family.get(h, 0)
+        R["old_kit"] = old_kit.get(h, 0)
         R["intensities"] = {}
         for f, _ in fl:
             n, d = R["intensities"].get(int(f.get("intensity") or 0), (0, 0))
-            R["intensities"][int(f.get("intensity") or 0)] = (n + 1, d + (1 if finished_of(f) else 0))
+            R["intensities"][int(f.get("intensity") or 0)] = (n + 1, d + (1 if completed(f) else 0))
         results.append(R)
+    if MODE in PER_INTENSITY_MODES:
+        # The mode-wide variant is what the intensities WITHOUT their own fly, so it learns from the fastest race of each
+        # intensity (fastest_each_intensity), not the three fastest overall, which are always the easiest intensity's.
+        for k, R in enumerate(results):
+            if "policy" in HULLS[R["hull"]] and by_hull.get(R["hull"]):
+                spread = learn_hull(R["hull"], by_hull[R["hull"]], each_intensity=True)
+                spread["intensities"] = R["intensities"]
+                spread["other_family"] = R["other_family"]
+                spread["old_kit"] = R["old_kit"]
+                results[k] = spread
     wrote = [p for R in results if write and R["learned"] for p in write_variant(R["hull"], R["learned"])]
+    if MODE in PER_INTENSITY_MODES:
+        for h, fl in by_hull.items():
+            if "policy" not in HULLS[h]:
+                continue
+            for i in sorted({int(f.get("intensity") or 0) for f, _ in fl} - {0}):
+                at_i = [(f, S) for f, S in fl if int(f.get("intensity") or 0) == i]
+                current = on_current_course(at_i)   # never the course a retuned ladder replaced
+                R = learn_hull(h, current)
+                R["hull"], R["label"] = h, f"I{i}"
+                R["retired"] = len(at_i) - len(current)
+                R["intensities"] = {}
+                results.append(R)
+                if write and R["learned"]:
+                    wrote += write_variant(h, R["learned"], intensity=i)
     text = report(results, wrote)
+    if HELD_BACK:
+        text += ("\nNot written: " + ", ".join(f"`{n}`" for n in sorted(set(HELD_BACK))) + " hold a trained drive "
+                 "(promote_trained_drives.py, the AI plan's searched winner); numbers learned from races never "
+                 "overwrite one. The learned numbers are in the tables above.\n")
     print(text)
     if write:
         doc = REPORT_DOC if MODE == "Regatta" else REPORT_DOC.replace("LEARNED_DRIVES", f"LEARNED_DRIVES_{MODE}")
@@ -650,9 +1358,104 @@ def run(sources, write):
 
 # ---------------------------------------------------------------- self-test
 
+def self_test_rocket_and_rings():
+    """ring_index on a lead-in course and the rocket's press measure (2026-10-26)."""
+    assert [ring_index(k, 15, 29) for k in (0, 1, 14, 15, 28)] == [0, 1, 14, 1, 14], "Breakwater: station 0 once, then 1-14 twice"
+    assert [ring_index(k, 8, 24) for k in (0, 7, 8, 23)] == [0, 7, 0, 7], "Regatta: three laps of eight"
+    assert base_asset_of("DolphinAIBoostPolicy_Switchback_I4.asset") == "DolphinAIBoostPolicy.asset", "intensity variant"
+    assert base_asset_of("SparrowAIBoostPolicy_Breakwater.asset") == "SparrowAIBoostPolicy.asset", "mode variant"
+    ring = lambda r: [[0, 0, 0, 0, 0, 0, 1, r], [1, 0, 0, 500, 0, 0, 1, r]]
+    old = [({"date": f"2026-10-26T01:0{i}", "name": f"old{i}", "ringList": ring(4.29)}, None) for i in range(3)]
+    new = [({"date": "2026-10-26T04:09", "name": "new", "ringList": ring(20.0)}, None)]
+    assert on_current_course(old + new) == new, "a retired ladder's races are left out of the intensity's variant"
+    assert on_current_course(old) == old, "no newer course: every race is the current one"
+    races = [({"intensity": i, "raceSeconds": t}, None) for i, t in ((1, 60), (1, 69), (1, 75), (2, 80), (4, 120))]
+    assert [fs[0]["raceSeconds"] for fs in fastest_each_intensity(races)][:3] == [60, 80, 120], \
+        "the mode's variant learns from the fastest race of each intensity, not three I1 races"
+    assert on_current_course(old + [({"date": "2026-10-27", "name": "bare"}, None)]) == old + [({"date": "2026-10-27", "name": "bare"}, None)], \
+        "a flight with no ringList never decides the course"
+    assert not on_shipped_family({"mode": "Switchback", "name": "a.json"}), "no funType: the retired Classic ladder"
+    assert not on_shipped_family({"mode": "Switchback", "name": "a.json", "funType": "Baseline"}), "a retired family"
+    assert on_shipped_family({"mode": "Switchback", "name": "a.json", "funType": "BlastRun"}), "the shipped family"
+    assert on_shipped_family({"mode": "Switchback", "name": "x/flight_Switchback_Dolphin_20261029_081918.json"}), \
+        "a judged Blast Run race without the field"
+    assert on_shipped_family({"mode": "Regatta", "name": "a.json", "funType": "BlastRun"}), \
+        "negative control: a mode without families keeps every race"
+    # The kit is the BUILD's (KIT_SINCE): 76c6835e69 is claude/regatta-overnight-balance, where Yash flew 8 Stoat Regatta
+    # races on 2026-11-06, two days after the trampoline was committed and without it; c459f4423f has it.
+    if build_has("8abe1fe83b", "c459f4423f") is not None:
+        assert on_current_kit({"hull": "Stoat", "gitCommitHash": "c459f4423f"}), "a build with the trampoline"
+        assert not on_current_kit({"hull": "Stoat", "gitCommitHash": "8abe1fe83b~1", "name": "x/flight_Slingshot_Stoat_20261107_020837.json"}), \
+            "a build without it, whatever the flight's date or name says"
+    assert not on_current_kit({"hull": "Stoat", "date": "2026-11-07 03:00:00", "name": "a.json"}), \
+        "a Stoat race with no known build cannot show it flew the trampoline"
+    assert not on_current_kit({"hull": "Stoat", "gitCommitHash": "unknown", "name": "a.json"}), "an unknown build is no build"
+    assert on_current_kit({"hull": "Stoat", "name": "x/flight_Slingshot_Stoat_20261107_020837.json"}), "a judged race"
+    assert on_current_kit({"hull": "Dolphin", "date": "2026-10-01 00:00:00"}), \
+        "negative control: a hull whose kit never changed keeps every race"
+    assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (0, 50, 100)) - 0.0) < 1e-6, "a ring above the nose is no turn"
+    assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (100, 0, 100)) - 45.0) < 1e-6, "a ring 45 deg to the right"
+    assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (-1, 0, -100)) - 180.0) < 1.0, "a ring behind is a full turn"
+    if promoted_variants():
+        assert "DolphinAIBoostPolicy_Switchback" in promoted_variants(), "the promoted Switchback drive is known"
+    assert coverage("Stoat", "Slingshot")[0] == "report", "the Stoat is not ready (Yash, 2026-11-10): reported, never written"
+    assert coverage("Serpent", "SerpentGulag")[0] == "report", "Serpent Gulag's marksman is reported, never written"
+    assert coverage("Serpent", "SerpentHood")[0] == "report" and coverage("Thresher", "Jackstraw")[0] == "report", \
+        "Hood's marksman and Jackstraw's hunter steer their AIs: reported, never written"
+    assert coverage("Thresher", "ThresherTime")[0] == "drives", "negative control: Thresher Time still learns"
+    assert coverage("Serpent", "SerpentTime")[0] == "drives", "negative control: Serpent Time still learns"
+    assert [ring_index(k, 20, 20) for k in (0, 19)] == [0, 19], "Switchback: open, in order"
+    S = [{"t": i * 0.1, "held": False, "dist": 100.0 + 10 * i, "nose": float(i % 10)} for i in range(100)]
+    events = [[i * 0.1, 2, 1] for i in range(0, 100, 10)] + [[i * 0.1 + 0.05, 2, 0] for i in range(0, 100, 10)]
+    events.sort()
+    extra = {"signal": ("press", "FireGunActionSO", "SkyBurst"), "input": 2}
+    m = measure_presses([({"buttonEvents": events}, S)], extra)
+    assert m["episodes"] == 10 and abs(m["pressDistLow"] - 190) < 1e-6 and abs(m["pressDistHigh"] - 910) < 1e-6, m
+    assert m["pressNoseMedian"] == 0.0, m
+    few = measure_presses([({"buttonEvents": events[:6]}, S)], extra)
+    assert "pressDistHigh" not in few, "under MIN_EPISODES presses nothing is learned"
+    self_test_aimed_launch()
+
+
+def self_test_aimed_launch():
+    """The Thresher's aimed launch (2026-11-02): found from the let-go's triggers and the boost's jump, and learned."""
+    S = [{"t": i * 0.1, "rt": 1.0, "speed": 200.0} for i in range(80)]
+    for s in S[25:35]:
+        s["speed"] = 900.0                       # the launch, 0.5 s after the let-go at sample 20
+    ep = (S[10], S[20], 1.0, 10, 20)
+    assert aimed_launch(S, ep), "both triggers full at the let-go, then the launch boost's jump: aimed"
+    assert not aimed_launch([dict(s, rt=0.0) for s in S], ep), "negative control: the winch not full is never aimed"
+    assert not aimed_launch([dict(s, speed=200.0) for s in S], ep), "negative control: no jump is a plain let-go"
+    late = [dict(s, speed=900.0 if s["t"] > 2.0 + AIMED_WAIT + 0.5 else 200.0) for s in S]
+    assert not aimed_launch(late, ep), "negative control: a jump long after the let-go is not this plant's"
+
+    def flight(aimed):
+        """Eight plants of 1.2 s every 5 s; the first `aimed` of them end in a launch 0.5 s after the let-go."""
+        S = [{"t": i * 0.1, "rt": 1.0, "speed": 200.0, "angle": 30.0, "stick": 0.2, "runway": 2.0, "dist": 400.0,
+              "steer": 0.2, "held": False} for i in range(420)]
+        events = []
+        for k in range(8):
+            events += [[5.0 * k, 2, 1], [5.0 * k + 1.2, 2, 0]]
+            if k < aimed:
+                for s in S[int(50 * k + 17):int(50 * k + 27)]:
+                    s["speed"] = 1000.0
+        return {"buttonEvents": events}, S
+
+    spec = {"signal": ("press", "ThresherActionSO", "Plant"), "input": 2, "aimed": True}
+    m = measure_generic([flight(7)], spec)
+    assert m["aimedLaunch"] == 1 and m["aimedShare"] == 0.88, m
+    assert abs(m["aimedHoldMedian"] - 1.2) < 1e-6, m
+    assert m["releaseAngleMedian"] is None, "an aimed launcher's let-gos are arms: the plain cone is not learned from them"
+    m = measure_generic([flight(0)], spec)
+    assert m["aimedLaunch"] == 0 and m["aimedShare"] == 0.0 and "aimedHoldMedian" not in m, m
+    assert m["releaseAngleMedian"] == 30.0, "negative control: a person who never aims keeps the plain cone"
+    assert clamp("aimedLaunch", m["aimedLaunch"]) == 0 and clamp("aimedLaunch", 1) == 1, "the bool stays a 0 / 1"
+
+
 def self_test():
     """Synthetic Regatta flights whose pilots follow KNOWN rules: the learner must recover them, and a pilot that
     ignores the rule must not produce the same numbers (negative control)."""
+    self_test_rocket_and_rings()
     import random
     rng = random.Random(7)
     ring_list = [[i, 600.0 * (i + 1), 0.0, 0.0, 1, 0, 0, 60.0] for i in range(40)]   # ring k is the one ahead after k threaded
@@ -723,7 +1526,7 @@ def self_test():
     do = learned("Dolphin", "policy")["learned"]
     assert do and abs(do["spendAtCharge01"] - 0.805) < 0.02 and "releaseAlignDegrees" not in do, do
     mt = learned("Manta", "manta")["learned"]
-    assert abs(mt["BoostStickBand"] - 0.5) < 0.03 and abs(mt["YastriStickBand"] - 0.8) < 0.03, mt
+    assert abs(mt["BoostStickBand"] - 0.5) < 0.03 and abs(mt["YawsteryStickBand"] - 0.8) < 0.03, mt
     assert not learned("Rhino", "policy", n=2)["learned"], "fewer than 3 finished races writes nothing"
     assert not learned("Rhino", "policy", finished=False)["learned"], "unfinished races write nothing"
     held = flight("Rhino", "policy", held=True)
@@ -731,7 +1534,11 @@ def self_test():
     # A variant overrides only the base's own fields and keeps its script.
     path, text = variant_text("Rhino", {"alignDegrees": 9.5, "notAField": 1})
     assert "alignDegrees: 9.5" in text and "notAField" not in text and "m_Name: RhinoAIBoostPolicy_Regatta" in text, text
-    path, text = variant_text("Manta", {"BoostStickBand": 0.5, "YastriStickBand": 0.8})
+    assert ("RhinoAIBoostPolicy_Regatta", "notAField") in UNWRITTEN and \
+        ("RhinoAIBoostPolicy_Regatta", "alignDegrees") not in UNWRITTEN, "a dropped number is reported, a written one is not"
+    path, text = variant_text("Rhino", {"alignDegrees": 9.5}, intensity=4)
+    assert path.endswith(f"RhinoAIBoostPolicy_{MODE}_I4.asset") and f"m_Name: RhinoAIBoostPolicy_{MODE}_I4" in text, path
+    path, text = variant_text("Manta", {"BoostStickBand": 0.5, "YawsteryStickBand": 0.8})
     assert "MantaSoarAITuning_Regatta" in text and "BoostStickBand: 0.5" in text
     # The Stoat: a pilot in Time mode slings when the ring is 40+ deg off the nose and 200+ u away, squeezes 0.7, lets
     # go once the ring is within 15 deg; switches into Time mode when the ring is 35 deg off. Recovered from flights.
@@ -754,9 +1561,10 @@ def self_test():
             else:
                 held_trig = 0.7 if rng.random() < 0.2 else 0.0
                 tm = 1 if rng.random() < 0.5 else 0
-            fx, fy = math.cos(math.radians(nose)), math.sin(math.radians(nose))
-            # the ring lies straight down +x from the pilot: the forward vector swings nose degrees off it
-            rows.append([t, 0, 0, 0, fx, fy, 0, 0, 0, 1, 100, 1, 0, 0, 0, 0, 1, 0, held_trig, 0, 1, 0, 0, 0, 0, tm, dist])
+            fx, fz = math.cos(math.radians(nose)), math.sin(math.radians(nose))
+            # the ring lies straight down +x from the pilot: the forward vector swings nose degrees off it, on the
+            # hull's horizontal (up is +y), so the bearing the AI gates on is the nose angle
+            rows.append([t, 0, 0, 0, fx, 0, fz, 0, 1, 0, 100, 1, 0, 0, 0, 0, 1, 0, held_trig, 0, 1, 0, 0, 0, 0, tm, dist])
         return {"schema": "cosmic-shore.flight/3", "mode": MODE, "hull": "Stoat", "ended": "race over", "finished": True,
                 "raceSeconds": seconds, "raceTarget": 24, "rings": 24, "ringList": [[0, 1000.0, 0, 0, 1, 0, 0, 60.0]],
                 "columns": ["t", "x", "y", "z", "fx", "fy", "fz", "ux", "uy", "uz", "speed", "boost", "xSum", "ySum", "xDiff", "yDiff",
@@ -768,23 +1576,117 @@ def self_test():
             s_["dist"] = r[-1]
         return S
 
-    st = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i) for i in range(3)]])["learned"]
+    R = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i) for i in range(3)]])
+    # The Stoat is REPORT_ONLY while its ability is made (Yash, 2026-11-10): nothing written, the measure still checked
+    assert R["learned"] == {} and R["why"] and R["why"].startswith("report only"), R["why"]
+    st = R["proposed"]
     sl, md = st.get("StoatSlingConfig", {}), st.get("StoatModeAction", {})
     assert sl and 38 <= sl["aiSlingMinTurnDegrees"] <= 50 and sl["aiSlingMinDistance"] >= 195 and abs(sl["autopilotHold01"] - 0.7) < 1e-6, st
-    assert sl["aiReleaseConeDegrees"] <= 18, st          # the last held sample, a tenth of a second before the 15 deg let-go
+    # the last held sample, a tenth of a second before the 15 deg let-go: still MEASURED (the report shows it) ...
+    assert R["person"]["StoatSlingConfig"]["aiReleaseConeDegrees"] <= 18, R["person"]
+    # ... and never written: the trampoline's AI lets go at once and reads no release cone (KIT_SINCE "unread")
+    assert "aiReleaseConeDegrees" not in sl, st
     assert md and 34 <= md["autopilotTimeModeDegrees"] <= 40, st
-    sloppy = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i, sloppy=True) for i in range(3)]])["learned"]
-    rs = sloppy.get("StoatSlingConfig", {})   # negative control: a pilot slinging at random does not look like the rule
-    assert rs.get("aiReleaseConeDegrees", 0) > 40 and rs.get("aiSlingMinTurnDegrees", 99) < 35, ("negative control", sloppy)
+    # Three flights pooled: each restarts its clock, and no gap is measured across two of them (it would be negative and
+    # pin the interval to its floor). The pilot above presses at most every 1.5 s, and its gaps are 2 s or more.
+    assert sl["aiSlingIntervalSeconds"] >= 1.5, ("a gap across two flights", sl)
+    short = [{"t": i / 10, "held": False, "trig": 0.7 if i % 50 < 10 else 0.0, "tm": 1, "fwd": (0, 0, 1), "nose": 40.0,
+              "noseYaw": 40.0, "dist": 300.0} for _ in range(3) for i in range(160)]
+    assert abs(measure_stoat(short)["StoatSlingConfig"]["aiSlingIntervalSeconds"] - 5.0) < 1e-6, \
+        "three 16 s flights pressing every 5 s: 5 s (pooled across flights it was -15)"
+    sloppy = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i, sloppy=True) for i in range(3)]])
+    rs = sloppy["person"].get("StoatSlingConfig", {})   # negative control: a pilot slinging at random does not look like the rule
+    assert rs.get("aiReleaseConeDegrees", 0) > 40 and sloppy["proposed"].get("StoatSlingConfig", {}).get("aiSlingMinTurnDegrees", 99) < 35, \
+        ("negative control", sloppy["proposed"])
     paths = [p for p, _ in variant_texts("Stoat", st)]
     assert any(p.endswith("StoatSlingConfig_Regatta.asset") for p in paths) and any(p.endswith("StoatModeAction_Regatta.asset") for p in paths), paths
     _, text = variant_texts("Stoat", {"StoatSlingConfig": {"aiSlingMinTurnDegrees": 42.0, "notAField": 3}})[0]
     assert "aiSlingMinTurnDegrees: 42.0" in text and "notAField" not in text and "m_Name: StoatSlingConfig_Regatta" in text
 
+    # Every other hull (POLICY_CLASSES): a press verb measured against the nearest CRYSTAL in a mode without rings. The
+    # pilot presses when lined up within 10 deg, stick <= 0.3, 1.2 s+ of runway, at most once per 1.5 s.
+    def crystal_flight(rule, seconds=120.0):
+        rows, events, crystals, last = [], [], [], -9.0
+        for k in range(int(seconds * 10)):
+            t = k / 10
+            ang = abs(30 * math.sin(t * 0.7)) + rng.random() * 2
+            stick = abs(0.8 * math.sin(t * 0.9))
+            dist = 150 + 250 * abs(math.cos(t * 0.3))
+            speed = 100.0
+            cx, cy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+            press = (ang <= 10 and stick <= 0.3 and dist / speed >= 1.2 and t - last >= 1.5) if rule == "rule" \
+                else (rng.random() < 0.05 and t - last >= 0.3)
+            if press:
+                events += [[t, 6, 1], [t + 0.1, 6, 0]]
+                last = t
+            # the crystal lies straight down +x; a far one off to the side is never the nearest
+            crystals.append([dist, 0.0, 0.0, 5, -900.0, 900.0, 0.0, 2])
+            rows.append([t, 0, 0, 0, 1, 0, 0, 0, 1, 0, speed, 1, stick, 0, 0, 0, 1, 0, 0, 0, cx, cy, 0, 0, 0, 0, -1])
+        return {"schema": "cosmic-shore.flight/3", "mode": "SelfTestMode", "hull": "Ghost", "ended": "race over",
+                "finished": False, "raceSeconds": 0, "raceTarget": 0, "ringList": [], "buttonEvents": events,
+                "crystals": crystals,
+                "columns": ["t", "x", "y", "z", "fx", "fy", "fz", "ux", "uy", "uz", "speed", "boost", "xSum", "ySum", "xDiff",
+                            "yDiff", "throttle", "rings", "lt", "rt", "cx", "cy", "cz", "state", "held", "m0", "lvT"], "samples": rows}
+    pellet = dict(POLICY_CLASSES["PelletBoostAIPolicySO"], input=6, policy="SerpentAIBoostPolicy", why=None)
+    HULLS["Ghost"] = pellet
+    try:
+        fl = [crystal_flight("rule", 120 + i) for i in range(3)]
+        R = learn_hull("Ghost", [(f, samples_of(f)) for f in fl])
+        g = R["learned"]
+        assert g and g["alignDegrees"] <= 10.5 and g["stickBand"] <= 0.31 and g["engageRunwaySeconds"] >= 1.15, R
+        assert g["minSecondsBetweenPellets"] >= 1.45, g
+        assert completed(fl[0]) and not is_race(fl[0]), "a match without rings that ran out is complete"
+        # Matches the person WON teach first: three won rule-flights plus a lost random one learn the rule's numbers.
+        wins = [dict(crystal_flight("rule", 120 + i), result={"youWon": True}) for i in range(3)]
+        lost = dict(crystal_flight("random", 130), result={"youWon": False})
+        gw = learn_hull("Ghost", [(f, samples_of(f)) for f in wins + [lost]])["learned"]
+        assert gw and gw["alignDegrees"] <= 10.5, ("a lost match must not teach when three won ones exist", gw)
+        rnd = learn_hull("Ghost", [(f, samples_of(f)) for f in [crystal_flight("random", 120 + i) for i in range(3)]])["learned"]
+        assert rnd.get("alignDegrees", 0) > g["alignDegrees"] + 5, ("negative control: random presses are not lined up", rnd)
+        # The Snap Dash: two throttle edges within the window at TIME 5 are one dash; a slow double press, or below
+        # level 5, is none; a triple tap is still one.
+        S = [{"t": i / 10, "throttle": v, "held": False, "lvT": lv, "angle": 0, "stick": 0, "runway": 2, "steer": 0}
+             for i, (v, lv) in enumerate([(0, 5), (1, 5), (0, 5), (1, 5), (0, 5), (1, 5), (0, 5), (0, 5), (0, 5), (0, 5),
+                                          (1, 5), (0, 5), (0, 5), (0, 5), (0, 5), (0, 5), (1, 5),
+                                          (0, 3), (1, 3), (0, 3), (1, 3)])]
+        eps, _ = verb_episodes({}, S, {"signal": ("doubletap",)})
+        assert len(eps) == 1, ("one dash: the triple tap at 0.1-0.5 s; the edges 0.6 s apart and those at TIME 3 are none", len(eps))
+    finally:
+        del HULLS["Ghost"]
+    # A drive the policy switches off in a mode writes nothing there; an existing variant keeps its own fields.
+    assert policy_off_in_mode("SparrowAIBoostPolicy", "DogFight") and not policy_off_in_mode("SparrowAIBoostPolicy", "Breakwater")
+    import tempfile
+    global OUT_DIR
+    keep = OUT_DIR
+    with tempfile.TemporaryDirectory() as tmp:
+        OUT_DIR = tmp
+        try:
+            open(os.path.join(tmp, "RhinoAIBoostPolicy_SelfTest.asset"), "w").write(
+                re.sub(r"(?m)^  cornerSpeed: .*$", "  cornerSpeed: 333",
+                       open(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), encoding="utf-8").read()))
+            _, text = copy_with(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), "RhinoAIBoostPolicy_SelfTest", {"alignDegrees": 9.0})
+            assert "cornerSpeed: 333" in text and "alignDegrees: 9.0" in text, "a hand-set field in an existing variant survives"
+            # An intensity's variant starts from its mode's, so the mode's hand-set field reaches it too; without a
+            # mode variant it starts from the base (negative control).
+            _, text = copy_with(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), "RhinoAIBoostPolicy_SelfTest_I4",
+                                {"alignDegrees": 7.0}, fallback="RhinoAIBoostPolicy_SelfTest")
+            assert "cornerSpeed: 333" in text and "m_Name: RhinoAIBoostPolicy_SelfTest_I4" in text, text
+            _, text = copy_with(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), "RhinoAIBoostPolicy_NoMode_I4",
+                                {"alignDegrees": 7.0}, fallback="RhinoAIBoostPolicy_NoMode")
+            assert "cornerSpeed: 333" not in text and "alignDegrees: 7.0" in text, "no mode variant: the base"
+        finally:
+            OUT_DIR = keep
+
+    floored = apply_floors("Sparrow", "Breakwater", {"releaseRunwaySeconds": 0.3, "alignDegrees": 20.0})
+    assert floored == {"releaseRunwaySeconds": 1.25, "alignDegrees": 20.0}, floored
+    assert apply_floors("Sparrow", "Regatta", {"releaseRunwaySeconds": 0.3}) == {"releaseRunwaySeconds": 0.3}
+
     print("learn_drives_from_flights self-test: OK (Rhino and Dolphin starts / stops recovered, a random pilot rejected; "
           "Dolphin charge 0.80; Manta bands 0.50 / 0.80 recovered; under 3 finished races, unfinished races and AI-held "
           "seconds write nothing; variants keep only their base's fields; the Stoat's sling turn / distance / squeeze / release "
-          "and its Time-mode switch angle recovered, a random slinger rejected)")
+          "and its Time-mode switch angle recovered, a random slinger rejected; a press verb against the nearest crystal "
+          "recovered and random presses rejected; the Snap Dash double-tap counted once; a switched-off mode and an "
+          "existing variant's own fields respected; an intensity's variant named _I<n> and started from its mode's)")
     return 0
 
 

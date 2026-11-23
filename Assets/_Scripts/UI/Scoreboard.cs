@@ -6,10 +6,11 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -73,6 +74,13 @@ namespace CosmicShore.UI
         [SerializeField] private string teamLine = "{score}";
         [Tooltip("What the local pilot earned and the wallet counting up. Empty: no strip.")]
         [SerializeField] private ScoreboardRewardStrip rewardStrip;
+
+        [Header("Team Versus (Rev 23 D)")]
+        [Tooltip("Two teams face to face, shown instead of the ladder for a two-team match (ScoreboardLadder.BuildVersus). " +
+                 "Empty keeps the ladder for every match.")]
+        [SerializeField] private ScoreboardVersusView versusView;
+        [Tooltip("A team's row in the versus layout - half the ladder's width, the counts under the name.")]
+        [SerializeField] private PlayerScoreCard versusRowPrefab;
 
         [Header("Crystal Rewards")]
         [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
@@ -138,6 +146,12 @@ namespace CosmicShore.UI
         [SerializeField] private string modeLine = "{mode} - Intensity {intensity}";
         [Tooltip("The line above the banner for a game without an intensity. {mode} is the game.")]
         [SerializeField] private string modeNoIntensityLine = "{mode}";
+        [Tooltip("The line under each pilot's name, in their domain colour. {domain} is their team, {vessel} the hull " +
+                 "they flew (a human or an AI).")]
+        [SerializeField] private string pilotLine = "{domain}  ·  {vessel}";
+        [Tooltip("The line under a pilot's name when their hull is not known (they left before the end). {domain} is " +
+                 "their team.")]
+        [SerializeField] private string pilotNoVesselLine = "{domain}";
         [Tooltip("Play again, for the host (whose press restarts the match).")]
         [SerializeField] private string playAgainHostLine = "Play again";
         [Tooltip("Play again, for a guest (whose press is a rematch vote).")]
@@ -219,6 +233,8 @@ namespace CosmicShore.UI
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+            else
+                statsProvider.Changed += OnStatsChanged;
 
             ResolveGameController();
             if (wireButtonsInCode) WireButtons();
@@ -439,6 +455,7 @@ namespace CosmicShore.UI
                 if (mainMenuButton)   mainMenuButton.SetActive(false);
                 if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
                 StopRematchVoteRoster();
+                ScoreboardBreath.Ensure(playAgainButton)?.Hide();
                 return;   // no rematch vote mid-tournament: the next game is the lineup's, not a replay
             }
 
@@ -456,6 +473,22 @@ namespace CosmicShore.UI
             if (playAgainLabel)   playAgainLabel.text = isClient ? playAgainGuestLine : playAgainHostLine;
 
             StartRematchVoteRoster();
+
+            // The breath (P5): one offered next step beside Play again, for whoever decides where the party goes.
+            var breath = ScoreboardBreath.Ensure(playAgainButton);
+            if (breath)
+            {
+                if (isClient) breath.Hide();
+                else breath.Show(gameData, LocalPlacedFirst());
+            }
+        }
+
+        /// <summary>The local player's domain took first place this game (the breath's "after a win").</summary>
+        bool LocalPlacedFirst()
+        {
+            var local = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
+            var order = PlacementOrder();
+            return order.Count > 0 && order[0] == local;
         }
 
         /// <summary>
@@ -565,6 +598,13 @@ namespace CosmicShore.UI
         {
             s_boards.Remove(this);
             _entranceSeq?.Kill();
+            if (statsProvider) statsProvider.Changed -= OnStatsChanged;
+        }
+
+        // Another pilot's last numbers can land a moment after the board was drawn (B21): redraw the stat block only.
+        void OnStatsChanged()
+        {
+            if (scoreboardPanel && scoreboardPanel.gameObject.activeInHierarchy) PopulateDynamicStats();
         }
 
         /// <summary>
@@ -746,13 +786,41 @@ namespace CosmicShore.UI
 
         void DecorateCard(PlayerScoreCard card, string pilotName, Domains domain)
         {
-            card.SetDomain(domain == Domains.Blue || (int)domain == 0 ? string.Empty : domain.ToString(), GetDomainColor(domain));
+            card.SetDomain(PilotLine(domain, FlownVesselName(pilotName)), GetDomainColor(domain));
             card.SetLocal(gameData != null && gameData.LocalPlayer != null && gameData.LocalPlayer.Name == pilotName);
+        }
+
+        /// <summary>
+        /// The line under a pilot's name: their team and the hull they flew ("Ruby · Squirrel"), so a board of
+        /// several hulls says who flew what. Blue is the "no domain" sentinel, so a pilot without a team shows the
+        /// hull alone.
+        /// </summary>
+        string PilotLine(Domains domain, string vessel)
+        {
+            bool noTeam = domain == Domains.Blue || (int)domain == 0;
+            if (string.IsNullOrEmpty(vessel))
+                return noTeam ? string.Empty : TemplateText.Fill(pilotNoVesselLine, "domain", domain.ToString());
+            return noTeam ? vessel : TemplateText.Fill(pilotLine, "domain", domain.ToString(), "vessel", vessel);
+        }
+
+        /// <summary>
+        /// The hull <paramref name="pilotName"/> is flying now, at the end of the match - humans and AI alike,
+        /// matched by name the way the avatar is (<see cref="ResolveAvatarSpriteByName"/>). Null when the pilot is
+        /// gone (left before the end) or never got a hull.
+        /// </summary>
+        string FlownVesselName(string pilotName)
+        {
+            var player = gameData?.Players?.FirstOrDefault(p => p.IsAlive() && p.Name == pilotName);
+            if (player == null || !player.Vessel.IsAlive() || !player.Vessel.VesselStatus.IsAlive()) return null;
+
+            var hull = player.Vessel.VesselStatus.VesselType;
+            return hull is VesselClassType.Any or VesselClassType.Random ? null : PauseMenu.SpacedName(hull.ToString());
         }
 
         void PopulatePlayerCards(List<IRoundStats> orderedStats)
         {
             ClearPlayerCards();
+            if (versusView) versusView.SetShown(false);
 
             if (orderedStats == null || orderedStats.Count == 0) return;
             if (!playerCardContainer || !playerCardPrefab)
@@ -811,6 +879,18 @@ namespace CosmicShore.UI
             }
 
             string winnerName = results[0].Name;
+
+            // Rev 23 D: a two-team match is drawn as the two teams facing each other; anything else stays the ladder.
+            var versus = versusView && versusRowPrefab && versusView.IsAvailable
+                ? ScoreboardLadder.BuildVersus(results, gameData.WinnerDomain) : null;
+            if (versusView) versusView.SetShown(versus != null);
+            if (versus != null)
+            {
+                PopulateVersus(results, versus, winnerName);
+                AwardCrystalsToLocalPlayer(winnerName);
+                return;
+            }
+
             var ladder = ScoreboardLadder.Build(results, gameData.WinnerDomain);
             int stagger = 0;
 
@@ -820,34 +900,66 @@ namespace CosmicShore.UI
                 {
                     if (!teamHeaderPrefab) continue;
                     var header = Instantiate(teamHeaderPrefab, playerCardContainer);
-                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), TeamLine(entry));
+                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), WithRuleTeamLine(TeamLine(entry), entry.Domain));
                     _spawnedHeaders.Add(header);
                     continue;
                 }
 
-                var r = results[entry.ResultIndex];
-                var card = Instantiate(playerCardPrefab, playerCardContainer);
-
-                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger++);
-                card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
-                card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
-                card.SetOutcome(entry.Won);
-                DecorateCard(card, r.Name, r.Domain);
                 // A header carries the team's shared score once; with no header prefab every row keeps its own.
-                card.ShowScore(entry.ShowsScore || !teamHeaderPrefab);
-                card.SetShare(entry.Share);
-
-                if (!string.IsNullOrEmpty(r.Secondary))
-                    card.ShowSecondaryStat(r.Secondary);
-
-                int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
-                if (reward > 0)
-                    card.ShowCrystalReward(reward);
-
-                _spawnedCards.Add(card);
+                SpawnRow(playerCardPrefab, playerCardContainer, results[entry.ResultIndex], entry,
+                         entry.ShowsScore || !teamHeaderPrefab, stagger++, winnerName);
             }
 
             AwardCrystalsToLocalPlayer(winnerName);
+        }
+
+        void PopulateVersus(List<ScoreResult> results, ScoreboardLadder.Side[] sides, string winnerName)
+        {
+            int stagger = 0;
+            for (int s = 0; s < sides.Length; s++)
+            {
+                var side = sides[s];
+                versusView.BindSide(s, side.Domain.ToString(), GetDomainColor(side.Domain), side.Won, side.Score,
+                                    RuleTeamLine(side.Domain));
+                foreach (var entry in side.Rows)
+                    SpawnRow(versusRowPrefab, versusView.Rows(s), results[entry.ResultIndex], entry,
+                             entry.ShowsScore, stagger++, winnerName);
+            }
+            versusView.SetShare(sides[0].Share, sides[0].Domain.ToString(), sides[1].Domain.ToString());
+        }
+
+        void SpawnRow(PlayerScoreCard prefab, Transform parent, ScoreResult r, ScoreboardLadder.Entry entry, bool showScore,
+                      int stagger, string winnerName)
+        {
+            var card = Instantiate(prefab, parent);
+
+            card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger);
+            card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
+            card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+            card.SetOutcome(entry.Won);
+            DecorateCard(card, r.Name, r.Domain);
+            card.ShowScore(showScore);
+            card.SetShare(entry.Share);
+
+            if (!string.IsNullOrEmpty(r.Secondary))
+                card.ShowSecondaryStat(r.Secondary);
+
+            int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
+            if (reward > 0)
+                card.ShowCrystalReward(reward);
+
+            _spawnedCards.Add(card);
+        }
+
+        /// <summary>The scoring rule's own line for a team (the Mass-Space volume books), or null.</summary>
+        string RuleTeamLine(Domains domain) =>
+            gameData != null && gameData.ScoringRule != null ? gameData.ScoringRule.TeamLine(gameData, domain) : null;
+
+        string WithRuleTeamLine(string line, Domains domain)
+        {
+            string rule = RuleTeamLine(domain);
+            if (string.IsNullOrEmpty(rule)) return line;
+            return string.IsNullOrEmpty(line) ? rule : line + "\n" + rule;
         }
 
         string TeamLine(ScoreboardLadder.Entry header)
@@ -877,7 +989,10 @@ namespace CosmicShore.UI
             }
         }
 
-        bool _crystalsAwardedThisGame;
+        // Static: the wallet is one per player, so the latch is one per process. An instance field let
+        // a second live Scoreboard (a duplicate in the scene, or a stale one surviving Play/Stop/Play)
+        // pay the same game again 2-27 ms later (crystals_earned near-duplicates, 2026-10-16..19).
+        static bool _crystalsAwardedThisGame;
 
         void ClearCrystalAwardLatch() => _crystalsAwardedThisGame = false;
 
@@ -901,7 +1016,7 @@ namespace CosmicShore.UI
             if (service == null) return;
 
             var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
-            int amount = CrystalsForPlacement(localDomain);
+            int amount = CrystalsForPlacement(PayDomain(localDomain));
             string source = gameData.IsMaelstromMode ? "tournament_placement" : "game_placement";
 
             _crystalsAwardedThisGame = true;
@@ -921,6 +1036,44 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogError($"[Scoreboard] Crystal award failed for '{localName}' ({source}, {amount}): {e}");
             }
+        }
+
+        // The party, for party pay (arc.social hole; RetentionTuningSO.PayPartyByBestPlacing). Injected like the arcade
+        // controllers' copy; absent in a scene with no Reflex scope, where every player is paid by their own domain.
+        [Inject] HostConnectionDataSO _party;
+
+        /// <summary>
+        /// The domain the local player is paid by: their own, or with party pay on, the best-placed domain any member of
+        /// their party flew for in this match (<see cref="RetentionPay.PayDomain"/>). Party members are matched to the
+        /// match's pilots by display name, the name the round stats carry.
+        /// </summary>
+        Domains PayDomain(Domains localDomain)
+        {
+            var tuning = RetentionTuningSO.Load();
+            if (!tuning.PayPartyByBestPlacing || _party == null || _party.PartyMembers == null || _party.PartyMembers.Count < 2)
+                return localDomain;
+            if (gameData.RoundStatsList == null) return localDomain;
+
+            var names = new HashSet<string>();
+            foreach (var m in _party.PartyMembers)
+                if (!string.IsNullOrEmpty(m.DisplayName)) names.Add(m.DisplayName);
+            var partyDomains = new List<Domains>();
+            foreach (var stats in gameData.RoundStatsList)
+                if (stats != null && names.Contains(stats.Name) && !partyDomains.Contains(stats.Domain))
+                    partyDomains.Add(stats.Domain);
+
+            return RetentionPay.PayDomain(localDomain, PlacementOrder(), partyDomains);
+        }
+
+        /// <summary>Domains best first: the mode rule's order when it has one, else the rank order of the results.</summary>
+        List<Domains> PlacementOrder()
+        {
+            if (_shufflePlacement != null && _shufflePlacement.Count > 0) return _shufflePlacement;
+            var order = new List<Domains>();
+            if (gameData.Results == null) return order;
+            foreach (var r in gameData.Results)
+                if (!order.Contains(r.Domain)) order.Add(r.Domain);
+            return order;
         }
 
         /// <summary>
@@ -979,9 +1132,9 @@ namespace CosmicShore.UI
         Sprite ResolveAvatarSpriteByName(string playerName)
         {
             // AI players - look up by name in AI profile list (struct, not nullable)
-            if (aiProfileList != null && aiProfileList.aiProfiles != null)
+            if (aiProfileList != null && aiProfileList.AiProfiles != null)
             {
-                foreach (var p in aiProfileList.aiProfiles)
+                foreach (var p in aiProfileList.AiProfiles)
                 {
                     if (p.Name == playerName)
                         return p.AvatarSprite;
@@ -989,17 +1142,17 @@ namespace CosmicShore.UI
             }
 
             // Human players - look up by AvatarId via gameData.Players
-            if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
+            if (profileIconList != null && profileIconList.ProfileIcons != null && gameData?.Players != null)
             {
                 var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
                 if (player != null)
                 {
-                    foreach (var icon in profileIconList.profileIcons)
+                    foreach (var icon in profileIconList.ProfileIcons)
                     {
                         if (icon.Id == player.AvatarId) return icon.IconSprite;
                     }
-                    if (profileIconList.profileIcons.Count > 0)
-                        return profileIconList.profileIcons[0].IconSprite;
+                    if (profileIconList.ProfileIcons.Count > 0)
+                        return profileIconList.ProfileIcons[0].IconSprite;
                 }
             }
 
@@ -1105,13 +1258,9 @@ namespace CosmicShore.UI
             if (playAgainButton) playAgainButton.SetActive(false);
             if (mainMenuButton)  mainMenuButton.SetActive(false);
             if (continueButton)  continueButton.SetActive(false);
+            ScoreboardBreath.Ensure(playAgainButton)?.Hide();
         }
 
-        /// <summary>
-        /// Client-side "Leave Lobby" button handler. Disconnects from the host's party
-        /// session and returns to Menu_Main. Host/single-player users see the regular
-        /// Main Menu button instead (which is wired to the SOAP main-menu event).
-        /// </summary>
         /// <summary>
         /// Sends this client's rematch vote and locks the button so it reads as cast. The tally
         /// comes back to every peer through <c>OnRematchVotesChanged</c>, so the host sees it too.
@@ -1160,6 +1309,11 @@ namespace CosmicShore.UI
                 : (_rematchVoteCast ? rematchSentLine : TemplateText.Fill(guestTallyLine, "votes", v, "pilots", n));
         }
 
+        /// <summary>
+        /// Client-side "Leave Lobby" button handler. Disconnects from the host's party
+        /// session and returns to Menu_Main. Host/single-player users see the regular
+        /// Main Menu button instead (which is wired to the SOAP main-menu event).
+        /// </summary>
         public void OnLeaveLobbyButtonPressed()
         {
             if (leaveLobbyButton) leaveLobbyButton.SetActive(false);

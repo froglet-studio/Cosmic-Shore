@@ -18,7 +18,7 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
-    public class ScreenSwitcher : MonoBehaviour
+    public partial class ScreenSwitcher : MonoBehaviour
     {
         public enum MenuScreens
         {
@@ -28,6 +28,9 @@ namespace CosmicShore.UI
             PORT   = 3,
             HANGAR = 4,
             PROFILE = 5,
+            // The Codex: elements and their Etherions, ecology, and the lexicon (Docs/CODEX.md's data). Its tab
+            // is first (Docs/MENU_REDESIGN_B.md section 84); its screen is CodexView (CodexScreen, section 88).
+            CODEX = 6,
         }
 
         public enum ModalWindows
@@ -104,6 +107,30 @@ namespace CosmicShore.UI
             // It also has to stay reachable if a second entry point (a home-hub tile) is ever
             // added. Shipping without it breaches FMOD's EULA clause 3 - see CreditsModal.
             CREDITS = 18,
+
+            // The replay browser (Docs/REPLAYS.md). Opened from the Arcade window's header, so its
+            // own modal TYPE: gamepad B out of it lands back on the Arcade. Not a hub window, so the
+            // triggers do not slide it, and not in the browser Toybox (replays need a device folder).
+            REPLAYS = 19,
+
+            // A pilot's profile page (Docs/MENU_REDESIGN_B.md section 92.1): the pilot's scene full screen, opened
+            // from the Ark's Pilots tab WITH a pilot (OpenPilotProfile). Not a hub window, never in the browser
+            // Toybox, and never reopened from the return-to-window pref, which carries a type and no pilot. Built
+            // from Resources/Pilots/PilotProfileView (EnsurePilotProfileModal).
+            PILOT_PROFILE = 21,
+
+            // The Quests window (Docs/MENU_REDESIGN_B.md sections 207, 208 and 200, Frogma Rev 107 D; Shombith, 2026-11-13:
+            // "Quest should be a seperate screen"): the route of quests, the picked quest's goals and its colour set
+            // reward, opened from Home's quest card (OnClickQuests). Not a hub window, so the triggers do not slide
+            // it. Built in code beside the Voyage window (EnsureQuestsModal). 20 was this window's once before
+            // (section 151, reverted in section 159) and nothing took it since.
+            QUESTS = 20,
+
+            // The What's new window (Docs/MENU_REDESIGN_B.md section 216, Frogma Rev 121 C; Shombith, 2026-11-21): every
+            // update and what it brought. Opened from Settings and once by itself after an update, so its own modal
+            // TYPE: gamepad B out of it lands back on Settings. Built in code beside the Quests window
+            // (EnsureWhatsNewModal).
+            WHATS_NEW = 22,
         }
 
         [System.Serializable]
@@ -139,7 +166,6 @@ namespace CosmicShore.UI
         [Header("Scene References")]
         [SerializeField] private Transform NavBar;
         [SerializeField] private HangarScreen HangarMenu;
-        [SerializeField] private LeaderboardsMenu LeaderboardMenu;
 
         [Tooltip("CanvasGroup on the Screens root. Disabled during freestyle to hide all screens without SetActive.")]
         [SerializeField] private CanvasGroup screensCanvasGroup;
@@ -160,7 +186,13 @@ namespace CosmicShore.UI
                  "It is not the only source: a COMMERCE screen (the Store) is closed by " +
                  "Resources/CommerceAvailability instead, so the paid-EA conversion is one asset edit and " +
                  "carries its own reading (Unavailable rather than Locked). Do not author one in both.")]
-        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT };
+        [SerializeField] private List<MenuScreens> disabledScreens = new();
+
+        [Header("Screens Off the Tab Bar")]
+        [Tooltip("Screens with no tab of their own (Rev 13, Shombith 2026-10-25: the top bar is Hangar, Ark, Home and " +
+                 "Port). LT / RT page past them, and while one is open the tab bar shows Home lit - the screen opens " +
+                 "over Home. The Profile is opened from the pilot card on Home (or Y) and closed with Back (or B).")]
+        [SerializeField] private List<MenuScreens> navHiddenScreens = new() { MenuScreens.PROFILE };
 
         [Tooltip("Reason a disabled screen's nav link gives when pressed. Empty leaves the refusal sting to " +
                  "speak alone. Deliberately generic: MenuScreens names (ARK, PORT) are internal.")]
@@ -602,12 +634,15 @@ namespace CosmicShore.UI
         {
             TrySubscribeFreestyleEvents();
             EnvironmentLoadVeil.Released += PlayCurrentScreenEntrances;
+            SceneTransitionManager.RevealStarted += PlayCurrentScreenEntrances;
         }
 
         /// <summary>
         /// The boot world's veil has started revealing the menu: the screen the player is on plays
         /// its entrances now, so the menu ARRIVES with the world instead of having settled behind
-        /// the cover where nobody saw it (Docs/MENU_REDESIGN_B.md section 25).
+        /// the cover where nobody saw it (Docs/MENU_REDESIGN_B.md section 25). On a boot or a return
+        /// the veil lifts while the splash is still opaque over it, so the entrances play again when
+        /// the splash starts to dissolve (<see cref="SceneTransitionManager.RevealStarted"/>, section 185).
         /// </summary>
         private void PlayCurrentScreenEntrances() => KitEntrance.ReplayUnder(GetScreenRootRT(currentScreen));
 
@@ -615,6 +650,7 @@ namespace CosmicShore.UI
         {
             UnsubscribeFreestyleEvents();
             EnvironmentLoadVeil.Released -= PlayCurrentScreenEntrances;
+            SceneTransitionManager.RevealStarted -= PlayCurrentScreenEntrances;
 
             // Scene-unload safety: the UI module's actions live on a shared asset instance
             // that outlives this scene — never leave Submit/Cancel/Move disabled for the
@@ -676,6 +712,10 @@ namespace CosmicShore.UI
 
             CacheScreenComponents();
             EnsureCreditsModal();
+            // Before the first layout: the page's ground is found there as a background that bleeds to the screen's edges.
+            EnsurePilotProfileModal();
+            EnsureQuestsModal();
+            EnsureWhatsNewModal();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
             UpdateHubButtonsVisibility();
@@ -716,8 +756,17 @@ namespace CosmicShore.UI
             }
 
             // Back from a match launched off a card: land on that card's launch panel, not on HOME.
-            if (MenuReturnCard.TryTake(out var returnCard))
+            bool returningToCard = MenuReturnCard.TryTake(out var returnCard);
+            if (returningToCard)
                 StartCoroutine(ReturnToLaunchedCardCoroutine(returnCard));
+
+            // After an update, the What's new window once (WhatsNewRules), when the menu is at rest.
+            if (!returningToCard && !PlayerPrefs.HasKey(ReturnToModalPrefKey))
+                StartCoroutine(OpenWhatsNewAfterUpdateCoroutine());
+
+            // A party's voyage lobby: the host tells its friends where its Voyage window stands, a friend follows
+            // (ScreenSwitcher.VoyageLobby.cs).
+            StartCoroutine(VoyageLobbyCoroutine());
         }
 
         /// <summary>
@@ -782,9 +831,11 @@ namespace CosmicShore.UI
             // re-opening the arcade overlay on its own causes stale game configuration to
             // resurface. Coming back from a match re-opens the launched card through
             // MenuReturnCard instead, which carries the card (ReturnToLaunchedCardCoroutine).
+            // PILOT_PROFILE needs its pilot the same way: the type does not say whose page it was.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
                           or ModalWindows.ARCADE
-                          or ModalWindows.ARENA_GAME_CONFIGURE)
+                          or ModalWindows.ARENA_GAME_CONFIGURE
+                          or ModalWindows.PILOT_PROFILE)
                 yield break;
 
             if (WebToybox.IsBuild && !IsModalInWebToybox(modalType))
@@ -872,13 +923,18 @@ namespace CosmicShore.UI
             if (inFreestyle) return;
             if (HasActiveModal)
             {
-                // Inside a hub window LT / RT swap it for its neighbour (rev 7). Only while that window is the
-                // top modal: under a configure the triggers belong to the game, and a guided path or a preview
-                // holding the stick leaves the pad one way forward.
+                // Inside a hub window LB / RB swap it for its neighbour (the hub strip's keycaps), and LT / RT keep
+                // paging the top bar's screens, leaving the window (Shombith, 2026-10-25: "These should be swapped with
+                // LB and RB when inside the screen and LT and RT should still work"; rev 7 slid on LT / RT). Only while
+                // that window is the top modal: under a configure the pad belongs to the game, and a guided path or a
+                // preview holding the stick leaves the pad one way forward.
                 if (!guided && !ModePreviewWindow.AnyHasFocus && ActiveHubWindow != ModalWindows.NONE)
                 {
-                    if (Gamepad.current.leftTrigger.wasPressedThisFrame) SlideHubWindow(-1);
-                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) SlideHubWindow(+1);
+                    // A window with tabs of its own (the Voyage window) holds LB / RB while it is open (HubShoulders).
+                    if (!HubShoulders.Claimed && Gamepad.current.leftShoulder.wasPressedThisFrame) SlideHubWindow(-1);
+                    else if (!HubShoulders.Claimed && Gamepad.current.rightShoulder.wasPressedThisFrame) SlideHubWindow(+1);
+                    else if (Gamepad.current.leftTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateLeft(); }
+                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateRight(); }
                 }
                 return;
             }
@@ -898,6 +954,13 @@ namespace CosmicShore.UI
                 if (Gamepad.current.startButton.wasPressedThisFrame)
                 {
                     OpenModalByType(ModalWindows.SETTINGS);
+                    return;
+                }
+
+                // Y opens the profile, as pressing the pilot card does (Rev 13: Select already toggles freestyle).
+                if (!guided && Gamepad.current.buttonNorth.wasPressedThisFrame)
+                {
+                    OnClickProfileNav();
                     return;
                 }
             }
@@ -1031,11 +1094,27 @@ namespace CosmicShore.UI
                 rt.pivot = new Vector2(0f, 0.5f);
                 rt.offsetMin = new Vector2(i * slot + inset.x, inset.y);
                 rt.offsetMax = new Vector2((i + 1) * slot - inset.z, -inset.w);
+                EnsureSlotMask(rt, inset);
             }
 
             _laidOutWidth = slot;
             _laidOutInsets = inset;
             ApplyBleeds(inset);
+        }
+
+        /// <summary>
+        /// Gives a screen its own <see cref="KitRectMask2D"/> spanning its whole slot (the negative padding
+        /// reaches past the safe rect to the slot edges, where the bleeds draw). Its graphics then register
+        /// with that mask rather than the strip's, and a screen slid off the strip stops re-culling them every
+        /// frame (Docs/PERFORMANCE_OPTIMIZATION.md, the 10-26 Menu_Main row). A screen that already carries
+        /// a RectMask2D keeps it.
+        /// </summary>
+        private static void EnsureSlotMask(RectTransform screen, Vector4 inset)
+        {
+            if (!screen.TryGetComponent(out RectMask2D mask))
+                mask = screen.gameObject.AddComponent<KitRectMask2D>();
+            if (mask is KitRectMask2D)
+                mask.padding = -inset;
         }
 
         /// <summary>
@@ -1526,10 +1605,6 @@ namespace CosmicShore.UI
                     if (HangarMenu)
                         HangarMenu.LoadView();
                     break;
-                case MenuScreens.PORT:
-                    if (LeaderboardMenu)
-                        LeaderboardMenu.LoadView();
-                    break;
                 case MenuScreens.PROFILE:
                     UserActionSystem.Instance.CompleteAction(UserActionType.ViewProfileMenu);
                     break;
@@ -1723,6 +1798,95 @@ namespace CosmicShore.UI
             Modals.Add(modal);
         }
 
+        /// <summary>Where <see cref="EnsurePilotProfileModal"/> finds a pilot's profile page
+        /// (Tools/Build/author_menu_pilot_profile.py writes it).</summary>
+        public const string PilotProfileWindowResource = "Pilots/PilotProfileView";
+
+        /// <summary>
+        /// Adds the pilot profile page to the canvas (Docs/MENU_REDESIGN_B.md section 92.1) when the scene has none,
+        /// as <see cref="EnsureCreditsModal"/> adds the credits screen. Not in the browser Toybox: the Ark is not there,
+        /// and that build keeps the scenes only as 32 px stand-ins (Tools/Build/author_pilot_scene_assets.py), so a
+        /// page opened there would have nothing to show.
+        /// </summary>
+        private void EnsurePilotProfileModal()
+        {
+            if (WebToybox.IsBuild) return;
+
+            Modals ??= new List<ModalWindowManager>();
+            foreach (var authored in Modals)
+                if (authored != null && authored.ModalType == ModalWindows.PILOT_PROFILE)
+                    return;
+
+            var prefab = Resources.Load<ModalWindowManager>(PilotProfileWindowResource);
+            if (prefab == null)
+            {
+                CSDebug.LogWarning($"[ScreenSwitcher] No pilot profile page at Resources/{PilotProfileWindowResource} " +
+                                   "(run Tools/Build/author_menu_pilot_profile.py); the Ark's pilots do not open.");
+                return;
+            }
+
+            // In the Voyage window's layer of the canvas, so it stretches the same way, and last in it: the page covers
+            // the whole screen, and no other window opens while one is up (the pad's Home shortcuts stand down under
+            // any modal; the scene transition's doors hoist themselves above the whole layer).
+            var mission = FindModal(ModalWindows.MISSION);
+            Transform parent = mission ? mission.transform.parent : _canvasRect;
+            var modal = Instantiate(prefab, parent, false);
+            modal.name = prefab.name;
+            modal.transform.SetAsLastSibling();
+            if (_container != null)
+                GameObjectInjector.InjectRecursive(modal.gameObject, _container);
+            modal.ModalType = ModalWindows.PILOT_PROFILE;
+            modal.AttachScreenSwitcher(this);
+            Modals.Add(modal);
+        }
+
+        /// <summary>
+        /// Builds the Quests window (<see cref="QuestsModal"/>, Docs/MENU_REDESIGN_B.md section 200) beside the Voyage
+        /// window when the scene has none, with the Voyage window's kit (its style, words and label face). It stands
+        /// down when a QUESTS modal is already registered, so authoring one into the scene is an ordinary scene edit.
+        /// </summary>
+        private void EnsureQuestsModal()
+        {
+            Modals ??= new List<ModalWindowManager>();
+            foreach (var authored in Modals)
+                if (authored != null && authored.ModalType == ModalWindows.QUESTS)
+                    return;
+
+            var mission = FindModal(ModalWindows.MISSION);
+            var lines = VoyageContentSO.Load() is { } content ? content.Lines : null;
+            var style = VoyageBoardStyleSO.Load();
+            if (lines == null || !style)
+            {
+                CSDebug.LogWarning("[ScreenSwitcher] No voyage content or board style in Resources; Home's quest card " +
+                                   "opens the Voyage window instead of the Quests window.");
+                return;
+            }
+            var view = mission ? mission.GetComponentInChildren<VoyageJobsView>(true) : null;
+
+            // In the Voyage window's layer of the canvas, so it stretches the same way; just after it, so the pilot
+            // profile page (last in the layer) still covers it.
+            Transform parent = mission ? mission.transform.parent : _canvasRect;
+            var go = new GameObject("QuestsWindow", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            if (mission) rt.SetSiblingIndex(mission.transform.GetSiblingIndex() + 1);
+            var modal = go.AddComponent<QuestsModal>();
+            // Hidden from the first frame; the window's own Start keeps it so until it is opened.
+            var group = go.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            modal.Setup(new VoyageKit(style, lines, view ? view.FontTemplate : null));
+            if (_container != null)
+                GameObjectInjector.InjectRecursive(go, _container);
+            modal.ModalType = ModalWindows.QUESTS;
+            modal.AttachScreenSwitcher(this);
+            Modals.Add(modal);
+        }
+
         #endregion
 
         #region Nav Button Handlers (legacy, kept)
@@ -1735,6 +1899,11 @@ namespace CosmicShore.UI
         public void OnClickPortNav()
         {
             NavigateTo(MenuScreens.PORT);
+        }
+
+        public void OnClickCodexNav()
+        {
+            NavigateTo(MenuScreens.CODEX);
         }
 
         public void OnClickHomeNav()
@@ -1752,9 +1921,17 @@ namespace CosmicShore.UI
             NavigateTo(MenuScreens.ARK);
         }
 
+        /// <summary>Opens the profile screen over Home without the strip's slide (it has no tab: Rev 13). The Home pilot
+        /// card and Y call it; <see cref="OnClickProfileBack"/> returns.</summary>
         public void OnClickProfileNav()
         {
-            NavigateTo(MenuScreens.PROFILE);
+            NavigateTo(MenuScreens.PROFILE, false);
+        }
+
+        /// <summary>The profile's Back (and B): straight back to Home, the screen it opened over.</summary>
+        public void OnClickProfileBack()
+        {
+            NavigateTo(MenuScreens.HOME, false);
         }
 
         /// <summary>
@@ -1783,6 +1960,24 @@ namespace CosmicShore.UI
 
         /// <summary>The home hub's Mission entry.</summary>
         public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
+
+        /// <summary>The Quests window (Home's quest card); the Voyage window when this build has no Quests window.</summary>
+        public void OnClickQuests()
+        {
+            if (FindModal(ModalWindows.QUESTS)) OpenModal(ModalWindows.QUESTS);
+            else OnClickMissionNav();
+        }
+
+        /// <summary>
+        /// Opens <paramref name="pilotId"/>'s profile page (the Ark's Pilots tab; a crew pilot's id, or a legacy callsign
+        /// id, which the page resolves to the crew's pilot). False when the page is not in this build or did not open.
+        /// </summary>
+        public bool OpenPilotProfile(string pilotId)
+        {
+            if (FindModal(ModalWindows.PILOT_PROFILE) is not PilotProfileModal page) return false;
+            page.SetPilot(pilotId);
+            return OpenModal(ModalWindows.PILOT_PROFILE);
+        }
 
         #region Hub window slide (rev 7)
 
@@ -1952,10 +2147,14 @@ namespace CosmicShore.UI
             NavigateRight();
         }
 
+        /// <summary>A screen with no tab (<see cref="navHiddenScreens"/>): LT / RT page past it.</summary>
+        private bool IsIndexNavHidden(int index) =>
+            navHiddenScreens != null && navHiddenScreens.Contains(GetScreenIdForIndex(index));
+
         private void NavigateLeft()
         {
             int target = currentScreen - 1;
-            while (target >= 0 && IsIndexDisabled(target))
+            while (target >= 0 && (IsIndexDisabled(target) || IsIndexNavHidden(target)))
                 target--;
 
             if (target < 0)
@@ -1968,7 +2167,7 @@ namespace CosmicShore.UI
         {
             int max = GetScreenCount() - 1;
             int target = currentScreen + 1;
-            while (target <= max && IsIndexDisabled(target))
+            while (target <= max && (IsIndexDisabled(target) || IsIndexNavHidden(target)))
                 target++;
 
             if (target > max)
@@ -1984,6 +2183,9 @@ namespace CosmicShore.UI
 
         private void UpdateNavBar(int index)
         {
+            // A screen with no tab lights Home's: it opens over Home (Rev 13).
+            if (IsIndexNavHidden(index)) index = GetIndexForScreen(MenuScreens.HOME);
+
             // Two supported ways to highlight the active nav tab:
             //
             //  1. Explicit per-button icon lists (NavActiveImages / NavInactiveImages).

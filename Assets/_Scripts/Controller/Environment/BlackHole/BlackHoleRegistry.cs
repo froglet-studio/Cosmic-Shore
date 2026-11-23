@@ -242,6 +242,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Let a held pair go and set the speed it closes at (the Stoat's warp gate: it falls together in a set time
+        /// whatever length it was stretched to).
+        /// </summary>
+        public static void LetGo(Pair pair, float driftSpeed)
+        {
+            if (pair == null || !pair.Held) return;
+            pair.DriftSpeed = Mathf.Max(0f, driftSpeed);
+            LetGo(pair);
+        }
+
+        /// <summary>
+        /// Move a HELD pair: a new midpoint and half gap along its axis (the Stoat's warp gate stretches with the squeeze).
+        /// A held pair stands still otherwise, so its holes are placed here; a let-go pair is left to its closing law.
+        /// </summary>
+        public static void Reshape(Pair pair, Vector3 midpoint, float halfGap)
+        {
+            if (pair == null || !pair.Held || !pair.IsAlive) return;
+            pair.Midpoint = midpoint;
+            pair.HalfGap0 = Mathf.Max(0f, halfGap);
+            BlackHolePairMath.Positions(pair.Midpoint, pair.Axis, pair.HalfGap0, out var blackPos, out var whitePos);
+            pair.Black.transform.position = blackPos;
+            pair.White.transform.position = whitePos;
+        }
+
+        /// <summary>
         /// The settings a CRYSTAL pair (§13) is opened with: the config's Crystal Pair section, a throat of
         /// the size dial a drift pair's horizon is (<see cref="BlackHoleConfigSO.HorizonRadius"/>), and the
         /// pilots its mouths may carry. A pilot's sling passes only that pilot (a vessel may not move an
@@ -463,10 +488,16 @@ namespace CosmicShore.Gameplay
             using (s_pullMarker.Auto()) BlackHoleVesselPull.Tick(_holes, config, dt);
             using (s_wavesMarker.Auto()) BlackHoleWaves.Tick(config);
             using (s_warpMarker.Auto()) BlackHoleWarp.Flush(_warpHoles, config);
-            // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
+            // Studio lens look only: the lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
             // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
             // holes itself (BlackHoleLens.ScreenWells).
-            using (s_lensMarker.Auto()) BlackHoleLens.CameraSupport.Maintain();
+            using (s_lensMarker.Auto())
+            {
+                BlackHoleLens.CameraSupport.Maintain();
+                // The Mobile look (the default): one small forward mesh per hole and per wave, no full-screen pass.
+                BlackHoleGlow.DrawHoles(_warpHoles, config);
+                BlackHoleGlow.DrawWaves(config);
+            }
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {

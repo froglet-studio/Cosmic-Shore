@@ -1,5 +1,7 @@
 # Cleave — Technical Documentation
 
+> **2026-11-07: Cleave is the SWORDFISH's.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the sword went to the Swordfish, so Cleave seats the Swordfish for the player and all four AI (card, scene `aiInitializeDatas`, `TrainingModeCatalog`). Its hull RAMS (destroys), so a hull contact scores again, as it did before the plough. Read "the Rhino" below as "the Swordfish".
+
 > **Naming.** `GameModes.Cleave = 39` is the code/data/enum identity. The mode has been renamed
 > TWICE — `Ribcage` → `PeelTheCage` (2026-09) → `Cleave` (immediately after, when three of its four
 > intensities stopped being cages). Enum VALUES are pinned forever, so both historical names
@@ -243,7 +245,7 @@ shielded prism of either tier. If the mode ever wants hardened mass, it needs an
 energize first.
 
 > **2026-10-16 — the premise above no longer holds; re-measure before relying on it.** The AI can
-> now energize: `RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors on the owning machine,
+> now energize: `SwordfishSwordAutopilot` (Rhino root) writes the trigger mirrors on the owning machine,
 > strokes at the nearest hostile prism in reach, and holds the energize stance near super-shielded
 > mass or on a ≥ 75% meter. So "an AI never pulls a trigger" — the reason both this section and
 > `cleave_budget` check 3 give — is stale. The arenas are unchanged (still no shielded prism of
@@ -267,7 +269,11 @@ i3/i4   arena  720  <  AI station  936 ( 720 × 1.3)  <  spawn ring 1050  <  mem
   orbits from within forever — the "the AI just stays inside" defect, twice.
 - The scene's `spawnRingRadiusFloorByIntensity` puts players outside all of it (this cell has **no
   nucleus**, so the computed ring would otherwise collapse to the cell centre).
-- Each intensity's `CellConfigDataSO` names its own `MembranePrefab`.
+- Each intensity's `CellConfigDataSO` names its own `MembranePrefab`, and the two rungs on the
+  3,600 shell also set `CytoplasmShardDistance` 360 (120 × 3). `SnowChanger` fills the whole
+  membrane sphere at one shard per spacing³, so the 3,600 shell at the prefab's 120 built
+  ~113,000 shards, 27× the ~4,189 of a 1,200 cell (fixed 2026-10-26; the generator derives it
+  from `cleave_budget.MEMBRANE_RADIUS`).
 
 **It became a TABLE rather than one number the moment the rungs stopped being one size**, and each
 of those three consumers is why: one shared radius across a 2,160-vs-720 spread either parks every
@@ -765,7 +771,7 @@ by seat so they never all raid at once.
 
 ⚠ **An AI Rhino cannot energize its blade** (no triggers), which is fine here because nothing in any
 arena is super-shielded — but it is the constraint that makes "no shielded mass" a rule rather than
-a preference. See above. *(Stale as of 2026-10-16: `RhinoSwordAutopilot` now swings the AI's blade
+a preference. See above. *(Stale as of 2026-10-16: `SwordfishSwordAutopilot` now swings the AI's blade
 and energizes near super-shielded mass or on a ≥ 75% meter, and `RampBoostAIPolicySO` now ramps it
 on straights that pay the wind-up back and brakes on the ramp into corners (`AI/AI_BOOST.md`, Ramp)
 — before this the AI never ramped, so every transit speed this section was watched at
@@ -892,6 +898,12 @@ python3 Tools/Build/cleave_budget.py                    # inspect the ladder + t
 python3 Tools/Build/author_cleave_assets.py             # re-author the assets
 python3 Tools/Build/author_cleave_assets.py --check     # must pass
 ```
+
+### The sword hand, trained (2026-11-19)
+
+The Swordfish's sword hand (`SwordfishSwordAutopilot` on its prefab) was trained in Palisade and Cleave together on the
+volume books: reach x6, energize at one prism. Cleave's mean seat VC + VD rose 7.5k -> 21.1k at I1, 13.0k -> 25.1k at I2,
+26.3k -> 33.3k at I3 and 31.2k -> 38.7k at I4. Numbers and knee: `PALISADE.md` 3.1.
 
 ## In-editor verification (authored headless — NOT yet run)
 
@@ -1061,7 +1073,7 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   23% headroom and whose score is destroying mass; `cleave_budget` models none of it. At Mass L5
   they are laid as **danger** prisms, which adds to the arenas' danger traps. (2) **The AI now
   ramps and swings**: `RampBoostAIPolicySO` ramps on straights that pay the wind-up back and
-  brakes on the ramp into corners (`AI/AI_BOOST.md`, Ramp; the AI never ramped before), and `RhinoSwordAutopilot` strokes at the nearest hostile prism and energizes near
+  brakes on the ramp into corners (`AI/AI_BOOST.md`, Ramp; the AI never ramped before), and `SwordfishSwordAutopilot` strokes at the nearest hostile prism and energizes near
   super-shields or on a ≥ 75% meter — so AI transit speed and cut rate both change, and the
   1,200 / 1,500 pacing flag above now has a moved baseline. (3) **"AI cannot energize, so the mode
   has no shielded mass"** (§ "Nothing is shielded", `cleave_budget` check 3) no longer holds as a

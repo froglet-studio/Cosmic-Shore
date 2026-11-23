@@ -7,7 +7,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -448,7 +448,10 @@ namespace CosmicShore.Gameplay
             if (!_launched && lobby.Ticket.IsArmed && secs <= 0)
             {
                 _launched = true;
-                previewHost?.Hide();
+                // Hides the preview, then hands the arena it showed to the prism pool so the round
+                // re-issues those prisms instead of cloning the arena again (every peer lays its own;
+                // the host's lobby makes the same call and waits on it - see MaelstromLobby).
+                if (previewHost) previewHost.ParkArenaForRound();
                 MaelstromTransitions.LaunchFlourish(_configureGroup, launchFlashSheet);
             }
         }
@@ -922,10 +925,6 @@ namespace CosmicShore.Gameplay
         // ── Roster sourcing / ordering ───────────────────────────────────────────
 
         /// <summary>
-        /// The roster for the round-0 preview - the connected human players (every peer sees all
-        /// Player NetworkObjects via the spawn manager). Between rounds the cards come from History.
-        /// </summary>
-        /// <summary>
         /// Who is in this tournament: the live human pilots, plus the AI SEATS the hub dealt.
         ///
         /// <para>The seats have to be added by hand because the hub is not a match and spawns no
@@ -1031,18 +1030,18 @@ namespace CosmicShore.Gameplay
 
         Sprite ResolveAvatar(MaelstromPlayerSnapshot s)
         {
-            if (s.IsAI && aiProfileList != null && aiProfileList.aiProfiles != null)
+            if (s.IsAI && aiProfileList != null && aiProfileList.AiProfiles != null)
             {
-                foreach (var p in aiProfileList.aiProfiles)
+                foreach (var p in aiProfileList.AiProfiles)
                     if (p.Name == s.Name) return p.AvatarSprite;
             }
 
-            if (profileIconList != null && profileIconList.profileIcons != null)
+            if (profileIconList != null && profileIconList.ProfileIcons != null)
             {
-                foreach (var icon in profileIconList.profileIcons)
+                foreach (var icon in profileIconList.ProfileIcons)
                     if (icon.Id == s.AvatarId) return icon.IconSprite;
-                if (profileIconList.profileIcons.Count > 0)
-                    return profileIconList.profileIcons[0].IconSprite;
+                if (profileIconList.ProfileIcons.Count > 0)
+                    return profileIconList.ProfileIcons[0].IconSprite;
             }
             return null;
         }

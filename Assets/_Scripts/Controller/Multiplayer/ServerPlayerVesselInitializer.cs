@@ -192,10 +192,18 @@ namespace CosmicShore.Gameplay
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
 
             if (ConvertDepartedPlayersToAI && NetworkManager.Singleton != null)
+            {
                 NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnectedForAITakeover;
+                // The other direction (section 103): a pilot who left and came back takes their seat from the AI.
+                NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnectedForRejoin;
+            }
 
             // Client-pull: answer roster requests from freshly-joined clients.
             clientPlayerVesselInitializer.OnRosterRequested = HandleRosterRequest;
+
+            // Fair play (Threat Board T5): measure guest-owned hulls' speed on the host. Signals only,
+            // never kicks; observe-only until ceilings are authored (Docs/AntiCheat/README.md §4.2).
+            MovementPlausibilityMonitor.Attach(gameObject, gameData);
 
             // Process players that were already spawned before this initializer
             // existed (e.g. the host's Player object spawned in the Auth scene
@@ -205,6 +213,11 @@ namespace CosmicShore.Gameplay
 
         void ProcessPreExistingPlayers()
         {
+            // A scene that adopts nobody keeps nobody: release what the last scene held on to, before anything
+            // below queues it (2026-11-20).
+            if (!ConvertDepartedPlayersToAI && NetworkManager.Singleton != null)
+                ReleaseDepartedHumans(NetworkManager.Singleton);
+
             // Stage 1: Check gameData.Players (catches players spawned in THIS scene,
             // e.g. AI players whose OnNetworkSpawn() already added them).
             foreach (var p in gameData.Players)
@@ -226,13 +239,74 @@ namespace CosmicShore.Gameplay
 
             foreach (var kvp in nm.ConnectedClients)
             {
-                var playerObj = kvp.Value.PlayerObject;
-                if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
-                    continue;
-                if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
+                var player = PersistentPlayerOf(nm, kvp.Key);
+                if (player == null || _processedPlayers.Contains(player.NetworkObjectId))
                     continue;
 
                 HandlePlayerNetworkSpawned(player.OwnerClientId);
+            }
+        }
+
+        /// <summary>
+        /// The human Player a connected client flies: its Netcode player object, or the human Player it OWNS. The
+        /// second case is a pilot who dropped and took their seat back (<see cref="TryReclaimSeat"/>): that connection
+        /// was approved with no player object of its own, so the reclaimed Player is owned by it without being its
+        /// player object. Reading only the player object skipped that pilot in every scene after the rejoin: no menu
+        /// vessel, no seat in the next match, and a Player still flagged to outlive its owner (2026-11-20).
+        /// </summary>
+        static Player PersistentPlayerOf(NetworkManager nm, ulong clientId)
+        {
+            if (!nm.ConnectedClients.TryGetValue(clientId, out var client)) return null;
+
+            if (client.PlayerObject != null
+                && client.PlayerObject.TryGetComponent<Player>(out var own) && own.IsSpawned)
+                return own;
+
+            // Every AI seat is the server's as well: the host's own Player is only ever its player object.
+            if (clientId == NetworkManager.ServerClientId || nm.SpawnManager == null) return null;
+
+            foreach (var owned in nm.SpawnManager.GetClientOwnedObjects(clientId))
+                if (owned && owned.TryGetComponent<Player>(out var player) && player.IsSpawned && !player.NetIsAI.Value)
+                    return player;
+            return null;
+        }
+
+        /// <summary>
+        /// For a scene that does not adopt leavers (the menu, the Maelstrom hub). A game scene flags each remote
+        /// human's Player to outlive its owner, so the AI can take the seat. That flag is re-decided here per player,
+        /// but only after the pre-spawn wait, and only for a Player this scene's pass reaches. A guest who left before
+        /// that (during the return to the menu) stayed behind as a server-owned Player that is neither a person nor an
+        /// AI: when they joined again there were two of them, one named "Name (2)", and the leftover showed on the
+        /// other machine's roster and scoreboard. So at this scene's start, at once: every human Player still owned by
+        /// its client goes back to leaving with its owner, and one already left behind is removed.
+        /// </summary>
+        void ReleaseDepartedHumans(NetworkManager nm)
+        {
+            if (nm.SpawnManager == null) return;
+
+            // Without the host's own Player to tell apart, nothing server-owned is safe to remove.
+            var hostPlayer = nm.LocalClient != null ? nm.LocalClient.PlayerObject : null;
+
+            List<Player> leftBehind = null;
+            foreach (var networkObject in nm.SpawnManager.SpawnedObjectsList)
+            {
+                if (!networkObject || !networkObject.TryGetComponent<Player>(out var player) || player.NetIsAI.Value)
+                    continue;
+
+                if (networkObject.OwnerClientId != NetworkManager.ServerClientId)
+                    networkObject.DontDestroyWithOwner = false;
+                else if (hostPlayer != null && networkObject != hostPlayer)
+                    (leftBehind ??= new List<Player>()).Add(player);
+            }
+
+            if (leftBehind == null) return;
+
+            foreach (var player in leftBehind)
+            {
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                    $"[ServerVesselInit] Removing '{player.NetName.Value}': its pilot left before this scene and nothing here adopts it.");
+                if (player.Vessel != null) DespawnVessel(player.Vessel);
+                player.NetworkObject.Despawn(true);
             }
         }
 
@@ -240,7 +314,10 @@ namespace CosmicShore.Gameplay
         {
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
             if (NetworkManager.Singleton != null)
+            {
                 NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnectedForAITakeover;
+                NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnectedForRejoin;
+            }
             if (clientPlayerVesselInitializer != null)
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
@@ -297,6 +374,13 @@ namespace CosmicShore.Gameplay
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                         $"[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
                         "resolved to an already-claimed server-owned player - nothing to do.");
+                else if (IsOwnersPlayerAlreadyProcessed(ownerClientId))
+                    // ProcessPreExistingPlayers can raise the same human twice: stage 1 from
+                    // gameData.Players, stage 2 from ConnectedClients, both before the delay above
+                    // lets the first one mark the player processed. The first did the work.
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                        $"[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
+                        "resolved to a player already processed - nothing to do.");
                 else
                     CSDebug.LogWarning($"[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL");
                 return;
@@ -680,6 +764,9 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer) return;
 
+            // A returning pilot's roster request can beat the connect callback; seat them first either way.
+            TryReclaimSeat(requesterClientId);
+
             var requester = FindPlayerByOwnerClientId(requesterClientId);
             if (requester != null
                 && requester.VesselNetId == 0
@@ -806,10 +893,6 @@ namespace CosmicShore.Gameplay
         readonly HashSet<VesselClassType> _arenaHullsInUse = new();
 
         /// <summary>
-        /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
-        /// and updates the player's <see cref="Player.NetVesselId"/>.
-        /// </summary>
-        /// <summary>
         /// Whether a player who leaves mid-match is handed to the AI instead of vanishing.
         /// True for game scenes; the MENU overrides it to false, because an abandoned menu vessel
         /// has no match to finish and would just accumulate autopilot ships in the lava lamp.
@@ -887,6 +970,7 @@ namespace CosmicShore.Gameplay
                 vc.NetworkObject.ChangeOwnership(NetworkManager.ServerClientId);
 
             ConfigureDepartedPilotAI(vessel);
+            ArmModeSteering(player);
             vessel.ToggleAIPilot(true);
 
             // Say it out loud. A ship that keeps flying under new management is LESS confusing than
@@ -894,6 +978,76 @@ namespace CosmicShore.Gameplay
             // differently reads as a cheat or a bug. Fired on the server; the toast feed is
             // per-peer, so this announces on the host and the ClientRpc below covers the rest.
             AnnouncePilotHandedToAI(player.NetName.Value.ToString(), player.Domain);
+        }
+
+        /// <summary>
+        /// Give an adopted hull the mode's own AI steering (<see cref="IAIPilotArming"/>: every gate race), as
+        /// <c>PilotControl</c> does for a hull handed over by hand. A gate race arms its AI seats once, when the
+        /// countdown ends, so a pilot who left after that flew the platform autopilot's own seeking: in Switchback it
+        /// circled through the cell centre and never threaded a gate (two-player test, 2026-11-15). A mode without
+        /// the interface keeps the platform autopilot.
+        /// </summary>
+        static void ArmModeSteering(IPlayer player)
+        {
+            foreach (var controller in FindObjectsByType<MiniGameControllerBase>(FindObjectsSortMode.None))
+                if (controller is IAIPilotArming arming && arming.ArmAIPilot(player))
+                    return;
+        }
+
+        void HandleClientConnectedForRejoin(ulong clientId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer || clientId == nm.LocalClientId) return;
+            TryReclaimSeat(clientId);
+        }
+
+        /// <summary>
+        /// The reverse of <see cref="ConvertPlayerToAI"/> (Docs/MENU_REDESIGN_B.md section 103): a pilot who dropped and
+        /// rejoined (approved with a <see cref="MatchRejoin"/> payload, so no new Player was made) takes back the Player
+        /// the AI has been flying - its score, its domain, its vessel - instead of entering the match as a second pilot.
+        /// Idempotent: the pending rejoin is taken once.
+        /// </summary>
+        void TryReclaimSeat(ulong clientId)
+        {
+            if (!MatchRejoin.ServerTake(clientId, out var ugsPlayerId)) return;
+
+            var player = MatchRejoin.FindReclaimableSeat(gameData.Players, ugsPlayerId);
+            if (player == null)
+            {
+                // The seat went between approval and connect (the match ended). Nothing to hand back: let the
+                // client's own join watchdog bounce it.
+                CSDebug.LogWarning($"[ServerVesselInit] Client {clientId} rejoined but its seat is gone.");
+                return;
+            }
+
+            NetSessionRecorder.Mark("seatReclaimed", player.NetName.Value.ToString());
+
+            player.NetworkObject.ChangeOwnership(clientId);
+            player.NetworkObject.DontDestroyWithOwner = true;
+            player.NetIsAI.Value = false;
+            _humanPlayersByOwner[clientId] = player;
+
+            var vessel = player.Vessel;
+            if (vessel != null)
+            {
+                vessel.ToggleAIPilot(false);
+                if (vessel is VesselController vc && vc.IsSpawned)
+                    vc.NetworkObject.ChangeOwnership(clientId);
+            }
+
+            // Tell the returning client which pair is now its own (it may have paired it as someone else's), then
+            // send the roster so every other pair resolves too. The turn state rides along: the client loaded the
+            // scene after the countdown's StartTurn went out, so without it the client would start the match over
+            // (cinematic, Ready) while everyone else is racing.
+            bool turnRunning = gameData.IsTurnRunning;
+            float turnElapsed = turnRunning ? Time.time - gameData.TurnStartTime : 0f;
+            if (clientPlayerVesselInitializer != null && clientPlayerVesselInitializer.IsSpawned)
+                clientPlayerVesselInitializer.SeatReclaimed_ClientRpc(player.NetworkObjectId, turnRunning, turnElapsed,
+                    gameData.RoundsPlayed, gameData.TurnsTakenThisRound, new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+                });
+            SendFullRosterToClient(clientId);
         }
 
         void AnnouncePilotHandedToAI(string playerName, Domains domain)
@@ -936,6 +1090,10 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
+        /// and updates the player's <see cref="Player.NetVesselId"/>.
+        /// </summary>
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
         {
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
@@ -1020,17 +1178,19 @@ namespace CosmicShore.Gameplay
             var nm = NetworkManager.Singleton;
             if (nm == null) return null;
 
-            if (!nm.ConnectedClients.TryGetValue(ownerClientId, out var client))
-                return null;
-
-            var playerObj = client.PlayerObject;
-            if (playerObj == null || !playerObj.TryGetComponent<Player>(out var player))
-                return null;
-
-            if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
+            var player = PersistentPlayerOf(nm, ownerClientId);
+            if (player == null || _processedPlayers.Contains(player.NetworkObjectId))
                 return null;
 
             return player;
+        }
+
+        bool IsOwnersPlayerAlreadyProcessed(ulong ownerClientId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return false;
+            var player = PersistentPlayerOf(nm, ownerClientId);
+            return player != null && _processedPlayers.Contains(player.NetworkObjectId);
         }
 
         /// <summary>

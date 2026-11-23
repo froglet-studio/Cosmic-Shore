@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -14,7 +15,7 @@ namespace CosmicShore.UI
     ///
     ///   [core]  drift         (LT, leans with the drift)       → no element, no upgrade
     ///   [core]  omni crystal  (shielded ring, flashes on pickup) → no element, no upgrade
-    ///   Charge → crystal joust (the skull, impactIcon)          → "Shepherd"
+    ///   Charge → crystal joust (the two hulls + a SPEED gauge)  → "Shepherd"
     ///   Mass   → boost ring    (danger-tinted)                  → "Twin Rings"
     ///   Space  → steal         (GENERATED: reach ring + count)  → "Iron Grip"
     ///   Time   → skimming      (the skim icon + the boost fill) → "Live Wire"
@@ -108,14 +109,76 @@ namespace CosmicShore.UI
         [SerializeField] private float driftRotationDuration = 0.45f;
         [Tooltip("Scale the icon swells to while drifting, relative to its kerned rest scale.")]
         [SerializeField] private float driftScale = 1.15f;
+        [Tooltip("The drift card as PARTS under its icon (Garrett 2026-10-25: 'use blocks and straight as the " +
+                 "default state. when drifting change them to octahedrons. have the angle between vessel and the " +
+                 "trail match the player's difference between vessel forward and course velocity'): the TRAIL, " +
+                 "stretched across the card - blocks at rest, octahedrons (shielded prisms) while drifting.")]
+        [SerializeField] private Image driftTrailIcon;
+        [Tooltip("The HULL, point-anchored on its own centre so it can TURN: rotated every frame of a drift by the " +
+                 "signed angle between the vessel's forward and its course (SetDriftAngle), eased. It wears the " +
+                 "pilot's DOMAIN colour at all times (Garrett 2026-10-25: 'the dynamic angle and trail change " +
+                 "should be sufficient' - no state tint on the parts).")]
+        [SerializeField] private Image driftHullIcon;
+        [Tooltip("The trail at rest: blocks, straight behind the hull.")]
+        [SerializeField] private Sprite driftTrailRestSprite;
+        [Tooltip("The trail while drifting: octahedrons - a drift lays shielded prisms - in the domain's SHIELDED " +
+                 "colour (SetShieldedTint, the same push as the omni card); blocks in the domain colour at rest.")]
+        [SerializeField] private Sprite driftTrailDriftingSprite;
+        [Tooltip("Largest hull turn the card shows, degrees either side - past this a drift reads as a spin.")]
+        [SerializeField, Range(10f, 90f)] private float driftMaxAngle = 75f;
+        [Tooltip("How fast the shown angle follows the live one, degrees per second. The live angle moves in small " +
+                 "steps; the hull should glide, not tick.")]
+        [SerializeField, Min(1f)] private float driftAngleSpeed = 360f;
 
         [Header("Impact (the joust - the CHARGE card)")]
+        [Tooltip("The Charge card's icon Image - the lockup kerns and punches THIS. When the two joust " +
+                 "hulls below are wired it is a transparent container (no sprite, alpha 0), the Dolphin's " +
+                 "jaw-pair arrangement; alone, it is the one tinted icon it used to be.")]
         [FormerlySerializedAs("dangerRingIcon")]
         [SerializeField] private Image impactIcon;
         [FormerlySerializedAs("normalColor")]
         [SerializeField] private Color impactRestColor = Color.white;
+        [Tooltip("Flash colour of the single-icon path (no pair wired). With the pair, a joust turns BOTH " +
+                 "hulls the shared lime instead.")]
         [FormerlySerializedAs("dangerColor")]
         [SerializeField] private Color joustFlashColor = Color.red;
+        [Tooltip("The player's Squirrel, right-facing, a child of the icon: tinted in the pilot's DOMAIN " +
+                 "colour (SetPlayerDomainColor - the same push that paints the boost fill and the steal count).")]
+        [SerializeField] private Image joustSelfIcon;
+        [Tooltip("The opponent, left-facing, nose to nose with the player's: tinted the palette's DANGER " +
+                 "colour (SetDangerTint - the same push that paints the Boost Ring). Garrett 2026-10-25: " +
+                 "'the right facing squirrel should be the players domain color. the other squirrel can " +
+                 "be the danger color (fire). when the player jousts then both can turn lime.'")]
+        [SerializeField] private Image joustOpponentIcon;
+        [Tooltip("Skimming (the TIME card) as parts under its icon: the Squirrel and the prisms it has reached - " +
+                 "tinted the pilot's DOMAIN colour (skimmed mass is yours). The skimmer sphere between them is a " +
+                 "third child the view never tints: it stays white.")]
+        [SerializeField] private Image skimSelfIcon;
+        [Tooltip("The prisms still ahead of the sphere - tinted the shared spec's blueColor. Garrett 2026-10-25: " +
+                 "'make the vessel and the prisms touching and behind the skimmer the player's domain color. make " +
+                 "the prisms in front of the skimmer the blue.'")]
+        [SerializeField] private Image skimAheadIcon;
+        [Tooltip("Shared colour spec: the joust's hit colour is its limeColor, the SAME lime a maxed flower and " +
+                 "the Dolphin's armed jaws show. Loaded from Resources when left empty; never author a second lime.")]
+        [SerializeField] private ElementalBarsConfigSO barsConfig;
+        [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
+
+        [Header("Joust speed (the CHARGE card's gauge - GENERATED, see EnsureGeneratedAbilityIcons)")]
+        [Tooltip("Thickness, in canvas units, of the joust-speed threshold's marks (the Rhino's momentumMarkThickness).")]
+        [SerializeField, Min(0.5f)] private float joustMarkThickness = 2f;
+        [Tooltip("The fleet's lockup style. The mark's colours are ITS: the gap cut through the fill once speed has passed " +
+                 "the threshold is the gauge track colour (the plate showing through), and the ticks while speed is below " +
+                 "it are the gauge fill colour at joustMarkAheadAlpha. Loaded from Resources when left empty; never " +
+                 "author a second copy of either colour.")]
+        [SerializeField] private AbilityLockupStyleSO lockupStyle;
+        [SerializeField] private string lockupStyleResourcePath = "AbilityLockupStyle";
+        [Tooltip("The ticks' opacity: the gauge fill colour at this alpha, so they read as a mark, not as fill.")]
+        [SerializeField, Range(0f, 1f)] private float joustMarkAheadAlpha = 0.35f;
+        [Tooltip("Length, in canvas units, of a tick, in from each edge of the gauge.")]
+        [SerializeField, Min(1f)] private float joustTickLength = 7f;
+        [Tooltip("How far the plate's slanted edge sits in from the gauge's rect at the BOTTOM of the card, in canvas " +
+                 "units (AbilityLockupStyle's trapezoid inset): a tick starts at the slant at its own height.")]
+        [SerializeField, Min(0f)] private float joustTickSlantInset = 9f;
 
         [Header("Boost Ring cooldown (Mass slot)")]
         [Tooltip("The Boost Ring ability's icon. Its RECHARGE is drawn by the fleet's standard " +
@@ -172,6 +235,7 @@ namespace CosmicShore.UI
         // Juice tweens
         private Tween _impactScaleTween;
         private Tween _impactColorTween;
+        private Sequence _joustColorTween;
         private Tween _boostScaleTween;
 
         private Vector3 _impactIconOriginalScale;
@@ -185,6 +249,14 @@ namespace CosmicShore.UI
         private Tween _driftRotationTween;
         private Tween _driftColorTween;
         private Tween _driftScaleTween;
+        private float _driftAngleShown;          // the pair's hull turn, degrees, eased toward the live angle
+        private Color _shieldedTint = new Color(0f, 0f, 0f, 0f);   // the domain's shielded colour; alpha 0 = not landed
+
+        // The generated Charge gauge (speed against the least speed a joust needs). Built once by
+        // EnsureGeneratedAbilityIcons and adopted into the card by the lockup.
+        private Image _joustSpeedGauge;
+        private Image _joustGap, _joustTickLeft, _joustTickRight;
+        private float _joustThreshold01 = -1f;
 
         // The generated Space readout. Built once by EnsureGeneratedAbilityIcons.
         private Image _reachIcon;
@@ -212,6 +284,7 @@ namespace CosmicShore.UI
         /// </summary>
         public override void EnsureGeneratedAbilityIcons()
         {
+            EnsureJoustSpeedGauge();
             if (_reachIcon) return;
 
             var host = transform.Find("StealReachButton") as RectTransform;
@@ -303,6 +376,101 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetStealReach01(float reach01) => _reachTarget01 = Mathf.Clamp01(reach01);
 
+        /// <summary>
+        /// The CHARGE card's meter: the hull's speed, built at runtime because it is a live measurement (Garrett,
+        /// 2026-11-11: "show the speed gauge on its charge icon with the tick on the threshold"). The lockup adopts it
+        /// like an authored gauge and styles it; until then it is invisible. Idempotent: a rebuild finds it by field,
+        /// and a fresh one is resolved by name.
+        /// </summary>
+        void EnsureJoustSpeedGauge()
+        {
+            if (_joustSpeedGauge) return;
+            if (transform is not RectTransform root) return;
+
+            _joustSpeedGauge = ResolveGeneratedChild<Image>(root, "JoustSpeedGauge");
+            _joustSpeedGauge.color = new Color(1f, 1f, 1f, 0f);   // the lockup's AdoptGauge paints it
+            _joustSpeedGauge.raycastTarget = false;
+            _joustSpeedGauge.fillAmount = 0f;
+            _joustThreshold01 = -1f;
+            BindGeneratedAbilityGauge(Element.Charge, _joustSpeedGauge);
+        }
+
+        /// <summary>
+        /// The joust's speed on the CHARGE card: <paramref name="speed01"/> fills the gauge, and the least speed a joust
+        /// needs (<paramref name="threshold01"/>, the Squirrel's Charge) is ONE mark on it, drawn the way the Rhino draws
+        /// Momentum (<c>RhinoVesselHUDView.SetMomentumMark</c>): a dim tick in from each slanted edge while the speed is
+        /// below it, a gap cut through the fill once the speed has passed it - the moment a joust lands. Both are
+        /// fractions of the fastest this hull flies; a threshold of 0 or less hides the mark.
+        /// </summary>
+        public void SetJoustSpeed(float speed01, float threshold01)
+        {
+            EnsureJoustSpeedGauge();
+            if (!_joustSpeedGauge) return;
+            speed01 = Mathf.Clamp01(speed01);
+            threshold01 = Mathf.Clamp01(threshold01);
+            _joustSpeedGauge.fillAmount = speed01;
+
+            if (!_joustGap)
+            {
+                var parent = _joustSpeedGauge.rectTransform;
+                _joustGap = ResolveGeneratedChild<Image>(parent, "JoustSpeedGap");
+                _joustTickLeft = ResolveGeneratedChild<Image>(parent, "JoustSpeedTickL");
+                _joustTickRight = ResolveGeneratedChild<Image>(parent, "JoustSpeedTickR");
+                _joustGap.raycastTarget = _joustTickLeft.raycastTarget = _joustTickRight.raycastTarget = false;
+                _joustThreshold01 = -1f;
+            }
+
+            if (!Mathf.Approximately(threshold01, _joustThreshold01))
+            {
+                _joustThreshold01 = threshold01;
+                float slant = joustTickSlantInset * (1f - threshold01);   // the plate narrows toward its base
+                PlaceJoustMark(_joustGap, 0f, 1f, threshold01, 0f, 0f);
+                PlaceJoustMark(_joustTickLeft, 0f, 0f, threshold01, joustTickLength, slant);
+                PlaceJoustMark(_joustTickRight, 1f, 1f, threshold01, joustTickLength, -slant);
+            }
+
+            var marks = JoustMarksFor(speed01, threshold01);
+            _joustGap.gameObject.SetActive(marks.Gap);
+            _joustTickLeft.gameObject.SetActive(marks.Ticks);
+            _joustTickRight.gameObject.SetActive(marks.Ticks);
+
+            if (!lockupStyle && !string.IsNullOrEmpty(lockupStyleResourcePath))
+                lockupStyle = Resources.Load<AbilityLockupStyleSO>(lockupStyleResourcePath);
+            if (!lockupStyle) return;
+            _joustGap.color = lockupStyle.GaugeTrackColor;
+            var ahead = lockupStyle.GaugeFillColor;
+            ahead.a *= joustMarkAheadAlpha;
+            _joustTickLeft.color = _joustTickRight.color = ahead;
+        }
+
+        /// <summary>Which joust-speed marks show: the ticks while the speed is below the threshold, the gap once it has
+        /// reached it, nothing for a threshold of 0 (no minimum).</summary>
+        public struct JoustMarks
+        {
+            public bool Ticks, Gap;
+        }
+
+        /// <summary>What <see cref="SetJoustSpeed"/> shows, as a pure function so it is tested without a canvas.</summary>
+        public static JoustMarks JoustMarksFor(float speed01, float threshold01)
+        {
+            bool shown = threshold01 > 0f;
+            bool passed = speed01 >= threshold01;
+            return new JoustMarks { Ticks = shown && !passed, Gap = shown && passed };
+        }
+
+        // A horizontal mark at height y01 of the gauge, spanning anchors x0..x1 (a stretched gap), or `width` canvas units
+        // in from that edge (x0 == x1: a tick, pivoted on the edge so it grows inward, shifted `dx` to the slant). The
+        // Rhino's PlaceMomentumMark.
+        void PlaceJoustMark(Image img, float x0, float x1, float y01, float width, float dx)
+        {
+            var rt = img.rectTransform;
+            rt.anchorMin = new Vector2(x0, y01);
+            rt.anchorMax = new Vector2(x1, y01);
+            rt.pivot = new Vector2(x0, 0.5f);
+            rt.anchoredPosition = new Vector2(dx, 0f);
+            rt.sizeDelta = new Vector2(width, joustMarkThickness);
+        }
+
         /// <summary>The running total of prisms this pilot has taken. Repainted only on a change.</summary>
         public void SetStealCount(int count)
         {
@@ -334,6 +502,7 @@ namespace CosmicShore.UI
         {
             _dangerTint = danger;
             PaintBoostRing();
+            PaintJoustPair();
         }
 
         void PaintBoostRing()
@@ -361,9 +530,11 @@ namespace CosmicShore.UI
 
             if (impactIcon)
             {
-                impactIcon.color = impactRestColor;
+                impactIcon.color = HasJoustPair ? new Color(1f, 1f, 1f, 0f) : impactRestColor;
                 _impactIconOriginalScale = AbilityIconRestScale(Element.Charge);
             }
+            PaintJoustPair();
+            PaintSkimPair();
 
 
             if (tubeCooldownIcon)
@@ -416,6 +587,50 @@ namespace CosmicShore.UI
                 boostFill.color = color;
 
             PaintStealCount(color);
+            PaintJoustPair();
+            PaintSkimPair();
+            PaintDriftPair();
+        }
+
+        /// <summary>
+        /// The Time card's pair: what the skim has made yours in the domain colour, what is still ahead in the
+        /// HUD's blue. Painted on the same domain push as the boost fill and the steal count.
+        /// </summary>
+        void PaintSkimPair()
+        {
+            if (!skimSelfIcon || !skimAheadIcon) return;
+            skimSelfIcon.color = _playerDomainColor;
+            if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
+                barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+            skimAheadIcon.color = barsConfig ? barsConfig.BlueColor : Color.white;
+        }
+
+        /// <summary>Both joust hulls are wired - the Charge icon is a transparent container over them.</summary>
+        bool HasJoustPair => joustSelfIcon && joustOpponentIcon;
+
+        /// <summary>The shared lime - "this is full / this landed" everywhere on the HUD.</summary>
+        Color JoustHitColor
+        {
+            get
+            {
+                if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
+                    barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+                return barsConfig ? barsConfig.LimeColor : joustFlashColor;
+            }
+        }
+
+        /// <summary>
+        /// Rest colours of the pair: the player's hull in the pilot's domain colour, the opponent in the
+        /// palette's danger colour. Neither is an ELEMENT colour (elements have no colour): one is a team
+        /// claim and the other the fleet's one warning hue. A danger colour the palette does not author
+        /// (alpha 0) leaves the opponent white rather than black.
+        /// </summary>
+        void PaintJoustPair()
+        {
+            if (!HasJoustPair) return;
+            _joustColorTween?.Kill();
+            joustSelfIcon.color = _playerDomainColor;
+            joustOpponentIcon.color = _dangerTint.a > 0f ? _dangerTint : Color.white;
         }
 
         public void SetBoostState(float boost01, bool isBoosted, bool isFull,
@@ -496,26 +711,71 @@ namespace CosmicShore.UI
             _driftRestColor = _driftIcon.color;
             _drifting = false;
             _driftSide = 0;
+            _driftAngleShown = 0f;
+            if (HasDriftPair)
+            {
+                if (driftTrailRestSprite) driftTrailIcon.sprite = driftTrailRestSprite;
+                driftHullIcon.rectTransform.localRotation = Quaternion.identity;
+                PaintDriftPair();
+            }
         }
 
         /// <summary>
+        /// The drift parts' colours: the hull and the resting trail in the pilot's domain colour, the drifting
+        /// trail (octahedrons: shielded prisms) in the domain's SHIELDED colour. Nothing here is a state tint.
+        /// </summary>
+        void PaintDriftPair()
+        {
+            if (!HasDriftPair) return;
+            _driftColorTween?.Kill();
+            driftHullIcon.color = _playerDomainColor;
+            driftTrailIcon.color = _drifting && _shieldedTint.a > 0f ? _shieldedTint : _playerDomainColor;
+        }
+
+        /// <summary>The domain's shielded colour, pushed by the controller beside the omni card's tint.</summary>
+        public void SetShieldedTint(Color shielded)
+        {
+            _shieldedTint = shielded;
+            PaintDriftPair();
+        }
+
+        /// <summary>The trail and the hull are wired as parts - the card's icon is a transparent container over them.</summary>
+        bool HasDriftPair => driftTrailIcon && driftHullIcon;
+
+        /// <summary>
         /// A drift began. The lean is deliberately NOT decided here: on the frame a drift engages
-        /// the nose has not yet left the course, so any side read now is noise. The controller
-        /// feeds <see cref="SetDriftSide"/> every frame of the drift and the icon leans the moment
+        /// the nose has not yet left the course, so any angle read now is noise. The controller
+        /// feeds <see cref="SetDriftAngle"/> every frame of the drift and the hull turns the moment
         /// the two actually diverge - which is also what lets it follow a drift that swaps sides.
         /// </summary>
         public void JuiceDriftStart(bool isDoubleDrift)
         {
             if (!_driftIcon) return;
 
-            var sprite = isDoubleDrift ? doubleDriftingSprite : driftingSprite;
-            if (sprite) _driftIcon.sprite = sprite;
+            if (HasDriftPair)
+            {
+                // The parts: the trail becomes octahedrons (a drift lays shielded prisms) and takes the domain's
+                // shielded colour; the hull stays in the domain colour. The angle and the trail change are the
+                // whole signal (Garrett 2026-10-25). The container keeps the scale punch.
+                if (driftTrailDriftingSprite) driftTrailIcon.sprite = driftTrailDriftingSprite;
+                _driftColorTween?.Kill();
+                if (_shieldedTint.a > 0f)
+                    _driftColorTween = driftTrailIcon
+                        .DOColor(_shieldedTint, driftRotationDuration)
+                        .SetEase(Ease.OutQuad)
+                        .SetLink(driftTrailIcon.gameObject);
+            }
+            else
+            {
+                var sprite = isDoubleDrift ? doubleDriftingSprite : driftingSprite;
+                if (sprite) _driftIcon.sprite = sprite;
 
-            _driftColorTween?.Kill();
-            _driftColorTween = _driftIcon
-                .DOColor(isDoubleDrift ? doubleDriftColor : driftColor, driftRotationDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(_driftIcon.gameObject);
+                _driftColorTween?.Kill();
+                _driftColorTween = _driftIcon
+                    .DOColor(isDoubleDrift ? doubleDriftColor : driftColor, driftRotationDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(_driftIcon.gameObject);
+            }
 
             var rest = CoreAbilityIconRestScale(CoreAbility.Drift);
             _driftScaleTween?.Kill();
@@ -525,6 +785,28 @@ namespace CosmicShore.UI
                 .SetLink(_driftIcon.gameObject);
 
             _drifting = true;
+        }
+
+        /// <summary>
+        /// The live drift: the signed angle, in degrees, between the vessel's forward and its course, positive
+        /// when the nose has swung LEFT of the course (the course lies to the ship's right). Pushed every frame
+        /// of a drift. With the parts wired the hull turns by exactly that angle (clamped, eased); the single-icon
+        /// path leans the whole icon to the side it names, re-tweening only when the side changes.
+        /// </summary>
+        public void SetDriftAngle(float angleDegrees)
+        {
+            if (!_driftIcon || !_drifting) return;
+            if (HasDriftPair)
+            {
+                float target = Mathf.Clamp(angleDegrees, -driftMaxAngle, driftMaxAngle);
+                _driftAngleShown = Mathf.MoveTowards(_driftAngleShown, target, driftAngleSpeed * Time.deltaTime);
+                driftHullIcon.rectTransform.localRotation = Quaternion.Euler(0f, 0f, _driftAngleShown);
+                return;
+            }
+            // Below this the nose has not left the course far enough for a side to mean anything.
+            const float sideDeadbandDegrees = 3f;
+            int side = Mathf.Abs(angleDegrees) < sideDeadbandDegrees ? 0 : (angleDegrees > 0f ? -1 : 1);
+            SetDriftSide(side);
         }
 
         /// <summary>
@@ -545,14 +827,33 @@ namespace CosmicShore.UI
             _drifting = false;
             _driftSide = 0;
 
-            if (_driftRestSprite) _driftIcon.sprite = _driftRestSprite;
-            LeanDriftIcon(0f);
+            if (HasDriftPair)
+            {
+                if (driftTrailRestSprite) driftTrailIcon.sprite = driftTrailRestSprite;
+                _driftRotationTween?.Kill();
+                _driftRotationTween = driftHullIcon.rectTransform
+                    .DOLocalRotate(Vector3.zero, driftRotationDuration)
+                    .SetEase(Ease.OutCubic)
+                    .OnUpdate(() => _driftAngleShown = driftHullIcon.rectTransform.localEulerAngles.z)
+                    .OnComplete(() => _driftAngleShown = 0f)
+                    .SetLink(driftHullIcon.gameObject);
+                _driftColorTween?.Kill();
+                _driftColorTween = driftTrailIcon
+                    .DOColor(_playerDomainColor, colorTweenDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(driftTrailIcon.gameObject);
+            }
+            else
+            {
+                if (_driftRestSprite) _driftIcon.sprite = _driftRestSprite;
+                LeanDriftIcon(0f);
 
-            _driftColorTween?.Kill();
-            _driftColorTween = _driftIcon
-                .DOColor(_driftRestColor, colorTweenDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(_driftIcon.gameObject);
+                _driftColorTween?.Kill();
+                _driftColorTween = _driftIcon
+                    .DOColor(_driftRestColor, colorTweenDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(_driftIcon.gameObject);
+            }
 
             _driftScaleTween?.Kill();
             _driftScaleTween = _driftIcon.rectTransform
@@ -593,6 +894,21 @@ namespace CosmicShore.UI
                         .DOScale(_impactIconOriginalScale, iconPunchDuration * 0.7f)
                         .SetEase(Ease.OutBounce);
                 });
+
+            if (HasJoustPair)
+            {
+                // The pair: both hulls snap to the shared lime and settle back to their own colours -
+                // the player's to the domain, the opponent's to danger.
+                _joustColorTween?.Kill();
+                var hit = JoustHitColor;
+                joustSelfIcon.color = hit;
+                joustOpponentIcon.color = hit;
+                _joustColorTween = DOTween.Sequence()
+                    .Join(joustSelfIcon.DOColor(_playerDomainColor, colorTweenDuration).SetEase(Ease.OutQuad))
+                    .Join(joustOpponentIcon.DOColor(_dangerTint.a > 0f ? _dangerTint : Color.white, colorTweenDuration).SetEase(Ease.OutQuad))
+                    .SetLink(joustSelfIcon.gameObject);
+                return;
+            }
 
             // Color flash: snap to the source colour, tween back to rest
             _impactColorTween?.Kill();

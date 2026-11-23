@@ -474,13 +474,14 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
 - **Vessel side**: `VesselImpactor` on the root (RequireComponent pulls `NetworkVesselImpactor`)
   with `vesselImpactorDataContainerSO` → `Assets/_SO_Assets/Effects/Effect Containers/
   VesselContainers/{Vessel}ImpactorDataContainer.asset`. Baseline prism trio every shipping
-  vessel authors: `VesselDamagePrismEffect` + `VesselHapticsByPrismEffect` +
+  vessel authors: `VesselDamagePrismEffect` + `VesselHapticsByPrismEffect` (the punish thud; a hull whose verb is
+  contact, a rammer, carries `VesselRamRewardByPrismEffect` instead, `Docs/HAPTICS.md`) +
   `VesselElementalDebuffByDangerPrismEffect`; plus ≥1 crystal effect
   (`{Vessel}VesselExplosionByCrystalEffect` / `...ChangeResourceByCrystalEffect`). **The Rhino is
   the sanctioned exception to the first slot** (2026-10-13): its hull destroys nothing, so
   `RhinoPloughPrismEffect` REPLACES `VesselDamagePrismEffect` (`RhinoImpactorDataContainer`:
-  plough + haptics + elemental-debuff-by-danger), and its crystal pair is
-  `RhinoVesselExplosionByCrystalEffect` + `RhinoVesselSurgeByCrystalEffect` (the Surge replaced the
+  plough + ram reward haptic + elemental-debuff-by-danger), and its crystal pair is
+  `RhinoVesselExplosionByCrystalEffect` + `SwordfishVesselSurgeByCrystalEffect` (the Surge replaced the
   resource-change effect 2026-10-16). It also carries no `VesselChangeSpeedByPrismEffect` by design —
   "the bulldozer ignores mass". The trio is the default, not a law: a hull whose contact verb is
   not destruction swaps the first slot for its own verb. Empty arrays
@@ -608,7 +609,7 @@ already lists all 11 prefabs).
 | Sparrow | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ row; no switcher (hints static, both glyph sets render); glyph art wrong | ✅ | skimmer containers all-empty; 2nd inline skimmer unwired | |
 | Manta | ✅ | 3/4 quantitative, 0 upgrades — **open slots** | 0 found (re-survey at vessel-prefab level) | ✅ (Manta meshes, also Termite/Falcon/Shrike) | ✅ | blocked on design |
 | Dolphin | ✅ | 4/4 + 4 upgrades SHIPPED (`claude/dolphin-energy-crystal-cooldown-zpvc07`) | 4/4 bound; no switcher (hints unbound) | ❌ placeholder art — rig swap pending | ✅ **since the branch** — the reference pointed at a DISABLED twin | energy economy + drift boost + cone; see `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` |
-| Rhino | ✅ | **4/4 + 4 upgrades SHIPPED 2026-10-16** (Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker, Ramp Spool / Momentum; editor-unverified) | **4/4 bound** (placeholder icons, 2026-10-16); the old 3-in-vessel-prefab cluster deleted | ❌ `Rhino_Test.fbx` still wired — rig swap to `rhino_shapekey_with_animations.fbx` never run | ✅ (sword variant; hull = plough, not damage) | was "1/4, open slots, bind once map approved" — done. Still open: rig swap, jets unsized, no authored `ElementalBarsView` |
+| Rhino | ✅ | **4/4 + 4 upgrades SHIPPED 2026-10-16** (Energize / Sword Steal, Afterimage / Danger Afterimages, Blade Reach / Shield Breaker, Ramp Spool / Momentum - the Charge and Space L5s re-cut 2026-10-26 from Live Wire and Breaker; editor-unverified) | **4/4 bound** (placeholder icons, 2026-10-16); the old 3-in-vessel-prefab cluster deleted | ❌ `Rhino_Test.fbx` still wired — rig swap to `rhino_shapekey_with_animations.fbx` never run | ✅ (sword variant; hull = plough, not damage) | was "1/4, open slots, bind once map approved" — done. Still open: rig swap, jets unsized, no authored `ElementalBarsView` |
 | Serpent | ✅ | 1/4, 0 upgrades — **open slots** | 0 bound; HUD root was centre-collapsed (fixed) | ✅ | ❌ "VacuumSkimmer" has no SkimmerImpactor/container AND its GameObject is INACTIVE — cannot vacuum | fails Audit Vessel Skimmers |
 | Urchin / Grizzly / Termite / Falcon / Shrike | ❌ | none | none | Urchin ❌ (rig pending) · Grizzly ❌ (no art) · Termite/Falcon/Shrike ✅ | none (nested base skimmer would NRE) | prefabs exist and are already in DefaultNetworkPrefabs (all 11 are — don't re-add); Vessel Prefab Container registration unstarted; NONE of the five has a `{Vessel}CameraSettingsSO.asset`; Falcon/Shrike additionally lack SO_Class assets |
 

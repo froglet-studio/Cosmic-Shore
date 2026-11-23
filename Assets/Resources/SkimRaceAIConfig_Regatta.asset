@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bf12f8c9f443417b8791c1048628978, type: 3}
   m_Name: SkimRaceAIConfig_Regatta
   m_EditorClassIdentifier: 
-  PolicyVersion: regatta-learned-20261025-3flights
+  PolicyVersion: regatta-learned-20261026-3flights
   TrackFingerprint: 
   DeployInNormalPlay: 1
   DecisionHz: 0

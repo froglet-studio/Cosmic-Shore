@@ -24,14 +24,16 @@ MonoBehaviour:
   Variant:
     Enabled: 1
     HeartWorldScale: 1.737
-    BaseBodyScale: 0.4
+    BaseBodyScale: 0.8175
     BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
     BodyMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
     StarvationSeconds: 90
     Forager: 1
-    CohesionRadius: 20
+    CohesionRadius: 40.88
     BehaviorUpdateRate: 3
-    TrailBlockInteractionRadius: 15
+    TrailBlockInteractionRadius: 30.66
+    SeparationRadius: 30.66
+    FeedingClusterRadius: 20.44
     GoalWeight: 0.3
     MinSpeed: 15
     MaxSpeed: 20

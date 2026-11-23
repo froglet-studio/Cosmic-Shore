@@ -1,0 +1,124 @@
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
+using UnityEngine;
+
+namespace CosmicShore.UI
+{
+    /// <summary>
+    /// Drives the Manta's bomb-bay HUD off <see cref="MantaStingActionExecutor"/>'s instance
+    /// events (the overcharge kit this controller used to speak for is deleted). One
+    /// symmetric Rebind/Unbind pair, detach-first — a vessel swap re-runs Initialize on live
+    /// components — gated for the local human pilot only AFTER the detach, so a re-init that
+    /// hands this vessel to an AI or a remote owner can never strand the old handlers.
+    ///
+    /// The shared fuse is the one per-frame poll (a burning number has no event to ride); it
+    /// early-outs while nothing is planted. Energy rides <c>OnBayChanged</c> onto the Space card.
+    /// </summary>
+    public class MantaHUDController : VesselHUDController
+    {
+        [Header("View")]
+        [SerializeField] private MantaVesselHUDView view;
+
+        [Header("Bomb bay binding")]
+        [Tooltip("The Sting executor on this vessel's ShipActions child. Empty resolves at " +
+                 "Initialize.")]
+        [SerializeField] private MantaStingActionExecutor stingExecutor;
+
+        [Inject] GameDataSO _gameData;
+        IVesselStatus _status;
+        bool _bound;
+
+        public override void Initialize(IVesselStatus vesselStatus)
+        {
+            base.Initialize(vesselStatus);
+            _status = vesselStatus;
+
+            if (!view)
+                view = View as MantaVesselHUDView;
+            if (!stingExecutor)
+                stingExecutor = GetComponentInChildren<MantaStingActionExecutor>(true);
+
+            Unbind();
+            if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser) return;
+            Rebind();
+        }
+
+        void Rebind()
+        {
+            if (_bound || !stingExecutor) return;
+            stingExecutor.OnBayChanged += HandleBayChanged;
+            stingExecutor.OnPlantedChanged += HandlePlantedChanged;
+            stingExecutor.OnSkimCharged += HandleSkimCharged;
+            stingExecutor.OnBombArmed += HandleBombArmed;
+            stingExecutor.OnBombPlanted += HandleBombPlanted;
+            stingExecutor.OnKabloom += HandleKabloom;
+            stingExecutor.OnDecoySprung += HandleDecoySprung;
+            _bound = true;
+            HandleBayChanged();
+            HandlePlantedChanged();
+        }
+
+        void Unbind()
+        {
+            if (!_bound || !stingExecutor) { _bound = false; return; }
+            stingExecutor.OnBayChanged -= HandleBayChanged;
+            stingExecutor.OnPlantedChanged -= HandlePlantedChanged;
+            stingExecutor.OnSkimCharged -= HandleSkimCharged;
+            stingExecutor.OnBombArmed -= HandleBombArmed;
+            stingExecutor.OnBombPlanted -= HandleBombPlanted;
+            stingExecutor.OnKabloom -= HandleKabloom;
+            stingExecutor.OnDecoySprung -= HandleDecoySprung;
+            _bound = false;
+        }
+
+        void OnDisable() => Unbind();
+
+        void Update()
+        {
+            // The burning-fuse number. Event-driven everywhere else; a countdown has to tick.
+            if (!_bound || !view || !stingExecutor) return;
+            if (stingExecutor.PlantedBombs.Count > 0) HandlePlantedChanged();
+            // The Mass card's decoys and the domain the four Mantas wear: cheap reads, the view early-outs on no change.
+            view.SetDecoys(stingExecutor.HasElementalDecoy, stingExecutor.HasOmniDecoy);
+            view.SetDomainColor(ResolveDomainSignalColor());
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Brittle Star's.</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
+        }
+
+        // ── Card juice. Each beat flashes the card of the ELEMENT that owns it, so the row
+        //    doubles as the feedback surface: Space for the energy the skim gathers, Charge for
+        //    the bombs and their shared fuse, Mass for a decoy sprung.
+        void HandleSkimCharged() => Flash(Element.Space);
+        void HandleBombArmed() => Flash(Element.Space);
+        void HandleBombPlanted() => Flash(Element.Charge);
+        void HandleKabloom(int cashed) => Flash(Element.Charge);
+        void HandleDecoySprung() => Flash(Element.Mass);
+
+        void Flash(Element element)
+        {
+            if (View) View.PlayAbilityFlash(element);
+        }
+
+        void HandleBayChanged()
+        {
+            if (view && stingExecutor)
+                view.SetEnergy(stingExecutor.ArmedBombs, stingExecutor.Capacity,
+                               stingExecutor.Energy);
+        }
+
+        void HandlePlantedChanged()
+        {
+            if (view && stingExecutor)
+                view.SetFuse(stingExecutor.PlantedBombs.Count, stingExecutor.Fuse01,
+                             stingExecutor.FuseRemaining);
+        }
+    }
+}

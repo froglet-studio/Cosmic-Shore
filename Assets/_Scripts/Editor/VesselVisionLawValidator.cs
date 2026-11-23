@@ -162,8 +162,8 @@ namespace CosmicShore.Editor
                 var settings = AssetDatabase.LoadAssetAtPath<CosmicShore.Gameplay.CameraSettingsSO>(path);
                 if (settings == null) continue;
                 float distance = settings.followOffset.magnitude;
-                if (settings.enableAdaptiveZoom)
-                    distance = Mathf.Max(distance, Mathf.Abs(settings.adaptiveMaxDistance));
+                if (settings.EnableAdaptiveZoom)
+                    distance = Mathf.Max(distance, Mathf.Abs(settings.AdaptiveMaxDistance));
                 if (distance > worst) { worst = distance; worstName = Path.GetFileNameWithoutExtension(path); }
             }
             report.AppendLine($"    note  widest gameplay camera in the fleet: {worstName} at " +

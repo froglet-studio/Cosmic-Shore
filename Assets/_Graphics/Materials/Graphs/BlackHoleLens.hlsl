@@ -39,9 +39,16 @@
 // per pilot, so Unity takes the nearest 8. BlackHoleLens.MaxWells mirrors it.
 #define BLACK_HOLE_LENS_MAX_WELLS 8
 
-// The photon ring's colour and the white core's glow colour, as the studio draws them.
-#define BLACK_HOLE_LENS_RING_COLOUR float3(1.0, 0.8, 0.55)
-#define BLACK_HOLE_LENS_CORE_COLOUR float3(1.0, 0.97, 0.9)
+// The photon ring's colour, the white core's glow, a light shell's glow and the gravitational wave's glow: the
+// material's colours (BlackHoleLens.mat saves the studio's values, (1, 0.8, 0.55), (1, 0.97, 0.9), (1, 0.96, 0.86) and
+// (0.45, 0.6, 1) once Unity reads them into linear), so the world colour trace repaints them from the worn colour set
+// (Garrett, 2026-11-10, LOCKED: every colour comes from the colour set; Docs/VesselModels/COLOR_TRACE.md).
+float4 _BHRingColour;
+float4 _BHCoreColour;
+float4 _BHShellColour;
+float4 _BHWaveColour;
+#define BLACK_HOLE_LENS_RING_COLOUR (_BHRingColour.rgb)
+#define BLACK_HOLE_LENS_CORE_COLOUR (_BHCoreColour.rgb)
 
 // One hole's step: what it adds to the pixel's displacement, shadow, white core and glow.
 //   look   x kShadow (black hole shadow, × r_c), y kCore (white core, × r_c), z ring glow, w ring width (× shadow)
@@ -52,10 +59,17 @@ void BlackHoleLensWell(float2 p, float4 c, float4 w, float4 m, float4 look, floa
                        inout float3 glow, inout float3 shadowColour, inout float3 coreColour)
 {
     float2 d = p - c.xy;
-    float th = max(length(d), 1e-6);
-    float2 dir = d / th;
     float type = w.x;
     float rc = max(w.y, 1e-6);
+#ifndef BLACK_HOLE_LENS_NO_EARLY_OUT
+    // STAND-IN (lens worker, 2026-11-10): a pixel outside the hole's influence disc does no work. A horizon hole's bend
+    // is exactly zero from its reach m.x and its photon ring is e^-(thousands) there; a smooth well's u e^(-u^2/2) is
+    // below 2e-5 of its peak past u = 5 (under 0.01 px at 1280x720 for any rc < 1). Squared distance: no sqrt.
+    float infl = type < 2.5 ? max(m.x, 1.2 * look.x * rc) : 5.0 * rc;
+    if (dot(d, d) >= infl * infl) return;
+#endif
+    float th = max(length(d), 1e-6);
+    float2 dir = d / th;
     if (type < 2.5)
     {
         float fade = 1.0 - smoothstep(look2.x * m.x, m.x, th);
@@ -119,7 +133,7 @@ void BlackHoleLensWave(float2 p, float4 c, float4 P, float4 Q, float4 ax, float 
         float x = (th - P.x) / max(P.z, 1e-5);
         float g = exp(-x * x);
         disp += dir * P.y * x * g;
-        glow += float3(1.0, 0.96, 0.86) * P.w * g;
+        glow += _BHShellColour.rgb * P.w * g;
     }
     else
     {
@@ -131,7 +145,7 @@ void BlackHoleLensWave(float2 p, float4 c, float4 P, float4 Q, float4 ax, float 
             float s2 = Q.w > 0.5 ? 1.0 - ca * ca : 1.0;   // silent along the meeting line, loudest across it
             float h = exp(-u / Q.z) * sin(6.2831853 * u / max(Q.y, 0.02)) * min(1.0, 60.0 / max(r, 1.0));
             disp += dir * P.z * h * s2;
-            glow += float3(0.45, 0.6, 1.0) * 0.32 * gwGlow * max(0.0, h) * s2;
+            glow += _BHWaveColour.rgb * 0.32 * gwGlow * max(0.0, h) * s2;
             squeeze += 0.14 * gwGlow * max(0.0, -h) * s2;
         }
     }
@@ -159,9 +173,25 @@ float3 BlackHoleLensComposite(float3 col, float shadow, float core, float coreGl
                               float coreMix, float3 shadowColour, float3 coreColour, float squeeze, float shellWash)
 {
     if (core > 0.5) col = col * coreMix + coreColour * coreGlow;
-    col = col * (1.0 - min(0.6, squeeze)) + glow + float3(1.0, 0.96, 0.86) * shellWash;
+    col = col * (1.0 - min(0.6, squeeze)) + glow + _BHShellColour.rgb * shellWash;
     if (shadow > 0.5) col = shadowColour;
     return col;
+}
+
+// THE WAVES' LIGHT (pass 1, after post-processing; see BlackHoleLens.shader): the shells' and crests' glow and a passing
+// shell's wash, added to the finished picture in display values. With pass 0's composite this is the studio's
+//   col·(1 − min(0.6, squeeze)) + glow + (1, 0.96, 0.86)·shellWash, the shadow over all,
+// split where the studio's picture is final: pass 0 the scene's bend, squeeze and the holes' own light; this the rest.
+float3 BlackHoleLensWaveLight(float3 col, float3 waveGlow, float shellWash)
+{
+    return col + waveGlow + _BHShellColour.rgb * shellWash;
+}
+
+// Whether the waves' light changes this pixel: no crest or shell glows here, no shell washes over the camera, or the
+// pixel is a hole's shadow (drawn over every light in the studio).
+bool BlackHoleLensWaveLightUntouched(float shadow, float3 waveGlow, float shellWash)
+{
+    return shadow > 0.5 || (max(waveGlow.x, max(waveGlow.y, waveGlow.z)) < 1.0 / 1024.0 && shellWash < 1.0 / 1024.0);
 }
 
 // Whether the holes and waves changed this pixel at all. Far from every hole the bend is exactly zero (past its reach)

@@ -1,5 +1,10 @@
 # The Fold — the Butterfly's TIME ability
 
+> **RETIRED 2026-10-29** with the Butterfly: `FoldActionSO`, `FoldActionExecutor` and `ButterflyFoldAction.asset` are
+> deleted. The Tiger Moth's Drop replaced it (`TIGER_MOTH.md`), and its WORMHOLE survives there: a drop that pays the
+> full recharge leaves the same pair of mouths, with the same toll. This file is the record of why the Fold, its gates and
+> its wormholes were built the way they were.
+
 Hold the left trigger. The vessel stops, a ghost of it appears on the hull, and the two sticks place
 that ghost anywhere inside the cell. Let go and you are there.
 
@@ -688,3 +693,11 @@ TollShedSpeed`), `WormholeView.cs` (seal removed), `TeleportContinuity.cs` + `Ve
   it plays as a de-facto lock, drop `rivalTollPetalsPerElement` to a few petals and the pair becomes
   a priced shortcut instead.
 - **An AI does not steer round a rival pair**, so bots on a course through one will pay every time.
+
+## Being tested: the tiger moth drop (2026-10-28)
+
+A blind A/B page puts this Fold beside a **drop**: on the press the hull falls along its own down (the way its dust
+rains) without rotating, and the camera swings up over it so down reads as forward, levelling out after the landing.
+Page, numbers and what it does not model: `Docs/Studios/ABTests/README.md` "Butterfly fold or drop v1",
+https://claude.ai/artifact/7V29goD7bYi3uM23PFrMMJ. **The drop won** (Garrett, 2026-10-28) and ships as its own hull
+class, the Tiger Moth (`TIGER_MOTH.md`), so this Fold, its wormholes and Waystation are unchanged on the Butterfly.

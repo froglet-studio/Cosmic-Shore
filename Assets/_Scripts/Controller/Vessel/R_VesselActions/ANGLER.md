@@ -317,6 +317,27 @@ any comes back (its self-test plants the Y binding and the label).
 **Not in the lab yet.** The Angler Command Lab still models the squad pick and the recall; bringing it to round 8 is a
 board task. No `CORE` formula changed, so the parity gate still holds.
 
+### 1n. The fundamentals pass: every element scales a number (2026-11-12)
+
+Garrett, 2026-11-12: polish the fleet the way the Rhino was polished (#1927). Each element owns one number of its own,
+on the fleet's convention (Space = reach, Time = rate, Charge = threat and PvP petals, Mass = size), and the two open
+level-5 slots are filled. All of it is GAME ONLY: the lab models no elements, so every lab number above is unchanged and
+`studio_to_unity --check` still holds; the scaling multiplies the cloned numbers.
+
+| Element | Scales (`AnglerConfigSO`) | x1 at 0 -> at 10 | Level 5 |
+|---|---|---|---|
+| Charge | `biteRate`: divides `lockBiteCooldown` (a hunter bites every 1 s -> every 0.4 s) | x2.5 | **Swallow**: a bite's petals land on the Angler (`ElementalTransferForm.Steal`, the Strike's fleet price) instead of coming loose |
+| Mass | `lureScale`: the lure's reach (70 -> 140 u) and hold radius (22 -> 44 u), and the ring round the esca | x2 | Steal Fauna (unchanged) |
+| Space | `brushScale`: the paint brush's half-angle and its radius at the nose (the eraser is unchanged) | x2 | Paint Shields (unchanged) |
+| Time | `faunaSpeed` (unchanged) | x2 | **Riptide**: a dash pressed while one is in flight is kept and fires the moment it lands, at the other group |
+
+- Every scaling is floored at x1 (`UseFloor`), so a deficit never shrinks the lab's numbers.
+- The gates are `AnglerConfigSO.SwallowActive` / `RiptideActive` (`swallowUpgradeElement`, `riptideUpgradeElement`).
+- The omni stays the Angler's own (§1g: a creature and a seed).
+- HUD: the Charge card shows a petal flying home to the school while a hunter is out at Charge 5 (`Angler_LockPetal`);
+  the Time card shows the other group's hull too, dim, at Time 5 (`AnglerHUDView.dashRiptideAlpha`).
+- Tests: `AnglerFundamentalsTests`.
+
 ## 2. What a leash is (and is not)
 
 `IFaunaLeash` (`Controller/Environment/FloraAndFauna/IFaunaLeash.cs`) is **behaviour only**, plus one mark.
@@ -465,22 +486,21 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 
   | Element | Ability | Input | Level 5 |
   |---|---|---|---|
-  | Charge | Erase / Lock-on | LT | open |
+  | Charge | Erase / Lock-on (scales: the bite rate) | LT | Swallow (2026-11-12) |
   | Mass | Lure, Tame & Grow | A | Steal Fauna |
   | Space | Paint (one group per throw, §1m) | RT | Paint Shields |
-  | Time | Dash to the School (one group per dash; scales: tamed fauna speed) | B | open |
+  | Time | Dash to the School (one group per dash; scales: tamed fauna speed) | B | Riptide (2026-11-12) |
 
-- **Not yet designed:**
-  - the Charge and Time level-5 upgrades (their labels are empty, per the `/vessel` design gate);
-  - which number Charge, Mass and Space SCALE (Time scales the tamed fauna's speed, 2026-10-17).
+- **Filled by the fundamentals pass (Garrett, 2026-11-12, §1n):** the Charge and Time level-5 upgrades, and the numbers
+  Charge, Mass and Space scale.
 
 ## 8. Follow-ups
 
 1. ~~**The Angler's own hull.**~~ Done 2026-10-18: `Angler.fbx` and `AnglerAnimation` (§9). Open: its hit box is still
    the Stoat's (`StoatBody` 1.2 x 1.4 x 7), narrower than the bow and the stabilisers; the AI and the card art were made
    against the stand-in.
-2. **An Angler AI autopilot.** It must be input-only per `/vessel-ai`. The lab's sim pilot (`aiErase`, its squad heuristics) is the starting point.
-3. **Element scaling for Charge, Mass and Space, and the Charge and Time level-5 upgrades** (§7). Time scales the tamed fauna's speed. The fleet's convention would make Space the paint's reach, Mass the lure's reach or growth, and Charge the bite, but none is approved.
+2. ~~**An Angler AI autopilot.**~~ (Glasshouse, the Angler's Mass game, 2026-11-10: `GlasshouseGardener` holds the LURE for an AI Angler - it fetches seeds, plants and tends; `Arcade/GLASSHOUSE.md`. The hull is unchanged.) Started 2026-10-29 with Lantern Run: `AnglerLeapfrogAIPolicySO` (the hull's `AnglerAIBoostPolicy`), input-only. It paints by holding RT, throws on release, and dashes after the school when the dash carries it toward its objective. It does not lure, erase or lock on yet. Untested in the editor.
+3. ~~**Element scaling for Charge, Mass and Space, and the Charge and Time level-5 upgrades**~~ Done 2026-11-12 (§1n). (§7). Time scales the tamed fauna's speed. The fleet's convention would make Space the paint's reach, Mass the lure's reach or growth, and Charge the bite, but none is approved.
 4. ~~**The HUD's squad name.**~~ Done in round 7: the picked kind shows over the Mass card (§1k).
 5. **A squad that is never ordered starves, apart from the keeper.** Whether a following creature should graze in passing is still a designer call.
 6. **The Amoebius Port build check** (rule 51; it needs .NET 10, which this session did not have).
@@ -488,7 +508,7 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 8. **"Paint shielded prisms too"** is read here as "paint them, and the squad cracks the shield off so they can be eaten". The locked rule "shielded mass is never food" is left untouched. If the designer meant the squad should eat them through the shield, that needs a sign-off on that rule.
 9. ~~**The squad trails the 2x hull.**~~ Moot since round 5: the cruise is back to 40 u/s, under the followers' 64 u/s.
 10. **The omni pool is herbivores only** (Clawfish, QuadFish, Tadpole), because only a herbivore can be leashed. A random shark would need a predator leash.
-11. **A thrown creature is slowed by its own behaviour tick.** `LightFauna.UpdateBehavior` rewrites `currentVelocity` to `desiredDirection * Clamp(averageSpeed, minSpeed, maxSpeed)` on every tick, and a leashed creature goes through it too. A homing throw at `slingSpeed` (150 u/s) is cut to the creature's `maxSpeed` (28-32 u/s) each tick, and `SteerOnLeash` eases it back up at 2.5/s. The lab flies a throw at a constant 150. To measure: log a thrown creature's speed per frame in the editor. The fix would be for the tick to leave a leashed creature's speed to the leash. It was found while reading for the QuadFish bug (2026-10-18) and is not fixed here.
+11. ~~**A thrown creature is slowed by its own behaviour tick.**~~ **Fixed 2026-10-29** (Lantern Run): `Fauna.LeashOwnsSpeed` makes `LightFauna` and `Boid` skip the velocity rewrite while the leash asks for more than the creature's own top speed. The original note follows. `LightFauna.UpdateBehavior` rewrites `currentVelocity` to `desiredDirection * Clamp(averageSpeed, minSpeed, maxSpeed)` on every tick, and a leashed creature goes through it too. A homing throw at `slingSpeed` (150 u/s) is cut to the creature's `maxSpeed` (28-32 u/s) each tick, and `SteerOnLeash` eases it back up at 2.5/s. The lab flies a throw at a constant 150. To measure: log a thrown creature's speed per frame in the editor. The fix would be for the tick to leave a leashed creature's speed to the leash. It was found while reading for the QuadFish bug (2026-10-18) and is not fixed here.
 12. **A penned species cannot follow a leash out of its pen.** Every leash goal goes through `Fauna.Goal`'s setter, which clamps to the species' band (`BandOuterRadius`, 1180 u on Wildlife Liberation's Clawfish and QuadFish) and to the cell's containment. The brush reaches 3200 u, so in that mode a creature is ordered past a wall it is steered back from. `LeashCanEat` already keeps creatures from being ORDERED to prisms outside their pen (`IsInsideBand`), so only the follow and gather goals are affected. Whether a tamed creature should leave its pen is a design call (`Docs/ECOSYSTEM.md` §22 calls the pens a diet and steering rule, never a wall).
 
 ## 9. The hull — `Angler.fbx` (2026-10-18)

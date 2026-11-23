@@ -32,6 +32,10 @@
 //
 // Like the body it deliberately does NOT read FadeIn's lowercase _opacity (see OmniCrystalFresnelShader).
 //
+// INSTANCED (2026-10-28): a population drawn as data (a swarm, a builder colony, a substrate) draws its Mass hearts on
+// this material through Graphics.RenderMeshInstanced (CrystalHeartDraw.cs, Docs/ECOSYSTEM.md §65.7) - undriven, so
+// sealed and at rest, which is exactly what the vertex stage draws with _DepthDriven 0.
+//
 // JS twin: VS_SHELL's depth block in Docs/Studios/OmniShepardLab.html, checked against this file by
 // Tools/Build/omni_depth_prism_shader_parity.py. Change one, change both.
 Shader "Custom/OmniDepthPrismShader"
@@ -123,6 +127,7 @@ Shader "Custom/OmniDepthPrismShader"
             float4 vertex : POSITION;
             float3 normal : NORMAL;
             float4 plate : TEXCOORD2;   // xyz: the plate's centre; w: its index
+            UNITY_VERTEX_INPUT_INSTANCE_ID
         };
 
         struct v2f
@@ -137,6 +142,7 @@ Shader "Custom/OmniDepthPrismShader"
         v2f DepthPrismVert(appdata v, float leaving)
         {
             v2f o;
+            UNITY_SETUP_INSTANCE_ID(v);
             // Clamped: undriven, TEXCOORD2.w is whatever the mesh carries (a fusion's discharge heights).
             float4 st = _DepthState[clamp((int)(v.plate.w + 0.5), 0, 59)];
             float4 pose = PrismPose(v.vertex.xyz, v.normal, v.plate, st, _DepthDriven, leaving);
@@ -176,6 +182,7 @@ Shader "Custom/OmniDepthPrismShader"
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 3.0
+            #pragma multi_compile_instancing
             v2f vert(appdata v) { return DepthPrismVert(v, 0.0); }
             half4 frag(v2f i) : SV_Target { return DepthPrismFrag(i, 0.0); }
             ENDCG
@@ -192,6 +199,7 @@ Shader "Custom/OmniDepthPrismShader"
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 3.0
+            #pragma multi_compile_instancing
             v2f vert(appdata v) { return DepthPrismVert(v, 1.0); }
             half4 frag(v2f i) : SV_Target { return DepthPrismFrag(i, 1.0); }
             ENDCG

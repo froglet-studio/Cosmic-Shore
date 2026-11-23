@@ -14,16 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Mode: 65
   Notes: 'OPEN-ENDED, shell-only: Slingshot''s circuit cut into five long legs, laid as rings at
-    match start, so a preview has no gates. It teaches the Barren cell, the LT/RT field dipole and
-    the pathfinder''s warp boost. One cell serves every intensity.'
+    match start, so a preview has no gates. It teaches the Barren cell, the Meerkat''s reticle (the
+    right stick bends it, LT shortens it) and RT''s tunnel ride. One cell serves every intensity.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
-  Vessel: 15
-  ObjectiveText: Bend your path with your poles and ride the warp
+  Vessel: 28
+  ObjectiveText: Bend the reticle, pull RT and ride the tunnel
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

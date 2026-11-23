@@ -37,18 +37,34 @@ namespace CosmicShore.Gameplay
     /// base level, so it is felt and then gone, and the economy is untouched. That asymmetry is the
     /// design: jousting an enemy MOVES material, jousting a friend only encourages them.</para>
     ///
-    /// <para><b>How much a steal takes scales with the THIEF's element</b>
-    /// (<see cref="stealScale"/>): the Squirrel authors it on CHARGE, so a charged jouster takes
-    /// more petals per overtake. At rest it is x1, which is exactly the price Broadside puts on a
-    /// Strike - so the two hulls that land this verb still take the same petals until one of them
-    /// has earned the difference.</para>
+    /// <para><b>How much a steal takes can scale with the THIEF's element</b>
+    /// (<see cref="stealScale"/>): the Rhino's sword (now the Swordfish's) authors it on CHARGE since
+    /// 2026-10-26 (Garrett: "Charge should control the amount of crystals stolen from vessels with the
+    /// sword"), x1 -> x2.5. At rest it is x1, which is exactly the price Broadside puts on a Strike. The
+    /// Squirrel's joust authored it too until 2026-11-11, when its Charge moved to the least speed a
+    /// joust needs (<see cref="joustSpeed"/>; Garrett: petals were too coarse a dial), so its steal is
+    /// the flat price.</para>
+    ///
+    /// <para><b>A joust can need a minimum speed</b> (<see cref="joustSpeed"/>, the Squirrel's): below it
+    /// the contact does nothing at all - no steal and no score (the reporter asks this effect through
+    /// <see cref="IContactAdmission"/>), no joust point or impact blast (<see cref="VesselExplosionBySkimmerEffectSO"/>
+    /// asks it the same way), and no friendly buff (asked in <c>Execute</c>). It is a floor on
+    /// top of <see cref="requireOvertake"/>, not instead of it.</para>
+    ///
+    /// <para><b>The steal can be a level-5 upgrade</b> (<see cref="stealUpgradeElement"/>): the
+    /// Rhino's sword only STEALS once its Charge level-5 upgrade is active (Garrett, 2026-10-26:
+    /// "have the sword only steal as the charge L5 upgrade"). Below it the same hit still costs the
+    /// victim the same petals, but they are knocked loose as crystals at the strike
+    /// (<see cref="ElementalTransferForm.Eject"/>) instead of landing on the thief - the hit still
+    /// scores and still conserves, the upgrade is the difference between knocking petals loose and
+    /// pocketing them. The Squirrel's joust authors None: it always steals.</para>
     ///
     /// <para>Nothing happens to the faster (overtaking) vessel beyond being paid.</para>
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselOvertakeBySkimmerEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselOvertakeBySkimmerEffectSO")]
-    public class VesselOvertakeBySkimmerEffectSO : VesselSkimmerEffectsSO, IContactPetalTake
+    public class VesselOvertakeBySkimmerEffectSO : VesselSkimmerEffectsSO, IContactPetalTake, IContactAdmission
     {
         [Header("Effect")]
         [Tooltip("Signed level change TAKEN from an overtaken opponent and handed to the " +
@@ -71,10 +87,10 @@ namespace CosmicShore.Gameplay
 
         [Header("Steal by element")]
         [Tooltip("A multiplier on how many petals a STEAL takes, scaled by the THIEF's level in " +
-                 "its element (the Squirrel: CHARGE - Charge is threat, and the joust is the " +
-                 "Squirrel's threat). x1 at rest keeps the priced Strike exactly; the multiplier " +
-                 "is what a charged jouster takes ON TOP of the price. Disabled = x1, which is " +
-                 "the Rhino's sword. Scales the opponent branch ONLY: the ally buff keeps " +
+                 "its element (the Swordfish's sword: CHARGE; the Squirrel's joust is flat since 2026-11-11, " +
+                 "its Charge sets joustSpeed instead). x1 at rest keeps the priced Strike exactly; the multiplier " +
+                 "is what a charged jouster takes ON TOP of the price. Disabled = x1. The Rhino's " +
+                 "sword authors it on CHARGE too (2026-10-26). Scales the opponent branch ONLY: the ally buff keeps " +
                  "mirroring the base magnitude, so a friendly overtake can never out-pay an " +
                  "enemy one. Read through the thief's REPLICATED integer level " +
                  "(R_VesselElementalAbilityHandler.ReplicatedLevel). The steal is now decided " +
@@ -83,6 +99,13 @@ namespace CosmicShore.Gameplay
                  "never depends on which copy of the thief a machine is looking at.")]
         [SerializeField] private ElementalFloat stealScale = new(1f);
 
+        [Tooltip("Element whose level-5 upgrade the opponent branch needs to STEAL (the Rhino's " +
+                 "sword: Charge). Below it the same petals are knocked loose as crystals at the " +
+                 "strike (Eject) rather than moving onto the thief, so the hit still scores and " +
+                 "still conserves. Gated on the replicated unlock bit (IsUpgradeActive). None = " +
+                 "always steal (the Squirrel's joust).")]
+        [SerializeField] private Element stealUpgradeElement = Element.None;
+
         [Header("When it lands")]
         [Tooltip("ON (the Squirrel's joust): only the SLOWER vessel is affected, so the effect " +
                  "is earned by overtaking. OFF (the Rhino's sword): any contact lands it, " +
@@ -90,6 +113,12 @@ namespace CosmicShore.Gameplay
                  "anyone. Defaults ON so every asset authored before this field existed " +
                  "deserializes to exactly its old behaviour.")]
         [SerializeField] private bool requireOvertake = true;
+
+        [Tooltip("The least speed this joust needs, on the jouster's element (the Squirrel's Charge, " +
+                 "SquirrelJoustSpeed.asset). Below it the contact does nothing: no steal, no score, no friendly " +
+                 "buff. The same asset gates the Squirrel's lifeform joust and draws the tick on its Charge card, " +
+                 "so all three agree. Empty = no minimum (the Swordfish's sword).")]
+        [SerializeField] private JoustSpeedConfigSO joustSpeed;
 
         [Header("Haptics")]
         [SerializeField] private float hapticAmplitude = 0.8f;
@@ -143,6 +172,10 @@ namespace CosmicShore.Gameplay
             if (requireOvertake &&
                 impactorVessel.VesselStatus.Speed >= impacteeVessel.VesselStatus.Speed) return;
 
+            // Too slow to joust at all (the jouster is the skimmer's vessel): no buff, no haptic, and the
+            // victim's cooldown below is not claimed by a contact that did nothing.
+            if (joustSpeed && !joustSpeed.Admits(impacteeVessel.VesselStatus)) return;
+
             var overtakenStatus = impactorVessel.VesselStatus;
             var rs = overtakenStatus.ResourceSystem;
             if (rs == null) return;
@@ -191,7 +224,8 @@ namespace CosmicShore.Gameplay
         /// permanently and land on the overtaker's, classed VesselContact (the ward the reporter's
         /// gate already asked about), and a warded pilot yields nothing, so the thief is paid
         /// exactly what the victim lost (<c>ResourceSystem.AccrueElementalLoss</c> is the
-        /// authority). How much moves is the priced magnitude times the THIEF's element scale,
+        /// authority). Where <see cref="stealUpgradeElement"/> is authored and its upgrade is not
+        /// active, the same petals are EJECTED at the strike instead. How much moves is the priced magnitude times the THIEF's element scale,
         /// snapshotted once so all four elements move at one rate. Called only by
         /// <see cref="VesselCombatHitBySkimmerEffectSO"/>, on the thief's owner, for an admitted
         /// hit; the victim's owner settles it (<see cref="ElementalTransfer.ApplyAllAuthoritative"/>).
@@ -201,9 +235,25 @@ namespace CosmicShore.Gameplay
         {
             if (victim == null || attacker == null) return;
             float amount = -debuffMagnitude * StealScale(attacker);
-            ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, victim, attacker,
-                                                    amount, Vector3.zero,
-                                                    ElementalDebuffSources.VesselContact);
+            if (StealUnlocked(attacker))
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, victim, attacker,
+                                                        amount, Vector3.zero,
+                                                        ElementalDebuffSources.VesselContact);
+            else
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, attacker,
+                                                        amount, attacker.Course * attacker.Speed,
+                                                        ElementalDebuffSources.VesselContact);
+        }
+
+        /// <summary>The reporter's question (<see cref="IContactAdmission"/>): is the thief fast enough to joust?</summary>
+        public bool AdmitsContact(IVesselStatus attacker, IVesselStatus victim) =>
+            !joustSpeed || joustSpeed.Admits(attacker);
+
+        bool StealUnlocked(IVesselStatus thief)
+        {
+            if (stealUpgradeElement == Element.None) return true;
+            var abilities = thief.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(stealUpgradeElement);
         }
 
         float StealScale(IVesselStatus thief) =>

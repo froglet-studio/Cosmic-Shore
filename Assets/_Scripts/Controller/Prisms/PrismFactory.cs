@@ -6,24 +6,6 @@ using CosmicShore.Utility;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
-    public enum PrismType
-    {
-        Dolphin = 0,
-        Serpent = 1,
-        Sparrow = 2,
-        Manta = 3,
-        Squirrel = 4,
-        Rhino = 5,
-        Interactive = 6,
-        Explosion = 7,
-        Implosion = 8,
-        Grow = 9,
-        // Fast-growing, collider-live-on-spawn prisms drawn from a dedicated pool: a
-        // surface a skimmer can boost off, but usually flown past without a body hit
-        // (Squirrel tube + joust danger-block formations). See PrismFactory.SpawnBoostPrism.
-        Boost = 10,
-    }
-    
     public class PrismFactory : MonoBehaviour
     {
         private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
@@ -327,7 +309,23 @@ namespace CosmicShore.Gameplay
             // (PrismType.Grow / SpawnGrow) still Get()s implosionPool because the
             // batched carrier has no completion callback — ReverseSuction needs
             // OnGrowCompleted to spawn the real prism.
-            if (CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null) &&
+            bool configured = CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null);
+
+            // The DETAIL LEVEL of the consumption (Docs/PRISM_ANIMATION.md §4.12, round 15), tried first: the
+            // destruction's silver gnomon cut at the depth the prism's size on screen and the budget allow — level 0,
+            // the explosion's own 24 wedges, everywhere else — every fragment drawn into the eater over the
+            // implosion's own life. Any refusal falls through to the SuctionGraph's implosion, so a consumption never
+            // loses its visual.
+            if (configured &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var detailBright, out var detailDark) &&
+                CosmicShore.Utility.PrismInteractionLod.TrySuction(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    detailBright, detailDark, data.TargetTransform))
+            {
+                return null;
+            }
+
+            if (configured &&
                 TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestImplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,

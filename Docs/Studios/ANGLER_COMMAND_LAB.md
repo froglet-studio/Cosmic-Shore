@@ -25,7 +25,7 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 | Commanded aggression | L1: speed ×1.25, reach ×1.4 | `LightFauna.SpeedByAggression` / consume-radius rows (the level used is lab-only) |
 | Tadpole | speed 10–15, dash ×10 arrival-capped, reach 20, tick 1.5 s | `TadPoleFauna.prefab` (Boid forager) |
 | Tadpole mouthful | 2 s hold, 6 bites within 10 u, 30° facing | `Boid` C# defaults (not in the prefab) |
-| Domain colours | Jade / Ruby / Gold | `studio-domains.js` (`OriginalColorSetSO`) |
+| Domain colours | Jade / Ruby / Gold | `studio-domains.js` (`PhoticColorSetSO`) |
 
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.

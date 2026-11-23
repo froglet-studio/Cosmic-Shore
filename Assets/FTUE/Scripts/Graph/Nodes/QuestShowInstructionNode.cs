@@ -30,16 +30,20 @@ namespace CosmicShore.Core
         public string text;
 
         [Tooltip("Optional haptic pulse when the instruction appears (respects the player's haptics setting).")]
-        public HapticType haptic = HapticType.None;
+        [SerializeField] HapticType haptic = HapticType.None;
+        public HapticType Haptic => haptic;
 
         [Tooltip("Optional key of a hand-built instruction panel registered on QuestInstructionView (icons + text as a CanvasGroup). Empty = plain text mode. The Text above OVERWRITES the panel's own TMP text — scene text is only a placeholder.")]
-        public string panelKey;
+        [SerializeField] string panelKey;
+        public string PanelKey => panelKey;
 
         [Tooltip("Hold the flow this many real-time seconds before advancing (0 = advance immediately; a following gate node keeps the prompt visible).")]
-        [Min(0f)] public float minDisplaySeconds;
+        [SerializeField, Min(0f)] float minDisplaySeconds;
+        public float MinDisplaySeconds => minDisplaySeconds;
 
         [Tooltip("Hide the instruction panel when this node advances (default: leave it up for the next beat).")]
-        public bool hideOnAdvance;
+        [SerializeField] bool hideOnAdvance;
+        public bool HideOnAdvance => hideOnAdvance;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

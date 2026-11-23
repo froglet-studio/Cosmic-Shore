@@ -171,7 +171,17 @@ programmer, a recompile, or a merge.
    invisible one that survives to release and gets mistaken for an intentional sound. FMOD's
    `EventReference.IsNull` makes an empty slot a clean no-op, and `AudioSystem` already warns once
    per unwired category (`warnOnUnwiredCategory`) rather than failing. Follow that pattern: check
-   `IsNull`, return, optionally warn once — never substitute another event.
+   `IsNull`, return, optionally warn once — never substitute another event **in code**.
+
+   **The one exception: a LISTED placeholder (Garrett, 2026-11-16: "if any vessel is missing a sound
+   then recycle obvious sounds ... make sure each sound has a place holder he can easily replace").**
+   A slot may hold a recycled, already-banked event only when `Docs/AudioSystem/sound_placeholders.json`
+   lists that slot, the event it borrows and the **target** event that replaces it. That keeps the
+   reason for this rule (a temp event nobody can find): every placeholder is in one ledger, in
+   `Docs/AudioSystem/PLACEHOLDERS.md` (the audio owner's prioritised list) and in
+   `python3 Tools/Build/sound_placeholders.py --check`. A new slot still ships empty; to give it a
+   placeholder, add a ledger line and run `--apply`, never hand-pick an event in the inspector. When
+   the audio owner authors the target and builds the banks, `--promote` moves every slot onto it.
 2. **Every ship ability gets its own dedicated FMOD event field** — boost, gun fire, drift, shield,
    turret, missile, ability start/stop, whatever. One field per ability per distinct sound (a
    start/stop or charge/release ability gets a field for each). Do **not** route a new ability
@@ -199,8 +209,7 @@ per-instance volume and therefore ignores the SFX slider when the bus fails to r
 (`_Scripts/Controller/FX/FMODOneShotVolumeHelper.cs` documents why). For a **looping/continuous**
 sound (engine, drift, ambient, creature loop) use a `StudioEventEmitter` on the prefab — again with
 the event exposed — or a small controller that owns its own `EventReference` field, like
-`ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController`,
-`FloraAmbientAudioController`.
+`ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController`.
 
 **Create, attach and release through `FmodSafe`; resolve volume through `AudioSystem`.**
 `RuntimeManager.CreateInstance` THROWS for an event no loaded bank knows (renamed, deleted, stale

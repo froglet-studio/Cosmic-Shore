@@ -60,7 +60,7 @@ sed -e 's/\bRenderer\.Render(/CardArt.Renderer.Render(/' \
 grep -q 'ClipAudit.Clamp' "$OUT/Program.cs" || { echo "FAIL: the card-art Xform moved; re-point run.sh's clamp hook" >&2; exit 1; }
 {
   echo "namespace CosmicShore.Utility {"
-  sed -n '/public enum CSLogChannel/,/^    }/p' "$ROOT/Assets/_Scripts/Utility/CSDebug.cs"
+  sed -n '/public enum CSLogChannel/,/^    }/p' "$ROOT/Assets/_Scripts/Utility/Foundation/CSDebug.cs"
   echo "}"
   # SpawnableGyroid's block-type enum, lifted verbatim out of the assembler it lives in.
   echo "namespace CosmicShore.Gameplay {"

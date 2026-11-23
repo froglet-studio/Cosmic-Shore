@@ -6,7 +6,7 @@ using System.Threading;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -459,6 +459,10 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 case GameModes.Hijack:
                     return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
+                case GameModes.Railrush:
+                    // Dog Fight's provider on purpose: the nearest OPPOSING pilot. The score is a spike in a
+                    // rival's hull, so "which way is the fight" is the one question; the rails are in plain sight.
+                    return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_Railrush");
                 case GameModes.Skein:
                     // Mandatory rather than a nicety, for Switchback's reason: every ring on the
                     // cable is neutral Blue, so nothing in the SHARED world says whose turn a ring
@@ -490,6 +494,42 @@ namespace CosmicShore.UI
                     // The same answer on the Wrasse and Grouper's circuit: the arrow names the ring the
                     // Grouper must carry the kite's plane through.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_WrasseRun");
+                case GameModes.BurrowRun:
+                    // The same answer on the Meerkat's wormhole circuit: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BurrowRun");
+                case GameModes.ScarabRally:
+                    // Switchback's answer on the Scarab's ring race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ScarabRally");
+                case GameModes.Thornline:
+                    // Switchback's answer on the Shrike's sling race: neutral rings, a per-viewer arrow (the thorn sits
+                    // straight behind the ring it points at).
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Thornline");
+                case GameModes.Spearline:
+                    // Switchback's answer on the Swordfish's sealed circuit: neutral rings, a per-viewer arrow (the seal
+                    // sits in the ring's mouth, so the arrow points at what to cut).
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Spearline");
+                case GameModes.DecoyRun:
+                    // the Jacks' Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_DecoyRun");
+                case GameModes.Breach:
+                    // the Orca's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Breach");
+                case GameModes.SlipLine:
+                    // the Honeyguide's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SlipLine");
+                case GameModes.PerchRun:
+                    // the Goby's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_PerchRun");
+                case GameModes.SerpentTime:
+                    // The circuit answer once more, on the Serpent's pellet circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SerpentTime");
+                case GameModes.BrittleStarTime:
+                    // ...and on the Brittle Star's Speed Mode circuit.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BrittleStarTime");
+                case GameModes.LanternRun:
+                    // ...and on the Angler's paint-and-dash circuit: the arrow names the next ring, the clusters are
+                    // what the pilot paints on the way.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_LanternRun");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which
@@ -505,12 +545,138 @@ namespace CosmicShore.UI
                     // check is the whole point - the dust spares teammates - and a duel between
                     // the fleet's two slowest-turning hulls is won by whoever FINDS the other.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Dustup");
+                case GameModes.SerpentHood:
+                    // The Bends' provider again: the nearest pilot this player may snipe. In a 3,600 u cell the
+                    // duel is won by whoever FINDS the other first, then lines them up - the arrow answers the
+                    // first half; the scope, the nests and the cloak are the second.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentHood");
+                case GameModes.Jackstraw:
+                    // The Bends' provider again: the nearest pilot this player may strike. In the heap the hard half
+                    // is finding a line through the sticks to them; the arrow answers where, the whip answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Jackstraw");
+                case GameModes.Bullrush:
+                    // The Bends' provider again: the nearest pilot this player may gore. A gore is a ram from behind at
+                    // speed, so the arrow answers who; the Ramp Spool's straight line answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Bullrush");
+                case GameModes.Windrow:
+                    // Tapestry's answer: the nearest opposing pilot is where their freshest row is, because a trail is
+                    // laid behind its pilot. That is the raid half; laying your own needs no arrow.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Windrow");
+                case GameModes.Landslide:
+                    // Cleave's answer: the densest hostile mass still standing, where a plough pass breaks the most.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Landslide");
+                case GameModes.Flatline:
+                    // The Bends' provider: the nearest pilot this player may hit. The panes hide pilots from rounds
+                    // and the cords reach through them, so the question every second is where the rival is.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flatline");
+                case GameModes.Riposte:
+                    // The Bends' provider again: the nearest pilot this player may strike. The sword lands only while
+                    // the Swordfish is the faster, so the arrow answers where and the ramp answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Riposte");
+                case GameModes.Kelpwood:
+                    // The Bends' provider again: the nearest pilot this player may bite. In the kelp the hard half is
+                    // keeping them under the nose long enough to lock; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Kelpwood");
+                case GameModes.Corona:
+                    // The Bends' provider again: the nearest pilot this player may graze. The way to them is through
+                    // the gates, and the cash-out is always the heart, so the arrow only has to answer who.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Corona");
+                case GameModes.Shockfront:
+                    // The Stoat's charge duel: the arrow answers "which rival do I sling past?", Dustup's question.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Shockfront");
+                case GameModes.Fulmen:
+                    // The Stoat's space race: the contested omni crystal IS the weapon, Rampage's question.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Fulmen");
+                case GameModes.Sentry:
+                    // The Bends' provider again: the nearest pilot this player may zap. A sentinel stands where the
+                    // soliton formed, so the question is where the rival is about to fly; the heart is always the
+                    // other answer, and the shells make it plain.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Sentry");
+                case GameModes.Warren:
+                    // Tapestry's answer: the nearest opposing pilot is where their freshest mass is, laid behind them,
+                    // and so where a soliton's swallow raids. Your own mass needs no arrow - you lay it where you fly.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Warren");
+                case GameModes.CaveIn:
+                    // Shatterplane's answer: the densest standing hostile mass, the nearest big plate still up. A
+                    // soliton formed beside it swallows it and fires it at whatever stands past its way out.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_CaveIn");
+                case GameModes.Standoff:
+                    // The Bends' provider again: the nearest pilot this player may blast. The posts hide pilots and
+                    // the bombs fly through them, so the question every second is where the rival is.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Standoff");
+                case GameModes.Harvest:
+                    // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
+                    // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Harvest");
+                case GameModes.Glasshouse:
+                    // Rampage's provider: the nearest managed omni crystal. In the garden that crystal is the next
+                    // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
+                    // happen wherever the pilot lets go of the lure.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
+                case GameModes.PodHunt:
+                    // The Bends' provider: the nearest pilot this crew may blast. The gunners fly the missiles; the
+                    // helm's job is to bring a rival into their reach.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_PodHunt");
+                case GameModes.IceShelf:
+                    // Rampage's provider: the nearest managed omni crystal - a missile for every seat, the ammunition
+                    // that keeps rival gunners off the shelf.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_IceShelf");
+                case GameModes.DepthCharge:
+                    // Rampage's provider, in Rampage's own forest: the nearest managed omni crystal (a missile per
+                    // seat). The forest itself is in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_DepthCharge");
+                case GameModes.Flitstrike:
+                    // The Bends' provider: the nearest pilot this player may strike. The Flit is a short dart along the
+                    // nose, so the whole question is where the rival is and how to come at them dead ahead.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flitstrike");
+                case GameModes.Honeycomb:
+                    // Rampage's provider: the nearest managed omni crystal. In Honeycomb that crystal is the next HIVE -
+                    // the comb of your prisms and the Ratel's hive puzzle - the one thing worth flying to.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Honeycomb");
+                case GameModes.Woodpecker:
+                    // Densest standing hostile mass (Sirocco's answer): the forest rings the cell, and the arrow names the
+                    // stand worth pecking through - the point Woodpecker's AI pecking runs steer to.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Woodpecker");
+                case GameModes.Haul:
+                    // Rampage's provider: the nearest managed omni crystal - a Windmill, whose spinning ball steals
+                    // everything it sweeps. The bales hang in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Haul");
+                case GameModes.Hedgerow:
+                    // Rampage's provider: the nearest managed omni crystal - each one re-shields every active wall
+                    // the Serpent owns. The hedges stand in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Hedgerow");
+                case GameModes.Longshot:
+                    // Rampage's provider: the nearest managed omni crystal. The lances hang in plain sight, and the
+                    // scope's reticle is the aid that matters.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Longshot");
+                case GameModes.Chum:
+                    // Rampage's provider: the nearest managed omni crystal, which is a creature for the school - the
+                    // one thing to fetch. The reef's shoals hang in plain sight; the brush finds them.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Chum");
+                case GameModes.Starweave:
                 case GameModes.Tapestry:
+                    // (Starweave shares it: a rival's freshest weave is behind them, which is where a raid goes.)
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where
                     // you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
+                case GameModes.Palisade:
+                    // Tapestry's answer: the nearest rival, whose freshest afterimages are behind them. Building needs no
+                    // arrow - you build where you are.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Palisade");
+                case GameModes.CleanerRam:
+                    // The Bends' provider again: the nearest pilot this player may ram. The ram happens on the kite's
+                    // board, so the Grouper's whole job is putting a rival under it; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_CleanerRam");
+                case GameModes.Reefbuild:
+                    // Tapestry's answer: the BUILD half needs no arrow (the kite lays the reef where it loops), and the
+                    // nearest opposing pilot is where the freshest opposing reef is - the raid half.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Reefbuild");
+                case GameModes.Blastline:
+                    // Shatterplane's provider: the densest mass this player may destroy - where a Space loop's blast
+                    // takes the most.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Blastline");
                 case GameModes.Bends:
                     // The provider was written for this mode and borrowed by three others before
                     // the mode itself was registered: the nearest pilot this player may bend.
@@ -520,6 +686,50 @@ namespace CosmicShore.UI
                     // there still a LOT of it" does, and on the 2,160-unit open rungs it is far
                     // from obvious. Densest hostile mass, the query Cleave's AI raids with.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Cleave");
+                case GameModes.Shatterplane:
+                    // Densest standing hostile mass again: the plates are the only breakable mass in the cell, so the
+                    // arrow names the nearest big plate still standing. Not a crystal: a crystal is a spare ring, and
+                    // it already floats on a plate's axis in front of it.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Shatterplane");
+                case GameModes.Larder:
+                    // The Bends' provider: the nearest pilot this player may hit. Paint is a cone off the nose, so the
+                    // question every second is where the rival is; the wreckage hides them from the missiles.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Larder");
+                case GameModes.Thornbush:
+                    // Rampage's provider: the nearest managed crystal. To a Shrike a crystal is a missile plant where it
+                    // was taken, the one thing worth fetching; the nests go wherever the pilot docks in the heap.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Thornbush");
+                case GameModes.Lancefall:
+                    // Shatterplane's provider: the densest standing hostile mass - the nearest big plate still standing.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Lancefall");
+                case GameModes.Marionette:
+                    // The Bends' provider: the nearest pilot this player may strike. The creature is the weapon, so the
+                    // question is which rival hull to ride it into.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Marionette");
+                case GameModes.Gorge:
+                    // Rampage's provider: the nearest managed omni crystal, which hatches a predator the wasp rides at
+                    // once. The reef's shoals hang in plain sight.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Gorge");
+                case GameModes.Stingherd:
+                    // The Bends' provider: the nearest pilot this player may sting. The herd is driven, not flown, so
+                    // the question is which rival hull to drive it at.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Stingherd");
+                case GameModes.Trawl:
+                    // Densest standing hostile mass: the net scores where prisms are packed tight enough to smash into
+                    // each other, so the arrow names the nearest big sheaf still standing.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Trawl");
+                case GameModes.Snap:
+                    // The Bends' provider: the nearest pilot this pair may hit. The Goby's half of the hunt is turning
+                    // its nose onto them to lock; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Snap");
+                case GameModes.DenBuilder:
+                    // Rampage's provider, Glasshouse's reason: the nearest omni crystal is the one thing to fetch; the
+                    // dens are built wherever the pair perches.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_DenBuilder");
+                case GameModes.Riptide:
+                    // Densest standing hostile mass, Shatterplane's reason: the plates are the field, and the Goby AI
+                    // routes its islands through the same question.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Riptide");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs
@@ -543,6 +753,9 @@ namespace CosmicShore.UI
                 case GameModes.Tandava:
                     // the swarm: one opponent loose in a closed cell - "where is it" is the whole question
                     return CreateProviderComponent<TandavaObjectiveProvider>("ObjectiveProvider_Tandava");
+                case GameModes.TandavaSevering:
+                    // Tandava's fork (Voyage 2): the same question, asked of its own controller
+                    return CreateProviderComponent<TandavaSeveringObjectiveProvider>("ObjectiveProvider_TandavaSevering");
                 default:
                     return null;
             }
@@ -658,7 +871,19 @@ namespace CosmicShore.UI
                     PrismTrailBuilder.SetLoadGateHolding(true);
                     try
                     {
-                        await connectingPanel.ShowAsync(ct, PrismTrailBuilder.PollArenaReady);
+                        // The intro is made ready the moment the arena is, while the panel still covers
+                        // it: its arena read and caption UI used to land on the reveal frame.
+                        bool introPrepared = false;
+                        await connectingPanel.ShowAsync(ct, () =>
+                        {
+                            if (!PrismTrailBuilder.PollArenaReady()) return false;
+                            if (!introPrepared)
+                            {
+                                introPrepared = true;
+                                PrepareIntro();
+                            }
+                            return true;
+                        });
                     }
                     finally
                     {
@@ -693,6 +918,16 @@ namespace CosmicShore.UI
                 LoadInsights.CompleteLoad("Loaded — arena complete (laid + grown), connecting screen done");
                 Show();
 
+                // A pilot who rejoined a running match (MatchRejoin, section 103) joined the turn while the panel was up:
+                // no intro and no Ready - nobody else will press Ready again, so it would wait for good. Straight into
+                // the race; OnMiniGameTurnStarted has already set up the score and the cards.
+                if (gameData != null && gameData.IsTurnRunning)
+                {
+                    ShowLocalVesselHUD();
+                    UpdateScoreUI();
+                    return;
+                }
+
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
                 {
@@ -700,21 +935,57 @@ namespace CosmicShore.UI
                     if (playerTarget != null)
                     {
                         bool cinematicDone = false;
-                        preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
-                        preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
+                        void OnDone() => cinematicDone = true;
+                        // Unsubscribed below: an anonymous handler stacked one per match on a controller
+                        // that outlives none of them, each still flipping a finished match's flag.
+                        preGameCinematic.OnCinematicFinished += OnDone;
+                        try
+                        {
+                            // The mode's own intro (a random one from its arena family); the orbit
+                            // when the mode has none. Docs/IntroCameras/README.md.
+                            preGameCinematic.Play(cinematicLookAtCenter, playerTarget, gameData.GameMode,
+                                                  gameData.Vessels, LocalAccent());
 
-                        while (!cinematicDone)
-                            await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
+                            while (!cinematicDone)
+                                await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
+                        }
+                        finally
+                        {
+                            preGameCinematic.OnCinematicFinished -= OnDone;
+                        }
                     }
                 }
 
                 _readyButtonUnlocked = true;
+                // The turn can have been joined while the intro played (a rejoin whose roster raised ClientReady
+                // before the seat claim did): no Ready for a running turn.
+                if (gameData != null && gameData.IsTurnRunning) return;
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException)
             {
                 // cancelled - nothing to do
             }
+        }
+
+        // The local pilot's domain colour, for the intro's lower third.
+        private Color LocalAccent()
+        {
+            var player = gameData != null ? gameData.LocalPlayer : null;
+            return player != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIAccentColor(player.Domain)
+                : Color.white;
+        }
+
+        // The intro's library, pick, arena read and caption UI, made ready behind the connecting panel.
+        private void PrepareIntro()
+        {
+            if (!enablePreGameCinematic || preGameCinematic == null) return;
+            if (gameData != null && gameData.IsTurnRunning) return;   // a rejoiner joins a running turn: no intro
+            Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
+            if (playerTarget == null) return;
+            preGameCinematic.Prepare(cinematicLookAtCenter, playerTarget, gameData.GameMode, gameData.Vessels,
+                                     LocalAccent());
         }
 
         private void ResetForReplay()
@@ -781,7 +1052,7 @@ namespace CosmicShore.UI
         protected Color ResolveDomainColor(Domains domain) =>
             gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)
-                : Color.gray;
+                : ColorTrace.Retrace(ColorTrace.Ui, Color.gray);
 
         private void CleanupLocalPlayerCard()
         {
@@ -854,17 +1125,17 @@ namespace CosmicShore.UI
 
         protected Sprite ResolveAvatarSprite(int avatarId)
         {
-            if (profileIconList == null || profileIconList.profileIcons == null)
+            if (profileIconList == null || profileIconList.ProfileIcons == null)
                 return null;
 
-            foreach (var icon in profileIconList.profileIcons)
+            foreach (var icon in profileIconList.ProfileIcons)
             {
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
             }
 
-            return profileIconList.profileIcons.Count > 0
-                ? profileIconList.profileIcons[0].IconSprite
+            return profileIconList.ProfileIcons.Count > 0
+                ? profileIconList.ProfileIcons[0].IconSprite
                 : null;
         }
 
@@ -876,7 +1147,7 @@ namespace CosmicShore.UI
         protected void AssignAIProfiles()
         {
             _assignedAIProfiles.Clear();
-            if (aiProfileList == null || aiProfileList.aiProfiles == null || aiProfileList.aiProfiles.Count == 0)
+            if (aiProfileList == null || aiProfileList.AiProfiles == null || aiProfileList.AiProfiles.Count == 0)
                 return;
 
             // Collect only actual AI players, skipping local player and remote human players
@@ -901,10 +1172,13 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Returns the avatar sprite for an AI player from the assigned AI profile.
-        /// Returns null if no AI profile is assigned for this player name.
+        /// Returns null if no AI profile is assigned for this player name, or the player has no
+        /// name yet: a seat a client is still reclaiming shows up before its name syncs, and a
+        /// null key made every domain-panel rebuild throw (B46, 1,636 times on one client).
         /// </summary>
         protected Sprite ResolveAIAvatarSprite(string playerName)
         {
+            if (string.IsNullOrEmpty(playerName)) return null;
             if (_assignedAIProfiles.TryGetValue(playerName, out var profile))
                 return profile.AvatarSprite;
             return null;
@@ -1025,16 +1299,6 @@ namespace CosmicShore.UI
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
 
         /// <summary>
-        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
-        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
-        /// authoritative and again at turn start, because a client can reach Start() before the
-        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
-        /// than another mode's objective.
-        ///
-        /// The COUNT does not come through here - it arrives on every monitor tick through
-        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
-        /// </summary>
-        /// <summary>
         /// The eye under the goal stack that appears while somebody is spectating this pilot.
         /// Ensured in code rather than authored: the goal stack lives in two forked GameCanvas
         /// prefabs across a dozen scenes, so an authored badge would be a hand-edit in both and
@@ -1066,6 +1330,16 @@ namespace CosmicShore.UI
             PilotSwapIndicator.Ensure(parent, gameData, stackRect, scoreBar);
         }
 
+        /// <summary>
+        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
+        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
+        /// authoritative and again at turn start, because a client can reach Start() before the
+        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
+        /// than another mode's objective.
+        ///
+        /// The COUNT does not come through here - it arrives on every monitor tick through
+        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
+        /// </summary>
         protected void RefreshGoalStack()
         {
             var stack = view != null ? view.GoalStack : null;

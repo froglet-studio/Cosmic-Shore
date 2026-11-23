@@ -17,6 +17,7 @@ public static class TraceDriver
     static readonly Dictionary<string, DynamoInputKind> Kinds = new()
     {
         ["tinker"] = DynamoInputKind.Tinker, ["refuel"] = DynamoInputKind.Refuel, ["activate"] = DynamoInputKind.Activate, ["remove"] = DynamoInputKind.Remove,
+        ["pick"] = DynamoInputKind.Pick,
     };
 
     static int Int(JsonElement o, string k) => o.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
@@ -38,6 +39,7 @@ public static class TraceDriver
         DynamoEventKind.Effect => $"F{EffectKeys[(int)e.Effect]}:{e.Count}",
         DynamoEventKind.Tick => $"t{e.Count}:{e.Ap}",
         DynamoEventKind.Remove => $"D{e.Cell}:{e.Colour}",
+        DynamoEventKind.Offer => $"O{string.Join(",", e.Offers.Select(a => DynamoCore.AbilityKeys[(int)a]))}:{e.PortSet}",
         _ => "?",
     };
 
@@ -45,6 +47,7 @@ public static class TraceDriver
     {
         DynamoInputKind.Tinker => $"itinker:{i.Value.From}>{i.Value.To}",
         DynamoInputKind.Refuel => $"irefuel:{i.Value.Cell}:{i.Value.Colour}",
+        DynamoInputKind.Pick => $"ipick:{i.Value.Slot}",
         _ => $"iactivate:{i.Value.Slot}",
     };
 
@@ -71,6 +74,7 @@ public static class TraceDriver
                 StartFilled = j.GetProperty("startFilled").GetBoolean(),
                 FixedAbility = string.IsNullOrEmpty(fixedAbility) ? -1 : Array.IndexOf(DynamoCore.AbilityKeys, fixedAbility),
                 FirstPortSet = Int(j, "firstPortSet"),
+                AbilityChoices = Int(j, "abilityChoices"), PickSeconds = j.TryGetProperty("pickSeconds", out var pk) ? pk.GetDouble() : 0,
             };
             if (j.TryGetProperty("abilities", out var pool) && pool.ValueKind == JsonValueKind.Array)
                 s.Abilities = pool.EnumerateArray().Select(a => Array.IndexOf(DynamoCore.AbilityKeys, a.GetString())).ToArray();

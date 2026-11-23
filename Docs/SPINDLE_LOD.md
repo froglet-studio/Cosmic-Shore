@@ -155,8 +155,7 @@ Amoebius's own FBX importer passes the same check.
 
 ## 6. Known limits
 
-- Tiering follows `CameraManager.ViewCamera` (the camera the player looks through). A second camera (the Third Eye,
-  a minimap) sees that camera's meshes; the shader still blends for its own distance.
+- Tiering follows `CameraManager.ViewCamera` (the camera the player looks through). A second camera (a minimap; the Third Eye was one until 2026-11-01 and now drives the main camera) sees that camera's meshes; the shader still blends for its own distance.
 - The instanced batch is culled by one box per material, not per limb; instances off screen still run 24-triangle
   vertex work. Per-instance culling is the next step if a capture asks for it.
 - A limb that moves never batches (a creature's body would lag its creature). Tadpoles and other moving users of

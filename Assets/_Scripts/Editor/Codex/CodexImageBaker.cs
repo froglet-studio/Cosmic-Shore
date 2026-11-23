@@ -36,9 +36,10 @@ namespace CosmicShore.Editor.Codex
     {
         public const string OutputFolder = "Assets/_Graphics/Codex";
 
-        // Three subjects, and the third is unlike the other two: an ethirion and a lifeform are
-        // AUTHORED objects this photographs, while a TOOL has no prefab at all and is DRAWN from
-        // the same shape vocabulary the toy is built from at runtime. See BuildToolPortrait.
+        // Two subjects are photographed here: an ethirion and a lifeform are AUTHORED objects. A
+        // TOOL's portrait is not baked at all - it is drawn as a 2D glyph by
+        // Tools/Build/icon_kit/toy_portraits.py, which writes the same file this would. See CanBake.
+        public const string ToolPortraitAuthor = "Tools/Build/icon_kit/toy_portraits.py";
 
         /// <summary>Below this fraction of visible pixels a render is treated as failed.</summary>
         const float MinimumCoverage = 0.004f;
@@ -57,13 +58,19 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
-        /// Whether this entry can be illustrated at all. Asked here rather than at each call site
-        /// because "a prefab, OR a tool definition to draw from" is one rule and a second copy of
-        /// it is how a kingdom ends up with a Bake button that does nothing.
+        /// Whether this baker illustrates this entry. Asked here rather than at each call site
+        /// because a second copy of the rule is how a kingdom ends up with a Bake button that does
+        /// nothing - or, worse, one that undoes art made elsewhere.
+        ///
+        /// <para><b>A Tool page is never baked.</b> Its portrait is a 2D glyph that teaches what the
+        /// toy does, drawn by <see cref="ToolPortraitAuthor"/> into the same file. The emblem this
+        /// used to render (a ring round some spheres in the toy's accent) said "a station" and
+        /// nothing else, and a re-bake would put it back over the drawn art, so the baker stands
+        /// down here. A tool's VARIANT icons (a painting's strokes, a hull) still bake - see
+        /// <see cref="CanBake(CodexEntry, CodexVariant)"/>.</para>
         /// </summary>
         public static bool CanBake(CodexEntry entry) =>
-            entry != null &&
-            (entry.SourcePrefab || (entry.Kingdom == CodexKingdom.Tool && entry.SourceConfig));
+            entry != null && entry.Kingdom != CodexKingdom.Tool && entry.SourcePrefab;
 
         /// <summary>
         /// Whether this VARIANT has art of its own worth baking. Most do not, and that is by
@@ -79,6 +86,12 @@ namespace CosmicShore.Editor.Codex
         public static BakeResult Bake(CodexEntry entry, int size)
         {
             if (entry == null) return new BakeResult { Error = "No entry." };
+            if (entry.Kingdom == CodexKingdom.Tool)
+                return new BakeResult
+                {
+                    Error = $"'{entry.DisplayName}' is a Tool: its portrait is drawn by " +
+                            $"{ToolPortraitAuthor}, not baked.",
+                };
             if (!CanBake(entry))
                 return new BakeResult { Error = $"'{entry.DisplayName}' has no source asset to render." };
 
@@ -171,10 +184,6 @@ namespace CosmicShore.Editor.Codex
             {
                 temporaries = new List<Object>();
                 model = CodexVariantSubject.Build(entry, variant, flat, temporaries, out bounds);
-            }
-            else if (entry.Kingdom == CodexKingdom.Tool)
-            {
-                model = BuildToolPortrait(entry, flat, out bounds, out temporaries);
             }
             else
             {
@@ -365,33 +374,6 @@ namespace CosmicShore.Editor.Codex
         /// wings, belly and danger rods sit at real offsets on the prefab), so their meshes are
         /// the creature.</para>
         /// </summary>
-        /// <summary>
-        /// A TOOL is drawn, not photographed. It has no prefab — a toy is built at runtime from
-        /// its definition — so <see cref="ToolPortraitBuilder"/> renders it in the vocabulary the
-        /// toy itself is made of: its emblem's core and satellites inside its switch ring, in its
-        /// own authored accent.
-        ///
-        /// <para>The satellite count is the number of choices the entry says the tool offers, which
-        /// is the harvested variant count. The portrait therefore keeps saying something true as
-        /// toys gain and lose content, without the builder knowing what any of them do.</para>
-        /// </summary>
-        static GameObject BuildToolPortrait(CodexEntry entry, bool flat, out Bounds bounds,
-            out List<Object> temporaries)
-        {
-            temporaries = new List<Object>();
-            bounds = new Bounds(Vector3.zero, Vector3.zero);
-
-            // The same violet CodexWindow.AccentFor gives the Tools kingdom, so a toy that
-            // authored no accent still draws in the colour its own list row is striped with.
-            // Every shipped toy authors one, so this is the unauthored case rather than the norm.
-            var accent = entry.ResolveAccent(FrogletEditorPalette.Violet);
-            var root = ToolPortraitBuilder.Build(accent, entry.Variants.Count, flat, temporaries);
-            if (!root) return null;
-
-            Normalize(root.transform, out bounds);
-            return root;
-        }
-
         static GameObject BuildSubject(GameObject prefab, bool flat, out Bounds bounds,
             out List<Object> temporaries)
         {
@@ -408,9 +390,105 @@ namespace CosmicShore.Editor.Codex
             var harvested = HarvestModel(prefab, flat, temporaries, out bounds);
             if (harvested) return harvested;
 
-            // Nothing to photograph. One shape reaches here: a COLONY, whose root is a brain with
-            // no body at all - the geometry belongs to its member prefabs.
-            return BuildColonyChain(prefab, flat, temporaries, out bounds);
+            // Nothing to photograph on the prefab itself. Two shapes reach here, both a brain with no
+            // body of its own: a COLONY (a chain of member prefabs) and a POPULATION (a school of members
+            // the GPU draws).
+            var colony = BuildColonyChain(prefab, flat, temporaries, out bounds);
+            if (colony) return colony;
+            return BuildPopulation(prefab, flat, temporaries, out bounds);
+        }
+
+        /// <summary>The serialized fields a population's root reads its species or config through.</summary>
+        static readonly string[] PopulationConfigFields = { "species", "config" };
+
+        /// <summary>
+        /// The member prefab each kind of population draws: a substrate species' agent proxy
+        /// (<c>SubstrateSpeciesSO.agentPrefab</c>), a swarm's tadpole (<c>SwarmFaunaConfigSO.TadpolePrefab</c>) and a
+        /// builder colony's worker (<c>BuilderColonyConfigSO.MemberPrefab</c>). Probed by NAME, as the colony chain is.
+        /// </summary>
+        static readonly string[] PopulationMemberFields = { "agentPrefab", "TadpolePrefab", "MemberPrefab" };
+
+        const int PopulationMembers = 9;
+
+        /// <summary>
+        /// A POPULATION's body is its members. A substrate pack, a swarm and a builder colony are each a heartless,
+        /// bodiless anchor whose lifeforms live in a simulation and are drawn from one GPU buffer, so the prefab
+        /// carries no mesh (Shombith 2026-10-27, after a bake: "None of the fauna got their images" - every one of
+        /// them "nothing to photograph"). This photographs a small loose school of the member the GPU draws - the
+        /// same body prism every agent wears - on a golden-angle disc, each turned and sized a little differently.
+        /// </summary>
+        static GameObject BuildPopulation(GameObject prefab, bool flat, List<Object> temporaries, out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+            var member = PopulationMember(prefab);
+            if (!member) return null;
+
+            var root = new GameObject("CodexPopulationModel") { hideFlags = HideFlags.HideAndDontSave };
+            Material shared = flat ? BuildFlatMaterial() : null;
+            if (shared) temporaries.Add(shared);
+
+            float spacing = 0f;
+            bool any = false;
+            for (int i = 0; i < PopulationMembers; i++)
+            {
+                var holder = new GameObject(member.name) { hideFlags = HideFlags.HideAndDontSave };
+                holder.transform.SetParent(root.transform, false);
+                if (!AddMemberMeshes(holder.transform, member, temporaries, ref shared))
+                {
+                    Object.DestroyImmediate(holder);
+                    continue;
+                }
+                any = true;
+                if (spacing <= 0f) spacing = Mathf.Max(0.01f, MemberSize(holder.transform)) * 1.5f;
+
+                const float GoldenAngle = 2.39996323f;
+                float a = i * GoldenAngle;
+                float r = Mathf.Sqrt((i + 0.5f) / PopulationMembers) * spacing * 1.8f;
+                holder.transform.localPosition = new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a * 1.7f) * spacing * 0.35f,
+                                                             Mathf.Sin(a) * r);
+                holder.transform.localRotation = Quaternion.Euler(Mathf.Sin(a) * 12f, 25f + Mathf.Cos(a) * 18f, 0f);
+                holder.transform.localScale = Vector3.one * (0.85f + 0.3f * Mathf.Repeat(i * 0.618f, 1f));
+            }
+
+            if (!any)
+            {
+                Object.DestroyImmediate(root);
+                return null;
+            }
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        static GameObject PopulationMember(GameObject prefab)
+        {
+            foreach (var component in prefab.GetComponents<Component>())
+            {
+                if (!component) continue;
+                var so = new SerializedObject(component);
+                foreach (var field in PopulationConfigFields)
+                {
+                    var config = so.FindProperty(field)?.objectReferenceValue;
+                    if (!config) continue;
+                    var configSo = new SerializedObject(config);
+                    foreach (var memberField in PopulationMemberFields)
+                    {
+                        var member = PrefabProperty(configSo, memberField);
+                        if (member) return member;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The largest dimension of a member laid at its holder's origin.</summary>
+        static float MemberSize(Transform holder)
+        {
+            var renderers = holder.GetComponentsInChildren<MeshRenderer>(true);
+            if (renderers.Length == 0) return 0f;
+            var b = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+            return Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
         }
 
         /// <summary>
@@ -489,6 +567,19 @@ namespace CosmicShore.Editor.Codex
             holder.transform.localPosition = new Vector3(0f, 0f, z);
             holder.transform.localScale = Vector3.one * Mathf.Max(0.05f, scale);
 
+            if (!AddMemberMeshes(holder.transform, member, temporaries, ref shared))
+            {
+                Object.DestroyImmediate(holder);
+                return false;
+            }
+
+            z -= step;
+            return true;
+        }
+
+        /// <summary>Copy a member prefab's body meshes under <paramref name="holder"/>. False when it has none.</summary>
+        static bool AddMemberMeshes(Transform holder, GameObject member, List<Object> temporaries, ref Material shared)
+        {
             bool any = false;
             foreach (var filter in member.GetComponentsInChildren<MeshFilter>(true))
             {
@@ -497,19 +588,11 @@ namespace CosmicShore.Editor.Codex
                 if (!renderer || !renderer.enabled) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, member.transform,
                         NonBodyNameHints)) continue;
-                AddMesh(holder.transform, member.transform, filter.transform, filter.sharedMesh,
+                AddMesh(holder, member.transform, filter.transform, filter.sharedMesh,
                         renderer.sharedMaterials, ref shared, temporaries);
                 any = true;
             }
-
-            if (!any)
-            {
-                Object.DestroyImmediate(holder);
-                return false;
-            }
-
-            z -= step;
-            return true;
+            return any;
         }
 
         static GameObject PrefabProperty(SerializedObject so, string field)
@@ -605,8 +688,15 @@ namespace CosmicShore.Editor.Codex
         /// dimension is 2 units. Reads the prefab ASSET — nothing is instantiated, so no gameplay
         /// component ever wakes up.
         /// </summary>
+        /// <param name="include">
+        /// Which parts belong in the picture, beyond the shared skips. A ship passes
+        /// <see cref="VesselModelBuilder.IsHull"/>: every ship prefab carries a skimmer, a builtin sphere
+        /// scaled 15-60x, and without the hull filter it fills the frame and every hull bakes the same blue
+        /// ball (Shombith 2026-10-27: twelve Vessel Changer pictures came out byte-identical).
+        /// </param>
         internal static GameObject HarvestModel(GameObject prefab, bool flat,
-            List<Object> temporaries, out Bounds bounds)
+            List<Object> temporaries, out Bounds bounds,
+            System.Func<Transform, Transform, Mesh, Renderer, bool> include = null)
         {
             bounds = new Bounds(Vector3.zero, Vector3.zero);
 
@@ -630,6 +720,7 @@ namespace CosmicShore.Editor.Codex
                 if (ToyModelBuilder.IsUnderHiddenLegacyModel(filter.transform, hiddenRoot)) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, prefab.transform,
                         NonBodyNameHints)) continue;
+                if (include != null && !include(prefab.transform, filter.transform, filter.sharedMesh, renderer)) continue;
                 AddMesh(root.transform, prefab.transform, filter.transform, filter.sharedMesh,
                         renderer.sharedMaterials, ref flatMaterial, temporaries);
                 any = true;
@@ -641,6 +732,7 @@ namespace CosmicShore.Editor.Codex
                 if (ToyModelBuilder.IsUnderHiddenLegacyModel(skinned.transform, hiddenRoot)) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(skinned.transform, prefab.transform,
                         NonBodyNameHints)) continue;
+                if (include != null && !include(prefab.transform, skinned.transform, skinned.sharedMesh, skinned)) continue;
                 AddMesh(root.transform, prefab.transform, skinned.transform, skinned.sharedMesh,
                         skinned.sharedMaterials, ref flatMaterial, temporaries);
                 any = true;
@@ -750,14 +842,14 @@ namespace CosmicShore.Editor.Codex
         /// A shaded neutral material — the fill a silhouette bake uses. Deliberately LIT rather
         /// than flat-unlit: a codex icon has to read as a shape, and an unlit fill of one colour
         /// throws away every bit of form the model has. Internal so
-        /// <see cref="ToolPortraitBuilder"/> and <see cref="CodexVariantSubject"/> draw in the
-        /// same grey rather than carrying their own copies of it.
+        /// <see cref="CodexVariantSubject"/> draws in the same grey rather than carrying its own
+        /// copy of it.
         /// </summary>
         internal static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
 
         /// <summary>
         /// One tinted preview material, built through one shader-resolution chain. Shared with
-        /// <see cref="ToolPortraitBuilder"/>: two bakers resolving their own shader is two ways for
+        /// <see cref="CodexVariantSubject"/>: two bakers resolving their own shader is two ways for
         /// a project without URP-Lit to render differently.
         /// </summary>
         internal static Material BuildTintedMaterial(Color tint)
@@ -840,7 +932,7 @@ namespace CosmicShore.Editor.Codex
             foreach (var entry in entries)
             {
                 if (entry == null) continue;
-                paths.Add($"{OutputFolder}/{FileNameFor(entry)}.png");
+                if (CanBake(entry)) paths.Add($"{OutputFolder}/{FileNameFor(entry)}.png");
 
                 foreach (var variant in entry.Variants)
                     if (CanBake(entry, variant))

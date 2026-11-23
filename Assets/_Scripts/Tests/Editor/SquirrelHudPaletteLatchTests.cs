@@ -19,7 +19,7 @@ namespace CosmicShore.Tests
         public void ALandedPushClosesTheLatch()
         {
             foreach (var d in new[] { Domains.Jade, Domains.Ruby, Domains.Gold })
-                Assert.IsTrue(SquirrelVesselHUDController.PaletteLanded(d, Resolved(1f)),
+                Assert.IsTrue(SquirrelHUDController.PaletteLanded(d, Resolved(1f)),
                     $"{d} resolved a real colour, so the retry must stop.");
         }
 
@@ -29,7 +29,7 @@ namespace CosmicShore.Tests
             // alpha 0 = "the palette had no answer" (ThemeManagerData not available yet). The view
             // keeps its white; the latch must NOT close, or the card stays white until the domain
             // changes - which for Jade, NetDomain's own initialiser, may be never.
-            Assert.IsFalse(SquirrelVesselHUDController.PaletteLanded(Domains.Jade, Resolved(0f)));
+            Assert.IsFalse(SquirrelHUDController.PaletteLanded(Domains.Jade, Resolved(0f)));
         }
 
         [Test]
@@ -37,8 +37,8 @@ namespace CosmicShore.Tests
         {
             // Blue's shielded tint is refused permanently by design, so a latch closed on it would
             // freeze the card for the rest of the match.
-            Assert.IsFalse(SquirrelVesselHUDController.PaletteLanded(Domains.Blue, Resolved(1f)));
-            Assert.IsFalse(SquirrelVesselHUDController.PaletteLanded(Domains.Blue, Resolved(0f)));
+            Assert.IsFalse(SquirrelHUDController.PaletteLanded(Domains.Blue, Resolved(1f)));
+            Assert.IsFalse(SquirrelHUDController.PaletteLanded(Domains.Blue, Resolved(0f)));
         }
 
         [Test]
@@ -48,9 +48,9 @@ namespace CosmicShore.Tests
             // it, the retry is gated on the domain CHANGING. Jade is the value NetDomain starts at,
             // so a Jade pilot's first (failed) push is also their last; Ruby and Gold arrive as a
             // change and repaint. This asserts the asymmetry that made it read as a Jade bug.
-            Assert.IsFalse(SquirrelVesselHUDController.PaletteLanded(Domains.Jade, Resolved(0f)),
+            Assert.IsFalse(SquirrelHUDController.PaletteLanded(Domains.Jade, Resolved(0f)),
                 "A failed push on the default domain must stay retryable - this is the whole bug.");
-            Assert.IsTrue(SquirrelVesselHUDController.PaletteLanded(Domains.Ruby, Resolved(1f)));
+            Assert.IsTrue(SquirrelHUDController.PaletteLanded(Domains.Ruby, Resolved(1f)));
         }
     }
 }

@@ -69,7 +69,7 @@ namespace CosmicShore.UI
 
                 if (trainingProgress.IsTierSatisfied(i + 1) && !trainingProgress.IsTierClaimed(i + 1))
                 {
-                    IntensityButtons[i].GetComponent<Image>().color = Color.green;
+                    IntensityButtons[i].GetComponent<Image>().color = ColorTrace.Retrace(ColorTrace.Ui, Color.green);
 
                 }
             }

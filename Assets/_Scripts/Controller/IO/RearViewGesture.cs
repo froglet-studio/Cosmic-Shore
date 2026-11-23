@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// "Look behind me." The gesture that flips the gameplay camera to the rear vantage and
-    /// back — <b>C</b> on the keyboard, or <b>both shoulder buttons at once</b> (LB+RB) on a pad.
+    /// back — <b>C</b> on the keyboard, or <b>D-pad down</b> on a pad.
     ///
     /// <para>One predicate, in one place, for the same reason <see cref="OverviewGesture"/> is:
     /// the view a pilot gets is a property of the PLATFORM, not of a vessel or a mode, so the
@@ -13,21 +13,21 @@ namespace CosmicShore.Gameplay
     /// already local-pilot gated and pause gated — a remote replica, an AI hull and a paused
     /// game cannot fire it.</para>
     ///
-    /// <para><b>The pad chord is deliberately STATELESS.</b> It fires on the single frame the
-    /// chord completes: both shoulders down, and at least one of them going down THIS frame.
-    /// That is an exact rising edge whichever button the player presses first, it cannot
-    /// re-fire while the chord is held, and — unlike a remembered was-both-held-last-frame flag
-    /// — it carries no state that could survive a scene load, a device swap, or an editor
-    /// play-mode exit and desynchronise the toggle from what the player is holding.</para>
+    /// <para><b>It fires on the press EDGE and carries no state.</b> <c>wasPressedThisFrame</c>
+    /// cannot re-fire while the button is held, and a remembered was-held-last-frame flag could
+    /// survive a scene load, a device swap or an editor play-mode exit and desynchronise the
+    /// toggle from what the player is holding.</para>
     ///
-    /// <para><b>Known overlap, stated rather than papered over:</b> the right shoulder is not a
-    /// free button. <c>GamepadInputStrategy</c> reads it as <c>Throttle</c> and raises
-    /// <c>FlipAction</c> from it, so completing this chord also boosts and flips on any vessel
-    /// bound to those. The left shoulder is genuinely unused (its handlers in that strategy are
-    /// commented out), which is what makes LB the half that carries the intent. Both are read
-    /// here rather than routed through <c>InputEvents</c> on purpose: this is a camera gesture,
-    /// not a vessel ability, and putting it in the ability map would make it something a hull
-    /// could fail to author.</para>
+    /// <para><b>Why D-pad down</b> (Garrett, 2026-10-27). It was LB + RB together until the
+    /// shoulders were given to the pilot: LB opens the pilot's vision and RB grabs the payload
+    /// (<c>Docs/Pilots/CALLSIGNS.md</c>), so a shoulder chord would fire all three at once. D-pad
+    /// down is free in flight: left and right are <see cref="PilotSwapGesture"/>'s, and the
+    /// theater's D-pad transport (<c>TheaterGesture</c>) is only read while the local pilot's
+    /// input is paused, which is exactly when this gesture is not polled.</para>
+    ///
+    /// <para>Read here rather than routed through <c>InputEvents</c> on purpose: this is a camera
+    /// gesture, not a vessel ability, and putting it in the ability map would make it something
+    /// a hull could fail to author.</para>
     /// </summary>
     public static class RearViewGesture
     {
@@ -39,9 +39,7 @@ namespace CosmicShore.Gameplay
             var pad = Gamepad.current;
             if (pad == null) return false;
 
-            // Both down, one of them newly down: the frame the chord closes, in either order.
-            return pad.leftShoulder.isPressed && pad.rightShoulder.isPressed &&
-                   (pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame);
+            return pad.dpad.down.wasPressedThisFrame;
         }
     }
 }

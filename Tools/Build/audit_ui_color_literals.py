@@ -61,7 +61,7 @@ TOKENS = {
 #   a = missing token   b = belongs in a feature-level SO   c = never designed
 VERDICTS = {
     "ConnectingPanelController.cs:160": ("b", "SO_ColorSet — domain accent fallback"),
-    "Controller/MantaVesselHUDController.cs:22": ("b", "Manta HUD — overcharge state; danger candidate"),
+    "Controller/MantaHUDController.cs:22": ("b", "Manta HUD — overcharge state; danger candidate"),
     "DomainVolumeHexGraphic.cs:84": ("b", "SO_ColorSet — hardcoded domain triad; SEE FLAG F1"),
     "DomainVolumeIndicator.cs:305": ("c", "alpha-0 hide, not a colour"),
     "DomainVolumeIndicator.cs:524": ("b", "SO_ColorSet — domain fallback"),

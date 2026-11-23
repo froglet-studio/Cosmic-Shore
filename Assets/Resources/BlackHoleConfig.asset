@@ -27,6 +27,11 @@ MonoBehaviour:
   pullVessels: 1
   vesselPullScale: 1
   maxVesselPullSpeed: 90
+  look: 0
+  mobileHaloGlow: 0.06
+  mobileWaveReach: 220
+  mobileWaveGlow: 0.12
+  mobileWaveShade: 0.06
   warpEnabled: 1
   tidalResponseSeconds: 0.9
   maxTidalStretch: 12

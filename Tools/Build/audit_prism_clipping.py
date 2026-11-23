@@ -56,7 +56,13 @@ BAKE_FORMAT = "Assets/_Scripts/Controller/Environment/Spawning/PrismLayoutBakeFo
 # Pure-C# helpers a shape calls. SpawnableGeode took MathfNoAlloc.Min (50a2e4e3c, 2026-10-24, the
 # no-params-array three-value Min), and until it was listed here the harness failed to compile, so this
 # audit and bake_prism_layouts.py --check both stopped running (CS0103 'MathfNoAlloc').
-HELPERS = ["Assets/_Scripts/Utility/MathfNoAlloc.cs"]
+# SpawnableSwitchbackFeatures (and SwitchbackCourse, which rcb.SOURCES carries for SpawnableBreakwater)
+# name the closed-form Blast Run layout; without its helpers the harness stopped compiling
+# (CS0246, 2026-10-28) and this audit stopped running.
+SB = "Assets/_Scripts/Controller/Arcade/Switchback"
+HELPERS = ["Assets/_Scripts/Utility/Foundation/MathfNoAlloc.cs",
+           f"{SB}/SwitchbackFeatures.cs", f"{SB}/SwitchbackBlastRun.cs",
+           "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterStationBuilder.cs"]
 GYROID_TABLES = ["Assets/_Scripts/Controller/Assemblers/CornerSiteType.cs",
                  "Assets/_Scripts/Controller/Assemblers/GyroidBondMateData.cs",
                  "Assets/_Scripts/Controller/Assemblers/GyroidBondMateDataContainer.cs"]
@@ -66,7 +72,12 @@ GYROID_TABLES = ["Assets/_Scripts/Controller/Assemblers/CornerSiteType.cs",
 ABSTRACT = {"SpawnableShapeBase"}
 # Generators that lay nothing until their controller hands them a course (SetCourse), with the
 # base seed the audit poses them on.
-POSED = {"SpawnableBreakwater": 9000}
+POSED = {"SpawnableBreakwater": 9000,
+         # Posed as Blast Run (Switchback's only course family since 2026-10-29) at the launch panel's FIXED
+         # seeds 45_501-45_504 (SwitchbackBlastRun.FixedSeed), on the EditMode tests' shell.
+         "SpawnableSwitchbackFeatures": 45_500}
+SWITCHBACK_POSE = {"gates": 20, "inner": 480.0, "outer": 1080.0, "firstGateDistance": 620.0,
+                   "clearRadius": 480.0 / 1.22 + 30.0}
 NOT_AUDITED = {
     "SpawnableCrystal": "instantiates a crystal, lays no prisms",
     "SpawnableFlora": "plants a flora; plants are held by their own species gates",
@@ -188,7 +199,10 @@ def build_spec(only=None):
             if name in POSED:
                 # Posed by its controller from the match seed: one representative course per
                 # intensity (a live match rolls its own).
-                e["course"] = {"intensity": i, "seed": POSED[name] + i, "settings": posed_settings(name)}
+                if name == "SpawnableSwitchbackFeatures":
+                    e["course"] = {"intensity": i, "seed": POSED[name] + i, "switchback": SWITCHBACK_POSE}
+                else:
+                    e["course"] = {"intensity": i, "seed": POSED[name] + i, "settings": posed_settings(name)}
             spec.append(e)
     return spec, skipped
 

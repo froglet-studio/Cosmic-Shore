@@ -62,7 +62,9 @@ namespace CosmicShore.Gameplay
     /// (<see cref="PrismMotion.NextLevel"/>, <c>PrismMotionConfigSO</c>): its exact oriented BOX on the
     /// main thread at levels 1 and 2 — with a collision burst on the ultra-high-res prism at level 1 —
     /// and the sphere of its volume in a fourth Burst job (<see cref="PrismMotion.ContactJob"/>) at level
-    /// 3. The main thread annihilates each pair, scored to the hole that moved the body. Bodies already
+    /// 3. The main thread annihilates each pair, scored to the hole that moved the body, and DRAWS each as the hole
+    /// eating it: the same suction into the hole a horizon capture and a creature's meal use
+    /// (<see cref="PrismMotion.AnnihilateInto"/>, 2026-11-22; it was an explosion before). Bodies already
     /// touching when the step began (a trail's neighbours falling together) are at rest, not a
     /// collision. A collision outranks a verdict on the same frame.</para>
     ///
@@ -124,6 +126,12 @@ namespace CosmicShore.Gameplay
         static readonly Unity.Profiling.ProfilerMarker s_admit = new("BlackHole.GravityField.Admit");
         static readonly Unity.Profiling.ProfilerMarker s_prune = new("BlackHole.GravityField.Prune");
         static readonly Unity.Profiling.ProfilerMarker s_verdicts = new("BlackHole.GravityField.Verdicts");
+        // The rest of a tick, named so a capture can split BlackHole.Field's self time (2.47 ms/frame in a
+        // Menu_Main capture with a Stoat dipole, 2026-10-26, with nothing inside to say where).
+        static readonly Unity.Profiling.ProfilerMarker s_jobs = new("BlackHole.GravityField.Jobs");
+        static readonly Unity.Profiling.ProfilerMarker s_boxContacts = new("BlackHole.GravityField.BoxContacts");
+        static readonly Unity.Profiling.ProfilerMarker s_indexWrite = new("BlackHole.GravityField.IndexWrite");
+        static readonly Unity.Profiling.ProfilerMarker s_contacts = new("BlackHole.GravityField.Contacts");
 
         // The hole behind each well slot this frame. A well index is NOT a holes-list index: the
         // wells skip null holes, so a capture's well index is resolved through this table.
@@ -149,6 +157,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Bodies that ran into a prism and were destroyed with it (prism motion's collision
         /// rule) since the last reset (session total).</summary>
         public static int CollisionsTotal { get; private set; }
+
+        /// <summary>Bodies that ran into a prism with a shield on either side and bounced (nothing destroyed) since the
+        /// last reset (session total).</summary>
+        public static int BouncesTotal { get; private set; }
 
         /// <summary>Prisms carried through a dipole's throat since the last reset (session total).</summary>
         public static int ThroatTransitsTotal { get; private set; }
@@ -247,14 +259,18 @@ namespace CosmicShore.Gameplay
             _level = NextLevel(n);
             bool spheres = _level == PrismMotionLevel.Bulk;
             var contacts = ScheduleContacts(index, indexLive, n, integrate, spheres);
-            writeBack.Complete();
-            contacts.Complete();
-            if (indexLive && !spheres) BoxContacts(index, n);
+            using (s_jobs.Auto())
+            {
+                writeBack.Complete();
+                contacts.Complete();
+            }
+            if (indexLive && !spheres)
+                using (s_boxContacts.Auto()) BoxContacts(index, n);
 
             if (indexLive)
-                index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
+                using (s_indexWrite.Auto()) index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
 
-            ApplyContacts(index, dt, _level);
+            using (s_contacts.Auto()) ApplyContacts(index, dt, _level);
             using (s_verdicts.Auto()) ApplyVerdicts(index);
         }
 
@@ -330,7 +346,9 @@ namespace CosmicShore.Gameplay
         /// Every contact the pass found: both prisms destroyed, scored to the hole nearest the
         /// body (the one whose pull moved it). A pair two bodies both reported, or a prism an
         /// earlier contact this frame already destroyed, is a no-op. The destroyed bodies leave
-        /// the ledger in <see cref="ApplyVerdicts"/>.
+        /// the ledger in <see cref="ApplyVerdicts"/>. A contact a shielded prism is part of
+        /// BOUNCES instead (<see cref="PrismMotion.Bounces(Prism, Prism)"/>): nothing is destroyed and
+        /// the bodies' velocities rebound off the contact (<see cref="Bounce"/>).
         /// </summary>
         static void ApplyContacts(PrismSpatialIndex index, float dt, PrismMotionLevel level)
         {
@@ -350,15 +368,44 @@ namespace CosmicShore.Gameplay
                 if (_bodyOfSlot.TryGetValue(contact.Slot, out int j) && j < _prisms.Count)
                     velocity -= (Vector3)((_points[j] - _prevPoints[j]) / dt);
 
+                if (PrismMotion.Bounces(mover, struck))
+                {
+                    Bounce(mover, struck, contact.Slot, velocity);
+                    BouncesTotal++;
+                    continue;
+                }
+
                 var hole = NearestHole(mover.transform.position);
                 bool owned = hole != null && !string.IsNullOrEmpty(hole.CaptureOwnerName);
-                PrismMotion.Annihilate(mover, struck, velocity,
-                    owned ? hole.CaptureDomain : Domains.Blue,
-                    owned ? hole.CaptureOwnerName : ConsumerName,
-                    level);
+                var domain = owned ? hole.CaptureDomain : Domains.Blue;
+                string name = owned ? hole.CaptureOwnerName : ConsumerName;
+                // Both are destroyed (prism motion's collision rule), and drawn as the hole eating them: the fauna's
+                // suction into the hole, not an explosion (Yash, 2026-11-22).
+                if (hole != null) PrismMotion.AnnihilateInto(mover, struck, hole.transform, domain, name);
+                else PrismMotion.Annihilate(mover, struck, velocity, domain, name, level);
                 CollisionsTotal++;
             }
             _contacts.Clear();
+        }
+
+        /// <summary>
+        /// A shielded contact: the mover's velocity rebounds off the contact normal. When the struck prism is another
+        /// body under gravity the two share the impulse equally (equal and opposite); a prism that is not a body keeps still.
+        /// </summary>
+        static void Bounce(Prism mover, Prism struck, int slot, Vector3 relativeVelocity)
+        {
+            var normal = PrismBounce.Normal(mover.transform.position, struck.transform.position, relativeVelocity);
+            bool both = _bodyOfSlot.TryGetValue(slot, out int j) && j >= 0 && j < _prisms.Count && _prisms[j] == struck;
+            var dv = PrismBounce.Impulse(relativeVelocity, normal, PrismMotion.BounceRestitution, both ? 0.5f : 1f);
+            AddVelocity(mover, dv);
+            if (both) AddVelocity(struck, -dv);
+        }
+
+        static void AddVelocity(Prism p, Vector3 dv)
+        {
+            if (dv.sqrMagnitude < 1e-12f || !PrismRenderService.TryGetGravityBody(in p.RenderHandle, out var body)) return;
+            body.Velocity += (float3)dv;
+            PrismRenderService.SetGravityBody(in p.RenderHandle, in body, enabled: true);
         }
 
         static BlackHole NearestHole(Vector3 position)
@@ -766,6 +813,7 @@ namespace CosmicShore.Gameplay
             CapturedThisSecond = 0;
             ThroatTransitsTotal = 0;
             CollisionsTotal = 0;
+            BouncesTotal = 0;
             _level = PrismMotionLevel.Showcase;
             DisposeLedger();
             DisposeOutputs();

@@ -37,6 +37,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AMatchNotice_DoesNotFollowThePlayerIntoANewMatch()
+        {
+            // "The host left" and the rejoin offer are raised on the menu, about a match the player is out of.
+            Assert.IsFalse(DisconnectNotice.MatchNoticeIsStale(true, true, "Menu_Main"), "it belongs on the menu");
+            Assert.IsTrue(DisconnectNotice.MatchNoticeIsStale(true, true, "MinigameSkimRace"),
+                "left up, it covered a match the player was in with a live host");
+            Assert.IsTrue(DisconnectNotice.MatchNoticeIsStale(true, true, "Maelstrom"));
+            Assert.IsFalse(DisconnectNotice.MatchNoticeIsStale(false, true, "MinigameSkimRace"),
+                "a lost connection is about NOW and must stay up in a match");
+            Assert.IsFalse(DisconnectNotice.MatchNoticeIsStale(true, false, "MinigameSkimRace"));
+        }
+
+        [Test]
         public void TheConfig_IsLoadableFromResources()
         {
             Assert.IsNotNull(Resources.Load<DisconnectNoticeConfigSO>("DisconnectNoticeConfig"),
@@ -61,6 +74,19 @@ namespace CosmicShore.Tests
                      })
                 Assert.IsFalse(string.IsNullOrWhiteSpace(value),
                     $"{label} is blank - the notice would render an empty panel.");
+        }
+
+        [Test]
+        public void TheConfig_NamesTheStyleBWindow()
+        {
+            var config = LoadConfig();
+            Assert.IsNotNull(config);
+            // Section 100.2: without it the notice falls back to the legacy code-built panel.
+            Assert.IsNotNull(config.WindowPrefab,
+                "DisconnectNoticeConfig.WindowPrefab is empty - run Tools/Build/author_disconnect_notice.py.");
+            Assert.IsNotNull(config.WindowPrefab.Title, "the window's title is unwired");
+            Assert.IsNotNull(config.WindowPrefab.ReconnectButton, "the window's RECONNECT is unwired");
+            Assert.IsNotNull(config.WindowPrefab.DismissButton, "the window's CONTINUE OFFLINE is unwired");
         }
 
         [Test]

@@ -85,6 +85,11 @@ CLASS_ID = 16
 STOAT_CLASS_ID = 15
 
 
+# The omni crystal folds into the hull (R_VesselActions/VESSEL_ABSORB_CRYSTAL_MORPH.md): a placeholder until this hull's
+# omni ability puts something in the world to land on. Shared asset, not generated here.
+VESSEL_ABSORB_MORPH_GUID = "9a40b3a2720043cd86332dbf7e16dd8d"   # VesselAbsorbCrystalMorphByCrystal.asset
+
+
 def guid_for(name: str) -> str:
     return hashlib.md5(f"CosmicShore/BrittleStar/{name}".encode()).hexdigest()
 
@@ -103,10 +108,11 @@ DOC_GUID = guid_for("BRITTLE_STAR.md")
 AI_POLICY_GUID = guid_for("BrittleStarAIBoostPolicy.asset")
 
 # (control name, enum value, InputEvents it is bound to). The InputEvents numbers: RightStickAction=1 (RT / LMB /
-# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), FlipAction=3 (RB / E - the only free face control the input
-# layer raises), Button1=6 (A / Space), Button2=7 (B / R), Button3=8 (X / Q).
+# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), Button1=6 (A / Space), Button2=7 (B / T), Button3=8 (X / Q),
+# Button4=14 (Y / F). Charge Mode was FlipAction=3 (RB / E) until 2026-10-27, when Garrett moved every RB ability to Y:
+# the shoulders belong to the pilot (LB sight, RB payload; Docs/Pilots/CALLSIGNS.md section 5).
 CONTROLS = (("BrittleStarSpeedMode", 0, 6), ("BrittleStarCreationMode", 1, 7), ("BrittleStarDestructionMode", 2, 8),
-            ("BrittleStarFire", 3, 1), ("BrittleStarRingDetonation", 4, 2), ("BrittleStarChargeMode", 5, 3))
+            ("BrittleStarFire", 3, 1), ("BrittleStarRingDetonation", 4, 2), ("BrittleStarChargeMode", 5, 14))
 CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
@@ -193,6 +199,11 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": hashlib.md5(b"CosmicShore/Britt
              "783faf75777a15c5b2241cfc3e2691d3": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_CreationMode.png").hexdigest(),
              "586d56db81bb568c940094830cd59abb": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_DestructionMode.png").hexdigest(),
              "669089ec7ad29ed295eccc53d8615225": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_SpeedMode.png").hexdigest()}
+# The cards the icon kit has recut into parts (the Stoat sprite they replaced -> a view field one of the parts wires).
+KIT_RECUT = {"ebdd346798d474b5a5ab2364683a8725": "chargeStarIcon",    # Charge: the five cords (2026-11-01)
+             "783faf75777a15c5b2241cfc3e2691d3": "massStarIcon",      # Mass: the corner trails, the tunnel (2026-11-01)
+             "586d56db81bb568c940094830cd59abb": "spaceStarIcon",     # Space: the five guns, the fan (2026-11-01)
+             "669089ec7ad29ed295eccc53d8615225": "timeStarIcon"}      # Time: the stretch (2026-11-01)
 # Script guids that must not survive the clone (every Stoat-specific component).
 STOAT_SCRIPTS = ("f8734be12714484eb93134990801178a",   # StoatAnimation
                  "1c6aec6ea8ef44f1bef4884679d33d0a",   # StoatHullBuilder
@@ -589,7 +600,7 @@ def vessel_container_asset() -> str:
             "  vesselSpaceCrystalEffects:\n" + crystal +
             "  vesselTimeCrystalEffects:\n" + crystal +
             "  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
-            "  omniCrystalRetirement: {fileID: 0}\n")
+            f"  omniCrystalRetirement: {{fileID: 11400000, guid: {VESSEL_ABSORB_MORPH_GUID}, type: 2}}\n")
 
 
 def skimmer_container_asset() -> str:
@@ -667,8 +678,8 @@ def quote(text: str) -> str:
 
 
 MAP_ENTRIES = (
-    (1, "Charge Mode", 3,
-     "RB. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) "
+    (1, "Charge Mode", 14,
+     "Y. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) "
      "and striking rival hulls for petals. Released, RT leaves them WHIPS at 150% length: heavy, inextensible, slow - a "
      "turn, a ring flick or a sweep of the right stick sends a wave travelling down them that rings on for seconds. "
      "Pulled, RT shortens them to 100% and stiffens them into five SABERS that keep 60% of the whip's give (analog: "
@@ -676,8 +687,8 @@ MAP_ENTRIES = (
      "The right stick turns them with the ring and opens them out. Using them cools the guns. "
      "LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the mounted ring then regrows "
      "on its own. It blows on contact or its fuse in a disk as wide as the cell's nucleus, bursting out of the ring as "
-     "faceted volumes - five coiling arms led by crystals, five crests and the ring's own pentagon - still spinning, destroying every prism in its "
-     "plane and stripping petals from every rival hull it crosses (petals only - nothing is moved). The card shows the "
+     "faceted volumes - five coiling arms led by crystals, five crests and the ring's own pentagon - still spinning, destroying every prism within 40 u of the "
+     "blast and every prism in its plane and stripping petals from every rival hull it crosses (petals only - nothing is moved). The card shows the "
      "spare stock. Charge is threat - one dial: the cords' cut width and the rounds' size x1 -> x1.8 at level 10 "
      "(projectileScaleMultiplier), the disk's thickness x1 -> x4 on top of its x4 base, 4 to 16 times the ring's (blastScale)."),
     (2, "Creation Mode", 7,
@@ -702,6 +713,29 @@ MAP_ENTRIES = (
 )
 
 
+# The level-5 upgrades (Shombith, 2026-11-03; Docs/Studios/BRITTLE_STAR.md "Level-5 upgrades"), each gated on
+# IsUpgradeActive(Element.X) in BrittleStarExecutor.
+UPGRADES = {
+    1: ("Thrown Sabers",
+        "With the cords held RIGID (RT held, the cords fully out), LT cuts all five off and throws them along the lines "
+        "they point - the right stick aims them as it aims the cords: centred they converge ahead, pushed they fan out. "
+        "Each flies on tumbling end over end, cutting every prism it crosses and striking rival hulls for petals, then is "
+        "gone; new cords grow back after a moment. The ring is thrown only when the sabers cannot be "
+        "(BrittleStarConfigSO.thrownSaber*)."),
+    2: ("Shielded Trail",
+        "Every ordinary prism the hull lays arrives SHIELDED - the base trail's and Creation Mode's five corner trails' "
+        "alike (danger prisms stay danger prisms)."),
+    3: ("Explosive Rounds",
+        "Every round a prism stops BURSTS, destroying the prisms within 10 u of where it struck (any domain - friendly "
+        "fire; your own fresh trail is spared; a shield pops first). The round's own hit on a hull is the scored hit, as "
+        "before (BrittleStarConfigSO.explosiveRoundRadius)."),
+    4: ("Speed Roll",
+        "In Speed Mode the right stick ROLLS the hull instead of turning the ring: its x rolls about the nose (220 "
+        "deg/s), its y pulls the nose (90 deg/s), so the hull can roll and pull to change direction at Speed Mode's "
+        "speed (BrittleStarConfigSO.speedRoll*)."),
+}
+
+
 def map_asset() -> str:
     out = header(MAP_SCRIPT, "BrittleStar").replace("  m_EditorClassIdentifier: \n", "  m_EditorClassIdentifier:\n")
     out += f"  vesselClass: {CLASS_ID}\n  entries:\n"
@@ -713,10 +747,8 @@ def map_asset() -> str:
                 "    UnlockLevel: 5\n"
                 "    RelockBelowLevel: 4\n"
                 "    LatchPolicy: 0\n"
-                # Level-5 upgrades are OPEN design slots: the class document names none, and the vessel skill's design
-                # gate forbids inventing one (BRITTLE_STAR.md §5 carries proposals for Garrett).
-                "    UpgradeLabel: \n"
-                "    UpgradeDescription: \n")
+                f"    UpgradeLabel: {UPGRADES[element][0]}\n"
+                f"    UpgradeDescription: {quote(UPGRADES[element][1])}\n")
     return out
 
 
@@ -909,7 +941,11 @@ def check(files: "dict[str, str]") -> "list[str]":
         for field in ("ringGauge", "creationGauge", "destructionGauge", "speedGauge"):
             need(re.search(r"  %s: \{fileID: [1-9]\d*\}" % field, hud), f"HUD view field {field} is not wired")
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            # A card the icon kit has recut (Tools/Build/icon_kit/specs/brittlestar.py) wears kit PARTS on child Images and
+            # its slot Image carries no sprite, so the round-1 sprite is gone on purpose: its view field stands in.
+            recut = KIT_RECUT.get(old)
+            done = new in hud or (recut and re.search(r"  %s: \{fileID: [1-9]\d*\}" % recut, hud))
+            need(old not in hud and done, f"HUD icon {new} not swapped in")
 
     for path, want in owned_files().items():
         have = files.get(path)

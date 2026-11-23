@@ -279,8 +279,8 @@ public class VesselControllerConformanceC4Tests
     public void RequireComponent_IVesselStatus_IsFrozen()
     {
         var declared = typeof(VesselController)
-            .GetCustomAttributes(typeof(RequireComponentAttribute), false)
-            .Cast<RequireComponentAttribute>()
+            .GetCustomAttributes(typeof(RequireComponent), false)
+            .Cast<RequireComponent>()
             .Select(a => a.m_Type0)
             .ToArray();
         Assert.Equal(new[] { typeof(IVesselStatus) }, declared);

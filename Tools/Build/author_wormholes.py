@@ -9,7 +9,7 @@ Emits, deterministically (guid = md5 of a stable name, so a re-run never re-mint
   Assets/_Graphics/Materials/Graphs/Wormhole.shader.meta              the surface shader's meta
   Assets/_Graphics/Materials/Wormhole.mat                             the surface material
 
-and wires ButterflyFoldAction.asset onto that material: every fold leaves a domain-tolled wormhole
+and wires TigerMothDropAction.asset onto that material: every fold leaves a domain-tolled wormhole
 pair (they replaced the ring gates; anyone rides, a rival pays petals), so the asset carries
 wormholeMaterial / portalWindowFadeBand / panoramaFaceSize / rivalTollPetalsPerElement /
 rivalTollShedSpeed and not the two ring-only keys (gateExitClearance, portalWindowFadeSeconds).
@@ -20,7 +20,7 @@ world used to prototype the idea. That cell is retired (the fold carries the ide
 asserts it stays gone from Menu_Main. The guid salt below is kept from that script on purpose:
 changing it would re-mint every guid above and dangle the committed references.
 
-Validates BEFORE writing anything: the fold asset's keys are fields of FoldActionSO; every guid
+Validates BEFORE writing anything: the fold asset's keys are fields of TigerMothDropActionSO; every guid
 this script owns is owned by no OTHER .meta; every guid it references resolves.
 
     python3 Tools/Build/author_wormholes.py           # write / re-sync
@@ -44,8 +44,10 @@ MATERIAL = A("_Graphics", "Materials", "Wormhole.mat")
 # The SEAMLESS mouth (a crystal wormhole's, Docs/CRYSTAL_WORMHOLE.md): the same shader, alpha-blended,
 # its view dissolving into the world toward the silhouette, no rim — no interface.
 SEAMLESS_MATERIAL = A("_Graphics", "Materials", "WormholeSeamless.mat")
-FOLD_ACTION = A("_SO_Assets", "VesselActions", "Butterfly", "ButterflyFoldAction.asset")
-FOLD_ACTION_SCRIPT = A("_Scripts", "Controller", "Vessel", "R_VesselActions", "Data Containers", "FoldActionSO.cs")
+# The Butterfly and its Fold were retired 2026-10-29: the pair is now laid by the Tiger Moth's Drop, and only by a drop
+# that pays the full recharge (R_VesselActions/TIGER_MOTH.md). The names below keep "FOLD" for the record.
+FOLD_ACTION = A("_SO_Assets", "VesselActions", "TigerMoth", "TigerMothDropAction.asset")
+FOLD_ACTION_SCRIPT = A("_Scripts", "Controller", "Vessel", "R_VesselActions", "Data Containers", "TigerMothDropActionSO.cs")
 FOLD_RETIRED_KEYS = ("gateExitClearance", "portalWindowFadeSeconds")
 FOLD_ADDED_DEFAULTS = (("portalWindowFadeBand", "600"), ("panoramaFaceSize", "256"))
 # The rival toll's tuning: anchored after gateSettleSeconds (the order FoldActionSO declares them),
@@ -247,12 +249,12 @@ def validate(out):
 # ── The Butterfly's fold: its pair is a wormhole ──────────────────────────────────
 
 def fold_patch(text):
-    """ButterflyFoldAction.asset as it should be: retired ring keys gone, wormhole keys present."""
+    """TigerMothDropAction.asset as it should be: retired ring keys gone, wormhole keys present."""
     for key in FOLD_RETIRED_KEYS:
         text = re.sub(rf"^  {key}: [^\n]*\n", "", text, flags=re.M)
     material = f"{{fileID: 2100000, guid: {guid_for('material')}, type: 2}}"
     anchor = re.search(r"^  portalWindowRenderScale: [^\n]*\n", text, re.M)
-    assert anchor, "ButterflyFoldAction.asset has no portalWindowRenderScale to anchor on"
+    assert anchor, "TigerMothDropAction.asset has no portalWindowRenderScale to anchor on"
     insert = ""
     for key, value in FOLD_ADDED_DEFAULTS:
         if not re.search(rf"^  {key}: ", text, re.M):
@@ -263,7 +265,7 @@ def fold_patch(text):
         insert += f"  wormholeMaterial: {material}\n"
     text = text[:anchor.end()] + insert + text[anchor.end():]
     toll = re.search(r"^  gateSettleSeconds: [^\n]*\n", text, re.M)
-    assert toll, "ButterflyFoldAction.asset has no gateSettleSeconds to anchor the toll on"
+    assert toll, "TigerMothDropAction.asset has no gateSettleSeconds to anchor the toll on"
     insert = "".join(f"  {k}: {v}\n" for k, v in FOLD_TOLL_DEFAULTS
                      if not re.search(rf"^  {k}: ", text, re.M))
     return text[:toll.end()] + insert + text[toll.end():]
@@ -274,11 +276,11 @@ def fold_problems(text):
     keys = set(re.findall(r"^  ([A-Za-z]\w*):", text.split("m_EditorClassIdentifier:")[1], re.M))
     want = fields(FOLD_ACTION_SCRIPT)
     for k in sorted(keys - want):
-        problems.append(f"ButterflyFoldAction.asset key '{k}' is not a field of FoldActionSO")
+        problems.append(f"TigerMothDropAction.asset key '{k}' is not a field of TigerMothDropActionSO")
     for k in ("wormholeMaterial", "portalWindowFadeBand", "panoramaFaceSize",
               "rivalTollPetalsPerElement", "rivalTollShedSpeed", "tollHitClass", "onTollHitLanded"):
         if k not in keys:
-            problems.append(f"ButterflyFoldAction.asset does not author '{k}'")
+            problems.append(f"TigerMothDropAction.asset does not author '{k}'")
     return problems
 
 
@@ -304,7 +306,7 @@ def main():
             for d in drift:
                 print(f"  - differs from what this script authors: {os.path.relpath(d, REPO)}")
             return 1
-        print("OK - the wormhole assets match, and the Butterfly's fold is wired to them.")
+        print("OK - the wormhole assets match, and the Tiger Moth's drop is wired to them.")
         return 0
 
     if problems:
@@ -320,7 +322,7 @@ def main():
     if fold_now != fold_want:
         with open(FOLD_ACTION, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(fold_want)
-        print("  Butterfly fold: ButterflyFoldAction.asset wired to the wormhole material")
+        print("  Tiger Moth drop: TigerMothDropAction.asset wired to the wormhole material")
     return 0
 
 

@@ -69,7 +69,7 @@ isn't juicy enough.
 
 Petal flare on unlock via `OnUpgradeStateChanged` (juice in `ElementalBarsConfigSO`); ability-icon
 row only in the branch's final view-binding shape with authored sprites; unlocked-state icons;
-Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now the roll-charge pip, `SparrowHUDView.SetRollCharge`; still open: shielded turret, piercing, domain-safe). Clean up dead code
+Sparrow HUD indicators (~~roll armed~~ RETIRED 2026-10-26 — the roll-charge pip was unbound from the Time card, Garrett: "its cooldown is so low"; ~~shielded turret~~ SHIPPED 2026-10-26 — the Mass card's rounds become shielded octahedrons at Mass 5, `SparrowHUDView.SetAbilityUpgraded`; still open: piercing, domain-safe). Clean up dead code
 (`ElementPipsView`, `SparrowAnimationController` or adopt it properly, `AIGunner`,
 `ExplodableProjectile`, `StopGunsAction`, `SparrowExhaustProjectile.prefab`).
 
@@ -158,7 +158,8 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
 
 Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
 
-10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
+10. **[FIXED 2026-10-31, `Tools/Build/fix_serpent_crystal_pickup.py`: the skimmer is a live far-field crystal
+    catcher that hands each crystal to the hull; not yet flown in the editor]** **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
     GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
     fault the Dolphin had; deliberately left untouched by that branch (different vessel).
     Confirm with `FrogletTools > Vessels > Audits > Audit Vessel Skimmers`.
@@ -469,14 +470,14 @@ measurement attached is worse than no row.
   a wiring change. The container and both prefabs are deliberately KEPT: a dangling container
   reference is worse than an empty one.
 - **[RESOLVED 2026-10-16 — the consumer side went first.]** `EventOnSkimmerDebuffApplied.asset` and
-  `EventOnVesselSlowedByExplosion.asset` are deleted, and `RhinoVesselHUDController`'s four SOAP
+  `EventOnVesselSlowedByExplosion.asset` are deleted, and `RhinoHUDController`'s four SOAP
   channels with them (two had no producer; the other two counted EVERY Rhino's blasts, not this
   one's). The `ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` TYPE survives with no
   asset, producer or consumer — the generic vehicle is still there for a future Debuff-class
   skimmer effect. Kept for the record:
   **`ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` have no producer.** Measured: the
   only raiser was `VesselDamageBySkimmerEffectSO` (deleted); the only consumer is
-  `RhinoVesselHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
+  `RhinoHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
   (the ability lockup's retire sweep switched the Rhino's whole root-level status cluster off —
   `Docs/ABILITY_LOCKUP.md`). Kept as a wire rather than deleted: it is the generic *"a skimmer
   debuffed you"* vehicle and the next Debuff-class skimmer effect is its producer. Deciding between
@@ -592,7 +593,7 @@ measurement attached is worse than no row.
   To measure: author a throwaway new SO type + asset by script, have a human pull it and select the
   asset before entering play mode, and record what the inspector says. *Report, not a fix.*
 
-- **Two pre-existing orphaned doc comments** (a `/// </summary>` immediately followed by
+- ~~**Two pre-existing orphaned doc comments**~~ **RESOLVED 2026-11-11** (`f484ff49bd`, `cece/loving-volta-kkvnex`): the `SweepCrystals` doc sits on `SweepCrystals`, the `CSLogChannel` note on the enum; `Tools/Build/check_doc_summaries.py`, a `/ship` gate since then, fails on any such stack under `Assets/`. Was: (a `/// </summary>` immediately followed by
   `/// <summary>`, both present at merge base `2cf25d8e`): `ExplosionImpactor.cs` above
   `SweptCylinder` (the `SweepCrystals` doc stacked on the narrowphase struct's) and `CSDebug.cs:40`
   (the `CSLogChannel` usage note stacked on `CSLogChannelLabelAttribute`'s). Move each down onto
@@ -636,7 +637,7 @@ and the `SkimmerImpactor` whose `skimmer:` field points at it (recorded in
   (`OnCrystalCollected` is skipped), no element level, no hull fusion. The fix is to point
   `_nearFieldSkimmer` at each hull's nested Skimmer (the Manta's is the stripped
   `874579554510349383`); confirm first that these three hulls are meant to be flyable.
-- **[report] The Serpent cannot collect a crystal.** Its `_nearFieldSkimmer` is `VacuumSkimmer`, a
+- **[FIXED 2026-10-31 - Shombith asked for it: the Serpent SHOULD collect; `fix_serpent_crystal_pickup.py`]** **[report] The Serpent cannot collect a crystal.** Its `_nearFieldSkimmer` is `VacuumSkimmer`, a
   GameObject with `m_IsActive: 0`, its SphereCollider `m_Enabled: 0`, and no `SkimmerImpactor` or
   `ImpactCollider` at all, so nothing on the Serpent can take an elemental crystal (play-tested
   2026-10-08: crystals hit the hull and are not collected). Whether the Serpent SHOULD collect by
@@ -765,13 +766,13 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   (was snapshotted at first engage); climb/bleed compares against `VesselTransformer.TrackedSpeed`.
 - **Sword pose and energy replication.** Every peer poses the blade from the replicated analog
   trigger mirrors (press/release events drive the pose only for touch, which writes no mirrors).
-  Energy, energize phase and surge are owner-authoritative through `RhinoSwordNetworkRelay` on the
+  Energy, energize phase and surge are owner-authoritative through `SwordfishSwordNetworkRelay` on the
   Rhino root; non-owners mirror them.
 - **AI never ramped or energized.** `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` ramps on a
   straight that pays the wind-up back, brakes ON the ramp to a corner speed and lets go at a sharp
   corner (`AI_BOOST.md`, Ramp; only a human input strategy raised `FullSpeedStraightAction`, so
   `AI_BOOST.md`'s old "the Rhino AI could already boost" was wrong).
-  `RhinoSwordAutopilot` writes the trigger mirrors on the owning machine: strokes at the nearest
+  `SwordfishSwordAutopilot` writes the trigger mirrors on the owning machine: strokes at the nearest
   hostile prism in reach, holds the energize stance near super-shielded mass or on a ≥ 75% meter.
   The AIPilot abilities list is empty (its one entry was the dead `GrowTrail`).
 - **`ChargeTestHarness` 0.5 on `Rhino.prefab`** pinned Charge at level 5 every frame; set to 0.
@@ -792,7 +793,7 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
 
 ### Open
 
-- **Afterimage mass budget — playtest.** `RhinoSwordAfterimageConfig.asset` is a first pass that has
+- **Afterimage mass budget — playtest.** `SwordfishSwordAfterimageConfig.asset` is a first pass that has
   never been played: window 5 s, one afterimage per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window,
   ≤ 6 segments of ≤ 10 u covering 90% of the blade, segment 2 × 0.8 (× cbrt of the Mass multiplier,
   ×1 → ×2.5 volume), collider delay 0.1 s; the Surge lays them for its whole 6 s too. It adds mass
@@ -816,7 +817,7 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   the branch never runs (only `DolphinVesselExplosionByCrystalEffect.asset` authors it `1`). This is
   finding #5 of `FLEET_GAPS.md` §3 again — `guard_state` reading a serialized bool's C# default —
   on a guard that sits ABOVE the gate rather than on it. Breaker is really gated only at
-  `RhinoSkimmerDamagePrismEffectSO`. *(tool)*
+  `SwordfishSkimmerDamagePrismEffectSO`. *(tool)*
 - **[gate false positive] `check_vessel_on_vessel_motion.py` is red on bleeding-edge as well as here
   (measured 2026-10-18, exit 1 on both trees: "1 PROBLEM(S) (13 victim-facing effect(s) over 3
   families)").** It flags `VesselImpulseByExplosionEffectSO.cs:75` (`ModifyVelocity`), but the
@@ -854,3 +855,13 @@ Rows only, from `/ship` §3.6. Each one names what was measured and what is stil
     - 2 of those 9 are gated further up the method than a 14-line window sees (Astro League ball, Rhino skimmer);
     - the rest act for nobody: flora, fauna, managers and spawners.
   - So a window rule cries wolf. The sound version tags the pilot-harm sites (an attribute or a `// silence-gated:` marker) and gates the TAGGED set.
+
+## From the Rhino L5 re-cut (`cece/exciting-noether-dx1n4z`, 2026-10-26)
+
+- **[made visible] `element_ability_table.py` lists a dead Space-5 gate on the Rhino as live.**
+  - `python3 Tools/Build/element_ability_table.py Rhino` prints `gated at VesselExplosionByCrystalEffectSO.cs:208 <- RhinoVesselExplosionByCrystalEffect.asset` under Space 5 with no `[OFF]` mark.
+  - The gate sits inside `if (_spaceUpgradeSparesAllies)`, and that bool is absent from `RhinoVesselExplosionByCrystalEffect.asset` (`grep -i spare` finds nothing), so Unity ships the C# default `false` and the gate never runs on the Rhino.
+  - The tool marks `[OFF]` only when the bool is in the same condition as `IsUpgradeActive`; here it is an enclosing `if`. Teach it to read the enclosing block, then re-run `--gaps` fleet-wide. That is a fix to the tool, not to the vessel.
+- **[debt this branch created] The bind drag ignores the `popRequiresEnergizedBlade` A/B switch.**
+  - `SwordfishSkimmerDamagePrismEffectSO.popRequiresEnergizedBlade` off lets an upgraded blade pop super-shields without the energize. `ShieldSkimmerScaleDriver.UpdateBind` still binds any blade that is not energized, so in that A/B a non-energized, upgraded blade both pops on entry and drags while inside. This was already true before the re-cut, for any non-energized blade.
+  - The switch is off by default and is a designer A/B only. Fix it when someone flips it: move the switch onto the sword config beside `superShieldUpgradeElement` so the driver can read it.

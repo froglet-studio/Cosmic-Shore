@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -196,19 +197,20 @@ namespace CosmicShore.UI
         {
             if (!col) return reticleNoTargetColor;
 
+            // Each target colour as the worn colour set paints it (ColorTrace).
             if (col.GetComponentInParent<ILifeFormEntity>() != null ||
                 col.GetComponentInParent<LightFauna>() != null)
-                return reticleFaunaColor;
+                return ColorTrace.Retrace(ColorTrace.Ui, reticleFaunaColor);
 
             var vessel = col.GetComponentInParent<IVesselStatus>();
             if (vessel != null)
-                return vessel.Domain == _ownDomain ? reticleAllyColor : reticleEnemyColor;
+                return ColorTrace.Retrace(ColorTrace.Ui, vessel.Domain == _ownDomain ? reticleAllyColor : reticleEnemyColor);
 
             var prism = col.GetComponentInParent<Prism>();
             if (prism != null)
             {
-                if (prism.Domain == _ownDomain) return reticleAllyColor;
-                return prism.Domain == Domains.Blue ? reticleFaunaColor : reticleEnemyColor;
+                if (prism.Domain == _ownDomain) return ColorTrace.Retrace(ColorTrace.Ui, reticleAllyColor);
+                return ColorTrace.Retrace(ColorTrace.Ui, prism.Domain == Domains.Blue ? reticleFaunaColor : reticleEnemyColor);
             }
 
             return reticleNoTargetColor;
@@ -360,7 +362,12 @@ namespace CosmicShore.UI
         {
             base.OnDestroy();
             _chasedRound = null;
-            RestoreScopeToHull();
+            // A scope camera still out on a round cannot go home here: this view is torn
+            // down with its hull, and Unity refuses a reparent onto an object it is
+            // destroying. Left alone it would stay in the scene root with no owner, so it
+            // is destroyed with the view. A camera already on the hull needs nothing.
+            if (_scopeRestCaptured && scopeCamera && scopeCamera.transform.parent != _scopeRestParent)
+                Destroy(scopeCamera.gameObject);
             ReleaseScopeTexture();
         }
     }

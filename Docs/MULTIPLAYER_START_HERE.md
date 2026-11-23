@@ -60,14 +60,45 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | The Unity-side hardening programme (Blocks 1-6, status, decisions already made) | `Docs/prompts/MULTIPLAYER_HARDENING_PROMPT.md` |
 | Every party bug, with status | `Docs/PartySystem/BUGS.md` |
 | MPPM test procedures (smoke, stress, failure gates) | `Docs/PartySystem/TESTS.md` |
+| Automatic 2-4 player runs with built development players, no Editor (`-csMpAutoHost` / `-csMpAutoJoin`) | `python3 Tools/Build/mp_auto.py run --player <exe>`; `Docs/PartySystem/TESTS.md` § Automatic runs |
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 | A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
+| Netcode concepts, verdicts and status (authority, tick, RTT, interpolation, transform tuning, score guard, rejoin) and the index of every multiplayer doc | `Docs/Multiplayer/MULTIPLAYER_ARCHITECTURE.md`, `Docs/Multiplayer/README.md` |
+| Hand bug-hunt checklist and the debug overlay (Ctrl+Shift+M) | `Docs/Multiplayer/TEST_CHECKLIST.md` |
+| Party and lobby work on other branches (August's push design, Garrett's part J): what to take, what was deleted | `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` |
 | Who sits where: every person's seat and hull (`Player.NetStation`), the one swap ring (seats, then the domain's hulls), riders on another person's crew vessel, the crew relay RPCs | `Docs/CREW_STATIONS.md`, `Assets/_Scripts/Controller/Multiplayer/CrewStations.cs` |
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
 | The game's edit-mode tests, run in Amoebius | `Tools/Build/prisma_edit_mode_tests/run.sh` |
 | Amoebius online play: START ONLINE, + PLAYER 2, SETTINGS > ONLINE (UGS environment, UGS CHECK) | `Port/docs/LAUNCHER.md` § START ONLINE |
+| The Relay region a host's parties use (Settings > REGION, ping per region, Auto fallback) | `RelayRegionPreference.cs`, `RelayRegionProbe.cs` (`Assets/_Scripts/Controller/Multiplayer/`), `Assets/_Scripts/UI/Modals/RegionSettingsView.cs`; checklist entry "Settings > REGION" |
 | Netcode, transports, relay, UGS sign-in and Lobby, simulator, stats, faults (code; built in one place, `NetStack.cs`) | `Port/src/CosmicShore.Engine/Networking/Wire/` |
+
+### 3.1 What reaches Claude by itself, and the sweep that reads it
+
+Nobody has to press anything. After any Play in the editor that went online (a party, a match, solo against AI
+online), the Bug Hunt's after-Play send (`BugHuntAutoSend`) pushes whatever is new to `bugledger/<user>`:
+
+| What | Written by | Read with |
+|---|---|---|
+| The multiplayer test log, every player of the test (session marks: joins, `stall`, `relayDrop`, 429s, config hash) | `NetTestLogs`, `NetSessionRecorder` | `net_logs.py collect`, `show <n>` |
+| A Load Time Insights report of every load while online: each launch, and each return to the menu (`loadKind: "menuReturn"`) | `LoadInsights` (records unarmed while online since 2026-10-25) | `net_logs.py show <n>`, section "Loads"; RELAY RISK marks a frame over 9 s |
+| New red console errors | Bug Ledger | `bug_ledger.py` |
+
+**The multiplayer sweep** (a scheduled Claude session, once a day; it can also be run by hand from any session):
+
+1. `git fetch origin`, check out `Ys-bleeding-edge` and merge it; `python3 Tools/Build/net_logs.py collect`.
+2. For each test newer than the last sweep (`Docs/PartySystem/SWEEP_LOG.md`, newest first): `net_logs.py show <n>`.
+   Read the joins, `stall` and `relayDrop` marks, 429 counts, config-hash mismatches and the loads with RELAY RISK.
+   Match each to a bug in `Docs/PartySystem/BUGS.md` (B-number) or open a new one (next free number, checked on
+   every branch).
+3. Fix what can be fixed from the code, on `Ys-bleeding-edge` only, with the usual proof (§2: tests in Amoebius,
+   `unity_refcompile`, the gates, the checklist entry). Never push to `bleeding-edge`; never touch the live UGS project.
+4. What needs a person (a hand retest, an editor step, a design call): a hand test in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and, with your person's yes, a swim-lane hand-off (`/handoff-for-test`,
+   `/handoff-open`; nobody is assigned).
+5. Add a dated row to `Docs/PartySystem/SWEEP_LOG.md`: tests read, what was found, what was fixed (commits),
+   what was suggested. A sweep that found nothing new writes one line and changes nothing else.
 
 ## 4. Where things stand (2026-10-14, after PRs #1087-#1090)
 
@@ -103,8 +134,8 @@ last result, on 2026-10-14 just before #1089, was 8/14, stopped by the blocker b
 | 2 | Verify what landed | Owner's MPPM runs (§5.2) |
 | 3 | Test level: the five-process party scenarios | Landed (14/14 on Amoebius) |
 | 4 | Offline mode, seven cases | Landed (L1 tests); needs a player build pass |
-| 5 | **Push instead of poll — a launch blocker** (week one is 10-40 concurrent players) | Not started |
-| 6 | Reconnection grace | Not started |
+| 5 | **Push instead of poll — a launch blocker** (week one is 10-40 concurrent players) | **All 9 steps landed 2026-10-26** on `Ys-bleeding-edge`, ported from August's `Ys-rescue-2026-08-24`: voided reads are counted (`voided N` in `net_logs.py show`), a voided read no longer skips our publish, a background rejoin keeps a live party roster, the party session's own join/leave/property events drive a roster sync at once (`party pushes N`), and the presence lobby's do too, with no read (`presence pushes N`); a pushed removal or delete rejoins at once, and our party size goes out the frame the party changes; a player missing from one read is no longer removed (two absent server reads, or the service saying they left); and the poll is now one 20 s safety poll under the pushes (about 0.1 lobby reads/s, was 0.83); and quitting leaves both lobbies at once (backgrounding leaves the presence lobby and rejoins on resume), so peers drop the row in about a second instead of ~30 s. Next: the owner's MPPM retest of the nine steps (checklist); order in `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 |
+| 6 | Reconnection grace | Party-level grace not started. **Mid-match rejoin already works:** AI takeover on drop, then seat reclaim by UGS id (`MatchRejoin`, `ServerPlayerVesselInitializer.TryReclaimSeat`). See `Docs/Multiplayer/MULTIPLAYER_ARCHITECTURE.md` §2.11 |
 
 Open bugs that matter: **B29 Count case** (a party that just shrank reads as full; Block 5 cures
 it). The B29 Session case ("defect 5") is fixed but unverified in Unity.
@@ -217,11 +248,11 @@ Each step has the check that proves it done. Update the state in §4 when a step
 | # | Step | Done when |
 |---|---|---|
 | U1 | The owner's MPPM runs in §5.2 | Each 🔴 checklist entry becomes 🟢 with a date |
-| U2 | **Block 5: push instead of poll** (hardening prompt) | GETs ≤ 4/min/client at rest; invite visible < 1 s p95; no stale-index lines in a 30-minute 4-client run |
-| U3 | Block 6: reconnection grace | A 15 s network pull mid-match hands the vessel back with no menu |
+| U2 | **Block 5: push instead of poll** (hardening prompt). **Built once already, in August, on `Ys-rescue-2026-08-24`:** port that design in the order of `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 | GETs ≤ 4/min/client at rest; invite visible < 1 s p95; no stale-index lines in a 30-minute 4-client run |
+| U3 | Block 6: reconnection grace (the rejoin half is built on `claude/new-session-76hnyc`, Docs/MENU_REDESIGN_B.md 103.1: drop or restart → Home offers REJOIN → the AI hands the vessel back; the no-menu grace is still open) | A 15 s network pull mid-match hands the vessel back with no menu |
 | U4 | **What the first real logs showed** (Caleb ↔ ys1, two machines, 2026-10-16; `Docs/PartySystem/BUGS.md` B31-B33). **Fixed 2026-10-17, awaiting the hand retest:** the party session is read at most every 6 s, and since 2026-10-24 no two lobby reads go out in the same second (`LobbyReadPacer`; the first fix still drew 1,061 429s) (B31); leaving the shared presence lobby no longer deletes it under everyone, and a rejoin leaves `Reconnecting` (B32); a new editor Play no longer inherits the last Play's session (B33) | B31: no `rate-limited` lines in a 10-minute party (`net_logs.py` shows `429s 0`); B32: a guest's mid-match leave keeps the host `InParty`; B33: a second Play's log starts clean |
 | U5 | **Joins refused with `NetworkConfig mismatch`** (Caleb ↔ Gradi, 21-23 Oct; `Docs/PartySystem/BUGS.md` B35). **Fixed 2026-10-24, awaiting the hand retest:** 11 network prefabs carried a stale `GlobalObjectIdHash`; they now carry Unity's value and `check_network_prefab_hashes.py` fails on a stale one. Each test log records `netConfig` | Two machines: a direct join and an invite accept both land in the party; `net_logs.py show` prints no `NetworkConfig differs` |
-| U6 | **Relay drops the host** ("player timed out due to inactivity"; owner, 20 Oct; `Docs/PartySystem/BUGS.md` B36). **Root-caused 2026-10-25, not fixed:** Relay cuts a player silent for ~10 s, and a frozen frame sends nothing; the drops followed Bloomrush teardowns in a mode running at 3-5 fps on that machine. The test log now records each freeze (`stall`) and the freeze each drop followed (`relayDrop`) | Play Bloomrush solo to the end and back to the menu; `net_logs.py show` gives the longest freeze. A 10 s one before a drop sends the fix to the freezing frame (profile) |
+| U6 | **Relay drops the host** ("player timed out due to inactivity"; owner, 20 Oct; `Docs/PartySystem/BUGS.md` B36). **Root-caused 2026-10-25, not fixed:** Relay cuts a player silent for ~10 s, and a frozen frame sends nothing; the drops followed Bloomrush teardowns in a mode running at 3-5 fps on that machine. The test log now records each freeze (`stall`) and the freeze each drop followed (`relayDrop`). **Boot drop fixed 2026-11-01:** the boot loads Menu_Main before its Relay host starts, so a 10-62 s menu-load frame (cold or warm boot) no longer drops it (B36) | Play Bloomrush solo to the end and back to the menu; `net_logs.py show` gives the longest freeze. A 10 s one before a drop sends the fix to the freezing frame (profile). Since 2026-10-25 every online load, the return to the menu included, sends its own Load Time Insights report (§3.1) |
 
 ## 7. How a session starts here
 
@@ -234,6 +265,6 @@ Each step has the check that proves it done. Update the state in §4 when a step
    14/14 expected - it does not run until it moves to the UGS stand-ins, §4). Never point a session's
    tests at the live UGS project: that is the owner's §5.3.
 5. Unity C#: follow §2's `/verify-unity` rule and add the checklist entry.
-5a. A test the owner ran: read its logs first (`python3 Tools/Build/net_logs.py collect`, then `show <n>`).
+5a. A test anyone ran: read its logs first (`python3 Tools/Build/net_logs.py collect`, then `show <n>`; §3.1).
     Ask for a pasted console only if no log reached a branch.
 6. Finish by updating §4 and §6 here.

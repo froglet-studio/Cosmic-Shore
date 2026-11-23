@@ -46,6 +46,13 @@ namespace CosmicShore.Utility
         static CustomCameraController _appliedController;
         static bool _warnedNoCameraManager;
 
+        // The FRAME channel (the Tiger Moth's Drop): a world rotation the follow frame is slerped toward, with its
+        // weight. Independent of the placement point; both ride the same binding and the same per-frame push.
+        static Transform _framingKey;
+        static Quaternion _frame = Quaternion.identity;
+        static float _frameWeight;
+        static bool _framing;
+
         /// <summary>True while a placement is actually being framed by a camera.</summary>
         public static bool IsApplied => _appliedController != null &&
                                         _appliedController.PlacementAnchor.HasValue;
@@ -59,6 +66,7 @@ namespace CosmicShore.Utility
         public static void SetTarget(Transform key)
         {
             _targetKey = key;
+            StopFraming();
             StopPlacing();
         }
 
@@ -75,6 +83,7 @@ namespace CosmicShore.Utility
         public static void ClearTarget()
         {
             _targetKey = null;
+            StopFraming();
             StopPlacing();
         }
 
@@ -102,6 +111,38 @@ namespace CosmicShore.Utility
             StopPlacing();
         }
 
+        /// <summary>
+        /// Re-orient the follow camera round <paramref name="key"/>'s hull: its follow frame is slerped toward the world
+        /// rotation <paramref name="frame"/> by <paramref name="weight01"/>, so offset, look and up all turn with it
+        /// while the hull does not (<c>CustomCameraController.FollowFrameOverride</c>). The Tiger Moth's Drop is its
+        /// one caller (<c>R_VesselActions/TIGER_MOTH.md</c>). The same contract as <see cref="Place"/>: safe every
+        /// frame, safe from any peer, ignored for a vessel that is not the local pilot's.
+        /// </summary>
+        public static void Frame(Transform key, Quaternion frame, float weight01)
+        {
+            if (!key || key != _targetKey) return;
+            _framingKey = key;
+            _frame = frame;
+            _frameWeight = Mathf.Clamp01(weight01);
+            _framing = true;
+            Apply();
+        }
+
+        /// <summary>Hand the follow frame back to the hull. Keyed, as <see cref="Clear"/> is.</summary>
+        public static void ClearFrame(Transform key)
+        {
+            if (_framingKey != key) return;
+            StopFraming();
+            Apply();
+        }
+
+        static void StopFraming()
+        {
+            _framingKey = null;
+            _framing = false;
+            _frameWeight = 0f;
+        }
+
         static void StopPlacing()
         {
             _placingKey = null;
@@ -123,6 +164,7 @@ namespace CosmicShore.Utility
             // A camera we are no longer driving must be handed back framing its own vessel.
             if (_appliedController != null && _appliedController != controller)
             {
+                ReleaseFrame(_appliedController);
                 if (_appliedController.PlacementAnchor.HasValue)
                 {
                     _appliedController.PlacementAnchor = null;
@@ -132,6 +174,15 @@ namespace CosmicShore.Utility
             }
 
             if (controller == null) return;
+
+            // The frame is pushed every frame and never snapped: its weight is eased by the ability itself, and a
+            // landing hands back a hull that already IS the frame.
+            if (_framing && IsTargetLive())
+            {
+                controller.FollowFrameOverride = _frame;
+                controller.FollowFrameOverride01 = _frameWeight;
+            }
+            else ReleaseFrame(controller);
 
             bool had = controller.PlacementAnchor.HasValue;
             controller.PlacementAnchor = want ? _point : (Vector3?)null;
@@ -145,6 +196,12 @@ namespace CosmicShore.Utility
             if (had != want) controller.SnapToTarget();
 
             _appliedController = controller;
+        }
+
+        static void ReleaseFrame(CustomCameraController controller)
+        {
+            controller.FollowFrameOverride = null;
+            controller.FollowFrameOverride01 = 0f;
         }
 
         static bool IsTargetLive() => _targetKey && _targetKey.gameObject.activeInHierarchy;
@@ -189,6 +246,9 @@ namespace CosmicShore.Utility
             _placing = false;
             _appliedController = null;
             _warnedNoCameraManager = false;
+            _framingKey = null;
+            _framing = false;
+            _frameWeight = 0f;
 
             // HideInHierarchy (NOT HideAndDontSave - that exempts the object from play-mode-exit
             // cleanup), the same pattern PrismOcclusionCorridor and VesselSpeedTunnel use.
@@ -215,6 +275,7 @@ namespace CosmicShore.Utility
 
             void OnDisable()
             {
+                if (_appliedController != null) ReleaseFrame(_appliedController);
                 if (_appliedController != null && _appliedController.PlacementAnchor.HasValue)
                 {
                     _appliedController.PlacementAnchor = null;
@@ -223,6 +284,8 @@ namespace CosmicShore.Utility
                 _appliedController = null;
                 _placingKey = null;
                 _placing = false;
+                _framingKey = null;
+                _framing = false;
             }
         }
     }

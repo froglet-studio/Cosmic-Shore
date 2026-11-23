@@ -118,6 +118,10 @@ namespace CosmicShore.Engine.Collections
 
         public Span<T> AsSpan() => m_Alias == null ? new(m_Buffer, m_Offset, m_Length) : AliasSpan();
         public ReadOnlySpan<T> AsReadOnlySpan() => AsSpan();
+
+        /// <summary>Lets an engine API that takes a span (Graphics.RenderMeshInstanced) accept a NativeArray where Unity has
+        /// a NativeArray overload: the engine assembly cannot name this type (CrystalHeartDraw draws its hearts this way).</summary>
+        public static implicit operator ReadOnlySpan<T>(NativeArray<T> array) => array.AsSpan();
         public ReadOnly AsReadOnly() => new(this);
 
         public Enumerator GetEnumerator() => new(this);

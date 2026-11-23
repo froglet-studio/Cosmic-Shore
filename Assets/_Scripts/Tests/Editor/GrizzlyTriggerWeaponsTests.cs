@@ -146,6 +146,16 @@ namespace CosmicShore.Tests
             Vector3 start = _claw.SwipeRotation(true, 0f) * Vector3.forward;
             Assert.Less((start - Vector3.forward).magnitude, 1e-4f, "the swipe starts where the claw was held");
 
+            // Same day: "I want each claw to be one side of an X when it swipes, starting up and going down and
+            // across". The TOP of each stroke is up and OUT; the bottom is down and ACROSS.
+            float w = _claw.SwipeWindupFraction;
+            Vector3 ltTop = _claw.SwipeRotation(true, w) * Vector3.forward;
+            Vector3 rtTop = _claw.SwipeRotation(false, w) * Vector3.forward;
+            Assert.Greater(ltTop.y, 0.3f, "LT's stroke starts UP");
+            Assert.Less(ltTop.x, -0.3f, "...and out to the left");
+            Assert.Greater(rtTop.y, 0.3f, "RT's stroke starts UP");
+            Assert.Greater(rtTop.x, 0.3f, "...and out to the right");
+
             Vector3 lt = _claw.SwipeRotation(true, 1f) * Vector3.forward;
             Vector3 rt = _claw.SwipeRotation(false, 1f) * Vector3.forward;
             Assert.Less(lt.y, -0.3f, "LT's claw swipes DOWN");
@@ -155,9 +165,14 @@ namespace CosmicShore.Tests
             Assert.AreEqual(lt.y, rt.y, 1e-4f, "the two swipes mirror each other");
             Assert.AreEqual(lt.x, -rt.x, 1e-4f);
 
-            float halfway = Vector3.Angle(Vector3.forward, _claw.SwipeRotation(true, 0.5f) * Vector3.forward);
-            Assert.Greater(halfway, 0.5f * _claw.SwipeArcDegrees, "the swipe is fastest as it leaves (eased out)");
-            Assert.Less(halfway, _claw.SwipeArcDegrees);
+            // One straight stroke: the top and the bottom sit on the same diagonal line through the held aim.
+            Assert.AreEqual(_claw.SwipeArcDegrees, Vector3.Angle(ltTop, lt), 0.1f, "the slash covers the whole arc");
+            Assert.AreEqual(-ltTop.x / ltTop.y, -lt.x / lt.y, 1e-3f, "top and bottom are on ONE diagonal - a stroke, not a hook");
+
+            // The slash eases out: past halfway in angle by half its time.
+            float slashMid = w + 0.5f * (1f - w);
+            float covered = Vector3.Angle(ltTop, _claw.SwipeRotation(true, slashMid) * Vector3.forward);
+            Assert.Greater(covered, 0.5f * _claw.SwipeArcDegrees, "the slash is fastest leaving the top");
         }
 
         [Test]
@@ -194,13 +209,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void XFiresNothingAndLeftBumperCyclesWeapons()
+        public void XFiresNothingAndYAndLeftBumperCycleWeapons()
         {
             var yaml = File.ReadAllText(Prefab);
             StringAssert.DoesNotContain("- InputEvent: 8\n", yaml.Replace("\r\n", "\n"),
                 "X / Q must not fire on the Grizzly: its weapons are on the triggers");
-            StringAssert.Contains("_gamepadActionOverrides:\n  - InputEvent: 4\n    ShipActions:\n    - {fileID: 11400000, guid: " + CycleWeaponGuid,
-                yaml.Replace("\r\n", "\n"), "LB (IdleAction on the pad) must cycle the Grizzly's weapon");
+            StringAssert.Contains("_gamepadActionOverrides:\n  - InputEvent: 16\n    ShipActions:\n    - {fileID: 11400000, guid: " + CycleWeaponGuid,
+                yaml.Replace("\r\n", "\n"), "LB (LeftShoulderAction) must cycle the Grizzly's weapon");
+            StringAssert.Contains("  - InputEvent: 14\n    ShipActions:\n    - {fileID: 11400000, guid: " + CycleWeaponGuid,
+                yaml.Replace("\r\n", "\n"), "Y / F (Button4Action) must cycle the Grizzly's weapon, the fleet's weapon-cycle button since 2026-10-27");
+            StringAssert.DoesNotContain("- InputEvent: 3\n", yaml.Replace("\r\n", "\n"), "RB / E is the Ark payload: nothing on the Grizzly may bind FlipAction");
         }
     }
 }

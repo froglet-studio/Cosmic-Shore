@@ -1,0 +1,23 @@
+{
+ "material": "Assets/_Graphics/Materials/GyroidSpindleMaterial.mat",
+ "mesh": "Assets/_Models/Fauna/bonita.fbx",
+ "meshFileId": 1825875415147931077,
+ "swapFile": "Assets/_Graphics/Materials/Graphs/SpindleGraph.shadergraph",
+ "clockSpan": 20,
+ "width": 2560,
+ "height": 1440,
+ "cameraDistance": 2.2,
+ "fov": 60,
+ "timepoints": 48,
+ "drawsPerBatch": 48,
+ "chain": 8,
+ "samples": 200,
+ "warmupSeconds": 3,
+ "floats": [],
+ "colors": [],
+ "randomPerMoment": [],
+ "driveGlobalTime": true,
+ "variantA": "D:/ABLab/variants/spA.shadergraph",
+ "variantB": "D:/ABLab/variants/spB4.shadergraph",
+ "outDir": "D:/ABLab/out/spindle/pr4"
+}

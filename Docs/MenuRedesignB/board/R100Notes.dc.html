@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 100 - notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+
+.soft-cta{clip-path:none;background:linear-gradient(90deg,rgba(153,255,128,0) 0,#99FF80 18%,#99FF80 82%,rgba(153,255,128,0) 100%);color:#00041F}
+.soft{clip-path:none;color:#E6E9FF;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.7) 20%,rgba(230,233,255,.7) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.7) 20%,rgba(230,233,255,.7) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat,linear-gradient(90deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 20%,rgba(0,4,31,.86) 80%,rgba(0,4,31,0) 100%)}
+.tier{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .55s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.pips{display:inline-block;width:124px;height:8px;background:repeating-linear-gradient(90deg,#434C89 0 12px,rgba(0,0,0,0) 12px 14px)}
+.pips>span{display:block;height:100%;background:repeating-linear-gradient(90deg,#E6E9FF 0 12px,rgba(0,0,0,0) 12px 14px);transition:width .4s ease}
+.rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+.pop{animation:pop .45s cubic-bezier(.3,1.4,.5,1) both}
+.draw{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 2.4s .3s cubic-bezier(.4,0,.2,1) forwards}
+.slide{transition:max-height .5s cubic-bezier(.2,.7,.2,1),opacity .4s ease;overflow:hidden}
+.spin{animation:spin 240s linear infinite}
+.sailer{offset-rotate:auto;animation:sail 3.2s .4s cubic-bezier(.4,0,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes sail{from{offset-distance:0%}to{offset-distance:100%}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div style="position:absolute;inset:0;padding:80px 96px;box-sizing:border-box;display:flex;flex-direction:column;gap:40px"><span style="font-size:40px">Rev 100 - the Voyages tab, new, in three pages</span><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:48px 64px"><section style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">What was asked</span><p style="margin:0;font-size:18px;line-height:1.6;color:#C9CDEB">Shombith, 2026-11-13: everything on the Voyages tab is gone; a new design set in three pages. 1 the HyperSea map (a table top and other options, all zoomable) with the voyages your pilots recommend; 2 the voyage opened - its story, route and rewards, animated; 3 your Ark - your lobby first, a squad only when there is no lobby, then Set sail. Voyages use difficulty 1-9, not intensity. Quests and Saga / Episodes are drawn in other rounds.</p></section><section style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">Page 1 - the HyperSea</span><p style="margin:0;font-size:18px;line-height:1.6;color:#C9CDEB">Every map zooms the same way: the ladder (Galaxy, Arm, Sector, Course), + and -, and the wheel. A press on a place, or on a pilot's card, picks the voyage; Open voyage goes on. A Table top (recommended): the chart on a table, the edge-on view as its front, the places as beacons whose height is the difficulty. B Orrery: the galaxy as a disc with a slow ring of bearings. C Bridge: flat and full-bleed, the cards along the foot. D Dive: three glass sheets; a zoom is a dive. The foot of every page 1 is left for Saga and Episodes (Rev 103).</p></section><section style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">Page 2 - the voyage</span><p style="margin:0;font-size:18px;line-height:1.6;color:#C9CDEB">Who offers it, what job it is, its story in the pilot's words, its stops, what it pays. Difficulty 1 to 9: the pilot's recommendation is marked, any other can be picked, and the crystals it pays follow it. A Briefing (recommended): the portrait and story, the route drawing itself, the rewards arriving. B Journey: one lane across the window, the Ark sailing it, each stop telling its part. C Dossier: the map stays; Story, Route, Rewards slide open.</p></section><section style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">Page 3 - your Ark</span><p style="margin:0;font-size:18px;line-height:1.6;color:#C9CDEB">A Lobby (recommended): the lobby's three seats as they stand; a friend's seat shows Ready or Choosing; your own seat changes in place (a vessel, an element: one press). B No lobby: the same page with a squad picked from the list, and Invite friends. C Formation: the three vessels in formation over the course. Set sail is the one Lime on every page.</p></section><section style="display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">New rules to confirm</span><p style="margin:0;font-size:18px;line-height:1.6;color:#C9CDEB">A voyage is a job a pilot of your crew offers (the slice's 31 jobs), one card per pilot. Difficulty 1-9 replaces intensity 1-4 on voyages, and scales the crystal reward (drawn as base x (0.55 + 0.1 x difficulty)). With a lobby, the lobby is the squad; squads appear only without one.</p></section></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

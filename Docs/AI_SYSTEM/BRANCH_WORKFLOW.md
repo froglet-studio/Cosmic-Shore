@@ -1,5 +1,12 @@
 # AI System — Branch Workflow (AI work lives on `Ys-bleeding-edge`)
 
+**2026-10-28: `ai`, the AI's own branch.** `origin/ai` is `bleeding-edge` plus AI work, owned by no person
+(Shombith, who leads Froglet Compute). Froglet Compute's AI jobs read it, and `Tools/Compute/ai_branch.py sync --push`
+keeps it current: it merges `bleeding-edge` in and replays only the AI paths that changed here on
+`Ys-bleeding-edge`. Nothing below changes yet: Yash's sessions and the daily sweep still work here, and the sync
+carries their AI work across. Moving the sweep and AI sessions to `ai` is the next step, Yash's to agree.
+`Docs/Compute/README.md` section 7.1.
+
 **2026-10-09: the `ai-system` branch is retired.** Its work (the Skim Race AI retunes, the perf
 diagnostics, these docs) was merged into `claude/peaceful-rubin-hhw49n` and from there into
 `Ys-bleeding-edge`, and the branch was deleted. Every AI session now works on **`Ys-bleeding-edge`**
@@ -32,7 +39,20 @@ python3 Tools/Build/ai_branch_sync.py --no-fetch # offline / already fetched
 | Party, presence, lobby, netcode, multiplayer packages | `Ys-bleeding-edge` |
 | `Assets/_Scripts/Utility/PerformanceBenchmark/**`, `Docs/PERFORMANCE_OPTIMIZATION.md`, allocation / Burst gates | `perf/performance-optimization` |
 | Stoat, black holes, `Port/`, `Docs/Studios/**`, `/vessel-studio` | `Ys-bleeding-edge` |
-| Everything else (modes, vessels, ecology, UI) | `bleeding-edge` (via its authors) |
+| Everything else (modes, vessels, ecology, UI) | `bleeding-edge` (via its authors). **Yash's own sessions: `Ys-bleeding-edge` too** (below) |
+
+**Yash's sessions build on `Ys-bleeding-edge` first, whatever the area (Yash, 2026-10-25).** "I'm changing features and
+adding them to Ys-bleeding-edge, testing them first and then deciding whether to push it or not in bleeding edge." So a
+session Yash drives, on any feature (a menu flow, a mode, a vessel, not only AI or multiplayer):
+
+- branches from `Ys-bleeding-edge` (or merges it into the working branch before the PR) and opens its PR **into
+  `Ys-bleeding-edge`**;
+- **never pushes to `bleeding-edge` and never opens a PR into it**, `/to-bleeding-edge` included, unless Yash asks for
+  that promotion in the chat;
+- leaves the promotion to Yash, who tests on `Ys-bleeding-edge` and then decides.
+
+(The first change this would have caught: #1529, the return-to-launch-panel flow, went straight to `bleeding-edge`; its
+doc follow-up #1537 was retargeted to `Ys-bleeding-edge`.)
 
 ---
 

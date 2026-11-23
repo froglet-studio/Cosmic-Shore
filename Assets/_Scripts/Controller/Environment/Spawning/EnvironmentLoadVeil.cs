@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     /// "Loading" caption at the bottom of the screen, not a headline.</para>
     ///
     /// <para><b>Rev 7: not black any more</b> (the owner, 2026-10-17: "Black loading screen when changing cell show
-    /// something interesting"; Docs/MENU_REDESIGN_B.md §47.4). Over the black: the living lattice, an omni crystal
+    /// something interesting"; Docs/MENU_REDESIGN_B.md §47.4). Over the black: the sea (§70), an omni crystal
     /// filling as the cell builds, "Entering" and the cell's name with its line, the four build steps lighting in
     /// their elements as the real phases pass (laying, growing, the all-clear hold, the reveal), and a tip. The build
     /// runs this screen at about 10 frames a second, so nothing here is fast motion: the crystal rises with the work
@@ -79,6 +79,15 @@ namespace CosmicShore.Gameplay
         bool _sawBuild;
         int _growPeak;
         float _progress;
+
+        // A colour-set change (Profile > Colour sets, Docs/MENU_REDESIGN_B.md section 123): the same screen with its own
+        // words, no build and no gate. The repaint runs once the screen is opaque, then the four steps light in turn.
+        static bool s_pendingColourSet;
+        bool _colourSet;
+        System.Action _repaint;
+        bool _repainted;
+        float _colourClock;
+        const float ColourStepSeconds = 0.3f;
 
         const int StepCount = 4;
         const float StepPendingAlpha = 0.22f;
@@ -129,6 +138,26 @@ namespace CosmicShore.Gameplay
             s_active.SetCell(environmentName);
         }
 
+        /// <summary>
+        /// Raise the veil for a COLOUR-SET change: "Changing colour set", the set's name and line, and the repaint's four
+        /// steps (<see cref="EnvironmentLoadVeilContentSO.colourSetSteps"/>). <paramref name="repaint"/> runs once,
+        /// when the screen is fully covered, so the player never sees the colours swap; the veil then lights its steps
+        /// and lifts on the repainted world. Returns false (and runs nothing) while another veil or a gated scene holds
+        /// the screen, so the caller can say it could not change now.
+        /// </summary>
+        public static bool ShowColourSetChange(string setName, string line, System.Action repaint)
+        {
+            if (s_active != null || PrismTrailBuilder.IsLoadGateHolding) return false;
+            s_pendingColourSet = true;
+            var go = new GameObject("EnvironmentLoadVeil");
+            try { s_active = go.AddComponent<EnvironmentLoadVeil>(); }
+            finally { s_pendingColourSet = false; }
+            s_active._repaint = repaint;
+            if (s_active._cellName) s_active._cellName.text = setName ?? string.Empty;
+            if (s_active._cellLine) s_active._cellLine.text = line ?? string.Empty;
+            return true;
+        }
+
         /// <summary>Gate slice while the veil holds: enough for a fast build (~10x the ungated
         /// pace) while leaving most of each frame for the services still running under the menu
         /// (Netcode heartbeats, Relay/session traffic, audio) - the full 250ms connecting-screen
@@ -147,6 +176,7 @@ namespace CosmicShore.Gameplay
 
         void Awake()
         {
+            _colourSet = s_pendingColourSet;
             var canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 30000; // above every menu canvas, under the transition fade
@@ -174,15 +204,15 @@ namespace CosmicShore.Gameplay
             if (!_words)
                 CSDebug.LogWarning($"[EnvironmentLoadVeil] No {nameof(EnvironmentLoadVeilContentSO)} at Resources/" +
                                  $"{EnvironmentLoadVeilContentSO.ResourcePath} - the loading screen shows its bar alone.");
-            // The living lattice over the black (its motion is the shader's, so it costs no canvas rebuild).
-            if (_words && _words.lattice)
+            // The sea over the black (its motion is the shader's, so it costs no canvas rebuild).
+            if (_words && _words.background)
             {
-                var lattice = new GameObject("Lattice", typeof(Image));
-                lattice.transform.SetParent(transform, false);
-                var image = lattice.GetComponent<Image>();
-                image.material = _words.lattice;
+                var sea = new GameObject("Sea", typeof(Image));
+                sea.transform.SetParent(transform, false);
+                var image = sea.GetComponent<Image>();
+                image.material = _words.background;
                 image.raycastTarget = false;
-                Stretch(lattice.GetComponent<RectTransform>());
+                Stretch(sea.GetComponent<RectTransform>());
             }
 
             // The backdrop bleeds and the readout does not - the safe-area split of
@@ -200,13 +230,16 @@ namespace CosmicShore.Gameplay
             crystalGo.transform.SetParent(_content, false);
             _crystal = crystalGo.AddComponent<LoadCrystalGraphic>();
             _crystal.raycastTarget = false;
-            _crystal.SetColours(UITheme.Resolve(null, UIColorToken.ElementMass), UITheme.Resolve(null, UIColorToken.ElementTime),
-                                UITheme.Resolve(null, UIColorToken.ElementCharge), UITheme.Resolve(null, UIColorToken.ElementSpace),
+            // The facets are the neutral blues, not the four element colours: elements carry no colour in the UI
+            // (Docs/UI_COLOR_RULES.md). The crystal's growth is the transition's motion.
+            _crystal.SetColours(UITheme.Resolve(null, UIColorToken.SurfaceLight), UITheme.Resolve(null, UIColorToken.NeutralLightest),
+                                UITheme.Resolve(null, UIColorToken.ControlActive), UITheme.Resolve(null, UIColorToken.NeutralLightest),
                                 UITheme.Resolve(null, UIColorToken.TextLight));
             Centre(crystalGo.GetComponent<RectTransform>(), new Vector2(0f, 150f), new Vector2(300f, 300f));
 
             var neutral = UITheme.Resolve(null, UIColorToken.NeutralLightest);
-            var entering = Label(_content, "Entering", _words.captionFont, 14f, 50f, neutral, _words.enteringWord);
+            var entering = Label(_content, "Entering", _words.captionFont, 14f, 50f, neutral,
+                                 _colourSet ? _words.colourSetWord : _words.enteringWord);
             Centre(entering.rectTransform, new Vector2(0f, -36f), new Vector2(600f, 22f));
             _cellName = Label(_content, "CellName", _words.displayFont, 72f, 0f, UITheme.Resolve(null, UIColorToken.TextLight), string.Empty);
             _cellName.fontStyle = FontStyles.UpperCase;
@@ -219,13 +252,12 @@ namespace CosmicShore.Gameplay
 
             var steps = Row(_content, "Steps", 40f);
             Centre((RectTransform)steps.transform, new Vector2(0f, -230f), new Vector2(0f, 30f));
-            UIColorToken[] elements = { UIColorToken.ElementMass, UIColorToken.ElementTime, UIColorToken.ElementCharge, UIColorToken.ElementSpace };
             for (int i = 0; i < StepCount; i++)
             {
                 var step = Row(steps.transform, $"Step{i + 1}", 12f);
                 _steps[i] = step.AddComponent<CanvasGroup>();
                 _steps[i].alpha = StepPendingAlpha;
-                var colour = UITheme.Resolve(null, elements[i]);
+                var colour = UITheme.Resolve(null, UIColorToken.TextLight);   // the glyph tells the steps apart, not a colour
                 var glyph = _words.StepGlyph(i);
                 if (glyph)
                 {
@@ -238,14 +270,15 @@ namespace CosmicShore.Gameplay
                     var le = g.GetComponent<LayoutElement>();
                     le.preferredWidth = le.preferredHeight = 26f;
                 }
-                Label(step.transform, "Label", _words.captionFont, 13f, 12f, colour, _words.StepLabel(i)).fontStyle = FontStyles.UpperCase;
+                Label(step.transform, "Label", _words.captionFont, 13f, 12f, colour,
+                      _colourSet ? _words.ColourSetStep(i) : _words.StepLabel(i)).fontStyle = FontStyles.UpperCase;
             }
 
-            string tip = _words.TipAt(Random.value);
+            string tip = _colourSet ? _words.colourSetTip : _words.TipAt(Random.value);
             if (string.IsNullOrEmpty(tip)) return;
             var tipRow = Row(_content, "Tip", 12f);
             Centre((RectTransform)tipRow.transform, new Vector2(0f, -310f), new Vector2(0f, 26f));
-            Label(tipRow.transform, "TipLabel", _words.captionFont, 13f, 12f, UITheme.Resolve(null, UIColorToken.ElementTime),
+            Label(tipRow.transform, "TipLabel", _words.captionFont, 13f, 12f, UITheme.Resolve(null, UIColorToken.NeutralLightest),
                   _words.tipLabel).fontStyle = FontStyles.UpperCase;
             Label(tipRow.transform, "TipText", _words.captionFont, 17f, 0f, UITheme.Resolve(null, UIColorToken.TextLight), tip);
         }
@@ -335,11 +368,35 @@ namespace CosmicShore.Gameplay
             int step = StepFor(_phase, _gated, _released, laying, grow, _sawBuild);
             _progress = CrystalLevel(_progress, step, PrismTrailBuilder.LayProgress, grow, _growPeak);
             if (_crystal) _crystal.Level = _progress;
+            ShowStep(step);
+        }
+
+        void ShowStep(int step)
+        {
             if (step == _phase) return;
             _phase = step;
             for (int i = 0; i < StepCount; i++)
                 if (_steps[i])
                     _steps[i].alpha = step == 3 || i == step ? 1f : i < step ? StepDoneAlpha : StepPendingAlpha;
+        }
+
+        /// <summary>A colour-set change: repaint once the screen is opaque, light the steps in turn, then lift.</summary>
+        void UpdateColourSet(float dt)
+        {
+            if (_fade < 1f) return;
+            if (!_repainted)
+            {
+                _repainted = true;
+                _repaint?.Invoke();
+            }
+            _colourClock += dt;
+            float total = ColourStepSeconds * StepCount;
+            ShowStep(Mathf.Min(StepCount - 1, (int)(_colourClock / ColourStepSeconds)));
+            _progress = Mathf.Clamp01(_colourClock / total);
+            if (_crystal) _crystal.Level = _progress;
+            _fill.anchoredPosition = Vector2.zero;
+            _fill.sizeDelta = new Vector2(_progress * BarWidth, 0f);
+            if (_colourClock >= total) Release();
         }
 
         /// <summary>The subtle readout: a "Loading" caption over a slim bar, bottom centre.</summary>
@@ -424,6 +481,11 @@ namespace CosmicShore.Gameplay
                 {
                     _fade = Mathf.Min(1f, _fade + dt / FadeInSeconds);
                     _group.alpha = _fade;
+                }
+                if (_colourSet)
+                {
+                    UpdateColourSet(dt);
+                    return;
                 }
                 // Opaque from here: the gate may settle grow-ins nobody can see
                 // (PrismTrailBuilder.LoadGateCovered).

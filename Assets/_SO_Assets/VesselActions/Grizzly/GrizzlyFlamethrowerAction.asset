@@ -54,3 +54,12 @@ MonoBehaviour:
   whipBodyColor: {r: 0.25, g: 0.02, b: 0.02, a: 1}
   whipRimColor: {r: 1, g: 0.12, b: 0.08, a: 1}
   whipEmptyBrightness: 0.25
+  energyIndex: 0
+  energyPerIgnite:
+    Enabled: 1
+    Value: 0.01
+    Min: 0.01
+    Max: 0.025
+    element: 2
+    UseFloor: 1
+    Floor: 0.005

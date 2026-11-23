@@ -17,9 +17,11 @@ mkdir -p "$OUT"
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 printf '%s\n' "$H/Stubs.cs" "$HERE/ExportCourse.cs" \
   "$ROOT/Assets/_Scripts/Data/Enums/Domains.cs" \
+  "$ROOT/Assets/_Scripts/Data/Enums/PrismKind.cs" \
   "$ROOT/Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
   "$ROOT/Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs" \
-  "$ROOT/Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
+  "$ROOT/Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs" \
+  "$ROOT/Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourseFeatures.cs" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0660,CS0661 \
   -target:exe -main:ExportCourse -out:"$OUT/export.exe" "@$OUT/files.rsp"

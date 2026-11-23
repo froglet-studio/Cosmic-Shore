@@ -1,6 +1,6 @@
 ---
 name: prism-morph
-description: Use for ANY Cosmic Shore effect that DEFORMS prism geometry to live gameplay data — a liquid/silky/fabric-like morph of the prism surface itself (drape, wrap, ripple, bulge, pucker, melt), built on the seamless high-poly mesh swap plus a GPU vertex map driven by a per-frame global-uniform bank. Loads the four-part recipe (mesh, residency, bank, map), the clock-material-law argument that makes it legal, the ownership and invisible-swap contracts, the analytic-normal rules, the wirer + clang++ proof-by-convergence harness, and the collider/triangle budget gate. Trigger when editing Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl or any sibling vertex-deformation HLSL, Assets/_Scripts/Utility/PrismCradle.cs, Assets/_Scripts/Utility/HighPolyPrismMesh.cs, Prism.SetRenderMeshOverride / RenderMeshOverride, Tools/Shaders/wire_prism_*.py or verify_prism_*.py, or Docs/PRISM_ANIMATION.md §4.7.
+description: Use for ANY Cosmic Shore effect that DEFORMS prism geometry to live gameplay data — a liquid/silky/fabric-like morph of the prism surface itself (drape, wrap, ripple, bulge, pucker, melt), built on the seamless high-poly mesh swap plus a GPU vertex map driven by a per-frame global-uniform bank. Loads the four-part recipe (mesh, residency, bank, map), the clock-material-law argument that makes it legal, the ownership and invisible-swap contracts, the analytic-normal rules, the wirer + clang++ proof-by-convergence harness, and the collider/triangle budget gate. Trigger when editing Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl or any sibling vertex-deformation HLSL, Assets/_Scripts/Utility/PrismCradle.cs, Assets/_Scripts/Utility/Foundation/HighPolyPrismMesh.cs, Prism.SetRenderMeshOverride / RenderMeshOverride, Tools/Shaders/wire_prism_*.py or verify_prism_*.py, or Docs/PRISM_ANIMATION.md §4.7.
 ---
 
 # High-Poly Prism Morph Protocol
@@ -19,7 +19,7 @@ first member already paid.
 
 **The reference implementation is the Urchin's CRADLE.** Read it before you write anything:
 `Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl`, `Assets/_Scripts/Utility/PrismCradle.cs`,
-`Assets/_Scripts/Utility/HighPolyPrismMesh.cs`, `Docs/PRISM_ANIMATION.md` §4.7.2. Its history
+`Assets/_Scripts/Utility/Foundation/HighPolyPrismMesh.cs`, `Docs/PRISM_ANIMATION.md` §4.7.2. Its history
 is the reason this skill is worth its weight: **two rounds of rigid per-facet motion were
 rejected on look** (a whole face, then a per-wedge cut), a 10× tone-down made a small glitch
 instead of a big one, and the branch went stale. The redesign — same spirit, more surface,
@@ -683,3 +683,37 @@ the machinery already supports, not an approved roster; do not build one because
    Adding a second morph broke three sibling wirers that each walked past ONE hard-coded name; a
    name list needs one edit per wirer per morph forever, which is a defect amplifier rather than a
    fix. **A new member must use that walk and must not add its name anywhere.**
+
+
+## Round status and what each gate still owes (2026-11-07, measured for Docs/SKILL_TRAINING_PLAN.md 3.7)
+
+**Rounds so far:** the cradle (2026-09-16, re-cut 09-22: "this looks terrible", then "this effect looks really bad
+... let this branch go stale"; the six properties worth carrying), the ripple (09-23 to 09-25, retired after six
+playtests), the gravity warp, the slice, the collision burst (Collision Burst Lab rounds 9-13, 2026-10-16/17), the
+spindle LOD (2026-10-21, "apply this to all spindles including fauna like sharks"), the prism's death, steal and
+suction (rounds 12-15, 2026-10-23/25). **Next unit proposed:** the vortex ring as a lensed toroid (Garrett,
+2026-10-24) through `/world-look` R3, with this skill's harness as its proof tier. No declared owner for the kit:
+Garrett drives the look, Shombith the tooling.
+
+**Gates and their negative controls:**
+
+| Gate | Script | Negative control today |
+|---|---|---|
+| the cradle harness (HARD GATE) | `Tools/Shaders/verify_prism_cradle.py` | yes |
+| the gravity-warp harness | `verify_prism_gravity_warp.py` | yes |
+| the sight-composition harness | `verify_prism_sight_composition.py` | yes |
+| the slice harness | `verify_prism_slice.py` | yes, but needs `glslangValidator` (absent here: rc 1) |
+| the collision-burst harness | `verify_prism_collision_burst.py` | yes, same dependency |
+| the spindle LOD harness | `verify_spindle_lod.py --self-test` | yes: 31 mutants |
+| the 17 sibling wirers' drift gate | `Tools/Shaders/wire_*.py` | owed: only `wire_spindle_lod.py` has a self-test |
+| the shared vertex chain | `prism_vertex_chain.py` | owed |
+| the edit-mode tests and the section 8 budget gate | `PrismCradleTests.cs` | owed (no editor ran them here) |
+| the Collision Burst Lab's parity | `prism_collision_burst_lab/build.py --check` | yes |
+
+**The sheet today:** none for the family itself (nothing renders a cradle or warp frame offline); the lab's scorecard
+for the burst. The look sheet (`/unity-look`) is the sheet this family has been missing since "proven by a harness
+and wrong on screen".
+
+**To promote to A:** one `--self-test` for the wirers (plant one drifted property), `glslangValidator` in the setup
+script so the two GLSL harnesses run in a cloud session, a references/LESSONS.md seeded from section 13's retirement
+record and `Docs/PRISM_ANIMATION.md` 4.7 (the owner's verdicts), and the round table above kept per effect.

@@ -172,6 +172,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Receives an element's own heart seat (FloraVariantTuning.HeartSeatInset, absolute world units) from the
+        /// flora, overriding the prefab's. An armoured (Mass) plant's struts are drawn as octahedra three times their
+        /// reach, so their seat holds back until those clear the heart's swing (Docs/ECOSYSTEM.md 65). Pushed with the
+        /// strut length at every creation site.
+        /// </summary>
+        public void ConfigureHeartSeat(float inset)
+        {
+            // Before the lattice is seeded: the founder's frame takes it at EnsureSeeded. A grown or seeded strut
+            // already wears its colony's frame, which was seeded by a plant of the same element.
+            if (inset > 0f) heartSeatInset = inset;
+        }
+
+        /// <summary>
         /// Receives the species' authored plain strut length (leafSize.x) from the flora.
         /// Must be pushed at every creation site (AssembledFlora.ApplyLatticeSpacing does),
         /// because the strut pose math needs it BEFORE the first growth probe - and a

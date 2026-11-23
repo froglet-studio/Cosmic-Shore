@@ -46,6 +46,9 @@ namespace CosmicShore.Gameplay
                  "launch view aimed by tilt; a thumb back down = the let-go that launches). Bind it in the touch map only.")]
         [SerializeField] ThresherControl control = ThresherControl.Winch;
 
+        /// <summary>Which control this asset is (the autopilot's sling finds its Plant and Winch inputs by it).</summary>
+        public ThresherControl Control => control;
+
         public override void StartAction(ActionExecutorRegistry executors, IVesselStatus status)
         {
             var thresher = executors?.Get<ThresherExecutor>();

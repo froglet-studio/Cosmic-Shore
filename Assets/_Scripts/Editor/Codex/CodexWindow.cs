@@ -57,12 +57,12 @@ namespace CosmicShore.Editor.Codex
         /// </summary>
         Action _deferred;
 
-        static readonly string[] KingdomFilters = { "All", "Ethirions", "Flora", "Fauna", "Tools" };
+        static readonly string[] KingdomFilters = { "All", "Etherions", "Flora", "Fauna", "Tools" };
         static readonly int[] BakeSizes = { 256, 512, 1024 };
 
         [MenuItem("FrogletTools/UI/Codex", false, 210)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
-            Description = "Harvest, edit and illustrate every ethirion, lifeform and tool for the " +
+            Description = "Harvest, edit and illustrate every Etherion, lifeform and tool for the " +
                           "in-game encyclopedia.",
             DocPath = "Docs/CODEX.md")]
         static void Open()
@@ -105,7 +105,7 @@ namespace CosmicShore.Editor.Codex
 
             FrogletEditorPalette.Banner(
                 "Codex",
-                "Every ethirion, every lifeform and every tool, as the in-game encyclopedia reads them.",
+                "Every Etherion, every lifeform and every tool, as the in-game encyclopedia reads them.",
                 ToolAccent);
 
             DrawSearchBar();
@@ -308,7 +308,7 @@ namespace CosmicShore.Editor.Codex
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
                 GUILayout.Label(
-                    $"{all.Count} entries  ·  {_codex.Ethirions.Count} ethirions  ·  " +
+                    $"{all.Count} entries  ·  {_codex.Ethirions.Count} Etherions  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Flora)} flora  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Fauna)} fauna  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Tool)} tools  ·  " +

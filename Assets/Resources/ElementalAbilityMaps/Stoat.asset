@@ -15,62 +15,48 @@ MonoBehaviour:
   vesselClass: 15
   entries:
   - Element: 3
-    AbilityLabel: Field Dipole
-    AbilityDescription: 'MASS MODE triggers. Squeeze a trigger and a sink-source pair (a black hole and a
-      white hole, joined as a wormhole) is laid 250 u ahead, the poles together, in the
-      frame you had then. The triggers'' DIFFERENCE pulls the poles apart sideways - the
-      sink on the deeper trigger''s side - and their SUM pulls them apart lengthways, the
-      sink always the nearer. Let go and the pair slams together and annihilates (throwing
-      the Charge ripple); every press lays a fresh pair. The field bends your flight and
-      anything that crosses the sink''s horizon goes through it: you come out of the
-      source; a rival vessel comes out stripped of its crystals, left on the sink''s side;
-      a creature is swallowed (killed); a prism vanishes. Space is the pair''s reach - one
-      dial, read live: both poles'' horizon and pull x1 -> x2 at level 10
-      (StoatDipoleConfigSO.poleSize), and in Time mode the orbit''s radius x1 -> x1.4
-      (StoatSlingConfigSO.orbitReach). R_VesselActions/STOAT_DIPOLE.md.'
+    AbilityLabel: Catch Orbit
+    AbilityDescription: 'Triggers: LT on the left, RT on the right. A press lays a small black hole
+      ahead of you on the pressed side. Fly past beside it and it SWINGS you round toward
+      itself until you have turned the angle your stick asks - toward the hole the most,
+      away from it the least, at rest the middle - then lets you go on that heading,
+      keeping the swing''s speed. Let go of the trigger mid-swing
+      to leave at once. Passed or out of time, the hole collapses and throws the Charge
+      ripple. A hole you own never pulls you in. Space is the swing''s reach - one dial, read
+      live: x1 -> x1.4 at level 10 (StoatSlingConfigSO.orbitReach). R_VesselActions/STOAT_DIPOLE.md
+      section 1b.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Accretion
-    UpgradeDescription: 'What the sink swallows is YOURS. Prisms it takes are STOLEN instead of destroyed -
-      they come out of the source in your domain (Prism.Steal, a super-steal: a shield is
-      no answer to a horizon) - and every one swallowed GROWS both poles, +4% each up to
-      twice their size, until the pair annihilates (StoatDipoleConfigSO.accretionPerPrism
-      / accretionMax). Gated on IsUpgradeActive(Space), replicated: every peer steals the
-      same prisms, and the grown size reaches peers as the published horizon. (Theft, the
-      earlier Space 5, is fused in - one element, one level-5.)'
+    UpgradeDescription: 'While your swing''s black hole is up, rival prisms that fall into it are STOLEN
+      (yours), and each one adds 4% to the reach of the ripple it throws, up to +40%
+      (StoatSlingConfigSO.accretionPerPrism / accretionMax).'
   - Element: 4
-    AbilityLabel: Pathfinder / Time Mode
-    AbilityDescription: 'Passive. The path your hull will fly on the inputs you hold right now, run 1200 u
-      ahead through your dipole''s field and drawn as dots from the nose (blue-grey). When
-      your poles WARP that path at all - it bends 3 degrees or more, or it goes through
-      the wormhole - it turns lime and you fly down it faster: a warp of the hull''s own
-      flight clock. TIME MODE (B): the triggers lay an attractor beside you and the hull
-      ORBITS it; release a quarter-turn round (90 deg +- 15) for the whole slingshot kick,
-      a fifth of it outside the window - the line becomes the rest of the orbit and turns
-      lime inside the window. Time is rate - one dial, the Stoat''s boost: the warp x2.5
-      at rest -> x5 at level 10 (StoatDipoleConfigSO.boost), and the slingshot''s kick by
-      the same ratio (BoostRatio, x1 -> x2).'
+    AbilityLabel: Timed Slingshot
+    AbilityDescription: 'Passive speed. While your swing''s black hole is up your flight clock warps and you
+      fly faster: half of it from the press, all of it and 15% more while the swing turns you,
+      and the swing''s warp kept as momentum after it lets you go, fading over 6 s. Time is
+      rate - one dial, the Stoat''s warp: x2.7 at rest -> x5.6 at level 10 (StoatDipoleConfigSO.boost
+      x StoatSlingConfigSO.catchWarpShare).'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Foresight
-    UpgradeDescription: 'The pathfinder also draws the predicted paths of the three nearest rivals within
-      1500 u, in their domain colours - each flown 500 u forward on the turn and speed it
-      is holding right now, measured from its pose (no input needed). Read a rival''s line
-      and lay your sink across it. Gated on IsUpgradeActive(Time), replicated; drawn for
-      the local pilot only (StoatPathfinderExecutor.Foresight).'
+    UpgradeLabel: 
+    UpgradeDescription: 'Open: Foresight (the rivals'' predicted paths, drawn with the old field pathfinder)
+      was deleted on 2026-11-21 with that pathfinder, and the Stoat draws nothing since 2026-11-22.
+      Time 5 has no upgrade until one is designed.'
   - Element: 1
     AbilityLabel: Ripple
-    AbilityDescription: 'Passive, anti-vessel and anti-creature. Every pair of yours that annihilates - a
-      dipole let go, an orbit''s pair closing after its slingshot - throws a SPACE-TIME
-      RIPPLE from where the poles met: a spherical wave that bends the scene as it passes.
+    AbilityDescription: 'Passive, anti-vessel and anti-creature. Every black hole of yours that collapses - a
+      swing''s hole passed, let go or out of time - throws a SPACE-TIME
+      RIPPLE from where the hole was: a spherical wave that bends the scene as it passes.
       Where its front sweeps over them, rival vessels are STRIPPED of one whole petal of
       every element they hold (shed as crystals around them; a ward against blasts stops
       it) and creatures are killed. It touches no prism, and never you or a teammate. The
-      ripple''s reach is the separation the poles had when you let go (x0.6, 30 -> 160 u)
+      ripple''s reach is the swing''s ripple separation x0.6 (StoatSlingConfigSO.rippleSeparation)
       - Charge scales it x1 -> x2 at level 10 (StoatRippleConfigSO.reach, replicated
       level).'
     Input: 0
@@ -82,18 +68,17 @@ MonoBehaviour:
       - a rival''s level becomes yours. Gated on IsUpgradeActive(Charge), replicated, so
       every peer moves the same petals (StoatRippleConfigSO.siphonOnChargeUpgrade).'
   - Element: 2
-    AbilityLabel: Mass / Time Mode
-    AbilityDescription: 'B switches the Stoat between its two modes; each press flips it, and a switch lets
-      go of whatever the triggers held. MASS MODE (the default): the triggers lay the
-      Field Dipole and the trail is laid THICK - the prism''s height x3 at Mass 0 -> x6 at
-      level 10 (StoatModeActionSO.massModeThickness, read at the replicated level so every
-      peer lays the same trail). TIME MODE: the triggers fly the orbit slingshot (see
-      Time) and the trail is laid at its own thickness.'
-    Input: 7
+    AbilityLabel: Heavy Launch
+    AbilityDescription: 'Passive. Mass powers a second push as the swing lets you go - one dial, read live:
+      x1 at rest -> x2.5 at level 10 (StoatSlingConfigSO.launchPower). The push ships OFF
+      (swingKickShare 0, 2026-11-19: one slingshot, the swing''s own speed-up), so only
+      Armoured Wake acts until it is turned back on.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Armoured Wake
-    UpgradeDescription: 'Every prism laid in MASS MODE arrives SHIELDED. Gated on IsUpgradeActive(Mass),
-      replicated, per lay - so every peer lays the same tier
-      (StoatModeActionSO.massUpgradeShieldsInMassMode).'
+    UpgradeDescription: 'The prisms you lay while a launch''s kick lasts (1.5 s) arrive SHIELDED. Gated on
+      IsUpgradeActive(Mass), replicated: every peer runs the replicated release, so every peer
+      lays the same tier (StoatSlingConfigSO.massUpgradeShieldsLaunchTrail).'
+  omniAbilityLabel: Fulmen

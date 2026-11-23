@@ -58,5 +58,29 @@ namespace CosmicShore.Gameplay
         /// <summary>The element weights (each 0..1: charge, mass, space, time) the hull is drawn at. The muzzles follow
         /// the barrels Space lengthens and the pods Charge lengthens.</summary>
         public abstract void ApplyElementMorphWeights(float charge, float mass, float space, float time);
+
+        // ------------------------------------------------------------------ the ring's motion smear
+
+        /// <summary>Can this hull hand its ring to <see cref="BrittleStarRingSmearPass"/> (hide it, and bake it as it
+        /// stands)? False = the ring is always drawn by the hull itself.</summary>
+        public virtual bool CanSmearRing => false;
+
+        /// <summary>Stop (true) or resume (false) drawing the ring: while the smear draws it. The ring's transforms,
+        /// muzzles and flames are untouched.</summary>
+        public virtual void SetRingHidden(bool hidden) { }
+
+        /// <summary>The ring as it stands, baked into <paramref name="into"/> (in <paramref name="toWorld"/>'s space),
+        /// with the renderer whose materials draw it, a point on the nose axis in the ring's plane, the nose axis
+        /// (world, unit) and the ring's reach from that axis (world units). False = the hull cannot bake it.</summary>
+        public virtual bool BakeRing(Mesh into, out Matrix4x4 toWorld, out Renderer renderer, out Vector3 centre,
+                                     out Vector3 axis, out float reach)
+        {
+            toWorld = Matrix4x4.identity;
+            renderer = null;
+            centre = Vector3.zero;
+            axis = Vector3.forward;
+            reach = 0f;
+            return false;
+        }
     }
 }

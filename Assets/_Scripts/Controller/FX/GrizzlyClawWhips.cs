@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -108,9 +109,12 @@ namespace CosmicShore.Gameplay
 
         void Draw(GrizzlyFlamethrowerActionSO so, float fill01)
         {
-            Color body = so.WhipBodyColor;
+            // Every colour comes from the worn colour set (LOCKED, Docs/VesselModels/COLOR_TRACE.md): the authored reds
+            // are retraced, then the rim dims with the cell.
+            Color body = ColorTrace.Retrace(ColorTrace.World, so.WhipBodyColor);
             body.a = 1f;
-            Color rim = so.WhipRimColor * Mathf.Lerp(so.WhipEmptyBrightness, 1f, Mathf.Clamp01(fill01));
+            Color rim = ColorTrace.Retrace(ColorTrace.World, so.WhipRimColor) *
+                        Mathf.Lerp(so.WhipEmptyBrightness, 1f, Mathf.Clamp01(fill01));
             rim.a = 1f;
             _mpb.Clear();
             _mpb.SetColor(DarkColorId, body);

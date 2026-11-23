@@ -1,6 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -25,6 +26,12 @@ namespace CosmicShore.Gameplay
         public static event Action<string> OnCrystalCollected;
 
         /// <summary>
+        /// The same moment as <see cref="OnCrystalCollected"/>, with the crystal's element: who took it and what it
+        /// was. A voyage's Crystal Run counts each element it is stealing (Docs/Voyages/CRYSTAL_RUN.md).
+        /// </summary>
+        public static event Action<string, Element> OnCrystalCollectedAs;
+
+        /// <summary>
         /// True once a skimmer has collected this crystal (it is now flying to the vessel and will
         /// self-destroy). Runtime owners - e.g. the conveyor toy's microscenes - read this so they
         /// stop managing a departing crystal as a live resident.
@@ -43,6 +50,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         internal SkimmerCrystalEffectSO[] CollectionEffects => elementalCrystalShipEffects;
 
+        /// <summary>
+        /// The one team a skim may take this crystal for, or null (the default) for anyone. Set only by a mode that lays a
+        /// team its OWN crystals: Harvest's I3 Space crystals (<c>HarvestController.LayTeamCrystals</c>,
+        /// Assets/_Scripts/Controller/Arcade/HARVEST.md) and Shatterplane's (<c>ShatterplaneController.Mint</c>,
+        /// SHATTERPLANE.md), the only two callers. Every other elemental crystal - a lifeform's heart, an arena
+        /// scatter, a toy's pickup - leaves it null and is collected by whoever touches it, exactly as before.
+        /// </summary>
+        Domains? _onlyFor;
+
+        /// <summary>Restrict skim collection to <paramref name="domain"/>'s pilots (see <see cref="_onlyFor"/>).</summary>
+        internal void RestrictTo(Domains domain) => _onlyFor = domain;
+
         CrystalCaptureConfigSO CaptureConfig =>
             captureConfigOverride ? captureConfigOverride : CrystalCaptureConfigSO.Load();
 
@@ -59,8 +78,21 @@ namespace CosmicShore.Gameplay
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
             if (DefersToItsVesselsSkimmer(skimmerImpactor)) return;
+            // A team's own crystal (Harvest and Shatterplane I3) is left for that team: another team's skim passes through it.
+            if (_onlyFor.HasValue && skimmerImpactor.Skimmer && skimmerImpactor.Skimmer.VesselStatus != null &&
+                skimmerImpactor.Skimmer.VesselStatus.Domain != _onlyFor.Value) return;
+            // a hull whose touch leaves crystals alone (the Jacks netting, IHullContactGate) does not skim one up either
+            if (!IsSweepDispatch && !VesselTakesByContact(skimmerImpactor)) return;
+            // a crystal a Soliton Tunnel carries is not in the world: nobody skims it up (SolitonIsolation.Seal)
+            if (!IsSweepDispatch && SolitonIsolation.Sealed(Crystal)) return;
 
             CollectBy(skimmerImpactor);
+        }
+
+        static bool VesselTakesByContact(SkimmerImpactor skimmer)
+        {
+            var hull = skimmer.Skimmer ? skimmer.Skimmer.VesselStatus?.Transform : null;
+            return !hull || !hull.TryGetComponent(out VesselImpactor vessel) || vessel.TakesCrystalsByContact;
         }
 
         /// <summary>
@@ -121,7 +153,11 @@ namespace CosmicShore.Gameplay
             // Scoring is credited at CONTACT, not at the end of the flourish: the capture is a
             // visual, and a mode's objective must never wait on one.
             var vesselStatus = skimmerImpactor.Skimmer ? skimmerImpactor.Skimmer.VesselStatus : null;
-            if (vesselStatus != null) OnCrystalCollected?.Invoke(vesselStatus.PlayerName);
+            if (vesselStatus != null)
+            {
+                OnCrystalCollected?.Invoke(vesselStatus.PlayerName);
+                OnCrystalCollectedAs?.Invoke(vesselStatus.PlayerName, Crystal.crystalProperties.Element);
+            }
 
             RunCapture(vesselStatus).Forget();
             return true;

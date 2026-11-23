@@ -182,6 +182,14 @@ namespace UnityEngine
         public static bool operator !=(Vector3Int a, Vector3Int b) => !a.Equals(b);
     }
 
+    // Decoy Run's start poses (DecoyRunCourse.StartPoses) name it.
+    public struct Pose
+    {
+        public Vector3 position;
+        public Quaternion rotation;
+        public Pose(Vector3 position, Quaternion rotation) { this.position = position; this.rotation = rotation; }
+    }
+
     public struct Quaternion
     {
         public float x, y, z, w;
@@ -447,6 +455,7 @@ namespace UnityEngine
         public string name = "";
         public static implicit operator bool(Object o) => !ReferenceEquals(o, null);
         public static void Destroy(Object o) { }
+        public static void DestroyImmediate(Object o) { }
         public static T Instantiate<T>(T original, Transform parent) where T : Object { Debug.LogError("Instantiate reached from the card-art harness"); return original; }
     }
     public class Component : Object
@@ -471,7 +480,12 @@ namespace UnityEngine
         public GameObject(string n) : this() { name = n; }
         public void SetActive(bool b) { }
         public T AddComponent<T>() where T : Component, new() => new T();
+        public Component AddComponent(Type t) => (Component)Activator.CreateInstance(t);
     }
+    // The Regatta course genome's gene catalogue loads from Resources; the harness lays shipped courses, which
+    // carry no genome, so nothing is ever loaded.
+    public class TextAsset : Object { public string text = ""; }
+    public static class Resources { public static T Load<T>(string path) where T : Object => null; }
 }
 
 namespace UnityEngine.Serialization

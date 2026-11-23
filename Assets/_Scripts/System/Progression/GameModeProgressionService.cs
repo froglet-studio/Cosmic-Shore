@@ -166,7 +166,7 @@ namespace CosmicShore.Core
                 return true;
 
             // First quest mode is free when configured ('the first game is free').
-            if (Config.firstQuestAlwaysUnlocked &&
+            if (Config.FirstQuestAlwaysUnlocked &&
                 questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
                 return true;
@@ -212,7 +212,7 @@ namespace CosmicShore.Core
 
             if (questList == null) return false;
 
-            string hangarQuestName = Config.vesselHangarQuestDisplayName;
+            string hangarQuestName = Config.VesselHangarQuestDisplayName;
             int hangarIndex = -1;
             for (int i = 0; i < questList.Quests.Count; i++)
             {
@@ -275,7 +275,7 @@ namespace CosmicShore.Core
                 var nextQuest = questList.Quests[nextIndex];
                 string nextModeName = nextQuest.GameMode.ToString();
                 ProgressionData.MarkUnlocked(nextModeName);
-                ProgressionData.EnsureIntensityInitialized(nextModeName, Config.defaultMaxIntensity);
+                ProgressionData.EnsureIntensityInitialized(nextModeName, Config.DefaultMaxIntensity);
                 _analytics?.RecordModeUnlocked(nextQuest.GameMode);
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
             }
@@ -295,7 +295,7 @@ namespace CosmicShore.Core
             if (ProgressionData.IsUnlocked(modeName)) return;
 
             ProgressionData.MarkUnlocked(modeName);
-            ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
             _analytics?.RecordModeUnlocked(mode);
             CSDebug.Log($"[GameModeProgressionService] Quest-graph unlock: {mode}");
 
@@ -338,9 +338,6 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Returns the quest data for a given game mode, or null if not found.
-        /// </summary>
-        /// <summary>
         /// Emits the `quest_completed` analytics event. Its only producer used to be
         /// <c>QuestSystem.cs</c>, which this branch deleted along with the XP/shard economy —
         /// so the event was documented LIVE with nothing left to raise it, and
@@ -358,6 +355,9 @@ namespace CosmicShore.Core
             _analytics?.RecordQuestCompleted(quest.DisplayName, 0);
         }
 
+        /// <summary>
+        /// Returns the quest data for a given game mode, or null if not found.
+        /// </summary>
         public SO_UnlockData GetQuestForMode(GameModes mode)
         {
             if (questList == null) return null;
@@ -407,7 +407,7 @@ namespace CosmicShore.Core
             if (unlocked)
             {
                 ProgressionData.MarkUnlocked(modeName);
-                ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+                ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
             }
             else
             {
@@ -422,9 +422,9 @@ namespace CosmicShore.Core
         /// </summary>
         public void DebugSetMaxIntensity(GameModes mode, int maxIntensity)
         {
-            maxIntensity = Mathf.Clamp(maxIntensity, Config.defaultMaxIntensity, Config.maxIntensity);
+            maxIntensity = Mathf.Clamp(maxIntensity, Config.DefaultMaxIntensity, Config.MaxIntensity);
             string modeName = mode.ToString();
-            ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
             ProgressionData.SetMaxUnlockedIntensity(modeName, maxIntensity);
             OnIntensityUnlocked?.Invoke(mode, maxIntensity);
             RaiseProgressionChanged();
@@ -444,14 +444,14 @@ namespace CosmicShore.Core
             // point - IsIntensityUnlocked and GetPlaysRemainingForIntensity both resolve
             // through it, so gating it here covers the intensity ladder entirely.
             if (DeveloperUnlockGate.AllUnlocked)
-                return Config.maxIntensity;
+                return Config.MaxIntensity;
 
             // Full-intensity modes (e.g. Maelstrom) aren't gated behind progression - the full
             // range is available (one intensity is chosen in the lobby and applied to every game).
-            if (Config.HasFullIntensity(mode)) return Config.maxIntensity;
+            if (Config.HasFullIntensity(mode)) return Config.MaxIntensity;
 
             if (!IsGameModeUnlocked(mode)) return 0;
-            return ProgressionData.GetMaxUnlockedIntensity(mode.ToString(), Config.defaultMaxIntensity);
+            return ProgressionData.GetMaxUnlockedIntensity(mode.ToString(), Config.DefaultMaxIntensity);
         }
 
         /// <summary>
@@ -544,7 +544,7 @@ namespace CosmicShore.Core
                 var quest = questList.Quests[i];
                 string modeName = quest.GameMode.ToString();
                 ProgressionData.MarkUnlocked(modeName);
-                ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+                ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
                 quest.IsCompleted = false;
             }
 
@@ -577,6 +577,13 @@ namespace CosmicShore.Core
 
             if (ProgressionData.IsQuestCompleted(mode.ToString()))
             {
+                // A quest completed on its intensity-2 goal still has its ladder above it: I4 opens on the I3 goal.
+                if (quest.TargetType == QuestTargetType.IntensityUnlocked && Config.QuestGoalIntensity < 3)
+                {
+                    int played = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
+                    RecordIntensityPlay(mode, quest, played, ExtractStatForIntensityGoal(quest));
+                    return;
+                }
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
                 return;
             }
@@ -611,15 +618,33 @@ namespace CosmicShore.Core
         void RecordIntensityPlay(GameModes mode, SO_UnlockData quest, int playedIntensity, float statValue)
         {
             string modeName = mode.ToString();
-            ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.DefaultMaxIntensity);
 
             int newCount = ProgressionData.IncrementIntensityPlayCount(modeName, playedIntensity);
-            int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName, Config.defaultMaxIntensity);
+            int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName, Config.DefaultMaxIntensity);
             bool useStatBased = quest.IntensityUnlockStatType != QuestTargetType.Placeholder;
 
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] RecordIntensityPlay - mode:{mode}, " +
                        $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
                        $"statBased:{useStatBased}, statValue:{statValue}");
+
+            // The quest's goal at intensity 2 (SO_ProgressionConfig.QuestGoalIntensity): the plays or stat that would
+            // open I3 complete the quest, wherever I3 already stands. The ladder below is unchanged.
+            if (Config.QuestGoalIntensity <= 2 && playedIntensity == 2 && !ProgressionData.IsQuestCompleted(modeName))
+            {
+                bool met = useStatBased ? EvaluateIntensityStat(quest, statValue, 3) : newCount >= quest.PlaysToUnlockIntensity3;
+                if (met)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] {mode} quest complete at intensity 2.");
+                    ProgressionData.MarkQuestCompleted(modeName);
+                    quest.IsCompleted = true;
+                    OnQuestCompleted?.Invoke(quest);
+                    RecordQuestCompletedAnalytics(quest);
+                    RaiseProgressionChanged();
+                    SaveImmediateAsync();
+                    return;
+                }
+            }
 
             // Check if playing at intensity 2 should unlock intensity 3
             if (maxUnlocked == 2 && playedIntensity == 2)
@@ -654,11 +679,14 @@ namespace CosmicShore.Core
                     OnIntensityUnlocked?.Invoke(mode, 4);
                     _analytics?.RecordIntensityUnlocked(mode, 4);
 
-                    // Intensity 4 unlocked = quest completed
-                    ProgressionData.MarkQuestCompleted(modeName);
-                    quest.IsCompleted = true;
-                    OnQuestCompleted?.Invoke(quest);
-                    RecordQuestCompletedAnalytics(quest);
+                    // Intensity 4 unlocked = quest completed (unless its intensity-2 goal already completed it)
+                    if (!ProgressionData.IsQuestCompleted(modeName))
+                    {
+                        ProgressionData.MarkQuestCompleted(modeName);
+                        quest.IsCompleted = true;
+                        OnQuestCompleted?.Invoke(quest);
+                        RecordQuestCompletedAnalytics(quest);
+                    }
                     RaiseProgressionChanged();
                     SaveImmediateAsync();
                     return;
@@ -837,7 +865,7 @@ namespace CosmicShore.Core
 
                 case QuestTargetType.IntensityUnlocked:
                     // Evaluated via RecordIntensityPlay, not here
-                    return ProgressionData.GetMaxUnlockedIntensity(quest.GameMode.ToString(), Config.defaultMaxIntensity) >= quest.TargetValue;
+                    return ProgressionData.GetMaxUnlockedIntensity(quest.GameMode.ToString(), Config.DefaultMaxIntensity) >= quest.TargetValue;
 
                 case QuestTargetType.Placeholder:
                     return false;
@@ -853,7 +881,7 @@ namespace CosmicShore.Core
 
             string firstMode = questList.Quests[0].GameMode.ToString();
             ProgressionData.MarkUnlocked(firstMode);
-            ProgressionData.EnsureIntensityInitialized(firstMode, Config.defaultMaxIntensity);
+            ProgressionData.EnsureIntensityInitialized(firstMode, Config.DefaultMaxIntensity);
         }
 
         /// <summary>
@@ -893,8 +921,8 @@ namespace CosmicShore.Core
             if (Config.HasFullIntensity(node.GameMode))
                 return IsGameModeUnlocked(node.GameMode);
 
-            return ProgressionData.GetMaxUnlockedIntensity(node.GameMode.ToString(), Config.defaultMaxIntensity)
-                   >= Config.maxIntensity;
+            return ProgressionData.GetMaxUnlockedIntensity(node.GameMode.ToString(), Config.DefaultMaxIntensity)
+                   >= Config.MaxIntensity;
         }
 
         // ── Cloud Save (delegated to UGSDataService.ProgressionRepo) ──

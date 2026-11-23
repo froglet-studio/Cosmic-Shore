@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.VesselChangerToyDefinitionSO
   id: vessel_changer
   displayName: Vessel Changer
-  description: Fly through to swap your ship.
+  description: Swap your ship.
   unlockedByDefault: 1
   placementAngleDegrees: 120
   accentColor: {r: 1, g: 0.85, b: 0.2, a: 1}

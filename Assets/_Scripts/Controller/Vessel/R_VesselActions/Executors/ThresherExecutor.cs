@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>Enemy vessels: petals only</b> (the LOCKED PvP rule). The ball's swept path and every chain
     /// link reach an enemy hull; a contact is a scored <see cref="CombatHitClass.Strike"/> that
-    /// STEALS <c>vesselHitPetals</c> (Charge-scaled) petals per element through
+    /// STEALS <c>vesselHitPetals</c> (fixed; Charge lowers the smash speed instead) petals per element through
     /// <see cref="CombatHitDrain.TryAdmit"/>, decided on the machine that owns this hull. Nothing
     /// else touches the victim. Charge L5 "Magnet" draws the free ball toward the nearest enemy hull.
     ///
@@ -152,6 +152,8 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ public surface
 
         public bool IsPivoting => _solver != null && _solver.Mode == ThresherMode.Pivot;
+        /// <summary>Mass Mode (A): the ball builds (steals, shields, lays its own prisms) instead of breaking. The HUD's Mass card.</summary>
+        public bool InMassMode => _massMode;
         /// <summary>Every Thresher dial (the transformer reads its release and planted-hull seams here).</summary>
         public ThresherConfigSO Config => config;
         /// <summary>Analog triggers are on (<c>dials.analogTriggers</c>): LT is a brake, RT the chain's rigidity.</summary>
@@ -172,14 +174,17 @@ namespace CosmicShore.Gameplay
             rate = _solver.LockSpeed / r;
             return true;
         }
-        /// <summary>How far an armed launch leaves before its point (radians); the transformer sets it each
-        /// frame so a spin wound down after the launch lands on the aim.</summary>
-        public void SetLaunchLead(float radians) { if (_solver != null) _solver.LaunchLeadRadians = Mathf.Max(0f, radians); }
         public ThresherMode Mode => _solver?.Mode ?? ThresherMode.Free;
         /// <summary>True while a MULTIPLAYER hit-stop is holding this hull and its ball still.</summary>
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
+        /// <summary>The ball's velocity (world units/s); zero before the chain is seeded.</summary>
+        public Vector3 BallVelocity => _solver?.BallVelocity ?? Vector3.zero;
+        /// <summary>This frame's analog LT (Plant) depth 0..1 as PollTriggers read it (a press reads 1).</summary>
+        public float LeftTriggerDepth => _settings.Analog ? _ltDepth : (_plantHeld ? 1f : 0f);
+        /// <summary>This frame's analog RT (Winch) depth 0..1 as PollTriggers read it (a press reads 1).</summary>
+        public float RightTriggerDepth => _settings.Analog ? _rtDepth : (_payOut ? 1f : 0f);
 
         /// <summary>The ball threads race rings as the hull does (Garrett, 2026-10-19: "the thresher should
         /// activate rings like in its racing game with either the vessel or the ball"). The epoch changes on
@@ -231,8 +236,9 @@ namespace CosmicShore.Gameplay
                 return cap > 1f ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (cap - 1f)) : 0f;
             }
         }
-        /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
-        public bool IsAiming => _spectating;
+        /// <summary>The release is being aimed, so the sticks do not lean the orbit: the local pilot is spectating a
+        /// planted spin, or the autopilot is aiming one (<see cref="AimAutopilotLaunch"/>).</summary>
+        public bool IsAiming => _spectating || _autoAimUp.sqrMagnitude > 0.5f;
         /// <summary>
         /// The launch view is up: a planted orbit spinning at <c>spectateSpinRate</c> or faster for
         /// <c>spectateEngageSeconds</c>, with (analog) LT and the chain's rigidity at a full pull; it
@@ -263,7 +269,12 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
+            if (_anchorWardHeld && _status?.ResourceSystem)
+                _status.ResourceSystem.SetElementalDebuffImmunity(this, false, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = false;
             _touchLaunch.Clear();
+            _snap.Clear();
+            ClearAutopilotAim();
             _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
@@ -286,9 +297,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The four element scalings, read live (never cached) and folded into this frame's
         /// settings. Read through <c>EvaluateReplicated</c>, not <c>EvaluateLive</c>: every peer
         /// simulates this ball, and element levels themselves do not replicate, so a remote copy
-        /// reading its own (empty) ResourceSystem would fly a different ball. Only TIME lives in the
-        /// chain's settings (the spin-up rate and cap); Charge, Mass and Space are read where they
-        /// are spent (<see cref="TryHitVessel"/>, <see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
+        /// reading its own (empty) ResourceSystem would fly a different ball. TIME (the spin-up rate and
+        /// cap) and CHARGE (the smash and white-hot speeds) live in the chain's settings; Mass and Space
+        /// are read where they are spent (<see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
         void ApplyElementScaling()
         {
             _settings = _baseSettings;
@@ -296,6 +307,10 @@ namespace CosmicShore.Gameplay
             float spin = Mathf.Max(0.05f, config.SpinMultiplier.EvaluateReplicated(_status));
             _settings.LockSpinRate *= spin;
             _settings.LockMaxSpeed *= spin;
+            // CHARGE: a charged ball smashes at a lower speed (and goes white-hot sooner).
+            float smash = Mathf.Max(0.05f, config.SmashSpeedScale.EvaluateReplicated(_status));
+            _settings.SmashSpeed *= smash;
+            _settings.WhiteHotSpeed *= smash;
             _solver.Settings = _settings;
         }
 
@@ -312,16 +327,43 @@ namespace CosmicShore.Gameplay
         bool ArmouredTrailActive => Abilities && Abilities.IsUpgradeActive(Element.Mass);
         /// <summary>Space L5 "Breaker": a red ball's direct hit destroys super-shielded prisms.</summary>
         bool BreakerActive => Abilities && Abilities.IsUpgradeActive(Element.Space);
-        // Time L5: OPEN since 2026-10-13. "Perfect Release" (a timed aimed launch x1.6) retired when every
-        // aimed launch took the boost (LetGo) - its gate is deleted, not left beside the new rule (rule 26).
+        /// <summary>Time L5 "Anchor Ward" (2026-11-13; the slot was open since "Perfect Release" retired on 2026-10-13):
+        /// while the ball is planted as the pivot, the arena's danger prisms cannot drain the Thresher. Scoped to
+        /// <see cref="ElementalDebuffSources.DangerPrism"/> alone, the Dolphin's Drift Ward and the Rhino's Momentum
+        /// scoping, so a rival pilot's hit still lands on a spinning Thresher.</summary>
+        bool AnchorWardActive => Abilities && Abilities.IsUpgradeActive(Element.Time);
+
+        bool _anchorWardHeld;
+
+        /// <summary>Grant or revoke the Anchor Ward on the hull's ResourceSystem: held while planted at Time 5. Keyed on
+        /// this executor (the grantor), so another ward on the hull is never cleared by it.</summary>
+        void UpdateAnchorWard()
+        {
+            bool hold = _solver != null && _solver.Mode == ThresherMode.Pivot && AnchorWardActive;
+            if (hold == _anchorWardHeld) return;
+            var resources = _status?.ResourceSystem;
+            if (!resources) return;
+            resources.SetElementalDebuffImmunity(this, hold, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = hold;
+        }
+
+        /// <summary>True while the Anchor Ward holds (the HUD's Time card draws the ward).</summary>
+        public bool AnchorWardHeld => _anchorWardHeld;
 
         // ------------------------------------------------------------------ input edges
 
-        public void BeginPayOut() => _payOut = true;
-        public void EndPayOut() => _payOut = false;
+        /// <summary>RT (Winch) pressed / released - the raw input edges, on every peer (they round-trip through
+        /// <c>R_VesselActionHandler</c>). Listened to by <see cref="CosmicShore.Gameplay.Audio.ThresherAudioController"/>.</summary>
+        public event Action WinchPressed, WinchReleased;
+        /// <summary>LT (Plant) pressed / released - the raw input edges, on every peer.</summary>
+        public event Action PlantPressed, PlantReleased;
+
+        public void BeginPayOut() { _payOut = true; WinchPressed?.Invoke(); }
+        public void EndPayOut() { _payOut = false; WinchReleased?.Invoke(); }
 
         public void BeginPlant()
         {
+            PlantPressed?.Invoke();
             if (_solver == null) return;
             _plantHeld = true;
             // Analog triggers: the press is only a fallback depth (a source with no analog channel, a remote
@@ -331,6 +373,7 @@ namespace CosmicShore.Gameplay
 
         public void EndPlant()
         {
+            PlantReleased?.Invoke();
             if (_solver == null) return;
             _plantHeld = false;
             if (_settings.Analog)
@@ -397,13 +440,22 @@ namespace CosmicShore.Gameplay
             // point whose tangent is the aim, centred on screen). Releasing ARMS the launch: the ship
             // keeps circling and leaves from exactly that point, along the aim — the pilot picks the
             // point, the solver does the timing. Unaimed (a slow orbit, a remote replica, the
-            // autopilot) it leaves on the orbit's tangent at once, as before.
-            if (wasPivot && _spectating && _aimDir.sqrMagnitude > 0.5f)
+            // autopilot) it leaves on the orbit's tangent at once, as before. Only under the crosshair:
+            // a snap's camera can be on its way into the launch view before the view's own rules have
+            // qualified, and a let-go then is still a plain release (ThresherSnapAim).
+            if (wasPivot && _spectating && LaunchViewUp && _aimDir.sqrMagnitude > 0.5f)
             {
                 // EVERY aimed launch leaves launchBoost x the orbit's speed, however long it waits for
                 // its point: the crosshair move is the reward, not the timing.
                 _solver.ArmLaunch(_aimDir, config ? config.LaunchBoost : 1f);
                 return;   // the yank plays when the launch happens (StepChain)
+            }
+            // The AUTOPILOT's aimed release: the same armed launch and boost, along the objective its driver handed
+            // over (AimAutopilotLaunch), under the same launch view. Without the view an AI's let-go is the plain one.
+            if (wasPivot && !_spectating && LaunchViewUp && AutopilotAimFresh && _autoAimDir.sqrMagnitude > 0.5f)
+            {
+                _solver.ArmLaunch(_autoAimDir, config ? config.LaunchBoost : 1f);
+                return;
             }
             _solver.Release(_lastShipVelocity);
             if (wasPivot) PlayAt(yankEvent, _lastShipPosition);
@@ -451,9 +503,14 @@ namespace CosmicShore.Gameplay
             if (_solver != null && (_plantHeld || _solver.LaunchArmed || _solver.Mode == ThresherMode.Pivot || _solver.Mode == ThresherMode.Skidding))
                 _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            if (_anchorWardHeld && _status?.ResourceSystem)
+                _status.ResourceSystem.SetElementalDebuffImmunity(this, false, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = false;
             _touchLaunch.Clear();
+            _snap.Clear();
             _ltDepth = 0f; _rtDepth = 0f;
             _releaseDirection = null;
+            ClearAutopilotAim();
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
             _ackAny = false;
@@ -514,8 +571,87 @@ namespace CosmicShore.Gameplay
             PublishAcknowledged();
 
             UpdateLaunchView(dt);
+            UpdateAutopilotAim(shipPosition, dt);
             UpdateCombo(dt);
+            UpdateAnchorWard();
             return result.ShipVelocity;
+        }
+
+        /// <summary>
+        /// The aimed launch's exit buff carries the whole rig: the hull travelled <paramref name="delta"/> further than
+        /// the chain physics moved it (<see cref="ThresherVesselTransformer"/>), so the ball and every link go with it,
+        /// and the next step sees the ship exactly where its own physics put it relative to the ball - a chain that saw
+        /// only the hull run ahead braked the physics to its floor within a quarter of a second. The ball's carried
+        /// stretch is swept like any other (prisms, Mass Mode's trail, enemy hulls); ring threading reads its positions.
+        /// </summary>
+        public void CarryRig(Vector3 delta)
+        {
+            if (_solver == null || !_seeded || delta.sqrMagnitude < 1e-10f) return;
+            Vector3 from = _solver.BallPosition;
+            _solver.Carry(delta);
+            _links.Carry(delta);
+            _lastShipPosition += delta;
+            if (_solver.Mode == ThresherMode.Pivot) return;
+            SweepBall(from, _solver.BallPosition);
+            if (_massMode) LayBallTrail(from, _solver.BallPosition, _lastShipPosition);
+            HitVesselsAlong(from, _solver.BallPosition, _settings.BallRadius, _solver.BallVelocity);
+        }
+
+        // ------------------------------------------------------------------ the autopilot's aimed launch
+
+        // The AI's crosshair (ThresherSlingAIPolicySO, 2026-11-02: in Garrett's Thresher Time races 85% of his planted
+        // time is the aimed launch, and the autopilot could only let go along the tangent). A pilot aims an armed
+        // launch in the launch view with the sticks; an AI has no camera, so its boost driver hands over its objective
+        // each tick instead. While the launch view is up - the rule that puts up a pilot's crosshair: both triggers
+        // full on a fast enough spin - the orbit plane is laid onto the objective at the pilot's own aimPitchRate, and
+        // the let-go ARMS the same launch, with the same boost, along it (LetGo). A local pilot's own aim always wins.
+        const int AutoAimFreshFrames = 2;
+        const int NoAutoAim = -1000;
+        Vector3 _autoAimTarget, _autoAimUp, _autoAimDir;
+        int _autoAimFrame = NoAutoAim;
+
+        /// <summary>
+        /// The autopilot aims the pending launch at <paramref name="toTarget"/> (a world offset from the hull). Called
+        /// every tick the aim is wanted: an aim not renewed within <c>AutoAimFreshFrames</c> frames lapses. It acts only
+        /// while the launch view is up, and never on a hull a local pilot is aiming.
+        /// </summary>
+        public void AimAutopilotLaunch(Vector3 toTarget)
+        {
+            _autoAimTarget = toTarget;
+            _autoAimFrame = Time.frameCount;
+        }
+
+        /// <summary>Degrees between the launch the autopilot's aim would arm and its objective: what is left of the
+        /// plane's tilt onto it. 180 while no aim is laid.</summary>
+        public float AutopilotAimErrorDegrees => _autoAimDir.sqrMagnitude > 0.5f && _autoAimTarget.sqrMagnitude > 1e-6f
+            ? Vector3.Angle(_autoAimDir, _autoAimTarget) : 180f;
+
+        bool AutopilotAimFresh => Time.frameCount - _autoAimFrame <= AutoAimFreshFrames && _autoAimTarget.sqrMagnitude > 1e-6f;
+
+        /// <summary>Once per chain step, after the launch view: lay the planted orbit onto the autopilot's objective,
+        /// hold it once a launch is armed (the point is chosen), and hand the plane back when the aim lapses.</summary>
+        void UpdateAutopilotAim(Vector3 shipPosition, float dt)
+        {
+            if (_autoAimUp.sqrMagnitude > 0.5f && IsPivoting && _solver.LaunchArmed) return;
+            bool aiming = config && !_spectating && IsPivoting && LaunchViewUp && AutopilotAimFresh;
+            if (!aiming)
+            {
+                // (a launch or a release already handed the plane back inside the solver)
+                if (_autoAimUp.sqrMagnitude > 0.5f && IsPivoting && !_spectating) _solver.SteerOrbitPlane(Vector3.zero);
+                ClearAutopilotAim();
+                return;
+            }
+            if (_autoAimUp.sqrMagnitude < 0.5f) _autoAimUp = _solver.OrbitNormal(shipPosition);
+            if (_autoAimUp.sqrMagnitude < 0.5f) return;
+            _autoAimDir = ThresherCameraFraming.LayAimTowards(ref _autoAimUp, _autoAimTarget,
+                config.AimPitchRate * Mathf.Deg2Rad * dt);
+            _solver.SteerOrbitPlane(_autoAimUp);
+        }
+
+        void ClearAutopilotAim()
+        {
+            _autoAimUp = Vector3.zero;
+            _autoAimDir = Vector3.zero;
         }
 
         // ------------------------------------------------------------------ the launch view
@@ -881,7 +1017,7 @@ namespace CosmicShore.Gameplay
         /// hull (every peer simulates the ball, so every peer sees the contact) — admitted through
         /// <see cref="CombatHitDrain.TryAdmit"/> (a warded victim is neither scored on nor robbed;
         /// <c>vesselHitCooldownSeconds</c> per victim), then a Strike-form STEAL of
-        /// <c>vesselHitPetals</c> (CHARGE) petals per element and the score on the stats channel.
+        /// <c>vesselHitPetals</c> petals per element and the score on the stats channel.
         /// </summary>
         void TryHitVessel(IVesselStatus victim, Vector3 velocity)
         {
@@ -1102,6 +1238,11 @@ namespace CosmicShore.Gameplay
         bool IsLocalPilot()
             => _status?.Player != null && _status.IsLocalUser && !_status.AutoPilotEnabled;
 
+        /// <summary>The local player's hull, whoever holds its sticks: the hull the camera frames
+        /// (<see cref="CameraManager.ActiveRigFollowing"/>). The camera's ball framing asks this; what the pilot's own
+        /// hand drives (the launch view's aim, haptics, hit-stop) asks <see cref="IsLocalPilot"/>.</summary>
+        bool IsLocalHull() => _status?.Player != null && _status.IsLocalUser;
+
         void UpdateCombo(float dt)
         {
             if (_combo == 0) return;
@@ -1186,6 +1327,16 @@ namespace CosmicShore.Gameplay
         // so a view that drops and comes back resumes where the pilot had aimed it.
         Vector3 _pointedDir;
         bool _aimHeld;
+        // Both triggers pulled FAST (ThresherSnapAim): the aim starts from the flight direction before the pull, and
+        // the camera eases into the launch view along it at once. _aimPitchOwed is the tilt still to give the orbit
+        // plane so the crosshair is that line itself, not its shadow on the orbit (paid at aimPitchRate).
+        ThresherSnapAim _snap;
+        float _aimPitchOwed;
+        // Seconds the sticks have been aiming (aimStickEaseSeconds ramps their authority in from 0).
+        float _aimAge;
+        // An exit after a LAUNCH eases from a start pose carried with the hull's travel since the launch.
+        Vector3 _exitShipStart;
+        bool _exitTracksShip;
         // The camera's pose last frame (its turn rate at the spectate cut) and the carried turn rate (rad/s).
         Quaternion _lastCamRotation = Quaternion.identity;
         float _carryRate;
@@ -1205,11 +1356,17 @@ namespace CosmicShore.Gameplay
         /// </list>
         /// Pose only, through <see cref="CustomCameraController.SetCameraDistance"/> and
         /// <see cref="CustomCameraController.Spectate"/>; FOV belongs to the speed tunnel and is
-        /// only READ here. Remote replicas and AI hulls never touch a camera.
+        /// only READ here. Remote replicas and AI seats never touch a camera.
+        ///
+        /// <para><b>Who flies the local hull</b> (Yash, 2026-11-22): the ball framing runs for the local player's hull
+        /// whoever holds its sticks, so an AI flying it for the player keeps the player's distance (it used to fall
+        /// back to the prefab's, nearer). The launch view is the pilot's AIM - the sticks turn the launch direction
+        /// and the orbit's plane with it - so it stays with a human pilot: an AI aims by its own path
+        /// (<c>AutopilotAim</c>) and must fly the hull exactly as it flies an AI seat.</para>
         /// </summary>
         void UpdateCamera()
         {
-            if (!config || !config.CameraFraming || !_seeded || !IsLocalPilot()) { ReleaseCamera(); return; }
+            if (!config || !config.CameraFraming || !_seeded || !IsLocalHull()) { ReleaseCamera(); return; }
 
             var cam = CameraManager.Instance != null
                 ? CameraManager.Instance.GetActiveController() as CustomCameraController
@@ -1255,18 +1412,38 @@ namespace CosmicShore.Gameplay
             _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
             _cam.MaxFollowAngularAcceleration = config.CameraMaxFollowAngularAcceleration;
 
+            // The AI holds the sticks: the framing above stands, the pilot's launch view does not (see the summary).
+            // A view that was up when the AI took over is dropped at once, as any teardown drops it.
+            if (!IsLocalPilot())
+            {
+                if (_spectating || _exiting || _cam.Spectate.HasValue) EndSpectate();
+                _snap.Clear();
+                _aimHeld = false;
+                _lastCamRotation = _cam.transform.rotation;
+                return;
+            }
+
             if (!IsPivoting)
             {
                 _pointedDir = _cam.transform.forward;
                 _aimHeld = false;
             }
 
-            // Spectate: on the launch view's own edges (LaunchViewUp, simulated in StepChain), so the
-            // crosshair comes on exactly when the trail goes off.
+            // Snap aim: both triggers pulled fast. Read from the depths the solver was handed this frame (a phone's
+            // both-thumbs-off reads as both full) and the flight direction the step left the hull on.
             bool analog = _settings.Analog;
-            if (!_spectating && LaunchViewUp)
+            Vector3 flight = _lastShipVelocity.sqrMagnitude > 1e-4f ? _lastShipVelocity : ship.forward;
+            _snap.Tick(_ltDepth, _rtDepth, flight, IsPivoting, LaunchViewUp, config.FullPull, config.LetGoBelow,
+                config.SnapAimRestDepth, analog ? config.SnapAimSeconds : 0f, config.SnapAimHoldSeconds,
+                config.SpectateDropSeconds, dt);
+
+            // Spectate: on the launch view's own edges (LaunchViewUp, simulated in StepChain), so the
+            // crosshair comes on exactly when the trail goes off - or, after a snap, at once (the crosshair still
+            // waits for LaunchViewUp; the camera just stops riding the hook and spin on the way there).
+            bool view = LaunchViewUp || _snap.Holding;
+            if (!_spectating && view)
                 BeginSpectate(ship.position, dt);
-            else if (_spectating && !LaunchViewUp)
+            else if (_spectating && !view)
                 EndSpectate(smooth: true);
 
             if (!_spectating)
@@ -1280,9 +1457,24 @@ namespace CosmicShore.Gameplay
             // pitch sign up/down) until a release ARMS it; then the point is chosen and held. On a phone
             // (both thumbs off, ThresherTouchLaunch) the tilt virtual thumb writes these same XSum / YSum.
             var input = _status.InputStatus;
+            // The sticks take the aim over smoothly: a stick already over (the turn the pilot planted in, or the
+            // orbit lean it was doing at pivotSteer) does not jump to the aim's full rate on the entry frame.
+            _aimAge += dt;
             if (input != null && !_solver.LaunchArmed)
-                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum, input.YSum,
+            {
+                float authority = ThresherCameraFraming.AimStickAuthority(_aimAge, config.AimStickEaseSeconds);
+                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum * authority, input.YSum * authority,
                     config.AimYawRate * Mathf.Deg2Rad, config.AimPitchRate * Mathf.Deg2Rad, dt);
+            }
+            // A snap's flight line off the orbit's plane: tilt the plane onto it at the stick's own pitch rate (a
+            // jump would re-lay the circling ship by the whole angle in one frame).
+            if (_aimPitchOwed != 0f && !_solver.LaunchArmed)
+            {
+                float step = config.AimPitchRate * Mathf.Deg2Rad * dt;
+                step = Mathf.Clamp(_aimPitchOwed, -step, step);
+                ThresherCameraFraming.PitchAim(ref _aimDir, ref _aimUp, step);
+                _aimPitchOwed -= step;
+            }
             // The whole spin turns with the camera: the orbit is laid into the plane the aim lives in.
             _solver.SteerOrbitPlane(_aimUp);
 
@@ -1314,6 +1506,9 @@ namespace CosmicShore.Gameplay
             ShowVantage(_easeFromPos, fromRot, eye, look, _camEase);
             _lastCamRotation = _cam.transform.rotation;
 
+            // A snap's camera on its way in, before the view's own rules qualify: no crosshair yet.
+            if (!LaunchViewUp) { if (_sight) _sight.Hide(); return; }
+
             // The launch sight: the crosshair (one colour; the release timing is left to feel) and the Time-petal
             // zoom window down the same trajectory, zoomed by LT's depth alone. (Analog triggers: LT is at a
             // full pull whenever this view is up, so its depth cannot zoom; the window stays wide.)
@@ -1333,26 +1528,38 @@ namespace CosmicShore.Gameplay
         /// laid into the orbit plane either way. It used to start from wherever the spinning chase camera
         /// happened to face, carried further round by its turn, so every entry pointed somewhere new. The
         /// aim's "above" is the orbit's axis on the camera's own side, so the launch camera rises over the
-        /// orbit rather than dropping under it.</summary>
+        /// orbit rather than dropping under it.
+        /// After a SNAP (both triggers pulled fast, <see cref="ThresherSnapAim"/>, 2026-10-30) the aim is the hull's
+        /// flight direction from before the pull, and the orbit plane is tilted onto it (<c>_aimPitchOwed</c>) so the
+        /// crosshair is that line exactly. This runs on the plant's first frames then, before the hook has turned
+        /// the ship onto the orbit, so the plane is the solver's own (<see cref="ThresherChainSolver.OrbitNormal"/>):
+        /// a ship still flying straight away from the ball has a velocity along its radius, and their cross is noise.</summary>
         void BeginSpectate(Vector3 shipPosition, float dt)
         {
             Vector3 pivot = _solver.Pivot;
             Vector3 outward = shipPosition - pivot;
-            Vector3 normal = Vector3.Cross(outward, _lastShipVelocity);
+            bool snap = !_aimHeld && _snap.Engaged;
+            Vector3 normal = snap ? _solver.OrbitNormal(shipPosition) : Vector3.Cross(outward, _lastShipVelocity);
             if (normal.sqrMagnitude < 1e-6f || outward.sqrMagnitude < 1e-6f) return;
             normal.Normalize();
             if (Vector3.Dot(normal, _cam.transform.position - pivot) < 0f) normal = -normal;
 
             // (a pointed direction within ~13 degrees of the orbit's axis has no clear launch point: fall back)
-            Vector3 want = _aimHeld ? _aimDir : _pointedDir;
+            Vector3 want = _aimHeld ? _aimDir : snap ? _snap.Heading : _pointedDir;
             Vector3 aim = Vector3.ProjectOnPlane(want, normal);
-            if (aim.sqrMagnitude < 0.05f) aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+            bool laid = aim.sqrMagnitude >= 0.05f;
+            if (!laid) aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
             if (aim.sqrMagnitude < 1e-6f) aim = _lastShipVelocity;
             if (aim.sqrMagnitude < 1e-6f) return;
 
             _aimDir = aim.normalized;
             _aimUp = normal;
             _aimHeld = true;
+            _aimAge = 0f;
+            // The snap's line off the plane: the pitch (TurnAim's sign, positive down) that lays aim onto it.
+            _aimPitchOwed = snap && laid
+                ? -Mathf.Atan2(Vector3.Dot(want.normalized, normal), Vector3.Dot(want.normalized, _aimDir))
+                : 0f;
             // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose;
             // the ease's start pose keeps turning at it and glides to a stop over spectateCarrySeconds.
             _carryRate = 0f;
@@ -1378,12 +1585,20 @@ namespace CosmicShore.Gameplay
         void EndSpectate(bool smooth = false)
         {
             if (_spectating) _solver?.SteerOrbitPlane(Vector3.zero);   // the orbit's plane is the ship's again
+            _aimPitchOwed = 0f;
             if (_sight) _sight.Hide();
             bool was = _spectating;
             _spectating = false;
             if (smooth && was && _cam)
             {
                 CaptureEaseStart();
+                // After a LAUNCH the start pose travels with the hull (2026-10-30, "jerky exits"): held still, it
+                // watched the ship shoot off at the boosted, exit-buffed speed and then swooped after it. At the
+                // launch the vantage is already behind the ship on its line, so carried along it only has to settle
+                // into the chase pose.
+                Transform followed = _cam.FollowTarget;
+                _exitTracksShip = followed && !IsPivoting;
+                _exitShipStart = followed ? followed.position : default;
                 _exiting = true;
                 return;
             }
@@ -1410,7 +1625,8 @@ namespace CosmicShore.Gameplay
             if (!SafeLookRotation.TryGet(target.position - eye, target.up, out var look, this, logError: false))
                 look = target.rotation;
             _camEase = Mathf.Min(1f, _camEase + dt / Mathf.Max(0.01f, config.SpectateExitSeconds));
-            ShowVantage(_easeFromPos, _easeFromRot, eye, look, _camEase);
+            Vector3 from = _exitTracksShip ? _easeFromPos + (target.position - _exitShipStart) : _easeFromPos;
+            ShowVantage(from, _easeFromRot, eye, look, _camEase);
             if (_camEase < 1f) return;
             _cam.SnapToTarget();
             _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;

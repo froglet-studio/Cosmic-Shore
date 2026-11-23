@@ -1,4 +1,24 @@
-# Serpent — Scope (Space) + Sniper Shot (Charge)
+# Serpent — Scope (Charge) + Cloak / Sniper Shot (Space)
+
+> **Recut 2026-10-30 (Garrett):** *"Space should be the cloak and sniper shot abilities. the icon
+> should change when the scope is held so the glyph can stay in the same spot. charge is the scope.
+> keep the charge parameter the sniper cooldown. lets not have the scope have its own parameters.
+> lets just have a good scope to begin with. lets have the sniper shot destroy supershields from the
+> beginning. ... Charge L5 upgrade is instead of pierce it causes the scope to produce short lived
+> after images that the serpent can snipe instead. (much like hawkeye in marvel rivals)"*
+>
+> | Element | Card | Input | Parameter | Level 5 |
+> |---|---|---|---|---|
+> | Charge | **Scope** | LT | the SNIPER's recovery, 12 s → 5.4 s; the zoom is one fixed 12° | **Hunter's Sight**: rivals leave afterimages while scoped (0.25 s apart, 1 s each); a round through one strips that rival (`ScopeAfterimages.cs`) |
+> | Space | **Cloak / Sniper Shot** | RT | the Seed Wall's steal reach (unchanged) | **Shield Steal** (the wall half of Deep Focus; Space 5 is still Garrett's call) |
+>
+> The round breaks super-shielded mass at every level (Pierce is retired). The SPACE card swaps its
+> picture between cloak and sniper while the scope is held (`SerpentVesselHUDView.SetScoped`), and
+> the sniper's cooldown veil moved there with it. Afterimages are recorded only on the machine that
+> decides the strip (`ElementalTransfer.IsDecidedHere`) and drawn only for the local pilot, in
+> `CloakGhost.mat` tinted with the rival's domain colour. Everything below this box is the history
+> of the old split and is kept for the reasoning; where it names Space's magnification, Deep Focus
+> or Pierce, this box wins.
 
 Hold the **left trigger**: a magnified view down the vessel's own nose opens in an eyepiece beside
 the flight view, zoomed by the trigger's own depth, and a **reticle at the shot's true angular
@@ -184,7 +204,7 @@ walls' steal radius.
 Super-shielded mass is invulnerable to `Prism.Damage` outright — it early-returns through
 `AbsorbSuperShieldHit`. The sanctioned teardown drops the shields **first** and then devastates,
 which is precisely what the Rhino's energised blade does
-(`RhinoSkimmerDamagePrismEffectSO.PopSuperShield`):
+(`SwordfishSkimmerDamagePrismEffectSO.PopSuperShield`):
 
 ```csharp
 prism.DeactivateShields(impact, debrisSpeedLimit);          // sheds the stellation as debris
@@ -254,7 +274,7 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
 | `_Scripts/UI/View/ScopePetalGeometry.cs` | **new** (round 8) — the CHARGE petal's outline, traced off the shipped sprite, plus the inradius/circumradius/area derived from it |
 | `_Scripts/UI/View/ScopePetalImage.cs` | **new** (round 8) — the eyepiece. A `RawImage` SUBCLASS overriding only `OnPopulateMesh`, so every part of the surface that renders is inherited |
-| `_Scripts/Utility/CSDebug.cs` | **+** (round 6) `CSLogChannel.SerpentScope` |
+| `_Scripts/Utility/Foundation/CSDebug.cs` | **+** (round 6) `CSLogChannel.SerpentScope` |
 | `_Scripts/UI/View/ScopeDiscGraphic.cs` | **added round 4, DELETED round 7** — the generated circular picture. Replaced round 3's `RawImage` and was never seen on screen; retired so two windows cannot compete for the next report |
 | `_Scripts/UI/View/AbilityLockupView.cs` | **+** (round 4) a LOCKED card draws its cooldown |
 | `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE, round 5 made it adopt the game's image, round 7 put its surface back to a `RawImage`, round 8 made its target SQUARE for the petal |
@@ -264,7 +284,7 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `_Scripts/UI/Elements/ToyPreviewCamera.cs` | **+** (round 5) `EnsureRig`'s URP block routes through the helper |
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | **+** `QueryCone` / `ConeContains` |
 | `_Scripts/UI/View/CloakSeedWallActionSO.cs` | **+** declines while scoped |
-| `_Scripts/UI/Controller/SerpentVesselHUDController.cs` | **+** drives the Charge card's cooldown veil |
+| `_Scripts/UI/Controller/SerpentHUDController.cs` | **+** drives the Charge card's cooldown veil |
 | `Assets/Resources/ElementalAbilityMaps/Serpent.asset` | Charge + Space entries authored; Time's `Input` corrected |
 | `Assets/_SO_Assets/VesselActions/Serpent/SniperScopeAction.asset` | **new** |
 | `Assets/_SO_Assets/VesselActions/Serpent/SniperShotAction.asset` | **new** |
@@ -310,7 +330,7 @@ bucket walk, same unordered-snapshot contract, with the radius a function of axi
 
 ### 2. The readiness push was correct and invisible
 
-`SerpentVesselHUDController` pushes `CooldownRemaining01` into the fleet's clockwise cooldown veil
+`SerpentHUDController` pushes `CooldownRemaining01` into the fleet's clockwise cooldown veil
 every frame, and it has been doing so since round 1. The veil is drawn **on an ability ICON**, and
 **the Serpent binds 0 of its 4 ability icons** — so its lockup renders four LOCKED cards and the
 veil has nothing to sit on. A perfectly wired readout with nowhere to appear.
@@ -438,7 +458,7 @@ and its extremes are usually the two readings the player actually needs.*
 **What this does NOT fix, stated plainly:** the readout lives on the scope overlay, so it is only
 on screen while the left trigger is held. The fleet's own ability row would carry it everywhere,
 and the Serpent binds no icons for it to sit on — that is still the icon-authoring follow-up below,
-and the `SerpentVesselHUDController` push into it is still live and still waiting for one.
+and the `SerpentHUDController` push into it is still live and still waiting for one.
 
 ### The PIP moved and grew
 
@@ -523,7 +543,7 @@ r = R · tan(coneHalfAngle) / tan(windowFov / 2)
 
 **The lockup's cooldown veil now draws on a LOCKED card.** `AbilityLockupView.SetAbilityCooldown`
 refused a locked slot, so the Serpent's recharge — pushed correctly from
-`SerpentVesselHUDController` since the ability shipped — landed nowhere for three rounds of
+`SerpentHUDController` since the ability shipped — landed nowhere for three rounds of
 playtest. The veil never needed an icon anyway: it sizes itself on the ability **plate**, which a
 locked card has.
 
@@ -1416,13 +1436,11 @@ the cheaper-to-undo one switchable.**
 
 ## Checked and clear
 
-- **Rule 26 (re-scoping an L5).** Space 5 on this hull could have granted two upgrades:
-  `SerpentVesselExplosionByCrystalEffect.asset` reads `IsUpgradeActive(Element.Space)` for the
-  blast's "spares allies" upgrade. It does **not** fire — the asset serializes no
-  `_spaceUpgradeSparesAllies`, whose field initializer is `false`, and its
-  `_heightMultiplierAtFullSpace` / `_coreMultiplierAtFullCharge` are both `1`, which the code
-  skips outright. Nothing to switch off. (Confirmed by
-  `Tools/Build/element_ability_table.py Serpent`, which labels both reads *inert — authored x1*.)
+- **Rule 26 (re-scoping an L5).** Space 5 on this hull once had a second reader:
+  `SerpentVesselExplosionByCrystalEffect.asset`, an inert crystal blast (no allies upgrade, x1 on
+  both element dials). Garrett called it a vestige on 2026-11-18 and it was removed from
+  `SerpentImpactorDataContainer.asset`, so a crystal pickup now only shields the wall and plays
+  haptics, and Shield Steal is gated in one place (`SerpentWallAssembler`).
 
 ## Known limitations
 
@@ -1619,7 +1637,7 @@ constant) both firing.
 35. **Both are stood down when the scope is (round 9).** Fly unscoped around the arena: no ring
     anywhere on screen. Then open the overview / pause while scoped, and swap hulls while scoped —
     the flight reticle must go with the eyepiece in both cases, not linger.
-36. **The rear view (round 9).** While scoped, flip to the look-back camera (**C**, or **LB+RB**).
+36. **The rear view (round 9).** While scoped, flip to the look-back camera (**C**, or **D-pad down**; LB+RB until 2026-10-27).
     The flight reticle must **disappear** rather than appear mirrored somewhere plausible — the aim
     point is behind the camera there. The eyepiece must keep working throughout.
 37. **MPPM (round 9).** Scope on client A; client B must get **neither** reticle. This is step 12's

@@ -655,7 +655,7 @@ MonoBehaviour:
   ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 1
   TickSyncChildren: 0
-  UseUnreliableDeltas: 0
+  UseUnreliableDeltas: 1
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -668,9 +668,9 @@ MonoBehaviour:
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
+  UseQuaternionSynchronization: 1
+  UseQuaternionCompression: 1
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
@@ -786,7 +786,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 1.35
+    Value: 1.9373
     Min: 1
     Max: 2.5
     element: 0
@@ -974,33 +974,23 @@ MonoBehaviour:
   _touchActionOverrides:
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}
     - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}
     - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}
   _gamepadActionOverrides:
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}
     - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}
     - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -1105,7 +1095,6 @@ MonoBehaviour:
   _iconSetSwitcher: {fileID: 0}
   view: {fileID: 5137264980012345622}
   mode: {fileID: 5137264980012345605}
-  dipole: {fileID: 5137264980012345603}
   sling: {fileID: 5137264980012345601}
   pathfinder: {fileID: 5137264980012345604}
 --- !u!114 &8755860699239805343
@@ -1228,7 +1217,6 @@ GameObject:
   - component: {fileID: 9105512684531825410}
   - component: {fileID: 5137264980012345601}
   - component: {fileID: 5137264980012345602}
-  - component: {fileID: 5137264980012345603}
   - component: {fileID: 5137264980012345604}
   - component: {fileID: 5137264980012345605}
   - component: {fileID: 5137264980012345606}
@@ -1269,7 +1257,6 @@ MonoBehaviour:
   _executors:
   - {fileID: 5137264980012345601}
   - {fileID: 5137264980012345602}
-  - {fileID: 5137264980012345603}
   - {fileID: 5137264980012345604}
   - {fileID: 5137264980012345605}
   - {fileID: 5137264980012345606}
@@ -1303,19 +1290,6 @@ MonoBehaviour:
   stationarySeedConfig: {fileID: 0}
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f, type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
---- !u!114 &5137264980012345603
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7850473780452578400}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6eee000b02734120a5138fb645997915, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: c6ae04d75c934a21aae1b3607d52cb84, type: 2}
 --- !u!114 &5137264980012345604
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1901,6 +1875,16 @@ PrefabInstance:
         type: 3}
       propertyPath: Scale.Min
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 7.5
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

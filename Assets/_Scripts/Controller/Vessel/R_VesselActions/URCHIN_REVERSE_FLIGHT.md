@@ -43,7 +43,7 @@ Course** rather than a negative Speed, and nothing in any of them was taught abo
 - **Backing into a ribbon latches the grind the way you are travelling.** `TrailFollower` takes its
   direction from `Course` at the moment of contact. Flying into your own forward-laid trail in
   reverse and riding it backwards is the Urchin's substitute for a turning circle — it has no
-  drift, no Yastri and no stop ability — and it is what the mode geometry (Hijack's burrs, Skein's
+  drift, no Yawstery and no stop ability — and it is what the mode geometry (Hijack's burrs, Skein's
   aimed breaks) already assumes a pilot can do.
 - **A danger prism still bites.** `throttleMultiplier` is applied before the split, so a slow scales
   a reverse exactly as it scales a cruise.
@@ -173,6 +173,6 @@ from the real declarations in the tree.
   saves, Unity writes them at their then-current values and the asset becomes authoritative.
 - The AI's rail-grind speedup (item 8) is untested behaviour, not a measurement.
 - A reversing Urchin's **camera** is unchanged — it still sits behind the hull, so reversing flies
-  the ship toward the viewer. The rear-view gesture (`C` / `LB+RB`) already covers wanting to look
+  the ship toward the viewer. The rear-view gesture (`C` / D-pad down) already covers wanting to look
   the other way, and pointing the camera at the direction of travel would compose with it badly.
   Worth a playtest read before anything is done about it.

@@ -1,6 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;

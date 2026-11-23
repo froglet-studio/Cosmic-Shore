@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 77 - notes: every other Voyage window in the picked look (C3), the Quests window, what is still a proposal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<span class="abs" style="left:56px;top:44px;font-size:36px">Rev 77 - notes</span><div class="abs" style="left:56px;top:120px;width:1808px;display:grid;grid-template-columns:1fr 1fr;gap:34px 64px"><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Picked</span><span style="font-size:18px;line-height:1.5">Rev 74 C3, Place (Shombith, 2026-11-08): "C3 and now show mockups of all other windows".</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">The look, everywhere</span><span style="font-size:18px;line-height:1.5">The menu's ground; the HyperSea map column on the left (the whole galaxy, + / - through seven tiers, the edge-on view at its foot) wherever a voyage is on screen; the muted place close-up as the card face; the carousel for every choice of one among many.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">The windows</span><span style="font-size:18px;line-height:1.5">Crew: three seats and their 12 settings, a press opens that setting's strip (hulls, pilots' portraits, the Codex's element shapes, artifacts), one press picks, Save squad keeps it. Story: one beat at a time over the place. Underway: the voyage that is out. Escort: the Ark escort in the carousel with its difficulty. Saga: Tandava, part 2 locked. Episodes: coming soon.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Quests</span><span style="font-size:18px;line-height:1.5">Its own window, opened from Home like the Profile: Episode 1's five quests on the same carousel, muted art, the claimed count, one Lime button (Claim or Play quest).</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Still a proposal</span><span style="font-size:18px;line-height:1.5">The voyage that stays put while the crew or domain changes is Garrett's voyage rules to change (section 147). Underway's words (Stowed 1 of 3) are the game's own progress lines.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Build</span><span style="font-size:18px;line-height:1.5">After the pick: the Voyage window's generator (author_voyage_window.py, Garrett's) and VoyageOpenCard, with the vessel strip of the configure card (Yash's ArenaLaunchPanel).</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,12 +1,18 @@
 using CosmicShore.Core;
+using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// The SWORDFISH's config sets <see cref="SwordPoseMapping.Bill"/> (2026-11-08): the blade is the fish's bill,
+    /// resting straight ahead off the snout; the difference lays it out to a side and the shared pull stands it up,
+    /// pivoting at its mount (<see cref="BillChannels"/>), and the local pilot's camera pans to keep it centred
+    /// (<see cref="SwordfishSwordCamera"/>). The paragraph below is the <see cref="SwordPoseMapping.Chop"/> model.
+    ///
     /// Drives the Rhino shield swipe from the analog triggers, reparameterized like the
     /// Manta's turn boost: the DIFFERENCE (right - left) sweeps the sword laterally
     /// through yaw+roll (full pulls are the +/-1 stances) and the SUM pitches it down
@@ -28,20 +34,21 @@ namespace CosmicShore.Gameplay
     /// 2026-10-21): both read fully pulled, which is the energize stance - so a phone energizes
     /// through the mirrors like every other device and the event-driven pose drops into the
     /// centred chop with it (<see cref="MirrorsInStance"/>). An AI Rhino's
-    /// <see cref="RhinoSwordAutopilot"/> writes the mirrors on its owning machine, so its sword
+    /// <see cref="SwordfishSwordAutopilot"/> writes the mirrors on its owning machine, so its sword
     /// replicates the same way.
     ///
     /// COMBOS ride on top: a rapid string of trigger TAPS (RR, RL, RLR, …) calls an authored
-    /// flourish from <see cref="RhinoSwordComboLibrarySO"/> — a separate, upgraded set while
+    /// flourish from <see cref="SwordfishSwordComboLibrarySO"/> — a separate, upgraded set while
     /// the blade is ENERGIZED — which blends in from the current pose, plays its path, and
-    /// blends back to wherever the fingers are. A held trigger is never a tap, so positioning
+    /// blends back to wherever the fingers are. The local pilot sees its name in the game's toast
+    /// container (top right, under Settings). A held trigger is never a tap, so positioning
     /// the sword is untouched. Detection reads the replicated trigger MIRRORS (the same values
     /// the energize stance reads), so every peer calls the same combo. See RHINO_SWORD_COMBOS.md.
     /// </summary>
     public sealed class ShieldSwipeActionExecutor : ShipActionExecutorBase
     {
         [Header("Config")]
-        [SerializeField] RhinoShieldSwipeConfigSO config;
+        [SerializeField] SwordfishShieldSwipeConfigSO config;
 
         [Header("References")]
         [Tooltip("The shield/sword transform to sweep (the ForceFieldSkimmer root). Falls back to the near-field skimmer.")]
@@ -51,10 +58,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
         [Header("Autopilot")]
-        [Tooltip("The AI's sword hand (RhinoSwordAutopilot on the Rhino root). While it drives the " +
+        [Tooltip("The AI's sword hand (SwordfishSwordAutopilot on the Rhino root). While it drives the " +
                  "trigger mirrors, an autopiloted vessel's triggers are followed instead of dropped. " +
                  "Found on the vessel when empty.")]
-        [SerializeField] RhinoSwordAutopilot autopilot;
+        [SerializeField] SwordfishSwordAutopilot autopilot;
 
         [Header("Blade Geometry")]
         [Tooltip("Half the blade mesh's extent along its length axis, in the blade's OWN local units. " +
@@ -72,6 +79,9 @@ namespace CosmicShore.Gameplay
         Vector3 _baseLocalPos;
         Quaternion _baseLocalRot;
         bool _baseCaptured;
+        Matrix4x4 _frameToHull = Matrix4x4.identity; // the pose frame's rest, in the hull's frame (the bill camera)
+
+        readonly SwordfishSwordCamera _billCamera = new();
 
         float _diff;       // smoothed swipe control: -1 (left stance) .. +1 (right stance)
         float _sum;        // smoothed chop control: 0 (raised rest) .. 2 (full chop)
@@ -87,16 +97,27 @@ namespace CosmicShore.Gameplay
         bool _leftHeld;
 
         // --- Combos -------------------------------------------------------------------------
-        RhinoSwordComboDetector _comboDetector;
-        RhinoSwordComboLibrarySO _comboLibraryConfigured; // library the detector was configured from
-        RhinoSwordComboPath _flourish;         // playing flourish, null when the fingers own the pose
+        SwordfishSwordComboDetector _comboDetector;
+        SwordfishSwordComboLibrarySO _comboLibraryConfigured; // library the detector was configured from
+        SwordfishSwordComboPath _flourish;         // playing flourish, null when the fingers own the pose
         float _flourishElapsed;
         SwordPoseChannels _flourishEntry;      // pose the flourish blends in FROM (wrapped)
         SwordPoseChannels _lastApplied;        // last pose written to the sword, in channel space
-        RhinoSwordFXController _fx;            // the blade's own FX (same GameObject as shieldRoot)
+        SwordfishSwordFXController _fx;            // the blade's own FX (same GameObject as shieldRoot)
 
         /// <summary>The flourish currently playing, or null. For FX/HUD/diagnostics.</summary>
-        public RhinoSwordComboPath ActiveFlourish => _flourish;
+        public SwordfishSwordComboPath ActiveFlourish => _flourish;
+
+        /// <summary>The pose last written to the blade (the swipe, the chop and any flourish), in
+        /// channel space; zero at rest. <see cref="RhinoAnimation"/> leans the wings with it.</summary>
+        public SwordPoseChannels CurrentPose => _lastApplied;
+
+        /// <summary>The swipe/chop tuning, so a reader can normalise <see cref="CurrentPose"/> (the HUD's katana).</summary>
+        public SwordfishShieldSwipeConfigSO Config => config;
+
+        /// <summary>The frame <see cref="CurrentPose"/>'s sweep is expressed in: the blade's parent,
+        /// whose origin it pivots about. Null until the blade resolves.</summary>
+        public Transform PoseFrame => shieldRoot ? shieldRoot.parent : null;
 
         void OnEnable()
         {
@@ -115,7 +136,7 @@ namespace CosmicShore.Gameplay
         {
             _status = shipStatus;
             if (!config)
-                CSDebug.LogError($"[{nameof(ShieldSwipeActionExecutor)}] No {nameof(RhinoShieldSwipeConfigSO)} wired on '{name}' - the shield swipe will not run.");
+                CSDebug.LogError($"[{nameof(ShieldSwipeActionExecutor)}] No {nameof(SwordfishShieldSwipeConfigSO)} wired on '{name}' - the shield swipe will not run.");
             EnsureShieldRoot();
         }
 
@@ -170,7 +191,11 @@ namespace CosmicShore.Gameplay
             // growing out of both ends of its mount again (the staff read this fix removes).
             bool poseAtRest = _flourish == null
                               && _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
-            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor)) return;
+            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor))
+            {
+                TickBillCamera();   // the pan eases home after the blade has
+                return;
+            }
 
             // The fingers keep driving underneath a flourish, so the blend back lands exactly
             // where the triggers are at that moment rather than where they were when it began.
@@ -178,14 +203,48 @@ namespace CosmicShore.Gameplay
             _sum = Drive(_sum, sumTarget, analog);
 
             ApplyShieldPose(_flourish != null ? AdvanceFlourish(Time.deltaTime) : AnalogChannels());
+            TickBillCamera();
         }
 
+        bool IsBill => config && config.PoseMapping == SwordPoseMapping.Bill;
+
         /// <summary>The trigger reparameterization, expressed in pose channels.</summary>
-        SwordPoseChannels AnalogChannels() => new(
-            _diff * config.SwipeYawDegrees,
-            _diff * config.SwipeRollDegrees,
-            0.5f * _sum * config.ChopPitchDegrees,
-            0f);
+        SwordPoseChannels AnalogChannels() => IsBill
+            ? BillChannels(_diff, _sum, config.BillSideYawDegrees, config.BillSideRollDegrees, config.BillRaiseDegrees)
+            : new(
+                _diff * config.SwipeYawDegrees,
+                _diff * config.SwipeRollDegrees,
+                0.5f * _sum * config.ChopPitchDegrees,
+                0f);
+
+        /// <summary>
+        /// The Swordfish's bill pose (<see cref="SwordPoseMapping.Bill"/>) from the two controls: the DIFFERENCE
+        /// (right - left, -1..1) swings the bill out to that side, and the RAISE - the part of the pull both triggers
+        /// share, min(left, right) = (sum - |difference|) / 2 - stands it up. So a single trigger lays the sword out
+        /// flat to its side, both triggers stand it straight up, and nothing pulled leaves it pointing ahead off the
+        /// nose. Pitch is negative because a positive turn about the frame's right carries forward DOWN. Pure, so it
+        /// is tested directly.
+        /// </summary>
+        public static SwordPoseChannels BillChannels(float diff, float sum, float sideYawDegrees, float sideRollDegrees, float raiseDegrees)
+        {
+            diff = Mathf.Clamp(diff, -1f, 1f);
+            float raise = Mathf.Clamp01(0.5f * (sum - Mathf.Abs(diff)));
+            return new SwordPoseChannels(diff * sideYawDegrees, diff * sideRollDegrees, -raise * raiseDegrees, 0f);
+        }
+
+        void TickBillCamera()
+        {
+            if (!IsBill || !_baseCaptured || !shieldRoot)
+            {
+                _billCamera.Release();
+                return;
+            }
+            // The blade's midpoint is the transform itself (the mesh is centred on it), and at rest it sits a half
+            // blade ahead of the mount. Its offset from there, in the hull's frame at rest, is what the camera centres.
+            Vector3 rest = _baseLocalPos + _baseLocalRot * Vector3.up * AnchorOffsetLocal();
+            Vector3 offset = _frameToHull.MultiplyVector(shieldRoot.localPosition - rest);
+            _billCamera.Tick(_status, offset, config, Time.deltaTime);
+        }
 
         /// <summary>
         /// Feed this frame's trigger MIRRORS to the combo detector and start a flourish when a
@@ -205,7 +264,7 @@ namespace CosmicShore.Gameplay
 
             if (_comboDetector == null || _comboLibraryConfigured != library)
             {
-                _comboDetector ??= new RhinoSwordComboDetector(library.DetectorSettings);
+                _comboDetector ??= new SwordfishSwordComboDetector(library.DetectorSettings);
                 _comboDetector.Configure(library.DetectorSettings);
                 _comboDetector.Reset();
                 _comboLibraryConfigured = library;
@@ -227,7 +286,7 @@ namespace CosmicShore.Gameplay
             StartFlourish(library, path, combo.IsFinisher, energized && path.Energized);
         }
 
-        void StartFlourish(RhinoSwordComboLibrarySO library, RhinoSwordComboPath path, bool finisher, bool energized)
+        void StartFlourish(SwordfishSwordComboLibrarySO library, SwordfishSwordComboPath path, bool finisher, bool energized)
         {
             _flourishEntry = _lastApplied.Wrapped();
             _flourish = path;
@@ -245,6 +304,15 @@ namespace CosmicShore.Gameplay
 
             if (!_fx) shieldRoot.TryGetComponent(out _fx);
             if (_fx) _fx.NotifyCombo(finisher, energized);
+
+            // The combo's name, for the pilot who landed it: through the game's toast container (top
+            // right, under Settings) - the only place incoming text goes - from the library's authored
+            // template. An AI, a remote copy and the lava lamp's autopilot are silent.
+            if (_status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI && !_status.AutoPilotEnabled)
+            {
+                string line = TemplateText.Fill(library.ComboToastTemplate, "name", path.DisplayName);
+                if (!string.IsNullOrEmpty(line)) ToastNotificationAPI.Show(line);
+            }
         }
 
         /// <summary>
@@ -306,7 +374,7 @@ namespace CosmicShore.Gameplay
         /// machine (the supershield key) runs off the same reparameterized trigger
         /// signals that pose the blade. See RHINO_ENERGY_SWORD.md.
         /// </summary>
-        IRhinoSwordState Sword
+        ISwordfishSwordState Sword
         {
             get
             {
@@ -372,7 +440,8 @@ namespace CosmicShore.Gameplay
         {
             float now = Time.time;
             float threshold = config.SwipeEngageThreshold;
-            bool energized = Sword is { IsEnergized: true };
+            // Energized, or the Time level-5 Flurry: the frenzy, with no recovery at all.
+            bool energized = Sword is { IsEnergized: true } || config.FlurryActive(_status);
 
             // Track the swing/release edges off the RAW target, so suppressing a direction can
             // never make it look released and re-arm itself mid-hold.
@@ -398,7 +467,22 @@ namespace CosmicShore.Gameplay
             else if (swung)
             {
                 swung = false;
-                readyAt = now + config.SwipeCooldownSeconds;   // recovery starts on release
+                _lastRecoverySeconds = config.SwipeCooldownSecondsFor(_status);
+                readyAt = now + _lastRecoverySeconds;   // recovery starts on release; Time (Quickdraw) shortens it
+            }
+        }
+
+        float _lastRecoverySeconds;
+
+        /// <summary>The swing's recovery still to run, 1 the instant a swing is released and 0 once both sides can
+        /// swing again (0 while energized or under Flurry, which owe none). The Swordfish's Time card plate.</summary>
+        public float SwipeRecoveryRemaining01
+        {
+            get
+            {
+                if (_lastRecoverySeconds <= 0f) return 0f;
+                float left = Mathf.Max(_rightReadyAt, _leftReadyAt) - Time.time;
+                return left <= 0f ? 0f : Mathf.Clamp01(left / _lastRecoverySeconds);
             }
         }
 
@@ -415,7 +499,7 @@ namespace CosmicShore.Gameplay
         {
             get
             {
-                if (!autopilot && _status?.ShipTransform) autopilot = _status.ShipTransform.GetComponentInChildren<RhinoSwordAutopilot>(true);
+                if (!autopilot && _status?.ShipTransform) autopilot = _status.ShipTransform.GetComponentInChildren<SwordfishSwordAutopilot>(true);
                 return autopilot && autopilot.DrivesTriggers;
             }
         }
@@ -467,7 +551,7 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the events should drive the stance (see <see cref="TryReadTriggers"/>).</summary>
         bool EventsDriveStance => !TryReadTriggers(out _, out _, out _);
 
-        public void BeginSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
+        public void BeginSwipe(SwordfishShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
             if (!so) return;
@@ -481,7 +565,7 @@ namespace CosmicShore.Gameplay
             _activeSign = so.DirectionSign;
         }
 
-        public void EndSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
+        public void EndSwipe(SwordfishShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
             if (!so) return;
@@ -537,6 +621,10 @@ namespace CosmicShore.Gameplay
             var pose = sweep * _baseLocalRot;
             shieldRoot.localRotation = pose;
 
+            // The BILL pivots at its root on the nose: the mount stays where it is and only the blade turns about
+            // it. (The chop carries the mount round the fuselage's centre, so it carves a wide arc.)
+            Vector3 mount = IsBill ? _baseLocalPos : sweep * _baseLocalPos;
+
             // HILT ANCHOR — what makes it a sword instead of a staff. The blade mesh is
             // centred on its transform, so growing it extends the capsule equally in BOTH
             // directions from the mount: at 30 the sword ran 30 units past the grip in each
@@ -547,7 +635,7 @@ namespace CosmicShore.Gameplay
             // THRUST (combos only) slides the whole blade out along itself — a lunge — as a
             // fraction of that same anchor length, so it reads the same at every blade size.
             float anchor = AnchorOffsetLocal();
-            shieldRoot.localPosition = sweep * _baseLocalPos + pose * Vector3.up * (anchor * (1f + channels.thrust));
+            shieldRoot.localPosition = mount + pose * Vector3.up * (anchor * (1f + channels.thrust));
             _appliedAnchor = anchor;
             _lastApplied = channels;
         }
@@ -581,6 +669,10 @@ namespace CosmicShore.Gameplay
             {
                 _baseLocalPos = shieldRoot.localPosition;
                 _baseLocalRot = shieldRoot.localRotation;
+                var hull = _status?.ShipTransform;
+                _frameToHull = hull && shieldRoot.parent
+                    ? hull.worldToLocalMatrix * shieldRoot.parent.localToWorldMatrix
+                    : Matrix4x4.identity;
                 _baseCaptured = true;
             }
             return true;
@@ -600,6 +692,7 @@ namespace CosmicShore.Gameplay
             // Drop the energize gesture too, so a turn-end/despawn mid-hold can't leave
             // the sword charging forever off a stance edge that will never release.
             Sword?.SetInStance(false);
+            _billCamera.Release();
 
             if (_baseCaptured && shieldRoot)
             {

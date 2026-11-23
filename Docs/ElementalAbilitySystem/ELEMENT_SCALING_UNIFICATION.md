@@ -434,3 +434,38 @@ written in**, so no row says "compiles".
 | Everything changed, as C# | **All 13 changed files parse** under Roslyn 9.0 (per-user SDK, `-langversion:9.0`): 0 syntax errors, and every diagnostic is an unresolved type (`CS0518`/`CS0246`/`CS0234`) because there are no Unity DLLs in this container. **This is a parse, not a type check of the assembly** | a player build |
 | The standing gates | `check_elemental_floats.py` OK, **20 blocks → 11**, `--self-test` PASS; `check_using_directives`, `check_enum_member_references`, `check_switch_label_collisions`, `check_conditional_compilation`, `check_self_referential_locals --all` all OK | nothing |
 | Five dead components (5.4c) | Guid sweep per `.meta`: zero asset referrers each; only intra-cluster C# references plus one `[Tooltip]` string | **a delete/keep verdict** — not taken here |
+
+## The fleet floor rule (2026-11-16)
+
+Garrett asked for the least polished ability floors to be fixed ("fix all of these problems", project thread
+"Rank least polished ability floors"). Measured before the change: 92 of the 109 rising `ElementalFloat`s broke any one
+rule. Half the hulls floored at the resting value, so a deficit did nothing to them (Angler, Honeyguide, Stoat, Kite
+Navigator, parts of Brittle Star and Jacks). Others floored near zero (Meerkat's 0.05 and 0: zap fell to 0.025 petals at
+level -5) or never authored a floor (Scarab's Switch ring x0.25, Urchin's gun lifetime and growth, every hull's nested
+skimmer `Scale`, and Termite's and Falcon's skim reach fell to 0). Rhino's Heft and Carry rested at 0, so they did
+nothing until the pilot banked Mass or Charge.
+
+**The rule: a rising parameter (Enabled, Max > Min) has `UseFloor: 1` and `Floor = Min / 2`.** At the band's bottom
+(level -5) an ability keeps at least half of what it does at rest, never less and never nothing, and every hull feels
+a deficit the same way. Where the plain extrapolation already lands at or above half, the floor never engages.
+
+- **Falling parameters** (cooldowns, intervals, minimum speeds: Max < Min) are out of scope. Their deficit side is
+  bounded by the band (`ResourceSystem` clamps the normalized level to [-0.5, 1.5]), so at level -5 they rise at most
+  1.45x (Tiger Moth's shred interval; Goby's Quick Jump 9 -> 12 s, Shrike's Sling 6 -> 7.75 s, Rhino's Gore speed
+  150 -> 200 u/s). Their Floor stays the guard on the level-15 end. The 2026-11-16 audit called these "uncapped";
+  they are capped by the band and need no change.
+- **Rhino Heft and Carry** now rest at 20 u and 10 u (60 and 40 at level 10 as before), floored at 10 and 5. The blade's
+  width floor moved from 10 to 7 (rest 14).
+- **Code-side clamps that kept a deficit flat** on the Stoat came out where they only repeated the old floor: the
+  ripple's Charge reach (`StoatRippleMath.Radius`) and the sling's launch power (`StoatSlingMath.TimedKick`) now take the
+  floored value. `StoatSlingMath.GapScale` keeps its `>= 1` clamp: the catch geometry depends on it.
+- **Bespoke floors** (`ElementalScaling.Multiplier(..., minMul)`) follow the same rule: Dolphin blast height 0.35 -> 0.5,
+  Dolphin core thickness 0.5 -> 0.375 (rest 0.75), Dolphin charge rate 0.25 -> 0.5 (never engaged), Urchin track length
+  0.4 -> 0.5. Grizzly, Manta decoys and Serpent's wall already met it.
+- **One exception**: Jacks' `dangerShare` keeps its lab curve (0 at Charge -5, 1 at Charge 15; `JacksMath.DangerShare`,
+  held by `JacksScalingTests`). It is a share of the herd, not a strength.
+
+Per-row floor numbers quoted elsewhere in this folder (`FLEET_MAPS.md`, `FLEET_GAPS.md`, the table above) predate the
+rule. **`python3 Tools/Build/elemental_floor_rule.py --check` is authoritative** (a reader; `--self-test` has negative
+controls for a flat floor, a missing floor, a zero rest and a skimmer override without a floor).
+Not run in Unity: see `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Fleet floor rule".

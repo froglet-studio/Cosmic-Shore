@@ -46,6 +46,12 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
      bursts wider by the boost (PrismBurstFragmentBoost).
   F11. VARIETY (round 12): two deaths with the same pose and hit, only their seeds differ, differ in SHAPE at least twice as much
      as the noise alone makes them; one death's neighbour roughness grows by at most 15% (the structure stays whole).
+  S. THE SUCTION (round 15: the destruction's cut drawn into a moving sink; both cuts at depths 0-10, the shipped shape
+     and every slider at the end of its range, the noise off and on, the eater swimming up to 8 u/s): the first frame
+     is the prism; unit normals; every fragment rigid up to its shrink; every pose inside PrismBurstSuctionReach about
+     the LIVE sink (the CPU's bounds); every fragment in, at the live sink, by 95% of the life; on each face the
+     triangles let go from the face's point nearest the sink outward (S6), ONE AT A TIME, spread over the face's share
+     of the life (S7, round 15b).
   X. THE EXPLOSION MAP (the lab draws the explosion with it) equals the harness's own Rodrigues statement of
      RotateFacesAlongAxis' closed form with the graph's constants.
   NEGATIVE CONTROLS, each must FAIL the test it guards:
@@ -61,10 +67,14 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   20b. -DPRISM_BURST_FRAGMENT_VELOCITY_OFF=1 — the pose ignores the hit (F10 fires).
   20c. -DPRISM_BURST_FRAGMENT_VARIETY_OFF=1  — every death alike: two prisms struck alike play one animation (F11 fires).
   21. -DPRISM_BURST_ROLL_TOWARD_CAMERA=1   — the roll rolls toward the camera, onto faces it sees (R fires).
+  22. -DPRISM_BURST_SUCTION_UNORDERED=1    — every suction fragment at a random turn (S6 fires).
+  23b. -DPRISM_BURST_SUCTION_WHOLE_FACE=1  — a face lets go of all its triangles at once (S7 fires).
+  23. -DPRISM_BURST_SUCTION_SNAPSHOT=1     — the sink snapshotted at the stamp: the mass converges on where the
+                                             eater WAS (S5 fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
-   fragment, plain and DOTS-instanced, in the lab's every-kind program and the game's two kind-only ones
-   (_BURST_FRAGMENT, _BURST_ROLL), against a mock of the URP library (the slice verifier's). It
+   fragment, plain and DOTS-instanced, in the lab's every-kind program and the game's kind-only ones
+   (_BURST_FRAGMENT, _BURST_ROLL, _BURST_SUCTION), against a mock of the URP library (the slice verifier's). It
    proves the shader's own code is well-formed HLSL; it cannot prove the URP library behaves as the
    mock says. That half is the editor's.
 
@@ -141,6 +151,7 @@ static inline float exp2(float v){return std::exp2(v);}
 static inline float2 operator*(float a,float2 b){return float2(a*b.x,a*b.y);}
 static inline float2 operator+(float a,float2 b){return float2(a+b.x,a+b.y);}
 static inline float atan(float v){return std::atan(v);}
+static inline float pow(float a,float b){return std::pow(a,b);}
 """
 
 HARNESS = r"""#include "shipped.h"
@@ -886,6 +897,150 @@ static void run_roll_tests() {
     CHECK(share >= 0.97f, "the roll left %.2f%% of the camera-facing skin in view at the end", 100 * (1 - share));
 }
 
+// S. the SUCTION kind (round 15): the destruction's cut drawn into a MOVING sink — the first frame is the prism, every
+// fragment stays rigid up to its shrink and inside the reach the CPU sizes the bounds by about the LIVE sink, every one
+// is in, at the live sink, by 95% of the life; and (round 15b) each face lets go of its triangles ONE AT A TIME from its
+// point nearest the sink, so they string out along the path.
+static PrismBurstSuctionShape suctionShape(bool extreme) {
+    PrismBurstSuctionShape s;
+    // the shipped shape (PrismInteractionLodConfig.asset), or every slider at the end of its range
+    s.stagger = extreme ? 0.85f : 0.7f; s.accel = extreme ? 4.0f : 1.4f; s.lift = extreme ? 2.0f : 0.35f;
+    s.swirl = extreme ? 2.0f : 0.25f; s.spin = extreme ? 3.0f : 0.75f; s.shrink = extreme ? 0.05f : 0.3f;
+    s.faceLag = extreme ? 1.0f : 0.2f; s.sizeSpin = extreme ? 1.0f : 0.25f; s.spinCap = extreme ? 3.0f : 1.6f;
+    s.levelRef = extreme ? 1.0f : 4.0f; s.variety = extreme ? 1.0f : 0.5f;
+    return s;
+}
+// A face's +u axis, as HighPolyPrismMesh lays it out (the cut builders' table); +v is cross(n, u), as BurstVert takes it.
+static float3 faceUOf(float3 n) {
+    if (n.x > 0.5f) return float3(0, 1, 0);
+    if (n.x < -0.5f) return float3(0, 0, 1);
+    if (n.y > 0.5f) return float3(0, 0, 1);
+    if (n.y < -0.5f) return float3(1, 0, 0);
+    if (n.z > 0.5f) return float3(1, 0, 0);
+    return float3(0, 1, 0);
+}
+static void suctionPose(const Pose& P, const WVert& v, float age, float life, float3 sink, float3 sink0, float4 noise,
+                        const PrismBurstSuctionShape& s, float3& pos, float3& nrm) {
+    FragFrame f = fragFrame(P, v);
+    float R = length(linear(P, float3(0.5f, 0.5f, 0.5f)));
+    float3 u = faceUOf(v.n);
+    PrismBurstSuctionPose(f.rest, f.n, f.centroid, P.t, f.faceCentre, linear(P, u * 0.5f), linear(P, cross(v.n, u) * 0.5f),
+                          v.centroid, v.level, R, age, life, sink, sink0, noise, s, pos, nrm);
+}
+// The instant a fragment lets go (its centroid first leaves its own age-0 pose — compared with itself, not with the
+// stored centroid, whose float rounding out at the pose's translation would read as motion), by bisection.
+static float suctionLeaves(const Pose& P, const std::vector<WVert>& m, size_t i, float life, float3 sink0, float4 noise,
+                           const PrismBurstSuctionShape& s, float R) {
+    auto centre = [&](float age) {
+        float3 c(0, 0, 0), n;
+        for (int k = 0; k < 3; k++) { float3 q; suctionPose(P, m[i + k], age, life, sink0, sink0, noise, s, q, n); c = c + q / 3.0f; }
+        return c;
+    };
+    float3 c0 = centre(0.0f);
+    float tol = 1e-5f * R + 1e-6f * length(c0);
+    float lo = 0, hi = life;
+    for (int it = 0; it < 30; it++) {
+        float age = 0.5f * (lo + hi);
+        if (length(centre(age) - c0) > tol) hi = age; else lo = age;
+    }
+    return hi;
+}
+static void run_suction_tests() {
+    const float life = 2.0f;   // PrismImplosion.prefab implosionDuration
+    float worstReach = 0, worstRigid = 0, worstArrival = 0, narrowest = 1e9f;
+    int ordered = 0, orderPairs = 0, together = 0, gaps = 0;
+    struct Cut { bool sier; int depth; };
+    for (bool extreme : {false, true})
+    for (Cut cut : {Cut{true, 0}, Cut{true, 3}, Cut{false, 0}, Cut{false, 4}, Cut{false, 7}, Cut{false, 10}})
+    for (float amp : {0.0f, 0.15f}) {
+        const PrismBurstSuctionShape s = suctionShape(extreme);
+        std::vector<WVert> m = cut.sier ? sierpinski(cut.depth) : silver(cut.depth);
+        for (int trial = 0; trial < 4; trial++) {
+            Pose P = rndPose();
+            float R = length(linear(P, float3(0.5f, 0.5f, 0.5f)));
+            float3 sink0 = P.t + rndDir() * (R * rnd(1.2f, 12.0f));
+            // the eater swims while it feeds (a grazer drifts ~6 u over the suction, a predator farther)
+            float3 swim = rndDir() * rnd(0.0f, 8.0f);
+            float4 noise(amp, 3.0f, rnd(0, 1), amp > 0 ? 0.03f : 0.0f);   // the shipped order noise
+            for (float age : {0.0f, 0.05f, 0.3f, 0.7f, 1.1f, 1.5f, 1.8f, 0.95f * life, life}) {
+                float3 sink = sink0 + swim * age;
+                float reach = PrismBurstSuctionReach(R, length(sink - P.t), s.lift, s.variety);
+                std::vector<float3> wp(m.size()), wn(m.size());
+                for (size_t i = 0; i < m.size(); i++) {
+                    suctionPose(P, m[i], age, life, sink, sink0, noise, s, wp[i], wn[i]);
+                    FragFrame f = fragFrame(P, m[i]);
+                    // S1. the first frame is the prism
+                    if (age == 0.0f)
+                        CHECK(length(wp[i] - f.rest) <= 1e-5f * R && length(wn[i] - f.n) <= 1e-5f, "suction: age 0 moved a vertex");
+                    // S2. unit normals
+                    CHECK(std::fabs(length(wn[i]) - 1.0f) <= 1e-4f, "suction: normal length %g", length(wn[i]));
+                    // S3. within the reach about the LIVE sink the CPU sizes the bounds by
+                    float r = length(wp[i] - sink);
+                    worstReach = std::max(worstReach, r / reach);
+                    CHECK(r <= reach * (1 + 1e-4f), "suction %d: a vertex %.3f from the sink escapes the reach %.3f", cut.depth, r, reach);
+                    // S5. every fragment is IN by 95% of the life: collapsed onto the live sink
+                    if (age >= 0.95f * life) {
+                        worstArrival = std::max(worstArrival, r / R);
+                        CHECK(r <= 1e-4f * (R + length(sink - P.t)), "suction %d: a vertex still %.4f R from the sink at %.0f%% of the life",
+                              cut.depth, r / R, 100 * age / life);
+                    }
+                }
+                // S4. RIGID up to its shrink: one scale k for all three edges, never above 1
+                for (size_t i = 0; i < m.size(); i += 3) {
+                    float d0[3], d1[3]; int longest = 0;
+                    for (int a = 0; a < 3; a++) {
+                        int b = (a + 1) % 3;
+                        d0[a] = length(world(P, m[i+a].pos) - world(P, m[i+b].pos)); d1[a] = length(wp[i+a] - wp[i+b]);
+                        if (d0[a] > d0[longest]) longest = a;
+                    }
+                    float kk = d1[longest] / d0[longest], off = 0;
+                    for (int a = 0; a < 3; a++) off = std::max(off, std::fabs(d1[a] - kk * d0[a]) / reach);
+                    worstRigid = std::max(worstRigid, off);
+                    CHECK(off <= 2e-5f && (kk - 1) * d0[longest] <= 2e-5f * reach, "suction %d: a fragment deformed", cut.depth);
+                }
+            }
+            if (extreme || cut.depth < 4) continue;
+            // Each fragment's instant of letting go, and its distance from its face's point nearest the sink.
+            std::vector<float> leave(m.size() / 3), from(m.size() / 3);
+            for (size_t i = 0; i < m.size(); i += 3) {
+                leave[i / 3] = suctionLeaves(P, m, i, life, sink0, noise, s, R);
+                FragFrame f = fragFrame(P, m[i]);
+                float3 u = faceUOf(m[i].n), U = linear(P, u * 0.5f), V = linear(P, cross(m[i].n, u) * 0.5f);
+                float lu = length(U), lv = length(V); float3 uh = U / lu, vh = V / lv, t = sink0 - f.faceCentre;
+                float3 near = f.faceCentre + uh * clamp(dot(t, uh), -lu, lu) + vh * clamp(dot(t, vh), -lv, lv);
+                from[i / 3] = length(f.centroid - near) / (2 * std::sqrt(lu * lu + lv * lv));
+            }
+            // S6. on each face the triangles nearer its point nearest the sink let go first (noise off)
+            if (amp == 0)
+                for (size_t i = 0; i < leave.size(); i++)
+                    for (size_t j = i + 1; j < leave.size(); j += 3) {
+                        if (length(m[3*i].n - m[3*j].n) > 0 || std::fabs(from[i] - from[j]) < 0.05f) continue;
+                        orderPairs++;
+                        if ((from[i] < from[j]) == (leave[i] < leave[j])) ordered++;
+                    }
+            // S7. ONE AT A TIME (the shipped noise on): a face's triangles let go spread over most of its share of the
+            // life, and no two of a face at one instant — so they string out along the path instead of the face going whole
+            if (amp > 0)
+                for (int face = 0; face < 6; face++) {
+                    // the cut builders lay the six faces out one after another, the same count each
+                    size_t per = leave.size() / 6;
+                    std::vector<float> t(leave.begin() + face * per, leave.begin() + (face + 1) * per);
+                    std::sort(t.begin(), t.end());
+                    float spread = (t.back() - t.front()) / (s.stagger * (1 - s.faceLag) * life);
+                    narrowest = std::min(narrowest, spread);
+                    CHECK(spread >= 0.5f, "suction %d: a face let go of its triangles within %.0f%% of its share: the face went whole", cut.depth, 100 * spread);
+                    for (size_t k = 1; k < t.size(); k++) { gaps++; if (t[k] - t[k-1] <= 1e-6f * life) together++; }
+                }
+        }
+    }
+    printf("suction: worst reach use %.3f, worst deformation %.2g, farthest from the sink at 95%% of life %.2g R; "
+           "nearer its face's sink point left first in %d of %d pairs; narrowest face spread %.2f of its share; "
+           "%d of %d consecutive departures at one instant\n",
+           worstReach, worstRigid, worstArrival, ordered, orderPairs, narrowest, together, gaps);
+    CHECK(orderPairs > 0 && ordered >= orderPairs * 97 / 100, "a face's triangles did not let go from its sink point outward (%d of %d)", ordered, orderPairs);
+    CHECK(gaps > 0 && together <= gaps / 50, "%d of %d consecutive departures of a face at one instant: not one at a time", together, gaps);
+}
+
 // 10. voronoi; 11. unknown kind.
 static void run_misc_tests() {
     for (int k = 0; k < 20000; k++) {
@@ -918,6 +1073,7 @@ int main(int argc, char** argv) {
     bool velocityOnly = argc > 1 && std::strcmp(argv[1], "velocity") == 0;
     bool rollOnly = argc > 1 && std::strcmp(argv[1], "roll") == 0;
     bool varietyOnly = argc > 1 && std::strcmp(argv[1], "variety") == 0;
+    bool suctionOnly = argc > 1 && std::strcmp(argv[1], "suction") == 0;
     if (envelopeOnly) run_pose_tests(true);
     else if (fadeOnly) run_fade_tests();
     else if (bendOnly) run_bend_tests();
@@ -927,7 +1083,8 @@ int main(int argc, char** argv) {
     else if (velocityOnly) run_velocity_tests();
     else if (rollOnly) run_roll_tests();
     else if (varietyOnly) run_variety_tests();
-    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_fragment_tests(); run_velocity_tests(); run_variety_tests(); run_explosion_tests(); run_roll_tests(); run_misc_tests(); }
+    else if (suctionOnly) run_suction_tests();
+    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_fragment_tests(); run_velocity_tests(); run_variety_tests(); run_explosion_tests(); run_roll_tests(); run_suction_tests(); run_misc_tests(); }
     printf("collision burst: %d failure(s)\n", failures);
     return failures ? 1 : 0;
 }
@@ -993,7 +1150,7 @@ def translate(src, required=True):
                  "float PrismBurstFragmentReach(", "void PrismBurstExplosionMap(", "float PrismBurstFragmentEnd(",
                  "float PrismBurstFragmentBoost(", "PrismBurstFragmentCharacter PrismBurstFragmentVariety(",
                  "float PrismBurstFragmentVarietyReach(", "float3 PrismBurstSeedWave(",
-                 "float3 PrismBurstWedgePivot("):
+                 "float3 PrismBurstWedgePivot(", "void PrismBurstSuctionPose(", "float PrismBurstSuctionReach("):
         assert not required or name in out, f"{name} missing from the shipped HLSL"
     return out
 
@@ -1043,7 +1200,10 @@ def main():
                                  ("-DPRISM_BURST_FRAGMENT_FACE_ONLY=1", "fragment", "grouped-burst control"),
                                  ("-DPRISM_BURST_FRAGMENT_VELOCITY_OFF=1", "velocity", "velocity-ignored control"),
                                  ("-DPRISM_BURST_FRAGMENT_VARIETY_OFF=1", "variety", "every-death-alike control"),
-                                 ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control")):
+                                 ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control"),
+                                 ("-DPRISM_BURST_SUCTION_UNORDERED=1", "suction", "unordered-suction control"),
+                                 ("-DPRISM_BURST_SUCTION_SNAPSHOT=1", "suction", "snapshot-sink control"),
+                                 ("-DPRISM_BURST_SUCTION_WHOLE_FACE=1", "suction", "whole-face control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0
             print(f"negative control [{label}]: {'FIRED' if fired else 'DID NOT FIRE'} ({out.splitlines()[-1]})")
@@ -1057,10 +1217,11 @@ def main():
                     os.path.join(work, "PrismOcclusionCorridor.hlsl"))
         include, passes = slice_verifier.extract_passes(shader)
         for vert, frag, prog in passes:
-            # round 11: the game's two kind-only programs (destruction, steal), plain and DOTS-instanced, beside the
-            # lab's every-kind one
+            # round 11: the game's kind-only programs (destruction, steal; round 15 the suction), plain and
+            # DOTS-instanced, beside the lab's every-kind one
             for defines in ([], ["DOTS_INSTANCING_ON"], ["_GBUFFER_NORMALS_OCT"], ["_BURST_FRAGMENT"], ["_BURST_ROLL"],
-                            ["DOTS_INSTANCING_ON", "_BURST_FRAGMENT"], ["DOTS_INSTANCING_ON", "_BURST_ROLL"]):
+                            ["_BURST_SUCTION"], ["DOTS_INSTANCING_ON", "_BURST_FRAGMENT"],
+                            ["DOTS_INSTANCING_ON", "_BURST_ROLL"], ["DOTS_INSTANCING_ON", "_BURST_SUCTION"]):
                 for stage, entry in (("vert", vert), ("frag", frag)):
                     rc, out = slice_verifier.glslang_compile(work, include, prog, stage, entry, defines)
                     label = f"{entry} [{stage}{' ' + ','.join(defines) if defines else ''}]"

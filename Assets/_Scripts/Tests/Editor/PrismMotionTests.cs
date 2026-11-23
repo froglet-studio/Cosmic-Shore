@@ -187,5 +187,28 @@ namespace CosmicShore.Tests
             Assert.AreEqual(ab, ba);
             Assert.AreEqual(tab, tba, Eps);
         }
+
+        // ------------------------------------------------------------------ a black hole eats what collides in its pull
+
+        [Test]
+        public void BlackHoleContacts_AreDrawnAsTheHoleEatingThem_NotAsAnExplosion()
+        {
+            // Yash, 2026-11-22: "the visuals of black hole sucking prisms need to be same as the fauna devouring the
+            // prisms". A creature's meal is Prism.Consume (the suction into its mouth); so is a horizon capture. A
+            // collision inside the pull used to explode (DamageByCollision); it is consumed into the hole too.
+            string motion = System.IO.File.ReadAllText("Assets/_Scripts/Controller/Prisms/PrismMotion.cs");
+            int at = motion.IndexOf("public static void AnnihilateInto(", System.StringComparison.Ordinal);
+            Assert.GreaterOrEqual(at, 0, "PrismMotion.AnnihilateInto is gone");
+            string body = motion.Substring(at, motion.IndexOf("\n        }", at, System.StringComparison.Ordinal) - at);
+            StringAssert.Contains("struck.Consume(sink, domain, playerName, devastate: true)", body);
+            StringAssert.Contains("mover.Consume(sink, domain, playerName, devastate: true)", body);
+            StringAssert.DoesNotContain("DamageByCollision", body, "consumed, never exploded");
+
+            string field = System.IO.File.ReadAllText("Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGravityField.cs");
+            StringAssert.Contains("PrismMotion.AnnihilateInto(mover, struck, hole.transform, domain, name)", field,
+                "a contact in a hole's pull is consumed into that hole");
+            StringAssert.Contains("p.Consume(sink, Domains.Blue, ConsumerName, devastate: true)", field,
+                "a horizon capture is the same Consume");
+        }
     }
 }

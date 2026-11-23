@@ -26,7 +26,7 @@ namespace CosmicShore.UI
             public CanvasGroup group;
             [Tooltip("The member's avatar.")]
             public Image avatar;
-            [Tooltip("The octagon behind the avatar, painted the member's domain colour (Space while it is not known).")]
+            [Tooltip("Legacy: the octagon behind the avatar, retired for the avatar's own round border (Rev 127 D). Hidden.")]
             public Image ring;
         }
 
@@ -48,7 +48,7 @@ namespace CosmicShore.UI
 
         [Header("You")]
         [SerializeField] private Image centreAvatar;
-        [Tooltip("The octagon behind your avatar, painted your domain colour (Space while it is not known).")]
+        [Tooltip("Legacy: the octagon behind your avatar, retired for the avatar's own round border (Rev 127 D). Hidden.")]
         [SerializeField] private Image centreRing;
 
         [Header("Party")]
@@ -103,7 +103,9 @@ namespace CosmicShore.UI
 
         private void Refresh()
         {
-            Color space = UITheme.Resolve(theme, UIColorToken.ElementSpace);
+            // A domain not known yet is the neutral blue: an element's colour would claim a meaning (elements carry no
+            // colour in the UI, Docs/UI_COLOR_RULES.md).
+            Color unknown = UITheme.Resolve(theme, UIColorToken.NeutralLightest);
             int online = party ? party.RemoteOnlineCount : 0;
             if (_material) _material.SetFloat(OnlineId, Mathf.Min(online, maxDots));
             if (countText && online != _shownCount)
@@ -121,23 +123,37 @@ namespace CosmicShore.UI
                 if (isLocal)
                 {
                     if (centreAvatar) centreAvatar.sprite = avatar;
-                    if (centreRing) centreRing.color = domain ?? space;
+                    if (centreRing) centreRing.enabled = false;
+                    // Rev 127 D (Docs/MENU_REDESIGN_B.md section 217): you, round and glowing; in your domain once
+                    // a match gives you one, the menu's own colour before.
+                    var you = AvatarRippleBorder.EnsureFor(centreAvatar);
+                    if (you != null)
+                    {
+                        if (domain is { } yours) you.Show(yours);
+                        else you.ShowSelf();
+                    }
                     continue;
                 }
                 if (members == null || seat >= members.Length) continue;
-                ShowMember(seat++, avatar, domain ?? space);
+                ShowMember(seat++, avatar, domain ?? unknown, domain.HasValue);
             }
 
             for (int i = seat; members != null && i < members.Length; i++)
                 HideMember(i);
         }
 
-        private void ShowMember(int index, Sprite avatar, Color colour)
+        private void ShowMember(int index, Sprite avatar, Color colour, bool known)
         {
             var m = members[index];
             KitVisibility.SetShown(m.group, true);
             if (m.avatar) m.avatar.sprite = avatar;
-            if (m.ring) m.ring.color = colour;
+            if (m.ring) m.ring.enabled = false;
+            var border = AvatarRippleBorder.EnsureFor(m.avatar);
+            if (border != null)
+            {
+                if (known) border.Show(colour);
+                else border.ShowUnknown();
+            }
             if (_material && index < BondIds.Length) _material.SetColor(BondIds[index], colour);
         }
 

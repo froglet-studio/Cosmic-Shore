@@ -69,11 +69,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.1f, 1f)] float intensityFourMouthFraction = 0.5f;
 
         [Header("Crystal")]
-        [Tooltip("World scale at which the omni crystal in the middle of the ring is the size of a " +
-                 "LEVEL-1 elemental crystal: one element level is a crystal at world scale 1 " +
-                 "(ElementalCrystalEjector.PetalCrystalWorldScale), and the omni model is 0.72 per " +
-                 "unit of scale against the Charge model's 1.02 (the reference the other elements " +
-                 "are corrected to), so 1.02 / 0.72 = 1.42. A measured reference, not a tuning knob - " +
+        [Tooltip("World scale at which the omni crystal in the middle of the ring is the size of an " +
+                 "elemental crystal at ROOT SCALE 1 (the size a one-petal crystal was until every " +
+                 "elemental crystal became ElementalCrystalSetSO.CrystalWorldScale, 2026-10-26; the " +
+                 "ring's omni kept its size). The omni model is 0.72 per unit of scale against the " +
+                 "Charge model's 1.02 (the reference the other elements are corrected to), so " +
+                 "1.02 / 0.72 = 1.42. A measured reference, not a tuning knob - " +
                  "SkimRaceRingCrystalTests measures both meshes. Tune Crystal Size Multiplier instead.")]
         [SerializeField, Min(0.01f)] float levelOneCrystalScale = 1.42f;
 
@@ -102,7 +103,7 @@ namespace CosmicShore.Gameplay
         /// intensity once the ring stands.</summary>
         public float MouthRadius => _ring ? _ring.Radius : intensityOneMouthRadius;
 
-        /// <summary>World scale at which the omni crystal is a level-1 elemental crystal's size.</summary>
+        /// <summary>World scale at which the omni crystal is an elemental crystal's size at root scale 1.</summary>
         public float LevelOneCrystalScale => levelOneCrystalScale;
 
         /// <summary>The omni crystal's size relative to a level-1 elemental crystal.</summary>

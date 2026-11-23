@@ -97,8 +97,13 @@ namespace CosmicShore.UI
                 // here. offsetMax is relative to the block's top anchor.
                 row.GetWorldCorners(RowCorners);
                 float rowBottom = parent.InverseTransformPoint(RowCorners[0]).y;
+                float rowTop = parent.InverseTransformPoint(RowCorners[1]).y;
                 float anchorTop = parent.rect.yMin + block.anchorMax.y * parent.rect.height;
-                top = Mathf.Min(_controlsAuthoredTop, rowBottom - controlsGapUnderDifficultyRow - anchorTop);
+                // Only a row ABOVE the block pushes it. The style-B arcade window puts the controls at the top
+                // of the right column and the row under them (section 74): the row starts below the block's top
+                // there, and moving the block down to clear it would drop it onto the pilots.
+                if (rowTop > anchorTop + _controlsAuthoredTop)
+                    top = Mathf.Min(_controlsAuthoredTop, rowBottom - controlsGapUnderDifficultyRow - anchorTop);
             }
 
             block.offsetMax = new Vector2(block.offsetMax.x, top);

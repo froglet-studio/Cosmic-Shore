@@ -1,9 +1,15 @@
 # Dustup (`GameModes.Dustup = 59`)
 
+> **Flown by the Tiger Moth since 2026-10-29**, when it replaced the Butterfly (`R_VesselActions/TIGER_MOTH.md`): the
+> same airframe, dust and modes. "Butterfly" below
+> means that airframe.
+
 The Butterfly's **CHARGE** game — a dust duel. The Butterfly carries no gun; its one weapon is the
 **Scale Dust**, a capsule that hangs **below** the hull while it is in Dust mode. So a rival is hit
-by flying **over** them. Every opposing pilot the dust passes through takes the Charge-scaled
-all-element bite and pays one **dusting**; the first **DOMAIN** to the point target wins.
+by flying **over** them. While an opposing pilot stays in the dust it **shreds** them: one petal of
+one random element they hold, once a second at Charge 0 and ten a second at Charge 10 (since
+2026-10-31, `TIGER_MOTH.md` §1.3). Every 3.2 petals shredded pays one **dusting** (a Strike's fleet
+price, so the score stays proportional to the petals); the first **DOMAIN** to the point target wins.
 
 It is one of the Butterfly's four element games, one per element and one per genre petal
 (`ModeGenre`): **Waystation** is Time (a race), **Tapestry** Mass (making mass),
@@ -30,11 +36,15 @@ It is one of the Butterfly's four element games, one per element and one per gen
 2. **Get above a rival.** Both of you turn at 45°/s. The duel is won by whoever finds the other
    first and gets on top — the Boneyard's wrecks are somewhere to lose a pursuer and somewhere to
    wait above a canyon.
-3. **Pass through them.** One pass is one dusting. The dust drains their elements (−0.33 per element
-   at rest, scaled by your **Charge** from 0.5× to 2×, doubled again at Charge 5 *Monarch*), so a
-   dusted rival also flies worse for four seconds.
-4. **Break off and come round again.** A skimmer runs its vessel effects on **entry**, so hovering
-   over a rival scores the pass that caught them and nothing after it.
+3. **Stay on them.** The dust shreds one petal a second at Charge 0, ten a second at Charge 10, and
+   each shred is stolen: the petal is yours. Each shred silences the rival for one petal's worth, and
+   every 3.2 petals is one dusting. An ALLY in the dust is cleansed instead (silence and temporary
+   debuffs lifted). Charge 5 is *Toll Gate*, the wormhole's toll, not a deeper shred.
+4. **Hovering now pays.** Until 2026-10-31 the dust took once per pass (a skimmer runs its vessel
+   effects on entry), so the duel was "break off and come round again". The dust's reporter now
+   re-runs every frame a rival stays inside (`repeatWhileInside`, driven by `ButterflyDustField`), so
+   time in the dust is what scores. A rival with no petals left is shredded for nothing and scores
+   nothing.
 
 The other two elements matter too: **Space** lengthens the capsule (60 → 150), which is reach, and
 **Time**'s Fold is the best way to get above someone who has not seen you yet. **Mass** mode still
@@ -71,7 +81,7 @@ despawn, on the whistle and on replay.
 
 | | value | why |
 |---|---|---|
-| target | 10 | ten clean passes — slow hulls, a far camera, and each pass needs a break-off and a turn |
+| target | 10 | set for ten clean passes; with the shred it is 32 s of dust contact at Charge 0, 3.2 s at Charge 10 — **re-tune after a playtest** |
 | points per dusting | 1 | the only scoring event, so it needs no weighting |
 | min players / domains | 2 / 2 | a **rule**: the dust spares teammates, so a solo lobby has nobody to score on |
 | spawn ring | 40 outside, floor 700, Symmetric | Dog Fight's own — the Boneyard has no nucleus |
@@ -87,8 +97,9 @@ API-surface read and no type check.
 
 ## Known limitations
 
-- **The target is reasoned, not measured.** How long a pass takes between two 45°/s hulls in the
-  Boneyard is a play-test number.
+- **The target is reasoned, not measured, and the shred changed what it measures.** It was ten
+  passes; it is now 32 petals' worth of dust contact (32 s at Charge 0, 3.2 s at Charge 10), and a
+  rival stripped to zero petals stops paying. A play-test number.
 - **The AI's hover is a guess at geometry it does not control.** `AIPilot` owns the vessel's roll,
   so "above along its own up" is only right while the AI flies roughly level. If bots overfly
   rivals without dusting them, `aiDustHover` is the dial.

@@ -799,6 +799,7 @@ namespace CosmicShore.ECS
                 // component lookup the transform flush takes.
                 FlushVisibility();
                 FlushTransforms();
+                FlushGrowStampClears();
             }
         }
 
@@ -1203,6 +1204,47 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>
+        /// Re-reads bright, dark and spread from <paramref name="materials"/> into every live prism entity that draws
+        /// with one of them. A colour set applied from the Profile (Docs/MENU_REDESIGN_B.md §124) repaints the domain
+        /// materials in place, but an entity copied its colours out of its material when it was created
+        /// (<see cref="Create"/>), so without this the world keeps the old set until every prism respawns. One pass
+        /// over the prism entities, on the main thread, run behind the loading veil; entities on other materials are
+        /// untouched. A prism whose owner shades it (<see cref="ApplyColorShade"/>) takes the raw new colours until its
+        /// next material sync re-applies the shade. Returns how many entities were re-stamped.
+        /// </summary>
+        public static int RestampColors(IReadOnlyList<Material> materials)
+        {
+            if (materials == null || materials.Count == 0 || _world == null || !_world.IsCreated) return 0;
+            var colours = new Dictionary<BatchMaterialID, (float4 bright, float4 dark, float3 spread)>();
+            foreach (var m in materials)
+                if (m && _materialIds.TryGetValue(m, out var id))
+                    colours[id] = (ReadColor(m, BrightColorId), ReadColor(m, DarkColorId), ReadVector3(m, SpreadId));
+            if (colours.Count == 0) return 0;
+
+            var em = _world.EntityManager;
+            using var query = em.CreateEntityQuery(new EntityQueryDesc
+            {
+                All = new[]
+                {
+                    ComponentType.ReadOnly<MaterialMeshInfo>(), ComponentType.ReadWrite<PrismBrightColorOverride>(),
+                    ComponentType.ReadWrite<PrismDarkColorOverride>(), ComponentType.ReadWrite<PrismSpreadOverride>(),
+                },
+                Options = EntityQueryOptions.IncludeDisabledEntities,
+            });
+            using var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+            int restamped = 0;
+            foreach (var entity in entities)
+            {
+                if (!colours.TryGetValue(em.GetComponentData<MaterialMeshInfo>(entity).MaterialID, out var c)) continue;
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = c.bright });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = c.dark });
+                em.SetComponentData(entity, new PrismSpreadOverride { Value = c.spread });
+                restamped++;
+            }
+            return restamped;
+        }
+
+        /// <summary>
         /// Re-writes the entity's bright/dark overrides as a SHADE of <paramref name="material"/>'s authored colours:
         /// scaled by <paramref name="gain"/> (0-1, darker), then lifted toward white by <paramref name="lift"/> (0-1,
         /// the LIT state). The hue stays the material's, so neither reads as another team. Inputs are authored-space;
@@ -1314,6 +1356,7 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = startTime });
             em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = rate });
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = startFrac });
+            EnqueueGrowStampClear(in handle, startTime, rate, in startFrac);
             return true;
         }
 
@@ -1327,6 +1370,88 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = new float3(1f) });
+        }
+
+        // ------------------------------------------------------------------
+        // The settled-bloom clear (Docs/PRISM_ANIMATION.md C23). Every grow stamp pushes ONE entry
+        // onto one shared due-queue (PrismGrowStampClearQueue: a min-heap, no per-entry allocation),
+        // drained by the LateUpdate flush host at most GrowClearBudgetPerFrame pops a frame. Entries
+        // are never cancelled: each pop re-reads the entity's current stamp, so a retarget, a restore
+        // or a pool reuse makes an older entry a no-op, and a same-instant re-stamp with a later end
+        // pushes itself again. A clear late by frames is invisible (the factor is already exactly 1).
+        // ------------------------------------------------------------------
+
+        static readonly PrismGrowStampClearQueue s_growClears = new();
+        static readonly PrismGrowStampClearQueue.Entry[] s_dueGrowClears =
+            new PrismGrowStampClearQueue.Entry[GrowClearBudgetPerFrame];
+        static readonly Unity.Profiling.ProfilerMarker s_growClearMarker = new("PrismRender.GrowStampClear");
+        static bool s_warnedGrowClearFull;
+
+        /// <summary>Most settled-bloom clears applied in one frame (~0.3 us each: one Exists, three reads,
+        /// three writes on the EntityManager). The rest stay due for the next frame.</summary>
+        internal const int GrowClearBudgetPerFrame = 1024;
+
+        /// <summary>Clears waiting in the queue (diagnostics/tests).</summary>
+        public static int PendingGrowStampClearCount => s_growClears.Count;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetGrowClears()
+        {
+            s_growClears.Clear();
+            s_warnedGrowClearFull = false;
+        }
+
+        static void EnqueueGrowStampClear(in PrismRenderHandle handle, float startTime, float rate, in float3 startFrac)
+        {
+            // No host can exist in edit mode or teardown: nothing would drain the queue, so the stamp
+            // simply stays (the pre-C23 cost, never a wrong picture).
+            if (s_quitting || !Application.isPlaying || rate <= 0f) return;
+            EnsureFlushHost();
+            if (s_flushHost == null) return;
+            float fire = startTime + PrismGrowStampClearQueue.ExactDelay(rate, in startFrac);
+            if (!s_growClears.TryPush(fire, startTime, in handle) && !s_warnedGrowClearFull)
+            {
+                s_warnedGrowClearFull = true;
+                CSDebug.LogWarning($"[PrismRenderService] Grow-stamp clear queue is full ({PrismGrowStampClearQueue.MaxCapacity}); " +
+                                   "further blooms keep their stamp (correct picture, full vertex cost) until it drains.");
+            }
+        }
+
+        /// <summary>Applies up to <see cref="GrowClearBudgetPerFrame"/> due clears. O(1) when none is due.</summary>
+        internal static void FlushGrowStampClears()
+        {
+            if (s_growClears.Count == 0) return;
+            if (_world == null || !_world.IsCreated)
+            {
+                s_growClears.Clear(); // every handle in it belongs to a dead world
+                return;
+            }
+            float now = PrismClock.Now;
+            int n = s_growClears.PopDue(now, s_dueGrowClears, GrowClearBudgetPerFrame);
+            if (n == 0) return;
+            using (s_growClearMarker.Auto())
+            {
+                var em = _world.EntityManager;
+                for (int i = 0; i < n; i++)
+                {
+                    ref readonly var e = ref s_dueGrowClears[i];
+                    if (!IsUsable(in e.Handle) || !em.HasComponent<PrismGrowStartTimeOverride>(e.Handle.Entity)) continue;
+                    var entity = e.Handle.Entity;
+                    float start = em.GetComponentData<PrismGrowStartTimeOverride>(entity).Value;
+                    if (start != e.StampTime) continue; // cheap reject before the other two reads
+                    float rate = em.GetComponentData<PrismGrowRateOverride>(entity).Value;
+                    float3 s0 = em.GetComponentData<PrismGrowStartFracOverride>(entity).Value;
+                    switch (PrismGrowStampClearQueue.Decide(e.StampTime, start, rate, in s0, now, out float refire))
+                    {
+                        case PrismGrowStampClearQueue.Verdict.Clear:
+                            ClearGrowStamp(in e.Handle);
+                            break;
+                        case PrismGrowStampClearQueue.Verdict.Refire:
+                            s_growClears.TryPush(refire, start, in e.Handle);
+                            break;
+                    }
+                }
+            }
         }
 
         /// <summary>Settles just the color-transition stamp (visual snaps to the bound
@@ -2097,6 +2222,29 @@ namespace CosmicShore.ECS
                 var r = refreshes[i];
                 if (r.Entity == Entity.Null || !em.Exists(r.Entity)) continue;
                 em.SetComponentData(r.Entity, new PrismImplosionLocationOverride { Value = r.Location });
+                if (r.GrowBounds)
+                    em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
+            }
+        }
+
+        /// <summary>
+        /// <see cref="RefreshImplosionDebrisBatch"/> for the burst carrier's SUCTION (PrismCollisionBurst, the slice
+        /// entities drawing the destruction's cut into a moving sink): the live sink rides the slice's
+        /// <see cref="PrismSliceCentreOverride"/>, which no other burst kind reads. The same §1 exception, the same
+        /// shape — one float4 per live suction per frame, a bounds write only when the sink wandered out of them.
+        /// </summary>
+        public static void RefreshSliceDebrisSinkBatch(
+            System.Collections.Generic.List<ImplosionDebrisRefresh> refreshes, int epoch)
+        {
+            if (refreshes == null || refreshes.Count == 0) return;
+            if (epoch != _epoch || _world == null || !_world.IsCreated) return;
+
+            var em = _world.EntityManager;
+            for (int i = 0; i < refreshes.Count; i++)
+            {
+                var r = refreshes[i];
+                if (r.Entity == Entity.Null || !em.Exists(r.Entity)) continue;
+                em.SetComponentData(r.Entity, new PrismSliceCentreOverride { Value = new float4(r.Location, 1f) });
                 if (r.GrowBounds)
                     em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
             }

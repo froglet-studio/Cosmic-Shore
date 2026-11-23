@@ -1,0 +1,27 @@
+{
+  "id": "2026-11-16-spearline-upgraded-in-place-by-yash-s-ro-136515",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-16T18:54:42+00:00",
+  "area": "Spearline (the Swordfish's Time card) and the Swordfish's AI sword hand",
+  "summary": "Spearline upgraded in place by Yash's round-5 fun pass: a sealed ring now counts through a connected hole of 8 prisms (the shipped 22 u share rule could not be met in one pass at I2-I4 with the bill's real width, and grid alignment decided it), armoured seals from I2 (a shielded sector to read), the worn seal (no soft lock), mouths 96/84/74/66, the gentlest 2/3/3/4 rings sealed, 5 laps (40 rings), toasts 400-402, 3 empty FMOD slots; and SwordfishSwordAutopilot gained an ISwordfishSwordCoach seam (a mode may hold the AI's triggers; null by default) so Spearline's AI strokes through seals instead of standing the bill up to energize.",
+  "why": "The race could not be won in one pass and the AI could not open a seal (Rivals 1); measured offline: reading saves 0/36/37/57%, a human reader ~85-109 s, every AI finishes. Kit proposals (Quickdraw never binds in a race; the crowd-energize rule) are in SPEARLINE.md section 6 - not changed.",
+  "branch": "claude/swordfish-time-upgrade-9e60cf",
+  "lane": "spearline",
+  "commit": "743541bd7",
+  "paths": [
+    "Assets/_Scripts/Controller/AI/Rhino/SwordfishSwordAutopilot.cs",
+    "Assets/_Scripts/Controller/Arcade/SPEARLINE.md",
+    "Assets/_Scripts/Controller/Arcade/Spearline",
+    "Tools/Build/author_spearline_assets.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

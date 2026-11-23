@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Reflex.Injectors;
 using UnityEngine;
@@ -533,7 +533,17 @@ namespace CosmicShore.Gameplay
             float cruise = Mathf.Max(1f, transformer.CruiseSpeed);
             float added = Mathf.Min(speed, config.SelfLaunchCeiling);
             transformer.ModifyThrottle(1f + added / cruise, config.SelfLaunchSeconds);
+            LastLaunchTime = Time.time;
+            LastLaunchPush = hull.forward * added;
         }
+
+        /// <summary>When this hull's last bomb launch landed (<see cref="Time.time"/>), on the simulating machine.
+        /// The launch rides the throttle, so it never shows in <c>VesselTransformer.VelocityShift</c>; a mode that
+        /// reads a launch's direction (Grizzly Time's bank shot) reads <see cref="LastLaunchPush"/> instead.</summary>
+        public float LastLaunchTime { get; private set; } = float.NegativeInfinity;
+
+        /// <summary>The last bomb launch as a push: the hull's heading at the blast times the speed it added, u/s.</summary>
+        public Vector3 LastLaunchPush { get; private set; }
 
         /// <summary>This trigger's bomb colour: the palette's DANGER signal colour
         /// (<c>GetDangerSignalColor</c>), turned a little one way for LT and the other for RT

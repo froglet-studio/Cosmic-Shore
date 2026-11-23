@@ -30,13 +30,17 @@ namespace CosmicShore.Engine.UI
     /// <summary>
     /// Rect-based clipper (original contract): clips child MaskableGraphics to this
     /// node's rect without stencil cost — the standard scroll-viewport clipper (the
-    /// toast container authors one). Headless data surface until Arc C clips for real.
+    /// toast container authors one). Headless data surface until Arc C clips for real. A
+    /// UIBehaviour, as Unity's is, so a subclass overrides its lifecycle messages.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class RectMask2D : MonoBehaviour, ICanvasRaycastFilter
+    public class RectMask2D : UIBehaviour, ICanvasRaycastFilter
     {
         [SerializeField] Vector4 m_Padding;
         [SerializeField] Vector2Int m_Softness;
+
+        /// <summary>The mask's RectTransform (original contract).</summary>
+        public RectTransform rectTransform => transform as RectTransform;
 
         /// <summary>Clip-rect inset in pixels: (left, bottom, right, top).</summary>
         public Vector4 padding { get => m_Padding; set => m_Padding = value; }
@@ -47,6 +51,13 @@ namespace CosmicShore.Engine.UI
             get => m_Softness;
             set => m_Softness = new Vector2Int(Mathf.Max(0, value.x), Mathf.Max(0, value.y));
         }
+
+        /// <summary>
+        /// The per-frame clip pass (original contract: ClipperRegistry calls it on every enabled mask before
+        /// the canvases draw; subclasses such as the kit's KitRectMask2D override it). Nothing to do until
+        /// Arc C clips for real.
+        /// </summary>
+        public virtual void PerformClipping() { }
 
         /// <summary>A hit outside the padded clip rect is clipped away (original contract).</summary>
         public virtual bool IsRaycastLocationValid(Vector2 sp, Camera eventCamera)

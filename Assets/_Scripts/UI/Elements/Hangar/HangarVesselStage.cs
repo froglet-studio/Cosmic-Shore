@@ -29,13 +29,25 @@ namespace CosmicShore.UI
     /// private stage parked far outside every gameplay camera (the <see cref="ToyPreviewCamera"/>
     /// pattern, on its own axis), with the game camera's post-processing adopted so emissive hull
     /// materials tonemap the way they do in play.</para>
+    ///
+    /// <para><b>The player holds the model</b> (Docs/MENU_REDESIGN_B.md section 83; Shombith, 2026-10-26: "give the user
+    /// all axis we can rotate zoom in zoom out and everything"): a drag turns it on any axis (about the view's up and
+    /// right), Shift-drag, a two-finger twist or Y with the right stick rolls it, the wheel, a pinch or Y with the right
+    /// stick zooms, a right / middle drag or two fingers move it, and a double-click, double-tap or a right-stick press
+    /// puts it back. While it is held the idle turn stays off; it resumes on a reset or another vessel.</para>
     /// </summary>
     [RequireComponent(typeof(RawImage))]
-    public class HangarVesselStage : MonoBehaviour, IDragHandler
+    public class HangarVesselStage : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IScrollHandler,
+        IPointerClickHandler
     {
         [Header("Data")]
         [Tooltip("Class -> prefab table the model is harvested from (Assets/_SO_Assets/Vessel Prefab Container.asset).")]
         [SerializeField] private VesselPrefabContainer prefabs;
+        [Tooltip("What the hull's DOMAIN-role slots wear on the stage: the class livery, silver plates that say \"your team's " +
+                 "colour goes here\" (Docs/VesselModels/COLOR.md; Garrett flagged gold here, 2026-10-27). Everything else wears " +
+                 "the ship's own materials (Shombith 2026-10-27: \"it should look like normal vessel but just the domain parts " +
+                 "should look silver\"). Empty: the prefab's authored placeholder.")]
+        [SerializeField] private Material liveryMaterial;
 
         [Header("Framing")]
         [SerializeField, Min(0.5f)] private float modelRadius = 4f;
@@ -46,12 +58,32 @@ namespace CosmicShore.UI
         [Header("Turntable")]
         [Tooltip("Degrees per second the model turns on its own while untouched.")]
         [SerializeField] private float idleDegreesPerSecond = 14f;
-        [Tooltip("Degrees per pixel of drag.")]
+        [Tooltip("Degrees per pixel of drag (at 1080 lines; scaled to the screen).")]
         [SerializeField] private float dragDegreesPerPixel = 0.35f;
         [Tooltip("Degrees per second at full right-stick deflection.")]
         [SerializeField] private float stickDegreesPerSecond = 160f;
-        [Tooltip("Seconds of no input before the idle turn resumes.")]
+        [Tooltip("Seconds after an ability's perform before the idle turn resumes (a player's own turn, zoom or move " +
+                 "keeps it off until the view is reset).")]
         [SerializeField, Min(0f)] private float idleResumeSeconds = 2.5f;
+
+        [Header("Free view")]
+        [Tooltip("How far out (x) and in (y) the view zooms, as multiples of the framed distance.")]
+        [SerializeField] private Vector2 zoomRange = new(0.6f, 2.2f);
+        [Tooltip("Zoom factor of one wheel notch.")]
+        [SerializeField, Min(1.01f)] private float wheelZoomStep = 1.12f;
+        [Tooltip("Zoom factor per second at full right-stick deflection with Y held.")]
+        [SerializeField, Min(1.01f)] private float padZoomPerSecond = 2.5f;
+        [Tooltip("How far the view may move off the hull, in hull radii.")]
+        [SerializeField, Min(0f)] private float panLimit = 1.5f;
+        [Tooltip("Seconds the view takes to settle back on a reset.")]
+        [SerializeField, Min(0.01f)] private float resetSeconds = 0.35f;
+
+        [Header("Hint (empty: nothing)")]
+        [Tooltip("The line under the stage that says how to hold the model; it follows the device in hand.")]
+        [SerializeField] private TMPro.TMP_Text hintText;
+        [SerializeField] private string pointerHint = "Drag to turn, Shift-drag to roll, wheel to zoom, right-drag to move, double-click to reset";
+        [SerializeField] private string padHint = "Right stick to turn, hold Y with it to zoom and roll, press it to reset";
+        [SerializeField] private string touchHint = "Drag to turn, pinch to zoom, twist to roll, two fingers to move, double-tap to reset";
 
         [Header("Perform (an ability pressed on the Abilities tab)")]
         [Tooltip("Seconds a perform lasts: a lunge, a roll and a burst of the element's colour.")]
@@ -84,7 +116,17 @@ namespace CosmicShore.UI
         GameObject _model;
         Light _burst;
         readonly List<VesselAnimation.ElementShapeTarget> _shapes = new();
-        float _yaw = 200f;
+        static readonly Quaternion HomeOrientation = Quaternion.Euler(0f, 200f, 0f);
+        Quaternion _orient = HomeOrientation;
+        float _zoom = 1f;
+        Vector2 _pan;
+        bool _held;                       // the player has turned, zoomed or moved the model since the last reset
+        float _resetT = -1f;
+        Quaternion _resetFromOrient;
+        float _resetFromZoom;
+        Vector2 _resetFromPan;
+        readonly Dictionary<int, Vector2> _touches = new();
+        int _hintMode = -1;
         float _lastInput = -100f;
         float _nextRender;
         float _performT = -1f;
@@ -133,13 +175,14 @@ namespace CosmicShore.UI
                 return;
             }
             EnsureRig();
-            if (!VesselModelBuilder.TryBuildLive(prefab, modelRadius, null, out _model))
+            if (!VesselModelBuilder.TryBuildLive(prefab, modelRadius, liveryMaterial, out _model))
             {
                 if (_surface) _surface.enabled = false;
                 return;
             }
             _model.transform.SetParent(_pivot, false);
             _model.transform.localPosition = Vector3.zero;
+            ResetView(instant: true);
             _modelBaseScale = _model.transform.localScale;
             SetLayerRecursive(_model, _stage.gameObject.layer);
             ReskinMorphMeshes(prefab, _model.transform);
@@ -259,28 +302,198 @@ namespace CosmicShore.UI
             return true;
         }
 
+        // ---- the free view ----------------------------------------------------------------------------------
+
+        /// <summary>Puts the model back: facing as it was first shown, framed, centred; the idle turn resumes.</summary>
+        public void ResetView(bool instant = false)
+        {
+            _held = false;
+            _touches.Clear();
+            if (instant)
+            {
+                _orient = HomeOrientation;
+                _zoom = 1f;
+                _pan = Vector2.zero;
+                _resetT = -1f;
+                return;
+            }
+            _resetFromOrient = _orient;
+            _resetFromZoom = _zoom;
+            _resetFromPan = _pan;
+            _resetT = 0f;
+        }
+
+        // The stage camera's fixed rotation: the view's right, up and forward are read from it.
+        Quaternion ViewRotation => Quaternion.LookRotation(-(Quaternion.Euler(pitchDegrees, 0f, 0f) * Vector3.back), Vector3.up);
+
+        float FramedDistance => modelRadius * distanceFactor;
+
+        void Hold()
+        {
+            _held = true;
+            _resetT = -1f;
+            _lastInput = Time.unscaledTime;
+        }
+
+        /// <summary>Turns the model about the view's up (<paramref name="yawDegrees"/>) and right
+        /// (<paramref name="pitchDegrees"/>) axes: a drag turns the side under the pointer the way it moves.</summary>
+        void Turn(float yawDegrees, float pitch)
+        {
+            var view = ViewRotation;
+            _orient = Quaternion.AngleAxis(-yawDegrees, view * Vector3.up) * Quaternion.AngleAxis(pitch, view * Vector3.right) * _orient;
+            Hold();
+        }
+
+        void Roll(float degrees)
+        {
+            _orient = Quaternion.AngleAxis(degrees, ViewRotation * Vector3.forward) * _orient;
+            Hold();
+        }
+
+        void Zoom(float factor)
+        {
+            _zoom = Mathf.Clamp(_zoom * factor, Mathf.Min(zoomRange.x, zoomRange.y), Mathf.Max(zoomRange.x, zoomRange.y));
+            Hold();
+        }
+
+        /// <summary>Moves the view by a screen delta, so the model follows the pointer.</summary>
+        void Pan(Vector2 screenDelta)
+        {
+            float worldPerPixel = 2f * (FramedDistance / _zoom) * Mathf.Tan(fieldOfView * 0.5f * Mathf.Deg2Rad) / SurfaceScreenHeight();
+            _pan = Vector2.ClampMagnitude(_pan - screenDelta * worldPerPixel, modelRadius * panLimit);
+            Hold();
+        }
+
+        float SurfaceScreenHeight()
+        {
+            if (!(transform is RectTransform rt)) return Screen.height;
+            var canvas = rt.GetComponentInParent<Canvas>();
+            var cam = canvas && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            rt.GetWorldCorners(s_corners);
+            float h = RectTransformUtility.WorldToScreenPoint(cam, s_corners[1]).y - RectTransformUtility.WorldToScreenPoint(cam, s_corners[0]).y;
+            return Mathf.Max(1f, h);
+        }
+
+        // Pointer deltas are screen pixels; the feel is set at 1080 lines.
+        static float PixelScale => 1080f / Mathf.Max(1, Screen.height);
+
+        // The Input System's UI module numbers a mouse by its device, so the pointer TYPE says what is a finger (the old
+        // module numbered fingers from 0 and the mouse buttons below it).
+        static bool IsTouch(PointerEventData e) => e is UnityEngine.InputSystem.UI.ExtendedPointerEventData x
+            ? x.pointerType == UnityEngine.InputSystem.UI.UIPointerType.Touch
+            : e.pointerId >= 0;
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (IsTouch(eventData)) _touches[eventData.pointerId] = eventData.position;
+        }
+
+        public void OnPointerUp(PointerEventData eventData) => _touches.Remove(eventData.pointerId);
+
         public void OnDrag(PointerEventData eventData)
         {
-            _yaw -= eventData.delta.x * dragDegreesPerPixel;
-            _lastInput = Time.unscaledTime;
+            if (!_model) return;
+            if (IsTouch(eventData) && _touches.Count >= 2 && _touches.ContainsKey(eventData.pointerId))
+            {
+                Pinch(eventData);
+                return;
+            }
+            if (IsTouch(eventData)) _touches[eventData.pointerId] = eventData.position;
+
+            var d = eventData.delta * PixelScale;
+            if (eventData.button is PointerEventData.InputButton.Right or PointerEventData.InputButton.Middle)
+                Pan(eventData.delta);
+            else if (Keyboard.current != null && Keyboard.current.shiftKey.isPressed)
+                Roll(-d.x * dragDegreesPerPixel);
+            else
+                Turn(d.x * dragDegreesPerPixel, d.y * dragDegreesPerPixel);
+        }
+
+        /// <summary>Two fingers: their spread zooms, their twist rolls, their midpoint moves the view.</summary>
+        void Pinch(PointerEventData moved)
+        {
+            int other = -1;
+            foreach (var id in _touches.Keys)
+                if (id != moved.pointerId) { other = id; break; }
+            if (other < 0) return;
+            Vector2 a0 = _touches[moved.pointerId], a1 = moved.position, b = _touches[other];
+            _touches[moved.pointerId] = a1;
+
+            Vector2 before = a0 - b, after = a1 - b;
+            if (before.sqrMagnitude > 1f && after.sqrMagnitude > 1f)
+            {
+                Zoom(after.magnitude / before.magnitude);
+                Roll(Vector2.SignedAngle(before, after));
+            }
+            Pan((a1 - a0) * 0.5f);
+        }
+
+        public void OnScroll(PointerEventData eventData)
+        {
+            if (!_model) return;
+            // A wheel notch arrives as one large delta and a trackpad as many small ones: each event zooms at most a step.
+            Zoom(Mathf.Pow(wheelZoomStep, Mathf.Clamp(eventData.scrollDelta.y, -1f, 1f)));
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (eventData.clickCount >= 2 && eventData.button == PointerEventData.InputButton.Left) ResetView();
+        }
+
+        void ReadPad(float dt)
+        {
+            var pad = Gamepad.current;
+            if (pad == null || !Showing) return;
+            if (pad.rightStickButton.wasPressedThisFrame)
+            {
+                ResetView();
+                return;
+            }
+            var stick = pad.rightStick.ReadValue();
+            if (stick.sqrMagnitude < 0.04f) return;
+            if (pad.buttonNorth.isPressed)
+            {
+                Zoom(Mathf.Pow(padZoomPerSecond, stick.y * dt));
+                Roll(-stick.x * stickDegreesPerSecond * dt);
+            }
+            else
+            {
+                Turn(stick.x * stickDegreesPerSecond * dt, stick.y * stickDegreesPerSecond * dt);
+            }
+        }
+
+        void StepReset(float dt)
+        {
+            if (_resetT < 0f) return;
+            _resetT += dt / resetSeconds;
+            float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_resetT));
+            _orient = Quaternion.Slerp(_resetFromOrient, HomeOrientation, k);
+            _zoom = Mathf.Lerp(_resetFromZoom, 1f, k);
+            _pan = Vector2.Lerp(_resetFromPan, Vector2.zero, k);
+            if (_resetT >= 1f) _resetT = -1f;
+        }
+
+        /// <summary>The hint names the hand that is on the controls: touch on a phone, the pad or the mouse otherwise.</summary>
+        void RefreshHint()
+        {
+            if (!hintText) return;
+            HangarControlInput.TrackDevice();
+            int mode = Application.isMobilePlatform ? 2 : HangarControlInput.LastWasKeyboard ? 0 : 1;
+            if (mode == _hintMode) return;
+            _hintMode = mode;
+            hintText.text = TemplateText.Fill(mode == 2 ? touchHint : mode == 1 ? padHint : pointerHint);
         }
 
         void LateUpdate()
         {
+            RefreshHint();
             if (!_camera || !_model) return;
             float dt = Time.unscaledDeltaTime;
 
-            var pad = Gamepad.current;
-            float stick = pad != null ? pad.rightStick.ReadValue().x : 0f;
-            if (Mathf.Abs(stick) > 0.2f)
-            {
-                _yaw -= stick * stickDegreesPerSecond * dt;
-                _lastInput = Time.unscaledTime;
-            }
-            else if (Time.unscaledTime - _lastInput > idleResumeSeconds)
-            {
-                _yaw += idleDegreesPerSecond * dt;
-            }
+            ReadPad(dt);
+            StepReset(dt);
+            if (!_held && _resetT < 0f && Time.unscaledTime - _lastInput > idleResumeSeconds)
+                _orient = Quaternion.AngleAxis(idleDegreesPerSecond * dt, Vector3.up) * _orient;
 
             Vector3 lunge = Vector3.zero;
             float roll = 0f;
@@ -326,7 +539,7 @@ namespace CosmicShore.UI
                 _nextRender = 0f;
             }
 
-            _pivot.localRotation = Quaternion.Euler(0f, _yaw, 0f);
+            _pivot.localRotation = _orient;
             _model.transform.localPosition = lunge;
             _model.transform.localRotation = Quaternion.Euler(0f, 0f, roll);
             _model.transform.localScale = _modelBaseScale * (swell * blink);
@@ -362,12 +575,13 @@ namespace CosmicShore.UI
             var size = TargetSize();
             if (_target && (_target.width != size.x || _target.height != size.y)) EnsureRig();
 
-            float distance = modelRadius * distanceFactor;
+            float distance = FramedDistance / Mathf.Max(0.01f, _zoom);
             var centre = _stage.position;
             var dir = Quaternion.Euler(pitchDegrees, 0f, 0f) * Vector3.back;
-            _camera.transform.SetPositionAndRotation(centre + dir * distance, Quaternion.LookRotation(-dir, Vector3.up));
-            _camera.nearClipPlane = Mathf.Max(0.05f, modelRadius * 0.05f);
-            _camera.farClipPlane = distance * 3f;
+            var view = ViewRotation;
+            _camera.transform.SetPositionAndRotation(centre + dir * distance + view * new Vector3(_pan.x, _pan.y, 0f), view);
+            _camera.nearClipPlane = Mathf.Max(0.05f, modelRadius * 0.02f);
+            _camera.farClipPlane = distance * 3f + modelRadius * 2f;
             _camera.fieldOfView = fieldOfView;
             if (_target && _target.height > 0) _camera.aspect = (float)_target.width / _target.height;
             _camera.Render();

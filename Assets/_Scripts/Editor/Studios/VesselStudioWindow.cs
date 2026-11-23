@@ -20,7 +20,8 @@ namespace CosmicShore.Editor.Studios
     /// <para><b>No tuning UI of its own.</b> The artifact is the one source of truth for a studio's parameters (the
     /// user, 2026-10-10). Unity never draws a second set of tabs over the assets; the artifact's numbers reach the
     /// game through <c>/artifact-to-unity</c> (<c>Tools/Build/studio_to_unity.py</c>), which writes them into the
-    /// vessel's config assets. READER: this window writes nothing.</para>
+    /// vessel's config assets. A card's CONFIGS button lists those assets and opens each in Unity's own Inspector
+    /// (<see cref="VesselConfigsWindow"/>, D41): the real asset, never a redrawn copy. READER: this window writes nothing.</para>
     /// </summary>
     public sealed partial class VesselStudioWindow : EditorWindow
     {

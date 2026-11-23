@@ -4,7 +4,7 @@ using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -82,12 +82,18 @@ namespace CosmicShore.Gameplay
         {
             End();
             _charging = false;
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
 
             if (!_resources) return;
 
             float start = GetUnits(so);
             status.IsChargedBoostDischarging = true;
+
+            // Boost Activate is a LOOPING boost bed, not a one-shot: firing it through
+            // PlayGameplaySFX is refused by FMODOneShotVolumeHelper (it would leak a voice per
+            // boost). Own it for exactly the discharge instead; every end path stops it (End /
+            // CancelAll, the routine's tail, OnDisable). Nothing to boost on, nothing to hear.
+            if (start > 0f)
+                HeldVesselSfx.Begin(audioSystem, GameplaySFXCategory.BoostActivate, this, status);
 
             OnDischargeStarted?.Invoke(start);
 
@@ -102,6 +108,8 @@ namespace CosmicShore.Gameplay
 
         void CancelAll()
         {
+            // Every interrupt (re-charge, turn end, disable/destroy) comes through here.
+            StopBoostSound();
             if (_cts == null) return;
             try
             {
@@ -114,6 +122,9 @@ namespace CosmicShore.Gameplay
             _cts.Dispose();
             _cts = null;
         }
+
+        void StopBoostSound()
+            => HeldVesselSfx.End(audioSystem, GameplaySFXCategory.BoostActivate, this);
 
         async UniTaskVoid ChargeRoutineAsync(ChargeBoostActionSO so, CancellationToken token)
         {
@@ -176,6 +187,7 @@ namespace CosmicShore.Gameplay
                 if (so.RechargeCooldownSeconds > 0f)
                     _cooldownUntilUtc = Time.unscaledTime + so.RechargeCooldownSeconds;
 
+                StopBoostSound();
                 OnDischargeEnded?.Invoke();
             }
             catch (OperationCanceledException) { }
@@ -214,14 +226,14 @@ namespace CosmicShore.Gameplay
         }
 
         // Element → parameter (Time → charge rate): a high Time element fills the charge meter
-        // faster while drifting, so the dart threads gaps into a blast sooner. Anchored at exactly
-        // 1x at the resting level. Scaled from the SO's OWN authored multiplier because
+        // faster while drifting, so the dart threads gaps into a blast sooner. The resting endpoint
+        // is authored too (1x by default). Scaled from the SO's OWN authored multipliers because
         // VesselTransformer already consumes the map's generic Time multiplier for boost SPEED.
         float ChargePerSecond(ChargeBoostActionSO so)
         {
             float baseRate = (so.ChargeTimeToFull > 0f) ? (so.MaxNormalizedCharge / so.ChargeTimeToFull) : so.MaxNormalizedCharge;
-            return baseRate * ElementalScaling.Multiplier(_status, Element.Time,
-                so.ChargeRateMultiplierAtFullTime, so.MinChargeRateMultiplier);
+            return baseRate * ElementalScaling.MultiplierFromRest(_status, Element.Time,
+                so.ChargeRateMultiplierAtRestTime, so.ChargeRateMultiplierAtFullTime, so.MinChargeRateMultiplier);
         }
 
         float DischargePerSecond(ChargeBoostActionSO so)

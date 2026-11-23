@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using FMODUnity;
 using UnityEngine;
@@ -5,10 +6,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly third weapon (Mass 5): the burning plasma-claw flamethrower.
+    /// Grizzly third weapon: the burning plasma-claw flamethrower, the MASS weapon.
     /// Costs NO energy (per the class doc). Sets enemy prisms — and enemy trails,
     /// which are prisms — on fire with a spreading burn (PrismBurnManager).
-    /// With Mass 5 active the burn STEALS on burnout instead of destroying.
     ///
     /// On the triggers (design ask, 2026-10-16) LT sprays from the LEFT front of the hull and RT
     /// from the RIGHT front, each forward, and the trigger's live PRESSURE sizes its claw between
@@ -19,6 +19,13 @@ namespace CosmicShore.Gameplay
     /// (<see cref="GrizzlyClawWhips"/>), the Brittle Star's Charge Mode whips (<see cref="BrittleStarCord"/>) held
     /// near-rigid, rooted at one point and fanned slightly like a claw. Since 2026-10-17 the fingers ARE the weapon:
     /// what they touch burns, and there is no cone.</para>
+    ///
+    /// <para><b>Mass is what the claw FEEDS you</b> (2026-11-18, the element-placeholder pass). Every enemy prism the
+    /// claw lights refills the Grizzly's energy (<see cref="energyPerIgnite"/>, 0.01 at rest -> 0.025 at level 10), the
+    /// energy the cannon, the sniper and the Rush spend. Mass only grows what helps your own team (Garrett,
+    /// 2026-11-16), so the claw's reach and bite stay fixed (that was the 2026-11-16 try, reverted) and the trail no
+    /// longer grows with Mass (the placeholder before it). Read live at each tick, on the machine that runs the spray.</para>
+    /// <para>Mass 5, Claimed Fire: the burn STEALS on burnout instead of destroying.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "GrizzlyFlamethrowerAction", menuName = "ScriptableObjects/Vessel Actions/Grizzly Flamethrower")]
     public class GrizzlyFlamethrowerActionSO : ShipActionSO
@@ -51,19 +58,33 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("FMOD event played at each cut. Leave empty for silence (an unwired slot, never a placeholder).")]
         EventReference sliceEvent;
 
-        [Header("Swipe on release (2026-11-23: 'make it swipe across on release, so both claws can swipe down and across diagonally')")]
-        [SerializeField, Tooltip("On: letting go of a trigger SWIPES its claw down and across toward the hull's centre line instead of just vanishing, slicing everything the fingers pass through. LT's claw slashes down-right and RT's down-left, so the pair cross in front of the nose. Off: release ends the claw as before.")]
+        [Header("Swipe on release (2026-11-23: each claw is one stroke of an X - up and out, then down and across)")]
+        [SerializeField, Tooltip("On: letting go of a trigger SWIPES its claw instead of just vanishing: it rises up and OUT, then slashes down and ACROSS the hull's centre line, slicing everything the fingers pass through. LT's stroke runs upper-left to lower-right and RT's upper-right to lower-left, so the two strokes are the two sides of an X. Off: release ends the claw as before.")]
         bool swipeEnabled = true;
-        [SerializeField, Tooltip("Seconds one swipe takes, start to finish. Short on purpose: a slash, not a sweep.")]
-        float swipeSeconds = 0.22f;
-        [SerializeField, Tooltip("Degrees the claw turns over the whole swipe, from where it was held.")]
-        float swipeArcDegrees = 80f;
+        [SerializeField, Tooltip("Seconds one swipe takes, rise and slash together. Short on purpose: a slash, not a sweep.")]
+        float swipeSeconds = 0.3f;
+        [SerializeField, Tooltip("Degrees of the whole stroke, top to bottom. It is centred on where the claw was held: half of it above and outside, half below and across.")]
+        float swipeArcDegrees = 90f;
+        [SerializeField, Tooltip("Share of Swipe Seconds spent RISING from where the claw was held up to the top of the stroke. The rest is the slash down.")]
+        [Range(0.05f, 0.6f)] float swipeWindupFraction = 0.25f;
         [SerializeField, Tooltip("Direction of the swipe: 0 = straight down, 90 = straight across toward the centre line. 45 = the diagonal.")]
         [Range(0f, 90f)] float swipeDiagonalDegrees = 45f;
         [SerializeField, Tooltip("Energy cell spent by each swipe, as a fraction of a full cell. A claw whose cell is empty does not swipe.")]
         [Range(0f, 1f)] float swipeCellCost = 0.1f;
         [SerializeField, Tooltip("The swipe is as big as the HARDEST pull within this many seconds before release, so easing off the trigger to let go does not shrink the swipe.")]
         float swipeSizeMemorySeconds = 0.25f;
+
+        [Header("Fuel (the Mass card)")]
+        [SerializeField, Tooltip("Index of the vessel ResourceSystem resource the claw refills (the Grizzly's energy).")]
+        int energyIndex = 0;
+        [SerializeField, Tooltip("Energy each enemy prism the claw lights gives back. MASS scales it: 0.01 at rest, 0.025 at " +
+                                 "level 10, floored at half (the fleet floor rule). A Rush costs 0.25, so a few seconds of " +
+                                 "claw on enemy mass buys the next ram. Super-shielded prisms it cannot light give nothing.")]
+        ElementalFloat energyPerIgnite = ElementalFloat.Multiplier(0.01f, 0.025f, Element.Mass, 0.005f);
+
+        public int EnergyIndex => energyIndex;
+        /// <summary>Energy one lit prism refills at this vessel's live Mass level.</summary>
+        public float EnergyPerIgniteFor(IVesselStatus status) => Mathf.Max(0f, energyPerIgnite.EvaluateLive(status));
 
         [Header("Muzzles (one per trigger)")]
         [SerializeField, Tooltip("How far each claw's root sits to its own side of the hull's centre line, in the hull's local units (LT left, RT right).")]
@@ -157,20 +178,36 @@ namespace CosmicShore.Gameplay
         public float SwipeCellCost => swipeCellCost;
         public float SwipeSizeMemorySeconds => swipeSizeMemorySeconds;
 
+        public float SwipeWindupFraction => swipeWindupFraction;
+
         /// <summary>
         /// The swipe's turn at <paramref name="progress01"/> (0 = where the claw was held, 1 = the end of the slash),
-        /// in the CLAW's own frame: apply it after the claw's aim (<c>aim * SwipeRotation(...)</c>). The claw's
-        /// forward turns toward "down and inward": down, and toward the hull's centre line - +x for LT's claw on the
-        /// left, -x for RT's on the right - mixed by <c>swipeDiagonalDegrees</c>. Eased out: fastest as it leaves.
+        /// in the CLAW's own frame: apply it after the claw's aim (<c>aim * SwipeRotation(...)</c>).
+        /// <para>Each claw draws ONE STROKE OF AN X (design ask, 2026-11-23: "I want each claw to be one side of an X
+        /// when it swipes, starting up and going down and across"). The stroke runs along one diagonal: down, and
+        /// toward the hull's centre line - +x for LT's claw on the left, -x for RT's on the right - mixed by
+        /// <c>swipeDiagonalDegrees</c>. For the first <c>swipeWindupFraction</c> the claw RISES back along that line,
+        /// up and out, to half the arc above where it was held; then it SLASHES the full arc down and across, ending
+        /// half the arc past it. Both legs ease out, so the slash is fastest as it leaves the top.</para>
         /// </summary>
         public Quaternion SwipeRotation(bool leftClaw, float progress01)
         {
             float p = Mathf.Clamp01(progress01);
-            float eased = 1f - (1f - p) * (1f - p);
+            float w = Mathf.Clamp(swipeWindupFraction, 0.01f, 0.99f);
+            float half = 0.5f * swipeArcDegrees;
+            float angle = p < w
+                ? -half * EaseOut(p / w)                                  // rise: held -> top of the stroke
+                : Mathf.Lerp(-half, half, EaseOut((p - w) / (1f - w)));   // slash: top -> bottom, across
             float diag = swipeDiagonalDegrees * Mathf.Deg2Rad;
             var motion = new Vector3((leftClaw ? 1f : -1f) * Mathf.Sin(diag), -Mathf.Cos(diag), 0f);
             // Rotating forward about cross(forward, motion) by a positive angle carries it toward motion.
-            return Quaternion.AngleAxis(swipeArcDegrees * eased, Vector3.Cross(Vector3.forward, motion));
+            return Quaternion.AngleAxis(angle, Vector3.Cross(Vector3.forward, motion));
+        }
+
+        static float EaseOut(float t)
+        {
+            t = Mathf.Clamp01(t);
+            return 1f - (1f - t) * (1f - t);
         }
 
         /// <summary>

@@ -41,8 +41,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] Material particleMaterial;
 
         [Tooltip("FALLBACK mote colour, used only while the vessel has no playable domain or no " +
-                 "palette is reachable. In play the motes wear the SHIELDED tier of the vessel's " +
-                 "own domain (see ResolveMoteColour). Alpha is shaped over each mote's life (in, " +
+                 "palette is reachable. In play each mote wears one of THREE colours of the vessel's " +
+                 "own domain - danger, plain and shielded (see ResolveMotePalette). Alpha is shaped over each mote's life (in, " +
                  "hold, out) and this alpha is the peak in both cases.")]
         [SerializeField] Color dustColor = new(1f, 0.86f, 0.52f, 0.9f);
 
@@ -64,9 +64,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float fallSpeed = 6f;
 
         [Header("Audio")]
-        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust BITES an opposing pilot (the " +
-                 "all-element debuff lands). Played on every peer that resolves the bite, at the " +
-                 "victim. Already rate-limited per victim by the debuff's own cooldown. Leave " +
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust first reaches an opposing pilot (the " +
+                 "shred starts). Played on every peer that resolves the contact, at the " +
+                 "victim. Already rate-limited per victim by the effect's own cooldown. Leave " +
                  "empty for silence - never point it at a borrowed event to hear something.")]
         [SerializeField] FMODUnity.EventReference scaleDustBiteEvent;
 
@@ -101,9 +101,22 @@ namespace CosmicShore.Gameplay
         // GameObjectInjector.InjectRecursive'd on every spawn path.
         [Inject] GameDataSO _gameData;
 
+        [Header("Lit (every prism in the dust)")]
+        [Tooltip("Light every prism standing in the live capsule - any domain, any tier (super-shielded, shielded, " +
+                 "growing, plain), whatever the dust does or does not do to it (Garrett, 2026-10-29: \"the dust should be " +
+                 "causing the lit state on any prism it does or doesn't affect\"). One ungated PrismLit bank light that " +
+                 "follows the capsule; off while the capsule is (Mass mode, the Tiger Moth's incorporeal drop).")]
+        [SerializeField] bool lightsPrisms = true;
+
+        [Tooltip("Strength of that light, 0..1. Under the full 1 that a blast's or an aimed instrument's light uses, " +
+                 "because the dust is on for as long as Dust mode is.")]
+        [SerializeField, Range(0f, 1f)] float litStrength = 0.6f;
+
         IVesselStatus _status;
         Domains _paintedDomain;
+        bool _litPublished;
         bool _painted;
+        int _paintedColorVersion;   // the colour set (ColorTrace.Version) the motes were last painted from
 
         CapsuleCollider _capsule;
         SkimmerImpactor _impactor;
@@ -163,7 +176,15 @@ namespace CosmicShore.Gameplay
         // ── audio — called by the dust's effect SOs, which find this component on the skimmer ──
 
         /// <summary>Scale Dust bit an opposing pilot. Empty slot = silence.</summary>
-        public void PlayScaleDustBite(Vector3 position) => Play(scaleDustBiteEvent, position);
+        public void PlayScaleDustBite(Vector3 position)
+        {
+            LastBiteTime = Time.time;
+            Play(scaleDustBiteEvent, position);
+        }
+
+        /// <summary>When the dust last bit an opposing pilot (<see cref="Time.time"/>), on this peer; negative infinity
+        /// until it has. The Tiger Moth's HUD turns its Charge card's rival red on it.</summary>
+        public float LastBiteTime { get; private set; } = float.NegativeInfinity;
 
         /// <summary>Dust Reach touched a prism: <paramref name="ownMass"/> = tended (own domain),
         /// otherwise blighted. Throttled per kind; empty slot = silence.</summary>
@@ -210,6 +231,10 @@ namespace CosmicShore.Gameplay
             if (audio) audio.PlaySFXEvent(reference, position);
         }
 
+        /// <summary>Put the capsule's collider and impactor back to what the MODE says. Called by an ability that switched
+        /// every collider on the hull off for a while (the Tiger Moth's incorporeal drop), so a mode changed meanwhile wins.</summary>
+        public void ReassertColliders() => ApplyColliderState(_active);
+
         void ApplyColliderState(bool active)
         {
             if (_capsule) _capsule.enabled = active;
@@ -218,12 +243,46 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            ClearLit();
             if (_particles) _particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         }
 
         void OnDestroy()
         {
             if (_particles) Destroy(_particles.gameObject);
+        }
+
+        /// <summary>Publish the dust's light every frame the capsule is live: PrismLit flushes in LateUpdate, so the
+        /// light is published from Update. Ungated on purpose (every domain's mass, debris included): the sentence is
+        /// "this is in my dust", not "this is mine". A cylinder the capsule's length and radius, mirrored about its
+        /// centre (PrismLit has no capsule; the caps' rounding is the only part the cylinder over-lights).</summary>
+        void Update()
+        {
+            // The shred keeps taking while a rival stays in the dust: a skimmer runs its vessel effects
+            // on entry only, so the standing contact is re-run here every frame and the dust reporter's
+            // Charge-scaled latch window paces it (VesselElementalDebuffBySkimmerEffectSO, TIGER_MOTH.md).
+            if (_active && _impactor && _impactor.enabled) _impactor.ReapplyVesselEffectsToOverlapping();
+
+            bool live = lightsPrisms && _active && _capsule && _capsule.enabled;
+            if (!live)
+            {
+                ClearLit();
+                return;
+            }
+            MeasureCapsule(out float length, out float radius);
+            Vector3 centre = transform.TransformPoint(_capsule.center);
+            var domain = _status != null && _status.Player != null ? _status.Domain : Domains.Blue;
+            PrismLit.PublishLight(GetInstanceID(),
+                LitVolume.Cylinder(centre, -transform.up, length * 0.5f, radius, mirrored: true),
+                litStrength, PrismLit.DomainTint(domain));
+            _litPublished = true;
+        }
+
+        void ClearLit()
+        {
+            if (!_litPublished) return;
+            _litPublished = false;
+            PrismLit.ClearLight(GetInstanceID());
         }
 
         void LateUpdate()
@@ -242,39 +301,62 @@ namespace CosmicShore.Gameplay
         void RefreshColour()
         {
             var domain = _status != null && _status.Player != null ? _status.Domain : Domains.Blue;
-            if (_painted && domain == _paintedDomain) return;
+            // Another colour set worn repaints too: the palette and the fallback both come from the worn set.
+            if (_painted && domain == _paintedDomain && _paintedColorVersion == ColorTrace.Version) return;
             _painted = true;
             _paintedDomain = domain;
+            _paintedColorVersion = ColorTrace.Version;
 
             var main = _particles.main;
-            main.startColor = ResolveMoteColour(domain);
+            ResolveMotePalette(_gameData, domain, ColorTrace.Retrace(ColorTrace.World, dustColor), _palette);
+            main.startColor = MotePaletteGradient(_palette);
         }
 
-        /// <summary>
-        /// The SHIELDED tier's rim colour for <paramref name="domain"/> - the frosty, bright colour
-        /// that says "shielded" on a prism - through <c>SO_ColorSet.TryGetPrismKindColors</c>, the
-        /// single source every prism tier is painted from, so the dust can never drift from the
-        /// shielded mass it sits beside. The rim rather than the base face because a mote is a
-        /// point of light: the base is the darker half of the pair and reads as dim smoke.
-        /// Blue (no team) and a missing palette fall back to the authored dust colour.
-        /// </summary>
-        Color ResolveMoteColour(Domains domain) => ResolveMoteColour(_gameData, domain, dustColor);
+        readonly Color[] _palette = new Color[MotePaletteSize];
+
+        /// <summary>How many colours the dust is made of: danger, plain (the domain) and shielded.</summary>
+        internal const int MotePaletteSize = 3;
 
         /// <summary>
-        /// The one mote colour rule, shared with the omni-crystal bloom's dust
-        /// (<see cref="ButterflyBloomDust"/>) so the two read as the same dust: the shielded rim of
-        /// <paramref name="domain"/>, at <paramref name="fallback"/>'s alpha; Blue or no palette
-        /// returns <paramref name="fallback"/>.
+        /// The one mote colour rule, shared with the omni-crystal bloom's dust (<see cref="ButterflyBloomDust"/>) and the
+        /// HUD's ability icons, so all three read as the same dust. Garrett, 2026-11-01: "make a dust made of danger
+        /// color, team domain color, team shielded domain color". Each mote wears ONE of the three prism tiers of
+        /// <paramref name="domain"/> (the DANGER, PLAIN and SHIELDED tiers' bright rims, through
+        /// <c>SO_ColorSet.TryGetPrismKindColors</c>, the single source every prism tier is painted from), so the dust is
+        /// the three things it turns your mass into. The rim rather than the base face because a mote is a point of light.
+        /// Blue (no team) or no palette: every entry is <paramref name="fallback"/>. Alpha is
+        /// <paramref name="fallback"/>'s throughout.
         /// </summary>
-        internal static Color ResolveMoteColour(GameDataSO gameData, Domains domain, Color fallback)
+        internal static void ResolveMotePalette(GameDataSO gameData, Domains domain, Color fallback, Color[] into)
         {
             var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
-            if (domain == Domains.Blue || colorSet == null ||
-                !colorSet.TryGetPrismKindColors(domain, PrismKind.Shielded, out var rim, out _))
-                return fallback;
+            Fill(PrismKind.Danger, 0);
+            Fill(PrismKind.Plain, 1);
+            Fill(PrismKind.Shielded, 2);
 
-            rim.a = fallback.a;
-            return rim;
+            void Fill(PrismKind kind, int i)
+            {
+                if (domain == Domains.Blue || colorSet == null ||
+                    !colorSet.TryGetPrismKindColors(domain, kind, out var rim, out _))
+                {
+                    into[i] = fallback;
+                    return;
+                }
+                rim.a = fallback.a;
+                into[i] = rim;
+            }
+        }
+
+        /// <summary>A start colour that gives each new mote one of <paramref name="palette"/>'s colours at random (a
+        /// FIXED-mode gradient read at a random point: three equal steps, no blends between them).</summary>
+        internal static ParticleSystem.MinMaxGradient MotePaletteGradient(Color[] palette)
+        {
+            int n = palette.Length;
+            var colours = new GradientColorKey[n];
+            for (int i = 0; i < n; i++) colours[i] = new GradientColorKey(palette[i], (i + 1f) / n);
+            var g = new Gradient { mode = GradientMode.Fixed };
+            g.SetKeys(colours, new[] { new GradientAlphaKey(palette[0].a, 0f), new GradientAlphaKey(palette[0].a, 1f) });
+            return new ParticleSystem.MinMaxGradient(g) { mode = ParticleSystemGradientMode.RandomColor };
         }
 
         /// <summary>The capsule's world length and radius, read the way PhysX sizes it.</summary>
@@ -324,7 +406,7 @@ namespace CosmicShore.Gameplay
             main.startLifetime = moteLifetime;
             main.startSpeed = 0f;
             main.startSize = new ParticleSystem.MinMaxCurve(moteSize.x, moteSize.y);
-            main.startColor = dustColor;
+            main.startColor = ColorTrace.Retrace(ColorTrace.World, dustColor);
             main.gravityModifier = 0f;
             main.maxParticles = Mathf.CeilToInt(maxMotesPerSecond * moteLifetime * 1.25f);
 

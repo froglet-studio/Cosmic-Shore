@@ -9,6 +9,37 @@ namespace CosmicShore.Gameplay
 {
     public class SnowChanger : MonoBehaviour
     {
+        /// <summary>
+        /// A mode's own answer to "which way does the cytoplasm point?", in place of the crystal: Serpent Time's race
+        /// line, so the whole cell reads as a current flowing round its circuit (Shombith, 2026-10-31: "show the track
+        /// ... not by making a track"). Set with <see cref="SetFlow"/>; null (the default, every other mode) keeps the
+        /// shipped law, every shard pointing at the local crystal. Asked once per shard per reorientation pass, so an
+        /// implementation must be cheap and allocation-free.
+        /// </summary>
+        public interface IFlow
+        {
+            /// <param name="position">The shard's world position.</param>
+            /// <param name="direction">Where the shard points (need not be unit length).</param>
+            /// <param name="stretch01">How long the shard is drawn, 0 (a small mote) to 1 (the longest streak), in
+            /// place of the crystal law's distance.</param>
+            /// <returns>False to leave this shard to the shipped law.</returns>
+            bool TryFlow(Vector3 position, out Vector3 direction, out float stretch01);
+        }
+
+        IFlow _flow;
+
+        /// <summary>
+        /// Point the cytoplasm along <paramref name="flow"/> instead of at the crystal (null restores the crystal law),
+        /// and reorient once. A cell with no crystal never built its field (<see cref="Initialize"/> is gated on one,
+        /// because the shards are how a pilot finds it), so a flow builds it here.
+        /// </summary>
+        public void SetFlow(IFlow flow)
+        {
+            _flow = flow;
+            if (flow != null && ShardCount == 0) Initialize();
+            ChangeSnowOrientation();
+        }
+
         [SerializeField]
         CellRuntimeDataSO cellData;
 
@@ -102,18 +133,44 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
-            cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
+            if (cellData) cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
         }
 
         void OnDisable()
         {
-            cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowOrientation;
+            if (cellData) cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowOrientation;
         }
+
+        // A satellite's field (Cell.SatelliteCytoplasmEnabled): bound to the satellite's OWN runtime data rather than the
+        // scene asset the prefab names, thinned by a spacing scale, and built on the crystal's arrival when the cell has
+        // none yet (a traversal cell's core crystal is handed to it just after its bootstrap).
+        bool _initWhenCrystal;
+        float _spacingScale = 1f;
+
+        /// <summary>Point the field at <paramref name="data"/> (a satellite cell's own runtime) instead of the prefab's
+        /// asset: its crystal is the one the shards point at, and its cell-items event re-aims them.</summary>
+        public void Rebind(CellRuntimeDataSO data)
+        {
+            if (!data || data == cellData) return;
+            if (isActiveAndEnabled && cellData) cellData.OnCellItemsUpdated.OnRaised -= ChangeSnowOrientation;
+            cellData = data;
+            if (isActiveAndEnabled) cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
+        }
+
+        /// <summary>Spread the shards this much wider than the config says (a satellite's field: fewer shards).</summary>
+        public float SpacingScale { get => _spacingScale; set => _spacingScale = Mathf.Max(1f, value); }
+
+        /// <summary>When the cell has no crystal yet, build the field when one arrives instead of never.</summary>
+        public bool InitializeWhenCrystalArrives { get => _initWhenCrystal; set => _initWhenCrystal = value; }
 
         public void Initialize()
         {
-            if (!cellData.TryGetLocalCrystal(out Crystal crystal))
+            if (!cellData.TryGetLocalCrystal(out Crystal crystal) && _flow == null)
+            {
+                _pendingInit = _initWhenCrystal;
                 return;
+            }
+            _pendingInit = false;
 
             _condensing.Clear();
             _morphedShards = 0;
@@ -130,6 +187,7 @@ namespace CosmicShore.Gameplay
             // a cell config may space its motes wider than the prefab does (a big arena: the count is a CUBE of the radius)
             var config = cellData.Cell != null ? cellData.Cell.Config : null;
             float spacing = config != null && config.CytoplasmShardDistance > 0 ? config.CytoplasmShardDistance : shardDistance;
+            spacing *= _spacingScale;
             float cellVolume = spacing * spacing * spacing;
 
             // Uniform density throughout the full sphere (0 → membrane)
@@ -233,8 +291,15 @@ namespace CosmicShore.Gameplay
         /// O(shardCount) loop inline.</summary>
         public void ChangeSnowOrientation()
         {
+            if (_pendingInit)
+            {
+                if (cellData && cellData.TryGetLocalCrystal(out _)) Initialize();
+                return;
+            }
             _reorientCursor = 0;
         }
+
+        bool _pendingInit;
 
         int ShardCount => _instanced ? _count : shards?.Count ?? 0;
 
@@ -254,10 +319,111 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool AddMorphedShard(Vector3 position, Quaternion limbRotation, float startTime, float duration)
         {
+            // A match replay places the shards the match's limbs left (AddRecordedMorphedShard), not this run's.
+            if (ReplayHoldsMorphs) return false;
             if (_morphedShards >= MorphedShardCap) return false;
             if (!_instanced && shards == null) return false;
             if (_dyingLimbs++ % Mathf.Max(1, limbsPerMorphedShard) != 0) return false;
 
+            AddMorphedShardUngated(position, limbRotation, startTime, duration);
+            MorphedShardAdded?.Invoke(this, position, limbRotation, startTime, duration);
+            return true;
+        }
+
+        // ---- Match replay (Docs/REPLAYS.md §6.4). Additive: nothing here runs unless a replay asks. ----
+
+        /// <summary>Raised after a dying limb's shard joined a field (field, position, limb rotation, start time, duration):
+        /// the match recorder keeps it so a replay can leave the same shard at the same moment.</summary>
+        public static event System.Action<SnowChanger, Vector3, Quaternion, float, float> MorphedShardAdded;
+
+        /// <summary>While a match replay plays, live dying limbs leave no shards; the replay adds the recorded ones.</summary>
+        public static bool ReplayHoldsMorphs { get; set; }
+
+        // Fast enter-play-mode keeps statics: a replay that never reached its teardown must not hold the next session's morphs.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetReplayState()
+        {
+            ReplayHoldsMorphs = false;
+            MorphedShardAdded = null;
+        }
+
+        /// <summary>How many shards the field holds now (its own and the limbs').</summary>
+        public int ShardTotal => ShardCount;
+
+        /// <summary>Every shard's position, in field order, into <paramref name="into"/> (cleared first).</summary>
+        public void CopyShardPositions(List<Vector3> into)
+        {
+            into.Clear();
+            int n = ShardCount;
+            for (int i = 0; i < n; i++)
+            {
+                if (_instanced) into.Add(_shardPos[i]);
+                else into.Add(shards[i] ? shards[i].transform.position : Vector3.zero);
+            }
+        }
+
+        /// <summary>
+        /// Stand the field's shards at <paramref name="positions"/> (a recorded field), growing or trimming it to that
+        /// many; each then points and sizes by the shard law as usual. Any shard still condensing is settled. False,
+        /// changing nothing, before <see cref="Initialize"/> built the field or for an empty list.
+        /// </summary>
+        public bool ApplyShardPositions(IReadOnlyList<Vector3> positions)
+        {
+            if (positions == null || positions.Count == 0) return false;
+            if (!_instanced && shards == null) return false;
+            _condensing.Clear();
+            int n = positions.Count;
+
+            if (_instanced)
+            {
+                while (_matrices.Length < n) GrowInstancedCapacity();
+                for (int i = 0; i < n; i++)
+                {
+                    if (i >= _count)
+                    {
+                        _shardRot[i] = snow ? snow.transform.rotation : Quaternion.identity;
+                        _shardScale[i] = Vector3.one * nodeScaler;
+                    }
+                    _shardPos[i] = positions[i];
+                    WriteMatrix(i);
+                }
+                _count = n;
+            }
+            else
+            {
+                for (int i = shards.Count - 1; i >= n; i--)
+                {
+                    if (shards[i]) Destroy(shards[i]);
+                    shards.RemoveAt(i);
+                }
+                for (int i = 0; i < n; i++)
+                {
+                    if (i >= shards.Count || !shards[i])
+                    {
+                        var shard = Instantiate(snow, transform, true);
+                        shard.transform.localScale = Vector3.one * nodeScaler;
+                        if (_tintMaterial) AssignTint(shard);
+                        if (i >= shards.Count) shards.Add(shard); else shards[i] = shard;
+                    }
+                    shards[i].transform.position = positions[i];
+                }
+            }
+
+            ChangeSnowOrientation();
+            return true;
+        }
+
+        /// <summary>A recorded limb's shard, as <see cref="AddMorphedShard"/> adds one but without its thinning or cap
+        /// (the recording already kept only the shards the match's field took).</summary>
+        public bool AddRecordedMorphedShard(Vector3 position, Quaternion limbRotation, float startTime, float duration)
+        {
+            if (!_instanced && shards == null) return false;
+            AddMorphedShardUngated(position, limbRotation, startTime, duration);
+            return true;
+        }
+
+        void AddMorphedShardUngated(Vector3 position, Quaternion limbRotation, float startTime, float duration)
+        {
             int index;
             if (_instanced)
             {
@@ -281,7 +447,6 @@ namespace CosmicShore.Gameplay
 
             _morphedShards++;
             _condensing.Add(new Condensing { Index = index, StartTime = startTime, Duration = Mathf.Max(0.01f, duration), From = limbRotation });
-            return true;
         }
 
         void GrowInstancedCapacity()
@@ -391,8 +556,9 @@ namespace CosmicShore.Gameplay
 
         void ReorientSlice()
         {
+            Crystal crystal = null;
             if (cellData == null || membraneRadius <= 0f ||
-                !cellData.TryGetLocalCrystal(out Crystal crystal))
+                (!cellData.TryGetLocalCrystal(out crystal) && _flow == null))
             {
                 _reorientCursor = int.MaxValue;
                 return;
@@ -411,7 +577,12 @@ namespace CosmicShore.Gameplay
             {
                 var shard = shards[i];
                 float normalizedDistance;
-                if (crystal)
+                if (_flow != null && _flow.TryFlow(shard.transform.position, out Vector3 flowDir, out float stretch))
+                {
+                    normalizedDistance = Mathf.Clamp01(stretch);
+                    SafeLookRotation.TrySet(shard.transform, flowDir, shard);
+                }
+                else if (crystal)
                 {
                     float clampedDistance =
                         Mathf.Clamp((shard.transform.position - crystal.transform.position).magnitude, 0,
@@ -456,7 +627,12 @@ namespace CosmicShore.Gameplay
         {
             rotation = current;
             float normalizedDistance;
-            if (crystal)
+            if (_flow != null && _flow.TryFlow(p, out Vector3 flowDir, out float stretch))
+            {
+                normalizedDistance = Mathf.Clamp01(stretch);
+                if (SafeLookRotation.TryGet(flowDir, out var flowRot, this, logError: false)) rotation = flowRot;
+            }
+            else if (crystal)
             {
                 Vector3 to = crystal.transform.position - p;
                 normalizedDistance = Mathf.Clamp(to.magnitude, 0, membraneRadius) / membraneRadius;

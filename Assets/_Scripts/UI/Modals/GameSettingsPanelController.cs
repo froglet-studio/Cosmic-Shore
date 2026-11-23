@@ -42,8 +42,10 @@ namespace CosmicShore.UI
         [Inject] ApplicationStateDataVariable appState;
 
         [Header("Words (empty shows nothing)")]
-        [Tooltip("The version line. {version} is the build's version.")]
-        [SerializeField] string versionLine = "Version {version}";
+        [Tooltip("The version line, filled from the build stamp: {version} version, {build} build number, " +
+                 "{commit} short commit, {ref} branch or tag, {channel} release channel, {env} UGS environment. " +
+                 "Empty shows nothing.")]
+        [SerializeField] string versionLine = "Version {version} ({build}) {commit} {env}";
         [Tooltip("The credits row's label when the row is built in code.")]
         [SerializeField] string creditsLabel = "Credits";
 
@@ -65,7 +67,10 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Scale of the unselected ON/OFF button.")] float unselectedScale = 0.95f;
 
         [Header("General")]
-        [SerializeField] TMP_Dropdown colorblindDropdown;
+        [SerializeField, Tooltip("Accessibility's breadcrumb to the colour sets: opens the Profile on its Colour sets " +
+                                 "tab, where the sets made for colour blindness, low vision and contrast live beside " +
+                                 "the others. Main menu only - see ApplyContextLock.")]
+        Button colourSetsButton;
         [SerializeField] OnOffControl subtitles;
         [SerializeField] TMP_Dropdown subtitleScaleDropdown;
         [SerializeField] OnOffControl analyticsConsent;
@@ -79,6 +84,9 @@ namespace CosmicShore.UI
                                  "this does not leave the game - it is main-menu only because the modal " +
                                  "stack it opens into (ScreenSwitcher) exists only in Menu_Main.")]
         Button creditsButton;
+        [SerializeField, Tooltip("Opens the WHAT'S NEW window (every update and what it brought; Docs/MENU_REDESIGN_B.md " +
+                                 "section 216). Main menu only, and hidden in a match: the window lives in Menu_Main.")]
+        Button whatsNewButton;
         [SerializeField, Tooltip("Leave empty to find the one in the scene. Only used by creditsButton.")]
         ScreenSwitcher screenSwitcher;
         [SerializeField, Tooltip("PC/Steam only: closes the game. Hidden automatically on mobile, where " +
@@ -91,6 +99,8 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Dropdown resolutionDropdown;
         [SerializeField] TMP_Dropdown frameCapDropdown;
         [SerializeField] OnOffControl vsync;
+        [SerializeField, Tooltip("Shows the FPS counter (FpsCounter) in every build, release included.")]
+        OnOffControl showFps;
         [SerializeField] Slider fovSlider;
         [SerializeField] float fovMin = 60f, fovMax = 90f;
 
@@ -126,7 +136,6 @@ namespace CosmicShore.UI
         [SerializeField] string bugReportUrl = "https://www.froglet.games/support";
 
         // Option labels (index == enum value - the controller fills these, never author them in the dropdown)
-        static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
         static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "240", "Uncapped" };
@@ -240,6 +249,10 @@ namespace CosmicShore.UI
             // but it opens a ScreenSwitcher modal, and the switcher only exists in Menu_Main. So it
             // is locked for a different reason from the four above: there is nothing to open here.
             SetInteractable(creditsButton, menu);
+            // What's new is only ever reached from the menu, so in a match it is not shown at all.
+            if (whatsNewButton) whatsNewButton.gameObject.SetActive(menu);
+            // The colour sets live on the Profile, a Menu_Main screen: the same reason as Credits.
+            SetInteractable(colourSetsButton, menu);
 
             UnlockLiveSafeControls();
 
@@ -265,10 +278,10 @@ namespace CosmicShore.UI
             SetInteractable(resolutionDropdown, true);
             SetInteractable(frameCapDropdown, true);
             SetOnOffInteractable(vsync, true);
+            SetOnOffInteractable(showFps, true);
             SetInteractable(fovSlider, true);
 
             // GENERAL - accessibility + consent.
-            SetInteractable(colorblindDropdown, true);
             SetInteractable(subtitleScaleDropdown, true);
             SetOnOffInteractable(subtitles, true);
             SetOnOffInteractable(analyticsConsent, true);
@@ -303,10 +316,10 @@ namespace CosmicShore.UI
 
         void BindAll()
         {
-            if (versionText) versionText.text = TemplateText.Fill(versionLine, "version", Application.version);
+            if (versionText) versionText.text = BuildStamp.Fill(versionLine, BuildStamp.Current);
 
             // GENERAL
-            BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
+            BindButton(colourSetsButton, OpenColourSets);
             BindDropdown(subtitleScaleDropdown, SubtitleScaleOpts, SetSubtitleScaleIndex);
             BindOnOff(subtitles, SetSubtitles, () => SubtitlesOn);
             BindOnOff(analyticsConsent, SetAnalyticsConsent, () => ConsentOn);
@@ -315,6 +328,7 @@ namespace CosmicShore.UI
             BindButton(deleteDataButton, OpenDeleteDataForm);
             EnsureCreditsRow();
             BindButton(creditsButton, OpenCredits);
+            BindButton(whatsNewButton, OpenWhatsNew);
             BindQuitButton();
 
             // DISPLAY
@@ -322,6 +336,7 @@ namespace CosmicShore.UI
             PopulateResolutionDropdown();
             BindDropdown(frameCapDropdown, FrameCapOpts, SetFrameCapIndex);
             BindOnOff(vsync, SetVSync, () => VSyncOn);
+            BindOnOff(showFps, SetShowFps, () => FpsCounter.Shown);
             BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView, FieldOfView);
             BindReadout(fovSlider, fovValueText, DegreesReadout);
 
@@ -353,7 +368,6 @@ namespace CosmicShore.UI
         /// <summary>Pushes current saved values into every assigned control (no listener changes).</summary>
         void RefreshValues()
         {
-            SetDropdown(colorblindDropdown, ColorblindIndex);
             SetDropdown(subtitleScaleDropdown, SubtitleScaleIndex);
             UpdateOnOff(subtitles, SubtitlesOn);
             UpdateOnOff(analyticsConsent, ConsentOn);
@@ -362,6 +376,7 @@ namespace CosmicShore.UI
             SetDropdown(resolutionDropdown, ResolutionIndex);
             SetDropdown(frameCapDropdown, FrameCapIndex);
             UpdateOnOff(vsync, VSyncOn);
+            UpdateOnOff(showFps, FpsCounter.Shown);
             SetSliderValue(fovSlider, FieldOfView);
 
             SetDropdown(qualityDropdown, QualityIndex);
@@ -415,7 +430,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            SetLabelColor(b, selected ? selectedColor : unselectedColor);
+            SetLabelColor(b, ColorTrace.Retrace(ColorTrace.Ui, selected ? selectedColor : unselectedColor));
             if (underline != null) underline.SetActive(selected);
             if (b != null) b.transform.localScale = Vector3.one * (selected ? selectedScale : unselectedScale);
         }
@@ -486,7 +501,6 @@ namespace CosmicShore.UI
 
         // ───────────────────────── setters (listeners call these) ─────────────────────────
 
-        public void SetColorblindModeIndex(int index) => AccessibilitySettings.ColorblindMode = (ColorblindModeSetting)index;
         public void SetSubtitles(bool on) => AccessibilitySettings.Subtitles = on;
         public void SetSubtitleScaleIndex(int index) => AccessibilitySettings.SubtitleScale = SubtitleScales[Mathf.Clamp(index, 0, SubtitleScales.Length - 1)];
         public void SetAnalyticsConsent(bool granted) => analytics?.SetConsent(granted);
@@ -525,6 +539,7 @@ namespace CosmicShore.UI
         }
         public void SetVSync(bool on) => S?.SetVSync(on ? VSyncSetting.On : VSyncSetting.Off);
         public void SetFieldOfView(float fov) => S?.SetFieldOfView(fov);
+        public void SetShowFps(bool on) => FpsCounter.Shown = on;
 
         public void AutoDetect()
         {
@@ -599,7 +614,6 @@ namespace CosmicShore.UI
 
         // ───────────────────────── getters ─────────────────────────
 
-        public int ColorblindIndex => (int)AccessibilitySettings.ColorblindMode;
         public bool SubtitlesOn => AccessibilitySettings.Subtitles;
         public int SubtitleScaleIndex => NearestScaleIndex(AccessibilitySettings.SubtitleScale);
         public bool ConsentOn => analytics != null && analytics.ConsentGranted;
@@ -683,17 +697,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Opens the in-game CREDITS screen. Names the modal TYPE and lets <see cref="ScreenSwitcher"/>
-        /// find the window, rather than holding a reference to it and calling
-        /// <c>ModalWindowIn</c> - the switcher already owns the modal stack, the return-to-modal
-        /// preference and the close sweeps, and a second authority over a modal's lifecycle is the
-        /// shape <c>Docs/HomeHub/ARCHITECTURE.md</c> §1 rules out.
-        ///
-        /// <para>The screen is not optional chrome: FMOD's EULA clause 3 requires an in-game credit,
-        /// so this row is what makes the obligation dischargeable at all. See
-        /// <c>Docs/THIRD_PARTY_REGISTER.md</c> §7.</para>
-        /// </summary>
-        /// <summary>
         /// Guarantees there is a CREDITS row to press, by cloning the Privacy Policy row when no
         /// <c>creditsButton</c> is wired.
         ///
@@ -753,6 +756,17 @@ namespace CosmicShore.UI
                 "to replace it with an authored row.");
         }
 
+        /// <summary>
+        /// Opens the in-game CREDITS screen. Names the modal TYPE and lets <see cref="ScreenSwitcher"/>
+        /// find the window, rather than holding a reference to it and calling
+        /// <c>ModalWindowIn</c> - the switcher already owns the modal stack, the return-to-modal
+        /// preference and the close sweeps, and a second authority over a modal's lifecycle is the
+        /// shape <c>Docs/HomeHub/ARCHITECTURE.md</c> §1 rules out.
+        ///
+        /// <para>The screen is not optional chrome: FMOD's EULA clause 3 requires an in-game credit,
+        /// so this row is what makes the obligation dischargeable at all. See
+        /// <c>Docs/THIRD_PARTY_REGISTER.md</c> §7.</para>
+        /// </summary>
         void OpenCredits()
         {
             if (!screenSwitcher)
@@ -767,6 +781,41 @@ namespace CosmicShore.UI
             }
 
             screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.CREDITS);
+        }
+
+        /// <summary>Opens the WHAT'S NEW window over Settings, through the switcher, as <see cref="OpenCredits"/> does.</summary>
+        void OpenWhatsNew()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            if (!screenSwitcher)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher in the scene, so the What's new window cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+            screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.WHATS_NEW);
+        }
+
+        // The breadcrumb: close Settings and open the Profile on Colour sets, the one place a colour set is picked.
+        void OpenColourSets()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            var colourSets = FindFirstObjectByType<ProfileColorSetsPanel>(FindObjectsInactive.Include);
+            if (!screenSwitcher || !colourSets)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher or ProfileColorSetsPanel in the scene, so the colour sets cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+
+            var modal = GetComponentInParent<ModalWindowManager>();
+            if (modal && modal.IsOpen) modal.ModalWindowOut();
+            colourSets.ShowColourSetsWhenOpen();
+            screenSwitcher.OnClickProfileNav();
         }
     }
 }

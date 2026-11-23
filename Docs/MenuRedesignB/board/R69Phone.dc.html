@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 69 C - Fleet Codex vessel page, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&amp;family=Saira:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#13010C}
+.app{position:relative;overflow:hidden;color:#F5E6EE;background:#13010C;font-family:'Saira',sans-serif}
+.app *{box-sizing:border-box}
+button{font:inherit;color:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #65E1DF;outline-offset:2px}
+.disp{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.lab{font-size:12px;letter-spacing:.22em;color:#A8869A}
+.soft{-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%)}
+.hud{position:absolute;padding:22px 24px;background:rgba(19,1,12,.84);backdrop-filter:blur(6px)}
+.glide{animation:glide 9s ease-in-out infinite}
+@keyframes glide{0%,100%{transform:translate(0,0) rotate(-2deg)}50%{transform:translate(18px,-14px) rotate(1.5deg)}}
+.chip{border:0;cursor:pointer;height:34px;padding:0 14px;background:transparent;color:#A8869A;box-shadow:inset 0 0 0 1px #70405F;font-size:13px;letter-spacing:.06em;transition:color .2s cubic-bezier(.45,0,.2,1),background .2s cubic-bezier(.45,0,.2,1)}
+.chip:hover{color:#F5E6EE}
+.chip.on{color:#13010C;background:#65E1DF;box-shadow:none}
+.ab{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;border:0;cursor:pointer;background:transparent;padding:0;transition:transform .3s cubic-bezier(.45,0,.2,1)}
+.ab span.i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:rgba(5,0,3,.72);box-shadow:inset 0 0 0 1px #70405F;transition:box-shadow .3s cubic-bezier(.45,0,.2,1)}
+.ab img{width:58px;height:58px;object-fit:contain}
+.ab small{font-size:12px;color:#A8869A;text-align:center;line-height:1.2}
+.ab:hover{transform:translateY(-4px)}
+.ab.on{transform:translateY(-8px)}
+.ab.on span.i{box-shadow:inset 0 0 0 2px #65E1DF}
+.ab.on small{color:#F5E6EE}
+.sec{position:absolute;left:80px;right:80px;display:flex;align-items:center;gap:18px}
+.sec .disp{font-size:30px}
+.sec .rule{flex:1;height:1px;background:#70405F}
+.row{display:grid;grid-template-columns:400px 1fr 380px 330px;gap:36px;align-items:start;width:100%;text-align:left;border:0;cursor:pointer;padding:26px 0 26px 20px;background:transparent;border-bottom:1px solid rgba(112,64,95,.6);transition:background .3s cubic-bezier(.45,0,.2,1),box-shadow .3s cubic-bezier(.45,0,.2,1)}
+.row:hover{background:rgba(60,29,49,.35)}
+.row.on{background:rgba(60,29,49,.55);box-shadow:inset 3px 0 0 #65E1DF}
+.row .who{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:center}
+.row .who img{width:72px;height:72px;object-fit:contain;background:#050003;padding:6px}
+.row b{display:block;font-family:'Saira Condensed',sans-serif;font-size:30px;text-transform:uppercase;line-height:1}
+.row .trig{font-size:13px;color:#65E1DF}
+.row p{margin:0;font-size:16px;line-height:1.55}
+.row .k{font-size:11px;letter-spacing:.2em;color:#A8869A;margin-bottom:6px}
+.dial{display:block;font-size:13px;color:#F5E6EE;margin-top:6px}
+.dial i{display:block;font-style:normal;font-size:11px;color:#6C5A65}
+.dial.off{color:#6C5A65;text-decoration:line-through}
+.l5 b{font-size:22px}
+.pill{display:inline-block;margin-top:8px;font-size:11px;letter-spacing:.16em;padding:2px 8px;color:#C4F637;box-shadow:inset 0 0 0 1px #C4F637}
+.gm{position:relative;height:210px;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;overflow:hidden;transition:transform .35s cubic-bezier(.45,0,.2,1)}
+.gm:hover{transform:translateY(-4px)}
+.gm img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.45,0,.2,1)}
+.gm:hover img{transform:scale(1.05)}
+.gm::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#13010C 8%,transparent 72%)}
+.gm>*:not(img){position:relative;z-index:1}
+.gm b{font-family:'Saira Condensed',sans-serif;font-size:26px;text-transform:uppercase;line-height:1.05}
+.gm span{font-size:12px;color:#A8869A}
+.eg{display:grid;grid-template-columns:18px 70px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(112,64,95,.5);font-size:15px}
+.eg img{width:16px;height:16px}
+.eg span{font-size:11px;letter-spacing:.16em;color:#A8869A}
+.eg.none{color:#6C5A65}
+.tbl{display:grid;grid-template-columns:260px repeat(3,1fr);font-size:15px}
+.tbl div{padding:12px 0;border-bottom:1px solid rgba(112,64,95,.5)}
+.tbl .h{font-size:11px;letter-spacing:.2em;color:#A8869A}
+.lst{margin:0;padding:0;list-style:none}
+.lst li{display:flex;gap:16px;padding:11px 0;border-bottom:1px solid rgba(112,64,95,.5);font-size:15px}
+.lst li span{flex:none;color:#A8869A;font-size:13px;width:96px}
+.lst a{color:#F5E6EE;text-decoration:none}
+.lst a:hover{color:#65E1DF}
+.top a{color:#A8869A;text-decoration:none}
+.top a:hover{color:#F5E6EE}
+
+.scene{position:relative;overflow:hidden;width:100%;height:100%}
+.scene .lane{position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,transparent,#70405F,transparent)}
+.hull{position:absolute;top:50%;left:0;width:46px;height:26px;margin-top:-13px;animation:fly 3.2s cubic-bezier(.45,0,.2,1) infinite;will-change:transform}
+.hull svg{width:100%;height:100%;display:block}
+@keyframes fly{0%{transform:translateX(-60px)}100%{transform:translateX(560px)}}
+.crys{position:absolute;left:52%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border:2px solid #F5E6EE;transform:rotate(45deg);animation:crys 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes crys{0%,40%{transform:translateX(0) rotate(45deg) scale(1);opacity:1}52%{transform:translateX(12px) rotate(45deg) scale(1.35);opacity:1}62%,100%{transform:translateX(14px) rotate(45deg) scale(0);opacity:0}}
+.plus{position:absolute;left:54%;top:30%;font-weight:700;font-size:15px;color:#65E1DF;opacity:0;animation:plus 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes plus{0%,52%{opacity:0;transform:translateY(8px)}62%{opacity:1;transform:translateY(0)}86%,100%{opacity:0;transform:translateY(-14px)}}
+.ringwrap{position:absolute;left:58%;top:50%;width:0;height:0}
+.blk{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;background:#DF5CE5;transform:rotate(var(--a)) translateX(34px) scale(0);opacity:0;animation:blk 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes blk{0%,16%{transform:rotate(var(--a)) translateX(10px) scale(0);opacity:0}28%,70%{transform:rotate(var(--a)) translateX(34px) scale(1);opacity:1}84%,100%{transform:rotate(var(--a)) translateX(40px) scale(0);opacity:0}}
+.streak{position:absolute;left:30%;top:50%;width:46%;height:2px;margin-top:-1px;background:linear-gradient(90deg,transparent,#65E1DF);transform-origin:left;transform:scaleX(0);opacity:0;animation:streak 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes streak{0%,50%{transform:scaleX(0);opacity:0}60%{transform:scaleX(1);opacity:1}80%,100%{transform:scaleX(1);opacity:0}}
+.prow{position:absolute;left:8%;right:8%;top:62%;display:flex;justify-content:space-between}
+.pr{position:relative;width:22px;height:22px}
+.pr i,.pr b{position:absolute;inset:0;transform:rotate(45deg) scale(.8)}
+.pr i{background:#DF5CE5;animation:prA 3.2s cubic-bezier(.45,0,.2,1) infinite;animation-delay:var(--d)}
+.pr b{background:#65E1DF;opacity:0;animation:prB 3.2s cubic-bezier(.45,0,.2,1) infinite;animation-delay:var(--d)}
+@keyframes prA{0%,10%{opacity:1}20%,88%{opacity:0}100%{opacity:1}}
+@keyframes prB{0%,10%{opacity:0;transform:rotate(45deg) scale(.8)}18%{opacity:1;transform:rotate(45deg) scale(1.05)}26%,88%{opacity:1;transform:rotate(45deg) scale(.8)}100%{opacity:0}}
+.hull.low{top:40%}
+.meter{position:absolute;left:8%;right:8%;bottom:12%;height:6px;background:#050003;box-shadow:inset 0 0 0 1px #70405F}
+.meter i{position:absolute;inset:0;background:#65E1DF;transform-origin:left;animation:meter 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes meter{0%{transform:scaleX(.18)}90%{transform:scaleX(1)}100%{transform:scaleX(.18)}}
+.pr.g i{background:#70405F;animation:none}.pr.g b{display:none}
+.burst{position:absolute;left:50%;top:50%;width:0;height:0}
+.oc{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:2px solid #FFC549;transform:rotate(45deg);animation:oc 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes oc{0%,10%{transform:rotate(45deg) scale(1);opacity:1}24%{transform:rotate(45deg) scale(1.3);opacity:1}32%,100%{transform:rotate(45deg) scale(0);opacity:0}}
+.sb{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;background:#F5E6EE;box-shadow:0 0 0 2px #65E1DF;opacity:0;animation:sb 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes sb{0%,26%{transform:rotate(var(--a)) translateX(0) scale(.2);opacity:0}40%,78%{transform:rotate(var(--a)) translateX(44px) scale(1);opacity:1}92%,100%{transform:rotate(var(--a)) translateX(48px) scale(.6);opacity:0}}
+/* the devices press on the same clock: a tap lands at 18-26 %, the ring at 28 % */
+.press{animation:press 3.2s cubic-bezier(.45,0,.2,1) infinite;transform-origin:center}
+@keyframes press{0%,16%{transform:scale(1);filter:brightness(1)}20%,24%{transform:scale(.84);filter:brightness(1.6)}30%,100%{transform:scale(1);filter:brightness(1)}}
+.keyp{animation:keyp 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes keyp{0%,16%{transform:translateY(0);box-shadow:inset 0 -4px 0 #70405F,inset 0 0 0 1px #70405F}20%,24%{transform:translateY(3px);box-shadow:inset 0 -1px 0 #65E1DF,inset 0 0 0 1px #65E1DF}30%,100%{transform:translateY(0);box-shadow:inset 0 -4px 0 #70405F,inset 0 0 0 1px #70405F}}
+.lift{animation:lift 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes lift{0%,14%{transform:translateY(0) scale(1);opacity:1}20%,30%{transform:translateY(-9px) scale(1.2);opacity:.3}38%,100%{transform:translateY(0) scale(1);opacity:1}}
+.drift{animation:drift 3.2s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes drift{0%,100%{transform:translate(0,0)}30%{transform:translate(5px,-3px)}65%{transform:translate(-4px,3px)}}
+@media (prefers-reduced-motion:reduce){.scene *,.press,.keyp,.lift,.drift{animation:none!important}}
+
+
+.dev{display:flex;gap:10px}
+.dev.col{flex-direction:column}
+.dv{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;background:#050003;box-shadow:inset 0 0 0 1px #70405F;min-width:0}
+.dl{font-size:10px;letter-spacing:.16em;color:#A8869A}
+.dg{height:44px;display:flex;align-items:center;justify-content:center}
+.dc{font-size:12px;color:#F5E6EE;text-align:center;white-space:nowrap}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:64px;height:34px;padding:0 10px;font-size:13px;font-weight:600;color:#F5E6EE;background:#3C1D31;box-shadow:inset 0 -4px 0 #70405F,inset 0 0 0 1px #70405F}
+.ph{display:inline-flex;align-items:center;justify-content:space-between;width:74px;height:40px;padding:0 9px;border:2px solid #70405F;border-radius:9px;box-sizing:border-box}
+.th{width:14px;height:18px;border-radius:50%;background:#A8869A}
+
+.sea{position:absolute;left:0;top:0;width:3840px;height:100%;animation:sea 90s linear infinite;pointer-events:none}
+@keyframes sea{from{transform:translateX(0)}to{transform:translateX(-1200px)}}
+</style>
+</helmet>
+<div class="app" style="width:390px;height:4040px">
+<style>
+.ph-app .row{grid-template-columns:1fr;gap:12px;padding:20px 0 20px 14px}
+.ph-app .row .who{grid-template-columns:56px 1fr}.ph-app .row .who img{width:56px;height:56px}
+.ph-app .row b{font-size:24px}.ph-app .row p{font-size:14px}
+.ph-app .ab{width:62px}.ph-app .ab span.i{width:58px;height:58px}.ph-app .ab img{width:40px;height:40px}.ph-app .ab small{font-size:10px}
+.ph-app .dv{padding:8px 4px}.ph-app .dc{font-size:11px;white-space:normal}.ph-app .kc{min-width:54px;font-size:11px}
+.ph-app .gm{height:150px}
+</style>
+<div class="ph-app" style="position:absolute;inset:0">
+<header class="top" style="position:absolute;left:16px;right:16px;top:14px;height:44px;display:flex;align-items:center;gap:10px">
+  <span class="disp" style="font-size:18px;letter-spacing:.1em">Fleet Codex</span><span style="flex:1"></span>
+  <button type="button" aria-label="Search" style="width:44px;height:44px;border:0;background:transparent;color:#A8869A;box-shadow:inset 0 0 0 1px #70405F"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+  <button type="button" aria-label="Theme: Nocturne" style="width:44px;height:44px;border:0;background:transparent;box-shadow:inset 0 0 0 1px #70405F;display:flex;align-items:center;justify-content:center;gap:2px"><i style="width:5px;height:12px;background:#65E1DF"></i><i style="width:5px;height:12px;background:#DF5CE5"></i><i style="width:5px;height:12px;background:#FFC549"></i><i style="width:5px;height:12px;background:#7BA0FF"></i></button>
+</header>
+<main style="position:absolute;left:16px;right:16px;top:70px;display:flex;flex-direction:column;gap:22px">
+<div style="height:48px;display:flex;align-items:center;gap:8px">
+  <a href="#Grizzly" aria-label="Previous vessel: Grizzly" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#A8869A"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg></a>
+  <button type="button" style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:#3C1D31;box-shadow:inset 0 0 0 1px #70405F"><span class="disp" style="font-size:20px">Squirrel</span><span style="font-size:11px;color:#A8869A">6 of 23</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
+  <a href="#Serpent" aria-label="Next vessel: Serpent" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#A8869A"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></a>
+</div>
+<div style="position:relative;margin:0 -16px;height:260px;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#480135,#13010C 72%)">
+  <img class="glide soft" src="/_blob/27617fceea883c9a40458136506eb3ef" alt="The Squirrel" style="position:absolute;left:-20px;top:10px;width:430px">
+</div>
+<div style="">
+  <div class="lab" style="color:#65E1DF;font-size:11px">VESSEL 6 · TWO-STICK</div>
+  <div class="disp" style="font-size:60px;line-height:.95">Squirrel</div>
+  <p style="margin:10px 0 0;font-size:15px;line-height:1.55">Get in your flow and stay there. Hard decisions are for other classes. You’re here to bounce around and ride your speed tubes, leaving a wake of creation and destruction.</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px"><div><div class="disp" style="font-size:24px">60</div><div style="font-size:10px;color:#A8869A">u/s cruise</div></div><div><div class="disp" style="font-size:24px">120</div><div style="font-size:10px;color:#A8869A">deg/s turn</div></div><div><div class="disp" style="font-size:24px">4 / 4</div><div style="font-size:10px;color:#A8869A">level 5 wired</div></div><div><div class="disp" style="font-size:24px">8</div><div style="font-size:10px;color:#A8869A">games</div></div></div>
+  <a href="#missions" style="display:flex;align-items:center;justify-content:center;height:48px;margin-top:16px;background:#C4F637;color:#13010C;font-family:'Saira Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:.1em;text-decoration:none">PLAY THE SQUIRREL</a>
+</div>
+<div style="display:flex;justify-content:space-between">
+  <sc-for list="{{abilities}}" as="a" hint-placeholder-count="5"><button type="button" class="{{a.cls}}" onClick="{{a.pick}}"><span class="i"><img src="{{a.icon}}" alt=""></span><small>{{a.name}}</small></button></sc-for>
+</div>
+<div style="padding:16px;background:rgba(60,29,49,.5);box-shadow:inset 0 0 0 1px #70405F"><sc-if value="{{s0}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:baseline;gap:12px"><span class="disp" style="font-size:34px">Crystal Joust</span><span style="color:#65E1DF">Passive - overtake</span></div><div style="height:130px;background:rgba(5,0,3,.72);box-shadow:inset 0 0 0 1px #70405F"><div class="scene" aria-hidden="true"><span class="lane"></span><span class="crys"></span><span class="plus">+ petals</span><span class="hull"><svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="#F5E6EE"/><path d="M2 13 L16 9 L16 17 Z" fill="#65E1DF"/><path d="M-30 13 H2" stroke="#65E1DF" stroke-width="2" opacity=".5"/></svg></span></div></div><div class="dev row"><div class="dv"><span class="dl">CONTROLLER</span><span class="dg"><span class="ph" style="width:56px"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">KEYBOARD</span><span class="dg"><span class="kc" style="opacity:.55">W A S D</span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">PHONE</span><span class="dg"><span class="ph"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div></div></div></sc-if><sc-if value="{{s1}}" hint-placeholder-val="{{true}}"><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:baseline;gap:12px"><span class="disp" style="font-size:34px">Boost Ring</span><span style="color:#65E1DF">Tap</span></div><div style="height:130px;background:rgba(5,0,3,.72);box-shadow:inset 0 0 0 1px #70405F"><div class="scene" aria-hidden="true"><span class="lane"></span><span class="ringwrap"><i class="blk" style="--a:0deg"></i><i class="blk" style="--a:45deg"></i><i class="blk" style="--a:90deg"></i><i class="blk" style="--a:135deg"></i><i class="blk" style="--a:180deg"></i><i class="blk" style="--a:225deg"></i><i class="blk" style="--a:270deg"></i><i class="blk" style="--a:315deg"></i></span><span class="streak"></span><span class="hull"><svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="#F5E6EE"/><path d="M2 13 L16 9 L16 17 Z" fill="#65E1DF"/><path d="M-30 13 H2" stroke="#65E1DF" stroke-width="2" opacity=".5"/></svg></span></div></div><div class="dev row"><div class="dv"><span class="dl">CONTROLLER</span><span class="dg"><img class="press" src="/_blob/8f66fc8db175fc9dad110dc28c1d1a04" alt="RT" style="width:40px;height:40px"></span><span class="dc">RT</span></div><div class="dv"><span class="dl">KEYBOARD</span><span class="dg"><span class="kc keyp">R-Shift</span></span><span class="dc">R-Shift</span></div><div class="dv"><span class="dl">PHONE</span><span class="dg"><span class="ph"><span class="th lift"></span><span class="th"></span></span></span><span class="dc">Lift left thumb</span></div></div></div></sc-if><sc-if value="{{s2}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:baseline;gap:12px"><span class="disp" style="font-size:34px">Steal</span><span style="color:#65E1DF">Passive - skim a prism</span></div><div style="height:130px;background:rgba(5,0,3,.72);box-shadow:inset 0 0 0 1px #70405F"><div class="scene" aria-hidden="true"><span class="lane"></span><span class="prow"><span class="pr" style="--d:0.15s"><i></i><b></b></span><span class="pr" style="--d:0.57s"><i></i><b></b></span><span class="pr" style="--d:0.99s"><i></i><b></b></span><span class="pr" style="--d:1.41s"><i></i><b></b></span><span class="pr" style="--d:1.83s"><i></i><b></b></span><span class="pr" style="--d:2.25s"><i></i><b></b></span></span><span class="hull low"><svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="#F5E6EE"/><path d="M2 13 L16 9 L16 17 Z" fill="#65E1DF"/><path d="M-30 13 H2" stroke="#65E1DF" stroke-width="2" opacity=".5"/></svg></span></div></div><div class="dev row"><div class="dv"><span class="dl">CONTROLLER</span><span class="dg"><span class="ph" style="width:56px"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">KEYBOARD</span><span class="dg"><span class="kc" style="opacity:.55">W A S D</span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">PHONE</span><span class="dg"><span class="ph"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div></div></div></sc-if><sc-if value="{{s3}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:baseline;gap:12px"><span class="disp" style="font-size:34px">Skimming</span><span style="color:#65E1DF">Passive - skim prisms</span></div><div style="height:130px;background:rgba(5,0,3,.72);box-shadow:inset 0 0 0 1px #70405F"><div class="scene" aria-hidden="true"><span class="lane"></span><span class="prow"><span class="pr g"><i></i></span><span class="pr g"><i></i></span><span class="pr g"><i></i></span><span class="pr g"><i></i></span><span class="pr g"><i></i></span><span class="pr g"><i></i></span></span><span class="hull low"><svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="#F5E6EE"/><path d="M2 13 L16 9 L16 17 Z" fill="#65E1DF"/><path d="M-30 13 H2" stroke="#65E1DF" stroke-width="2" opacity=".5"/></svg></span><span class="meter"><i></i></span></div></div><div class="dev row"><div class="dv"><span class="dl">CONTROLLER</span><span class="dg"><span class="ph" style="width:56px"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">KEYBOARD</span><span class="dg"><span class="kc" style="opacity:.55">W A S D</span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">PHONE</span><span class="dg"><span class="ph"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div></div></div></sc-if><sc-if value="{{s4}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:baseline;gap:12px"><span class="disp" style="font-size:34px">Shield Ring</span><span style="color:#65E1DF">Pick up an omni crystal</span></div><div style="height:130px;background:rgba(5,0,3,.72);box-shadow:inset 0 0 0 1px #70405F"><div class="scene" aria-hidden="true"><span class="lane"></span><span class="burst"><span class="oc"></span><i class="sb" style="--a:0deg"></i><i class="sb" style="--a:45deg"></i><i class="sb" style="--a:90deg"></i><i class="sb" style="--a:135deg"></i><i class="sb" style="--a:180deg"></i><i class="sb" style="--a:225deg"></i><i class="sb" style="--a:270deg"></i><i class="sb" style="--a:315deg"></i></span></div></div><div class="dev row"><div class="dv"><span class="dl">CONTROLLER</span><span class="dg"><span class="ph" style="width:56px"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">KEYBOARD</span><span class="dg"><span class="kc" style="opacity:.55">W A S D</span></span><span class="dc">Just fly</span></div><div class="dv"><span class="dl">PHONE</span><span class="dg"><span class="ph"><span class="th drift"></span><span class="th drift"></span></span></span><span class="dc">Just fly</span></div></div></div></sc-if></div>
+<div style=""><div class="lab" style="font-size:11px">ABILITIES</div>
+  <sc-for list="{{abilities}}" as="a" hint-placeholder-count="5"><button type="button" class="{{a.rowCls}}" onClick="{{a.pick}}">
+    <span class="who"><img src="{{a.icon}}" alt=""><span><span class="k">{{a.el}}</span><b>{{a.name}}</b><span class="trig">{{a.trig}}</span></span></span>
+    <p>{{a.does}}</p>
+    <span><span class="k" style="display:block">{{a.more}}</span><p style="font-size:13px">{{a.scales}}</p><sc-for list="{{a.dials}}" as="d" hint-placeholder-count="1"><span class="{{d.cls}}">{{d.txt}}</span></sc-for></span>
+    <span class="l5"><span class="k" style="display:block">{{a.l5tag}}</span><b style="font-family:'Saira Condensed',sans-serif;text-transform:uppercase;font-size:20px">{{a.l5name}}</b><p style="font-size:13px;color:#A8869A;margin-top:4px">{{a.l5desc}}</p></span>
+  </button></sc-for>
+</div>
+<div id="missions">
+  <div class="lab" style="font-size:11px;margin-bottom:10px">MISSIONS</div><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{filters}}" as="f" hint-placeholder-count="7"><button type="button" class="{{f.cls}}" onClick="{{f.pick}}">{{f.label}}</button></sc-for></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><sc-for list="{{games}}" as="g" hint-placeholder-count="8"><div class="gm"><img src="{{g.img}}" alt=""><span>{{g.label}}</span><b style="font-size:20px">{{g.name}}</b></div></sc-for></div>
+  <sc-if value="{{none}}" hint-placeholder-val="{{false}}"><div style="padding:22px;color:#A8869A;box-shadow:inset 0 0 0 1px #70405F">{{noneText}}</div></sc-if>
+</div>
+<div style="">
+  <div class="lab" style="font-size:11px">FLIGHT</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px"><div><div class="disp" style="font-size:20px">60</div><div style="font-size:10px;color:#A8869A">u/s cruise</div></div><div><div class="disp" style="font-size:20px">120 / 120</div><div style="font-size:10px;color:#A8869A">pitch / yaw deg/s</div></div><div><div class="disp" style="font-size:20px">0</div><div style="font-size:10px;color:#A8869A">minimum speed</div></div><div><div class="disp" style="font-size:20px">x1</div><div style="font-size:10px;color:#A8869A">boost</div></div></div>
+  <div style="margin-top:16px;font-size:12px;color:#6C5A65">Controls for every device, docs and recent changes open below.</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":4040}}'>
+
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: 1, filt: 'All' }; }
+  renderVals() {
+    const K = [{"el": "CHARGE", "name": "Crystal Joust", "icon": "/_blob/28caf13c4c51cc3dabdd9ddeb62fada3", "mark": "/_blob/5e320705da242326bd1f14d57cb94875", "trig": "Passive - overtake", "does": "Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting it. Overtake a rival pilot to steal petals off them.", "scales": "More Charge steals more petals with each overtake.", "l5": "L5 Shepherd", "press": false, "pad": "no button", "key": "no button", "touch": "no button", "dials": [{"txt": "stealScale  x1 to x2.5", "src": "VesselOvertakeBySkimmerEffect.asset", "cls": "dial"}], "l5name": "Shepherd", "l5desc": "Jousting an OWN-domain lifeform's crystal nourishes it instead of doing nothing.", "l5state": "WIRED", "more": "MORE CHARGE", "l5tag": "LEVEL 5 · WIRED"}, {"el": "MASS", "name": "Boost Ring", "icon": "/_blob/e2cd6439ef4917f81b7f14c1e04b0d06", "mark": "/_blob/a94b4259b11be12ae624a402365e488f", "trig": "Tap", "does": "Drops a ring of danger prisms ahead of you to fly through the middle of. Grazing it boosts you, but it slams any vessel that hits it, yours included. Twenty-second cooldown.", "scales": "More Mass shortens the cooldown between rings.", "l5": "L5 Twin Rings", "press": true, "pad": "RT", "key": "R-Shift", "touch": "Lift left thumb", "dials": [], "l5name": "Twin Rings", "l5desc": "The boost ring deploys with a second ring.", "l5state": "WIRED", "more": "MORE MASS", "l5tag": "LEVEL 5 · WIRED"}, {"el": "SPACE", "name": "Steal", "icon": "/_blob/407c65dfa28d85aa1ea8e411299436b0", "mark": "/_blob/407c65dfa28d85aa1ea8e411299436b0", "trig": "Passive - skim a prism", "does": "Skim a prism to steal it into your own domain. A rival's shielded prism only loses its shield, and super-shielded prisms can never be taken.", "scales": "More Space grows your skimmer, so each pass steals from further away.", "l5": "L5 Iron Grip", "press": false, "pad": "no button", "key": "no button", "touch": "no button", "dials": [{"txt": "Scale  x15 to x30", "src": "Squirrel.prefab", "cls": "dial"}], "l5name": "Iron Grip", "l5desc": "Shielded prisms are stolen outright and keep their shield, instead of merely being stripped of it.", "l5state": "WIRED", "more": "MORE SPACE", "l5tag": "LEVEL 5 · WIRED"}, {"el": "TIME", "name": "Skimming", "icon": "/_blob/f1478c57f5014fcd7215444bd90cd937", "mark": "/_blob/34fa9e05d3c3263f8a856df7bfd0062a", "trig": "Passive - skim prisms", "does": "Every prism you skim past gives you boost energy, and that energy is your speed. Keep threading close to mass to stay fast.", "scales": "More Time gives more boost energy for each prism you skim.", "l5": "L5 Live Wire", "press": false, "pad": "no button", "key": "no button", "touch": "no button", "dials": [{"txt": "ThrottleScalerMultiplier  x1 to x2.5  (switched off)", "src": "Squirrel.prefab", "cls": "dial off"}, {"txt": "energyMultiplier  x1 to x2", "src": "SkimmerBoostPrismEffect.asset", "cls": "dial"}], "l5name": "Live Wire", "l5desc": "Danger prisms grant 10x boost energy when skimmed.", "l5state": "WIRED", "more": "MORE TIME", "l5tag": "LEVEL 5 · WIRED"}, {"el": "OMNI", "name": "Shield Ring", "icon": "/_blob/187b01f5930c06570dc38a4f7b702a49", "mark": "/_blob/ef6b3eba67683e1f949ec76faceb1fb0", "trig": "Pick up an omni crystal", "does": "The crystal opens and becomes a ring of eight shielded prisms just ahead of your nose.", "scales": "Flown into, never pressed.", "l5": "no level 5", "press": false, "pad": "", "key": "", "touch": "", "dials": [], "l5name": "No level 5", "l5desc": "The omni crystal has no level-5 upgrade.", "l5state": "", "l5tag": "LEVEL 5", "more": "OMNI CRYSTAL"}], G = [{"name": "Joust", "img": "/_blob/e1ed99dc1ca95f7ad7bd6799d2fef248", "els": ["Charge"], "kind": "Arcade", "label": "Charge game", "mark": "/_blob/5e320705da242326bd1f14d57cb94875", "sub": "Squirrels only", "desc": ""}, {"name": "Scurry", "img": "/_blob/9e0ae5004d61a1b41e0d36a172a80737", "els": ["Mass"], "kind": "Arcade", "label": "Mass game", "mark": "/_blob/a94b4259b11be12ae624a402365e488f", "sub": "3 hulls", "desc": "Capture all crystals as fast as you can"}, {"name": "Skim Race", "img": "/_blob/abfc74a0ada7ebdae0759591cdd25b79", "els": ["Time"], "kind": "Arcade", "label": "Time game", "mark": "/_blob/34fa9e05d3c3263f8a856df7bfd0062a", "sub": "Squirrels only", "desc": "Find the fastest path to the crystal by skimming trails for a speed boost."}, {"name": "Maelstrom", "img": "/_blob/b139c1cb8ada70c55845af6a39401438", "els": [], "kind": "Arcade", "label": "Party game", "mark": "/_blob/ef6b3eba67683e1f949ec76faceb1fb0", "sub": "3 hulls", "desc": "A multi-game gauntlet - compete across a lineup of games for the crown."}, {"name": "Broadside", "img": "/_blob/9da0d8eda380ada6d08ea573195d13ae", "els": ["Charge"], "kind": "Arena", "label": "Charge arena", "mark": "/_blob/5e320705da242326bd1f14d57cb94875", "sub": "7 hulls", "desc": "Every hull that can fight, loose in the Boneyard, each with the weapon it actually has - a Sparrow's guns and rockets, an Urchin's spikes, a Swordfish's sword, a Squirrel's joust, a Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is worth what it cost you to land, not what you flew: a round is 1, a contact strike 8, a debuff 12, a rocket up to 30. First team to the target wins. Pick the hull you fight best."}, {"name": "Brood Rush", "img": "/_blob/9d3d0a6f48806339300b9ad2281d9bcf", "els": ["Mass", "Space"], "kind": "Arena", "label": "Mass + Space arena", "mark": "/_blob/a94b4259b11be12ae624a402365e488f", "sub": "7 hulls", "desc": "Hold the nucleus. Every brood the cell births in your color scores a point - first team to three wins."}, {"name": "Astro League", "img": "/_blob/cca3fdfdb93bf65155c6431ed93e6396", "els": ["Time"], "kind": "Arena", "label": "Time arena", "mark": "/_blob/34fa9e05d3c3263f8a856df7bfd0062a", "sub": "3 hulls", "desc": "Hypersea soccer, played with a sword. Swordfish only - swing the blade through the payload and slam it into the enemy portal. Tip strikes hit hardest. First to five, golden goal if it's tied. Welcome to the league."}, {"name": "Regatta", "img": "/_blob/0a8a3d51016e89f3d0b86eb7820a8c94", "els": ["Time"], "kind": "Arena", "label": "Time arena", "mark": "/_blob/34fa9e05d3c3263f8a856df7bfd0062a", "sub": "9 hulls", "desc": "Every hull, one circuit, three laps. Three rails run the racing line in the three team colours - an Urchin grinds the one in its colour and a Squirrel skims it, while a Manta, a Rhino, a Scarab or a Sparrow flies beside it. Thread the rings in order - every gate anyone on your team threads counts. The race ends when the first pilot finishes; the team with the most gates wins. Pick your hull, and tap an ally's avatar to pick theirs."}];
+    const sel = this.state.sel, filt = this.state.filt;
+    const abilities = K.map((a, i) => Object.assign({}, a, { cls: i === sel ? 'ab on' : 'ab', rowCls: i === sel ? 'row on' : 'row', pick: () => this.setState({ sel: i }) }));
+    const games = G.filter(g => filt === 'All' || g.kind === filt || g.els.indexOf(filt) >= 0);
+    const filters = ['All', 'Charge', 'Mass', 'Space', 'Time', 'Arcade', 'Arena'].map(f => ({ label: f, cls: f === filt ? 'chip on' : 'chip', pick: () => this.setState({ filt: f }) }));
+    return { abilities, games, filters, none: games.length === 0, noneText: 'No ' + filt + ' game seats the Squirrel yet.',
+      cur: K[sel], s0: sel === 0, s1: sel === 1, s2: sel === 2, s3: sel === 3, s4: sel === 4 };
+  }
+}
+
+</script>
+</body>
+</html>

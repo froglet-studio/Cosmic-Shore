@@ -9,55 +9,38 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Stoat's SLINGSHOT (<c>R_VesselActions/STOAT.md</c>): an attractor–repulsor WORMHOLE pair
-    /// laid beside the hull — the attractor on the trigger's side, the repulsor mirrored on the other.
+    /// The Stoat's SLINGSHOT is the SWING (Yash, 2026-11-11, <c>R_VesselActions/STOAT_DIPOLE.md</c> §1b "The swing"): a lone,
+    /// small BLACK HOLE, no white hole, no orbit. PRESS lays it <see cref="StoatSlingConfigSO.SwingAhead"/> ahead and
+    /// <see cref="StoatSlingConfigSO.SwingSide"/> to the pressed side. Pass beside it and it SWINGS you toward itself
+    /// (ω = v / d, capped) until you have turned the angle the stick asks (<see cref="StoatSlingMath.SwingTurnDegrees"/>, read
+    /// every frame: toward the hole the most, away the least), then lets you go on that heading. Nothing is drawn for it
+    /// (2026-11-22).
+    /// ONE slingshot (2026-11-19): the swing's own speed-up is kept as momentum, with no second push at the exit
+    /// (<see cref="StoatSlingConfigSO.SwingKickShare"/> ships 0). Letting go of the trigger mid-swing lets you go at once; before
+    /// it, it does nothing. Passed or out of time, the hole collapses and throws the Charge ripple
+    /// (<see cref="StoatRippleExecutor"/>).
     ///
-    /// <para><b>TIME MODE — THE CATCH (2026-10-14, <c>STOAT_DIPOLE.md</c> §1b).</b> The triggers fly this only while
-    /// the hull is in Time mode (<see cref="StoatModeExecutor"/>; Mass mode lays the field dipole). It is the studio's
-    /// dipole sling (<c>StoatFlightStudio.html</c>, the <c>dp*</c> rows): PRESS lays a LIGHT attractor
-    /// <see cref="StoatSlingConfigSO.CatchAhead"/> ahead and <see cref="StoatSlingConfigSO.CatchSide"/> to the pressed side,
-    /// its repulsor mirrored — out in front, where the camera sees it — and the pathfinder draws two rings round it in
-    /// place of the path: the ORBIT radius (the squeeze sets it live, harder = tighter) and the DETECTION radius
-    /// (<see cref="StoatSlingConfigSO.CatchReach"/> × the orbit). Fly past it and it CATCHES you
-    /// (<see cref="StoatSlingMath.Catches"/>): your nose eases onto the orbit's tangent and you go round for as long as you
-    /// hold, up to <see cref="StoatSlingConfigSO.MaxOrbitDegrees"/>. RELEASE and you slingshot out along the tangent, the
-    /// kick TIMED by the angle swept since the catch — all of it a quarter-turn round
-    /// (<see cref="StoatSlingConfigSO.SweetSpotDegrees"/> ± <see cref="StoatSlingConfigSO.SweetSpotHalfWidth"/>),
-    /// <see cref="StoatSlingConfigSO.MissKickShare"/> of it outside, none before a catch — × Time's rate
-    /// (<see cref="StoatDipoleConfigSO.BoostRatio"/>). It can never suck you in: it catches you at the orbit radius, many
-    /// horizons out, and an owned pair pulls no vessel (<see cref="BlackHoleVesselPull"/>). Released, the pair falls
-    /// together and annihilates, and the meeting throws the Charge ripple (<see cref="StoatRippleExecutor"/>).</para>
+    /// <para><b>Retired 2026-11-21</b> (Yash: "make sure all AI uses our latest slingshot mechanics, and delete all other old
+    /// pathfinding and other mechanics"): the catch orbit and its aimed exit, the skim sling, the trampoline and the crystal
+    /// style. Every pilot, human or AI, in every mode, flies the swing; there is no other path.</para>
     ///
-    /// <para><b>Why it changed.</b> The 2026-10-13 cut laid the attractor square beside the hull at the orbit radius and
-    /// started the orbit at once: the pole sat ~80° off the chase camera's axis, so in play nothing was seen and the hull
-    /// was "just pulled right or left" — and its strength was the circular-orbit GM, several times Mass mode's poles.</para>
+    /// <para><b>Where it runs.</b> The press and release replicate, so every peer lays its own copy of the hole from the
+    /// replicated press. The swing itself is flown on the simulating machine only (an owned hole moves no vessel,
+    /// <see cref="BlackHoleVesselPull"/>); the squeeze and the stick are not replicated.</para>
     ///
-    /// <para><b>Where it runs.</b> The press and release replicate, so every peer lays its own copy of the pair from the
-    /// replicated press and lets it go on the release. The catch and the orbit are flown on the simulating machine only;
-    /// the squeeze is not replicated.</para>
-    ///
-    /// <para><b>The crystal style</b> (<c>BlackHoleConfig.crystalPairs</c>, §13) is charming-cerf's
-    /// wormhole and keeps its first design: laid on RELEASE, sized by the deepest squeeze
-    /// (<see cref="StoatSlingMath.Peak"/> — a let-go trigger sweeps back down before the release edge).</para>
-    ///
-    /// <para><b>Naming.</b> Player-facing these are WORMHOLES (attractor / repulsor). In code they are
-    /// the black-hole system's types (<c>BlackHole</c> with <c>HolePolarity.Sink</c> / <c>Source</c>,
-    /// the names <c>cece/charming-cerf-alf1j1</c> chose).</para>
-    ///
-    /// <para><b>One pair per Stoat.</b> A new press ends this hull's last pair (and slings out of an orbit still
-    /// running, so chaining triggers chains turns); other hulls' and the tool's pairs are left alone.</para>
+    /// <para><b>One hole per Stoat.</b> A new press collapses this hull's last hole first; other hulls' holes are left alone.</para>
     /// </summary>
     public sealed class StoatSlingExecutor : ShipActionExecutorBase
     {
         public enum Side { Left = 0, Right = 1 }
 
         [Header("Config")]
-        [Tooltip("Every number of the sling: squeeze → orbit, slingshot, life, the crystal style, audio slots.")]
+        [Tooltip("Every number of the swing: the hole, the turn, the warp, the autopilot, the audio slots.")]
         [SerializeField] StoatSlingConfigSO config;
 
-        // The autopilot's numbers: the mode's own copy when it has one (AIModeTuning, e.g. StoatSlingConfig_Regatta learned
-        // from people's editor flights), resolved once the pilot's mode is known; this config otherwise. Only the AI's
-        // reads go through it - a person flying this hull reads `config`.
+        // The autopilot's numbers: the mode's own copy when it has one (AIModeTuning, e.g. StoatSlingConfig_Slingshot trained
+        // in the real game), resolved once the pilot's mode is known; this config otherwise. Only the AI's reads go through
+        // it - the mechanic itself, and a person flying this hull, read `config`.
         StoatSlingConfigSO _aiConfig;
         StoatSlingConfigSO AIConfig
         {
@@ -72,14 +55,11 @@ namespace CosmicShore.Gameplay
         {
             public bool Holding;
             public float HeldFor;   // seconds, for devices with no analog trigger
-            public float Live;      // this frame's squeeze — the orbit radius follows it
-            public float Peak;      // the deepest squeeze of the hold — the boost and the crystal size
+            public float Peak;      // the deepest squeeze of the hold - the (optional) fling kick
         }
 
         readonly Hold[] _holds = new Hold[2];
         IVesselStatus _status;
-        BlackHoleRegistry.Pair _pair;
-        CrystalWormhole _crystal;
         ToggleTranslationModeActionExecutor _stance;
         readonly InputEvents?[] _boundInput = new InputEvents?[2];
         readonly List<ShipActionSO> _bindScratch = new();
@@ -87,47 +67,55 @@ namespace CosmicShore.Gameplay
 
         StoatModeExecutor _mode;
         StoatRippleExecutor _ripple;
-        StoatDipoleExecutor _dipole;
         bool _resolvedSiblings;
+        int _capturedAtLay;     // the hole's CapturedCount when it was laid (Space-5 Accretion counts from it)
+        float _accretion;       // Space-5 Accretion: the next ripple's reach bonus, 0..accretionMax
         float _lastTiming = -1f;
+        float _lastLaunchAt = float.NegativeInfinity;
+        float _momentumClock = 1f;       // the flight clock at the last fling
+        float _momentumAt = float.NegativeInfinity;
+        float _launchShieldUntil = float.NegativeInfinity;   // Mass 5: the fling's trail is shielded until
 
-        // The Time-mode pair under the trigger, and the orbit once it has caught the hull.
-        bool _laid;          // a pair is laid and held by a trigger (every peer)
-        bool _caught;        // ...and has caught the hull (the simulating machine)
-        Side _orbitSide;
-        float _orbitRadius;
-        float _orbitAngle;   // radians swept round the attractor since the catch
-        Vector3 _lastRadial;
-        float _laidAt;
+        // The swing: a lone black hole that swings the hull round it.
+        BlackHole _swingHole;
+        bool _swingUp;              // a swing hole is up (every peer)
+        bool _swinging;             // ...and it is swinging the hull (the simulating machine)
+        bool _swingWasNear;         // the hull has been within its reach (every peer: the Mass-5 shield on the collapse)
+        Side _swingSide;
+        Vector3 _swingHolePos;
+        float _swingReach;
+        float _swingAt;
+        Vector3 _swingAxis;         // the turn axis, fixed at the start (toward the hole)
+        float _swingTurned;         // degrees turned so far
+        float _swingWant;           // degrees the stick asks for now
 
-        /// <summary>The Time-mode pair this hull laid last, alive or not; null before the first one.</summary>
-        public BlackHoleRegistry.Pair LastPair => _pair;
-        /// <summary>The crystal pair this hull slung last (the crystal style, Docs/BLACK_HOLE.md §13); null before the first.</summary>
-        public CrystalWormhole LastCrystal => _crystal;
         public bool IsHolding(Side side) => _holds[(int)side].Holding;
         /// <summary>The deepest squeeze of the current (or last) hold, 0..1.</summary>
         public float Hold01(Side side) => _holds[(int)side].Peak;
-        /// <summary>True while a Time-mode pair is laid and held (caught or not yet).</summary>
-        public bool HasPair => _laid && _pair != null && _pair.Black != null;
-        /// <summary>True while the attractor has caught the hull and it is circling (the simulating machine).</summary>
-        public bool IsOrbiting => _laid && _caught;
-        /// <summary>The orbit radius the squeeze asks for right now, world units (0 with no pair) — the solid ring.</summary>
-        public float OrbitRadius => _laid ? _orbitRadius : 0f;
-        /// <summary>How far out the attractor can catch the hull, world units (0 with no pair) — the faint ring.</summary>
-        public float DetectionRadius => _laid && config ? _orbitRadius * config.CatchReach : 0f;
-        /// <summary>Radians swept round the attractor since the catch.</summary>
-        public float OrbitAngle => _orbitAngle;
-        /// <summary>True while either trigger holds this executor's squeeze.</summary>
+        /// <summary>True while either trigger is held.</summary>
         public bool IsHoldingAny => _holds[0].Holding || _holds[1].Holding;
-        /// <summary>The laid pair's attractor (caught or not), or null.</summary>
-        public BlackHole Attractor => HasPair ? _pair.Black : null;
-        /// <summary>How well a release RIGHT NOW would be timed, 0..1 (0 before a catch) — the rings and the HUD.</summary>
-        public float Timing01 => IsOrbiting && config ? config.SweetSpot(_orbitAngle * Mathf.Rad2Deg) : 0f;
-        /// <summary>How far round the current orbit is toward the sweet spot, 0..1 (the HUD's Time card).</summary>
-        public float SweetProgress01 => IsOrbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
-        /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
+        /// <summary>True while the swing turns the hull (the simulating machine). The warp and the HUD's Time card read it.</summary>
+        public bool IsOrbiting => _swinging;
+        /// <summary>How well a release RIGHT NOW would be timed, 0..1: the swing has no window, so 1 while it swings you.</summary>
+        public float Timing01 => _swinging ? 1f : 0f;
+        /// <summary>How far through the turn the stick asks for the swing is, 0..1 (the HUD's Time card).</summary>
+        public float SweetProgress01 => _swinging ? Mathf.Clamp01(_swingTurned / Mathf.Max(1f, _swingWant)) : 0f;
+        /// <summary>Seconds since the last fling (+infinity before the first). The HUD's Mass and Time cards.</summary>
+        public float SinceLaunch => Time.time - _lastLaunchAt;
+        /// <summary>Space-5 Accretion on the swing: how much of the ripple-reach bonus the hole has earned, 0..1.</summary>
+        public float Accretion01 => config && config.AccretionMax > 0f ? Mathf.Clamp01(_accretion / config.AccretionMax) : 0f;
+        /// <summary>The Charge ripple the open hole would throw now, as a share of the largest (Accretion full), 0..1; empty
+        /// with no hole. HUD only.</summary>
+        public float RippleCharge01 => _swingUp && config ? (1f + _accretion) / (1f + config.AccretionMax) : 0f;
+        /// <summary>The last fling's timing, 0..1, or −1 before the first.</summary>
         public float LastTiming => _lastTiming;
         public StoatSlingConfigSO Config => config;
+        /// <summary>The last fling's momentum as a flight-clock warp, fading to 1 (the pathfinder reads it).</summary>
+        public float MomentumWarp => config ? StoatSlingMath.MomentumWarp(_momentumClock, 1f, Time.time - _momentumAt, config.MomentumSeconds) : 1f;
+
+        /// <summary>True while a swing's black hole is up (every peer), and while it swings the hull (the simulating machine).</summary>
+        public bool IsSwingUp => _swingUp;
+        public bool IsSwinging => _swinging;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -135,8 +123,8 @@ namespace CosmicShore.Gameplay
             _aiConfig = null;
             _holds[0] = default;
             _holds[1] = default;
-            _laid = false;
-            _caught = false;
+            _lastLaunchAt = float.NegativeInfinity;
+            _swingUp = _swinging = false;
             _resolvedSiblings = false;
             _lastTiming = -1f;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
@@ -145,48 +133,38 @@ namespace CosmicShore.Gameplay
                                  "Wire Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset on the prefab.");
         }
 
-        /// <summary>Trigger PRESS: the Time-mode pair is laid ahead now (it catches the hull as it passes); a crystal pair
-        /// waits for the release.</summary>
+        /// <summary>Trigger PRESS: the swing's black hole is laid ahead on the pressed side.</summary>
         public void BeginHold(Side side)
         {
-            // The triggers fly the orbit in TIME mode only; in Mass mode they lay the field dipole (StoatDipoleExecutor).
             ResolveSiblings();
-            if (_mode && !_mode.IsTimeMode) return;
+            if (_mode && !_mode.UsesOrbit) return;
             int i = (int)side;
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
             _holds[i].HeldFor = 0f;
             // An autopilot writes no trigger, so its fixed squeeze is the hold from the start.
-            float start = config != null && _status != null && _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
-            _holds[i].Live = start;
-            _holds[i].Peak = start;
+            _holds[i].Peak = config != null && _status != null && _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
             if (config == null) return;
             PlayOneShot(config.HoldStartEvent);
-            if (!BlackHoleRegistry.Config.CrystalPairs) LayPair(side);
+            LaySwing(side);
         }
 
-        /// <summary>Trigger RELEASE: let the pair go — slingshot out of the orbit if it caught you — or lay the crystal pair.</summary>
+        /// <summary>Trigger RELEASE: a release while the swing turns you lets you go at once; before it, the hole stays up.</summary>
         public void Release(Side side)
         {
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].Holding = false;
             if (config == null || _status == null) return;
-            if (_laid)
-            {
-                if (_orbitSide == side) Slingshot(boost: true);
-                return;
-            }
-            if (BlackHoleRegistry.Config.CrystalPairs) SlingCrystal(side, _holds[i].Peak);
+            if (_swingUp && _swinging && side == _swingSide && MantaStingActionExecutor.IsSimAuthority(_status) &&
+                _status.VesselTransformer && _status.Transform)
+                Fling(_status.VesselTransformer, _status.Transform);
         }
 
-        /// <summary>
-        /// A mode switch: both triggers let go here. A pair is let go WITHOUT its kick (the switch is not a release) and
-        /// closes and annihilates as any let-go pair does. Every peer runs it (the switch is replicated).
-        /// </summary>
+        /// <summary>A mode switch or a reset: both triggers let go and the hole collapses without a fling. Every peer runs it.</summary>
         public void ReleaseAll()
         {
-            if (_laid) Slingshot(boost: false);
+            if (_swingUp) EndSwing(flung: false);
             _holds[0].Holding = false;
             _holds[1].Holding = false;
         }
@@ -198,18 +176,13 @@ namespace CosmicShore.Gameplay
             if (!TryGetComponent<ActionExecutorRegistry>(out var registry)) return;
             _mode = registry.Get<StoatModeExecutor>();
             _ripple = registry.Get<StoatRippleExecutor>();
-            _dipole = registry.Get<StoatDipoleExecutor>();
         }
 
-        // ------------------------------------------------------------------ Time mode: the catch and the orbit
+        /// <summary>The speed the hull is actually flying: the swing's turn ω = v / d comes from it.</summary>
+        float FlightSpeed() => Mathf.Max(_status.Speed, 1f);
 
-        /// <summary>The speed the hull is actually flying: the orbit's turn ω = v / r comes from it, so the circle drawn is
-        /// the circle flown (a floored speed would turn a slow hull on a smaller circle than the radius and leave the
-        /// radial correction fighting it).</summary>
-        float OrbitSpeed() => Mathf.Max(_status.Speed, 1f);
-
-        /// <summary>The engine's own speed: the published speed with the flight-clock warp taken out. The kick is a share of
-        /// it, as in the studio (<c>speed + flow</c>), so the warp paces the flight without compounding into the kick.</summary>
+        /// <summary>The engine's own speed: the published speed with the flight-clock warp taken out, so the warp paces the
+        /// flight without compounding into the (optional) fling kick.</summary>
         float EngineSpeed()
         {
             var transformer = _status.VesselTransformer;
@@ -218,215 +191,207 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// True while the Time-mode pair is held and warps the hull's flight clock (the studio's catch warp, dpWarp): from
-        /// the press (<see cref="StoatSlingConfigSO.CatchWarpFromPress"/>) or once caught. The pathfinder, the one writer of
-        /// the clock, reads it.
+        /// True while the swing's hole is up and warps the hull's flight clock: from the press
+        /// (<see cref="StoatSlingConfigSO.CatchWarpFromPress"/>) or once it swings you. The pathfinder, the one writer of the
+        /// clock, reads it.
         /// </summary>
-        public bool WarpsFlight => _laid && _pair != null && _pair.IsAlive && _pair.Held && config &&
-                                   config.CatchWarpShare > 0f && (_caught || config.CatchWarpFromPress);
-
-        float RadiusFor(float hold01)
-        {
-            // Space is reach: read live, never cached (vessel contract rule 2).
-            float reach = config.OrbitReach.EvaluateLive(_status);
-            return StoatSlingMath.OrbitRadius(hold01, config.OrbitRadiusWide * reach, config.OrbitRadiusTight * reach, config.HoldExponent);
-        }
-
-        /// <summary>
-        /// The press: a LIGHT pair laid AHEAD — the attractor to the pressed side, the repulsor mirrored — held, not
-        /// moving. Every peer lays its own copy from the replicated press.
-        /// </summary>
-        void LayPair(Side side)
-        {
-            var hull = _status.Transform;
-            if (hull == null) return;
-            // One pair per Stoat: a press while circling slings out of the old orbit first.
-            if (_laid) Slingshot(boost: true);
-            EndLastPair();
-            var bh = BlackHoleRegistry.Config;
-            if (!BlackHoleRegistry.CanSpawn(2))
-            {
-                CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                    $"[Stoat] Time-mode pair refused — needs two free of {bh.MaxBlackHoles} wormholes ({BlackHoleRegistry.Count} live).");
-                return;
-            }
-
-            bool left = side == Side.Left;
-            StoatSlingMath.CatchPair(hull.position, hull.forward, hull.right, left, config.CatchAhead, config.CatchSide,
-                out var attractor, out var repulsor);
-            // The pair's axis runs attractor → repulsor (BlackHolePairMath puts the attractor at −axis).
-            float strength = config.PoleGM / Mathf.Max(1e-3f, bh.GmPerStrength);
-            _pair = BlackHoleRegistry.SpawnPair(0.5f * (attractor + repulsor), StoatSlingMath.PairAxis(left, hull.right), strength,
-                config.PoleHorizon, config.CatchSide, config.DriftSpeed, config.Lifetime, hull.up, OwnerTransform(), held: true);
-            if (_pair == null) return;
-
-            _laid = true;
-            _caught = false;
-            _orbitSide = side;
-            _orbitRadius = RadiusFor(_holds[(int)side].Live);
-            _orbitAngle = 0f;
-            _laidAt = Time.time;
-            // A sling is a launch: leave the hold-still stance, which would otherwise pin the hull.
-            if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
-            CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[Stoat] {side} Time-mode pair laid {config.CatchAhead:F0} u ahead, orbit {_orbitRadius:F0} u, " +
-                $"detection {_orbitRadius * config.CatchReach:F0} u");
-        }
-
-        /// <summary>
-        /// The simulating machine's frame with a pair laid: the orbit radius follows the squeeze; until the attractor
-        /// catches the hull nothing else happens (an owned pair pulls no vessel); once caught the nose eases onto the
-        /// orbit's tangent and the hull is held on the radius, and the angle swept round the attractor is counted — what
-        /// the release's timing reads.
-        /// </summary>
-        void StepOrbit(float dt)
-        {
-            var hull = _status.Transform;
-            var transformer = _status.VesselTransformer;
-            if (!hull || !transformer || _pair.Black == null) return;
-
-            _orbitRadius = Mathf.Lerp(_orbitRadius, RadiusFor(_holds[(int)_orbitSide].Live), 1f - Mathf.Exp(-config.RadiusFollowRate * dt));
-            var centre = _pair.Black.transform.position;
-
-            if (!_caught)
-            {
-                if (_status.IsTranslationRestricted) return;
-                if (!StoatSlingMath.Catches(hull.position, hull.forward, centre, _orbitRadius, _orbitRadius * config.CatchReach,
-                        config.CatchDegrees))
-                    return;
-                _caught = true;
-                _orbitAngle = 0f;
-                _lastRadial = hull.position - centre;
-                CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                    $"[Stoat] caught at {_lastRadial.magnitude:F0} u (orbit {_orbitRadius:F0} u)");
-            }
-
-            // Onto the radius...
-            var toCentre = centre - hull.position;
-            float distance = toCentre.magnitude;
-            if (distance > 1e-3f)
-                transformer.TranslateShip(toCentre / distance *
-                                          StoatSlingMath.RadialCorrection(distance, _orbitRadius, config.RadialCorrectionRate, dt));
-
-            // ...and round it: the nose eases onto the tangent and turns at ω = v / r, the momentum with it.
-            float step = OrbitSpeed() / Mathf.Max(1f, _orbitRadius) * dt;
-            var tangent = StoatSlingMath.OrbitHeading(hull.forward, toCentre, step);
-            var desired = StoatSlingMath.SettleHeading(hull.forward, tangent, step * Mathf.Rad2Deg,
-                1f - Mathf.Exp(-config.SettleRate * dt));
-            Quaternion.FromToRotation(hull.forward, desired).ToAngleAxis(out float degrees, out var axis);
-            if (degrees > 1e-4f && axis.sqrMagnitude > 1e-8f) transformer.ApplyRotation(degrees, axis);
-            transformer.SetCourseVelocity(desired);
-
-            // The angle really swept round the attractor (not ω·t: a catch off the radius sweeps slower at first).
-            var radial = hull.position - centre;
-            _orbitAngle += Vector3.Angle(_lastRadial, radial) * Mathf.Deg2Rad;
-            _lastRadial = radial;
-            if (_orbitAngle * Mathf.Rad2Deg >= config.MaxOrbitDegrees) LetGoReplicated();
-        }
-
-        /// <summary>The longest orbit is flown: let go through the replicated path, so every peer's copy is let go too.</summary>
-        void LetGoReplicated()
-        {
-            var handler = _status.ActionHandler;
-            if (handler && ResolveBoundInput(_orbitSide, handler, out var ie)) handler.StopShipControllerActionsReplicated(ie);
-            else Release(_orbitSide);
-        }
-
-        /// <summary>
-        /// Out of the pair: it is let go (it closes and annihilates) and, on a real release of a pair that CAUGHT the
-        /// hull, the hull is thrown along its tangent — the kick timed by the angle swept since the catch.
-        /// </summary>
-        void Slingshot(bool boost)
-        {
-            if (!_laid) return;
-            bool caught = _caught;
-            _laid = false;
-            _caught = false;
-            BlackHoleRegistry.LetGo(_pair);
-            var transformer = _status.VesselTransformer;
-            var hull = _status.Transform;
-            if (boost && caught && transformer && hull && MantaStingActionExecutor.IsSimAuthority(_status))
-            {
-                // TIMED: the whole kick for a release a quarter-turn round (the sweet spot), the miss share outside it;
-                // × Time's rate, the Stoat's one Time number (StoatDipoleConfigSO.BoostRatio).
-                ResolveSiblings();
-                float timing = config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
-                float rate = _dipole && _dipole.Config ? _dipole.Config.BoostRatio(_status) : 1f;
-                float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
-                float kick = StoatSlingMath.TimedKick(squeeze, timing, config.MissKickShare, rate);
-                _lastTiming = timing;
-                // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer). A timed kick can
-                // pass the shared 100 u/s displacement ceiling, so it raises the cap for its own life (vessel §4.ab2) —
-                // never the vessel's ceiling, which every knock-back shares.
-                if (kick > 0f) transformer.ModifyVelocity(hull.forward * (kick / 1.5f), config.SlingBoostSeconds, false, kick * 1.05f);
-                if (timing >= 0.999f) PlayOneShot(config.SweetSpotEvent);
-                PlayOneShot(config.SlingEvent);
-            }
-            CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[Stoat] {_orbitSide} Time-mode pair let go ({(caught ? $"after {_orbitAngle * Mathf.Rad2Deg:F0}°" : "never caught")})");
-        }
-
-        void EndLastPair()
-        {
-            if (_pair != null && _pair.IsAlive)
-            {
-                // A fresh press over a live pair annihilates it where it stands: that is an annihilation too, and throws
-                // the Charge ripple from its middle (StoatRippleExecutor).
-                var middle = 0.5f * (_pair.Black.transform.position + _pair.White.transform.position);
-                float separation = Vector3.Distance(_pair.Black.transform.position, _pair.White.transform.position);
-                BlackHoleRegistry.Annihilate(_pair);
-                Detonate(middle, separation);
-            }
-            if (_crystal && !_crystal.IsGone && !_crystal.IsAnnihilating) _crystal.Annihilate(BlackHoleRegistry.Config.CrystalReplaceSeconds);
-        }
-
-        /// <summary>This hull's let-go pair met and annihilated (every peer, its own copy): the Charge ripple, its reach
-        /// the separation the pair was laid at.</summary>
-        void OnPairMet(BlackHoleRegistry.Pair pair, Vector3 at)
-        {
-            if (pair == null || pair != _pair) return;
-            Detonate(at, 2f * pair.HalfGap0);
-        }
+        public bool WarpsFlight => config && config.CatchWarpShare > 0f && _swingUp && (_swinging || config.CatchWarpFromPress);
 
         void Detonate(Vector3 at, float separation)
         {
             ResolveSiblings();
-            if (_ripple) _ripple.Detonate(at, separation);
+            if (_ripple) _ripple.Detonate(at, separation, _accretion);
+            _accretion = 0f;
         }
 
-        void OnEnable() => BlackHoleRegistry.PairMet += OnPairMet;
+        /// <summary>
+        /// Space 5 — Accretion on the swing: while the hole is up it STEALS what falls in (in your domain), and every capture
+        /// since it was laid adds accretionPerPrism to its ripple's reach, to accretionMax. Every peer runs this on its own
+        /// copy — the upgrade bit, the name and the domain are replicated, and the gravity field counts captures on every peer.
+        /// </summary>
+        void StepAccretion()
+        {
+            var black = _swingUp ? _swingHole : null;
+            if (!black) return;
+            var abilities = _status.ElementalAbilityHandler;
+            bool active = _status.Player != null && abilities && abilities.IsUpgradeActive(Element.Space);
+            if (!active)
+            {
+                if (black.PrismCapture == BlackHole.PrismCaptureRule.Steal) black.PrismCapture = BlackHole.PrismCaptureRule.Default;
+                return;
+            }
+            black.PrismCapture = BlackHole.PrismCaptureRule.Steal;
+            black.CaptureDomain = _status.Domain;
+            black.CaptureOwnerName = _status.PlayerName;
+            float before = _accretion;
+            _accretion = StoatSlingMath.AccretionBonus(black.CapturedCount - _capturedAtLay, config.AccretionPerPrism, config.AccretionMax);
+            if (_accretion > before)
+                CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] Accretion: {black.CapturedCount - _capturedAtLay} stolen, ripple +{_accretion:P0}");
+        }
 
-        // ------------------------------------------------------------------ the crystal style
+        // ------------------------------------------------------------------ the swing (STOAT_DIPOLE.md §1b)
 
-        void SlingCrystal(Side side, float hold01)
+        /// <summary>
+        /// The press: a lone, small BLACK HOLE laid <see cref="StoatSlingConfigSO.SwingAhead"/> ahead and
+        /// <see cref="StoatSlingConfigSO.SwingSide"/> to the pressed side, held still. Owned by this hull, so it pulls no vessel.
+        /// Every peer lays its own copy from the replicated press.
+        /// </summary>
+        void LaySwing(Side side)
         {
             var hull = _status.Transform;
             if (hull == null) return;
+            // One per Stoat: a press over a live hole collapses it first.
+            if (_swingUp) EndSwing(flung: false);
             var bh = BlackHoleRegistry.Config;
-            float strength = StoatSlingMath.Strength(hold01, config.MinStrength, config.MaxStrength, config.HoldExponent);
-            float rs = bh.HorizonRadius(strength);
-            float halfGap = rs * config.HalfGapHorizons.EvaluateLive(_status);
-            var midpoint = StoatSlingMath.Midpoint(hull.position, hull.forward, rs, config.AheadHorizons);
-            var axis = StoatSlingMath.PairAxis(side == Side.Left, hull.right);
-
-            EndLastPair();
-            if (!BlackHoleRegistry.CanSpawn(2))
+            if (!BlackHoleRegistry.CanSpawn(1))
             {
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                    $"[Stoat] sling refused — needs two free of {bh.MaxBlackHoles} wormholes ({BlackHoleRegistry.Count} live).");
+                    $"[Stoat] swing refused — needs one free of {bh.MaxBlackHoles} wormholes ({BlackHoleRegistry.Count} live).");
                 return;
             }
-            // charming-cerf's wormhole: its mouths carry this pilot alone, its wells pull this hull alone.
-            var riders = new List<IPlayer>(1);
-            if (_status.Player != null) riders.Add(_status.Player);
-            _crystal = BlackHoleRegistry.SpawnCrystalPair(midpoint, axis, halfGap,
-                BlackHoleRegistry.CrystalSettings(strength, 0f, hull.up, riders), OwnerTransform());
-            if (_crystal == null) return;
+
+            var at = StoatSlingMath.SwingHole(hull.position, hull.forward, hull.right, side == Side.Right, config.SwingAhead, config.SwingSide);
+            float strength = config.PoleGM / Mathf.Max(1e-3f, bh.GmPerStrength);
+            _swingHole = BlackHoleRegistry.Spawn(at, strength, Vector3.zero, hull.up, config.SwingHorizon, HolePolarity.Sink);
+            if (_swingHole == null) return;
+            _swingHole.OwnerVessel = OwnerTransform();
+
+            _swingUp = true;
+            _swinging = false;
+            _swingWasNear = false;
+            _swingSide = side;
+            _swingHolePos = at;
+            // Space is reach: the replicated tier, so every peer starts and ends the swing at the same distance.
+            _swingReach = config.SwingReach * Mathf.Max(1f, config.OrbitReach.EvaluateReplicated(_status));
+            _swingAt = Time.time;
+            _swingTurned = 0f;
+            _accretion = 0f;
+            _capturedAtLay = _swingHole.CapturedCount;
+            // A swing is a launch: leave the hold-still stance, which would otherwise pin the hull.
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
-            PlayOneShot(config.SlingEvent);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                $"[Stoat] {side} swing hole laid {config.SwingAhead:F0} u ahead, {config.SwingSide:F0} u aside, reach {_swingReach:F0} u");
+        }
+
+        /// <summary>
+        /// A frame with a swing hole up. The simulating machine: passing beside it starts the swing; the heading turns toward
+        /// the hole at ω = v / d (capped) about the axis fixed at the start, until it has turned the angle the stick asks now
+        /// (the autopilot: until it faces its target), then the fling. Every peer: passed untouched (moving away beyond its
+        /// reach) or out of time, it collapses.
+        /// </summary>
+        void StepSwing(float dt)
+        {
+            var hull = _status.Transform;
+            if (!hull) return;
+            if (!_swingHole || _swingHole.IsDespawning) { EndSwing(flung: false); return; }
+            var toHole = _swingHolePos - hull.position;
+            float d = toHole.magnitude;
+            if (d <= _swingReach) _swingWasNear = true;
+
+            // The angle the stick asks for now, about the hole's side of the nose.
+            Stick(out float x, out float y);
+            _swingWant = StoatSlingMath.SwingTurnDegrees(x, y, Vector3.Dot(toHole, hull.right), Vector3.Dot(toHole, hull.up),
+                config.SwingMinDegrees, config.SwingMaxDegrees);
+
+            var transformer = _status.VesselTransformer;
+            if (MantaStingActionExecutor.IsSimAuthority(_status) && transformer && !_status.IsTranslationRestricted)
+            {
+                if (!_swinging && StoatSlingMath.SwingStarts(hull.position, hull.forward, _swingHolePos, _swingReach, config.SwingCatchDegrees))
+                {
+                    _swinging = true;
+                    _swingAxis = StoatSlingMath.SwingAxis(hull.forward, toHole, hull.up);
+                    _swingTurned = 0f;
+                    PlayOneShot(config.SwingStartEvent);
+                    if (IsLocalHumanPilot) HapticController.PlaySkim(1f);
+                    CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] swing started {d:F0} u from the hole");
+                }
+                if (_swinging)
+                {
+                    bool done;
+                    float want = _swingWant;
+                    if (_status.AutoPilotEnabled)
+                    {
+                        // The AI's stick picks the angle toward its target: it is let go once it faces it.
+                        var ai = _status.AIPilot;
+                        var toTarget = ai ? ai.TargetPosition - hull.position : hull.forward;
+                        float off = Vector3.Angle(hull.forward, toTarget);
+                        want = config.SwingMaxDegrees;
+                        done = StoatSlingMath.SwingAiLetsGo(_swingTurned, off, config.SwingMinDegrees, want, AIConfig.AiSwingFaceDegrees,
+                            StoatSlingMath.OnSwingSide(hull.forward, toTarget, _swingAxis));
+                    }
+                    else done = _swingTurned >= want;
+                    // Swung far out past the hole's reach (a slow turn on a wide pass): let go where it points.
+                    if (done || d > 2f * _swingReach) { Fling(transformer, hull); return; }
+                    float step = Mathf.Min(StoatSlingMath.SwingRate(FlightSpeed(), d, config.SwingDegreesPerSecond) * dt, want - _swingTurned);
+                    var heading = Quaternion.AngleAxis(step, _swingAxis) * hull.forward;
+                    Quaternion.FromToRotation(hull.forward, heading).ToAngleAxis(out float degrees, out var turnAxis);
+                    if (degrees > 1e-4f && turnAxis.sqrMagnitude > 1e-8f) transformer.ApplyRotation(degrees, turnAxis);
+                    transformer.SetCourseVelocity(heading);
+                    _swingTurned += step;
+                    return;
+                }
+            }
+            if (!_swinging && ((Vector3.Dot(hull.forward, toHole) < 0f && d > _swingReach) || Time.time - _swingAt >= config.SwingSeconds))
+                EndSwing(flung: false);
+        }
+
+        /// <summary>
+        /// Let go by the swing (the simulating machine), on the heading it turned you onto. ONE slingshot (2026-11-19): the
+        /// swing's own speed-up (the warp from its start) is kept as momentum; a second push - the hold's squeeze × Mass's power
+        /// - is paid only as <see cref="StoatSlingConfigSO.SwingKickShare"/> of it (0 ships).
+        /// </summary>
+        void Fling(VesselTransformer transformer, Transform hull)
+        {
+            _swinging = false;
+            float kick = 0f;
+            if (config.SwingKickShare > 0f)
+            {
+                float power = config.LaunchPower.EvaluateLive(_status);
+                float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_swingSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
+                kick = config.SwingKickShare * StoatSlingMath.CappedKick(squeeze * power, _status.Speed, config.SpeedCapShare);
+                kick = StoatSlingMath.WarpCappedKick(kick, transformer.FlightTimeScale, EngineSpeed(), config.WarpKickCapCruise);
+            }
+            _momentumClock = Mathf.Max(1f, transformer.FlightTimeScale);
+            _momentumAt = Time.time;
+            _lastLaunchAt = Time.time;
+            _lastTiming = 1f;
+            // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer); the kick raises the
+            // displacement cap for its own life only (vessel §4.ab2).
+            if (kick > 0f) transformer.ModifyVelocity(hull.forward * (kick / 1.5f), config.SlingBoostSeconds, false, kick * 1.05f);
+            PlayOneShot(config.SwingFlingEvent);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] flung after {_swingTurned:F0}° of swing: kick {kick:F0}");
+            EndSwing(flung: true);
+        }
+
+        /// <summary>The swing hole collapses (every peer, its own copy): the black hole goes and the Charge ripple is thrown from
+        /// it. A hull that came within its reach lays its trail shielded for the kick's length (Mass 5).</summary>
+        void EndSwing(bool flung)
+        {
+            if (!_swingUp) return;
+            _swingUp = false;
+            _swinging = false;
+            if (_swingHole && !_swingHole.IsDespawning) _swingHole.BeginDespawn(0.25f);
+            if (_swingHole && _swingHole.PrismCapture == BlackHole.PrismCaptureRule.Steal) _swingHole.PrismCapture = BlackHole.PrismCaptureRule.Default;
+            _swingHole = null;
+            if (flung || _swingWasNear) _launchShieldUntil = Time.time + config.SlingBoostSeconds;
+            Detonate(_swingHolePos, config.RippleSeparation);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] swing hole collapsed ({(flung ? "flung" : _swingWasNear ? "passed close" : "untouched")})");
         }
 
         // ------------------------------------------------------------------ frame
+
+        /// <summary>The person flying this hull on this machine: no AI seat, no autopilot, the local owner. Only they get the
+        /// haptics.</summary>
+        bool IsLocalHumanPilot => _status != null && _status.Player != null && _status.IsLocalUser &&
+                                  !_status.IsInitializedAsAI && !_status.AutoPilotEnabled;
+
+        /// <summary>The stick this frame, each axis clamped to a full deflection.</summary>
+        void Stick(out float x, out float y)
+        {
+            var input = _status.InputStatus;
+            x = input != null ? Mathf.Clamp(input.XSum, -1f, 1f) : 0f;
+            y = input != null ? Mathf.Clamp(input.YSum, -1f, 1f) : 0f;
+        }
 
         void Update()
         {
@@ -436,60 +401,45 @@ namespace CosmicShore.Gameplay
             bool autopilot = _status.AutoPilotEnabled;
             Track(Side.Left, input != null ? input.LeftTriggerAnalog : 0f, analog, autopilot);
             Track(Side.Right, input != null ? input.RightTriggerAnalog : 0f, analog, autopilot);
+            var prisms = _status.VesselPrismController;
+            if (prisms) prisms.ForceShielded = Time.time < _launchShieldUntil && config.ShieldsLaunchTrail(_status);
 
-            if (_laid)
-            {
-                // The pair ended under us (annihilated, or held past its lifetime and let go on its own).
-                if (_pair == null || !_pair.IsAlive) _laid = _caught = false;
-                else if (!_pair.Held) Slingshot(boost: true);
-                else if (MantaStingActionExecutor.IsSimAuthority(_status)) StepOrbit(Time.deltaTime);
-            }
+            StepAccretion();
+            if (_swingUp) StepSwing(Time.deltaTime);
 
             ResolveSiblings();
-            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.IsTimeMode)) AutopilotSling();
+            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.UsesOrbit)) AutopilotSwing();
         }
 
         /// <summary>
-        /// The sling an autopilot cannot press (the arcade rule: never assume an AI can use a human's input). When the
-        /// AI's target sits at least <c>aiSlingMinTurnDegrees</c> off the nose and far enough away, it presses the trigger
-        /// on the side it wants to turn — the pair is laid ahead on that side, and the AI steering toward its target flies
-        /// past it and is caught. Once caught it lets go when the target is within <c>aiReleaseConeDegrees</c> of the nose
-        /// (or, inside the timing window, within three times that, for the full kick); a pair that has not caught it after
-        /// <c>aiCatchGiveUpSeconds</c> is let go. Both edges through the REPLICATED path, so every peer runs the same sling
-        /// a human's would. Simulating machine only.
+        /// The swing an autopilot cannot press (the arcade rule: never assume an AI can use a human's input). It presses toward
+        /// a turn it wants (target at least <c>aiSlingMinTurnDegrees</c> off the nose, far enough away, every
+        /// <c>aiSlingIntervalSeconds</c>; or for the warp on a long leg, <c>aiWarpMinDistance</c>) and lets go at once - the
+        /// hole stays up. The hole sits on the turn's side, so steering toward its target it passes beside it and is swung; it
+        /// is let go once it faces its target (<see cref="StepSwing"/>). Both edges through the REPLICATED path, so every peer
+        /// runs the same swing a human's would. Simulating machine only.
         /// </summary>
-        void AutopilotSling()
+        void AutopilotSwing()
         {
             var handler = _status.ActionHandler;
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (!handler || !ai || !hull) return;
-            if (_laid)
-            {
-                bool letGo;
-                if (!_caught) letGo = Time.time - _laidAt >= AIConfig.AiCatchGiveUpSeconds;
-                else
-                {
-                    float off = Vector3.Angle(hull.forward, ai.TargetPosition - hull.position);
-                    float cone = AIConfig.AiReleaseConeDegrees;
-                    letGo = off <= cone || (Timing01 >= 0.999f && off <= 3f * cone);
-                }
-                if (letGo && ResolveBoundInput(_orbitSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
-                return;
-            }
-            if (AIConfig.AiSlingMinTurnDegrees <= 0f) return;
-            if (Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
-            // Bearing from the steering point, range from the objective: on a race line the steering point sits one
-            // look-ahead away, inside AiSlingMinDistance at cruise (StoatDipoleMath.AutopilotGauge).
+            for (int i = 0; i < 2; i++)
+                if (_holds[i].Holding && !_swinging && ResolveBoundInput((Side)i, handler, out var held))
+                    handler.StopShipControllerActionsReplicated(held);
+            if (_swingUp || AIConfig.AiSlingMinTurnDegrees <= 0f || Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
+            // Bearing from the steering point, range from the objective: on a race line the steering point sits one look-ahead
+            // away, inside AiSlingMinDistance at cruise (StoatDipoleMath.AutopilotGauge).
             var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
                                                        (ai.ObjectivePosition - hull.position).magnitude);
-            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool attractorLeft))
-                return;
-            var side = attractorLeft ? Side.Left : Side.Right;
+            if (!StoatSlingMath.AutopilotPress(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance,
+                                               AIConfig.AiWarpMinDistance, out bool turnLeft)) return;
+            var side = turnLeft ? Side.Left : Side.Right;
             if (!ResolveBoundInput(side, handler, out var ie)) return;
             _aiLastSlingTime = Time.time;
-            handler.PerformShipControllerActionsReplicated(ie);                                         // the squeeze: the pair is laid ahead
-            if (BlackHoleRegistry.Config.CrystalPairs) handler.StopShipControllerActionsReplicated(ie);   // the crystal sling
+            handler.PerformShipControllerActionsReplicated(ie);   // the black hole is laid ahead on the turn's side
+            handler.StopShipControllerActionsReplicated(ie);      // and stays up
         }
 
         /// <summary>Which input event this side's sling is bound to on THIS vessel — read off the
@@ -523,7 +473,6 @@ namespace CosmicShore.Gameplay
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += Time.deltaTime;
             float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot, AIConfig.AutopilotHold01);
-            _holds[i].Live = sample;
             _holds[i].Peak = StoatSlingMath.Peak(_holds[i].Peak, sample);
         }
 
@@ -538,19 +487,23 @@ namespace CosmicShore.Gameplay
             if (audio) audio.PlaySFXEvent(reference, transform.position);
         }
 
-        // A vessel swap or despawn drops the squeeze and lets an orbiting pair go (it closes and annihilates).
+        // A vessel swap or despawn drops the squeeze and collapses the hole.
         void OnDisable()
         {
-            BlackHoleRegistry.PairMet -= OnPairMet;
-            if (_laid)
+            if (_swingUp)
             {
-                _laid = _caught = false;
-                BlackHoleRegistry.LetGo(_pair);
+                _swingUp = _swinging = false;
+                if (_swingHole && !_swingHole.IsDespawning) _swingHole.BeginDespawn(0.25f);
+                _swingHole = null;
             }
             _holds[0] = default;
             _holds[1] = default;
             _boundInput[0] = null;
             _boundInput[1] = null;
+            _launchShieldUntil = float.NegativeInfinity;
+            _momentumAt = float.NegativeInfinity;
+            var prisms = _status?.VesselPrismController;
+            if (prisms) prisms.ForceShielded = false;
         }
     }
 }

@@ -106,10 +106,15 @@ Four asks in one pass:
 
 ### The heat is on the guns card
 
-The Space card (Pulsefire Cannons) carries the heat as the fleet's linear gauge, with a mark across
-it at **every phase transition** — 6, 8, 14, 18 and 24 s of heat, i.e. 21% / 29% / 50% / 64% /
-86% of the gauge. Marks the heat has passed are bright; marks ahead are dim, so the card says which
-stage the gun is in and how close the next one is. Nothing is authored for it:
+The Space card (Pulsefire Cannons) carries the heat as the fleet's linear gauge, marked at **every
+phase transition** (since Round 8 the even sixths, 17 / 33 / 50 / 67 / 83%). Since 2026-10-27 a join
+the heat has passed is a GAP cut through the fill, so the fill reads as one bar per level reached,
+and a join still ahead is a short dim tick in from each slanted edge - the card says which stage the
+gun is in and how close the next one is without a ruler across the whole card. The ICON over it is
+the live cone: ten rounds on their rays inside the gun's real half-angle (mapped per level onto a
+readable card angle, `SparrowHUDView.SprayCardAngle`; pushed each frame from
+`GunSprayAccuracy.HalfAngleDegrees`) - one stream when cold, the card's full height in the collapse.
+The icon is drawn by `/ability-icon` (`Tools/Build/icon_kit/specs/sparrow.py`). Nothing is authored for it:
 `SparrowHUDView.EnsureGeneratedAbilityIcons` generates the gauge Image and binds it into the Space
 entry, and the lockup re-homes and masks it exactly like an authored meter (an authored gauge would
 win). The marks are children of the gauge, so they ride inside the same stencil. The joins come from
@@ -414,7 +419,7 @@ The shell's palette:
 |---|---|---|
 | `_FresnelRimColor` (always-on shell) | `(0.25, 0.55, 1.0)` | **neutral** — a saturated blue |
 | `_CrackleColorB` (arc body) | `(0.10, 0.35, 1.0)` | **neutral** — a deeper saturated blue |
-| `_CrackleColorA` (arc core) | `(1.4979111, 0.0058463, 0.0068495)` | **danger** — `EnvironmentColors.Danger` from `OriginalColorSetSO`, **verbatim** |
+| `_CrackleColorA` (arc core) | `(1.4979111, 0.0058463, 0.0068495)` | **danger** — `EnvironmentColors.Danger` from `PhoticColorSetSO`, **verbatim** |
 
 The danger colour is taken from the live colour set rather than eyeballed, because it is the one
 shared, domain-independent red the arena already uses for danger mass — so a round's hot core is
@@ -904,7 +909,7 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 
 | File | Role |
 |---|---|
-| `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — the four-stage curve, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. Also declares `GunSpreadStages`, the parameter object the curve consumes (six loose floats at a call site are transposable, and a transposed pair produces a plausible wrong curve rather than an error). |
+| `_Scripts/Utility/Foundation/GunSpreadMath.cs` | The pure cone math — the four-stage curve, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. Also declares `GunSpreadStages`, the parameter object the curve consumes (six loose floats at a call site are transposable, and a transposed pair produces a plausible wrong curve rather than an error). |
 | `R_VesselActions/Data Containers/GunSpreadProfile.cs` | The authored profile (cone + haptic ramp). Serialized on the bullet action. |
 | `R_VesselActions/Executors/GunSprayAccuracy.cs` | Per-vessel hold state, the spread clock, the haptic ramp, and the deferred reset. |
 | `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and the authored growth pair; `ResolveGrowthFactor` reads the shared curve. Hands the accuracy component to its executor. |
@@ -968,7 +973,7 @@ parameter, and because the shell is a general `Projectile` capability rather tha
 | `_ArcSharpness` | **0.12** | Arc width in radians. Lower reads as lightning, higher as a smear. |
 | `_ArcIntensity` | **1** | Arc brightness. At the shipped values arcs are ~34% of the shell's light and the rest is the rim. |
 | `_CoreThreshold` | **0.75** | Where the arc stops being neutral blue and becomes danger red. **Lower it and the two colours blend into magenta** — this is a separation dial, not a blend dial. Measured hue split at 0.75: 78% blue / 15% red / 7% magenta. |
-| `_CrackleColorA` | **`EnvironmentColors.Danger`** | The hot core. Taken verbatim from `OriginalColorSetSO` so a round's core is the same red as the arena's danger mass. |
+| `_CrackleColorA` | **`EnvironmentColors.Danger`** | The hot core. Taken verbatim from `PhoticColorSetSO` so a round's core is the same red as the arena's danger mass. |
 | `_CrackleColorB` / `_FresnelRimColor` | **(0.10,0.35,1) / (0.25,0.55,1)** | The neutral blues — the arc body and the always-on shell. |
 | `_CrackleRate` | **6** | Discharges per second per seed. Also what spreads consecutive volleys' phases apart — drop it far and a burst starts flashing in unison. |
 | `_FresnelRimIntensity` | **0.18** | The always-on rim. **This is the see-through dial**: it sets the shell's floor alpha (0.036 at the muzzle, 0.079 fully charged). Raise it far and an enormous round starts hiding the arena. |

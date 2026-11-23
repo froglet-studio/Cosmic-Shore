@@ -73,6 +73,8 @@ Shader "CosmicShore/UI/ElementRim"
 
             #pragma multi_compile_local _ UNITY_UI_CLIP_RECT
             #pragma multi_compile_local _ UNITY_UI_ALPHACLIP
+            #pragma multi_compile _ COSMIC_COLOR_GRADE
+            #include "../ColorGrade.cginc"   // the art follows the worn colour set
 
             struct appdata_t
             {
@@ -120,6 +122,7 @@ Shader "CosmicShore/UI/ElementRim"
                 // there is already transparent; this only stops paying for it (Docs/MENU_REDESIGN_B.md §46.3).
                 if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
                 half4 tex = tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd;
+                tex.rgb = COSMIC_GRADE_UI(tex.rgb);
                 float4 rim = ElementRim(IN.rimUV.xy, IN.rimUV.zw, _Time.y, _Speed, _Tail, _BaseLevel, _Omni, _Linear,
                                         _ElementColor.rgb, _ChargeColor.rgb, _MassColor.rgb, _SpaceColor.rgb, _TimeColor.rgb);
                 // The selection breathes (rev 7): the whole rim dims and recovers once per breath; 0 is steady.

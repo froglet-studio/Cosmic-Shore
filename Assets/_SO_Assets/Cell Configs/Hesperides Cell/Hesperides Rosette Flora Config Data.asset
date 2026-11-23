@@ -28,7 +28,7 @@ MonoBehaviour:
   Element: 2
   Variant:
     Enabled: 1
-    LeafSize: {x: 7.56, y: 7.56, z: 1}
+    LeafSize: {x: 5.6, y: 5.6, z: 1}
     GrowPeriod: 2.08
     ShieldPeriod: 0.0
     MaxTotalSpawnedObjects: 108

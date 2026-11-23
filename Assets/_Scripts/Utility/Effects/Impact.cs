@@ -19,8 +19,10 @@ namespace CosmicShore.Utility
         static readonly int VelocityID = Shader.PropertyToID("_velocity");
         static readonly int OpacityID = Shader.PropertyToID("_Opacity");
 
-        public float positionScale;
-        public float maxDistance = 3f;
+        [SerializeField] float positionScale;
+        public float PositionScale => positionScale;
+        [SerializeField] float maxDistance = 3f;
+        public float MaxDistance => maxDistance;
 
         /// <summary>Raised when the drift completes; the owning pool subscribes on checkout.</summary>
         public event Action<Impact> OnReturnToPool;

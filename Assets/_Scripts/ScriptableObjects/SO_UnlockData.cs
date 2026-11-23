@@ -85,6 +85,12 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("If true, this node is a placeholder for a feature not yet implemented")]
         public bool IsPlaceholder;
 
+        [Header("Reward")]
+        [Tooltip("The colour set claiming this quest gives (Shombith, 2026-11-14: colour sets are the quests' rewards; " +
+                 "Docs/MENU_REDESIGN_B.md section 200). The Quests window shows it beside the quest. Empty: no reward " +
+                 "is shown. A claimed quest's set is the player's (QuestRewards.IsEarned).")]
+        public SO_ColorSet RewardColorSet;
+
         /// <summary>
         /// Runtime flag set when the quest goal is achieved during gameplay.
         /// Not serialized — lives only in the current session, synced from ProgressionData on load.

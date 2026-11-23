@@ -239,53 +239,38 @@ namespace CosmicShore.Tests
         // ---------------------------------------------------------------- drift
 
         [Test]
-        public void AFullDrift_SlidesTheHullOut_AndTheNeckLeans_ThenSettlesBack()
+        public void ADrift_NeverMovesTheHullOnScreen()
         {
+            // Garrett 2026-11-02: the game is truly 3D with no "up", so the hull's place in the frame is the pilot's
+            // reference for position, speed and orientation. A drift (course locked, nose swinging) rumbles, but
+            // never offsets the camera or leans it.
             var feel = new CameraFeel();
             Set("driftRumble", 0f);
             Vector3 cruise = new(0f, 0f, 2f * _config.DriftFullSpeed * Distance);   // well above drift speed
-            Vector3 p = Fly(feel, 3f, Vector3.zero, cruise, Vector3.zero, drift: 1f);
-            float slide = CameraFeel.SoftClamp(new Vector3(_config.DriftSlide, 0f, 0f), _config.MaxGOffset).x;
-            Assert.AreEqual(-slide, feel.LocalOffset.x, 1e-3f, "A full drift slides the hull off the centre by DriftSlide.");
-            Assert.AreEqual(_config.GRoll * slide / _config.MaxGOffset, feel.LocalAngles.z, 0.02f,
-                "The same G leans the camera like the pilot's neck.");
-            Fly(feel, 4f, p, cruise, Vector3.zero, drift: 0f);
-            Assert.Less(feel.LocalOffset.magnitude, 1e-3f);
-            Assert.Less(feel.LocalAngles.magnitude, 1e-2f);
+            Vector3 p = Fly(feel, 0.5f, Vector3.zero, cruise, Vector3.zero);
+            p = Fly(feel, 3f, p, cruise, Vector3.zero, drift: 1f);
+            Assert.Less(feel.LocalOffset.magnitude, 1e-4f, "A full drift must not displace the hull on screen.");
+            Assert.Less(feel.LocalAngles.magnitude, 1e-3f, "A full drift must not lean the camera.");
+            Fly(feel, 1f, p, cruise, Vector3.zero, drift: -1f);
+            Assert.Less(feel.LocalOffset.magnitude, 1e-4f, "Nor a drift to the other side.");
         }
 
         [Test]
-        public void ADrift_BuildsWithAnAcceleratingStart_AndSwingsALittlePast()
+        public void ADrift_StillRumbles()
         {
-            // Not an ease along a straight line: the slide starts still, gathers speed, overshoots and settles,
-            // the way a head is thrown and caught.
             var feel = new CameraFeel();
+            Set("driftRumble", 1f);
             Vector3 cruise = new(0f, 0f, 2f * _config.DriftFullSpeed * Distance);
             Vector3 p = Fly(feel, 0.5f, Vector3.zero, cruise, Vector3.zero);
-            float previous = 0f, previousStep = 0f, deepest = 0f;
-            bool accelerated = false;
-            for (int i = 0; i < 180; i++)
+            float most = 0f;
+            for (int i = 0; i < 120; i++)
             {
                 p += cruise * Dt;
                 feel.Step(_config, Dt, p, Quaternion.identity, Distance, 1f, 1f, 1f);
-                float x = -feel.LocalOffset.x;
-                if (i > 0 && i < 4 && x - previous > previousStep + 1e-7f) accelerated = true;
-                previousStep = x - previous;
-                previous = x;
-                deepest = Mathf.Max(deepest, x);
+                most = Mathf.Max(most, feel.LocalAngles.magnitude);
+                Assert.Less(feel.LocalOffset.magnitude, 1e-4f, "The rumble wobbles the view; it never moves the hull.");
             }
-            Assert.IsTrue(accelerated, "The slide must gather speed over its first frames, not start at full speed.");
-            Assert.Greater(deepest, previous * 1.01f, "With damping below 1 it swings a little past and settles back.");
-        }
-
-        [Test]
-        public void ADriftAtACrawl_SlidesLess()
-        {
-            var slow = new CameraFeel();
-            var fast = new CameraFeel();
-            Fly(slow, 3f, Vector3.zero, new Vector3(0f, 0f, 0.3f * _config.DriftFullSpeed * Distance), Vector3.zero, drift: 1f);
-            Fly(fast, 3f, Vector3.zero, new Vector3(0f, 0f, 2f * _config.DriftFullSpeed * Distance), Vector3.zero, drift: 1f);
-            Assert.Less(Mathf.Abs(slow.LocalOffset.x), 0.5f * Mathf.Abs(fast.LocalOffset.x));
+            Assert.Greater(most, 0.05f * _config.RumbleAngle, "A drift is still felt as a rumble.");
         }
 
         [Test]

@@ -559,7 +559,7 @@ namespace CosmicShore.Gameplay
                 ? status.Course.normalized
                 : ship.forward;
 
-            Vector3 centre = ship.position + course * place.placementDistance.EvaluateLive(status);
+            Vector3 centre = ship.position + course * place.PlacementDistance.EvaluateLive(status);
             float tolerance = settings != null ? settings.aiAnchorAimTolerance : 70f;
             return ScarabSwitchAnchors.TryResolve(ship.position, centre, tolerance, out _);
         }

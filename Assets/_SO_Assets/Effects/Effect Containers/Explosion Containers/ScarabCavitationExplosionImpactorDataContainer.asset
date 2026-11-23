@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ScarabCavitationExplosionImpactorDataContainer
   m_EditorClassIdentifier:
   vesselExplosionEffects:
-  - {fileID: 11400000, guid: 1587fc1489104b19b23b3f545657df3d, type: 2}
+  - {fileID: 11400000, guid: 9799d633521f44d6993dc54878002176, type: 2}
   - {fileID: 11400000, guid: 8ddb9ffd0015031800dfec98bcd5dc2d, type: 2}
   explosionPrismEffects: []
   explosionCrystalEffects:
