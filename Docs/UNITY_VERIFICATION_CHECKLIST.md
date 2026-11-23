@@ -26451,6 +26451,23 @@ in Unity. The cause is read from the load reports, not reproduced.
 - [ ] Normal case: return to the menu from an arcade game and from a Voyage, then launch another game: as before.
 - [ ] Return to the menu, launch a game, return again within 30 s: the second return is not ignored.
 
+## Avatar borders, Rev 127 D Ripple (2026-11-23)
+
+Every party seat and rematch-vote avatar is cut to a circle with a domain ring on its edge, two waves the ring sends out
+to the halo's rim, and the halo behind it at 1.3x (`AvatarRippleBorder`, built at run time round the avatar Image;
+`PartySlotDomainGlow` retired; the octagon ring, gap and backing are gone from `PartySlot.prefab`). Not run in the Unity
+editor: none in this session. The reference compile has 0 errors in the changed files (the rest are in untouched files,
+from packages this machine cannot fetch). The edit-mode tests `AvatarRippleBorderTests` were not run.
+
+- [ ] Run `AvatarRippleBorderTests` in the Test Runner: all four pass.
+- [ ] Menu_Main, a party of 2-4: every seated avatar is round, its ring sits exactly on the edge, the glow is centred on
+      it and a thin wave runs from the ring to the glow's edge and fades there, about every 1.2 s. No square corners.
+- [ ] A pilot whose domain is not known yet: no glow, no waves, a quiet grey line ring. Re-pick a domain mid-lobby:
+      the colour eases to the new one.
+- [ ] Hovering a member's avatar still opens their profile card; the host's kick button still works on its shoulder.
+- [ ] End of a match, Play Again votes: each voter's avatar blooms in round, ringed in their domain colour with the waves.
+- [ ] Phone and iPad: the rings stay round (not stretched) and the waves do not get clipped by the panel.
+
 ## Arcade Poster card and the cell in every card picture (2026-11-23, Shombith's pick, Frogma Rev 128 E / Rev 129)
 
 Not opened in the editor: built in a cloud session (unity_refcompile: 0 errors in the changed files).
