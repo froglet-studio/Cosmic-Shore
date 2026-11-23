@@ -126,6 +126,36 @@ MonoBehaviour:
     - {fileID: 11400000, guid: bf8b71ceef5d5c2d72b5f91153cefb04, type: 2}
     - {fileID: 11400000, guid: d178ed24d3b1f5225cd670822633f7b7, type: 2}
     - {fileID: 11400000, guid: e9cd5e24a37dca338302c40167224d61, type: 2}
+  - Name: Ray
+    ElementConfigs:
+    - {fileID: 11400000, guid: 1243a8c0942c8abaf753cc507bdcd81e, type: 2}
+    - {fileID: 11400000, guid: 7bab02eb972d9e8285139dff817a1ccf, type: 2}
+    - {fileID: 11400000, guid: 72cff7c2060cedd5e30681376f48ec9e, type: 2}
+    - {fileID: 11400000, guid: 38382646eaef4faeedab20a9138eedcb, type: 2}
+  - Name: Plume
+    ElementConfigs:
+    - {fileID: 11400000, guid: d2b563b7b4e7fea20507ab4dbd89f937, type: 2}
+    - {fileID: 11400000, guid: 5d562a27745db55a73fe20f97eac1606, type: 2}
+    - {fileID: 11400000, guid: 08ae3c9031cef752a918e7fa81c593c5, type: 2}
+    - {fileID: 11400000, guid: 2d79b73212b14538f57ae3dae1e0beb6, type: 2}
+  - Name: Lantern
+    ElementConfigs:
+    - {fileID: 11400000, guid: 247f736a426917b0b95c5aaab4705302, type: 2}
+    - {fileID: 11400000, guid: 7668c5936b39a7629f43e67407e2168b, type: 2}
+    - {fileID: 11400000, guid: 01148409160f4bb92a8c002454db5659, type: 2}
+    - {fileID: 11400000, guid: c711ce0a19872f7ba9019df93937da19, type: 2}
+  - Name: Ammon
+    ElementConfigs:
+    - {fileID: 11400000, guid: 9b5f61b99db0311701fa088e440f90ad, type: 2}
+    - {fileID: 11400000, guid: 0ece654edee9a838a53e64ca953e6108, type: 2}
+    - {fileID: 11400000, guid: 4b01e4591b96ae99a02b215738f914cf, type: 2}
+    - {fileID: 11400000, guid: 282f5e5b7a8c2ec3b9d8ddd8f728c049, type: 2}
+  - Name: Nettle
+    ElementConfigs:
+    - {fileID: 11400000, guid: d514808ba271bf2723499662f11607d5, type: 2}
+    - {fileID: 11400000, guid: 3392780b79c3d0da6a618d38ece987c2, type: 2}
+    - {fileID: 11400000, guid: e3fbe097223c81bc145294cdd31a60f5, type: 2}
+    - {fileID: 11400000, guid: 457bcaee5d2173e130aca9fc2a3ad75b, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -324,6 +354,16 @@ MonoBehaviour:
     Description: "8 sprinters that hunt the shoal as a pack. A hunter streaks out when it bursts and can burn only after 0.4 s of it. Charge crystals. Spawn with a Shoal or it scavenges flora."
   - Species: Bee
     Description: "A pollinator. It eats no plants: it makes the plants it visits, of every colour, grow faster. Released on its own it pollinates wherever it is; predators hunt it."
+  - Species: Ray
+    Description: "A glider grown from woven wire: two great vanes that beat in a slow wave, two lobes curled round its crystal, a long whip with a sting. It grazes mass as it passes. Ride it with a Jewel Wasp: it eats whatever comes within its lobes."
+  - Species: Plume
+    Description: "A feather star grown from woven wire: ten feathered arms round a cup, every one ending in a sting. It eats on every side through its plumes and whips all ten arms at a vessel. Each element is its own body."
+  - Species: Lantern
+    Description: "A lit comb jelly: eight rows of beating combs round a woven body, two long stinging lines behind. The smoothest swimmer here and quick to turn; it lunges. Each element is its own body."
+  - Species: Ammon
+    Description: "Twin coiled shells either side of its heart, like a ram's horns, with six stinging feelers between. It swims in jets: a kick, then a glide it turns in. Each element is its own body."
+  - Species: Nettle
+    Description: "A woven bell that swims in pulses, eight stinging tendrils hanging from its rim and four frilled arms beneath. It eats on every side and whips a vessel anywhere inside its tendrils. Each element is its own body."
   - Species: Gyroid
     Description: "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about every 30s into one endless lattice. Space grows needles."
   - Species: SchwarzP
@@ -353,7 +393,7 @@ MonoBehaviour:
   - Species: Frond
     Description: "A fern of four arching, drooping stems lined with paired leaflets the whole way along."
   - Species: Lantern
-    Description: "A hanging bell: one stem ending in a single big blossom head cupped downward."
+    Description: "A lit comb jelly: eight rows of beating combs round a woven body, two long stinging lines behind. The smoothest swimmer here and quick to turn; it lunges. Each element is its own body."
   - Species: Reed
     Description: "Five straight upright blades with a pair of leaves near the top, the grass at a pool's edge."
   - Species: Rosette

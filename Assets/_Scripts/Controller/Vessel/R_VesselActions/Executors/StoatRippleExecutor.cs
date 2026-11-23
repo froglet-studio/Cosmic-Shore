@@ -89,8 +89,7 @@ namespace CosmicShore.Gameplay
             s_vessels.Clear();
             _waves.Add(wave);
 
-            StoatRipple.Spawn(at, wave.Radius, config.ExpandSeconds, config.FadeSeconds, config.BandWidth, config.Bend,
-                config.ChromaticSplit, DomainLight(), config.RimGlow);
+            StoatRipple.Spawn(at, wave.Radius, config);
             PlayOneShot(config.RippleEvent, at);
             CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] ripple at {at} radius {wave.Radius:F0} u (separation {separation:F0} u)");
         }
@@ -204,14 +203,6 @@ namespace CosmicShore.Gameplay
                 VictimName = victim.PlayerName,
                 HitClass = CombatHitClass.Debuff,
             });
-        }
-
-        /// <summary>The owner domain's LIGHT colour (the dipole's source core wears it), white without a palette.</summary>
-        Color DomainLight()
-        {
-            if (_status?.Player == null) return Color.white;
-            var colors = PrismLit.ColorSet;
-            return colors && colors.TryGetPrismKindColors(_status.Domain, PrismKind.Plain, out var light, out _) ? light : Color.white;
         }
 
         void PlayOneShot(EventReference reference, Vector3 at)

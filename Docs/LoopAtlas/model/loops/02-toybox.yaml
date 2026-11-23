@@ -101,6 +101,12 @@
     s: built
   src:
   - Docs/ToySystem/ARCHITECTURE.md (Spawn Matrix, Cell Selector)
+  prop:
+    s: change
+    note: 'Since 2026-11-22 the matrix spawns five grown creatures (Ray, Plume, Lantern, Ammon, Nettle), each in four element
+      forms with a body of its own (PR #2327, Tools/Build/author_spawn_matrix_roster.py). Let ''play in what you made''
+      include riding one: offer the Jewel Wasp beside a spawned creature, so the matrix becomes the free version of the
+      Wasp''s possession kit and the four forms are something a player feels, not only sees.'
 - id: toy.paint
   parent: toybox
   at: 2

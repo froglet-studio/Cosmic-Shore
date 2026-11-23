@@ -939,7 +939,9 @@ def recipe(stem, card_path, pal, ends):
         # ball in front of it - so it is drawn as one (an opaque sphere swallowed Joust whole).
         r = r or nuc
         if r > 0:
-            layers.append({"kind": "shell", "c": [0, 0, 0], "r": r, "color": [0.22, 0.28, 0.75], "strength": strength * 0.3})
+            # Faint, near-neutral glass (Frogma Rev 129, "Inside the cell"): drawn blue at 0.3 it washed a third of
+            # Skim Race's card blue-violet; the race inside it keeps its own colours.
+            layers.append({"kind": "shell", "c": [0, 0, 0], "r": r, "color": NUCLEUS_GLASS, "strength": strength * 0.14})
 
     def crystal(pos, size, colour=(0.55, 1.2, 0.25)):
         layers.append({"kind": "sphere", "c": list(pos), "r": size, "base": [c * 0.3 for c in colour],
@@ -1885,13 +1887,25 @@ def recipe(stem, card_path, pal, ends):
     accents(s, layers, stage, cam, pal, R, card_path)
 
     if R > 0:
-        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", [0.2, 0.3, 0.8]),
+        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", WALL_COLOUR),
                        "strength": 0.1})
+        # Inside the cell (Shombith picked it, 2026-11-23, Frogma Rev 129): every card is in a cell, so it shows the
+        # cell's wall - the net of many-sided panes - and the white dust you fly through, on the deep-sea ground
+        # instead of the old purple-blue one.
+        for k, v in CELL_LOOK.items():
+            look.setdefault(k, v)
+        look.setdefault("CellRadius", R)
     return {"tier": tier, "layers": layers, "camera": cam, "look": look, "stage": stage,
             "cell": facts["name"] if facts else None, "env": env.stem if env else None,
             "track": track.stem if track else None}
 
 
+# The look of the cell (Frogma Rev 129 "Inside the cell", Docs/MENU_REDESIGN_B.md section 222.1): the deep-sea ground
+# (the style guide's Deep Sea navy, no violet nebula), the wall's panes and the dust. Linear RGB, before ACES.
+NUCLEUS_GLASS = [0.30, 0.38, 0.48]
+WALL_COLOUR = [0.42, 0.52, 0.62]
+CELL_LOOK = {"SkyTop": [0.0015, 0.003, 0.011], "SkyBottom": [0.002, 0.004, 0.013], "Nebula": [0.004, 0.008, 0.015],
+             "Stars": 0, "WallColour": WALL_COLOUR, "WallStrength": 0.42, "WallPanes": 240, "Dust": 650}
 OMNI = (0.55, 1.25, 0.22)   # the CTA lime a free crystal wears (Docs/PALETTE.md §2.2)
 
 
