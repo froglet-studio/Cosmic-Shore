@@ -573,6 +573,34 @@ def validate(spec):
             errors.append(f"voyage {vid}: no name")
         elif name.strip().lower() in TYPE_NAMES:
             errors.append(f"voyage {vid}: '{name}' is a voyage type, not a name")
+
+    # Each voyage type's giver: a crew pilot gives it, known faction types, and every type a named voyage sails has one
+    # (the classes it wants are VoyageClassesSO's, Tools/Build/author_voyage_classes.py).
+    crew_ids = {p["pilot"] for p in spec["crew"]}
+    typed = set()
+    for t in spec.get("voyageTypes", []):
+        ty = t.get("type", "")
+        if ty in typed:
+            errors.append(f"voyage type {ty}: described twice")
+        typed.add(ty)
+        if ty != "escort" and ty not in job_ids:
+            errors.append(f"voyage type {ty}: no job and not 'escort'")
+        if t.get("giver") not in crew_ids:
+            errors.append(f"voyage type {ty}: giver {t.get('giver')} is no crew pilot")
+        sides = {}
+        for side in ("keen", "reluctant", "refuse"):
+            for f in t.get(side, []):
+                if f not in e["fac"] or f == "None":
+                    errors.append(f"voyage type {ty}: unknown faction type {f} in {side}")
+                if f in sides:
+                    errors.append(f"voyage type {ty}: {f} is both {sides[f]} and {side}")
+                sides[f] = side
+        for k in ("say", "lore"):
+            if not t.get(k, "").strip():
+                errors.append(f"voyage type {ty}: no {k}")
+    for v in spec.get("voyages", []):
+        if v.get("type") not in typed:
+            errors.append(f"voyage {v.get('id')}: its type {v.get('type')} has no giver")
         text(f"voyage {vid}", name, tokens=False)
         text(f"voyage {vid}", v.get("line", ""), tokens=False)
     return errors
@@ -671,6 +699,12 @@ def to_model(spec):
     m["World"] = {field: (list(world[key]) if kind is list else world[key]) for key, field, kind in WORLD_FIELDS}
     kaiju = spec.get("kaiju", {})
     m["Kaiju"] = {field: (bool(kaiju[key]) if kind is bool else kaiju[key]) for key, field, kind in KAIJU_FIELDS}
+    # Who gives each voyage type and what it wants (Milestone 2, the Voyage Codex: the quay's givers).
+    m["VoyageTypes"] = [{"Type": t["type"], "Giver": t["giver"], "Say": t.get("say", ""), "Lore": t.get("lore", ""),
+                         "Keen": [e["fac"][f] for f in t.get("keen", [])],
+                         "Reluctant": [e["fac"][f] for f in t.get("reluctant", [])],
+                         "Refuse": [e["fac"][f] for f in t.get("refuse", [])]}
+                        for t in spec.get("voyageTypes", [])]
     words = spec.get("words", {})
     m["Words"] = {field: words.get(key, "") for key, field in WORDS_FIELDS}
     # The named voyages (Milestone 2, Docs/Voyages/MILESTONE_2.md section 2).
@@ -874,6 +908,9 @@ def self_test():
         "a rival with no hulls": lambda s: s["rivals"][0].update(hulls=[]),
         "a voyage named for its type": lambda s: s["voyages"][0].update(name="Salvage"),
         "a voyage of seven cells": lambda s: s["voyages"][0].update(cells=7),
+        "a voyage type given by a stranger": lambda s: s["voyageTypes"][0].update(giver="pilot.nobody"),
+        "a faction both keen and reluctant": lambda s: s["voyageTypes"][0].update(keen=["Pirate"], reluctant=["Pirate"]),
+        "a voyage type with no giver": lambda s: s["voyageTypes"].pop(0),
         "a voyage at rung 5": lambda s: s["voyages"][0].update(rung=5),
         "a voyage of an unknown type": lambda s: s["voyages"][0].update(type="job.nope"),
         "a voyage to nowhere": lambda s: s["voyages"][0].update(to="loc.nowhere"),
@@ -919,7 +956,7 @@ def self_test():
     # The twin is the model: every top-level C# field, enums as numbers, and it round-trips.
     twin = json.loads(emit_twin(spec))
     for field in ("Locations", "Lanes", "Crew", "Jobs", "Events", "Seeds", "SeedWrecks", "WreckLine", "WreckNewsLine",
-                  "Rivals", "Sagas", "World", "Kaiju", "Words", "Voyages"):
+                  "Rivals", "Sagas", "World", "Kaiju", "Words", "Voyages", "VoyageTypes"):
         if field not in twin:
             failures.append(f"the twin lacks {field}")
     if twin["Jobs"] and not isinstance(twin["Jobs"][0]["Verb"], int):

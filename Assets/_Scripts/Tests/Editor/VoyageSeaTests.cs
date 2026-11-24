@@ -81,6 +81,22 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EveryVoyageTypeHasAGiver()
+        {
+            // The quay (Milestone 2 shell, stage 2) reads these: who offers the work, what they say, who is keen.
+            var c = Shipped();
+            foreach (var type in c.Voyages.Select(v => v.Type).Distinct())
+            {
+                var info = c.VoyageType(type);
+                Assert.IsNotNull(info, $"{type} has a giver");
+                Assert.IsNotNull(c.Person(info.Giver), $"{type}: the giver is a crew pilot");
+                Assert.IsEmpty(info.Keen.Intersect(info.Reluctant.Concat(info.Refuse)), $"{type}: no faction both keen and not");
+                Assert.IsNotEmpty(info.Say);
+            }
+            Assert.IsNull(c.VoyageType("job.nope"), "a probe, not a fault");
+        }
+
+        [Test]
         public void TheLadderRoughensRungByRung()
         {
             var r = VoyageSeaRung.Defaults();

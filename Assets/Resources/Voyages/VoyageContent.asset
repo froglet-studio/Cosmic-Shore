@@ -2881,6 +2881,55 @@ MonoBehaviour:
       SightedLine: 'The {kaiju} is sighted at {about}. Every port is talking about it, and no hunter is sailing alone.'
       MovedLine: 'The {kaiju} has moved its lair to {about}.'
       FelledLine: 'The {kaiju} broke at {about}. The next one will be worse: the sea remembers how it died.'
+    VoyageTypes:
+    - Type: job.salvage.drift
+      Giver: pilot.callsign.galleon
+      Say: The Grin will smell this field by noon. Skim fast, bank faster, and don't carry more than you can lose.
+      Lore: When an Ark goes down, her hold bursts and her crystal drifts loose through the cells for days. Ours is nearly dry, and that drift is the only fuel nobody owns. Fly in, take every loose crystal you can reach, and bring it to the Ark before something with teeth takes it from you.
+      Keen:
+      - 4
+      - 9
+      - 8
+      Reluctant:
+      - 3
+      - 15
+      Refuse: []
+    - Type: escort
+      Giver: pilot.callsign.wingman
+      Say: I don't need you to win anything out there. I need her hull green when we dock.
+      Lore: 'Some crossings are made by people who cannot fly them: settlers, wounded crews, a whole port moving house. The Ark carries them, and every creature between here and the next nucleus has noticed. Nothing aboard is worth anything if she arrives in pieces.'
+      Keen:
+      - 14
+      - 3
+      - 1
+      Reluctant:
+      - 6
+      - 8
+      Refuse: []
+    - Type: job.bounty.crew
+      Giver: pilot.callsign.bandit
+      Say: BANDIT sees them through anything. You just have to be faster than their nerve.
+      Lore: Writ and Hook posts a price on any crew the ports are tired of. This one has been stripping wrecks that were not theirs and leaving the crews inside. They are two cells out and running for a port that will hide them. Serve the warrant at sea, and what they carry spills for whoever is close.
+      Keen:
+      - 5
+      - 2
+      Reluctant:
+      - 16
+      - 13
+      Refuse: []
+    - Type: job.defence.aid
+      Giver: pilot.callsign.rampart
+      Say: Build first. Shoot second. A wall that stands is worth ten kills.
+      Lore: 'A core is a cell''s heart, and whoever''s mass holds it decides whose colour its waves wear. Ironmouth''s core is wavering: another domain is laying mass faster than the wardens can clear it, and their creatures are already at the walls. Anchor the Ark under the nucleus and do not let it turn.'
+      Keen:
+      - 3
+      - 14
+      - 10
+      Reluctant:
+      - 4
+      - 6
+      - 11
+      Refuse: []
     Words:
       RestockNews: 'The shells at {about} are lit again.'
       BountyOnYou: 'A price is on an Ark out of {home}: yours. Writs are posted at every port.'

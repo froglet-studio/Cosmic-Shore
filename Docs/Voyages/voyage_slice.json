@@ -1849,6 +1849,72 @@
    "line": "The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju."
   }
  ],
+ "voyageTypes": [
+  {
+   "type": "job.salvage.drift",
+   "giver": "pilot.callsign.galleon",
+   "say": "The Grin will smell this field by noon. Skim fast, bank faster, and don't carry more than you can lose.",
+   "lore": "When an Ark goes down, her hold bursts and her crystal drifts loose through the cells for days. Ours is nearly dry, and that drift is the only fuel nobody owns. Fly in, take every loose crystal you can reach, and bring it to the Ark before something with teeth takes it from you.",
+   "keen": [
+    "Pirate",
+    "Gatherer",
+    "Thief"
+   ],
+   "reluctant": [
+    "Aristocrat",
+    "Priest"
+   ],
+   "refuse": []
+  },
+  {
+   "type": "escort",
+   "giver": "pilot.callsign.wingman",
+   "say": "I don't need you to win anything out there. I need her hull green when we dock.",
+   "lore": "Some crossings are made by people who cannot fly them: settlers, wounded crews, a whole port moving house. The Ark carries them, and every creature between here and the next nucleus has noticed. Nothing aboard is worth anything if she arrives in pieces.",
+   "keen": [
+    "FirstResponder",
+    "Aristocrat",
+    "Merchant"
+   ],
+   "reluctant": [
+    "Explorer",
+    "Thief"
+   ],
+   "refuse": []
+  },
+  {
+   "type": "job.bounty.crew",
+   "giver": "pilot.callsign.bandit",
+   "say": "BANDIT sees them through anything. You just have to be faster than their nerve.",
+   "lore": "Writ and Hook posts a price on any crew the ports are tired of. This one has been stripping wrecks that were not theirs and leaving the crews inside. They are two cells out and running for a port that will hide them. Serve the warrant at sea, and what they carry spills for whoever is close.",
+   "keen": [
+    "BountyHunter",
+    "Hunter"
+   ],
+   "reluctant": [
+    "Diplomat",
+    "Preservationist"
+   ],
+   "refuse": []
+  },
+  {
+   "type": "job.defence.aid",
+   "giver": "pilot.callsign.rampart",
+   "say": "Build first. Shoot second. A wall that stands is worth ten kills.",
+   "lore": "A core is a cell's heart, and whoever's mass holds it decides whose colour its waves wear. Ironmouth's core is wavering: another domain is laying mass faster than the wardens can clear it, and their creatures are already at the walls. Anchor the Ark under the nucleus and do not let it turn.",
+   "keen": [
+    "Aristocrat",
+    "FirstResponder",
+    "Contractor"
+   ],
+   "reluctant": [
+    "Pirate",
+    "Explorer",
+    "Sport"
+   ],
+   "refuse": []
+  }
+ ],
  "events": [
   {
    "id": "ev.courier.delivered",
