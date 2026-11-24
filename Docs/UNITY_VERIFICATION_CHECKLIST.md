@@ -360,7 +360,7 @@ section 4a). Run without Unity: `BurrowRunRuinsTests` 8 of 8 against the shipped
 - [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
 - [ ] Frame rate at I4 with about 450 more prisms in the cell.
 
-## 🔴 Breakwater: the heat, the fun pass for the Sparrow's Time game (`Ys-bleeding-edge`, 2026-11-23, Yash) — NOT COMPILED IN UNITY, NOT RUN
+## 🔴 Breakwater: the heat, the fun pass for the Sparrow's Time game (`Ys-bleeding-edge`, 2026-11-23, Yash) — COMPILED, EditMode tests pass (2026-11-24); NOT FLOWN
 
 **What landed:** the local pilot's stations are graded and called (`BreakwaterHeat`, `BreakwaterController.Heat`): a
 thread through the 18 u eye throws a shock ring off it, a bigger one with the afterburner lit; a door (fired or sawn)
@@ -371,7 +371,7 @@ holds the streak; streaks of eyes are called at 3, 7, 14; each lap is split. Toa
 pass headless); `check_console_logging.py`; `author_breakwater_assets.py --check`. The controller's half was NOT
 compiled (`unity_refcompile` cannot run on this machine, and no Unity run was made).
 
-1. The project compiles, and `BreakwaterHeatTests` (EditMode) pass.
+1. DONE 2026-11-24 in the open editor (6000.3.17f1): the project compiles with no errors and `BreakwaterHeatTests` pass (6 of 6).
 2. Breakwater I2 as the Sparrow: one hint at the start ("Thread the eye...").
 3. Thread a station through the eye: a ring grows off the eye and vanishes, and the first time a line says so. Do it
    with the afterburner held: the ring is bigger, and the first time a line says so.
@@ -380,7 +380,7 @@ compiled (`unity_refcompile` cannot run on this machine, and no Unity run was ma
 6. The start gate throws no ring. A guest in a two-machine lobby sees only their own rings.
 7. Answer the fun card when Play stops.
 
-## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT WATCHED
+## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — COMPILED, EditMode tests pass (2026-11-24); NOT WATCHED
 
 **What landed:** Spearline's I4 ruins, laid from Breakwater's circuit (`BreakwaterRuins`, `BreakwaterController.Ruins`):
 7 ruins a lap on every other leg, about 744 plain prisms, in Jade, Ruby and Gold, clear of the flown line, the
@@ -390,7 +390,7 @@ stations, the pads and the start gate. No wheel fits these legs. I1-I3 and the S
 negative controls fire); `author_breakwater_assets.py --check`. The controller hook was NOT compiled: only the pure
 rule and its tests were.
 
-1. The project compiles, and `BreakwaterRuinsTests` (EditMode) pass.
+1. DONE 2026-11-24 in the open editor: the project compiles with no errors and `BreakwaterRuinsTests` pass (10 of 10, about 200 s: nine of them walk 100 seeds).
 2. Breakwater I4: ruins stand on every other leg in three colours; none touches a dish, a pad or the start gate.
 3. Fly the line station to station without steering round anything: no ruin prism is hit.
 4. I1, I2 and I3: no ruins.
