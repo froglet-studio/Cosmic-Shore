@@ -832,6 +832,7 @@ namespace CosmicShore.Gameplay
             WatchHold();
             TickHold();
             TickBounty();
+            TickNeighbours();
             TickObserve();
             if (Time.unscaledTime >= _nextWorkCheck)
             {
@@ -1297,8 +1298,9 @@ namespace CosmicShore.Gameplay
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;
-            // A Crystal Run's Ark anchors at each cell for the squad to raid it (VoyageRun.Raid.cs).
-            _sea.AnchorSeconds = RaidAnchorSeconds;
+            // A Crystal Run's Ark anchors at each cell for the squad to raid it (VoyageRun.Raid.cs); a detour the squad
+            // voted for holds it longer (VoyageRun.Neighbours.cs).
+            _sea.AnchorSeconds = AnchorAtCell;
             _sea.Anchored += OnRaidAnchored;
             _sea.Weighed += OnRaidWeighed;
             // A pilot who strays past the stray radius is warned 5-4-3-2-1, then recalled to their seat (VoyageRun.Stray.cs).

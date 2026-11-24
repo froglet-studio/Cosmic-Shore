@@ -26350,6 +26350,19 @@ Not run in the Unity editor. Reference compile: 0 errors in changed files; rules
 - [ ] Let the clock run out: "{crew} MADE PORT", the end board says they got away, no pay.
 - [ ] The awards board's Rival Breaker goes to the seat that broke most of the rival hull.
 
+### Events next door and the detour vote (2026-11-24)
+
+Not run in the Unity editor. Reference compile: 0 errors in changed files; rules harness 87 of 87.
+
+- [ ] Sail a named voyage of 3 cells or more (e.g. a Salvage): pause, and the chart shows wrecks and blooms beside some
+      cells, each with its time.
+- [ ] Cross into a cell with one: the feed says "Wreck to port" (or a bloom), and the vote panel opens low left for
+      five seconds; press D-pad left (Detour) or right (Press on).
+- [ ] Detour: "Detour: Wreck"; the Ark anchors (or stays anchored) about 20 s longer, and loose crystals lie at the
+      lane's side the event was on.
+- [ ] Press on, or let the clock run out with no keen pilot aboard: the squad presses on and nothing spills.
+- [ ] With a keen pilot in a wingmate seat, no press: the vote ends on the detour.
+
 ## Voyages Milestone 2 in-game screens: Pause A, Vote B, Awards A, run toasts, rival plate (2026-11-24)
 
 `Docs/UI/specs/voyages-m2-ingame.md` (Frogma Rev 134 and Rev 137). Not run in the Unity editor: none in this session.

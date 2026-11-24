@@ -143,6 +143,23 @@ by the seat nearest each hull, since a silence carries no attacker). The warrant
 Not built yet: the crew's wake on the pause map before it is met, the crew splitting or calling a second crew at 7-9,
 and the fight on a party friend's machine (the host's run decides it; a friend sees the rival Ark and hulls).
 
-## 8 Next
+## 8 Events next door and the detour vote
 
-Hold the Core's kaiju and distress call, and the screens' remaining feeds (events next door, the detour vote).
+Built 2026-11-24 (`Data/Voyages/VoyageNeighbours.cs`, `Controller/Voyages/VoyageRun.Neighbours.cs`; Frogma Rev 134
+WorldEvents, Event, Vote B, Detour; Shombith: "nothing happening in neighbouring cells", "the detour is a vote"). Each
+named voyage's leg is planned with events beside the lane, seeded by the day and the voyage: each cell but the last has
+one with `neighbourChance` (0.5), a wreck (likelier on rough water) or a bloom, port or starboard, lasting about
+`neighbourSeconds` (60) once the Ark is in its cell. The pause chart shows them all (`GetNeighbours`).
+
+When the Ark crosses into a cell with one, the feed says so and the squad votes (Vote B, five seconds, D-pad): the AI
+seats vote as it opens, a keen pilot for the detour and any other to press on, and the first keen seat asks; alone, the
+one press decides. A detour holds the Ark `detourSeconds` (20) longer in the cell (on its anchor) and brings what was
+next door to the lane's side: a wreck's spilled crystals (`wreckCrystals`) or a bloom's (`bloomCrystals`), loose
+crystals like Salvage's.
+
+Not built yet: a party friend's press (the host's vote counts its own press and the AI seats), the distress call and
+predator events, and the rival crews of the world next door (a Bounty's crew is met at its stop, section 7).
+
+## 9 Next
+
+Hold the Core's kaiju and distress call; party presses for the vote; Bounty's wake on the map before the crew is met.
