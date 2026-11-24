@@ -57,7 +57,7 @@ namespace CosmicShore.Data
 
         /// <summary>
         /// The job that sails named voyage <paramref name="v"/> from <paramref name="here"/> (Docs/Voyages/MILESTONE_2.md
-        /// §2): its type's rules, the voyage's own name as the title, its rung as the intensity and its cells as the leg.
+        /// §2): its type's rules, the voyage's own name as the title, its difficulty (1-9) and its cells as the leg.
         /// Null when the voyage starts somewhere else, ends here, is the escort card's (not a job), or its place is unknown.
         /// </summary>
         public static VoyageJob DrawNamed(VoyageState state, VoyageContent content, NamedVoyage v, VoyageLocation here,
@@ -75,13 +75,14 @@ namespace CosmicShore.Data
         }
 
         /// <summary>Give <paramref name="job"/> (made from <paramref name="t"/>) named voyage <paramref name="v"/>'s
-        /// title, rung, cells and goal.</summary>
+        /// title, difficulty, cells and goal.</summary>
         static void Name(VoyageJob job, NamedVoyage v, JobTemplate t)
         {
             job.VoyageId = v.Id;
             if (!string.IsNullOrEmpty(v.Name)) job.Title = v.Name;
             if (!string.IsNullOrEmpty(v.Line)) job.Summary = v.Line;
-            job.Intensity = VoyageSea.Rung(v.Rung);
+            job.Difficulty = VoyageDifficulty.Clamp(v.Difficulty);
+            job.Intensity = VoyageDifficulty.IntensityOf(job.Difficulty);   // the board's pricing follows the difficulty
             job.Cells = VoyageSea.RunCells(v.Cells);
             if (t.GoalPerCell > 0f) job.Goal = t.GoalPerCell * job.Cells;
         }

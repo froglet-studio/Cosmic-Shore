@@ -475,7 +475,7 @@ namespace CosmicShore.UI
                 Pay = pay,
                 Pays = !job.IsReturn && pay > 0,
                 Element = kind != null ? kind.RewardElement : Element.Omni,
-                Recommended = VoyageDifficulty.Recommended(job.Intensity),
+                Recommended = job.Difficulty > 0 ? VoyageDifficulty.Clamp(job.Difficulty) : VoyageDifficulty.Recommended(job.Intensity),
             };
             if (sea != null) foreach (var p in sea.Points) offer.Course.Add(VoyageMapGraphic.MapPoint(p));
             if (route != null)

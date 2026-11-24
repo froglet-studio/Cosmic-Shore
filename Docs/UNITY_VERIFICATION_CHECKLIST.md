@@ -25660,8 +25660,9 @@ the changed files (30 in untouched files, from packages this machine lacks); the
       core), so a 4-cell run lands near 3.5 minutes.
 - [ ] Salvage cells hold about 18 loose crystals drifting slowly, half bunched where a hold burst; flying through one
       collects it and counts toward the goal; none leaves its cell.
-- [ ] An I1 run (Spindrift) is calm: no held cells, no raiders, no kaiju. An I3 run (Cinder Shoal) holds two in three
-      cells, raiders come on the way out and a kaiju waits on the first crossing only.
+- [ ] Spindrift at difficulty 2 is calm: no held cells, no raiders, no kaiju. Cinder Shoal at difficulty 6 holds two in
+      three cells, raiders come on the way out and a kaiju waits on the first crossing only. Picking another difficulty
+      on the voyage page changes the sea the same way; no screen says I1-I4.
 - [ ] Unnamed work (every other job on the board) sails exactly as before.
 
 ## Voyages Milestone 2 in-game screens: Pause A, Vote B, Awards A, run toasts, rival plate (2026-11-24)

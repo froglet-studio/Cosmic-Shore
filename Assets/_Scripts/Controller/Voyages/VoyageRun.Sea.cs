@@ -8,14 +8,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The shared base of the Milestone 2 voyages (Docs/Voyages/MILESTONE_2.md; Shombith 2026-11-24): a named voyage's
-    /// sea is laid from its rung (I1-I4, how dangerous the water is), its cells keep a clock of about 50 seconds each so
+    /// sea is laid from its difficulty (1-9, how dangerous the water is), its cells keep a clock of about 50 seconds each so
     /// a run lands at 3 to 5 minutes, a Salvage cell fills with loose crystals adrift, and the run reports where the Ark
     /// is on its course for the pause screen's map (<see cref="TryGetCourseFix"/>). Unnamed work is unchanged.
     /// </summary>
     public sealed partial class VoyageRun
     {
-        /// <summary>The rung of the last named voyage sailed: the way home after it is as rough (0: none yet).</summary>
-        int _voyageRungHome;
+        /// <summary>The difficulty of the last named voyage sailed: the way home after it is as rough (0: none yet).</summary>
+        int _voyageDifficultyHome;
 
         /// <summary>The host lays a named voyage's sea onto its job before the leg is sent (the party sails the same).</summary>
         void LaySea(VoyageJob job)
@@ -23,8 +23,8 @@ namespace CosmicShore.Gameplay
             if (job is not { IsNamed: true } || !_def || Content == null) return;
             var route = VoyageRules.Route(Content, job.From, job.To, _state) ?? VoyageRules.Route(Content, job.From, job.To);
             var danger = VoyageSea.DangerPerCell(VoyageSea.CourseDanger(Content, route), VoyageSea.RunCells(job.Cells));
-            VoyageSea.Lay(job, _def.SeaRung(job.Intensity), danger);
-            _voyageRungHome = VoyageSea.Rung(job.Intensity);
+            VoyageSea.Lay(job, _def.SeaDanger(VoyageSea.DifficultyOf(job)), danger);
+            _voyageDifficultyHome = VoyageSea.DifficultyOf(job);
         }
 
         /// <summary>A new leg (from <see cref="PrepareLeg"/>): its crossings counted from the first again.</summary>
@@ -32,8 +32,8 @@ namespace CosmicShore.Gameplay
         {
             _kaijuCrossing = 0;
             var job = _state?.Current;
-            if (job is { IsNamed: true }) _voyageRungHome = VoyageSea.Rung(job.Intensity);
-            else if (job is { IsReturn: false }) _voyageRungHome = 0; // unnamed work (Crystal Run) sails home as before
+            if (job is { IsNamed: true }) _voyageDifficultyHome = VoyageSea.DifficultyOf(job);
+            else if (job is { IsReturn: false }) _voyageDifficultyHome = 0; // unnamed work (Crystal Run) sails home as before
         }
 
         /// <summary>The Ark's crawl speed that crosses one cell, core to core, in the cell clock less its anchor

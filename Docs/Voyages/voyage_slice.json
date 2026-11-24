@@ -1734,7 +1734,7 @@
    "name": "Spindrift's Last Glitter",
    "from": "",
    "to": "loc.spindrift",
-   "rung": 1,
+   "difficulty": 2,
    "cells": 2,
    "line": "A salvage run at the far end of Aurum Banks: the shallows still shine where a merchant Ark broke up last season. Calm water, slow drift, the first run anyone should sail."
   },
@@ -1744,7 +1744,7 @@
    "name": "The Glassmere Shatter",
    "from": "",
    "to": "loc.glassmere",
-   "rung": 2,
+   "difficulty": 4,
    "cells": 4,
    "line": "An Ark burst at Glassmere and her crystal is spread across four cells. Black Tide heard about it at the same time you did."
   },
@@ -1754,7 +1754,7 @@
    "name": "Embers of Cinder Shoal",
    "from": "",
    "to": "loc.cinder.shoal",
-   "rung": 3,
+   "difficulty": 6,
    "cells": 5,
    "line": "The richest drift in Carmine Drift, burning in cells the Ruby crews hold. Kaiju wait between the cells."
   },
@@ -1764,7 +1764,7 @@
    "name": "Lanterns Home",
    "from": "loc.lantern",
    "to": "loc.harbour.jade",
-   "rung": 1,
+   "difficulty": 2,
    "cells": 3,
    "line": "Carry the Lantern Reach keepers home through quiet water. The first escort, and a short one."
   },
@@ -1774,7 +1774,7 @@
    "name": "The Tollmoor Crossing",
    "from": "loc.harbour.jade",
    "to": "loc.tollmoor",
-   "rung": 2,
+   "difficulty": 4,
    "cells": 4,
    "line": "A whole port's worth of traders aboard, through the busiest lane in the sea."
   },
@@ -1784,7 +1784,7 @@
    "name": "Through the Maw's Teeth",
    "from": "loc.gnawreach",
    "to": "loc.maw",
-   "rung": 4,
+   "difficulty": 8,
    "cells": 6,
    "line": "Six cells of the Deep with a wounded crew aboard. Every cell is held against you."
   },
@@ -1794,7 +1794,7 @@
    "name": "Hush the Quiet Spear",
    "from": "",
    "to": "loc.magpie",
-   "rung": 1,
+   "difficulty": 2,
    "cells": 2,
    "line": "A young crew with more nerve than skill. Catch them before they learn better."
   },
@@ -1804,7 +1804,7 @@
    "name": "Black Tide Rising",
    "from": "",
    "to": "loc.gullbone",
-   "rung": 2,
+   "difficulty": 4,
    "cells": 3,
    "line": "Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them."
   },
@@ -1814,7 +1814,7 @@
    "name": "The Grin Runs Last",
    "from": "",
    "to": "loc.ironmouth",
-   "rung": 4,
+   "difficulty": 8,
    "cells": 4,
    "line": "The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs."
   },
@@ -1824,7 +1824,7 @@
    "name": "The Verdigris Vigil",
    "from": "",
    "to": "loc.verdigris",
-   "rung": 1,
+   "difficulty": 1,
    "cells": 1,
    "line": "A short hold under a calm core while the wardens rest. One wave, no rival."
   },
@@ -1834,7 +1834,7 @@
    "name": "Ironmouth Holds",
    "from": "",
    "to": "loc.ironmouth",
-   "rung": 2,
+   "difficulty": 4,
    "cells": 2,
    "line": "Another domain is laying mass at Ironmouth's core faster than the wardens can clear it."
   },
@@ -1844,7 +1844,7 @@
    "name": "The Ninefold Stand",
    "from": "",
    "to": "loc.shrine.ninefold",
-   "rung": 4,
+   "difficulty": 8,
    "cells": 3,
    "line": "The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju."
   }
@@ -3454,10 +3454,7 @@
   "ChartLegendArk": "The Ark, live",
   "ChartLegendEvent": "Event next door",
   "ChartLegendRival": "Rival crew",
-  "SeaCalm": "Calm sea",
-  "SeaChoppy": "Choppy sea",
-  "SeaRough": "Rough sea",
-  "SeaAbyssal": "Abyssal sea",
+  "SeaDifficulty": "difficulty {difficulty}",
   "SidePort": "port",
   "SideStarboard": "starboard",
   "VerbArrive": "Arrive",

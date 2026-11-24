@@ -1203,7 +1203,7 @@ namespace CosmicShore.ScriptableObjects
         public string PauseGoal = "/ {goal} aboard";
         [Tooltip("Pause chart: where the Ark is and how rough the sea is. {cell}, {cells}, {sea}.")]
         public string PauseWhere = "Cell {cell} of {cells} - {sea}";
-        [Tooltip("Pause chart: where the Ark is, on a leg with no sea rung. {cell}, {cells}.")]
+        [Tooltip("Pause chart: where the Ark is, on a leg with no difficulty of its own. {cell}, {cells}.")]
         public string PauseWhereCalm = "Cell {cell} of {cells}";
         [Tooltip("Pause chart: the resume button.")]
         public string PauseResume = "Resume";
@@ -1257,14 +1257,8 @@ namespace CosmicShore.ScriptableObjects
         public string ChartLegendEvent = "Event next door";
         [Tooltip("Pause chart legend: a rival's mark.")]
         public string ChartLegendRival = "Rival crew";
-        [Tooltip("The sea's rung I1 (Docs/Voyages/MILESTONE_2.md section 3).")]
-        public string SeaCalm = "Calm sea";
-        [Tooltip("The sea's rung I2.")]
-        public string SeaChoppy = "Choppy sea";
-        [Tooltip("The sea's rung I3.")]
-        public string SeaRough = "Rough sea";
-        [Tooltip("The sea's rung I4.")]
-        public string SeaAbyssal = "Abyssal sea";
+        [Tooltip("How dangerous the sea is: the voyage's difficulty, 1-9 (Docs/Voyages/MILESTONE_2.md section 3). {difficulty}.")]
+        public string SeaDifficulty = "difficulty {difficulty}";
         [Tooltip("Which side of the lane: port (left).")]
         public string SidePort = "port";
         [Tooltip("Which side of the lane: starboard (right).")]
@@ -1383,7 +1377,7 @@ namespace CosmicShore.ScriptableObjects
         public string ToastCellNamed = "{place}";
         [Tooltip("Feed: the line under the cell's name. {cell}, {cells}, {sea}.")]
         public string ToastCellNamedSub = "Cell {cell} of {cells} - {sea}";
-        [Tooltip("Feed: the line under the cell's name with no sea rung. {cell}, {cells}.")]
+        [Tooltip("Feed: the line under the cell's name with no difficulty of its own. {cell}, {cells}.")]
         public string ToastCellNamedSubCalm = "Cell {cell} of {cells}";
         [Tooltip("Feed (Rev 134 Event): an event next door. {event}, {side}.")]
         public string ToastEventNext = "{event} to {side}";

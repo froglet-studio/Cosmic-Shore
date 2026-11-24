@@ -8,7 +8,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Milestone 2 shared base (Docs/Voyages/MILESTONE_2.md; Shombith 2026-11-24): named voyages from the Codex, a run
-    /// of 1-6 cells, the sea's danger on rungs I1-I4 (never a timer) and the cell clock. Pure rules, so the headless voyage
+    /// of 1-6 cells, the sea's danger by difficulty 1-9 (never a timer) and the cell clock. Pure rules, so the headless voyage
     /// harness runs them too (Tools/Build/voyage_depth_harness).
     /// </summary>
     public class VoyageSeaTests
@@ -29,7 +29,7 @@ namespace CosmicShore.Tests
             {
                 Assert.IsFalse(string.IsNullOrWhiteSpace(v.Name), v.Id);
                 Assert.IsFalse(TypeNames.Contains(v.Name.Trim().ToLowerInvariant()), $"{v.Id}: a type is never a name");
-                Assert.That(v.Rung, Is.InRange(VoyageSea.MinRung, VoyageSea.MaxRung), v.Id);
+                Assert.That(v.Difficulty, Is.InRange(VoyageDifficulty.Min, VoyageDifficulty.Max), v.Id);
                 Assert.That(v.Cells, Is.InRange(VoyageSea.MinCells, VoyageSea.MaxCells), v.Id);
                 Assert.IsNotNull(c.Location(v.To), $"{v.Id} sails to a known place");
             }
@@ -37,7 +37,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void APortOffersOneSalvageVoyageByItsNameRungAndCells()
+        public void APortOffersOneSalvageVoyageByItsNameDifficultyAndCells()
         {
             var c = Shipped();
             var s = VoyageRules.NewGalaxy(c, Domains.Jade);
@@ -49,7 +49,8 @@ namespace CosmicShore.Tests
             var v = c.Voyage(job.VoyageId);
             Assert.IsNotNull(v);
             Assert.AreEqual(v.Name, job.Title);
-            Assert.AreEqual(v.Rung, job.Intensity);
+            Assert.AreEqual(v.Difficulty, job.Difficulty);
+            Assert.AreEqual(VoyageDifficulty.IntensityOf(v.Difficulty), job.Intensity, "the board prices it by its difficulty");
             Assert.AreEqual(v.Cells, job.Cells);
             Assert.AreEqual(v.To, job.To);
             float perCell = c.Job(SalvageType).GoalPerCell;
@@ -97,21 +98,33 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheLadderRoughensRungByRung()
+        public void TheSeaRoughensWithDifficulty()
         {
-            var r = VoyageSeaRung.Defaults();
-            Assert.AreEqual(4, r.Length);
-            for (int i = 1; i < r.Length; i++)
+            var d = VoyageSeaDanger.Defaults();
+            Assert.AreEqual(VoyageDifficulty.Max, d.Length, "one row a difficulty, 1-9");
+            for (int i = 1; i < d.Length; i++)
             {
-                Assert.GreaterOrEqual(r[i].HostileShare, r[i - 1].HostileShare, $"I{i + 1} holds as many cells");
-                Assert.Greater(r[i].Life, r[i - 1].Life, $"I{i + 1} has more life");
-                Assert.GreaterOrEqual(r[i].Breach, r[i - 1].Breach);
-                Assert.GreaterOrEqual(r[i].KaijuCrossings, r[i - 1].KaijuCrossings);
+                Assert.GreaterOrEqual(d[i].HostileShare, d[i - 1].HostileShare, $"difficulty {i + 1} holds as many cells");
+                Assert.Greater(d[i].Life, d[i - 1].Life, $"difficulty {i + 1} has more life");
+                Assert.GreaterOrEqual(d[i].Breach, d[i - 1].Breach);
+                Assert.GreaterOrEqual(d[i].KaijuCrossings, d[i - 1].KaijuCrossings);
             }
-            Assert.AreEqual(0f, r[0].HostileShare, "I1 is calm");
-            Assert.AreEqual(1f, r[3].HostileShare, "I4 holds every cell");
-            Assert.AreEqual(r[1].Life, VoyageSea.RungOf(null, 2).Life, "a short table falls back to the Codex");
-            Assert.AreEqual(VoyageSea.RungOf(r, 4).Life, VoyageSea.RungOf(r, 9).Life, "rungs clamp to I4");
+            Assert.AreEqual(0f, d[0].HostileShare, "difficulty 1 is calm");
+            Assert.AreEqual(1f, d[8].HostileShare, "difficulty 9 holds every cell");
+            Assert.AreEqual(d[1].Life, VoyageSea.At(null, 2).Life, "a short table falls back to the Codex");
+            Assert.AreEqual(VoyageSea.At(d, 9).Life, VoyageSea.At(d, 12).Life, "difficulty clamps to 9");
+        }
+
+        [Test]
+        public void AJobSailsAtThePickedDifficultyElseItsOwn()
+        {
+            Assert.AreEqual(7, VoyageSea.DifficultyOf(new VoyageJob { Difficulty = 7, Intensity = 1 }), "the crew's pick");
+            Assert.AreEqual(VoyageDifficulty.Recommended(3), VoyageSea.DifficultyOf(new VoyageJob { Intensity = 3 }));
+            var named = new VoyageJob { VoyageId = "v", Difficulty = 4, Intensity = 2, Pay = 10 };
+            var harder = VoyageDifficulty.At(named, 8);
+            Assert.AreEqual(8, VoyageSea.DifficultyOf(harder));
+            Assert.Greater(harder.Pay, named.Pay, "a harder pick pays more");
+            Assert.AreEqual(named.Pay, VoyageDifficulty.At(named, 4).Pay, "its own difficulty pays what the board priced");
         }
 
         [Test]
@@ -143,28 +156,28 @@ namespace CosmicShore.Tests
         public void LayingTheSeaSetsHeldCellsBreachAndLife()
         {
             var job = new VoyageJob { VoyageId = "voyage.test", Cells = 9, CellLife = new List<float> { 1f } };
-            var rung = VoyageSeaRung.Defaults()[2];
-            VoyageSea.Lay(job, rung, new List<float> { 0f, 0f, 0f, 1f, 1f, 1f });
+            var sea = VoyageSeaDanger.Defaults()[5];   // difficulty 6
+            VoyageSea.Lay(job, sea, new List<float> { 0f, 0f, 0f, 1f, 1f, 1f });
             Assert.AreEqual(6, job.Cells, "cells clamp to six");
-            Assert.AreEqual(4, job.HostileCells.Count(h => h), "two in three held at I3");
+            Assert.AreEqual(4, job.HostileCells.Count(h => h), "two in three held at difficulty 6");
             Assert.IsTrue(job.HostileCells[3] && job.HostileCells[4] && job.HostileCells[5]);
-            Assert.AreEqual(rung.Breach, job.BreachHull, 1e-5f);
+            Assert.AreEqual(sea.Breach, job.BreachHull, 1e-5f);
             Assert.AreEqual(6, job.CellLife.Count);
-            Assert.AreEqual(rung.Life, job.CellLife[5], 1e-5f);
+            Assert.AreEqual(sea.Life, job.CellLife[5], 1e-5f);
 
             var unnamed = new VoyageJob { Cells = 9 };
-            VoyageSea.Lay(unnamed, rung, null);
+            VoyageSea.Lay(unnamed, sea, null);
             Assert.AreEqual(9, unnamed.Cells, "unnamed work is left as it is");
         }
 
         [Test]
-        public void KaijuWaitOnTheCrossingsTheRungAllows()
+        public void KaijuWaitOnTheCrossingsTheDifficultyAllows()
         {
-            var r = VoyageSeaRung.Defaults();
-            Assert.IsFalse(VoyageSea.KaijuOn(r[1], 0));
-            Assert.IsTrue(VoyageSea.KaijuOn(r[2], 0));
-            Assert.IsFalse(VoyageSea.KaijuOn(r[2], 1), "I3: the first crossing only");
-            Assert.IsTrue(VoyageSea.KaijuOn(r[3], 3), "I4: every crossing");
+            var d = VoyageSeaDanger.Defaults();
+            Assert.IsFalse(VoyageSea.KaijuOn(d[3], 0), "difficulty 4: none");
+            Assert.IsTrue(VoyageSea.KaijuOn(d[4], 0));
+            Assert.IsFalse(VoyageSea.KaijuOn(d[5], 1), "difficulty 6: the first crossing only");
+            Assert.IsTrue(VoyageSea.KaijuOn(d[7], 3), "difficulty 8: every crossing");
         }
 
         [Test]

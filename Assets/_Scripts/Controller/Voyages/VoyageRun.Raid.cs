@@ -392,7 +392,7 @@ namespace CosmicShore.Gameplay
             // A named voyage names the cell it crosses into (Frogma Rev 134 Crossing); Crystal Run keeps its own toasts.
             if (_state.Current.IsNamed && TryGetObjective(out var objective))
             {
-                VoyageScreenToasts.Crossing(_sea, Lines, VoyageObjectiveText.StopName(Lines, objective, cell - 1), cell, cells, SeaRung);
+                VoyageScreenToasts.Crossing(_sea, Lines, VoyageObjectiveText.StopName(Lines, objective, cell - 1), cell, cells, SeaDifficulty);
                 return;
             }
             if (cell == cells && cells > 1)

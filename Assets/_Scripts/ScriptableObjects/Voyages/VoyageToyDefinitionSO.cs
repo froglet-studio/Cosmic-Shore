@@ -368,11 +368,11 @@ namespace CosmicShore.ScriptableObjects
         float homewardArkSpeedFactor = 2f;
 
         [Header("Voyage - the sea's danger and the cell clock (Milestone 2, Shombith 2026-11-24)")]
-        [SerializeField, Tooltip("The four rungs of the sea, I1 to I4 (the Voyage Codex's ladder): the share of a named " +
+        [SerializeField, Tooltip("How dangerous the sea is at each difficulty, 1 to 9 (the Voyage Codex's ladder): the share of a named " +
                                  "voyage's cells held against the squad (the map's most dangerous first), each cell's life, " +
                                  "the breach line, raiders out and home, and kaiju crossings (0 none, 1 the first, 2 every). " +
                                  "Difficulty is how dangerous the water is, never a timer; nothing here touches a vessel.")]
-        VoyageSeaRung[] seaRungs = VoyageSeaRung.Defaults();
+        VoyageSeaDanger[] seaDanger = VoyageSeaDanger.Defaults();
 
         [SerializeField, Range(20f, 120f), Tooltip("Seconds a named voyage's cell takes, core to core with its anchor " +
                                                    "(Shombith 2026-11-24: runs of 3-5 minutes over 1-6 cells, so about 50 s " +
@@ -389,7 +389,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Voyage - Salvage's loose crystals (Shombith 2026-11-24: \"collect loose crystals\")")]
         [SerializeField, Min(0), Tooltip("Loose elemental crystals that drift through each cell of a voyage whose type " +
-                                         "gathers (Salvage), before the rung's life: about one and a half times the goal per " +
+                                         "gathers (Salvage), before the difficulty's life: about one and a half times the goal per " +
                                          "cell, so there is more than the squad can take.")]
         int driftCrystalsPerCell = 18;
 
@@ -552,8 +552,8 @@ namespace CosmicShore.ScriptableObjects
         public int WingmateBankAt => wingmateBankAt;
         public float HomeEscortRewardScale => homeEscortRewardScale;
         public float ArkSpeedScale => arkSpeedScale;
-        /// <summary>Rung <paramref name="rung"/> (I1-I4) of the sea.</summary>
-        public VoyageSeaRung SeaRung(int rung) => VoyageSea.RungOf(seaRungs, rung);
+        /// <summary>How dangerous the sea is at <paramref name="difficulty"/> (1-9).</summary>
+        public VoyageSeaDanger SeaDanger(int difficulty) => VoyageSea.At(seaDanger, difficulty);
         public float CellSeconds => cellSeconds;
         public float NamedAnchorSeconds => namedAnchorSeconds;
         public float ArkCrawlCeiling => arkCrawlCeiling;

@@ -455,7 +455,7 @@ namespace CosmicShore.Gameplay
                 Resolve(VoyageRules.WorkDone(_state.Current, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
 
             if (!VoyageRules.Take(_state, Content, job)) return;
-            // A named voyage's sea (Milestone 2): its hostile cells, breach line and life from its rung, on the host, before
+            // A named voyage's sea (Milestone 2): its hostile cells, breach line and life from its difficulty, on the host, before
             // the leg is sent to the party.
             LaySea(job);
             var route = FitLeg(job, VoyageRules.Corridor(Content, job.From, job.To, _state.Day, _worlds, _state));

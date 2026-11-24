@@ -2969,7 +2969,7 @@ MonoBehaviour:
       Name: Spindrift's Last Glitter
       From: 
       To: loc.spindrift
-      Rung: 1
+      Difficulty: 2
       Cells: 2
       Line: 'A salvage run at the far end of Aurum Banks: the shallows still shine where a merchant Ark broke up last season. Calm water, slow drift, the first run anyone should sail.'
     - Id: voyage.salvage.glassmere
@@ -2977,7 +2977,7 @@ MonoBehaviour:
       Name: The Glassmere Shatter
       From: 
       To: loc.glassmere
-      Rung: 2
+      Difficulty: 4
       Cells: 4
       Line: An Ark burst at Glassmere and her crystal is spread across four cells. Black Tide heard about it at the same time you did.
     - Id: voyage.salvage.cinder
@@ -2985,7 +2985,7 @@ MonoBehaviour:
       Name: Embers of Cinder Shoal
       From: 
       To: loc.cinder.shoal
-      Rung: 3
+      Difficulty: 6
       Cells: 5
       Line: The richest drift in Carmine Drift, burning in cells the Ruby crews hold. Kaiju wait between the cells.
     - Id: voyage.escort.lanterns
@@ -2993,7 +2993,7 @@ MonoBehaviour:
       Name: Lanterns Home
       From: loc.lantern
       To: loc.harbour.jade
-      Rung: 1
+      Difficulty: 2
       Cells: 3
       Line: Carry the Lantern Reach keepers home through quiet water. The first escort, and a short one.
     - Id: voyage.escort.tollmoor
@@ -3001,7 +3001,7 @@ MonoBehaviour:
       Name: The Tollmoor Crossing
       From: loc.harbour.jade
       To: loc.tollmoor
-      Rung: 2
+      Difficulty: 4
       Cells: 4
       Line: A whole port's worth of traders aboard, through the busiest lane in the sea.
     - Id: voyage.escort.maw
@@ -3009,7 +3009,7 @@ MonoBehaviour:
       Name: Through the Maw's Teeth
       From: loc.gnawreach
       To: loc.maw
-      Rung: 4
+      Difficulty: 8
       Cells: 6
       Line: Six cells of the Deep with a wounded crew aboard. Every cell is held against you.
     - Id: voyage.bounty.spear
@@ -3017,7 +3017,7 @@ MonoBehaviour:
       Name: Hush the Quiet Spear
       From: 
       To: loc.magpie
-      Rung: 1
+      Difficulty: 2
       Cells: 2
       Line: A young crew with more nerve than skill. Catch them before they learn better.
     - Id: voyage.bounty.tide
@@ -3025,7 +3025,7 @@ MonoBehaviour:
       Name: Black Tide Rising
       From: 
       To: loc.gullbone
-      Rung: 2
+      Difficulty: 4
       Cells: 3
       Line: Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them.
     - Id: voyage.bounty.grin
@@ -3033,7 +3033,7 @@ MonoBehaviour:
       Name: The Grin Runs Last
       From: 
       To: loc.ironmouth
-      Rung: 4
+      Difficulty: 8
       Cells: 4
       Line: The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs.
     - Id: voyage.hold.verdigris
@@ -3041,7 +3041,7 @@ MonoBehaviour:
       Name: The Verdigris Vigil
       From: 
       To: loc.verdigris
-      Rung: 1
+      Difficulty: 1
       Cells: 1
       Line: A short hold under a calm core while the wardens rest. One wave, no rival.
     - Id: voyage.hold.ironmouth
@@ -3049,7 +3049,7 @@ MonoBehaviour:
       Name: Ironmouth Holds
       From: 
       To: loc.ironmouth
-      Rung: 2
+      Difficulty: 4
       Cells: 2
       Line: Another domain is laying mass at Ironmouth's core faster than the wardens can clear it.
     - Id: voyage.hold.ninefold
@@ -3057,7 +3057,7 @@ MonoBehaviour:
       Name: The Ninefold Stand
       From: 
       To: loc.shrine.ninefold
-      Rung: 4
+      Difficulty: 8
       Cells: 3
       Line: The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju.
   cellPool: []
@@ -3529,10 +3529,7 @@ MonoBehaviour:
     ChartLegendArk: The Ark, live
     ChartLegendEvent: Event next door
     ChartLegendRival: Rival crew
-    SeaCalm: Calm sea
-    SeaChoppy: Choppy sea
-    SeaRough: Rough sea
-    SeaAbyssal: Abyssal sea
+    SeaDifficulty: 'difficulty {difficulty}'
     SidePort: port
     SideStarboard: starboard
     VerbArrive: Arrive

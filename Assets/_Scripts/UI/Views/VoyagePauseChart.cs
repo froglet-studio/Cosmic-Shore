@@ -223,10 +223,10 @@ namespace CosmicShore.UI
                 _goal.rectTransform.anchoredPosition = new Vector2(SideX + 30f + _count.GetPreferredValues(_count.text).x,
                     _goal.rectTransform.anchoredPosition.y);
             }
-            int rung = source?.SeaRung ?? 0;
+            int difficulty = source?.SeaDifficulty ?? 0;
             VoyageKit.Set(_where, haveFix && fix.Cells > 0
-                ? TemplateText.Fill(rung > 0 ? _lines.PauseWhere : _lines.PauseWhereCalm, "cell", Mathf.Max(1, fix.Cell).ToString(),
-                    "cells", fix.Cells.ToString(), "sea", SeaName(rung))
+                ? TemplateText.Fill(difficulty > 0 ? _lines.PauseWhere : _lines.PauseWhereCalm, "cell", Mathf.Max(1, fix.Cell).ToString(),
+                    "cells", fix.Cells.ToString(), "sea", SeaName(difficulty))
                 : string.Empty);
 
             string action = PauseMenuAction.Label;
@@ -259,14 +259,7 @@ namespace CosmicShore.UI
                 };
         }
 
-        string SeaName(int rung) => rung switch
-        {
-            1 => _lines.SeaCalm,
-            2 => _lines.SeaChoppy,
-            3 => _lines.SeaRough,
-            4 => _lines.SeaAbyssal,
-            _ => string.Empty,
-        };
+        string SeaName(int difficulty) => VoyageScreenToasts.SeaName(_lines, difficulty);
 
         // ── The chart ───────────────────────────────────────────────────────
 

@@ -14,12 +14,12 @@ namespace CosmicShore.Gameplay
     public static class VoyageScreenToasts
     {
         /// <summary>A named voyage crosses into a cell (Rev 134 Crossing): the cell's name over "Cell n of m · the sea".</summary>
-        public static void Crossing(ArkwayRun sea, VoyageLines lines, string place, int cell, int cells, int rung)
+        public static void Crossing(ArkwayRun sea, VoyageLines lines, string place, int cell, int cells, int difficulty)
         {
             if (lines == null) return;
             VoyageToasts.Show(sea, ArkwayVoyageHud.Mood.Event, TemplateText.Fill(lines.ToastCellNamed, "place", place),
-                TemplateText.Fill(rung > 0 ? lines.ToastCellNamedSub : lines.ToastCellNamedSubCalm, "cell", cell.ToString(),
-                    "cells", cells.ToString(), "sea", SeaName(lines, rung)));
+                TemplateText.Fill(difficulty > 0 ? lines.ToastCellNamedSub : lines.ToastCellNamedSubCalm, "cell", cell.ToString(),
+                    "cells", cells.ToString(), "sea", SeaName(lines, difficulty)));
         }
 
         /// <summary>An event lights up next door (Rev 134 Event): what and where, how long, and that the squad will vote.</summary>
@@ -93,14 +93,9 @@ namespace CosmicShore.Gameplay
             VoyageToasts.Show(sea, mood, head, under);
         }
 
-        public static string SeaName(VoyageLines lines, int rung) => rung switch
-        {
-            1 => lines.SeaCalm,
-            2 => lines.SeaChoppy,
-            3 => lines.SeaRough,
-            4 => lines.SeaAbyssal,
-            _ => string.Empty,
-        };
+        /// <summary>The sea's danger as the player reads it: the voyage's difficulty (1-9), or nothing without one.</summary>
+        public static string SeaName(VoyageLines lines, int difficulty) =>
+            difficulty > 0 ? TemplateText.Fill(lines.SeaDifficulty, "difficulty", difficulty.ToString()) : string.Empty;
 
         static string EventName(VoyageLines lines, in VoyageNeighbourFix n) =>
             !string.IsNullOrEmpty(n.Title) ? n.Title : n.Kind switch

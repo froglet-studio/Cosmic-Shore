@@ -459,7 +459,7 @@ namespace CosmicShore.Data
 
     /// <summary>
     /// One named voyage (Docs/Voyages/MILESTONE_2.md §2): a voyage of <see cref="Type"/> (a job template id, or
-    /// <see cref="EscortType"/> for the Ark escort card) to <see cref="To"/>, sailed at rung <see cref="Rung"/> (I1-I4, how
+    /// <see cref="EscortType"/> for the Ark escort card) to <see cref="To"/>, offered at <see cref="Difficulty"/> (1-9, how
     /// dangerous the water is) over exactly <see cref="Cells"/> cells. A new voyage is a new entry, not new code.
     /// </summary>
     [Serializable]
@@ -477,8 +477,8 @@ namespace CosmicShore.Data
         public string From;
         /// <summary>Where it ends (a location id).</summary>
         public string To;
-        /// <summary>The sea's danger, I1-I4.</summary>
-        public int Rung = 1;
+        /// <summary>The difficulty it is offered at, 1-9 (the crew may pick another; the sea's danger follows it).</summary>
+        public int Difficulty = 2;
         /// <summary>The cells the leg flies, 1-6.</summary>
         public int Cells = 1;
         /// <summary>The voyage's own line on its card.</summary>
