@@ -3449,6 +3449,140 @@ MonoBehaviour:
     KindCull: Hunt
     KindHome: Home
     KindEscort: Ark escort
+    PauseKicker: Paused
+    PauseCount: '{done}'
+    PauseGoal: '/ {goal} aboard'
+    PauseWhere: 'Cell {cell} of {cells} - {sea}'
+    PauseWhereCalm: 'Cell {cell} of {cells}'
+    PauseResume: Resume
+    PauseResumeKey: B
+    PauseSettings: Settings
+    PauseLeave: Leave voyage
+    PauseLeaveParty: Leave party
+    PauseParty: The party keeps sailing while you look
+    ChartYou: You
+    ChartYouNext: 'You - {time} to the next cell'
+    ChartStop: '{place} dock'
+    ChartTimer: '{time} left - {verb}'
+    ChartWreck: Wreck surfacing
+    ChartBloom: Bloom
+    ChartDistress: Distress call
+    ChartPredators: Predator pack
+    ChartRivalCrew: Rival crew
+    ChartRivalArk: '{name} - rival Ark'
+    ChartRunaway: '{name} - runaway crew'
+    ChartRivalArkLine: 'Also bound for {place} - hold {hold}'
+    ChartRunawayLine: Loose in the next cell - no Ark
+    ChartRivalRacing: 'Racing you to {place}'
+    ChartRivalAttacking: Attacking your Ark
+    ChartRivalRouted: Routed - dropped their haul
+    ChartRivalBroken: Hold burst - turning back
+    ChartLegendArk: The Ark, live
+    ChartLegendEvent: Event next door
+    ChartLegendRival: Rival crew
+    SeaCalm: Calm sea
+    SeaChoppy: Choppy sea
+    SeaRough: Rough sea
+    SeaAbyssal: Abyssal sea
+    SidePort: port
+    SideStarboard: starboard
+    VerbArrive: Arrive
+    VerbStow: Stow
+    VerbHold: Hold
+    VerbGather: Gather
+    VerbCull: Cull
+    VerbLay: Lay
+    VerbRaze: Raze
+    VerbObserve: Observe
+    VerbMeet: Meet
+    VoteAsker: '{pilot} - {whose}'
+    VoteAskerYours: your pilot
+    VoteAskerFriend: '{friend}''s pilot'
+    VoteAskerWingmate: wingmate
+    VoteQuoteWreck: '"Wreck coming up to port. We strip it, we sink nothing. Detour?"'
+    VoteQuoteBloom: '"There''s a bloom next door, thick with crystal. Detour?"'
+    VoteQuoteDistress: '"Someone''s calling for help next door. We go?"'
+    VoteQuotePredators: '"A pack is gathering next door. We hunt them first?"'
+    VoteQuoteRival: '"{event}, next door. We take them on?"'
+    VoteQuoteSolo: '"{event} next door. Your call, captain."'
+    VoteCost: 'Detour one cell: {time} on the clock, {gain}.'
+    VoteGainWreck: the wreck's crystals into the hold
+    VoteGainBloom: the bloom's crystals into the hold
+    VoteGainDistress: a crew that will remember you
+    VoteGainPredators: a quieter sea for the Ark
+    VoteGainRival: whatever they carry
+    VoteDetour: Detour
+    VotePressOn: Press on
+    VoteDetourWord: Detour
+    VotePressOnWord: Press on
+    VoteNoBallot: No vote
+    VoteBallotHost: '{choice} - host'
+    VoteRuleParty: A tie goes to the host. The AI votes with its pilot's mood.
+    VoteRuleSolo: 'Solo: one press decides. No press in 5 s: press on.'
+    VoteEndChosen: '{choice}.'
+    VoteEndTie: 'Tie: the host''s vote wins. {choice}.'
+    VoteEndNoPress: 'No press: press on.'
+    RivalTemper: '{faction} - {temper}'
+    TemperCareful: Careful
+    TemperBold: Bold
+    TemperGreedy: Greedy
+    RivalHold: Hold
+    RivalCarrying: Carrying
+    RivalHull: Hull
+    RivalHullValue: '{hull}%'
+    RivalGuarding: Guarding
+    RivalSilenced: Silenced
+    RivalSilencedFor: 'Silenced - {time}'
+    RivalRunning: Running
+    RivalTurningBack: Turning back
+    RivalNoteArk: Her escorts wall her hull. Silence them, then break her.
+    RivalNoteArkOpen: '{count} escorts silenced: her hull is open. Destroyers, now.'
+    RivalNoteBroken: Her hold is gone. The crew turns back to save her.
+    RivalNoteRunaway: Silence all three at once and they run.
+    RivalNoteRunawayPart: 'Silence all three at once and they run. {count} of {total} down.'
+    RivalNoteRouted: All three silenced at once. They drop their haul and run.
+    ToastCellNamed: '{place}'
+    ToastCellNamedSub: 'Cell {cell} of {cells} - {sea}'
+    ToastCellNamedSubCalm: 'Cell {cell} of {cells}'
+    ToastEventNext: '{event} to {side}'
+    ToastEventNextSub: 'Next door, {time} before it is gone. Your squad will vote.'
+    ToastDetour: 'Detour: {event}'
+    ToastDetourSub: '{verb} it before it is gone. The lane waits one cell over.'
+    ToastJoins: '{friend} joins at the next cell'
+    ToastJoinsSub: 'They take the AI''s seat as the Ark crosses into {place}.'
+    ToastRivalHere: '{name} are here'
+    ToastRivalHereSub: Same drift, same crystals. Whatever they stow is theirs.
+    ToastRivalAttack: '{name} want your hold'
+    ToastRivalAttackSub: They are breaking the Ark's mass. Protectors, hold them off.
+    ToastRivalArk: '{name} sail their own Ark'
+    ToastRivalArkSub: '{ark} carries {hold} crystals. Break her hull and the hold spills.'
+    ToastRivalOpen: '{ark} is unguarded'
+    ToastRivalOpenSub: '{count} escorts are silenced for {time}. Break her hull before they recover.'
+    ToastRivalBurst: '{ark}''s hold bursts'
+    ToastRivalBurstSub: '{count} crystals drift loose. Take what you can reach before the fauna do.'
+    ToastRunaway: '{name} are in your drift'
+    ToastRunawaySub: 'A runaway crew: no Ark, nothing to lose. They take from your hold.'
+    ToastRout: '{name} break and run'
+    ToastRoutSub: 'They dropped {count} crystals in the drift. Grudge raised: they will remember you.'
+    AwardsKicker: '{name} - {cells} cells - {time}'
+    AwardsTitleDone: Voyage complete
+    AwardsTitleMissed: Voyage short
+    AwardsYou: 'You - {vessel}'
+    AwardsSeat: '{name} - {vessel}'
+    AwardsPay: Pay
+    AwardTopSalvager: Top salvager
+    AwardTopSalvagerLine: '{count} crystals stowed'
+    AwardWall: Wall of the voyage
+    AwardWallLine: '{share}% of the Ark''s damage stopped'
+    AwardRivalBreaker: Rival breaker
+    AwardRivalBreakerLine: '{share}% of the rival hulls broken'
+    AwardHunter: Hunter
+    AwardHunterLine: '{count} felled'
+    AwardCrew: Steady hand
+    AwardCrewLine: Sailed with her all the way
+    AwardsLostKicker: The Ark is lost
+    AwardsLostTitle: '{name} ends at {place}'
+    AwardsLostLine: 'Cell {cell} of {cells} - {time} - {count} crystals went down with her'
     ObjectiveRaidKicker: CRYSTAL RUN
     ObjectiveVoyageKicker: '{name}'
     ObjectiveRaidGoal: 'Steal {goal} crystals before the Ark reaches {to}'

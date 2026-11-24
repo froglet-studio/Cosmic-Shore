@@ -35,6 +35,8 @@ namespace CosmicShore.Gameplay
             public int Guarded;
             /// <summary>Filled when the board is shown (<see cref="VoyageRaid.Score"/>).</summary>
             public int Score;
+            /// <summary>The share of rival hulls this seat broke, 0-1 (the last blows; Rev 137 Fall's Rival Breaker).</summary>
+            public float RivalHull;
         }
 
         public Kind Board;
@@ -57,6 +59,12 @@ namespace CosmicShore.Gameplay
         public float Breach;
 
         public readonly List<Row> Rows = new();
+        /// <summary>A named voyage's places in order, for the run line over the awards (Frogma Rev 134 Awards A): where it
+        /// left from, then each cell's name. Empty draws no line.</summary>
+        public readonly List<string> Stops = new();
+        /// <summary>The cell where the Ark fell (1-based) and its name (Rev 134 Lost: "ends at Ashwater"); 0 when it did not.</summary>
+        public int LostCell;
+        public string LostAt = string.Empty;
         /// <summary>Crystals stolen (a Crystal Run) or banked (docked), by element (index = (int)Element).</summary>
         public readonly int[] Crystals = new int[(int)Element.Omni + 1];
         /// <summary>The job's or the escort's pay, owed until the Ark docks home.</summary>

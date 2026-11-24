@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-24-pausemenu-gains-a-stage-hook-pausemenust-d21f87",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-24T12:29:18+00:00",
+  "area": "the shared PauseMenu (#2211)",
+  "summary": "PauseMenu gains a stage hook (PauseMenuStage) a game can use to show its own pause screen in place of the window; voyages use it for the Rev 134 pause chart. LeavesParty and SharedSession are now public for that screen. No stage registered means no change.",
+  "branch": "claude/project-thread-n8v0f3",
+  "commit": "13969a7b2",
+  "paths": [
+    "Assets/_Scripts/UI/PauseMenu.cs",
+    "Assets/_Scripts/UI/PauseMenuAction.cs"
+  ]
+}

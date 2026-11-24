@@ -75,6 +75,10 @@ namespace CosmicShore.Gameplay
             // The voyage's own screen-space HUD: the objective box and the end-of-voyage scoreboard.
             go.AddComponent<CosmicShore.UI.VoyageObjectiveBox>().Configure(harbour);
             go.AddComponent<CosmicShore.UI.VoyageScoreboardView>().Configure(harbour);
+            // The Milestone 2 run screens (Frogma Rev 134 / Rev 137): the pause chart, the detour vote, the rival plate.
+            go.AddComponent<CosmicShore.UI.VoyagePauseChart>().Configure(harbour);
+            go.AddComponent<CosmicShore.UI.VoyageVotePanel>().Configure(harbour);
+            go.AddComponent<CosmicShore.UI.VoyageRivalPlate>().Configure(harbour);
             ArkEscortRun.Finished += harbour.OnEscortFinished;
             s_current = harbour;
             RaiseChanged();

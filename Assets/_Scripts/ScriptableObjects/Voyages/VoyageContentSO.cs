@@ -1193,5 +1193,275 @@ namespace CosmicShore.ScriptableObjects
         public string ScoreSailHome = "SAIL HOME";
         [Tooltip("Scoreboard: the line under Sail home ({scale}).")]
         public string ScoreSailHomeLine = "Escort the Ark home for {scale}x the crystals";
+
+        // ── The Milestone 2 run screens (Frogma Rev 134 / Rev 137, Docs/MENU_REDESIGN_B.md sections 227 and 230) ──
+        [Tooltip("Pause chart (Frogma Rev 134 Pause A): the kicker over the voyage's name.")]
+        public string PauseKicker = "Paused";
+        [Tooltip("Pause chart: the crystals aboard, big. {done}.")]
+        public string PauseCount = "{done}";
+        [Tooltip("Pause chart: the goal beside the count. {goal}.")]
+        public string PauseGoal = "/ {goal} aboard";
+        [Tooltip("Pause chart: where the Ark is and how rough the sea is. {cell}, {cells}, {sea}.")]
+        public string PauseWhere = "Cell {cell} of {cells} - {sea}";
+        [Tooltip("Pause chart: where the Ark is, on a leg with no sea rung. {cell}, {cells}.")]
+        public string PauseWhereCalm = "Cell {cell} of {cells}";
+        [Tooltip("Pause chart: the resume button.")]
+        public string PauseResume = "Resume";
+        [Tooltip("Pause chart: the key Resume is on.")]
+        public string PauseResumeKey = "B";
+        [Tooltip("Pause chart: the settings button.")]
+        public string PauseSettings = "Settings";
+        [Tooltip("Pause chart: the leave button (the host, or alone).")]
+        public string PauseLeave = "Leave voyage";
+        [Tooltip("Pause chart: the leave button for a party guest.")]
+        public string PauseLeaveParty = "Leave party";
+        [Tooltip("Pause chart: under the buttons in a party (time is not frozen).")]
+        public string PauseParty = "The party keeps sailing while you look";
+        [Tooltip("Pause chart: the label by the Ark.")]
+        public string ChartYou = "You";
+        [Tooltip("Pause chart: the label by the Ark with the cell clock. {time}.")]
+        public string ChartYouNext = "You - {time} to the next cell";
+        [Tooltip("Pause chart: the stop at the end of the leg. {place}.")]
+        public string ChartStop = "{place} dock";
+        [Tooltip("Pause chart: an event next door, its timer and the work a detour there is. {time}, {verb}.")]
+        public string ChartTimer = "{time} left - {verb}";
+        [Tooltip("An event next door (Rev 134 WorldEvents): a fallen Ark's hull rising.")]
+        public string ChartWreck = "Wreck surfacing";
+        [Tooltip("An event next door: a cell lit from inside, crystals and flora thick.")]
+        public string ChartBloom = "Bloom";
+        [Tooltip("An event next door: a flare over a still derelict.")]
+        public string ChartDistress = "Distress call";
+        [Tooltip("An event next door: red-lit bodies gathering at the membrane.")]
+        public string ChartPredators = "Predator pack";
+        [Tooltip("An event next door: a rival crew.")]
+        public string ChartRivalCrew = "Rival crew";
+        [Tooltip("Pause chart: a rival crew sailing its own Ark. {name}.")]
+        public string ChartRivalArk = "{name} - rival Ark";
+        [Tooltip("Pause chart: a rival crew with no Ark. {name}.")]
+        public string ChartRunaway = "{name} - runaway crew";
+        [Tooltip("Pause chart: a rival Ark's line. {place}, {hold}.")]
+        public string ChartRivalArkLine = "Also bound for {place} - hold {hold}";
+        [Tooltip("Pause chart: a runaway crew's line.")]
+        public string ChartRunawayLine = "Loose in the next cell - no Ark";
+        [Tooltip("Pause chart: a rival in your cell, racing you. {place}.")]
+        public string ChartRivalRacing = "Racing you to {place}";
+        [Tooltip("Pause chart: a rival breaking your Ark or raiding your hold.")]
+        public string ChartRivalAttacking = "Attacking your Ark";
+        [Tooltip("Pause chart: a runaway crew that broke and ran.")]
+        public string ChartRivalRouted = "Routed - dropped their haul";
+        [Tooltip("Pause chart: a rival Ark whose hull broke.")]
+        public string ChartRivalBroken = "Hold burst - turning back";
+        [Tooltip("Pause chart legend: the Ark's mark.")]
+        public string ChartLegendArk = "The Ark, live";
+        [Tooltip("Pause chart legend: an event's mark.")]
+        public string ChartLegendEvent = "Event next door";
+        [Tooltip("Pause chart legend: a rival's mark.")]
+        public string ChartLegendRival = "Rival crew";
+        [Tooltip("The sea's rung I1 (Docs/Voyages/MILESTONE_2.md section 3).")]
+        public string SeaCalm = "Calm sea";
+        [Tooltip("The sea's rung I2.")]
+        public string SeaChoppy = "Choppy sea";
+        [Tooltip("The sea's rung I3.")]
+        public string SeaRough = "Rough sea";
+        [Tooltip("The sea's rung I4.")]
+        public string SeaAbyssal = "Abyssal sea";
+        [Tooltip("Which side of the lane: port (left).")]
+        public string SidePort = "port";
+        [Tooltip("Which side of the lane: starboard (right).")]
+        public string SideStarboard = "starboard";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbArrive = "Arrive";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbStow = "Stow";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbHold = "Hold";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbGather = "Gather";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbCull = "Cull";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbLay = "Lay";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbRaze = "Raze";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbObserve = "Observe";
+        [Tooltip("A work verb as the chart names it.")]
+        public string VerbMeet = "Meet";
+        [Tooltip("Detour vote (Frogma Rev 134 Vote B): who asks. {pilot}, {whose}.")]
+        public string VoteAsker = "{pilot} - {whose}";
+        [Tooltip("Detour vote: the asker is the player's own pilot.")]
+        public string VoteAskerYours = "your pilot";
+        [Tooltip("Detour vote: the asker is a party friend's pilot. {friend}.")]
+        public string VoteAskerFriend = "{friend}'s pilot";
+        [Tooltip("Detour vote: the asker is an AI wingmate.")]
+        public string VoteAskerWingmate = "wingmate";
+        [Tooltip("Detour vote: the asker's words about a wreck. {event}.")]
+        public string VoteQuoteWreck = "\"Wreck coming up to port. We strip it, we sink nothing. Detour?\"";
+        [Tooltip("Detour vote: the asker's words about a bloom. {event}.")]
+        public string VoteQuoteBloom = "\"There's a bloom next door, thick with crystal. Detour?\"";
+        [Tooltip("Detour vote: the asker's words about a distress call. {event}.")]
+        public string VoteQuoteDistress = "\"Someone's calling for help next door. We go?\"";
+        [Tooltip("Detour vote: the asker's words about a predator pack. {event}.")]
+        public string VoteQuotePredators = "\"A pack is gathering next door. We hunt them first?\"";
+        [Tooltip("Detour vote: the asker's words about a rival crew. {event}.")]
+        public string VoteQuoteRival = "\"{event}, next door. We take them on?\"";
+        [Tooltip("Detour vote, alone: the pilot's words. {event}.")]
+        public string VoteQuoteSolo = "\"{event} next door. Your call, captain.\"";
+        [Tooltip("Detour vote: what the detour costs and wins. {time}, {gain}.")]
+        public string VoteCost = "Detour one cell: {time} on the clock, {gain}.";
+        [Tooltip("Detour vote: what a wreck is worth.")]
+        public string VoteGainWreck = "the wreck's crystals into the hold";
+        [Tooltip("Detour vote: what a bloom is worth.")]
+        public string VoteGainBloom = "the bloom's crystals into the hold";
+        [Tooltip("Detour vote: what answering a distress call is worth.")]
+        public string VoteGainDistress = "a crew that will remember you";
+        [Tooltip("Detour vote: what culling a pack is worth.")]
+        public string VoteGainPredators = "a quieter sea for the Ark";
+        [Tooltip("Detour vote: what beating a rival is worth.")]
+        public string VoteGainRival = "whatever they carry";
+        [Tooltip("Detour vote: the left choice (D-pad left).")]
+        public string VoteDetour = "Detour";
+        [Tooltip("Detour vote: the right choice (D-pad right).")]
+        public string VotePressOn = "Press on";
+        [Tooltip("Detour vote: a ballot for the detour.")]
+        public string VoteDetourWord = "Detour";
+        [Tooltip("Detour vote: a ballot to press on.")]
+        public string VotePressOnWord = "Press on";
+        [Tooltip("Detour vote: a seat that has not pressed.")]
+        public string VoteNoBallot = "No vote";
+        [Tooltip("Detour vote: the host's ballot. {choice}.")]
+        public string VoteBallotHost = "{choice} - host";
+        [Tooltip("Detour vote: the rule under the ballots in a party.")]
+        public string VoteRuleParty = "A tie goes to the host. The AI votes with its pilot's mood.";
+        [Tooltip("Detour vote: the rule alone.")]
+        public string VoteRuleSolo = "Solo: one press decides. No press in 5 s: press on.";
+        [Tooltip("Detour vote: how it ended, most presses. {choice}.")]
+        public string VoteEndChosen = "{choice}.";
+        [Tooltip("Detour vote: a tie the host broke. {choice}.")]
+        public string VoteEndTie = "Tie: the host's vote wins. {choice}.";
+        [Tooltip("Detour vote: nobody pressed.")]
+        public string VoteEndNoPress = "No press: press on.";
+        [Tooltip("Rival plate (Frogma Rev 137): the crew's faction and temper. {faction}, {temper}.")]
+        public string RivalTemper = "{faction} - {temper}";
+        [Tooltip("A rival crew's temper.")]
+        public string TemperCareful = "Careful";
+        [Tooltip("A rival crew's temper.")]
+        public string TemperBold = "Bold";
+        [Tooltip("A rival crew's temper.")]
+        public string TemperGreedy = "Greedy";
+        [Tooltip("Rival plate: a rival Ark's hold.")]
+        public string RivalHold = "Hold";
+        [Tooltip("Rival plate: what a runaway crew carries.")]
+        public string RivalCarrying = "Carrying";
+        [Tooltip("Rival plate: a rival Ark's hull.")]
+        public string RivalHull = "Hull";
+        [Tooltip("Rival plate: the hull share. {hull}.")]
+        public string RivalHullValue = "{hull}%";
+        [Tooltip("Rival plate: an escort guarding.")]
+        public string RivalGuarding = "Guarding";
+        [Tooltip("Rival plate: an escort silenced.")]
+        public string RivalSilenced = "Silenced";
+        [Tooltip("Rival plate: an escort silenced, with the time left. {time}.")]
+        public string RivalSilencedFor = "Silenced - {time}";
+        [Tooltip("Rival plate: a routed escort running.")]
+        public string RivalRunning = "Running";
+        [Tooltip("Rival plate: an escort turning back to its broken Ark.")]
+        public string RivalTurningBack = "Turning back";
+        [Tooltip("Rival plate: how to beat a rival Ark.")]
+        public string RivalNoteArk = "Her escorts wall her hull. Silence them, then break her.";
+        [Tooltip("Rival plate: a rival Ark's hull open. {count}.")]
+        public string RivalNoteArkOpen = "{count} escorts silenced: her hull is open. Destroyers, now.";
+        [Tooltip("Rival plate: a rival Ark broken.")]
+        public string RivalNoteBroken = "Her hold is gone. The crew turns back to save her.";
+        [Tooltip("Rival plate: how to beat a runaway crew.")]
+        public string RivalNoteRunaway = "Silence all three at once and they run.";
+        [Tooltip("Rival plate: a runaway crew partly silenced. {count}, {total}.")]
+        public string RivalNoteRunawayPart = "Silence all three at once and they run. {count} of {total} down.";
+        [Tooltip("Rival plate: a runaway crew routed.")]
+        public string RivalNoteRouted = "All three silenced at once. They drop their haul and run.";
+        [Tooltip("Feed (Frogma Rev 134 Crossing): a named voyage crosses into a cell. {place}.")]
+        public string ToastCellNamed = "{place}";
+        [Tooltip("Feed: the line under the cell's name. {cell}, {cells}, {sea}.")]
+        public string ToastCellNamedSub = "Cell {cell} of {cells} - {sea}";
+        [Tooltip("Feed: the line under the cell's name with no sea rung. {cell}, {cells}.")]
+        public string ToastCellNamedSubCalm = "Cell {cell} of {cells}";
+        [Tooltip("Feed (Rev 134 Event): an event next door. {event}, {side}.")]
+        public string ToastEventNext = "{event} to {side}";
+        [Tooltip("Feed: the line under an event next door. {time}.")]
+        public string ToastEventNextSub = "Next door, {time} before it is gone. Your squad will vote.";
+        [Tooltip("Feed (Rev 134 Detour): the squad turned off the lane. {event}.")]
+        public string ToastDetour = "Detour: {event}";
+        [Tooltip("Feed: the line under a detour. {verb}.")]
+        public string ToastDetourSub = "{verb} it before it is gone. The lane waits one cell over.";
+        [Tooltip("Feed (Rev 134 Joins): a friend takes an AI's seat. {friend}.")]
+        public string ToastJoins = "{friend} joins at the next cell";
+        [Tooltip("Feed: the line under a friend joining. {place}.")]
+        public string ToastJoinsSub = "They take the AI's seat as the Ark crosses into {place}.";
+        [Tooltip("Feed (Rev 134 Rival): a rival crew in your cell. {name}.")]
+        public string ToastRivalHere = "{name} are here";
+        [Tooltip("Feed: the line under a rival crew arriving.")]
+        public string ToastRivalHereSub = "Same drift, same crystals. Whatever they stow is theirs.";
+        [Tooltip("Feed (Rev 134 Hostile): a rival breaking your Ark. {name}.")]
+        public string ToastRivalAttack = "{name} want your hold";
+        [Tooltip("Feed: the line under a rival attacking.")]
+        public string ToastRivalAttackSub = "They are breaking the Ark's mass. Protectors, hold them off.";
+        [Tooltip("Feed (Rev 137 ArkMeet): a rival Ark arrives. {name}.")]
+        public string ToastRivalArk = "{name} sail their own Ark";
+        [Tooltip("Feed: the line under a rival Ark. {ark}, {hold}.")]
+        public string ToastRivalArkSub = "{ark} carries {hold} crystals. Break her hull and the hold spills.";
+        [Tooltip("Feed (Rev 137 ArkOpen): a rival Ark's escorts silenced. {ark}.")]
+        public string ToastRivalOpen = "{ark} is unguarded";
+        [Tooltip("Feed: the line under an open hull. {count}, {time}.")]
+        public string ToastRivalOpenSub = "{count} escorts are silenced for {time}. Break her hull before they recover.";
+        [Tooltip("Feed (Rev 137 ArkBreak): a rival Ark broken. {ark}.")]
+        public string ToastRivalBurst = "{ark}'s hold bursts";
+        [Tooltip("Feed: the line under a burst hold. {count}.")]
+        public string ToastRivalBurstSub = "{count} crystals drift loose. Take what you can reach before the fauna do.";
+        [Tooltip("Feed (Rev 137 Runaway): a runaway crew raiding. {name}.")]
+        public string ToastRunaway = "{name} are in your drift";
+        [Tooltip("Feed: the line under a runaway crew.")]
+        public string ToastRunawaySub = "A runaway crew: no Ark, nothing to lose. They take from your hold.";
+        [Tooltip("Feed (Rev 137 Rout): a runaway crew routed. {name}.")]
+        public string ToastRout = "{name} break and run";
+        [Tooltip("Feed: the line under a rout. {count}.")]
+        public string ToastRoutSub = "They dropped {count} crystals in the drift. Grudge raised: they will remember you.";
+        [Tooltip("End board (Frogma Rev 134 Awards A): the kicker. {name}, {cells}, {time}.")]
+        public string AwardsKicker = "{name} - {cells} cells - {time}";
+        [Tooltip("End board: the title when the goal was met.")]
+        public string AwardsTitleDone = "Voyage complete";
+        [Tooltip("End board: the title when the goal was missed.")]
+        public string AwardsTitleMissed = "Voyage short";
+        [Tooltip("End board: the player's own card. {name}, {vessel}.")]
+        public string AwardsYou = "You - {vessel}";
+        [Tooltip("End board: a seat's card. {name}, {vessel}.")]
+        public string AwardsSeat = "{name} - {vessel}";
+        [Tooltip("End board: the word beside the pay.")]
+        public string AwardsPay = "Pay";
+        [Tooltip("An award: the most crystals.")]
+        public string AwardTopSalvager = "Top salvager";
+        [Tooltip("An award's line. {count}.")]
+        public string AwardTopSalvagerLine = "{count} crystals stowed";
+        [Tooltip("An award: the most hull saved.")]
+        public string AwardWall = "Wall of the voyage";
+        [Tooltip("An award's line. {share}.")]
+        public string AwardWallLine = "{share}% of the Ark's damage stopped";
+        [Tooltip("An award: the last blows on rival hulls.")]
+        public string AwardRivalBreaker = "Rival breaker";
+        [Tooltip("An award's line. {share}.")]
+        public string AwardRivalBreakerLine = "{share}% of the rival hulls broken";
+        [Tooltip("An award: the most kills.")]
+        public string AwardHunter = "Hunter";
+        [Tooltip("An award's line. {count}.")]
+        public string AwardHunterLine = "{count} felled";
+        [Tooltip("An award: a seat no other award fits.")]
+        public string AwardCrew = "Steady hand";
+        [Tooltip("An award's line.")]
+        public string AwardCrewLine = "Sailed with her all the way";
+        [Tooltip("End board, the Ark fallen (Rev 134 Lost): the kicker.")]
+        public string AwardsLostKicker = "The Ark is lost";
+        [Tooltip("End board, the Ark fallen: the title. {name}, {place}.")]
+        public string AwardsLostTitle = "{name} ends at {place}";
+        [Tooltip("End board, the Ark fallen: the line. {cell}, {cells}, {time}, {count}.")]
+        public string AwardsLostLine = "Cell {cell} of {cells} - {time} - {count} crystals went down with her";
     }
 }

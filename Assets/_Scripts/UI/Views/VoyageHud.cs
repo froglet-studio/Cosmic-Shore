@@ -509,6 +509,7 @@ namespace CosmicShore.UI
         VoyageLines _lines;
         RectTransform _root, _page;
         VoyageScoreboard _shown;
+        VoyageAwardsBoard _awards;
         float _pressFrom;
         CursorLockMode _cursorLock;
         bool _cursorVisible, _cursorHeld;
@@ -604,6 +605,13 @@ namespace CosmicShore.UI
             var frame = VoyageKit.Node("Frame", safe);
             VoyageKit.Fit(frame, new Vector2(1920f, 1080f));
 
+            // A named voyage's board is Frogma Rev 134 Awards A (and its Lost card); Crystal Run keeps this one.
+            if (VoyageAwardsBoard.Draws(b))
+            {
+                (_awards ??= new VoyageAwardsBoard(_kit, _lines)).Build(frame, b);
+                Buttons(frame, b);
+                return;
+            }
             Head(frame, b);
             Seats(frame, b);
             Rewards(frame, b);
