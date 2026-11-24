@@ -26714,3 +26714,16 @@ NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins 
 - [ ] Serpentine at I1, I2 and I3: no ruins.
 - [ ] Frame rate at I4 with the ruins (about 840 more prisms) against without.
 - [ ] A rematch lays a fresh set and leaves none of the old one.
+
+## Thresher Time: the I4 garden ruins (2026-11-24)
+
+Compiled and tested outside Unity only (`ThresherTimeRuinsTests` 7/7 with Roslyn, the game assembly with Unity's own
+compiler arguments). Not compiled in the editor, no edit-mode run in Unity, never seen in Play. `THRESHERTIME.md` §0b.
+
+- [ ] The project compiles in the editor and `ThresherTimeRuinsTests` passes there.
+- [ ] Thresher Time I4: each leg but the last runs through a ruin in Jade, Ruby or Gold; the Belfry stays Blue.
+- [ ] The way to a ring is open wherever the ring is in its swing; no mace swings through a ruin.
+- [ ] The wheel (about half the courses have one) turns, and host and guest see it at the same angle.
+- [ ] I1, I2 and I3 have no ruins.
+- [ ] Three AI at I4 still finish (one race before: 159 s, seed 7001), and the frame rate holds with about 1,000 more prisms.
+- [ ] The ruins are gone after leaving the race and on Play Again.
