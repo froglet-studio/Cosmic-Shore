@@ -87,18 +87,20 @@ combos:
 - in: x
   name: Length and line
   t: [1, 4]
-  src: 'Steward 2026-11-24: Goby Time step 1 signed fun by Will in Perch Run (loop.json); PERCH_RUN.md sections 1-2; commits
-    3b9cbf31a and e8b6bf92b (dart cooldown 2.2 s from launch, a person''s Goby never held at a perch)'
-  is: Every dart costs one second whatever its length, so each dart is two choices, how long to hold and where to point.
+  src: 'Garrett 2026-11-24 (project chat): the Goby never flies; its only movement is charged launches of different lengths
+    from perch to perch, and two thumbs orient the shrimp''s plane. Dart numbers from PERCH_RUN.md section 1; Goby Time step
+    1 signed fun by Will (loop.json).'
+  is: The Goby never flies. On a perch, two thumbs turn it to set the Pistol's plane; it charges a length and shoots itself
+    to the next perch, so every move is one choice of line and length.
   chain:
   - - ''
-    - Hold to charge the dart's length, 140 to 600 u
+    - 'Perched: two thumbs turn the hull, and the turn sets the Pistol''s plane'
   - - ''
-    - Aim the line past the coral head, or through a double
+    - Hold to charge the length, 140 u for a tap up to 600 u at a full charge
   - - Time
-    - Let go; it lands in one second and the next is ready 2.2 s after launch
+    - Let go; it lands in one second and the landing is the next perch
   drivers: [mastery, joy]
-  feel: Reading the course one dart ahead.
+  feel: Reading the course one perch ahead.
   gene:
     genome: Time
     cue: [gate_next, straight_ahead]
@@ -113,7 +115,7 @@ combos:
       - 0
       - 60
       - u
-    done: A ring is threaded with one dart from the ring before.
+    done: A ring is threaded with one launch from the perch before.
     sight: NEEDLE
 - in: x
   name: Lock and snap

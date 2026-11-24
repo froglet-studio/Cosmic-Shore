@@ -378,7 +378,6 @@
    "id": "breath",
    "parent": "sitting",
    "at": 4,
-   "in": "px",
    "name": "The breath",
    "tier": 3,
    "kind": "loop",
@@ -414,16 +413,9 @@
    "src": [
     "proposal"
    ],
-   "plan": {
-    "s": "decided",
+   "now": {
+    "s": "built",
     "note": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off."
-   },
-   "build": {
-    "s": "building",
-    "what": "Proposal P5. The scoreboard already knows the placing and the volume books; this adds the hand-off.",
-    "by": "Garrett",
-    "at": "2026-11-21",
-    "branch": "claude/retain-breath"
    }
   },
   {
@@ -1836,8 +1828,8 @@
    "reps": "4",
    "repsOf": "quests before the Hangar",
    "now": {
-    "s": "dark",
-    "note": "Scurry, Hex Race, Joust, Maelstrom, then the Vessel Hangar. Stood down by the master unlock."
+    "s": "built",
+    "note": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
    },
    "holes": [
     {
@@ -1850,18 +1842,7 @@
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2",
     "Docs/QUEST_TRACK_AND_BREADCRUMB.md",
     "Docs/LoopAtlas/sim/REPORT.md"
-   ],
-   "plan": {
-    "s": "decided",
-    "note": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar."
-   },
-   "build": {
-    "s": "building",
-    "what": "A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after the Hangar.",
-    "by": "Garrett",
-    "at": "2026-11-21",
-    "branch": "claude/retain-economy"
-   }
+   ]
   },
   {
    "id": "arc.fleet",
@@ -2248,7 +2229,7 @@
    "repsOf": "sittings with a friend",
    "now": {
     "s": "built",
-    "note": "The party lobby, invites, friends and AI backfill exist. Crew vessels (two to four seats on one hull) are local only until networked."
+    "note": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
    },
    "prop": {
     "s": "change",
@@ -2279,18 +2260,7 @@
     "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
     "Docs/Voyages/PARTY.md",
     "Docs/LoopAtlas/sim/REPORT.md"
-   ],
-   "plan": {
-    "s": "decided",
-    "note": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."
-   },
-   "build": {
-    "s": "building",
-    "what": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.",
-    "by": "Garrett",
-    "at": "2026-11-21",
-    "branch": "claude/retain-economy"
-   }
+   ]
   },
   {
    "id": "arc.replay",
@@ -3635,7 +3605,7 @@
     "sitting",
     "arcade"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-breath"
   },
   {
@@ -3685,7 +3655,7 @@
     "voyages",
     "arc.fleet"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-economy"
   },
   {
@@ -3714,7 +3684,7 @@
     "voy.home",
     "sitting"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-voyage-chapters"
   },
   {
@@ -3752,7 +3722,7 @@
     "arc.replay",
     "arc.fleet"
    ],
-   "stage": "building",
+   "stage": "current",
    "branch": "claude/retain-makers"
   }
  ],
@@ -4898,27 +4868,27 @@
       1,
       4
      ],
-     "src": "Steward 2026-11-24: Goby Time step 1 signed fun by Will in Perch Run (loop.json); PERCH_RUN.md sections 1-2; commits 3b9cbf31a and e8b6bf92b (dart cooldown 2.2 s from launch, a person's Goby never held at a perch)",
-     "is": "Every dart costs one second whatever its length, so each dart is two choices, how long to hold and where to point.",
+     "src": "Garrett 2026-11-24 (project chat): the Goby never flies; its only movement is charged launches of different lengths from perch to perch, and two thumbs orient the shrimp's plane. Dart numbers from PERCH_RUN.md section 1; Goby Time step 1 signed fun by Will (loop.json).",
+     "is": "The Goby never flies. On a perch, two thumbs turn it to set the Pistol's plane; it charges a length and shoots itself to the next perch, so every move is one choice of line and length.",
      "chain": [
       [
        "",
-       "Hold to charge the dart's length, 140 to 600 u"
+       "Perched: two thumbs turn the hull, and the turn sets the Pistol's plane"
       ],
       [
        "",
-       "Aim the line past the coral head, or through a double"
+       "Hold to charge the length, 140 u for a tap up to 600 u at a full charge"
       ],
       [
        "Time",
-       "Let go; it lands in one second and the next is ready 2.2 s after launch"
+       "Let go; it lands in one second and the landing is the next perch"
       ]
      ],
      "drivers": [
       "mastery",
       "joy"
      ],
-     "feel": "Reading the course one dart ahead.",
+     "feel": "Reading the course one perch ahead.",
      "gene": {
       "genome": "Time",
       "cue": [
@@ -4941,7 +4911,7 @@
         "u"
        ]
       ],
-      "done": "A ring is threaded with one dart from the ring before.",
+      "done": "A ring is threaded with one launch from the perch before.",
       "sight": "NEEDLE"
      }
     },
@@ -10883,6 +10853,20 @@
    },
    "src": [
     "commits a67739a1e, b8f578023, c30156ef7"
+   ]
+  },
+  {
+   "id": "goby.perch-only",
+   "name": "The Goby only moves perch to perch",
+   "area": "game",
+   "is": "The Goby never flies: it shoots itself from perch to perch, and two thumbs orient the Pistol's plane.",
+   "in": "x",
+   "prop": {
+    "s": "add",
+    "note": "Garrett's design: every move the Goby makes is a charged launch from one perch to the next. A tap is a short hop (140 u) and a full 0.8 s charge goes 600 u; the landing is always a perch, so short hops count too. While perched, the person's two thumbs turn the hull, and the turn sets the Pistol's plane. Today the Goby cruises between perches on two-thumb flight (its AI at aiCruiseSpeed 100), only darts that end 900 u or more from the last perch make a perch, and shorter ones are dashes."
+   },
+   "src": [
+    "Garrett, project chat, 2026-11-24"
    ]
   }
  ],
