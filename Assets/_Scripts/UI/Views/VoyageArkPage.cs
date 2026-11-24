@@ -25,7 +25,9 @@ namespace CosmicShore.UI
     /// </list>
     /// The seats are the voyage's own (<see cref="VoyageSeatRecord"/>, a copy of the active squad made when the page
     /// opens on a voyage): a pick never changes a saved squad, and Set sail sails exactly these seats. The seat picker
-    /// slides in from the right and leaves the seats in view, so your seat changes behind it as you pick.
+    /// slides in from the right and leaves the seats in view, so your seat changes behind it as you pick. Pressing a seat's
+    /// hull opens Vessels (<see cref="VoyageVesselsPage"/>, Rev 136 E / Rev 138), and each vessel carries its voyage class
+    /// beside its name (Rev 134 seats), muted when the voyage does not want it.
     /// <para>On a friend's machine (<see cref="VoyageLaunch.IsPartyGuest"/>) the same page is their own seat in the host's
     /// lobby (section 209.2): they change their own seat, kept in <see cref="VoyageSeatRecord.PartyKey"/> and written to
     /// their player's replicated hull at once (<see cref="VoyageLaunch.SeatLocal"/>), so the host's page shows it and the
@@ -56,6 +58,8 @@ namespace CosmicShore.UI
         TMP_Text _sailWords;
         RectTransform _fillButton;
         VoyageSeatPicker _picker;
+        VoyageVesselsPage _vessels;
+        readonly VoyageClassesSO _classes = VoyageClassesSO.Load();
 
         // The voyage, top left.
         Image _voyageFace;
@@ -78,17 +82,23 @@ namespace CosmicShore.UI
         sealed class SeatView
         {
             public RectTransform Root, StateRoot, Flower, Change, AiButtons;
-            public TMP_Text Role, State, Vessel, Pilot, Element, Line;
+            public TMP_Text Role, State, Vessel, Pilot, Element, Line, Class;
+            public VoyageGlyph ClassGlyph;
             public VoyageRing StateDot;
             public VoyageSeats.HullView Hull;
             public Image Portrait, Rule;
-            public Button ChangeButton, Invite, Wingmate;
+            public Button ChangeButton, Invite, Wingmate, HullButton;
         }
 
-        public bool PickerOpen => _picker != null && _picker.IsOpen;
+        /// <summary>The seat picker or Vessels is open over the page (Back closes it first).</summary>
+        public bool PickerOpen => (_picker != null && _picker.IsOpen) || (_vessels != null && _vessels.IsOpen);
 
-        /// <summary>Removes the seat popup's canvas with the board.</summary>
-        public void Dispose() => _picker?.Dispose();
+        /// <summary>Removes the seat popup's and Vessels' canvases with the board.</summary>
+        public void Dispose()
+        {
+            _picker?.Dispose();
+            _vessels?.Dispose();
+        }
 
         public VoyageArkPage(VoyageBoard board, VoyageKit kit, VoyageSeats rules, RectTransform pages, HostConnectionDataSO party)
         {
@@ -107,6 +117,7 @@ namespace CosmicShore.UI
             for (int seat = 0; seat < SavedSquad.SlotCount; seat++) _seatViews.Add(BuildSeat(seat));
             BuildBar();
             _picker = new VoyageSeatPicker(_board, _kit, _rules, Root);
+            _vessels = new VoyageVesselsPage(_board, _kit, _rules, Root);
             _rules.Changed += Refresh;
             _rules.VoyageChanged += SeatsChanged;
         }
@@ -212,7 +223,14 @@ namespace CosmicShore.UI
 
             // The hull (480 x 260) standing on a soft floor shadow, and one thin line under it.
             VoyageKit.Glow(At("Shadow", 40f, 300f, w - 80f, 60f, c), VoyageKit.Fade(FloorLight, 0.22f));
-            view.Hull = VoyageSeats.HullBox(At("Hull", 20f, HullY, w - 40f, HullHeight, c));
+            var hull = At("Hull", 20f, HullY, w - 40f, HullHeight, c);
+            view.Hull = VoyageSeats.HullBox(hull);
+            // Pressing the hull opens Vessels on this seat (Frogma Rev 138 Seats, mark 1).
+            var hullHit = VoyageKit.Block(hull, VoyageKit.Clear, hit: true);
+            view.HullButton = hull.gameObject.AddComponent<Button>();
+            view.HullButton.targetGraphic = hullHit;
+            view.HullButton.transition = Selectable.Transition.None;
+            view.HullButton.onClick.AddListener(() => OpenVessels(seat));
             view.Rule = VoyageKit.Block(At("Line", 0f, LineY, w, 1f, c), _kit.Outline);
 
             // Under the line: the pilot's face (60 x 72), the vessel (24) over "pilot - artifact" (14, Sub), and the element's
@@ -222,7 +240,20 @@ namespace CosmicShore.UI
             view.Portrait = VoyageKit.CoverBox(face);
             var names = At("Names", 76f, NamesY + 6f, w - 76f - 96f, 64f, c);
             VoyageKit.Column(names, 6f, TextAnchor.UpperLeft);
-            view.Vessel = _kit.Text(names, 24, _kit.Light, TextAlignmentOptions.Left);
+            // The vessel (24) and its voyage class beside it: the class's glyph (18) and name (15), Light when this voyage
+            // wants the class, muted when it does not (Rev 134 seats).
+            var vesselRow = VoyageKit.Node("VesselRow", names);
+            VoyageKit.Le(vesselRow).preferredHeight = 32f;
+            VoyageKit.Row(vesselRow, 14f).childForceExpandHeight = true;
+            view.Vessel = _kit.Text(vesselRow, 24, _kit.Light, TextAlignmentOptions.Left);
+            view.Vessel.overflowMode = TextOverflowModes.Overflow;
+            var glyph = VoyageKit.Node("ClassGlyph", vesselRow);
+            var gle = VoyageKit.Le(glyph);
+            gle.preferredWidth = gle.minWidth = gle.preferredHeight = gle.minHeight = 18f;
+            view.ClassGlyph = glyph.gameObject.AddComponent<VoyageGlyph>();
+            view.ClassGlyph.raycastTarget = false;
+            view.Class = _kit.Text(vesselRow, 15, _kit.Light, TextAlignmentOptions.Left);
+            view.Class.overflowMode = TextOverflowModes.Overflow;
             view.Pilot = _kit.Text(names, 14, _kit.Sub, TextAlignmentOptions.Left);
             var flowerBox = At("Flower", w - 34f - 24f, NamesY, 34f, 34f, c);
             view.Flower = VoyageKit.Flower(flowerBox, Element.Charge, _kit.Light);
@@ -387,6 +418,7 @@ namespace CosmicShore.UI
             _sail.interactable = !guest && _offer?.SetSail != null;
             VoyageKit.Set(_sailWords, guest ? _lines?.ArkHostSails : _lines?.CardSetSail);
             if (_picker.IsOpen) _picker.Refresh();
+            if (_vessels.IsOpen) _vessels.Refresh();
         }
 
         void DrawVoyage()
@@ -475,6 +507,8 @@ namespace CosmicShore.UI
                 _rules.SetHull(view.Hull, null);
                 VoyageKit.Show(view.Portrait, null);
                 VoyageKit.Set(view.Vessel, null);
+                DrawClass(view, null);
+                view.HullButton.interactable = false;
                 VoyageKit.Set(view.Pilot, null);
                 VoyageKit.Set(view.Element, null);
                 view.Flower.parent.gameObject.SetActive(false);
@@ -488,6 +522,7 @@ namespace CosmicShore.UI
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Show(view.Portrait, pilot ? pilot.Portrait : null);
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
+            DrawClass(view, vessel);
             string artifact = vessel ? _rules.ArtifactName(slot, vessel, canEdit) : null;
             string pilotName = VoyageSeats.PilotName(slot, pilot, canEdit);
             // "Tamako Deephook - No artifact": the pilot, then what the seat carries.
@@ -501,6 +536,7 @@ namespace CosmicShore.UI
             // Your seat changes here when it is yours to change; an AI seat keeps its two buttons.
             Foot(view, state, you && !canEdit ? _lines?.CardNoSquad : null);
             view.ChangeButton.interactable = canEdit;
+            view.HullButton.interactable = canEdit;
             view.Wingmate.interactable = canEdit;
         }
 
@@ -516,6 +552,9 @@ namespace CosmicShore.UI
             var vessel = _rules.VesselOf(FriendHull(id, name));
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : name);
+            DrawClass(view, vessel);
+            // A friend picks their own vessel on their own page.
+            view.HullButton.interactable = false;
             if (reported != null)
             {
                 var slot = reported.Slot;
@@ -534,6 +573,24 @@ namespace CosmicShore.UI
                 VoyageKit.Set(view.Element, null);
             }
             Foot(view, SeatState.Friend, TemplateText.Fill(_lines?.ArkFriendLine, "name", name));
+        }
+
+        /// <summary>The seat's voyage class beside its vessel: Light when the open voyage wants it, muted when not;
+        /// nothing for a vessel with no class.</summary>
+        void DrawClass(SeatView view, SO_Vessel vessel)
+        {
+            var c = _classes && vessel ? _classes.ClassOf(vessel.Class) : VoyageClass.None;
+            bool any = c != VoyageClass.None;
+            view.ClassGlyph.gameObject.SetActive(any);
+            view.Class.gameObject.SetActive(any);
+            if (!any) return;
+            var wants = _classes.WantedBy(VoyageClassesSO.JobOf(SeatKey));
+            bool lit = wants.Count == 0 || _classes.Wanted(VoyageClassesSO.JobOf(SeatKey), c);
+            var col = lit ? _kit.Light : VoyageKit.Fade(_kit.Sub, 0.6f);
+            view.ClassGlyph.Form = VoyageGlyph.Of(c);
+            view.ClassGlyph.color = col;
+            VoyageKit.Set(view.Class, _classes.NameOf(c));
+            view.Class.color = col;
         }
 
         // ── Invite a friend ──────────────────────────────────────────────────
@@ -629,11 +686,26 @@ namespace CosmicShore.UI
             _picker.Open(_offer, seat, kind, SeatKey);
         }
 
-        public void ClosePicker() => _picker.Close();
+        /// <summary>Open Vessels on <paramref name="seat"/> (its hull pressed).</summary>
+        void OpenVessels(int seat)
+        {
+            var squad = Seats();
+            // A friend changes only their own seat.
+            if (Guest && seat != VoyageSeatRecord.MySeatOf(squad)) return;
+            _picker.Close();
+            _vessels.Open(_offer, seat, SeatKey);
+        }
+
+        public void ClosePicker()
+        {
+            _picker.Close();
+            _vessels.Close();
+        }
 
         public void Tick(float dt)
         {
             _picker.Tick(dt);
+            _vessels.Tick(dt);
             // A friend joining, leaving or changing their hull redraws the seats.
             if ((_pollIn -= dt) <= 0f && _offer != null && Root.gameObject.activeInHierarchy)
             {

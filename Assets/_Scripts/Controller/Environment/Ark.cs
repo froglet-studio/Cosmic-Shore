@@ -141,7 +141,6 @@ namespace CosmicShore.Gameplay
 
         const float AliveScanSeconds = 0.5f;              // hull-integrity scan cadence
         const float CellRebindSeconds = 2.5f;             // cell re-bind + grid re-file cadence
-        const float TurnDegreesPerSecond = 40f;           // how fast the bow swings onto course
 
         readonly List<Prism> _prisms = new();
         Trail _trail;
@@ -169,6 +168,12 @@ namespace CosmicShore.Gameplay
         Vector3 _lastWakeAt;
         bool _wakeArmed;
         float _speed;                                     // live speed this frame
+        // ── Helm ─────────────────────────────────────────────────────────────
+        // The drawn pose is the course pose with the helm's attitude on top (ArkHelm): peeled off at the start of each
+        // Update, the course stepped and followed, then laid back on.
+        ArkHelm _helm;
+        Quaternion _attitude = Quaternion.identity;       // bank, pitch, swell and flinch, in the course's own frame
+        Vector3 _attitudeOffset;                          // the swell's heave, world space
         float _approachSpeed;                             // speed at the destination's core
         float _cruiseSpeed;                               // speed in open water between cells
         float _slowRadius;                                // range over which cruise eases to approach
@@ -239,7 +244,19 @@ namespace CosmicShore.Gameplay
         public bool IsHullLost => _hullLost;
 
         public Vector3 Position => transform.position;
-        public Vector3 Forward => transform.forward;
+
+        /// <summary>The bow's COURSE heading: where the Ark is sailing, without the bank, swell and flinch the helm draws
+        /// on top (<see cref="ArkHelm"/>). Escort roles place themselves off this.</summary>
+        public Vector3 Forward => CourseRotation * Vector3.forward;
+
+        /// <summary>The course pose's position: the drawn position less the swell's heave. What a party syncs.</summary>
+        public Vector3 CoursePosition => transform.position - _attitudeOffset;
+
+        /// <summary>The course pose's rotation: the drawn rotation less the helm's attitude. What a party syncs.</summary>
+        public Quaternion CourseRotation => transform.rotation * Quaternion.Inverse(_attitude);
+
+        /// <summary>The Ark's helm: how it accelerates, steers, leans, breathes and flinches (<see cref="ArkHelm"/>).</summary>
+        public ArkHelm Helm => _helm ??= new ArkHelm(_modelDefinition ? _modelDefinition.Helm : ArkHelmSettings.Default);
 
         /// <summary>The domain the hull was laid in - the squad whose home this is.</summary>
         public Domains Domain { get; private set; }
@@ -292,6 +309,7 @@ namespace CosmicShore.Gameplay
         {
             _modelDefinition = definition;
             _theme = theme;
+            Helm.Use(definition ? definition.Helm : ArkHelmSettings.Default);   // the model says how its hull is sailed
         }
 
         /// <summary>The model this Ark is drawn as, or null (the spindle).</summary>
@@ -357,7 +375,8 @@ namespace CosmicShore.Gameplay
             }
 
             Domain = domain;
-            _speed = _approachSpeed = _cruiseSpeed = Mathf.Max(1f, speed);
+            _approachSpeed = _cruiseSpeed = Mathf.Max(1f, speed);
+            _speed = 0f;   // the Ark lies still until it is under way, then gathers way (ArkHelm.StepSpeed)
             _trail = new Trail();
             _hullPrefab = prismPrefab;
 
@@ -987,7 +1006,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// A party friend's Ark is kept where the host's is (Docs/Voyages/PARTY.md §2, <c>VoyageArkSync</c>): each machine
         /// sails its own Ark through its own worlds, and this pulls this one a share <paramref name="blend"/> (0-1) of the way
-        /// toward <paramref name="position"/> and <paramref name="rotation"/> on its next step. The hull follows the move as it
+        /// toward <paramref name="position"/> and <paramref name="rotation"/> on its next step. Both are the host's COURSE
+        /// pose (<see cref="CoursePosition"/>, <see cref="CourseRotation"/>): each machine draws its own swell and lean on top. The hull follows the move as it
         /// follows the Ark's own course (the mover contract). A fallen hull is not moved.
         /// </summary>
         public void FollowPose(Vector3 position, Quaternion rotation, float blend)
@@ -1002,39 +1022,59 @@ namespace CosmicShore.Gameplay
         {
             if (_retiring) return;
 
+            // Peel the helm's attitude off: the course pose is what sails, follows the host and is read as Forward.
+            float dt = Time.deltaTime;
+            var helm = Helm;
+            var coursePosition = transform.position - _attitudeOffset;
+            var courseRotation = transform.rotation * Quaternion.Inverse(_attitude);
+            var headingBefore = courseRotation * Vector3.forward;
+
             bool moved = false;
             if (_underWay && _hasDestination && !_hullLost)
             {
-                Vector3 to = _destination - transform.position;
+                Vector3 to = _destination - coursePosition;
                 float dist = to.magnitude;
                 if (dist > 0.5f)
                 {
                     // Smoothstep over the approach band: flat cruise outside it, flat approach
                     // speed at the core, and no discontinuity at either end — an Ark that
                     // stepped between two speeds would read as a stutter, not as a landing.
+                    float target;
                     if (_useProfile)
                     {
                         float dIn = dist - _destinationRadius;
                         float dOut = _hasDeparture
-                            ? Vector3.Distance(transform.position, _departure) - _departureRadius
+                            ? Vector3.Distance(coursePosition, _departure) - _departureRadius
                             : float.PositiveInfinity;
                         _insideCell = dIn < 0f || dOut < 0f;
-                        _speed = _profile.SpeedAt(dIn, dOut);
+                        target = _profile.SpeedAt(dIn, dOut);
                     }
                     else
                     {
                         float t = _slowRadius > 1f ? Mathf.Clamp01(dist / _slowRadius) : 1f;
                         _insideCell = dist < _slowRadius;
-                        _speed = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
+                        target = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
                     }
+                    // The profile names the speed the Ark WANTS; the helm gathers and sheds way toward it.
+                    _speed = helm.StepSpeed(_speed, target, dt);
+                    if (_useProfile) _speed = Mathf.Min(_speed, _profile.Ceiling);
 
+                    // The bow swings onto the (weaving) bearing with an eased turn rate and the Ark sails where it
+                    // points; inside the capture range it makes straight for the destination, so it always arrives.
                     Vector3 dir = to / dist;
-                    transform.position += dir * Mathf.Min(_speed * Time.deltaTime, dist);
-                    transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                        Quaternion.LookRotation(dir, Vector3.up),
-                        TurnDegreesPerSecond * Time.deltaTime);
+                    float step = Mathf.Min(_speed * dt, dist);
+                    var heading = helm.Steer(headingBefore, dir, dist, step, dt);
+                    coursePosition += (dist <= helm.Settings.CaptureRange ? dir : heading) * step;
+                    courseRotation = Quaternion.LookRotation(heading, Vector3.up);
                     moved = true;
                 }
+            }
+            else if (_speed > 0f && !_hullLost)
+            {
+                // Stopped (anchored, or the leg ended): the Ark sheds its way over a second or two instead of halting dead.
+                _speed = helm.StepSpeed(_speed, 0f, dt);
+                coursePosition += headingBefore * (_speed * dt);
+                moved = true;
             }
 
             // A party friend's Ark pulled toward the host's (FollowPose): after the course step, so the two add.
@@ -1043,11 +1083,24 @@ namespace CosmicShore.Gameplay
                 _followPending = false;
                 if (!_hullLost && _followBlend > 0f)
                 {
-                    transform.position = Vector3.Lerp(transform.position, _followPosition, _followBlend);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, _followRotation, _followBlend);
+                    coursePosition = Vector3.Lerp(coursePosition, _followPosition, _followBlend);
+                    courseRotation = Quaternion.Slerp(courseRotation, _followRotation, _followBlend);
                     moved = true;
                 }
             }
+
+            // Lay the helm's attitude back on: banked into the turn, nose up under way gathering, the swell, the flinch.
+            // The swell never stops, so the hull is always a moving body (108 prisms re-filed a frame, as under way).
+            float yawRate = 0f;
+            if (dt > 1e-5f)
+            {
+                var courseUp = courseRotation * Vector3.up;
+                yawRate = Vector3.SignedAngle(headingBefore, courseRotation * Vector3.forward, courseUp) / dt;
+            }
+            helm.Attitude(yawRate, !_hullLost, dt, out _attitude, out float heave);
+            _attitudeOffset = courseRotation * (Vector3.up * heave);
+            transform.SetPositionAndRotation(coursePosition + _attitudeOffset, courseRotation * _attitude);
+            moved = true;
 
             // The mover contract, exactly as fauna bodies honour it: every frame the hull moves,
             // each prism's spatial-index position, shell pose and render-entity matrix follow the
@@ -1114,6 +1167,7 @@ namespace CosmicShore.Gameplay
             if (ReferenceEquals(slot.Prism, null) || IsGone(slot.Prism))
             {
                 slot.Counted = false;
+                Helm.Flinch(slot.ArkLocal);   // the hull rocks away from the struck plate and the bow jinks
                 HullPrismLost?.Invoke(slot.Prism, slot.Lay.Kind);
             }
             else if (!IsSeated(slot)) slot.Counted = false;

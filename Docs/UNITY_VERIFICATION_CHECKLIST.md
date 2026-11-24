@@ -25689,3 +25689,28 @@ events next door, the rivals and the vote appear only once the gameplay fills th
 - [ ] (Once a rival is in the cell) The rival plate top right: name, faction and temper, hold and hull, a row per escort,
       silenced escorts dim; it hides during the intro and the end board.
 - [ ] Phone and iPad: the same layout inside the safe area; nothing clipped, text at today's sizes.
+
+## The Ark is sailed: way, weave, lean, swell, flinch (2026-11-24)
+
+`ArkHelm` (`Docs/Voyages/ARK_ESCORT.md` section 4.3). Not run in the Unity editor: none in this session. The reference
+compile (player and editor) has 0 errors in the changed files (30 in untouched files, from packages this machine lacks).
+
+- [ ] Start a voyage: after the intro the Ark gathers way slowly instead of jumping to speed, and comes in to a cell
+      slowing smoothly.
+- [ ] Between cells the Ark weaves gently and banks into each turn; it still lines up on and reaches every core.
+- [ ] At anchor (Salvage / Crystal Run) the Ark heaves and rolls slightly; the hangar wingmates, the HUD plate and the
+      formation slots ride with it without jitter.
+- [ ] Get the Ark hit: it rocks away from the struck side and jinks; a swarm gnawing many plates does not shake it nonstop.
+- [ ] Party of two: both screens show the Ark on the same course; the friend's Ark does not jitter or drift.
+- [ ] Phone: no visible frame cost from the Ark at anchor (its 108 hull prisms are re-filed every frame now).
+- [ ] Tune it in `ArkReverseModel.asset` > Helm if it is too much or too little.
+
+## Voyages M2 shell, stage 1: Vessels E and the class tags (2026-11-24)
+
+Not run in Unity (cloud session; the reference compile passed on the changed files). Open Voyages, pick a voyage, Your Ark:
+- [ ] Each seat shows its class beside the vessel (glyph and name); on a Salvage the Squirrel's Cultivator is bright, the Sparrow's and Dolphin's Destroyer muted; on the Crystal Run all are bright.
+- [ ] Pressing a seat's hull opens Vessels over the whole screen on that vessel's class; the hangar previews stand on the floor, the seat's vessel underlined in cyan.
+- [ ] On an AI seat, vessels the AI cannot fly are dimmed and do nothing when pressed; on your seat every one can be picked.
+- [ ] Pressing a class (or LB / RB on a pad) shows its vessels; "<Class>s are wanted on this voyage" shows only for wanted classes; the fit line reads "Squad fit 1 to 2 of 3" when the pick changes it.
+- [ ] Take the vessel (A) puts it in the seat and Your Ark shows it; Back (B) and the pad's B leave the seat unchanged.
+- [ ] Run the EditMode tests `VoyageClassesTests`.
