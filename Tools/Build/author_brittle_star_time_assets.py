@@ -126,6 +126,18 @@ def shift_line_errors() -> "list[str]":
     for call in ("LayRuins();", "TickRuins();", "ClearRuins();"):
         if call not in cs:
             errors.append(f"BrittleStarTimeController never calls {call}")
+    # The I4 breakers (section 0b): Headlong's hedge slabs on this mode's own placement, laid before the ruins so the
+    # ruins keep off them, and standing back up after a hull breaks through.
+    breakers = htr.read_or_empty(f"{MODE_DIR}/BrittleStarTimeBreakers.cs")
+    if "HeadlongHedges.Build(" not in breakers:
+        errors.append("BrittleStarTimeBreakers does not build its slabs through HeadlongHedges.Build")
+    if "Domains breakerDomain = Domains.Ruby;" not in cs:
+        errors.append("BrittleStarTimeController.breakerDomain does not default to Ruby")
+    for call in ("LayBreakers();", "TickBreakers();", "ClearBreakers();", "_ruinWheels, BreakerSlabs);"):
+        if call not in cs:
+            errors.append(f"BrittleStarTimeController never calls {call}")
+    if "LayBreakers();" in cs and "LayRuins();" in cs and cs.index("LayBreakers();") > cs.index("LayRuins();"):
+        errors.append("BrittleStarTimeController lays the ruins before the breakers (the ruins keep off the breakers)")
     v = variant_text()
     if "  engageRunwaySeconds: 999\n" not in v or "  alignDegrees: 0\n" not in v:
         errors.append("the AI policy variant's straight law can engage")
@@ -154,6 +166,11 @@ htr.author(dict(
         "BrittleStarTimeController.Ruins":   f"{MODE_DIR}/BrittleStarTimeController.Ruins.cs",
         "BrittleStarTimeRuins":              f"{MODE_DIR}/BrittleStarTimeRuins.cs",
         "BrittleStarTimeRuinsTests":         "Assets/_Scripts/Tests/Editor/BrittleStarTimeRuinsTests.cs",
+        # The I4 breakers (section 0b): Headlong's hedge slabs across every ring's way in. breakerDomain keeps its C#
+        # default (Ruby), so the scene needs no line for it.
+        "BrittleStarTimeController.Breakers": f"{MODE_DIR}/BrittleStarTimeController.Breakers.cs",
+        "BrittleStarTimeBreakers":           f"{MODE_DIR}/BrittleStarTimeBreakers.cs",
+        "BrittleStarTimeBreakersTests":      "Assets/_Scripts/Tests/Editor/BrittleStarTimeBreakersTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/BRITTLESTARTIME.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",

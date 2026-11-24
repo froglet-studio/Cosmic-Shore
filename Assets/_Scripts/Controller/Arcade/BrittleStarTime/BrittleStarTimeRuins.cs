@@ -92,20 +92,27 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static List<RaceGate> Lay(IReadOnlyList<RaceGate> course, int intensity, float turnRadius,
                                          IReadOnlyList<BrittleStarTimeLine.Post> posts,
-                                         List<SpearlineRuinPart> into, List<SpearlineRuinWheel> wheels)
+                                         List<SpearlineRuinPart> into, List<SpearlineRuinWheel> wheels,
+                                         IReadOnlyList<HeadlongHedges.Part> breakers = null)
         {
             var settings = SpearlineRuins.ForIntensity(intensity);
             if (settings.PerLap <= 0 || course.Count < 3) return null;
             var lap = RuinLap(course, turnRadius);
             SpearlineRuins.Lay(lap, settings, into, wheels);
-            if (posts != null && posts.Count > 0) KeepOffPosts(posts, into, wheels);
+            if ((posts != null && posts.Count > 0) || (breakers != null && breakers.Count > 0))
+                KeepOffPosts(posts ?? System.Array.Empty<BrittleStarTimeLine.Post>(), into, wheels, breakers);
             return lap;
         }
 
-        /// <summary>Drop each standing prism that reaches a let-go post, and each wheel whose sweep does (whole).</summary>
+        /// <summary>No standing ruin prism comes nearer than this (u) to a breaker slab (<see cref="BrittleStarTimeBreakers"/>).</summary>
+        public const float BreakerClearance = 20f;
+
+        /// <summary>Drop each standing prism that reaches a let-go post or a breaker slab, and each wheel whose sweep
+        /// does (whole).</summary>
         static void KeepOffPosts(IReadOnlyList<BrittleStarTimeLine.Post> posts, List<SpearlineRuinPart> parts,
-                                 List<SpearlineRuinWheel> wheels)
+                                 List<SpearlineRuinWheel> wheels, IReadOnlyList<HeadlongHedges.Part> breakers)
         {
+            bool hasBreakers = breakers != null && breakers.Count > 0;
             var kept = new List<SpearlineRuinPart>(parts.Count);
             var keptWheels = new List<SpearlineRuinWheel>(wheels.Count);
             int i = 0;
@@ -114,12 +121,17 @@ namespace CosmicShore.Gameplay
                 int w = WheelAt(wheels, i);
                 if (w < 0)
                 {
-                    if (PostDistance(posts, parts[i]) >= PostClearance) kept.Add(parts[i]);
+                    if (PostDistance(posts, parts[i]) >= PostClearance &&
+                        !(hasBreakers && BrittleStarTimeBreakers.Near(breakers, parts[i].Position,
+                                                                       BreakerClearance + 0.5f * parts[i].Scale.z)))
+                        kept.Add(parts[i]);
                     i++;
                     continue;
                 }
                 var wheel = wheels[w];
-                if (NearestPost(posts, wheel.Centre) >= SpearlineRuins.WheelRadius + PostClearance)
+                if (NearestPost(posts, wheel.Centre) >= SpearlineRuins.WheelRadius + PostClearance &&
+                    !(hasBreakers && BrittleStarTimeBreakers.Near(breakers, wheel.Centre,
+                                                                   SpearlineRuins.WheelRadius + BreakerClearance)))
                 {
                     keptWheels.Add(new SpearlineRuinWheel(wheel.Centre, wheel.Axis, wheel.DegreesPerSecond, kept.Count, wheel.Count));
                     for (int j = wheel.First; j < wheel.First + wheel.Count; j++) kept.Add(parts[j]);

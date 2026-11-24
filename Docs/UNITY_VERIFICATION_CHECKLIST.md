@@ -26899,23 +26899,28 @@ Affects: Garrett's Shrike / Thornline.
 - [ ] The hitch when the course is laid (about 0.2 s in the harness) and the frame rate at I4 with about 620 more prisms.
 - [ ] A rematch lays a fresh set and leaves none of the old one.
 
-### 🔴 Brittle Star Time: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
+### 🟡 Brittle Star Time: ruins and breakers at I4 (2026-11-24, Yash; compiled and flown by AI in Unity, not by a person)
 
-`BRITTLESTARTIME.md` section 0a. Spearline's ruins called from Brittle Star Time (`BrittleStarTimeRuins.cs`,
-`BrittleStarTimeController.Ruins.cs`, three hook lines in `BrittleStarTimeController.cs`), laid round the flown line and
-kept off the let-go gates. Ran: the headless `brittle_star_time_course_harness/run.sh --self-test` (36 tests, the measured
-claims, 13 negative controls) and `author_brittle_star_time_assets.py --check` (35 files match). Not run: a Unity
-compile, the EditMode tests in the editor, `unity_refcompile` (cannot run on this Windows box), any flight.
+`BRITTLESTARTIME.md` sections 0a (Spearline's ruins round the flown line) and 0b (breakers: a Ruby disc of Headlong's
+hedge slabs across the way into every ring and along the return straight, standing back up once no hull is near).
+Ran in Yash's editor: the compile; the mode's EditMode tests (42 pass, the 12 ruin and 5 breaker tests among them);
+six I4 races with the AI on all three seats. Headless: `brittle_star_time_course_harness/run.sh --self-test` (42 tests,
+the measured claims, 16 negative controls) and `author_brittle_star_time_assets.py --check`. The last fix (each disc's
+own trail, so a slab back from the pool is not added twice) was compiled with Unity's compiler outside the editor, not
+in it: the editor hung on "Running managed callbacks" during that reload.
 
-- [ ] The project compiles; `BrittleStarTimeRuinsTests` (12) pass in the editor.
-- [ ] Brittle Star Time at I4: ONE ruin stands on the return straight (the long leg back to the coil's mouth), in Jade,
-      apart from the Blue let-go posts; none round the coil, none at a ring. The line through it is open.
-- [ ] Nothing turns: the wheel never fits this course (a pergola stands in its place).
-- [ ] Three AI at I4 (Easy, Medium, Legendary) still finish and do not clip the ruin (the model has Medium 8 u and Easy
-      9 u off its nearest prism; that is close).
-- [ ] Brittle Star Time at I1, I2 and I3: no ruins.
-- [ ] Frame rate at I4 with the ruin (about 90 more prisms) against without.
-- [ ] A rematch lays a fresh ruin (often another kind) and leaves none of the old one.
+- [x] The project compiles; the ruin tests pass in the editor.
+- [x] I4: one ruin (72 to 89 prisms) stands on the return straight in Jade, apart from the Blue posts.
+- [ ] Fauna and the ruin: in one race tadpoles broke 72 of its 85 prisms; in the last race 68 of 72 stood at the end.
+      Should fauna be kept off the ruin? (A decision, not a bug.)
+- [x] I4: 11 Ruby discs a lap (749 slabs) stand in front of the rings and on the straight; every AI threads every ring
+      and the race finishes (leader 6 laps in ~166 s).
+- [x] A broken slab goes back to the pool: the breaker root held 749 children all race (it grew to 4,191 before the fix).
+- [ ] After the trail fix: no `[Trail] Attempted to add duplicate block` warnings in an I4 race (622 before it).
+- [ ] A person at I4: ramming a disc costs speed (boost reset, up to half speed for a second); the guns or cords open a
+      hole first; the discs read as something to break, not something to fly round.
+- [ ] Frame rate at I4 with the breakers against without (the editor ran ~90 fps mean before them).
+- [ ] Brittle Star Time at I1, I2 and I3: no ruins, no breakers.
 
 ## Bug ledger fixes (2026-11-24)
 

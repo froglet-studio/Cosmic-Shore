@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
             ClearRuins();
             if (!postPrefab || _course.Count == 0) return;
             BrittleStarTimeRuins.Lay(_course, Intensity, BrittleStarTimeCourse.CornerRadiusAt(TopSpeed),
-                                     BrittleStarTimeLine.Marks(_course, TopSpeed), _ruinParts, _ruinWheels);
+                                     BrittleStarTimeLine.Marks(_course, TopSpeed), _ruinParts, _ruinWheels, BreakerSlabs);
             if (_ruinParts.Count == 0) return;
             _ruinRoot = new GameObject($"{ModeName}Ruins").transform;
             var trail = new Trail();

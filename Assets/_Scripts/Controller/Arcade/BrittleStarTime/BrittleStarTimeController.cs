@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// early and coast in. I4 Corkscrew: start at Time 5 and roll (Speed Roll) to hold Speed through a coil. See
     /// <see cref="BrittleStarTimeCourse"/> and BRITTLESTARTIME.md.</para>
     ///
-    /// <para><b>The Shift Line (2026-11-16, BRITTLESTARTIME.md section 0).</b> Four partials on top of the race:
+    /// <para><b>The Shift Line (2026-11-16, BRITTLESTARTIME.md section 0).</b> Five partials on top of the race:
     /// <list type="bullet">
     /// <item><c>.Line</c> - a let-go gate (two columns of shielded Blue posts) before every ring whose corner is tighter
     /// than Speed Mode carries (<see cref="BrittleStarTimeLine"/>), laid on every peer from the broadcast course; it lights
@@ -22,6 +22,9 @@ namespace CosmicShore.Gameplay
     /// Speed wish through the hull's own autopilot control, its line, its nose follow by difficulty.</item>
     /// <item><c>.Ruins</c> - at I4, garden ruins round the flown line (<see cref="BrittleStarTimeRuins"/>, laid by
     /// Spearline's generator): decoration, plain prisms with the game's own rules.</item>
+    /// <item><c>.Breakers</c> - at I4, a disc of plain slabs across the way into every ring and along the return
+    /// straight (<see cref="BrittleStarTimeBreakers"/>): ram it and the hull's own kit slows it, or shoot a hole first.
+    /// It stands back up once no hull is near.</item>
     /// <item><c>.Heat</c> - the local pilot's threads graded and called (<see cref="BrittleStarTimeHeat"/>): shock rings
     /// off the gates, streaks, lap splits, a best lap, a clean lap, and a start hint per rung.</item>
     /// </list></para>
@@ -54,6 +57,7 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             RaiseLetGoGates();
+            LayBreakers();
             LayRuins();
         }
 
@@ -67,6 +71,7 @@ namespace CosmicShore.Gameplay
         {
             TickLetGoGates();
             TickRuins();
+            TickBreakers();
             TickHeat();
         }
 
@@ -77,6 +82,7 @@ namespace CosmicShore.Gameplay
             ReleaseEveryCoachedWish();
             ClearLetGoGates();
             ClearRuins();
+            ClearBreakers();
             ClearHeat();
             base.OnNetworkDespawn();
         }

@@ -12,6 +12,8 @@
 #   bash Tools/Build/brittle_star_time_course_harness/run.sh --race [N]    # pilots and AIs flown over N seeds a rung
 #   bash Tools/Build/brittle_star_time_course_harness/run.sh --tune [N]    # search the coach's pace tables
 #   bash Tools/Build/brittle_star_time_course_harness/run.sh --check-race [N]  # the measured claims; exit 0 = they hold
+#   bash Tools/Build/brittle_star_time_course_harness/run.sh --ruins [N]       # the I4 ruins and how near the pilots come
+#   bash Tools/Build/brittle_star_time_course_harness/run.sh --breakers [N]    # the I4 breakers: discs, slabs, breaks a lap
 #
 # The tests read the shipped assets by repo-relative path, so the runner runs from the repo root.
 # Needs a .NET SDK (8+): DOTNET_ROOT, else ~/.dotnet, else the folder of `dotnet` on PATH.
@@ -37,6 +39,10 @@ LINE="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeLine.cs"
 COACH="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeCoach.cs"
 HEAT="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeHeat.cs"
 RUINS="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeRuins.cs"
+BREAKERS="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeBreakers.cs"
+# The I4 breakers' slabs are Headlong's hedges (read, never copied).
+HEDGES="$A/Controller/Arcade/Headlong/HeadlongHedges.cs"
+REDLINE_CRYSTALS="$A/Controller/Arcade/Redline/RedlineTimeCrystals.cs"   # HeadlongHedges places its crystals with it
 # The I4 ruins are Spearline's generator (read, never copied): it, and the seals' hash and basis it uses.
 SPEAR_RUINS="$A/Controller/Arcade/Spearline/SpearlineRuins.cs"
 SPEAR_SEALS="$A/Controller/Arcade/Spearline/SpearlineSeals.cs"
@@ -51,9 +57,9 @@ build() {
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$HERE/FlightSim.cs" "$HERE/RaceSweep.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" \
-    "$COURSE" "$LINE" "$COACH" "$HEAT" "$RUINS" "$A/Data/Enums/PrismKind.cs" "$SPEAR_SEALS" "$SPEAR_RUINS" \
+    "$COURSE" "$LINE" "$COACH" "$HEAT" "$RUINS" "$BREAKERS" "$HEDGES" "$REDLINE_CRYSTALS" "$A/Data/Enums/PrismKind.cs" "$SPEAR_SEALS" "$SPEAR_RUINS" \
     "$A/Tests/Editor/BrittleStarTimeCourseTests.cs" "$A/Tests/Editor/BrittleStarTimeLineTests.cs" \
-    "$A/Tests/Editor/BrittleStarTimeRuinsTests.cs"; do
+    "$A/Tests/Editor/BrittleStarTimeRuinsTests.cs" "$A/Tests/Editor/BrittleStarTimeBreakersTests.cs"; do
     [ "$f" = "${2:-}" ] && f="$3"
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
@@ -73,7 +79,7 @@ case "${1:-}" in
   --gates) run bst --gates "$2" "$3"; exit 0 ;;
   --race) run bst --race "${2:-24}"; exit 0 ;;
   --ruins) run bst --ruins "${2:-40}"; exit 0 ;;
-  --ruins) run bst --ruins "${2:-40}"; exit 0 ;;
+  --breakers) run bst --breakers "${2:-40}"; exit 0 ;;
   --tune) run bst --tune "${2:-16}"; exit 0 ;;
   --check-race) set +e; run bst --check-race "${2:-16}"; exit $? ;;
 esac
@@ -122,6 +128,13 @@ negative "a flat-out grade that ignores the heart (heart share 1)" "$HEAT" \
 negative "MEASURED: let-go gates that stand nowhere are worth nothing (the 3% bar fires)" "$LINE" \
   's/public const float LetGoBelowShare = 0.9f;/public const float LetGoBelowShare = 0.4f;/' 'LetGoBelowShare = 0.4f' race
 negative "RUINS: laid round the raw rings, not the flown line (no turn's end before the return straight)" "$RUINS"   's/(g.Position - exit).magnitude >= SpearlineRuins.MinLegLength)/false)/' '&& *$'
-negative "RUINS: ruins left standing in the let-go gates" "$RUINS"   's/if (PostDistance(posts, parts\[i\]) >= PostClearance) kept.Add(parts\[i\]);/kept.Add(parts[i]);/' '^ *kept.Add(parts\[i\]);'
+negative "RUINS: ruins left standing in the let-go gates" "$RUINS" \
+  's/if (PostDistance(posts, parts\[i\]) >= PostClearance \&\&/if (true \&\&/' 'if (true &&'
+negative "BREAKERS: on every rung" "$BREAKERS" \
+  's/intensity >= FromIntensity;/intensity >= 1;/' 'intensity >= 1;'
+negative "BREAKERS: each disc after its ring, not before it" "$BREAKERS" \
+  's/Vector3 centre = ring - normal \* RingLead;/Vector3 centre = ring + normal * RingLead;/' 'ring + normal \* RingLead'
+negative "BREAKERS: slabs left standing on other legs" "$BREAKERS" \
+  's/if (OtherLegDistance(course, hedges\[h\].Leg, p) < LegClearance) continue;/{ }/' '^ *{ }$'
 negative "RUINS: ruins on an easier rung" "$SPEAR_RUINS"   's/PerLapByRung = { 0, 0, 0, 7 }/PerLapByRung = { 7, 0, 0, 7 }/' '7, 0, 0, 7'
 echo "brittle_star_time_course_harness self-test: ok"
