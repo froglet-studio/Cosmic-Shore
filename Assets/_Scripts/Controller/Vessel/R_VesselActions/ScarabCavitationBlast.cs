@@ -33,8 +33,9 @@ namespace CosmicShore.Gameplay
     /// should never be rationed, while the destructive punch is a resource.
     ///
     /// CHARGE sets how often the shove fires (Garrett, 2026-11-11: "scarab charge parameter can switch to the
-    /// cooldown on its shove plate"): the wait is <see cref="cooldownSeconds"/> times <see cref="cooldownScale"/>, 2.5 s
-    /// at rest down to 1.25 s at Charge 10, read at the pilot's REPLICATED level when the plate is asked whether it is
+    /// cooldown on its shove plate"): the wait is <see cref="cooldownSeconds"/> times <see cref="cooldownScale"/>, 4.25 s
+    /// at rest down to 2.125 s at Charge 10 as shipped on Scarab.prefab (2.5 s until 2026-11-19, when the Broadside judge put
+    /// the knee at 4.25 s; the field default below is the old value), read at the pilot's REPLICATED level when the plate is asked whether it is
     /// ready, so every machine that runs the dash agrees. From 2026-10-29 to 2026-11-10 Charge scaled the shove's petal
     /// bite instead (x1 -> x2.5), a dial in whole petals and too coarse to tune; the bite is the flat price again. The
     /// retired Charge-5 "Cavitation Shear" (shielded prisms destroyed outright) stays retired.

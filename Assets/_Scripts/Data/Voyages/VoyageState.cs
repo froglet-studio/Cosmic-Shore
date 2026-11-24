@@ -62,8 +62,21 @@ namespace CosmicShore.Data
         public int TickedDay;
         /// <summary>When the record was last saved (ms since the epoch): the days away tick the galaxy on return.</summary>
         public long SavedAtMs;
+        /// <summary>Jobs finished since the last dock: what the dock pays in wallet crystals (P10, one currency;
+        /// <c>RetentionPay.VoyageWalletCrystals</c>). Lost with the haul when the voyage is given up.</summary>
+        public int JobsDoneSinceDock;
+        /// <summary>A voyage waiting at sea (P13, voyage chapters): the leg's worlds, saved when the leg began. Empty when
+        /// no waypoint waits.</summary>
+        public List<int> WaypointRoute = new();
+        /// <summary>The last world of <see cref="WaypointRoute"/> the Ark reached; -1 before the first. A voyage closed
+        /// mid-leg picks up here next time instead of being given up.</summary>
+        public int WaypointReached = -1;
 
         public bool HasJob() => Current != null && !string.IsNullOrEmpty(Current.TemplateId);
+
+        /// <summary>A waypoint waits: at sea, with the job and a world reached on its saved route.</summary>
+        public bool HasWaypoint() => AtSea && HasJob() && WaypointRoute != null && WaypointReached >= 0 &&
+                                    WaypointReached < WaypointRoute.Count;
 
         public bool IsHome() => !AtSea && !string.IsNullOrEmpty(Home) && At == Home;
 
@@ -164,6 +177,7 @@ namespace CosmicShore.Data
             Aboard ??= new List<string>();
             Aboard.RemoveAll(string.IsNullOrEmpty);
             Owed ??= new List<int>();
+            WaypointRoute ??= new List<int>();
             Ledgers ??= new List<PortLedger>();
             Ledgers.RemoveAll(l => l == null || string.IsNullOrEmpty(l.Port));
             foreach (var l in Ledgers)

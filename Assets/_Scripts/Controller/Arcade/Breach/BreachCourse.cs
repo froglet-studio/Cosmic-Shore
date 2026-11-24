@@ -50,14 +50,15 @@ namespace CosmicShore.Gameplay
     {
         // ── The hull this course is cut for (read back off Orca.prefab and OrcaCrewConfig.asset by BreachCourseTests) ──
 
-        /// <summary>`DefaultMinimumSpeed`, `DefaultThrottleScaler` and `boostMultiplier` (Orca.prefab).</summary>
-        public const float MinimumSpeed = 8.5f, ThrottleScaler = 21.25f, BoostMultiplier = 5f;
+        /// <summary>`DefaultMinimumSpeed`, `DefaultThrottleScaler` (Orca.prefab) and the helm's charge, `chargeMultiplier`
+        /// (OrcaCrewConfig.asset; the prefab's `boostMultiplier` 5 before the charge, 2026-11-20).</summary>
+        public const float MinimumSpeed = 8.5f, ThrottleScaler = 21.25f, BoostMultiplier = 14f;
 
         /// <summary>`PitchScaler` / `YawScaler` and `RotationThrottleScaler` (Orca.prefab): degrees a second at full stick.</summary>
         public const float TurnScaler = 44f, RotationThrottleScaler = 0.055f;
 
         /// <summary>`boostTank` (s) and `boostRefill` at rest (tank s a second) (OrcaCrewConfig.asset).</summary>
-        public const float BoostTank = 3f, BoostRefill = 0.25f;
+        public const float BoostTank = 6f, BoostRefill = 2f;
 
         /// <summary>A danger prism stops the hull (`SparrowVesselChangeSpeedByPrism`: 0.5 x 3, clamped) and the throttle
         /// recovers over `speedModifierDuration` x `dangerSlowDurationMultiplier` s.</summary>

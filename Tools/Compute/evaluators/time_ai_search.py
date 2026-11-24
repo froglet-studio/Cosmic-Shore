@@ -211,13 +211,12 @@ GAMES = {
     },
     "Stoat": {
         "mode": "Slingshot",
-        # StoatSlingConfigSO's AI sling rule (StoatSlingExecutor.AutopilotSling), the Slingshot file; only the ai* knobs
-        # and the trampoline AI turn scale, never the sling's own physics (a mode never changes the vessel).
+        # StoatSlingConfigSO's AI swing rule (StoatSlingExecutor.AutopilotSwing), the Slingshot file; only the ai* knobs,
+        # never the swing's own physics (a mode never changes the vessel). aiReleaseConeDegrees, aiCatchGiveUpSeconds,
+        # aiHoldForWindowDegrees and trampolineAiTurnScale were the orbit's and the trampoline's: deleted 2026-11-21.
         "assets": {i: POL + "StoatSlingConfig_Slingshot.asset" for i in (1, 2, 3, 4)},
-        "fields": {"aiSlingMinTurnDegrees": (0.0, 180.0), "aiReleaseConeDegrees": (1.0, 90.0),
-                   "aiCatchGiveUpSeconds": (0.5, 10.0), "aiSlingIntervalSeconds": (0.5, 20.0),
-                   "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0),
-                   "aiHoldForWindowDegrees": (0.0, 360.0), "trampolineAiTurnScale": (40.0, 300.0)},
+        "fields": {"aiSlingMinTurnDegrees": (0.0, 180.0), "aiSlingIntervalSeconds": (0.5, 20.0),
+                   "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0)},
         # SlingshotController.aiNoseLead: Stoat 2.62 at 10.43/s (run1, 2026-11-17).
         "lead": 2.62, "rows": [], "nose_gene": 10.43,
     },
@@ -331,13 +330,15 @@ GAMES = {
     "Grizzly": {
         "mode": "GrizzlyTime",
         # As the Wrasse: the gate race's own steering, Grizzly Time's controller knobs and the nose rate (fleet lag).
-        "assets": {},
-        "fields": {},
+        # Since the 20-80 blast (Garrett, 2026-11-20: one smaller radius, then retrain) the bomb autopilot's own freeze
+        # and detonate distances are searched too: both must sit inside the 40 u full blast or the launch misses.
+        "assets": {i: "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset" for i in (1, 2, 3, 4)},
+        "fields": {"aiFreezeDistance": (2.0, 36.0), "aiDetonateBehindDistance": (1.0, 36.0)},
         "ctrl_fields": {"aiCommitDistance": (40.0, 900.0), "aiApproachLead": (40.0, 1200.0),
                         "aiThroughDistance": (40.0, 900.0)},
-        "ctrl_defaults": {"aiCommitDistance": 380.0, "aiApproachLead": 420.0, "aiThroughDistance": 285.0},
+        "ctrl_defaults": {"aiCommitDistance": 522.0, "aiApproachLead": 549.0, "aiThroughDistance": 114.0},   # run 2026-11-20
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
-        "lead": None, "rows": [], "nose_gene": 1.5,
+        "lead": None, "rows": [], "nose_gene": 9.05,                                                     # run 2026-11-20
     },
     "Honeyguide": {
         "mode": "SlipLine",

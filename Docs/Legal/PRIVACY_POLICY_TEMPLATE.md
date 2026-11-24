@@ -45,7 +45,8 @@ anonymous player ID and gameplay parameters — **no real-world identifiers**. T
 UGS Analytics and to **Froglet's own analytics server** (hosted on Oracle Cloud), which also
 records the country you connect from (two letters, derived from your IP address); the IP
 address itself is never stored. Versions released before November 2026 sent these events to
-PostHog (EU) instead; that account closes on 23 November 2026.
+PostHog (EU) instead; that history was moved to Froglet's own analytics server and the PostHog
+account was closed on 23 November 2026.
 
 **c. Saved game data (Cloud Save)**
 Your profile (display name, avatar, in-game currency balance, unlocked rewards,
@@ -163,8 +164,6 @@ reason for it. We may withhold details of how our detection works, but not the f
   processing terms / DPA.)
 - **Oracle** — hosts Froglet's own analytics server (gameplay analytics). Only Froglet operates
   and reads it. [Region: confirm; the VM's backups use us-ashburn-1.]
-- **PostHog (EU cloud)** — gameplay analytics from builds released before November 2026, until
-  the account closes on 23 November 2026.
 - **[Platform: Valve/Steam, Apple, Google]** — distribution, crash reporting, and
   payment processing for purchases.
 - **[Any other vendor — e.g., ad network]**.

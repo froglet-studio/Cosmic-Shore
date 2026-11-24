@@ -48,7 +48,10 @@
       fewer people.'
   prop:
     s: change
-    note: Tie each turn to a Tide so that players can see it coming.
+    note: 'Tie each turn to a Tide so that players can see it coming, and announce it in the What''s new window built 2026-11-21
+      (commit 56584fa4e, Frogma Rev 121 C): the turn''s entry in WhatsNew.asset names which vessels changed and which arena
+      environments are new, and the window opens once by itself after the update, so the hole''s ''nothing tells a player
+      that the meta turned'' has its channel.'
   holes:
   - 'on': p
     q: The schedule is not set, and nothing tells a player that the meta turned or why their vessel flies differently.
@@ -82,7 +85,8 @@
     note: Proposal P6. It gives the long game's empty last phase a rhythm built from systems that already tick.
   src: [proposal]
   build:
-    s: queued
+    s: building
     what: This and the quest chain should take over the two little windows under the profile on the home screen.
     by: Garrett
     at: '2026-11-20'
+    branch: claude/build-era.tide

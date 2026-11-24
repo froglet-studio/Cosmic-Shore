@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-22-each-window-now-draws-on-its-own-nested-b8e866",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-22T17:53:39+00:00",
+  "area": "Menu UI: ModalWindowManager (every menu window)",
+  "summary": "Each window now draws on its own nested Canvas (added at runtime with a GraphicRaycaster when the scene authored none) that is on exactly while the window's CanvasGroup alpha is above KitSightline.HiddenAlpha; synced in SetCanvasGroupVisible and a new virtual LateUpdate. This is the open item of MENU_REDESIGN_B 46.3 (hidden graphics are still batched). Why: the menu was one 6,937-graphic canvas rebuilt every frame (1.4 ms of a 9 ms frame in a built player) because a hidden window's content animated; after, about 3,200 graphics stay on the shared canvas. Probed in editor Play (Arcade, Arena, Toybox open, take clicks, close); not hand-tested window by window, list in the checklist. Voyage code not touched.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "4afdcfb14"
+}

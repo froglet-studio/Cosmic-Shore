@@ -564,14 +564,16 @@ The photon ring (≈ 0.6) blooms a little, as it does in the studio.
 
 **Studio parameters the Mobile look does not use** — kept in the config, not deleted, each tooltip prefixed
 "[Studio lens only …]": `warpEnabled`, `lensStrength`, `lensRadiusMultiplier`, `lensFadeStart`, `whiteLensStrength`,
-`whiteCoreSkyMix`, `shellBend`, `gwAmp`, `gwPrism`, `gwShake`; and the Stoat ripple's `bend` and `chromaticSplit`
-(`StoatRippleConfigSO`, prefixed likewise). Everything else (sizes, ring, core, `gwSpeed`, `gwPeriod`, `gwRingdown`,
+`whiteCoreSkyMix`, `shellBend`, `gwAmp`, `gwPrism`, `gwShake`. (The Stoat ripple's `bend` and `chromaticSplit` were on
+this list until 2026-11-21; the ripple now bends in both looks and `chromaticSplit` is retired.) Everything else (sizes, ring, core, `gwSpeed`, `gwPeriod`, `gwRingdown`,
 `gwGlow`, the shells' timings) drives both looks.
 
 **The Charge ripple now renders.** In the studio look it was a sphere with a `LightMode = BlackHoleLens` pass — a pass
 no renderer list ever draws, so it never showed. In the Mobile look `StoatRipple` draws its front as a mode-2 ring
 (`BlackHoleGlow.DrawRing`, `rimGlow` 0.15, half width ½·front·`bandWidth`), once a frame, and never acquires the depth
-texture.
+texture. **Superseded 2026-11-21:** the ring was "very bright and like a domain color ring" (Yash); the ripple is now a
+colourless bend of the scene drawn by its own pass, `StoatRipplePass`, in both looks, only while a ripple lives
+(`R_VesselActions/STOAT_DIPOLE.md` §1c "The drawn wave"). `bandWidth`, `chromaticSplit` and `rimGlow` are retired.
 
 **Cost** (DXIL static instructions over all branches, `verify_black_hole_glow.py` C):
 

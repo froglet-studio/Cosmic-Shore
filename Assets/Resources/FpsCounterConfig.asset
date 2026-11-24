@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46aa2a5554ac4b33a127f177765cd111, type: 3}
+  m_Name: FpsCounterConfig
+  m_EditorClassIdentifier: 
+  Template: '{fps} FPS'
+  SampleSeconds: 0.5
+  Font: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  FontSize: 28
+  Theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+  Token: 0
+  Alpha: 0.85
+  Corner: {x: 0, y: 1}
+  Margin: {x: 16, y: 12}
+  SortingOrder: 32000

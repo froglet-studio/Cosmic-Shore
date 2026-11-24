@@ -199,6 +199,36 @@ what changed as a result — live in `MPPM_SESSION_LOG.md`. This file
 (`TESTS.md`) holds the test *procedures*; the session log is the
 *journal* across runs.
 
+## Automatic runs with built players (no Editor, no MPPM) — 2026-11-02
+
+Two MPPM Editors used about 23.7 GB with their import workers on the test PC (0.7 GB left), the clone ran at
+1-10 fps with `PostLateUpdate.MemoryFrameMaintenance` at 695 ms a frame, and four Editors do not fit. Built
+**development** players need a fraction of that, so a 2-4 player run goes through them instead.
+
+1. Build a **development** player (Build Profiles, Development Build ticked) pointed at a development UGS
+   environment, never the live one. A release player ignores every argument below.
+2. Run it from a terminal:
+
+```bash
+python3 Tools/Build/mp_auto.py run --player "C:/Builds/Dev/CosmicShore.exe" --players 2
+```
+
+   One player hosts, the others press JOIN on the host's online row (`PartyInviteController.JoinPartyAsync`, the
+   button's own path), each on its own UGS auth profile (`mpauto-host`, `mpauto-join1..3`, reused between runs).
+   It prints `PASS`/`FAIL` per player with the steps of any failure, and the folder with each player's log and
+   result JSON. Exit code 0 when all passed.
+3. The same run from the Unity Test Runner: set `CS_MP_PLAYER` to the player's executable and run
+   `PartyAcceptFlowPlayModeTests.TwoStandalonePlayers_HostAndJoin_BothReachTheParty` (skipped when it is unset).
+
+The arguments, for a hand-made run or another machine (`MultiplayerAutoArgs.cs` has the full list):
+`-csMpProfile <name>` (required), `-csMpAutoHost <rendezvous file>`, `-csMpAutoJoin <file | id:<UGS id> |
+name:<display name>>`, `-csMpExpect <2-4>`, `-csMpTimeout <s>`, `-csMpResult <file>`, `-csMpQuit`.
+`-csMpProfile` alone gives a hand-played standalone player its own UGS identity. Each step is also a `mpAuto`
+mark in the net log, so `net_logs.py show` lines a run up with everything else.
+
+What it covers today: sign-in, the solo party session, the online list, a direct JOIN, the client reaching the
+party, the host counting every human. It does not start a match or invite (later items in the multiplayer plan).
+
 ## Automation (deferred — D4 in `REFACTOR.md`)
 
 These procedures are manual today. Deferred item **D4** in `REFACTOR.md`

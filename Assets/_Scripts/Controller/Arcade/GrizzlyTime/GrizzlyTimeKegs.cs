@@ -107,10 +107,7 @@ namespace CosmicShore.Gameplay
         public const float AIKegAimRange = 600f;
         /// <summary>The AI aims this far (u) past the keg down its exit lane, so it passes BESIDE the core (inside every
         /// credit radius and every full blast) instead of ramming the cage.</summary>
-        public const float AIKegPassOffset = 40f;
-        /// <summary>Within this distance (u) of its keg aim point with the keg still standing, the AI gives that keg up
-        /// for this gate and threads the mouth.</summary>
-        public const float AIKegGiveUp = 50f;
+        public const float AIKegPassOffset = 30f;
         /// <summary>Seconds without a gate before the AI is steered back to its ring (about 3x a gate's measured 6-8 s).</summary>
         public const float AIStallSeconds = 18f;
         /// <summary>The stall rescue's run-up: this far (u) back along the ring's axis, then through the mouth.</summary>
@@ -289,8 +286,9 @@ namespace CosmicShore.Gameplay
 
         // ── Reading a keg ──────────────────────────────────────────────────
 
-        /// <summary>How far (u) from the core the blow point stands: inside a full blast, clear of the hoop.</summary>
-        public const float BlowStandOff = 60f;
+        /// <summary>How far (u) from the core the blow point stands: inside a full blast (40 u since the 20-80 blast), clear of
+        /// the hoop and its 6 u margin (22 u).</summary>
+        public const float BlowStandOff = 30f;
 
         /// <summary>Where to stand to blow a keg so its blast throws you down its exit lane: on the keg's EXIT side, between
         /// the core and the next ring, <paramref name="standOff"/> u out (inside a full blast). A Grizzly is launched AWAY
@@ -331,8 +329,9 @@ namespace CosmicShore.Gameplay
         /// a peer where the real ram broke the core at just under 16 u.</summary>
         public static float RamReach => RamRadius + CoreCube * 0.5f;
         /// <summary>A keg that broke with a ramming hull this near its core (u) was that pilot's ram (the feedback's
-        /// reading where the vessel's own ram broke the core first).</summary>
-        public static float RamCreditReach => RamReach + 20f;
+        /// reading where the vessel's own ram broke the core first). The slack is 10 u, so it stays inside
+        /// <see cref="BlowStandOff"/>: a hull waiting at the blow point never reads as the rammer.</summary>
+        public static float RamCreditReach => RamReach + 10f;
 
         /// <summary>
         /// Does a ramming hull at <paramref name="hull"/> open <paramref name="keg"/>? It does when it is within
@@ -375,6 +374,40 @@ namespace CosmicShore.Gameplay
         {
             if (noseDegrees > AIRushNoseDegrees || runToAim < AIRushMinRun) return false;
             if (push > AIRushMaxPush) return false;
+            if (energy < energyCost + Mathf.Max(0f, energyHeadroom) - 1e-4f) return false;
+            return sinceLastPress >= cooldownSeconds + AIRushCooldownMargin;
+        }
+
+        // ── AI: ram a standing keg open (input only; one rule for every difficulty) ──
+
+        /// <summary>The AI presses Rush to ram a keg once its core is this near (u): a Rush covers about 125 u in its 1 s
+        /// ram window, so the core is reached while the ram still runs.</summary>
+        public const float AIRamPressDistance = 100f;
+        /// <summary>The AI presses Rush to ram a keg only with its nose this near (deg) the core.</summary>
+        public const float AIRamNoseDegrees = 12f;
+        /// <summary>Within this distance (u) of a core that still stands (the ram missed, or no Rush was there), the AI
+        /// gives the keg up for this gate and threads the mouth.</summary>
+        public const float AIRamGiveUp = 8f;
+
+        /// <summary>
+        /// Is ramming the keg worth it? True when the line from the hull through the keg's core to the next ring is no
+        /// longer than the line through the mouth plus <paramref name="slack"/> u. A keg sits on its corner's inside, so
+        /// on a sharp corner the core is the shorter way round; on a gentle one the mouth is.
+        /// </summary>
+        public static bool AIRamPays(Vector3 hull, Vector3 core, Vector3 gate, Vector3 next, float slack) =>
+            Vector3.Distance(hull, core) + Vector3.Distance(core, next)
+            <= Vector3.Distance(hull, gate) + Vector3.Distance(gate, next) + slack;
+
+        /// <summary>
+        /// Should an AI ramming a keg press Rush now? Its nose is within <see cref="AIRamNoseDegrees"/> of the core, the core
+        /// is within <see cref="AIRamPressDistance"/>, the Energy is there with <paramref name="energyHeadroom"/> to spare
+        /// (one tick, as <see cref="AIShouldRush"/>) and its own last press has cooled down. A launch still pushing the hull
+        /// does not stop it: the ram opens the keg however fast the hull arrives.
+        /// </summary>
+        public static bool AIShouldRam(float noseDegrees, float distanceToCore, float energy, float energyCost,
+                                       float energyHeadroom, float sinceLastPress, float cooldownSeconds)
+        {
+            if (noseDegrees > AIRamNoseDegrees || distanceToCore > AIRamPressDistance) return false;
             if (energy < energyCost + Mathf.Max(0f, energyHeadroom) - 1e-4f) return false;
             return sinceLastPress >= cooldownSeconds + AIRushCooldownMargin;
         }
