@@ -10041,7 +10041,7 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
 
-## 230. Rev 140 mockups: the Artifacts tab, touch the artifacts in the room - four ways (2026-11-24, awaiting a pick)
+## 230. Rev 140 mockups: the Artifacts tab, touch the artifacts in the room - four ways (2026-11-24; Shombith picked A, built in section 231)
 
 **Asked (Shombith, 2026-11-24, on the built section 201):** "Artifacts again doesnt make sense I cannot click in the image
 itself that should be what I should be able to do. Rework on this and give me different design variations."
@@ -10072,3 +10072,43 @@ in-world but long words get hard to read on the floor.
 its place in the backdrop with a ring and halo on top; D re-shapes `ArtifactLens` into the column. No new data.
 
 Affects: Shombith's Ark screen (the Artifacts tab, `ArkArtifactsPage`, `author_menu_ark.py`) once picked.
+
+**Picked (Shombith, 2026-11-24):** "Lets build A". Built in section 231.
+
+## 231. Built: the Artifacts tab as Rev 140 A, lit where it stands (2026-11-24, claude/project-thread-lgiktq, not run in Unity)
+
+**Asked:** Shombith picked A in section 230 ("Lets build A").
+
+**Built** (`Tools/Build/author_menu_ark.py` writes `ArkView.prefab`'s Artifacts page; `--check` and `--self-test` clean):
+- **The room is the buttons.** `ArtifactSpot` (new) is an invisible button laid over each artifact and its pedestal in
+  the clip, anchored to its place as a fraction of the picture (the clip stretches over the page, so the spot stays on
+  it at any aspect), plus one over each of the four dark alcoves. Its light is a halo round the artifact (`kit_ring_glow`)
+  and a pool and two rings on the pedestal's top: dark at rest, 60 % while pointed at or focused by the pad (with the
+  kind's name over it), full while picked. Positions are the clip's own, measured on its first frame (`ART_SPOTS`,
+  `ALCOVES`; the round script's `SPOTS`).
+- **A pedestal holds a kind.** Pressing it opens the first artifact of that kind in the hoard; pressing it again steps to
+  the next of the same kind. A kind the hoard has none of, or an alcove, says so in the hint line ("An empty alcove. It
+  waits for an artifact you have still to find."). The validator fails unless every catalog kind has its pedestal.
+- **Lit where it stands.** The picked one's light goes full, the room dims round it (`Artifacts/Spotlight`: a 4000 px
+  dark field with a clear hole, `Assets/_Graphics/UI/Ark/ark_spotlight_hole.png`, SurfaceBlack at 62 %, laid on the
+  spot), and its words stand on the side with room (right of the room for Javelin and Hydra, left for Aftershock and
+  Aegis; `wordsRightX` / `wordsLeftX`), tied to it by a leader straight up from the artifact and across to the kicker.
+- **The words** are Rev 105's, 420 wide: kind and serial, name, what it does, the attuned element and value, who carries
+  it, FEED IT and GIVE TO A SEAT, and now the three tracks it was rolled with ("Rolled with it, fixed"). Feeding is
+  unchanged. Every word is a field on `ArkArtifactsPage`.
+- **Gone:** the medallion rail (`ArtifactMedallion`) and the lens (`ArtifactLens`), both deleted.
+
+**Not done / to judge in Unity:** the spots are placed on the Nocturne clip; another colour set's clip would need the same
+framing. The halo and rings are themed UI images, not light in the clip. A kind added to the catalog needs a pedestal in
+the room (the validator says so).
+
+**Also found:** Rev 105 B's constants set a second `RAIL_Y = 890` that overrode the Squads rail's `RAIL_Y = 40` in the
+same file, so the shipped Squads prefab was built with 890. Kept as it was here (the Squads tab is unchanged byte for
+byte); flagged for the Squads rework.
+
+**Verified:** `author_menu_ark.py --check / --self-test` (new planted defects: a pedestal's light unwired, a pedestal
+moved off its artifact, a kind on two pedestals, the spotlight a plain sheet, the rail back), reference compile (0 errors
+in changed files; 30 elsewhere were already there), `check_console_logging.py`, `check_conditional_compilation.py`. Not
+run in the Unity editor: hand test in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("The Artifacts tab as Rev 140 A").
+
+Affects: Shombith's Ark screen (the Artifacts tab).

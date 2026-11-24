@@ -11,18 +11,24 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Ark's ARTIFACTS tab as Rev 105 B draws it (Docs/MENU_REDESIGN_B.md sections 193 and 201; Shombith, 2026-11-13:
-    /// "B is good", after "the UI cards on top of each screen, I do not like them at all"): no card behind any word, the
-    /// room's backdrop whole, and the tab in THREE LEVELS, one press each, the back button one level up:
+    /// The Ark's ARTIFACTS tab as Rev 140 A draws it (Docs/MENU_REDESIGN_B.md sections 230 and 231; Shombith, 2026-11-24:
+    /// "I cannot click in the image itself that should be what I should be able to do", then "Lets build A"). The room's
+    /// clip is the screen: the four artifacts floating over their pedestals ARE the buttons (<see cref="ArtifactSpot"/>, one
+    /// per kind, laid over its place in the picture), and the dark alcoves are the artifacts still to find. No card behind
+    /// any word, no rail. Three levels, one press each, the back button one level up:
     /// <list type="number">
-    /// <item><b>The hoard.</b> The rail of medallions along the floor: every held artifact's mark and kind, then empty
-    /// slots for the ones still to find. Nothing else on screen but a one-line hint.</item>
-    /// <item><b>One artifact.</b> The lens opens (<see cref="ArtifactLens"/>): its payload plays over prisms, its four
-    /// tracks round the rim. On the left, no box: the kind and serial, its unique name, what its kind does, its attuned
-    /// element with the value it improves, and which seat carries it; FEED IT and GIVE TO A SEAT.</item>
+    /// <item><b>The hoard.</b> The room, one hint line. Pointing at an artifact (or the pad's focus) half lights its
+    /// pedestal and shows its name.</item>
+    /// <item><b>One artifact.</b> Lit where it stands: its pedestal and halo lit, the rest of the room dimmed round it
+    /// (the spotlight), and its words hanging in the open air on the side with room, tied to it by a leader line: the kind
+    /// and serial, its unique name, what its kind does, its attuned element with the value it improves, which seat
+    /// carries it, FEED IT and GIVE TO A SEAT, and the three tracks it was rolled with.</item>
     /// <item><b>Feeding it.</b> The same words, then the attuned track's level now and after the next feed (the twist
     /// marked at 5), the crystals of its element the profile holds, and FEED / OMNI.</item>
     /// </list>
+    ///
+    /// <para>A pedestal holds a KIND. Pressing it opens the first artifact of that kind in the hoard; pressing it again
+    /// while open steps to the next of the same kind. A kind the hoard has none of says so in the hint line.</para>
     ///
     /// <para><b>The feeding rule is unchanged</b> (Garrett, 2026-11-07, Docs/Pilots/INVENTORY.md section 2): every artifact
     /// is unique and accepts ONE element; FEED spends <see cref="feedBatch"/> of that element, OMNI the same number of
@@ -41,42 +47,54 @@ namespace CosmicShore.UI
             Feed = 2,
         }
 
-        /// <summary>How a kind of artifact looks on the rail and plays in the lens.</summary>
+        /// <summary>One of the three tracks an artifact was rolled with (not its attuned one): fixed, shown at level 2.</summary>
         [Serializable]
-        public class KindLook
+        public class FixedRow
         {
-            [Tooltip("The kind's id (ArtifactSO.Id), e.g. artifact.hydra.")]
-            public string kindId;
-            [Tooltip("Its mark on the rail.")]
-            public Sprite glyph;
-            [Tooltip("The shape its payload plays in the lens.")]
-            public ArtifactLens.Payload payload;
-            [Tooltip("The track whose value is the payload's count (heads, cracks, shocks, re-raises).")]
-            public Element countTrack = Element.Charge;
-            [Tooltip("Added to that value: 1 for a count of re-raises, where the first shell is not a re-raise.")]
-            public int countOffset;
+            public KitElementFlower flower;
+            public TMP_Text labelText;
+            public TMP_Text valueText;
         }
 
-        /// <summary>The tracks round the lens's rim, in the lens's arc order.</summary>
+        /// <summary>The four tracks in the order the fixed rows take them (the attuned one skipped).</summary>
         static readonly Element[] TrackOrder = { Element.Mass, Element.Space, Element.Time, Element.Charge };
 
         [SerializeField] private PilotArtifactCatalogSO catalog;
-        [SerializeField] private KindLook[] kinds = Array.Empty<KindLook>();
 
         [Header("Level 1: the hoard")]
-        [Tooltip("The rail's medallions, left to right. Past the hoard they show as empty slots.")]
-        [SerializeField] private ArtifactMedallion[] medallions = new ArtifactMedallion[7];
-        [Tooltip("The hint over the rail while nothing is picked.")]
+        [Tooltip("The places in the room you can touch: one per artifact kind on its pedestal, and the alcoves.")]
+        [SerializeField] private ArtifactSpot[] spots = Array.Empty<ArtifactSpot>();
+        [Tooltip("The hint line under the room while nothing is picked.")]
         [SerializeField] private CanvasGroup hintGroup;
-        [Tooltip("No artifacts held: the words that stand in for the rail's medallions.")]
+        [SerializeField] private TMP_Text hintText;
+        [Tooltip("No artifacts held: the words that stand in for the hint.")]
         [SerializeField] private CanvasGroup emptyGroup;
         [Tooltip("Where you are, in the tab row: the hoard, the artifact, feeding it.")]
         [SerializeField] private TMP_Text trailText;
 
-        [Header("Level 2: one artifact")]
-        [SerializeField] private ArtifactLens lens;
-        [Tooltip("The picked artifact's words on the left (levels 2 and 3).")]
+        [Header("Level 2: one artifact, lit where it stands")]
+        [Tooltip("The room dimmed round the picked artifact: a dark field with a clear hole, laid on the picked spot.")]
+        [SerializeField] private CanvasGroup spotlightGroup;
+        [SerializeField] private RectTransform spotlight;
+        [Tooltip("The picked artifact's words (levels 2 and 3), moved to the side of the room with space.")]
         [SerializeField] private CanvasGroup detailGroup;
+        [SerializeField] private RectTransform detailRect;
+        [Tooltip("The words' left edge (from the screen's left) for a pedestal left of the column of light.")]
+        [SerializeField] private float wordsRightX = 1340f;
+        [Tooltip("The words' left edge for a pedestal right of the column.")]
+        [SerializeField] private float wordsLeftX = 80f;
+        [Tooltip("The leader from the artifact to its words: straight up, then across.")]
+        [SerializeField] private CanvasGroup leaderGroup;
+        [SerializeField] private RectTransform leaderUp;
+        [SerializeField] private RectTransform leaderAcross;
+        [SerializeField] private RectTransform leaderDot;
+        [Tooltip("The leader's thickness.")]
+        [Min(1f)]
+        [SerializeField] private float leaderWidth = 2f;
+        [Tooltip("How far below the words' top edge the leader meets them (the kicker line).")]
+        [SerializeField] private float leaderMeetY = 8f;
+        [Tooltip("The gap between the leader's end and the words.")]
+        [SerializeField] private float leaderGap = 16f;
         [SerializeField] private TMP_Text kickerText;
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text descriptionText;
@@ -89,6 +107,9 @@ namespace CosmicShore.UI
         [Tooltip("GIVE TO A SEAT: takes the picked artifact to the Squads tab, where the next seat picked carries it.")]
         [SerializeField] private KitButton giveButton;
         [SerializeField] private TMP_Text giveLabel;
+        [Tooltip("The three tracks it was rolled with (level 2 only).")]
+        [SerializeField] private CanvasGroup fixedGroup;
+        [SerializeField] private FixedRow[] fixedRows = new FixedRow[3];
         [Tooltip("BACK: one level up (levels 2 and 3).")]
         [SerializeField] private CanvasGroup backGroup;
         [SerializeField] private KitButton backButton;
@@ -127,6 +148,14 @@ namespace CosmicShore.UI
         [SerializeField] private string[] elementNames = { "", "", "", "", "", "" };
         [Tooltip("Seat names: Leader, Rogue One, Rogue Two.")]
         [SerializeField] private string[] seatNames = { "", "", "" };
+        [Tooltip("The hint line at the hoard.")]
+        [SerializeField] private string hintWord = "";
+        [Tooltip("An alcove was pressed: it waits for an artifact still to find.")]
+        [SerializeField] private string alcoveWord = "";
+        [Tooltip("A pedestal whose kind the hoard has none of was pressed; {kind} is filled in.")]
+        [SerializeField] private string notFoundTemplate = "";
+        [Tooltip("A fixed track's label; {element} and {aspect} are filled in.")]
+        [SerializeField] private string fixedTemplate = "";
         [Tooltip("The trail at each level; {kind} is filled in.")]
         [SerializeField] private string trailHoard = "";
         [SerializeField] private string trailArtifact = "";
@@ -173,20 +202,20 @@ namespace CosmicShore.UI
         readonly List<ArtifactRecord> _hoard = new();
         /// <summary>The picked artifact's id: ids survive the hoard changing order, indices do not.</summary>
         string _pickedId = string.Empty;
-        /// <summary>The hoard index the first medallion shows.</summary>
-        int _first;
+        /// <summary>The hint line in place of <see cref="hintWord"/> until the next level change (an alcove, a kind not held).</summary>
+        string _hint = string.Empty;
         Level _level = Level.Hoard;
         bool _shown;
-        bool _replayLens;
+        readonly List<int> _ofKind = new();
 
         public Level CurrentLevel => _level;
 
         void Awake()
         {
-            for (int i = 0; i < medallions.Length; i++)
+            for (int i = 0; i < spots.Length; i++)
             {
                 int index = i;
-                if (medallions[i] && medallions[i].Button) medallions[i].Button.onClick.AddListener(() => Pick(index));
+                if (spots[i] && spots[i].Button) spots[i].Button.onClick.AddListener(() => Pick(index));
             }
             if (feedItButton) feedItButton.onClick.AddListener(() => GoTo(Level.Feed));
             if (backButton) backButton.onClick.AddListener(Back);
@@ -212,13 +241,10 @@ namespace CosmicShore.UI
         public void SetPageShown(bool shown)
         {
             _shown = shown;
-            if (!shown)
-            {
-                if (lens) lens.Hide();
-                return;
-            }
+            if (!shown) return;
             // Every visit opens on the hoard.
             _level = Level.Hoard;
+            _hint = string.Empty;
             if (statusText) statusText.text = string.Empty;
             Refresh();
         }
@@ -226,18 +252,43 @@ namespace CosmicShore.UI
         void OnArtifactsChanged(VesselClassType _) => Refresh();
         void OnBalance(int _) => Refresh();
 
-        void Pick(int medallion)
+        void Pick(int spot)
         {
-            int index = _first + medallion;
-            if (index < 0 || index >= _hoard.Count) return;
-            string id = _hoard[index].Id;
-            if (id == _pickedId && _level != Level.Hoard) return;
-            _pickedId = id;
-            // Scroll the window by one at either edge so a hoard longer than the rail stays reachable.
-            if (medallion == medallions.Length - 1 && _first + medallions.Length < _hoard.Count) _first++;
-            else if (medallion == 0 && _first > 0) _first--;
-            _replayLens = true;
+            var at = spot >= 0 && spot < spots.Length ? spots[spot] : null;
+            if (!at) return;
+            if (at.IsAlcove)
+            {
+                ShowHint(alcoveWord);
+                return;
+            }
+            OfKind(at.KindId, _ofKind);
+            if (_ofKind.Count == 0)
+            {
+                ShowHint(TemplateText.Fill(notFoundTemplate, "kind", KindName(at.KindId)));
+                return;
+            }
+            // Pressed again while open: the next of the same kind, if the hoard has more than one.
+            int now = _level != Level.Hoard ? _ofKind.IndexOf(PickedIndex()) : -1;
+            if (now >= 0 && _ofKind.Count == 1) return;
+            int next = now >= 0 ? _ofKind[(now + 1) % _ofKind.Count] : _ofKind[0];
+            _pickedId = _hoard[next].Id;
             GoTo(Level.Artifact);
+        }
+
+        /// <summary>Back to the hoard, with <paramref name="line"/> in the hint line until the next press.</summary>
+        void ShowHint(string line)
+        {
+            GoTo(Level.Hoard);
+            _hint = line ?? string.Empty;
+            Refresh();
+        }
+
+        /// <summary>The hoard indices of every artifact of kind <paramref name="kindId"/>, in hoard order.</summary>
+        void OfKind(string kindId, List<int> into)
+        {
+            into.Clear();
+            for (int i = 0; i < _hoard.Count; i++)
+                if (_hoard[i].Kind() == kindId) into.Add(i);
         }
 
         /// <summary>One level up: feeding back to the artifact, the artifact back to the hoard.</summary>
@@ -254,8 +305,8 @@ namespace CosmicShore.UI
         void GoTo(Level level)
         {
             if (level != Level.Hoard && PickedIndex() < 0) level = Level.Hoard;
-            if (level == Level.Hoard) _replayLens = true;
             _level = level;
+            _hint = string.Empty;
             if (statusText) statusText.text = string.Empty;
             Refresh();
         }
@@ -308,27 +359,25 @@ namespace CosmicShore.UI
                 _level = Level.Hoard;
             }
 
-            int visible = Mathf.Max(1, medallions.Length);
-            _first = Mathf.Clamp(_first, 0, Mathf.Max(0, _hoard.Count - visible));
-            if (picked >= 0 && picked < _first) _first = picked;
-            else if (picked >= _first + visible) _first = picked - visible + 1;
-
-            bool anyPicked = _level != Level.Hoard;
-            for (int i = 0; i < medallions.Length; i++)
+            var current = picked >= 0 ? _hoard[picked] : null;
+            string currentKindId = current != null && _level != Level.Hoard ? current.Kind() : null;
+            ArtifactSpot pickedSpot = null;
+            foreach (var spot in spots)
             {
-                if (!medallions[i]) continue;
-                int index = _first + i;
-                if (index >= _hoard.Count) { medallions[i].Draw(false, null, null, false, anyPicked); continue; }
-                var a = _hoard[index];
-                var kind = Kind(a);
-                medallions[i].Draw(true, Look(a)?.glyph, kind ? kind.DisplayName : DisplayName(a), anyPicked && index == picked, anyPicked);
+                if (!spot) continue;
+                bool on = !spot.IsAlcove && spot.KindId == currentKindId;
+                if (on) pickedSpot = spot;
+                spot.Draw(spot.IsAlcove ? string.Empty : KindName(spot.KindId), on);
             }
 
             bool empty = _hoard.Count == 0;
             KitVisibility.SetShown(emptyGroup, empty);
-            KitVisibility.SetShown(hintGroup, !empty && _level == Level.Hoard);
+            KitVisibility.SetShown(hintGroup, (!empty || _hint.Length > 0) && _level == Level.Hoard);
+            if (hintText) hintText.text = _hint.Length > 0 ? _hint : hintWord;
+            if (empty && _hint.Length > 0) KitVisibility.SetShown(emptyGroup, false);
             KitVisibility.SetShown(detailGroup, _level != Level.Hoard);
             KitVisibility.SetShown(actionsGroup, _level == Level.Artifact);
+            KitVisibility.SetShown(fixedGroup, _level == Level.Artifact);
             KitVisibility.SetShown(feedGroup, _level == Level.Feed);
             KitVisibility.SetShown(backGroup, _level != Level.Hoard);
             SetButton(feedItButton, _level == Level.Artifact);
@@ -337,7 +386,6 @@ namespace CosmicShore.UI
             SetButton(feedButton, _level == Level.Feed);
             SetButton(omniButton, _level == Level.Feed);
 
-            var current = picked >= 0 ? _hoard[picked] : null;
             var currentKind = current != null ? Kind(current) : null;
             if (trailText)
             {
@@ -345,13 +393,13 @@ namespace CosmicShore.UI
                 trailText.text = TemplateText.Fill(template, "kind", currentKind ? currentKind.DisplayName : string.Empty);
             }
 
-            if (current == null)
-            {
-                if (lens) lens.Hide();
-                return;
-            }
+            bool lit = current != null && _level != Level.Hoard && pickedSpot;
+            KitVisibility.SetShown(spotlightGroup, lit);
+            KitVisibility.SetShown(leaderGroup, lit);
+            if (!lit) return;
+            PlaceWords(pickedSpot);
             DrawDetail(current, currentKind);
-            DrawLens(current, currentKind);
+            DrawFixed(current, currentKind);
             if (_level == Level.Feed) DrawFeed(current, currentKind);
         }
 
@@ -375,25 +423,54 @@ namespace CosmicShore.UI
         /// <summary>The flower drawn as the element's mark, all five petals lit (the HUD's level 5), not as a level.</summary>
         const int FlowerMarkLevel = 5;
 
-        void DrawLens(ArtifactRecord artifact, ArtifactSO kind)
+        /// <summary>Lays the spotlight on <paramref name="spot"/>, moves the words to the side of the room with space and
+        /// draws the leader from the top of the artifact up to the words' kicker line and across to them.</summary>
+        void PlaceWords(ArtifactSpot spot)
         {
-            if (!lens) return;
-            if (_level == Level.Hoard) { lens.Hide(); return; }
-            var levels = artifact.Levels();
-            for (int i = 0; i < TrackOrder.Length; i++)
+            var spotRect = spot.Rect;
+            if (spotlight)
             {
-                var e = TrackOrder[i];
-                var track = kind ? kind.Track(e) : null;
-                float lv = levels.Of(e);
-                lens.SetArc(i, e, lv, track == null ? string.Empty : Number(track.Value(lv)), track?.label ?? string.Empty,
-                    e == artifact.Element);
+                spotlight.anchorMin = spotRect.anchorMin;
+                spotlight.anchorMax = spotRect.anchorMax;
+                spotlight.anchoredPosition = spotRect.anchoredPosition;
             }
-            var look = Look(artifact);
-            int count = 1;
-            if (look != null && kind && kind.Track(look.countTrack) is { } countTrack)
-                count = Mathf.RoundToInt(countTrack.Value(levels.Of(look.countTrack))) + look.countOffset;
-            lens.Show(look?.payload ?? ArtifactLens.Payload.Fan, count, Seed(artifact.Id), _replayLens);
-            _replayLens = false;
+            if (detailRect)
+                detailRect.anchoredPosition = new Vector2(spot.WordsOnLeft ? wordsLeftX : wordsRightX, detailRect.anchoredPosition.y);
+            if (!detailRect || !leaderUp || !leaderAcross) return;
+            var page = (RectTransform)transform;
+            // The spot's pivot is the artifact's centre; its top edge is the artifact's top.
+            var r = spotRect.rect;
+            Vector2 from = page.InverseTransformPoint(spotRect.TransformPoint(new Vector3(0f, r.yMax, 0f)));
+            var d = detailRect.rect;
+            float edgeX = spot.WordsOnLeft ? d.xMax + leaderGap : d.xMin - leaderGap;
+            Vector2 meet = page.InverseTransformPoint(detailRect.TransformPoint(new Vector3(edgeX, d.yMax - leaderMeetY, 0f)));
+            Segment(leaderUp, from, new Vector2(from.x, meet.y));
+            Segment(leaderAcross, new Vector2(from.x, meet.y), meet);
+            if (leaderDot) leaderDot.localPosition = from;
+        }
+
+        /// <summary>An axis-aligned line from <paramref name="a"/> to <paramref name="b"/> in the page's space.</summary>
+        void Segment(RectTransform line, Vector2 a, Vector2 b)
+        {
+            line.localPosition = (a + b) * 0.5f;
+            line.sizeDelta = new Vector2(Mathf.Abs(b.x - a.x) + leaderWidth, Mathf.Abs(b.y - a.y) + leaderWidth);
+        }
+
+        void DrawFixed(ArtifactRecord artifact, ArtifactSO kind)
+        {
+            var levels = artifact.Levels();
+            int row = 0;
+            foreach (var e in TrackOrder)
+            {
+                if (e == artifact.Element || row >= fixedRows.Length) continue;
+                var at = fixedRows[row++];
+                if (at == null) continue;
+                var track = kind ? kind.Track(e) : null;
+                if (at.flower) at.flower.Set(e, FlowerMarkLevel);
+                if (at.labelText)
+                    at.labelText.text = TemplateText.Fill(fixedTemplate, "element", ElementName(e), "aspect", track?.label ?? string.Empty);
+                if (at.valueText) at.valueText.text = track == null ? string.Empty : Number(track.Value(levels.Of(e)));
+            }
         }
 
         void DrawFeed(ArtifactRecord artifact, ArtifactSO kind)
@@ -471,13 +548,8 @@ namespace CosmicShore.UI
         ArtifactSO Kind(ArtifactRecord artifact) =>
             catalog && catalog.TryGetArtifact(artifact.Kind(), out var kind) ? kind : null;
 
-        KindLook Look(ArtifactRecord artifact)
-        {
-            string id = artifact.Kind();
-            foreach (var k in kinds)
-                if (k != null && k.kindId == id) return k;
-            return null;
-        }
+        string KindName(string kindId) =>
+            catalog && catalog.TryGetArtifact(kindId, out var kind) ? kind.DisplayName : string.Empty;
 
         Sprite CrystalSprite(Element element)
         {
@@ -487,17 +559,6 @@ namespace CosmicShore.UI
 
         static string Aspect(ArtifactRecord artifact, ArtifactTrack track) =>
             !string.IsNullOrEmpty(artifact.Aspect) ? artifact.Aspect : track?.label ?? string.Empty;
-
-        /// <summary>A stable seed from an artifact's id (FNV-1a), so its field of prisms is the same on every visit.</summary>
-        static int Seed(string id)
-        {
-            unchecked
-            {
-                uint h = 2166136261;
-                foreach (char ch in id ?? string.Empty) h = (h ^ ch) * 16777619;
-                return (int)h;
-            }
-        }
 
         string TwistLine(ArtifactRecord artifact)
         {
@@ -521,7 +582,7 @@ namespace CosmicShore.UI
 
         string SeatName(int seat) => seat >= 0 && seat < seatNames.Length ? seatNames[seat] : string.Empty;
 
-        /// <summary>A level on the 0-10 band: one decimal on the lens's page (the curve still moves it by hundredths).</summary>
+        /// <summary>A level on the 0-10 band: one decimal on the page (the curve still moves it by hundredths).</summary>
         static string LevelWord(float v) => v.ToString("0.0#", CultureInfo.InvariantCulture);
 
         /// <summary>What a feed added; never "+0.00" for a real gain too small to show.</summary>
