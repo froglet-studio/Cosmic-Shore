@@ -26942,7 +26942,7 @@ Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally
       standing, the lay 0.27 s on that course.
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
 
-### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, compiles and tests pass in Unity 2026-11-25, NOT PLAYED)
+### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, compiles and tests pass in Unity 2026-11-25, AI 20 s SLOWER with ruins)
 
 `THORNLINE.md` §2a. Spearline's ruins called from Thornline (`ThornlineRuins.cs`, `ThornlineController.Ruins.cs`, four
 hook lines and the `ruinDomains` field in `ThornlineController.cs`, one line in `MinigameThornline.unity`). Ran: the
@@ -26964,7 +26964,9 @@ Affects: Garrett's Shrike / Thornline.
       ring, a thorn or under the start; every thorn-to-thorn line and every snipe line open.
 - [ ] A sling aimed at a thorn through a ruin anchors on the thorn, not on the ruin.
 - [ ] Four AI at I4 still finish with the ruins standing; note their times against THORNLINE.md §4.1 and any seconds
-      spent lancing ruins.
+      spent lancing ruins. **2026-11-25, three Legendary AI, four races in the editor: they finish, but the winner took
+      69.6 s and 69.2 s with the ruins and 42.0 s and 52.3 s with the ruins cleared at the start (§4.1: 41.6 s).** Not
+      ticked until the AI loses no time to the ruins.
 - [ ] Thornline at I1, I2 and I3: no ruins.
 - [ ] The hitch when the course is laid (about 0.2 s in the harness) and the frame rate at I4 with about 620 more prisms.
 - [ ] A rematch lays a fresh set and leaves none of the old one.

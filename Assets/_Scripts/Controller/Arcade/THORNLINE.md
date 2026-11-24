@@ -100,7 +100,15 @@ Held by `ThornlineRuinsTests` (11 tests, measured against the thorns, not the ga
 **Compiled in Unity (2026-11-25):** the open editor (6000.3.17f1) rebuilt `Assembly-CSharp.dll` and
 `Assembly-CSharp-Editor.dll` at 01:58 IST, after these files were written, and they hold `ThornlineRuins`,
 `ruinDomains` and `ThornlineRuinsTests` (Unity rewrites them only on a compile with no errors). The 11 `ThornlineRuinsTests`
-passed in that editor's EditMode runner the same day (29 s). No race was watched.
+passed in that editor's EditMode runner the same day (29 s).
+
+Four I4 races in the open editor (2026-11-25; the Mode Smoke Test driver, three Legendary AI Shrikes, offline,
+normal speed; the race ends on the first finisher). **With the ruins the AI is about 20 s slower:** winners 69.6 s and
+69.2 s with the ruins standing (7 ruins of 823 prisms; then 4 of 565), 42.0 s and 52.3 s with the ruins cleared before
+the start (THORNLINE.md §4.1's trained Legendary I4 time is 41.6 s). Two races each and different courses, so the size
+is rough; the direction held in every race. In the first race one Shrike stayed near one point for about 60 s; in the
+second one passed 11 u from a ruin prism. 58 and 58 ruin prisms were broken during the two races. No error in any match
+(the boot logged the Cloud Code 404); 52-77 fps while racing. Why the AI loses the time is not known yet.
 
 ### What it measures (offline)
 
