@@ -279,7 +279,8 @@ ruins a course, in Jade, Ruby and Gold. Run headless: `Tools/Build/waystation_to
 
 - [x] It compiles (2026-11-25): Yash's open editor compiled `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` at
       03:54, after every ruins source and the latest `SpearlineRuins.cs`, and both DLLs carry the ruins types and
-      `WaystationRuinsTests`; Unity writes them only on a clean compile. The EditMode tests have not run in Unity.
+      `WaystationRuinsTests`; Unity writes them only on a clean compile.
+- [x] `WaystationRuinsTests` pass in Unity (2026-11-25): 8 of 8 EditMode tests in Yash's open editor, 27 s.
 - [ ] Waystation at I4: ruins stand on the long last drop and on some tower cruise legs, none in a tower's walls or
       lanterns, none at a ring or a press point; the cruise line and every fall line are open.
 - [ ] The ruins read apart from the Blue walls and lanterns, and their prisms are at the authored size.
