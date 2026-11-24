@@ -26956,8 +26956,10 @@ Affects: Garrett's Shrike / Thornline.
 
 - [x] The project compiles (2026-11-25, the open editor's script assemblies).
 - [x] `ThornlineRuinsTests` (11) pass in the editor (2026-11-25, 11 of 11, 29 s).
-- [ ] Open `MinigameThornline`: the controller shows Ruin Domains Jade, Ruby, Gold (the scene line was written by hand
-      as `010000000200000004000000`), and saving the scene does not change that line.
+- [x] Open `MinigameThornline`: the controller shows Ruin Domains Jade, Ruby, Gold (the scene line was written by hand
+      as `010000000200000004000000`), and saving the scene does not change that line. (2026-11-25, the open editor:
+      the scene opened clean with Jade, Ruby, Gold and no override, and Unity serializes the controller to that exact
+      line; the scene itself was not saved.)
 - [ ] Thornline at I4: four to seven ruins in Jade, Ruby or Gold, each between a ring and its far thorn; none at a
       ring, a thorn or under the start; every thorn-to-thorn line and every snipe line open.
 - [ ] A sling aimed at a thorn through a ruin anchors on the thorn, not on the ruin.
