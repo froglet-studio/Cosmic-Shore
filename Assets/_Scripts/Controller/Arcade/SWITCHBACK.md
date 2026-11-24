@@ -712,6 +712,49 @@ I4 is still the hardest rung by far (Medium about 40 % slower than I3, five time
 turns the gauntlet off, has no seals and is unchanged (`WithoutTheGauntlet_I4IsTheFortressOfBefore`). Affects: Yash's
 gauntlet and bands (queued for his `/approve`).
 
+## The I4 ruins (2026-11-24) - NOT compiled in Unity, NOT editor-verified
+
+Yash asked for the environment update Spearline got (SPEARLINE.md §2a, "going through a ruins of old flora gardens")
+on every Time game. Switchback CALLS Spearline's generator (`SpearlineRuins.Lay`) with its own gates; no Spearline file
+is copied or changed. `Switchback/SwitchbackRuins.cs` (pure) chooses what a Switchback course keeps, and
+`SwitchbackController.Ruins.cs` lays it on every peer in `OnCourseRaised`, from the Blast Run prism
+(`SpawnableSwitchbackFeatures.PrismPrefab`), and clears it on despawn. I4 only (the generator's own rule). Decoration:
+plain prisms with the game's own rules, nothing reads or writes a vessel, nothing is replicated.
+
+**What differs from Spearline, and why.** A Spearline leg is open space; an I4 leg here is the gauntlet. So:
+
+- A ruin prism stands only outside the generator's 60 u lane and 120 u ring margin, AND 60 u off the route a pilot
+  really flies (ring, key to key, ring: `SwitchbackRuins.Route`, where the path rays also run), AND 60 u (centre to
+  centre) from every Blast Run prism, which covers a slider's 24 u travel. What is left of a ruin fronts its gauntlet
+  block: the pilot flies through it on the way to the first key.
+- **No wheel.** A wheel sweeps the line, and the line here is inside a tunnel; the gauntlet has movers of its own. A leg
+  whose turn is the wheel is skipped.
+- A course is not a lap: up to **6 ruins a course** (the six standing kinds, each once), at least 3 legs apart, and a
+  ruin with fewer than 30 prisms left standing is not laid.
+- Each ruin is one domain colour, Jade, Ruby and Gold in turn along the course (`ruinDomains` on the controller, empty =
+  Blue), apart from Blast Run's Blue. Not looked at beside the Danger prisms; change the field if Ruby reads as one.
+- Scarab Rally flies this controller without the gauntlet and lays no ruins (`LaysRuins`, its own session's call).
+
+**Measured headless** (26 gates, the shipped shell, seeds 1-40 and the fixed seed 45_504): 4-6 ruins a course (mean
+5.0), 210-389 ruin prisms (mean 295) on top of the gauntlet's 5,080; the fixed seed has 5 ruins, 260 prisms. The lay
+takes about 150 ms in the harness, once a course (the generator clears every leg before this class picks six).
+Held by `SwitchbackRuinsTests` (7: none below I4, counts and the 450 budget, whole / spread / one of a kind, the
+generator's lane and ring margin, the route and the gauntlet clear, the route through every key, determinism); two
+negative controls fail as they should (no prism clearance: a ruin 38 u from a field prism; no route lane: 47 u).
+
+**Not done, not known:**
+
+- The controller hook was not compiled: `unity_refcompile` cannot run on this machine and no Unity run was made (22
+  sessions share the editor). Its calls were read against the signatures Spearline's hook uses.
+- **The prism budget.** Nearly every ruin prism is within 200 u of the route, where `PrismColliderLodManager` gives it
+  a collider, and the I4 row is already spent (Docs/perf/SWITCHBACK_PRISM_BUDGET.md: `ColliderCap(4)` 600, reached on
+  the fixed seed). A ruin adds up to about 110 colliders near a pilot as it is passed. Run the I4 soak before trusting it.
+- **The AI.** The ruins are plain prisms off the route, and the AI dodges Danger prisms only, so its line should not
+  move; a hull that leaves the route meets them at the usual 0.25 s. I4 race times were not re-measured (the offline
+  simulator does not know the ruins).
+- In the editor: MinigameSwitchback at I4, fixed seed: 5 ruins in three colours ahead of blocked gates 5, 10, 14, 18
+  and 23 (legs 4, 9, 13, 17, 22), none touching a tunnel, a key, a ray or a block field; I1-I3 have none.
+
 ## AI: the blast planner (2026-10-29) - NOT editor-verified
 
 An AI Dolphin plays a blocked gate the way a good player does. Each gate has three points: the **key crystal** (on the

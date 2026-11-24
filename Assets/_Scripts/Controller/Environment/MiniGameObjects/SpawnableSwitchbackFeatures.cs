@@ -23,6 +23,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The list's starting size: Blast Run lays up to 5100 prisms at the I4 gauntlet (<see cref="SwitchbackBlastRun.LayCapacity"/>).</summary>
         protected override int LayCapacity => SwitchbackBlastRun.LayCapacity;
 
+        /// <summary>The prism Blast Run is laid from; the I4 ruins are laid from the same one (SwitchbackController.Ruins).</summary>
+        public Prism PrismPrefab => prism;
+
         readonly List<RaceGate> _course = new(32);
         int _layoutIntensity = 1;
         SwitchbackFeatureLayout _layout;

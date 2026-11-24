@@ -26647,3 +26647,20 @@ session. The reference compile has 0 errors in the changed files; `economy.test.
 - [ ] Fly the Honeyguide in freestyle, swap to the Ratel, leave and fly it again: it starts on the Ratel's board. Swap
       back to flying, leave and return: it starts flying.
 - [ ] Finish a painting in the Toybox gallery: the wallet rises by 150. A third painting the same day pays nothing.
+
+## Switchback: the I4 garden ruins (2026-11-24)
+
+Spearline's ruins laid round Switchback's I4 gauntlet (`SwitchbackRuins`, `SwitchbackController.Ruins.cs`; SWITCHBACK.md
+"The I4 ruins"). Run headless: `SwitchbackRuinsTests` (7 pass, two negative controls fail as they should), the
+generator `--check`, the console-logging gate. NOT run: any Unity compile (the controller hook has never been compiled),
+the EditMode suite in Unity, a race.
+
+- [ ] Unity compiles with `SwitchbackController.Ruins.cs`; `SwitchbackRuinsTests` pass in the Test Runner.
+- [ ] MinigameSwitchback, I4, fixed seed: 5 ruins in Jade, Ruby and Gold ahead of blocked gates 5, 10, 14, 18 and 23.
+      None touches a tunnel, a key crystal, a path ray or a block field, and the way from ring to key is open.
+- [ ] Ruby ruins do not read as Danger prisms (else change `ruinDomains` on the controller).
+- [ ] I1, I2 and I3 have no ruins; Scarab Rally I4 has none.
+- [ ] The I4 soak (`SwitchbackSoakLauncher -sbSoak 4:4:1`): frame time and live colliders against the last gauntlet
+      row in Docs/perf/SWITCHBACK_PRISM_BUDGET.md (about 260 more prisms, nearly all within 200 u of the route).
+- [ ] Three AI at I4 finish in the times they did before (the ruins stand off their route).
+- [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race.
