@@ -4374,9 +4374,9 @@ cloud data and tell me what to do"; "in the controls tab the omni crystal abilit
   (0.50, 0.56, 0.70). It is set as `HangarVesselStage.liveryMaterial` in place of the prefab's placeholder.
 - **The Mass icon is upside down.**
   - `mass_triangle_label.png` is flipped in place.
-  - `mass_petal.png` is flipped and set at 60 %, so the five petals keep their gaps; the flower reads as a star of five
-    triangles.
-  - Every flower and the HUD pips draw it.
+  - `mass_petal.png` was flipped and set at 60 % here too, so the flower read as a star of five triangles. **Reverted
+    2026-11-22 (Garrett):** the Mass petals point into the centre again, as every element's petal does
+    (`ElementPetalGeometry`'s traced outline never changed). The flipped label icon stays.
 - **2D and 3D in one tab.** Each ABILITIES row shows the element's 2D flower and icon, and now its crystal in 3D: the
   Codex flipbook, still on its first frame. Playing a row turns the 2D flower one petal and swells it (rotate and
   scale, 0.6 s), and runs the crystal's loop once.
@@ -8985,6 +8985,13 @@ party seats (`FriendInfoSlot` / `KitPartySlot`, replacing the octagon ring, gap 
 `PartySlotDomainGlow` is retired. The connecting screen's roster draws no avatars today, so it has none. Not yet seen in
 Unity: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders, Rev 127 D Ripple".
 
+
+**Everywhere (2026-11-23).** Shombith sent screenshots of avatars still square or octagonal and asked for the border and
+glow on all of them. The same `AvatarRippleBorder` now wraps the Home pilot card, the friends orb (you and the members),
+the drawer's profile card, the profile window's preview and party-slot chip, the avatar picker and the Configure pilot
+seats. Your own avatar in a menu glows in `ControlActive` (no domain yet); the picker's pick ripples in `Selection` and
+the rest wear the quiet ring. The border cuts the largest circle that fits the avatar's rect, so a non-square region
+still gets a circle. Editor checks: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders everywhere".
 ## 222. Rev 128 mockups: the arcade game card, six ways, beside the card we ship (2026-11-23; Shombith picked E, the Poster)
 
 **Asked (Shombith, 2026-11-23):** "Start a thread to redesign the arcade/ arena game cards. Currently they are still

@@ -2,6 +2,16 @@
 
 **Status:** SHIPPED. Replaces the Sparrow's "Overheat Boost".
 
+> **2026-11-24 (Shombith): the roll left the boost button.** It is now the **Barrel Roll**, a *vessel dynamic*
+> on the **right stick**: push it any way and the Sparrow rolls that way, hold it and it keeps rolling
+> (`BarrelRollController`; keyboard `P ; L '`, the one-thumb mouse scheme included; no phone control yet). No
+> element changes it, so the Time scaling on its duration (`rollTimeScale`, 2026-11-18) is gone, and its HUD
+> card is a core card (`CoreAbility.BarrelRoll`, icon `AbilityIcons/Sparrow/Core/Sparrow_BarrelRoll.png`, the
+> icon kit's Afterimage) left of the elemental row. The Fleet Codex lists it as a sixth tile after the omni
+> crystal (`Docs/FleetCodex/abilities.json` `Dynamics`). Everything below about the roll being armed by a
+> boost press, its 0.3 s window and its charge (`RollChargeState`, deleted) is history; the Afterburner is the
+> boost and the Elemental Ward alone.
+
 The Sparrow's TIME ability used to be a boost you had to ration: holding it built **heat** in a
 resource, hitting the ceiling **overheated** you — force-releasing the boost, turning your own trail
 into a danger trail for 7 s and slamming you if you flew back through it. The strafing roll was

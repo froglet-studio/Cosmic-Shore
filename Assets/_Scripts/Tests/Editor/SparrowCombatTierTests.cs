@@ -557,6 +557,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnMissileHitsLandedChanged;
             public event Action<IRoundStats> OnDebuffHitsLandedChanged;
             public event Action<IRoundStats> OnStrikeHitsLandedChanged;
+            public event Action<IRoundStats> OnPetalsTakenChanged;
             public event Action<IRoundStats> OnCombatPointsChanged;
             public event Action<IRoundStats> OnSwitchesThreadedChanged;
             public event Action<IRoundStats> OnFusesBeatenChanged;
@@ -601,6 +602,7 @@ namespace CosmicShore.Tests
             public int MissileHitsLanded { get; set; }
             public int DebuffHitsLanded { get; set; }
             public int StrikeHitsLanded { get; set; }
+            public int PetalsTaken { get; set; }
             public int CombatPoints { get; set; }
             public int SwitchesThreaded { get; set; }
             public int FusesBeaten { get; set; }

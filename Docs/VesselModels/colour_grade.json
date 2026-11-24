@@ -1,7 +1,7 @@
 {
  "counts": {
   "exempt": 7,
-  "grey": 550,
+  "grey": 551,
   "ui": 1239,
   "world": 1
  },
@@ -27,7 +27,7 @@
   "Assets/Resources/ElementPetals/mass_petal.png": {
    "coloured": 0.0,
    "kind": "sprite",
-   "sha": "07f878487eec0526"
+   "sha": "667eb1d8b3c3670d"
   },
   "Assets/Resources/ElementPetals/space_petal.png": {
    "coloured": 0.0,
@@ -7070,6 +7070,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "89e4a2ddf72f2104"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Core/Sparrow_BarrelRoll.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "810676ef4d45e55d"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Ladder/Sparrow_Rockets_0.png": {
    "coloured": 0.0,

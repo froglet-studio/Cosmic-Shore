@@ -64,7 +64,10 @@ namespace CosmicShore.UI
         [Tooltip("The ring's colour while the pilot's domain is not known yet.")]
         [SerializeField] UIColorToken unknownRingToken = UIColorToken.SurfaceLight;
 
-        RectTransform _holder;
+        [Tooltip("The colour of the player's own avatar in a menu, where no match has given them a domain yet.")]
+        [SerializeField] UIColorToken selfToken = UIColorToken.ControlActive;
+
+        RectTransform _square;
         Image _halo, _ring;
         Image[] _waves;
         Image _avatar;
@@ -130,14 +133,26 @@ namespace CosmicShore.UI
             }
 
             var border = holderGo.AddComponent<AvatarRippleBorder>();
-            border._holder = holder;
             border._avatar = avatar;
 
-            // Back to front: halo, the two waves, the round mask holding the avatar and the ring.
-            border._halo = Layer(holder, "Halo", border.haloScale);
-            border._waves = new[] { Layer(holder, "Wave1", 1f), Layer(holder, "Wave2", 1f) };
+            // The circle is the largest square that fits the avatar's rect, centred: a portrait laid out in a
+            // non-square region (a Configure seat's) still gets a round cut, not an ellipse.
+            var squareGo = new GameObject("Square", typeof(RectTransform), typeof(AspectRatioFitter));
+            var square = (RectTransform)squareGo.transform;
+            square.SetParent(holder, false);
+            square.anchorMin = Vector2.zero;
+            square.anchorMax = Vector2.one;
+            square.offsetMin = square.offsetMax = Vector2.zero;
+            var fitter = squareGo.GetComponent<AspectRatioFitter>();
+            fitter.aspectRatio = 1f;
+            fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            border._square = square;
 
-            var round = Layer(holder, "Round", 1f);
+            // Back to front: halo, the two waves, the round mask holding the avatar and the ring.
+            border._halo = Layer(square, "Halo", border.haloScale);
+            border._waves = new[] { Layer(square, "Wave1", 1f), Layer(square, "Wave2", 1f) };
+
+            var round = Layer(square, "Round", 1f);
             round.sprite = Disc();
             var mask = round.gameObject.AddComponent<Mask>();
             mask.showMaskGraphic = false;
@@ -194,6 +209,15 @@ namespace CosmicShore.UI
             _targetVisibility = 1f;
         }
 
+        /// <summary>
+        /// Shows the border in a theme token's colour: for an avatar that is the player themself in a menu, where no
+        /// match has given them a domain yet (the Home pilot card, the profile, the friends orb, the avatar picker).
+        /// </summary>
+        public void ShowToken(UIColorToken token) => Show(UITheme.Resolve(theme, token));
+
+        /// <summary>The player's own avatar in a menu: <see cref="ShowToken"/> in <see cref="selfToken"/>.</summary>
+        public void ShowSelf() => ShowToken(selfToken);
+
         /// <summary>The pilot's domain is not known yet: no halo, no waves, the quiet line ring.</summary>
         public void ShowUnknown()
         {
@@ -211,7 +235,7 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (_holder == null || _ring == null) return;
+            if (_square == null || _ring == null) return;
             RebuildSpritesIfResized();
 
             float dt = Time.unscaledDeltaTime;   // menus run at a modified timeScale during camera transitions
@@ -276,7 +300,7 @@ namespace CosmicShore.UI
 
         void RebuildSpritesIfResized()
         {
-            var size = _holder.rect.size;
+            var size = _square.rect.size;
             // The ring is narrower for a pilot whose domain is not known yet, so a flip of that rebuilds it too.
             if ((size - _builtForSize).sqrMagnitude < 0.25f && _ringBuiltKnown == _known) return;
             _builtForSize = size;

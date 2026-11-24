@@ -14,20 +14,18 @@ namespace CosmicShore.Gameplay
     /// <item>Else this ring: its centre if the dart's own block test (<see cref="GobyPistolDuo.RaceDartStops"/>, the
     /// rails and every other prism) is clear, else the nearest clear point inside the mouth; charged
     /// <see cref="Overshoot"/> past the ring, or full when the ring is further than one dart.</item>
-    /// <item>A ring inside the turning circle is only ever orbited: fly straight on until it is outside, then turn.</item>
+    /// <item>The Goby never flies (Garrett, 2026-11-24): it turns where it sits, and when the dart's line is blocked at its
+    /// nose (it landed on a block) it hops aside first (<see cref="PerchRunCourse.SidestepDirection"/>).</item>
     /// </list>
     /// Perch Run plans against its coral list; Regatta has no list, so the plan asks the Goby where its dart would stop.
-    /// The two numbers it shares with Perch Run (<see cref="Overshoot"/>, <see cref="TurnMargin"/>) are the ones the
-    /// Time-game AI search learns there (time_ai_search.py --hull Goby). Nothing on the vessel changes.
+    /// The number it shares with Perch Run (<see cref="Overshoot"/>) is the one the Time-game AI search learns there
+    /// (time_ai_search.py --hull Goby). Nothing on the vessel changes.
     /// </summary>
     [Serializable]
     public sealed class RegattaGobyDart
     {
         [Tooltip("How far past the last ring it threads the AI charges its dart (u). Perch Run's aiOvershoot.")]
         [Range(0f, 300f)] public float Overshoot = PerchRunCourse.Overshoot;
-
-        [Tooltip("The turning circle is widened by this much before a ring counts as inside it. Perch Run's aiTurnMargin.")]
-        [Range(1f, 3f)] public float TurnMargin = 1.25f;
 
         [Tooltip("How far inside the mouth's edge (beyond the hull's radius) a line must pass to count as threading it (u).")]
         [Min(0f)] public float RimMargin = PerchRunCourse.RimMargin;
@@ -53,7 +51,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The dart from the Goby's hull at ring <paramref name="next"/> (and <paramref name="after"/>, the ring after it in
-        /// race order, or null on the last). Length 0: cruise this frame (no clear line, or turning room first).
+        /// race order, or null on the last). A hop aside when the line is blocked at the nose; length 0 only when every way
+        /// out is blocked too (it sits).
         /// </summary>
         public void Aim(GobyPistolDuo goby, int nextIndex, in RaceGate next, RaceGate? after, out Vector3 aim, out float length)
         {
@@ -69,12 +68,26 @@ namespace CosmicShore.Gameplay
                 aim = PlanDart(goby, hull.position, next, after, out length);
                 _plans[goby] = new Plan { Ring = nextIndex, At = now, Aim = aim, Length = length };
             }
-            float radius = Mathf.Max(goby.RaceCruiseSpeed, 1f) / (Mathf.Max(goby.RaceTurnRate, 1f) * Mathf.Deg2Rad);
-            if (PerchRunCourse.InsideTurn(hull.position, hull.forward, aim, radius, TurnMargin))
+            // landed on a block on the line: the dart would go nowhere, so hop aside to see the ring from somewhere new
+            Vector3 to = aim - hull.position;
+            if (length > 0f && to.sqrMagnitude > 1e-4f && goby.RaceDartStops(hull.position, to.normalized, length, out float along) && along < 6f)
+                aim = Sidestep(goby, hull.position, to, out length);
+        }
+
+        /// <summary>The first sidestep (<see cref="PerchRunCourse.SidestepDirection"/>) whose shortest dart the Goby's own
+        /// block test lets through. Length 0 when every one is blocked.</summary>
+        static Vector3 Sidestep(GobyPistolDuo goby, Vector3 from, Vector3 toward, out float length)
+        {
+            float min = goby.RaceDartMinRange;
+            for (int i = 0; i < PerchRunCourse.SidestepCount; i++)
             {
-                aim = hull.position + hull.forward * goby.RaceDartRange;
-                length = 0f;
+                Vector3 dir = PerchRunCourse.SidestepDirection(toward, i);
+                if (goby.RaceDartStops(from, dir, min + PerchRunCourse.HullRadius + 2f, out _)) continue;
+                length = min;
+                return from + dir * min;
             }
+            length = 0f;
+            return from;
         }
 
         Vector3 PlanDart(GobyPistolDuo goby, Vector3 from, in RaceGate next, RaceGate? after, out float length)
@@ -92,8 +105,8 @@ namespace CosmicShore.Gameplay
             }
             if (!TryClearShot(goby, from, next, out Vector3 through))
             {
-                // Nothing clears all the way: dart as far as the centre line goes (it stops on the block), never 0 - the
-                // Goby's cruise flies through prisms, but at a sixth of a dart's pace.
+                // Nothing clears all the way: dart as far as the centre line goes (it stops on the block and darts on
+                // from there; the Goby never flies).
                 through = next.Position;
             }
             Vector3 to = through - from;

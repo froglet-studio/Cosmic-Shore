@@ -101,7 +101,7 @@ namespace CosmicShore.Gameplay
                 return;
 
             ApplyContact(vesselImpactor.Vessel.VesselStatus, prismImpactee.Prism.Domain,
-                         prismImpactee.Prism.prismProperties.DangerWeight);
+                         prismImpactee.Prism.prismProperties.DangerWeight, prismImpactee.Prism.PlayerName);
         }
 
         /// <summary>
@@ -110,7 +110,10 @@ namespace CosmicShore.Gameplay
         /// path (<see cref="Execute"/>) and contacts that have no collision - a leech sipping from the hull it rides
         /// (SubstrateFauna) - share this, the per-vessel cooldown included. Returns whether it landed.
         /// </summary>
-        public bool ApplyContact(IVesselStatus victim, Domains prismDomain, float weight)
+        /// <param name="layerName">The player who laid the prism (<c>Prism.PlayerName</c>). A hostile burn
+        /// is credited to them in the per-attacker petal ledger (<see cref="PetalLedger"/>,
+        /// <c>SILENCE.md</c> §6); null credits nobody (a contact with no layer, such as a leech).</param>
+        public bool ApplyContact(IVesselStatus victim, Domains prismDomain, float weight, string layerName = null)
         {
             if (!(weight > 0f)) return false;
             var rs = victim?.ResourceSystem;
@@ -144,18 +147,23 @@ namespace CosmicShore.Gameplay
 
             // Classed DangerPrism either way, which is what a narrow ward can be held against: the
             // Dolphin's Time-5 Drift Ward wards THIS and nothing else (ElementalDebuffSources).
+            int burned = 0;
             for (int i = 0; i < AllElements.Length; i++)
             {
                 if (hostile)
                     // THE SINK. The only call in the game that destroys a petal instead of
                     // moving it. Authored negative because it reads as a debuff; a transfer
                     // takes a positive amount.
-                    ElementalTransfer.Burn(victim, AllElements[i], -magnitude,
-                                           ElementalDebuffSources.DangerPrism);
+                    burned += ElementalTransfer.Burn(victim, AllElements[i], -magnitude,
+                                                     ElementalDebuffSources.DangerPrism);
                 else
                     rs.ApplyElementalEffect(AllElements[i], magnitude, debuffDuration,
                                             ElementalDebuffSources.DangerPrism);
             }
+
+            // THE LEDGER. What the burn destroyed is the layer's score (SILENCE.md §6), credited once,
+            // on the victim's owner. The own-domain sting takes nothing permanent and credits nothing.
+            if (hostile) ElementalTransfer.CreditTake(layerName, victim, burned);
             return true;
         }
 
