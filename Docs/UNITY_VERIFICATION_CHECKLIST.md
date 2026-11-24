@@ -26586,3 +26586,24 @@ session. The reference compile has 0 errors in the changed files; `economy.test.
 - [ ] Fly the Honeyguide in freestyle, swap to the Ratel, leave and fly it again: it starts on the Ratel's board. Swap
       back to flying, leave and return: it starts flying.
 - [ ] Finish a painting in the Toybox gallery: the wallet rises by 150. A third painting the same day pays nothing.
+
+## The Goby's dart cooldown runs from launch; its hull leaves the pair's own prisms alone (2026-11-24)
+
+The Goby's dart cooldown now starts when the dart launches, not when it lands (`GobyPistolDuo.FireDart`). `dartCooldown`
+goes 1.2 s -> 2.2 s, the old 1 s dart plus 1.2 s reload, so a full dart's cycle is unchanged at every Time level and
+in Regatta. A dart a block cuts short now waits longer than before. The Time HUD card shows the cooldown filling while
+the dart flies. The Goby's hull no longer rams or bounces off the pair's own prisms (perch pads, the Pistol's dens and
+ground: `IHullPrismFilter`, read by `VesselImpactor.TouchesPrism` on both halves of a contact). Not run in the Unity
+editor: none in this session. The reference compile has 0 errors in the changed files; the Perch Run harness passes
+11/11 with race clocks identical to before; `GobyPistolTests` was not run.
+
+- [ ] Fly the Goby in freestyle and dart: the Time card's cooldown starts at launch, and the next full dart is ready
+      2.2 s after launch at rest (1.2 s after a 1 s dart lands, as before).
+- [ ] Charge fully, then tap: each is ready 2.2 s after its own launch.
+- [ ] Dart until the Goby perches and lays its 5-block pad, then turn hard and pitch away from it: the hull passes
+      through the pad and the den without stopping, bouncing or destroying them. A rival's prisms still stop a dart.
+- [ ] A person's Goby is never held at a perch (2026-11-24): dart until a perch lays an island, then steer at once;
+      it flies on with no pause. The Pistol still gets the island, its ground and its den. The AI Goby still pauses
+      1.5 s at a perch.
+- [ ] Race Perch Run and Regatta with an AI Goby: it still darts through every ring, and the Regatta Goby's times are
+      about the same as before (REGATTA.md 6.6: card 78.1 s, L5 62.6 s).
