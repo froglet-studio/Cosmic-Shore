@@ -98,6 +98,22 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void NamedEscortsSetOutFromAKnownPortAtTheirOwnDifficulty()
+        {
+            var c = Shipped();
+            var escorts = c.Voyages.Where(v => v.Type == NamedVoyage.EscortType).ToList();
+            Assert.GreaterOrEqual(escorts.Count, 3);
+            foreach (var v in escorts)
+            {
+                Assert.IsNotNull(c.Location(v.From), $"{v.Id} sets out from a known port");
+                Assert.IsNotNull(c.Location(v.To), $"{v.Id} makes for a known port");
+                Assert.AreNotEqual(v.From, v.To);
+                Assert.That(v.Difficulty, Is.InRange(VoyageDifficulty.Min, VoyageDifficulty.Max), $"{v.Id}: difficulty 1-9");
+                Assert.That(VoyageSea.RunCells(v.Cells), Is.InRange(1, 6), $"{v.Id}: 1-6 cells");
+            }
+        }
+
+        [Test]
         public void TheSeaRoughensWithDifficulty()
         {
             var d = VoyageSeaDanger.Defaults();

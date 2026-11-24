@@ -31,8 +31,7 @@ and its cells, and the Codex's line. A port offers ONE named voyage of each type
 it the title, the summary, the difficulty (and the board's pricing from it), the cells and the goal (`GoalPerCell` x cells). Venture further sails the
 next named voyage of the type; try again sails the same one when it starts here.
 
-Bounty and Hold the Core are named in the content but stay off the board until those types are built. The escort voyages
-are named but the escort card does not read them yet.
+Bounty and Hold the Core are named in the content but stay off the board until those types are built.
 
 ### Givers
 
@@ -71,7 +70,16 @@ core (`namedAnchorSeconds`, 15), under the Arkway's slow-near-the-core profile, 
 cell seeds `driftCrystalsPerCell` elemental crystals, part bunched where a hold burst, each drifting slowly and turning
 back at the cell's rim; seeded by the day, the voyage and the cell, so a party sees the same field.
 
-## 5 Next
+## 5 Escort the Ark
 
-Escort (the escort voyages onto its tiers), Hold the Core, Bounty (rival crews in the world), then the screens Shombith
+The escort voyages (Spindrift, Lanterns Home, Tollmoor, ...) are offered on the board beside the plain escort, from the port
+they set out from (`VoyageJobsView.NamedEscortsFrom`). Each card shows the voyage's own name and line and recommends its own
+difficulty; the crew may pick another 1-9, and the escort's tier is that pick (`ArkEscortSO.TierFor`). It sails the voyage's
+own cells (`ArkEscortVariety.Roll(..., worlds)`), and the party course carries the voyage id so friends sail the same one
+(`VoyageCourse.VoyageId`). The HUD kicker and the end board carry the voyage's name. Venture further sails the next named
+escort from where the Ark berthed, at that voyage's own difficulty; try again sails the same one.
+
+## 6 Next
+
+Hold the Core, Bounty (rival crews in the world), then the screens Shombith
 picks on Frogma (the pause map reads `TryGetCourseFix`).

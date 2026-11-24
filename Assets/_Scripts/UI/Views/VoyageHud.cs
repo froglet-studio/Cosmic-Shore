@@ -364,7 +364,9 @@ namespace CosmicShore.UI
         {
             VoyageObjective.Kind.CrystalRun => RunKicker(lines, o),
             VoyageObjective.Kind.SailingHome => lines.ObjectiveHomeKicker,
-            VoyageObjective.Kind.Escort => TemplateText.Fill(lines.ObjectiveEscortKicker, "difficulty", o.Difficulty.ToString()),
+            VoyageObjective.Kind.Escort => string.IsNullOrEmpty(o.Name)
+                ? TemplateText.Fill(lines.ObjectiveEscortKicker, "difficulty", o.Difficulty.ToString())
+                : TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
             _ => string.Empty,
         };
 
@@ -383,7 +385,9 @@ namespace CosmicShore.UI
         {
             VoyageObjective.Kind.CrystalRun => RunKicker(lines, o),
             VoyageObjective.Kind.SailingHome => lines.ObjectiveHomeKicker,
-            VoyageObjective.Kind.Escort => lines.ObjectiveStripEscort,
+            VoyageObjective.Kind.Escort => string.IsNullOrEmpty(o.Name)
+                ? lines.ObjectiveStripEscort
+                : TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
             _ => string.Empty,
         };
 
@@ -643,8 +647,11 @@ namespace CosmicShore.UI
                 VoyageScoreboard.Kind.CrystalRun => string.IsNullOrEmpty(b.Name)
                     ? TemplateText.Fill(_lines.ScoreRaidStats, "to", b.To, "cells", b.Cells.ToString(), "time", time)
                     : TemplateText.Fill(_lines.ScoreVoyageStats, "name", b.Name, "to", b.To, "cells", b.Cells.ToString(), "time", time),
-                VoyageScoreboard.Kind.Escort => TemplateText.Fill(_lines.ScoreEscortStats, "difficulty", b.Difficulty.ToString(),
-                    "worlds", b.Worlds.ToString(), "legs", b.Legs.ToString(), "time", time),
+                VoyageScoreboard.Kind.Escort => string.IsNullOrEmpty(b.Name)
+                    ? TemplateText.Fill(_lines.ScoreEscortStats, "difficulty", b.Difficulty.ToString(),
+                        "worlds", b.Worlds.ToString(), "legs", b.Legs.ToString(), "time", time)
+                    : TemplateText.Fill(_lines.ScoreEscortVoyageStats, "name", b.Name, "worlds", b.Worlds.ToString(),
+                        "legs", b.Legs.ToString(), "time", time),
                 VoyageScoreboard.Kind.Docked => _lines.ScoreDockedStats,
                 _ => string.Empty,
             };

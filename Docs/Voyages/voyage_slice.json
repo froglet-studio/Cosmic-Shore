@@ -3295,6 +3295,7 @@
   "ScoreVoyageStats": "{name} - {cells} cells - {time}",
   "ScoreEscortTitle": "The Ark reached {to}",
   "ScoreEscortStats": "Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}",
+  "ScoreEscortVoyageStats": "{name} - {worlds} of {legs} cells - {time}",
   "ScoreLostTitle": "Everything aboard went down with it",
   "ScoreDockedTitle": "Docked at {to}",
   "ScoreDockedStats": "Everything aboard is yours now",

@@ -28,6 +28,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The escort's difficulty, 1-9 (<see cref="VoyageLaunchKind.Escort"/>).</summary>
         public int Difficulty;
 
+        /// <summary>The named escort voyage to sail (<see cref="NamedVoyage.Id"/>, Milestone 2), or empty for the plain
+        /// escort at <see cref="Difficulty"/>.</summary>
+        public string VoyageId;
+
         /// <summary>The squad that sails; null is the player's active squad.</summary>
         public SavedSquad Squad;
 
@@ -37,8 +41,9 @@ namespace CosmicShore.Gameplay
         public static VoyageLaunchRequest ForJob(VoyageJob job) =>
             new() { Kind = VoyageLaunchKind.Job, Job = job };
 
-        public static VoyageLaunchRequest ForEscort(int difficulty, SavedSquad squad = null, bool aiLocal = false) =>
-            new() { Kind = VoyageLaunchKind.Escort, Difficulty = difficulty, Squad = squad, AiLocal = aiLocal };
+        public static VoyageLaunchRequest ForEscort(int difficulty, SavedSquad squad = null, bool aiLocal = false,
+            string voyageId = null) =>
+            new() { Kind = VoyageLaunchKind.Escort, Difficulty = difficulty, Squad = squad, AiLocal = aiLocal, VoyageId = voyageId };
 
         public override string ToString() => Kind == VoyageLaunchKind.Escort
             ? $"escort d{Difficulty}{(AiLocal ? " (AI local)" : string.Empty)}"

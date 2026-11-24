@@ -103,7 +103,7 @@ LINES_FIELDS += [
     "ObjectiveGoalMet", "ObjectiveHomeKicker", "ObjectiveHomeGoal", "ObjectiveAtStake",
     "ToastCellCalm", "ToastCellHostile", "ToastFinalCell", "ToastGoalReached",
     "ScoreKickerDone", "ScoreKickerFailed", "ScoreKickerLost", "ScoreKickerDocked", "ScoreRaidTitle", "ScoreRaidStats", "ScoreVoyageStats",
-    "ScoreEscortTitle", "ScoreEscortStats", "ScoreLostTitle", "ScoreDockedTitle", "ScoreDockedStats", "ScoreHull",
+    "ScoreEscortTitle", "ScoreEscortStats", "ScoreEscortVoyageStats", "ScoreLostTitle", "ScoreDockedTitle", "ScoreDockedStats", "ScoreHull",
     "ScoreHullValue", "ScoreColSeat", "ScoreColCrystals", "ScoreColKills", "ScoreRowSeat", "ScoreRowYou", "ScoreRewards",
     "ScoreStolen", "ScoreStolenBy", "ScoreStolenSeparator", "ScorePay", "ScoreEscortPay", "ScoreRewardValue",
     "ScoreAtStake", "ScoreBanked", "ScoreFinish", "ScoreFinishLine", "ScoreVenture", "ScoreVentureRaid",

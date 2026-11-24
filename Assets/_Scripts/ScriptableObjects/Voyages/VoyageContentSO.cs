@@ -945,6 +945,8 @@ namespace CosmicShore.ScriptableObjects
         public string ScoreEscortTitle = "The Ark reached {to}";
         [Tooltip("Scoreboard: an escort's line ({difficulty}, {worlds}, {legs}, {time}).")]
         public string ScoreEscortStats = "Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}";
+        [Tooltip("Scoreboard: a named escort voyage's line ({name}, {worlds}, {legs}, {time}; Milestone 2).")]
+        public string ScoreEscortVoyageStats = "{name} - {worlds} of {legs} cells - {time}";
         [Tooltip("Scoreboard: the title when the Ark fell.")]
         public string ScoreLostTitle = "Everything aboard went down with it";
         [Tooltip("Scoreboard: the title when the Ark docked home ({to}).")]

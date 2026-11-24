@@ -25665,6 +25665,19 @@ the changed files (30 in untouched files, from packages this machine lacks); the
       on the voyage page changes the sea the same way; no screen says I1-I4.
 - [ ] Unnamed work (every other job on the board) sails exactly as before.
 
+### Escort the Ark's named voyages (2026-11-24)
+
+Not run in the Unity editor. Reference compile: 0 errors in changed files; rules harness 68 of 68.
+
+- [ ] At a port an escort voyage sets out from (Lanterns Home's), the board shows it by name beside the plain escort, with
+      its own line, recommending its own difficulty (Lanterns Home 2, Tollmoor 4, the Maw 8).
+- [ ] Pick another difficulty and set sail: the escort sails at the pick, over the voyage's own number of cells.
+- [ ] The objective box and the end board name the voyage; the board's stats read "{name} - N of M cells - time".
+- [ ] Come through: Venture further sails the next named escort from where the Ark berthed, at its difficulty; fall: Try
+      again sails the same voyage at the same difficulty.
+- [ ] In a party, a friend sails the same named voyage (same name, same cells) as the host.
+- [ ] The plain escort card still sails and reads exactly as before.
+
 ## Voyages Milestone 2 in-game screens: Pause A, Vote B, Awards A, run toasts, rival plate (2026-11-24)
 
 `Docs/UI/specs/voyages-m2-ingame.md` (Frogma Rev 134 and Rev 137). Not run in the Unity editor: none in this session.
