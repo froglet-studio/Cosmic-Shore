@@ -3513,6 +3513,70 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 137 - notes: rivals"
+    },
+    "R138Flow.dc.html": {
+      "x": 0,
+      "y": 60680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Flow - Flow: every screen, every press"
+    },
+    "R138Board.dc.html": {
+      "x": 2100,
+      "y": 60680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Board - The quay, five jobs"
+    },
+    "R138Full.dc.html": {
+      "x": 4200,
+      "y": 60680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Full - HyperSea full screen"
+    },
+    "R138Seats.dc.html": {
+      "x": 0,
+      "y": 61940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Seats - Your Ark"
+    },
+    "R138Vessels.dc.html": {
+      "x": 2100,
+      "y": 61940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Vessels - Vessels E with hangar previews"
+    },
+    "R138Pilots.dc.html": {
+      "x": 4200,
+      "y": 61940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Pilots - Pilots"
+    },
+    "R138Party.dc.html": {
+      "x": 0,
+      "y": 63200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Party - Party"
+    },
+    "R138Notes.dc.html": {
+      "x": 0,
+      "y": 64460,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 138 - notes: the final shell"
     }
   },
   "createdOnFiles": {
@@ -3613,6 +3677,7 @@
     "sec-rev135",
     "sec-rev136",
     "sec-rev137",
+    "sec-rev138",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3712,7 +3777,8 @@
     "rev134",
     "rev135",
     "rev136",
-    "rev137"
+    "rev137",
+    "rev138"
   ],
   "notes": {
     "hud_end": {
@@ -6050,6 +6116,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev138": {
+      "kind": "title1",
+      "text": "Rev 138 - Voyages: the final app shell, every screen and what you press",
+      "x": 0,
+      "y": 60280,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev138": {
+      "kind": "rect",
+      "x": -160,
+      "y": 60120,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6473,7 +6563,15 @@
     "R137Runaway.dc.html",
     "R137Rout.dc.html",
     "R137Fall.dc.html",
-    "R137Notes.dc.html"
+    "R137Notes.dc.html",
+    "R138Flow.dc.html",
+    "R138Board.dc.html",
+    "R138Full.dc.html",
+    "R138Seats.dc.html",
+    "R138Vessels.dc.html",
+    "R138Pilots.dc.html",
+    "R138Party.dc.html",
+    "R138Notes.dc.html"
   ],
   "pages": [
     {

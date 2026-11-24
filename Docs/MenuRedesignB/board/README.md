@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795521468-80c7` of **Frogma**: Rev 41 to Rev 137, 421 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795522040-8997` of **Frogma**: Rev 41 to Rev 138, 429 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -415,6 +415,17 @@ Copied on 2026-11-24 from canvas version `1795521468-80c7` of **Frogma**: Rev 41
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 138 - Voyages: the final app shell, every screen and what you press
+
+- [`R138Flow.dc.html`](R138Flow.dc.html) - Rev 138 Flow - Flow: every screen, every press
+- [`R138Board.dc.html`](R138Board.dc.html) - Rev 138 Board - The quay, five jobs
+- [`R138Full.dc.html`](R138Full.dc.html) - Rev 138 Full - HyperSea full screen
+- [`R138Seats.dc.html`](R138Seats.dc.html) - Rev 138 Seats - Your Ark
+- [`R138Vessels.dc.html`](R138Vessels.dc.html) - Rev 138 Vessels - Vessels E with hangar previews
+- [`R138Pilots.dc.html`](R138Pilots.dc.html) - Rev 138 Pilots - Pilots
+- [`R138Party.dc.html`](R138Party.dc.html) - Rev 138 Party - Party
+- [`R138Notes.dc.html`](R138Notes.dc.html) - Rev 138 - notes: the final shell
 
 #### Rev 137 - Voyages: rival Arks and runaway crews, and how you beat them
 

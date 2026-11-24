@@ -8998,7 +8998,7 @@ noisy and confusing", "Even the classes pick section", and "I already selected 1
 classes/vessels should be another section following the same design principle no?" Rev 134's Seats and Pilots stand as
 picked; BoardFull and FullScreen stand.
 
-## 229. Rev 136 mockups: Vessels, a section of Your Ark in Rev 134's look (2026-11-24, awaiting a pick)
+## 229. Rev 136 mockups: Vessels, a section of Your Ark in Rev 134's look (2026-11-24; Shombith picked E)
 
 **Asked**: the rejection above. **On the canvas**: tab Voyages, Rev 136; copies `Docs/MenuRedesignB/board/R136*.dc.html`,
 generator `Docs/MenuRedesignB/rounds/r136_voyages_vessels.py`. Rev 134's look kept: the voyage line on top, the hangar
@@ -9010,7 +9010,7 @@ Seat 3 / Take the vessel).
   other vessels as chips; the rest is one line and See all seven.
 - The Seat boards are the same section opened from Change vessel on a seat: what the AI cannot fly is dimmed.
 
-## 230. Rev 137 mockups: rival Arks and runaway crews, and how you beat them (2026-11-24, awaiting board approval)
+## 230. Rev 137 mockups: rival Arks and runaway crews, and how you beat them (2026-11-24; in game approved, built in its own thread)
 
 **Asked** (Shombith): "Lets make rival ark thats cooler and makes sense there can be runaway crews as well no problem both
 can be there and how do i defeat theses players?" **On the canvas**: tab Voyages, Rev 137; copies
@@ -9021,3 +9021,20 @@ crystal, the crew turns back), Runaway (a runaway crew raids your drift), Rout (
 their haul and run), Fall (the end board's rival lines, grudge, Rival Breaker). All AI crews in Milestone 2; PvP petals
 only. Rules for the build: a per-crew Ark / runaway flag; rout = all three silenced at the same moment; a rival Ark crew
 turns back when its Ark breaks. The voyage-build thread waits on this round for those rules.
+
+## 231. Rev 138 mockups: the final Voyages app shell, every screen and what you press (2026-11-24, awaiting board approval)
+
+**Asked** (Shombith): "I like E but why cant I see the vessels screenshots, so draw me a final round of the app shell and
+each screen and where would i click to get to the next screen or select vessels, pilots or anything else, I like in game
+you can start building on it on a separate thread"; "do not delete the old milestone 1 salvage mission we had keep it as
+well in the selection lot but do not update anything about it".
+
+**On the canvas**: tab Voyages, Rev 138; copies `Docs/MenuRedesignB/board/R138*.dc.html`, generator
+`Docs/MenuRedesignB/rounds/r138_voyages_shell_final.py`. Flow (every screen and every press between them), then each
+picked screen with numbered marks on what you press and what it opens: Board (five jobs: the four voyages and the
+Milestone 1 Crystal Run as it is today), Full (the HyperSea full screen), Seats, Vessels (E, from Seat 3, with the game's
+hangar previews from `Assets/_Graphics/Design Assests/Hangar`, uploaded to the canvas), Pilots, Party. Nothing picked was
+redrawn; the marks are the only addition. Tiger Moth has no hangar preview yet.
+
+**Differs from the build**: the built shell has no Vessels section, no class marks, no givers on the quay; the Crystal Run
+is unchanged. The in-game UI (Rev 134 run screens, Rev 137 rivals) was approved and is built in its own thread.
