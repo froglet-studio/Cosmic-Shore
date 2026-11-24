@@ -1,0 +1,506 @@
+<title>Voyage Codex</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
+<style>
+/* Layout: the froglet.games page shape (eyebrow + H2 with one italic word, card grids) on the game's Deep Sea tokens.
+   One committed dark look, like the game and the website. Corners are the Froglet sliver, never rounded. */
+:root {
+  color-scheme: dark;
+  --ground: #00041F;
+  --ground-deep: #00010A;
+  --surface: #0E1235;
+  --surface-2: #222645;
+  --line: #2C3366;
+  --line-hi: #434C89;
+  --text: #E6E9FF;
+  --soft: #8D93C2;
+  --off: #5C5F70;
+  --cta: #99FF80;
+  --danger: #FF4B3A;
+  --spend: #FFAE00;
+  --select: #00D4FF;
+  --commit: #A600FF;
+  --jade: #21C0BD;
+  --ruby: #BD1BC8;
+  --gold: #FF9B11;
+  --blue: #758FFB;
+  --f-display: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
+  --f-label: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  --sl: 14px;
+  --sl-s: 10px;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--ground);
+  color: var(--text);
+  font: 500 16px/1.6 var(--f-label);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+.sliver { clip-path: polygon(var(--sl) 0, 100% 0, 100% calc(100% - var(--sl)), calc(100% - var(--sl)) 100%, 0 100%, 0 var(--sl)); }
+.sliver-s { clip-path: polygon(var(--sl-s) 0, 100% 0, 100% calc(100% - var(--sl-s)), calc(100% - var(--sl-s)) 100%, 0 100%, 0 var(--sl-s)); }
+
+/* hero */
+.hero { padding-block: 56px 32px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+.eyebrow { font: 600 13px/1 var(--f-label); letter-spacing: .18em; text-transform: uppercase; color: var(--soft); display: flex; gap: 10px; align-items: center; }
+.eyebrow::before { content: ""; width: 18px; height: 2px; background: var(--select); }
+h1 { font: 400 clamp(40px, 7vw, 72px)/1 var(--f-display); margin: 16px 0 12px; letter-spacing: .01em; text-wrap: balance; }
+h2 { font: 400 clamp(28px, 4vw, 38px)/1.1 var(--f-display); margin: 10px 0 14px; text-wrap: balance; }
+h2 em, h1 em { font-family: var(--f-label); font-style: italic; font-weight: 600; color: var(--select); }
+h3 { font: 400 20px/1.25 var(--f-display); margin: 0 0 6px; }
+.lede { color: var(--soft); font-size: 18px; max-width: 60ch; margin: 0; }
+.tag { font: 600 12px/1 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.marquee { overflow: hidden; border-block: 1px solid var(--line); margin-block: 8px 0; }
+.marquee div { display: flex; gap: 28px; white-space: nowrap; padding-block: 10px; font: 400 14px/1 var(--f-display); color: var(--off); animation: drift 60s linear infinite; width: max-content; }
+.marquee b { color: var(--soft); font-weight: 400; }
+@keyframes drift { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .marquee div { animation: none; } }
+
+section { padding-block: 48px 8px; border-top: 1px solid var(--line); margin-top: 40px; }
+section > p, .prose { color: var(--soft); max-width: 70ch; }
+.prose strong, section > p strong { color: var(--text); font-weight: 600; }
+
+/* grids and cards */
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); padding: 18px 18px 16px; min-width: 0; }
+.card p { margin: 6px 0 0; color: var(--soft); font-size: 15px; }
+.card .k { font: 600 12px/1 var(--f-label); letter-spacing: .14em; text-transform: uppercase; color: var(--select); margin-bottom: 8px; }
+.card.fire .k { color: var(--danger); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { font: 600 12px/1 var(--f-label); letter-spacing: .06em; padding: 6px 9px; background: var(--surface-2); color: var(--text); }
+.chip.dim { color: var(--soft); background: transparent; border: 1px solid var(--line); }
+.chip.ready { border: 1px solid var(--select); background: transparent; color: var(--select); }
+
+/* today vs problem list */
+.problems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); }
+.problems div { padding: 14px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+.problems div:nth-child(odd) { border-right: 1px solid var(--line); }
+.problems b { display: block; font: 400 15px/1.3 var(--f-display); color: var(--text); }
+.problems span { color: var(--soft); font-size: 14px; }
+.problems code, code { font: 500 13px/1.3 ui-monospace, Menlo, monospace; color: var(--blue); }
+
+/* map */
+.mapbox { background: var(--ground-deep); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.mapbox svg { display: block; width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--soft); }
+.legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+
+/* tables */
+.tbl { overflow-x: auto; border: 1px solid var(--line); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font: 600 12px/1.2 var(--f-label); letter-spacing: .1em; text-transform: uppercase; color: var(--soft); padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--line-hi); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--soft); }
+td:first-child { color: var(--text); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+
+/* classes */
+.cls { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cls h3 { display: flex; align-items: center; gap: 10px; }
+.glyph { width: 30px; height: 30px; flex: none; }
+.cls .what { color: var(--text); font-size: 15px; margin: 0; }
+.cls .why { color: var(--soft); font-size: 14px; margin: 0; }
+.vrow { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.vrow div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; font-size: 13px; color: var(--soft); border-top: 1px dashed var(--line); padding-top: 5px; }
+.vrow b { color: var(--text); font-weight: 600; }
+
+/* zones */
+.zone { border-left: 3px solid var(--z, var(--line-hi)); }
+
+/* timeline */
+.tl { background: var(--surface); border: 1px solid var(--line); padding: 18px; }
+.tl svg { width: 100%; height: auto; display: block; }
+
+/* fit tool */
+.fit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; }
+.missions { display: flex; flex-direction: column; gap: 8px; }
+.mbtn { all: unset; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); }
+.mbtn:hover { border-color: var(--line-hi); }
+.mbtn[aria-pressed="true"] { border-color: var(--select); box-shadow: inset 3px 0 0 var(--select); }
+.mbtn:focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+.mbtn b { font: 400 16px/1.2 var(--f-display); color: var(--text); }
+.mbtn small { grid-column: 1 / -1; color: var(--soft); font-size: 13px; }
+.mbtn .st { font: 600 11px/1 var(--f-label); letter-spacing: .12em; text-transform: uppercase; align-self: center; }
+.st.m2 { color: var(--select); }
+.st.later { color: var(--off); }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 20px; min-width: 0; }
+.giver { display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: var(--ground-deep); border: 1px solid var(--line); margin: 12px 0; }
+.giver .av { width: 42px; height: 42px; flex: none; display: grid; place-items: center; font: 400 15px/1 var(--f-display); color: var(--ground); }
+.giver q { color: var(--text); font-style: italic; quotes: "\201C" "\201D"; }
+.seatpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.seatpick label { font-size: 12px; color: var(--soft); letter-spacing: .08em; text-transform: uppercase; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+select { font: 500 14px/1.2 var(--f-label); color: var(--text); background: var(--ground-deep); border: 1px solid var(--line-hi); padding: 8px; width: 100%; min-width: 0; }
+select:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+.meter { height: 10px; background: var(--ground-deep); border: 1px solid var(--line); margin-top: 8px; position: relative; }
+.meter span { position: absolute; inset: 0 auto 0 0; background: var(--select); transition: width .2s; }
+.fitline { display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px; color: var(--soft); }
+.fitline b { color: var(--text); font: 400 18px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.moods { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; font-size: 13px; }
+.moods div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px dashed var(--line); padding-top: 6px; color: var(--soft); }
+.moods .keen { color: var(--select); }
+.moods .rel { color: var(--spend); }
+.moods .ref { color: var(--danger); }
+.beats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); margin-top: 12px; }
+.beats div { padding: 10px; border-right: 1px solid var(--line); font-size: 13px; color: var(--soft); min-width: 0; }
+.beats div:last-child { border-right: 0; }
+.beats b { display: block; font: 600 11px/1.2 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--text); margin-bottom: 4px; }
+
+/* plan */
+.plan { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); }
+.step { display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 0.8fr); gap: 16px; padding: 16px; border-bottom: 1px solid var(--line); }
+.step:last-child { border-bottom: 0; }
+.step .n { font: 400 32px/1 var(--f-display); color: var(--line-hi); }
+.step h3 { margin-bottom: 4px; }
+.step p { margin: 0; color: var(--soft); font-size: 14px; }
+.step ul { margin: 6px 0 0; padding-left: 18px; color: var(--soft); font-size: 14px; }
+.step .side { font-size: 13px; color: var(--soft); border-left: 1px solid var(--line); padding-left: 14px; }
+.step .side b { color: var(--text); display: block; font: 600 11px/1.4 var(--f-label); letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; }
+.step .side b:first-child { margin-top: 0; }
+.scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.scope ul { margin: 8px 0 0; padding-left: 18px; color: var(--soft); font-size: 15px; }
+.scope li { margin-bottom: 4px; }
+.decisions ol { color: var(--soft); padding-left: 20px; max-width: 80ch; }
+.decisions li { margin-bottom: 10px; }
+.decisions li b { color: var(--text); }
+.foot { margin-top: 48px; color: var(--off); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fit { grid-template-columns: 1fr; }
+  .step { grid-template-columns: 44px minmax(0, 1fr); }
+  .step .side { grid-column: 2; border-left: 0; padding-left: 0; border-top: 1px dashed var(--line); padding-top: 8px; }
+}
+@media (max-width: 600px) {
+  .g2, .g3, .g4, .scope, .problems { grid-template-columns: 1fr; }
+  .problems div:nth-child(odd) { border-right: 0; }
+  .beats { grid-template-columns: 1fr; }
+  .beats div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .seatpick { grid-template-columns: 1fr; }
+}
+</style>
+<style>
+/* Codex additions: a voyage index (tabs) and a long voyage page */
+.vtabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.vtab { all: unset; cursor: pointer; padding: 14px 16px 12px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.vtab:hover { border-color: var(--line-hi); }
+.vtab[aria-selected="true"] { border-color: var(--select); box-shadow: inset 0 -3px 0 var(--select); }
+.vtab:focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+.vtab b { font: 400 20px/1.1 var(--f-display); color: var(--text); }
+.vtab small { color: var(--soft); font-size: 13px; }
+.vtab .z { font: 600 11px/1 var(--f-label); letter-spacing: .14em; text-transform: uppercase; }
+.sealed { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.sealed .card { opacity: .78; }
+.vhead { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.lore { font: italic 500 18px/1.65 var(--f-label); color: var(--text); border-left: 2px solid var(--line-hi); padding-left: 16px; margin: 0; max-width: 62ch; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); background: var(--surface); }
+.facts div { padding: 10px 14px; border-bottom: 1px solid var(--line); min-width: 0; }
+.facts div:nth-child(odd) { border-right: 1px solid var(--line); }
+.facts span { display: block; font: 600 11px/1.2 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.facts b { font: 400 16px/1.3 var(--f-display); color: var(--text); font-weight: 400; }
+.ladder td:first-child { white-space: nowrap; }
+.rung { display: inline-block; font: 400 13px/1 var(--f-display); padding: 5px 7px; color: var(--ground); }
+.hudmock { background: var(--ground-deep); border: 1px solid var(--line); padding: 16px; display: grid; gap: 10px; }
+.toast { justify-self: center; text-align: center; padding: 8px 14px; background: rgba(0,4,31,.85); border: 1px solid var(--line-hi); min-width: 0; }
+.toast b { display: block; font: 400 15px/1.2 var(--f-display); letter-spacing: .06em; }
+.toast span { font-size: 13px; color: var(--soft); }
+.objbox { justify-self: start; border: 1px solid var(--line-hi); padding: 10px 12px; font-size: 13px; color: var(--soft); min-width: 0; max-width: 100%; }
+.objbox b { display: block; color: var(--text); font: 400 15px/1.2 var(--f-display); margin-bottom: 4px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.state { display: inline-block; font: 600 11px/1 var(--f-label); letter-spacing: .1em; text-transform: uppercase; padding: 4px 6px; border: 1px solid currentColor; }
+.state.have { color: var(--cta); }
+.state.adapt { color: var(--spend); }
+.state.build { color: var(--soft); }
+.moodrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.moodrow span { font-size: 13px; padding: 5px 8px; border: 1px solid var(--line); color: var(--soft); }
+.moodrow .keen { color: var(--select); border-color: var(--select); }
+.moodrow .ref { color: var(--danger); border-color: var(--danger); }
+@media (max-width: 900px) {
+  .vtabs, .sealed { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vhead, .split { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .vtabs, .sealed, .facts { grid-template-columns: 1fr; }
+  .facts div:nth-child(odd) { border-right: 0; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <div>
+    <div class="eyebrow">Cosmic Shore · Voyages · the codex · Milestone 2</div>
+    <h1>Voyage <em>Codex</em></h1>
+    <p class="lede">Every voyage you can sail across the HyperSea: the story behind it, who offers it, the squad they ask for, how a run plays from cast-off to dock, and how it changes from calm water to the abyss. Four voyage types and twelve named voyages sail in Milestone 2; the rest are sealed until later.</p>
+  </div>
+  <div class="mapbox sliver" aria-label="The four voyages on the sea">
+    <svg id="heroMap" viewBox="0 0 520 330" role="img" aria-label="Four voyage routes across the HyperSea zones"></svg>
+  </div>
+</header>
+
+<!-- ───────────────────────── the sea ───────────────────────── -->
+<section>
+  <div class="eyebrow">Before you sail</div>
+  <h2>The sea, the Ark and <em>the danger</em></h2>
+  <div class="grid g3">
+    <div class="card sliver"><div class="k">The Ark</div><h3>She burns crystal to sail</h3><p>Every squad sails with an Ark: home, hold and engine. She crosses the HyperSea cell by cell, burning elemental crystal, and everything she carries is lost if her hull breaks. Your three vessels fly beside her.</p></div>
+    <div class="card sliver"><div class="k">The sea</div><h3>Cells, membranes and lanes</h3><p>The HyperSea is a foam of living cells. Places sit at their nuclei; lanes run through the cells between them. A voyage flies exactly the cells on its lane, <strong style="color:var(--text)">1 to 6 of them</strong>, and docks at a real place. Pause, and the map shows where your Ark is.</p></div>
+    <div class="card sliver"><div class="k">The life</div><h3>Everything in it is hungry</h3><p>Fauna graze mass, and the Ark's hull is mass. Cells held by another domain send their creatures at her. Between cells, raiders and the Leviathan's spawn wait in open water.</p></div>
+  </div>
+
+  <h3 style="margin-top:28px">Difficulty is how dangerous the sea is</h3>
+  <p class="prose">A voyage's difficulty is not a timer and not a stepper. It is the water you choose to sail: every voyage card carries a <strong>difficulty from 1 to 9</strong>, the same scale Escort the Ark has today, and the number says how hostile the cells on its lane are. Every voyage type uses the same scale; the table groups it in pairs to show what changes. Length comes from the lane, so a run lasts <strong>3 to 5 minutes on average</strong>, longer on a long lane, never because the rung is higher.</p>
+  <div class="tbl ladder">
+    <table>
+      <thead><tr><th>Difficulty</th><th>The water</th><th>Cells held against you</th><th>Life</th><th>Open water</th><th>Rivals</th><th>Breach line</th><th>Usual zones</th></tr></thead>
+      <tbody>
+        <tr><td><span class="rung" style="background:var(--jade)">1–2</span> Calm</td><td>Learn the voyage</td><td>none</td><td>sparse, slow to the Ark</td><td>quiet</td><td>co-op only</td><td>none</td><td>Celadon Reach, Aurum Banks</td></tr>
+        <tr><td><span class="rung" style="background:var(--select)">3–4</span> Choppy</td><td>The fun one</td><td>about 1 in 3</td><td>normal</td><td>raiders on the way home</td><td>race</td><td>10%</td><td>home zones, The Crossing edge</td></tr>
+        <tr><td><span class="rung" style="background:var(--spend)">5–6</span> Hostile</td><td>A real challenge</td><td>about 2 in 3</td><td>dense, lured to the Ark</td><td>raiders both ways, one kaiju</td><td>race or hostile</td><td>30%</td><td>The Crossing, Carmine Drift</td></tr>
+        <tr><td><span class="rung" style="background:var(--danger)">7–9</span> Abyssal</td><td>Very hard</td><td>every cell</td><td>packed, assaults</td><td>a kaiju on every crossing</td><td>hostile, strength 3</td><td>45%</td><td>The Deep</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:14px">The numbers grow out of what is shipped: the escort's nine tiers (population, Ark speed, breach line, hostile worlds) and Salvage's raiders, kaiju and leaking hold. Each rung picks from them; nothing changes a vessel.</p>
+
+  <h3 style="margin-top:28px">Run length</h3>
+  <p class="prose">Measured from the code on 20 Nov, a 4-cell Crystal Run took about 8 minutes to its stop: 30-second anchors in every cell and a slow Ark inside 3000 u cells. To land at 3 to 5 minutes, a cell should take <strong>about 45 to 55 seconds</strong>, cast-off and docking about 15 seconds each. A 1-cell lane is a 1½-minute sprint; a 6-cell lane is a 6-minute haul.</p>
+</section>
+
+<!-- ───────────────────────── the voyages ───────────────────────── -->
+<section id="voyages">
+  <div class="eyebrow">Milestone 2 · four types, twelve voyages</div>
+  <h2>Choose <em>a voyage</em></h2>
+  <p>Salvage, Escort, Bounty and Hold the Core are voyage <strong>types</strong>: the rules a run plays by. Players sail <strong>named voyages</strong>, each tied to a real place on the map, its zone, its danger and its length. A new voyage is a new name on a lane, not new code.</p>
+  <div class="vtabs" role="tablist" id="vtabs" aria-label="Voyages"></div>
+  <div id="vpage" role="tabpanel" style="margin-top:24px"></div>
+</section>
+
+<!-- ───────────────────────── sealed ───────────────────────── -->
+<section>
+  <div class="eyebrow">Sealed until later</div>
+  <h2>Voyages <em>still in the dark</em></h2>
+  <p>Designed and on the board, locked in Milestone 2 (<code>VoyageToyDefinitionSO.lockJobs</code>). Each opens by adding its job to <code>openJobs</code> once its piece is built.</p>
+  <div class="sealed">
+    <div class="card sliver"><div class="k" style="color:var(--ruby)">Lair Hunt · Brisk Amadou</div><h3>Fell the brood</h3><p>The Maw is crawling. Cull predators near the Ark until the pack leader rises, then break it. Destroyers and Shepherds. Uses <code>job.hunt.kaiju</code>.</p></div>
+    <div class="card sliver"><div class="k" style="color:var(--ruby)">Liberate the Pen · Sable Okoye</div><h3>Burn the fence</h3><p>Raze another domain's pen and lead the freed herd to a nursery. Shepherds lead; Wardens hate it.</p></div>
+    <div class="card sliver"><div class="k" style="color:var(--gold)">Courier Race · Merrin Tal</div><h3>First to Tollmoor</h3><p>Beat a rival courier to the port through tunnels and slingshots, Ark intact. Pathfinders lead.</p></div>
+    <div class="card sliver"><div class="k">Sail Home</div><h3>Bring her in</h3><p>Already sails: when the Ark lies away from your harbour, sail the lane home and dock to bank everything owed.</p></div>
+  </div>
+</section>
+
+<p class="foot">Built from the <code>voyages</code> branch at 248e6d9 and the Milestone 2 decisions of 24 Nov 2026: CRYSTAL_RUN.md (now Salvage), ARK_ESCORT.md, DEPTH.md, voyage_slice.json (jobs, rivals, crew, places). Lore lines are drafts for the authored fields in voyage_slice.json; nothing here has been playtested. Companion page: <a href="https://claude.ai/artifact/41YTUVhkuX1wPDwJQhub3g" style="color:var(--select)">Voyages Milestone 2</a>.</p>
+</div>
+
+<script>
+(function () {
+  const C = { jade: '#21C0BD', ruby: '#BD1BC8', gold: '#FF9B11', blue: '#758FFB', off: '#5C5F70', sel: '#00D4FF', fire: '#FF4B3A', text: '#E6E9FF', soft: '#8D93C2', line: '#2C3366', deep: '#00010A', spend: '#FFAE00' };
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; };
+  let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const RC = { '1–2': C.jade, '3–4': C.sel, '5–6': C.spend, '7–9': C.fire };
+  const dc = d => +d <= 2 ? C.jade : +d <= 4 ? C.sel : +d <= 6 ? C.spend : C.fire;
+
+  const V = [
+    {
+      id: 'salvage', named: [["Spindrift's Last Glitter", "Spindrift Shallows", "Aurum Banks", "2", "2", "A salvage run at the far end of Aurum Banks: the shallows still shine where a merchant Ark broke up last season. Calm water, slow drift, the first run anyone should sail."], ["The Glassmere Shatter", "Glassmere", "The Crossing", "4", "4", "An Ark burst at Glassmere and her crystal is spread across four cells. Black Tide heard about it at the same time you did."], ["Embers of Cinder Shoal", "Cinder Shoal", "Carmine Drift", "6", "5", "The richest drift in Carmine Drift, burning in cells the Ruby crews hold. Kaiju wait between the cells."]], name: 'Salvage', tag: 'Gather loose crystals and bank them in the Ark', zone: 'The Crossing', zc: C.blue,
+      giver: 'Cass Morrow', gf: 'Pirate · Ruby · callsign GALLEON', gc: C.ruby, job: 'job.raid.crystals (title becomes Salvage)', verb: 'Gather',
+      cells: '2–6 (lane)', squad: ['Cultivator', 'Pathfinder', 'Protector'],
+      lore: 'When an Ark goes down, her hold bursts and her crystal drifts loose through the cells for days. Ours is nearly dry, and that drift is the only fuel nobody owns. Fly in, take every loose crystal you can reach, and bring it to the Ark before something with teeth takes it from you.',
+      say: '“The Grin will smell this field by noon. Skim fast, bank faster, and don’t carry more than you can lose.”',
+      how: [
+        ['Cast off', 'Goal on the objective box: bank N crystals (about 12 a cell). The Ark sets sail from the port.'],
+        ['Every cell', 'Loose crystals drift through the whole cell, thickest where a wreck burst. Take one and you carry it; fly within 180 u of the Ark to bank it. Only banked crystals count.'],
+        ['Under fire', 'A hit from a danger prism spills what you carry for anyone to take. Below 30% hull the Ark leaks banked crystals back into the sea.'],
+        ['Next door', 'A wreck bursting in the next cell (a crystal surge) or a bloom. The squad votes to detour.'],
+        ['The turn', 'A rival crew arrives to take the same drift. Whatever they bank is gone.'],
+        ['Dock', 'Goal met: Complete and set sail from pause, or sail on. Docking banks the hold. Missed: the haul is lost.'],
+      ],
+      win: 'Dock with the goal banked.', lose: 'Ark breached, or the goal missed at the stop.', score: 'Crystals banked per seat and element; most banked wins Top Salvager.',
+      ladder: {
+        '1–2': ['All cells calm', 'No spill from fauna, only from rival danger mass', 'Co-op crew may help for a share', 'No leak'],
+        '3–4': ['1 cell in 3 hostile', 'Spill on danger hits', 'A rival crew races for the drift', 'Leak below 30%, breach 10%'],
+        '5–6': ['2 in 3 hostile, fauna lured to the Ark', 'Raiders between cells both ways', 'Rival races, may turn hostile when you are laden', 'One kaiju crossing; breach 30%'],
+        '7–9': ['Every cell hostile', 'Kaiju on every crossing', 'Hostile crew raids the hold', 'Leak below 40%, breach 45%'],
+      },
+      events: ['Crystal surge (a wreck bursts next door)', 'Bloom', 'Rival crew sighted', 'Predator pack'],
+      rival: 'Black Tide (bold) or the Rusted Grin (greedy) race for the drift; at difficulty 7–9 the Grin goes for your hold.',
+      keen: ['Pirates', 'Gatherers', 'Thieves'], refuse: [], rel: ['Aristocrats', 'Priests'],
+      toast: ['THE GLASSMERE SHATTER', 'Salvage 36 crystals. Bank them before they spill.'], obj: ['The Glassmere Shatter', 'Banked 14 / 36 · carrying 5 · Ark hull 82%'],
+      exists: [['have', 'Goal, carry and bank, spills, leak, anchors, Complete and set sail, Venture further, scoreboard'], ['adapt', 'Rename to Salvage, crystals as drift fields (scatterLifeSpawns already spreads them), cell time to ~50 s'], ['build', 'Crystal surge event, rival race for the drift'] ],
+    },
+    {
+      id: 'escort', named: [["Lanterns Home", "Lantern Reach to Celadon Harbour", "Celadon Reach", "2", "3", "Carry the Lantern Reach keepers home through quiet water. The first escort, and a short one."], ["The Tollmoor Crossing", "Celadon Harbour to Tollmoor", "The Crossing", "4", "4", "A whole port's worth of traders aboard, through the busiest lane in the sea."], ["Through the Maw's Teeth", "Gnawreach to The Maw", "The Deep", "8", "6", "Six cells of the Deep with a wounded crew aboard. Every cell is held against you."]], name: 'Escort', tag: 'Keep her above the breach line to the next port', zone: 'Any lane', zc: C.jade,
+      giver: 'Captain Theo Lark', gf: 'First responder · Jade · callsign WINGMAN', gc: C.jade, job: 'Escort card (ArkEscort.asset)', verb: 'Arrive (HullFloor)',
+      cells: '3–6 (lane)', squad: ['Protector', 'Guardian', 'Destroyer'],
+      lore: 'Some crossings are made by people who cannot fly them: settlers, wounded crews, a whole port moving house. The Ark carries them, and every creature between here and the next nucleus has noticed. Nothing aboard is worth anything if she arrives in pieces.',
+      say: '“I don’t need you to win anything out there. I need her hull green when we dock.”',
+      how: [
+        ['Cast off', 'Objective: bring the Ark to the next port above the breach line. Her hull is on the strip.'],
+        ['Every cell', 'Fauna from cells held against you graze the hull. Take a cell back by laying more of your own mass in it than they have.'],
+        ['Assaults', 'Hostile cells send waves at the Ark; the reactor regrows plates slowly.'],
+        ['Next door', 'A distress call or a predator pack heading for the lane. Detour, or hold the line.'],
+        ['The turn', 'A hostile crew sees a laden Ark and attacks her mass.'],
+        ['Dock', 'Berth at the port. The hull share you arrive with is the score.'],
+      ],
+      win: 'Berth above the breach line.', lose: 'Hull falls below the breach line.', score: 'Ark hull at dock; Wall of the Voyage for the most damage stopped.',
+      ladder: {
+        '1–2': ['Escort tiers 1–2: population 0.2–0.3', 'Only the first cell hostile', 'Fast reactor, fast Ark', 'No breach line'],
+        '3–4': ['Tiers 3–4: population 0.45–0.6', 'About a third of cells hostile, the swarm cell bites', 'Raiders on the way home', 'Breach 20–30%'],
+        '5–6': ['Tiers 5–6: population 0.75–0.9', 'Most cells hostile, assaults', 'Hostile crew may attack', 'Breach 38–45%'],
+        '7–9': ['Tiers 7–9: population 1.05–1.4', 'Every cell hostile, kaiju crossings', 'Slow reactor, slow Ark', 'Breach 50–72%'],
+      },
+      events: ['Distress call', 'Predator pack', 'Rival crew (hostile)', 'Kaiju wake'],
+      rival: 'House Verdance (careful) may fly co-op escort with a Jade squad; a Pirate crew with a tip on a laden Ark attacks.',
+      keen: ['First responders', 'Aristocrats', 'Merchants'], refuse: [], rel: ['Explorers', 'Thieves'],
+      toast: ['THE TOLLMOOR CROSSING', 'Bring her into Tollmoor above 30%.'], obj: ['The Tollmoor Crossing', 'Ark hull 74% · breach 30% · cell 2 of 4'],
+      exists: [['have', 'Nine tuned tiers, five worlds, assaults, escort AI roles, course on the map'], ['adapt', 'Keeps its nine tiers; worlds from the lane’s real cells instead of five rolled worlds; locked in M1, reopened'], ['build', 'Distress call event; hostile crew attack'] ],
+    },
+    {
+      id: 'bounty', named: [["Hush the Quiet Spear", "Magpie Hollow", "Carmine Drift", "2", "2", "A young crew with more nerve than skill. Catch them before they learn better."], ["Black Tide Rising", "Gullbone Landing", "The Crossing", "4", "3", "Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them."], ["The Grin Runs Last", "Ironmouth", "The Crossing", "8", "4", "The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs."]], name: 'Bounty', tag: 'Hunt a named rival crew before they make port', zone: 'Carmine Drift · The Crossing', zc: C.ruby,
+      giver: 'Juno Rask', gf: 'Bounty hunter · Gold · callsign BANDIT', gc: C.gold, job: 'job.bounty.crew', verb: 'Meet, then break',
+      cells: '2–4 (lane)', squad: ['Hunter', 'Pathfinder', 'Destroyer'],
+      lore: 'Writ and Hook posts a price on any crew the ports are tired of. This one has been stripping wrecks that were not theirs and leaving the crews inside. They are two cells out and running for a port that will hide them. Serve the warrant at sea, and what they carry spills for whoever is close.',
+      say: '“BANDIT sees them through anything. You just have to be faster than their nerve.”',
+      how: [
+        ['Cast off', 'Objective: serve the warrant on the named crew. Their wake shows on the pause map.'],
+        ['Cell 1', 'Close the distance. BANDIT lights every opposing vessel through mass; your sight echoes to the squad.'],
+        ['Catch', 'Three rival hulls turn to fight. Score hits on their hulls (petals) to break each one; a broken hull limps off.'],
+        ['They split', 'One hull runs for a soliton or the membrane. A Pathfinder cuts it off; the vote decides who chases.'],
+        ['The turn', 'At higher rungs they go for your Ark instead, or call allies from a cell they hold.'],
+        ['Dock', 'Warrant served when all three are broken: their hold spills as loose crystals. Grudge +1, notoriety +1.'],
+      ],
+      win: 'Break all three hulls before they leave the last cell.', lose: 'They reach their port, or the Ark is breached.', score: 'Hits and breaks per seat; Rival Breaker award.',
+      ladder: {
+        '1–2': ['Strength 1 crew (The Quiet Spear)', 'Slow, does not fight back', 'Calm cells', 'Warrant on 2 of 3 hulls'],
+        '3–4': ['Strength 2 crew', 'They split at the turn', 'One cell hostile', 'Breach 10%'],
+        '5–6': ['Strength 2–3', 'They lay danger mass in their wake and turn on the Ark', 'Hostile cells, raiders', 'Breach 30%'],
+        '7–9': ['The Rusted Grin, strength 3, greedy', 'They raid your hold first, call a second crew', 'Kaiju crossing', 'Breach 45%'],
+      },
+      events: ['Rival crew (the target)', 'Wreck they left behind', 'Predator pack in their wake'],
+      rival: 'The target is always a named crew from the slice. Beating it raises its grudge; at 2 it hunts you on your next voyage.',
+      keen: ['Bounty hunters', 'Hunters'], refuse: [], rel: ['Diplomats', 'Preservationists'],
+      toast: ['BLACK TIDE RISING', 'Black Tide are here. Break all three.'], obj: ['Black Tide Rising', 'Broken 1 / 3 · they leave cell 3 in 0:42'],
+      exists: [['have', 'Bounty job, rivals with hulls, strength, temper, grudge, notoriety (data and tick)'], ['adapt', 'Meet becomes meet and break; hits on AI hulls already score by arena rules'], ['build', 'Rival crews in the world (three AI vessels that flee, split and fight), their wake on the map'] ],
+    },
+    {
+      id: 'hold', named: [["The Verdigris Vigil", "Verdigris", "Celadon Reach", "1", "1", "A short hold under a calm core while the wardens rest. One wave, no rival."], ["Ironmouth Holds", "Ironmouth", "The Crossing", "4", "2", "Another domain is laying mass at Ironmouth's core faster than the wardens can clear it."], ["The Ninefold Stand", "The Ninefold Shell", "The Deep", "8", "3", "The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju."]], name: 'Hold the Core', tag: 'Anchor at a core under pressure and keep it yours', zone: 'Celadon Reach · The Crossing', zc: C.jade,
+      giver: 'Marshal Edda Kroll', gf: 'Aristocrat · Jade · callsign RAMPART', gc: C.jade, job: 'job.defence.aid / retake', verb: 'Hold',
+      cells: '1–3 (lane), then the hold', squad: ['Guardian', 'Cultivator', 'Protector'],
+      lore: 'A core is a cell’s heart, and whoever’s mass holds it decides whose colour its waves wear. Ironmouth’s core is wavering: another domain is laying mass faster than the wardens can clear it, and their creatures are already at the walls. Anchor the Ark under the nucleus and do not let it turn.',
+      say: '“Build first. Shoot second. A wall that stands is worth ten kills.”',
+      how: [
+        ['Cast off', 'Objective: reach the core. One to three cells of travel, the lane’s danger on the card.'],
+        ['Anchor', 'The Ark anchors under the nucleus. The hold clock starts only while your domain holds more mass in the cell than theirs.'],
+        ['Wave 1', 'Their fauna and builders push in. RAMPART lights every shielded prism; walls and shields matter.'],
+        ['Next door', 'A distress call from a neighbouring cell. Leave one seat to answer, or stay three-strong.'],
+        ['Wave 2', 'The other domain’s crew arrives to retake the core.'],
+        ['Hold', 'The clock runs out with the core yours: its waves wear your colour, the port’s pressure drops.'],
+      ],
+      win: 'The hold clock completes with the core yours.', lose: 'The core turns and stays theirs for 15 s, or the Ark is breached.', score: 'Mass laid and held, damage stopped; Wall of the Voyage.',
+      ladder: {
+        '1–2': ['Hold 45 s', 'One wave, a slow builder crew', 'No rival', 'No breach line'],
+        '3–4': ['Hold 60 s', 'Two waves', 'A rival crew tries to retake in wave 2', 'Breach 10%'],
+        '5–6': ['Hold 75 s', 'Two waves plus assaults on the Ark', 'Hostile crew from the start of wave 2', 'Breach 30%'],
+        '7–9': ['Hold 90 s', 'Three waves, a kaiju in the last', 'Strength 3 crew and their builders', 'Breach 45%'],
+      },
+      events: ['Distress call', 'Rival crew (retake)', 'Penned herd next door'],
+      rival: 'House Verdance answers with you if you are Jade; any other domain’s crew comes to retake.',
+      keen: ['Aristocrats', 'First responders', 'Contractors'], refuse: [], rel: ['Pirates', 'Explorers', 'Sport'],
+      toast: ['IRONMOUTH HOLDS', 'Keep the core yours for 60 seconds.'], obj: ['Ironmouth Holds', 'Held 0:38 / 1:00 · yours 61% · Ark hull 88%'],
+      exists: [['have', 'Hold verb, defence jobs (aid, patrol, retake), cells taken back by mass, anchoring'], ['adapt', 'Hold clock tied to who holds the nucleus; waves from the assault code'], ['build', 'Retake crew, wave director, the clock on the objective box'] ],
+    },
+  ];
+  const CLS = { Cultivator: 'Squirrel, Urchin, Tiger Moth, Goby', Pathfinder: 'Meerkat, Stoat, Wrasse', Protector: 'Orca, Scarab, Thresher', Guardian: 'Serpent, Grizzly, Shrike', Destroyer: 'Sparrow, Dolphin, Swordfish, Rhino', Hunter: 'Manta, Brittle Star, Honeyguide', Shepherd: 'Angler, Jacks, Starling, Jewel Wasp' };
+
+  const tabs = document.getElementById('vtabs');
+  const page = document.getElementById('vpage');
+  V.forEach(v => {
+    const b = document.createElement('button'); b.className = 'vtab sliver-s'; b.type = 'button'; b.role = 'tab'; b.id = 'tab-' + v.id;
+    b.setAttribute('aria-controls', 'vpage');
+    b.innerHTML = `<span class="z" style="color:${v.gc}">Voyage type · ${v.named.length} voyages</span><b>${v.name}</b><small>${v.named.map(n => n[0]).join(' · ')}</small>`;
+    b.addEventListener('click', () => { show(v.id); try { history.replaceState(null, '', '#' + v.id); } catch (e) {} });
+    tabs.appendChild(b);
+  });
+  function show(id) {
+    const v = V.find(x => x.id === id) || V[0];
+    V.forEach(x => document.getElementById('tab-' + x.id).setAttribute('aria-selected', x === v ? 'true' : 'false'));
+    const ladder = Object.entries(v.ladder).map(([r, a]) => `<tr><td><span class="rung" style="background:${RC[r]}">${r}</span></td>${a.map(x => `<td>${x}</td>`).join('')}</tr>`).join('');
+    page.innerHTML = `
+      <div class="vhead">
+        <div>
+          <div class="eyebrow">Voyage type · ${v.verb}</div>
+          <h2 style="margin-top:8px">${v.name}</h2>
+          <p class="lore">${v.lore}</p>
+          <div class="giver sliver-s" style="margin-top:16px"><div class="av sliver-s" style="background:${v.gc}">${v.giver.split(' ').map(w => w[0]).slice(-2).join('')}</div><div><div style="font-size:13px;color:var(--soft)">${v.giver} · ${v.gf}</div><q style="quotes:none">${v.say}</q></div></div>
+        </div>
+        <div class="facts">
+          <div><span>Offered by</span><b>${v.giver}</b></div>
+          <div><span>Cells</span><b>${v.cells}</b></div>
+          <div><span>Win</span><b style="font-size:14px">${v.win}</b></div>
+          <div><span>Lose</span><b style="font-size:14px">${v.lose}</b></div>
+          <div style="grid-column:1/-1"><span>Recommended squad</span><div class="chips">${v.squad.map((c, i) => `<span class="chip${i === 0 ? ' ready' : ''}" title="${CLS[c]}">${c}${i === 0 ? ' (lead)' : ''}</span>`).join('')}</div><div style="font-size:13px;color:var(--soft);margin-top:6px">${v.squad.map(c => `<b style="font:600 13px var(--f-label);color:var(--text)">${c}:</b> ${CLS[c]}`).join('<br>')}</div></div>
+          <div style="grid-column:1/-1"><span>Score</span><b style="font-size:14px">${v.score}</b></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:28px">The ${v.named.length} ${v.name} voyages</h3>
+      <div class="grid g3">${v.named.map(n => `<div class="card sliver"><div class="k" style="color:${dc(n[3])}">Difficulty ${n[3]} · ${n[2]} · ${n[4]} cell${n[4] === '1' ? '' : 's'}</div><h3>${n[0]}</h3><p style="color:var(--text);font-size:14px">${n[1]}</p><p>${n[5]}</p></div>`).join('')}</div>
+      <h3 style="margin-top:28px">How a run plays out</h3>
+      <div class="beats" style="grid-template-columns:repeat(${v.how.length},minmax(0,1fr))">${v.how.map(h => `<div><b>${h[0]}</b>${h[1]}</div>`).join('')}</div>
+
+      <h3 style="margin-top:28px">By difficulty (1–9)</h3>
+      <div class="tbl ladder"><table><thead><tr><th>Difficulty</th><th>The sea</th><th>Pressure</th><th>Rivals and threats</th><th>Stakes</th></tr></thead><tbody>${ladder}</tbody></table></div>
+
+      <div class="split" style="margin-top:20px">
+        <div class="card sliver">
+          <div class="k">In the world</div>
+          <h3>Events, rivals, pilots</h3>
+          <p><b style="color:var(--text)">Events next door:</b> ${v.events.join(' · ')}</p>
+          <p><b style="color:var(--text)">Rivals:</b> ${v.rival}</p>
+          <div class="moodrow">${v.keen.map(k => `<span class="keen">Keen: ${k}</span>`).join('')}${v.rel.map(k => `<span>Reluctant: ${k}</span>`).join('')}${v.refuse.map(k => `<span class="ref">Refuses: ${k}</span>`).join('')}</div>
+          <p style="font-size:13px">Pilots refuse only work against their ethos (a Preservationist on a cull). None of these four voyages asks for a kill near a nursery, so no faction refuses them outright; Lair Hunt and Liberate the Pen are the first with refusals.</p>
+        </div>
+        <div class="hudmock sliver" aria-label="How it reads in the current HUD">
+          <div class="tag">On the HUD you have today (layout and text sizes unchanged)</div>
+          <div class="toast sliver-s"><b>${v.toast[0]}</b><span>${v.toast[1]}</span></div>
+          <div class="objbox sliver-s"><b>${v.obj[0]}</b>${v.obj[1]}</div>
+          <div style="font-size:12px;color:var(--off)">Wording is a draft for the authored fields in voyage_slice.json.</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:28px">What exists and what to build</h3>
+      <div class="tbl"><table><tbody>${v.exists.map(([s, t]) => `<tr><td style="width:120px"><span class="state ${s}">${s === 'have' ? 'Built' : s === 'adapt' ? 'Change' : 'New'}</span></td><td>${t}</td></tr>`).join('')}<tr><td><span class="state build">Job</span></td><td><code>${v.job}</code></td></tr></tbody></table></div>`;
+  }
+  const start = (location.hash || '').slice(1);
+  show(V.some(v => v.id === start) ? start : 'salvage');
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (V.some(v => v.id === h)) show(h); });
+
+  // hero map: four routes on zones
+  (function () {
+    const s = document.getElementById('heroMap'); seed = 9;
+    el('rect', { x: 0, y: 0, width: 520, height: 330, fill: C.deep }, s);
+    const Z = [{ c: C.jade, x: 90, y: 70 }, { c: C.ruby, x: 90, y: 270 }, { c: C.gold, x: 320, y: 290 }, { c: C.blue, x: 260, y: 160 }, { c: C.off, x: 450, y: 80 }];
+    const zc = (x, y) => { let b = Z[0], bd = 1e9; Z.forEach(z => { const d = (z.x - x) ** 2 + (z.y - y) ** 2; if (d < bd) { bd = d; b = z; } }); return b.c; };
+    for (let i = 0; i < 110; i++) { const x = rnd() * 520, y = rnd() * 330, c = zc(x, y); el('circle', { cx: x, cy: y, r: 13 + rnd() * 8, fill: c, 'fill-opacity': .07, stroke: c, 'stroke-opacity': .35 }, s); }
+    const routes = [
+      ['GLASSMERE SHATTER', [[150, 180], [210, 160], [270, 150], [330, 130]], C.sel],
+      ['LANTERNS HOME', [[60, 70], [110, 100], [160, 120], [210, 160]], C.jade],
+      ['BLACK TIDE RISING', [[80, 250], [130, 230], [180, 215]], C.ruby],
+      ['IRONMOUTH HOLDS', [[300, 210], [340, 195]], C.gold],
+    ];
+    routes.forEach(([n, p, c]) => {
+      el('path', { d: 'M' + p.map(q => q.join(' ')).join(' L'), fill: 'none', stroke: c, 'stroke-width': 2.5 }, s);
+      p.forEach(([x, y], i) => el('circle', { cx: x, cy: y, r: i === p.length - 1 ? 6 : 3.5, fill: i === p.length - 1 ? c : C.deep, stroke: c, 'stroke-width': 1.5 }, s));
+      const [lx, ly] = p[p.length - 1];
+      el('text', { x: lx + 10, y: ly - 8, fill: c, 'font-size': 12, 'font-family': 'Aldrich', 'letter-spacing': '.1em' }, s, n);
+    });
+  })();
+})();
+</script>

@@ -1,0 +1,654 @@
+<title>Voyages Milestone 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap">
+<style>
+/* Layout: the froglet.games page shape (eyebrow + H2 with one italic word, card grids) on the game's Deep Sea tokens.
+   One committed dark look, like the game and the website. Corners are the Froglet sliver, never rounded. */
+:root {
+  color-scheme: dark;
+  --ground: #00041F;
+  --ground-deep: #00010A;
+  --surface: #0E1235;
+  --surface-2: #222645;
+  --line: #2C3366;
+  --line-hi: #434C89;
+  --text: #E6E9FF;
+  --soft: #8D93C2;
+  --off: #5C5F70;
+  --cta: #99FF80;
+  --danger: #FF4B3A;
+  --spend: #FFAE00;
+  --select: #00D4FF;
+  --commit: #A600FF;
+  --jade: #21C0BD;
+  --ruby: #BD1BC8;
+  --gold: #FF9B11;
+  --blue: #758FFB;
+  --f-display: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
+  --f-label: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  --sl: 14px;
+  --sl-s: 10px;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--ground);
+  color: var(--text);
+  font: 500 16px/1.6 var(--f-label);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+.sliver { clip-path: polygon(var(--sl) 0, 100% 0, 100% calc(100% - var(--sl)), calc(100% - var(--sl)) 100%, 0 100%, 0 var(--sl)); }
+.sliver-s { clip-path: polygon(var(--sl-s) 0, 100% 0, 100% calc(100% - var(--sl-s)), calc(100% - var(--sl-s)) 100%, 0 100%, 0 var(--sl-s)); }
+
+/* hero */
+.hero { padding-block: 56px 32px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+.eyebrow { font: 600 13px/1 var(--f-label); letter-spacing: .18em; text-transform: uppercase; color: var(--soft); display: flex; gap: 10px; align-items: center; }
+.eyebrow::before { content: ""; width: 18px; height: 2px; background: var(--select); }
+h1 { font: 400 clamp(40px, 7vw, 72px)/1 var(--f-display); margin: 16px 0 12px; letter-spacing: .01em; text-wrap: balance; }
+h2 { font: 400 clamp(28px, 4vw, 38px)/1.1 var(--f-display); margin: 10px 0 14px; text-wrap: balance; }
+h2 em, h1 em { font-family: var(--f-label); font-style: italic; font-weight: 600; color: var(--select); }
+h3 { font: 400 20px/1.25 var(--f-display); margin: 0 0 6px; }
+.lede { color: var(--soft); font-size: 18px; max-width: 60ch; margin: 0; }
+.tag { font: 600 12px/1 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.marquee { overflow: hidden; border-block: 1px solid var(--line); margin-block: 8px 0; }
+.marquee div { display: flex; gap: 28px; white-space: nowrap; padding-block: 10px; font: 400 14px/1 var(--f-display); color: var(--off); animation: drift 60s linear infinite; width: max-content; }
+.marquee b { color: var(--soft); font-weight: 400; }
+@keyframes drift { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .marquee div { animation: none; } }
+
+section { padding-block: 48px 8px; border-top: 1px solid var(--line); margin-top: 40px; }
+section > p, .prose { color: var(--soft); max-width: 70ch; }
+.prose strong, section > p strong { color: var(--text); font-weight: 600; }
+
+/* grids and cards */
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); padding: 18px 18px 16px; min-width: 0; }
+.card p { margin: 6px 0 0; color: var(--soft); font-size: 15px; }
+.card .k { font: 600 12px/1 var(--f-label); letter-spacing: .14em; text-transform: uppercase; color: var(--select); margin-bottom: 8px; }
+.card.fire .k { color: var(--danger); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { font: 600 12px/1 var(--f-label); letter-spacing: .06em; padding: 6px 9px; background: var(--surface-2); color: var(--text); }
+.chip.dim { color: var(--soft); background: transparent; border: 1px solid var(--line); }
+.chip.ready { border: 1px solid var(--select); background: transparent; color: var(--select); }
+
+/* today vs problem list */
+.problems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); }
+.problems div { padding: 14px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+.problems div:nth-child(odd) { border-right: 1px solid var(--line); }
+.problems b { display: block; font: 400 15px/1.3 var(--f-display); color: var(--text); }
+.problems span { color: var(--soft); font-size: 14px; }
+.problems code, code { font: 500 13px/1.3 ui-monospace, Menlo, monospace; color: var(--blue); }
+
+/* map */
+.mapbox { background: var(--ground-deep); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.mapbox svg { display: block; width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--soft); }
+.legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+
+/* tables */
+.tbl { overflow-x: auto; border: 1px solid var(--line); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font: 600 12px/1.2 var(--f-label); letter-spacing: .1em; text-transform: uppercase; color: var(--soft); padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--line-hi); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--soft); }
+td:first-child { color: var(--text); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+
+/* classes */
+.cls { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cls h3 { display: flex; align-items: center; gap: 10px; }
+.glyph { width: 30px; height: 30px; flex: none; }
+.cls .what { color: var(--text); font-size: 15px; margin: 0; }
+.cls .why { color: var(--soft); font-size: 14px; margin: 0; }
+.vrow { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.vrow div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; font-size: 13px; color: var(--soft); border-top: 1px dashed var(--line); padding-top: 5px; }
+.vrow b { color: var(--text); font-weight: 600; }
+
+/* zones */
+.zone { border-left: 3px solid var(--z, var(--line-hi)); }
+
+/* timeline */
+.tl { background: var(--surface); border: 1px solid var(--line); padding: 18px; }
+.tl svg { width: 100%; height: auto; display: block; }
+
+/* fit tool */
+.fit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; }
+.missions { display: flex; flex-direction: column; gap: 8px; }
+.mbtn { all: unset; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); }
+.mbtn:hover { border-color: var(--line-hi); }
+.mbtn[aria-pressed="true"] { border-color: var(--select); box-shadow: inset 3px 0 0 var(--select); }
+.mbtn:focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+.mbtn b { font: 400 16px/1.2 var(--f-display); color: var(--text); }
+.mbtn small { grid-column: 1 / -1; color: var(--soft); font-size: 13px; }
+.mbtn .st { font: 600 11px/1 var(--f-label); letter-spacing: .12em; text-transform: uppercase; align-self: center; }
+.st.m2 { color: var(--select); }
+.st.later { color: var(--off); }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 20px; min-width: 0; }
+.giver { display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: var(--ground-deep); border: 1px solid var(--line); margin: 12px 0; }
+.giver .av { width: 42px; height: 42px; flex: none; display: grid; place-items: center; font: 400 15px/1 var(--f-display); color: var(--ground); }
+.giver q { color: var(--text); font-style: italic; quotes: "\201C" "\201D"; }
+.seatpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.seatpick label { font-size: 12px; color: var(--soft); letter-spacing: .08em; text-transform: uppercase; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+select { font: 500 14px/1.2 var(--f-label); color: var(--text); background: var(--ground-deep); border: 1px solid var(--line-hi); padding: 8px; width: 100%; min-width: 0; }
+select:focus-visible { outline: 2px solid var(--select); outline-offset: 1px; }
+.meter { height: 10px; background: var(--ground-deep); border: 1px solid var(--line); margin-top: 8px; position: relative; }
+.meter span { position: absolute; inset: 0 auto 0 0; background: var(--select); transition: width .2s; }
+.fitline { display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px; color: var(--soft); }
+.fitline b { color: var(--text); font: 400 18px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.moods { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; font-size: 13px; }
+.moods div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px dashed var(--line); padding-top: 6px; color: var(--soft); }
+.moods .keen { color: var(--select); }
+.moods .rel { color: var(--spend); }
+.moods .ref { color: var(--danger); }
+.beats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); margin-top: 12px; }
+.beats div { padding: 10px; border-right: 1px solid var(--line); font-size: 13px; color: var(--soft); min-width: 0; }
+.beats div:last-child { border-right: 0; }
+.beats b { display: block; font: 600 11px/1.2 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--text); margin-bottom: 4px; }
+
+/* plan */
+.plan { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); }
+.step { display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 0.8fr); gap: 16px; padding: 16px; border-bottom: 1px solid var(--line); }
+.step:last-child { border-bottom: 0; }
+.step .n { font: 400 32px/1 var(--f-display); color: var(--line-hi); }
+.step h3 { margin-bottom: 4px; }
+.step p { margin: 0; color: var(--soft); font-size: 14px; }
+.step ul { margin: 6px 0 0; padding-left: 18px; color: var(--soft); font-size: 14px; }
+.step .side { font-size: 13px; color: var(--soft); border-left: 1px solid var(--line); padding-left: 14px; }
+.step .side b { color: var(--text); display: block; font: 600 11px/1.4 var(--f-label); letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; }
+.step .side b:first-child { margin-top: 0; }
+.scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.scope ul { margin: 8px 0 0; padding-left: 18px; color: var(--soft); font-size: 15px; }
+.scope li { margin-bottom: 4px; }
+.decisions ol { color: var(--soft); padding-left: 20px; max-width: 80ch; }
+.decisions li { margin-bottom: 10px; }
+.decisions li b { color: var(--text); }
+.foot { margin-top: 48px; color: var(--off); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fit { grid-template-columns: 1fr; }
+  .step { grid-template-columns: 44px minmax(0, 1fr); }
+  .step .side { grid-column: 2; border-left: 0; padding-left: 0; border-top: 1px dashed var(--line); padding-top: 8px; }
+}
+@media (max-width: 600px) {
+  .g2, .g3, .g4, .scope, .problems { grid-template-columns: 1fr; }
+  .problems div:nth-child(odd) { border-right: 0; }
+  .beats { grid-template-columns: 1fr; }
+  .beats div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .seatpick { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <div>
+    <div class="eyebrow">Cosmic Shore · Voyages · gameplay design · 24 Nov 2026</div>
+    <h1>Sail a sea that is <em>alive</em></h1>
+    <p class="lede">Voyages become a curated open world for a squad of three: you sail the real HyperSea map cell by cell, something is always happening next door, every vessel class has a job worth doing, pilots have opinions, and rival crews want the same prize. Then: what Milestone 2 builds, in order.</p>
+  </div>
+  <div class="mapbox sliver" aria-label="A voyage course across the HyperSea">
+    <svg id="heroMap" viewBox="0 0 520 330" role="img" aria-label="Ark course through three cells with live events in neighbouring cells"></svg>
+  </div>
+</header>
+
+<div class="marquee" aria-hidden="true"><div id="mq"></div></div>
+
+<!-- ───────────────────────── why ───────────────────────── -->
+<section>
+  <div class="eyebrow">Where we are</div>
+  <h2>Why it feels <em>linear</em> today</h2>
+  <p>Read from the <code>voyages</code> branch, not from a playtest. Each point below is a code fact that produces the feeling you described.</p>
+  <div class="problems">
+    <div><b>The leg is a count, not the map</b><span>A job's leg is "N cells" (<code>VoyageRaid.CellsFor</code>), filled from a pool of open-sea worlds. The cells you fly are not the cells the map draws between the two places.</span></div>
+    <div><b>Next door is empty</b><span>Only the cell the Ark is in runs. Neighbouring cells hold nothing you can see or reach, so there is never a reason to look around or change course.</span></div>
+    <div><b>One job, one verb, one voyage</b><span>Each voyage is a single job resolved at one stop. Ten of the 31 job types resolve on arrival with nothing to do (missions audit, 16 Nov).</span></div>
+    <div><b>Any vessel fits any job</b><span>Nothing on a job card or in the run asks for a kind of vessel, so the squad pick never matters and most of the fleet has no reason to sail.</span></div>
+    <div><b>Pilots are only a pair of eyes</b><span>A pilot is a callsign sight plus a faction. They have no mood, no history and no say in what work they take.</span></div>
+    <div><b>Rivals live in a spreadsheet</b><span>Nine rival crews exist in <code>voyage_slice.json</code>, but they are resolved by a daily tick. You never meet one in the world during a run.</span></div>
+    <div><b>The map is a menu screen</b><span>The HyperSea map lives in the Voyage window. In flight there is no way to see where you are on it.</span></div>
+    <div><b>Three minutes with no turns</b><span>Salvage (was Crystal Run) is collect, survive, dock. There is no moment where the squad has to decide something together.</span></div>
+  </div>
+</section>
+
+<!-- ───────────────────────── pillars ───────────────────────── -->
+<section>
+  <div class="eyebrow">Five pillars</div>
+  <h2>What a voyage <em>promises</em></h2>
+  <div class="grid g3">
+    <div class="card sliver"><div class="k">1 · The sea is real</div><h3>You fly the map</h3><p>The cells you cross are the cells on the HyperSea map between two places. Pause shows the map with your Ark on it, mid-lane.</p></div>
+    <div class="card sliver"><div class="k">2 · Next door is alive</div><h3>Something is always happening</h3><p>A director lights live events in the cells beside your course: a wreck surfacing, a bloom, a rival crew, a distress call. You can see them and detour.</p></div>
+    <div class="card sliver"><div class="k">3 · Every class has work</div><h3>Voyages use the whole fleet</h3><p>Vessels sort into seven classes. Each mission and each event wants certain classes, so the squad you bring changes how the voyage plays.</p></div>
+    <div class="card sliver"><div class="k">4 · Pilots are people</div><h3>Mood and experience</h3><p>Pilots come from zones, like some work and hate other work, and get better at what they do often. A reluctant pilot sails worse.</p></div>
+    <div class="card sliver"><div class="k">5 · Three minutes, three friends</div><h3>One story per run</h3><p>Every run has a start, a job, a turn and a landing, with a decision the squad makes together and a moment each player owns.</p></div>
+    <div class="card sliver fire"><div class="k">Rules that stay</div><h3>What this never changes</h3><p>A mode never changes a vessel's kit. PvP is petals only. Every colour comes from the colour set. One HUD layout on every device, current text sizes.</p></div>
+  </div>
+</section>
+
+<!-- ───────────────────────── map ───────────────────────── -->
+<section id="map">
+  <div class="eyebrow">Pillar 1 and 2</div>
+  <h2>The HyperSea, <em>as you sail it</em></h2>
+  <p>The galaxy is one shared, authored map (<code>VOYAGES.md</code> §3). A lane between two places crosses a run of cells. In Milestone 2 <strong>the voyage flies exactly those cells</strong>, in order, with each cell's density and danger taken from the map (<code>HyperSeaCourse.Steps</code>, already used by the escort's course). Five zones give the sea its character and decide which pilots and events you find there.</p>
+  <div class="mapbox sliver">
+    <svg id="bigMap" viewBox="0 0 1000 520" role="img" aria-label="HyperSea zones, places, a course and live events"></svg>
+    <div class="legend">
+      <span><i style="background:var(--jade)"></i>Celadon Reach (Jade home)</span>
+      <span><i style="background:var(--ruby)"></i>Carmine Drift (Ruby home)</span>
+      <span><i style="background:var(--gold)"></i>Aurum Banks (Gold home)</span>
+      <span><i style="background:var(--blue)"></i>The Crossing (contested)</span>
+      <span><i style="background:var(--off)"></i>The Deep (uncharted)</span>
+      <span><i style="background:var(--select)"></i>your course</span>
+      <span><i style="background:var(--danger)"></i>live event</span>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card sliver">
+      <div class="k">Traversal</div>
+      <h3>How a run moves across the map</h3>
+      <p><strong style="color:var(--text)">Places are nodes, lanes are cells.</strong> A run sails one lane: three cells for play (a short-leg answer to <code>VOYAGE_BOARD.md</code> §5 decision 8). The Ark enters each cell through its membrane, crosses it, and leaves toward the next one on the map. Arriving docks the Ark at a real place, which becomes the next run's start, so a session of four runs is a real journey you can trace.</p>
+      <p>A <strong style="color:var(--text)">detour</strong> bends the course one cell sideways into a live event, then rejoins the lane. It costs time on the clock and gives the event's reward.</p>
+    </div>
+    <div class="card sliver">
+      <div class="k">Pause shows the map</div>
+      <h3>Pause, and you are on the chart</h3>
+      <p>Pressing pause in a voyage opens the same HyperSea map the Voyage window draws (<code>VoyageMapGraphic</code>, the foam you shaped), framed on the course: the Ark's live position inside the current cell, the cells behind and ahead, live events beside the lane with their timers, rival crews in range, and the next dock. Pause menu buttons stay where they are; the map is the background panel.</p>
+      <p>In multiplayer the game keeps running while one player looks (a party never freezes), so the map is a quick read, not a menu.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px">Live events in neighbouring cells</h3>
+  <p class="prose">A director keeps one or two events lit beside the course at any time and never lets a player go 20 seconds without something to do or look at. Each event is shown in 3D in the world (a light through the neighbouring membrane, per the LOCKED world-fact rule) and as a mark on the pause map. Each one uses work verbs and fauna the game already has (<code>DEPTH.md</code> §4).</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Event</th><th>What you see</th><th>Detour to…</th><th>Classes that shine</th><th>Timer</th><th>Built from</th></tr></thead>
+      <tbody>
+        <tr><td>Wreck surfaces</td><td>A fallen Ark's hull glows through the membrane</td><td>Strip salvage into your hold before it sinks or a rival strips it</td><td>Cultivator, Destroyer</td><td>60 s</td><td>Wreck, <code>ArkFall</code>, Stow</td></tr>
+        <tr><td>Bloom</td><td>The next cell lights up with crystals and flora</td><td>Harvest crystals for the hold</td><td>Cultivator, Pathfinder</td><td>45 s</td><td>Bloom, Gather</td></tr>
+        <tr><td>Rival crew sighted</td><td>Three hulls in their domain colour, named on the map</td><td>Race them, raid them, or let them pass</td><td>Hunter, Protector</td><td>until they leave</td><td><code>VoyageRivals</code>, relation</td></tr>
+        <tr><td>Distress call</td><td>A stranded crew's flare</td><td>Hold beside the derelict until its crew boards</td><td>Guardian, Protector</td><td>50 s</td><td>Derelict, Hold</td></tr>
+        <tr><td>Predator pack</td><td>Predators gathering, heading for your lane</td><td>Cull them before they reach the Ark, or out-sail them</td><td>Destroyer, Shepherd</td><td>40 s</td><td>Lair, Cull</td></tr>
+        <tr><td>Penned herd</td><td>Fauna trapped behind another domain's mass</td><td>Raze the pen, lead the herd home</td><td>Shepherd, Destroyer</td><td>60 s</td><td>Pen, Raze</td></tr>
+        <tr><td>Kaiju wake</td><td>The Leviathan's shadow in the far cell</td><td>Nothing yet: it is coming. Brace or run</td><td>everyone</td><td>event climax</td><td><code>kaiju</code> (Leviathan)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ───────────────────────── classes ───────────────────────── -->
+<section id="classes">
+  <div class="eyebrow">Pillar 3</div>
+  <h2>The fleet by <em>class</em></h2>
+  <p>Seven voyage classes, sorted from what each vessel's four abilities actually do (<code>Docs/FleetCodex/abilities.json</code>). A class is a label for voyages: missions and events ask for classes, and squads are judged by them. <strong>It never changes a kit.</strong> The escort AI already has roles for five of these (Sparrow destroyer, Squirrel cultivator, Dolphin blaster, Serpent and Scarab guardian); the names here grow from those. Garrett's Brood Rush will measure each vessel's cultivator/destroyer position; where that measurement disagrees, it wins.</p>
+  <div class="grid g3" id="classGrid"></div>
+  <p style="margin-top:14px"><span class="chip ready">voyage AI ready</span>&nbsp; has an escort role today (<code>*Role.cs</code>), so it can fill an empty seat. Other vessels can be flown by a person on a voyage but have no voyage AI yet.</p>
+</section>
+
+<!-- ───────────────────────── pilots ───────────────────────── -->
+<section id="pilots">
+  <div class="eyebrow">Pillar 4</div>
+  <h2>Pilots with <em>opinions</em></h2>
+  <p>The sixteen faction types already split into three domains (<code>DEPTH.md</code> §4). We group them into three <strong>guilds</strong> and give every zone of the sea its own mix, so where you dock decides who you can recruit and who gives you work.</p>
+
+  <div class="grid g3">
+    <div class="card sliver zone" style="--z:var(--jade)"><div class="k" style="color:var(--jade)">Wardens · Jade</div><h3>Keep things standing</h3><p>Aristocrat, Priest, Researcher, Preservationist, First responder, Diplomat.</p><p>Love: hold, tend, rescue, observe. Hate: raze, killing near a nursery.</p></div>
+    <div class="card sliver zone" style="--z:var(--ruby)"><div class="k" style="color:var(--ruby)">Raiders · Ruby</div><h3>Take what is out there</h3><p>Hunter, Pirate, Explorer, Activist, Thief.</p><p>Love: salvage, hunt, survey, liberate. Hate: waiting at a core, courier runs.</p></div>
+    <div class="card sliver zone" style="--z:var(--gold)"><div class="k" style="color:var(--gold)">Traders · Gold</div><h3>Make the sea pay</h3><p>Merchant, Bounty hunter, Gatherer, Contractor, Sport.</p><p>Love: convoy, harvest, bounties, building. Hate: culling, anything with no pay.</p></div>
+  </div>
+
+  <h3 style="margin-top:28px">Who you meet in each zone</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Zone</th><th>Places on the map</th><th>Pilots found here</th><th>Typical events</th><th>Difficulty</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--jade)">Celadon Reach</td><td>Celadon Harbour, Lantern Reach, Verdigris, its Nursery, Deepreed Shrine</td><td>Mostly Wardens; a few Gatherers</td><td>Distress call, bloom, penned herd</td><td>1–4</td></tr>
+        <tr><td style="color:var(--ruby)">Carmine Drift</td><td>Carmine Harbour, The Hollow, Cinder Shoal, Magpie Hollow</td><td>Mostly Raiders; a few Bounty hunters</td><td>Wreck, predator pack, rival crew</td><td>3–6</td></tr>
+        <tr><td style="color:var(--gold)">Aurum Banks</td><td>Aurum Harbour, Saltmarch, Spindrift Shallows, Nine Wells</td><td>Mostly Traders; a few Explorers</td><td>Bloom, convoy trouble, rival crew</td><td>1–4</td></tr>
+        <tr><td style="color:var(--blue)">The Crossing</td><td>Tollmoor, Gullbone Landing, Ironmouth, Glassmere</td><td>Everyone, plus Pirates, Thieves and Bounty hunters</td><td>Rival crews (often), wrecks, bounties</td><td>3–6</td></tr>
+        <tr><td style="color:var(--soft)">The Deep</td><td>The Maw, Gnawreach, Quillmark Derelict, the Ninefold Shell, uncharted places</td><td>Explorers, Researchers, the odd veteran Hunter</td><td>Kaiju wake, predator pack, derelicts</td><td>6–9</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:14px">Zone names are proposals. The places are the 25 in <code>voyage_slice.json</code>; which zone each falls in follows its position on the galaxy and needs your check.</p>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card sliver">
+      <div class="k">Mood</div>
+      <h3>How a pilot feels about this job</h3>
+      <p>Each pilot reads the job card through their guild and faction: <strong style="color:var(--select)">Keen</strong> (their kind of work), <strong style="color:var(--text)">Steady</strong>, <strong style="color:var(--spend)">Reluctant</strong> (not their kind of work), or <strong style="color:var(--danger)">Refuses</strong> (against their ethos: a Preservationist on a cull, a Priest on a raze). A refusing pilot will not take the seat; you swap them or skip the job. Mood also moves with the voyage: a run that pays well or saves the Ark lifts it; losing the hold drops it.</p>
+    </div>
+    <div class="card sliver">
+      <div class="k">Experience</div>
+      <h3>Pilots get good at errands</h3>
+      <p>Every completed job adds to the pilot's count for that work verb (Hold, Stow, Cull, Raze...). Three ranks per verb: <strong style="color:var(--text)">Green</strong>, <strong style="color:var(--text)">Seasoned</strong> (3 jobs), <strong style="color:var(--text)">Veteran</strong> (8 jobs). A veteran salvager on a salvage run is the best seat you can bring. Shown as a small rank pip on the seat card.</p>
+    </div>
+  </div>
+  <div class="card sliver fire" style="margin-top:14px">
+    <div class="k">How mood and experience change performance</div>
+    <h3>Through the pilot, never through the vessel</h3>
+    <p>The LOCKED rule says a mode never changes a kit, so a pilot never touches speed, damage or cooldowns. Instead:</p>
+    <p><strong style="color:var(--text)">When an AI flies the seat:</strong> the pilot sets how well the AI plays. Keen or Veteran plays as a stronger AI; Reluctant plays weaker and more cautious. This fits <code>AI_PLAN.md</code>, where the pilot already biases the seat's AI, and goes into Garrett's queue.<br>
+    <strong style="color:var(--text)">When a person flies the seat:</strong> the pilot's callsign sight (LB) is stronger: a Keen pilot's sight lasts longer and reaches further; a Reluctant one's flickers. Pay and the scoreboard credit the pilot's mood too.</p>
+  </div>
+</section>
+
+<!-- ───────────────────────── mission givers ───────────────────────── -->
+<section id="givers">
+  <div class="eyebrow">Missions and the people who offer them</div>
+  <h2>Givers who tell you <em>what to bring</em></h2>
+  <p>Each job card names its giver (a pilot from the zone you are docked in), what the work is, and the squad the giver recommends, by class. Bring that squad and the pay goes up; bring something else and the voyage still works, it is just harder. Your own pilots react to the card before you set sail. Try it: pick a mission, then change the three seats.</p>
+
+  <div class="fit">
+    <div class="missions" id="missionList" role="group" aria-label="Missions"></div>
+    <div class="panel sliver" id="missionPanel" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ───────────────────────── rivals ───────────────────────── -->
+<section id="rivals">
+  <div class="eyebrow">Rival crews</div>
+  <h2>Someone else wants <em>the same prize</em></h2>
+  <p>Rival crews stop being a tick on a spreadsheet and sail into the run as three AI vessels in their domain, named on arrival and on the pause map. The nine crews in <code>voyage_slice.json</code> already have a faction, three hulls, a strength and a temper; the relation rules (co-op, race, hostile) already exist in <code>VoyageRivals.Relation</code>. No story arc, only named crews that behave like their temper and remember you.</p>
+  <div class="grid g4">
+    <div class="card sliver"><div class="k">Race</div><h3>Same job, first wins</h3><p>They want the same wreck or bloom. Whatever they stow is theirs. Hunters and Pathfinders cut them off.</p></div>
+    <div class="card sliver fire"><div class="k">Hostile</div><h3>They want your hold</h3><p>A Pirate with a tip on your laden Ark breaks Ark mass by the arena rules. Protectors and Guardians hold them off.</p></div>
+    <div class="card sliver"><div class="k">Co-op</div><h3>Three more wings</h3><p>Same domain: they fly escort for a share of the pay. A good run with them makes the next one friendlier.</p></div>
+    <div class="card sliver"><div class="k">Grudge and bounty</div><h3>They remember</h3><p>Beat a crew twice and they come looking for you. Notoriety 3 puts a bounty on your squad in every port.</p></div>
+  </div>
+  <div class="tbl" style="margin-top:14px">
+    <table>
+      <thead><tr><th>Crew</th><th>Faction</th><th>Temper</th><th>Hulls, read as classes</th><th>Home</th></tr></thead>
+      <tbody id="rivalRows"></tbody>
+    </table>
+  </div>
+  <p style="font-size:14px">Player rivals (another party's squad in your cell) are galactic traffic control, V2/V3 in <code>VOYAGES.md</code>. Milestone 2 uses AI crews only.</p>
+</section>
+
+<!-- ───────────────────────── fun ───────────────────────── -->
+<section id="fun">
+  <div class="eyebrow">Pillar 5</div>
+  <h2>Three minutes that are <em>fun with friends</em></h2>
+  <p>Every run is built from the same five beats. The director fills them from the mission, the cells on the course and the events next door. Target: first action within 15 seconds, never more than 20 seconds of nothing, one squad decision, and each player credited for something on the scoreboard.</p>
+  <div class="tl sliver"><svg id="timeline" viewBox="0 0 1000 230" role="img" aria-label="Three minute voyage beat timeline"></svg></div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card sliver"><div class="k">Split the work</div><h3>Three jobs at once</h3><p>Each beat asks for three things at the same time: guard the Ark, work the objective, deal with the event or rival. The class on each seat suggests who does what; nobody is told.</p></div>
+    <div class="card sliver"><div class="k">Shared eyes</div><h3>Callsign sights become pings</h3><p>When you hold LB, your squadmates see a faint echo of what your pilot lights. Three pilots, three sights, one squad that sees the sea. No new button.</p></div>
+    <div class="card sliver"><div class="k">One squad decision</div><h3>The detour vote</h3><p>When an event lights next door, a five-second vote on the D-pad: detour or press on. Ties go to the host. Solo, it is your call.</p></div>
+    <div class="card sliver"><div class="k">Clutch moments</div><h3>Everyone sees the danger</h3><p>Ark breach warnings, a rival grabbing the last salvage, the kaiju wake: shown to the whole squad in the world, so saves are shared moments.</p></div>
+    <div class="card sliver"><div class="k">Credit for everyone</div><h3>A scoreboard of roles</h3><p>End-of-voyage awards by class: Wall of the Voyage (most Ark damage stopped), Top Salvager, Rival Breaker, Herd Master. Every seat earns one line.</p></div>
+    <div class="card sliver"><div class="k">Keep the party together</div><h3>Join at the next cell</h3><p>A friend who joins mid-voyage drops in at the next membrane crossing into an empty seat, replacing its AI.</p></div>
+  </div>
+</section>
+
+<!-- ───────────────────────── milestone 2 ───────────────────────── -->
+<section id="m2">
+  <div class="eyebrow">Milestone 2</div>
+  <h2>Scope and <em>the order to build it</em></h2>
+  <div class="scope">
+    <div class="card sliver">
+      <div class="k">In Milestone 2</div>
+      <ul>
+        <li>Voyages fly the real map: 1 to 6 cells a lane, 3 to 5 minutes on average, real docks, pause shows the map</li>
+        <li>Neighbour-cell event director with 5 events: wreck, bloom, rival crew, distress call, predator pack</li>
+        <li>Seven vessel classes as data, on job cards, seat cards and the Fleet Codex</li>
+        <li>Four missions open: Escort the Ark, Salvage, Bounty, Hold the Core</li>
+        <li>Givers per zone, recommended squads, a squad-fit meter and pay bonus</li>
+        <li>Pilot mood (4 states) and experience (3 ranks per verb), applied to AI seats and callsign sight</li>
+        <li>Rival crews in the world: race, hostile and co-op</li>
+        <li>Multiplayer layer: shared sight echo, detour vote, role awards; a two-device party test</li>
+        <li>Voyage AI roles for three more vessels, so every class has an AI-ready vessel except Shepherd</li>
+      </ul>
+    </div>
+    <div class="card sliver">
+      <div class="k" style="color:var(--soft)">Not in Milestone 2</div>
+      <ul>
+        <li>Lair Hunt, Liberate the Pen and Courier Race missions (designed, stay locked)</li>
+        <li>Penned herd and kaiju wake events (kaiju appears only as a climax at difficulty 7–9 if time allows)</li>
+        <li>Player-versus-player rival squads, galactic traffic control, a networked Ark (V2/V3)</li>
+        <li>Pilot recruitment economy, bunks and promotions beyond mood and rank</li>
+        <li>Shepherd AI (Angler, Jacks, Starling, Jewel Wasp are flown by people only)</li>
+        <li>Sagas and relics, Episodes, the Saga tab</li>
+        <li>Any change to a vessel's kit, or a new HUD layout</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px">Build order</h3>
+  <p class="prose">Each step lands as its own PR into <code>voyages</code> and can be played in Unity on its own. Steps 2 and 3 come first because without them every mission still feels linear.</p>
+  <div class="plan" id="plan"></div>
+
+  <h3 style="margin-top:28px">Done when</h3>
+  <div class="grid g4">
+    <div class="card sliver"><div class="k">Real map</div><p>Four runs in a row trace a real path on the pause map, docking at real places.</p></div>
+    <div class="card sliver"><div class="k">Pacing</div><p>A 3-minute run has a first action by 0:15, no gap over 20 s, and at least one detour offered.</p></div>
+    <div class="card sliver"><div class="k">Choice matters</div><p>A recommended squad clears each mission at difficulty 4; a mismatched one clears it less than half the time.</p></div>
+    <div class="card sliver"><div class="k">Fun with friends</div><p>Three people on two or more devices finish a voyage and each gets a scoreboard award. You decide if it was fun.</p></div>
+  </div>
+</section>
+
+<!-- ───────────────────────── decisions ───────────────────────── -->
+<section class="decisions">
+  <div class="eyebrow">Your calls</div>
+  <h2>Decisions, <em>answered 24 Nov</em></h2>
+  <div class="card sliver" style="margin-bottom:16px"><div class="k" style="color:var(--cta)">Decided by Shombith</div><p style="color:var(--text)">1 The four missions: yes. 2 Salvage collects loose crystals (no wreck stripping). 3 Runs average 3 to 5 minutes over 1 to 6 cells; difficulty is how dangerous the sea is, not time. 4 Class names: good for now. 5 Mood effects as proposed, with refusals. 6 The detour is a vote. 7 Garrett hears about the AI and map parts. Every voyage is written up in the <a href="https://claude.ai/artifact/S4aH7rcMZhd6xrSen9oZSD" style="color:var(--select)">Voyage Codex</a>.</p></div>
+  <ol style="opacity:.7">
+    <li><b>The four missions.</b> Recommended: Escort the Ark, Salvage, Bounty, Hold the Core. Lair Hunt is the alternative to Bounty if rivals slip.</li>
+    <li><b>Salvage's shape.</b> This page treats Salvage as stripping a wreck that surfaces in the lane and carrying it to the hold, not collecting loose crystals. Confirm, or say what you changed it to.</li>
+    <li><b>Lane length.</b> Three cells per run, so a run is three minutes and the map stays true. The real sea puts places 27–62 cells apart today; that needs either more places on the map or lanes measured in "run cells".</li>
+    <li><b>The seven class names.</b> Guardian, Protector, Destroyer, Cultivator, Hunter, Shepherd, Pathfinder. And which class each vessel sits in (Grizzly, Thresher and Dolphin are the borderline ones).</li>
+    <li><b>What a pilot's mood does.</b> Recommended: AI skill rung plus callsign sight strength, never kit numbers. Refusal on or off.</li>
+    <li><b>The detour vote.</b> Five-second D-pad vote with host tie-break, or host decides alone.</li>
+    <li><b>Who else hears about it.</b> The pilot effect on AI goes to Garrett (AI plan); the map traversal touches Garrett's HyperSea work; the vessel classes go to each vessel's owner through <code>/approve</code>.</li>
+  </ol>
+</section>
+
+<p class="foot">Sources read: <code>voyages</code> branch at 248e6d9 (24 Nov 2026): Docs/Voyages (VOYAGES, DEPTH, CRYSTAL_RUN, ARK_ESCORT, HANDOFF), voyage_slice.json (rivals, crew, places), Docs/FleetCodex/abilities.json, Docs/Pilots/CALLSIGNS.md, the escort role scripts and VoyageRaid. Nothing here was playtested. Look: froglet.games and Docs/UI/froglet.css (Deep Sea).</p>
+</div>
+
+<script>
+(function () {
+  const C = { jade: '#21C0BD', ruby: '#BD1BC8', gold: '#FF9B11', blue: '#758FFB', off: '#5C5F70', sel: '#00D4FF', fire: '#FF4B3A', text: '#E6E9FF', soft: '#8D93C2', line: '#2C3366', deep: '#00010A', spend: '#FFAE00' };
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; };
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  /* ── vessels and classes ── */
+  const CLASSES = [
+    { id: 'guardian', name: 'Guardians', short: 'Guardian', what: 'Hold a place: build walls, dig in, make a spot the enemy cannot take.', why: 'Hold the Core, distress calls, anchoring the Ark.', shape: 'M15 3 L27 8 L25 20 L15 28 L5 20 L3 8 Z',
+      v: [['Serpent', 'Seed walls that steal loose prisms; cloak and snipe', 1], ['Grizzly', 'Digs in, refills, and shells whatever comes', 0], ['Shrike', 'Docks to mass, leaves missile nests behind', 0]] },
+    { id: 'protector', name: 'Protectors', short: 'Protector', what: 'Ride with the moving Ark and stop what hits it.', why: 'Escort the Ark, hostile rivals, the way home.', shape: 'M15 3 A12 12 0 1 1 14.9 3 Z M15 9 A6 6 0 1 0 15.1 9 Z',
+      v: [['Orca', 'Rings the hull in super-shielded prisms; four seats', 0], ['Scarab', 'Dash plates shred prisms and debuff raiders; rings deflect', 1], ['Thresher', 'Mass mode shields your own prisms; the ball windmills', 0]] },
+    { id: 'destroyer', name: 'Destroyers', short: 'Destroyer', what: 'Break hostile mass and creatures fast.', why: 'Predator packs, cracking a wreck, clearing the lane.', shape: 'M15 2 L19 11 L28 15 L19 19 L15 28 L11 19 L2 15 L11 11 Z',
+      v: [['Sparrow', 'Cannons and skyburst rockets; restocks by shooting', 1], ['Dolphin', 'Banks skim energy, blasts a cone through mass', 1], ['Swordfish', 'The sword: cuts shielded prisms, ring of blades', 0], ['Rhino', 'The plough: throws prisms clear, ramps to top speed', 0]] },
+    { id: 'cultivator', name: 'Cultivators', short: 'Cultivator', what: 'Make mass and steal it, so the ground becomes yours.', why: 'Salvage, blooms, rebuilding Ark mass.', shape: 'M15 28 L15 12 M15 16 C9 16 6 11 6 6 C11 6 15 9 15 14 M15 14 C15 9 19 5 25 5 C25 11 21 15 15 15',
+      v: [['Squirrel', 'Skims to steal prisms; boost rings; crystal jousts', 1], ['Urchin', 'Chain spikes turn rival prisms into yours; rides rails', 0], ['Tiger Moth', 'Paints a wide wake of prisms; dust steals petals', 0], ['Goby & Pistol', 'Crew vessel: builds dens, pulls mass and crystals in', 0]] },
+    { id: 'hunter', name: 'Hunters', short: 'Hunter', what: 'Fight crews: take petals, plant bombs, lock on.', why: 'Bounties, racing rivals, breaking a raid.', shape: 'M15 3 L15 27 M3 15 L27 15 M15 8 A7 7 0 1 1 14.9 8 Z',
+      v: [['Manta', 'Plants hidden bombs on rivals and creatures; Kabloom', 0], ['Brittle Star', 'Five cords and five guns that strike rival hulls', 0], ['Honeyguide', 'Crew vessel: darts strike every rival along its line', 0]] },
+    { id: 'shepherd', name: 'Shepherds', short: 'Shepherd', what: 'Command fauna: lure, herd, tame and send creatures.', why: 'Penned herds, predator packs, turning the sea’s life on raiders.', shape: 'M6 22 C6 10 24 10 24 22 M10 22 L10 26 M20 22 L20 26 M15 6 L15 12',
+      v: [['Angler', 'Lures and tames herbivores, throws its school', 0], ['Jacks', 'Two jacks herd real fauna; danger share stings', 0], ['Starling', 'The swarm roams; pick cards to arm or build', 0], ['Jewel Wasp', 'Stings a creature and rides it', 0]] },
+    { id: 'pathfinder', name: 'Pathfinders', short: 'Pathfinder', what: 'Open the sea: tunnels, slingshots, short cuts and speed.', why: 'Detours on time, races, reaching the event first.', shape: 'M3 22 C9 22 9 8 15 8 C21 8 21 22 27 22 M23 18 L27 22 L23 26',
+      v: [['Meerkat', 'Bends wormhole tunnels anyone can ride', 0], ['Stoat', 'Orbit slingshots; ripples strip petals', 0], ['Wrasse', 'Crew vessel: the kite saves boosts for the Grouper', 0]] },
+  ];
+  const vClass = {}; CLASSES.forEach(c => c.v.forEach(v => vClass[v[0]] = c));
+  const grid = document.getElementById('classGrid');
+  CLASSES.forEach(c => {
+    const d = document.createElement('div'); d.className = 'cls sliver';
+    d.innerHTML = `<h3><svg class="glyph" viewBox="0 0 30 30" aria-hidden="true"><path d="${c.shape}" fill="none" stroke="${C.sel}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>${c.name}</h3>
+      <p class="what">${c.what}</p><p class="why"><span class="tag">Wanted for</span> ${c.why}</p>
+      <div class="vrow">${c.v.map(v => `<div><b>${v[0]}${v[2] ? ' <span class="chip ready" style="padding:2px 5px;font-size:10px">AI</span>' : ''}</b><span>${v[1]}</span></div>`).join('')}</div>`;
+    grid.appendChild(d);
+  });
+  document.getElementById('mq').innerHTML = (() => { const s = CLASSES.map(c => `<span><b>${c.name}</b> ${c.v.map(v => v[0]).join(' · ')}</span>`).join(''); return s + s; })();
+
+  /* ── rivals ── */
+  const RIV = [['Black Tide', 'Pirate', 'Ruby', 'Bold', ['Serpent', 'Sparrow', 'Squirrel'], 'Gullbone Landing'], ['The Rusted Grin', 'Pirate', 'Ruby', 'Greedy', ['Dolphin', 'Serpent', 'Rhino'], 'Gullbone Landing'], ['Longwake Lodge', 'Hunter', 'Ruby', 'Careful', ['Squirrel', 'Sparrow', 'Manta'], ''], ['The Quiet Spear', 'Hunter', 'Ruby', 'Bold', ['Sparrow', 'Sparrow', 'Dolphin'], ''], ['Brass Lantern Company', 'Merchant', 'Gold', 'Careful', ['Rhino', 'Manta', 'Dolphin'], ''], ['Writ and Hook', 'Bounty hunter', 'Gold', 'Greedy', ['Sparrow', 'Squirrel', 'Serpent'], ''], ['House Verdance', 'Aristocrat', 'Jade', 'Careful', ['Rhino', 'Manta', 'Scarab'], ''], ['Far Shoal Society', 'Explorer', 'Ruby', 'Bold', ['Manta', 'Squirrel', 'Dolphin'], ''], ['Driftnet Cooperative', 'Gatherer', 'Gold', 'Careful', ['Manta', 'Manta', 'Rhino'], '']];
+  const dc = { Ruby: C.ruby, Gold: C.gold, Jade: C.jade };
+  document.getElementById('rivalRows').innerHTML = RIV.map(r => `<tr><td>${r[0]}</td><td><span style="color:${dc[r[2]]}">${r[2]}</span> ${r[1]}</td><td>${r[3]}</td><td>${r[4].map(h => `${h} <span style="color:var(--off)">(${vClass[h] ? vClass[h].short : '?'})</span>`).join(', ')}</td><td>${r[5] || '<span style="color:var(--off)">see slice</span>'}</td></tr>`).join('');
+
+  /* ── missions ── */
+  const PILOTS = [
+    { n: 'Brisk Amadou', f: 'Hunter', g: 'Raiders', cs: 'TALON', love: ['cull', 'stow', 'meet'], hate: ['hold'], refuse: [], xp: { cull: 9, stow: 2 } },
+    { n: 'Cass Morrow', f: 'Pirate', g: 'Raiders', cs: 'GALLEON', love: ['stow'], hate: ['hold', 'arrive'], refuse: [], xp: { stow: 5 } },
+    { n: 'Warden Sorrel', f: 'Preservationist', g: 'Wardens', cs: 'IVY', love: ['hold'], hate: ['meet'], refuse: ['cull', 'raze'], xp: { hold: 4 } },
+    { n: 'Marshal Edda Kroll', f: 'Aristocrat', g: 'Wardens', cs: 'RAMPART', love: ['hold', 'escort'], hate: ['stow'], refuse: [], xp: { hold: 8, escort: 3 } },
+    { n: 'Juno Rask', f: 'Bounty hunter', g: 'Traders', cs: 'BANDIT', love: ['meet'], hate: ['hold'], refuse: [], xp: { meet: 3 } },
+    { n: 'Merrin Tal', f: 'Merchant', g: 'Traders', cs: 'VOLT', love: ['escort', 'arrive'], hate: ['cull'], refuse: [], xp: { escort: 1 } },
+    { n: 'Captain Theo Lark', f: 'First responder', g: 'Wardens', cs: 'WINGMAN', love: ['escort', 'hold'], hate: [], refuse: [], xp: { escort: 6 } },
+  ];
+  const MISSIONS = [
+    { id: 'escort', name: 'Escort the Ark', st: 'm2', verb: 'escort', giver: 'Captain Theo Lark', gfac: 'First responder · Jade', col: C.jade,
+      line: 'Three cells of hostile water and the Ark carries everything we own. Bring walls and shields.', rec: ['protector', 'guardian', 'destroyer'],
+      sum: 'Keep the moving Ark above the breach line across three hostile cells.', beats: ['Cast off from the harbour', 'Fauna start gnawing the hull', 'Rival raid or predator pack next door', 'Assault wave on the last cell', 'Berth; Ark hull % is the score'] },
+    { id: 'salvage', name: 'Salvage', st: 'm2', verb: 'stow', giver: 'Cass Morrow', gfac: 'Pirate · Ruby', col: C.ruby,
+      line: 'An Ark went down in the Crossing. Crack her open before the Grin does, and bring cutters.', rec: ['destroyer', 'cultivator', 'protector'],
+      sum: 'A wreck surfaces mid-lane. Crack its hull, carry salvage into the Ark’s hold, and get it home. Was Crystal Run.', beats: ['Sail into the lane', 'Wreck surfaces in cell 2', 'Rival crew arrives to race you', 'Wreck sinks; last haul under fire', 'Dock to bank the hold'] },
+    { id: 'bounty', name: 'Bounty', st: 'm2', verb: 'meet', giver: 'Juno Rask', gfac: 'Bounty hunter · Gold', col: C.gold,
+      line: 'Black Tide is two cells out and running. I want their hulls broken, not their story.', rec: ['hunter', 'pathfinder', 'destroyer'],
+      sum: 'Track a named rival crew across the lane and break them before they reach their port.', beats: ['Their wake shows on the map', 'Catch them in cell 2', 'They split; one runs for a tunnel', 'Last stand at the membrane', 'Bounty paid; grudge +1'] },
+    { id: 'hold', name: 'Hold the Core', st: 'm2', verb: 'hold', giver: 'Marshal Edda Kroll', gfac: 'Aristocrat · Jade', col: C.jade,
+      line: 'Ironmouth’s core is wavering. Anchor there and hold it for sixty seconds. Builders first.', rec: ['guardian', 'cultivator', 'protector'],
+      sum: 'Sail to a core under pressure, anchor the Ark and hold the radius for 60 seconds against waves.', beats: ['Sail to the core', 'Anchor; build the ring', 'Wave 1 and a distress call next door', 'Wave 2 with a rival', 'Core holds; pressure drops'] },
+    { id: 'lair', name: 'Lair Hunt', st: 'later', verb: 'cull', giver: 'Brisk Amadou', gfac: 'Hunter · Ruby', col: C.ruby,
+      line: 'The Maw is crawling. Bring guns and something that can make them come to you.', rec: ['destroyer', 'shepherd', 'hunter'],
+      sum: 'Cull predators at a lair; the pack leader is the climax.', beats: ['Into the Deep', 'Packs gather', 'Lure them off the Ark', 'Pack leader rises', 'Haul the hearts home'] },
+    { id: 'pen', name: 'Liberate the Pen', st: 'later', verb: 'raze', giver: 'Sable Okoye', gfac: 'Activist · Ruby', col: C.ruby,
+      line: 'They fence the herds in with their mass. Burn the fence and walk them home.', rec: ['shepherd', 'destroyer', 'cultivator'],
+      sum: 'Raze another domain’s pen and lead the freed herd to a nursery.', beats: ['Find the pen', 'Raze the walls', 'The owners arrive', 'Lead the herd', 'Herd reaches the nursery'] },
+    { id: 'race', name: 'Courier Race', st: 'later', verb: 'arrive', giver: 'Merrin Tal', gfac: 'Merchant · Gold', col: C.gold,
+      line: 'First dispatch to Tollmoor sets the price. Second gets nothing.', rec: ['pathfinder', 'protector', 'hunter'],
+      sum: 'Beat a rival courier to the port, using tunnels and slingshots, Ark intact.', beats: ['Start side by side', 'Tunnel short cut', 'Rival cuts across', 'Last cell sprint', 'Dock first'] },
+  ];
+  const VESSELS = Object.keys(vClass).sort();
+  const seats = ['Sparrow', 'Squirrel', 'Dolphin'];
+  const seatPilots = ['Brisk Amadou', 'Warden Sorrel', 'Merrin Tal'];
+  let cur = MISSIONS[1];
+  const list = document.getElementById('missionList');
+  MISSIONS.forEach(m => {
+    const b = document.createElement('button'); b.className = 'mbtn sliver-s'; b.type = 'button'; b.id = 'm-' + m.id;
+    b.innerHTML = `<b>${m.name}</b><span class="st ${m.st}">${m.st === 'm2' ? 'Milestone 2' : 'Later'}</span><small>${m.sum}</small>`;
+    b.addEventListener('click', () => { cur = m; render(); });
+    list.appendChild(b);
+  });
+  const panel = document.getElementById('missionPanel');
+  function moodOf(p, m) {
+    if (p.refuse.includes(m.verb)) return ['Refuses', 'ref'];
+    if (p.love.includes(m.verb)) return ['Keen', 'keen'];
+    if (p.hate.includes(m.verb)) return ['Reluctant', 'rel'];
+    return ['Steady', ''];
+  }
+  function rank(p, m) { const n = (p.xp[m.verb] || 0); return n >= 8 ? 'Veteran' : n >= 3 ? 'Seasoned' : 'Green'; }
+  function render() {
+    MISSIONS.forEach(m => document.getElementById('m-' + m.id).setAttribute('aria-pressed', m === cur ? 'true' : 'false'));
+    const g = PILOTS.find(p => p.n === cur.giver) || { n: cur.giver };
+    const initials = cur.giver.split(' ').map(w => w[0]).slice(-2).join('');
+    const rec = cur.rec.map(id => CLASSES.find(c => c.id === id));
+    const have = seats.map(v => vClass[v].id);
+    let fit = 0; const left = have.slice();
+    rec.forEach((c, i) => { const k = left.indexOf(c.id); if (k >= 0) { fit += i === 0 ? 40 : 30; left.splice(k, 1); } });
+    const moods = seatPilots.map(n => { const p = PILOTS.find(x => x.n === n); const [m, cls] = moodOf(p, cur); return { p, m, cls, r: rank(p, cur) }; });
+    const pay = fit >= 100 ? '+50%' : fit >= 70 ? '+25%' : fit >= 40 ? '+10%' : 'base';
+    const opt = (sel, arr) => arr.map(v => `<option${v === sel ? ' selected' : ''}>${v}</option>`).join('');
+    panel.innerHTML = `
+      <div class="tag">${cur.st === 'm2' ? 'Milestone 2 mission' : 'Designed, locked in Milestone 2'}</div>
+      <h3 style="margin-top:6px">${cur.name}</h3>
+      <div class="giver sliver-s"><div class="av sliver-s" style="background:${cur.col}">${initials}</div><div><div style="font-size:13px;color:var(--soft)">${cur.giver} · ${cur.gfac}</div><q>${cur.line}</q></div></div>
+      <div class="tag">Recommended squad</div>
+      <div class="chips">${rec.map((c, i) => `<span class="chip${i === 0 ? ' ready' : ''}">${c.short}${i === 0 ? ' (lead)' : ''}</span>`).join('')}</div>
+      <div class="seatpick">${[0, 1, 2].map(i => `<label for="seat${i}">Seat ${i + 1}<select id="seat${i}" data-seat="${i}">${opt(seats[i], VESSELS)}</select><span style="text-transform:none;letter-spacing:0">${vClass[seats[i]].short}</span></label>`).join('')}</div>
+      <div class="fitline"><span>Squad fit</span><b>${fit}%</b></div>
+      <div class="meter"><span style="width:${fit}%"></span></div>
+      <div class="fitline"><span>Pay bonus from fit</span><b style="font-size:15px">${pay}</b></div>
+      <div class="tag" style="margin-top:16px">Your pilots on this job</div>
+      <div class="moods">${[0, 1, 2].map(i => `<div><label for="pil${i}" style="flex:1;min-width:0"><select id="pil${i}" data-pil="${i}">${opt(seatPilots[i], PILOTS.map(p => p.n))}</select></label><span class="${moods[i].cls}" style="min-width:110px;text-align:right">${moods[i].m} · ${moods[i].r}</span></div>`).join('')}</div>
+      <div class="beats">${cur.beats.map((b, i) => `<div><b>${['0:00 Cast off', '0:15 Cell 1', '1:00 Cell 2', '1:50 Cell 3', '2:40 Dock'][i]}</b>${b}</div>`).join('')}</div>`;
+    panel.querySelectorAll('select[data-seat]').forEach(s => s.addEventListener('change', e => { seats[+e.target.dataset.seat] = e.target.value; render(); document.getElementById(e.target.id).focus(); }));
+    panel.querySelectorAll('select[data-pil]').forEach(s => s.addEventListener('change', e => { seatPilots[+e.target.dataset.pil] = e.target.value; render(); document.getElementById(e.target.id).focus(); }));
+  }
+  render();
+
+  /* ── plan ── */
+  const PLAN = [
+    { t: 'Lock the design', d: 'Your answers to the decisions at the bottom of this page, written into Docs/Voyages/MILESTONE_2.md.', l: ['Class per vessel and mission list as data in voyage_slice.json', 'Zones as a field on each place'], who: 'Shombith', touch: 'Docs/Voyages, voyage_slice.json', test: 'author_voyage_assets.py --check' },
+    { t: 'Fly the real map', d: 'A run’s cells are the lane’s cells from HyperSeaCourse.Steps, three per lane; the Ark docks at the real place it reached.', l: ['Replace the pool-filled leg (VoyageRaid.CellsFor) with the course', 'Each cell’s config from its density and danger', 'Pause menu shows VoyageMapGraphic framed on the course with a live Ark marker'], who: 'Voyages lane; tell Garrett (HyperSea)', touch: 'VoyageRaid, VoyageRun, VoyageChart, PauseMenuAction', test: 'Four runs trace a path on the pause map' },
+    { t: 'Events next door', d: 'A director lights one or two events in cells beside the course, shown through the membrane and on the map. Detour bends the course one cell.', l: ['Event table in data: wreck, bloom, rival crew, distress call, predator pack', 'Pacing rule: nobody idle over 20 s', 'Detour cost on the clock, reward on arrival'], who: 'Voyages lane', touch: 'New VoyageDirector beside VoyageRun; uses Wreck, Bloom, Derelict, Lair', test: 'Every 3-minute run offers at least one detour' },
+    { t: 'Vessel classes in the UI', d: 'Class chip on the seat card, the job card’s recommended squad, the squad-fit meter and its pay bonus. Fleet Codex shows the class.', l: ['Frogma round first (job card + seat card)', 'Same HUD; no new in-flight UI'], who: 'Voyages lane; vessel owners via /approve', touch: 'VoyageJobsView, VoyageSeats, Fleet Codex', test: 'Card shows class and fit for every vessel' },
+    { t: 'Salvage, Bounty, Hold the Core', d: 'Three missions on the existing verbs (Stow, Meet, Hold) with the five-beat shape, plus Escort the Ark kept. Each opened in openJobs.', l: ['Salvage: Crystal Run renamed, loose crystal drift through every cell', 'Bounty: needs step 7’s rivals in the world', 'Hold the Core: anchor, ring, two waves'], who: 'Voyages lane', touch: 'voyage_slice.json jobs, VoyageRun.*, VoyageToyDefinitionSO.openJobs', test: 'Each mission finishes at difficulty 4 in 3 to 5 minutes' },
+    { t: 'Pilots: zones, mood, experience', d: 'Givers come from the docked zone; each seat shows its pilot’s mood and rank; refusals block the seat.', l: ['Mood from guild likes and dislikes per verb', 'Experience counted per verb in the saved pilot record', 'AI seat skill rung and callsign sight strength from mood and rank'], who: 'Voyages lane; Garrett for the AI plan step', touch: 'VoyageState, VoyageStore, pilot records, AI seat setup', test: 'A Keen veteran AI seat outscores a Reluctant green one' },
+    { t: 'Rival crews in the world', d: 'Rival crews met on the course spawn as three AI vessels in their domain, named, with race, hostile or co-op behaviour and grudges.', l: ['Spawn from VoyageRivals.StandingAt on cell entry', 'Hulls use the existing escort roles', 'Grudge and notoriety written back to the record'], who: 'Voyages lane', touch: 'VoyageRivals, VoyageRun, ArkEscort roles', test: 'Black Tide races you to a wreck and can win' },
+    { t: 'AI for more classes', d: 'Escort roles for Orca or Thresher (Protector), Manta (Hunter) and Meerkat (Pathfinder), so empty seats and rivals can be any class but Shepherd.', l: ['Named plan steps in AI_PLAN; no compute while Compute is paused'], who: 'Garrett / Yash queue (AI)', touch: 'Controller/Voyages/*Role.cs', test: 'Each role keeps the Ark above breach at difficulty 4 in the escort sim' },
+    { t: 'The multiplayer layer', d: 'Shared callsign echo, detour vote, role awards on the scoreboard, join at the next cell. Then the first real two-device party test.', l: ['Party already follows the host’s course (VoyageCourseLink)', 'Awards reuse the scoreboard’s rows'], who: 'Voyages lane; multiplayer doc owners informed', touch: 'VoyageCourse, scoreboard, callsign sight', test: 'Three people, two devices, one full voyage, three awards' },
+    { t: 'Play it and tune', d: 'You play each mission with friends; we tune pacing, pay and event timers from what you feel and from the run reports.', l: ['Run reports per voyage: time to first action, idle gaps, detours taken'], who: 'Shombith plays; sessions tune', touch: 'Voyage.asset, voyage_slice.json', test: 'You call it fun' },
+  ];
+  document.getElementById('plan').innerHTML = PLAN.map((p, i) => `<div class="step"><div class="n">${String(i + 1).padStart(2, '0')}</div><div><h3>${p.t}</h3><p>${p.d}</p><ul>${p.l.map(x => `<li>${x}</li>`).join('')}</ul></div><div class="side"><b>Who</b>${p.who}<b>Touches</b>${p.touch}<b>Done when</b>${p.test}</div></div>`).join('');
+
+  /* ── maps ── */
+  function foam(svg, w, h, n, colorAt, r0) {
+    const g = el('g', {}, svg); const pts = [];
+    for (let i = 0; i < n; i++) { const x = rnd() * w, y = rnd() * h; pts.push([x, y]); }
+    pts.forEach(([x, y]) => { const c = colorAt(x, y); el('circle', { cx: x, cy: y, r: r0 * (0.75 + rnd() * 0.5), fill: c, 'fill-opacity': 0.07, stroke: c, 'stroke-opacity': 0.35, 'stroke-width': 1 }, g); el('circle', { cx: x, cy: y, r: 1.6, fill: c, 'fill-opacity': 0.6 }, g); });
+    return pts;
+  }
+  // hero: one course of three cells + neighbours
+  (function hero() {
+    const s = document.getElementById('heroMap'); seed = 11;
+    el('rect', { x: 0, y: 0, width: 520, height: 330, fill: C.deep }, s);
+    foam(s, 520, 330, 55, () => C.line, 26);
+    const cells = [[70, 230], [190, 170], [320, 150], [445, 95]];
+    const nb = [[200, 270, 'RIVAL CREW', C.ruby], [330, 60, 'WRECK', C.fire], [440, 210, 'BLOOM', C.gold]];
+    nb.forEach(([x, y, t, c]) => { el('circle', { cx: x, cy: y, r: 40, fill: c, 'fill-opacity': 0.08, stroke: c, 'stroke-width': 1.2, 'stroke-dasharray': '3 4' }, s); el('circle', { cx: x, cy: y, r: 5, fill: c }, s); el('text', { x: x, y: y + 58, 'text-anchor': 'middle', fill: c, 'font-size': 11, 'font-family': 'Chakra Petch', 'letter-spacing': '.12em' }, s, t); });
+    el('path', { d: 'M330 150 Q345 110 330 70', fill: 'none', stroke: C.fire, 'stroke-width': 1.5, 'stroke-dasharray': '5 5' }, s);
+    el('text', { x: 352, y: 128, fill: C.fire, 'font-size': 10, 'font-family': 'Chakra Petch' }, s, 'detour?');
+    const d = 'M' + cells.map(c => c.join(' ')).join(' L');
+    el('path', { d, fill: 'none', stroke: C.sel, 'stroke-width': 2.5 }, s);
+    cells.forEach(([x, y], i) => { el('circle', { cx: x, cy: y, r: 34, fill: C.sel, 'fill-opacity': i === 1 ? 0.14 : 0.05, stroke: C.sel, 'stroke-opacity': 0.7, 'stroke-width': 1.2 }, s); });
+    el('text', { x: 70, y: 285, 'text-anchor': 'middle', fill: C.soft, 'font-size': 11, 'font-family': 'Chakra Petch', 'letter-spacing': '.1em' }, s, 'TOLLMOOR');
+    el('text', { x: 445, y: 48, 'text-anchor': 'middle', fill: C.soft, 'font-size': 11, 'font-family': 'Chakra Petch', 'letter-spacing': '.1em' }, s, 'GLASSMERE');
+    const ark = el('g', { transform: 'translate(190 170)' }, s);
+    el('path', { d: 'M-9 6 L0 -10 L9 6 Z', fill: C.text }, ark);
+    el('text', { x: 190, y: 222, 'text-anchor': 'middle', fill: C.text, 'font-size': 11, 'font-family': 'Chakra Petch', 'letter-spacing': '.1em' }, s, 'ARK · CELL 1 OF 3');
+  })();
+  // big map with zones
+  (function big() {
+    const s = document.getElementById('bigMap'); seed = 3;
+    el('rect', { x: 0, y: 0, width: 1000, height: 520, fill: C.deep }, s);
+    const Z = [{ c: C.jade, x: 170, y: 130, n: 'CELADON REACH' }, { c: C.ruby, x: 170, y: 410, n: 'CARMINE DRIFT' }, { c: C.gold, x: 560, y: 440, n: 'AURUM BANKS' }, { c: C.blue, x: 460, y: 250, n: 'THE CROSSING' }, { c: C.off, x: 850, y: 170, n: 'THE DEEP' }];
+    const zc = (x, y) => { let b = Z[0], bd = 1e9; Z.forEach(z => { const d = (z.x - x) ** 2 + (z.y - y) ** 2; if (d < bd) { bd = d; b = z; } }); return b.c; };
+    foam(s, 1000, 520, 260, zc, 20);
+    Z.forEach(z => el('text', { x: z.x, y: z.y, 'text-anchor': 'middle', fill: z.c, 'font-size': 15, 'font-family': 'Aldrich', 'letter-spacing': '.14em', opacity: 0.95 }, s, z.n));
+    const places = [[110, 90, 'Celadon Harbour'], [300, 175, 'Lantern Reach'], [110, 460, 'Carmine Harbour'], [640, 480, 'Aurum Harbour'], [470, 300, 'Tollmoor'], [380, 360, 'Gullbone'], [610, 210, 'Glassmere'], [800, 110, 'The Maw'], [860, 300, 'Quillmark']];
+    places.forEach(([x, y, n]) => { el('rect', { x: x - 5, y: y - 5, width: 10, height: 10, fill: C.text, transform: `rotate(45 ${x} ${y})` }, s); el('text', { x: x + 10, y: y + 4, fill: C.text, 'font-size': 12, 'font-family': 'Chakra Petch' }, s, n); });
+    const course = [[300, 175], [360, 215], [420, 255], [470, 300]];
+    const course2 = [[470, 300], [530, 270], [575, 240], [610, 210]];
+    [course, course2].forEach((cs, k) => { el('path', { d: 'M' + cs.map(c => c.join(' ')).join(' L'), fill: 'none', stroke: C.sel, 'stroke-width': 3, 'stroke-dasharray': k ? '6 5' : '' }, s); cs.slice(1, -1).forEach(([x, y]) => el('circle', { cx: x, cy: y, r: 17, fill: 'none', stroke: C.sel, 'stroke-width': 1.5 }, s)); });
+    el('text', { x: 330, y: 150, fill: C.sel, 'font-size': 11, 'font-family': 'Chakra Petch' }, s, 'run 1: 3 cells');
+    el('text', { x: 560, y: 300, fill: C.sel, 'font-size': 11, 'font-family': 'Chakra Petch' }, s, 'run 2 (venture further)');
+    [[400, 180, 'wreck'], [350, 280, 'rival crew'], [560, 190, 'bloom']].forEach(([x, y, t]) => { el('circle', { cx: x, cy: y, r: 9, fill: C.fire, 'fill-opacity': .25, stroke: C.fire, 'stroke-width': 1.5 }, s); el('circle', { cx: x, cy: y, r: 3, fill: C.fire }, s); el('text', { x: x + 13, y: y + 4, fill: C.fire, 'font-size': 11, 'font-family': 'Chakra Petch' }, s, t); });
+    const ark = el('g', { transform: 'translate(360 215)' }, s); el('path', { d: 'M-8 6 L0 -9 L8 6 Z', fill: C.text }, ark);
+  })();
+  // timeline
+  (function tl() {
+    const s = document.getElementById('timeline'); const X = t => 40 + t / 180 * 920;
+    const beats = [[0, 15, 'CAST OFF', 'Giver’s line, objective box, the Ark leaves port'], [15, 60, 'CELL 1 · APPROACH', 'Warm-up action; the first event lights next door'], [60, 110, 'CELL 2 · THE JOB', 'Main objective; a rival crew arrives at ~1:20'], [110, 160, 'CELL 3 · THE TURN', 'Detour vote or press on; the climax'], [160, 180, 'DOCK', 'Scoreboard, awards, Venture further / Finish']];
+    beats.forEach(([a, b, t, d], i) => {
+      el('rect', { x: X(a), y: 40, width: X(b) - X(a) - 3, height: 46, fill: i === 2 || i === 3 ? C.sel : C.line, 'fill-opacity': i === 2 || i === 3 ? 0.22 : 0.6 }, s);
+      el('text', { x: X(a) + 8, y: 60, fill: C.text, 'font-size': 12, 'font-family': 'Chakra Petch', 'font-weight': 600, 'letter-spacing': '.08em' }, s, i === 0 || i === 4 ? t.split(' ')[0] : t);
+      const tx = el('text', { x: X(a) + 8, y: 78, fill: C.soft, 'font-size': 11, 'font-family': 'Chakra Petch' }, s, i === 0 || i === 4 ? '' : d);
+    });
+    // intensity curve
+    const pts = [[0, .15], [15, .3], [40, .45], [60, .4], [80, .65], [100, .7], [110, .55], [130, .8], [150, 1], [160, .5], [180, .2]];
+    el('path', { d: 'M' + pts.map(([t, v]) => `${X(t)} ${205 - v * 90}`).join(' L'), fill: 'none', stroke: C.spend, 'stroke-width': 2 }, s);
+    el('text', { x: X(150) + 6, y: 112, fill: C.spend, 'font-size': 11, 'font-family': 'Chakra Petch' }, s, 'intensity');
+    [[45, 'event lights'], [80, 'rival'], [115, 'vote'], [150, 'climax']].forEach(([t, l]) => { el('line', { x1: X(t), x2: X(t), y1: 95, y2: 210, stroke: C.fire, 'stroke-dasharray': '3 4' }, s); el('text', { x: X(t) + 4, y: 224, fill: C.fire, 'font-size': 11, 'font-family': 'Chakra Petch' }, s, l); });
+    for (let t = 0; t <= 180; t += 30) el('text', { x: X(t), y: 30, fill: C.off, 'font-size': 11, 'font-family': 'Chakra Petch', 'text-anchor': 'middle' }, s, `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
+  })();
+})();
+</script>
