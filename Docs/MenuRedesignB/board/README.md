@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-23 from canvas version `1795406768-c5d4` of **Frogma**: Rev 41 to Rev 129, 342 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795522511-7239` of **Frogma**: Rev 41 to Rev 141, 445 boards on 17 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -201,14 +201,14 @@ Copied on 2026-11-23 from canvas version `1795406768-c5d4` of **Frogma**: Rev 41
 
 #### Rev 127 - Avatar borders that sit on the domain halo: six animated rings
 
-- `R127Compare.dc.html` (not copied yet) - Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold
-- `R127A.dc.html` (not copied yet) - Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive
-- `R127B.dc.html` (not copied yet) - Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive
-- `R127C.dc.html` (not copied yet) - Rev 127 C - Dial: two counter-turning segmented rings - interactive
-- `R127D.dc.html` (not copied yet) - Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive
-- `R127E.dc.html` (not copied yet) - Rev 127 E - Current: a turning gradient ring with its own glow - interactive
-- `R127F.dc.html` (not copied yet) - Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive
-- `R127Notes.dc.html` (not copied yet) - Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick
+- [`R127Compare.dc.html`](R127Compare.dc.html) - Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold
+- [`R127A.dc.html`](R127A.dc.html) - Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive
+- [`R127B.dc.html`](R127B.dc.html) - Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive
+- [`R127C.dc.html`](R127C.dc.html) - Rev 127 C - Dial: two counter-turning segmented rings - interactive
+- [`R127D.dc.html`](R127D.dc.html) - Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive
+- [`R127E.dc.html`](R127E.dc.html) - Rev 127 E - Current: a turning gradient ring with its own glow - interactive
+- [`R127F.dc.html`](R127F.dc.html) - Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive
+- [`R127Notes.dc.html`](R127Notes.dc.html) - Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick
 
 #### Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle
 
@@ -340,57 +340,82 @@ Copied on 2026-11-23 from canvas version `1795406768-c5d4` of **Frogma**: Rev 41
 
 ### Tab: Ark  (`ark`)
 
+#### Rev 141 - The Squads tab started again: the vessels in the room and on screen, press the vessel itself, a slim foot
+
+- [`R141Compare.dc.html`](R141Compare.dc.html) - Rev 141 - one seat picked in A, B and C beside the build
+- [`R141A.dc.html`](R141A.dc.html) - Rev 141 A - Line abreast: the three hulls stand side by side across the floor; press one and the view walks up to it (recommended) - interactive
+- [`R141B.dc.html`](R141B.dc.html) - Rev 141 B - The holo table: the vessels as holograms over one table in the middle of the room - interactive
+- [`R141C.dc.html`](R141C.dc.html) - Rev 141 C - One bay: one vessel at a time, big on the centre pad, the other two seats beside it - interactive
+- [`R141Notes.dc.html`](R141Notes.dc.html) - Rev 141 - notes: what was broken, what each option changes, the recommendation
+
+#### Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways
+
+- `R140Compare.dc.html` (not copied yet) - Rev 140 - Compare: what happens when you touch Hydra, in each option
+- `R140A.dc.html` (not copied yet) - Rev 140 A - Lit where it stands: touch it, its pedestal lights, the words hang beside it - interactive
+- `R140B.dc.html` (not copied yet) - Rev 140 B - Step up to it: touch it and the view walks in to its pedestal - interactive
+- `R140C.dc.html` (not copied yet) - Rev 140 C - Written on the floor: the words lie on the deck in front of it - interactive
+- `R140D.dc.html` (not copied yet) - Rev 140 D - The column shows it: touch it and the light column plays what it does (recommended) - interactive
+- `R140Notes.dc.html` (not copied yet) - Rev 140 - Notes: what changes, what stays, what each costs to build
+
+#### Rev 139 - The Converter redrawn: the pier stays, the UI starts again, and CONVERT plays at once
+
+- `R139Compare.dc.html` (not copied yet) - Rev 139 - the convert moment of A, B and C side by side, frame by frame
+- `R139A.dc.html` (not copied yet) - Rev 139 A - Light paths: the five readings in one quiet line at the foot; on CONVERT each crystal's path lights up to the pad - interactive
+- `R139B.dc.html` (not copied yet) - Rev 139 B - Glass orb: the converter as a small glass sphere at the foot, the four inside fuse into the omni - interactive
+- `R139C.dc.html` (not copied yet) - Rev 139 C - The pad is the button: press the pier's own ring; the counts are one line at the foot (recommended) - interactive
+- `R139Notes.dc.html` (not copied yet) - Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build
+
 #### Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models
 
-- `R110B.dc.html` (not copied yet) - Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive
-- `R110Notes.dc.html` (not copied yet) - Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked
+- [`R110B.dc.html`](R110B.dc.html) - Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive
+- [`R110Notes.dc.html`](R110Notes.dc.html) - Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked
 
 #### Rev 109 - The crew PDA itself, redesigned: three devices from the Ark for the hangar bench
 
-- `R109Compare.dc.html` (not copied yet) - Rev 109 - the three devices lying on the bench and held up, beside the built slab
-- `R109A.dc.html` (not copied yet) - Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive
-- `R109B.dc.html` (not copied yet) - Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive
-- `R109C.dc.html` (not copied yet) - Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive
-- `R109Notes.dc.html` (not copied yet) - Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes
+- [`R109Compare.dc.html`](R109Compare.dc.html) - Rev 109 - the three devices lying on the bench and held up, beside the built slab
+- [`R109A.dc.html`](R109A.dc.html) - Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive
+- [`R109B.dc.html`](R109B.dc.html) - Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive
+- [`R109C.dc.html`](R109C.dc.html) - Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive
+- [`R109Notes.dc.html`](R109Notes.dc.html) - Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes
 
 #### Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges
 
-- `R106Compare.dc.html` (not copied yet) - Rev 106 - one seat at rest and open, in the build and in A, B and C
-- `R106A.dc.html` (not copied yet) - Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive
-- `R106B.dc.html` (not copied yet) - Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive
-- `R106C.dc.html` (not copied yet) - Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive
-- `R106Notes.dc.html` (not copied yet) - Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen
+- [`R106Compare.dc.html`](R106Compare.dc.html) - Rev 106 - one seat at rest and open, in the build and in A, B and C
+- [`R106A.dc.html`](R106A.dc.html) - Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive
+- [`R106B.dc.html`](R106B.dc.html) - Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive
+- [`R106C.dc.html`](R106C.dc.html) - Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive
+- [`R106Notes.dc.html`](R106Notes.dc.html) - Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen
 
 #### Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room
 
-- `R105A.dc.html` (not copied yet) - Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive
-- `R105B.dc.html` (not copied yet) - Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive
-- `R105C.dc.html` (not copied yet) - Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive
-- `R105Notes.dc.html` (not copied yet) - Rev 105 - notes: no cards, three levels, real artifacts, the recommendation
+- [`R105A.dc.html`](R105A.dc.html) - Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive
+- [`R105B.dc.html`](R105B.dc.html) - Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive
+- [`R105C.dc.html`](R105C.dc.html) - Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive
+- [`R105Notes.dc.html`](R105Notes.dc.html) - Rev 105 - notes: no cards, three levels, real artifacts, the recommendation
 
 #### Rev 104 - Elemental Converter without the cards: the player's real crystal balances, inside the Ark
 
-- `R104A.dc.html` (not copied yet) - Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended) - interactive
-- `R104B.dc.html` (not copied yet) - Rev 104 B - Holo dais: a projection rises from the pier's edge like the bridge tables in the pilot scenes, the four round the omni - interactive
-- `R104C.dc.html` (not copied yet) - Rev 104 C - Wall gauges: each balance mounted on the pier's tiled walls, two a side, the omni count on the lintel - interactive
+- [`R104A.dc.html`](R104A.dc.html) - Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended) - interactive
+- [`R104B.dc.html`](R104B.dc.html) - Rev 104 B - Holo dais: a projection rises from the pier's edge like the bridge tables in the pilot scenes, the four round the omni - interactive
+- [`R104C.dc.html`](R104C.dc.html) - Rev 104 C - Wall gauges: each balance mounted on the pier's tiled walls, two a side, the omni count on the lintel - interactive
 
 #### Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it
 
-- `R99Compare.dc.html` (not copied yet) - Rev 99 - The PDA's three screens flat, and the three places it lies
-- `R99A.dc.html` (not copied yet) - Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive
-- `R99B.dc.html` (not copied yet) - Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive
-- `R99C.dc.html` (not copied yet) - Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive
-- `R99Notes.dc.html` (not copied yet) - Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation
+- [`R99Compare.dc.html`](R99Compare.dc.html) - Rev 99 - The PDA's three screens flat, and the three places it lies
+- [`R99A.dc.html`](R99A.dc.html) - Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive
+- [`R99B.dc.html`](R99B.dc.html) - Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive
+- [`R99C.dc.html`](R99C.dc.html) - Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive
+- [`R99Notes.dc.html`](R99Notes.dc.html) - Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation
 
 #### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
 
-- `R86ArtifactsAB.dc.html` (not copied yet) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
+- [`R86ArtifactsAB.dc.html`](R86ArtifactsAB.dc.html) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
 
 #### Rev 85 - The Artifacts room, three still mockups - A Reliquary, B Gallery, C Orrery
 
-- `R85ArtifactsA.dc.html` (not copied yet) - Rev 85 ArtifactsA - A - The Reliquary
-- `R85ArtifactsB.dc.html` (not copied yet) - Rev 85 ArtifactsB - B - The Gallery
-- `R85ArtifactsC.dc.html` (not copied yet) - Rev 85 ArtifactsC - C - The Orrery
+- [`R85ArtifactsA.dc.html`](R85ArtifactsA.dc.html) - Rev 85 ArtifactsA - A - The Reliquary
+- [`R85ArtifactsB.dc.html`](R85ArtifactsB.dc.html) - Rev 85 ArtifactsB - B - The Gallery
+- [`R85ArtifactsC.dc.html`](R85ArtifactsC.dc.html) - Rev 85 ArtifactsC - C - The Orrery
 
 #### Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)
 
@@ -398,25 +423,107 @@ Copied on 2026-11-23 from canvas version `1795406768-c5d4` of **Frogma**: Rev 41
 
 #### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
 
-- `R64Live.dc.html` (not copied yet) - Rev 64 Live - Live scene (animated) - interactive
+- [`R64Live.dc.html`](R64Live.dc.html) - Rev 64 Live - Live scene (animated) - interactive
 
 #### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
 
-- `R62A.dc.html` (not copied yet) - Rev 62 A - The pads (recommended) - interactive
-- `R62B.dc.html` (not copied yet) - Rev 62 B - The map wall - interactive
-- `R62C.dc.html` (not copied yet) - Rev 62 C - Down the bay - interactive
-- `R62D.dc.html` (not copied yet) - Rev 62 D - The porthole row - interactive
-- `R62E.dc.html` (not copied yet) - Rev 62 E - Across the bay - interactive
-- `R62F.dc.html` (not copied yet) - Rev 62 F - At a porthole - interactive
+- [`R62A.dc.html`](R62A.dc.html) - Rev 62 A - The pads (recommended) - interactive
+- [`R62B.dc.html`](R62B.dc.html) - Rev 62 B - The map wall - interactive
+- [`R62C.dc.html`](R62C.dc.html) - Rev 62 C - Down the bay - interactive
+- [`R62D.dc.html`](R62D.dc.html) - Rev 62 D - The porthole row - interactive
+- [`R62E.dc.html`](R62E.dc.html) - Rev 62 E - Across the bay - interactive
+- [`R62F.dc.html`](R62F.dc.html) - Rev 62 F - At a porthole - interactive
 
 #### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
 
-- `R61C.dc.html` (not copied yet) - Rev 61 C - On the pads - interactive
-- `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
+- [`R61C.dc.html`](R61C.dc.html) - Rev 61 C - On the pads - interactive
+- [`R61E.dc.html`](R61E.dc.html) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
 
-No boards yet.
+#### Rev 138 - Voyages: the final app shell, every screen and what you press
+
+- `R138Flow.dc.html` (not copied yet) - Rev 138 Flow - Flow: every screen, every press
+- `R138Board.dc.html` (not copied yet) - Rev 138 Board - The quay, five jobs
+- `R138Full.dc.html` (not copied yet) - Rev 138 Full - HyperSea full screen
+- `R138Seats.dc.html` (not copied yet) - Rev 138 Seats - Your Ark
+- `R138Vessels.dc.html` (not copied yet) - Rev 138 Vessels - Vessels E with hangar previews
+- `R138Pilots.dc.html` (not copied yet) - Rev 138 Pilots - Pilots
+- `R138Party.dc.html` (not copied yet) - Rev 138 Party - Party
+- `R138Notes.dc.html` (not copied yet) - Rev 138 - notes: the final shell
+
+#### Rev 137 - Voyages: rival Arks and runaway crews, and how you beat them
+
+- `R137Chart.dc.html` (not copied yet) - Rev 137 Chart - Pause: a rival Ark and a runaway crew
+- `R137ArkMeet.dc.html` (not copied yet) - Rev 137 ArkMeet - A rival Ark arrives
+- `R137ArkOpen.dc.html` (not copied yet) - Rev 137 ArkOpen - Escorts silenced, her hull open
+- `R137ArkBreak.dc.html` (not copied yet) - Rev 137 ArkBreak - Her hold bursts
+- `R137Runaway.dc.html` (not copied yet) - Rev 137 Runaway - A runaway crew raids
+- `R137Rout.dc.html` (not copied yet) - Rev 137 Rout - They break and run
+- `R137Fall.dc.html` (not copied yet) - Rev 137 Fall - The end board: who you beat
+- `R137Notes.dc.html` (not copied yet) - Rev 137 - notes: rivals
+
+#### Rev 136 - Voyages: Vessels, a section of Your Ark in Rev 134's look (two ways)
+
+- `R136EVessels.dc.html` (not copied yet) - Rev 136 EVessels - E One class on the floor
+- `R136ESeat.dc.html` (not copied yet) - Rev 136 ESeat - E opened from Seat 3
+- `R136FVessels.dc.html` (not copied yet) - Rev 136 FVessels - F The wanted three on the floor
+- `R136FSeat.dc.html` (not copied yet) - Rev 136 FSeat - F opened from Seat 3
+- `R136Notes.dc.html` (not copied yet) - Rev 136 - notes: Vessels in Rev 134's look
+
+#### Rev 135 - Voyages: the full-screen HyperSea stays, and the vessel classes screen
+
+- `R135BoardFull.dc.html` (not copied yet) - Rev 135 BoardFull - The quay board with its Full screen control kept
+- `R135FullScreen.dc.html` (not copied yet) - Rev 135 FullScreen - The HyperSea full screen: zoom inside the map, back from full screen, the givers on the right, the voyage along the foot
+- `R135ClassesA.dc.html` (not copied yet) - Rev 135 ClassesA - Classes A: the fleet by class, how each class fares in every voyage
+- `R135ClassesB.dc.html` (not copied yet) - Rev 135 ClassesB - Classes B: this voyage's shelf, every vessel by how well it fits (recommended)
+- `R135ClassesPick.dc.html` (not copied yet) - Rev 135 ClassesPick - Classes B in the seat picker: swapping a hull, fit and pay change live
+- `R135Notes.dc.html` (not copied yet) - Rev 135 - notes: the classes screen, effectiveness and where it opens
+
+#### Rev 134 - The picked Milestone 2 Voyages UI on every screen and state (Board B, Seats A+B, Pause A, Vote B, Awards A), and how the world reads
+
+- `R134Board.dc.html` (not copied yet) - Rev 134 Board - The quay: the givers ask, your crew answers
+- `R134BoardRefuse.dc.html` (not copied yet) - Rev 134 BoardRefuse - A pilot refuses the job
+- `R134Seats.dc.html` (not copied yet) - Rev 134 Seats - Your Ark: A's line-up, B's pilots speaking
+- `R134SeatsRefuse.dc.html` (not copied yet) - Rev 134 SeatsRefuse - A refusing pilot holds Set sail
+- `R134Pilots.dc.html` (not copied yet) - Rev 134 Pilots - The pilot picker: mood for this job, rank
+- `R134Party.dc.html` (not copied yet) - Rev 134 Party - A friend still choosing
+- `R134Intro.dc.html` (not copied yet) - Rev 134 Intro - The intro card: the voyage's name
+- `R134Crossing.dc.html` (not copied yet) - Rev 134 Crossing - Through a membrane: the cell named
+- `R134Event.dc.html` (not copied yet) - Rev 134 Event - An event lights next door
+- `R134Vote.dc.html` (not copied yet) - Rev 134 Vote - The vote: the pilot who saw it asks
+- `R134VoteTie.dc.html` (not copied yet) - Rev 134 VoteTie - A tie: the host's vote wins
+- `R134VoteSolo.dc.html` (not copied yet) - Rev 134 VoteSolo - Solo: your call
+- `R134Detour.dc.html` (not copied yet) - Rev 134 Detour - The detour: one cell over
+- `R134Rival.dc.html` (not copied yet) - Rev 134 Rival - A rival crew arrives, racing
+- `R134Hostile.dc.html` (not copied yet) - Rev 134 Hostile - A rival attacks the Ark
+- `R134Joins.dc.html` (not copied yet) - Rev 134 Joins - A friend joins at the next cell
+- `R134Pause.dc.html` (not copied yet) - Rev 134 Pause - Pause: the chart on your lane
+- `R134Dock.dc.html` (not copied yet) - Rev 134 Dock - Docking: the hold banks
+- `R134Awards.dc.html` (not copied yet) - Rev 134 Awards - The end board: one award per seat
+- `R134Lost.dc.html` (not copied yet) - Rev 134 Lost - The Ark lost
+- `R134WorldEvents.dc.html` (not copied yet) - Rev 134 WorldEvents - The world: the five events next door
+- `R134WorldSea.dc.html` (not copied yet) - Rev 134 WorldSea - The world: zones, cells, danger
+- `R134Notes.dc.html` (not copied yet) - Rev 134 - notes: the picked mix on every screen
+
+#### Rev 133 - Milestone 2 Voyages UI, three ways: A The Chart (recommended), B The Quay, C The Ledger - the job board, seats, pause map, detour vote, role awards
+
+- `R133ABoard.dc.html` (not copied yet) - Rev 133 ABoard - The Chart: jobs as giver pins on the HyperSea (recommended)
+- `R133ASeats.dc.html` (not copied yet) - Rev 133 ASeats - The Chart: seats with class, mood and rank
+- `R133APause.dc.html` (not copied yet) - Rev 133 APause - The Chart: pause is the chart on your lane
+- `R133AVote.dc.html` (not copied yet) - Rev 133 AVote - The Chart: the detour vote
+- `R133AAwards.dc.html` (not copied yet) - Rev 133 AAwards - The Chart: role awards
+- `R133BBoard.dc.html` (not copied yet) - Rev 133 BBoard - The Quay: the givers on the quay
+- `R133BSeats.dc.html` (not copied yet) - Rev 133 BSeats - The Quay: pilot cards
+- `R133BPause.dc.html` (not copied yet) - Rev 133 BPause - The Quay: the lane as a column
+- `R133BVote.dc.html` (not copied yet) - Rev 133 BVote - The Quay: the pilot asks
+- `R133BAwards.dc.html` (not copied yet) - Rev 133 BAwards - The Quay: role awards
+- `R133CBoard.dc.html` (not copied yet) - Rev 133 CBoard - The Ledger: the job list
+- `R133CSeats.dc.html` (not copied yet) - Rev 133 CSeats - The Ledger: seats as rows
+- `R133CPause.dc.html` (not copied yet) - Rev 133 CPause - The Ledger: the course strip
+- `R133CVote.dc.html` (not copied yet) - Rev 133 CVote - The Ledger: the vote in the chip
+- `R133CAwards.dc.html` (not copied yet) - Rev 133 CAwards - The Ledger: role awards
+- `R133Notes.dc.html` (not copied yet) - Rev 133 - notes: what each direction answers
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
@@ -566,6 +673,36 @@ No boards yet.
 - `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
 
 ### Tab: Game Cards  (`game-cards`)
+
+#### Rev 132 - Real frames with the vessel acting
+
+- `R132Compare.dc.html` (not copied yet) - Rev 132 - Compare
+- `R132M1.dc.html` (not copied yet) - Rev 132 M1 - M1 Frame + Light trail - interactive
+- `R132M2.dc.html` (not copied yet) - Rev 132 M2 - M2 Frame + Hero shot - interactive
+- `R132M3.dc.html` (not copied yet) - Rev 132 M3 - M3 Frame + Diorama - interactive
+- `R132M4.dc.html` (not copied yet) - Rev 132 M4 - M4 Frame + Chase cam - interactive
+- `R132Notes.dc.html` (not copied yet) - Rev 132 - notes: what each option changes, what is shared, what differs from the build
+
+#### Rev 131 - Symbolic, three new ways
+
+- `R131Compare.dc.html` (not copied yet) - Rev 131 - Compare
+- `R131Y5.dc.html` (not copied yet) - Rev 131 Y5 - Y5 Light trail - interactive
+- `R131Y6.dc.html` (not copied yet) - Rev 131 Y6 - Y6 Chase cam - interactive
+- `R131Y7.dc.html` (not copied yet) - Rev 131 Y7 - Y7 Hero shot - interactive
+- `R131Notes.dc.html` (not copied yet) - Rev 131 - notes: what each option changes, what is shared, what differs from the build
+
+#### Rev 130 - The card's picture, eight more ways: real frames and signs of the play; the short line
+
+- `R130Compare.dc.html` (not copied yet) - Rev 130 - Compare
+- `R130S1.dc.html` (not copied yet) - Rev 130 S1 - S1 Frame - interactive
+- `R130S2.dc.html` (not copied yet) - Rev 130 S2 - S2 Night grade - interactive
+- `R130S3.dc.html` (not copied yet) - Rev 130 S3 - S3 Reel - interactive
+- `R130S4.dc.html` (not copied yet) - Rev 130 S4 - S4 Window - interactive
+- `R130Y1.dc.html` (not copied yet) - Rev 130 Y1 - Y1 Pictogram - interactive
+- `R130Y2.dc.html` (not copied yet) - Rev 130 Y2 - Y2 Playbook - interactive
+- `R130Y3.dc.html` (not copied yet) - Rev 130 Y3 - Y3 Diorama - interactive
+- `R130Y4.dc.html` (not copied yet) - Rev 130 Y4 - Y4 Crest - interactive
+- `R130Notes.dc.html` (not copied yet) - Rev 130 - Notes
 
 #### Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell
 

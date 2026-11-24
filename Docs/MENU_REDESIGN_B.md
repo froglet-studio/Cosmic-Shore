@@ -10040,3 +10040,53 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
+
+## 230. Fixed: the Squads rail stood under the screen; a slimmer rail; Back on every level (2026-11-24, claude/project-thread-ffv5m4, not run in Unity)
+
+**Asked (Shombith, 2026-11-24, of the Squads tab in Unity):** "Same problem there is no UI, the footer tab is too big the
+vessels appear out of world, once select cannot press the back button the vessels go out of screen this is the worst
+of the lot."
+
+**Why there was no UI.** `author_menu_ark.py` named two module constants `RAIL_Y`: the Squads rail's controls' top (40,
+section 206) and, further down, the Artifacts rail's line (890, section 201). Python reads a global when the function
+runs, so `squad_rail()` placed every rail control at y -890 inside a 136-high rail: Prev, the name, Next, Make, Join,
+Delete, the squad's light, Mission and Arena all stood 850 px under the screen, and the rail showed as an empty dark
+bar. `--check` passed, because it compared the prefab with the generator that wrote it. The Squads one is now
+`SQUAD_RAIL_Y`, and `validate()` holds every rail control inside the rail (a new negative control, "the rail's MAKE under
+the screen", fires on the prefab that shipped).
+
+**Also changed:** the rail is 96 high instead of 136 (Shombith: "the footer tab is too big"), its controls centred in it;
+the projection's Back shows at every level, so a picked seat can be closed on screen as well as with B / Escape.
+
+**Not changed here:** where the hulls stand. They stand on the clip's own pads, and those sit left of centre (projected
+at x 207, 579 and 1141 of 1920, Rogue One's at the screen's edge), while the plates are centred at 640, 960 and 1280.
+That is a layout question, drawn in section 231.
+
+Affects: Shombith's Ark screen (`author_menu_ark.py`, `ArkView.prefab`, `SquadsPage`).
+
+## 231. Rev 141 mockups: the Squads tab started again - the vessels in the room, press the vessel itself, a slim foot (2026-11-24, awaiting a pick)
+
+**Asked (Shombith, 2026-11-24):** the Squads tab is "the worst of the lot" (no UI, a big footer, vessels out of the world and
+off screen, no way back from a seat); of Artifacts the same day, "I cannot click in the image itself, that should be
+what I should be able to do".
+
+**On the canvas** (Ark tab, Rev 141; copies `Docs/MenuRedesignB/board/R141*.dc.html`). Every option keeps three levels
+(the squad, one seat, one list), you press the vessel itself, there are no cards, a seat's picks are words with one thin
+line in the squad's colour, Back is on screen and on B at every level, and the foot is 72 px: the squad's name (press it
+for your squads, Make and Join), its light, Take into Mission / Arena.
+- **R141A - Line abreast (recommended):** the three hulls stand side by side across the floor on pads in one row; each
+  seat's role, who and vessel in three lines under it. Pressing a hull walks the view up to it and its words stand
+  beside it; a list opens as a strip (hulls, faces, words).
+- **R141B - The holo table:** the hangar clip stays, dimmed; the squad stands as holograms over one brass-rimmed table.
+  Nothing has to line up with the clip's pads.
+- **R141C - One bay:** one seat at a time, big on a centre pad; the other two seats a short list on the left (LB / RB).
+- **R141Compare:** Rogue One picked with its Vessel list open, in the build and in A, B and C. **R141Notes:** the brief,
+  what was broken, what each option costs.
+
+Recommended A: the squad reads as three ships parked in your Ark, and pressing the one you want is the whole
+interaction. The mockups use the shipped Nocturne clips' first frames and the class card renders; A's pads in a row and
+C's single pad are drawn over the current room.
+
+**Differs from the build:** the plates, the dome and the projection go. A needs the hangar clips re-rendered with the
+pads in a row and the pads moved in `ArkBackdropConfigSO.Hangar` (the wall pictures need stand-ins, section 202); B needs
+a hologram look on `SquadVesselLayer`'s hulls and no new clips; C needs one pad, re-rendered or cropped.

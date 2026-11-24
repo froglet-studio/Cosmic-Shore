@@ -1122,7 +1122,9 @@ namespace CosmicShore.UI
             if (joinGroup) KitVisibility.SetShown(joinGroup, _joinOpen);
             if (choicesGroup) KitVisibility.SetShown(choicesGroup, lists && !pilotList);
             if (pilotChoicesGroup) KitVisibility.SetShown(pilotChoicesGroup, pilotList);
-            if (backButton) backButton.gameObject.SetActive(_joinOpen || lists);
+            // Back is on at every level: a list steps back to the seat, the seat closes (Shombith 2026-11-24: once a seat
+            // was picked there was nothing on screen to get out of it).
+            if (backButton) backButton.gameObject.SetActive(true);
             float height;
             if (_joinOpen)
             {

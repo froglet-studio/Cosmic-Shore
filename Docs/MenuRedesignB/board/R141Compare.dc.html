@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 141 - one seat picked in A, B and C beside the build</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.abs{position:absolute}
+.sh{text-shadow:0 0 10px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:46px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px;letter-spacing:.12em;text-transform:uppercase}
+.cta{background:#99FF80;color:#00010A}
+.ghost{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px rgba(116,123,173,.55)}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,.btn:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mv{transition:left 420ms cubic-bezier(.2,.7,.2,1),top 420ms cubic-bezier(.2,.7,.2,1),width 420ms cubic-bezier(.2,.7,.2,1),opacity 300ms ease-out,transform 420ms cubic-bezier(.2,.7,.2,1),filter 300ms ease-out}
+.hull{position:absolute;display:block;object-fit:contain;pointer-events:none}
+.strip{display:flex;gap:14px;align-items:flex-end}
+.chip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 10px 10px;min-width:100px;box-sizing:border-box}
+@keyframes csIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.in{animation:csIn 280ms ease-out both}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:40px;top:30px"><span class="lab" style="font-size:14px">Rev 141 - Rogue One picked, its Vessel list open: the build beside A, B and C</span></div>
+<sc-for list="{{cells}}" as="c" hint-placeholder-count="4"><div class="abs" style="left:{{c.x}}px;top:{{c.y}}px;width:900px;height:490px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(116,123,173,.45)">
+<img class="bg" src="{{c.bg}}" alt="{{c.alt}}" style="filter:{{c.bgf}};transform:{{c.bgt}};transform-origin:{{c.bgo}}">
+<sc-for list="{{c.hulls}}" as="h" hint-placeholder-count="3"><img class="hull" src="{{h.src}}" alt="" style="left:{{h.x}}px;top:{{h.y}}px;width:{{h.w}}px;height:{{h.w}}px;opacity:{{h.op}};filter:{{h.f}}"></sc-for>
+<sc-for list="{{c.words}}" as="w" hint-placeholder-count="4"><span class="abs sh" style="left:{{w.x}}px;top:{{w.y}}px;font-size:{{w.s}}px;color:{{w.col}};background:{{w.bg}};padding:{{w.pad}}">{{w.t}}</span></sc-for>
+<div class="abs" style="left:0;right:0;bottom:0;height:{{c.footH}}px;background:rgba(0,1,10,.85);box-shadow:inset 0 1px 0 {{c.footLine}}"></div>
+<span class="abs cap" style="left:14px;top:12px;font-size:15px;background:rgba(0,1,10,.75);padding:4px 10px">{{c.name}}</span>
+</div><span class="abs lab" style="left:{{c.x}}px;top:{{c.ny}}px;width:900px;font-size:12px;color:#C9CDEA;text-transform:none;letter-spacing:.04em">{{c.note}}</span></sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}}'>
+
+const G = "/_blob/647b06095636f7febe5b4d7cef189b89", SP = "/_blob/e5e40c7e12e972011b17f9578fcebe4f", DO = "/_blob/deda902b66cd7ff982bce24181f4d689", UR = "/_blob/fcddcf89487b1b170442cd6103aa01d3";
+const GOLD = "#FFAE00";
+class Component extends DCLogic {
+  renderVals() {
+    const cells = [
+      {x: 40, y: 70, name: "Built (Rev 110 B)", bg: G, alt: "The build: hulls on the clip's pads", bgf: "none", bgt: "none", bgo: "50% 50%",
+       hulls: [{src: DO, x: -40, y: 220, w: 200, op: 1, f: "none"}, {src: SP, x: 200, y: 250, w: 230, op: 1, f: "none"}, {src: UR, x: 500, y: 190, w: 140, op: 1, f: "none"}],
+       words: [{t: "Rogue One - AI wingmate", x: 230, y: 330, s: 13, col: "#E6E9FF", bg: "rgba(130,40,160,.55)", pad: "8px 12px"},
+               {t: "VESSEL   Dolphin  >", x: 160, y: 90, s: 12, col: "#E6E9FF", bg: "rgba(130,40,160,.55)", pad: "6px 12px"},
+               {t: "ELEMENT  Space  >", x: 160, y: 120, s: 12, col: "#E6E9FF", bg: "rgba(130,40,160,.55)", pad: "6px 12px"},
+               {t: "(rail empty: its buttons were drawn under the screen)", x: 20, y: 440, s: 12, col: "#FF8A8A", bg: "none", pad: "0"}],
+       footH: 68, footLine: GOLD, note: "The plates and the projection sit on the dome as cards; the left hull is cut by the edge; nothing on screen backs out of a seat."},
+      {x: 980, y: 70, name: "A - Line abreast", bg: G, alt: "A: the view walked up to Rogue One", bgf: "none", bgt: "scale(1.45)", bgo: "22% 58%",
+       hulls: [{src: DO, x: 70, y: 150, w: 300, op: 1, f: "drop-shadow(0 10px 10px rgba(0,1,10,.7))"}, {src: SP, x: 430, y: 170, w: 240, op: 0.25, f: "none"}],
+       words: [{t: "ROGUE ONE", x: 560, y: 120, s: 11, col: GOLD, bg: "none", pad: "0"}, {t: "AI wingmate", x: 560, y: 136, s: 20, col: "#E6E9FF", bg: "none", pad: "0"},
+               {t: "Vessel   Dolphin", x: 560, y: 180, s: 14, col: "#E6E9FF", bg: "none", pad: "0 0 0 8px"}, {t: "Element   Space", x: 560, y: 206, s: 14, col: "#C9CDEA", bg: "none", pad: "0 0 0 8px"},
+               {t: "Sparrow  Dolphin  Squirrel  Urchin ...", x: 560, y: 330, s: 12, col: "#E6E9FF", bg: "rgba(0,4,31,.6)", pad: "10px 12px"}],
+       footH: 36, footLine: "transparent", note: "The room itself moves to the seat; the words stand beside the hull with no panel; the list is a strip of hulls."},
+      {x: 40, y: 600, name: "B - The holo table", bg: G, alt: "B: Rogue One's hologram grown over the table", bgf: "brightness(.5) blur(2px)", bgt: "none", bgo: "50% 50%",
+       hulls: [{src: DO, x: 330, y: 120, w: 260, op: 1, f: "drop-shadow(0 0 10px " + GOLD + ") brightness(1.25) saturate(.6)"}],
+       words: [{t: "AI wingmate", x: 390, y: 90, s: 18, col: "#E6E9FF", bg: "none", pad: "0"},
+               {t: "Vessel  Dolphin    Element  Space    Pilot  ZODIAC    Artifact  None", x: 160, y: 400, s: 13, col: "#E6E9FF", bg: "none", pad: "0"}],
+       footH: 36, footLine: "transparent", note: "The video stays behind, dimmed; the squad lives on one table, so nothing has to line up with the clip's pads."},
+      {x: 980, y: 600, name: "C - One bay", bg: G, alt: "C: Rogue One alone on the centre pad", bgf: "none", bgt: "scale(1.35)", bgo: "42% 66%",
+       hulls: [{src: DO, x: 300, y: 100, w: 320, op: 1, f: "drop-shadow(0 12px 12px rgba(0,1,10,.7))"}, {src: SP, x: 20, y: 120, w: 60, op: 0.7, f: "none"}, {src: UR, x: 20, y: 190, w: 50, op: 0.7, f: "none"}],
+       words: [{t: "Leader", x: 90, y: 140, s: 12, col: "#C9CDEA", bg: "none", pad: "0"}, {t: "Rogue One", x: 90, y: 185, s: 12, col: "#E6E9FF", bg: "none", pad: "0 0 0 6px"},
+               {t: "Vessel  Dolphin    Element  Space    Pilot  ZODIAC    Artifact  None", x: 180, y: 400, s: 13, col: "#E6E9FF", bg: "none", pad: "0"}],
+       footH: 36, footLine: "transparent", note: "One seat at a time, always big on the middle pad; the other two are a short list on the left."}];
+    return {cells: cells.map((c) => Object.assign(c, {ny: c.y + 496}))};
+  }
+}
+
+</script>
+</body>
+</html>

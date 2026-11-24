@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 141 - notes: what was broken, what each option changes, the recommendation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.abs{position:absolute}
+.sh{text-shadow:0 0 10px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:46px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px;letter-spacing:.12em;text-transform:uppercase}
+.cta{background:#99FF80;color:#00010A}
+.ghost{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px rgba(116,123,173,.55)}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,.btn:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mv{transition:left 420ms cubic-bezier(.2,.7,.2,1),top 420ms cubic-bezier(.2,.7,.2,1),width 420ms cubic-bezier(.2,.7,.2,1),opacity 300ms ease-out,transform 420ms cubic-bezier(.2,.7,.2,1),filter 300ms ease-out}
+.hull{position:absolute;display:block;object-fit:contain;pointer-events:none}
+.strip{display:flex;gap:14px;align-items:flex-end}
+.chip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 10px 10px;min-width:100px;box-sizing:border-box}
+@keyframes csIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.in{animation:csIn 280ms ease-out both}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div style="padding:56px 70px;font-size:19px;line-height:1.55;color:#C9CDEA">
+<div class="lab" style="font-size:14px">Rev 141 - notes</div>
+<h1 style="font-family:'Chakra Petch';font-weight:700;font-size:40px;color:#E6E9FF;margin:10px 0 24px">The Squads tab, started again</h1>
+<p style="margin:0 0 14px"><b style="color:#E6E9FF">Asked (Shombith, 2026-11-24):</b> "there is no UI, the footer tab is too big the vessels appear out of world, once select cannot press the back button the vessels go out of screen this is the worst of the lot." Of Artifacts, the same day: "I cannot click in the image itself, that should be what I should be able to do."</p>
+<p style="margin:0 0 14px"><b style="color:#E6E9FF">What was broken in the build, and is fixed now on its own:</b> the rail's buttons (squad name, Make, Join, Delete, the light, Mission, Arena) were written 850 px under the screen, because the generator's Squads and Artifacts sections both named a constant RAIL_Y and the second one won. That is the empty bar. The rail is now 96 high instead of 136, and the projection always shows Back. The vessels' placement is not a bug: they stand where the clip's pads are, and those pads sit left of centre, one at the screen's edge.</p>
+<p style="margin:0 0 14px"><b style="color:#E6E9FF">Every option keeps:</b> three levels (the squad, one seat, one list), press the vessel itself, no cards, the seat's picks as words with one thin line in the squad's colour, a 72 px foot with the squad's name (press it for your squads, Make and Join), its light, and Take into Mission / Arena. Back on screen and on B at every level.</p>
+<p style="margin:0 0 14px"><b style="color:#E6E9FF">A - Line abreast (recommended).</b> The hangar is re-rendered head on with its three pads in one row across the middle; each hull stands on its own pad, its seat in three short lines under it. Pressing a hull walks the view up to it (the clip zooms on that pad) and its words stand beside it. Needs: new hangar clips (the pad box is re-rendered; the wall pictures need stand-ins), the pads moved in the config, the plates retired.</p>
+<p style="margin:0 0 14px"><b style="color:#E6E9FF">B - The holo table.</b> The hangar clip stays, dimmed; the squad stands as holograms over one brass-rimmed table in the middle. Nothing has to register with the clip, so the hulls can never land off a pad. Needs: the holo shader on the display hulls, the table drawn in the UI, no new clips.</p>
+<p style="margin:0 0 14px"><b style="color:#E6E9FF">C - One bay.</b> One seat at a time, big on a single centre pad; the other two seats are a short list on the left, LB / RB steps. The fewest choices on screen. Needs: one new clip with a single pad (or the current clip cropped), the hull fitted to the centre pad.</p>
+<p style="margin:0"><b style="color:#E6E9FF">Why A:</b> it is the only one where the squad reads as three ships parked in your Ark, side by side, which is the room the captains' scenes show, and pressing the ship you want is the whole interaction.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 900}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

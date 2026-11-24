@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 141 C - One bay: one vessel at a time, big on the centre pad, the other two seats beside it - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.abs{position:absolute}
+.sh{text-shadow:0 0 10px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:46px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:17px;letter-spacing:.12em;text-transform:uppercase}
+.cta{background:#99FF80;color:#00010A}
+.ghost{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px rgba(116,123,173,.55)}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,.btn:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mv{transition:left 420ms cubic-bezier(.2,.7,.2,1),top 420ms cubic-bezier(.2,.7,.2,1),width 420ms cubic-bezier(.2,.7,.2,1),opacity 300ms ease-out,transform 420ms cubic-bezier(.2,.7,.2,1),filter 300ms ease-out}
+.hull{position:absolute;display:block;object-fit:contain;pointer-events:none}
+.strip{display:flex;gap:14px;align-items:flex-end}
+.chip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 10px 10px;min-width:100px;box-sizing:border-box}
+@keyframes csIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.in{animation:csIn 280ms ease-out both}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img class="bg" src="{{bg}}" alt="The Ark's hangar, closer on one pad" style="transform:scale(1.35);transform-origin:42% 66%">
+<div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(0,1,10,.7) 0%,rgba(0,1,10,0) 20%,rgba(0,1,10,0) 70%,rgba(0,1,10,.55) 100%);pointer-events:none;z-index:2"></div><nav aria-label="Menu screens" class="abs" style="left:0;right:0;top:0;height:84px;background:rgba(0,1,10,.78);border-bottom:1px solid #222645;display:flex;align-items:center;justify-content:center;gap:48px;z-index:20"><span class="kc">LT</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/ec690d6b90d6fcdbc430b9bbaacf28a9" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">CODEX</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HANGAR</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HOME</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#E6E9FF"><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:26px;height:26px;object-fit:contain;opacity:1">ARK<span class="abs" style="left:0;right:0;bottom:-10px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">PORT</span><span class="kc">RT</span></nav><div class="abs" style="left:40px;right:40px;top:96px;height:52px;display:flex;align-items:center;gap:30px;border-bottom:1px solid rgba(116,123,173,.35);z-index:20"><span class="kc">LB</span><span style="position:relative;color:#747BAD"><span class="cap" style="font-size:16px">Converter</span></span><span style="position:relative;color:#E6E9FF"><span class="cap" style="font-size:16px">Squads</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;color:#747BAD"><span class="cap" style="font-size:16px">Pilots</span></span><span style="position:relative;color:#747BAD"><span class="cap" style="font-size:16px">Artifacts</span></span><span style="position:relative;color:#747BAD"><span class="cap" style="font-size:16px">Decor</span></span><span class="kc">RB</span></div>
+<svg class="abs" aria-hidden="true" width="760" height="170" viewBox="0 0 760 170" style="left:580px;top:700px;z-index:3" fill="none"><defs><radialGradient id="cg"><stop offset="0" stop-color="{{domCol}}" stop-opacity=".55"></stop><stop offset="1" stop-color="{{domCol}}" stop-opacity="0"></stop></radialGradient></defs><ellipse cx="380" cy="85" rx="370" ry="74" fill="url(#cg)"></ellipse><ellipse cx="380" cy="85" rx="270" ry="48" stroke="{{domCol}}" stroke-opacity=".75" stroke-width="2"></ellipse></svg>
+<sc-if value="{{hasHull}}" hint-placeholder-val="{{ true }}"><img class="hull in" src="{{hull}}" alt="{{hullAlt}}" style="left:640px;top:250px;width:640px;height:560px;filter:drop-shadow(0 24px 24px rgba(0,1,10,.7));z-index:4"></sc-if>
+<sc-if value="{{isOpen}}" hint-placeholder-val="{{ false }}"><button class="pick abs in" type="button" onClick="{{fill}}" style="left:810px;top:420px;width:300px;height:220px;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px"><svg width="90" height="90" viewBox="0 0 90 90" fill="none" stroke="{{domCol}}" stroke-width="2"><circle cx="45" cy="45" r="42" stroke-dasharray="6 7"></circle><path d="M45 28v34M28 45h34"></path></svg><span class="cap sh" style="font-size:18px">Pick who flies it</span></button></sc-if>
+<div class="abs" style="left:0;right:0;top:186px;text-align:center;z-index:6"><span class="lab" style="font-size:12px;color:{{domCol}}">{{seatRole}}</span><div class="sh" style="font-size:36px">{{seatWho}}</div></div>
+<div class="abs" style="left:40px;top:300px;width:300px;z-index:6;display:flex;flex-direction:column;gap:6px">
+<sc-for list="{{rail}}" as="r" hint-placeholder-count="3"><button class="pick" type="button" onClick="{{r.press}}" aria-pressed="{{r.pressed}}" style="display:flex;align-items:center;gap:14px;padding:10px 14px;box-shadow:inset 2px 0 0 {{r.edge}};opacity:{{r.op}}">
+<span style="width:76px;height:52px;display:flex;align-items:center;justify-content:center"><sc-if value="{{r.hasImg}}" hint-placeholder-val="{{ true }}"><img src="{{r.img}}" alt="" style="width:76px;height:52px;object-fit:contain"></sc-if></span>
+<span style="display:flex;flex-direction:column"><span class="lab" style="font-size:11px">{{r.role}}</span><span class="sh" style="font-size:19px">{{r.who}}</span></span></button></sc-for>
+<span class="lab" style="margin-top:10px;font-size:11px;padding-left:14px"><span class="kc">LB</span> <span class="kc">RB</span> seat</span>
+</div>
+<div class="abs" style="left:0;right:0;top:860px;display:flex;justify-content:center;gap:52px;z-index:8">
+<sc-for list="{{picks}}" as="p" hint-placeholder-count="4"><button class="pick" type="button" onClick="{{p.press}}" aria-expanded="{{p.on}}" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:6px;box-shadow:inset 0 -2px 0 {{p.edge}}"><span class="lab" style="font-size:11px">{{p.name}}</span><span class="sh" style="font-size:24px;color:{{p.col}}">{{p.value}}</span></button></sc-for>
+</div>
+<sc-if value="{{listOn}}" hint-placeholder-val="{{ false }}"><div class="abs in" style="left:{{stripX}}px;top:{{stripY}}px;z-index:14">
+<span class="lab" style="font-size:12px">{{listTitle}}</span>
+<div class="strip" style="margin-top:8px"><sc-for list="{{items}}" as="c" hint-placeholder-count="5"><button class="pick chip" type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" style="background:rgba(0,4,31,{{c.bga}});box-shadow:inset 0 -2px 0 {{c.edge}}">
+<sc-if value="{{c.hasImg}}" hint-placeholder-val="{{ true }}"><img src="{{c.img}}" alt="" style="width:{{c.imgW}}px;height:{{c.imgH}}px;object-fit:{{c.fit}};border-radius:{{c.rad}}"></sc-if>
+<span class="cap" style="font-size:13px;color:{{c.col}}">{{c.name}}</span></button></sc-for></div>
+<span class="lab" style="display:block;margin-top:8px;font-size:11px;color:#C9CDEA;text-transform:none;letter-spacing:.04em">{{listHint}}</span>
+</div></sc-if><sc-if value="{{showBack}}" hint-placeholder-val="{{ false }}"><button class="pick in" type="button" onClick="{{back}}" style="position:absolute;left:40px;top:168px;z-index:18;display:flex;align-items:center;gap:10px"><span class="kc">B</span><svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M8 2L2 8l6 6"></path></svg><span class="cap sh" style="font-size:16px">{{backLabel}}</span></button></sc-if><div class="abs" style="left:0;right:0;bottom:0;height:72px;background:linear-gradient(180deg,rgba(0,1,10,0),rgba(0,1,10,.82) 45%);z-index:15"></div>
+<div class="abs" style="left:40px;right:40px;bottom:14px;height:46px;display:flex;align-items:center;gap:18px;z-index:16">
+<button class="pick" type="button" onClick="{{toggleSquads}}" aria-expanded="{{squadsOpenAria}}" style="display:flex;align-items:center;gap:12px">
+<span style="width:12px;height:12px;transform:rotate(45deg);background:{{domCol}}"></span>
+<span style="display:flex;flex-direction:column"><span class="sh" style="font-size:22px;line-height:1.1">{{squadName}}</span><span class="lab" style="font-size:11px">{{squadWhose}}</span></span>
+<svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="#8C93C7" stroke-width="1.8" aria-hidden="true"><path d="M2 2l5 5 5-5"></path></svg>
+</button>
+<span style="flex:1"></span>
+<sc-for list="{{lights}}" as="d" hint-placeholder-count="3"><button class="pick" type="button" onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" aria-label="{{d.aria}}" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><span style="width:12px;height:12px;transform:rotate(45deg);background:{{d.col}};opacity:{{d.op}};box-shadow:0 0 0 {{d.ring}}px rgba(230,233,255,.9)"></span></button></sc-for>
+<span style="width:24px"></span>
+<button class="btn ghost sls" type="button" onClick="{{noop}}">Mission</button>
+<button class="btn cta sls" type="button" onClick="{{noop}}"><span class="kc" style="border-color:currentColor;color:inherit">Y</span>Arena</button>
+</div>
+<sc-if value="{{squadsOpen}}" hint-placeholder-val="{{ false }}"><div class="abs in" style="left:40px;bottom:76px;width:380px;z-index:17;background:rgba(0,4,31,.86);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(116,123,173,.45);padding:14px 0">
+<span class="lab abs" style="left:20px;top:14px;font-size:11px">Your squads</span>
+<div style="height:24px"></div>
+<sc-for list="{{book}}" as="b" hint-placeholder-count="3"><button class="pick" type="button" onClick="{{b.pick}}" style="display:flex;align-items:center;gap:12px;width:100%;padding:10px 20px;box-sizing:border-box;box-shadow:inset 3px 0 0 {{b.edge}}"><span style="width:10px;height:10px;transform:rotate(45deg);background:{{b.col}}"></span><span style="flex:1;font-size:18px">{{b.name}}</span><span class="lab" style="font-size:11px">{{b.whose}}</span></button></sc-for>
+<div style="display:flex;gap:10px;padding:12px 20px 0"><button class="btn ghost sls" type="button" onClick="{{noop}}" style="height:40px;font-size:14px;padding:0 18px">Make</button><button class="btn ghost sls" type="button" onClick="{{noop}}" style="height:40px;font-size:14px;padding:0 18px">Join a friend</button></div>
+</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"seat": 1, "pick": ""}}'>
+
+const HANGAR = {"Gold": "/_blob/647b06095636f7febe5b4d7cef189b89", "Jade": "/_blob/edc5fd6761a4d41adb3332719263571b", "Ruby": "/_blob/95a1e2e7b06e61b2f05d9293768258df"};
+const HULL = {"Sparrow": "/_blob/e5e40c7e12e972011b17f9578fcebe4f", "Dolphin": "/_blob/deda902b66cd7ff982bce24181f4d689", "Squirrel": "/_blob/2a3683d6638e0396e48d3473bd67d4af", "Urchin": "/_blob/fcddcf89487b1b170442cd6103aa01d3", "Rhino": "/_blob/25668094e6dd4c5b17f0ffaeaefcb90e", "Manta": "/_blob/fd9ed06a21b25f6d72d8b51f2f73b40e", "Serpent": "/_blob/6839871c19c050087ace4dd5bec1486a"};
+const CLOSE = {"VOLT": "32a9eed26dda493c7334d13cddaf435e", "ZODIAC": "30c5723ab68af43282bfca424757ff31", "ANVIL": "f4c3e0f26d1f48e7d121156e212e4136", "TALON": "77e722ebf367c3b4093b2ae2778762e4", "HORNET": "5bb7e9dc77ccbb917e79991a86168b17", "NEEDLE": "17190fc5544dfc08266eab625c0aa6a2", "IVY": "d750680bcbd6bed6958c9fa98632d348", "OPAL": "02126cf45624881e04e68ab3443b261b"};
+const DOMC = {"Jade": "#00D4FF", "Ruby": "#A600FF", "Gold": "#FFAE00"};
+const VESSELS = ["Sparrow", "Dolphin", "Squirrel", "Urchin", "Rhino", "Manta", "Serpent"];
+const ELEMENTS = ["Charge", "Mass", "Space", "Time"];
+const PILOTS = ["VOLT", "ZODIAC", "ANVIL", "TALON", "HORNET", "NEEDLE"];
+const ARTIFACTS = ["None", "Javelin", "Hydra", "Aftershock", "Aegis"];
+const WHO = ["AI wingmate", "Open for a friend"];
+const KEYS = [["v", "Vessel"], ["e", "Element"], ["p", "Pilot"], ["a", "Artifact"]];
+const HINT = {v: "The hull on the pad changes as you pick.", e: "Which of its four abilities the vessel leads with.",
+  p: "The pilot's callsign biases how an AI flies this seat.", a: "Carried into the match.", w: "A friend who joins later takes the seat from the AI."};
+const ROLES = ["Rogue One", "Leader", "Rogue Two"];
+const START = [
+  {who: "AI wingmate", v: "Dolphin", e: "Space", p: "ZODIAC", a: "None", ai: true},
+  {who: "You", v: "Sparrow", e: "Charge", p: "VOLT", a: "Javelin", me: true},
+  {who: "Open seat", v: "", e: "", p: "", a: "None", open: true}];
+const BOOK = [["Skim Wing", "Gold", "Yours"], ["Breakers", "Ruby", "Kestrel's"], ["Lantern", "Jade", "Yours"]];
+
+
+
+class Component extends DCLogic {
+
+  constructor(props) {
+    super(props);
+    const s = Object.assign({seat: -1, pick: ""}, props.start || {});
+    this.state = {seats: START.map((x) => Object.assign({}, x)), seat: s.seat, pick: s.pick, dom: "Gold", book: 0, squads: false};
+  }
+  dom() { return BOOK[this.state.book][1] === this.state.dom ? this.state.dom : this.state.dom; }
+  openSeat(i) { this.setState({seat: this.state.seat === i ? -1 : i, pick: "", squads: false}); }
+  openList(k) { this.setState({pick: this.state.pick === k ? "" : k}); }
+  back() { const st = this.state; if (st.squads) this.setState({squads: false}); else if (st.pick) this.setState({pick: ""}); else this.setState({seat: -1}); }
+  choose(k, n) {
+    const seats = this.state.seats.map((x) => Object.assign({}, x));
+    const s = seats[this.state.seat];
+    if (k === "w") {
+      if (n === "AI wingmate") Object.assign(s, {who: "AI wingmate", v: s.v || "Urchin", e: s.e || "Mass", p: s.p || "ANVIL", ai: true, open: false});
+      else Object.assign(s, {who: "Open seat", ai: false, open: true});
+    } else s[k] = n;
+    this.setState({seats, pick: ""});
+  }
+  list() {
+    const st = this.state, k = st.pick, s = st.seat >= 0 ? st.seats[st.seat] : null;
+    if (!k || !s) return {listOn: false, items: [], listTitle: "", listHint: ""};
+    const names = k === "v" ? VESSELS : k === "e" ? ELEMENTS : k === "p" ? PILOTS : k === "a" ? ARTIFACTS : WHO;
+    const cur = k === "w" ? (s.open ? "Open for a friend" : "AI wingmate") : s[k];
+    const items = names.map((n) => ({name: n, pressed: n === cur ? "true" : "false",
+      edge: n === cur ? DOMC[st.dom] : "rgba(116,123,173,.35)", col: n === cur ? "#E6E9FF" : "#9AA0CC", bga: n === cur ? ".72" : ".5",
+      hasImg: k === "v" || k === "p", img: k === "v" ? HULL[n] : (k === "p" ? "/_blob/" + CLOSE[n] : ""),
+      imgW: k === "v" ? 90 : 60, imgH: k === "v" ? 60 : 60, fit: k === "v" ? "contain" : "cover", rad: k === "p" ? "50%" : "0",
+      pick: () => this.choose(k, n)}));
+    const title = k === "w" ? "Who flies it" : KEYS.find((x) => x[0] === k)[1];
+    return {listOn: true, items, listTitle: title, listHint: HINT[k]};
+  }
+  picks() {
+    const st = this.state, s = st.seat >= 0 ? st.seats[st.seat] : null;
+    if (!s) return [];
+    const out = [];
+    if (!s.me) out.push({k: "w", name: "Who flies it", value: s.open ? "Open for a friend" : "AI wingmate"});
+    if (!s.open) KEYS.forEach(([k, name]) => out.push({k, name, value: s[k] || "-"}));
+    return out.map((x) => Object.assign(x, {on: st.pick === x.k, edge: st.pick === x.k ? DOMC[st.dom] : "transparent",
+      col: st.pick === x.k ? "#E6E9FF" : "#C9CDEA", press: () => this.openList(x.k)}));
+  }
+  plateOf(i) {
+    const s = this.state.seats[i];
+    return {role: ROLES[i], who: s.who, line: s.open ? "Press to fill it" : s.v + " - " + s.e, open: !!s.open, me: !!s.me};
+  }
+  foot() {
+    const st = this.state;
+    return {squadName: BOOK[st.book][0], squadWhose: BOOK[st.book][2] + " squad", domCol: DOMC[st.dom],
+      squadsOpen: st.squads, squadsOpenAria: st.squads ? "true" : "false",
+      toggleSquads: () => this.setState({squads: !st.squads}),
+      lights: ["Jade", "Ruby", "Gold"].map((d) => ({col: DOMC[d], op: d === st.dom ? 1 : 0.45, ring: d === st.dom ? 2 : 0,
+        pressed: d === st.dom ? "true" : "false", aria: "Squad light: " + d, pick: () => this.setState({dom: d})})),
+      book: BOOK.map((b, i) => ({name: b[0], whose: b[2], col: DOMC[b[1]], edge: i === st.book ? DOMC[b[1]] : "transparent",
+        pick: () => this.setState({book: i, dom: b[1], squads: false, seat: -1, pick: ""})})),
+      noop: () => {}, bg: HANGAR[st.dom], back: () => this.back(),
+      showBack: st.seat >= 0 || st.squads, backLabel: st.pick ? "Back to the seat" : (st.squads ? "Close" : "Back to the squad")};
+  }
+
+
+  // One bay: a seat is always shown (the leader first), so Back only closes a list or the squads.
+  back() { const st = this.state; if (st.squads) this.setState({squads: false}); else if (st.pick) this.setState({pick: ""}); }
+  openSeat(i) { this.setState({seat: i, pick: "", squads: false}); }
+  renderVals() {
+    if (this.state.seat < 0) this.state.seat = 1;
+    const st = this.state, f = this.foot(), L = this.list(), s = st.seats[st.seat], col = DOMC[st.dom];
+    const rail = [1, 0, 2].map((i) => {
+      const t = st.seats[i], on = st.seat === i;
+      return {role: ROLES[i], who: t.who, img: t.open ? "" : HULL[t.v], hasImg: !t.open, edge: on ? col : "transparent",
+        op: on ? 1 : 0.7, pressed: on ? "true" : "false", press: () => this.openSeat(i)};
+    });
+    return Object.assign(f, L, {rail, hull: s.open ? "" : HULL[s.v], hasHull: !s.open, isOpen: !!s.open,
+      hullAlt: s.open ? "" : s.v + " on the pad", fill: () => this.openList("w"), seatRole: ROLES[st.seat], seatWho: s.who,
+      picks: L.listOn ? [] : this.picks(), stripX: 560, stripY: 820, showBack: !!st.pick || st.squads,
+      backLabel: st.pick ? "Back to the seat" : "Close"});
+  }
+}
+
+</script>
+</body>
+</html>

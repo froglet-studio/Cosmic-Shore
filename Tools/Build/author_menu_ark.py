@@ -355,8 +355,10 @@ def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=No
 # MAKE, JOIN, DELETE, the squad's light and Take into. Every number is the board's (R110B, 1920 x 1080), measured from
 # the screen's foot-centre.
 EDGE = 40                                      # the boards' margin, left and right
-RAIL_H = 136                                   # the brass rail: the board's 944..1080
-RAIL_Y = 40                                    # its controls' top, down from the rail's top edge
+RAIL_H = 96                                    # the brass rail (was R110B's 136: Shombith 2026-11-24, "the footer is too big")
+# Its controls' top, down from the rail's top edge. Its own name: the Artifacts section below defines a RAIL_Y of its own
+# (890), and while both were RAIL_Y every Squads rail control was written 850 px under the screen (section 230).
+SQUAD_RAIL_Y = (RAIL_H - 48) // 2
 RAIL_BTN_H = 48
 DOME = (0, 144, 1260, 520)                     # centre x, centre y up from the foot, width, height (R110B left 330 top 676)
 DOME_GLOW_ALPHA, DOME_RIM_ALPHA = 0.12, 0.45
@@ -405,27 +407,27 @@ def squad_rail(page):
     image_node(rail, "Squads/Rail/Brass", "Brass", R((0, 1), (1, 1), (0, 0), (0, 3), (0.5, 1)), "Purchase", alpha=0.55)
     image_node(rail, "Squads/Rail/Sheen", "Sheen", R((0, 1), (1, 1), (0, 0), (0, 40), (0.5, 0)), "Purchase",
                K.kit_sprite("kit_fade_v"), alpha=0.12)
-    small_button(rail, "Squads/Rail/Prev", "Prev", "<", TL(EDGE, RAIL_Y, 44, RAIL_BTN_H))
-    H.ellipsize(label(rail.child(N("Squads/Rail/Name", "Name", TL(EDGE + 54, RAIL_Y - 6, 196, 30))), "", "H3", "TextLight"))
-    H.ellipsize(label(rail.child(N("Squads/Rail/Whose", "Whose", TL(EDGE + 54, RAIL_Y + 28, 196, 18))), "", "Label",
+    small_button(rail, "Squads/Rail/Prev", "Prev", "<", TL(EDGE, SQUAD_RAIL_Y, 44, RAIL_BTN_H))
+    H.ellipsize(label(rail.child(N("Squads/Rail/Name", "Name", TL(EDGE + 54, SQUAD_RAIL_Y - 6, 196, 30))), "", "H3", "TextLight"))
+    H.ellipsize(label(rail.child(N("Squads/Rail/Whose", "Whose", TL(EDGE + 54, SQUAD_RAIL_Y + 28, 196, 18))), "", "Label",
                       "NeutralLightest"))
-    small_button(rail, "Squads/Rail/Next", "Next", ">", TL(EDGE + 256, RAIL_Y, 44, RAIL_BTN_H))
-    image_node(rail, "Squads/Rail/Divider", "Divider", TL(EDGE + 312, RAIL_Y + 6, 1, 36), "Purchase", alpha=0.35)
-    small_button(rail, "Squads/Rail/Make", "Make", "Make", TL(EDGE + 326, RAIL_Y, 100, RAIL_BTN_H))
-    small_button(rail, "Squads/Rail/Join", "Join", "Join", TL(EDGE + 434, RAIL_Y, 100, RAIL_BTN_H))
+    small_button(rail, "Squads/Rail/Next", "Next", ">", TL(EDGE + 256, SQUAD_RAIL_Y, 44, RAIL_BTN_H))
+    image_node(rail, "Squads/Rail/Divider", "Divider", TL(EDGE + 312, SQUAD_RAIL_Y + 6, 1, 36), "Purchase", alpha=0.35)
+    small_button(rail, "Squads/Rail/Make", "Make", "Make", TL(EDGE + 326, SQUAD_RAIL_Y, 100, RAIL_BTN_H))
+    small_button(rail, "Squads/Rail/Join", "Join", "Join", TL(EDGE + 434, SQUAD_RAIL_Y, 100, RAIL_BTN_H))
     sq = rail.child(N("Squads/Rail/Squad", "Squad", STRETCH))
     sq.add("cg", 225, canvas_group(False))
-    small_button(sq, "Squads/Rail/Squad/Remove", "Remove", "Delete", TL(EDGE + 542, RAIL_Y, 110, RAIL_BTN_H), "Danger")
+    small_button(sq, "Squads/Rail/Squad/Remove", "Remove", "Delete", TL(EDGE + 542, SQUAD_RAIL_Y, 110, RAIL_BTN_H), "Danger")
     light_w = 3 * 118 + 2 * 8
-    lt = sq.child(N("Squads/Rail/Squad/Light", "Light", R((0.5, 1), None, (0, -RAIL_Y), (light_w, RAIL_BTN_H), (0.5, 1))))
+    lt = sq.child(N("Squads/Rail/Squad/Light", "Light", R((0.5, 1), None, (0, -SQUAD_RAIL_Y), (light_w, RAIL_BTN_H), (0.5, 1))))
     for i, (name, _) in enumerate(DOMAIN_ORDER):
         pick_chip(lt, f"Squads/Rail/Squad/Light/{name}", name, TL(i * 126, 0, 118, RAIL_BTN_H), RAIL_BTN_H, name,
                   K.chrome_sprite("chrome_diamond"), TL(14, 17, 14, 14), label_rect=TL(34, 0, 80, RAIL_BTN_H))
-    mission = small_button(sq, "Squads/Rail/Squad/Mission", "Mission", "Mission", TR(EDGE + 188, RAIL_Y, 180, RAIL_BTN_H))
+    mission = small_button(sq, "Squads/Rail/Squad/Mission", "Mission", "Mission", TR(EDGE + 188, SQUAD_RAIL_Y, 180, RAIL_BTN_H))
     # The lock in the button, before its word (R67): Mission refuses as Home's entry does.
     lock = mission.child(N("Squads/Rail/Squad/Mission/Lock", "Lock", TL(16, 14, 16, 20)))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_lock"), preserve=True))
-    small_button(sq, "Squads/Rail/Squad/Arena", "Arena", "Arena", TR(EDGE, RAIL_Y, 180, RAIL_BTN_H), "Play")
+    small_button(sq, "Squads/Rail/Squad/Arena", "Arena", "Arena", TR(EDGE, SQUAD_RAIL_Y, 180, RAIL_BTN_H), "Play")
 
 
 def seat_plate(page, seat):
@@ -1692,6 +1694,13 @@ def validate_tabs(view, V):
         x, y = rect_xy(view, rt, "m_AnchoredPosition")
         xs.append(x)
         assert y - PLATE_H >= RAIL_H, f"seat {seat}'s plate runs into the rail"
+    # The rail's controls stand inside the rail (top-anchored: y 0 is its top edge, -RAIL_H its foot). A name clash once
+    # wrote them all 850 px under the screen (section 230), and nothing here said so.
+    for key in ("Prev", "Name", "Whose", "Next", "Make", "Join", "Squad/Remove", "Squad/Mission", "Squad/Arena"):
+        rt = V(f"Squads/Rail/{key}#rt")
+        _, y = rect_xy(view, rt, "m_AnchoredPosition")
+        _, h = rect_xy(view, rt, "m_SizeDelta")
+        assert -RAIL_H <= y - h and y <= 0, f"the rail's {key} stands outside the rail (y {y}, height {h}, rail {RAIL_H})"
     assert xs[1] < xs[0] < xs[2], "the plates are not Rogue One left, the leader in the middle, Rogue Two right (their pads)"
     assert PROJ_BOTTOM > PLATE_TOP + PLATE_RISE, "the projection stands on the picked plate"
     assert re.search(r"^  domainOrder:\n  - 1\n  - 2\n  - 4\n", page, re.M), "SquadsPage.domainOrder is not Jade, Ruby, Gold"
@@ -1886,6 +1895,9 @@ def self_test(files):
         ("the leader's plate moved to the left", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Squads/Plate0#rt"), lambda d: re.sub(r"(  m_AnchoredPosition: \{x: )0(,)", r"\g<1>-640\2", d))),
          "the plates are not"),
+        ("the rail's MAKE under the screen", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Squads/Rail/Make#rt"), lambda d: re.sub(r"(  m_AnchoredPosition: \{x: [\d.]+, y: )-?[\d.]+", r"\g<1>-890", d))),
+         "stands outside the rail"),
         ("the Rev 67 seat cards back", lambda f: f.__setitem__(view, f[view].replace(
             "  domainLit:", "  mateCards: []\n  domainLit:", 1)), "is back"),
         ("FEED unwired", lambda f: f.__setitem__(view, re.sub(

@@ -65,6 +65,12 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Squads rail on screen, 96 high, Back at every level (`claude/project-thread-ffv5m4`, 2026-11-24, Shombith) — NOT EDITOR-VERIFIED
+
+Menu_Main > Ark > Squads at 1920 x 1080: the foot shows the rail (< squad name >, Make, Join, Delete, the Jade / Ruby /
+Gold light, Mission, Arena) inside a 96 px bar, not an empty dark bar. Press a plate: the projection shows Back; Back
+closes the seat. Open a list (Vessel): Back returns to the seat, a second Back closes it. `Docs/MENU_REDESIGN_B.md` 230.
+
 ### 🔴 The Squads tab as the holo table, Rev 110 B (`claude/project-thread-sdvd40`, 2026-11-14, Shombith) — NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md section 206. Compiled with `unity_refcompile` (0 errors in changed files); never opened in Unity.
