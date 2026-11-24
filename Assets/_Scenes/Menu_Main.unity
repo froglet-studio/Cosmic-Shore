@@ -46096,9 +46096,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &181413933364595608 stripped
+--- !u!114 &581145194989758497 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 911606969064912970, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 446571931708726259, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46107,9 +46107,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18a748c84941261d033c5ec287a52c67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &757732002485926730 stripped
+--- !u!114 &599030149088224500 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 335007493539023000, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 464433748822562598, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46118,9 +46118,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18a748c84941261d033c5ec287a52c67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &822700334868541178 stripped
+--- !u!114 &1038416964343197351 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 380834745875799336, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 21141468400377205, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46140,9 +46140,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50795810ee6941c9b9641e72797386c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1025018842816353041 stripped
+--- !u!114 &446135783012176130 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7801599456190659, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 581756644655538896, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46151,9 +46151,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b10c374f85649a2a9e0757ff915fe66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &862963668109830597 stripped
+--- !u!114 &114817478248137123 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 422197440358357527, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 1132030048679637617, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46162,9 +46162,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b10c374f85649a2a9e0757ff915fe66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &390381771515756566 stripped
+--- !u!114 &646377436967797697 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 813115858239796164, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 493788942020751379, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46173,9 +46173,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b10c374f85649a2a9e0757ff915fe66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &979048104410417598 stripped
+--- !u!114 &1020372619880158587 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 266954447442524780, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 3159765968447145, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46202,13 +46202,13 @@ MonoBehaviour:
   convertButton: {fileID: 592029296974899447}
   convertLabel: {fileID: 862056330562694479}
   balances:
-  - {fileID: 1025018842816353041}
-  - {fileID: 862963668109830597}
-  - {fileID: 390381771515756566}
-  - {fileID: 979048104410417598}
-  omniCountText: {fileID: 181413933364595608}
-  balanceLineText: {fileID: 757732002485926730}
-  omniPop: {fileID: 822700334868541178}
+  - {fileID: 446135783012176130}
+  - {fileID: 114817478248137123}
+  - {fileID: 646377436967797697}
+  - {fileID: 1020372619880158587}
+  omniCountText: {fileID: 581145194989758497}
+  balanceLineText: {fileID: 599030149088224500}
+  omniPop: {fileID: 1038416964343197351}
   arkTabs: {fileID: 415689352332947796}
   converterTab: 0
 --- !u!222 &4102067197520110292

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+p{margin:0 0 14px 0}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif; padding: 64px 80px; box-sizing: border-box; font-size: 19px; line-height: 1.5">
+<div class="cap" style="font-size:30px;margin-bottom:24px">Rev 139 notes</div>
+<div style="display:flex;gap:80px">
+<div style="flex:1;color:#C9CDEA">
+<p><span class="cap" style="color:#E6E9FF">Asked</span> (Shombith, 2026-11-24): "No convert animation happening even the UI is very weird and does not look good at all. Completely need to rework this. The BG is fine but not the UI." The pier and its clips stay; the dais of Rev 104 B goes.</p>
+<p><span class="cap" style="color:#E6E9FF">Why nothing seemed to happen.</span> CONVERT plays converter_Nocturne_convert from frame 0, and in that clip the four crystals idle for the first 4.7 seconds before they fly. The dais's rays and counts step on the overlay's own clock, so the screen said Converting while the picture stood still. Every option trims the clip to start where the crystals leave, and answers the press on the same frame.</p>
+<p><span class="cap" style="color:#E6E9FF">Why the dais read as weird.</span> Its three big ellipses cut across the deck below the crystals, the counts sat on the rings far from the crystals they count, and the rays pointed at an omni drawn on the floor, not at the pad where the real omni forms.</p>
+</div>
+<div style="flex:1;color:#C9CDEA">
+<p><span class="cap" style="color:#E6E9FF">A, Light paths.</span> One quiet line at the foot, CONVERT in it. On a press each count drops and its dotted path draws up to the pad, like the routes on the holo table in Scales's scene; the ring flashes when the omni forms.</p>
+<p><span class="cap" style="color:#E6E9FF">B, Glass orb.</span> The converter as an object: a small glass sphere at the foot, after the orb in Flux's cockpit. The four sit inside it and spiral into one omni; counts hang off it on hairlines. The most to build (a sphere shader or a rendered sprite).</p>
+<p><span class="cap" style="color:#E6E9FF">C, The pad is the button (recommended).</span> The pier's own landing ring is CONVERT: press the thing in the picture, the same thing you asked for on the Artifacts tab. The counts are one line at the foot and nothing else is drawn. The ring pulses as each crystal lands. On a pad, A presses it as before.</p>
+<p><span class="cap" style="color:#E6E9FF">Colour.</span> CONVERT is drawn Lime, the call to action; the build has it gold (Purchase). Say if gold stays.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

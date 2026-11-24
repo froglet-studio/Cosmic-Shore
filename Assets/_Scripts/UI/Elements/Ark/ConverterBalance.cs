@@ -4,9 +4,9 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One element's balance on the Ark converter (Rev 104 B, "the holo dais", Docs/MENU_REDESIGN_B.md section 196):
-    /// its crystal, how many of them the player holds, and its name, standing on the dais's arc with no panel behind it,
-    /// and its beam to the omni at the dais's centre. The count turns the CTA colour while that element's crystal flies
+    /// One element's balance on the Ark converter (Rev 139 C, the foot line, Docs/MENU_REDESIGN_B.md section 223; the beam
+    /// is Rev 104 B's dais, section 196, and stays optional): its crystal, how many of them the player holds, and its name,
+    /// with no panel behind it. The count turns the CTA colour while that element's crystal flies
     /// into the omni, and dims at 0; the beam lights once its crystal has started to fly and stays lit for the run.
     ///
     /// <para><see cref="ElementalConverterView"/> draws it every frame; text and colours are written only on a change.</para>
@@ -23,7 +23,7 @@ namespace CosmicShore.UI
         [SerializeField] private KitText countText;
         [Tooltip("The element's name (Label role). Its words are authored on this text.")]
         [SerializeField] private KitText nameText;
-        [Tooltip("The beam from this crystal to the omni at the dais's centre: faint at rest, the CTA colour once lit.")]
+        [Tooltip("Optional: a beam from this crystal to the omni, faint at rest, the CTA colour once lit (the Rev 104 B dais had one; the foot line has none).")]
         [SerializeField] private KitThemedGraphic beam;
 
         int _held = -1;
