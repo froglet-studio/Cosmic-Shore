@@ -26520,7 +26520,8 @@ prisms finished clean in 136.4 s.
 - [ ] The wheel turns, at the same angle on host and guest; you can pass through its hub or between its spokes, and
   meeting a spoke costs what hitting prisms costs.
 - [ ] Straying off the line into a ruin costs what hitting prisms costs, no more.
-- [ ] The ruins read as ruins and not as seals (both are Blue); say if they need their own look.
+- [ ] The ruins read as ruins and not as seals: each ruin is Jade, Ruby or Gold, the seals Blue (2026-11-24, seen in
+  stills). Fly through a ruin of your own colour and one of another: say if they cost you differently.
 - [ ] The frame rate at I4 is no worse than at I2.
 I2 and I3 at 1x: 133.3 s and 132.7 s (one seed each), both within 10% of the judge's 142.3 and 135.2 s.
 

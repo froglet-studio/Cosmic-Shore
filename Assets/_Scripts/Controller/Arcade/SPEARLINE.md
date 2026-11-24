@@ -109,13 +109,18 @@ through and one who strays meets prisms at the game's own cost. **The wheel alon
 it, and only its 30 u hub and the three gaps between spokes are open. A wheel is laid only where no other leg's lane
 passes through its sweep (a pergola stands there otherwise). No ruin prism stands within 120 u of a ring's mouth.
 
-Every ruin prism is at least 8 u across (the first cut's were 4.5-5). The ruins are the seals' prism in the seals'
-domain (Blue), laid by every peer from the broadcast rings; a hull or a bill breaks them and they do not grow back, so
+Every ruin prism is at least 8 u across (the first cut's were 4.5-5). The ruins are the seals' prism, laid by every
+peer from the broadcast rings, each ruin in one domain colour, Jade, Ruby and Gold in turn round the lap, so they read
+apart from the Blue seals (Yash, 2026-11-24: "a different colour from the seals, we can use domain colors also, its
+just for decoration"; `ruinDomains` on the controller, empty = Blue). **Open:** a ruin in a pilot's own domain is that
+pilot's own colour, and the game treats own-domain prisms as allied in places, so the three pilots may not meet every
+ruin alike; not measured.
+They are laid by every peer from the broadcast rings; a hull or a bill breaks them and they do not grow back, so
 they wear down over the five laps. The wheel's prisms are posed each frame from the network clock, so every peer sees
 the same angle; they are the shape of their owner, not moving prisms (`Docs/PRISM_MOTION.md` 1). Nothing about the
 vessel changes.
 
-About 730-800 prisms a lap. Held by `SpearlineRuinsTests` (11) and six negative controls in `spearline_harness`.
+About 730-810 prisms a lap. Held by `SpearlineRuinsTests` (12) and six negative controls in `spearline_harness`.
 
 ## 3. The AI (`SpearlineController.Coach.cs`)
 
@@ -226,6 +231,9 @@ About 730-800 prisms a lap. Held by `SpearlineRuinsTests` (11) and six negative 
   rate sampled five times in the race under the 75 fps cap: 75, 69, 73, 73, 55. Each kind was seen through a plain
   camera at race start. Not seen: the wheel turning (stills only), what the wheel costs a pilot or an AI that meets a
   spoke, and the frame rate with the cap off.
+- **2026-11-24, the ruins in Jade, Ruby and Gold, same setup:** 814 ruin prisms, the race finished with a winner in
+  158.1 s and no error in the match. That is 5 s over the slowest race without ruins (152.7 s); one race cannot say
+  whether the colours cost the AI time.
 - **Frame rate, I2, clock 1x, 1920x1080 Ultra, 15 s `capture`** (i7-8700K, RTX 4070 Ti, editor): Debug code mode with
   the 75 fps cap, 49 fps (game work 12.8 ms a frame, capped, so not a measurement); Release code mode with VSync and the
   target off, 111 fps average, median 8.6 ms, p95 12.4 ms, p99 15.6 ms, GPU 2.8 ms, CPU-bound. The controller's
