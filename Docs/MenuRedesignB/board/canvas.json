@@ -3409,6 +3409,110 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 135 - notes: the classes screen, effectiveness and where it opens"
+    },
+    "R136EVessels.dc.html": {
+      "x": 0,
+      "y": 49660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 EVessels - E One class on the floor"
+    },
+    "R136ESeat.dc.html": {
+      "x": 2100,
+      "y": 49660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 ESeat - E opened from Seat 3"
+    },
+    "R136FVessels.dc.html": {
+      "x": 4200,
+      "y": 49660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 FVessels - F The wanted three on the floor"
+    },
+    "R136FSeat.dc.html": {
+      "x": 0,
+      "y": 50920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 FSeat - F opened from Seat 3"
+    },
+    "R136Notes.dc.html": {
+      "x": 0,
+      "y": 52180,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 136 - notes: Vessels in Rev 134's look"
+    },
+    "R137Chart.dc.html": {
+      "x": 0,
+      "y": 54540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Chart - Pause: a rival Ark and a runaway crew"
+    },
+    "R137ArkMeet.dc.html": {
+      "x": 2100,
+      "y": 54540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 ArkMeet - A rival Ark arrives"
+    },
+    "R137ArkOpen.dc.html": {
+      "x": 4200,
+      "y": 54540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 ArkOpen - Escorts silenced, her hull open"
+    },
+    "R137ArkBreak.dc.html": {
+      "x": 0,
+      "y": 55800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 ArkBreak - Her hold bursts"
+    },
+    "R137Runaway.dc.html": {
+      "x": 2100,
+      "y": 55800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Runaway - A runaway crew raids"
+    },
+    "R137Rout.dc.html": {
+      "x": 4200,
+      "y": 55800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Rout - They break and run"
+    },
+    "R137Fall.dc.html": {
+      "x": 0,
+      "y": 57060,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Fall - The end board: who you beat"
+    },
+    "R137Notes.dc.html": {
+      "x": 0,
+      "y": 58320,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 137 - notes: rivals"
     }
   },
   "createdOnFiles": {
@@ -3507,6 +3611,8 @@
     "sec-rev134",
     "sec-rev134-2",
     "sec-rev135",
+    "sec-rev136",
+    "sec-rev137",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3604,7 +3710,9 @@
     "rev132",
     "rev133",
     "rev134",
-    "rev135"
+    "rev135",
+    "rev136",
+    "rev137"
   ],
   "notes": {
     "hud_end": {
@@ -5894,6 +6002,54 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev136": {
+      "kind": "title1",
+      "text": "Rev 136 - Voyages: Vessels, a section of Your Ark in Rev 134's look (two ways)",
+      "x": 0,
+      "y": 49260,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev136": {
+      "kind": "rect",
+      "x": -160,
+      "y": 49100,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev137": {
+      "kind": "title1",
+      "text": "Rev 137 - Voyages: rival Arks and runaway crews, and how you beat them",
+      "x": 0,
+      "y": 54140,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev137": {
+      "kind": "rect",
+      "x": -160,
+      "y": 53980,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(255, 77, 77, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 77, 77, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6304,7 +6460,20 @@
     "R135ClassesA.dc.html",
     "R135ClassesB.dc.html",
     "R135ClassesPick.dc.html",
-    "R135Notes.dc.html"
+    "R135Notes.dc.html",
+    "R136EVessels.dc.html",
+    "R136ESeat.dc.html",
+    "R136FVessels.dc.html",
+    "R136FSeat.dc.html",
+    "R136Notes.dc.html",
+    "R137Chart.dc.html",
+    "R137ArkMeet.dc.html",
+    "R137ArkOpen.dc.html",
+    "R137ArkBreak.dc.html",
+    "R137Runaway.dc.html",
+    "R137Rout.dc.html",
+    "R137Fall.dc.html",
+    "R137Notes.dc.html"
   ],
   "pages": [
     {

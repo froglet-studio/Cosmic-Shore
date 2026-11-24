@@ -8968,7 +8968,7 @@ should be very well defined for these to work".
 
 **Differs from the build**: none of it is built (see section 226).
 
-## 228. Rev 135 mockups: the full-screen HyperSea kept, and the vessel classes screen (2026-11-24, awaiting a pick)
+## 228. Rev 135 mockups: the full-screen HyperSea kept, and the vessel classes screen (2026-11-24; classes boards rejected, see 229)
 
 **Asked** (Shombith, on Rev 134): "We can build these. ... in the board in the first screen please make sure the fullscreen
 of hypersea feature stays, show me the screen which differentiates vessels as per their classes and what to choose and
@@ -8992,3 +8992,32 @@ copies `Docs/MenuRedesignB/board/R135*.dc.html`, generator `Docs/MenuRedesignB/r
 
 **Differs from the build**: the built Voyages tab has the full screen but no givers column or events on it, and no class
 screen at all; vessels have no voyage class in data yet (the class sort is the Milestone 2 design's, Brood Rush wins).
+
+**Rejected (Shombith, 2026-11-24)**: "I dont like any of them, there can be CTA try 2 more variations for the classes its too
+noisy and confusing", "Even the classes pick section", and "I already selected 134 for seats and pilots and
+classes/vessels should be another section following the same design principle no?" Rev 134's Seats and Pilots stand as
+picked; BoardFull and FullScreen stand.
+
+## 229. Rev 136 mockups: Vessels, a section of Your Ark in Rev 134's look (2026-11-24, awaiting a pick)
+
+**Asked**: the rejection above. **On the canvas**: tab Voyages, Rev 136; copies `Docs/MenuRedesignB/board/R136*.dc.html`,
+generator `Docs/MenuRedesignB/rounds/r136_voyages_vessels.py`. Rev 134's look kept: the voyage line on top, the hangar
+floor, hulls standing on it, one line under each, fit and pay along the foot, Lime only on the one CTA (Put Scarab in
+Seat 3 / Take the vessel).
+- **E One class on the floor** (EVessels, ESeat): a class's vessels stand on the floor; the seven classes run along the
+  foot, the giver's three brighter.
+- **F The wanted three on the floor** (FVessels, FSeat): the giver's three classes stand like three seats, each with its
+  other vessels as chips; the rest is one line and See all seven.
+- The Seat boards are the same section opened from Change vessel on a seat: what the AI cannot fly is dimmed.
+
+## 230. Rev 137 mockups: rival Arks and runaway crews, and how you beat them (2026-11-24, awaiting board approval)
+
+**Asked** (Shombith): "Lets make rival ark thats cooler and makes sense there can be runaway crews as well no problem both
+can be there and how do i defeat theses players?" **On the canvas**: tab Voyages, Rev 137; copies
+`Docs/MenuRedesignB/board/R137*.dc.html`, generator `Docs/MenuRedesignB/rounds/r137_voyages_rivals.py`.
+Chart (a rival Ark on its own lane, a runaway crew next door), ArkMeet (their Ark lit red in the world with its plate:
+hold, hull, escorts), ArkOpen (two escorts silenced, her hull open), ArkBreak (hull broken, the hold bursts as loose
+crystal, the crew turns back), Runaway (a runaway crew raids your drift), Rout (all three silenced at once: they drop
+their haul and run), Fall (the end board's rival lines, grudge, Rival Breaker). All AI crews in Milestone 2; PvP petals
+only. Rules for the build: a per-crew Ark / runaway flag; rout = all three silenced at the same moment; a rival Ark crew
+turns back when its Ark breaks. The voyage-build thread waits on this round for those rules.

@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795521164-0ea7` of **Frogma**: Rev 41 to Rev 135, 408 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795521468-80c7` of **Frogma**: Rev 41 to Rev 137, 421 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -415,6 +415,25 @@ Copied on 2026-11-24 from canvas version `1795521164-0ea7` of **Frogma**: Rev 41
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 137 - Voyages: rival Arks and runaway crews, and how you beat them
+
+- [`R137Chart.dc.html`](R137Chart.dc.html) - Rev 137 Chart - Pause: a rival Ark and a runaway crew
+- [`R137ArkMeet.dc.html`](R137ArkMeet.dc.html) - Rev 137 ArkMeet - A rival Ark arrives
+- [`R137ArkOpen.dc.html`](R137ArkOpen.dc.html) - Rev 137 ArkOpen - Escorts silenced, her hull open
+- [`R137ArkBreak.dc.html`](R137ArkBreak.dc.html) - Rev 137 ArkBreak - Her hold bursts
+- [`R137Runaway.dc.html`](R137Runaway.dc.html) - Rev 137 Runaway - A runaway crew raids
+- [`R137Rout.dc.html`](R137Rout.dc.html) - Rev 137 Rout - They break and run
+- [`R137Fall.dc.html`](R137Fall.dc.html) - Rev 137 Fall - The end board: who you beat
+- [`R137Notes.dc.html`](R137Notes.dc.html) - Rev 137 - notes: rivals
+
+#### Rev 136 - Voyages: Vessels, a section of Your Ark in Rev 134's look (two ways)
+
+- [`R136EVessels.dc.html`](R136EVessels.dc.html) - Rev 136 EVessels - E One class on the floor
+- [`R136ESeat.dc.html`](R136ESeat.dc.html) - Rev 136 ESeat - E opened from Seat 3
+- [`R136FVessels.dc.html`](R136FVessels.dc.html) - Rev 136 FVessels - F The wanted three on the floor
+- [`R136FSeat.dc.html`](R136FSeat.dc.html) - Rev 136 FSeat - F opened from Seat 3
+- [`R136Notes.dc.html`](R136Notes.dc.html) - Rev 136 - notes: Vessels in Rev 134's look
 
 #### Rev 135 - Voyages: the full-screen HyperSea stays, and the vessel classes screen
 
