@@ -76,6 +76,22 @@ combos:
     - 'Paint a rival: every nest launches'
   drivers: [make, rival, mastery]
   feel: A trap sprung from three sides.
+  gene:
+    genome: Charge
+    cue: [rival_near, bank_full]
+    dials:
+    - - nestsBeforePaint
+      - nests standing before a rival is painted
+      - 1
+      - 3
+      - count
+    - - paintHold
+      - seconds a target is painted
+      - 0.3
+      - 3
+      - s
+    done: A nest's missile takes a petal from a rival.
+    sight: BANDIT
 - name: Perch and lance
   t: [8, 25]
   is: Docked, everything recharges faster.
@@ -85,4 +101,101 @@ combos:
   - [Time, Sling away]
   drivers: [break, joy]
   feel: A sniper who is never where they fired from.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, verb_ready]
+    dials:
+    - - perchOffset
+      - distance from the target line to the perch
+      - 20
+      - 300
+      - u
+    - - lanceAlign
+      - aim error down the line that still fires
+      - 1
+      - 15
+      - deg
+    done: One lance breaks rival prisms along its whole line.
+- in: x
+  name: Sling chain
+  t: [5, 15]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Sling to the block nearest the gate line, dock while the cooldown runs, sling again.
+  chain:
+  - - Time
+    - Sling to a block on the gate line
+  - - Mass
+    - 'Dock: every cooldown runs faster'
+  - [Time, Sling again]
+  drivers: [joy, mastery]
+  feel: Swinging branch to branch.
+  gene:
+    genome: Time
+    cue: [gate_next, mass_ahead]
+    dials:
+    - - slingAlign
+      - heading error to the block that still slings
+      - 1
+      - 45
+      - deg
+    - - dockTime
+      - seconds docked before the next sling
+      - 0
+      - 2
+      - s
+    done: A gate is threaded within two seconds of a sling.
+    sight: NEEDLE
+- in: x
+  name: The thornbush
+  t: [20, 60]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Sling to blocks round the nucleus and leave a nest at each.
+  chain:
+  - - Time
+    - Sling to a block by the nucleus
+  - - Mass
+    - 'Detach: a nest of super-shielded blocks'
+  - - ''
+    - Three nests round the claim
+  drivers: [make, mastery]
+  feel: A fortress you planted.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap]
+    dials:
+    - [nestSpacing, distance between nests, 10, 200, u]
+    done: Three nests stand inside the claim.
+    sight: ENSIGN
+- in: x
+  name: Void Lance into Nest into Void Sling
+  t: [12, 60]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive
+    cell at 93% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Void Lance (Space), then Nest (Mass), then Void Sling (Time).'
+  chain:
+  - [Space, Void Lance]
+  - [Mass, Nest]
+  - [Time, Void Sling]
+  drivers: [break, joy, make]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [rival_mass_ahead]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Void Sling lands within the handoff of the Void Lance before it.
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md

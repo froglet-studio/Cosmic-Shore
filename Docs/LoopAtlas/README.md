@@ -19,7 +19,12 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `model/kit.yaml` | What every vessel's kit shares: roles per game type, the flight-feel pulse, the verb archetypes, which drivers each element serves. |
 | `model/proposals.yaml` | Proposals P1 to P12 and the loops each touches. |
 | `model/items.yaml` | Product work beyond the loops: the areas (Game, App, AI, ...) and the items in them, which move through the layers like loops. |
-| `model/fleet/<Vessel>.yaml` | One vessel: its verbs, combos (with nested `sub` loops), games, arenas and board. |
+| `model/fleet/<Vessel>.yaml` | One vessel: its verbs, combos (with nested `sub` loops and each combo's AI `gene`), games, arenas and board. |
+| `model/genes.yaml` | What turns a combo into an AI gene: the rule, the activation expectation for combos, the `senses` a gene's cues name and the pilot `sights` (callsigns). |
+| `genes-out/` | **The gene search's output** (`Tools/Build/gene_search.py run`): one genome per vessel and element (best, MAP-Elites archive, I1-I4 ladder, plateau, bloat), `pool.json` (the fixed AI pool arena balancing races against), `retrain-<arena>.json`, `discovered.json` (candidate loops) and `SUMMARY.md`. |
+| `balance-in/` | Proposed tuning from the arena balancing work, one JSON per arena, read by `gene_search.py retrain --balance`. |
+| `discover-in/` | Strategies other searches observed, offered as loops (`README.md` there has the shape). |
+| `GENES.md` | Every combo as an AI gene, the coverage per vessel and genome, and the activation expectations of every measured loop, **generated**. |
 | `schema.json` | JSON Schema for the assembled model. |
 | `model.json` | The assembled model, **generated**; never edit it by hand. Other tools read this. |
 | `page/atlas.template.html` | The published page with the model taken out. The map's runtime lives here. |
@@ -28,6 +33,7 @@ https://claude.ai/artifact/QUiM5ztvnHhkpWgsn4S43K.
 | `BOARD.md` | The atlas as a work board, **generated**: build orders, decided plans, proposals, holes, recent moves. |
 | `CODE.md` | **The Code Atlas**: how the map zooms from a loop into the whole codebase down to every value (equivalent places, no links), the data model, loading, the anchored camera, the pictures. |
 | `code/links.yaml` | Hand links from loops to the code that implements them (the automatic ones need none). |
+| `personas/journeys.yaml` | **Player journeys**: six personas (shared ids with the economy simulation's `sim/personas.yaml`) and the path each takes through the loops, in the game today and with the Proposed layer's fixes. `Tools/Build/loop_journeys.py build` expands it into `personas/journeys.json` (generated; read by the page and the simulation) and `personas/JOURNEYS.md`; `--html DIR` writes the animated page (https://claude.ai/artifact/QTMtLQcBVg4FipV27WSswD) with its data, and `--sim sim/out/journeys.json` adds the simulation's runs as three more layers. |
 | `code-out/` | The Code Atlas build (`Tools/Build/code_atlas.py build`), **generated and ignored**; published beside the page as `code/`. |
 
 ## Editing the model
@@ -55,6 +61,8 @@ The tool needs PyYAML and jsonschema (`pip install pyyaml jsonschema`).
 - Every driver, handoff, layer letter, tier and archetype a loop, edge, role or vessel names is defined in
   `vocabulary.yaml` or `kit.yaml`.
 - Every edge joins two loops, every proposal touches only loops that exist, the default vessel is in the fleet.
+- Every gene's cues, sight and dials are well formed (above); every `measure` names an Activation phase that exists and
+  an event no other loop uses.
 
 ## Fields of a loop
 
@@ -74,6 +82,39 @@ The tool needs PyYAML and jsonschema (`pip install pyyaml jsonschema`).
 | `src` | Where the loop came from: a repo path (optionally with a section), or a dated brief. |
 | `build` | A build order: the change graduated to Now that the game does not have yet (`s` queued or building, `what`, `by`, `at`, `branch`). |
 | `kit`, `element`, `core` | The role it plays a vessel's kit in, its element, and whether it is on the core path. |
+| `measure` | How a pass is counted and what activation expects of it: `event` (the analytics event one pass fires, `params`), `target`, `first` (the phase of `arc.activation` where a new player first meets it) and `expect` (what they have done by then). `in` its layers, `x` until planned. |
+
+## Genes: a combo as an AI behaviour
+
+Garrett, 2026-11-21: "your proposed gameplay loop combos are spot on for most vessels. expand that work. turn them into
+genes for ai behaviors". Every combo carries a `gene`, one gene of the vessel's genome for one element (the AI plan's
+one AI per vessel per element, `Docs/AI_SYSTEM/AI_PLAN.md`):
+
+| Field | Meaning |
+| --- | --- |
+| `genome` | Time, Charge, Mass or Space: the element genome that carries it, usually the element of the arcade game it pays in. |
+| `cue` | When the AI starts the combo: ids from `genes.yaml` senses (what the AI reads of the world, each with where the game knows it). |
+| `dials` | What a search learns: `[name, what it sets, low, high, unit]`. The seed is what the shipped AI does; once a search writes a dial nobody types it (the `RaceAICrystalGenesSO` rule). |
+| `done` | The measured moment the combo counts as done: the AI's fitness term and the player's `combo_completed` event are the same count. |
+| `sight` | The pilot callsign whose sight leans into it (`Docs/Pilots/CALLSIGNS.md`): a pilot changes what the AI goes after, never what the vessel can do. |
+| `in` | Its layers; `x` (Proposed) until the AI owner plans it. |
+
+`genes.search` is how a search scores a genome (Garrett, 2026-11-21): it keeps **bloat** small (a dial, cue or
+branch nobody can see change anything, that widens the search or costs effectiveness) and weights toward **style**
+(switching between noticeably different behaviours of roughly comparable effectiveness, kept in a MAP-Elites archive
+beside the best genome). Skill comes down the ladder by leaning on the archive's fun, less effective behaviours, never
+by adding random mistakes to the best one. GENES.md prints it under "How a search scores a genome".
+
+**Genes and loops inform each other** (Garrett, 2026-11-21). `Tools/Build/gene_search.py` trains every genome from
+the atlas's genes (atlas to genes) and may also compose the vessel's own verbs into chains no combo names. A chain the
+archive keeps, effective and used, is a candidate loop: `discover` lists it beside strategies other projects drop in
+`discover-in/`, and `propose --top N` writes the best into the vessel's YAML as a Proposed combo with its gene (genes to
+atlas). Once a person keeps one, the next run seeds it as an atlas gene. Until Froglet Compute runs again and a
+harness flies a gene in the vessel's own games, the search scores genomes on a surrogate: its numbers measure the
+search, not the vessels.
+
+The check refuses a cue that is not a sense, a sight that is not a callsign, a dial range that is empty, and a genome
+the vessel has no verb for. `report` lists a vessel with a game or arena for an element and no gene for it.
 
 ## Next phases
 

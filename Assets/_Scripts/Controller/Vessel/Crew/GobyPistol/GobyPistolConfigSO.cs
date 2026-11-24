@@ -36,10 +36,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.05f)] float dartChargeSeconds = 0.8f;
         [Tooltip("Seconds a dart takes, whatever its length (the Shrike's slingSeconds).")]
         [SerializeField, Min(0.1f)] float dartSeconds = 1f;
-        [Tooltip("Seconds after a dart lands before the next can start.")]
-        [SerializeField, Min(0f)] float dartCooldown = 1.2f;
+        [Tooltip("Seconds from a dart's launch before the next can start (it runs while the dart flies; never ready mid-dart). " +
+                 "2.2 = the old 1 s dart + 1.2 s reload from landing, so a full dart's cycle is unchanged at every Time level " +
+                 "(Will, 2026-11-24: counted from launch so a longer charge costs no extra wait).")]
+        [SerializeField, Min(0f)] float dartCooldown = 2.2f;
         [Tooltip("Time: the dart's pace, dividing both dartSeconds and dartCooldown (x1 at rest -> x2.2 at level 10, half " +
-                 "pace at level -5). A full dart takes 1 s and recovers in 1.2 s at rest, 0.45 s and 0.55 s at Time 10.")]
+                 "pace at level -5). A full dart takes 1 s and is ready again 2.2 s after launch at rest, 0.45 s and 1 s at Time 10.")]
         [SerializeField] ElementalFloat dartPace = ElementalFloat.Multiplier(1f, 2.2f, Element.Time, 0.5f);
         [Tooltip("The hull's radius against a block's box: a dart stops this far off the block it reaches (the Shrike's 3).")]
         [SerializeField, Min(0.5f)] float hullRadius = 3f;
@@ -51,8 +53,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.5f)] float perchBlockSize = 4f;
 
         [Header("Goby: cruise, perch and the Pistol's islands (Garrett, 2026-10-23: \"the goby is barely cruising around at all\")")]
-        [Tooltip("Seconds the Goby stays perched at the end of an island, aiming, before it lifts off and cruises (longer " +
-                 "while a person charges a dart from the perch).")]
+        [Tooltip("Seconds the AI Goby stays perched at the end of an island, aiming, before it lifts off and cruises. A " +
+                 "person's Goby is never held at a perch (Will, 2026-11-24).")]
         [SerializeField, Min(0f)] float perchSeconds = 1.5f;
         [Tooltip("A dart's end is a perch (the end of the Pistol's next island) only this far from the last perch, u; " +
                  "nearer, the dart is a dash and the Goby cruises on. A Tiny Wings island of about 35 hills.")]

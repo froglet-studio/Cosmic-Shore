@@ -1,0 +1,85 @@
+# Loop Atlas model: loops, crew seats. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+# Found by the player journeys (Docs/LoopAtlas/personas/journeys.yaml, 2026-11-21): the seat a second person takes
+# on a crew vessel is how a non-flyer enters the game, and the atlas had no loop for it.
+- id: seat.crew
+  in: x
+  parent: arc.social
+  at: 2
+  name: The crew seat
+  tier: 3
+  kind: loop
+  t: [60, 900]
+  is: 'Proposed. Take the empty seat on a friend''s hull and play its one-thumb board: the Ratel''s Dynamo on the
+    Honeyguide, the kite on the Wrasse, the Pistol on the Goby, a gunner on the Orca. What you do there powers their
+    hull, and the AI takes whichever seat nobody holds.'
+  phases:
+  - n: An empty seat is offered
+    d: '"Play the Ratel on my Honeyguide."'
+  - n: Take it
+    d: A D-pad press or a two-finger swipe; on a phone the board is upright in portrait.
+  - n: Play the board
+  - n: See it land on the hull
+    d: A dart that only your pattern made possible.
+  - n: Stay, swap seats, or take your own hull
+  drivers: [crew, mastery, joy]
+  reps: null
+  repsOf: seats taken per sitting with a friend
+  prop:
+    s: add
+    note: 'In the game today on four crew vessels, networked for the rider (Docs/CREW_STATIONS.md). Proposed as a loop
+      because it is the one way into the game that needs no flying: Mira''s and the night crew''s fourth friend''s path
+      both start here (journeys.yaml).'
+  holes:
+  - 'on': npx
+    q: 'A crew seat is reached only from inside a hull: the Toybox''s Vessel Changer, then a seat swap. Nobody arriving
+      by invite is dropped into the seat they were invited to.'
+    fill: 'The invite names the seat, and accepting it opens the game in that seat (the prop of Party and friends: the
+      empty seat is the invite).'
+  - 'on': npx
+    q: 'A squad is three seats and a voyage party at most three players, so a group of four never fits one team.'
+    fill: 'A crew seat is the fourth place: it costs no squad slot, so four friends fly three hulls with one of them
+      riding.'
+  src:
+  - Docs/CREW_STATIONS.md
+  - Docs/Voyages/PARTY.md
+  - Docs/LoopAtlas/personas/journeys.yaml
+- id: seat.ratel
+  in: x
+  parent: seat.crew
+  at: 2
+  name: The Ratel's board
+  tier: 2
+  kind: loop
+  t: [15, 60]
+  is: 'Proposed. The Honeyguide''s second seat, a hex puzzle. Every 15 seconds the ports turn and the spin gives AP;
+    moves and injections make patterns, each pattern sends a charge to the pilot''s battery, and every four patterns
+    the Ratel picks one ability of three.'
+  phases:
+  - n: The spin
+    d: Ports turn 60 degrees; 3 AP, kept up to 6.
+  - n: Move, inject, make a pattern
+  - n: A charge goes to the battery
+    d: The pilot slips or darts with it.
+  - n: Every four patterns, pick one of three
+  drivers: [mastery, crew, make]
+  reps: '4'
+  repsOf: patterns per pick
+  prop:
+    s: add
+    note: 'Built (Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md, DynamoCore). A casual puzzle player''s whole
+      game, on an older phone in portrait with one thumb. Proposed as a loop so its sittings are counted apart from the
+      hull''s.'
+  holes:
+  - 'on': npx
+    q: The Ratel has no way in of its own. A player who wants the puzzle has to find the Honeyguide in the Toybox and
+      swap seats, and the Toybox gives the board no goal and banks nothing.
+    fill: 'A Ratel card: the Honeyguide''s Mass game (Honeycomb) with the player seated on the Ratel and the AI flying,
+      on its own I1 to I4 ladder, so a Ratel player''s rungs light the hull''s Mass petal.'
+  - 'on': npx
+    q: The Honeyguide is in no arena roster, so a Ratel player cannot come along when their squad goes to the arena.
+    fill: Seat the Honeyguide in Brood Rush, where a hive-builder's Mass verb serves the cultivator role.
+  src:
+  - Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+  - Docs/Studios/ONE_THUMB_SEAT_ARCS.md
+  - Docs/LoopAtlas/personas/journeys.yaml

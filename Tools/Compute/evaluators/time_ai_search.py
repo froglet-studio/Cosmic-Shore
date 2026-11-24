@@ -211,13 +211,12 @@ GAMES = {
     },
     "Stoat": {
         "mode": "Slingshot",
-        # StoatSlingConfigSO's AI sling rule (StoatSlingExecutor.AutopilotSling), the Slingshot file; only the ai* knobs
-        # and the trampoline AI turn scale, never the sling's own physics (a mode never changes the vessel).
+        # StoatSlingConfigSO's AI swing rule (StoatSlingExecutor.AutopilotSwing), the Slingshot file; only the ai* knobs,
+        # never the swing's own physics (a mode never changes the vessel). aiReleaseConeDegrees, aiCatchGiveUpSeconds,
+        # aiHoldForWindowDegrees and trampolineAiTurnScale were the orbit's and the trampoline's: deleted 2026-11-21.
         "assets": {i: POL + "StoatSlingConfig_Slingshot.asset" for i in (1, 2, 3, 4)},
-        "fields": {"aiSlingMinTurnDegrees": (0.0, 180.0), "aiReleaseConeDegrees": (1.0, 90.0),
-                   "aiCatchGiveUpSeconds": (0.5, 10.0), "aiSlingIntervalSeconds": (0.5, 20.0),
-                   "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0),
-                   "aiHoldForWindowDegrees": (0.0, 360.0), "trampolineAiTurnScale": (40.0, 300.0)},
+        "fields": {"aiSlingMinTurnDegrees": (0.0, 180.0), "aiSlingIntervalSeconds": (0.5, 20.0),
+                   "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0)},
         # SlingshotController.aiNoseLead: Stoat 2.62 at 10.43/s (run1, 2026-11-17).
         "lead": 2.62, "rows": [], "nose_gene": 10.43,
     },

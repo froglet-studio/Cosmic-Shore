@@ -66,20 +66,27 @@ namespace CosmicShore.Gameplay
         /// the object must be invisible to Netcode NOW (before a host start in the same call
         /// stack), and ordinary <c>Destroy</c> defers to the end of the frame.</para>
         /// </summary>
-        public static bool NeutralizeStray(GameObject go, string reason)
+        /// <para><paramref name="deferred"/>: for a caller that can run inside a physics callback (a creature
+        /// born from a crystal hit). Unity refuses <c>DestroyImmediate</c> there with an error and leaves the
+        /// component in place, so the stray survived and the guard did nothing (Bug Ledger E-6bc7e07601). Deferred
+        /// uses <c>Destroy</c>, which lands at the end of the frame; <see cref="Sweep"/> still runs before anything
+        /// starts a NetworkManager. Outside Play mode it falls back to the immediate form (Destroy is not allowed
+        /// in edit mode).</para>
+        public static bool NeutralizeStray(GameObject go, string reason, bool deferred = false)
         {
             if (!go) return false;
             if (!go.TryGetComponent(out NetworkObject netObj)) return false;
-            return NeutralizeStray(netObj, reason);
+            return NeutralizeStray(netObj, reason, deferred);
         }
 
         /// <inheritdoc cref="NeutralizeStray(GameObject,string)"/>
-        public static bool NeutralizeStray(NetworkObject netObj, string reason)
+        public static bool NeutralizeStray(NetworkObject netObj, string reason, bool deferred = false)
         {
             if (!netObj) return false;
             if (netObj.IsSpawned) return false;   // Netcode already owns it - never touch a live object.
 
             var go = netObj.gameObject;
+            bool later = deferred && Application.isPlaying;
             // Read the prefab's hash BEFORE the NetworkObject is destroyed: read after, the destroyed component answers
             // no hash, so the once-per-prefab report below fired on EVERY birth (a voyage profile, 2026-11-17: 10-11
             // warnings per species, 7.9 ms of console logging in one spawn frame).
@@ -96,11 +103,13 @@ namespace CosmicShore.Gameplay
                 var behaviour = _behaviourScratch[i];
                 // Leave anything belonging to a NESTED NetworkObject alone - it is not ours to strip.
                 if (!behaviour || behaviour.NetworkObject != netObj) continue;
-                UnityEngine.Object.DestroyImmediate(behaviour);
+                if (later) UnityEngine.Object.Destroy(behaviour);
+                else UnityEngine.Object.DestroyImmediate(behaviour);
             }
             _behaviourScratch.Clear();
 
-            UnityEngine.Object.DestroyImmediate(netObj);
+            if (later) UnityEngine.Object.Destroy(netObj);
+            else UnityEngine.Object.DestroyImmediate(netObj);
 
             if (known && !_reported.Add(hash))
                 return true;   // already reported this prefab once

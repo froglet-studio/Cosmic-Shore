@@ -90,7 +90,7 @@ note on what blocks each one.
 | Goby (+ Pistol) | The Time verb belongs to the Pistol seat, but the Goby flies the race | Needs a design decision: which seat races |
 | Jacks | Racing gates conflicts with herding | Needs a decision: hull flight or herding |
 | Starling | The pilot does not steer (a passive swarm), so a gate race contradicts the vessel | Needs a different kind of Time goal |
-| Meerkat | Already has one, Burrow Run (71), on `Ys-bleeding-edge` | - |
+| Meerkat | Already has one, Warpline (65). Burrow Run (71) was its second and moved to the Jewel Wasp on 2026-11-22 | - |
 | Termite, Falcon | Not live vessels (no ability map, not in the Vessel Changer) | - |
 
 ## 2026-11-07, round 3: the unowned floors, raised

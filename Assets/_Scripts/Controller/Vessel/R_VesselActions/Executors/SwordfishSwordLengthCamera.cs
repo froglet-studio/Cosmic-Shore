@@ -3,8 +3,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Rhino sword's two holds on the pilot's camera, for the LOCAL HUMAN pilot only (an AI, a
-    /// remote copy or the lava lamp's autopilot never moves anyone's camera). Owned and ticked by
+    /// The Rhino sword's two holds on the camera, for the LOCAL PLAYER'S hull only, whoever holds its sticks
+    /// (<see cref="CameraManager.ActiveRigFollowing"/>: an AI seat, a remote copy or the lava lamp's autopilot
+    /// never moves anyone's camera; an AI flying the player's own hull keeps the player's framing). Owned and ticked by
     /// <see cref="ShieldSkimmerScaleDriver"/>; both are point-of-use multipliers on
     /// <see cref="CustomCameraController"/>, so adaptive zoom and settings re-applies keep working
     /// underneath, and both reset with the follow target.
@@ -33,8 +34,10 @@ namespace CosmicShore.Gameplay
 
         public void Tick(IVesselStatus status, bool surging, float lengthRatio, ShieldSkimmerScaleConfigSO config, float dt)
         {
-            bool pilot = status?.Player != null && status.IsLocalUser && !status.IsInitializedAsAI
-                         && (status.AIPilot == null || !status.AIPilot.AutoPilotEnabled);
+            // The local player's hull, whoever holds the sticks (CameraManager.ActiveRigFollowing's rule): a sword the
+            // AI is swinging for the player is as long on screen as one the player swings, so the camera stands as
+            // far back. The menu's lava lamp has no active camera, so Resolve returns none there.
+            bool pilot = status?.Player != null && status.IsLocalUser && !status.IsInitializedAsAI;
             if (!pilot || config == null)
             {
                 Release();
@@ -45,8 +48,8 @@ namespace CosmicShore.Gameplay
             float reach = ReachDistanceScale(lengthRatio, config.CameraFollowsBladeLength);
             if (_surround01 <= 0f && Mathf.Approximately(reach, 1f) && !_written) return;
 
-            var cam = Resolve();
-            if (!cam) return;
+            var cam = Resolve(status);
+            if (!cam) { Release(); return; }
             cam.SurroundFraming01 = _surround01 * _surround01 * (3f - 2f * _surround01);
             cam.SurroundDistanceScale = config.SurgeCameraDistanceScale;
             cam.VesselDistanceScale = reach;
@@ -59,18 +62,22 @@ namespace CosmicShore.Gameplay
             _surround01 = 0f;
             if (!_written) return;
             _written = false;
-            var cam = _camera ? _camera : Resolve();
+            var cam = _camera;
+            _camera = null;
             if (!cam) return;
             cam.SurroundFraming01 = 0f;
             cam.SurroundDistanceScale = 1f;
             cam.VesselDistanceScale = 1f;
         }
 
-        CustomCameraController Resolve()
+        // The camera on screen while it follows this hull; a camera pointed elsewhere (a cinematic, another hull) is
+        // not this sword's to move.
+        CustomCameraController Resolve(IVesselStatus status)
         {
-            if (_camera && _camera.isActiveAndEnabled) return _camera;
-            _camera = CameraManager.Instance != null ? CameraManager.Instance.GetActiveController() as CustomCameraController : null;
-            return _camera;
+            var cam = CameraManager.ActiveRigFollowing(status.Transform);
+            if (cam != _camera && _written) Release();
+            _camera = cam;
+            return cam;
         }
     }
 }
