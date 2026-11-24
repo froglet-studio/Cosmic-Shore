@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Data;
@@ -101,7 +102,8 @@ namespace CosmicShore.Gameplay
         public bool IsOwnedHere => IsSpawned && IsOwner;
 
         public int RelayTakeToOwner(ElementalTransferForm form, int elementMask, float normalizedAmountPerElement,
-                                    Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee)
+                                    Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee,
+                                    string attackerName)
         {
             if (normalizedAmountPerElement <= 0f || elementMask == 0) return 0;
 
@@ -113,12 +115,16 @@ namespace CosmicShore.Gameplay
 
             if (IsOwner)
                 return SettleTakeAsOwner(steal, elementMask, normalizedAmountPerElement, impactVelocity, source,
-                                         steal ? payeeImpactor : null);
+                                         steal ? payeeImpactor : null, attackerName);
 
+            // The attacker's name rides along so the victim's owner can credit the settled take in the
+            // petal ledger (ElementalTransfer.CreditTake): the owner is the only machine that knows
+            // how many petals came loose, and it has no other way to know whose hit it was.
+            var wireName = WireName(attackerName);
             if (steal)
-                CombatSteal_ServerRpc(elementMask, normalizedAmountPerElement, source, payeeImpactor);
+                CombatSteal_ServerRpc(elementMask, normalizedAmountPerElement, source, payeeImpactor, wireName);
             else
-                CombatEject_ServerRpc(elementMask, normalizedAmountPerElement, impactVelocity, source);
+                CombatEject_ServerRpc(elementMask, normalizedAmountPerElement, impactVelocity, source, wireName);
             return 0;
         }
 
@@ -128,65 +134,72 @@ namespace CosmicShore.Gameplay
         // held and honours a ward.
         [ServerRpc(RequireOwnership = false)]
         void CombatEject_ServerRpc(int elementMask, float normalizedAmountPerElement, Vector3 impactVelocity,
-                                   ElementalDebuffSources source)
+                                   ElementalDebuffSources source, FixedString128Bytes attackerName)
         {
             // The server owns every AI hull and the host's own; settle without a further hop.
             if (IsOwner)
             {
-                SettleTakeAsOwner(false, elementMask, normalizedAmountPerElement, impactVelocity, source, null);
+                SettleTakeAsOwner(false, elementMask, normalizedAmountPerElement, impactVelocity, source, null,
+                                  attackerName.ToString());
                 return;
             }
 
-            CombatEject_ClientRpc(elementMask, normalizedAmountPerElement, impactVelocity, source, ToOwner());
+            CombatEject_ClientRpc(elementMask, normalizedAmountPerElement, impactVelocity, source, attackerName,
+                                  ToOwner());
         }
 
         [ClientRpc]
         void CombatEject_ClientRpc(int elementMask, float normalizedAmountPerElement, Vector3 impactVelocity,
-                                   ElementalDebuffSources source, ClientRpcParams rpcParams = default)
+                                   ElementalDebuffSources source, FixedString128Bytes attackerName,
+                                   ClientRpcParams rpcParams = default)
         {
             // Ownership can move while the RPC is in flight (Hijack's swap). The pilot who was
             // shot no longer flies this hull, and its levels are no longer this machine's to publish.
             if (!IsOwner) return;
-            SettleTakeAsOwner(false, elementMask, normalizedAmountPerElement, impactVelocity, source, null);
+            SettleTakeAsOwner(false, elementMask, normalizedAmountPerElement, impactVelocity, source, null,
+                              attackerName.ToString());
         }
 
         [ServerRpc(RequireOwnership = false)]
         void CombatSteal_ServerRpc(int elementMask, float normalizedAmountPerElement, ElementalDebuffSources source,
-                                   NetworkBehaviourReference payeeRef)
+                                   NetworkBehaviourReference payeeRef, FixedString128Bytes attackerName)
         {
             if (IsOwner)
             {
-                SettleStealFromWire(elementMask, normalizedAmountPerElement, source, payeeRef);
+                SettleStealFromWire(elementMask, normalizedAmountPerElement, source, payeeRef, attackerName);
                 return;
             }
 
-            CombatSteal_ClientRpc(elementMask, normalizedAmountPerElement, source, payeeRef, ToOwner());
+            CombatSteal_ClientRpc(elementMask, normalizedAmountPerElement, source, payeeRef, attackerName, ToOwner());
         }
 
         [ClientRpc]
         void CombatSteal_ClientRpc(int elementMask, float normalizedAmountPerElement, ElementalDebuffSources source,
-                                   NetworkBehaviourReference payeeRef, ClientRpcParams rpcParams = default)
+                                   NetworkBehaviourReference payeeRef, FixedString128Bytes attackerName,
+                                   ClientRpcParams rpcParams = default)
         {
             if (!IsOwner) return;   // ownership moved in flight, as above
-            SettleStealFromWire(elementMask, normalizedAmountPerElement, source, payeeRef);
+            SettleStealFromWire(elementMask, normalizedAmountPerElement, source, payeeRef, attackerName);
         }
 
         void SettleStealFromWire(int elementMask, float normalizedAmountPerElement, ElementalDebuffSources source,
-                                 NetworkBehaviourReference payeeRef)
+                                 NetworkBehaviourReference payeeRef, FixedString128Bytes attackerName)
         {
             // A payee that despawned in flight cannot be paid; the take then ejects so the petals
-            // stay in play rather than vanishing.
+            // stay in play rather than vanishing. It is still the attacker's take in the ledger.
             payeeRef.TryGet(out NetworkVesselImpactor payee);
-            SettleTakeAsOwner(payee != null, elementMask, normalizedAmountPerElement, Vector3.zero, source, payee);
+            SettleTakeAsOwner(payee != null, elementMask, normalizedAmountPerElement, Vector3.zero, source, payee,
+                              attackerName.ToString());
         }
 
         int SettleTakeAsOwner(bool steal, int elementMask, float normalizedAmountPerElement, Vector3 impactVelocity,
-                              ElementalDebuffSources source, NetworkVesselImpactor payee)
+                              ElementalDebuffSources source, NetworkVesselImpactor payee, string attackerName)
         {
             var victim = VesselStatusHere;
             if (victim == null) return 0;
 
-            uint packed = ElementalTransfer.SettleTake(victim, elementMask, normalizedAmountPerElement, source);
+            uint packed = ElementalTransfer.SettleTake(victim, elementMask, normalizedAmountPerElement, source,
+                                                       attackerName);
             if (packed == 0u) return 0;   // warded, empty, or still accruing toward a whole petal
 
             if (steal && payee != null)
@@ -247,6 +260,36 @@ namespace CosmicShore.Gameplay
             // conserve; it needs an ownership swap inside one round trip.
             if (!IsOwner) return;
             ElementalTransfer.GrantSettled(VesselStatusHere, packedPetals);
+        }
+
+        // ── Petal ledger (ElementalTransfer.CreditTake, PetalLedger) ─────────────────
+        //
+        // A take is credited on the victim's OWNER, the one machine that knows how many petals came
+        // loose. The ledger StatsManager scores from is the server's, so a client owner forwards it.
+        // Owner-only RPC: a client can only report what its OWN hull lost.
+
+        public void ReportPetalsTaken(string attackerName, int petals)
+        {
+            if (petals <= 0 || string.IsNullOrEmpty(attackerName)) return;
+            if (!IsSpawned || IsServer)
+            {
+                PetalLedger.Record(attackerName, VesselStatusHere?.PlayerName, petals);
+                return;
+            }
+            PetalsTaken_ServerRpc(WireName(attackerName), petals);
+        }
+
+        [ServerRpc]
+        void PetalsTaken_ServerRpc(FixedString128Bytes attackerName, int petals) =>
+            PetalLedger.Record(attackerName.ToString(), VesselStatusHere?.PlayerName, petals);
+
+        /// <summary>A player name on the wire, the width <c>Player.NetName</c> carries; an over-long
+        /// name is cut rather than throwing inside a hit.</summary>
+        static FixedString128Bytes WireName(string name)
+        {
+            var wire = new FixedString128Bytes();
+            if (!string.IsNullOrEmpty(name)) wire.CopyFromTruncated(name);
+            return wire;
         }
 
         // ── Silence (ISilenceRelay, Docs/ElementalAbilitySystem/SILENCE.md) ─────────

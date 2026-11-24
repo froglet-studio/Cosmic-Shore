@@ -456,6 +456,7 @@ and "again" every month so a repeat is seen.
 | 3.7 Near-A skills | the measurement and the owed negative controls | **measured 2026-11-07 night** for fauna-creation, cardart and prism-morph (a 'Round status and what each gate still owes' section each); flora and ecology not reached |
 | ledger | `Tools/Build/rework_ledger.py` | built 2026-11-07, the numbers in section 2 |
 | elemental loop | scaffolding 1-2: the one-minute fun card and the per-rung bars | **built 2026-11-12** (Garrett picked each design choice on a card): `FunCard.cs` after every arcade match, `fun_cards.py` (sign-offs), `rung_bars.py` + `rung_bars.json` (defaults, then learned); **first card answered 2026-11-13** (Garrett, Honeyguide Slip Line I1: fun almost, rung right, weakest Rivals), no sign-off yet |
+| elemental loop | PLAYBOOK §7 item 3: the per-attacker petal ledger (SILENCE §6) | **built 2026-11-23, PR open**: `PetalLedger` credits strips, steals and danger burns to the pilot who caused them, once, on the victim's owner (a client forwards to the server); readable as `IRoundStats.PetalsTaken` and `ScoringMetric.PetalsTaken` (13); the trainer's fitness hook is left to the AI lane (occupied, Yash). EditMode tests plus harness T12 (passes here, negative control fails); not yet run in the editor |
 | elemental loop | step 1 fun pass driven by a card: Honeyguide Time (Slip Line) | **built 2026-11-16, PR open**: the Rivals floor raised from Garrett's recorded race (race line clear of the rails, Regatta steering, throttle floor; a ride's landing no longer un-counts a ring), measured in `slip_line_ai_sim.py`; waits on Garrett flying I1 again and answering the card |
 
 ## 7. What each step taught (append; newest last)
@@ -503,6 +504,14 @@ and "again" every month so a repeat is seen.
   owner sees the overlap faster from the option than from the rule text. (3) **Put the owner's own quote next to a
   clause the owner questions**: the source's `words` settled what the clause meant in one message.
 
+- 2026-11-23, the per-attacker petal ledger: (1) **credit where the count is known, not where the hit is decided**:
+  the attacker's owner decides a hit but only the victim's owner knows how many petals came loose, so the attacker's
+  name rides the take to the owner and the owner credits it; the alternative (crediting the decider) would have scored
+  hits on empty pilots. (2) **A score that must be counted once needs the same owner gate the silence tally already
+  had**: the harness's double-count control is a replay on a peer, and removing the gate turns exactly that check red.
+  (3) **A harness that compiles the shipped file is worth reviving before it is needed**: the transfer harness had
+  rotted on two stubs (`ColorTrace`, `CrystalWorldScale`); fixed, it ran the new credits against the real transfer in
+  a cloud session, which the reference compile alone cannot.
 - 2026-11-23, the principles gate re-anchored: (1) **a gate that checks a quote against a line number rots with every
   edit above it**: 96 of 268 entries drifted in 16 days, almost all in the long docs (`CLAUDE.md`, `ECOSYSTEM_DESIGN_PRINCIPLES.md`,
   `UNITY_VERIFICATION_CHECKLIST.md`), and a gate that is always red is read by nobody. `--fix-lines` heals it by moving the
