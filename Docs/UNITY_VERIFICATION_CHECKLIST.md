@@ -26916,3 +26916,15 @@ compile, the EditMode tests in the editor, `unity_refcompile` (cannot run on thi
 - [ ] Brittle Star Time at I1, I2 and I3: no ruins.
 - [ ] Frame rate at I4 with the ruin (about 90 more prisms) against without.
 - [ ] A rematch lays a fresh ruin (often another kind) and leaves none of the old one.
+
+## Bug ledger fixes (2026-11-24)
+
+Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section 3). Not run in the Unity editor
+(cloud sweep); `Tools/Build/unity_refcompile` reports 0 errors in project code.
+
+- [ ] Jacks, from the Toybox's Vessel Changer and in a mode: fly with the net out, return to the menu, fly Jacks
+      again. No `MissingReferenceException` naming `MeshRenderer` from `JacksBodies`, and the net still draws
+      (`a5a7ef89c3`).
+- [ ] In Play mode, start the mode smoke test from the command line or the Unity CLI
+      (`CosmicShore.Editor.ModeSmokeLauncher.Run`): the console says "[ModeSmoke] cannot start: the editor is in Play
+      mode: leave Play mode first", with no exception, and the offline preference is unchanged (`c7f4c53311`).
