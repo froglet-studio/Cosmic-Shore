@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The per-attacker petal ledger counts what each pilot takes from opponents (`claude/project-thread-6znms8`, 2026-11-23, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed.** `PetalLedger` (SILENCE.md §6): every strip and steal is credited to its attacker, and every hostile
+danger burn to the pilot who laid the prism, with the whole petals that really came loose. On the server it lands in
+`IRoundStats.PetalsTaken` (a new `RoundStats` NetworkVariable), readable as `ScoringMetric.PetalsTaken` (13). The relayed eject and steal RPCs on `NetworkVesselImpactor` now
+carry the attacker's name, and a client owner forwards each credit to the server (`PetalsTaken_ServerRpc`).
+Reference compile (player and editor configs): 0 errors in changed files. `elemental_transfer_harness` T12 passes.
+
+1. **Offline, Broadside or Dog Fight with AIs**: after a minute, each pilot's `PetalsTaken` (inspector on its
+   `RoundStats`) is about its combat points divided by ten, and lower when it hits pilots who hold nothing.
+2. **A pilot flying into an opponent's danger trail**: the trail's layer gains the petals the burn took; flying into
+   your own trail credits nobody.
+3. **Host plus one client**: a hit by the client on an AI, and a hit by an AI on the client, each credit once on the
+   host (no double count), and the client's inspector mirrors the host's value.
+4. **A new match starts at 0** for every pilot.
+
+---
 ### 🔴 Skim Race flights record a finish: the crystal target and the team's crystals (`Ys-bleeding-edge`, 2026-11-23, Yash) — NOT COMPILED BY ITS AUTHOR, NOT RUN IN EDITOR
 
 **What was wrong.** `HumanFlightRecorder` took a flight's `raceTarget` only from `SwitchTargetCount`, which only a gate
@@ -26332,6 +26349,16 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
 
+## Swordfish: bigger afterimages, its Brood Rush Mass lever (2026-11-21, NOT PLAYED)
+
+`SwordfishSwordAfterimageConfig.asset` `massVolumeMultiplier` x1 -> x2.5 became x1.7 -> x4.25 (`SWORDFISH.md` § "Brood
+Rush"). Measured in the Amoebius Brood Rush judge only (index 0.73 -> 1.03 at Medium, 3 teams of 3). No Unity editor ran;
+the reference compile has 0 errors in the changed files.
+
+- [ ] Toybox or Palisade: energize the Swordfish and let go. The afterimages laid in the next 5 s read as the sword's
+      ghost, about 1.2x thicker on every axis than before, and the bill still cuts them after a second.
+- [ ] Brood Rush with the Swordfish seated (once the card seats it again): its score sits with the field's, not at the bottom.
+
 ## Grizzly scope camera at teardown (2026-11-22)
 
 Bug ledger E-5e0864d332: leaving a match while the Grizzly's scope camera was out on a round logged "Cannot set the
@@ -26642,3 +26669,23 @@ not run.
 - [ ] Ride the Pistol over a fresh island: the trail reads as a near-continuous line, about 6 prisms a hill.
 - [ ] The hills vary a little more in length and height than before, and the ride still flies off crests.
 - [ ] Big jumps still build about the same size den as before; frame rate holds with three islands queued.
+
+## The Sparrow's barrel roll is on the right stick, with its own HUD card (2026-11-24)
+
+Shombith: "Currently pressing the boost button would make the sparrow roll, move that to the right stick of the
+controller. Any direction the stick goes the sparrow barrel rolls and if you keep that button pressed it will keep doing
+that barrel roll." `BarrelRollController` now reads the right stick (past `engageThreshold` 0.6, any direction), repeats
+while held, and is owner-gated like the Scarab's juke; the boost arming, its 0.3 s window, `RollChargeState` and the Time
+`rollTimeScale` are gone. The one-thumb mouse scheme now publishes P ; L ' as the right stick (it published zero), which
+also gives the Scarab a keyboard juke there. New core card `CoreAbility.BarrelRoll` on the Sparrow HUD from
+`Sparrow_BarrelRoll.png` (icon kit, Core/). The Honeyguide carries the same component and rolls on the right stick too.
+Not run in the Unity editor: unity_refcompile and the gates only.
+
+- [ ] Pad: push the right stick right, left, up, down and diagonally - the Sparrow rolls that way each time.
+- [ ] Hold the right stick: it keeps rolling, one roll straight after another; let go and it stops after the current roll.
+- [ ] Boost (B) no longer rolls, with the left stick at any deflection.
+- [ ] Turret Stance: the right stick still rolls and strafes while stopped.
+- [ ] Desktop with the mouse flying: P ; L ' roll the Sparrow; the Scarab jukes on the same keys.
+- [ ] The Sparrow HUD shows the barrel-roll card (three rolling Sparrows) left of the four elemental cards, no flower, no chip.
+- [ ] Multiplayer: a remote Sparrow's roll plays once on other machines (no doubled displacement).
+- [ ] Honeyguide: decide whether its right-stick roll should stay.

@@ -6,7 +6,7 @@ Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for row 8).
 Palisade is the Swordfish's MASS game (Garrett, 2026-11-15: "make all the missing games you can"): a TIMED wall war
 scored on the prism volume a domain has STANDING at the whistle (ScoringMetric.VolumeRemaining, a live stock). The
 Swordfish's Mass ability is Afterimage - for 5 s after the blade leaves the energized state it leaves prism copies of
-itself where it swings, Mass scales their volume x1 -> x2.5, and at Mass 5 they are laid as danger. Its blade cuts any
+itself where it swings, Mass scales their volume x1.7 -> x4.25, and at Mass 5 they are laid as danger. Its blade cuts any
 rival prism it reaches. So the sword builds and the sword raids: an energized run through a rival's wall cuts it down
 and leaves your afterimages standing in its place. See Assets/_Scripts/Controller/Arcade/PALISADE.md.
 
@@ -97,9 +97,12 @@ coverage = one(AFTER, r"^  lengthCoverage: ([0-9.]+)$", "lengthCoverage")
 width = one(AFTER, r"^  width: ([0-9.]+)$", "width")
 thick = one(AFTER, r"^  thickness: ([0-9.]+)$", "thickness")
 per_window = one(AFTER, r"^  maxAfterimagesPerWindow: ([0-9]+)$", "maxAfterimagesPerWindow")
+MV = re.search(r"^  massVolumeMultiplier:\n    Enabled: 1\n    Value: [0-9.]+\n    Min: ([0-9.]+)\n    Max: ([0-9.]+)\n    element: 2\n",
+               AFTER, re.M)
+MASS_AT_REST, MASS_AT_FULL = (float(v) for v in MV.groups()) if MV else (0.0, 0.0)   # x1.7 -> x4.25 since 2026-11-21
 BLADE_AT_REST = 24.0      # Space 0 blade length (SWORDFISH.md, Blade Reach 24 -> 40)
 SEGMENTS = max(1, round(BLADE_AT_REST / seg_len))
-AFTERIMAGE_VOLUME = SEGMENTS * seg_len * coverage * width * thick   # one afterimage at Mass 0
+AFTERIMAGE_VOLUME = SEGMENTS * seg_len * coverage * width * thick * MASS_AT_REST   # one afterimage at Mass 0
 WINDOW_VOLUME = per_window * AFTERIMAGE_VOLUME                      # one energize's worth at Mass 0
 WINDOWS_PER_ROUND = ROUND_SECONDS / 15.0                            # an energize about every 15 s (crowds, cooldown)
 
@@ -250,9 +253,8 @@ if len(CRYSTALS_BY_INTENSITY) != 4 or any(b > a for a, b in zip(CRYSTALS_BY_INTE
     errors.append("the crystal ladder must be four rungs, non-increasing (intensity is SCARCITY)")
 if AFTERIMAGE_VOLUME <= 0:
     errors.append("the afterimage model lays no volume - SwordfishSwordAfterimageConfig changed shape")
-if not re.search(r"^  massVolumeMultiplier:\n    Enabled: 1\n    Value: [0-9.]+\n    Min: 1\n    Max: 2\.5\n    element: 2\n",
-                 AFTER, re.M):
-    errors.append("SwordfishSwordAfterimageConfig no longer scales afterimage volume x1 -> x2.5 with Mass - the "
+if not MV or MASS_AT_REST <= 0 or abs(MASS_AT_FULL / MASS_AT_REST - 2.5) > 1e-3:
+    errors.append("SwordfishSwordAfterimageConfig no longer scales afterimage volume x2.5 from rest to full Mass - the "
                   "card's Mass promise is gone")
 if f"Palisade = {MODE_ID}," not in g.read("Assets/_Scripts/Data/Enums/GameModes.cs"):
     errors.append(f"GameModes.Palisade is not the roster's reserved {MODE_ID}")
