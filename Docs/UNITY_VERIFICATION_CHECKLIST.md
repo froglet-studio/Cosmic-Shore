@@ -26515,7 +26515,10 @@ Time this mode's AI at 1x.
 Machine side done: `SpearlineRuinsTests` 8 of 8 headless, compiles in the editor, one I4 AI race at 1x with 723 ruin
 prisms finished clean in 136.4 s.
 
-- [ ] Fly I4: between rings you pass through arches, a flower head and vines; the middle of each is open.
+- [ ] Fly I4: between rings you pass through arches, a flower head, vines, a wall's doorway, a tunnel and a maze; the
+  middle of each is open. (2026-11-24: 729 prisms, AI race clean in 146.0 s, 55-75 fps under the 75 cap.)
+- [ ] The wheel turns, at the same angle on host and guest; you can pass through its hub or between its spokes, and
+  meeting a spoke costs what hitting prisms costs.
 - [ ] Straying off the line into a ruin costs what hitting prisms costs, no more.
 - [ ] The ruins read as ruins and not as seals (both are Blue); say if they need their own look.
 - [ ] The frame rate at I4 is no worse than at I2.

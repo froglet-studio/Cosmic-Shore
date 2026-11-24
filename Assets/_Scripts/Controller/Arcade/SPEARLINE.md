@@ -90,22 +90,32 @@ are in section 3.
 
 ## 2a. Garden ruins at I4 (`SpearlineRuins`, `SpearlineController.Ruins.cs`; Yash, 2026-11-24)
 
-"In intensity 4, we need more environmental shapes with prisms, like going through a ruins of old flora gardens." Only
-I4 has them. Seven legs of the lap carry one ruin each (the leg into ring 0, where the field starts, has none), and
-the three kinds take turns round the lap:
+"In intensity 4, we need more environmental shapes with prisms, like going through a ruins of old flora gardens", then
+"make obstacles more thicker and wall / tunnel / 3d maze grid, moving obstacles". Only I4 has them. Seven legs of the
+lap carry one ruin each (the leg into ring 0, where the field starts, has none), and seven kinds take turns round the
+lap, so a lap has each once:
 
 - **Pergola:** a row of 5 broken arches round the line, each with a fallen sector and a few stones gone.
 - **Flower head:** a phyllotactic dish of flat petals facing down the line, its eye open, a bite out of the rim.
 - **Vines:** 3 strands wound round the line, broken into runs.
+- **Wall:** a thick wall across the leg, 340 u wide with a broken skyline; the lane is its doorway.
+- **Tunnel:** a 220 u tube of plates round the lane, stones fallen out, more of them toward its two mouths.
+- **Maze:** a 3D lattice of 62 u bars (cell 64, 5 x 5 x 4 nodes), a third of the bars gone.
+- **Wheel (it turns):** 3 spokes and a rim in one plane across the line, turning at 25 degrees a second.
 
-Each ruin stands round the leg's flown line (a Hermite curve through the two rings along their axes) with a clear lane
-of 60 u radius, a little under the I4 mouth (66), so a pilot on the line flies through it and one who strays meets
-prisms at the game's own cost. No ruin prism stands within 120 u of a ring's mouth or in any other leg's lane. The
-ruins are the seals' prism in the seals' domain (Blue), laid by every peer from the broadcast rings; a hull or a bill
-breaks them and they do not grow back, so they wear down over the five laps. Nothing about the vessel changes.
+Each ruin stands round the leg's flown line (a Hermite curve through the two rings along their axes). The six
+standing kinds keep a clear lane of 60 u radius, a little under the I4 mouth (66), so a pilot on the line flies
+through and one who strays meets prisms at the game's own cost. **The wheel alone crosses the lane:** its spokes sweep
+it, and only its 30 u hub and the three gaps between spokes are open. A wheel is laid only where no other leg's lane
+passes through its sweep (a pergola stands there otherwise). No ruin prism stands within 120 u of a ring's mouth.
 
-About 800 prisms a lap on an average course (raised by half the same day, Yash: the first cut was 529 with 3 arches,
-a smaller dish and 2 strands). Held by `SpearlineRuinsTests` (8) and three negative controls in `spearline_harness`.
+Every ruin prism is at least 8 u across (the first cut's were 4.5-5). The ruins are the seals' prism in the seals'
+domain (Blue), laid by every peer from the broadcast rings; a hull or a bill breaks them and they do not grow back, so
+they wear down over the five laps. The wheel's prisms are posed each frame from the network clock, so every peer sees
+the same angle; they are the shape of their owner, not moving prisms (`Docs/PRISM_MOTION.md` 1). Nothing about the
+vessel changes.
+
+About 730-800 prisms a lap. Held by `SpearlineRuinsTests` (11) and six negative controls in `spearline_harness`.
 
 ## 3. The AI (`SpearlineController.Coach.cs`)
 
@@ -211,6 +221,11 @@ a smaller dish and 2 strands). Held by `SpearlineRuinsTests` (8) and three negat
   and 152.7 s on three other courses, so the ruins cost the AI nothing that one race can show. Seen through a plain
   camera placed at each ruin (no post effects). Not measured: the frame rate with ruins. Not judged: the look in the
   real camera, and whether a person reads the lane.
+- **2026-11-24, the seven kinds (wall, tunnel, maze, wheel added; all thicker), same setup:** 729 ruin prisms, the race
+  finished with a winner in 146.0 s and no error in the match (the run of times without ruins is 130.9-152.7 s). Frame
+  rate sampled five times in the race under the 75 fps cap: 75, 69, 73, 73, 55. Each kind was seen through a plain
+  camera at race start. Not seen: the wheel turning (stills only), what the wheel costs a pilot or an AI that meets a
+  spoke, and the frame rate with the cap off.
 - **Frame rate, I2, clock 1x, 1920x1080 Ultra, 15 s `capture`** (i7-8700K, RTX 4070 Ti, editor): Debug code mode with
   the 75 fps cap, 49 fps (game work 12.8 ms a frame, capped, so not a measurement); Release code mode with VSync and the
   target off, 111 fps average, median 8.6 ms, p95 12.4 ms, p99 15.6 ms, GPU 2.8 ms, CPU-bound. The controller's
