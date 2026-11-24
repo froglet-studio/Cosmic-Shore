@@ -274,9 +274,9 @@ lab and port by one command each (`unity_port.py <name> --dry` passes); they wai
 ## 🔴 Skein: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
 
 Skein lays Spearline's ruins from its own rings on I4, on every third leg, less what would reach a rail or a launch's
-path (`Assets/_Scripts/Controller/Arcade/SKEIN.md` section 20). Run without Unity: `SkeinRuinsTests` 11 of 11 against
-the shipped sources (`bash Tools/Build/skein_ruins_harness/run.sh --self-test`, five negative controls). Not run: a
-Unity compile of `SkeinController.Ruins.cs`, `SkeinRuins.cs` and the `RailPrism` accessor on `SpawnableSkein`, and the
+path (`Assets/_Scripts/Controller/Arcade/SKEIN.md` section 20). Run without Unity: `SkeinRuinsTests` 12 of 12 against
+the shipped sources (`bash Tools/Build/skein_ruins_harness/run.sh --self-test`, five negative controls), and
+`author_skein_assets.py --check`. Not run: a Unity compile of `SkeinController.Ruins.cs`, `SkeinRuins.cs` and the `RailPrism` accessor on `SpawnableSkein`, and the
 race itself.
 
 - [ ] Unity compiles, and `SkeinRuinsTests` pass in the Test Runner.
@@ -289,6 +289,8 @@ race itself.
 - [ ] Three AI Urchins still finish I4, and their times against the 331-391 s of section 19 (not measured: the model
       has no ruins in it).
 - [ ] Leave the race and start another: the old ruins are gone.
+- [ ] The I4 cell starts Calm, not Restless or Frenzy (the ruins' 439,125 volume is in `Skein Cell Config 4`'s
+      baseline), and reaches Restless about when it did before.
 - [ ] Frame rate at I4 with about 215 more prisms in the cell (the cable is 6165).
 
 ## 🔴 Slip Line: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
