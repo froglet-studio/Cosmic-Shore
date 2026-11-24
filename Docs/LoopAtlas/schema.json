@@ -5,7 +5,7 @@
   "description": "The assembled Loop Atlas model (Docs/LoopAtlas/model.json), built from the YAML files under Docs/LoopAtlas/model/ by Tools/Build/loop_atlas.py. Cross-references (parents, edges, drivers, handoffs, proposals) are checked by the tool, not here. Docs/LoopAtlas/README.md explains every field.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder", "defaultVessel", "artifact", "areas", "items"],
+  "required": ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles", "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder", "defaultVessel", "artifact", "areas", "items", "senses", "sights", "genes"],
   "properties": {
     "schema": {"const": 1},
     "updated": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
@@ -34,7 +34,21 @@
     "defaultVessel": {"type": "string"},
     "artifact": {"type": "string"},
     "areas": {"type": "array", "items": {"$ref": "#/$defs/area"}, "minItems": 1, "description": "Areas of product work beyond the loops (items.yaml)."},
-    "items": {"type": "array", "items": {"$ref": "#/$defs/item"}, "description": "Product work in any area; it moves through the layers like a loop."}
+    "items": {"type": "array", "items": {"$ref": "#/$defs/item"}, "description": "Product work in any area; it moves through the layers like a loop."},
+    "senses": {"type": "array", "items": {"$ref": "#/$defs/sense"}, "minItems": 1, "description": "What an AI reads of the world: the words a gene's cues use (kit.yaml)."},
+    "sights": {"type": "array", "items": {"$ref": "#/$defs/sight"}, "minItems": 1, "description": "The pilot callsigns (Docs/Pilots/CALLSIGNS.md section 2). A gene's sight is the callsign whose pilot leans into it."},
+    "genes": {
+      "type": "object", "additionalProperties": false, "required": ["is", "activation", "search"],
+      "properties": {
+        "is": {"type": "string"}, "activation": {"type": "string"},
+        "search": {
+          "type": "object", "additionalProperties": false, "required": ["is", "cut", "keep", "ladder", "measure"],
+          "properties": {"is": {"type": "string", "minLength": 1}, "cut": {"type": "string", "minLength": 1},
+            "keep": {"type": "string", "minLength": 1}, "ladder": {"type": "string", "minLength": 1},
+            "measure": {"type": "string", "minLength": 1}}
+        }
+      }
+    }
   },
   "$defs": {
     "area": {
@@ -125,6 +139,7 @@
           "properties": {"s": {"enum": ["change", "add"]}, "note": {"type": "string"}}
         },
         "holes": {"type": "array", "items": {"$ref": "#/$defs/hole"}},
+        "measure": {"$ref": "#/$defs/measure"},
         "build": {"$ref": "#/$defs/buildOrder"},
         "src": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
       }
@@ -200,8 +215,40 @@
         "is": {"type": "string"}, "chain": {"type": "array", "items": {"$ref": "#/$defs/chainStep"}, "minItems": 1},
         "drivers": {"type": "array", "items": {"$ref": "#/$defs/id"}}, "feel": {"type": "string"},
         "repsOf": {"type": "string"}, "in": {"$ref": "#/$defs/layerSet"}, "src": {"type": "string"},
-        "sub": {"type": "array", "items": {"$ref": "#/$defs/combo"}}
+        "sub": {"type": "array", "items": {"$ref": "#/$defs/combo"}}, "gene": {"$ref": "#/$defs/gene"}
       }
+    },
+    "gene": {
+      "description": "The AI behaviour a combo becomes: one gene of the vessel's genome for one element (Docs/AI_SYSTEM/AI_PLAN.md). cue: when the AI starts the combo (senses). dials: what a search learns, each [name, what it sets, low, high, unit]. done: the measured completion. sight: the callsign whose pilot leans into it.",
+      "type": "object", "additionalProperties": false, "required": ["genome", "cue", "dials", "done"],
+      "properties": {
+        "genome": {"enum": ["Time", "Charge", "Mass", "Space"]},
+        "cue": {"type": "array", "items": {"$ref": "#/$defs/id"}, "minItems": 1, "uniqueItems": true},
+        "dials": {"type": "array", "items": {"$ref": "#/$defs/dial"}, "minItems": 1},
+        "done": {"type": "string", "minLength": 1}, "sight": {"type": "string"}, "in": {"$ref": "#/$defs/layerSet"}
+      }
+    },
+    "dial": {
+      "description": "[name, what it sets, low, high, unit]: one learned number of a gene, and the range a search may try.",
+      "type": "array", "minItems": 5, "maxItems": 5,
+      "prefixItems": [{"type": "string", "pattern": "^[a-z][A-Za-z0-9]*$"}, {"type": "string", "minLength": 1}, {"type": "number"}, {"type": "number"}, {"type": "string"}]
+    },
+    "measure": {
+      "description": "How a loop is measured and what activation expects of it: the analytics event one pass fires, its target, the Activation phase where a new player first meets it, and what is expected by then.",
+      "type": "object", "additionalProperties": false, "required": ["event", "target", "first", "expect"],
+      "properties": {
+        "event": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}, "params": {"type": "array", "items": {"type": "string"}},
+        "target": {"type": "string", "minLength": 1}, "first": {"type": "integer", "minimum": 0},
+        "expect": {"type": "string", "minLength": 1}, "in": {"$ref": "#/$defs/layerSet"}
+      }
+    },
+    "sense": {
+      "type": "object", "additionalProperties": false, "required": ["id", "is", "from"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "is": {"type": "string"}, "from": {"type": "string"}}
+    },
+    "sight": {
+      "type": "object", "additionalProperties": false, "required": ["id", "sees"],
+      "properties": {"id": {"type": "string", "pattern": "^[A-Z]+$"}, "sees": {"type": "string"}}
     },
     "vessel": {
       "type": "object", "additionalProperties": false,

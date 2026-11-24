@@ -118,6 +118,7 @@ S = dict(
     tile=K.kit_script("KitTile"),
     grid_options=script("Assets/_Scripts/UI/Elements/ArcadeGridOptions.cs"),
     text_tab=K.kit_script("KitTextTab"),
+    reveal=K.kit_script("KitPosterReveal"),
 )
 
 # Section 90 (Shombith, 2026-10-27: "Favorites to the top by default, A-Z under. Drop the sort controls, the
@@ -639,9 +640,8 @@ def build_slot():
     # not given one - RequestInfoEntry / OnlineInfoEntry already fade them in (entryFadeInSeconds).
     root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     occ = root.child(N("Occupied", "Occupied", STRETCH)).add("cg", 225, canvas_group(False))
-    oct_nodes(occ, "Occupied/Avatar/Ring", SOCK_AV + 6, "SurfaceDark")
-    oct_nodes(occ, "Occupied/Avatar/Gap", SOCK_AV + 2, "SurfaceVeryDark")
-    oct_nodes(occ, "Occupied/Avatar/Back", SOCK_AV, "SurfaceDark")
+    # The avatar's round cut, domain ring, waves and halo are built round the icon at run time (AvatarRippleBorder,
+    # Frogma Rev 127 D, Docs/MENU_REDESIGN_B.md section 217); the octagon ring, gap and backing it replaced are gone.
     art_node(occ, "Occupied/Avatar/Icon", "Avatar", R((0.5, 1), None, (0, -SOCK_AV_Y), (SOCK_AV, SOCK_AV)),
              AVATAR_PLACEHOLDER, preserve=True)
     # Rev 7: hovering a member's avatar opens their profile card (FriendProfilePopup); under the kick button.
@@ -684,13 +684,11 @@ def build_slot():
              f"  addButton: {ref(ctx.c('Empty', 'tile'))}\n"
              f"  displayNameText: {ref(ctx.c('Occupied/Name', 'tmp'))}\n"
              f"  kickButton: {ref(ctx.iref('KickButton', 'root#button'))}\n"
-             "  domainGlow: {fileID: 0}\n"
              f"  occupiedGroup: {ref(ctx.c('Occupied', 'cg'))}\n"
              f"  emptyGroup: {ref(ctx.c('Empty', 'cg'))}\n"
              f"  kickGroup: {ref(ctx.c('Occupied/Kick', 'cg'))}\n"
              f"  roleText: {ref(ctx.c('Occupied/Role', 'kt'))}\n"
-             f"  domainRing: {ref(ctx.c('Occupied/Avatar/Ring', 'img'))}\n"
-             f"  theme: {K.ref(11400000, K.THEME, 2)}\n"))
+             ))
     return root
 
 
@@ -1021,13 +1019,16 @@ def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
     return n
 
 
-def art_band(parent, key, w, h, sprite):
+def art_band(parent, key, w, h, sprite, cover=False):
     """The card's art band: a RectMask2D the art drifts under, the art fitted COVER x ART_OVERSCAN."""
     band = parent.child(N(f"{key}", "ArtBand", R((0, 1), (1, 1), (0, -h / 2), (0, h), (0.5, 0.5))))
     band.add("mask", 114, rect_mask()) \
         .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c(key + '/Art', 'img'))}\n"
                                                                 f"  overscan: {ART_OVERSCAN}\n"))
-    drift_art(band, f"{key}/Art", "Art", R(size=(w * ART_OVERSCAN, w * ART_OVERSCAN * 510 / 768)), sprite)
+    # `cover`: a band taller than the art's aspect (the Poster) sizes the art to fill it both ways; the wide bands keep
+    # their width-fitted art (KitCoverImage fits both at run time).
+    fit_w = (max(w, h * 768 / 510) if cover else w) * ART_OVERSCAN
+    drift_art(band, f"{key}/Art", "Art", R(size=(fit_w, fit_w * 510 / 768)), sprite)
     return band
 
 
@@ -1049,37 +1050,55 @@ def body_sea(parent, key, body_h):
     return sea
 
 
+POSTER_SHADE_H = 200                   # Rev 128 E: the navy fade up from the foot the name sits on
+POSTER_OPEN_H = 112                    # the reveal panel's open height (KitPosterReveal.openHeight)
+POSTER_TITLE_H = 84                    # two lines of H1 (36, Aldrich), one word a line for a two-word name
+
+
 def build_card(placeholder_art):
+    # Rev 128 E, the Poster (Docs/MENU_REDESIGN_B.md section 222; Shombith 2026-11-23: "I like the poster style but use
+    # our font"): the picture fills the card and drifts, a navy fade rises from the foot, the mode's name sits on it in
+    # Aldrich (H1), the hull at the bottom right. Hover or pad focus slides a panel up from the foot with the mode's
+    # line and its pilots (KitPosterReveal); the name rides up with it and the hull fades.
     root = N("root", "ArcadeGameCard", R(size=(CARD_W, CARD_H)))
     ring_node(root, "FocusRing", 14)
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
-    # The card's cut-corner shape clips everything (stencil); the band clips the drifting art to the top.
+    # The card's cut-corner shape clips everything (stencil): the picture, the fade and the reveal panel.
     clip = root.child(N("Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
     clip.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("mask", 114, mask(False))
-    art_band(clip, "Clip/Band", CARD_W, ART_BAND_H, placeholder_art)
-    body_sea(clip, "Clip/Sea", BODY_H)
-    image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, BODY_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
+    art_band(clip, "Clip/Band", CARD_W, CARD_H, placeholder_art, cover=True)
+    image_node(clip, "Clip/Shade", "Shade", R((0, 0), (1, 0), (0, 0), (0, POSTER_SHADE_H), (0.5, 0)), "SurfaceBlack",
+               K.kit_sprite("kit_fade_v"))
+    reveal = clip.child(N("Clip/Reveal", "Reveal", R((0, 0), (1, 0), (0, 0), (0, 0), (0.5, 0))))
+    reveal.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.96))) \
+        .add("th", 114, themed("SurfaceBlack", 0.96)).add("mask", 114, rect_mask())
+    desc = reveal.child(N("Clip/Reveal/Description", "Description", R((0, 1), (1, 1), (0, -16), (-40, 44), (0.5, 1))))
+    desc.add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, ellipsis(text("Mode line", "BodySmall", tok("TextLight"), valign="top", wrap=True))) \
+        .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
+    pilots = reveal.child(N("Clip/Reveal/Pilots", "Pilots", R((0, 0), (1, 0), (0, 14), (-40, 18), (0.5, 0))))
+    pilots.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("2 pilots", "Label", tok("InactiveLight"))) \
+        .add("kt", 114, K.kit_text("Label", "InactiveLight"))
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
 
-    # The body: the hull, the name, the petals.
-    hull_icon(root, "VesselChip", R((0, 0), None, (12, BODY_H / 2), (HULL_ICON, HULL_ICON), (0, 0.5)), "VesselIcon", HULL_ICON)
-    text_x = 12 + HULL_ICON + 12
-    flowers_w = 12 + FLOWER + 8
-    title = root.child(N("Title", "Title", R((0, 0), (1, 0), ((text_x - flowers_w) / 2, BODY_H / 2), (-(text_x + flowers_w), 30),
-                                             (0.5, 0.5))))
-    title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
-        .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
+    # The foot: the name (bottom left, over the fade) and the hull (bottom right, faded while the panel is open).
+    hull_icon(root, "VesselChip", R((1, 0), None, (-12, 14), (HULL_ICON, HULL_ICON), (1, 0)), "VesselIcon", HULL_ICON) \
+        .add("cg", 225, canvas_group(True))
+    title_w = CARD_W - 20 - (12 + HULL_ICON + 8)
+    title = root.child(N("Title", "Title", R((0, 0), None, (20, 20), (title_w, POSTER_TITLE_H), (0, 0))))
+    title.add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, text("Game", "H1", tok("TextLight"), valign="bottom", wrap=True)) \
+        .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
     # Section 90 (Shombith 2026-10-27: "Arcade shows a single petal, not per-vessel upgrade numbers"): the genre's ONE
-    # element icon (GameCard.GenrePetal, in white), not the flower filled to a hull's bought level. On
-    # the body's right edge, small: a column centred in the body, so one petal sits in the middle and a two-genre mode's
-    # second stacks under it (GameCard hides an empty petal by disabling its image).
-    col = root.child(N("Flowers", "Flowers", R((1, 0), None, (-12, BODY_H / 2), (FLOWER, BODY_H - 8), (1, 0.5))))
-    col.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 4, (0, 0), (0, 0)))
+    # element icon (GameCard.GenrePetal, in white). Rev 128 E puts it in the tag at the top left, a two-genre mode's
+    # second under it (GameCard hides an empty petal by disabling its image).
+    col = root.child(N("Flowers", "Flowers", R((0, 1), None, (12, -10), (FLOWER, FLOWER * 2 + 4), (0, 1))))
+    col.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 1, (0, 0), (0, 0)))
     for key in ("Petal", "PetalSecondary"):
         slot = col.child(N(key, key, R(size=(FLOWER, FLOWER))))
         slot.add("le", 114, le(mw=FLOWER, mh=FLOWER, pw=FLOWER, ph=FLOWER))
@@ -1089,7 +1108,7 @@ def build_card(placeholder_art):
         image_node(slot, f"{key}/Image", "Image", R(size=(GENRE_SHAPE, GENRE_SHAPE)), "TextLight", None, preserve=True)
 
     # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
-    picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
+    picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12 + FLOWER + 8, -15), (200, 24), (0, 1))))
     picks.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 4, 3, (0, 0), (0, 0)))
     pick = picks.child(N("Picks/Pick", "AvatarIcon", R(size=(24, 24))))
     pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AVATAR_PLACEHOLDER, preserve=True)) \
@@ -1109,11 +1128,11 @@ def build_card(placeholder_art):
              + refs("texts", []) + refs("graphics", [ctx.c("Star/Glyph", "th")])))
     assert glyph
 
-    # Locked: the lock and its word in the middle of the art.
-    lock = root.child(N("Lock", "Lock", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 + 12), size=(30, 30))))
+    # Locked: the lock and its word in the middle of the picture.
+    lock = root.child(N("Lock", "Lock", R(pos=(0, 40), size=(30, 30))))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.0), K.chrome_sprite("chrome_lock"),
                                                                    preserve=True))
-    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 - 16), size=(200, 18))))
+    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, 12), size=(200, 18))))
     lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("LOCKED", "Label", tok("TextLight", 0.0), align="center")) \
         .add("kt", 114, K.kit_text("Label", "TextLight", driven=True))
 
@@ -1144,7 +1163,13 @@ def build_card(placeholder_art):
              "  lockOverlay: {fileID: 0}\n"
              "  lockedTintColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}\n"
              f"  tile: {ref(ctx.c('root', 'tile'))}\n"
-             f"  starPaint: {ref(ctx.c('Star/Glyph', 'th'))}\n"))
+             f"  starPaint: {ref(ctx.c('Star/Glyph', 'th'))}\n"
+             f"  descriptionText: {ref(ctx.c('Clip/Reveal/Description', 'tmp'))}\n"
+             f"  pilotsText: {ref(ctx.c('Clip/Reveal/Pilots', 'kt'))}\n"
+             "  pilotsLine: '{pilots} pilots'\n"))
+    root.add("reveal", 114, lambda ctx, go: mono(go, S["reveal"],
+             f"  panel: {ref(ctx.rt('Clip/Reveal'))}\n  title: {ref(ctx.rt('Title'))}\n  hull: {ref(ctx.c('VesselChip', 'cg'))}\n"
+             f"  openHeight: {POSTER_OPEN_H}\n  duration: 0.2\n"))
     root.add("audio", 114, menu_audio(2)).add("scroll", 114, scroll_into()) \
         .add("le", 114, le(mw=0, fw=1, ph=CARD_H))
     return root
@@ -1672,7 +1697,7 @@ def check_fields(files, name, comp_key, wanted):
 TMP, IMG = K.TMP_UGUI, K.IMAGE
 FIELDS = [
     ("PartySlot", "root#slot", dict(avatarIcon=IMG, addButton=S["tile"], displayNameText=TMP, kickButton=S["button"],
-                                    occupiedGroup=225, emptyGroup=225, kickGroup=225, roleText=S["kt"], domainRing=IMG)),
+                                    occupiedGroup=225, emptyGroup=225, kickGroup=225, roleText=S["kt"])),
     ("PartyRequestRow", "root#row", dict(avatarIcon=IMG, usernameText=TMP, labelText=TMP, acceptButton=S["button"],
                                          declineButton=S["button"], kindText=S["kt"])),
     ("PartyOnlineRow", "root#row", dict(avatarIcon=IMG, usernameText=TMP, labelText=TMP, inviteButton=S["button"],
@@ -1685,7 +1710,7 @@ FIELDS = [
     ("PartyPanel", "root#friends", dict(onlineContent=224, requestsContent=224, onlineEmptyLine=225)),
     ("ArcadeGameCard", "root#card", dict(GameTitle=TMP, BackgroundImage=IMG, StarImage=IMG, VesselIcon=IMG,
                                          GenrePetal=IMG, GenrePetalSecondary=IMG, AvatarSpace=224, tile=S["tile"],
-                                         starPaint=S["th"])),
+                                         starPaint=S["th"], descriptionText=TMP, pilotsText=S["kt"])),
     ("ArcadeView", "Weekly#weekly", dict(GameTitle=TMP, TimeRemaining=TMP, BackgroundImage=IMG)),
 ]
 
@@ -1783,7 +1808,7 @@ def check_profile_hovers(files):
     assert "  m_RaycastTarget: 1\n" in hit, "the online row's avatar hit area does not take the pointer"
 
 
-def check_card_a(card, name, band_key, card_w, band_h):
+def check_card_a(card, name, band_key, card_w, band_h, sea=True):
     """Rev 18 A (section 72): the art drifts (Card_ArtDrift.mat) under a band that crops it, the drift never shows an edge;
     section 73: the hull is lit (no plate) and the body carries the sea. Shared with author_menu_arena.py."""
     F = K.FileIds(name)
@@ -1801,7 +1826,25 @@ def check_card_a(card, name, band_key, card_w, band_h):
     _, mk = doc_of(card, F(f"{band_key}#mask"))
     assert mk and KIT_RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
     assert f"guid: {HULL_LIT_MAT}" in card, f"{name}: the hull is not lit (Hull_Lit.mat) - it vanishes on the navy body"
-    assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
+    if sea:
+        assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
+
+
+def check_poster(card):
+    """Rev 128 E, the Poster (section 222): the picture fills the card, the name is Aldrich (H1) over a navy fade, and
+    hover or pad focus slides the reveal panel up (KitPosterReveal wired to the panel, the name and the hull)."""
+    F = K.FileIds("ArcadeGameCard")
+    _, band = doc_of(card, F("Clip/Band#mask"))
+    assert band, "ArcadeGameCard: no art band"
+    _, kt = doc_of(card, F("Title#kt"))
+    assert kt and f"  role: {K.ROLES['H1'][0]}\n" in kt, "ArcadeGameCard: the name is not H1 (Aldrich 36) - Rev 128 E"
+    _, shade = doc_of(card, F("Clip/Shade#img"))
+    assert shade and K.kit_sprite("kit_fade_v") in shade, "ArcadeGameCard: no navy fade under the name"
+    _, rv = doc_of(card, F("root#reveal"))
+    assert rv, "ArcadeGameCard: no KitPosterReveal"
+    for field in ("panel", "title", "hull"):
+        m = re.search(rf"^  {field}: \{{fileID: (-?\d+)\}}$", rv, re.M)
+        assert m and m.group(1) != "0", f"ArcadeGameCard: KitPosterReveal.{field} is not wired"
 
 
 def validate_prefabs(files, guids):
@@ -1830,7 +1873,8 @@ def validate_prefabs(files, guids):
     check_profile_hovers(files)
 
     check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
-                 ART_BAND_H)
+                 CARD_H, sea=False)
+    check_poster(files[prefab_path("ArcadeGameCard")])
     # 2026-10-28: the genre icon is the element's shape (Charge, Mass, Space, Time), never the lone HUD petal.
     _, card = doc_of(files[prefab_path("ArcadeGameCard")], K.FileIds("ArcadeGameCard")("root#card"))
     shapes = re.search(r"^  GenreShapes:\n((?:  - .*\n)*)", card, re.M)
@@ -2095,6 +2139,9 @@ def self_test(current, files, guids):
         "the genre icon back to the petal": prefab_plant(card, lambda t: t.replace(GENRE_SHAPES[0], GENRE_SHAPES[1], 1)),
         "the hull back to a dark render": prefab_plant(card, lambda t: t.replace(HULL_LIT_MAT, ART_DRIFT_MAT)),
         "the art band with no overscan": prefab_plant(card, lambda t: re.sub(r"  overscan: [\d.]+\n", "  overscan: 1\n", t)),
+        "the Poster's name back in the small type": prefab_plant(card, lambda t: re.sub(
+            r"(role: )" + str(K.ROLES["H1"][0]) + r"\n", r"\g<1>" + str(K.ROLES["H3"][0]) + "\n", t)),
+        "the Poster's reveal unwired": prefab_plant(card, lambda t: re.sub(r"(  panel: \{fileID: )-?\d+", r"\g<1>0", t, count=1)),
         "lists not embedded": prefab_plant(panel, lambda t: t.replace("  embedded: 1\n", "  embedded: 0\n", 1)),
         "slot field unwired": prefab_plant(panel, lambda t: t.replace(f"  - {{fileID: {slot1}}}\n", "  - {fileID: 0}\n", 1)),
         "Back closes by persistent call": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(

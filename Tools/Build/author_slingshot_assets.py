@@ -338,16 +338,16 @@ _ai = re.search(r"  m_Enabled: (\d)\n  m_EditorHideFlags: 0\n  m_Script: \{fileI
                 r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _stoat)
 if not _ai or _ai.group(1) != "1":
     errors.append("Stoat.prefab's AIPilot is not enabled - an AI Stoat cannot race")
-# Since round 15 the triggers are the FIELD DIPOLE (R_VesselActions/STOAT_DIPOLE.md); the round-4
-# orbit sling is unbound, so its autopilot never presses. The AI that races is the dipole's.
-_cfg = read_or_empty("Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset")
-m = re.search(r"^  autopilotHold01: ([0-9.]+)$", _cfg, re.M)
+# The triggers fly the SWING (R_VesselActions/STOAT_DIPOLE.md section 1b; the field dipole and every other
+# slingshot were deleted 2026-11-21). The AI that races is the swing's: it presses through the replicated path.
+_cfg = read_or_empty("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset")
+m = re.search(r"^  aiSlingMinTurnDegrees: ([0-9.]+)$", _cfg, re.M)
 if not m or float(m.group(1)) <= 0:
-    errors.append("StoatDipoleConfig.autopilotHold01 is 0 or missing - an AI Stoat lays no pair, "
+    errors.append("StoatSlingConfig_Slingshot.aiSlingMinTurnDegrees is 0 or missing - an AI Stoat never presses, "
                   "so it races at cruise on its x0.4 turn")
-_exec = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatDipoleExecutor.cs")
-if "PerformShipControllerActionsReplicated" not in _exec:
-    errors.append("StoatDipoleExecutor's autopilot does not go through the replicated press path")
+_exec = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs")
+if "PerformShipControllerActionsReplicated" not in _exec or "void AutopilotSwing()" not in _exec:
+    errors.append("StoatSlingExecutor's swing autopilot does not go through the replicated press path")
 
 # The toybox must offer the hull this mode is built for, and the card's hull must be a class asset.
 _roster = read_or_empty("Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs")

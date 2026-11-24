@@ -34,7 +34,8 @@ namespace CosmicShore.UI
         [SerializeField] private Image pool;
         [Tooltip("The pool's rim, tinted the team's colour.")]
         [SerializeField] private Image poolRim;
-        [Tooltip("Your own seat's glow. Optional.")]
+        [Tooltip("Legacy: your own seat's octagon glow behind the portrait, retired for the round avatar border " +
+                 "(Rev 127 D, Docs/MENU_REDESIGN_B.md section 217). Kept hidden. Optional.")]
         [SerializeField] private CanvasGroup localGlow;
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text statusText;
@@ -124,7 +125,10 @@ namespace CosmicShore.UI
             if (pool) pool.color = new Color(colour.r, colour.g, colour.b, pool.color.a);
             if (poolRim) poolRim.color = new Color(colour.r, colour.g, colour.b, poolRim.color.a);
             if (podiumGlow) podiumGlow.color = new Color(colour.r, colour.g, colour.b, podiumGlow.color.a);
-            KitVisibility.SetShown(localGlow, isLocal);
+            KitVisibility.SetShown(localGlow, false);
+            // Rev 127 D (Docs/MENU_REDESIGN_B.md section 217): the portrait is round, ringed and glowing in the
+            // seat's domain colour, the same border every other avatar wears.
+            AvatarRippleBorder.EnsureFor(avatar)?.Show(colour);
             KitVisibility.SetShown(aiTag, isAi);
             if (nameText) nameText.text = pilotName ?? string.Empty;
             SetStatus(status);

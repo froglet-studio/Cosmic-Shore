@@ -68,4 +68,113 @@ combos:
     - At the perch the Pistol builds a den
   drivers: [crew, make, rival]
   feel: Two games that need each other.
+  gene:
+    genome: Mass
+    cue: [crew_ready, open_space]
+    dials:
+    - - perchSpacing
+      - distance between the perches the Goby picks
+      - 20
+      - 250
+      - u
+    - - denEnergy
+      - energy earned over the ground before the Pistol rests to build
+      - 0.2
+      - 1.0
+      - fraction
+    done: A den is built at a perch the Pistol reached without a fall.
+    sight: ENSIGN
+- in: x
+  name: Length and line
+  t: [1, 4]
+  src: 'Garrett 2026-11-24 (project chat): the Goby never flies; its only movement is charged launches of different lengths
+    from perch to perch, and two thumbs orient the shrimp''s plane. Dart numbers from PERCH_RUN.md section 1; Goby Time step
+    1 signed fun by Will (loop.json).'
+  is: The Goby never flies. On a perch, two thumbs turn it to set the Pistol's plane; it charges a length and shoots itself
+    to the next perch, so every move is one choice of line and length.
+  chain:
+  - - ''
+    - 'Perched: two thumbs turn the hull, and the turn sets the Pistol''s plane'
+  - - ''
+    - Hold to charge the length, 140 u for a tap up to 600 u at a full charge
+  - - Time
+    - Let go; it lands in one second and the landing is the next perch
+  drivers: [mastery, joy]
+  feel: Reading the course one perch ahead.
+  gene:
+    genome: Time
+    cue: [gate_next, straight_ahead]
+    dials:
+    - - chargeFraction
+      - share of the full 0.8 s charge held before release
+      - 0
+      - 1
+      - fraction
+    - - lineOffset
+      - aim off the next ring's centre to clear a blocker or catch a double
+      - 0
+      - 60
+      - u
+    done: A ring is threaded with one launch from the perch before.
+    sight: NEEDLE
+- in: x
+  name: Lock and snap
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The Goby holds the lock, the Pistol snaps, and the ring homes.
+  chain:
+  - - ''
+    - The Goby locks a rival in the Pistol's view
+  - - Charge
+    - 'The Pistol snaps: the vortex ring homes'
+  - - Space
+    - The undertow pulls their loose mass in
+  drivers: [crew, rival]
+  feel: Spotter and shooter.
+  gene:
+    genome: Charge
+    cue: [rival_near, crew_ready]
+    dials:
+    - - lockHold
+      - seconds the Goby holds the lock before the snap
+      - 0.2
+      - 3
+      - s
+    - - snapRange
+      - rival distance at which the Pistol snaps
+      - 10
+      - 150
+      - u
+    done: A homed ring takes petals.
+    sight: BANDIT
+- in: x
+  name: The riptide
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Sit in dense mass, let the undertow fill the plane, then smash it in one ring.
+  chain:
+  - - Space
+    - Undertow pulls mass into the plane
+  - - Charge
+    - Snap a ring through what was pulled in
+  - - ''
+    - Crystals drift in to collect
+  drivers: [break, find]
+  feel: Drawing it all in, then letting go.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, dense_mass]
+    dials:
+    - - dwell
+      - seconds the Pistol stays in dense mass
+      - 1
+      - 10
+      - s
+    - - snapDensity
+      - prisms in the plane before the snap
+      - 5
+      - 200
+      - count
+    done: A ring collapses on mass the undertow pulled in.
+    sight: MANGER
 doc: Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset

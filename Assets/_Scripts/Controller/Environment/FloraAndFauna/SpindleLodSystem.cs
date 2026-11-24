@@ -171,6 +171,9 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_tickMarker = new("SpindleLod.Tick");
         static readonly ProfilerMarker s_drainMarker = new("SpindleLod.Drain");
         static readonly ProfilerMarker s_drawMarker = new("SpindleLod.Draw");
+        // The parts of the two above, so a capture can say which one a slow pass spent its time in.
+        static readonly ProfilerMarker s_classifyMarker = new("SpindleLod.Tick.Classify");
+        static readonly ProfilerMarker s_rebuildMarker = new("SpindleLod.Draw.Rebuild");
 
         static SpindleLodSystem s_instance;
         static bool s_unavailable;     // the profile is missing, off or broken: stop asking
@@ -774,6 +777,7 @@ namespace CosmicShore.Gameplay
                 int n = _entries.Count;
                 var desired = new NativeArray<byte>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
                 var action = new NativeArray<byte>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                s_classifyMarker.Begin();
                 new ClassifyJob
                 {
                     Camera = cam.transform.position,
@@ -788,6 +792,7 @@ namespace CosmicShore.Gameplay
                     Desired = desired,
                     Action = action,
                 }.ScheduleReadOnly(_transforms, 64).Complete();
+                s_classifyMarker.End();
 
                 _pending.Clear();
                 _pendingCursor = 0;
@@ -1025,7 +1030,9 @@ namespace CosmicShore.Gameplay
                     var batch = _batches[b];
                     int count = batch.entries.Count;
                     if (count == 0 || !batch.mesh || !batch.material) continue;
-                    if (batch.dirty) Rebuild(batch);
+                    if (batch.dirty)
+                        using (s_rebuildMarker.Auto())
+                            Rebuild(batch);
                     for (int start = 0; start < count; start += MaxInstancesPerCall)
                         Graphics.RenderMeshInstanced(batch.renderParams, batch.mesh, 0, batch.matrices,
                             Mathf.Min(MaxInstancesPerCall, count - start), start);

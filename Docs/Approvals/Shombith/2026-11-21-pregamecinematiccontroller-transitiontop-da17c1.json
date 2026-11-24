@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-21-pregamecinematiccontroller-transitiontop-da17c1",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-21T19:26:25+00:00",
+  "area": "the pre-game cinematic",
+  "summary": "PreGameCinematicController.TransitionToPlayer ends the move when the vessel or the camera is destroyed mid-move (bug ledger E-b872184a91)",
+  "why": "it read a destroyed Transform every frame of the move and threw MissingReferenceException",
+  "branch": "Ys-bleeding-edge",
+  "commit": "536a720a8",
+  "paths": [
+    "Assets/_Scripts/UI/PreGameCinematic/PreGameCinematicController.cs"
+  ]
+}
