@@ -457,3 +457,6 @@
 2026-11-24T11:29:04.000Z E-05e4645aad: fix 25d287a0b taken (PlayMode); needs 2 clean run(s)
 2026-11-24T11:29:04.074Z E-6bc7e07601: fix 97aab2a6a taken (PlayMode); needs 2 clean run(s)
 2026-11-24T11:32:20.865Z PlayMode session ended (114s play run, exiting play mode): 2 fix(es) waiting; counted: E-05e4645aad 1/2 E-6bc7e07601 1/2; fired: E-930ca435ca E-111d87fec0
+2026-11-24T11:34:13.581Z EditMode session ended (10min editor span, script reload): 2 fix(es) waiting; counted: none; fired: E-930ca435ca E-111d87fec0
+2026-11-24T11:34:23.178Z editor load: play=False capture=True minPlay=15s issues=130
+2026-11-24T11:41:05.890Z PlayMode session ended (150s play run, exiting play mode): 2 fix(es) waiting; counted: E-05e4645aad 2/2 E-6bc7e07601 2/2; fired: E-930ca435ca
