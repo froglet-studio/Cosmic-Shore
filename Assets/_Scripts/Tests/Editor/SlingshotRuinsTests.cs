@@ -72,10 +72,18 @@ namespace CosmicShore.Tests
             }
         }
 
-        // Measured over Seeds on 2026-11-24 (slingshot_ruins_harness --report): 4 ruins a lap (5 on one seed), one on
-        // every leg of 380 u or more bar the closing one, 424 to 546 prisms.
+        // Measured over Seeds on 2026-11-24 (slingshot_ruins_harness --report) on the 150 u lane: 4 ruins a lap (5 on
+        // one seed), one on every leg of 380 u or more bar the closing one, 631 to 870 prisms (424 to 546 on the 60 u
+        // lane it had first: a ruin stands round its lane, so a wider lane is a bigger ruin, not a missing one).
         const int MinRuinsALap = 4;
-        const int MaxPrismsALap = 600;
+        const int MaxPrismsALap = 900;
+
+        [Test]
+        public void The_lane_is_the_Stoats_own_and_wider_than_Spearlines()
+        {
+            Assert.AreEqual(SlingshotRuins.ClearRadius, SlingshotRuins.ForIntensity(4).ClearRadius);
+            Assert.Greater(SlingshotRuins.ClearRadius, SpearlineRuins.LaneRadius);
+        }
 
         [Test]
         public void A_ruin_stands_only_on_a_long_leg_and_never_on_the_closing_one()

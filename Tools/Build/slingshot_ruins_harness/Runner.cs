@@ -14,6 +14,7 @@ public static class Runner
     public static int Main(string[] args)
     {
         if (args.Contains("--report")) Report();
+        if (args.Contains("--lanes")) Lanes();
         int failed = 0, ran = 0;
         var fixture = typeof(CosmicShore.Tests.SlingshotRuinsTests);
         var instance = Activator.CreateInstance(fixture);
@@ -33,6 +34,31 @@ public static class Runner
         }
         Console.WriteLine($"{ran - failed}/{ran} passed");
         return failed == 0 && ran > 0 ? 0 : 1;
+    }
+
+    // What a wider clear lane leaves standing: per lane radius, the fewest and most ruins and prisms a lap over the seeds.
+    static void Lanes()
+    {
+        foreach (float lane in new[] { 60f, 80f, 100f, 120f, 140f, 160f, 200f })
+        {
+            int minRuins = int.MaxValue, maxRuins = 0, minPrisms = int.MaxValue, maxPrisms = 0;
+            foreach (int seed in new[] { 1, 2, 3, 7, 11, 17, 23, 42, 101, 102, 103, 104, 2026, 90210 })
+            {
+                var c = SlingshotCourse.ForIntensity(4);
+                c.InnerRadius = 480f;
+                c.OuterRadius = 1080f;
+                c.FirstGateDirection = Vector3.up;
+                var lap = HeadlongCircuit.Generate(seed, c);
+                var parts = new List<SpearlineRuinPart>();
+                var wheels = new List<SpearlineRuinWheel>();
+                var s = SpearlineRuins.ForIntensity(4).With(lane, SpearlineRuins.MinLegLength, SpearlineRuins.RingMargin);
+                SpearlineRuins.Lay(lap, s, parts, wheels);
+                int ruins = parts.Select(p => p.Leg).Distinct().Count();
+                minRuins = Math.Min(minRuins, ruins); maxRuins = Math.Max(maxRuins, ruins);
+                minPrisms = Math.Min(minPrisms, parts.Count); maxPrisms = Math.Max(maxPrisms, parts.Count);
+            }
+            Console.WriteLine($"lane {lane}: {minRuins}-{maxRuins} ruins, {minPrisms}-{maxPrisms} prisms");
+        }
     }
 
     static void Report()
