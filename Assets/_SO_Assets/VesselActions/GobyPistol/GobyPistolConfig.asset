@@ -164,7 +164,6 @@ MonoBehaviour:
   diveTailCurl: 22
   diveTailRate: 10
   aiDartLength: 300
-  aiCruiseSpeed: 100
   aiTurnRate: 90
   aiRethinkSeconds: 2.5
   aiHomeRadius: 2000

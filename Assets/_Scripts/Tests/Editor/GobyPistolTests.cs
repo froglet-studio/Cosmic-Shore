@@ -334,11 +334,10 @@ namespace CosmicShore.Tests
         [Test]
         public void Islands_AreLaidAtTheirLength_AndKeepThePairTogether()
         {
-            // Garrett, 2026-10-23: "the goby is barely cruising around at all". The Goby cruises; a dart's end is a perch only
-            // once it is an island's length from the last perch; a longer gap is several islands; and no new perch is laid
-            // while the Pistol has its islands ahead
+            // The Goby only darts (Garrett, 2026-11-24); a landing is a perch only once it is an island's length from the
+            // last one; a longer gap is several islands; and no new perch is laid while the Pistol has its islands ahead
             Vector3 a = Vector3.zero;
-            Assert.That(GobyIslands.Reaches(a, Vector3.forward * 899f, 900f), Is.False, "the control: a dart short of an island is a dash");
+            Assert.That(GobyIslands.Reaches(a, Vector3.forward * 899f, 900f), Is.False, "the control: a landing short of an island is a hop");
             Assert.That(GobyIslands.Reaches(a, new Vector3(600f, 0f, 700f), 900f), Is.True);
             Assert.That(GobyIslands.Pieces(a, Vector3.forward * 1800f, 1800f), Is.EqualTo(1));
             Assert.That(GobyIslands.Pieces(a, Vector3.forward * 1801f, 1800f), Is.EqualTo(2));
@@ -349,19 +348,21 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
-        /// The pair together (Garrett, 2026-10-23: "take a pass at tuning the two together"): the Goby AI, cruising and
-        /// wandering, makes an island faster than the Pistol AI rides one, so the Pistol never waits at the head perch; the
-        /// island queue then keeps the Goby from running away. The control: the old Goby, which only darted and waited up to
-        /// 45 s for the Pistol, kept it waiting at every perch.
+        /// The pair together (Garrett, 2026-10-23: "take a pass at tuning the two together"): the Goby AI, hopping
+        /// <c>aiDartLength</c> a dart cooldown at a time (it never flies, Garrett 2026-11-24) and wandering, makes an island
+        /// faster than the Pistol AI rides one, so the Pistol never waits at the head perch; the island queue then keeps the
+        /// Goby from running away. The control: the old Goby, which waited up to 45 s for the Pistol at every perch, kept it
+        /// waiting.
         /// </summary>
         [TestCase(true)]
         [TestCase(false)]
         public void Pair_TheGobyKeepsAheadOfThePistol(bool shipped)
         {
             var config = ShippedConfig();
-            const float wander = 0.7f;   // net progress per u flown by the wandering AI (simulated over 200 seeds: median 0.88, one in ten 0.56)
+            const float wander = 0.7f;   // net progress per u hopped by the wandering AI (simulated over 200 seeds: median 0.88, one in ten 0.56)
             float island = 0.5f * (config.IslandMinLength + config.IslandMaxLength);
-            float goby = island / (wander * config.AiCruiseSpeed) + config.PerchSeconds + config.DartSeconds;
+            float hops = Mathf.Ceil(island / (wander * config.AiDartLength));
+            float goby = hops * Mathf.Max(config.DartCooldown, config.DartSeconds) + config.PerchSeconds;
             float pistol = RideIt(config, island, 60f).Seconds + config.RestSeconds;
             if (!shipped) { goby = config.PerchSeconds + 45f; Assert.That(goby, Is.GreaterThan(pistol), "the control: the waiting Goby"); return; }
             Assert.That(goby, Is.LessThan(pistol), $"the Goby makes an island in {goby:F1} s, the Pistol rides one in {pistol:F1} s");

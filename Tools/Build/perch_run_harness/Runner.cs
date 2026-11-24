@@ -1,9 +1,10 @@
 // Runs every [Test] of the compiled SHIPPED Perch Run tests (PerchRunCourseTests) by reflection and prints a pass/fail line
 // per test. Exit 0 = all passed. One more mode reads the shipped C#, never a copy:
-//   --sweep   the ladder per intensity over 400 seeds, and the race clock of three pilots, all on the seat AI's numbers
-//             (turn 90 deg/s, cruise 100 u/s, the dart's 1 s and 1.2 s cooldown, a perch's 1.5 s pin for the first three
-//             islands): the CRUISER (never darts), the FULL-CHARGER (every dart at the ring's centre at a full charge: no
-//             judgement of length or line) and the READER (the AI's PlanDart: exact length, rim shots, doubles).
+//   --sweep   the ladder per intensity over 400 seeds, and the race clock of two pilots, all on the seat AI's numbers
+//             (turn 90 deg/s where it sits, the dart's 1 s and 2.2 s cooldown from launch, a perch's 1.5 s wait for the
+//             first three islands; the Goby never flies, Garrett 2026-11-24): the FULL-CHARGER (every dart at the ring's
+//             centre at a full charge: no judgement of length or line; a hop aside when coral stops it at the nose) and
+//             the READER (the AI's PlanDart: exact length, rim shots, doubles, a hop aside when no line clears).
 //   --trace I seed   one course's dart log for the full-charger and the reader.
 using System;
 using System.Collections.Generic;
@@ -33,7 +34,7 @@ public static class Runner
         return fail == 0 && pass > 0 ? 0 : 1;
     }
 
-    enum Pilot { Cruiser, FullCharger, Reader }
+    enum Pilot { FullCharger, Reader }
 
     /// <summary>The race clock of one pilot; also the darts it fired and the darts that stopped short of the ring (on coral, or out of reach).</summary>
     static bool _trace;
@@ -53,22 +54,15 @@ public static class Runner
             {
                 Vector3 to = g.Position - pos;
                 aim = g.Position + to.normalized * PerchRunCourse.Overshoot;
-                length = pilot == Pilot.Cruiser || to.magnitude + PerchRunCourse.Overshoot < PerchRunCourse.DartMinRange ? 0f : PerchRunCourse.DartRange;
+                length = PerchRunCourse.DartRange;
+                // nose on the coral (the last dart stopped on it): hop aside, as the Goby must (it never flies)
+                Vector3 d0 = (aim - pos).normalized;
+                if (PerchRunCourse.FirstCoral(pos, d0, length, coral, out float h0) && h0 < 6f)
+                    aim = PerchRunCourse.TrySidestep(pos, to, coral, out length);
             }
+            if (length <= 0f) return 999f;   // walled in: the race is stuck
             Vector3 dir = (aim - pos).normalized;
             float turn = Vector3.Angle(fwd, dir) / PerchRunCourse.AiTurnRate;
-            if (length <= 0f)
-            {
-                // cruise: through the ring (and through any coral: the Goby's flight ignores collision)
-                float d = (aim - pos).magnitude;
-                t += turn + d / PerchRunCourse.AiCruiseSpeed;
-                reloadLeft = Mathf.Max(0f, reloadLeft - turn - d / PerchRunCourse.AiCruiseSpeed);
-                Vector3 end = aim;
-                while (next < rings.Count && PerchRunCourse.Threads(pos, end, rings[next])) next++;
-                if (_trace) Console.WriteLine($"  t {t,6:F1}  CRUISE {d:F0}  rings ->{next}");
-                pos = end; fwd = dir;
-                continue;
-            }
             t += Mathf.Max(turn, reloadLeft);
             float go = length;
             if (PerchRunCourse.FirstCoral(pos, dir, length, coral, out float hit)) go = hit;
@@ -79,14 +73,6 @@ public static class Runner
             if (next == before && go < (g.Position - pos).magnitude) blocked++;
             t += PerchRunCourse.DartSeconds;
             reloadLeft = Mathf.Max(0f, PerchRunCourse.DartCooldown - PerchRunCourse.DartSeconds);   // the cooldown runs from launch
-            if (go < 6f)
-            {
-                // nose on the coral: cruise past it, then dart again
-                float d = 2f * PerchRunCourse.HalfDiagonal(PerchRunCourse.ForIntensity(4).CoralSize) + 12f;
-                stop = pos + dir * d;
-                t += d / PerchRunCourse.AiCruiseSpeed;
-                reloadLeft = Mathf.Max(0f, reloadLeft - d / PerchRunCourse.AiCruiseSpeed);
-            }
             if (perches < PerchRunCourse.IslandQueue && (stop - lastPerch).magnitude >= PerchRunCourse.IslandMinLength)
             {
                 perches++; lastPerch = stop; t += PerchRunCourse.PerchSeconds;
@@ -117,7 +103,7 @@ public static class Runner
         for (int i = 1; i <= 4; i++)
         {
             var s = PerchRunCourse.ForIntensity(i);
-            var cruise = new List<float>(); var full = new List<float>(); var reader = new List<float>();
+            var full = new List<float>(); var reader = new List<float>();
             var saveFull = new List<float>(); var legs = new List<float>();
             int fails = 0, dartsR = 0, blockedF = 0, stuck = 0;
             for (int seed = 1; seed <= 400; seed++)
@@ -127,18 +113,17 @@ public static class Runner
                 var coral = new List<Coral>();
                 PerchRunCourse.CoralFor(rings, s, coral);
                 for (int k = 1; k < rings.Count; k++) legs.Add((rings[k].Position - rings[k - 1].Position).magnitude);
-                float c0 = Clock(rings, coral, Pilot.Cruiser, out _, out _);
                 float f = Clock(rings, coral, Pilot.FullCharger, out _, out int bf);
                 float r = Clock(rings, coral, Pilot.Reader, out int dr, out _);
                 if (f >= 999f || r >= 999f) { stuck++; continue; }
-                cruise.Add(c0); full.Add(f); reader.Add(r); saveFull.Add(1f - r / f);
+                full.Add(f); reader.Add(r); saveFull.Add(1f - r / f);
                 dartsR += dr; blockedF += bf;
             }
             float Med(List<float> xs) { if (xs.Count == 0) return 0f; var o = xs.OrderBy(x => x).ToList(); return o[o.Count / 2]; }
-            int n = Math.Max(1, cruise.Count);
+            int n = Math.Max(1, full.Count);
             Console.WriteLine($"I{i}: fails {fails}/400 (stuck {stuck})  rings {s.RingCount}  radius {s.RingRadius}  legs {legs.Min():F0}-{legs.Max():F0} (med {Med(legs):F0})  " +
                               $"period {s.Period} (hairpin {s.HairpinSlot}, blocker {s.BlockerSlot}, double {s.DoubleSlot})  coral {s.CoralSize}");
-            Console.WriteLine($"     clock: cruiser {Med(cruise):F1} s, full-charger {Med(full):F1} s ({(float)blockedF / n:F1} darts a race stop short of their ring)" +
+            Console.WriteLine($"     clock: full-charger {Med(full):F1} s ({(float)blockedF / n:F1} darts a race stop short of their ring)" +
                               $", reader {Med(reader):F1} s ({(float)dartsR / n:F1} darts); " +
                               $"the reader saves {100f * Med(saveFull):F0}% on the full-charger");
         }

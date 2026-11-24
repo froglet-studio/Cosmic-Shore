@@ -27,8 +27,8 @@ namespace CosmicShore.ScriptableObjects
     public sealed class GobyPistolConfigSO : ScriptableObject
     {
         [Header("Goby: dart and perch (the Shrike's sling: distance / dartSeconds, docks on the first block it touches)")]
-        [Tooltip("The farthest a full-charged dart goes, u. A dart is the Goby's burst between cruising; its end is the " +
-                 "next perch once it is islandMinLength from the last one.")]
+        [Tooltip("The farthest a full-charged dart goes, u. A dart is the Goby's only movement (it never flies); a landing " +
+                 "islandMinLength from the last island's end lays the Pistol's next island.")]
         [SerializeField, Min(10f)] float dartRange = 600f;
         [Tooltip("How far a tap darts, u. Holding the dart button charges it up to dartRange over dartChargeSeconds.")]
         [SerializeField, Min(5f)] float dartMinRange = 140f;
@@ -52,17 +52,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A perch pad block's edge, u.")]
         [SerializeField, Min(0.5f)] float perchBlockSize = 4f;
 
-        [Header("Goby: cruise, perch and the Pistol's islands (Garrett, 2026-10-23: \"the goby is barely cruising around at all\")")]
-        [Tooltip("Seconds the AI Goby stays perched at the end of an island, aiming, before it lifts off and cruises. A " +
-                 "person's Goby is never held at a perch (Will, 2026-11-24).")]
+        [Header("Goby: perches and the Pistol's islands (Garrett, 2026-11-24: it never flies, only darts perch to perch)")]
+        [Tooltip("Seconds the AI Goby waits at the end of an island, aiming, before it darts on. A person's Goby is never " +
+                 "held there (Will, 2026-11-24).")]
         [SerializeField, Min(0f)] float perchSeconds = 1.5f;
-        [Tooltip("A dart's end is a perch (the end of the Pistol's next island) only this far from the last perch, u; " +
-                 "nearer, the dart is a dash and the Goby cruises on. A Tiny Wings island of about 35 hills.")]
+        [Tooltip("A landing lays the Pistol's next island only this far from the last island's end, u; nearer, it is a hop " +
+                 "and the Goby darts on from where it sits. A Tiny Wings island of about 35 hills.")]
         [SerializeField, Min(50f)] float islandMinLength = 900f;
         [Tooltip("A longer gap from the last perch is laid as islands of at most this, u (about 70 hills), each ending in a " +
                  "perch of its own.")]
         [SerializeField, Min(50f)] float islandMaxLength = 1800f;
-        [Tooltip("The Goby lays no new perch while this many islands wait ahead of the Pistol: a dart is a dash until the " +
+        [Tooltip("The Goby lays no new island while this many wait ahead of the Pistol: a landing is a hop until the " +
                  "Pistol catches up, so the two stay together.")]
         [SerializeField, Range(1, 8)] int islandQueue = 3;
 
@@ -357,13 +357,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.1f)] float diveTailRate = 10f;
 
         [Header("AI")]
-        [Tooltip("The Goby AI's dart, u: it darts once its island is as long as it planned, so the dart's end is the perch.")]
+        [Tooltip("The Goby AI's hop, u: it darts this far at a time along the island it means to lay.")]
         [SerializeField, Min(10f)] float aiDartLength = 300f;
-        [Tooltip("The Goby AI's cruise between perches, u/s (a person cruises on the hull's own two-thumb flight).")]
-        [SerializeField, Min(1f)] float aiCruiseSpeed = 100f;
-        [Tooltip("How fast the cruising Goby AI turns, degrees a second.")]
+        [Tooltip("How fast the Goby AI turns where it sits, degrees a second.")]
         [SerializeField, Min(1f)] float aiTurnRate = 90f;
-        [Tooltip("Seconds between the cruising Goby AI's choices of where to head.")]
+        [Tooltip("Seconds between the Goby AI's choices of where to hop.")]
         [SerializeField, Min(0.2f)] float aiRethinkSeconds = 2.5f;
         [Tooltip("The Goby AI keeps within this distance of where it started, u.")]
         [SerializeField, Min(100f)] float aiHomeRadius = 4000f;
@@ -501,7 +499,6 @@ namespace CosmicShore.ScriptableObjects
         public float ViewPistolAt => viewPistolAt;
         public float DepthFullSpreadAt => depthFullSpreadAt;
         public float AiDartLength => aiDartLength;
-        public float AiCruiseSpeed => aiCruiseSpeed;
         public float AiTurnRate => aiTurnRate;
         public float AiRethinkSeconds => aiRethinkSeconds;
         public float PerchSeconds => perchSeconds;
