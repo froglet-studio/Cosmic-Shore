@@ -31,6 +31,7 @@ first DOMAIN whose lead runner threads the last ring wins (golf: finish time).
 | Mouth twist (jitter / cap) | 15° / 40° | 25° / 50° | 40° / 60° | 40° / 60° |
 | Legs | 420-620 | 400-620 | 420-620 | 360-520 |
 | Blast Run (fields, doors, keys) | none | none | none | Switchback's pre-gauntlet I4 field (unchanged) |
+| Garden ruins | none | none | none | up to 7 along the course, 400-560 prisms |
 
 **Blast Run only at I4 (2026-11-13, elemental loop step 1).** Switchback became Blast Run on 2026-10-29, two days
 after this race was cut, and Scarab Rally inherited it at every intensity: every second or third leg (every leg from I3)
@@ -55,6 +56,43 @@ field still leaves the mouth clear) and each field keeps a sight bore of the big
 Measured over 400 seeds per level: the walk never fails. Hairpin share is 0 / 50 / 32 / 50%, and the shortest leg
 is 420 / 400 / 420 / 360 u.
 
+## The ruins (I4, 2026-11-24, Yash)
+
+Decoration: the garden ruins Spearline lays round its racing line at I4 (SPEARLINE.md section 2a), round this course's
+rings. `ScarabRallyRuins` CALLS `SpearlineRuins.Lay` with the course's gates and adds no ruin of its own; it only
+chooses which of Spearline's prisms this course lays. Plain prisms with the game's own rules: a hull breaks one, nothing
+grows back, nothing reads or writes a vessel.
+
+What Spearline's generator already holds here (tested on this course): a 60 u clear lane down each leg's flown line (the
+I4 mouth is 22 u), nothing within 120 u of a ring, only on legs of 380 u or more, every prism at least 8 u thick, none
+below I4.
+
+What this course changes, and why:
+
+- **Up to seven ruins, spread along the 24 rings.** Spearline's lap has seven legs; this chain has 23. Every leg is
+  asked for a ruin and seven are kept, evenly spaced along the legs where one can stand, so the prism count stays
+  Spearline's and the ruins do not all stand in the first third of the race. A ruin's kind follows its leg, so the
+  seven are a mix of the kinds and a kind can repeat.
+- **Cut clear of the block field.** Every I4 leg from the second ring on carries Switchback's block field. A ruin
+  prism within 6 u of a field prism's bounding ball is left out, and a ruin with fewer than 24 prisms left is not laid.
+  That takes about a fifth of each course's ruin prisms.
+- **The next ring stays in sight** (Garrett's rule above). Spearline's lane follows the curved line a pilot flies; a
+  wall across it could still stand in the straight line from one ring to the next. No ruin prism reaches into the
+  sight bore the field itself keeps (34 u round the straight line at I4).
+- **No turning wheel.** It never fits (a wheel needs 270 u clear of both rings, and the legs are 360-520 u), it would
+  sweep the sight line, and its rim would pass through the block field. Where Spearline would lay a wheel this course
+  gets a pergola. So nothing in the ruins moves and the race has no ruin tick.
+
+Colours: one domain a ruin, Jade, Ruby, Gold in turn along the course (`scarabRuinDomains` on the controller; empty =
+Blue). The block field is Blue and the next ring is lime, so the ruins read apart from both.
+
+Measured headless on ten I4 courses (`bash Tools/Build/scarab_rally_ruins_harness/run.sh`, the shipped code and
+`ScarabRallyRuinsTests`): 7 ruins on every course, 397-559 prisms (mean 467), 30-117 a ruin, beside a field of
+2,600-3,400; choosing them takes about 150 ms a course, once, while the course is raised. The race lays the field out a
+second time to cut the ruins round it (Switchback's layout is private to it). Not compiled in Unity and not seen in the
+editor (the hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`). The AI's I4 times in the table below were measured
+before the ruins; the ruins stand outside the lane the AI flies, but that was not raced again.
+
 ## What is reused, and what is new
 
 - **Reused whole:** `SwitchbackController` (`ScarabRallyController` subclasses it and overrides the name, the course
@@ -64,6 +102,7 @@ is 420 / 400 / 420 / 360 u.
 - **New:**
   - `ScarabRallyCourse`: the Scarab's constants and the ladder.
   - `ScarabRallyCourseSource`: the walk, with Switchback's back-off.
+  - `ScarabRallyRuins`: which of Spearline's I4 ruins this course lays (above); the hook is in `ScarabRallyController`.
   - Their tests, the scene (a clone of `MinigameSwitchback`), the card, the rule, the preview and the toasts.
   - All the assets come from `Tools/Build/author_scarab_rally_assets.py` (on `hull_time_race.py`).
 

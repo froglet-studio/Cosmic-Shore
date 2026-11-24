@@ -26743,3 +26743,23 @@ compiler arguments). Not compiled in the editor, no edit-mode run in Unity, neve
 - [ ] I1, I2 and I3 have no ruins.
 - [ ] Three AI at I4 still finish (one race before: 159 s, seed 7001), and the frame rate holds with about 1,000 more prisms.
 - [ ] The ruins are gone after leaving the race and on Play Again.
+
+## Scarab Rally: the I4 garden ruins (2026-11-24)
+
+NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Scarab Rally lays Spearline's ruins round its own rings at I4, cut clear
+of the block field and of the sight line to the next ring (SCARABRALLY.md, "The ruins"; `ScarabRallyRuins`, the hook in
+`ScarabRallyController`). Run outside Unity only: `ScarabRallyRuinsTests` 13/13 and six negative controls
+(`bash Tools/Build/scarab_rally_ruins_harness/run.sh --self-test`), and the game assembly compiled with Roslyn on
+Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally_assets.py --check` OK.
+
+- [ ] The project compiles in the editor and `ScarabRallyRuinsTests` passes there.
+- [ ] `MinigameScarabRally`: the controller shows `Scarab Ruin Prism Prefab` = SpawnablePrism (written into the scene
+      as text; the scene still owes its first open-and-save).
+- [ ] Scarab Rally I4: up to seven ruins stand along the course in Jade, Ruby and Gold, apart from the Blue block
+      fields and the lime ring; none at a ring; nothing in them moves.
+- [ ] From each ring the next lime ring is in plain sight, as before the ruins (Garrett's 2026-11-14 rule).
+- [ ] No ruin prism stands inside a block-field prism.
+- [ ] Scarab Rally I1, I2 and I3: no ruins. Switchback: no Scarab Rally ruins (its own are the Switchback session's).
+- [ ] Three AI Scarabs at I4 finish in about the times they did (Medium 161 s, Legendary 121 s), and the frame rate
+      holds with about 470 more prisms and the 150 ms the ruins take to choose while the course is raised.
+- [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
