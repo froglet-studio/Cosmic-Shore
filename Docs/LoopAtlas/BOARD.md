@@ -78,7 +78,7 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | toybox | 2 | Every arc in the atlas is fed by winning. A player who only makes things (the painter in Docs/LoopAtlas/personas/journeys.yaml) moves no arc, and has seen every painting and microscene by week 3. | Each week of the Tide adds one painting and one microscene, and a shared painting opens the same canvas for whoever taps it. |
 | arcade | 0 | Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card. | 3 to 5 rounds a run. The breath offers the next rung after a win and the same rung after a loss. |
 | arcade | 1 | Most cards have never been played: steps 1 to 3 of the elemental loop are 'built', not 'done', for every vessel and element except Dolphin Time step 1. |  |
-| ladder | 0 | Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. | Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off. |
+| ladder | 0 | Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. 2026-11-24: two more cards show it. Spearline's Legendary Swordfish AI (eda5d81aa, SPEARLINE.md) runs I1 148.5 s, I2 142.3, I3 135.2, I4 143.6, so I3 is the quickest rung, and Perch Run's reader runs 36.0, 37.8, 36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder. | Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off. |
 | round.ms | 0 | Only the category has landed. The per-vessel merge has not started: the board still shows Mass and Space as two games each. |  |
 | arena | 0 | Matches per set, and what makes a squad stay for another, are not written. | Best of three against the same opponents, hulls re-drafted between matches, so the set is a loop of its own. |
 | round.astro | 0 | The plan names three arena games. Where Astro League sits (a fourth arena, or an arena-sized party game) is not said. | Call it the Arena's party game: it balances nothing and is kept for fellowship, the way party cards are in the Arcade. |
@@ -117,6 +117,8 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 
 | Date | Step | Loop or item | By | What |
 | --- | --- | --- | --- | --- |
+| 2026-11-24 | hole | ladder | Claude | Ladder hole refreshed: Spearline's Legendary AI runs I3 quickest (148.5/142.3/135.2/143.6 s) and Perch Run's reader I4 quickest (36.0/37.8/36.8/30.5 s); Spearline step 3 was recorded built on that ladder. Source: eda5d81aa, SPEARLINE.md, 3b9cbf31a. |
+| 2026-11-24 | propose | Goby | Claude | Combo 'Length and line' (Time gene): the Goby's dart in Perch Run, now that Goby Time step 1 is signed fun. The Goby had no Time combo and no Time entry in the gene pool. Source: loop.json (Will, 2026-11-24), PERCH_RUN.md, commits 3b9cbf31a and e8b6bf92b. |
 | 2026-11-20 | start | era.tide | Claude |  |
 | 2026-11-21 | start | arc.social | Garrett |  |
 | 2026-11-21 | develop | arc.social | Garrett | A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided. |
@@ -140,5 +142,3 @@ How work moves: `Docs/LoopAtlas/PROCESS.md`.
 | 2026-11-21 | develop | P10 | Garrett | Garrett, 2026-11-21: "Build everything proposed. Get all personas retained" |
 | 2026-11-21 | plan | P10 | Garrett | Garrett, 2026-11-21: "Build everything proposed. Get all personas retained" |
 | 2026-11-21 | start | P5 | Garrett | The breath between rounds |
-| 2026-11-21 | develop | P5 | Garrett | Garrett, 2026-11-21: "Build everything proposed. Get all personas retained" |
-| 2026-11-21 | plan | P5 | Garrett | Garrett, 2026-11-21: "Build everything proposed. Get all personas retained" |

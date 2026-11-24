@@ -884,7 +884,7 @@
    "holes": [
     {
      "on": "n",
-     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it.",
+     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. 2026-11-24: two more cards show it. Spearline's Legendary Swordfish AI (eda5d81aa, SPEARLINE.md) runs I1 148.5 s, I2 142.3, I3 135.2, I4 143.6, so I3 is the quickest rung, and Perch Run's reader runs 36.0, 37.8, 36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder.",
      "fill": "Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off."
     }
    ],
@@ -4889,6 +4889,60 @@
       ],
       "done": "A den is built at a perch the Pistol reached without a fall.",
       "sight": "ENSIGN"
+     }
+    },
+    {
+     "in": "x",
+     "name": "Length and line",
+     "t": [
+      1,
+      4
+     ],
+     "src": "Steward 2026-11-24: Goby Time step 1 signed fun by Will in Perch Run (loop.json); PERCH_RUN.md sections 1-2; commits 3b9cbf31a and e8b6bf92b (dart cooldown 2.2 s from launch, a person's Goby never held at a perch)",
+     "is": "Every dart costs one second whatever its length, so each dart is two choices, how long to hold and where to point.",
+     "chain": [
+      [
+       "",
+       "Hold to charge the dart's length, 140 to 600 u"
+      ],
+      [
+       "",
+       "Aim the line past the coral head, or through a double"
+      ],
+      [
+       "Time",
+       "Let go; it lands in one second and the next is ready 2.2 s after launch"
+      ]
+     ],
+     "drivers": [
+      "mastery",
+      "joy"
+     ],
+     "feel": "Reading the course one dart ahead.",
+     "gene": {
+      "genome": "Time",
+      "cue": [
+       "gate_next",
+       "straight_ahead"
+      ],
+      "dials": [
+       [
+        "chargeFraction",
+        "share of the full 0.8 s charge held before release",
+        0,
+        1,
+        "fraction"
+       ],
+       [
+        "lineOffset",
+        "aim off the next ring's centre to clear a blocker or catch a double",
+        0,
+        60,
+        "u"
+       ]
+      ],
+      "done": "A ring is threaded with one dart from the ring before.",
+      "sight": "NEEDLE"
      }
     },
     {

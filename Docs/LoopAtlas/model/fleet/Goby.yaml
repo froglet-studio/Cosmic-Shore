@@ -85,6 +85,37 @@ combos:
     done: A den is built at a perch the Pistol reached without a fall.
     sight: ENSIGN
 - in: x
+  name: Length and line
+  t: [1, 4]
+  src: 'Steward 2026-11-24: Goby Time step 1 signed fun by Will in Perch Run (loop.json); PERCH_RUN.md sections 1-2; commits
+    3b9cbf31a and e8b6bf92b (dart cooldown 2.2 s from launch, a person''s Goby never held at a perch)'
+  is: Every dart costs one second whatever its length, so each dart is two choices, how long to hold and where to point.
+  chain:
+  - - ''
+    - Hold to charge the dart's length, 140 to 600 u
+  - - ''
+    - Aim the line past the coral head, or through a double
+  - - Time
+    - Let go; it lands in one second and the next is ready 2.2 s after launch
+  drivers: [mastery, joy]
+  feel: Reading the course one dart ahead.
+  gene:
+    genome: Time
+    cue: [gate_next, straight_ahead]
+    dials:
+    - - chargeFraction
+      - share of the full 0.8 s charge held before release
+      - 0
+      - 1
+      - fraction
+    - - lineOffset
+      - aim off the next ring's centre to clear a blocker or catch a double
+      - 0
+      - 60
+      - u
+    done: A ring is threaded with one dart from the ring before.
+    sight: NEEDLE
+- in: x
   name: Lock and snap
   t: [6, 20]
   src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'

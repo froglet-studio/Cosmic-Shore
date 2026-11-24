@@ -25,7 +25,7 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | Angler | 1 | 1 | 1 | 1 |
 | Brittle Star | 1 | 1 | 1 | 1 |
 | Dolphin | 1 | 1 | - | 2 |
-| Goby | off | 1 | 1 | 1 |
+| Goby | 1 | 1 | 1 | 1 |
 | Grizzly | 2 | 1 | - | 1 |
 | Honeyguide | 1 | 1 | 1 | 1 |
 | Jacks | 1 | 1 | - | 1 |
@@ -81,6 +81,7 @@ Genes per vessel and genome. A dash is a genome the vessel has a verb for and no
 | Combo | Genome | Starts when | Dials a search learns | Done when | Sight | Layer |
 |---|---|---|---|---|---|---|
 | Perch to perch | Mass | crew_ready, open_space | `perchSpacing` distance between the perches the Goby picks (20 to 250 u); `denEnergy` energy earned over the ground before the Pistol rests to build (0.2 to 1 fraction) | A den is built at a perch the Pistol reached without a fall. | ENSIGN | Proposed |
+| Length and line | Time | gate_next, straight_ahead | `chargeFraction` share of the full 0.8 s charge held before release (0 to 1 fraction); `lineOffset` aim off the next ring's centre to clear a blocker or catch a double (0 to 60 u) | A ring is threaded with one dart from the ring before. | NEEDLE | Proposed |
 | Lock and snap | Charge | rival_near, crew_ready | `lockHold` seconds the Goby holds the lock before the snap (0.2 to 3 s); `snapRange` rival distance at which the Pistol snaps (10 to 150 u) | A homed ring takes petals. | BANDIT | Proposed |
 | The riptide | Space | rival_mass_ahead, dense_mass | `dwell` seconds the Pistol stays in dense mass (1 to 10 s); `snapDensity` prisms in the plane before the snap (5 to 200 count) | A ring collapses on mass the undertow pulled in. | MANGER | Proposed |
 

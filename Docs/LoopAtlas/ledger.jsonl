@@ -31,3 +31,5 @@
 {"at": "2026-11-21", "verb": "develop", "target": "arc.social", "by": "Garrett", "text": "A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided."}
 {"at": "2026-11-21", "verb": "start", "target": "arc.social", "by": "Garrett", "branch": "claude/retain-economy"}
 {"at": "2026-11-20", "verb": "start", "target": "era.tide", "by": "Claude", "branch": "claude/build-era.tide"}
+{"at": "2026-11-24", "verb": "propose", "target": "Goby", "by": "Claude", "text": "Combo 'Length and line' (Time gene): the Goby's dart in Perch Run, now that Goby Time step 1 is signed fun. The Goby had no Time combo and no Time entry in the gene pool. Source: loop.json (Will, 2026-11-24), PERCH_RUN.md, commits 3b9cbf31a and e8b6bf92b."}
+{"at": "2026-11-24", "verb": "hole", "target": "ladder", "by": "Claude", "text": "Ladder hole refreshed: Spearline's Legendary AI runs I3 quickest (148.5/142.3/135.2/143.6 s) and Perch Run's reader I4 quickest (36.0/37.8/36.8/30.5 s); Spearline step 3 was recorded built on that ladder. Source: eda5d81aa, SPEARLINE.md, 3b9cbf31a."}
