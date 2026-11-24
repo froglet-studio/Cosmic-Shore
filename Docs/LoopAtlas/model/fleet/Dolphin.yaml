@@ -101,6 +101,27 @@ combos:
     - The explosion completes the loop
   drivers: [break, mastery, goal]
   feel: Seeing the line before you fly it, and being right.
+  gene:
+    genome: Space
+    cue: [bank_full, rival_mass_ahead, crystal_near]
+    dials:
+    - - bankThreshold
+      - energy banked before the AI seeks a target
+      - 0.2
+      - 1.0
+      - fraction
+    - - targetMass
+      - prisms a cluster must hold to be worth a full bank
+      - 10
+      - 400
+      - count
+    - - alignTolerance
+      - aim error onto the crystal that still fires
+      - 1
+      - 20
+      - deg
+    done: The blast destroys at least half the prisms of the target it was aimed at.
+    sight: MANGER
 - in: px
   name: The hunter's shot
   t: [10, 30]
@@ -115,6 +136,22 @@ combos:
   - [Space, Fire through the crystal]
   drivers: [rival, mastery]
   feel: Leading a moving target.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, crystal_near, bank_full]
+    dials:
+    - - leadTime
+      - how far ahead the rival's path is led
+      - 0.2
+      - 3
+      - s
+    - - bankThreshold
+      - energy banked before hunting
+      - 0.1
+      - 1.0
+      - fraction
+    done: A blast through a crystal takes a petal from a rival.
+    sight: BANDIT
 - in: px
   name: The snap shot
   t: [4, 12]
@@ -126,4 +163,48 @@ combos:
   - [Space, 'A small blast, now']
   drivers: [break, joy]
   feel: Rate of fire over size.
+  gene:
+    genome: Space
+    cue: [crystal_near, mass_ahead]
+    dials:
+    - - snapRange
+      - how near the nearest crystal must be for a snap
+      - 10
+      - 120
+      - u
+    - - bankCeiling
+      - the bank below which the AI snaps instead of saving
+      - 0
+      - 0.5
+      - fraction
+    done: A blast goes off within three seconds of the target being seen.
+- in: x
+  name: Drift and kick
+  t: [4, 15]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Drift into the turn skimming the wall, let go on the exit line.
+  chain:
+  - - Time
+    - Hold to drift into the turn
+  - - Space
+    - 'Skim the mass as you slide: energy banks'
+  - [Time, Let go on the exit line]
+  drivers: [joy, mastery]
+  feel: The slide and the kick out of it.
+  gene:
+    genome: Time
+    cue: [gate_next, mass_ahead]
+    dials:
+    - - driftEntry
+      - heading error that starts a drift
+      - 15
+      - 120
+      - deg
+    - - releaseAlign
+      - heading error onto the exit at which the drift is let go
+      - 0
+      - 20
+      - deg
+    done: A gate is threaded within one and a half seconds of the release.
+    sight: NEEDLE
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md

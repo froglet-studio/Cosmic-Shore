@@ -16,13 +16,13 @@ shortens it, RT forms the tunnel and dives through it at up to 2.5x the entry sp
 so every leg (~750 u) is longer than one straight tunnel and asks how to dig it. See
 Assets/_Scripts/Controller/Arcade/WARPLINE.md.
 
-THE DONOR IS SLINGSHOT (the Stoat's other circuit race, itself Redline's shape). The clone swaps:
+THE DONOR IS SLINGSHOT (the Stoat's Time race, itself Redline's shape). The clone swaps:
 
   1. the controller script (WarplineController), keeping Slingshot's `laps` field (2 here).
   2. its scoring rule ASSET (another asset on the shared GateRaceScoringRuleSO script).
-  3. maxPlausibleSpeed, raised for the warp (kept from the Stoat days; the clamp only reads a respawn).
+  3. maxPlausibleSpeed, raised above Slingshot's (see MAX_PLAUSIBLE_SPEED below).
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh.
-  5. the arcade card's Vessels list: the Meerkat (the Stoat until 2026-10-27; its Time race is Slingshot).
+  5. the arcade card's Vessels list: the Meerkat only.
 
 THE CIRCUIT GENERATOR IS SHARED, NOT CLONED: WarplineController hands SlingshotCourse.ForIntensity's
 settings to HeadlongCircuit.Generate with target/laps rings - the same base circle cut into fewer,
@@ -88,14 +88,15 @@ LAPS = 2
 RINGS_PER_LAP = 5                 # Slingshot's 600 u circle cut into five ~750 u legs
 GATE_TARGET = LAPS * RINGS_PER_LAP
 
-# AI approach geometry: Slingshot's, sized to the Stoat's turn (Burrow Run keeps the same for the Meerkat).
+# AI approach geometry: Slingshot's numbers, unchanged by the clone. WarplineController commits from the approach
+# point (Regatta's gate steering), which is what lets a hull finish on them (WARPLINE.md sections 3 and 6.1).
 AI_COMMIT_DISTANCE = 160
 AI_APPROACH_LEAD = 180
 AI_THROUGH_DISTANCE = 120
 
-# Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. A Stoat at
-# the full 4x warp boost with the field's gravity speed at its ceiling flies (60 + 240) x 4 = 1200
-# u/s; a pass through the wormhole is a teleport (SetPose), which the gate watcher reads as such.
+# Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. The value was
+# sized for the hull that first raced here (the Stoat, up to 1200 u/s warped) and is kept so the scene
+# does not change: the Meerkat's ride is slower, and a clamp that is too high only reads a respawn late.
 MAX_PLAUSIBLE_SPEED = 1400
 
 # The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.45 a

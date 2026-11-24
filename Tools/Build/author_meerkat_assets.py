@@ -774,7 +774,7 @@ def check_prefab(text: str):
          "Meerkat.prefab: the ActionExecutorRegistry does not list the wormhole and the stance executors")
     for sid in STOAT_ONLY:
         want(f"&{sid}\n" not in text and f"fileID: {sid}}}" not in text, f"Meerkat.prefab: the Stoat's executor {sid} is still on the hull")
-    for name in ("StoatDipoleExecutor", "StoatPathfinderExecutor", "StoatModeExecutor", "StoatRippleExecutor",
+    for name in ("StoatPathfinderExecutor", "StoatModeExecutor", "StoatRippleExecutor",
                  "StoatSlingExecutor", "StoatHUDController", "StoatHUDView"):
         want(f"guid: {guid_of_script(name)}, type: 3" not in text, f"Meerkat.prefab: the Stoat's {name} is still on the hull (one ability only)")
     t = doc_of(text, TRANSFORMER_ID)

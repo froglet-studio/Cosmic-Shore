@@ -11,7 +11,7 @@
 The Swordfish's **Charge** card is **Energize** and its PvP: a sword hit on a rival hull takes x1 -> x2.5 petals across
 Charge 0-10, knocked loose as crystals at the strike, and at Charge 5 **Sword Steal** pockets them instead
 (`SwordfishSwordStealBySkimmerEffect`). The hit itself is `VesselCombatHitBySword`: a **Strike**-class combat hit,
-once per victim per 1.4 s, and **only while the Swordfish is faster than its victim** (`requireFasterThanVictim`).
+once per victim per 0.5 s (1.4 s until the 2026-11-23 Broadside knee), and **only while the Swordfish is faster than its victim** (`requireFasterThanVictim`).
 
 The Swordfish's speed is its **ramp**, which winds up to 840 u/s only on a straight line. So the duel is about lines:
 wind up somewhere straight, then run the bill through a rival who is slower than you.

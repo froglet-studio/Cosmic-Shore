@@ -247,8 +247,9 @@ namespace CosmicShore.Core
             try
             {
                 // Destroy() without Finish() would never raise the event; poll the instance
-                // as the backstop so the wait cannot outlive the overlay.
-                while (!done.Task.Status.IsCompleted() && PrivacyConsentOverlay.Current == overlay)
+                // as the backstop so the wait cannot outlive the overlay. The overlay's own null test
+                // matters: once destroyed, Current is null and Unity calls null equal to a destroyed overlay.
+                while (!done.Task.Status.IsCompleted() && overlay != null && PrivacyConsentOverlay.Current == overlay)
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
             finally

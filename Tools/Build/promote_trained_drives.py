@@ -73,9 +73,11 @@ ROWS = {
     # Replaced the parent's trained B (job slingshot-stoat-time, PR #1792 and #1831).
     "StoatSlingConfig_Slingshot": dict(
         base=L.STOAT_DIR + "/StoatSlingConfig.asset",
-        fields={"aiSlingMinTurnDegrees": 154.471, "aiReleaseConeDegrees": 63.666, "aiCatchGiveUpSeconds": 5.181,
-                "aiSlingIntervalSeconds": 1.594, "aiSlingMinDistance": 115.742, "aiWarpMinDistance": 11.523,
-                "aiHoldForWindowDegrees": 58.721, "trampolineAiTurnScale": 67.159, "autopilotHold01": 0.012},
+        # aiReleaseConeDegrees 63.666, aiCatchGiveUpSeconds 5.181, aiHoldForWindowDegrees 58.721 and trampolineAiTurnScale
+        # 67.159 were in the genome too; the swing's AI never read them, and they were deleted with the orbit and the
+        # trampoline on 2026-11-21 (Yash: "make sure all AI uses our latest slingshot mechanics").
+        fields={"aiSlingMinTurnDegrees": 154.471, "aiSlingIntervalSeconds": 1.594, "aiSlingMinDistance": 115.742,
+                "aiWarpMinDistance": 11.523, "autopilotHold01": 0.012},
         source="/mnt/project-files/regatta-flywheel/train/Stoat/run1/best.json"),
     # Sparrow, Breakwater: Sparrow run4 in the real game (time_ai_search.py, 2026-11-17, seeded from run3 and the #2095
     # drive, on bleeding-edge with the #2112 afterburner and #2109's difficulty rates), flown at the Legendary nose 13.9/s.
@@ -193,10 +195,8 @@ OLD = {
                                            "alignDegrees": 12, "releaseAlignDegrees": 25, "stickBand": 0.35,
                                            "releaseStickBand": 0.6, "engageRunwaySeconds": 1.5, "releaseRunwaySeconds": 0.5},
     # trained B, as it shipped before Stoat run1 (2026-11-17; #1792, #1831)
-    "StoatSlingConfig_Slingshot": {"aiSlingMinTurnDegrees": 147.951, "aiReleaseConeDegrees": 15.999,
-                                   "aiCatchGiveUpSeconds": 4, "aiSlingIntervalSeconds": 2.896, "aiSlingMinDistance": 13.329,
-                                   "aiWarpMinDistance": 310.106, "aiHoldForWindowDegrees": 120,
-                                   "trampolineAiTurnScale": 96.362, "autopilotHold01": 0.012},
+    "StoatSlingConfig_Slingshot": {"aiSlingMinTurnDegrees": 147.951, "aiSlingIntervalSeconds": 2.896,
+                                   "aiSlingMinDistance": 13.329, "aiWarpMinDistance": 310.106, "autopilotHold01": 0.012},
     # run3, as it shipped before run4 (2026-11-17; #2095)
     "SparrowAIBoostPolicy_Breakwater": {"alignDegrees": 63.004, "releaseAlignDegrees": 94.815, "stickBand": 0.978, "releaseStickBand": 0.804, "engageRunwaySeconds": 1.559, "releaseRunwaySeconds": 0.049, "minHoldSeconds": 1.996, "minRestSeconds": 0.243},
     # lead-on B, as it shipped before Rhino run1 (2026-11-17); before #1828 Headlong flew the hull's own policy

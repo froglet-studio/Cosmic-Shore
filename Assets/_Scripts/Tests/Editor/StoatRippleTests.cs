@@ -7,9 +7,8 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Stoat's own-vessel pass (<c>R_VesselActions/STOAT_DIPOLE.md</c> §1a–§1e), as pure arithmetic: the Charge
-    /// ripple's reach, front and victims (<see cref="StoatRippleMath"/>), and Time mode's timed slingshot
-    /// (<see cref="StoatSlingMath.SweetSpot"/>, <see cref="StoatSlingMath.TimedKick"/>; the catch and its rings are held by
-    /// <c>StoatSlingTests</c>).
+    /// ripple's reach, front and victims (<see cref="StoatRippleMath"/>). The slingshot, the swing, is held by
+    /// <c>StoatSlingTests</c>.
     /// </summary>
     public class StoatRippleTests
     {
@@ -130,36 +129,6 @@ namespace CosmicShore.Tests
             var shader = System.IO.File.ReadAllText("Assets/_Graphics/Materials/Graphs/StoatRipple.shader");
             StringAssert.DoesNotContain("_RippleTint", shader, "the shader paints no colour");
             StringAssert.Contains("col * max(0.0, 1.0 + shimmer)", shader, "it only bends and shades the scene's own light");
-        }
-
-        // ------------------------------------------------------------------ Time mode: the timed slingshot
-
-        [Test]
-        public void SweetSpot_IsWholeAQuarterTurnRound_AndFallsOffSmoothly()
-        {
-            Assert.AreEqual(1f, StoatSlingMath.SweetSpot(90f, 90f, 15f, 30f), 1e-5f, "a release a quarter-turn round");
-            Assert.AreEqual(1f, StoatSlingMath.SweetSpot(76f, 90f, 15f, 30f), 1e-5f, "inside the window");
-            Assert.AreEqual(1f, StoatSlingMath.SweetSpot(-104f, 90f, 15f, 30f), 1e-5f, "either way round");
-            Assert.AreEqual(0.5f, StoatSlingMath.SweetSpot(120f, 90f, 15f, 30f), 1e-5f, "half way down the falloff");
-            Assert.AreEqual(0f, StoatSlingMath.SweetSpot(0f, 90f, 15f, 30f), 1e-5f, "the tap release earns nothing");
-            Assert.AreEqual(0f, StoatSlingMath.SweetSpot(180f, 90f, 15f, 30f), 1e-5f, "a half orbit is too late");
-            // Monotone toward the centre from both sides — a later release inside the falloff is never worse.
-            float last = -1f;
-            for (float a = 40f; a <= 75f; a += 1f)
-            {
-                float s = StoatSlingMath.SweetSpot(a, 90f, 15f, 30f);
-                Assert.GreaterOrEqual(s, last);
-                last = s;
-            }
-        }
-
-        [Test]
-        public void TimedKick_PaysTheMissShareOutsideTheWindow_AndScalesWithTime()
-        {
-            Assert.AreEqual(54f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 1f), 1e-4f, "timed: the whole kick");
-            Assert.AreEqual(54f * 0.2f, StoatSlingMath.TimedKick(54f, 0f, 0.2f, 1f), 1e-4f, "missed: the miss share");
-            Assert.AreEqual(108f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 2f), 1e-4f, "Time 10 doubles it");
-            Assert.AreEqual(27f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 0.5f), 1e-4f, "a deficit halves it at the fleet floor");
         }
     }
 }

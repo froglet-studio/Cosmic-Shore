@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-22-burrow-run-s-scene-now-spawns-no-crystal-aa6dec",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T21:53:14+00:00",
+  "area": "Burrow Run, the Jewel Wasp's Time race (its environment, not the wasp)",
+  "summary": "Burrow Run's scene now spawns no crystal (crystal manager FixedCount 0, written by author_burrowrun_assets.py, which fails if the scene can spawn one). Why: the scene inherited Warpline's players + 1 omni crystals, an omni crystal hatches a predator under a Jewel Wasp, and every AI wasp then stung and rode creatures instead of racing: measured in Unity batch mode with the mode smoke test, no finisher in 600 game s over three runs, 16 to 49 creatures alive; with no crystal, 0 creatures and game over at 230 game s. The wasp, its executor, its hatch effect and its assets are not touched and no AI number changed. It does mean the wasp's omni hatch and its Time ability have nothing to act on in this race, which was already the mode's open step 1; if you would rather keep crystals and have an AI wasp ignore creatures while a gate race steers it, that is a change on the wasp and yours to make.",
+  "branch": "HEAD",
+  "commit": "5846326a4"
+}

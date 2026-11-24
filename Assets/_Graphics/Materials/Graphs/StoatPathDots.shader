@@ -1,5 +1,6 @@
-// StoatPathDots.shader — the Stoat pathfinder's dots in the scene (R_VesselActions/STOAT_DIPOLE.md §3b), and Time
-// mode's detection / orbit rings (§1b). StoatPathfinderWorldDots.cs builds ONE mesh a frame: a camera-facing quad per
+// StoatPathDots.shader — round dots in the scene. Made for the Stoat pathfinder's dots and rings, which were deleted
+// (2026-11-21 / 11-22: the Stoat draws nothing); the Angler's marks (AnglerWorldMarks.cs) draw with it today and keep the
+// name. The caller builds ONE mesh a frame: a camera-facing quad per
 // dot, its colour (and depth fade) in the vertex colour, uv 0..1 across the quad. This file only draws a round dot with
 // a dark rim from that uv, so a dot never reads as a star.
 //

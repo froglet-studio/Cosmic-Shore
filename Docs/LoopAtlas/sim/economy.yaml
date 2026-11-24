@@ -1,0 +1,76 @@
+# Loop timescale simulation: the game's side. What the game pays, charges and gates, and how long its units take.
+# Every value names where it came from. `now` is the build as the docs describe it; `prop` is the same game with
+# the Proposed-layer fixes this simulation tests (each names its proposal). Durations come from the loop model's
+# `t` spans (Docs/LoopAtlas/model.json) unless a `unit` below overrides them with a measured or planned number.
+# Read by Tools/Build/loop_timescale_sim.py. Docs/LoopAtlas/sim/README.md explains the fields.
+
+payout:
+  # Docs/ECONOMY_TABLES.md table 2: same table in every mode. Last place 0. Losing pays nothing (decided).
+  place: [200, 50, 0]
+  # Proposed fill on the voyages loop (P10): voyage pay is crystals, a clean voyage is about three arcade wins.
+  voyage_clean: 600
+  # A voyage that fails its job or loses the Ark banks nothing (Docs/Voyages/CRYSTAL_RUN.md section 1).
+  voyage_failed: 0
+  # P16 (making pays): what a finished painting pays. This simulation's guess: a quarter of a second place.
+  painting: 15
+
+prices:
+  # Docs/ECONOMY_TABLES.md table 3: flat 4000. Counted from the class assets on 2026-11-21 (isLocked: 1, UnlockCost:
+  # 4000): Dolphin, Manta, Rhino, Serpent, Sparrow, Swordfish, Urchin. Termite is locked too but not playable, so it
+  # is left out. (The atlas's arc.fleet note still says five.)
+  vessel: 4000
+  vessels_for_sale: 7
+  # P7 (more to spend crystals on): the sinks the arc.fleet hole proposes. Prices are this simulation's guess,
+  # sized so the three of them together last about as long as the fleet does.
+  prop_sinks:
+    ark_refit: {price: 3000, count: 4}
+    pilot_recruit: {price: 2000, count: 6}
+    colour_set: {price: 1500, count: 6}
+
+ladder:
+  # model: ladder.reps "4 rungs per card; I4 after a set number of plays at I3". The set number is not written
+  # anywhere; 3 is this simulation's assumption.
+  rungs: 4
+  plays_at_i3_for_i4: 3
+  # Opponent strength per rung, on the same 0-1 scale as a persona's skill (assumption: I1 is an intro an
+  # unskilled player usually wins, I4 is "very hard").
+  ai_strength: [0.15, 0.4, 0.6, 0.85]
+
+quests:
+  # arc.unlock: Scurry, Hex Race, Joust, Maelstrom, then the Hangar. "Reaching a mode's top rung completes its quest."
+  # Docs/ECONOMY_TABLES.md table 5 says the Hangar opens after "~3 games". The two disagree; `now` follows the loop
+  # (I4 on each), `prop` follows the table (one cleared rung, I2, per quest).
+  chain: [Scurry, Hex Race, Joust, Maelstrom]
+  rung_to_clear: {now: 4, prop: 2}
+
+gates:
+  # Which places are open before the Hangar. Not written down for the planned build (the master unlock opens
+  # everything today). Assumption: Toybox and Arcade from the first launch; Arena and Voyages with the Hangar.
+  open_from_start: [toybox, arcade]
+  open_with_hangar: [arena, voyages]
+
+units:
+  # The smallest thing a place lets you finish and walk away from, in seconds, and whether quitting it early
+  # costs you anything. Rounds come from the model's `t`. The voyage is the exception: the model's plan is
+  # 20-40 min (voyages.plan), the one built job, Crystal Run, is about 11 min (PR #2314's measurement).
+  voyage:
+    now: [540, 780]
+    plan: [1200, 2400]
+    # prop (P13, voyage chapters): a voyage may dock at any location it reached and resume next sitting.
+    chapter: [300, 600]
+  quit_mid_voyage_loses_haul: true
+
+social:
+  # Squad and party sizes. arc.social and voyages: a squad is three seats; a voyage party at most three players.
+  squad_seats: 3
+  # A crew vessel takes one squad seat and carries two people (Docs/CREW_STATIONS.md). Honeyguide: the Ratel can be
+  # played from a second machine (Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md step 3).
+  crew_vessel_people: 2
+  # Fleet facts that shape who can sit with whom: the Honeyguide has no arena card (fleet/Honeyguide.yaml `arenas: []`).
+  arena_crew_vessels: {now: [], prop: [Honeyguide]}
+
+tide:
+  # era.tide (proposed, build queued 2026-11-20 by Garrett): a daily job, a weekly card, a six-week season.
+  days: 42
+  daily_job_pay: 150
+  weekly_card_pay: 600
