@@ -34,6 +34,14 @@ next named voyage of the type; try again sails the same one when it starts here.
 Bounty and Hold the Core are named in the content but stay off the board until those types are built. The escort voyages
 are named but the escort card does not read them yet.
 
+### Givers
+
+Each voyage type has a giver on the quay (`voyageTypes` in `voyage_slice.json`, `VoyageTypeInfo` in `VoyageContent.cs`,
+`content.VoyageType(type)`): the crew pilot who offers it (Cass Morrow, GALLEON, for Salvage; Captain Theo Lark, WINGMAN,
+for the escort; Juno Rask, BANDIT, for Bounty; Marshal Edda Kroll, RAMPART, for Hold the Core), what they say, the type's
+lore, and the faction types keen, reluctant or refusing to sail it. The three classes a type wants are the shell's
+(`VoyageClassesSO`, `Tools/Build/author_voyage_classes.py`).
+
 ## 3 The rungs
 
 | Rung | Held cells | Life | Breach line | Raiders out / home | Kaiju |

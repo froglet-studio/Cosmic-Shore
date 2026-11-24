@@ -45,7 +45,20 @@ namespace CosmicShore.Data
         /// length. A type's name is never a title (Docs/Voyages/MILESTONE_2.md §2).</summary>
         public List<NamedVoyage> Voyages = new();
 
+        /// <summary>Who gives each voyage type (Milestone 2: the quay's givers, what they say, the pilots keen, reluctant
+        /// or refusing to sail it). The classes a type wants are <c>VoyageClassesSO</c>'s.</summary>
+        public List<VoyageTypeInfo> VoyageTypes = new();
+
         [NonSerialized] Dictionary<string, VoyageLocation> _byId;
+
+        /// <summary>The giver and wants of voyage type <paramref name="type"/>, or null (a probe).</summary>
+        public VoyageTypeInfo VoyageType(string type)
+        {
+            if (string.IsNullOrEmpty(type) || VoyageTypes == null) return null;
+            foreach (var t in VoyageTypes)
+                if (t != null && t.Type == type) return t;
+            return null;
+        }
 
         /// <summary>The named voyage with this id, or null (a probe).</summary>
         public NamedVoyage Voyage(string id)
@@ -421,6 +434,27 @@ namespace CosmicShore.Data
         public List<float> CellLife = new();
         /// <summary>A named voyage's goal per cell of its leg (Salvage: about 12 crystals a cell). 0: <see cref="Goal"/>.</summary>
         public float GoalPerCell;
+    }
+
+    /// <summary>A voyage type's giver (Docs/Voyages/MILESTONE_2.md §2, the Voyage Codex); its wanted classes live in
+    /// <c>VoyageClassesSO</c>.</summary>
+    [Serializable]
+    public class VoyageTypeInfo
+    {
+        /// <summary>The voyage type: a job template id, or <see cref="NamedVoyage.EscortType"/>.</summary>
+        public string Type;
+        /// <summary>The crew pilot who gives this work on the quay (<see cref="CrewPerson.PilotId"/>).</summary>
+        public string Giver;
+        /// <summary>What the giver says when offering it (the Codex's line).</summary>
+        public string Say;
+        /// <summary>The type's lore, a few sentences.</summary>
+        public string Lore;
+        /// <summary>Pilots of these faction types are keen to sail it.</summary>
+        public List<FactionType> Keen = new();
+        /// <summary>Pilots of these faction types sail it reluctantly.</summary>
+        public List<FactionType> Reluctant = new();
+        /// <summary>Pilots of these faction types refuse it.</summary>
+        public List<FactionType> Refuse = new();
     }
 
     /// <summary>
