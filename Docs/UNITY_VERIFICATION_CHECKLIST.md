@@ -325,7 +325,7 @@ anything: `SlipLineController.Ruins.cs` and the three lines added to `SlipLineCo
 - [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
 - [ ] Frame time at I4 with about 660 more prisms in the cell (not measured).
 
-## 🟡 Headlong: garden ruins at I4 (2026-11-24, Yash, compiled and AI-raced in the editor; no person has looked)
+## 🟡 Headlong: garden ruins at I4 (2026-11-24, Yash, compiled, tested and AI-raced in the editor; the look is a person's)
 
 Headlong lays Spearline's ruins round its own circuit on I4, less what would stand in a hedge or on a Time crystal
 (`Assets/_Scripts/Controller/Arcade/HEADLONG.md` section 0a). Run without Unity: `HeadlongRuinsTests` 8 of 8 and
@@ -341,17 +341,42 @@ by Headlong. The courses laid 630 and 647 ruin prisms in Jade, Ruby and Gold, no
 ploughed about a third of them in the first 30 game seconds. No race without ruins was run for comparison, and the
 frame rate read 62 to 85 fps between captures at time scale 4, which is not a measurement.
 
+**Second pass, same day, the AI flying while Yash watched** (probes read over the editor's Pipeline; one fixed course,
+seed -652407953, for everything that compares):
+
+| Check | Result |
+|---|---|
+| I4 at time scale 1, twice | game over in 160 and 170 game seconds, no error in the match |
+| Ruins laid | 633 prisms (Jade 332, Gold 182, Ruby 119), the same 633 on both runs of the seed |
+| Nearest ruin prism centre | 22 u from a hedge prism, 64 u from a Time crystal, 184 u from a gate centre |
+| Hedges against ruins | hedge prisms fell and stood back up all race (1258 to 1546 standing); ruins only fell (633 to 478 and 499) |
+| The wheel (31 prisms) | every prism 0.000 u from `SpearlineRuins.Pose` at the network clock on 8 samples, the rim moving, never nearer than 46 u to a hedge prism; no Rhino hit it |
+| After game over | the controller held 0 ruin parts and 0 prisms |
+| I1, I2, I3 at time scale 4 | 0 ruin prisms on each (hedge prisms 788, 1176, 2005); I1 and I2 finished clean |
+| Same course, ruins removed (`ClearRuins` at the start) | time scale 1: 145 s against 160 and 170 with; time scale 4: 175 and 193 s against 178 and 195 with |
+| Frame rate at time scale 1 (editor, vsync, target 75) | 46 to 78 fps with ruins, 48 to 72 without |
+
+Read: the ruins make no difference to race time or frame rate that five races can show; race to race the AI varies by
+about 20 s on one course. This is an editor on a desktop GPU, not a build and not a phone.
+
+**The editor crashed once**, during the I3 race (no ruins on that level), in Unity's own Profiler
+(`profiling::ProfilerSymbolsDelayedDeletion::AddCloneObject` on a job thread, crash folder
+`Crash_2026-11-24_161056079`). No game code is on the stack. The editor had been profiling a Brittle Star freeze
+earlier in the session. It was reopened and the rest ran without a repeat.
+
 - [x] Unity compiles, and `HeadlongRuinsTests` pass in the Test Runner.
-- [ ] Headlong at I4: about seven ruins a lap stand between the gates in Jade, Ruby and Gold, none at a gate, none
-      inside a hedge (the Blue hedge shows whole through its ruin), none on a Time crystal.
-- [ ] I1 to I3: no ruins.
-- [ ] A Rhino that ploughs a ruin sprays its prisms as it does a hedge's; the ruin stays broken on the next lap while
-      the hedges stand back up.
-- [ ] On a course with a wheel (about one in six): it turns at the same angle on host and client, and through no hedge.
-- [x] Three AI Rhinos still finish the race at I4 (twice, 169 and 197 game seconds).
-- [ ] Their times against a race without ruins (ploughed ruin prisms feed the ramp's fuel like any prism: not measured).
-- [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
-- [ ] Frame rate at I4 with about 680 more prisms in the cell (the hedges are about 1530).
+- [ ] A person looks at Headlong I4: the ruins read as scenery beside the line in Jade, Ruby and Gold, the Blue hedge
+      shows whole through its ruin, and a ploughed ruin sprays like a hedge. (Positions, counts and colours are
+      measured above; how it looks is not.)
+- [x] I1 to I3: no ruins.
+- [x] The ruin stays broken while the hedges stand back up.
+- [x] On a course with a wheel: it turns on the network clock and through no hedge (host only).
+- [ ] The wheel shows the same angle on a client (no second machine was used).
+- [x] Three AI Rhinos still finish the race at I4 (seven races, 160 to 197 game seconds).
+- [x] Their times against a race without ruins: no difference these races can show (table above).
+- [x] The old ruins are gone when the race ends. A second race inside one Play session was not run (each race here
+      was a fresh Play).
+- [ ] Frame rate on a build and on the phone bench (the editor reading above is not that).
 
 ## 🔴 Burrow Run: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED, NOT RUN IN EDITOR)
 

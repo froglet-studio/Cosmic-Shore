@@ -99,6 +99,11 @@ mode reads and writes no vessel.
 
 **In the editor, 2026-11-24:** it compiles, `HeadlongRuinsTests` pass 8 of 8, and three AI Rhinos finished two I4
 races (169 and 197 game seconds, 630 and 647 ruin prisms laid, no wheel on either course) with no error in the match.
+A second pass on one fixed course (seed -652407953, 633 ruin prisms, one wheel): I1 to I3 lay none; no ruin prism
+centre is nearer than 22 u to a hedge prism, 64 u to a Time crystal or 184 u to a gate; the wheel's prisms sit exactly
+where `SpearlineRuins.Pose` puts them on the network clock; the hedges stand back up and the ruins do not; the ruins
+are gone at game over. With the ruins removed the same course took 145, 175 and 193 game seconds against 160, 170, 178
+and 195 with them, and the editor ran 48 to 72 fps against 46 to 78: no difference those races can show.
 Details and what a person still has to look at: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 **Open, not measured:**
