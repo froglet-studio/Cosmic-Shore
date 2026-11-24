@@ -26525,6 +26525,20 @@ prisms finished clean in 136.4 s.
 - [ ] The frame rate at I4 is no worse than at I2.
 I2 and I3 at 1x: 133.3 s and 132.7 s (one seed each), both within 10% of the judge's 142.3 and 135.2 s.
 
+### Wrasse Run: the I4 garden ruins (2026-11-24) — NOT COMPILED IN UNITY, NOT WATCHED
+
+Spearline's generator called from `WrasseRunController.Ruins.cs` (WRASSERUN.md §3a). Machine side: `WrasseRunRuinsTests`
+6 of 6 headless (Roslyn, the shipped C#, 10 seeds: 761-880 prisms a lap), `author_wrasse_run_assets.py --check` OK. No
+Unity compile, no refcompile (it cannot run on this machine), no play.
+
+- [ ] It compiles in the editor and `WrasseRunRuinsTests` pass there.
+- [ ] Wrasse Run at I4: a ruin on each leg between rings in Jade, Ruby and Gold, the line through each open, none
+  crowding a ring. At I1-I3 there are none.
+- [ ] A slung kite that meets a ruin: say what happens to the kite and the ruin.
+- [ ] An AI crew at I4 still finishes, and its time is no worse than before the ruins (it commits from 433 u out).
+- [ ] The frame rate at I4 is no worse than at I2 (~850 more prisms).
+- [ ] The wheel fits on about 1 course in 10 here: when it stands, it turns at the same angle on host and guest.
+
 ## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
 
 The economy fixes of the Loop Atlas retention build (Garrett: "Build everything proposed. Get all personas retained";
