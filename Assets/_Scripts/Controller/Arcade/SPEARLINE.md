@@ -88,6 +88,25 @@ reader. The model's self-test fails on that bar and is left failing until a pers
 the bar moves). The model flies the ramp without its fuel tank, so its absolute times run fast; the real-game times
 are in section 3.
 
+## 2a. Garden ruins at I4 (`SpearlineRuins`, `SpearlineController.Ruins.cs`; Yash, 2026-11-24)
+
+"In intensity 4, we need more environmental shapes with prisms, like going through a ruins of old flora gardens." Only
+I4 has them. Seven legs of the lap carry one ruin each (the leg into ring 0, where the field starts, has none), and
+the three kinds take turns round the lap:
+
+- **Pergola:** a row of 5 broken arches round the line, each with a fallen sector and a few stones gone.
+- **Flower head:** a phyllotactic dish of flat petals facing down the line, its eye open, a bite out of the rim.
+- **Vines:** 3 strands wound round the line, broken into runs.
+
+Each ruin stands round the leg's flown line (a Hermite curve through the two rings along their axes) with a clear lane
+of 60 u radius, a little under the I4 mouth (66), so a pilot on the line flies through it and one who strays meets
+prisms at the game's own cost. No ruin prism stands within 120 u of a ring's mouth or in any other leg's lane. The
+ruins are the seals' prism in the seals' domain (Blue), laid by every peer from the broadcast rings; a hull or a bill
+breaks them and they do not grow back, so they wear down over the five laps. Nothing about the vessel changes.
+
+About 800 prisms a lap on an average course (raised by half the same day, Yash: the first cut was 529 with 3 arches,
+a smaller dish and 2 strands). Held by `SpearlineRuinsTests` (8) and three negative controls in `spearline_harness`.
+
 ## 3. The AI (`SpearlineController.Coach.cs`)
 
 - **The read.** For its next sealed ring, the AI takes `SpearlineSeals.Read`: of 37 crossings on a polar grid inside the
@@ -146,6 +165,7 @@ are in section 3.
 |---|---|
 | Controller | `Spearline/SpearlineController.cs : GateRaceController` (seals, regrowth, the hole rule, the worn seal), `.Coach.cs` (the AI), `.Feedback.cs` |
 | Course | `Spearline/SpearlineCourseSource.cs` (Headlong's `BuildCircuit` with Spearline's mouths, 5 laps) |
+| Ruins | `Spearline/SpearlineRuins.cs` (pure: the three kinds, the lane, the clearances), `SpearlineController.Ruins.cs` (laying) |
 | Seals | `Spearline/SpearlineSeals.cs` (pure: ladder, sealed rings, armour, laying, the hole, the stroke model, the read) |
 | The AI's hand | `Controller/AI/Rhino/SwordfishSwordAutopilot.cs` (`ISwordfishSwordCoach`, the `Coach` seam) |
 | Tests | `Tests/Editor/SpearlineSealsTests.cs`; headless: `bash Tools/Build/spearline_harness/run.sh [--self-test]` |
@@ -186,6 +206,11 @@ are in section 3.
   So the 4x times above are not race times for I2-I4: time Spearline's AI at 1x. No Spearline change was made.
   I2 and I3 at 1x, same seats, one seed each: 133.3 s and 132.7 s (judge 142.3 and 135.2 s). So at 1x the winner of
   three takes 133.3 / 132.7 / 130.9 s at I2 / I3 / I4: the ladder is flat for the AI in the editor too. I1 at 1x not run.
+- **2026-11-24, the I4 garden ruins, same editor, clock 1x, three Legendary AI:** 723 ruin prisms laid on that course,
+  the race finished with a winner in 136.4 s and no error in the match. Without ruins the same setup ran 130.9, 149.2
+  and 152.7 s on three other courses, so the ruins cost the AI nothing that one race can show. Seen through a plain
+  camera placed at each ruin (no post effects). Not measured: the frame rate with ruins. Not judged: the look in the
+  real camera, and whether a person reads the lane.
 - **Frame rate, I2, clock 1x, 1920x1080 Ultra, 15 s `capture`** (i7-8700K, RTX 4070 Ti, editor): Debug code mode with
   the 75 fps cap, 49 fps (game work 12.8 ms a frame, capped, so not a measurement); Release code mode with VSync and the
   target off, 111 fps average, median 8.6 ms, p95 12.4 ms, p99 15.6 ms, GPU 2.8 ms, CPU-bound. The controller's

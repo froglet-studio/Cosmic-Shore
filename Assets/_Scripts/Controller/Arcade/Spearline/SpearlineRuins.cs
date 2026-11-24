@@ -55,6 +55,10 @@ namespace CosmicShore.Gameplay
 
         public const int KindCount = 3;
 
+        // How much ruin stands on a leg (raised by half on 2026-11-24, Yash: 3 arches, a 78 u dish, 2 strands before).
+        public const int PergolaArches = 5, VineStrands = 3;
+        public const float FlowerHeadDepth = 104f;
+
         public static SpearlineRuinSettings ForIntensity(int intensity) => new()
         {
             PerLap = PerLapByRung[Mathf.Clamp(intensity, 1, 4) - 1],
@@ -83,11 +87,11 @@ namespace CosmicShore.Gameplay
             return d.sqrMagnitude > 1e-6f ? d.normalized : (b.Position - a.Position).normalized;
         }
 
-        /// <summary>Which kind of ruin leg <paramref name="leg"/> carries: 0 pergola, 1 flower head, 2 vines. Neighbouring
-        /// legs differ.</summary>
-        public static int KindOf(int leg, Vector3 ringPosition)
+        /// <summary>Which kind of ruin leg <paramref name="leg"/> carries: 0 pergola, 1 flower head, 2 vines. The kinds
+        /// take turns round the lap, starting from a draw on the lap's first ring (<paramref name="lapOrigin"/>).</summary>
+        public static int KindOf(int leg, Vector3 lapOrigin)
         {
-            int salt = Mathf.FloorToInt(Mathf.Abs(ringPosition.x) + Mathf.Abs(ringPosition.y) + Mathf.Abs(ringPosition.z));
+            int salt = Mathf.FloorToInt(Mathf.Abs(lapOrigin.x) + Mathf.Abs(lapOrigin.y) + Mathf.Abs(lapOrigin.z));
             return (leg + Mathf.FloorToInt(SpearlineSeals.Hash01(salt, 17, 3) * KindCount)) % KindCount;
         }
 
@@ -112,7 +116,7 @@ namespace CosmicShore.Gameplay
                 Vector3 dir = LineDirection(a, b, t);
                 SpearlineSeals.Basis(dir, out var u, out var v);
                 int first = into.Count;
-                switch (KindOf(leg, a.Position))
+                switch (KindOf(leg, lap[0].Position))
                 {
                     case 0: Pergola(centre, dir, u, v, s.ClearRadius, salt, into); break;
                     case 1: FlowerHead(centre, dir, u, v, s.ClearRadius, salt, into); break;
@@ -125,15 +129,15 @@ namespace CosmicShore.Gameplay
 
         // ── The three kinds ──────────────────────────────────────────────
 
-        /// <summary>A row of three arches round the lane, each with a fallen sector and a few stones gone.</summary>
+        /// <summary>A row of arches round the lane, each with a fallen sector and a few stones gone.</summary>
         static void Pergola(Vector3 c, Vector3 dir, Vector3 u, Vector3 v, float clear, int salt, List<SpearlineRuinPart> into)
         {
             const float step = 13f;
             var scale = new Vector3(5f, 5f, 12f);
-            for (int arch = 0; arch < 3; arch++)
+            for (int arch = 0; arch < PergolaArches; arch++)
             {
                 float radius = clear + 16f + 10f * SpearlineSeals.Hash01(salt, arch, 11);
-                Vector3 at = c + dir * ((arch - 1) * 46f);
+                Vector3 at = c + dir * ((arch - 0.5f * (PergolaArches - 1)) * 40f);
                 float fallenAt = SpearlineSeals.Hash01(salt, arch, 12) * 2f * Mathf.PI;
                 float fallenWidth = Mathf.Deg2Rad * (70f + 100f * SpearlineSeals.Hash01(salt, arch, 13));
                 int count = Mathf.Max(8, Mathf.RoundToInt(2f * Mathf.PI * radius / step));
@@ -154,7 +158,7 @@ namespace CosmicShore.Gameplay
         {
             const float golden = 2.39996323f, spread = 12f;
             var scale = new Vector3(9f, 9f, 2.5f);
-            float inner = clear + 6f, outer = clear + 78f;
+            float inner = clear + 6f, outer = clear + FlowerHeadDepth;
             float biteAt = SpearlineSeals.Hash01(salt, 0, 21) * 2f * Mathf.PI;
             float biteWidth = Mathf.Deg2Rad * (60f + 70f * SpearlineSeals.Hash01(salt, 0, 22));
             int from = Mathf.CeilToInt(inner * inner / (spread * spread));
@@ -174,16 +178,16 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Two strands wound round the lane, each broken into runs.</summary>
+        /// <summary>Strands wound round the lane, each broken into runs.</summary>
         static void Vines(Vector3 c, Vector3 dir, Vector3 u, Vector3 v, float clear, int salt, List<SpearlineRuinPart> into)
         {
             const float length = 150f, turns = 1.15f;
             var scale = new Vector3(4.5f, 4.5f, 12f);
-            for (int strand = 0; strand < 2; strand++)
+            for (int strand = 0; strand < VineStrands; strand++)
             {
-                float radius = clear + 10f + 14f * strand;
-                float phase = SpearlineSeals.Hash01(salt, strand, 31) * 2f * Mathf.PI + Mathf.PI * strand;
-                float sense = strand == 0 ? 1f : -1f;
+                float radius = clear + 10f + 12f * strand;
+                float phase = SpearlineSeals.Hash01(salt, strand, 31) * 2f * Mathf.PI + 2f * Mathf.PI * strand / VineStrands;
+                float sense = (strand & 1) == 0 ? 1f : -1f;
                 float arc = Mathf.Sqrt(Mathf.Pow(2f * Mathf.PI * radius * turns, 2f) + length * length);
                 int count = Mathf.Max(8, Mathf.RoundToInt(arc / 12.5f));
                 for (int k = 0; k < count; k++)

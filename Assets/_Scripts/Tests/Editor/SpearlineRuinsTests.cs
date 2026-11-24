@@ -93,12 +93,18 @@ namespace CosmicShore.Tests
         [Test]
         public void A_lap_carries_enough_ruin_to_read_and_stays_in_budget()
         {
+            int total = 0;
             foreach (int seed in Seeds)
             {
                 int count = Ruins(4, seed, out _).Count;
-                Assert.GreaterOrEqual(count, 150, $"seed {seed}: too little to read as ruins");
-                Assert.LessOrEqual(count, 700, $"seed {seed}: over the prism budget");
+                total += count;
+                Assert.GreaterOrEqual(count, 450, $"seed {seed}: too little to read as ruins");
+                Assert.LessOrEqual(count, 1000, $"seed {seed}: over the prism budget");
             }
+            // Half again the first cut's 529 a lap (2026-11-24): about 800 on an average course.
+            float mean = total / (float)Seeds.Length;
+            Assert.GreaterOrEqual(mean, 760f, $"mean {mean}");
+            Assert.LessOrEqual(mean, 860f, $"mean {mean}");
         }
 
         [Test]
@@ -115,16 +121,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void All_three_kinds_appear_over_a_handful_of_courses()
+        public void All_three_kinds_stand_on_every_lap_and_neighbouring_legs_differ()
         {
-            var seen = new bool[SpearlineRuins.KindCount];
             foreach (int seed in Seeds)
             {
                 var lap = Lap(4, seed);
+                var seen = new bool[SpearlineRuins.KindCount];
                 for (int leg = 0; leg < lap.Count - 1; leg++)
-                    seen[SpearlineRuins.KindOf(leg, lap[leg].Position)] = true;
+                {
+                    int kind = SpearlineRuins.KindOf(leg, lap[0].Position);
+                    seen[kind] = true;
+                    if (leg > 0) Assert.AreNotEqual(SpearlineRuins.KindOf(leg - 1, lap[0].Position), kind, $"seed {seed} leg {leg}");
+                }
+                foreach (bool kind in seen) Assert.IsTrue(kind, $"seed {seed}");
             }
-            foreach (bool kind in seen) Assert.IsTrue(kind);
         }
     }
 }
