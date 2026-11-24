@@ -45,7 +45,7 @@ namespace CosmicShore.ScriptableObjects
 
     /// <summary>Every line the voyage HUD and its stations show. An empty line shows nothing.</summary>
     [System.Serializable]
-    public class VoyageLines
+    public partial class VoyageLines
     {
         [Tooltip("The harbour toy's label and the build veil's.")]
         public string VoyageName = "VOYAGE";

@@ -77,8 +77,9 @@ namespace CosmicShore.Tests
             var c = Shipped();
             var s = VoyageRules.NewGalaxy(c, Domains.Ruby);
             foreach (var pilot in c.Crew.Select(p => p.PilotId))
-                CollectionAssert.IsEmpty(VoyageRules.Board(s, c, new[] { pilot }).Where(j => j.IsNamed && j.TemplateId != SalvageType)
-                    .Select(j => j.VoyageId), "Bounty and Hold the Core sail as named voyages once they are built");
+                CollectionAssert.IsEmpty(VoyageRules.Board(s, c, new[] { pilot })
+                    .Where(j => j.IsNamed && j.TemplateId != SalvageType && j.TemplateId != VoyageCoreHoldTests.HoldType)
+                    .Select(j => j.VoyageId), "Bounty sails as named voyages once it is built");
         }
 
         [Test]

@@ -155,6 +155,16 @@ namespace CosmicShore.Data
             job.CellLife = life;
         }
 
+        /// <summary>The last cell of <paramref name="job"/>'s leg (its destination) is held against the squad: a core to
+        /// hold is contested whatever the sea's danger.</summary>
+        public static void ContestLast(VoyageJob job)
+        {
+            if (job == null || job.Cells <= 0) return;
+            job.HostileCells ??= new List<bool>();
+            while (job.HostileCells.Count < job.Cells) job.HostileCells.Add(false);
+            job.HostileCells[job.Cells - 1] = true;
+        }
+
         /// <summary>True when a kaiju may wait on crossing <paramref name="crossing"/> (0-based) of a leg in
         /// <paramref name="sea"/>.</summary>
         public static bool KaijuOn(in VoyageSeaDanger sea, int crossing) =>

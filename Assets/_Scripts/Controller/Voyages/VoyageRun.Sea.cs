@@ -24,6 +24,8 @@ namespace CosmicShore.Gameplay
             var route = VoyageRules.Route(Content, job.From, job.To, _state) ?? VoyageRules.Route(Content, job.From, job.To);
             var danger = VoyageSea.DangerPerCell(VoyageSea.CourseDanger(Content, route), VoyageSea.RunCells(job.Cells));
             VoyageSea.Lay(job, _def.SeaDanger(VoyageSea.DifficultyOf(job)), danger);
+            // Hold the Core: the core the Ark sails to is contested at any difficulty (another domain is laying mass there).
+            if (IsCoreHold(job)) VoyageSea.ContestLast(job);
             _voyageDifficultyHome = VoyageSea.DifficultyOf(job);
         }
 

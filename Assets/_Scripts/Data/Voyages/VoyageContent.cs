@@ -455,6 +455,9 @@ namespace CosmicShore.Data
         public List<FactionType> Reluctant = new();
         /// <summary>Pilots of these faction types refuse it.</summary>
         public List<FactionType> Refuse = new();
+        /// <summary>The type is built: every port offers one of its named voyages on the board, picked by the day, even
+        /// when its job template is not offered everywhere (Hold the Core). False: its named voyages wait.</summary>
+        public bool OnBoard;
     }
 
     /// <summary>

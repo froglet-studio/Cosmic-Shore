@@ -79,7 +79,35 @@ own cells (`ArkEscortVariety.Roll(..., worlds)`), and the party course carries t
 (`VoyageCourse.VoyageId`). The HUD kicker and the end board carry the voyage's name. Venture further sails the next named
 escort from where the Ark berthed, at that voyage's own difficulty; try again sails the same one.
 
-## 6 Next
+## 6 Hold the Core
 
-Hold the Core, Bounty (rival crews in the world), then the screens Shombith
+The three Hold the Core voyages (The Verdigris Vigil 1, Ironmouth Holds 4, The Ninefold Stand 8; type `job.defence.aid`)
+are on the board: the type is built (`onBoard` on its `voyageTypes` entry, `VoyageTypeInfo.OnBoard`), so every port offers
+one of them, picked by the day, beside Salvage and Crystal Run. The news-brought defence jobs are unchanged.
+
+The Ark sails the voyage's cells to the core, which is contested at any difficulty (`VoyageSea.ContestLast`), and anchors
+under the nucleus. The hold clock (`VoyageCoreHold`, `VoyageRun.Core.cs`) runs only while the squad's domain holds more of
+the nucleus than any other (`Cell.GetControlVolume`, the volume that decides the cell); an empty nucleus is nobody's. Once
+the core has been yours, it turning theirs starts a 15 s countdown, and the hold is lost if it stays theirs. Wave 1 comes
+at the anchor and wave k when the clock passes (k - 1) / waves of the hold; in each wave's window (`coreWaveSeconds`, 25)
+the core's fauna may assault the anchored Ark through the assault clock. From difficulty 3 the other domain's crew comes
+with wave 2 to retake the core: AI hulls of the domain that leads the rest of the nucleus (`coreRetakeHulls`), which build
+and fight by the rules every AI plays. The Ark falling, or its breach line, ends it as anywhere.
+
+| Difficulty | Hold | Waves | Retake crew |
+|---|---|---|---|
+| 1-2 | 45 s | 1 | none |
+| 3-4 | 60 s | 2 | 1 hull |
+| 5-6 | 75 s | 2 | 2 hulls |
+| 7-9 | 90 s | 3 | 3 hulls |
+
+The objective box names the voyage, gives the goal ("Keep the core of Ironmouth yours for 1:00") and, at the core, the
+clock and one line: build (not yours), "Yours 61% - wave 2 of 2", or the turning countdown. The end board (`Kind.CoreHold`)
+shows the hold and the wave reached; Venture further sails the next Hold the Core voyage from here, Finish sails home.
+
+Not built yet: the kaiju in the last wave at 7-9, the distress call next door, and the Codex's "Wall of the Voyage" award.
+
+## 7 Next
+
+Hold the Core's kaiju and distress call, Bounty (rival crews in the world), then the screens Shombith
 picks on Frogma (the pause map reads `TryGetCourseFix`).
