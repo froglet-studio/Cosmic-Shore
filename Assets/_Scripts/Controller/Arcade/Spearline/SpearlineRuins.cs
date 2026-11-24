@@ -8,6 +8,19 @@ namespace CosmicShore.Gameplay
     {
         public int PerLap;          // ruins a lap, one to a leg at most (0: none on this rung)
         public float ClearRadius;   // no standing ruin prism reaches nearer than this (u) to any leg's flown line
+        public float MinLegLength;  // a leg shorter than this (u) carries no ruin
+        public float RingMargin;    // no ruin prism stands within this distance (u) of a ring's mouth
+
+        /// <summary>Spearline's rung with another game's own clearances: a course with shorter legs, wider mouths or
+        /// a different lane states them here and lays the same seven kinds (<see cref="SpearlineRuins.Lay"/>).</summary>
+        public SpearlineRuinSettings With(float clearRadius, float minLegLength, float ringMargin)
+        {
+            var s = this;
+            s.ClearRadius = clearRadius;
+            s.MinLegLength = minLegLength;
+            s.RingMargin = ringMargin;
+            return s;
+        }
     }
 
     /// <summary>One ruin prism: where it stands, how it is turned (forward and up, as <c>Quaternion.LookRotation</c>
@@ -73,11 +86,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The clear lane's radius: a little under the I4 mouth (66), so the lane a ring allows stays open.</summary>
         public const float LaneRadius = 60f;
 
-        /// <summary>No ruin prism stands within this distance (u) of a ring's centre, past its mouth: the seal, its
-        /// regrowth and the pilot's last look at the pane are left alone.</summary>
+        /// <summary>Spearline's own margin (<see cref="SpearlineRuinSettings.RingMargin"/>): no ruin prism stands within
+        /// this distance (u) of a ring's centre, past its mouth, so the seal, its regrowth and the pilot's last look at
+        /// the pane are left alone.</summary>
         public const float RingMargin = 120f;
 
-        /// <summary>A leg shorter than this (u) carries no ruin: there is no room between its two rings.</summary>
+        /// <summary>Spearline's own floor (<see cref="SpearlineRuinSettings.MinLegLength"/>): a leg shorter than this
+        /// (u) carries no ruin, there is no room between its two rings.</summary>
         public const float MinLegLength = 380f;
 
         /// <summary>Points sampled along each leg's flown line for the clearance test.</summary>
@@ -98,6 +113,8 @@ namespace CosmicShore.Gameplay
         {
             PerLap = PerLapByRung[Mathf.Clamp(intensity, 1, 4) - 1],
             ClearRadius = LaneRadius,
+            MinLegLength = MinLegLength,
+            RingMargin = RingMargin,
         };
 
         /// <summary>The flown line of the leg from <paramref name="a"/> to <paramref name="b"/> at
@@ -146,7 +163,7 @@ namespace CosmicShore.Gameplay
             {
                 var a = lap[leg];
                 var b = lap[leg + 1];
-                if ((b.Position - a.Position).magnitude < MinLegLength) continue;
+                if ((b.Position - a.Position).magnitude < s.MinLegLength) continue;
                 int salt = leg * 7919 + n;
                 float t = 0.5f + (SpearlineSeals.Hash01(salt, 1, 0) - 0.5f) * 0.12f;
                 Vector3 centre = LinePoint(a, b, t);
@@ -154,7 +171,7 @@ namespace CosmicShore.Gameplay
                 SpearlineSeals.Basis(dir, out var u, out var v);
                 int first = into.Count;
                 int kind = KindOf(leg, lap[0].Position);
-                if (kind == Wheel && !WheelFits(lap, leg, centre)) kind = Pergola;
+                if (kind == Wheel && !WheelFits(lap, s, leg, centre)) kind = Pergola;
                 switch (kind)
                 {
                     case Pergola: LayPergola(centre, dir, u, v, s.ClearRadius, salt, into); break;
@@ -169,7 +186,7 @@ namespace CosmicShore.Gameplay
                         wheels?.Add(new SpearlineRuinWheel(centre, dir, sense * WheelDegreesPerSecond, first, into.Count - first));
                         break;
                 }
-                if (kind != Wheel) Clear(lap, s.ClearRadius, into, first);
+                if (kind != Wheel) Clear(lap, s, into, first);
                 for (int i = first; i < into.Count; i++) into[i] = into[i].OnLeg(leg);
                 if (into.Count > first) laid++;
             }
@@ -355,14 +372,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>May a wheel turn at <paramref name="centre"/> on leg <paramref name="leg"/>: clear of every ring, and
         /// with no OTHER leg's lane passing through the ball it sweeps?</summary>
-        static bool WheelFits(IReadOnlyList<RaceGate> lap, int leg, Vector3 centre)
+        static bool WheelFits(IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s, int leg, Vector3 centre)
         {
-            if (RingClearance(lap, centre) < RingMargin + WheelRadius) return false;
+            if (RingClearance(lap, centre) < s.RingMargin + WheelRadius) return false;
             int n = lap.Count;
             for (int other = 0; other < n; other++)
             {
                 if (other == leg) continue;
-                if (LegDistance(lap, other, centre) < WheelRadius + LaneRadius) return false;
+                if (LegDistance(lap, other, centre) < WheelRadius + s.ClearRadius) return false;
             }
             return true;
         }
@@ -385,12 +402,12 @@ namespace CosmicShore.Gameplay
         // ── Clearance ────────────────────────────────────────────────────
 
         /// <summary>Drop every part from <paramref name="first"/> on that reaches into a leg's lane or too near a ring.</summary>
-        static void Clear(IReadOnlyList<RaceGate> lap, float clear, List<SpearlineRuinPart> parts, int first)
+        static void Clear(IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s, List<SpearlineRuinPart> parts, int first)
         {
             int keep = first;
             for (int i = first; i < parts.Count; i++)
             {
-                if (!Stands(lap, clear, parts[i])) continue;
+                if (!Stands(lap, s, parts[i])) continue;
                 parts[keep++] = parts[i];
             }
             parts.RemoveRange(keep, parts.Count - keep);
@@ -398,8 +415,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>May a standing ruin prism be laid as <paramref name="part"/>: its whole length outside every leg's
         /// lane and clear of every ring?</summary>
-        public static bool Stands(IReadOnlyList<RaceGate> lap, float clear, in SpearlineRuinPart part) =>
-            PartLaneDistance(lap, part) >= clear && PartRingClearance(lap, part) >= RingMargin;
+        public static bool Stands(IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s, in SpearlineRuinPart part) =>
+            PartLaneDistance(lap, part) >= s.ClearRadius && PartRingClearance(lap, part) >= s.RingMargin;
 
         /// <summary>How near <paramref name="part"/> comes to any leg's flown line, along its whole length.</summary>
         public static float PartLaneDistance(IReadOnlyList<RaceGate> lap, in SpearlineRuinPart part)

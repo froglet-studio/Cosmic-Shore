@@ -232,6 +232,47 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Spearlines_own_lay_is_what_it_was_before_the_settings_grew()
+        {
+            // Golden: the lay of seed 1 and seed 101 as shipped on 2026-11-24, before MinLegLength and RingMargin became
+            // settings. Another game changing its own settings must never move Spearline's ruins.
+            var s = SpearlineRuins.ForIntensity(4);
+            Assert.AreEqual(SpearlineRuins.LaneRadius, s.ClearRadius);
+            Assert.AreEqual(380f, s.MinLegLength);
+            Assert.AreEqual(120f, s.RingMargin);
+            Assert.AreEqual(734, Ruins(4, 1, out _, out _).Count);
+            Assert.AreEqual(881, Ruins(4, 101, out _, out _).Count);
+        }
+
+        [Test]
+        public void Another_games_clearances_are_read_from_the_settings()
+        {
+            foreach (int seed in Seeds)
+            {
+                var lap = Lap(4, seed);
+                var own = new List<SpearlineRuinPart>();
+                SpearlineRuins.Lay(lap, SpearlineRuins.ForIntensity(4), own, null);
+
+                // A floor no leg reaches: nothing is laid.
+                var none = new List<SpearlineRuinPart>();
+                SpearlineRuins.Lay(lap, SpearlineRuins.ForIntensity(4).With(60f, 100000f, 120f), none, null);
+                Assert.AreEqual(0, none.Count, $"seed {seed}: MinLegLength is not read");
+
+                // A wider lane and a wider ring margin: both hold for every standing part.
+                var wide = new List<SpearlineRuinPart>();
+                var wheels = new List<SpearlineRuinWheel>();
+                SpearlineRuins.Lay(lap, SpearlineRuins.ForIntensity(4).With(90f, 380f, 170f), wide, wheels);
+                for (int i = 0; i < wide.Count; i++)
+                {
+                    Assert.GreaterOrEqual(SpearlineRuins.RingClearance(lap, wide[i].Position), 170f - 0.01f, $"seed {seed}: RingMargin is not read");
+                    if (!Turns(wheels, i))
+                        Assert.GreaterOrEqual(SpearlineRuins.PartLaneDistance(lap, wide[i]), 90f - 0.01f, $"seed {seed}: ClearRadius is not read");
+                }
+                Assert.Greater(wide.Count, 0);
+            }
+        }
+
+        [Test]
         public void A_wheel_really_turns_and_comes_round()
         {
             foreach (int seed in Seeds)
