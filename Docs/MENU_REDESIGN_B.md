@@ -10040,3 +10040,34 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
+
+## 223. Rev 139 mockups: the Elemental Converter redrawn, three ways, and why CONVERT seemed to do nothing (2026-11-24, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-24, of the built Rev 104 B dais): "Converter - No convert animation happening even the UI
+is very weird and does not look good at all. Completely need to rework this. The BG is fine but not the UI." Kept: the
+pier and its clips, the player's real balances (10 of each to start, section 196). Style: the pilot scenes inside the
+Ark (Scales's holo table with its dotted routes, Flux's cockpit orb).
+
+**Why nothing seemed to happen:** CONVERT plays `converter_Nocturne_convert.mp4` (10.7 s) from frame 0, and in it the
+four crystals idle for the first 4.7 s before they fly (measured frame by frame). The dais's rays and counts step on
+the overlay's own clock, so the screen read Converting while the picture stood still. Every option starts the clip
+at its 4.7 s mark and answers the press on the same frame.
+
+**On the canvas:** the Ark tab, "Rev 139 - The Converter redrawn: the pier stays, the UI starts again, and CONVERT
+plays at once" (copies `Docs/MenuRedesignB/board/R139*.dc.html`, written by `Docs/MenuRedesignB/rounds/r139_converter_boards.py`
+over the pier stills of the shipped clips). A, B and C are interactive (CONVERT runs, counts step down, the balances
+switch shows 10 each / short of Time / none yet).
+- **Compare:** the convert moment of today's build, A, B, C and the trimmed clip on one clock.
+- **A - Light paths:** the four counts, CONVERT and the omni in one quiet line at the foot; on a press each count drops
+  and its dotted path draws up to the pier's ring, which flashes when the omni forms.
+- **B - Glass orb:** a small glass sphere at the foot holds the four, which spiral into one omni inside it; counts hang
+  off it on hairlines; CONVERT straddles its foot. The most to build (a sphere shader or a rendered sprite).
+- **C - The pad is the button (recommended):** the pier's own landing ring is CONVERT (press the thing in the picture;
+  A on a pad still presses it), the counts are one line at the foot, nothing else is drawn; the ring pulses as each
+  crystal lands. Recommended because it is the least UI and answers "I cannot click in the image itself", said of the
+  Artifacts tab the same day.
+- **Notes:** the above, and that the boards draw CONVERT Lime where the build has it gold (Purchase).
+
+**Differs from the build:** the dais (`author_menu_ark.py` `dais()`, its rings, beams and `DAIS_*`) goes in every
+option; the convert clip is trimmed to start where the crystals leave (or the view seeks it to 4.7 s); the overlay's
+per-crystal steps are timed to the trimmed clip.
