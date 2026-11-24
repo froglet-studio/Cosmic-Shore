@@ -26955,6 +26955,26 @@ not run.
 - [ ] Ride the Pistol over a fresh island: the trail reads as a near-continuous line, about 6 prisms a hill.
 - [ ] The hills vary a little more in length and height than before, and the ride still flies off crests.
 - [ ] Big jumps still build about the same size den as before; frame rate holds with three islands queued.
+
+## The Sparrow's barrel roll is on the right stick, with its own HUD card (2026-11-24)
+
+Shombith: "Currently pressing the boost button would make the sparrow roll, move that to the right stick of the
+controller. Any direction the stick goes the sparrow barrel rolls and if you keep that button pressed it will keep doing
+that barrel roll." `BarrelRollController` now reads the right stick (past `engageThreshold` 0.6, any direction), repeats
+while held, and is owner-gated like the Scarab's juke; the boost arming, its 0.3 s window, `RollChargeState` and the Time
+`rollTimeScale` are gone. The one-thumb mouse scheme now publishes P ; L ' as the right stick (it published zero), which
+also gives the Scarab a keyboard juke there. New core card `CoreAbility.BarrelRoll` on the Sparrow HUD from
+`Sparrow_BarrelRoll.png` (icon kit, Core/). The Honeyguide carries the same component and rolls on the right stick too.
+Not run in the Unity editor: unity_refcompile and the gates only.
+
+- [ ] Pad: push the right stick right, left, up, down and diagonally - the Sparrow rolls that way each time.
+- [ ] Hold the right stick: it keeps rolling, one roll straight after another; let go and it stops after the current roll.
+- [ ] Boost (B) no longer rolls, with the left stick at any deflection.
+- [ ] Turret Stance: the right stick still rolls and strafes while stopped.
+- [ ] Desktop with the mouse flying: P ; L ' roll the Sparrow; the Scarab jukes on the same keys.
+- [ ] The Sparrow HUD shows the barrel-roll card (three rolling Sparrows) left of the four elemental cards, no flower, no chip.
+- [ ] Multiplayer: a remote Sparrow's roll plays once on other machines (no doubled displacement).
+- [ ] Honeyguide: decide whether its right-stick roll should stay.
 ## Switchback: the I4 garden ruins (2026-11-24)
 
 Spearline's ruins laid round Switchback's I4 gauntlet (`SwitchbackRuins`, `SwitchbackController.Ruins.cs`; SWITCHBACK.md

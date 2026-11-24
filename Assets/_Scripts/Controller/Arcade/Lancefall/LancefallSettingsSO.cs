@@ -32,8 +32,9 @@ namespace CosmicShore.Gameplay
         public float[] aiAimError = { 50f, 30f, 15f, 5f };
 
         [Tooltip("A crystal this close (u) is worth the detour: every crystal is a missile plant where it is taken and " +
-                 "its Space widens the lance.")]
-        public float[] aiCrystalDetourRange = { 150f, 220f, 300f, 400f };
+                 "its Space widens the lance. Falls with difficulty: chasing crystals kept the AI off the plates it docks " +
+                 "and nests on, so the Legendary AI ignores them (LANCEFALL.md 4.1).")]
+        public float[] aiCrystalDetourRange = { 300f, 200f, 100f, 0f };
 
         [Header("AI edgers - every level")]
         [Tooltip("How far (u) off a plate's centre, in its plane and across the approach, the AI lays its line. The " +

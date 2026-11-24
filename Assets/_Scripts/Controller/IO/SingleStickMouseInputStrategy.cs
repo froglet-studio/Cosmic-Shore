@@ -197,7 +197,7 @@ namespace CosmicShore.Gameplay
 
             UpdateStick(pixelDelta);
             ProcessButtons(mouse, keyboard);
-            Publish(KeyboardStick(keyboard));
+            Publish(KeyboardStick(keyboard), KeyboardRightStick(keyboard));
             PerformSpeedAndDirectionalEffects();
 
             // DEAD LAST, and isolated. Everything above is flight input; everything here is a
@@ -528,7 +528,22 @@ namespace CosmicShore.Gameplay
                 (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f));
         }
 
-        void Publish(Vector2 keys)
+        /// <summary>
+        /// P ; L ' as the one-thumb hull's RIGHT stick, read exactly as <see cref="KeyboardInputStrategy"/>
+        /// reads its right stick (' / L is x, P / ; is y, each digital), so a key does the same thing
+        /// on both desktop schemes. The mouse only flies the left stick; the right stick is what the
+        /// Sparrow's barrel roll (BarrelRollController) and the Scarab's juke read, so without these
+        /// keys neither exists for a mouse pilot. Clamped to the unit circle like every stick.
+        /// </summary>
+        static Vector2 KeyboardRightStick(Keyboard keyboard)
+        {
+            if (keyboard == null) return Vector2.zero;
+            return Vector2.ClampMagnitude(new Vector2(
+                (keyboard.quoteKey.isPressed ? 1f : 0f) - (keyboard.lKey.isPressed ? 1f : 0f),
+                (keyboard.pKey.isPressed ? 1f : 0f) - (keyboard.semicolonKey.isPressed ? 1f : 0f)), 1f);
+        }
+
+        void Publish(Vector2 keys, Vector2 rightKeys)
         {
             // InvertY is applied HERE, at the source, rather than to YSum the way DualStickMix
             // does it — because a one-thumb vessel never reads YSum. Its pitch, its hull puppetry
@@ -549,12 +564,13 @@ namespace CosmicShore.Gameplay
             inputStatus.EasedLeftJoystickPosition = new Vector2(Ease(2f * aimed.x), Ease(2f * aimed.y));
             inputStatus.LeftNormalizedJoystickPosition = aimed;
 
-            // The right stick is genuinely absent, so it publishes as centred rather than being
-            // left at whatever the previous strategy wrote. A stale right stick would keep the
-            // Scarab's juke armed and keep any polled right-stick read alive with no control
-            // behind it.
-            inputStatus.EasedRightJoystickPosition = Vector2.zero;
-            inputStatus.RightNormalizedJoystickPosition = Vector2.zero;
+            // The right stick is the P ; L ' keys only (the mouse never drives it), published every
+            // frame - centred when no key is held - rather than left at whatever the previous
+            // strategy wrote. A stale right stick would keep the Scarab's juke armed and roll the
+            // Sparrow with no control behind it. It feeds no flight term below: a one-thumb hull
+            // steers off the left stick alone.
+            inputStatus.EasedRightJoystickPosition = new Vector2(Ease(2f * rightKeys.x), Ease(2f * rightKeys.y));
+            inputStatus.RightNormalizedJoystickPosition = rightKeys;
 
             inputStatus.XSum = Ease(aimed.x);   // yaw
             inputStatus.YSum = -Ease(aimed.y);  // pitch
