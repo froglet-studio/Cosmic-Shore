@@ -103,7 +103,16 @@ namespace CosmicShore.UI
         /// leaves the drift's bare plate at the far end. Between them the band would have a hole
         /// in it.</para>
         public static readonly CoreAbility[] CoreAbilityDisplayOrder =
-            { CoreAbility.Drift, CoreAbility.Objective, CoreAbility.OmniCrystal };
+            { CoreAbility.Drift, CoreAbility.BarrelRoll, CoreAbility.Objective, CoreAbility.OmniCrystal };
+
+        /// <summary>
+        /// The core FLIGHT MOVES: each is one hull's signature way of moving (the Squirrel's drift, the
+        /// Sparrow's barrel roll), and a hull binds at most ONE of them - so the widest row any hull draws
+        /// counts this set as a single card (AbilityLockupStyleTests.Row_StaysInsideTheRightHalfOfTheScreen).
+        /// Both are bare plates at the far left of the row.
+        /// </summary>
+        public static readonly CoreAbility[] FlightMoveAbilities =
+            { CoreAbility.Drift, CoreAbility.BarrelRoll };
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
 

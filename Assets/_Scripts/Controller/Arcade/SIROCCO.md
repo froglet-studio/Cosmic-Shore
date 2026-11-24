@@ -65,6 +65,27 @@ abandoned halfway through a stand on a 45°/s hull. Crystal seeking is deliberat
 objective is mass, not a crystal (the Wrecking Ball shape; the reverse of Rampage's rule, where the
 crystal IS the weapon).
 
+### AI trained (2026-11-21, elemental loop step 3)
+
+Raced on the Brood Rush volume books (VC + VD, `brood_judge.py --mode Sirocco`, Tiger Moth against Tiger Moth). In a
+1v1 the 600-prism target is never reached in 200 s (every match timed out), and a seat's score is its own wake
+(~7k, deterministic) plus what its dust STEALS off the forest (1.8k-14k, the noisy half; neutral forest destroyed is
+not VD). None of the erosion-run settings moved it beyond that noise (seeds 1-4, 8 seats): dust hover 0 / 30 / 55 / 90
+12.9k / 12.6k / 13.2k / 13.4k, retarget 2 / 4 / 8 s 14.6k / 12.6k / 14.8k, and a run that overshoots the stand by 150 /
+400 u (tried in code, not shipped) 16.0k / 14.8k against 15.0k. So `SiroccoSettings.asset` is unchanged.
+
+The one lever that reaches it is the generic AIPilot throttle (0.6 -> 1.0, shipped through the Mass-Space AI plan row,
+not the prefab): the faster hull lays ~25% more wake every match; its steals stay noisy.
+
+| Mean seat VC + VD (seeds 11-12) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| shipped | 11.7k | 19.1k | 12.9k | 12.8k |
+| plan-row throttle 1.0 | 14.0k | 15.3k | 13.3k | 17.5k |
+
+Seeds 1-4 at I2: 15.0k -> 16.6k (+10%). What is still wrong is the kit's, not the AI's: a dust pass destroys one prism
+in three it touches, and destroyed neutral forest scores nothing on the volume books, so the hull's Space game pays
+mostly for its wake.
+
 ## Verification status
 
 **Authored headless; nothing has been opened in the editor.** Proved: the generator's `--check`

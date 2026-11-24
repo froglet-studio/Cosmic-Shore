@@ -27,6 +27,7 @@ namespace CosmicShore.Gameplay
             ScoringMetric.CombatPoints      => stats.CombatPoints,
             ScoringMetric.SwitchesThreaded  => stats.SwitchesThreaded,
             ScoringMetric.PrismsStolen      => stats.PrismStolen,
+            ScoringMetric.PetalsTaken       => stats.PetalsTaken,
             // The one FLOAT-backed metric: rounded once, here, so every downstream consumer
             // (the per-domain NetworkVariable sum, the HUD column, the goal row, the
             // scoreboard secondary) keeps the single int contract the rest of them share.

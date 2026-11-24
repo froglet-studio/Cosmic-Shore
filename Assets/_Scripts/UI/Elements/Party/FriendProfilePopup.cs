@@ -44,7 +44,7 @@ namespace CosmicShore.UI
 
         [Header("Card")]
         [SerializeField] Image avatar;
-        [Tooltip("The octagon round the avatar: the pilot's domain colour, Space when it is not known.")]
+        [Tooltip("Legacy: the octagon round the avatar, retired for the avatar's own round border (Rev 127 D). Hidden.")]
         [SerializeField] Image ring;
         [SerializeField] TMP_Text nameText;
         [SerializeField] CanvasGroup friendTag;
@@ -408,7 +408,15 @@ namespace CosmicShore.UI
                 avatar.sprite = p.Avatar;
                 avatar.enabled = p.Avatar;
             }
-            if (ring) ring.color = p.DomainColour ?? UITheme.Resolve(theme, UIColorToken.NeutralLightest);
+            // Rev 127 D (Docs/MENU_REDESIGN_B.md section 217): the avatar is round, ringed and glowing in the pilot's
+            // domain colour; the quiet ring while it is not known.
+            if (ring) ring.enabled = false;
+            var border = AvatarRippleBorder.EnsureFor(avatar);
+            if (border != null)
+            {
+                if (p.DomainColour is { } domainColour) border.Show(domainColour);
+                else border.ShowUnknown();
+            }
             if (nameText) nameText.text = p.DisplayName ?? string.Empty;
             KitVisibility.SetShown(friendTag, IsFriend(p.PlayerId));
 
