@@ -99,13 +99,13 @@ namespace CosmicShore.Gameplay
             float now = Time.unscaledTime;
             if (now < _nextSend) return;
             _nextSend = now + SendSeconds;
-            var p = ark.Position;
+            var p = ark.CoursePosition;   // the course pose: each machine draws its own swell and lean on top
             var v = anchorLeft > 0f ? Vector3.zero : _lastPositionAt >= 0f && now > _lastPositionAt
                 ? (p - _lastPosition) / (now - _lastPositionAt)
                 : ark.Forward * ark.Speed;
             _lastPosition = p;
             _lastPositionAt = now;
-            VoyageCourseLink.SendArkPose(new VoyageArkPose(legSerial, VoyageCourseLink.ServerTimeNow, p, ark.transform.rotation, v, anchorLeft));
+            VoyageCourseLink.SendArkPose(new VoyageArkPose(legSerial, VoyageCourseLink.ServerTimeNow, p, ark.CourseRotation, v, anchorLeft));
         }
 
         void Follow(Ark ark, int legSerial)
@@ -115,7 +115,7 @@ namespace CosmicShore.Gameplay
             if (age < 0) age = 0;
             if (age > StaleSeconds) return;
             var target = _pose.Position + _pose.Velocity * (float)age;
-            float gap = Vector3.Distance(ark.Position, target);
+            float gap = Vector3.Distance(ark.CoursePosition, target);
             LastGap = gap;
             if (gap < Deadband || gap > GiveUpDistance) return;
             float blend = 1f - Mathf.Exp(-Time.deltaTime / CatchUpSeconds);

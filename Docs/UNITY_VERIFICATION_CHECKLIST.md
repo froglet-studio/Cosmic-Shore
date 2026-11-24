@@ -25689,3 +25689,18 @@ events next door, the rivals and the vote appear only once the gameplay fills th
 - [ ] (Once a rival is in the cell) The rival plate top right: name, faction and temper, hold and hull, a row per escort,
       silenced escorts dim; it hides during the intro and the end board.
 - [ ] Phone and iPad: the same layout inside the safe area; nothing clipped, text at today's sizes.
+
+## The Ark is sailed: way, weave, lean, swell, flinch (2026-11-24)
+
+`ArkHelm` (`Docs/Voyages/ARK_ESCORT.md` section 4.3). Not run in the Unity editor: none in this session. The reference
+compile (player and editor) has 0 errors in the changed files (30 in untouched files, from packages this machine lacks).
+
+- [ ] Start a voyage: after the intro the Ark gathers way slowly instead of jumping to speed, and comes in to a cell
+      slowing smoothly.
+- [ ] Between cells the Ark weaves gently and banks into each turn; it still lines up on and reaches every core.
+- [ ] At anchor (Salvage / Crystal Run) the Ark heaves and rolls slightly; the hangar wingmates, the HUD plate and the
+      formation slots ride with it without jitter.
+- [ ] Get the Ark hit: it rocks away from the struck side and jinks; a swarm gnawing many plates does not shake it nonstop.
+- [ ] Party of two: both screens show the Ark on the same course; the friend's Ark does not jitter or drift.
+- [ ] Phone: no visible frame cost from the Ark at anchor (its 108 hull prisms are re-filed every frame now).
+- [ ] Tune it in `ArkReverseModel.asset` > Helm if it is too much or too little.

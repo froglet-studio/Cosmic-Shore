@@ -194,6 +194,29 @@ time left, kills and plates), and `ArkVoyageSignals.Signal` fires an `ArkEscortS
 `WorldAhead`, `WorldEntered`, `AssaultIncoming`, `AssaultStarted`, `AssaultRepelled`, `AssaultPassed`, `ArkUnderAttack`,
 `ArkAttackEased`, `HullChanged`, `WorldPacified`, `Ended`. Words stay on the HUD's side.
 
+### 4.3 The helm: the Ark is sailed, not slid (2026-11-24)
+
+Shombith: "the Ark's movement is very uncanny and linear, there is no excitement, maneuverability, no animation". Before,
+the Ark slid along a straight line to each core with its speed read straight off the profile. Now `ArkHelm`
+(`Assets/_Scripts/Controller/Environment/ArkHelm.cs`), authored on the model (`ArkReverseModel.asset`, Helm block):
+
+- **Way.** The profile (`ArkSpeedProfile`) names the speed the Ark wants; the helm gathers way toward it under an
+  acceleration, braking and jerk limit, so it lifts anchor slowly, surges out of a cell and settles into the crawl.
+  Stopped, it sheds its way over a second or two. It never passes the profile's speed or `Ceiling`.
+- **Steering.** The bow swings onto the next bearing with a turn rate that builds and eases (22 deg/s at most), and the
+  Ark sails where it points, so a new destination is an arc, not a kink. Inside `CaptureRange` (40 u) it makes straight
+  for the core, so it always arrives.
+- **Weave.** The bearing wanders up to 9 deg left/right and 3.5 deg up/down on two harmonics of DISTANCE sailed (1100 u a
+  weave), fading out over the last 450 u so it lines up on the core. About 1% more course.
+- **Lean.** It banks into the turn (2.2 deg per deg/s, at most 18), lifts its nose gathering way and dips it braking.
+- **Swell.** A slow heave (0.9 u), roll and pitch on a 9 s period that never stops, even at anchor.
+- **Flinch.** A lost hull plate rocks the hull away from it (6 deg) and jinks the bow away from that side (8 deg),
+  at most once per 0.9 s.
+
+The lean, swell and flinch are drawn on top of the COURSE pose (`Ark.CoursePosition`, `Ark.CourseRotation`,
+`Ark.Forward`), which is what navigates, what escort roles read and what a party syncs (`Docs/Voyages/PARTY.md` 2).
+Tests: `ArkHelmTests`.
+
 ## 5. On the galactic map (the HyperSea)
 
 **Status: wired, minimal** (`claude/voyage-ship`, 2026-11-01). Garrett asked for the escort to "integrate with the
