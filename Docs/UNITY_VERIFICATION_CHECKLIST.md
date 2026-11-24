@@ -26974,7 +26974,12 @@ NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins 
 - [ ] Frame rate at I4 with the ruins (about 840 more prisms) against without.
 - [ ] A rematch lays a fresh set and leaves none of the old one.
 
-### 🔴 Grizzly Time: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
+### 🔴 Grizzly Time: ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, EDITMODE TESTS NOT RUN, NOT PLAYED)
+
+2026-11-25: the open editor (6000.3.17f1) compiles `2a3e56faac` with 0 errors and 0 warnings (`unity recompile`). The
+first push (`f2e457b577`) did not compile: the ruins file lacked `using CosmicShore.Utility;`, fixed in `2a3e56faac`.
+`GrizzlyTimeRuinsTests` in the editor (Pipeline `run_tests`) did not finish: the run was invalidated while the editor sat
+in Play mode spamming `CrystalFlipWave.cs:128` NullReferenceExceptions and stopped answering commands. Re-run it.
 
 `GRIZZLYTIME.md` §0.2. Spearline's ruins called from Grizzly Time (`GrizzlyTimeRuins.cs`, `GrizzlyTimeController.Ruins.cs`,
 three hook lines in `GrizzlyTimeController.Kegs.cs`), cut back for the throw lanes and the kegs. Ran: the headless
