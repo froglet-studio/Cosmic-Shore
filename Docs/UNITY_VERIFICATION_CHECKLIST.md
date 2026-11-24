@@ -1077,6 +1077,22 @@ headless: the generator `--check` (with a negative control), the `/arcadegame` �
 **First-pass tuning (not settled):** round 90 s; plant caps 36 / 30 / 24 / 18; omni 4 / 3 / 3 / 2; grazers
 6 / 9 / 12 / 15; cactus at 1.4x leaf (~32,900 volume mature); comeback 0.00003. The open question is the
 retire condition: does the garden matter against the trail (~42,000 volume a round of cruising)?
+### 🔴 Redline: the I4 garden ruins (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT FLOWN
+
+**What landed:** `Assets/_Scripts/Controller/Arcade/REDLINE.md` section 4b. Spearline's ruins (`SpearlineRuins`, called,
+not copied) laid round Redline's lap at I4: `RedlineRuins.cs`, `RedlineController.Ruins.cs`, `ruinPrefab` on the
+controller in `MinigameRedline.unity`. **Ran headless:** `redline_course_harness` (38 tests, `RedlineRuinsTests` among
+them) and `author_redline_assets.py --check`. **Not compiled:** `RedlineController.Ruins.cs` and the three lines added
+to `RedlineController.cs` (no Unity was run; the harness compiles the pure files only).
+
+- [ ] Unity compiles; `RedlineRuinsTests` pass in the Test Runner.
+- [ ] Redline I1-I3: no ruins. I4: a ruin on most legs, in Blue, Gold and Jade, none at a gate, none on a Time crystal,
+      none inside the nucleus; the wheel (when the course has one) turns.
+- [ ] Fly I4 on the line at full Soar: does the hull stay inside the ruins' clear lane, or clip them on a straight cut
+      (REDLINE.md 4b, the open point)? Watch the AI rivals for the same, and their I4 times against 96 s (Legendary).
+- [ ] Frame rate at I4 with about 800 more prisms standing.
+- [ ] Two peers: the same ruins, the wheel at the same angle.
+
 ### 🔴 Redline round 5: Soar from the gun, 8 laps, the AI race line, the heat (`Ys-bleeding-edge`, 2026-11-11, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `Assets/_Scripts/Controller/Arcade/REDLINE.md` section 0. The card starts every Manta at Time 6
