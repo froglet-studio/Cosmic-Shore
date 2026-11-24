@@ -25714,3 +25714,15 @@ Not run in Unity (cloud session; the reference compile passed on the changed fil
 - [ ] Pressing a class (or LB / RB on a pad) shows its vessels; "<Class>s are wanted on this voyage" shows only for wanted classes; the fit line reads "Squad fit 1 to 2 of 3" when the pick changes it.
 - [ ] Take the vessel (A) puts it in the seat and Your Ark shows it; Back (B) and the pad's B leave the seat unchanged.
 - [ ] Run the EditMode tests `VoyageClassesTests`.
+
+## Voyages M2 shell, stage 2: the quay and pilot mood (2026-11-24)
+
+Not run in Unity (the reference compile passed on the changed files). Open Voyages:
+- [ ] The first page is the quay: up to five job cards along the top with the givers' portraits (GALLEON on the Salvage, WINGMAN on the escort), the map flat in the chart at the top right, Full screen in its corner.
+- [ ] Pressing a card picks it: its ask (kind, giver, the giver's words, Bring me with three classes), Your crew says with one row per seat and a mood mark, the squad fit and the pay update.
+- [ ] The Crystal Run card shows its own pilot and story, and no classes, crew moods or fit.
+- [ ] Full screen still opens and closes (zoom row, Open now and the picked voyage's card in the full screen only); Take the job there opens Your Ark.
+- [ ] See every class (Y) opens Vessels over the quay; Back closes it; LB / RB step the classes.
+- [ ] Take the job (A) opens Your Ark; Back (B) returns to the quay.
+- [ ] On Your Ark each seat shows its mood and why under the pilot line. (No faction refuses yet; to test the hold, add a faction to a type's Refuse in voyage_content.json: Set sail greys out and the bar says "<pilot> refuses this voyage".)
+- [ ] Run the EditMode tests `VoyageClassesTests` and `VoyageBoardTests`.

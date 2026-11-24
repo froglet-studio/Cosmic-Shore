@@ -164,7 +164,7 @@ namespace CosmicShore.Tests
                 var texts = Texts(host);
                 CollectionAssert.Contains(texts, "Meet the Gallows crew at Lantern Reach");
                 CollectionAssert.Contains(texts, TemplateText.Fill(lines.SeaOfferKicker, "kind", lines.KindBounty, "pilot", "Oriel Vance"));
-                CollectionAssert.Contains(texts, lines.SeaOpenVoyage);
+                CollectionAssert.Contains(texts, ScriptableObjects.VoyageQuaySO.Load().TakeJob, "Take the job on the quay (Rev 138)");
                 board.Pick(0);
                 Assert.AreEqual(0, picked);
 
@@ -197,9 +197,10 @@ namespace CosmicShore.Tests
                 board.SetSail();
                 Assert.AreEqual(VoyageDifficulty.Max, sailedAt);
 
-                // Back steps one page at a time.
+                // Back from Your Ark is the quay (Rev 138 Flow); from the voyage page, one page back.
                 board.StepBack();
-                Assert.AreEqual(VoyageBoard.Page.Voyage, board.Shown);
+                Assert.AreEqual(VoyageBoard.Page.Sea, board.Shown);
+                board.ShowPage(VoyageBoard.Page.Voyage);
                 board.StepBack();
                 Assert.AreEqual(VoyageBoard.Page.Sea, board.Shown);
 

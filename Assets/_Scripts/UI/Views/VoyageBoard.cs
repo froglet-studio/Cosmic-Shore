@@ -165,7 +165,7 @@ namespace CosmicShore.UI
             board._pages = VoyageKit.Node("Pages", rt);
             VoyageKit.Stretch(board._pages);
             board._pages.offsetMax = new Vector2(0f, -HeaderHeight);
-            board._sea = new VoyageSeaPage(board, board._kit, board._pages);
+            board._sea = new VoyageSeaPage(board, board._kit, board._rules, board._pages);
             board._brief = new VoyageBriefPage(board, board._kit, board._pages);
             board._ark = new VoyageArkPage(board, board._kit, board._rules, board._pages, party);
             board._crew = new VoyageCrewPopup(board, board._kit, board._pages);
@@ -249,8 +249,23 @@ namespace CosmicShore.UI
                 _ark.ClosePicker();
                 return;
             }
-            if (_page > Page.Sea) ShowPage(_page - 1);
+            // Your Ark steps back to the quay (Rev 138 Flow: Take the job opens Your Ark from the quay).
+            if (_page == Page.Ark) ShowPage(Page.Sea);
+            else if (_page > Page.Sea) ShowPage(_page - 1);
         }
+
+        /// <summary>Take the job (A) on the quay or the full screen: the open voyage goes to Your Ark (Rev 138 Flow).</summary>
+        public void TakeJob() => ShowPage(Page.Ark);
+
+        /// <summary>See every class (Y) on the quay: Vessels over the quay, on your seat of the open voyage.</summary>
+        public void BrowseVessels()
+        {
+            if (Open == null) return;
+            _ark.BrowseVessels(Open, _difficulty);
+        }
+
+        /// <summary>The words the board's pages share.</summary>
+        internal VoyageLines Lines => _lines;
 
         /// <summary>Open Crew recommends over the HyperSea page (Rev 113 Crew).</summary>
         public void OpenCrew() => _crew.Open(_offers, LockSprite);
@@ -325,7 +340,12 @@ namespace CosmicShore.UI
         {
             float dt = Time.unscaledDeltaTime;
             _crew.Tick(dt);
-            if (_page == Page.Sea) _sea.Tick(dt);
+            if (_page == Page.Sea)
+            {
+                _sea.Tick(dt);
+                // Vessels opened from the quay (See every class) still fits and takes the shoulders.
+                _ark.TickOverlays(dt);
+            }
             else if (_page == Page.Voyage) _brief.Tick(dt);
             else _ark.Tick(dt);
             StepRise(dt);

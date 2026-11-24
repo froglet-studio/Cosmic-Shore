@@ -86,5 +86,38 @@ namespace CosmicShore.Tests
             foreach (VesselClassType v in Enum.GetValues(typeof(VesselClassType)))
                 Assert.AreEqual(ArkEscortRoles.Create(v) is not HeartChaserRole, ArkEscortRoles.HasRole(v), v.ToString());
         }
+
+        [Test]
+        public void Mood_ReadsTheFactionAgainstTheTypesLists()
+        {
+            var info = new VoyageTypeInfo
+            {
+                Type = "job.salvage.drift",
+                Keen = new List<FactionType> { (FactionType)4 },
+                Reluctant = new List<FactionType> { (FactionType)3 },
+                Refuse = new List<FactionType> { (FactionType)7 },
+            };
+            Assert.AreEqual(PilotMood.Keen, VoyageMood.Of(info, (FactionType)4));
+            Assert.AreEqual(PilotMood.Reluctant, VoyageMood.Of(info, (FactionType)3));
+            Assert.AreEqual(PilotMood.Refuses, VoyageMood.Of(info, (FactionType)7));
+            Assert.AreEqual(PilotMood.Steady, VoyageMood.Of(info, (FactionType)1));
+            Assert.AreEqual(PilotMood.None, VoyageMood.Of(info, FactionType.None), "no faction, no mood");
+            Assert.AreEqual(PilotMood.None, VoyageMood.Of(null, (FactionType)4), "no giver (the Crystal Run), no mood");
+            Assert.AreEqual(3, VoyageMoodMark.Bars(PilotMood.Keen));
+            Assert.AreEqual(0, VoyageMoodMark.Bars(PilotMood.Refuses));
+        }
+
+        [Test]
+        public void QuayWords_LoadWithEveryMood()
+        {
+            var words = VoyageQuaySO.Load();
+            Assert.IsNotNull(words, "Resources/Voyages/VoyageQuay is missing: run Tools/Build/author_voyage_classes.py");
+            foreach (PilotMood m in Enum.GetValues(typeof(PilotMood)))
+                if (m != PilotMood.None)
+                {
+                    Assert.IsFalse(string.IsNullOrEmpty(words.MoodName(m)), m.ToString());
+                    Assert.IsFalse(string.IsNullOrEmpty(words.Say(m)), m.ToString());
+                }
+        }
     }
 }
