@@ -413,7 +413,7 @@ compiled (`unity_refcompile` cannot run on this machine, and no Unity run was ma
 6. The start gate throws no ring. A guest in a two-machine lobby sees only their own rings.
 7. Answer the fun card when Play stops.
 
-## 🔴 Breakwater: barriers across the racing line at I4 (`Ys-bleeding-edge`, 2026-11-25, Yash) — NOT COMPILED, NOT WATCHED
+## 🔴 Breakwater: barriers across the racing line at I4 (`Ys-bleeding-edge`, 2026-11-25, Yash) — COMPILED, EditMode tests pass, one AI race watched (2026-11-25); NOT FLOWN BY A PERSON
 
 **What landed:** curtain walls, locks and minefields on the legs the ruins leave bare (`BreakwaterBarriers`,
 `BreakwaterController.Barriers`): 7 barriers and about 604 Blue prisms a course, I4 only. BREAKWATER.md "The barriers".
@@ -422,7 +422,7 @@ compiled (`unity_refcompile` cannot run on this machine, and no Unity run was ma
 `BreakwaterBarriersTests` with the ruins and heat tests, and three negative controls for the barriers).
 
 **In the editor:**
-1. The project compiles and `BreakwaterBarriersTests` pass.
+1. DONE 2026-11-25 in the open editor: compiles with no errors, `BreakwaterBarriersTests` pass (6 of 6); one three-racer I4 race with every seat AI-flown ran to 29 of 29 at 54 to 76 FPS (one sample at 41) with no exception in the log. 603 barrier prisms were laid; 17 were already destroyed before the start (cause not found), 405 by the leader's 14th crossing and 474 by the end, so the second lap meets little of them.
 2. Breakwater I4: between two ruins a Blue wall, a row of three walls or a cloud of danger cubes stands across the line; none touches a dish, a pad or the start gate.
 3. Fire a rocket at a curtain: it opens a hole a Sparrow fits through, and the rounds pay ammunition.
 4. Fly the line through a minefield without touching a mine; stray and a mine costs what a danger prism costs.
