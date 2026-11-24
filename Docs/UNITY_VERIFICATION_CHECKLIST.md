@@ -271,14 +271,15 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
-## 🔴 Waystation: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, NOT RUN IN EDITOR)
 
 Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"): one to three
 ruins a course, in Jade, Ruby and Gold. Run headless: `Tools/Build/waystation_tower_harness/run_tests.sh --self-test`
-(30 tests pass, the three ruins negative controls fire). `WaystationController.Ruins.cs` and the three one-line hooks
-in `WaystationController.cs` have had no type check.
+(30 tests pass, the three ruins negative controls fire).
 
-- [ ] It compiles.
+- [x] It compiles (2026-11-25): Yash's open editor compiled `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` at
+      03:54, after every ruins source and the latest `SpearlineRuins.cs`, and both DLLs carry the ruins types and
+      `WaystationRuinsTests`; Unity writes them only on a clean compile. The EditMode tests have not run in Unity.
 - [ ] Waystation at I4: ruins stand on the long last drop and on some tower cruise legs, none in a tower's walls or
       lanterns, none at a ring or a press point; the cruise line and every fall line are open.
 - [ ] The ruins read apart from the Blue walls and lanterns, and their prisms are at the authored size.
