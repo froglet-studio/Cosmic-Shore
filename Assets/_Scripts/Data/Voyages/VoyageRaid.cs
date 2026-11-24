@@ -83,6 +83,7 @@ namespace CosmicShore.Data
         static void Name(VoyageJob job, NamedVoyage v, JobTemplate t)
         {
             job.VoyageId = v.Id;
+            if (!string.IsNullOrEmpty(v.Rival)) job.RivalId = v.Rival;   // a Bounty hunts its named crew
             if (!string.IsNullOrEmpty(v.Name)) job.Title = v.Name;
             if (!string.IsNullOrEmpty(v.Line)) job.Summary = v.Line;
             job.Difficulty = VoyageDifficulty.Clamp(v.Difficulty);

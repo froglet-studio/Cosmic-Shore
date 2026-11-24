@@ -624,6 +624,7 @@ namespace CosmicShore.Gameplay
             if (job.CountsUnderway) ArriveRaid(job);
             // Work decided by arriving (a courier, a convoy's hull floor) is decided now.
             else if (job.Verb == WorkVerb.Arrive) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
+            else if (IsBounty(job)) BeginBounty(job);
             else if (job.Verb == WorkVerb.Meet) CheckWork();
             else if (IsCoreHold(job)) BeginCore(job);
             SaveState();
@@ -765,8 +766,11 @@ namespace CosmicShore.Gameplay
             var forward = ark ? ark.Forward : Vector3.forward;
             var prefabs = swapper.VesselPrefabContainer;
             int row = 0;
+            string hunted = IsBounty(_state?.Current) ? _state.Current.RivalId : null;
             foreach (var meeting in _arrival.Rivals)
             {
+                // A Bounty's crew comes with its own fight (VoyageRun.Bounty.cs), not as the stop's rivals.
+                if (meeting.Crew.Id == hunted) continue;
                 float side = row % 2 == 0 ? 1f : -1f;
                 int column = 0;
                 foreach (var hullName in meeting.Crew.Hulls ?? new List<string>())
@@ -803,6 +807,7 @@ namespace CosmicShore.Gameplay
             _rivalVessels.Clear();
             _marks.Clear();
             ClearCore();
+            ClearBounty();
             _arrival = null;
         }
 
@@ -826,6 +831,8 @@ namespace CosmicShore.Gameplay
             TickHullLeak();
             WatchHold();
             TickHold();
+            TickBounty();
+            TickNeighbours();
             TickObserve();
             if (Time.unscaledTime >= _nextWorkCheck)
             {
@@ -1076,6 +1083,7 @@ namespace CosmicShore.Gameplay
         {
             var job = _state.Current;
             if (job == null || _state.AtSea) return;
+            if (IsBounty(job)) return;   // a Bounty is decided by its fight (VoyageRun.Bounty.cs), not by arriving
             if (VoyageRules.WorkDone(job, Tally())) Resolve(JobOutcome.Succeeded);
         }
 
@@ -1290,8 +1298,9 @@ namespace CosmicShore.Gameplay
             _sea.Underway += OnUnderway;
             _sea.RouteEnded += OnRouteEnded;
             _sea.ArkFallen += OnArkFallen;
-            // A Crystal Run's Ark anchors at each cell for the squad to raid it (VoyageRun.Raid.cs).
-            _sea.AnchorSeconds = RaidAnchorSeconds;
+            // A Crystal Run's Ark anchors at each cell for the squad to raid it (VoyageRun.Raid.cs); a detour the squad
+            // voted for holds it longer (VoyageRun.Neighbours.cs).
+            _sea.AnchorSeconds = AnchorAtCell;
             _sea.Anchored += OnRaidAnchored;
             _sea.Weighed += OnRaidWeighed;
             // A pilot who strays past the stray radius is warned 5-4-3-2-1, then recalled to their seat (VoyageRun.Stray.cs).

@@ -412,6 +412,45 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(100f, 1200f), Tooltip("How far from the Ark a retaking crew appears, u.")]
         float coreRetakeDistance = 420f;
 
+        [Header("Voyage - events next door and the detour vote (Frogma Rev 134 WorldEvents, Vote B)")]
+        [SerializeField, Range(0f, 1f), Tooltip("The chance each cell of a named voyage (but its last) has an event next " +
+                                                "door: a wreck or a bloom beside the lane.")]
+        float neighbourChance = 0.5f;
+
+        [SerializeField, Range(10f, 180f), Tooltip("Seconds an event next door lasts once the Ark is in its cell, give or " +
+                                                   "take a quarter (the vote and the detour must fit inside it).")]
+        float neighbourSeconds = 60f;
+
+        [SerializeField, Range(0f, 60f), Tooltip("Seconds a detour holds the Ark in the cell while the squad takes the event " +
+                                                 "(added to the cell's anchor, or to the anchor already dropped).")]
+        float detourSeconds = 20f;
+
+        [SerializeField, Range(0, 40), Tooltip("Loose crystals a wreck next door spilled (a detour brings them to the lane's side).")]
+        int wreckCrystals = 10;
+
+        [SerializeField, Range(0, 40), Tooltip("Loose crystals a bloom next door holds.")]
+        int bloomCrystals = 14;
+
+        [Header("Voyage - Bounty (Docs/Voyages/MILESTONE_2.md section 7; Frogma Rev 137)")]
+        [SerializeField, Tooltip("What a Bounty asks at each difficulty, 1 first: seconds before the hunted crew makes port, " +
+                                 "the crystals it carries (all spill when it is beaten), the rival Ark's hull share at which " +
+                                 "she breaks, and how many escorts must be silenced at once to open her hull.")]
+        VoyageBountyPlan[] bounty = VoyageBountyPlan.Defaults();
+
+        [SerializeField, Range(150f, 1500f), Tooltip("How far from the squad's Ark the hunted crew is met, u (a rival Ark " +
+                                                     "lies abeam at this range; a runaway crew circles there).")]
+        float bountyDistance = 520f;
+
+        [SerializeField, Range(60f, 400f), Tooltip("How far apart a hunted crew's escorts stand round their centre, u.")]
+        float bountySpread = 140f;
+
+        [SerializeField, Range(1f, 20f), Tooltip("Seconds a beaten or escaping crew stays in sight, turning back or " +
+                                                 "running, before its hulls leave.")]
+        float bountyLeaveSeconds = 6f;
+
+        [SerializeField, Range(0.2f, 1f), Tooltip("A rival Ark's hull length against the squad's Ark (she is a smaller ship).")]
+        float rivalArkScale = 0.7f;
+
         [Header("Voyage - Salvage's loose crystals (Shombith 2026-11-24: \"collect loose crystals\")")]
         [SerializeField, Min(0), Tooltip("Loose elemental crystals that drift through each cell of a voyage whose type " +
                                          "gathers (Salvage), before the difficulty's life: about one and a half times the goal per " +
@@ -609,6 +648,17 @@ namespace CosmicShore.ScriptableObjects
         public float CoreWaveSeconds => coreWaveSeconds;
         public IReadOnlyList<VesselClassType> CoreRetakeHulls => coreRetakeHulls;
         public float CoreRetakeDistance => coreRetakeDistance;
+        public float NeighbourChance => neighbourChance;
+        public float NeighbourSeconds => neighbourSeconds;
+        public float DetourSeconds => detourSeconds;
+        public int WreckCrystals => wreckCrystals;
+        public int BloomCrystals => bloomCrystals;
+        /// <summary>What a Bounty asks at <paramref name="difficulty"/> (1-9).</summary>
+        public VoyageBountyPlan Bounty(int difficulty) => VoyageBountyPlan.At(bounty, difficulty);
+        public float BountyDistance => bountyDistance;
+        public float BountySpread => bountySpread;
+        public float BountyLeaveSeconds => bountyLeaveSeconds;
+        public float RivalArkScale => rivalArkScale;
         public float ArkCrawlCeiling => arkCrawlCeiling;
         public int DriftCrystalsPerCell => driftCrystalsPerCell;
         public float DriftClusterShare => driftClusterShare;

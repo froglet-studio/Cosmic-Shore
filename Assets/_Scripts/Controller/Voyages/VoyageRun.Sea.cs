@@ -81,24 +81,51 @@ namespace CosmicShore.Gameplay
             int bunched = Mathf.RoundToInt(count * Mathf.Clamp01(_def.DriftClusterShare));
             for (int i = 0; i < count; i++)
             {
-                var element = ElementalCrystalSetSO.RandomElementFrom(rng);
-                var prefab = set.GetPrefab(element);
-                if (!prefab) continue;
                 Vector3 at = i < bunched
                     ? burst + RandomDirection(rng) * radius * 0.15f * Mathf.Pow((float)rng.NextDouble(), 1f / 3f)
                     : centre + RandomDirection(rng) * radius * Mathf.Pow((float)rng.NextDouble(), 1f / 3f);
-                var crystal = Instantiate(prefab, at, Quaternion.identity, cell.transform);
-                crystal.transform.localScale = Vector3.one * ElementalCrystalSetSO.CrystalWorldScale / Mathf.Max(1e-3f, cell.transform.lossyScale.x);
-                crystal.enabled = true;
-                crystal.gameObject.SetActive(true);
-                var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
-                impactor.Crystal = crystal;
-                if (set.CollectionEffects is { Length: > 0 }) impactor.SetCollectionEffects(set.CollectionEffects);
-                crystal.gameObject.AddComponent<ImpactCollider>().SetImpactor(impactor);
-                crystal.gameObject.AddComponent<VoyageDriftCrystal>()
-                    .Drift(RandomDirection(rng), _def.DriftSpeed * Mathf.Lerp(0.5f, 1.5f, (float)rng.NextDouble()),
-                        (float)rng.NextDouble() * 2f - 1f, centre, radius);
+                LooseCrystal(set, rng, at, cell.transform, centre, radius);
             }
+        }
+
+        /// <summary>
+        /// A hold bursts at <paramref name="at"/> (a beaten crew's haul, Bounty; Frogma Rev 137): <paramref name="count"/>
+        /// loose crystals scatter within <paramref name="spread"/> and drift there, the same crystals a Salvage cell holds.
+        /// Parented to <paramref name="parent"/> (the cell), so they retire with it. Seeded by the caller.
+        /// </summary>
+        void SpillLoose(Transform parent, Vector3 at, int count, float spread, System.Random rng)
+        {
+            if (count <= 0 || !_def) return;
+            var set = ElementalCrystalSetSO.Load();
+            if (!set)
+            {
+                CSDebug.LogWarning("[Voyage] No elemental crystal set (Resources/ElementalCrystalSet) - the burst hold spills nothing.");
+                return;
+            }
+            for (int i = 0; i < count; i++)
+                LooseCrystal(set, rng, at + RandomDirection(rng) * spread * Mathf.Pow((float)rng.NextDouble(), 1f / 3f), parent,
+                    at, spread * 2f);
+        }
+
+        /// <summary>One loose elemental crystal at <paramref name="at"/>, collectable by any hull, drifting about
+        /// <paramref name="centre"/> within <paramref name="radius"/> (<see cref="VoyageDriftCrystal"/>).</summary>
+        void LooseCrystal(ElementalCrystalSetSO set, System.Random rng, Vector3 at, Transform parent, Vector3 centre, float radius)
+        {
+            var element = ElementalCrystalSetSO.RandomElementFrom(rng);
+            var prefab = set.GetPrefab(element);
+            if (!prefab) return;
+            var crystal = Instantiate(prefab, at, Quaternion.identity, parent);
+            float parentScale = parent ? parent.lossyScale.x : 1f;
+            crystal.transform.localScale = Vector3.one * ElementalCrystalSetSO.CrystalWorldScale / Mathf.Max(1e-3f, parentScale);
+            crystal.enabled = true;
+            crystal.gameObject.SetActive(true);
+            var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
+            impactor.Crystal = crystal;
+            if (set.CollectionEffects is { Length: > 0 }) impactor.SetCollectionEffects(set.CollectionEffects);
+            crystal.gameObject.AddComponent<ImpactCollider>().SetImpactor(impactor);
+            crystal.gameObject.AddComponent<VoyageDriftCrystal>()
+                .Drift(RandomDirection(rng), _def.DriftSpeed * Mathf.Lerp(0.5f, 1.5f, (float)rng.NextDouble()),
+                    (float)rng.NextDouble() * 2f - 1f, centre, radius);
         }
 
         static Vector3 RandomDirection(System.Random rng)

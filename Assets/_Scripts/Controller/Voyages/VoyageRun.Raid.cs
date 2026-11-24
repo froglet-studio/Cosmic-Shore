@@ -462,6 +462,11 @@ namespace CosmicShore.Gameplay
                 FillCoreObjective(job, ref objective);
                 return true;
             }
+            if (IsBounty(job))
+            {
+                FillBountyObjective(job, ref objective);
+                return true;
+            }
             if (job is { CountsUnderway: true })
             {
                 objective.Goal = VoyageObjective.Kind.CrystalRun;

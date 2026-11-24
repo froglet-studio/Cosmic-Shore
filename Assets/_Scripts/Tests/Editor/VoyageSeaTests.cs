@@ -72,14 +72,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void NamedVoyagesOfTypesNotYetBuiltStayOffTheBoard()
+        public void EveryNamedVoyageOnTheBoardIsOfABuiltType()
         {
+            // All four Milestone 2 types are built (the escort's named voyages sail from its own card, not the board).
+            var built = new[] { SalvageType, VoyageCoreHoldTests.HoldType, VoyageBountyTests.BountyType };
             var c = Shipped();
             var s = VoyageRules.NewGalaxy(c, Domains.Ruby);
             foreach (var pilot in c.Crew.Select(p => p.PilotId))
                 CollectionAssert.IsEmpty(VoyageRules.Board(s, c, new[] { pilot })
-                    .Where(j => j.IsNamed && j.TemplateId != SalvageType && j.TemplateId != VoyageCoreHoldTests.HoldType)
-                    .Select(j => j.VoyageId), "Bounty sails as named voyages once it is built");
+                    .Where(j => j.IsNamed && !built.Contains(j.TemplateId))
+                    .Select(j => j.VoyageId), "only built voyage types sail as named voyages");
         }
 
         [Test]

@@ -246,7 +246,9 @@ namespace CosmicShore.Tests
             foreach (var port in c.Locations.Where(l => l.Experience is VoyageExperience.Port or VoyageExperience.Harbour))
                 Assert.IsTrue(s.Ledger(port.Id).News.Any(n => n.Tag == NewsTag.Bounty && n.Rival == VoyageRules.SelfRival), $"{port.Name} posts the price");
             var hunter = PilotOf(c, FactionType.BountyHunter);
-            Assert.IsNull(Offered(s, c, hunter, "job.bounty.crew"), "the crew's own bounty is never its work");
+            var bounty = Offered(s, c, hunter, "job.bounty.crew");
+            Assert.IsTrue(bounty == null || bounty.IsNamed && bounty.RivalId != VoyageRules.SelfRival,
+                "the crew's own bounty is never its work (a named Bounty hunts another crew)");
             var job = VoyageRules.Board(s, c, new[] { hunter }).First(j => !j.IsReturn);
             Assert.IsTrue(job.Warnings.Any(w => w == c.Words.WarningBounty), "and every card warns of it");
             VoyageWorld.TickDays(s, c, c.World.NotorietyDecayDays * c.World.BountyAt + 1);
