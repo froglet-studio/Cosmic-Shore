@@ -26700,3 +26700,17 @@ the EditMode suite in Unity, a race.
       row in Docs/perf/SWITCHBACK_PRISM_BUDGET.md (about 260 more prisms, nearly all within 200 u of the route).
 - [ ] Three AI at I4 finish in the times they did before (the ruins stand off their route).
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race.
+
+## Serpentine: the I4 garden ruins (2026-11-24)
+
+NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins round its own lap at I4
+(SERPENTTIME.md, "Garden ruins at I4"; `SerpentTimeController.Ruins.cs`). Run headless only: `SerpentineRuinsTests`
+(7 tests, 13 seeds: 7 ruins, 760-881 prisms a lap) and three negative controls in `serpent_time_course_harness`.
+
+- [ ] The project compiles (the controller is now a partial class with a second file).
+- [ ] Serpentine at I4: seven ruins stand between the gates in Jade, Ruby and Gold, apart from the Blue shapes and
+      debris; none at a gate, none on the leg behind the start; the line through each is open.
+- [ ] Where a wheel stands (about one course in four), it turns before and during the race, alike on host and guest.
+- [ ] Serpentine at I1, I2 and I3: no ruins.
+- [ ] Frame rate at I4 with the ruins (about 840 more prisms) against without.
+- [ ] A rematch lays a fresh set and leaves none of the old one.
