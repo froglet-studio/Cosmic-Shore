@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
     /// shared seam would be too thin to be worth it. Headlong disproved that; the retraction is in
     /// BREAKWATER.md under "What is NOT shared".</para>
     /// </summary>
-    public class BreakwaterController : GateRaceController
+    public partial class BreakwaterController : GateRaceController
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
@@ -128,6 +128,15 @@ namespace CosmicShore.Gameplay
 
             var container = arena.Spawn(Intensity);
             if (container) container.name = "BreakwaterArena (prisms)";
+
+            LayRuins();
         }
+
+        // GateRaceController.Update runs the race and a subclass must not declare Update; LateUpdate is free. Declared
+        // once, here, for every partial.
+        void LateUpdate() => TickRuins();
+
+        // The ruins are not cleared on despawn: like the arena they stand under a scene object and go with the scene
+        // (a replay reloads it), and LayRuins clears the last course's before it lays.
     }
 }

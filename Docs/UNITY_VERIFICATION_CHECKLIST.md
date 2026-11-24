@@ -360,6 +360,23 @@ section 4a). Run without Unity: `BurrowRunRuinsTests` 8 of 8 against the shipped
 - [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
 - [ ] Frame rate at I4 with about 450 more prisms in the cell.
 
+## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT WATCHED
+
+**What landed:** Spearline's I4 ruins, laid from Breakwater's circuit (`BreakwaterRuins`, `BreakwaterController.Ruins`):
+7 ruins a lap on every other leg, about 744 plain prisms, in Jade, Ruby and Gold, clear of the flown line, the
+stations, the pads and the start gate. No wheel fits these legs. I1-I3 and the Sparrow are unchanged.
+
+**Verified without the editor:** `bash Tools/Build/breakwater_ruins_harness/run.sh --self-test` (10 tests pass, three
+negative controls fire); `author_breakwater_assets.py --check`. The controller hook was NOT compiled: only the pure
+rule and its tests were.
+
+1. The project compiles, and `BreakwaterRuinsTests` (EditMode) pass.
+2. Breakwater I4: ruins stand on every other leg in three colours; none touches a dish, a pad or the start gate.
+3. Fly the line station to station without steering round anything: no ruin prism is hit.
+4. I1, I2 and I3: no ruins.
+5. The start: the connecting panel covers the lay, and the first frame is not a hitch.
+6. Two machines: host and guest see the same ruins in the same colours.
+
 ## 🔴 Burrow Run re-seated on the Jewel Wasp (2026-11-22, Yash, NOT COMPILED, NOT RUN IN EDITOR)
 
 Burrow Run (71) moved from the Meerkat to the Jewel Wasp (`Assets/_Scripts/Controller/Arcade/BURROWRUN.md` section 5).

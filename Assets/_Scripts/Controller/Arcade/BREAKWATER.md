@@ -1283,6 +1283,39 @@ ability driver.
 
 ---
 
+## The ruins (2026-11-24, I4 only; decoration)
+
+Yash asked for the garden ruins Spearline lays round its racing line at I4 (SPEARLINE.md section 2a) on every Time
+game. Breakwater CALLS that generator (`SpearlineRuins.Lay`, with per-mode clearances) and adds none of its own:
+`BreakwaterRuins.cs` states Breakwater's sizes and decides which of the generator's prisms this course leaves out.
+`BreakwaterController.Ruins.cs` lays them, on every peer, from the broadcast course.
+
+| | Breakwater | why |
+|---|---|---|
+| clear lane | 60 u round the flown line of every leg | wider than the I4 port (42) |
+| leg floor | 300 u | I4 legs are 300 to 380 u |
+| margin round a station | its reach past the port + 10 u (80.2 u from the rim, 122 u from the centre) | the dish reaches 112 u |
+| which legs | every OTHER leg of the circuit (7 of 13) | open water between ruins; each of the seven kinds once |
+| the way in | nothing within 80 u of a pad or of its straight run to the start gate; the start gate's leg and margin kept as a lane | the generator is handed the circuit alone |
+
+**Measured** (`bash Tools/Build/breakwater_ruins_harness/run.sh --measure`, the I4 courses of seeds 1-100): 7 ruins on
+every course, 744 prisms a course (675 to 816). With the arena's 2,385 that is about 3,130 at I4, under intensity 1's
+4,144. **No wheel stands**: it needs 150 u of sweep clear of every station and no leg this short has it, so that leg
+carries a pergola (the generator's own fallback). Nothing in Breakwater's ruins moves.
+
+**The colours, and what they cost.** Everything else in this arena is Blue so that every pilot's rounds earn the same
+ammunition on it (see *Everything is `Domains.Blue`*). The ruins are Jade, Ruby and Gold so they read apart from the
+stations, which means a pilot's rounds earn nothing on ruins of their own colour. To keep that even, each ruin in
+course order takes the colour holding the fewest ruin prisms so far (`BreakwaterRuins.ShareOut`); the worst gap
+between two colours over the 100 courses is 134 prisms, about one ruin. No station is touched by this: a station is
+still Blue and still opens for everyone. `ruinDomains` on the controller holds the colours; emptied, the ruins are Blue.
+
+**Rules kept.** Plain prisms with the game's own rules, off the flown line; nothing reads or writes a vessel; I1-I3
+are unchanged; the legs were not lengthened. The shoals on the same legs are not moved, so a ruin can stand among them.
+
+**Tests:** `BreakwaterRuinsTests` (10, also run headless by the harness, whose `--self-test` proves three of them can
+fail). **Not compiled in Unity and not watched in the game.**
+
 ## Scoring and the end condition
 
 **A domain's progress is its LEAD RUNNER, not its sum.** Every pilot flies the same course, so
