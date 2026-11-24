@@ -16,13 +16,19 @@ namespace CosmicShore.Gameplay
     {
         public readonly Vector3 Position, Forward, Up, Scale;
 
-        public SpearlineRuinPart(Vector3 position, Vector3 forward, Vector3 up, Vector3 scale)
+        /// <summary>The leg whose ruin this prism belongs to (every prism of one ruin shares it).</summary>
+        public readonly int Leg;
+
+        public SpearlineRuinPart(Vector3 position, Vector3 forward, Vector3 up, Vector3 scale, int leg = 0)
         {
             Position = position;
             Forward = forward;
             Up = up;
             Scale = scale;
+            Leg = leg;
         }
+
+        public SpearlineRuinPart OnLeg(int leg) => new(Position, Forward, Up, Scale, leg);
     }
 
     /// <summary>A turning ruin: <see cref="Count"/> parts from <see cref="First"/> turn together about
@@ -164,6 +170,7 @@ namespace CosmicShore.Gameplay
                         break;
                 }
                 if (kind != Wheel) Clear(lap, s.ClearRadius, into, first);
+                for (int i = first; i < into.Count; i++) into[i] = into[i].OnLeg(leg);
                 if (into.Count > first) laid++;
             }
         }

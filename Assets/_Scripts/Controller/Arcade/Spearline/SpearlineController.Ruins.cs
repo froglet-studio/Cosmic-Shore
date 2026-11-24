@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Spearline's garden ruins in the world (SPEARLINE.md §2a): every peer lays <see cref="SpearlineRuins"/>' prisms
-    /// from the broadcast rings, in the seals' prism and domain, once a course. They are scenery with the game's own
+    /// from the broadcast rings, in the seals' prism and in domain colours of their own, once a course. They are scenery with the game's own
     /// prism rules: a hull or a bill breaks them, nothing grows back, and they are returned to the pool with the seals.
     /// The wheels turn: their prisms are POSED here every frame from the network clock, so every peer sees the same
     /// angle (a posed prism is the shape of its owner, not a moving prism: Docs/PRISM_MOTION.md §1).
@@ -15,6 +15,11 @@ namespace CosmicShore.Gameplay
     public partial class SpearlineController
     {
         const string RuinOwnerId = "SpearlineRuins";
+
+        [Header("Garden ruins (I4)")]
+        [Tooltip("The domain colours the ruins are laid in, one ruin after another round the lap, so they read apart " +
+                 "from the seals (Blue). Decoration (Yash, 2026-11-24). Empty = Blue, as the seals.")]
+        [SerializeField] Domains[] ruinDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         readonly List<SpearlineRuinPart> _ruinParts = new();
         readonly List<SpearlineRuinWheel> _ruinWheels = new();
@@ -34,10 +39,13 @@ namespace CosmicShore.Gameplay
                 var part = _ruinParts[i];
                 var rotation = Quaternion.LookRotation(part.Forward, part.Up);
                 _ruinPrisms.Add(PrismTrailBuilder.LayOne(sealPrefab,
-                    new PrismLay(new SpawnPoint(part.Position, rotation, part.Scale), Domains.Blue, PrismKind.Plain),
+                    new PrismLay(new SpawnPoint(part.Position, rotation, part.Scale), RuinDomain(part.Leg), PrismKind.Plain),
                     _ruinRoot, trail, RuinOwnerId, admitAuthoredScale: true));
             }
         }
+
+        Domains RuinDomain(int leg) =>
+            ruinDomains is { Length: > 0 } ? ruinDomains[leg % ruinDomains.Length] : Domains.Blue;
 
         /// <summary>The clock the wheels turn on: the network's, so every peer poses them alike.</summary>
         float RuinClock => IsSpawned && NetworkManager != null ? (float)NetworkManager.ServerTime.Time : Time.time;

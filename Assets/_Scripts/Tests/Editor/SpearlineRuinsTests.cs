@@ -211,6 +211,27 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Every_prism_names_its_ruins_leg_and_a_wheel_is_one_ruin()
+        {
+            foreach (int seed in Seeds)
+            {
+                var parts = Ruins(4, seed, out var lap, out var wheels);
+                int legs = 0, last = -1;
+                foreach (var part in parts)
+                {
+                    Assert.GreaterOrEqual(part.Leg, last, "ruins are laid leg after leg");
+                    Assert.Less(part.Leg, lap.Count - 1, "the closing leg carries no ruin");
+                    if (part.Leg != last) legs++;
+                    last = part.Leg;
+                }
+                Assert.GreaterOrEqual(legs, 5, $"seed {seed}");
+                foreach (var wheel in wheels)
+                    for (int i = wheel.First; i < wheel.First + wheel.Count; i++)
+                        Assert.AreEqual(parts[wheel.First].Leg, parts[i].Leg);
+            }
+        }
+
+        [Test]
         public void A_wheel_really_turns_and_comes_round()
         {
             foreach (int seed in Seeds)
