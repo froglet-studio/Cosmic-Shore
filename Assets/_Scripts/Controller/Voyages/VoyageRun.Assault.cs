@@ -234,9 +234,9 @@ namespace CosmicShore.Gameplay
             var job = _state?.Current;
             // The way home, and (raidersOutbound) the way out of a Crystal Run too: "more attacks outside the cell".
             bool raiding = job is { IsReturn: true } || (job is { CountsUnderway: true } && _def && _def.RaidersOutbound);
-            // A named voyage's raiders come from its rung (the sea's danger): out at I3-I4, home from I2.
-            if (job is { IsNamed: true } && _def) raiding = _def.SeaRung(job.Intensity).RaidersOut;
-            else if (job is { IsReturn: true } && _def && _voyageRungHome > 0) raiding = _def.SeaRung(_voyageRungHome).RaidersHome;
+            // A named voyage's raiders come from its difficulty (the sea's danger): out from 5, home from 3.
+            if (job is { IsNamed: true } && _def) raiding = _def.SeaDanger(VoyageSea.DifficultyOf(job)).RaidersOut;
+            else if (job is { IsReturn: true } && _def && _voyageDifficultyHome > 0) raiding = _def.SeaDanger(_voyageDifficultyHome).RaidersHome;
             if (!_def || !raiding || _fallen || _docked || _state is not { AtSea: true })
             {
                 _nextRaiderWave = -1f;

@@ -4,11 +4,12 @@ using System.Collections.Generic;
 namespace CosmicShore.Data
 {
     /// <summary>
-    /// How dangerous one rung of the sea is (Docs/Voyages/MILESTONE_2.md §3, the Voyage Codex's ladder). Every voyage type
-    /// reads the same four rungs; nothing here touches a vessel.
+    /// How dangerous the sea is at one difficulty (Docs/Voyages/MILESTONE_2.md §3). A voyage's only difficulty is 1-9
+    /// (Shombith, 2026-11-24: "there is no intensity difficulty on voyages, it is just difficulty from 1-9"); the sea's
+    /// danger grows with it. Every voyage type reads the same table; nothing here touches a vessel.
     /// </summary>
     [Serializable]
-    public struct VoyageSeaRung
+    public struct VoyageSeaDanger
     {
         /// <summary>Share of the leg's cells held against the squad (0 none, 1 every cell).</summary>
         public float HostileShare;
@@ -23,43 +24,52 @@ namespace CosmicShore.Data
         /// <summary>Kaiju crossings in one leg: 0 none, 1 the first crossing only, 2 or more every crossing.</summary>
         public int KaijuCrossings;
 
-        /// <summary>The Codex's ladder: I1 calm, I2 choppy, I3 hostile, I4 abyssal.</summary>
-        public static VoyageSeaRung[] Defaults() => new[]
+        static VoyageSeaDanger D(float hostile, float life, float breach, bool raidOut, bool raidHome, int kaiju) =>
+            new() { HostileShare = hostile, Life = life, Breach = breach, RaidersOut = raidOut, RaidersHome = raidHome, KaijuCrossings = kaiju };
+
+        /// <summary>Difficulty 1 to 9, first to last (the Codex's ladder, the escort's nine tiers beside it).</summary>
+        public static VoyageSeaDanger[] Defaults() => new[]
         {
-            new VoyageSeaRung { HostileShare = 0f, Life = 0.6f, Breach = 0f, RaidersOut = false, RaidersHome = false, KaijuCrossings = 0 },
-            new VoyageSeaRung { HostileShare = 1f / 3f, Life = 1f, Breach = 0.1f, RaidersOut = false, RaidersHome = true, KaijuCrossings = 0 },
-            new VoyageSeaRung { HostileShare = 2f / 3f, Life = 1.3f, Breach = 0.3f, RaidersOut = true, RaidersHome = true, KaijuCrossings = 1 },
-            new VoyageSeaRung { HostileShare = 1f, Life = 1.6f, Breach = 0.45f, RaidersOut = true, RaidersHome = true, KaijuCrossings = 2 },
+            D(0f, 0.5f, 0f, false, false, 0),
+            D(0f, 0.6f, 0f, false, false, 0),
+            D(1f / 3f, 0.9f, 0.1f, false, true, 0),
+            D(1f / 3f, 1f, 0.15f, false, true, 0),
+            D(0.5f, 1.15f, 0.25f, true, true, 1),
+            D(2f / 3f, 1.3f, 0.3f, true, true, 1),
+            D(5f / 6f, 1.45f, 0.38f, true, true, 1),
+            D(1f, 1.6f, 0.45f, true, true, 2),
+            D(1f, 1.8f, 0.55f, true, true, 2),
         };
     }
 
     /// <summary>
     /// The shared base of the Milestone 2 voyages (Docs/Voyages/MILESTONE_2.md, Shombith 2026-11-24): a run flies its
-    /// lane's cells (1 to 6), its difficulty is the sea's danger (rung I1-I4, never a timer), and a cell takes about 50
+    /// lane's cells (1 to 6), its difficulty (1-9) is the sea's danger (never a timer), and a cell takes about 50
     /// seconds so a run lands at 3 to 5 minutes. Pure C#: the board, the run and the tests read it.
     /// </summary>
     public static class VoyageSea
     {
         public const int MinCells = 1, MaxCells = 6;
-        public const int MinRung = 1, MaxRung = 4;
 
         /// <summary><paramref name="cells"/> kept inside 1-6.</summary>
         public static int RunCells(int cells) => Math.Max(MinCells, Math.Min(MaxCells, cells));
 
-        /// <summary><paramref name="rung"/> kept inside I1-I4.</summary>
-        public static int Rung(int rung) => Math.Max(MinRung, Math.Min(MaxRung, rung));
-
-        /// <summary>The rung <paramref name="rung"/> from <paramref name="table"/> (I1 first), the Codex's when the table
-        /// is short.</summary>
-        public static VoyageSeaRung RungOf(IReadOnlyList<VoyageSeaRung> table, int rung)
+        /// <summary>The sea at <paramref name="difficulty"/> (1-9) from <paramref name="table"/> (difficulty 1 first), the
+        /// Codex's when the table is short.</summary>
+        public static VoyageSeaDanger At(IReadOnlyList<VoyageSeaDanger> table, int difficulty)
         {
-            int i = Rung(rung) - 1;
+            int i = VoyageDifficulty.Clamp(difficulty) - 1;
             if (table != null && i < table.Count) return table[i];
-            return VoyageSeaRung.Defaults()[i];
+            return VoyageSeaDanger.Defaults()[i];
         }
 
+        /// <summary>The difficulty <paramref name="job"/> sails at: the crew's pick, else the one it recommends.</summary>
+        public static int DifficultyOf(VoyageJob job) =>
+            job == null ? VoyageDifficulty.Min
+                : job.Difficulty > 0 ? VoyageDifficulty.Clamp(job.Difficulty) : VoyageDifficulty.Recommended(job.Intensity);
+
         /// <summary>How many of <paramref name="cells"/> cells are held against the squad at <paramref name="share"/>
-        /// (rounded half away from zero: one cell in three at I2, two in three at I3).</summary>
+        /// (rounded half away from zero).</summary>
         public static int HostileCount(int cells, float share)
         {
             if (cells <= 0 || share <= 0f) return 0;
@@ -127,28 +137,28 @@ namespace CosmicShore.Data
 
         /// <summary>
         /// Lay a named voyage's sea onto <paramref name="job"/>: its hostile cells (the most dangerous by
-        /// <paramref name="danger"/>), its breach line and each cell's life, all from <paramref name="rung"/>. The job's
-        /// cell count is kept inside 1-6. Unnamed work is left as it is.
+        /// <paramref name="danger"/>), its breach line and each cell's life, all from <paramref name="sea"/> (its
+        /// difficulty's). The job's cell count is kept inside 1-6. Unnamed work is left as it is.
         /// </summary>
-        public static void Lay(VoyageJob job, in VoyageSeaRung rung, IReadOnlyList<float> danger)
+        public static void Lay(VoyageJob job, in VoyageSeaDanger sea, IReadOnlyList<float> danger)
         {
             if (job == null || !job.IsNamed) return;
             job.Cells = RunCells(job.Cells);
-            job.HostileCells = HostilePattern(job.Cells, rung.HostileShare, danger);
-            job.BreachHull = Math.Max(0f, rung.Breach);
+            job.HostileCells = HostilePattern(job.Cells, sea.HostileShare, danger);
+            job.BreachHull = Math.Max(0f, sea.Breach);
             var life = new List<float>(job.Cells);
             for (int i = 0; i < job.Cells; i++)
             {
                 float authored = job.CellLife != null && job.CellLife.Count > 0 ? job.CellLife[Math.Min(i, job.CellLife.Count - 1)] : 1f;
-                life.Add(Math.Max(0.1f, authored * Math.Max(0.1f, rung.Life)));
+                life.Add(Math.Max(0.1f, authored * Math.Max(0.1f, sea.Life)));
             }
             job.CellLife = life;
         }
 
-        /// <summary>True when a kaiju may wait on crossing <paramref name="crossing"/> (0-based) of a leg at
-        /// <paramref name="rung"/>.</summary>
-        public static bool KaijuOn(in VoyageSeaRung rung, int crossing) =>
-            rung.KaijuCrossings >= 2 || rung.KaijuCrossings == 1 && crossing <= 0;
+        /// <summary>True when a kaiju may wait on crossing <paramref name="crossing"/> (0-based) of a leg in
+        /// <paramref name="sea"/>.</summary>
+        public static bool KaijuOn(in VoyageSeaDanger sea, int crossing) =>
+            sea.KaijuCrossings >= 2 || sea.KaijuCrossings == 1 && crossing <= 0;
 
         // ── The cell clock ──────────────────────────────────────────────────
 

@@ -93,7 +93,7 @@ LINES_FIELDS = [
 
 # The Milestone 2 run screens (Frogma Rev 134 / Rev 137): pause chart, detour vote, rival plate, feed, awards.
 LINES_FIELDS += [
-    "PauseKicker", "PauseCount", "PauseGoal", "PauseWhere", "PauseWhereCalm", "PauseResume", "PauseResumeKey", "PauseSettings", "PauseLeave", "PauseLeaveParty", "PauseParty", "ChartYou", "ChartYouNext", "ChartStop", "ChartTimer", "ChartWreck", "ChartBloom", "ChartDistress", "ChartPredators", "ChartRivalCrew", "ChartRivalArk", "ChartRunaway", "ChartRivalArkLine", "ChartRunawayLine", "ChartRivalRacing", "ChartRivalAttacking", "ChartRivalRouted", "ChartRivalBroken", "ChartLegendArk", "ChartLegendEvent", "ChartLegendRival", "SeaCalm", "SeaChoppy", "SeaRough", "SeaAbyssal", "SidePort", "SideStarboard", "VerbArrive", "VerbStow", "VerbHold", "VerbGather", "VerbCull", "VerbLay", "VerbRaze", "VerbObserve", "VerbMeet", "VoteAsker", "VoteAskerYours", "VoteAskerFriend", "VoteAskerWingmate", "VoteQuoteWreck", "VoteQuoteBloom", "VoteQuoteDistress", "VoteQuotePredators", "VoteQuoteRival", "VoteQuoteSolo", "VoteCost", "VoteGainWreck", "VoteGainBloom", "VoteGainDistress", "VoteGainPredators", "VoteGainRival", "VoteDetour", "VotePressOn", "VoteDetourWord", "VotePressOnWord", "VoteNoBallot", "VoteBallotHost", "VoteRuleParty", "VoteRuleSolo", "VoteEndChosen", "VoteEndTie", "VoteEndNoPress", "RivalTemper", "TemperCareful", "TemperBold", "TemperGreedy", "RivalHold", "RivalCarrying", "RivalHull", "RivalHullValue", "RivalGuarding", "RivalSilenced", "RivalSilencedFor", "RivalRunning", "RivalTurningBack", "RivalNoteArk", "RivalNoteArkOpen", "RivalNoteBroken", "RivalNoteRunaway", "RivalNoteRunawayPart", "RivalNoteRouted", "ToastCellNamed", "ToastCellNamedSub", "ToastCellNamedSubCalm", "ToastEventNext", "ToastEventNextSub", "ToastDetour", "ToastDetourSub", "ToastJoins", "ToastJoinsSub", "ToastRivalHere", "ToastRivalHereSub", "ToastRivalAttack", "ToastRivalAttackSub", "ToastRivalArk", "ToastRivalArkSub", "ToastRivalOpen", "ToastRivalOpenSub", "ToastRivalBurst", "ToastRivalBurstSub", "ToastRunaway", "ToastRunawaySub", "ToastRout", "ToastRoutSub", "AwardsKicker", "AwardsTitleDone", "AwardsTitleMissed", "AwardsYou", "AwardsSeat", "AwardsPay", "AwardTopSalvager", "AwardTopSalvagerLine", "AwardWall", "AwardWallLine", "AwardRivalBreaker", "AwardRivalBreakerLine", "AwardHunter", "AwardHunterLine", "AwardCrew", "AwardCrewLine", "AwardsLostKicker", "AwardsLostTitle", "AwardsLostLine",
+    "PauseKicker", "PauseCount", "PauseGoal", "PauseWhere", "PauseWhereCalm", "PauseResume", "PauseResumeKey", "PauseSettings", "PauseLeave", "PauseLeaveParty", "PauseParty", "ChartYou", "ChartYouNext", "ChartStop", "ChartTimer", "ChartWreck", "ChartBloom", "ChartDistress", "ChartPredators", "ChartRivalCrew", "ChartRivalArk", "ChartRunaway", "ChartRivalArkLine", "ChartRunawayLine", "ChartRivalRacing", "ChartRivalAttacking", "ChartRivalRouted", "ChartRivalBroken", "ChartLegendArk", "ChartLegendEvent", "ChartLegendRival", "SeaDifficulty", "SidePort", "SideStarboard", "VerbArrive", "VerbStow", "VerbHold", "VerbGather", "VerbCull", "VerbLay", "VerbRaze", "VerbObserve", "VerbMeet", "VoteAsker", "VoteAskerYours", "VoteAskerFriend", "VoteAskerWingmate", "VoteQuoteWreck", "VoteQuoteBloom", "VoteQuoteDistress", "VoteQuotePredators", "VoteQuoteRival", "VoteQuoteSolo", "VoteCost", "VoteGainWreck", "VoteGainBloom", "VoteGainDistress", "VoteGainPredators", "VoteGainRival", "VoteDetour", "VotePressOn", "VoteDetourWord", "VotePressOnWord", "VoteNoBallot", "VoteBallotHost", "VoteRuleParty", "VoteRuleSolo", "VoteEndChosen", "VoteEndTie", "VoteEndNoPress", "RivalTemper", "TemperCareful", "TemperBold", "TemperGreedy", "RivalHold", "RivalCarrying", "RivalHull", "RivalHullValue", "RivalGuarding", "RivalSilenced", "RivalSilencedFor", "RivalRunning", "RivalTurningBack", "RivalNoteArk", "RivalNoteArkOpen", "RivalNoteBroken", "RivalNoteRunaway", "RivalNoteRunawayPart", "RivalNoteRouted", "ToastCellNamed", "ToastCellNamedSub", "ToastCellNamedSubCalm", "ToastEventNext", "ToastEventNextSub", "ToastDetour", "ToastDetourSub", "ToastJoins", "ToastJoinsSub", "ToastRivalHere", "ToastRivalHereSub", "ToastRivalAttack", "ToastRivalAttackSub", "ToastRivalArk", "ToastRivalArkSub", "ToastRivalOpen", "ToastRivalOpenSub", "ToastRivalBurst", "ToastRivalBurstSub", "ToastRunaway", "ToastRunawaySub", "ToastRout", "ToastRoutSub", "AwardsKicker", "AwardsTitleDone", "AwardsTitleMissed", "AwardsYou", "AwardsSeat", "AwardsPay", "AwardTopSalvager", "AwardTopSalvagerLine", "AwardWall", "AwardWallLine", "AwardRivalBreaker", "AwardRivalBreakerLine", "AwardHunter", "AwardHunterLine", "AwardCrew", "AwardCrewLine", "AwardsLostKicker", "AwardsLostTitle", "AwardsLostLine",
 ]
 
 # Crystal Run (Docs/Voyages/CRYSTAL_RUN.md): the objective box, the toasts and the end-of-voyage scoreboard.
@@ -564,8 +564,8 @@ def validate(spec):
             errors.append(f"voyage {vid}: starts where it ends")
         if v.get("type") == "escort" and not v.get("from"):
             errors.append(f"voyage {vid}: an escort names where it sets out from")
-        if not 1 <= int(v.get("rung", 0)) <= 4:
-            errors.append(f"voyage {vid}: rung must be 1 to 4 (I1-I4)")
+        if not 1 <= int(v.get("difficulty", 0)) <= 9:
+            errors.append(f"voyage {vid}: difficulty must be 1 to 9")
         if not 1 <= int(v.get("cells", 0)) <= 6:
             errors.append(f"voyage {vid}: cells must be 1 to 6")
         name = v.get("name", "")
@@ -709,7 +709,7 @@ def to_model(spec):
     m["Words"] = {field: words.get(key, "") for key, field in WORDS_FIELDS}
     # The named voyages (Milestone 2, Docs/Voyages/MILESTONE_2.md section 2).
     m["Voyages"] = [{"Id": v["id"], "Type": v["type"], "Name": v["name"], "From": v.get("from", ""), "To": v["to"],
-                     "Rung": int(v.get("rung", 1)), "Cells": int(v.get("cells", 1)), "Line": v.get("line", "")}
+                     "Difficulty": int(v.get("difficulty", 2)), "Cells": int(v.get("cells", 1)), "Line": v.get("line", "")}
                     for v in spec.get("voyages", [])]
     return m
 
@@ -911,7 +911,7 @@ def self_test():
         "a voyage type given by a stranger": lambda s: s["voyageTypes"][0].update(giver="pilot.nobody"),
         "a faction both keen and reluctant": lambda s: s["voyageTypes"][0].update(keen=["Pirate"], reluctant=["Pirate"]),
         "a voyage type with no giver": lambda s: s["voyageTypes"].pop(0),
-        "a voyage at rung 5": lambda s: s["voyages"][0].update(rung=5),
+        "a voyage at difficulty 10": lambda s: s["voyages"][0].update(difficulty=10),
         "a voyage of an unknown type": lambda s: s["voyages"][0].update(type="job.nope"),
         "a voyage to nowhere": lambda s: s["voyages"][0].update(to="loc.nowhere"),
         "an escort from nowhere": lambda s: next(v for v in s["voyages"] if v["type"] == "escort").update(**{"from": ""}),

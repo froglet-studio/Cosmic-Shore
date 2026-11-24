@@ -58,8 +58,8 @@ namespace CosmicShore.Gameplay
                 _kaijuThisCrossing = 0;
                 _kaijuCrossing++;
             }
-            // A named voyage's kaiju come from its rung: none at I1-I2, the first crossing at I3, every crossing at I4.
-            if (_state.Current.IsNamed && !VoyageSea.KaijuOn(_def.SeaRung(_state.Current.Intensity), _kaijuCrossing - 1)) return;
+            // A named voyage's kaiju come from its difficulty: none to 4, the first crossing at 5-7, every crossing from 8.
+            if (_state.Current.IsNamed && !VoyageSea.KaijuOn(_def.SeaDanger(VoyageSea.DifficultyOf(_state.Current)), _kaijuCrossing - 1)) return;
             if (_kaijuThisCrossing >= _def.KaijuPerCrossing || _kaiju.Count >= _def.KaijuMax) return;
             if (!CrossingOpen(ark, bound, out var behind)) return;
 

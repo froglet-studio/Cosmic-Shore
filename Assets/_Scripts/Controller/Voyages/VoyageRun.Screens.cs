@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// What the run tells the in-game screens (Frogma Rev 134 / Rev 137; <see cref="IVoyageScreenSource"/>): the leg and its
-    /// rung for the pause chart, the seats for the vote's ballots, and - once the Milestone 2 gameplay builds them - the
+    /// difficulty for the pause chart, the seats for the vote's ballots, and - once the Milestone 2 gameplay builds them - the
     /// events next door, the rival crews and the detour vote. Until then those three report none and the screens that show
     /// them stay hidden. The gameplay fills <see cref="_neighbours"/>, <see cref="_rivals"/> and <see cref="_vote"/>.
     /// </summary>
@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
 
         PilotArtifactCatalogSO _screenPilots;
 
-        public int SeaRung => _state?.Current is { IsNamed: true } job ? VoyageSea.Rung(job.Intensity) : 0;
+        public int SeaDifficulty => _state?.Current is { IsNamed: true } job ? VoyageSea.DifficultyOf(job) : 0;
 
         public float CellSeconds => _state?.Current is { IsNamed: true } && _def ? _def.CellSeconds : 0f;
 

@@ -14,8 +14,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The leg under way (false when none is).</summary>
         bool TryGetCourseFix(out VoyageCourseFix fix);
 
-        /// <summary>The run's danger rung, 1-4 (I1 calm to I4 abyssal; 0 when the job has none).</summary>
-        int SeaRung { get; }
+        /// <summary>The run's difficulty, 1-9 (how dangerous the sea is; 0 when the job has none).</summary>
+        int SeaDifficulty { get; }
 
         /// <summary>About how long the Ark takes to cross one cell, in seconds (0 when the leg keeps no cell clock).</summary>
         float CellSeconds { get; }

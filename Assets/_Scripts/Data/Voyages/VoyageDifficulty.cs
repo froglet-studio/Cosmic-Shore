@@ -45,7 +45,7 @@ namespace CosmicShore.Data
         public static VoyageJob At(VoyageJob job, int difficulty)
         {
             if (job == null) return null;
-            int recommended = Recommended(job.Intensity);
+            int recommended = job.Difficulty > 0 ? Clamp(job.Difficulty) : Recommended(job.Intensity);
             difficulty = Clamp(difficulty);
             var copy = job.MemberwiseCloneJob();
             copy.Intensity = IntensityOf(difficulty);
