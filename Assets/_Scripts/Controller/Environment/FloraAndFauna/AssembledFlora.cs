@@ -18,15 +18,6 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Colony-wide event counters for the gyroid octagon population, plus a 5s heartbeat the
-    /// FOUNDER logs. Diagnostics, not gameplay: this colony's playtests kept producing symptoms
-    /// (a crystal/spindle flood outrunning grown prisms; "twinned" surfaces that would not mate)
-    /// which code reading alone could not attribute - so the decisive sites now report.
-    /// Volume is naturally low (births and mints are rare events in a healthy colony; a SPAMMING
-    /// counter in the console IS the diagnosis). Always compiled - plain CSDebug, no editor-only
-    /// guards (Docs/CONDITIONAL_COMPILATION.md).
-    /// </summary>
-    /// <summary>
     /// Colony-wide event counters for the Schwarz P TILE population (Docs/ECOSYSTEM.md 34.6).
     /// A separate class from <see cref="GyroidColonyDiagnostics"/> on purpose: the two colonies
     /// can live in one cell, and a merged counter is unattributable.
@@ -109,6 +100,15 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// Colony-wide event counters for the gyroid octagon population, plus a 5s heartbeat the
+    /// FOUNDER logs. Diagnostics, not gameplay: this colony's playtests kept producing symptoms
+    /// (a crystal/spindle flood outrunning grown prisms; "twinned" surfaces that would not mate)
+    /// which code reading alone could not attribute - so the decisive sites now report.
+    /// Volume is naturally low (births and mints are rare events in a healthy colony; a SPAMMING
+    /// counter in the console IS the diagnosis). Always compiled - plain CSDebug, no editor-only
+    /// guards (Docs/CONDITIONAL_COMPILATION.md).
+    /// </summary>
     public static class GyroidColonyDiagnostics
     {
         public static int Births;
@@ -720,16 +720,6 @@ namespace CosmicShore.Gameplay
         float MisalignmentRadius => 5.5f * LatticeScale;
 
         /// <summary>
-        /// Pushes this element's authored lattice scale onto a freshly created assembler, which
-        /// reads it before its first growth probe.
-        ///
-        /// <para>Each species scales a different thing, and each is exact for its own reason:
-        /// Schwarz P moves periodScale and separationDistance together so the subdivision level
-        /// is invariant; the gyroid moves its bond offsets AND every absolute tolerance that
-        /// decides lattice coherence (see GyroidAssembler.ApplyLatticeScale - scaling the
-        /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 34.8).</para>
-        /// </summary>
-        /// <summary>
         /// Scales the spindle's visible branch geometry with the lattice - the branch spans the
         /// gap between two prisms, so a widened lattice leaves an unscaled one visibly short.
         ///
@@ -763,6 +753,16 @@ namespace CosmicShore.Gameplay
                 root.GetChild(i).localScale *= scale;
         }
 
+        /// <summary>
+        /// Pushes this element's authored lattice scale onto a freshly created assembler, which
+        /// reads it before its first growth probe.
+        ///
+        /// <para>Each species scales a different thing, and each is exact for its own reason:
+        /// Schwarz P moves periodScale and separationDistance together so the subdivision level
+        /// is invariant; the gyroid moves its bond offsets AND every absolute tolerance that
+        /// decides lattice coherence (see GyroidAssembler.ApplyLatticeScale - scaling the
+        /// offsets alone is what grew offset parallel domains, Docs/ECOSYSTEM.md 34.8).</para>
+        /// </summary>
         void ApplyLatticeSpacing(Assembler target)
         {
             // The quasicrystal branch runs even with no scale override: its strut pose math

@@ -1953,24 +1953,6 @@ namespace CosmicShore.Gameplay
             // ── THE SEED TREE ────────────────────────────────────────────────────────────────
 
             /// <summary>
-            /// A spanning tree over the seeds, rooted at the one the plant's TRUNK climbs to.
-            ///
-            /// <para>Prim's algorithm on great-circle distance between the seeds' own directions,
-            /// which is the right metric because every seed lies on the same star-shaped surface:
-            /// two seeds close in angle are close on the membrane, and the stem between them is
-            /// short. The root is seed 0 — for the walking species the first point the
-            /// well-spread generator emits, for the Watershed the first saddle in farthest-point
-            /// order, for Apollonia the largest disc — so in every case the trunk climbs to the
-            /// most prominent feature the species knows about rather than to an arbitrary one.</para>
-            ///
-            /// <para><b>Prim's insertion order IS a valid growth order</b>: it only ever admits a
-            /// seed whose parent is already in the tree, so <c>_seedOrder</c> needs no separate
-            /// sort and `parent appears earlier than child` holds by construction rather than by
-            /// assertion. That is the same property the Borromean table gets from its hop
-            /// ordering (Docs/ECOSYSTEM.md §49) and the reason neither species needs a topological
-            /// pass it could get wrong.</para>
-            /// </summary>
-            /// <summary>
             /// How close two seed-tree costs have to be before the INDEX decides.
             ///
             /// <para>A Mandelbulb is highly symmetric, so its seeds come in ORBITS whose
@@ -1990,6 +1972,24 @@ namespace CosmicShore.Gameplay
             /// </summary>
             const float SeedCostEpsilon = 1e-5f;
 
+            /// <summary>
+            /// A spanning tree over the seeds, rooted at the one the plant's TRUNK climbs to.
+            ///
+            /// <para>Prim's algorithm on great-circle distance between the seeds' own directions,
+            /// which is the right metric because every seed lies on the same star-shaped surface:
+            /// two seeds close in angle are close on the membrane, and the stem between them is
+            /// short. The root is seed 0 — for the walking species the first point the
+            /// well-spread generator emits, for the Watershed the first saddle in farthest-point
+            /// order, for Apollonia the largest disc — so in every case the trunk climbs to the
+            /// most prominent feature the species knows about rather than to an arbitrary one.</para>
+            ///
+            /// <para><b>Prim's insertion order IS a valid growth order</b>: it only ever admits a
+            /// seed whose parent is already in the tree, so <c>_seedOrder</c> needs no separate
+            /// sort and `parent appears earlier than child` holds by construction rather than by
+            /// assertion. That is the same property the Borromean table gets from its hop
+            /// ordering (Docs/ECOSYSTEM.md §49) and the reason neither species needs a topological
+            /// pass it could get wrong.</para>
+            /// </summary>
             void BuildSeedTree()
             {
                 if (Gasket) { BuildGasketTree(); return; }

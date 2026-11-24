@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: MantaSoarAITuning_Bloomrush
   m_EditorClassIdentifier: 
   BoostStickBand: 0.025
-  YastriStickBand: 0.975
+  YawsteryStickBand: 0.975

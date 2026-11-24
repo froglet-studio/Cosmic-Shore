@@ -23,6 +23,41 @@ namespace CosmicShore.Gameplay
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
 
+        [Header("Element ladder (I3 team crystals)")]
+        [Tooltip("Crystals of the game's element each team gets from I3 up (the standard element ladder, " +
+                 "ElementLadderCrystals; Garrett 2026-11-16). Each is taken only by its team and regrows. 0 turns the " +
+                 "rung off for this mode.")]
+        [SerializeField, Min(0)] int ladderCrystalsPerTeam = 4;
+
+        [Tooltip("Seconds after a team's ladder crystal is taken before it grows back in the same place.")]
+        [SerializeField, Min(0.5f)] float ladderCrystalRegrowSeconds = 12f;
+
+        /// <summary>The I3 rung's crystals per team (<see cref="ElementLadderCrystals"/>).</summary>
+        public int LadderCrystalsPerTeam => ladderCrystalsPerTeam;
+
+        /// <summary>The I3 rung's regrow delay (<see cref="ElementLadderCrystals"/>).</summary>
+        public float LadderCrystalRegrowSeconds => ladderCrystalRegrowSeconds;
+
+        /// <summary>
+        /// True for a mode that lays its own team crystals at I3 (Harvest, Shatterplane), so the platform's
+        /// <see cref="ElementLadderCrystals"/> stands down.
+        /// </summary>
+        public virtual bool LaysOwnLadderCrystals => false;
+
+        /// <summary>
+        /// Where the I3 rung puts <paramref name="team"/>'s <paramref name="count"/> crystals, drawn from
+        /// <paramref name="rng"/> (the same stream on every peer). Default: scattered through the cell between the
+        /// nucleus and the membrane. A mode with a better answer (a race: beside its rings) overrides it.
+        /// </summary>
+        public virtual void CollectLadderCrystalPoints(Domains team, int count, System.Random rng, List<Vector3> into)
+        {
+            var cell = FindAnyObjectByType<Cell>();
+            if (!cell) return;
+            float outer = cell.MembraneRadius * 0.8f;
+            float inner = Mathf.Min(outer * 0.5f, cell.NucleusWorldRadius * 1.5f);
+            ElementLadderCrystals.ScatterInShell(cell.transform.position, inner, outer, count, rng, into);
+        }
+
         /// <summary>
         /// When true, Play Again performs a full network scene reload instead of an in-place reset.
         /// Override to true in game modes where the environment doesn't fully reset in-place
@@ -37,7 +72,7 @@ namespace CosmicShore.Gameplay
             RearmGameStartStatsReset();   // fresh scene = fresh game
 
             // Fair play (Threat Board T4, T9): every peer reports each match to the server.
-            if (CosmicShore.Core.MatchReportGate.Enabled) MatchReporter.Attach(gameObject, gameData);
+            if (CosmicShore.Core.MatchReportGate.IsActive) MatchReporter.Attach(gameObject, gameData);
 
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
@@ -53,6 +88,12 @@ namespace CosmicShore.Gameplay
                     NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnectedForReadyGate;
 
                 StampMatchEnvelope();
+
+                // The course variant, drawn ONCE per match before the broadcast below carries it (a Cell that
+                // chooses its config by it waits for this; see CellTypeChoiceOptions.CourseVariantWise). A mode
+                // may already have drawn it on the way here (Regatta's start line asks for the circuit during
+                // the spawn chain), so an existing draw stands.
+                if (gameData.CourseVariant < 0) gameData.CourseVariant = DrawCourseVariant();
 
                 // The server IS the authority, so its config is synced by definition. Set before
                 // the broadcast: Cell.AssignConfig gates its (sticky) IntensityWise choice on this
@@ -79,7 +120,8 @@ namespace CosmicShore.Gameplay
                     gameData.PartyId,
                     gameData.InviteTriggered,
                     gameData.IsArenaMatch,
-                    startClasses, startIntensities, startLevels
+                    startClasses, startIntensities, startLevels,
+                    gameData.CourseVariant
                 );
             }
 
@@ -309,6 +351,11 @@ namespace CosmicShore.Gameplay
             // OnValueChanged when the value actually changes, so it cannot fix a client that
             // drifted on its own.
             ZeroStatsForGameStartOnce();
+
+            // The standard element ladder's I3 rung: each team's own crystals of the game's element, laid locally and
+            // identically on every peer (ElementLadderCrystals; nothing below I3, on an arena card or in a mode that
+            // lays its own).
+            ElementLadderCrystals.EnsureOn(this, gameData).Lay();
 
             gameData.SetPlayersActive();
             gameData.StartTurn();
@@ -613,6 +660,9 @@ namespace CosmicShore.Gameplay
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening) return;
 
+            // A running turn has no gate to pass: it opened before the countdown and closes at the next turn.
+            if (gameData.IsTurnRunning) return;
+
             // Departed clients are pruned rather than trusted: the set is keyed on client id and a
             // stale entry would let the gate pass on behalf of somebody who is gone.
             _readyClients.RemoveWhere(id => !IsClientConnected(nm, id));
@@ -818,7 +868,12 @@ namespace CosmicShore.Gameplay
             // The host is excluded because it DRIVES the load - it cannot be waiting on itself, and
             // bouncing it would tear down the party it is trying to move.
             if (!IsServer)
+            {
                 _sceneLoader?.ArmClientMenuReturnWatchdog("Return to menu (host-driven)");
+                // Behind the veil now: take this machine's copy of the world down in slices while the host
+                // does the same and holds the load for it (SceneLoader.DrainSceneForExitAsync).
+                _sceneLoader?.BeginSceneExitDrain();
+            }
         }
 
         // Play Again (scene reload): OnClientReady can arrive before InitializeGame has run, and
@@ -896,6 +951,14 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnResetForReplayCustom() { }
 
+        /// <summary>
+        /// The course-pool entry this match lays, drawn once on the server before the game config is broadcast,
+        /// or -1 for a mode whose course is not a pool (the default). Regatta deals from its
+        /// <c>RegattaCoursePoolSO</c>; the value reaches every client in <c>SyncGameConfigToClients_ClientRpc</c> as
+        /// <c>GameDataSO.CourseVariant</c>.
+        /// </summary>
+        protected virtual int DrawCourseVariant() => -1;
+
         // ---------------- Game Config Sync ----------------
 
         /// <summary>
@@ -935,6 +998,7 @@ namespace CosmicShore.Gameplay
                 gameData.InviteTriggered,
                 gameData.IsArenaMatch,
                 startClasses, startIntensities, startLevels,
+                gameData.CourseVariant,
                 target
             );
         }
@@ -973,6 +1037,7 @@ namespace CosmicShore.Gameplay
             string matchId, string partyId, bool inviteTriggered,
             bool isArenaMatch,
             int[] startClasses, int[] startIntensities, float[] startLevels,
+            int courseVariant,
             ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;
@@ -998,6 +1063,10 @@ namespace CosmicShore.Gameplay
             gameData.IsMaelstromMode = isMaelstrom;
             gameData.ComebackRatePerScoreDeficit = comebackRate;
             gameData.IsArenaMatch = isArenaMatch;   // arena seating: unique hulls + pilot swap
+
+            // The course-pool entry the host drew (-1: this mode has no pool). Before GameConfigSynced below,
+            // because a CourseVariantWise Cell makes its sticky config choice the moment that flag is true.
+            gameData.CourseVariant = courseVariant;
 
             // The card's per-hull starting element levels (SO_ArcadeGame.StartingElements). A
             // client never runs SyncFromArcadeGame, and element levels are simulated on the

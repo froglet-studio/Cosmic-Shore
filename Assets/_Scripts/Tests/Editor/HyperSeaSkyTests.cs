@@ -242,7 +242,7 @@ namespace CosmicShore.Tests
                 Near(11.9875080611299, v.Lcut, "Lcut at 900,2100 w 50");
                 Near(125.000000000000, v.Zwin, "zwin at w 50");
                 Assert.AreEqual(true, v.Slab, "slab at w 50");
-                Near(30.0000000000000, v.Zf, "focus height at 900,2100 w 50");
+                Near(35.0000000000000, v.Zf, "focus height at 900,2100 w 50 (Tumult's 30 ly, snapped to the cells' layer at 35)");
                 Assert.AreEqual(5, HyperSeaSky.TierOf(50), "tier at w 50 (Cell)");
             }
             {

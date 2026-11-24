@@ -130,6 +130,14 @@ namespace CosmicShore.Utility
         public int CourseSeed;
 
         /// <summary>
+        /// The course-pool entry the match laid, ONE-based (Regatta's <c>RegattaCoursePoolSO</c>: entry k is stored as k + 1),
+        /// so the replay in its real scene lays the same circuit (<c>CosmicShore.Gameplay.CourseVariantOverride</c>).
+        /// 0 for a mode whose course is not a pool, and for a summary written before 2026-11-07 - one-based so that an
+        /// older summary, which reads 0, pins nothing.
+        /// </summary>
+        public int CoursePoolEntry;
+
+        /// <summary>
         /// Seconds as <c>m:ss</c> - a number format, not a sentence: the browser and the playback HUD
         /// put it inside authored templates. Negative and fractional seconds floor to whole ones.
         /// </summary>

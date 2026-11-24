@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-19-amoebius-gameobject-scene-returns-an-inv-2d50cc",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-19T03:34:41+00:00",
+  "area": "the Amoebius engine (SceneGraph)",
+  "summary": "Amoebius GameObject.scene returns an invalid scene for prefab assets, so AppManager's root-only InstallBindings (ab622b42) installs again and the headless race judge boots",
+  "why": "Every race-judge run on bleeding-edge came back scene-not-ready: no DI bindings at boot",
+  "branch": "claude/project-thread-wgodhb",
+  "commit": "ea1bd86e5",
+  "paths": [
+    "Port/src/CosmicShore.Engine/SceneGraph/GameObject.cs",
+    "Port/src/CosmicShore.Engine/SceneGraph/Scene.cs"
+  ]
+}

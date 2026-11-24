@@ -134,6 +134,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The MENU does not adopt a departed player's vessel. There is no match to finish, so an
+        /// abandoned menu ship would just accumulate as another autopilot vessel in the lava lamp -
+        /// and a player who leaves the party here is going back to their own menu, where they get a
+        /// fresh vessel anyway.
+        /// </summary>
+        protected override bool ConvertDepartedPlayersToAI => false;
+
+        /// <summary>
         /// Menu override: reset the player's domain to the menu domain BEFORE the base
         /// spawns + paints the vessel, then activate autopilot after.
         /// Server-authoritative - the ONLY menu domain reset. Runs on every menu entry
@@ -143,23 +151,21 @@ namespace CosmicShore.Gameplay
         /// delta reaches a client after its pair-init instead, Player.OnNetDomainChanged
         /// re-syncs the mirrors and repaints (ShipHelper.SetShipProperties).
         /// </summary>
-
-        /// <summary>
-        /// The MENU does not adopt a departed player's vessel. There is no match to finish, so an
-        /// abandoned menu ship would just accumulate as another autopilot vessel in the lava lamp -
-        /// and a player who leaves the party here is going back to their own menu, where they get a
-        /// fresh vessel anyway.
-        /// </summary>
-        protected override bool ConvertDepartedPlayersToAI => false;
-
         protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            if (!player.NetIsAI.Value && player.NetDomain.Value != menuVesselDomain)
-                player.NetDomain.Value = menuVesselDomain;
+            // The voyage scene runs this initializer too: there every person flies the Ark's one domain, the host's pick
+            // (VoyageLobbyLink.ArkDomain; Shombith, 2026-11-21), so the vessels and the Ark, which wears its pilot's
+            // vessel's domain, agree.
+            var domain = InVoyageScene() ? VoyageLobbyLink.ArkDomain : menuVesselDomain;
+            if (!player.NetIsAI.Value && player.NetDomain.Value != domain)
+                player.NetDomain.Value = domain;
 
             await base.OnPlayerReadyToSpawnAsync(player, ct);
             ActivateAutopilot(player);
         }
+
+        /// <summary>True when this initializer stands in the voyage scene (loaded, whether or not it is active yet).</summary>
+        bool InVoyageScene() => gameObject.scene.name == VoyageLaunch.SceneName;
 
         // ---------------------------------------------------------
         // VESSEL SWAP (server-side)

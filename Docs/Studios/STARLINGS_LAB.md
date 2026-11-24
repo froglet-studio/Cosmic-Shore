@@ -133,6 +133,84 @@ The first proposal laid each phase's objective at a station and timed four laps 
 rewarded a different element (Long haul for Time, Fortress for Space, Chase for Charge; Mass won none). Garrett's
 2026-11-02 direction (each element has its own arcade game, and the Time game is a switch race) replaced it.
 
+## Tuning the 20 Time cards (2026-11-03, `feature/starlings-time-card-tuning`)
+
+Garrett, 2026-11-02: tune the Time cards so all 20 have their place; no card categorically better; cards win roughly
+equally often, but some combinations are far better than others and every card is in some winning combinations, not
+all; better strategy (reading the race before it starts) and tactics (reading it as it goes) beat random picks
+significantly; and optimal play uses every card about equally over many races.
+
+**All 20 Time cards now run in the Time race** (the lab's `IMPL`; `IMPL_UNITY` keeps the 24 the game runs until
+`/artifact-to-unity` ports the rest). The harness is `Docs/Studios/StarlingsLab/tuning/` (its README lists each script).
+
+### What changed in the race (the mode)
+
+| Change | Why |
+|---|---|
+| Hazards drawn per race, each on or off: gunners at the switches, switches that drift, locked switches (keys off the line), reefs of danger prisms | the random factors a pick should answer |
+| A switch threads after 3/4 of the swarm's START size has passed (a starling counts again 0.6 s after it last did) | losses used to cost nothing, so the survival cards had nothing to save; now a swarm knocked to 60 is 13% slower, to its minimum 30 is 85% slower |
+| Time-only hands, the first dealt at the start line with the course and hazards in view (Garrett chose this) | the opening pick is the strategic one; with a mixed first hand it was forced |
+| A burst (Dragonfly's dart, Slingshot's fling, the clock cards' surges) pushes only along the line to the switch | bursts carried the swarm past the switch: Dragonfly alone made races 17% slower; after the fix it makes them 7% faster |
+| A starling's pass is tested along its step, not at its end | a fast starling skipped through a switch between two steps |
+
+Each hazard alone costs a swarm with no cards 19-38% of its race time.
+
+### What changed in the cards
+
+| Card | Change |
+|---|---|
+| Hurry Up | did nothing in a race; now the omnicrystals lie closer, so hands come sooner |
+| Lead Time | leads by the swarm's travel time to the switch (was a fixed 0.2-1.6 s) |
+| Blink Step | also dodges reef bites (Garrett chose a second job for each counter) |
+| Out of Phase | also lets gunner shots pass through |
+| Stopwatch | also slows drifting switches |
+| Rewind | a spent key may also rewind and come back |
+| Save Point | also fires when the swarm is left at a locked switch without the key it just held, and returns keys |
+| every Time card | its strength rescaled (below) |
+
+Tuning method: the look-ahead picker races every card in each hand to the finish and keeps the fastest (tactics with
+foresight); each card's main stat is scaled until the look-ahead picks use every card about equally (80 races a round,
+smoothed over two rounds). Seven rounds of that first shrank every card's effect until picks were noise; the cards
+were then made 2.5x stronger and retuned.
+
+### Results (the deck's own numbers)
+
+Look-ahead picks (share of all choices) from the deck's own numbers, 60 races, I1-I4: Agility 10%, Mayfly Couriers 8%,
+Stopwatch, Save Point, Fast Forward and Slipstream 7%, Dragonfly, Hummingbird, Skip Ahead and Echo Swarm 6%, Quickening
+and Synchrony 5%, Skim Rush, Out of Phase and Rewind 4%, Metronome 3%, Blink Step, Hurry Up and Lead Time 2%, Slingshot
+1% (before tuning: 0-15%). Look-ahead races are 21.6% faster than random picks.
+
+Strategy vs tactics on 40 fresh races (the last tuning round's numbers, before Slingshot's fling cut and the rounding):
+
+| Picker | Faster than random picks | Beats random in |
+|---|---|---|
+| Fixed favourite list | 5.4% | 25 of 40 |
+| Strategy (reads course and hazards) | 9.1% | 25 of 40 |
+| Look-ahead (tactics with foresight) | 23.4% | 38 of 40 |
+
+Strategy is a card priority read from the course and hazards before the race, fitted from the look-ahead's picks
+(fixed = one favourite list for every race). What each race condition calls for:
+
+| Condition | Favoured cards |
+|---|---|
+| Open water | Slingshot, Synchrony, Lead Time, Mayfly Couriers |
+| Bends | Hurry Up, Rewind, Agility, Metronome |
+| Hairpins | Fast Forward, Hummingbird, Blink Step, Skim Rush |
+| Gunners | Out of Phase, Blink Step, Save Point, Synchrony |
+| Drift | Stopwatch, Lead Time, Slingshot, Out of Phase |
+| Locked switches | Mayfly Couriers, Rewind, Slipstream, Blink Step |
+| Reefs | Skim Rush, Slingshot, Out of Phase, Synchrony |
+
+Combinations (every pair of the 20 at L10 on the same 12 races): no cards 249 s, best pair Agility + Slingshot 171 s,
+median 213 s, worst Lead Time + Slingshot 327 s. Slingshot is a combination card: with Agility it is the best pair,
+with most others among the worst. Its fling was cut from 3300 u to 1000 u at L1 because at the full value Agility +
+Slingshot won 10 of 12 races; it now wins 6, and 8 cards appear in some race's winning pair.
+
+Open: Slingshot, Lead Time, Hurry Up and Blink Step still get only 1-2% of the best picks (the target is 5%); Out of Phase lasts
+longer than its 15 s cooldown, so it is always on; the 12-race combo sample is small. None of this is in Unity yet:
+the race, its hazards and 14 of the Time cards are lab-only, and the deck's new numbers reach Unity's six wired Time
+cards (`StarlingCardDeck.asset`) through `author_starling_assets.py`.
+
 ## Found
 
 1. **Space first gets more than twice the hands (11.3 against about 5).** Space cards meet the Opposing mass goal early, so the cycle comes round faster and deals more hands. In this design, the element that ends phases early also earns cards fastest. That makes it the strongest pick for a player who wants more picks. Either the hand rate needs a cap, or the other phases need cards that end them early too.

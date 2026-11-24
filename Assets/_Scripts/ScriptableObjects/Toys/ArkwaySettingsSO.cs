@@ -178,7 +178,7 @@ namespace CosmicShore.ScriptableObjects
             LeashGraceSeconds = leashGraceSeconds,
             RevertCellOnStart = revertCellOnStart,
             ReturnStationRadius = returnStationRadius,
-            ReturnStationColor = returnStationColor,
+            ReturnStationColor = ColorTrace.Retrace(ColorTrace.World, returnStationColor),
         };
     }
 }

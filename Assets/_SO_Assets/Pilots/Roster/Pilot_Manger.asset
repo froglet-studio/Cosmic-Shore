@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: MANGER
   description: 
   flavor: 
-  portrait: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 4c2f13581c9e4c8bfc6656aff1142b12, type: 3}
   portraitIsStandIn: 0
   icon: {fileID: 0}
   requirement:

@@ -13,10 +13,12 @@ namespace CosmicShore.Gameplay
     /// that represents a goby and synergizes with the pistol and its kit" - the watchman goby and the near-blind pistol
     /// shrimp that share a burrow. The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c> §11.
     /// <list type="bullet">
-    /// <item><b>The Goby</b> never cruises. It perches, aims, and DARTS like the Shrike slings itself: hold Dart to charge
-    /// the distance, let go, and it flies there in <c>dartSeconds</c>, stopping on the first block on its line (Time 5: it
-    /// passes through prisms). A dart into open space makes its own perch. Each dart lays the Pistol's ground. It LOCKS
-    /// rival vessels (then fauna) in its nose's cone.</item>
+    /// <item><b>The Goby</b> never flies (Garrett, 2026-11-24: "its only movement [is] stretches of different length
+    /// between perches ... only shoot itself from perch to perch"). It sits where it landed, the two thumbs turning the
+    /// hull (and so the Pistol's plane), and DARTS like the Shrike slings itself: hold Dart to charge the distance (a tap
+    /// is a short hop), let go, and it flies there in <c>dartSeconds</c>, stopping on the first block on its line (Time 5:
+    /// it passes through prisms). A dart into open space makes its own perch. A landing far enough from the last island's
+    /// end lays the Pistol's next island. It LOCKS rival vessels (then fauna) in its nose's cone.</item>
     /// <item><b>The Pistol</b> rides the ground from perch to perch on a FLAT plane through the dart, downhill whichever
     /// way it goes (<see cref="PistolPlane"/>), Tiny Wings style. At each perch it rests and builds a DEN of prisms and
     /// shielded prisms (Mass 5: danger and super-shielded too), as many as its ENERGY and Mass make; it may ride back to an
@@ -39,7 +41,7 @@ namespace CosmicShore.Gameplay
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (CrewSeat):
     /// the Pistol, the dens, the pull and the rings are simulated on that one machine until the crew is networked.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay, IUprightSeat, IHullPrismFilter
     {
         enum Half { Goby = 0, Pistol = 1 }
 
@@ -78,13 +80,14 @@ namespace CosmicShore.Gameplay
         Transform _lockTarget; IVesselStatus _lockVessel; bool _lockIsVessel;
 
         // the Goby's own AI (while the human flies the Pistol): it aims the hull and darts by the same calls the buttons make
-        Vector3 _aiDir; float _aiDecideAt, _aiIslandGoal; bool _aiHasDir;
+        Vector3 _aiDir; float _aiDecideAt, _aiIslandGoal; bool _aiHasDir; int _aiPerchesSeen;
         // its route: the island it means to lay next, aimed where the most opposing prisms are (PistolPaths.BestHeading)
         readonly List<Vector3> _routePts = new();
         uint _misjudgeSeed;
         Vector3 _aiRouteEnd; bool _aiHasRoute; int _aiRouteCount;
         const int RoutePointsMax = 2048;   // the opposing prisms a route is weighed against (sampled evenly beyond that)
-        // perched: pinned on the end of an island, aiming, until the perch time is up (it cruises between perches)
+        // perched at an island's end: the AI Goby aims there for the perch time before it darts on (the hull is pinned
+        // throughout: it never flies)
         bool _perched; float _perchT;
         PistolAI.Mulberry32 _aiRng;
 
@@ -143,7 +146,7 @@ namespace CosmicShore.Gameplay
         readonly GobyPistolButtons _buttons = new();
         CrewViewRender _render;
         GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos, _camWindow; float _camWidth;
-        Mesh _torus; Material _lockMat, _bodyMat;
+        Mesh _torus; Material _lockMat, _reachMat, _bodyMat;
         // the Pistol's model (Pistol.fbx): its scale, which way it faces along the plane, the claw it snaps and the tail it
         // curls on a dive, each turned about the model's own right axis from its rest pose
         bool _bodyIsModel; float _bodyScale = 1f, _facing = 1f, _snapAt = -10f, _tailCurl; Material _bodyDomain;
@@ -213,10 +216,27 @@ namespace CosmicShore.Gameplay
         public float Energy01 => Config ? Mathf.Clamp01(_energy / Mathf.Max(1f, Config.EnergyMax)) : 0f;
         // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
         public bool LockHeld => _lockHeld && _human == Half.Goby;
-        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldown));
+        public float DartCooldown01 => _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldownFor(_status)));
         public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
         public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
         public bool SnapHeld => _p != null && _p.prevVortex;
+
+        /// <summary>
+        /// The pair's OMNI-CRYSTAL ability, the <b>restock</b> (2026-11-17, the design brief's "crystals restock both halves
+        /// fully" plus the Pistol's "ability cooldowns reset"): the Pistol's energy fills to the most it holds, and the
+        /// Goby's dart, the Pistol's snap and ghost, and every jump charge are ready at once. Called by <see cref="GobyOmniCrystalEffectSO"/>
+        /// on the machine that decides this hull (the same rule <see cref="CollectCrystal"/> takes the omni crystal by).
+        /// </summary>
+        public void OnOmniCrystal()
+        {
+            if (!Config) return;
+            _energy = Config.EnergyMax;
+            _dartReadyAt = Mathf.Min(_dartReadyAt, _t);
+            if (_p == null) return;
+            _p.vortexAt = Mathf.Min(_p.vortexAt, _t);
+            _p.ghostAt = Mathf.Min(_p.ghostAt, _t);
+            _p.launch = Mathf.Max(_p.launch, Mathf.FloorToInt(_body.pLaunchCharges));
+        }
         public bool Ghosting => _p != null && _t < _p.ghostUntil;
         public bool Diving => _dive > 0.5f;
         /// <summary>The Pistol's speed as a share of its top speed (pMaxSpeed), 0..1.</summary>
@@ -312,7 +332,7 @@ namespace CosmicShore.Gameplay
             TwoDCameraSky.Unregister(_cam);
             if (_view) Destroy(_view);
             if (_bodyGo) Destroy(_bodyGo);
-            foreach (var o in new Object[] { _torus, _lockMat, _bodyMat, _cube, _pickMat }) if (o) Destroy(o);
+            foreach (var o in new Object[] { _torus, _lockMat, _reachMat, _bodyMat, _cube, _pickMat }) if (o) Destroy(o);
             if (_heatMats != null) foreach (var m in _heatMats) if (m) Destroy(m);
             if (_juiceMats != null) foreach (var m in _juiceMats) if (m) Destroy(m);
             _juiceMats = null; _bursts.Clear(); _flightRewards.Clear(); _dueRewards.Clear();
@@ -326,8 +346,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy() => Unbind();
 
-        /// <summary>Translation pinned (the fleet's restricted stance) while the Goby is perched or darting: perched it only
-        /// aims, darting it is moved along the dart; between perches it cruises on its own flight.</summary>
+        /// <summary>Translation pinned (the fleet's restricted stance) the whole time the Goby is bound (Garrett, 2026-11-24:
+        /// "it should never fly"): sitting it only turns, darting it is moved along the dart.</summary>
         void Pin(bool on)
         {
             if (_pinned == on || _status == null) return;
@@ -362,7 +382,7 @@ namespace CosmicShore.Gameplay
             if (_goby != null && (rider != _rider || aiCrew != _aiCrew)) Unbind();   // the seat changed hands: seat it afresh
             if (_goby == null) { _rider = rider; _aiCrew = aiCrew; Bind(vessel); }
             // the platform autopilot would fly the pinned Goby like its donor; the AI crew's own Goby AI flies it instead
-            if (_aiCrew && _status.AutoPilotEnabled) { _goby.ToggleAIPilot(false); _stoppedAutopilot = true; }
+            if (_aiCrew && _status.AutoPilotEnabled) { _goby.ToggleAIPilot(false); _stoppedAutopilot = true; ReleaseStick(); }
             float dt = Time.deltaTime; if (dt <= 0f) return;
             _t += dt;
             _body.pLaunchCd = Mathf.Max(0.1f, Config.JumpCooldown.EvaluateReplicated(_status));
@@ -401,6 +421,17 @@ namespace CosmicShore.Gameplay
             StepRings(dt);
         }
 
+        /// <summary>The stopped autopilot leaves the stick where it last held it, and the hull's transformer goes on turning
+        /// by it every frame: in Regatta that was a full pitch (YSum -1), which spun the AI Goby's nose faster than its own
+        /// turn could bring it round, so it never lined up a dart (2026-11-19). The seat's Goby AI steers the hull itself,
+        /// so it lets go of the stick.</summary>
+        void ReleaseStick()
+        {
+            var input = _status?.InputStatus;
+            if (input == null) return;
+            input.XSum = 0f; input.YSum = 0f; input.XDiff = 0f; input.YDiff = 0f;
+        }
+
         // the level-5 upgrades, each read where it acts (named literally so the element ability table finds every gate)
         R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
 
@@ -428,6 +459,20 @@ namespace CosmicShore.Gameplay
             _prevLockHeld = _lockHeld;
         }
 
+        /// <summary>Where the dart the person is charging would stop now: the charged length along the nose, or the first
+        /// block on its line (none with the Time upgrade, which phases through). False while nothing charges.</summary>
+        public bool TryDartReach(out Vector3 at)
+        {
+            at = default;
+            if (_goby == null || !_gt || _aiCrew || _human != Half.Goby || !_charging) return false;
+            float dist = Mathf.Lerp(Config.DartMinRange, Config.DartRange, Mathf.Clamp01(_chargeT / Config.DartChargeSeconds));
+            Vector3 o = _gt.position, f = _gt.forward;
+            bool phase = Abilities && Abilities.IsUpgradeActive(Element.Time);
+            if (!phase && FirstOnLine(o, f, dist, out float along)) dist = Mathf.Max(0f, along);
+            at = o + f * dist;
+            return true;
+        }
+
         /// <summary>The charge the dart button holds, 0..1 (for the HUD).</summary>
         public float DartCharge01 => _charging ? Mathf.Clamp01(_chargeT / Config.DartChargeSeconds) : 0f;
 
@@ -443,7 +488,9 @@ namespace CosmicShore.Gameplay
             if (!_dartPhase && FirstOnLine(o, f, dist, out float along)) go = Mathf.Max(0f, along);
             if (go < 6f) return;
             _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
-            _dartSpeed = go / Mathf.Max(0.05f, Config.DartSeconds);
+            _dartSpeed = go / Mathf.Max(0.05f, Config.DartSecondsFor(_status));   // Time: the dart's pace
+            // the cooldown runs from launch, not landing, so a longer charge costs no extra wait (Will, 2026-11-24)
+            _dartReadyAt = _t + Config.DartCooldownFor(_status);
             _perched = false; Pin(true);
         }
 
@@ -466,6 +513,11 @@ namespace CosmicShore.Gameplay
 
         bool Perchable(Prism prism) => prism && !prism.destroyed && prism.prismProperties != null && prism.ownerID != _status.PlayerName;
 
+        /// <summary>The Goby's hull leaves the pair's own prisms alone (<see cref="IHullPrismFilter"/>): its perch pads, the
+        /// Pistol's dens and the ground all sit where it perched, and turning away from a perch rammed or bounced off them
+        /// (Will, 2026-11-24). Its darts already ignore them (<see cref="Perchable"/>).</summary>
+        public bool LeavesAlone(Prism prism) => prism && _status != null && prism.ownerID == _status.PlayerName;
+
         void StepDart(float dt)
         {
             if (!_darting) return;
@@ -477,11 +529,11 @@ namespace CosmicShore.Gameplay
             _dartWent += move;
             if (_dartWent < _dartDist - 0.01f) return;
             _darting = false;
-            _dartReadyAt = _t + Config.DartCooldown;
             Vector3 at = _gt.position;
             var prev = _perches[_perches.Count - 1];
-            // a dash, not a perch: too close to the last perch for an island, or the Pistol already has its islands ahead
-            if (!GobyIslands.Reaches(prev.Pos, at, Config.IslandMinLength) || IslandsAhead >= Config.IslandQueue) { Pin(false); return; }
+            // a hop: too close to the last island's end to lay the next, or the Pistol already has its islands ahead. The
+            // Goby sits where it landed (it never flies) and darts on from there
+            if (!GobyIslands.Reaches(prev.Pos, at, Config.IslandMinLength) || IslandsAhead >= Config.IslandQueue) return;
             // a perch: the end of an island (a long gap is laid as several, each a perch of its own), pinned for the perch time
             bool onBlock = NearBlock(at, Config.HullRadius + 4f);
             int pieces = GobyIslands.Pieces(prev.Pos, at, Config.IslandMaxLength);
@@ -504,17 +556,18 @@ namespace CosmicShore.Gameplay
         /// <summary>Islands laid ahead of the one the Pistol is on (none counted while it flies on another machine).</summary>
         int IslandsAhead => _remotePistol ? 0 : GobyIslands.Ahead(_perches.Count, _resting, _at, _seg, _dir);
 
-        /// <summary>Perched, the Goby aims for <c>perchSeconds</c> (longer while a person charges a dart from it), then lifts
-        /// off and cruises on its own flight.</summary>
+        /// <summary>At an island's end the AI Goby aims for <c>perchSeconds</c> before it darts on. A person's Goby is never
+        /// held there (Will, 2026-11-24: the hold read as getting stuck after a dart): the island, its ground and its den
+        /// are laid the frame the dart lands, so the Pistol loses nothing. The hull stays pinned either way.</summary>
         void StepPerch(float dt)
         {
             if (_perched)
             {
                 _perchT += dt;
-                bool charging = _human == Half.Goby && !_aiCrew && _charging;
-                if (_perchT >= Config.PerchSeconds && !charging) _perched = false;
+                bool personFlies = _human == Half.Goby && !_aiCrew;
+                if (personFlies || _perchT >= Config.PerchSeconds) _perched = false;
             }
-            Pin(_perched || _darting);
+            Pin(true);
         }
 
         bool NearBlock(Vector3 at, float r)
@@ -858,20 +911,21 @@ namespace CosmicShore.Gameplay
 
         // ================================ the Goby's AI (while the human flies the Pistol) ================================
 
-        /// <summary>The seat's Goby (Garrett, 2026-10-23: "the goby is barely cruising around at all"): it CRUISES at
-        /// <c>aiCruiseSpeed</c>, steering toward a locked rival or wandering within reach of home, and darts once its island
-        /// is as long as it planned (a length between <c>islandMinLength</c> and <c>islandMaxLength</c>), so the dart's end
-        /// is the next perch. While the Pistol already has <c>islandQueue</c> islands ahead it lays none and stays near the
-        /// last perch. Perched, it aims at where it will go next. It acts through the calls the Goby's buttons make, and
-        /// moves the hull itself (the pilot's input is paused while it flies).</summary>
+        /// <summary>The seat's Goby. It never flies (Garrett, 2026-11-24): it turns where it sits and hops <c>aiDartLength</c>
+        /// at a time along the island it means to lay (<see cref="AiPlanRoute"/>), toward a locked rival, or home when it
+        /// strays. A landing <c>islandMinLength</c> from the last island's end lays the Pistol's next island, and it waits
+        /// there <c>perchSeconds</c>. While the Pistol already has <c>islandQueue</c> islands ahead it sits and aims. It acts
+        /// through the calls the Goby's buttons make (the pilot's input is paused while it flies).</summary>
         void GobyAI(float dt)
         {
             if (_darting) return;
+            if (_coach != null) { RaceAI(dt); return; }
             var lvl = Difficulty();
             if (!_lockTarget || !_lockIsVessel) AiLockNearestRival();
-            if (_aiIslandGoal <= 0f)
+            if (_aiIslandGoal <= 0f || _perches.Count != _aiPerchesSeen)
             {
                 // a new island: how long, and how the easier AIs will misread the field this time
+                _aiPerchesSeen = _perches.Count;
                 _aiIslandGoal = Mathf.Lerp(Config.IslandMinLength, Config.IslandMaxLength, _aiRng.Next());
                 _misjudgeSeed = (uint)(_aiRng.Next() * uint.MaxValue);
                 _aiHasDir = false;
@@ -879,20 +933,73 @@ namespace CosmicShore.Gameplay
             if (!_aiHasDir || _t >= _aiDecideAt)
             {
                 AiPlanRoute(lvl);
-                _aiDir = AiCruiseDirection(lvl); _aiHasDir = true;
+                _aiDir = AiHopDirection(lvl); _aiHasDir = true;
                 _aiDecideAt = _t + Config.AiRethinkSeconds * (0.7f + 0.6f * _aiRng.Next()) + lvl.Late;
             }
             Quaternion.FromToRotation(_gt.forward, _aiDir).ToAngleAxis(out float deg, out var axis);
             if (deg > 0.05f && axis.sqrMagnitude > 1e-8f && IsAuthority())
                 _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, Config.AiTurnRate * dt), axis);
-            if (_perched) return;   // aims from the perch; it lifts off when the perch time is up (StepPerch)
-            if (IsAuthority()) _status.VesselTransformer.TranslateShip(_gt.forward * (Config.AiCruiseSpeed * dt));
-            float from = Vector3.Distance(_gt.position, _perches[_perches.Count - 1].Pos);
-            if (DartReady && deg < 25f && IslandsAhead < Config.IslandQueue && from + 0.5f * Config.AiDartLength >= _aiIslandGoal)
+            if (_perched || IslandsAhead >= Config.IslandQueue) return;   // sits and aims: at an island's end, or the Pistol is behind
+            if (DartReady && deg < 3f)
             {
                 FireDart(Config.AiDartLength);
-                if (_darting) _aiIslandGoal = 0f;
+                if (_darting) _aiHasDir = false;   // the next hop is aimed from where this one lands
             }
+        }
+
+        /// <summary>
+        /// A race's coach for this Goby's AI (Perch Run). Set: the seat's Goby AI races on the coach's darts instead of
+        /// laying islands for the Pistol, through the same calls (it turns the hull where it sits at <c>aiTurnRate</c> and
+        /// fires the dart the button fires, at the coach's length, once the nose is on the coach's aim; it never flies).
+        /// Null: the shipped AI. A person's Goby ignores it. The Pistol is unchanged either way.
+        /// </summary>
+        public IGobyRaceCoach RaceCoach
+        {
+            get => _coach;
+            set => _coach = value;
+        }
+
+        IGobyRaceCoach _coach;
+
+        /// <summary>The nose of the hull the coach reads (the dart flies along it).</summary>
+        public Transform RaceHull => _gt;
+
+        /// <summary>The dart is ready (its cooldown is up and it is not mid-dart).</summary>
+        public bool RaceDartReady => _goby != null && DartReady;
+
+        /// <summary>Perched at an island's end for its time (it still turns).</summary>
+        public bool RacePerched => _perched;
+
+        /// <summary>The dart's charge range, shortest and longest (u), for a coach that plans its length.</summary>
+        public float RaceDartMinRange => Config ? Config.DartMinRange : 140f;
+        public float RaceDartRange => Config ? Config.DartRange : 600f;
+
+        /// <summary>The seat AI's turn rate where it sits (deg/s).</summary>
+        public float RaceTurnRate => Config ? Config.AiTurnRate : 90f;
+
+        /// <summary>
+        /// Where a dart fired from <paramref name="from"/> along <paramref name="dir"/> (unit) for <paramref name="length"/>
+        /// would stop on a block: the same test <see cref="FireDart"/> makes. False when the line is clear, or when the
+        /// dart phases through (the Time upgrade). A read for a race coach (Regatta's dart plan); it changes nothing.
+        /// </summary>
+        public bool RaceDartStops(Vector3 from, Vector3 dir, float length, out float along)
+        {
+            along = float.MaxValue;
+            if (_goby == null || _status == null) return false;
+            if (Abilities && Abilities.IsUpgradeActive(Element.Time)) return false;
+            return FirstOnLine(from, dir, length, out along);
+        }
+
+        void RaceAI(float dt)
+        {
+            if (!_coach.TryRaceAim(this, out Vector3 aim, out float dartLength)) return;   // no aim: it sits
+            Vector3 want = aim - _gt.position;
+            if (want.sqrMagnitude < 1e-4f) return;
+            Quaternion.FromToRotation(_gt.forward, want.normalized).ToAngleAxis(out float deg, out var axis);
+            if (deg > 0.01f && axis.sqrMagnitude > 1e-8f && IsAuthority())
+                _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, Config.AiTurnRate * dt), axis);
+            // it sits while the dart reloads or the nose comes round (it never flies)
+            if (dartLength > 0f && DartReady && deg < 0.5f) FireDart(dartLength);
         }
 
         void AiLockNearestRival()
@@ -938,15 +1045,13 @@ namespace CosmicShore.Gameplay
             _aiHasRoute = true;
         }
 
-        /// <summary>Where the cruising Goby AI heads next: back toward the last perch while the Pistol's islands are full (it
-        /// circles there instead of laying more); along its route, where the island will pass the most opposing prisms;
-        /// else at a locked rival in reach; home when it strays; else a wander off the nose. Easy and Medium misjudge it by a
-        /// few degrees.</summary>
-        Vector3 AiCruiseDirection(PistolAI.Difficulty lvl)
+        /// <summary>Where the Goby AI hops next: along its route, where the island will pass the most opposing prisms; else at
+        /// a locked rival in reach; home when it strays; else a wander off the nose. Easy and Medium misjudge it by a few
+        /// degrees.</summary>
+        Vector3 AiHopDirection(PistolAI.Difficulty lvl)
         {
-            Vector3 pos = _gt.position, last = _perches[_perches.Count - 1].Pos, dir;
-            if (IslandsAhead >= Config.IslandQueue && (last - pos).magnitude > 0.5f * Config.IslandMinLength) dir = last - pos;
-            else if (_aiHasRoute && (_aiRouteEnd - pos).sqrMagnitude > 1f) dir = _aiRouteEnd - pos;
+            Vector3 pos = _gt.position, dir;
+            if (_aiHasRoute && (_aiRouteEnd - pos).sqrMagnitude > 1f) dir = _aiRouteEnd - pos;
             else if (_lockTarget && (_lockTarget.position - pos).sqrMagnitude < Config.LockRange * Config.LockRange) dir = _lockTarget.position - pos;
             else if ((pos - _home).magnitude > 0.7f * Config.AiHomeRadius) dir = _home - pos;
             else dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 120f, _gt.up) * Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 50f, _gt.right) * _gt.forward;
@@ -1652,7 +1757,7 @@ namespace CosmicShore.Gameplay
             for (int i = _rings.Count - 1; i >= 0; i--)
             {
                 var run = _rings[i]; var ring = run.Ring;
-                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Deg2Rad * dt);
+                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Max(0f, Config.RingHomingScale.EvaluateReplicated(_status)) * Mathf.Deg2Rad * dt);
                 bool alive = ring.Advance(dt, _vs);
                 if (index && index.IsAvailable && !ring.Full(_vs))
                 {
@@ -1698,14 +1803,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A ring on a rival hull under the LOCKED PvP rule (petals only): admitted through the one gate every
-        /// scored hit passes, it takes <c>ringPetals</c> (Charge) from each of the victim's elements, and raises the score.</summary>
+        /// scored hit passes, it takes <c>ringPetals</c> (Charge) from each of the victim's elements, and raises the score. At
+        /// Charge 5 (Vortex Steal) the petals are stolen onto the pair rather than ejected.</summary>
         void ScoreRingHit(IVesselStatus victim, Vector3 velocity)
         {
             if (!ElementalTransfer.IsDecidedHere(_status)) return;
             var hitClass = Config.RingHitClass;
             if (!CombatHitDrain.TryAdmit(victim, _status, hitClass, Config.HitCooldown, ElementalDebuffSources.Other, out int superseded)) return;
             float petals = Mathf.Max(0f, Config.RingPetals.EvaluateReplicated(_status));
-            ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, _status, petals * CombatHitDrain.NormalizedPerLevel,
+            // Charge 5 VORTEX STEAL (2026-11-13): the hit's petals land on the pair instead of being knocked loose,
+            // read through the replicated unlock bit at the moment of the hit
+            var form = Abilities && Abilities.IsUpgradeActive(Element.Charge) ? ElementalTransferForm.Steal : ElementalTransferForm.Eject;
+            ElementalTransfer.ApplyAllAuthoritative(form, victim, _status, petals * CombatHitDrain.NormalizedPerLevel,
                 velocity, ElementalDebuffSources.Other);
             if (Config.OnCombatHitLanded)
                 Config.OnCombatHitLanded.Raise(new CombatHitStats
@@ -1736,6 +1845,10 @@ namespace CosmicShore.Gameplay
 
         /// <inheritdoc cref="ICrewStations.LocalSeat"/>
         public int LocalSeat => _goby != null && !_rider && !_aiCrew ? (_human == Half.Pistol ? 1 : 0) : -1;
+
+        /// <inheritdoc cref="IUprightSeat.UprightSeat"/>: the Pistol. Its side view is the one played with the phone held
+        /// upright (Shombith, 2026-11-08); turning the phone back to landscape returns the person to the Goby.
+        public int UprightSeat => 1;
 
         /// <inheritdoc cref="ICrewStations.HostsRiders"/>: the Pistol seat. It runs on the rider's machine, on the perches
         /// and the lock the hull's machine sends (<see cref="ICrewRelay"/>).
@@ -1870,8 +1983,13 @@ namespace CosmicShore.Gameplay
             _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.farClipPlane = 6000f;
             _torus = BuildRingMesh(VortexRing.Tube, 24, 6);
             // the lock is a lit, faceted volume (nothing in the world looks flat); the vortex ring is no mesh at all but a
-            // toroidal warp of what lies behind it (VortexRingLens, Garrett 2026-10-24: "loose the flat effect")
-            _lockMat = Lit(new Color32(255, 92, 108, 255), new Color32(80, 16, 22, 255), 0.5f);
+            // toroidal warp of what lies behind it (VortexRingLens, Garrett 2026-10-24: "loose the flat effect"). Both
+            // materials are born in the worn colour set; a set worn later repaints them in place (WorldColorTrace).
+            _lockMat = Lit(ColorTrace.Retrace(ColorTrace.World, new Color32(255, 92, 108, 255)),
+                           ColorTrace.Retrace(ColorTrace.World, new Color32(80, 16, 22, 255)), 0.5f);
+            // the dart's reach while it charges: where the Goby will stop (Perch Run, 2026-11-07)
+            _reachMat = Lit(ColorTrace.Retrace(ColorTrace.World, new Color32(214, 240, 255, 255)),
+                            ColorTrace.Retrace(ColorTrace.World, new Color32(40, 64, 80, 255)), 0.6f);
             BuildBody();
             _render = new CrewViewRender(_cam, RenderLook);
             TwoDCameraSky.Register(_cam);   // a 2D camera: no sky cell net glued to the side view (TwoDCameraSky)
@@ -2287,6 +2405,14 @@ namespace CosmicShore.Gameplay
                 float life = Config.FallPopSeconds, r = Config.FallRingRadius, fade = VortexRingLens.LifeFade(_popT, life - _popT, 0.08f, 0.3f);
                 VortexRingLens.Set(_popOut, _popOutAt, _f.M, r, r * VortexRing.Tube * 2f, fade, VortexRingLens.DefaultTint, _vs.pVortexSpin);
                 VortexRingLens.Set(_popIn, _popInAt, _f.M, r, r * VortexRing.Tube * 2f, fade, VortexRingLens.DefaultTint, -_vs.pVortexSpin);
+            }
+            // where a charging dart will stop is a fact in the world too (Perch Run, 2026-11-07: the length of a dart is the
+            // Goby's whole skill, and the charge gauge alone says how much, not where): a small lit ring there, at the
+            // charged length or on the first block on the line, facing the Goby
+            if (TryDartReach(out Vector3 reach))
+            {
+                Vector3 back = _gt.position - reach;
+                if (back.sqrMagnitude > 1e-4f) Draw(_torus, Matrix4x4.TRS(reach, Quaternion.LookRotation(back.normalized), Vector3.one * 6f), _reachMat);
             }
             // the lock is a fact in the world, so it is drawn there: a lit ring round the locked target, facing the Goby
             if (_lockTarget)

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 71 - notes: six new Voyage windows on the menu's ground, what each is, the recommendation, the two fixes they all carry, and the Quests window</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<span class="abs" style="left:56px;top:44px;font-size:36px">Rev 71 - notes</span><div class="abs" style="left:56px;top:120px;width:1808px;display:grid;grid-template-columns:1fr 1fr;gap:34px 64px"><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Asked</span><span style="font-size:18px;line-height:1.5">Shombith, 2026-11-08, on Rev 70: too bland; something new; six new options; the menu's own ground, as the Hangar and the Codex have, not the Ark's room (only the Ark wears that).</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Six ideas</span><span style="font-size:18px;line-height:1.5">A Dial, a round lens on the course with bearings on its ring. B Departures, a board and a boarding pass. C Coverflow, tilted cards. D Hex board, the HyperSea's cells with the Ark in the middle. E Journey, a band of map and the edge-on profile. F Crew's hand, the voyages dealt as cards.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Recommended: D</span><span style="font-size:18px;line-height:1.5">It is the HyperSea itself: the cells are the game's 20 ly hexes, the Ark sits in the one it is in, and a voyage is a hex you can see the way to. It reads as a game board, not a list. B is the clearest to read; F carries the story that the crew brings the voyages.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">In every option</span><span style="font-size:18px;line-height:1.5">A squad hull opens the vessel strip on its seat and one press picks (P-ui-21, the configure card's strip). Picking another squad never changes the voyage on screen. Set sail is Ruby, the selection the selection blue, Lime unused.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">The course stays put</span><span style="font-size:18px;line-height:1.5">As in Rev 70: the board is dealt from the seated pilots and the home domain (Docs/Voyages/DEPTH.md section 4). Pinning the voyage on screen is Garrett's rule to change; a proposal to him before any build.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Quests</span><span style="font-size:18px;line-height:1.5">Its own window, opened from Home like the Profile, on the same ground: Episode 1's five quests as medallions on one trail, lit as far as you have reached, one Lime button (Claim or Play quest).</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

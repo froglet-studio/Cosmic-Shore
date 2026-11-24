@@ -53,6 +53,7 @@ namespace CosmicShore.Core
         LoadoutRepository _loadout;
         QuestProgressRepository _questGraph;
         DrillProgressRepository _drill;
+        InventoryRepository _inventory;
 
         ICloudSaveProvider _provider;
         List<ICloudDataWriter> _allRepos;
@@ -89,6 +90,7 @@ namespace CosmicShore.Core
         public LoadoutRepository LoadoutRepo => _loadout;
         public QuestProgressRepository QuestGraphRepo => _questGraph;
         public DrillProgressRepository DrillRepo => _drill;
+        public InventoryRepository InventoryRepo => _inventory;
 
         void Awake()
         {
@@ -151,12 +153,13 @@ namespace CosmicShore.Core
             _loadout = new LoadoutRepository(_provider);
             _questGraph = new QuestProgressRepository(_provider);
             _drill = new DrillProgressRepository(_provider);
+            _inventory = new InventoryRepository(_provider);
 
             _allRepos = new List<ICloudDataWriter>
             {
                 _profile, _modeStats, _progression,
                 _hangar, _episodes, _settings,
-                _weeklyChallenge, _training, _squad, _loadout, _questGraph, _drill
+                _weeklyChallenge, _training, _squad, _loadout, _questGraph, _drill, _inventory
             };
         }
 
@@ -231,7 +234,8 @@ namespace CosmicShore.Core
                 _squad.LoadAsync(ct),
                 _loadout.LoadAsync(ct),
                 _questGraph.LoadAsync(ct),
-                _drill.LoadAsync(ct)
+                _drill.LoadAsync(ct),
+                _inventory.LoadAsync(ct)
             ).AsMainThread();
 
             // Restore vessel unlock state from cloud → SO_Vessel assets
@@ -274,7 +278,8 @@ namespace CosmicShore.Core
                     _squad.ResetAsync(ct),
                     _loadout.ResetAsync(ct),
                     _questGraph.ResetAsync(ct),
-                    _drill.ResetAsync(ct)
+                    _drill.ResetAsync(ct),
+                    _inventory.ResetAsync(ct)
                 ).AsMainThread();
 
                 CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] All player data reset successfully.");

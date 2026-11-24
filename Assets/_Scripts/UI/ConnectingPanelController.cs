@@ -8,14 +8,14 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
     /// The in-game loading screen - lives under the MiniGameHUD in every game scene, shown at the start of each game
-    /// BEFORE the pre-game intro. Since Rev 33 it is the "cell gate" (Docs/MENU_REDESIGN_B.md section 99, board A):
-    /// the cell-change screen grown into the mode entry, drawn by <see cref="ConnectingGateView"/>.
+    /// BEFORE the pre-game intro. Since Rev 91 it is "the tour" (Docs/MENU_REDESIGN_B.md section 173, board F) on
+    /// the Rev 33 cover (section 99): the parts of the game shown in turn over one bar cut into the load's real steps,
+    /// drawn by <see cref="ConnectingGateView"/> and <see cref="KitStepBar"/>.
     ///
     /// <para>It COVERS the arena. Nothing renders the world while it is up: it has no camera and no live preview, and
     /// it parks the gameplay camera (no layers, no post, no shadows) until the gate opens. Covered, the build runs
@@ -24,7 +24,7 @@ namespace CosmicShore.UI
     /// mode-entry lag (section 99.1-99.2).</para>
     ///
     /// Holds for at least <see cref="dwellSeconds"/>, then until the arena is ready and every human pilot's arena is
-    /// built; then the crystal's hex opens into the arena. MiniGameHUD awaits <see cref="ShowAsync"/>.
+    /// built; then a hex opens from the centre into the arena. MiniGameHUD awaits <see cref="ShowAsync"/>.
     /// </summary>
     public class ConnectingPanelController : MonoBehaviour
     {
@@ -35,31 +35,21 @@ namespace CosmicShore.UI
         [Header("References")]
         [Tooltip("Optional CanvasGroup used to show/hide the panel UI (auto-added if missing).")]
         [SerializeField] CanvasGroup canvasGroup;
-        [Tooltip("The cell-gate look: crystal, steps, brief, footer and the gate that opens into the arena.")]
+        [Tooltip("The screen's look: the cover, the brief, the tour and the gate that opens into the arena.")]
         [SerializeField] ConnectingGateView gate;
 
         [Header("Mode")]
-        [Tooltip("The mode's title, big, under ENTERING.")]
+        [Tooltip("The mode's title, under ENTERING.")]
         [SerializeField] TMP_Text gameModeText;
-        [Tooltip("Where a mode's display name and tips are looked up (the arcade's game list).")]
+        [Tooltip("Where a mode's display name is looked up (the arcade's game list).")]
         [SerializeField] SO_GameList games;
-        [Tooltip("Where a mode's tagline and objective are looked up - the same words its intro shows.")]
+        [Tooltip("The fallback for a mode's name: the title its intro shows.")]
         [SerializeField] IntroCameraLibrarySO introWords;
 
-        [Header("Phase (the steps panel's header)")]
-        [SerializeField] TMP_Text phaseTitle;
-        [Tooltip("Optional. Replays on the header whenever the phase changes.")]
-        [SerializeField] KitEntrance phaseTitleEntrance;
-        [SerializeField] string connectingTitle = "Connecting to shore";
-        [SerializeField] string buildingTitle = "Building the arena";
-        [SerializeField] string settlingTitle = "Settling the arena";
-        [SerializeField] string waitingTitle = "Waiting for pilots";
-
         [Header("Progress bar")]
-        [Tooltip("Progress of the arena build, 0..1. Forced non-interactable and stripped of its " +
-                 "handle at Awake - it is a READOUT, and a slider a player can drag is a lie about " +
-                 "who is in control of the load.")]
-        [SerializeField] Slider progressSlider;
+        [Tooltip("The one bar, cut into the load's real steps (laying, growing, pilots). It draws the eased value " +
+                 "below and names the step that value is in; its words are its own authored fields.")]
+        [SerializeField] KitStepBar stepBar;
 
         [Tooltip("Seconds the bar takes to catch up to the model. The phases step, and a bar that " +
                  "steps with them reads as broken; easing makes the same numbers read as motion.")]
@@ -78,8 +68,9 @@ namespace CosmicShore.UI
         [SerializeField] Color parkedBackdrop = Color.black;
 
         [Header("Players")]
-        [Tooltip("The pilots panel. The panel also waits for every HUMAN player's arena to finish before it " +
-                 "comes down, so nobody drops into the intro while a teammate is still loading.")]
+        [Tooltip("The pilots this load waits on (the tour screen does not draw them). The panel waits for every " +
+                 "HUMAN player's arena to finish before it comes down, so nobody drops into the intro while a " +
+                 "teammate is still loading; their count is the bar's last share.")]
         [SerializeField] ConnectingPlayerRoster playerRoster;
 
         [Tooltip("Seconds the panel will wait on a peer that never reports. A player who crashed " +
@@ -102,22 +93,11 @@ namespace CosmicShore.UI
         bool _arenaReady;
         bool _opening;
 
-        // True while this machine's arena is built and the panel is only still up because another
-        // human is not. Drives the header - the pilots panel already says WHO.
-        bool _waitingForPeers;
-
-        // The build's stage, as the cell-change screen reads it (EnvironmentLoadVeil.UpdateStage).
-        int _step = -1;
-        float _level;
-        int _growPeak;
-        bool _sawBuild;
-
         readonly ArenaLoadProgress _progress = new();
         readonly PilotCameraPark _park = new();
 
         void Awake()
         {
-            StyleProgressBar();
             EnsurePlayerRoster();
             SetVisible(false);
         }
@@ -138,37 +118,13 @@ namespace CosmicShore.UI
             playerRoster.AdoptSources(gameData, hud ? hud.ProfileIcons : null);
         }
 
-        /// <summary>
-        /// Make the slider a READOUT rather than a control: no interaction, no handle, no selection
-        /// transition, no navigation. The LOOK is authored in the prefab; this only enforces the behaviour.
-        /// </summary>
-        void StyleProgressBar()
-        {
-            if (!progressSlider) return;
-
-            progressSlider.interactable = false;
-            progressSlider.transition = Selectable.Transition.None;
-            progressSlider.navigation = new Navigation { mode = Navigation.Mode.None };
-            progressSlider.minValue = 0f;
-            progressSlider.maxValue = 1f;
-            progressSlider.wholeNumbers = false;
-            progressSlider.value = 0f;
-
-            if (progressSlider.handleRect)
-                progressSlider.handleRect.gameObject.SetActive(false);
-            progressSlider.handleRect = null;
-        }
-
         void Update()
         {
             if (!_showing || _opening) return;
 
             ParkGameplayCamera();
             float bar = TickProgress();
-            UpdateStage();
-            if (gate)
-                gate.Tick(_step, _level, bar, PrismTrailBuilder.LayDoneCount, PrismTrailBuilder.LayQueuedCount);
-            DrawPhase();
+            if (gate) gate.Tick(bar);
         }
 
         /// <summary>
@@ -192,28 +148,16 @@ namespace CosmicShore.UI
         float TickProgress()
         {
             float target = _progress.Tick(
-                Time.unscaledDeltaTime,
                 PrismTrailBuilder.IsLayingInProgress,
                 PrismTrailBuilder.LayProgress,
                 PrismTrailBuilder.GrowRemainingCount,
-                _arenaReady);
+                _arenaReady,
+                playerRoster ? playerRoster.ReadyHumanCount : 0,
+                playerRoster ? playerRoster.HumanCount : 0);
 
             _shownProgress = Mathf.Lerp(_shownProgress, target, Mathf.Clamp01(Time.unscaledDeltaTime / barSmoothing));
-            if (progressSlider) progressSlider.value = _shownProgress;
+            if (stepBar) stepBar.Show(_shownProgress, false);
             return _shownProgress;
-        }
-
-        // The four steps and the crystal, read the way the cell-change screen reads them. The panel's gate is held
-        // throughout; "released" is the gate opening, so a peer wait sits on the all-clear step.
-        void UpdateStage()
-        {
-            bool laying = PrismTrailBuilder.IsLayingInProgress;
-            int grow = PrismTrailBuilder.GrowRemainingCount;
-            if (laying || grow > 0) _sawBuild = true;
-            _growPeak = Mathf.Max(_growPeak, grow);
-            _step = EnvironmentLoadVeil.StepFor(_step, true, false, laying, grow, _sawBuild || _arenaReady);
-            if (_arenaReady) _step = Mathf.Max(_step, 2);
-            _level = EnvironmentLoadVeil.CrystalLevel(_level, _step, PrismTrailBuilder.LayProgress, grow, _growPeak);
         }
 
         /// <param name="ct">Cancellation (HUD lifecycle).</param>
@@ -224,12 +168,7 @@ namespace CosmicShore.UI
         {
             _shownProgress = 0f;
             _arenaReady = false;
-            _waitingForPeers = false;
             _opening = false;
-            _step = -1;
-            _level = 0f;
-            _growPeak = 0;
-            _sawBuild = false;
             _progress.Reset();
 
             SetVisible(true);
@@ -244,6 +183,7 @@ namespace CosmicShore.UI
             RenderGameMode();
             RenderRank();
             if (gate) gate.BeginHold();
+            if (stepBar) stepBar.Show(0f, false);
 
             try
             {
@@ -254,8 +194,8 @@ namespace CosmicShore.UI
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
-                // THIS machine's arena is complete: the bar finishes here, because the bar measures the build and
-                // the build is done. Whatever is waited on next is a different wait and says so in its own words.
+                // THIS machine's arena is complete: the bar moves into its last share, the pilots who have reported
+                // their own arena built (ArenaLoadProgress.PilotsFloor). Alone, that is all of them at once.
                 _arenaReady = true;
 
                 await WaitForPeersAsync(ct);
@@ -282,65 +222,32 @@ namespace CosmicShore.UI
             playerRoster.ReportLocalReady();
             if (playerRoster.AllHumansReady) return;
 
-            _waitingForPeers = true;
             float waited = 0f;
-            try
+            while (!playerRoster.AllHumansReady)
             {
-                while (!playerRoster.AllHumansReady)
+                if (waited >= peerWaitTimeoutSeconds)
                 {
-                    if (waited >= peerWaitTimeoutSeconds)
-                    {
-                        CSDebug.LogWarning(
-                            $"[ConnectingPanel] Released after waiting {peerWaitTimeoutSeconds:F0}s for " +
-                            $"{playerRoster.HumanCount - playerRoster.ReadyHumanCount} player(s) who never " +
-                            "reported their arena built - starting anyway.");
-                        return;
-                    }
-
-                    // The local player may spawn after the build finishes on a slow client; keep asking rather than
-                    // reporting once into a null LocalPlayer and hanging on ourselves.
-                    playerRoster.ReportLocalReady();
-
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                    waited += Time.unscaledDeltaTime;
+                    CSDebug.LogWarning(
+                        $"[ConnectingPanel] Released after waiting {peerWaitTimeoutSeconds:F0}s for " +
+                        $"{playerRoster.HumanCount - playerRoster.ReadyHumanCount} player(s) who never " +
+                        "reported their arena built - starting anyway.");
+                    return;
                 }
-            }
-            finally
-            {
-                _waitingForPeers = false;
-            }
-        }
 
-        // The steps panel's header: the phase, from authored words.
-        void DrawPhase()
-        {
-            if (!phaseTitle) return;
-            string title = _waitingForPeers ? waitingTitle
-                : PrismTrailBuilder.IsLayingInProgress ? buildingTitle
-                : PrismTrailBuilder.GrowRemainingCount > 0 ? settlingTitle
-                : _sawBuild ? settlingTitle
-                : connectingTitle;
-            if (phaseTitle.text == title) return;
-            phaseTitle.text = title;
-            if (phaseTitleEntrance) phaseTitleEntrance.Play();
+                // The local player may spawn after the build finishes on a slow client; keep asking rather than
+                // reporting once into a null LocalPlayer and hanging on ourselves.
+                playerRoster.ReportLocalReady();
+
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                waited += Time.unscaledDeltaTime;
+            }
         }
 
         void RenderGameMode()
         {
             var mode = gameData != null ? gameData.GameMode : default;
             if (gameModeText) gameModeText.text = ResolveModeName(mode);
-
-            var words = introWords ? introWords.WordsFor(mode) : null;
-            int intensity = gameData != null && gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 0;
-            if (gate) gate.Bind(words?.Tagline, words?.Objective, intensity, ResolveTip(mode));
-        }
-
-        // One of the mode's own play tips (its arcade card's), or none.
-        string ResolveTip(GameModes mode)
-        {
-            var card = FindCard(mode) as SO_ArcadeGame;
-            if (card == null || card.Tips == null || card.Tips.Count == 0) return string.Empty;
-            return card.Tips[UnityEngine.Random.Range(0, card.Tips.Count)];
+            if (gate) gate.Bind();
         }
 
         SO_Game FindCard(GameModes mode)
@@ -402,7 +309,7 @@ namespace CosmicShore.UI
             canvasGroup.blocksRaycasts = visible;
         }
 
-        // The load is over: the world draws again, the tempo goes back, and the crystal's hex opens into the arena.
+        // The load is over: the world draws again, the tempo goes back, the bar reads done and the gate opens.
         void Hide()
         {
             // The covered tempo belonged to this hold. SetLoadGateHolding(false) clears it too; clearing it here as
@@ -418,9 +325,9 @@ namespace CosmicShore.UI
             if (gate && _showing && isActiveAndEnabled)
             {
                 _opening = true;
-                _step = 3;
-                _level = 1f;
-                gate.Tick(_step, _level, 1f, PrismTrailBuilder.LayDoneCount, PrismTrailBuilder.LayQueuedCount);
+                _shownProgress = 1f;
+                if (stepBar) stepBar.Show(1f, true);
+                gate.Tick(1f);
                 EnsureCanvasGroup();
                 canvasGroup.blocksRaycasts = false;
                 gate.Open(() =>

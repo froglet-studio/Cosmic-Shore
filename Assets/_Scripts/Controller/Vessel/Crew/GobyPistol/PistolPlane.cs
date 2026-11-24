@@ -443,8 +443,8 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// Where the Pistol's islands end (Garrett, 2026-10-23: "the goby is barely cruising around at all ... lets start by
-    /// tuning their movement"). The Goby cruises between perches; a dart's end becomes a PERCH, the end of an island, only
-    /// once it is <c>islandMinLength</c> from the last perch, and a longer gap is laid as islands of at most
+    /// tuning their movement"). The Goby only darts (Garrett, 2026-11-24: it never flies); a landing becomes a PERCH, the
+    /// end of an island, only once it is <c>islandMinLength</c> from the last one (nearer, it is a hop), and a longer gap is laid as islands of at most
     /// <c>islandMaxLength</c>, so the Pistol always rides the island length its Tiny Wings ride is tuned for. Pure.
     /// </summary>
     public static class GobyIslands

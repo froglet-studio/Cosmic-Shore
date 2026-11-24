@@ -1,0 +1,3845 @@
+{
+ "about": "New pilots planned by Tools/Build/pilot_art/roster.py so every player can own a unique crew (Garrett, 2026-11-18). Each is the person creator.roll mints for its seed. state: planned, designed (a scene record exists), painted (its scene is captured).",
+ "pilots": [
+  {
+   "word": "Joriro",
+   "callsign": "ENSIGN",
+   "n": 0,
+   "seed": "876bd79a9972e831",
+   "person": "Joriro Wavecove",
+   "heritage": [
+    "Pangolin",
+    "Yak"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Dellalia",
+   "callsign": "MANGER",
+   "n": 0,
+   "seed": "a73209fa9bf26ca5",
+   "person": "Dellalia Tidebloom",
+   "heritage": [
+    "Narwhal",
+    "Jellyfish"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "The Bright Buoys",
+   "state": "painted"
+  },
+  {
+   "word": "Sabero",
+   "callsign": "ANVIL",
+   "n": 0,
+   "seed": "62032f2886acc54f",
+   "person": "Sabero Lowrest",
+   "heritage": [
+    "Badger",
+    "Tardigrade"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Amber Ledger Guild",
+   "state": "painted"
+  },
+  {
+   "word": "Olo",
+   "callsign": "VOLT",
+   "n": 0,
+   "seed": "f632ea627c0de59a",
+   "person": "Olo Spindlewing",
+   "heritage": [
+    "Koi",
+    "Fennec"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Rolamo",
+   "callsign": "ZODIAC",
+   "n": 0,
+   "seed": "2c9af6982f03ead8",
+   "person": "Rolamo Mirehollow",
+   "heritage": [
+    "Ibis",
+    "Tortoise"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Yox",
+   "callsign": "SUNDIAL",
+   "n": 0,
+   "seed": "d1bdf2de911d953b",
+   "person": "Yox Lowhook",
+   "heritage": [
+    "Ocelot",
+    "Mole"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Xathata",
+   "callsign": "OPAL",
+   "n": 0,
+   "seed": "885b88e47f43658a",
+   "person": "Xathata Ashwell",
+   "heritage": [
+    "Moose",
+    "Gecko"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Belthaly",
+   "callsign": "RAMPART",
+   "n": 0,
+   "seed": "672243ef4cd76e80",
+   "person": "Belthaly Wavewell",
+   "heritage": [
+    "Lynx",
+    "Hyena"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "Envoys of the Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Nethael",
+   "callsign": "CITADEL",
+   "n": 0,
+   "seed": "b75fe232e1848bfc",
+   "person": "Nethael Foamridge",
+   "heritage": [
+    "Hummingbird",
+    "Armadillo"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted"
+  },
+  {
+   "word": "Mamo",
+   "callsign": "HORNET",
+   "n": 0,
+   "seed": "79a8e4e41d064668",
+   "person": "Mamo Silverthorn",
+   "heritage": [
+    "Pangolin",
+    "Ibis"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Driftnet Cooperative",
+   "state": "painted"
+  },
+  {
+   "word": "Xalaai",
+   "callsign": "IVY",
+   "n": 0,
+   "seed": "51065a9388b58885",
+   "person": "Xalaai Shellhollow",
+   "heritage": [
+    "Mole",
+    "Firefly"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Briola",
+   "callsign": "TALON",
+   "n": 0,
+   "seed": "cea62d634cb6cbff",
+   "person": "Briola Whistlefield",
+   "heritage": [
+    "Narwhal",
+    "Armadillo"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "House Verdance",
+   "state": "painted"
+  },
+  {
+   "word": "Peveth",
+   "callsign": "DOE",
+   "n": 0,
+   "seed": "9b694c257314f991",
+   "person": "Peveth Driftrest",
+   "heritage": [
+    "Lobster",
+    "Crane"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted"
+  },
+  {
+   "word": "Fenra",
+   "callsign": "WINGMAN",
+   "n": 0,
+   "seed": "77840e213605fdf4",
+   "person": "Fenra Greywell",
+   "heritage": [
+    "Cuttlefish",
+    "Sloth"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Amber Ledger Guild",
+   "state": "painted"
+  },
+  {
+   "word": "Corrarin",
+   "callsign": "BANDIT",
+   "n": 0,
+   "seed": "b27d2f69601baefe",
+   "person": "Corrarin Deepreach",
+   "heritage": [
+    "Mole",
+    "Lynx"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Court of Still Water",
+   "state": "painted"
+  },
+  {
+   "word": "Neloel",
+   "callsign": "NEEDLE",
+   "n": 0,
+   "seed": "99a00999d96f93bd",
+   "person": "Neloel Anchorfall",
+   "heritage": [
+    "Firefly",
+    "Ibis"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Institute of the Shore",
+   "state": "painted"
+  },
+  {
+   "word": "Uthael",
+   "callsign": "GALLEON",
+   "n": 0,
+   "seed": "5ed41c121dedf5fc",
+   "person": "Uthael Stormdrift",
+   "heritage": [
+    "Puffin",
+    "Hedgehog"
+   ],
+   "faction": "Priest",
+   "faction_name": "Order of the Slow Tide",
+   "state": "painted"
+  },
+  {
+   "word": "Cario",
+   "callsign": "FLUME",
+   "n": 0,
+   "seed": "e40fddab8eedcdd8",
+   "person": "Cario Emberrest",
+   "heritage": [
+    "Axolotl",
+    "Platypus"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Brass Lantern Company",
+   "state": "painted"
+  },
+  {
+   "word": "Lulaane",
+   "callsign": "ENSIGN",
+   "n": 1,
+   "seed": "dacc5935a8eb2d1f",
+   "person": "Lulaane Whistlewright",
+   "heritage": [
+    "Badger",
+    "Koi"
+   ],
+   "faction": "Explorer",
+   "faction_name": "The Unmapped",
+   "state": "painted"
+  },
+  {
+   "word": "Belrenro",
+   "callsign": "MANGER",
+   "n": 1,
+   "seed": "f20ef39e0c1f4d73",
+   "person": "Belrenro Frostbrook",
+   "heritage": [
+    "Cuttlefish",
+    "Gecko"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted"
+  },
+  {
+   "word": "Zeriola",
+   "callsign": "ANVIL",
+   "n": 1,
+   "seed": "e5643c8c7881cd28",
+   "person": "Zeriola Lanternsong",
+   "heritage": [
+    "Tardigrade",
+    "Jellyfish"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Maloane",
+   "callsign": "VOLT",
+   "n": 1,
+   "seed": "84cf6c149deb545d",
+   "person": "Maloane Wavegate",
+   "heritage": [
+    "Tapir",
+    "Toucan"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Fenx",
+   "callsign": "ZODIAC",
+   "n": 1,
+   "seed": "f155f6af3abca632",
+   "person": "Fenx Brightlight",
+   "heritage": [
+    "Hedgehog",
+    "Wolf"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Steadfast Joinery",
+   "state": "painted"
+  },
+  {
+   "word": "Quilox",
+   "callsign": "SUNDIAL",
+   "n": 1,
+   "seed": "04e09171c457b537",
+   "person": "Quilox Ambermere",
+   "heritage": [
+    "Pelican",
+    "Axolotl"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Moonsedge Pack",
+   "state": "painted"
+  },
+  {
+   "word": "Pediri",
+   "callsign": "OPAL",
+   "n": 1,
+   "seed": "ffa0564b45377a55",
+   "person": "Pediri Wakereach",
+   "heritage": [
+    "Lynx",
+    "Moose"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "House Verdance",
+   "state": "painted"
+  },
+  {
+   "word": "Zesondo",
+   "callsign": "RAMPART",
+   "n": 1,
+   "seed": "1008b7f7c6ba4ac1",
+   "person": "Zesondo Kelphook",
+   "heritage": [
+    "Lobster",
+    "Newt"
+   ],
+   "faction": "Researcher",
+   "faction_name": "The Tidal Archive",
+   "state": "painted"
+  },
+  {
+   "word": "Mirin",
+   "callsign": "CITADEL",
+   "n": 1,
+   "seed": "33f284257258a208",
+   "person": "Mirin Dawnstone",
+   "heritage": [
+    "Lynx",
+    "Crane"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Olone",
+   "callsign": "HORNET",
+   "n": 1,
+   "seed": "d159b818ac545034",
+   "person": "Olone Deepwright",
+   "heritage": [
+    "Heron",
+    "Moose"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Moonsedge Pack",
+   "state": "painted"
+  },
+  {
+   "word": "Quikoth",
+   "callsign": "IVY",
+   "n": 2,
+   "seed": "2ec51f100b165092",
+   "person": "Quikoth Ashfield",
+   "heritage": [
+    "Badger",
+    "Axolotl"
+   ],
+   "faction": "Researcher",
+   "faction_name": "The Tidal Archive",
+   "state": "painted"
+  },
+  {
+   "word": "Athara",
+   "callsign": "TALON",
+   "n": 1,
+   "seed": "77e1ddc1355d0fb2",
+   "person": "Athara Glassmore",
+   "heritage": [
+    "Firefly",
+    "Otter"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Institute of the Shore",
+   "state": "painted"
+  },
+  {
+   "word": "Takoane",
+   "callsign": "DOE",
+   "n": 1,
+   "seed": "a1b211591ea08d5e",
+   "person": "Takoane Sandfin",
+   "heritage": [
+    "Jellyfish",
+    "Fennec"
+   ],
+   "faction": "Preservationist",
+   "faction_name": "Reefward Trust",
+   "state": "painted"
+  },
+  {
+   "word": "Dellorin",
+   "callsign": "WINGMAN",
+   "n": 1,
+   "seed": "a08647fe4bd028ef",
+   "person": "Dellorin Stillbell",
+   "heritage": [
+    "Axolotl",
+    "Puffin"
+   ],
+   "faction": "Activist",
+   "faction_name": "Open Current",
+   "state": "painted"
+  },
+  {
+   "word": "Maix",
+   "callsign": "BANDIT",
+   "n": 2,
+   "seed": "0553b90e7953f31a",
+   "person": "Maix Whistlesworth",
+   "heritage": [
+    "Lynx",
+    "Mantis"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Red Reef Rovers",
+   "state": "painted"
+  },
+  {
+   "word": "Mirisa",
+   "callsign": "NEEDLE",
+   "n": 1,
+   "seed": "1160be8109219449",
+   "person": "Mirisa Saltward",
+   "heritage": [
+    "Koi",
+    "Chameleon"
+   ],
+   "faction": "Researcher",
+   "faction_name": "The Tidal Archive",
+   "state": "painted"
+  },
+  {
+   "word": "Cakoola",
+   "callsign": "GALLEON",
+   "n": 1,
+   "seed": "7e14d1487c2cec13",
+   "person": "Cakoola Lanterndrift",
+   "heritage": [
+    "Yak",
+    "Jellyfish"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Corlilia",
+   "callsign": "FLUME",
+   "n": 1,
+   "seed": "edbab3f081700389",
+   "person": "Corlilia Rustmark",
+   "heritage": [
+    "Raven",
+    "Heron"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Copperclaim Agency",
+   "state": "painted"
+  },
+  {
+   "word": "Galsoola",
+   "callsign": "ENSIGN",
+   "n": 3,
+   "seed": "eb98f0a4c549fc41",
+   "person": "Galsoola Gulltail",
+   "heritage": [
+    "Lemur",
+    "Gecko"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Veveola",
+   "callsign": "MANGER",
+   "n": 2,
+   "seed": "e552014116cd923c",
+   "person": "Veveola Spindlespark",
+   "heritage": [
+    "Orangutan",
+    "Tardigrade"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Saltmark Consortium",
+   "state": "painted"
+  },
+  {
+   "word": "Zeth",
+   "callsign": "ANVIL",
+   "n": 2,
+   "seed": "a62ce81bf8bbef25",
+   "person": "Zeth Starwater",
+   "heritage": [
+    "Owl",
+    "Newt"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Far Shoal Society",
+   "state": "painted"
+  },
+  {
+   "word": "Rosondo",
+   "callsign": "VOLT",
+   "n": 3,
+   "seed": "a4747b79ddb4eab5",
+   "person": "Rosondo Rusthollow",
+   "heritage": [
+    "Armadillo",
+    "Tardigrade"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Institute of the Shore",
+   "state": "painted"
+  },
+  {
+   "word": "Uline",
+   "callsign": "ZODIAC",
+   "n": 2,
+   "seed": "05894eb45598bff7",
+   "person": "Uline Shellmoor",
+   "heritage": [
+    "Ibis",
+    "Newt"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Far Shoal Society",
+   "state": "painted"
+  },
+  {
+   "word": "Lunulo",
+   "callsign": "SUNDIAL",
+   "n": 2,
+   "seed": "1cf723ab57d827c2",
+   "person": "Lunulo Stormlight",
+   "heritage": [
+    "Pangolin",
+    "Gecko"
+   ],
+   "faction": "Thief",
+   "faction_name": "Whisperkelp",
+   "state": "painted"
+  },
+  {
+   "word": "Ovex",
+   "callsign": "OPAL",
+   "n": 3,
+   "seed": "4e69d5250ca3bd0e",
+   "person": "Ovex Driftsong",
+   "heritage": [
+    "Mole",
+    "Pelican"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Jodiola",
+   "callsign": "RAMPART",
+   "n": 2,
+   "seed": "898ed70efa3eb00c",
+   "person": "Jodiola Emberthorn",
+   "heritage": [
+    "Hyena",
+    "Narwhal"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Pekoar",
+   "callsign": "CITADEL",
+   "n": 2,
+   "seed": "38646af8abb79243",
+   "person": "Pekoar Starwright",
+   "heritage": [
+    "Seahorse",
+    "Yak"
+   ],
+   "faction": "Explorer",
+   "faction_name": "The Unmapped",
+   "state": "painted"
+  },
+  {
+   "word": "Quibemo",
+   "callsign": "HORNET",
+   "n": 2,
+   "seed": "8c9eb51bcf0ef176",
+   "person": "Quibemo Ashstone",
+   "heritage": [
+    "Yak",
+    "Platypus"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Mamaola",
+   "callsign": "IVY",
+   "n": 3,
+   "seed": "87e3440f82a198f4",
+   "person": "Mamaola Crestmark",
+   "heritage": [
+    "Puffin",
+    "Moose"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "The Patient Harvest",
+   "state": "painted"
+  },
+  {
+   "word": "Tanuwen",
+   "callsign": "TALON",
+   "n": 2,
+   "seed": "feed4566b1ea1e19",
+   "person": "Tanuwen Spindlespark",
+   "heritage": [
+    "Heron",
+    "Orangutan"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Wyve",
+   "callsign": "DOE",
+   "n": 2,
+   "seed": "970ec4f76cf419b4",
+   "person": "Wyve Stillline",
+   "heritage": [
+    "Bison",
+    "Koi"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Amber Ledger Guild",
+   "state": "painted"
+  },
+  {
+   "word": "Delliar",
+   "callsign": "WINGMAN",
+   "n": 2,
+   "seed": "91007a9e18f86dc7",
+   "person": "Delliar Brinewater",
+   "heritage": [
+    "Owl",
+    "Heron"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "House Albrine",
+   "state": "painted"
+  },
+  {
+   "word": "Delsoko",
+   "callsign": "BANDIT",
+   "n": 3,
+   "seed": "fd6408011f39dff2",
+   "person": "Delsoko Tidehook",
+   "heritage": [
+    "Ocelot",
+    "Cuttlefish"
+   ],
+   "faction": "Thief",
+   "faction_name": "Whisperkelp",
+   "state": "painted"
+  },
+  {
+   "word": "Nemaix",
+   "callsign": "NEEDLE",
+   "n": 2,
+   "seed": "7a4e84cc997b0b16",
+   "person": "Nemaix Hollowline",
+   "heritage": [
+    "Armadillo",
+    "Tapir"
+   ],
+   "faction": "Priest",
+   "faction_name": "The Ninefold Shell",
+   "state": "painted"
+  },
+  {
+   "word": "Brilolia",
+   "callsign": "GALLEON",
+   "n": 2,
+   "seed": "c55ba2a4417821ea",
+   "person": "Brilolia Coralrest",
+   "heritage": [
+    "Gecko",
+    "Tardigrade"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Writ and Hook",
+   "state": "painted"
+  },
+  {
+   "word": "Ithax",
+   "callsign": "FLUME",
+   "n": 2,
+   "seed": "9674b9609644792f",
+   "person": "Ithax Moonmark",
+   "heritage": [
+    "Armadillo",
+    "Mantis"
+   ],
+   "faction": "Thief",
+   "faction_name": "The Pickled Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Makoola",
+   "callsign": "ENSIGN",
+   "n": 5,
+   "seed": "d5acf45146ec5b12",
+   "person": "Makoola Starsail",
+   "heritage": [
+    "Jackal",
+    "Toucan"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Deepreed Stalkers",
+   "state": "painted"
+  },
+  {
+   "word": "Talolo",
+   "callsign": "MANGER",
+   "n": 3,
+   "seed": "aea96b5aa870f669",
+   "person": "Talolo Foamrest",
+   "heritage": [
+    "Ibis",
+    "Mole"
+   ],
+   "faction": "Thief",
+   "faction_name": "Velvet Gill",
+   "state": "painted"
+  },
+  {
+   "word": "Iri",
+   "callsign": "ANVIL",
+   "n": 4,
+   "seed": "3a620ed0fa2c72ee",
+   "person": "Iri Whistlebell",
+   "heritage": [
+    "Bison",
+    "Puffin"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Miben",
+   "callsign": "VOLT",
+   "n": 5,
+   "seed": "db581f639b404345",
+   "person": "Miben Glasscove",
+   "heritage": [
+    "Heron",
+    "Otter"
+   ],
+   "faction": "Sport",
+   "faction_name": "Slipstream Racing Club",
+   "state": "painted"
+  },
+  {
+   "word": "Verao",
+   "callsign": "ZODIAC",
+   "n": 5,
+   "seed": "5a78b57509e424b8",
+   "person": "Verao Emberrest",
+   "heritage": [
+    "Chameleon",
+    "Cuttlefish"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Amber Ledger Guild",
+   "state": "painted"
+  },
+  {
+   "word": "Brisilia",
+   "callsign": "SUNDIAL",
+   "n": 3,
+   "seed": "9aa3ff094f2a14d5",
+   "person": "Brisilia Stillridge",
+   "heritage": [
+    "Hummingbird",
+    "Mantis"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Pewen",
+   "callsign": "OPAL",
+   "n": 4,
+   "seed": "28bacc0b44c27a0a",
+   "person": "Pewen Reefwatch",
+   "heritage": [
+    "Bison",
+    "Capybara"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Copperclaim Agency",
+   "state": "painted"
+  },
+  {
+   "word": "Briraix",
+   "callsign": "RAMPART",
+   "n": 3,
+   "seed": "1b88d7634baea370",
+   "person": "Briraix Driftthorn",
+   "heritage": [
+    "Fennec",
+    "Beetle"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Moonsedge Pack",
+   "state": "painted"
+  },
+  {
+   "word": "Mata",
+   "callsign": "CITADEL",
+   "n": 4,
+   "seed": "c7ee1aa2a413b793",
+   "person": "Mata Deepridge",
+   "heritage": [
+    "Tapir",
+    "Lemur"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Ludira",
+   "callsign": "HORNET",
+   "n": 4,
+   "seed": "60a545c6ab360ddd",
+   "person": "Ludira Kelpfin",
+   "heritage": [
+    "Newt",
+    "Lemur"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Court of Still Water",
+   "state": "painted"
+  },
+  {
+   "word": "Belsiar",
+   "callsign": "IVY",
+   "n": 5,
+   "seed": "6142dea336e0020d",
+   "person": "Belsiar Silvermore",
+   "heritage": [
+    "Yak",
+    "Pelican"
+   ],
+   "faction": "Activist",
+   "faction_name": "Open Current",
+   "state": "painted"
+  },
+  {
+   "word": "Canuar",
+   "callsign": "TALON",
+   "n": 3,
+   "seed": "91e82a6d540fd392",
+   "person": "Canuar Stormwatch",
+   "heritage": [
+    "Lemur",
+    "Walrus"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Hollowfen Trackers",
+   "state": "painted"
+  },
+  {
+   "word": "Uro",
+   "callsign": "DOE",
+   "n": 4,
+   "seed": "e1ca7736ee984cad",
+   "person": "Uro Spindlefield",
+   "heritage": [
+    "Tortoise",
+    "Firefly"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Emao",
+   "callsign": "WINGMAN",
+   "n": 4,
+   "seed": "eca3aae6d9a0222a",
+   "person": "Emao Ambermark",
+   "heritage": [
+    "Wolf",
+    "Badger"
+   ],
+   "faction": "Priest",
+   "faction_name": "Choir of the Deep",
+   "state": "painted"
+  },
+  {
+   "word": "Ora",
+   "callsign": "BANDIT",
+   "n": 4,
+   "seed": "0cd650b2a1b3b324",
+   "person": "Ora Spindlestone",
+   "heritage": [
+    "Beetle",
+    "Platypus"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Bright Hull Works",
+   "state": "painted"
+  },
+  {
+   "word": "Nemath",
+   "callsign": "NEEDLE",
+   "n": 4,
+   "seed": "be23ac9f5d3f56a9",
+   "person": "Nemath Dawnward",
+   "heritage": [
+    "Tortoise",
+    "Lemur"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Oth",
+   "callsign": "GALLEON",
+   "n": 3,
+   "seed": "31d011bd3289e9cc",
+   "person": "Oth Farmere",
+   "heritage": [
+    "Firefly",
+    "Hedgehog"
+   ],
+   "faction": "Preservationist",
+   "faction_name": "Reefward Trust",
+   "state": "painted"
+  },
+  {
+   "word": "Sasoko",
+   "callsign": "FLUME",
+   "n": 9,
+   "seed": "0eebfed628867646",
+   "person": "Sasoko Hollowwell",
+   "heritage": [
+    "Hummingbird",
+    "Moose"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Anudek",
+   "callsign": "OPAL",
+   "n": 6,
+   "seed": "d11115590b01a90a",
+   "person": "Anudek Silversong",
+   "heritage": [
+    "Puffin",
+    "Octopus"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Steadfast Joinery",
+   "state": "painted"
+  },
+  {
+   "word": "Xabedek",
+   "callsign": "IVY",
+   "n": 9,
+   "seed": "582d3971a6570ff8",
+   "person": "Xabedek Stormgate",
+   "heritage": [
+    "Eel",
+    "Newt"
+   ],
+   "faction": "Priest",
+   "faction_name": "Order of the Slow Tide",
+   "state": "painted"
+  },
+  {
+   "word": "Belsoth",
+   "callsign": "DOE",
+   "n": 5,
+   "seed": "7c8a488df8d1d467",
+   "person": "Belsoth Deepwell",
+   "heritage": [
+    "Fennec",
+    "Pangolin"
+   ],
+   "faction": "Explorer",
+   "faction_name": "The Unmapped",
+   "state": "painted"
+  },
+  {
+   "word": "Zebeel",
+   "callsign": "FLUME",
+   "n": 11,
+   "seed": "e88816dad2097827",
+   "person": "Zebeel Reefsail",
+   "heritage": [
+    "Jellyfish",
+    "Seahorse"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Lusiel",
+   "callsign": "ENSIGN",
+   "n": 6,
+   "seed": "a7bfb6aa4daaf365",
+   "person": "Lusiel Lanternwater",
+   "heritage": [
+    "Mantis",
+    "Sloth"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Driftnet Cooperative",
+   "state": "painted"
+  },
+  {
+   "word": "Tathadek",
+   "callsign": "MANGER",
+   "n": 4,
+   "seed": "d5e044c6b68b5787",
+   "person": "Tathadek Amberward",
+   "heritage": [
+    "Wolf",
+    "Pangolin"
+   ],
+   "faction": "Thief",
+   "faction_name": "Whisperkelp",
+   "state": "painted"
+  },
+  {
+   "word": "Brisoo",
+   "callsign": "ANVIL",
+   "n": 5,
+   "seed": "e22fde25029b51bd",
+   "person": "Brisoo Brinereach",
+   "heritage": [
+    "Axolotl",
+    "Lemur"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Writ and Hook",
+   "state": "painted"
+  },
+  {
+   "word": "Galsodek",
+   "callsign": "VOLT",
+   "n": 6,
+   "seed": "89c2ada793727ffe",
+   "person": "Galsodek Driftfall",
+   "heritage": [
+    "Mole",
+    "Wolf"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Amber Ledger Guild",
+   "state": "painted"
+  },
+  {
+   "word": "Brivelo",
+   "callsign": "ZODIAC",
+   "n": 6,
+   "seed": "47e147b73e47d0d5",
+   "person": "Brivelo Greyrest",
+   "heritage": [
+    "Capybara",
+    "Koi"
+   ],
+   "faction": "Thief",
+   "faction_name": "The Pickled Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Veveai",
+   "callsign": "SUNDIAL",
+   "n": 5,
+   "seed": "e92681d3db0de24a",
+   "person": "Veveai Dawnridge",
+   "heritage": [
+    "Lemur",
+    "Pelican"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Tadiwen",
+   "callsign": "OPAL",
+   "n": 8,
+   "seed": "b6df4c299270c725",
+   "person": "Tadiwen Driftwhistle",
+   "heritage": [
+    "Otter",
+    "Moose"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Far Shoal Society",
+   "state": "painted"
+  },
+  {
+   "word": "Esius",
+   "callsign": "RAMPART",
+   "n": 4,
+   "seed": "ec34abbc64d20bb3",
+   "person": "Esius Greydrift",
+   "heritage": [
+    "Jellyfish",
+    "Capybara"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Eradek",
+   "callsign": "CITADEL",
+   "n": 5,
+   "seed": "25b8c51d085894c4",
+   "person": "Eradek Kelpkeel",
+   "heritage": [
+    "Ibis",
+    "Wolf"
+   ],
+   "faction": "Priest",
+   "faction_name": "Choir of the Deep",
+   "state": "painted"
+  },
+  {
+   "word": "Isoro",
+   "callsign": "HORNET",
+   "n": 5,
+   "seed": "1c479c10cbeed3fb",
+   "person": "Isoro Driftmore",
+   "heritage": [
+    "Cheetah",
+    "Mantis shrimp"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Lifeline Corps",
+   "state": "painted",
+   "named": "Garrett, 2026-11-20: a combination he named"
+  },
+  {
+   "word": "Nemix",
+   "callsign": "IVY",
+   "n": 11,
+   "seed": "6910518782f3189d",
+   "person": "Nemix Hollowrunner",
+   "heritage": [
+    "Venus flytrap",
+    "Cordyceps"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Brass Lantern Company",
+   "state": "painted",
+   "named": "Garrett, 2026-11-20: a combination he named"
+  },
+  {
+   "word": "Calio",
+   "callsign": "TALON",
+   "n": 4,
+   "seed": "9d57204b33bb054d",
+   "person": "Calio Dawnrunner",
+   "heritage": [
+    "Kangaroo",
+    "Jackal"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Moonsedge Pack",
+   "state": "painted",
+   "named": "Garrett, 2026-11-20: a combination he named"
+  },
+  {
+   "word": "Hasa",
+   "callsign": "DOE",
+   "n": 6,
+   "seed": "419a01aac2ea7a5d",
+   "person": "Hasa Wavemere",
+   "heritage": [
+    "Eel",
+    "Cuttlefish"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Unmoored",
+   "state": "painted"
+  },
+  {
+   "word": "Irenmo",
+   "callsign": "WINGMAN",
+   "n": 6,
+   "seed": "95eb8644df9f6a63",
+   "person": "Irenmo Lowspark",
+   "heritage": [
+    "Lynx",
+    "Firefly"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Mithamo",
+   "callsign": "BANDIT",
+   "n": 5,
+   "seed": "06f84386525e78ee",
+   "person": "Mithamo Hollowsong",
+   "heritage": [
+    "Chameleon",
+    "Ratel"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted",
+   "named": "Garrett, 2026-11-20: a combination he named"
+  },
+  {
+   "word": "Nekoia",
+   "callsign": "NEEDLE",
+   "n": 5,
+   "seed": "ca59b68a7bf35b65",
+   "person": "Nekoia Foamwater",
+   "heritage": [
+    "Hyena",
+    "Hummingbird"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Unmoored",
+   "state": "painted"
+  },
+  {
+   "word": "Zerilo",
+   "callsign": "GALLEON",
+   "n": 4,
+   "seed": "991240bdd54cfe90",
+   "person": "Zerilo Moonwing",
+   "heritage": [
+    "Yak",
+    "Firefly"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Court of Still Water",
+   "state": "painted"
+  },
+  {
+   "word": "Nebeth",
+   "callsign": "FLUME",
+   "n": 14,
+   "seed": "8bdf627868b7a9cc",
+   "person": "Nebeth Starspark",
+   "heritage": [
+    "Chameleon",
+    "Ocelot"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Keel and Rivet",
+   "state": "painted"
+  },
+  {
+   "word": "Abeko",
+   "callsign": "ENSIGN",
+   "n": 7,
+   "seed": "c90c3319182859ac",
+   "person": "Abeko Deeplight",
+   "heritage": [
+    "Lobster",
+    "Owl"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Zeliai",
+   "callsign": "MANGER",
+   "n": 5,
+   "seed": "375f864024b0a29b",
+   "person": "Zeliai Lanternwhistle",
+   "heritage": [
+    "Ibis",
+    "Lynx"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Gullbone Crew",
+   "state": "painted"
+  },
+  {
+   "word": "Zethave",
+   "callsign": "ANVIL",
+   "n": 6,
+   "seed": "a347f4bcf3817a17",
+   "person": "Zethave Shellhook",
+   "heritage": [
+    "Owl",
+    "Jackal"
+   ],
+   "faction": "Priest",
+   "faction_name": "Choir of the Deep",
+   "state": "painted"
+  },
+  {
+   "word": "Uvelo",
+   "callsign": "VOLT",
+   "n": 8,
+   "seed": "a72bbfbe05c4e8ca",
+   "person": "Uvelo Stillbell",
+   "heritage": [
+    "Hummingbird",
+    "Gecko"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "House Verdance",
+   "state": "painted"
+  },
+  {
+   "word": "Jorish",
+   "callsign": "ZODIAC",
+   "n": 7,
+   "seed": "25f1ca81238cbcbc",
+   "person": "Jorish Ambershore",
+   "heritage": [
+    "Gecko",
+    "Owl"
+   ],
+   "faction": "Researcher",
+   "faction_name": "The Tidal Archive",
+   "state": "painted"
+  },
+  {
+   "word": "Vesidek",
+   "callsign": "SUNDIAL",
+   "n": 7,
+   "seed": "bc2720377d5c9f17",
+   "person": "Vesidek Saltfall",
+   "heritage": [
+    "Raven",
+    "Toucan"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Gallaus",
+   "callsign": "OPAL",
+   "n": 9,
+   "seed": "563ec5e01b142598",
+   "person": "Gallaus Stillmore",
+   "heritage": [
+    "Platypus",
+    "Pelican"
+   ],
+   "faction": "Activist",
+   "faction_name": "Free Shoals League",
+   "state": "painted"
+  },
+  {
+   "word": "Peai",
+   "callsign": "RAMPART",
+   "n": 6,
+   "seed": "7222ab9e1b6e8dac",
+   "person": "Peai Coralfield",
+   "heritage": [
+    "Mole",
+    "Armadillo"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Lifeline Corps",
+   "state": "painted"
+  },
+  {
+   "word": "Harendek",
+   "callsign": "CITADEL",
+   "n": 6,
+   "seed": "31e75c31efc713da",
+   "person": "Harendek Kelpspark",
+   "heritage": [
+    "Toucan",
+    "Pelican"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Rusted Grin",
+   "state": "painted"
+  },
+  {
+   "word": "Delrave",
+   "callsign": "HORNET",
+   "n": 6,
+   "seed": "0837ba8a722f113e",
+   "person": "Delrave Hollowlight",
+   "heritage": [
+    "Hyena",
+    "Badger"
+   ],
+   "faction": "Sport",
+   "faction_name": "Slipstream Racing Club",
+   "state": "painted"
+  },
+  {
+   "word": "Belthax",
+   "callsign": "IVY",
+   "n": 14,
+   "seed": "7226356474a2d525",
+   "person": "Belthax Creststone",
+   "heritage": [
+    "Platypus",
+    "Fennec"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Wardens of the Calm",
+   "state": "painted"
+  },
+  {
+   "word": "Nemiwen",
+   "callsign": "TALON",
+   "n": 5,
+   "seed": "c4b5b9addacff6d6",
+   "person": "Nemiwen Saltgate",
+   "heritage": [
+    "Octopus",
+    "Crane"
+   ],
+   "faction": "Preservationist",
+   "faction_name": "Keepers of the Bloom",
+   "state": "painted"
+  },
+  {
+   "word": "Delnous",
+   "callsign": "DOE",
+   "n": 10,
+   "seed": "6730312b6815a869",
+   "person": "Delnous Anchorweaver",
+   "heritage": [
+    "Octopus",
+    "Orangutan"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Steadfast Joinery",
+   "state": "painted"
+  },
+  {
+   "word": "Darsous",
+   "callsign": "WINGMAN",
+   "n": 8,
+   "seed": "1e6902906d133fc5",
+   "person": "Darsous Silverwatch",
+   "heritage": [
+    "Crane",
+    "Bison"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Saltmark Consortium",
+   "state": "painted"
+  },
+  {
+   "word": "Jomasa",
+   "callsign": "BANDIT",
+   "n": 6,
+   "seed": "7db9400ca48de14d",
+   "person": "Jomasa Gullstone",
+   "heritage": [
+    "Pangolin",
+    "Walrus"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Rusted Grin",
+   "state": "painted"
+  },
+  {
+   "word": "Mamiai",
+   "callsign": "NEEDLE",
+   "n": 6,
+   "seed": "51ae13ad9c503e30",
+   "person": "Mamiai Saltsong",
+   "heritage": [
+    "Beetle",
+    "Mantis"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Steadfast Joinery",
+   "state": "painted"
+  },
+  {
+   "word": "Inuly",
+   "callsign": "GALLEON",
+   "n": 5,
+   "seed": "e04508862b9971fd",
+   "person": "Inuly Greywater",
+   "heritage": [
+    "Owl",
+    "Octopus"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Ush",
+   "callsign": "FLUME",
+   "n": 15,
+   "seed": "aab1eecdc82335e1",
+   "person": "Ush Drifthart",
+   "heritage": [
+    "Armadillo",
+    "Tortoise"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Far Shoal Society",
+   "state": "painted"
+  },
+  {
+   "word": "Venura",
+   "callsign": "ENSIGN",
+   "n": 8,
+   "seed": "ddede7fb2993eb5a",
+   "person": "Venura Amberfield",
+   "heritage": [
+    "Narwhal",
+    "Cuttlefish"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "The Ninth Warrant",
+   "state": "painted"
+  },
+  {
+   "word": "Lutharin",
+   "callsign": "MANGER",
+   "n": 6,
+   "seed": "753b3976028cc390",
+   "person": "Lutharin Tidestone",
+   "heritage": [
+    "Raven",
+    "Platypus"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Driftnet Cooperative",
+   "state": "painted"
+  },
+  {
+   "word": "Tariola",
+   "callsign": "ANVIL",
+   "n": 7,
+   "seed": "20d25d70506d4c91",
+   "person": "Tariola Rustshore",
+   "heritage": [
+    "Capybara",
+    "Platypus"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "Envoys of the Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Jorenne",
+   "callsign": "VOLT",
+   "n": 11,
+   "seed": "ca5a4b1c18c299fe",
+   "person": "Jorenne Rustbrook",
+   "heritage": [
+    "Moose",
+    "Chameleon"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Emasa",
+   "callsign": "ZODIAC",
+   "n": 8,
+   "seed": "0af049ff9e908b38",
+   "person": "Emasa Shellwing",
+   "heritage": [
+    "Tapir",
+    "Tortoise"
+   ],
+   "faction": "Merchant",
+   "faction_name": "House of Seven Scales",
+   "state": "painted"
+  },
+  {
+   "word": "Kamane",
+   "callsign": "SUNDIAL",
+   "n": 8,
+   "seed": "872c26ce777de46a",
+   "person": "Kamane Coralwright",
+   "heritage": [
+    "Hedgehog",
+    "Newt"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Copperclaim Agency",
+   "state": "painted"
+  },
+  {
+   "word": "Yovelia",
+   "callsign": "OPAL",
+   "n": 10,
+   "seed": "7e3b536c81c0cf0b",
+   "person": "Yovelia Frostgate",
+   "heritage": [
+    "Newt",
+    "Seahorse"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Belkosa",
+   "callsign": "RAMPART",
+   "n": 7,
+   "seed": "63a2c3d43b211cdb",
+   "person": "Belkosa Reefridge",
+   "heritage": [
+    "Axolotl",
+    "Hummingbird"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Open Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Kamael",
+   "callsign": "CITADEL",
+   "n": 7,
+   "seed": "abd0220bcd0af76f",
+   "person": "Kamael Drifttail",
+   "heritage": [
+    "Pangolin",
+    "Toucan"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Wymimo",
+   "callsign": "HORNET",
+   "n": 8,
+   "seed": "80c0b03c875e14b9",
+   "person": "Wymimo Amberdrift",
+   "heritage": [
+    "Bison",
+    "Tortoise"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Order of the Last Lure",
+   "state": "painted"
+  },
+  {
+   "word": "Iliwen",
+   "callsign": "IVY",
+   "n": 17,
+   "seed": "56b3a68bc5e70f1e",
+   "person": "Iliwen Amberfall",
+   "heritage": [
+    "Lobster",
+    "Capybara"
+   ],
+   "faction": "Activist",
+   "faction_name": "Free Shoals League",
+   "state": "painted"
+  },
+  {
+   "word": "Hanomo",
+   "callsign": "TALON",
+   "n": 6,
+   "seed": "0c7658d6ee65eb81",
+   "person": "Hanomo Glasswick",
+   "heritage": [
+    "Otter",
+    "Hedgehog"
+   ],
+   "faction": "Activist",
+   "faction_name": "The Unbound Choir",
+   "state": "painted"
+  },
+  {
+   "word": "Nerenlo",
+   "callsign": "DOE",
+   "n": 11,
+   "seed": "2412bb34724a1598",
+   "person": "Nerenlo Crestreach",
+   "heritage": [
+    "Capybara",
+    "Mantis"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Brilalo",
+   "callsign": "WINGMAN",
+   "n": 10,
+   "seed": "8b775671f1347c24",
+   "person": "Brilalo Dawnshore",
+   "heritage": [
+    "Heron",
+    "Fennec"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Brass Lantern Company",
+   "state": "painted"
+  },
+  {
+   "word": "Abero",
+   "callsign": "BANDIT",
+   "n": 8,
+   "seed": "bda5b4a2417ecf44",
+   "person": "Abero Greywing",
+   "heritage": [
+    "Eel",
+    "Sloth"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Copperclaim Agency",
+   "state": "painted"
+  },
+  {
+   "word": "Xamilo",
+   "callsign": "NEEDLE",
+   "n": 7,
+   "seed": "d7a9999172f189ff",
+   "person": "Xamilo Ashhook",
+   "heritage": [
+    "Hedgehog",
+    "Axolotl"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Kakoai",
+   "callsign": "GALLEON",
+   "n": 7,
+   "seed": "281df8fc670e84be",
+   "person": "Kakoai Anchormoor",
+   "heritage": [
+    "Badger",
+    "Fennec"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Tidewright Exchange",
+   "state": "painted"
+  },
+  {
+   "word": "Caane",
+   "callsign": "FLUME",
+   "n": 16,
+   "seed": "293e5715fda6ee30",
+   "person": "Caane Frostdrift",
+   "heritage": [
+    "Lobster",
+    "Wolf"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Jade Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Rolan",
+   "callsign": "ENSIGN",
+   "n": 9,
+   "seed": "50f83ef373419213",
+   "person": "Rolan Glasswatch",
+   "heritage": [
+    "Fennec",
+    "Chameleon"
+   ],
+   "faction": "Thief",
+   "faction_name": "Whisperkelp",
+   "state": "painted"
+  },
+  {
+   "word": "Brirendek",
+   "callsign": "MANGER",
+   "n": 9,
+   "seed": "f2b22b9f8ce15e6e",
+   "person": "Brirendek Gullshore",
+   "heritage": [
+    "Raven",
+    "Firefly"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Longwake Lodge",
+   "state": "painted"
+  },
+  {
+   "word": "Tamalo",
+   "callsign": "ANVIL",
+   "n": 8,
+   "seed": "fa34a8b10e36860b",
+   "person": "Tamalo Gulllight",
+   "heritage": [
+    "Jellyfish",
+    "Tapir"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Deepreed Stalkers",
+   "state": "painted"
+  },
+  {
+   "word": "Brinoix",
+   "callsign": "VOLT",
+   "n": 12,
+   "seed": "e128c6f2630af8bd",
+   "person": "Brinoix Starkeel",
+   "heritage": [
+    "Otter",
+    "Tortoise"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Far Shoal Society",
+   "state": "painted"
+  },
+  {
+   "word": "Karenai",
+   "callsign": "ZODIAC",
+   "n": 9,
+   "seed": "31efdc5a2e1dc7f4",
+   "person": "Karenai Kelpreach",
+   "heritage": [
+    "Fennec",
+    "Eel"
+   ],
+   "faction": "Sport",
+   "faction_name": "Slipstream Racing Club",
+   "state": "painted"
+  },
+  {
+   "word": "Cornoly",
+   "callsign": "SUNDIAL",
+   "n": 9,
+   "seed": "73ee77fa6b7d9e69",
+   "person": "Cornoly Hollowfield",
+   "heritage": [
+    "Pelican",
+    "Pangolin"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Driftnet Cooperative",
+   "state": "painted"
+  },
+  {
+   "word": "Darveia",
+   "callsign": "OPAL",
+   "n": 11,
+   "seed": "95a2789ce58ccd8d",
+   "person": "Darveia Stillgate",
+   "heritage": [
+    "Axolotl",
+    "Armadillo"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Unmoored",
+   "state": "painted"
+  },
+  {
+   "word": "Darsiel",
+   "callsign": "RAMPART",
+   "n": 8,
+   "seed": "03852ee6e8615963",
+   "person": "Darsiel Mirerunner",
+   "heritage": [
+    "Gecko",
+    "Walrus"
+   ],
+   "faction": "Preservationist",
+   "faction_name": "Reefward Trust",
+   "state": "painted"
+  },
+  {
+   "word": "Gallara",
+   "callsign": "CITADEL",
+   "n": 8,
+   "seed": "75a53708c6993159",
+   "person": "Gallara Kelpdrift",
+   "heritage": [
+    "Seahorse",
+    "Beetle"
+   ],
+   "faction": "Thief",
+   "faction_name": "Velvet Gill",
+   "state": "painted"
+  },
+  {
+   "word": "Pemius",
+   "callsign": "HORNET",
+   "n": 9,
+   "seed": "3375c24c1e61cfa3",
+   "person": "Pemius Gullmark",
+   "heritage": [
+    "Owl",
+    "Ibis"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Gullbone Crew",
+   "state": "painted"
+  },
+  {
+   "word": "Brirensh",
+   "callsign": "IVY",
+   "n": 18,
+   "seed": "115475d2a6cd99e8",
+   "person": "Brirensh Reefgate",
+   "heritage": [
+    "Platypus",
+    "Jackal"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Hollowfen Trackers",
+   "state": "painted"
+  },
+  {
+   "word": "Penuek",
+   "callsign": "TALON",
+   "n": 7,
+   "seed": "45cf2600e8c3116d",
+   "person": "Penuek Sandtail",
+   "heritage": [
+    "Otter",
+    "Pelican"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "The Patient Harvest",
+   "state": "painted"
+  },
+  {
+   "word": "Quiri",
+   "callsign": "DOE",
+   "n": 13,
+   "seed": "20ec8df04b9e28a2",
+   "person": "Quiri Foamwick",
+   "heritage": [
+    "Otter",
+    "Hummingbird"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Keel and Rivet",
+   "state": "painted"
+  },
+  {
+   "word": "Kasirin",
+   "callsign": "WINGMAN",
+   "n": 11,
+   "seed": "f3d1cc7978518636",
+   "person": "Kasirin Farmere",
+   "heritage": [
+    "Mole",
+    "Chameleon"
+   ],
+   "faction": "Priest",
+   "faction_name": "The Ninefold Shell",
+   "state": "painted"
+  },
+  {
+   "word": "Joko",
+   "callsign": "BANDIT",
+   "n": 9,
+   "seed": "7429d4d2db98aac1",
+   "person": "Joko Hollowmere",
+   "heritage": [
+    "Axolotl",
+    "Capybara"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Open Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Ikoko",
+   "callsign": "NEEDLE",
+   "n": 8,
+   "seed": "001be8338e0e9aec",
+   "person": "Ikoko Pearlmere",
+   "heritage": [
+    "Hummingbird",
+    "Hedgehog"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Institute of the Shore",
+   "state": "painted"
+  },
+  {
+   "word": "Caveus",
+   "callsign": "GALLEON",
+   "n": 8,
+   "seed": "d4c83368a2cf35ef",
+   "person": "Caveus Farspark",
+   "heritage": [
+    "Armadillo",
+    "Capybara"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Brithari",
+   "callsign": "FLUME",
+   "n": 17,
+   "seed": "119710cc7ec1aa8d",
+   "person": "Brithari Sandkeel",
+   "heritage": [
+    "Crane",
+    "Beetle"
+   ],
+   "faction": "Sport",
+   "faction_name": "Slipstream Racing Club",
+   "state": "painted"
+  },
+  {
+   "word": "Nenush",
+   "callsign": "ENSIGN",
+   "n": 10,
+   "seed": "48e995242a1bd360",
+   "person": "Nenush Glasswell",
+   "heritage": [
+    "Newt",
+    "Octopus"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Darveai",
+   "callsign": "MANGER",
+   "n": 10,
+   "seed": "596a08f9019c1b4e",
+   "person": "Darveai Saltwell",
+   "heritage": [
+    "Hummingbird",
+    "Jellyfish"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Zeveola",
+   "callsign": "ANVIL",
+   "n": 9,
+   "seed": "1b3dfbd508cadb65",
+   "person": "Zeveola Gullhollow",
+   "heritage": [
+    "Newt",
+    "Tapir"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Institute of the Shore",
+   "state": "painted"
+  },
+  {
+   "word": "Masoix",
+   "callsign": "VOLT",
+   "n": 13,
+   "seed": "337cf8a6253e7960",
+   "person": "Masoix Brightwing",
+   "heritage": [
+    "Hyena",
+    "Jackal"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "The Patient Harvest",
+   "state": "painted"
+  },
+  {
+   "word": "Darthando",
+   "callsign": "ZODIAC",
+   "n": 10,
+   "seed": "ddb59d7292993879",
+   "person": "Darthando Moonfall",
+   "heritage": [
+    "Ibis",
+    "Toucan"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted"
+  },
+  {
+   "word": "Malomo",
+   "callsign": "SUNDIAL",
+   "n": 10,
+   "seed": "5ed94905b1832d70",
+   "person": "Malomo Sandhook",
+   "heritage": [
+    "Mole",
+    "Yak"
+   ],
+   "faction": "Activist",
+   "faction_name": "The Unbound Choir",
+   "state": "painted"
+  },
+  {
+   "word": "Irin",
+   "callsign": "OPAL",
+   "n": 13,
+   "seed": "9548579c9e786e23",
+   "person": "Irin Sandweaver",
+   "heritage": [
+    "Lobster",
+    "Jellyfish"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Darmaix",
+   "callsign": "RAMPART",
+   "n": 9,
+   "seed": "4300d94cf68887e6",
+   "person": "Darmaix Anchortail",
+   "heritage": [
+    "Eel",
+    "Bison"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Lifeline Corps",
+   "state": "painted"
+  },
+  {
+   "word": "Caberin",
+   "callsign": "CITADEL",
+   "n": 9,
+   "seed": "72205cd6ae2839fa",
+   "person": "Caberin Reefspark",
+   "heritage": [
+    "Narwhal",
+    "Koi"
+   ],
+   "faction": "Thief",
+   "faction_name": "Velvet Gill",
+   "state": "painted"
+  },
+  {
+   "word": "Wylane",
+   "callsign": "HORNET",
+   "n": 10,
+   "seed": "c727af2274acfe67",
+   "person": "Wylane Whistlerunner",
+   "heritage": [
+    "Lynx",
+    "Tortoise"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Udira",
+   "callsign": "IVY",
+   "n": 19,
+   "seed": "37d0f0761776e047",
+   "person": "Udira Tidemark",
+   "heritage": [
+    "Tapir",
+    "Bison"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Lifeline Corps",
+   "state": "painted"
+  },
+  {
+   "word": "Galsosa",
+   "callsign": "TALON",
+   "n": 10,
+   "seed": "ad7e5e64f374d612",
+   "person": "Galsosa Kelpbell",
+   "heritage": [
+    "Tapir",
+    "Puffin"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Jade Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Etharin",
+   "callsign": "DOE",
+   "n": 14,
+   "seed": "915107b47beb499e",
+   "person": "Etharin Pearlhart",
+   "heritage": [
+    "Tardigrade",
+    "Narwhal"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Fenveko",
+   "callsign": "WINGMAN",
+   "n": 12,
+   "seed": "323a6249218cb706",
+   "person": "Fenveko Reefspark",
+   "heritage": [
+    "Chameleon",
+    "Narwhal"
+   ],
+   "faction": "Sport",
+   "faction_name": "Slipstream Racing Club",
+   "state": "painted"
+  },
+  {
+   "word": "Edin",
+   "callsign": "BANDIT",
+   "n": 12,
+   "seed": "3e0969dcf85b8be9",
+   "person": "Edin Dawnreach",
+   "heritage": [
+    "Octopus",
+    "Bison"
+   ],
+   "faction": "Researcher",
+   "faction_name": "The Tidal Archive",
+   "state": "painted"
+  },
+  {
+   "word": "Yorari",
+   "callsign": "NEEDLE",
+   "n": 11,
+   "seed": "3daf00fb60c79c90",
+   "person": "Yorari Brightwing",
+   "heritage": [
+    "Badger",
+    "Puffin"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Lattice Peerage",
+   "state": "painted"
+  },
+  {
+   "word": "Rothaia",
+   "callsign": "GALLEON",
+   "n": 13,
+   "seed": "9d120de57601428b",
+   "person": "Rothaia Deepdrift",
+   "heritage": [
+    "Ocelot",
+    "Jackal"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Steadfast Joinery",
+   "state": "painted"
+  },
+  {
+   "word": "Rolon",
+   "callsign": "FLUME",
+   "n": 18,
+   "seed": "7ecc402285533984",
+   "person": "Rolon Glassshore",
+   "heritage": [
+    "Wolf",
+    "Ocelot"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Writ and Hook",
+   "state": "painted"
+  },
+  {
+   "word": "Vero",
+   "callsign": "ENSIGN",
+   "n": 11,
+   "seed": "9e49a670d867f491",
+   "person": "Vero Whistlereach",
+   "heritage": [
+    "Raven",
+    "Capybara"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Lattice Peerage",
+   "state": "painted"
+  },
+  {
+   "word": "Xathara",
+   "callsign": "MANGER",
+   "n": 11,
+   "seed": "570a6a8116c86954",
+   "person": "Xathara Hollowgate",
+   "heritage": [
+    "Eel",
+    "Narwhal"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Keel and Rivet",
+   "state": "painted"
+  },
+  {
+   "word": "Xanuane",
+   "callsign": "ANVIL",
+   "n": 10,
+   "seed": "c00ac7d68326e03c",
+   "person": "Xanuane Starbloom",
+   "heritage": [
+    "Cuttlefish",
+    "Tortoise"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Longwake Lodge",
+   "state": "painted"
+  },
+  {
+   "word": "Adix",
+   "callsign": "VOLT",
+   "n": 14,
+   "seed": "9c4e9b261fe1c4ef",
+   "person": "Adix Rustthorn",
+   "heritage": [
+    "Jackal",
+    "Octopus"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "The Ninth Warrant",
+   "state": "painted"
+  },
+  {
+   "word": "Lunush",
+   "callsign": "ZODIAC",
+   "n": 12,
+   "seed": "592313fe0b55357e",
+   "person": "Lunush Stillfield",
+   "heritage": [
+    "Seahorse",
+    "Cuttlefish"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Fensolo",
+   "callsign": "SUNDIAL",
+   "n": 11,
+   "seed": "0d23ab7c43d18c39",
+   "person": "Fensolo Farreach",
+   "heritage": [
+    "Bison",
+    "Platypus"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Open Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Perao",
+   "callsign": "OPAL",
+   "n": 15,
+   "seed": "5e636fc85cb56ab1",
+   "person": "Perao Amberwing",
+   "heritage": [
+    "Toucan",
+    "Ocelot"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Evewen",
+   "callsign": "RAMPART",
+   "n": 10,
+   "seed": "f5ffadbbf2896762",
+   "person": "Evewen Moonhollow",
+   "heritage": [
+    "Otter",
+    "Narwhal"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Bright Hull Works",
+   "state": "painted"
+  },
+  {
+   "word": "Wyriix",
+   "callsign": "CITADEL",
+   "n": 10,
+   "seed": "170928cef726861e",
+   "person": "Wyriix Ashmore",
+   "heritage": [
+    "Mantis",
+    "Hyena"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Steadfast Joinery",
+   "state": "painted"
+  },
+  {
+   "word": "Xanun",
+   "callsign": "HORNET",
+   "n": 16,
+   "seed": "4c2682aabf2f13cf",
+   "person": "Xanun Crestmore",
+   "heritage": [
+    "Orangutan",
+    "Wolf"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "House Verdance",
+   "state": "painted"
+  },
+  {
+   "word": "Quiloai",
+   "callsign": "IVY",
+   "n": 20,
+   "seed": "13865ac0fdae7402",
+   "person": "Quiloai Crestmere",
+   "heritage": [
+    "Ocelot",
+    "Koi"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Jade Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Zelaane",
+   "callsign": "TALON",
+   "n": 11,
+   "seed": "018a83e10a526868",
+   "person": "Zelaane Pearlreach",
+   "heritage": [
+    "Firefly",
+    "Lemur"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Zesa",
+   "callsign": "DOE",
+   "n": 15,
+   "seed": "d57ea5ae9a13a78b",
+   "person": "Zesa Brinewatch",
+   "heritage": [
+    "Moose",
+    "Tardigrade"
+   ],
+   "faction": "Priest",
+   "faction_name": "The Ninefold Shell",
+   "state": "painted"
+  },
+  {
+   "word": "Luar",
+   "callsign": "WINGMAN",
+   "n": 16,
+   "seed": "4e40a5084b759330",
+   "person": "Luar Moonreach",
+   "heritage": [
+    "Chameleon",
+    "Orangutan"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Institute of the Shore",
+   "state": "painted"
+  },
+  {
+   "word": "Habene",
+   "callsign": "BANDIT",
+   "n": 18,
+   "seed": "404ce03b413fe733",
+   "person": "Habene Starbloom",
+   "heritage": [
+    "Seahorse",
+    "Badger"
+   ],
+   "faction": "Explorer",
+   "faction_name": "The Unmapped",
+   "state": "painted"
+  },
+  {
+   "word": "Nenone",
+   "callsign": "NEEDLE",
+   "n": 18,
+   "seed": "68abecdbdda50731",
+   "person": "Nenone Lanternrest",
+   "heritage": [
+    "Jackal",
+    "Wolf"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Far Shoal Society",
+   "state": "painted"
+  },
+  {
+   "word": "Galsith",
+   "callsign": "GALLEON",
+   "n": 15,
+   "seed": "b4c7dbfe5685f3a6",
+   "person": "Galsith Farmark",
+   "heritage": [
+    "Tapir",
+    "Crane"
+   ],
+   "faction": "Preservationist",
+   "faction_name": "The Green Vigil",
+   "state": "painted"
+  },
+  {
+   "word": "Hanux",
+   "callsign": "FLUME",
+   "n": 19,
+   "seed": "beb6d0bd9d1af810",
+   "person": "Hanux Greyweaver",
+   "heritage": [
+    "Octopus",
+    "Pelican"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted"
+  },
+  {
+   "word": "Penoola",
+   "callsign": "ENSIGN",
+   "n": 12,
+   "seed": "14cf57a4a2cc7a31",
+   "person": "Penoola Wakesworth",
+   "heritage": [
+    "Koi",
+    "Orangutan"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "The Bright Buoys",
+   "state": "painted"
+  },
+  {
+   "word": "Belwen",
+   "callsign": "MANGER",
+   "n": 12,
+   "seed": "0fdccf1b810e7e55",
+   "person": "Belwen Dawnwatch",
+   "heritage": [
+    "Bison",
+    "Hedgehog"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Lumen College",
+   "state": "painted"
+  },
+  {
+   "word": "Kadiwen",
+   "callsign": "ANVIL",
+   "n": 11,
+   "seed": "b4ce8420ff5e68ad",
+   "person": "Kadiwen Stormthorn",
+   "heritage": [
+    "Eel",
+    "Axolotl"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "The Bright Buoys",
+   "state": "painted"
+  },
+  {
+   "word": "Nenuve",
+   "callsign": "VOLT",
+   "n": 15,
+   "seed": "013293cd6605a4de",
+   "person": "Nenuve Amberfin",
+   "heritage": [
+    "Ibis",
+    "Gecko"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Quayside Mutual",
+   "state": "painted"
+  },
+  {
+   "word": "Milawen",
+   "callsign": "ZODIAC",
+   "n": 13,
+   "seed": "0faf8b1467833b0e",
+   "person": "Milawen Gullmore",
+   "heritage": [
+    "Armadillo",
+    "Eel"
+   ],
+   "faction": "Priest",
+   "faction_name": "Order of the Slow Tide",
+   "state": "painted"
+  },
+  {
+   "word": "Joro",
+   "callsign": "SUNDIAL",
+   "n": 12,
+   "seed": "cfde5e620c1e67e6",
+   "person": "Joro Brightridge",
+   "heritage": [
+    "Jackal",
+    "Raven"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted"
+  },
+  {
+   "word": "Nenux",
+   "callsign": "OPAL",
+   "n": 16,
+   "seed": "9cf42cf2cba82d4b",
+   "person": "Nenux Anchorgate",
+   "heritage": [
+    "Bison",
+    "Hyena"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Lifeline Corps",
+   "state": "painted"
+  },
+  {
+   "word": "Kamash",
+   "callsign": "RAMPART",
+   "n": 12,
+   "seed": "cc174b4d109f9c73",
+   "person": "Kamash Duskhollow",
+   "heritage": [
+    "Chameleon",
+    "Heron"
+   ],
+   "faction": "Activist",
+   "faction_name": "The Unbound Choir",
+   "state": "painted"
+  },
+  {
+   "word": "Perensa",
+   "callsign": "CITADEL",
+   "n": 11,
+   "seed": "e7a07f33bc0b9599",
+   "person": "Perensa Farhart",
+   "heritage": [
+    "Fennec",
+    "Sloth"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Idio",
+   "callsign": "HORNET",
+   "n": 18,
+   "seed": "1c4343af92586968",
+   "person": "Idio Pearlsworth",
+   "heritage": [
+    "Octopus",
+    "Ibis"
+   ],
+   "faction": "Activist",
+   "faction_name": "Free Shoals League",
+   "state": "painted"
+  },
+  {
+   "word": "Miloly",
+   "callsign": "IVY",
+   "n": 21,
+   "seed": "aa90921648ef9827",
+   "person": "Miloly Emberspark",
+   "heritage": [
+    "Pelican",
+    "Cuttlefish"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Lumen College",
+   "state": "painted"
+  },
+  {
+   "word": "Kariix",
+   "callsign": "TALON",
+   "n": 13,
+   "seed": "80fe6163d80b7d9f",
+   "person": "Kariix Wakerunner",
+   "heritage": [
+    "Tapir",
+    "Orangutan"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Belberin",
+   "callsign": "DOE",
+   "n": 16,
+   "seed": "fd35971c00d52181",
+   "person": "Belberin Spindlebloom",
+   "heritage": [
+    "Cuttlefish",
+    "Jackal"
+   ],
+   "faction": "Activist",
+   "faction_name": "Open Current",
+   "state": "painted"
+  },
+  {
+   "word": "Ilorin",
+   "callsign": "WINGMAN",
+   "n": 17,
+   "seed": "22b0e5d4c8284f5f",
+   "person": "Ilorin Sandwater",
+   "heritage": [
+    "Newt",
+    "Sloth"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Brass Lantern Company",
+   "state": "painted"
+  },
+  {
+   "word": "Corbeek",
+   "callsign": "BANDIT",
+   "n": 19,
+   "seed": "60afb1fd14420c09",
+   "person": "Corbeek Emberwater",
+   "heritage": [
+    "Koi",
+    "Armadillo"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Court of Still Water",
+   "state": "painted"
+  },
+  {
+   "word": "Galsoly",
+   "callsign": "NEEDLE",
+   "n": 20,
+   "seed": "6bad6d9186a7c33a",
+   "person": "Galsoly Stormdrift",
+   "heritage": [
+    "Yak",
+    "Walrus"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Cariel",
+   "callsign": "GALLEON",
+   "n": 16,
+   "seed": "aa38a22268bba7e2",
+   "person": "Cariel Moonbrook",
+   "heritage": [
+    "Capybara",
+    "Crane"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Far Shoal Society",
+   "state": "painted"
+  },
+  {
+   "word": "Fenkora",
+   "callsign": "FLUME",
+   "n": 20,
+   "seed": "a235399013dc3c2f",
+   "person": "Fenkora Mirewell",
+   "heritage": [
+    "Tardigrade",
+    "Wolf"
+   ],
+   "faction": "BountyHunter",
+   "faction_name": "Writ and Hook",
+   "state": "painted"
+  },
+  {
+   "word": "Wyne",
+   "callsign": "ENSIGN",
+   "n": 13,
+   "seed": "2e4b34a0a0e720ab",
+   "person": "Wyne Crestthorn",
+   "heritage": [
+    "Toucan",
+    "Tortoise"
+   ],
+   "faction": "Priest",
+   "faction_name": "The Ninefold Shell",
+   "state": "painted"
+  },
+  {
+   "word": "Habear",
+   "callsign": "MANGER",
+   "n": 13,
+   "seed": "045325c5d1844868",
+   "person": "Habear Rustsail",
+   "heritage": [
+    "Orangutan",
+    "Toucan"
+   ],
+   "faction": "Merchant",
+   "faction_name": "House of Seven Scales",
+   "state": "painted"
+  },
+  {
+   "word": "Misish",
+   "callsign": "ANVIL",
+   "n": 13,
+   "seed": "4bbdaa46c09e0a3b",
+   "person": "Misish Frostwell",
+   "heritage": [
+    "Hummingbird",
+    "Eel"
+   ],
+   "faction": "Activist",
+   "faction_name": "Open Current",
+   "state": "painted"
+  },
+  {
+   "word": "Uloth",
+   "callsign": "VOLT",
+   "n": 16,
+   "seed": "b72a4046a76af3b0",
+   "person": "Uloth Whistlewright",
+   "heritage": [
+    "Hyena",
+    "Octopus"
+   ],
+   "faction": "Thief",
+   "faction_name": "Whisperkelp",
+   "state": "painted"
+  },
+  {
+   "word": "Belmidek",
+   "callsign": "ZODIAC",
+   "n": 14,
+   "seed": "ed41fd45664d20e5",
+   "person": "Belmidek Wavefield",
+   "heritage": [
+    "Sloth",
+    "Seahorse"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "Envoys of the Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Arara",
+   "callsign": "SUNDIAL",
+   "n": 15,
+   "seed": "8a5720975d5b2f03",
+   "person": "Arara Miresong",
+   "heritage": [
+    "Jellyfish",
+    "Newt"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Wardens of the Calm",
+   "state": "painted"
+  },
+  {
+   "word": "Isolo",
+   "callsign": "OPAL",
+   "n": 18,
+   "seed": "6be6aee0f5dec323",
+   "person": "Isolo Gullhollow",
+   "heritage": [
+    "Jellyfish",
+    "Wolf"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Pemiix",
+   "callsign": "RAMPART",
+   "n": 13,
+   "seed": "fa5cd22e45934b77",
+   "person": "Pemiix Glasswater",
+   "heritage": [
+    "Axolotl",
+    "Lynx"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Keel and Rivet",
+   "state": "painted"
+  },
+  {
+   "word": "Arilia",
+   "callsign": "CITADEL",
+   "n": 12,
+   "seed": "24af68a5495adf3b",
+   "person": "Arilia Anchorwatch",
+   "heritage": [
+    "Crane",
+    "Jellyfish"
+   ],
+   "faction": "Thief",
+   "faction_name": "The Pickled Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Nekoane",
+   "callsign": "HORNET",
+   "n": 19,
+   "seed": "ed62ceb8147fc328",
+   "person": "Nekoane Anchorwatch",
+   "heritage": [
+    "Orangutan",
+    "Puffin"
+   ],
+   "faction": "Merchant",
+   "faction_name": "House of Seven Scales",
+   "state": "painted"
+  },
+  {
+   "word": "Darsoane",
+   "callsign": "IVY",
+   "n": 22,
+   "seed": "2c8286a5b3cc6681",
+   "person": "Darsoane Coralhollow",
+   "heritage": [
+    "Narwhal",
+    "Ocelot"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Open Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Galbemo",
+   "callsign": "TALON",
+   "n": 14,
+   "seed": "b76841326d4daee9",
+   "person": "Galbemo Farwright",
+   "heritage": [
+    "Yak",
+    "Lynx"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Brass Lantern Company",
+   "state": "painted"
+  },
+  {
+   "word": "Calosh",
+   "callsign": "DOE",
+   "n": 17,
+   "seed": "d1fdbdfcb977ce55",
+   "person": "Calosh Ashwatch",
+   "heritage": [
+    "Moose",
+    "Newt"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Hollowfen Trackers",
+   "state": "painted"
+  },
+  {
+   "word": "Corane",
+   "callsign": "WINGMAN",
+   "n": 18,
+   "seed": "fa508a88c898f35a",
+   "person": "Corane Stillmoor",
+   "heritage": [
+    "Jellyfish",
+    "Otter"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "Envoys of the Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Rosirin",
+   "callsign": "BANDIT",
+   "n": 20,
+   "seed": "e8efff6620ad6a3a",
+   "person": "Rosirin Ashmoor",
+   "heritage": [
+    "Owl",
+    "Eel"
+   ],
+   "faction": "Explorer",
+   "faction_name": "The Unmapped",
+   "state": "painted"
+  },
+  {
+   "word": "Yon",
+   "callsign": "NEEDLE",
+   "n": 21,
+   "seed": "e66037ee7ddf8a8f",
+   "person": "Yon Greywing",
+   "heritage": [
+    "Capybara",
+    "Mole"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Black Tide",
+   "state": "painted"
+  },
+  {
+   "word": "Corbemo",
+   "callsign": "GALLEON",
+   "n": 17,
+   "seed": "ca95d330a5c672c4",
+   "person": "Corbemo Ashbell",
+   "heritage": [
+    "Lobster",
+    "Hyena"
+   ],
+   "faction": "Activist",
+   "faction_name": "The Unbound Choir",
+   "state": "painted"
+  },
+  {
+   "word": "Anoth",
+   "callsign": "FLUME",
+   "n": 21,
+   "seed": "27596e1b979182e9",
+   "person": "Anoth Foammore",
+   "heritage": [
+    "Orangutan",
+    "Mole"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Harbour Watch",
+   "state": "painted"
+  },
+  {
+   "word": "Yomilia",
+   "callsign": "ENSIGN",
+   "n": 14,
+   "seed": "0ce7c963c72c60ce",
+   "person": "Yomilia Moonshore",
+   "heritage": [
+    "Axolotl",
+    "Walrus"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Calaola",
+   "callsign": "MANGER",
+   "n": 15,
+   "seed": "bee89003d7e0f759",
+   "person": "Calaola Mirecove",
+   "heritage": [
+    "Tardigrade",
+    "Axolotl"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Jade Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Nemamo",
+   "callsign": "ANVIL",
+   "n": 14,
+   "seed": "6f20401798301557",
+   "person": "Nemamo Silverridge",
+   "heritage": [
+    "Seahorse",
+    "Crane"
+   ],
+   "faction": "Activist",
+   "faction_name": "The Unbound Choir",
+   "state": "painted"
+  },
+  {
+   "word": "Delko",
+   "callsign": "VOLT",
+   "n": 18,
+   "seed": "1fe0d6386137be28",
+   "person": "Delko Saltlight",
+   "heritage": [
+    "Pelican",
+    "Heron"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Brish",
+   "callsign": "ZODIAC",
+   "n": 15,
+   "seed": "86aa3a320fcb6f05",
+   "person": "Brish Crestwhistle",
+   "heritage": [
+    "Lemur",
+    "Beetle"
+   ],
+   "faction": "Priest",
+   "faction_name": "The Ninefold Shell",
+   "state": "painted"
+  },
+  {
+   "word": "Delnuri",
+   "callsign": "SUNDIAL",
+   "n": 17,
+   "seed": "16bf5c16d9f479de",
+   "person": "Delnuri Farbell",
+   "heritage": [
+    "Platypus",
+    "Tardigrade"
+   ],
+   "faction": "Activist",
+   "faction_name": "The Unbound Choir",
+   "state": "painted"
+  },
+  {
+   "word": "Cabeane",
+   "callsign": "OPAL",
+   "n": 21,
+   "seed": "3da51d70670604b6",
+   "person": "Cabeane Lowwick",
+   "heritage": [
+    "Orangutan",
+    "Mantis"
+   ],
+   "faction": "Priest",
+   "faction_name": "The Ninefold Shell",
+   "state": "painted"
+  },
+  {
+   "word": "Omako",
+   "callsign": "RAMPART",
+   "n": 14,
+   "seed": "e2d1a94052b8435d",
+   "person": "Omako Driftbloom",
+   "heritage": [
+    "Capybara",
+    "Gecko"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Open Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Takous",
+   "callsign": "CITADEL",
+   "n": 13,
+   "seed": "d1c00d97084dea39",
+   "person": "Takous Coralfin",
+   "heritage": [
+    "Walrus",
+    "Ocelot"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Wardens of the Calm",
+   "state": "painted"
+  },
+  {
+   "word": "Xathalo",
+   "callsign": "HORNET",
+   "n": 20,
+   "seed": "c46fc159a53d04d6",
+   "person": "Xathalo Amberkeel",
+   "heritage": [
+    "Newt",
+    "Otter"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Unmoored",
+   "state": "painted"
+  },
+  {
+   "word": "Delloane",
+   "callsign": "IVY",
+   "n": 25,
+   "seed": "7ebf52e2d140b4c2",
+   "person": "Delloane Stormrunner",
+   "heritage": [
+    "Fennec",
+    "Tortoise"
+   ],
+   "faction": "Pirate",
+   "faction_name": "Saltjaw Brethren",
+   "state": "painted"
+  },
+  {
+   "word": "Malimo",
+   "callsign": "TALON",
+   "n": 15,
+   "seed": "70b22e4253c26ee7",
+   "person": "Malimo Lowgate",
+   "heritage": [
+    "Gecko",
+    "Chameleon"
+   ],
+   "faction": "FirstResponder",
+   "faction_name": "Lifeline Corps",
+   "state": "painted"
+  },
+  {
+   "word": "Samaia",
+   "callsign": "DOE",
+   "n": 19,
+   "seed": "2c41d17b35ddd0c7",
+   "person": "Samaia Tidethorn",
+   "heritage": [
+    "Koi",
+    "Hyena"
+   ],
+   "faction": "Priest",
+   "faction_name": "Choir of the Deep",
+   "state": "painted"
+  },
+  {
+   "word": "Gallith",
+   "callsign": "WINGMAN",
+   "n": 19,
+   "seed": "9beca414b1cf0f11",
+   "person": "Gallith Pearlmark",
+   "heritage": [
+    "Jackal",
+    "Seahorse"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Open Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Han",
+   "callsign": "BANDIT",
+   "n": 22,
+   "seed": "504feab945574eb1",
+   "person": "Han Amberfall",
+   "heritage": [
+    "Beetle",
+    "Tapir"
+   ],
+   "faction": "Explorer",
+   "faction_name": "The Unmapped",
+   "state": "painted"
+  },
+  {
+   "word": "Kalara",
+   "callsign": "NEEDLE",
+   "n": 23,
+   "seed": "dea617283d83ca6d",
+   "person": "Kalara Lowfield",
+   "heritage": [
+    "Ocelot",
+    "Lynx"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "The Treaty Table",
+   "state": "painted"
+  },
+  {
+   "word": "Olia",
+   "callsign": "GALLEON",
+   "n": 18,
+   "seed": "16cb4924089e5084",
+   "person": "Olia Ashmark",
+   "heritage": [
+    "Chameleon",
+    "Armadillo"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Driftnet Cooperative",
+   "state": "painted"
+  },
+  {
+   "word": "Corndo",
+   "callsign": "FLUME",
+   "n": 22,
+   "seed": "31768436af16abdf",
+   "person": "Corndo Kelpweaver",
+   "heritage": [
+    "Capybara",
+    "Otter"
+   ],
+   "faction": "Sport",
+   "faction_name": "Spray and Spin",
+   "state": "painted"
+  },
+  {
+   "word": "Sanuia",
+   "callsign": "ENSIGN",
+   "n": 15,
+   "seed": "70dd912cb2b78c7e",
+   "person": "Sanuia Tidewright",
+   "heritage": [
+    "Sloth",
+    "Owl"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Order of the Last Lure",
+   "state": "painted"
+  },
+  {
+   "word": "Pendo",
+   "callsign": "MANGER",
+   "n": 18,
+   "seed": "027d277c4f79f092",
+   "person": "Pendo Rustmark",
+   "heritage": [
+    "Wolf",
+    "Pelican"
+   ],
+   "faction": "Merchant",
+   "faction_name": "Quayside Mutual",
+   "state": "painted"
+  },
+  {
+   "word": "Wysoola",
+   "callsign": "ANVIL",
+   "n": 15,
+   "seed": "bd720f0d97a7548c",
+   "person": "Wysoola Hollowtail",
+   "heritage": [
+    "Hummingbird",
+    "Pelican"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Kash",
+   "callsign": "VOLT",
+   "n": 19,
+   "seed": "a33694b12a22fd62",
+   "person": "Kash Lanternfin",
+   "heritage": [
+    "Jackal",
+    "Lemur"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Belko",
+   "callsign": "ZODIAC",
+   "n": 16,
+   "seed": "5493d97de0e4cd8e",
+   "person": "Belko Sandcove",
+   "heritage": [
+    "Yak",
+    "Bison"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Deepreed Stalkers",
+   "state": "painted"
+  },
+  {
+   "word": "Uix",
+   "callsign": "SUNDIAL",
+   "n": 18,
+   "seed": "05d5ca5edeebc5f2",
+   "person": "Uix Whistlemore",
+   "heritage": [
+    "Bison",
+    "Narwhal"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Hollowfen Trackers",
+   "state": "painted"
+  },
+  {
+   "word": "Galmao",
+   "callsign": "OPAL",
+   "n": 23,
+   "seed": "91fa87b11eed64e0",
+   "person": "Galmao Whistlehollow",
+   "heritage": [
+    "Ocelot",
+    "Otter"
+   ],
+   "faction": "Activist",
+   "faction_name": "The Unbound Choir",
+   "state": "painted"
+  },
+  {
+   "word": "Yove",
+   "callsign": "RAMPART",
+   "n": 16,
+   "seed": "d07cb7bfb663de4c",
+   "person": "Yove Sandwhistle",
+   "heritage": [
+    "Wolf",
+    "Cuttlefish"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Deepreed Stalkers",
+   "state": "painted"
+  },
+  {
+   "word": "Darek",
+   "callsign": "CITADEL",
+   "n": 15,
+   "seed": "024d06a75c74479a",
+   "person": "Darek Brightbell",
+   "heritage": [
+    "Raven",
+    "Pangolin"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Bright Hull Works",
+   "state": "painted"
+  },
+  {
+   "word": "Ulia",
+   "callsign": "HORNET",
+   "n": 21,
+   "seed": "8967cb341bf6a1b8",
+   "person": "Ulia Stormrunner",
+   "heritage": [
+    "Lynx",
+    "Sloth"
+   ],
+   "faction": "Gatherer",
+   "faction_name": "Kelpline Gleaners",
+   "state": "painted"
+  },
+  {
+   "word": "Oloel",
+   "callsign": "IVY",
+   "n": 26,
+   "seed": "4e0cbad9eb234ae2",
+   "person": "Oloel Gullmoor",
+   "heritage": [
+    "Beetle",
+    "Mole"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "Envoys of the Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Mirave",
+   "callsign": "TALON",
+   "n": 19,
+   "seed": "0da1c0c061a2db44",
+   "person": "Mirave Hollowwatch",
+   "heritage": [
+    "Hummingbird",
+    "Fennec"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Jade Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Pelowen",
+   "callsign": "DOE",
+   "n": 23,
+   "seed": "ac6f57574f847ef0",
+   "person": "Pelowen Anchorshore",
+   "heritage": [
+    "Narwhal",
+    "Tapir"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Longwake Lodge",
+   "state": "painted"
+  },
+  {
+   "word": "Sathaane",
+   "callsign": "WINGMAN",
+   "n": 21,
+   "seed": "8e3e5caeb35fb72e",
+   "person": "Sathaane Shellsong",
+   "heritage": [
+    "Sloth",
+    "Mole"
+   ],
+   "faction": "Thief",
+   "faction_name": "The Pickled Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Sarax",
+   "callsign": "BANDIT",
+   "n": 26,
+   "seed": "05f3abf72e839bbb",
+   "person": "Sarax Anchorthorn",
+   "heritage": [
+    "Eel",
+    "Jackal"
+   ],
+   "faction": "Diplomat",
+   "faction_name": "Envoys of the Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Corn",
+   "callsign": "NEEDLE",
+   "n": 25,
+   "seed": "cd7bcde9e1be4e14",
+   "person": "Corn Wakewick",
+   "heritage": [
+    "Tardigrade",
+    "Otter"
+   ],
+   "faction": "Thief",
+   "faction_name": "The Pickled Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Delmadek",
+   "callsign": "GALLEON",
+   "n": 22,
+   "seed": "22aed292fd6c6422",
+   "person": "Delmadek Tidedrift",
+   "heritage": [
+    "Toucan",
+    "Puffin"
+   ],
+   "faction": "Activist",
+   "faction_name": "Open Current",
+   "state": "painted"
+  },
+  {
+   "word": "Kaben",
+   "callsign": "FLUME",
+   "n": 23,
+   "seed": "f98aed70b90bda94",
+   "person": "Kaben Greyweaver",
+   "heritage": [
+    "Tardigrade",
+    "Tortoise"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Court of Still Water",
+   "state": "painted"
+  },
+  {
+   "word": "Aloix",
+   "callsign": "ENSIGN",
+   "n": 16,
+   "seed": "da24a1ce68f28b4e",
+   "person": "Aloix Sandmark",
+   "heritage": [
+    "Seahorse",
+    "Lobster"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "The Jade Accord",
+   "state": "painted"
+  },
+  {
+   "word": "Aane",
+   "callsign": "MANGER",
+   "n": 19,
+   "seed": "f0f8cc103dcffafb",
+   "person": "Aane Saltbloom",
+   "heritage": [
+    "Owl",
+    "Crane"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Keel and Rivet",
+   "state": "painted"
+  },
+  {
+   "word": "Miriola",
+   "callsign": "ANVIL",
+   "n": 16,
+   "seed": "3a18f7b8d4f794a1",
+   "person": "Miriola Drifthollow",
+   "heritage": [
+    "Armadillo",
+    "Cuttlefish"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Rusted Grin",
+   "state": "painted"
+  },
+  {
+   "word": "Jous",
+   "callsign": "VOLT",
+   "n": 21,
+   "seed": "a33b2dbc6bfcff6a",
+   "person": "Jous Stormhook",
+   "heritage": [
+    "Tardigrade",
+    "Yak"
+   ],
+   "faction": "Thief",
+   "faction_name": "Velvet Gill",
+   "state": "painted"
+  },
+  {
+   "word": "Beldiri",
+   "callsign": "ZODIAC",
+   "n": 17,
+   "seed": "23b8bbfecdc94996",
+   "person": "Beldiri Wakelight",
+   "heritage": [
+    "Narwhal",
+    "Crane"
+   ],
+   "faction": "Researcher",
+   "faction_name": "Lumen College",
+   "state": "painted"
+  },
+  {
+   "word": "Rodiix",
+   "callsign": "SUNDIAL",
+   "n": 19,
+   "seed": "610d0780066b5fc3",
+   "person": "Rodiix Mirewell",
+   "heritage": [
+    "Chameleon",
+    "Mantis"
+   ],
+   "faction": "Hunter",
+   "faction_name": "Hollowfen Trackers",
+   "state": "painted"
+  },
+  {
+   "word": "Luliia",
+   "callsign": "OPAL",
+   "n": 26,
+   "seed": "21b09112a083aa27",
+   "person": "Luliia Coralwright",
+   "heritage": [
+    "Lynx",
+    "Platypus"
+   ],
+   "faction": "Pirate",
+   "faction_name": "The Rusted Grin",
+   "state": "painted"
+  },
+  {
+   "word": "Fenlalia",
+   "callsign": "RAMPART",
+   "n": 17,
+   "seed": "818145f6ebb82e1c",
+   "person": "Fenlalia Wavewatch",
+   "heritage": [
+    "Sloth",
+    "Lemur"
+   ],
+   "faction": "Thief",
+   "faction_name": "The Pickled Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Omix",
+   "callsign": "CITADEL",
+   "n": 16,
+   "seed": "e17058daf6d7517f",
+   "person": "Omix Mooncove",
+   "heritage": [
+    "Tapir",
+    "Raven"
+   ],
+   "faction": "Contractor",
+   "faction_name": "Keel and Rivet",
+   "state": "painted"
+  },
+  {
+   "word": "Tamo",
+   "callsign": "HORNET",
+   "n": 22,
+   "seed": "d2dffe07165d209c",
+   "person": "Tamo Copperstone",
+   "heritage": [
+    "Crane",
+    "Tortoise"
+   ],
+   "faction": "Sport",
+   "faction_name": "The Glittering Heats",
+   "state": "painted"
+  },
+  {
+   "word": "Darx",
+   "callsign": "IVY",
+   "n": 28,
+   "seed": "0c04729c37ac6506",
+   "person": "Darx Lanternspark",
+   "heritage": [
+    "Pangolin",
+    "Crane"
+   ],
+   "faction": "Thief",
+   "faction_name": "Whisperkelp",
+   "state": "painted"
+  },
+  {
+   "word": "Josora",
+   "callsign": "TALON",
+   "n": 20,
+   "seed": "e4cdd71a60ba0dd6",
+   "person": "Josora Deepspark",
+   "heritage": [
+    "Hedgehog",
+    "Ibis"
+   ],
+   "faction": "Activist",
+   "faction_name": "Free Shoals League",
+   "state": "painted"
+  },
+  {
+   "word": "Yonoek",
+   "callsign": "DOE",
+   "n": 28,
+   "seed": "bc52bc4370bad83f",
+   "person": "Yonoek Rustkeel",
+   "heritage": [
+    "Seahorse",
+    "Eel"
+   ],
+   "faction": "Explorer",
+   "faction_name": "Lantern Reach Cartographers",
+   "state": "painted"
+  },
+  {
+   "word": "Caladek",
+   "callsign": "WINGMAN",
+   "n": 22,
+   "seed": "d32043c2e27de7f9",
+   "person": "Caladek Anchorspark",
+   "heritage": [
+    "Eel",
+    "Badger"
+   ],
+   "faction": "Preservationist",
+   "faction_name": "Reefward Trust",
+   "state": "painted"
+  },
+  {
+   "word": "Jothaar",
+   "callsign": "BANDIT",
+   "n": 28,
+   "seed": "2a24555bd94a1416",
+   "person": "Jothaar Glasswick",
+   "heritage": [
+    "Cuttlefish",
+    "Yak"
+   ],
+   "faction": "Thief",
+   "faction_name": "The Pickled Hand",
+   "state": "painted"
+  },
+  {
+   "word": "Nelasa",
+   "callsign": "NEEDLE",
+   "n": 27,
+   "seed": "b42ea2b6f66fe052",
+   "person": "Nelasa Whistlewatch",
+   "heritage": [
+    "Ocelot",
+    "Badger"
+   ],
+   "faction": "Sport",
+   "faction_name": "Slipstream Racing Club",
+   "state": "painted"
+  },
+  {
+   "word": "Yone",
+   "callsign": "GALLEON",
+   "n": 23,
+   "seed": "e1852e55600f7634",
+   "person": "Yone Glasswatch",
+   "heritage": [
+    "Beetle",
+    "Firefly"
+   ],
+   "faction": "Aristocrat",
+   "faction_name": "Court of Still Water",
+   "state": "painted"
+  },
+  {
+   "word": "Rolodek",
+   "callsign": "FLUME",
+   "n": 34,
+   "seed": "c2c54b1ddc925ccf",
+   "person": "Rolodek Spindlebell",
+   "heritage": [
+    "Moose",
+    "Yak"
+   ],
+   "faction": "Sport",
+   "faction_name": "Slipstream Racing Club",
+   "state": "painted"
+  }
+ ]
+}

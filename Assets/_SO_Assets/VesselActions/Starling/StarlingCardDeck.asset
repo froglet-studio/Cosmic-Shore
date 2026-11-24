@@ -459,8 +459,8 @@ MonoBehaviour:
     stats:
     - label: 'Dart speed'
       kind: 0
-      a: 2
-      b: 0.15
+      a: 1.35
+      b: 0.1
       unit: '×'
       decimals: 2
       steps: []
@@ -484,8 +484,8 @@ MonoBehaviour:
     stats:
     - label: 'Cruise speed'
       kind: 0
-      a: 4
-      b: 4
+      a: 1
+      b: 1.25
       unit: '%'
       decimals: 0
       steps: []
@@ -500,8 +500,8 @@ MonoBehaviour:
     stats:
     - label: 'Draft bonus'
       kind: 0
-      a: 5
-      b: 3
+      a: 16
+      b: 10
       unit: '%'
       decimals: 0
       steps: []
@@ -516,8 +516,8 @@ MonoBehaviour:
     stats:
     - label: 'Speed per skim'
       kind: 0
-      a: 3
-      b: 1
+      a: 75
+      b: 25
       unit: '%'
       decimals: 0
       steps: []
@@ -534,8 +534,8 @@ MonoBehaviour:
     stats:
     - label: 'Turn rate'
       kind: 0
-      a: 90
-      b: 15
+      a: 72
+      b: 5.5
       unit: '°/s'
       decimals: 0
       steps: []
@@ -552,15 +552,15 @@ MonoBehaviour:
     stats:
     - label: 'Sip radius'
       kind: 0
-      a: 60
-      b: 8
+      a: 18
+      b: 2.5
       unit: 'u'
       decimals: 0
       steps: []
     - label: 'Turn rate'
       kind: 0
-      a: 180
-      b: 30
+      a: 72
+      b: 4.5
       unit: '°/s'
       decimals: 0
       steps: []
@@ -571,12 +571,12 @@ MonoBehaviour:
     displayName: 'Lead Time'
     kind: 'Aim'
     shinesIn: 'Opposing vessels'
-    text: 'The swarm flies to where its objective will be in a moment, not where it is now, so it meets moving targets head on.'
+    text: 'The swarm flies to where its objective will be when it gets there, not where it is now, so it meets moving targets head on.'
     stats:
     - label: 'Looks ahead'
       kind: 0
-      a: 0.2
-      b: 0.1
+      a: 10
+      b: 2
       unit: 's'
       decimals: 1
       steps: []
@@ -593,7 +593,7 @@ MonoBehaviour:
     stats:
     - label: 'Cooldown'
       kind: 1
-      a: 24
+      a: 54
       b: 0.89
       unit: 's'
       decimals: 1
@@ -612,12 +612,12 @@ MonoBehaviour:
     displayName: 'Blink Step'
     kind: 'Dodge'
     shinesIn: 'Opposing vessels'
-    text: 'A member about to be hit skips a fraction of a second ahead and is not there when the shot lands.'
+    text: 'A member about to be shot or bitten skips a fraction of a second ahead and is not there when the hit lands.'
     stats:
     - label: 'Chance'
       kind: 0
-      a: 10
-      b: 4
+      a: 14
+      b: 5.7
       unit: '%'
       decimals: 0
       steps: []
@@ -628,12 +628,12 @@ MonoBehaviour:
     displayName: 'Out of Phase'
     kind: 'Pass'
     shinesIn: 'Any'
-    text: 'Every 15 s the swarm slips out of phase with the world and passes through prisms and vessels.'
+    text: 'Every 15 s the swarm slips out of phase with the world and passes through prisms, vessels and their shots.'
     stats:
     - label: 'Phase lasts'
       kind: 0
-      a: 1
-      b: 0.3
+      a: 22
+      b: 6.6
       unit: 's'
       decimals: 1
       steps: []
@@ -648,8 +648,8 @@ MonoBehaviour:
     stats:
     - label: 'Fling distance'
       kind: 0
-      a: 200
-      b: 40
+      a: 1000
+      b: 200
       unit: 'u'
       decimals: 0
       steps: []
@@ -667,12 +667,12 @@ MonoBehaviour:
     displayName: 'Save Point'
     kind: 'Rewind'
     shinesIn: 'Any'
-    text: 'Once per cycle, when the swarm is knocked down to its minimum size, it rewinds to where it was and how big it was a few seconds ago.'
+    text: 'Once per cycle, when the swarm is knocked down to its minimum size or is left without the key it just held, it rewinds to how big it was and what it held a few seconds ago.'
     stats:
     - label: 'Rewinds'
       kind: 0
-      a: 3
-      b: 0.5
+      a: 40
+      b: 5
       unit: 's'
       decimals: 1
       steps: []
@@ -689,8 +689,8 @@ MonoBehaviour:
     stats:
     - label: 'Double time lasts'
       kind: 0
-      a: 2
-      b: 0.4
+      a: 1.1
+      b: 0.22
       unit: 's'
       decimals: 1
       steps: []
@@ -712,10 +712,10 @@ MonoBehaviour:
       steps: []
     - label: 'Surge speed'
       kind: 0
-      a: 1.5
-      b: 0.1
+      a: 1.1
+      b: 0.074
       unit: '×'
-      decimals: 1
+      decimals: 2
       steps: []
     milestones:
     - level: 10
@@ -737,8 +737,8 @@ MonoBehaviour:
       steps: []
     - label: 'Burst speed'
       kind: 0
-      a: 1.3
-      b: 0.05
+      a: 1.39
+      b: 0.053
       unit: '×'
       decimals: 2
       steps: []
@@ -760,8 +760,8 @@ MonoBehaviour:
       steps: []
     - label: 'Courier speed'
       kind: 0
-      a: 150
-      b: 15
+      a: 54
+      b: 5.4
       unit: 'u/s'
       decimals: 0
       steps: []
@@ -772,12 +772,12 @@ MonoBehaviour:
     displayName: 'Rewind'
     kind: 'Survive'
     shinesIn: 'Opposing vessels'
-    text: 'A member that is killed may rewind 2 s and come back.'
+    text: 'A member that is killed, or a key that is spent, may rewind 2 s and come back.'
     stats:
     - label: 'Chance'
       kind: 0
-      a: 10
-      b: 5
+      a: 12
+      b: 5.9
       unit: '%'
       decimals: 0
       steps: []
@@ -792,8 +792,8 @@ MonoBehaviour:
     stats:
     - label: 'Ghost strength'
       kind: 0
-      a: 20
-      b: 4
+      a: 7
+      b: 1.4
       unit: '%'
       decimals: 0
       steps: []
@@ -808,12 +808,12 @@ MonoBehaviour:
     displayName: 'Stopwatch'
     kind: 'Field'
     shinesIn: 'Opposing vessels'
-    text: 'Shots and vessels near the swarm move slower in its time bubble, so it can slip past them.'
+    text: 'Shots, vessels and drifting objectives near the swarm move slower in its time bubble, so it can slip past them or catch them.'
     stats:
     - label: 'Slow'
       kind: 0
-      a: 10
-      b: 3
+      a: 18
+      b: 5.5
       unit: '%'
       decimals: 0
       steps: []
@@ -831,12 +831,12 @@ MonoBehaviour:
     displayName: 'Hurry Up'
     kind: 'Phase'
     shinesIn: 'Any'
-    text: 'Every phase timer runs shorter, so the cycle comes round and new hands arrive sooner.'
+    text: 'Every phase timer runs shorter (in a race, the omnicrystals lie closer), so new hands arrive sooner.'
     stats:
     - label: 'Phase time cut'
       kind: 0
-      a: 3
-      b: 2
+      a: 6
+      b: 3.85
       unit: '%'
       decimals: 0
       steps: []

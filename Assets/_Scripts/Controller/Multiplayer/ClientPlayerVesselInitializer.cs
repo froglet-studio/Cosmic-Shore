@@ -269,15 +269,38 @@ namespace CosmicShore.Gameplay
         /// Sent to a client that REJOINED a running match when the host has handed it back the Player the AI was flying
         /// (<see cref="ServerPlayerVesselInitializer"/>.TryReclaimSeat). The pair may already have been initialised here
         /// as somebody else's, so it is re-initialised as this machine's own once the ownership and the human flag land.
+        ///
+        /// <para>It also carries the match's turn state. This client loaded the scene after the countdown's StartTurn
+        /// went out, so on its own it reads the match as not started: the HUD played the intro and showed READY, and
+        /// the press waited forever on a ready gate the racing pilots would never press again.</para>
         /// </summary>
         [ClientRpc]
-        internal void SeatReclaimed_ClientRpc(ulong playerNetId, ClientRpcParams rpcParams = default)
+        internal void SeatReclaimed_ClientRpc(ulong playerNetId, bool turnRunning, float turnElapsedSeconds,
+            int roundsPlayed, int turnsTakenThisRound, ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;
-            ClaimReclaimedSeatAsync(playerNetId, this.GetCancellationTokenOnDestroy()).Forget();
+            // Kept as a local start time, so the seconds spent waiting for the claim below count too.
+            var turn = new RunningTurn(turnRunning, Time.time - turnElapsedSeconds, roundsPlayed, turnsTakenThisRound);
+            ClaimReclaimedSeatAsync(playerNetId, turn, this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        async UniTaskVoid ClaimReclaimedSeatAsync(ulong playerNetId, CancellationToken ct)
+        /// <summary>The host's turn state at the moment it handed a rejoiner its seat back.</summary>
+        readonly struct RunningTurn
+        {
+            public readonly bool Running;
+            public readonly float LocalStartTime;
+            public readonly int RoundsPlayed, TurnsTakenThisRound;
+
+            public RunningTurn(bool running, float localStartTime, int roundsPlayed, int turnsTakenThisRound)
+            {
+                Running = running;
+                LocalStartTime = localStartTime;
+                RoundsPlayed = roundsPlayed;
+                TurnsTakenThisRound = turnsTakenThisRound;
+            }
+        }
+
+        async UniTaskVoid ClaimReclaimedSeatAsync(ulong playerNetId, RunningTurn turn, CancellationToken ct)
         {
             // Ownership (the Player's AND the vessel's), NetIsAI and the vessel id replicate on their own messages;
             // wait for all of them (bounded). p.Vessel is set only by InitializePair, so the roster has always
@@ -306,19 +329,38 @@ namespace CosmicShore.Gameplay
             gameData.ClaimLocalPlayer(player);
             ClaimReclaimedPair(player, player.Vessel);
 
-            // A match already under way: the countdown that frees input has been and gone.
-            if (gameData.IsTurnRunning && player.InputController != null)
+            MatchRejoin.Remember(gameData.PartyId, gameData.GameMode);
+            _signalClientReadyWhenDone = false;
+            _localPairResolved = true;
+            _rosterRetryCts?.Cancel();
+
+            // ClientReady before the turn joins: the HUD's ClientReady handler clears its score and cards first thing,
+            // so the turn-started setup has to land after that clear, not be wiped by it.
+            gameData.InvokeClientReady();
+
+            if (turn.Running)
+                JoinRunningTurn(player, turn);
+        }
+
+        /// <summary>
+        /// The match was already racing when this client came back: join the turn where the others are instead of
+        /// starting it over. The countdown that activates the pilots and frees input has been and gone, so this does
+        /// what its ClientRpc would have done here, without zeroing anybody's score.
+        /// </summary>
+        void JoinRunningTurn(Player player, RunningTurn turn)
+        {
+            gameData.RoundsPlayed = turn.RoundsPlayed;
+            gameData.TurnsTakenThisRound = turn.TurnsTakenThisRound;
+            gameData.SetPlayersActive();
+            gameData.JoinRunningTurn(Time.time - turn.LocalStartTime);
+            NetSessionRecorder.Mark("rejoinedRunningTurn", $"{Time.time - turn.LocalStartTime:F1}s in");
+
+            if (player.InputController != null)
             {
                 player.InputController.SetPause(false);
                 player.InputController.SetIdle(false);
                 player.Vessel.VesselStatus.IsStationary = false;
             }
-
-            MatchRejoin.Remember(gameData.PartyId, gameData.GameMode);
-            _signalClientReadyWhenDone = false;
-            _localPairResolved = true;
-            _rosterRetryCts?.Cancel();
-            gameData.InvokeClientReady();
         }
 
         /// <summary>
@@ -403,12 +445,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Bounded self-healing loop: re-asks the host for the roster until the local
-        /// player's pair resolves. Recovers a dropped request, a dropped reply, or a
-        /// late host-side spawn. Cancelled once the local pair is initialised
-        /// (<see cref="InitializePair"/>) or on despawn.
-        /// </summary>
-        /// <summary>
         /// Tells every peer that a departed pilot's ship is now flown by the AI. The toast feed is
         /// a per-peer surface, so the server's own post does not travel - this carries it.
         /// </summary>
@@ -419,6 +455,12 @@ namespace CosmicShore.Gameplay
             GameToastAPI.Post(GameToastSituation.PilotHandedToAI, (Domains)domain, playerName);
         }
 
+        /// <summary>
+        /// Bounded self-healing loop: re-asks the host for the roster until the local
+        /// player's pair resolves. Recovers a dropped request, a dropped reply, or a
+        /// late host-side spawn. Cancelled once the local pair is initialised
+        /// (<see cref="InitializePair"/>) or on despawn.
+        /// </summary>
         async UniTaskVoid RosterPullRetryLoop(CancellationToken ct)
         {
             // These must cover MORE wall-clock than PartyInviteController.joinReadyTimeoutSeconds,

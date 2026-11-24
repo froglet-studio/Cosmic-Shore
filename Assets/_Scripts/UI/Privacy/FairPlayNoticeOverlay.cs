@@ -55,6 +55,8 @@ namespace CosmicShore.UI
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Subscribe()
         {
+            // The compiled gate, not IsActive: this runs before sign-in, when a saved kill switch may be lifted by the
+            // live flags moments later. Nothing is shown while trust is killed, because RefreshAsync never asks.
             if (!FairPlayTrustGate.Enabled) return;
             FairPlayTrust.OnNoticeChanged -= Show;
             FairPlayTrust.OnNoticeChanged += Show;

@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Core;
 using TMPro;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -125,6 +126,7 @@ namespace CosmicShore.UI
                 p.button.onClick.AddListener(() => ProviderChosen?.Invoke(provider));
                 var face = providers ? providers.ButtonFor(provider) : null;
                 if (p.mark && face) p.mark.sprite = face;
+                ColorGrade.KeepAsAuthored(p.mark);   // the provider's own artwork: its brand fixes its colours
             }
             if (primaryButton) primaryButton.onClick.AddListener(OnPrimary);
             if (secondaryButton) secondaryButton.onClick.AddListener(OnSecondary);
@@ -263,6 +265,7 @@ namespace CosmicShore.UI
             {
                 autoMark.sprite = mark;
                 autoMark.enabled = mark;
+                ColorGrade.KeepAsAuthored(autoMark);   // the provider's own mark: its brand fixes its colours
             }
             Set(autoName, accountName);
             Set(autoCaption, TemplateText.Fill(autoCaptionLine, "provider", n));

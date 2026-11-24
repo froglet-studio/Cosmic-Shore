@@ -74,7 +74,7 @@ Worked numbers at the shipped values:
 | a Sparrow bullet | 1 | 0.4 s (ten bullets: 4 s) |
 | a Strike (Squirrel joust, Rhino sword, Thresher ball, Angler, Wrasse kite) | 8 | 3.2 s |
 | a missile shockwave | 10 | 4 s |
-| a Debuff (Dolphin cone, Scarab plate, Manta bloom, Serpent rifle) | 12 | 4.8 s |
+| a Debuff (Dolphin cone, Scarab plate, Manta bloom, Serpent rifle, Stoat ripple) | 12 | 4.8 s |
 | a missile blast | 20 | 8 s |
 | a missile direct hit | 30 | 8 s (capped) |
 

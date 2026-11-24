@@ -1,78 +1,67 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One of Home's docked cards (rev 3: the weekly challenge and the current quest move to the left
-    /// under the pilot chip, and "can go away and be minimized"). The – button folds the card to a strip
-    /// (its art slice and eyebrow) and back, remembered on this device; the × closes it for this session.
+    /// One of Home's docked cards under the pilot chip: the Tide strip and the quest chain (Loop Atlas
+    /// <c>era.tide</c>, the picked Frogma option C, Garrett 2026-11-21: "lets not x them out"). A card rests
+    /// folded to its strip (its eyebrow, its one-line summary and, on the Tide, the clock) and opens to the
+    /// full card while the pad's focus is on it or the pointer is over it; it folds again when both leave.
+    /// There is no fold or close button. On a touch screen there is no hover, so a tap goes straight to the
+    /// card's press (the window it opens).
     ///
-    /// <para>The card's data and its show / hide stay with <see cref="HomeUpNext"/>, which asks
-    /// <see cref="IsClosed"/> before showing a card again.</para>
+    /// <para>The card's data and its show / hide stay with <see cref="HomeUpNext"/>. This component sits on
+    /// the card's own GameObject, beside its Button, so the select events reach it.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI/Home Dock Card")]
-    public class HomeDockCard : MonoBehaviour
+    public class HomeDockCard : MonoBehaviour, ISelectHandler, IDeselectHandler, IPointerEnterHandler, IPointerExitHandler
     {
         [Header("Wiring")]
-        [Tooltip("The card's own group (shared with HomeUpNext, which shows it when it has data).")]
-        [SerializeField] private CanvasGroup cardGroup;
-        [Tooltip("Everything below the eyebrow: hidden while the card is folded.")]
+        [Tooltip("Everything the folded strip does not show: hidden while the card is folded.")]
         [SerializeField] private CanvasGroup detailGroup;
         [Tooltip("The card's rect; its height folds.")]
         [SerializeField] private RectTransform card;
-        [SerializeField] private Button minimiseButton;
-        [SerializeField] private Button closeButton;
 
         [Header("Fold")]
         [SerializeField, Min(1f)] private float expandedHeight = 132f;
-        [SerializeField, Min(1f)] private float foldedHeight = 48f;
+        [SerializeField, Min(1f)] private float foldedHeight = 56f;
         [Tooltip("Seconds the fold takes.")]
         [SerializeField, Min(0f)] private float foldSeconds = 0.18f;
-        [Tooltip("PlayerPrefs key that remembers the fold on this device. Empty = always opens unfolded.")]
-        [SerializeField] private string foldKey;
 
-        private bool _closed;
-        private bool _folded;
+        private bool _selected;
+        private bool _hovered;
+        private bool _folded = true;
         private float _from, _to, _t = 1f;
 
-        public bool IsClosed => _closed;
         public bool IsFolded => _folded;
 
-        private void Awake()
+        private void Awake() => ApplyFold(instant: true);
+
+        private void OnDisable()
         {
-            if (minimiseButton) minimiseButton.onClick.AddListener(ToggleFold);
-            if (closeButton) closeButton.onClick.AddListener(Close);
-            _folded = !string.IsNullOrEmpty(foldKey) && PlayerPrefs.GetInt(foldKey, 0) == 1;
+            _selected = _hovered = false;
+            _folded = true;
             ApplyFold(instant: true);
         }
 
-        private void OnDestroy()
-        {
-            if (minimiseButton) minimiseButton.onClick.RemoveListener(ToggleFold);
-            if (closeButton) closeButton.onClick.RemoveListener(Close);
-        }
+        public void OnSelect(BaseEventData eventData) { _selected = true; Refold(); }
+        public void OnDeselect(BaseEventData eventData) { _selected = false; Refold(); }
+        public void OnPointerEnter(PointerEventData eventData) { _hovered = true; Refold(); }
+        public void OnPointerExit(PointerEventData eventData) { _hovered = false; Refold(); }
 
-        public void ToggleFold()
+        private void Refold()
         {
-            _folded = !_folded;
-            if (!string.IsNullOrEmpty(foldKey))
-            {
-                PlayerPrefs.SetInt(foldKey, _folded ? 1 : 0);
-                PlayerPrefs.Save();
-            }
+            bool folded = !(_selected || _hovered);
+            if (folded == _folded) return;
+            _folded = folded;
             ApplyFold(instant: false);
-        }
-
-        public void Close()
-        {
-            _closed = true;
-            KitVisibility.SetShown(cardGroup, false);
         }
 
         private void ApplyFold(bool instant)
         {
-            KitVisibility.SetShown(detailGroup, !_folded);
+            if (detailGroup) KitVisibility.SetShown(detailGroup, !_folded);
             if (!card) return;
             _from = card.sizeDelta.y;
             _to = _folded ? foldedHeight : expandedHeight;

@@ -45,31 +45,79 @@ namespace CosmicShore.UI
         const int LinesPerFrame = 6000;
         const int MaxLabels = 48;
         const int MaxVerts = 60000;
+        // A map lying back (the Voyages table, VoyageTableTilt) is laid out again as a triangle list, three vertices to a
+        // triangle, and one mesh holds at most 65,000: past it Unity draws none of the map, which is how the galaxy went
+        // missing at Sector and Region round Tumult, whose sky ran to 94,000-165,000 (Shombith, 2026-11-16). Its sky is
+        // counted in indices (the list's vertices) and stops here, leaving room for the painted sea the tilt cuts finer
+        // (about 6,200), the corner, the course and the places drawn after the sky.
+        const int TiltedMaxIndices = 48000;
         const float LadderRow = VoyageMapText.Ladder * 1.45f, LadderGap = 8f, LadderLeft = 8f, LadderTop = 8f;
-        // The cells (Garrett, 2026-11-02: "at the deepest levels we should see the hexagons and you should zoom into the
-        // hexagons to see cells"): their outline fades in as a cell grows from 16 to 36 px across (about the Region tier
-        // into the Neighbourhood), each names itself from 150 px, and a tap on open water opens a cell's card from 40 px.
-        const float CellFadeFrom = 16f, CellFadeTo = 36f, CellAlphaMax = .3f, CellNamedFrom = 150f, CellTapFrom = 40f;
-        const int MaxCells = 2500;
+        // The cells in 3D (Garrett, 2026-11-07: "when we zoom into cells the semantic zoom should see nuclei and membranes
+        // and represent the actual cell"; Docs/Voyages/VOYAGE_BOARD.md §4c): truncated octahedra round a BCC lattice of
+        // nuclei (HyperSeaCells), drawn as a slice at one height. Their walls fade in as a cell grows from 36 to 58 px
+        // across (the board starts at 22 px; the map keeps its one mesh under its vertex budget by starting later), the
+        // nuclei from a 4 px radius (full at 8), each cell fills with its own sea from 60 px and shows its cytoplasm and
+        // inner walls from 90 px, the cell at the view's centre names its levels from 200 px, and a tap on open water
+        // opens a cell's card from 40 px.
+        //
+        // The foam comes in by stages so a player sees the cells coming (Shombith, 2026-11-20: "the switch where we start
+        // seeing the kelvin foam structure is abrupt ... so users see we are getting towards a structure of cells"):
+        // first the nuclei alone, faint points that brighten from a 20 px cell; then the walls grow in round them over a
+        // zoom of about two (their size from 36 px, and the mesh budget's room spread over a third of the cell count, not
+        // the last quarter of the budget, which was one wheel notch); then the straight plain walls cross-fade into the
+        // wet foam over a zoom of about one and a half, both drawn while the budget holds them.
+        public const float CellsFromPx = 36f;
+        const float DotsFromPx = 20f;
+        // The nuclei fade out as the slice's count nears MaxCells (from this share of it), so they never cut off.
+        const float DotsCountFade = .4f;
+        // The cost ratio the walls fade in over (cells drawn ~ 1 / width^2: 3 is a zoom of ~1.7), and the plain-to-wet one.
+        const float FitRange = 3f, WetBlendRange = 2.25f;
+        // How long a stage takes to come in (or go) when the zoom jumps past it, seconds.
+        const float RevealSeconds = .6f;
+        // The walls are full once the nuclei are this far in (1 / this), so the dots always lead.
+        const float WallsAfterDots = 1.6f;
+        const float CellFadeTo = 58f, CellFillFrom = 60f, CellFillTo = 90f, CellInnerFrom = 90f, CellTagsFrom = 200f,
+            CellTapFrom = 40f, NucleusOutlineFrom = 50f;
+        const int MaxCells = 4000, CellVertBudget = 34000;
+        // The view's cells are drawn whole or not at all: past the budget the mesh would keep only the first rows the
+        // lattice yields, a band of foam across the top of the map (Shombith, 2026-11-17). They fade in as the budget's
+        // room grows instead (FitRange), so the foam comes in across the whole view as the cells grow.
         const float Margin = 20f;
 
         static HyperSeaSkyCatalog s_Catalog;
         static bool s_Loaded;
 
         static readonly Color32 GlobCore = new(255, 226, 170, 242), GlobMid = new(255, 206, 140, 115), GlobEdge = new(255, 200, 130, 0);
-        static readonly Color OpenRing = new(170 / 255f, 205 / 255f, 1f, .85f);
-        static readonly Color StarLabelReal = new(214 / 255f, 226 / 255f, 246 / 255f, .8f);
-        static readonly Color StarLabelModel = new(200 / 255f, 210 / 255f, 230 / 255f, .6f);
-        static readonly Color StarLabelTumult = new(1f, 214 / 255f, 150 / 255f, .82f);
-        static readonly Color GlobLabel = new(1f, 220 / 255f, 170 / 255f, .85f);
-        static readonly Color OpenLabel = new(180 / 255f, 210 / 255f, 1f, .85f);
-        static readonly Color FarColor = new(159 / 255f, 176 / 255f, 200 / 255f, .9f);
+        static readonly Color OpenRingAuthored = new(170 / 255f, 205 / 255f, 1f, .85f);
+        static Color OpenRing => ColorTrace.Retrace(ColorTrace.Ui, OpenRingAuthored);
+        static readonly Color StarLabelRealAuthored = new(214 / 255f, 226 / 255f, 246 / 255f, .8f);
+        static Color StarLabelReal => ColorTrace.Retrace(ColorTrace.Ui, StarLabelRealAuthored);
+        static readonly Color StarLabelModelAuthored = new(200 / 255f, 210 / 255f, 230 / 255f, .6f);
+        static Color StarLabelModel => ColorTrace.Retrace(ColorTrace.Ui, StarLabelModelAuthored);
+        static readonly Color StarLabelTumultAuthored = new(1f, 214 / 255f, 150 / 255f, .82f);
+        static Color StarLabelTumult => ColorTrace.Retrace(ColorTrace.Ui, StarLabelTumultAuthored);
+        static readonly Color GlobLabelAuthored = new(1f, 220 / 255f, 170 / 255f, .85f);
+        static Color GlobLabel => ColorTrace.Retrace(ColorTrace.Ui, GlobLabelAuthored);
+        static readonly Color OpenLabelAuthored = new(180 / 255f, 210 / 255f, 1f, .85f);
+        static Color OpenLabel => ColorTrace.Retrace(ColorTrace.Ui, OpenLabelAuthored);
+        static readonly Color FarColorAuthored = new(159 / 255f, 176 / 255f, 200 / 255f, .9f);
+        static Color FarColor => ColorTrace.Retrace(ColorTrace.Ui, FarColorAuthored);
         static readonly Color LadderIdle = new(214 / 255f, 224 / 255f, 240 / 255f, .7f);
         static readonly Color PanelBack = new(.02f, .035f, .07f, .86f);
         static readonly Color LabelBack = new(.02f, .035f, .07f, .62f);
-        static readonly Color CellLine = new(.84f, .88f, .94f, 1f);
-        static readonly Color CellLabel = new(.84f, .9f, 1f, .9f);
-        static readonly float Sq3 = Mathf.Sqrt(3f);
+        /// <summary>The Lime of the edge view's slice bar (the style guide's call to action: it is dragged).</summary>
+        public static readonly Color SliceLimeAuthored = new(179 / 255f, 1f, 89 / 255f, .95f);
+        public static Color SliceLime => ColorTrace.Retrace(ColorTrace.Ui, SliceLimeAuthored);
+        static readonly Color CutLineAuthored = new(179 / 255f, 1f, 89 / 255f, .6f);
+        static Color CutLine => ColorTrace.Retrace(ColorTrace.Ui, CutLineAuthored);
+        static readonly Color TagNucleusAuthored = new(1f, 238 / 255f, 196 / 255f, 1f);
+        static Color TagNucleus => ColorTrace.Retrace(ColorTrace.Ui, TagNucleusAuthored);
+        static readonly Color TagCytoplasmAuthored = new(207 / 255f, 228 / 255f, 1f, 1f);
+        static Color TagCytoplasm => ColorTrace.Retrace(ColorTrace.Ui, TagCytoplasmAuthored);
+        static readonly Color TagMembraneAuthored = new(214 / 255f, 236 / 255f, 1f, 1f);
+        static Color TagMembrane => ColorTrace.Retrace(ColorTrace.Ui, TagMembraneAuthored);
+        static readonly Color TagBodyAuthored = new(214 / 255f, 224 / 255f, 240 / 255f, .8f);
+        static Color TagBody => ColorTrace.Retrace(ColorTrace.Ui, TagBodyAuthored);
 
         readonly VoyageMapGraphic _map;
         readonly HyperSeaSkyField _field = new();
@@ -79,8 +127,44 @@ namespace CosmicShore.UI
         readonly List<Candidate> _candidates = new();
         readonly List<Rect> _boxes = new();
         readonly List<Rect> _backs = new();
-        readonly List<(int q, int r)> _cells = new();
+        // The cells the view's slice crosses: each cell, its nucleus's middle in the slice (board x, y), how far the
+        // nucleus sits off the slice and its radius, and its wet outline (board x, y) in _cellPoly from _cellStart[i] to
+        // _cellStart[i + 1].
+        readonly List<(double x, double y, double z)> _nuclei = new();
+        readonly List<(double x, double y, double z)> _cellNuclei = new();
+        readonly List<double> _cellH = new();
+        readonly List<double> _cellR = new();
+        readonly List<(double x, double y)> _cellMid = new();
+        readonly List<(double u, double v)> _wetScratch = new();
+        readonly List<int> _cellStart = new();
+        readonly List<(double u, double v)> _cellPoly = new();
+        readonly List<(double u, double v)> _sectionScratch = new();
+        // Each cell's section as the slice cuts it, in _secPts from _secStart[i] to _secStart[i + 1]: the wet outlines are
+        // made from them once the room for the wet foam is known.
+        readonly List<int> _secStart = new();
+        // Whether each cell is drawn at all (its middle within a cell of the view); only those count toward the budget.
+        readonly List<bool> _cellSeen = new();
+        readonly List<(double u, double v)> _secPts = new();
+        // Each cell's plain section too (its straight walls), in _cellRaw from _rawStart[i] to _rawStart[i + 1]: the
+        // far view's foam (CellLod.Plain).
+        readonly List<int> _rawStart = new();
+        readonly List<(double u, double v)> _cellRaw = new();
+        // Dots: the nuclei alone, before the walls. Wet: the wet foam, over the plain walls while _wetBlend is under 1.
+        enum CellLod { None, Dots, Plain, Wet }
+        CellLod _cellLod;
+        // How far the wet foam has taken over from the plain walls (0-1), and how strongly the nuclei show as dots.
+        float _wetBlend, _dotAlpha;
+        // When the reveal last eased, and whether it is still on its way (the map redraws until it lands).
+        float _easedAt = float.NegativeInfinity;
+        bool _easing;
+        // Whether the wet foam's lit rims and the missed nuclei's dashed outlines fit beside it.
+        bool _wetExtras;
+        // How much of a cell's fill the plain foam draws (0-1): its fans fade out first as the view widens past the budget.
+        float _plainFill;
+        readonly List<Vector2> _screenPoly = new();
+        readonly Dictionary<(int, int, int), Color> _cellSea = new();
         float _cellAlpha;
+        double _sliceZ;
         readonly List<TMP_Text> _labels = new();
         readonly List<TMP_Text> _ladder = new();
         readonly List<Rect> _ladderRects = new();
@@ -99,6 +183,18 @@ namespace CosmicShore.UI
         /// <summary>The landmarks drawn now.</summary>
         public IReadOnlyList<SkyObject> Landmarks => _landmarks;
         public HyperSeaSkyCatalog Catalog => s_Catalog;
+        /// <summary>The content's lines the deep zoom writes with.</summary>
+        public VoyageLines Lines => _lines;
+        /// <summary>The height the map slices the cells at (and the deep tiers' slab is centred on), ly.</summary>
+        public double SliceZ => _sliceZ;
+        /// <summary>The height the slice would sit at with no offset: the focus's layer of nuclei.</summary>
+        public double SliceBase { get; private set; }
+        /// <summary>True while the map shows the cells (the edge view then cuts them upright and shows the slice bar).</summary>
+        public bool CellZoom => _hasView && CellPx >= CellsFromPx;
+        /// <summary>How far the cells' walls have come in (0-1), as the map shows them now; the edge view follows it.</summary>
+        public float CellReveal => _cellAlpha;
+        /// <summary>How strongly the nuclei show as dots before the walls (0-1).</summary>
+        public float DotReveal => _dotAlpha;
 
         struct Hit
         {
@@ -121,8 +217,11 @@ namespace CosmicShore.UI
         public void SetTemplate(TMP_Text template) => _template = template;
         public void SetLines(VoyageLines lines) => _lines = lines;
 
-        /// <summary>Read more of the sky table; true when this frame finished it (the map then redraws).</summary>
-        public bool Tick()
+        /// <summary>Read more of the sky table; true when this frame finished it, or while the cells' reveal is still easing
+        /// in or out (the map then redraws).</summary>
+        public bool Tick() => TickCatalog() | _easing;
+
+        bool TickCatalog()
         {
             if (!s_Loaded)
             {
@@ -167,7 +266,7 @@ namespace CosmicShore.UI
                 bool drawn = false;
                 if (content?.Locations != null)
                     foreach (var l in content.Locations)
-                        if (l != null && l.Charted && Math.Abs(l.GalaxyX - p.X) < 2 && Math.Abs(l.GalaxyY - p.Y) < 2)
+                        if (_map.IsDrawn(l) && Math.Abs(l.GalaxyX - p.X) < 2 && Math.Abs(l.GalaxyY - p.Y) < 2)
                         {
                             drawn = true;
                             break;
@@ -187,7 +286,7 @@ namespace CosmicShore.UI
             _clusters.Clear();
             _landmarks.Clear();
             _hits.Clear();
-            _cells.Clear();
+            _cellNuclei.Clear();
             _backs.Clear();
             _ladderRects.Clear();
             Selected = null;
@@ -208,8 +307,21 @@ namespace CosmicShore.UI
             var c = _map.ViewCentre;
             double cx = c.x, cy = -c.y, w = r.width / s;
             _view = HyperSeaSky.ViewOf(cx, cy, w, r.height / r.width,
-                s_Catalog != null && s_Catalog.Done ? s_Catalog.Landmarks : null);
+                s_Catalog != null && s_Catalog.Done ? s_Catalog.Landmarks : null, _map.SliceOffset);
             _hasView = true;
+            // The slab's height is the cells' slice; wider views, which have no slab, slice at the squad's place.
+            if (_view.Slab)
+            {
+                _sliceZ = _view.Zf;
+                SliceBase = HyperSeaCells.SliceZ(_view.Zf - _map.SliceOffset, 0);
+            }
+            else
+            {
+                var here = _map.Content?.Location(_map.Here);
+                double hz = here != null && here.Charted ? here.GalaxyZ : HyperSea.SolHeight;
+                SliceBase = HyperSeaCells.SliceZ(hz, 0);
+                _sliceZ = HyperSeaCells.SliceZ(hz, _map.SliceOffset);
+            }
             double halfW = (r.width * .5 + Margin) / s, halfH = (r.height * .5 + Margin) / s;
             _field.Collect(_view, cx - halfW, cy - halfH, cx + halfW, cy + halfH, _stars, _clusters);
             _landmarks.Clear();
@@ -245,39 +357,212 @@ namespace CosmicShore.UI
             return (c.x + (at.x - r.center.x) / s, -(c.y + (at.y - r.center.y) / s));
         }
 
-        /// <summary>The cells the view's outline grid draws (none while a cell is too small to see).</summary>
+        /// <summary>The cells the view's slice crosses, with their sections (none while a cell is too small to see).</summary>
         void Cells(double x0, double y0, double x1, double y1)
         {
-            _cells.Clear();
+            _cellNuclei.Clear();
+            _cellH.Clear();
+            _cellR.Clear();
+            _cellMid.Clear();
+            _cellStart.Clear();
+            _cellPoly.Clear();
+            _rawStart.Clear();
+            _cellRaw.Clear();
+            _cellLod = CellLod.None;
             float px = CellPx;
-            _cellAlpha = CellAlphaMax * Mathf.Clamp01((px - CellFadeFrom) / (CellFadeTo - CellFadeFrom));
-            if (_cellAlpha <= 0f) return;
-            double row = HyperSea.CellLy * Sq3 / 2;
-            int r0 = (int)Math.Floor(y0 / row) - 1, r1 = (int)Math.Ceiling(y1 / row) + 1;
-            for (int rr = r0; rr <= r1; rr++)
+            // the time since the last look, for the reveal's easing (a long gap is a fresh start, not a jump)
+            float now = Time.unscaledTime, dt = Mathf.Clamp(now - _easedAt, 0f, .1f);
+            _easedAt = now;
+            _easing = false;
+            if (px < DotsFromPx)
             {
-                int q0 = (int)Math.Floor(x0 / HyperSea.CellLy - rr / 2.0) - 1, q1 = (int)Math.Ceiling(x1 / HyperSea.CellLy - rr / 2.0) + 1;
-                for (int q = q0; q <= q1; q++)
+                _cellAlpha = _wetBlend = _dotAlpha = 0f;
+                return;
+            }
+            double m = HyperSeaCells.A;
+            HyperSeaCells.NucleiInSlice(_sliceZ, x0 - m, y0 - m, x1 + m, y1 + m, _nuclei, MaxCells + 1);
+            if (_nuclei.Count > MaxCells)
+            {
+                // More cells than the map draws: the plain sea until they are fewer.
+                _cellAlpha = _wetBlend = _dotAlpha = 0f;
+                return;
+            }
+            float dotRoom = Smooth((MaxCells - _nuclei.Count) / (MaxCells * DotsCountFade));
+            float dotGoal = Smooth((px - DotsFromPx) / (CellsFromPx - DotsFromPx)) * dotRoom;
+            // the walls' sections while they show or are on their way in or out
+            bool walls = px >= CellsFromPx || _cellAlpha > 0f;
+            _secPts.Clear();
+            _secStart.Clear();
+            _cellSeen.Clear();
+            // a cell counts toward the mesh only where it is drawn: its middle within a cell of the view (PopulateCells)
+            var vr = _map.rectTransform.rect;
+            var seenLim = new Rect(vr.xMin - px, vr.yMin - px, vr.width + 2f * px, vr.height + 2f * px);
+            long seenRaw = 0;
+            foreach (var c in _nuclei)
+            {
+                if (!HyperSeaCells.TrySection(c, (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0), _sectionScratch, out var sec)) continue;
+                _cellNuclei.Add(c);
+                _cellH.Add(sec.Mh);
+                _cellR.Add(sec.NucleusR);
+                _cellMid.Add((sec.Mu, sec.Mv));
+                bool seen = seenLim.Contains(At(sec.Mu, sec.Mv));
+                _cellSeen.Add(seen);
+                // the plain foam: each cell's own section pulled in by the liquid, its corners sharp (the wet foam's
+                // outline before it is rounded, so the one becomes the other); a sliver the slice only grazes is left to
+                // the liquid between cells, as the wet foam leaves it
+                _rawStart.Add(_cellRaw.Count);
+                if (walls && HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch, 0))
                 {
-                    if (_cells.Count >= MaxCells) return;
-                    _cells.Add((q, rr));
+                    _cellRaw.AddRange(_wetScratch);
+                    if (seen) seenRaw += _wetScratch.Count;
+                }
+                _cellStart.Add(0);
+                _secStart.Add(_secPts.Count);
+                if (walls) _secPts.AddRange(_sectionScratch);
+            }
+            _rawStart.Add(_cellRaw.Count);
+            _cellStart.Add(0);
+            _secStart.Add(_secPts.Count);
+            _wetExtras = false;
+            float cellGoal = 0f, wetGoal = 0f, cellRoom = 0f;
+            if (walls)
+            {
+                // The walls grow in with the cells' size and with the budget's room, so the view's cells are drawn whole,
+                // never the lattice's first rows alone (a band across the top, Shombith 2026-11-17).
+                long plainWalls = CellsCost(px, CellLod.Plain, fill: false);
+                cellRoom = Fit(plainWalls);
+                // and never ahead of the nuclei, which come first
+                cellGoal = px >= CellsFromPx
+                    ? Smooth((px - CellsFromPx) / (CellFadeTo - CellsFromPx)) * cellRoom * Smooth(dotGoal * WallsAfterDots)
+                    : 0f;
+                _plainFill = px > CellFillFrom ? Fit(CellsCost(px, CellLod.Plain)) : 0f;
+                // The rounded (wet) foam once it fits beside the plain walls; it takes over from them as its room grows, and
+                // the plain walls stop when it has. Its corners are rounded as finely as the room lets the whole view's
+                // take over (3, 2 or 1 samples a corner; the side view's are 3), and its lit rims and the dashed outlines
+                // of the nuclei the slice misses come with it only where they fit too. Short of that, the plain foam
+                // alone, which costs a fraction of it. (The full wet foam cost about twice the budget at Cell, so before
+                // 2026-11-20 the map never drew it and showed straight walls over the side view's round ones.)
+                long room = CellVertBudget - plainWalls;
+                int corners = 0;
+                for (int k = 3; k >= 1 && corners == 0; k--)
+                {
+                    long est = WetCost(seenRaw * (k + 1L), px);
+                    if (est * WetBlendRange <= room || (k == 1 && est < room)) corners = k;
+                }
+                if (corners > 0)
+                {
+                    for (int i = 0; i < _cellNuclei.Count; i++)
+                    {
+                        _cellStart[i] = _cellPoly.Count;
+                        if (!_cellSeen[i]) continue;
+                        _sectionScratch.Clear();
+                        for (int k = _secStart[i]; k < _secStart[i + 1]; k++) _sectionScratch.Add(_secPts[k]);
+                        if (_sectionScratch.Count >= 3 && HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch, corners))
+                            _cellPoly.AddRange(_wetScratch);
+                    }
+                    _cellStart[_cellNuclei.Count] = _cellPoly.Count;
+                    long wet = CellsCost(px, CellLod.Wet, extras: false);
+                    if (wet > 0 && room > wet) wetGoal = Smooth(Mathf.Log((float)room / wet) / Mathf.Log(WetBlendRange));
+                    _wetExtras = CellsCost(px, CellLod.Wet, extras: true) * WetBlendRange <= room;
                 }
             }
+            // Each stage eases to where the zoom puts it over RevealSeconds, so a jump (+, a tier, a dive) still shows the
+            // foam coming in. What the budget or the count cannot hold goes at once, so the mesh never overflows.
+            float step = dt / RevealSeconds;
+            _dotAlpha = Mathf.Min(Mathf.MoveTowards(_dotAlpha, dotGoal, step), dotRoom);
+            _cellAlpha = Mathf.Min(Mathf.MoveTowards(_cellAlpha, cellGoal, step), cellRoom);
+            _wetBlend = wetGoal > 0f ? Mathf.MoveTowards(_wetBlend, wetGoal, step) : 0f;
+            _easing = !Mathf.Approximately(_dotAlpha, dotGoal) || !Mathf.Approximately(_cellAlpha, cellGoal)
+                || !Mathf.Approximately(_wetBlend, wetGoal);
+            if (_cellAlpha > 0f && _cellRaw.Count > 0) _cellLod = _wetBlend > 0f && _cellPoly.Count > 0 ? CellLod.Wet : CellLod.Plain;
+            else if (_dotAlpha > 0f) _cellLod = CellLod.Dots;
+            else _cellNuclei.Clear();
         }
 
-        /// <summary>The card a cell opens: its centre in the plane, at the height the view slices.</summary>
-        SkyObject CellObject(int q, int r)
+        /// <summary>How much of the foam the mesh budget lets show when drawing it costs <paramref name="cost"/>: none at the
+        /// budget, all of it at a <see cref="FitRange"/>th of it.</summary>
+        static float Fit(long cost) =>
+            cost <= 0 ? 1f : Smooth(Mathf.Log(CellVertBudget / (float)cost) / Mathf.Log(FitRange));
+
+        static float Smooth(float t)
         {
-            var (x, y) = HyperSea.CellCentre(q, r);
-            return new SkyObject { Kind = SkyKind.Cell, X = x, Y = y, Z = _view.Slab ? _view.Zf : HyperSea.SolHeight, CellQ = q, CellR = r };
+            t = Mathf.Clamp01(t);
+            return t * t * (3f - 2f * t);
         }
 
-        /// <summary>A hexagon's corner k (0-5) on the screen: pointy-top, corners at 30 + 60k degrees in the board's frame,
-        /// whose y runs down the screen.</summary>
-        static Vector2 Corner(Vector2 centre, float circumPx, int k)
+        /// <summary>
+        /// What drawing the collected cells costs the mesh, in the units <see cref="Used"/> counts (vertices on a flat map,
+        /// the list's vertices on a tilted one): every wall a quad, a filled cell's fan with its rims, and each nucleus a
+        /// quad or its dashed outline. An upper bound, as <see cref="PopulateCells"/> skips short walls and cells off the
+        /// view.
+        /// </summary>
+        long CellsCost(float px, CellLod lod, bool fill = true, bool extras = true)
         {
-            float t = Mathf.PI / 6f + k * Mathf.PI / 3f;
-            return centre + new Vector2(Mathf.Cos(t), -Mathf.Sin(t)) * circumPx;
+            bool tilted = Tilted;
+            int quad = tilted ? 6 : 4;
+            fill &= px > CellFillFrom;
+            if (lod == CellLod.Plain)
+            {
+                // each cell's own pulled-in walls, the fan on them, and a nucleus quad
+                long plain = quad;
+                for (int i = 0; i < _cellNuclei.Count; i++)
+                {
+                    if (!_cellSeen[i]) continue;
+                    int m = _rawStart[i + 1] - _rawStart[i];
+                    plain += (long)m * quad + quad;
+                    if (fill) plain += tilted ? 9L * m : 1L + 2L * m;
+                }
+                return plain;
+            }
+            bool inner = extras && px > CellInnerFrom;
+            double s = _map.PixelsPerUnit;
+            long cost = quad;
+            for (int i = 0; i < _cellNuclei.Count; i++)
+            {
+                int n = _cellStart[i + 1] - _cellStart[i];
+                if (n == 0 || !_cellSeen[i]) continue;
+                cost += (long)n * quad;
+                if (fill) cost += tilted ? 9L * n : 1L + 2L * n;
+                if (inner) cost += 2L * n * quad;
+                int dashes = extras && px > NucleusOutlineFrom
+                    ? Mathf.Clamp(Mathf.RoundToInt(2f * Mathf.PI * (float)(_cellR[i] * s) / 7f), 6, 32)
+                    : 1;
+                cost += (long)dashes * quad;
+            }
+            return cost;
+        }
+
+        /// <summary>What <paramref name="points"/> points of rounded outline would cost as the wet foam without its extras:
+        /// their walls and fills, and a nucleus quad a cell (an estimate before the outlines are made).</summary>
+        long WetCost(long points, float px)
+        {
+            bool tilted = Tilted;
+            int quad = tilted ? 6 : 4;
+            int cells = 0;
+            foreach (bool seen in _cellSeen) if (seen) cells++;
+            long cost = quad + points * quad + (long)cells * quad;
+            if (px > CellFillFrom) cost += tilted ? 9L * points : 2L * points + cells;
+            return cost;
+        }
+
+        /// <summary>A cell's own sea: the colour of the water at its lattice point (a knot's cells share it).</summary>
+        Color CellSea((double x, double y, double z) c)
+        {
+            var key = HyperSeaCells.KeyOf(c);
+            if (_cellSea.TryGetValue(key, out var col)) return col;
+            if (_cellSea.Count > 50000) _cellSea.Clear();
+            var l = HyperSeaCells.LatticePoint(c);
+            var (r, g, b) = HyperSea.SeaColor(HyperSea.Density(l.x, l.y, l.z));
+            col = new Color((float)r / 255f, (float)g / 255f, (float)b / 255f, 1f);
+            _cellSea[key] = col;
+            return col;
+        }
+
+        /// <summary>The card a cell opens: its nucleus, and the plane cell under it for its berth and name.</summary>
+        SkyObject CellObject((double x, double y, double z) c)
+        {
+            var (q, r) = HyperSea.CellOf(c.x, c.y);
+            return new SkyObject { Kind = SkyKind.Cell, X = c.x, Y = c.y, Z = c.z, CellQ = q, CellR = r };
         }
 
         void Hits()
@@ -314,17 +599,25 @@ namespace CosmicShore.UI
                 if (d < bestD) { bestD = d; best = h.Object; }
             }
             // Open water at the deep tiers opens the cell under the tap; a second tap on the same cell closes it.
-            if (best == null && _hasView && CellPx >= CellTapFrom)
+            if (best == null && _hasView && _cellAlpha > 0f && CellPx >= CellTapFrom)
             {
                 var (x, y) = BoardAt(at);
-                var (q, r) = HyperSea.CellOf(x, y);
-                if (Selected is { Kind: SkyKind.Cell } c && c.CellQ == q && c.CellR == r) return null;
-                best = CellObject(q, r);
+                var n = HyperSeaCells.CellAt(x, y, _sliceZ);
+                if (Selected is { Kind: SkyKind.Cell } c && c.X == n.x && c.Y == n.y && c.Z == n.z) return null;
+                best = CellObject(n);
             }
             return best;
         }
 
         // ── The mesh ─────────────────────────────────────────────────────────
+
+        bool Tilted => _map.Tilt && _map.Tilt.Active;
+
+        /// <summary>How much of the mesh's room the sky has used: vertices on a flat map, the list's vertices (indices) on
+        /// a tilted one.</summary>
+        int Used(VertexHelper vh) => Tilted ? vh.currentIndexCount : vh.currentVertCount;
+
+        int Cap => Tilted ? TiltedMaxIndices : MaxVerts;
 
         /// <summary>Draw the sky into the map's mesh (under the inset, the lanes and the places).</summary>
         public void Populate(VertexHelper vh, Vector2 white, VoyageToyDefinitionSO style)
@@ -333,31 +626,11 @@ namespace CosmicShore.UI
             var r = _map.rectTransform.rect;
             double s = _map.PixelsPerUnit;
             var lim = new Rect(r.xMin - 10f, r.yMin - 10f, r.width + 20f, r.height + 20f);
-            // The cells' outlines first, under everything: each cell draws three of its six edges (the 0, 60 and 120
-            // degree sides), so every shared edge is drawn once.
-            if (_cellAlpha > 0f)
-            {
-                float circ = CellPx / Sq3;
-                var lineCol = new Color(CellLine.r, CellLine.g, CellLine.b, _cellAlpha);
-                var cellLim = new Rect(r.xMin - circ, r.yMin - circ, r.width + 2f * circ, r.height + 2f * circ);
-                foreach (var (q, cr) in _cells)
-                {
-                    if (vh.currentVertCount > MaxVerts / 2) break;
-                    var (x, y) = HyperSea.CellCentre(q, cr);
-                    var at = At(x, y);
-                    if (!cellLim.Contains(at)) continue;
-                    var c5 = Corner(at, circ, 5);
-                    var c0 = Corner(at, circ, 0);
-                    var c1 = Corner(at, circ, 1);
-                    var c2 = Corner(at, circ, 2);
-                    VoyageMapGraphic.Line(vh, c5, c0, 1f, lineCol, white);
-                    VoyageMapGraphic.Line(vh, c0, c1, 1f, lineCol, white);
-                    VoyageMapGraphic.Line(vh, c1, c2, 1f, lineCol, white);
-                }
-            }
+            // The cells first, under everything.
+            if (_cellLod != CellLod.None) PopulateCells(vh, white);
             foreach (var m in _stars)
             {
-                if (vh.currentVertCount > MaxVerts) return;
+                if (Used(vh) > Cap) return;
                 var o = m.Object;
                 var at = At(o.X, o.Y);
                 if (!lim.Contains(at)) continue;
@@ -377,9 +650,13 @@ namespace CosmicShore.UI
                 Disc(vh, at, rad, col, col, 8, white);
             }
             var clim = new Rect(r.xMin - 30f, r.yMin - 30f, r.width + 60f, r.height + 60f);
+            // A globular cluster's glow in the worn colour set (ColorTrace), looked up once per mesh.
+            Color32 globCore = (Color32)ColorTrace.Retrace(ColorTrace.Ui, GlobCore),
+                globMid = (Color32)ColorTrace.Retrace(ColorTrace.Ui, GlobMid),
+                globEdge = (Color32)ColorTrace.Retrace(ColorTrace.Ui, GlobEdge);
             foreach (var m in _clusters)
             {
-                if (vh.currentVertCount > MaxVerts) return;
+                if (Used(vh) > Cap) return;
                 var c = m.Object;
                 var at = At(c.X, c.Y);
                 if (!clim.Contains(at)) continue;
@@ -387,8 +664,8 @@ namespace CosmicShore.UI
                 if (c.Kind == SkyKind.Globular)
                 {
                     float a = m.Alpha;
-                    Disc(vh, at, rpx * 1.4f * .45f, Fade(GlobCore, a), Fade(GlobMid, a), 12, white);
-                    Annulus(vh, at, rpx * 1.4f * .45f, rpx * 1.4f, Fade(GlobMid, a), Fade(GlobEdge, a), 12, white);
+                    Disc(vh, at, rpx * 1.4f * .45f, Fade(globCore, a), Fade(globMid, a), 12, white);
+                    Annulus(vh, at, rpx * 1.4f * .45f, rpx * 1.4f, Fade(globMid, a), Fade(globEdge, a), 12, white);
                 }
                 else DashedRing(vh, at, rpx, 1.1f, new Color(OpenRing.r, OpenRing.g, OpenRing.b, OpenRing.a * m.Alpha), white);
             }
@@ -400,10 +677,14 @@ namespace CosmicShore.UI
             }
             if (Selected is { Kind: SkyKind.Cell })
             {
-                var at = At(Selected.X, Selected.Y);
-                float circ = CellPx / Sq3;
-                for (int k = 0; k < 6; k++)
-                    VoyageMapGraphic.Line(vh, Corner(at, circ, k), Corner(at, circ, (k + 1) % 6), 2f, Color.white, white);
+                if (HyperSeaCells.TrySection((Selected.X, Selected.Y, Selected.Z), (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0),
+                        _sectionScratch, out _) && HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch))
+                {
+                    _screenPoly.Clear();
+                    foreach (var p in _wetScratch) _screenPoly.Add(At(p.u, p.v));
+                    for (int k = 0; k < _screenPoly.Count; k++)
+                        VoyageMapGraphic.Line(vh, _screenPoly[k], _screenPoly[(k + 1) % _screenPoly.Count], 2f, Color.white, white);
+                }
             }
             else if (Selected != null)
             {
@@ -412,18 +693,87 @@ namespace CosmicShore.UI
                     : Selected.Kind == SkyKind.Landmark ? LandmarkSize(Selected) * .5f + 5f : 6f + 2f;
                 Ring(vh, at, rad, 1f, Color.white, 24, white);
             }
+            // The map's bottom edge is the line the edge view cuts along (Garrett, 2026-11-07: "the bottom edge of the plane
+            // [is] the slice for the thickness so they always have a nice lock up"): marked in the slice bar's Lime.
+            VoyageMapGraphic.Line(vh, new Vector2(r.xMin, r.yMin + 1f), new Vector2(r.xMax, r.yMin + 1f), 1.5f, CutLine, white);
             // The dark plates under the names and the readout, so they read over bright stars and thick water.
+            var labelBack = ColorTrace.Retrace(ColorTrace.Ui, LabelBack);
             foreach (var b in _backs)
                 VoyageMapGraphic.Quad(vh, new Vector2(b.xMin, b.yMin), new Vector2(b.xMin, b.yMax), new Vector2(b.xMax, b.yMax),
-                    new Vector2(b.xMax, b.yMin), LabelBack, white, white, white, white);
+                    new Vector2(b.xMax, b.yMin), labelBack, white, white, white, white);
             // The ladder's chips, under their text.
             for (int i = 0; i < _ladderRects.Count; i++)
             {
                 var b = _ladderRects[i];
                 bool on = i == _tier;
                 VoyageMapGraphic.Quad(vh, new Vector2(b.xMin, b.yMin), new Vector2(b.xMin, b.yMax), new Vector2(b.xMax, b.yMax),
-                    new Vector2(b.xMax, b.yMin), on ? new Color(.95f, .97f, 1f, .92f) : new Color(.04f, .067f, .125f, .78f),
+                    new Vector2(b.xMax, b.yMin),
+                    ColorTrace.Retrace(ColorTrace.Ui, on ? new Color(.95f, .97f, 1f, .92f) : new Color(.04f, .067f, .125f, .78f)),
                     white, white, white, white);
+            }
+        }
+
+        /// <summary>The cells the slice crosses: their seas, cytoplasm and walls, then the nuclei over them.</summary>
+        void PopulateCells(VertexHelper vh, Vector2 white)
+        {
+            var r = _map.rectTransform.rect;
+            if (_cellLod == CellLod.None) return;
+            bool wet = _cellLod == CellLod.Wet;
+            float px = CellPx, fill = Mathf.Clamp01((px - CellFillFrom) / (CellFillTo - CellFillFrom));
+            // the fills come in with the plain foam's, and are the wet outlines' once the wet foam is drawn at all
+            fill *= wet ? Mathf.Lerp(_plainFill, 1f, _wetBlend) : _plainFill;
+            bool inner = wet && _wetExtras && px > CellInnerFrom;
+            // while the wet foam takes over, the plain walls fade out under it
+            float wetA = _cellAlpha * (wet ? _wetBlend : 0f), plainA = _cellAlpha * (wet ? 1f - _wetBlend : 1f);
+            var lim = new Rect(r.xMin - px, r.yMin - px, r.width + 2f * px, r.height + 2f * px);
+            int budget = Mathf.Min(Used(vh) + CellVertBudget, Cap - 4000);
+            // the liquid between the cells, under them
+            float memA = (float)HyperSeaCells.MembraneAlpha(px);
+            if (_cellLod != CellLod.Dots) VoyageCellDraw.Liquid(vh, r, Mathf.Max(.4f, memA) * _cellAlpha, white);
+            for (int pass = 0; pass < 2 && _cellLod != CellLod.Dots; pass++)
+                for (int i = 0; i < _cellNuclei.Count; i++)
+                {
+                    if (Used(vh) > budget) break;
+                    var at = At(_cellMid[i].x, _cellMid[i].y);
+                    if (!lim.Contains(at)) continue;
+                    // the plain walls first, under the wet foam taking over from them
+                    if (pass == 1 && plainA > 0.004f)
+                    {
+                        _screenPoly.Clear();
+                        for (int k = _rawStart[i]; k < _rawStart[i + 1]; k++) _screenPoly.Add(At(_cellRaw[k].u, _cellRaw[k].v));
+                        if (_screenPoly.Count >= 3) VoyageCellDraw.Walls(vh, _screenPoly, px, plainA, white);
+                        if (wetA <= 0f) continue;
+                    }
+                    _screenPoly.Clear();
+                    if (wet)
+                        for (int k = _cellStart[i]; k < _cellStart[i + 1]; k++) _screenPoly.Add(At(_cellPoly[k].u, _cellPoly[k].v));
+                    else
+                        for (int k = _rawStart[i]; k < _rawStart[i + 1]; k++) _screenPoly.Add(At(_cellRaw[k].u, _cellRaw[k].v));
+                    if (_screenPoly.Count < 3) continue;
+                    if (pass == 0)
+                    {
+                        if (fill > 0f) VoyageCellDraw.Cell(vh, _screenPoly, at, CellSea(_cellNuclei[i]), px, fill * _cellAlpha, inner, white);
+                    }
+                    else if (wetA > 0f) VoyageCellDraw.Walls(vh, _screenPoly, px, wetA, white);
+                }
+            // The nuclei, each at its cell's middle and as big as its cell: where the slice cuts one, its section; where
+            // it passes above or below, its outline, dashed. Before the walls they are the foam's first sign, as dots.
+            float nucA = Mathf.Max((float)HyperSeaCells.NucleusAlpha(px), _dotAlpha);
+            if (nucA <= 0f) return;
+            double s = _map.PixelsPerUnit;
+            for (int i = 0; i < _cellNuclei.Count; i++)
+            {
+                if (Used(vh) > budget + 4000) break;
+                var at = At(_cellMid[i].x, _cellMid[i].y);
+                if (!lim.Contains(at)) continue;
+                double R = _cellR[i], h = Math.Abs(_cellH[i]);
+                if (h < R)
+                {
+                    float rad = (float)(Math.Sqrt(R * R - h * h) * s);
+                    VoyageCellDraw.NucleusQuad(vh, at, rad, nucA, _map.NucleusUv(rad));
+                }
+                else if (wet && _wetExtras && px > NucleusOutlineFrom)
+                    VoyageCellDraw.NucleusOutline(vh, at, (float)(R * s), _wetBlend * nucA * (float)(.8 - h / HyperSeaCells.A * .6), white);
             }
         }
 
@@ -533,6 +883,14 @@ namespace CosmicShore.UI
         void Labels()
         {
             _candidates.Clear();
+            if (_map.Plain)
+            {
+                // The board's plain map: no star, cluster or landmark names, and no card.
+                foreach (var t in _labels) if (t && t.gameObject.activeSelf) t.gameObject.SetActive(false);
+                _backs.Clear();
+                if (Selected != null) Select(null);
+                return;
+            }
             bool sys = SystemTier;
             foreach (var m in _stars)
             {
@@ -567,24 +925,8 @@ namespace CosmicShore.UI
                     Priority = big ? 2f : p.Region == "far" ? 0f : 1f, Color = _template ? _template.color : Color.white,
                 });
             }
-            // A cell big enough to read names itself, under everything else's names.
-            if (_lines != null && _cellAlpha > 0f && CellPx >= CellNamedFrom)
-            {
-                float px = CellPx;
-                foreach (var (q, cr) in _cells)
-                {
-                    var (x, y) = HyperSea.CellCentre(q, cr);
-                    string text = TemplateText.Fill(_lines.MapCellLabel, "sea",
-                        VoyageJobsView.SeaName(_lines, HyperSea.Sea(HyperSea.Density(x, y))),
-                        "q", q.ToString(CultureInfo.InvariantCulture), "r", cr.ToString(CultureInfo.InvariantCulture));
-                    // Near the top of the hexagon, starting left of its centre, clear of a star at the centre.
-                    _candidates.Add(new Candidate
-                    {
-                        Text = text, At = At(x, y) + new Vector2(-px * .28f, px * .3f), Offset = 0f, Priority = -3f,
-                        Color = CellLabel, Small = true,
-                    });
-                }
-            }
+            // Inside the cell at the view's centre, once it is big enough: its levels, named, over everything else's names.
+            if (_lines != null && _cellAlpha > 0f && CellPx >= CellTagsFrom) CellTags();
             _candidates.Sort((a, b) => b.Priority.CompareTo(a.Priority));
 
             var r = _map.rectTransform.rect;
@@ -626,11 +968,61 @@ namespace CosmicShore.UI
                 t.fontSize = size;
                 t.color = cand.Color;
                 if (!ReferenceEquals(t.text, cand.Text)) t.text = cand.Text;
-                ((RectTransform)t.transform).anchoredPosition = new Vector2(bx + 3f, cand.At.y) - r.center;
+                // On a table lying back (VoyageTableTilt) the name stands where its point is seen.
+                var seen = _map.SeenAt(new Vector2(bx + 3f, cand.At.y), out float scale);
+                ((RectTransform)t.transform).anchoredPosition = seen - r.center;
+                t.transform.localScale = new Vector3(scale, scale, 1f);
             }
             for (int i = used; i < _labels.Count; i++)
                 if (_labels[i].gameObject.activeSelf) _labels[i].gameObject.SetActive(false);
         }
+
+        /// <summary>The levels of the cell nearest the view's centre (cells.js <c>tags</c>): its nucleus below the
+        /// nucleus, its cytoplasm between the nucleus and the top wall, its membrane under the top wall.</summary>
+        void CellTags()
+        {
+            var L = _lines;
+            var vc = _map.ViewCentre;
+            var c = HyperSeaCells.NearestInSlice(vc.x, -vc.y, _sliceZ);
+            if (!HyperSeaCells.TrySection(c, (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0), _sectionScratch, out var sec)) return;
+            bool heart = HyperSeaCells.IsHeart(c);
+            double s = _map.PixelsPerUnit, R = sec.NucleusR, h = sec.Mh, ah = Math.Abs(h);
+            var at = At(sec.Mu, sec.Mv);
+            var top = _sectionScratch[0];
+            foreach (var p in _sectionScratch) if (p.v < top.v) top = p;
+            var topAt = At(top.u, top.v);
+            float nucR = (float)((ah < R ? Math.Sqrt(R * R - h * h) : R) * s);
+            var l = HyperSeaCells.LatticePoint(c);
+            double n = HyperSea.Density(l.x, l.y, l.z);
+            Tag(heart ? L.MapCellNucleusHeart : L.MapCellNucleus,
+                ah < R ? L.MapCellNucleusBody : TemplateText.Fill(h > 0 ? L.MapCellNucleusAbove : L.MapCellNucleusBelow, "ly", Ly(ah)),
+                new Vector2(at.x, at.y - nucR - 18f), TagNucleus, 30f);
+            Tag(L.MapCellCytoplasm, TemplateText.Fill(L.MapCellCytoplasmBody, "sea", VoyageJobsView.SeaName(L, HyperSea.Sea(n)),
+                "density", Density(n)), new Vector2((at.x + topAt.x) * .5f, (at.y + topAt.y) * .5f - 6f), TagCytoplasm, 20f);
+            Tag(heart ? L.MapCellMembraneHeart : L.MapCellMembrane, L.MapCellMembraneBody,
+                new Vector2(topAt.x, topAt.y - 22f), TagMembrane, 10f);
+        }
+
+        /// <summary>A level's tag: its name, and a line under it, centred on <paramref name="at"/>.</summary>
+        void Tag(string title, string body, Vector2 at, Color color, float priority)
+        {
+            float big = LabelSize(false), small = LabelSize(true);
+            if (!string.IsNullOrEmpty(title))
+                _candidates.Add(new Candidate
+                {
+                    Text = title, At = new Vector2(at.x - (title.Length * big * .56f + 8f) * .5f - 4f, at.y), Offset = 0f,
+                    Priority = 100f + priority, Color = color,
+                });
+            if (!string.IsNullOrEmpty(body))
+                _candidates.Add(new Candidate
+                {
+                    Text = body, At = new Vector2(at.x - (body.Length * small * .56f + 8f) * .5f - 4f, at.y - big * 1.35f),
+                    Offset = 0f, Priority = 99f + priority, Color = TagBody, Small = true,
+                });
+        }
+
+        static string Density(double n) =>
+            n < 10 ? n.ToString(n < .1 ? "0.000" : "0.00", CultureInfo.InvariantCulture) : Fmt(n);
 
         bool Clash(float x, float y, float w, float h, Rect r)
         {
@@ -677,6 +1069,13 @@ namespace CosmicShore.UI
             var r = _map.rectTransform.rect;
             _tier = HyperSeaSky.TierOf(_view.W);
             _ladderRects.Clear();
+            if (_map.Plain)
+            {
+                // The Voyages board's map shows no ladder or readout (VoyageMapGraphic.Plain).
+                foreach (var t in _ladder) if (t) t.gameObject.SetActive(false);
+                if (_readout) _readout.gameObject.SetActive(false);
+                return;
+            }
             float size = VoyageMapText.Ladder;
             float y = r.yMax - LadderTop;
             for (int i = 0; i < Rows; i++)
@@ -691,7 +1090,7 @@ namespace CosmicShore.UI
                 bool on = i == _tier;
                 t.fontSize = size;
                 t.fontStyle = on ? FontStyles.Bold : FontStyles.Normal;
-                t.color = on ? new Color(.02f, .035f, .07f, 1f) : LadderIdle;
+                t.color = ColorTrace.Retrace(ColorTrace.Ui, on ? new Color(.02f, .035f, .07f, 1f) : LadderIdle);
                 if (!ReferenceEquals(t.text, text)) t.text = text;
                 float w = text.Length * size * .66f + 14f;
                 var box = new Rect(r.xMin + LadderLeft, y - LadderRow, w, LadderRow - 2f);
@@ -772,7 +1171,7 @@ namespace CosmicShore.UI
                 var go = new GameObject("SkyCard", typeof(RectTransform));
                 go.transform.SetParent(_map.transform, false);
                 _card = go.AddComponent<Image>();
-                _card.color = PanelBack;
+                _card.color = ColorTrace.Retrace(ColorTrace.Ui, PanelBack);   // a later wear: UIThemeLive retraces it
                 _card.raycastTarget = false;
                 var crt = _card.rectTransform;
                 crt.pivot = new Vector2(1f, 0f);
@@ -820,10 +1219,10 @@ namespace CosmicShore.UI
                     string qs = o.CellQ.ToString(CultureInfo.InvariantCulture), rs = o.CellR.ToString(CultureInfo.InvariantCulture);
                     kind = L.MapKindCell;
                     name = TemplateText.Fill(L.MapCellName, "q", qs, "r", rs);
-                    double n = HyperSea.Density(o.X, o.Y);
+                    double n = HyperSea.Density(o.X, o.Y, o.Z);
                     string berth = BerthOf(o.CellQ, o.CellR);
                     body = TemplateText.Fill(L.MapCellBody, "sea", VoyageJobsView.SeaName(L, HyperSea.Sea(n)),
-                        "density", n < 10 ? n.ToString(n < .1 ? "0.000" : "0.00", CultureInfo.InvariantCulture) : Fmt(n),
+                        "density", Density(n),
                         "danger", HyperSea.Danger(n).ToString("0.0", CultureInfo.InvariantCulture),
                         "berth", berth.Length > 0 ? TemplateText.Fill(L.MapCellBerth, "place", berth) : string.Empty);
                     source = L.MapSourceCell;
@@ -884,7 +1283,7 @@ namespace CosmicShore.UI
             int bestSteps = VoyageChart.BerthCells + 1;
             foreach (var l in content.Locations)
             {
-                if (l == null || !l.Charted) continue;
+                if (!_map.IsDrawn(l)) continue;
                 int steps = HyperSea.CellSteps(HyperSea.CellOf(l.GalaxyX, l.GalaxyY), (q, r));
                 if (steps < bestSteps) { bestSteps = steps; best = l.Name ?? string.Empty; }
             }
@@ -919,6 +1318,9 @@ namespace CosmicShore.UI
 
         string Ly(double ly) => TemplateText.Fill(_lines?.MapLy, "ly",
             ly < 9.95 ? ly.ToString("0.0", CultureInfo.InvariantCulture) : Fmt(ly));
+
+        /// <summary>A height as the map writes it (MapAbove, MapBelow or MapMidplane).</summary>
+        public string HeightText(double z) => Height(z);
 
         string Height(double z)
         {

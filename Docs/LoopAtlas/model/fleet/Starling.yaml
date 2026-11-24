@@ -1,0 +1,127 @@
+# Loop Atlas model: vessel Starling. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Starling
+verbs:
+  Time:
+    ability: Pick the Time card
+    does: Take the Time card from a hand dealt to the swarm. Time cards make the swarm faster and nimbler, let members dodge
+      hits, or shorten every phase so hands come sooner. A held card levels up.
+    trigger: Tap while a hand is up
+    scales: Your Time level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+  Charge:
+    ability: Pick the Charge card
+    does: Take the Charge card from a hand dealt to the swarm. Charge cards arm the swarm against rivals and wildlife -
+      stings, lasers, chain lightning, a pulse - and a card you already hold levels up.
+    trigger: Tap while a hand is up
+    scales: Your Charge level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+  Mass:
+    ability: Pick the Mass card
+    does: 'Take the Mass card from a hand dealt to the swarm. Mass cards build and protect: the swarm lays your prisms,
+      drips danger prisms, grows shells or breeds more members. A held card levels up.'
+    trigger: Tap while a hand is up
+    scales: Your Mass level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+  Space:
+    ability: Pick the Space card
+    does: 'Take the Space card from a hand dealt to the swarm. Space cards eat rival mass: members steal, burst or bite
+      through shielded prisms, or the swarm splits to work two objectives. A held card levels up.'
+    trigger: Tap while a hand is up
+    scales: Your Space level does not change this; each card's own level sets its strength.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+    arch: card
+    t: [10, 40]
+board:
+  Time: x x x
+  Charge: x x x
+  Mass: x x x
+  Space: x x x
+missing: Time, Charge, Mass or Space
+arenas: []
+games:
+  Time: []
+  Charge: []
+  Mass: []
+  Space: []
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Hand by hand
+  t: [20, 60]
+  is: The swarm flies itself; you choose what it becomes. The kit is not settled.
+  chain:
+  - ['', A hand is dealt]
+  - - ''
+    - Pick the card the swarm lacks
+  - ['', The swarm changes]
+  - - Time
+    - Time cards bring the next hand sooner
+  drivers: [mastery, find]
+  feel: A build coming together.
+  gene:
+    genome: Time
+    cue: [crew_ready]
+    dials:
+    - - timeWeight
+      - how much the AI wants a Time card
+      - 0
+      - 1
+      - ''
+    - - chargeWeight
+      - how much the AI wants a Charge card
+      - 0
+      - 1
+      - ''
+    - - massWeight
+      - how much the AI wants a Mass card
+      - 0
+      - 1
+      - ''
+    - - spaceWeight
+      - how much the AI wants a Space card
+      - 0
+      - 1
+      - ''
+    done: The picked card is the one the swarm held least of, and the next hand comes sooner.
+- in: x
+  name: Pick the Time card into Pick the Charge card into Pick the Mass card
+  t: [30, 60]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 100% of the behaviour in an archive
+    cell at 94% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Pick the Time card (Time), then Pick the Charge card (Charge), then
+    Pick the Mass card (Mass).'
+  chain:
+  - [Time, Pick the Time card]
+  - [Charge, Pick the Charge card]
+  - [Mass, Pick the Mass card]
+  drivers: [joy, mastery, rival]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [gate_next]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Pick the Mass card lands within the handoff of the Pick the Time card before it.
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md

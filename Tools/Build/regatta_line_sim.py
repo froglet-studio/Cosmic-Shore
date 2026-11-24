@@ -21,7 +21,24 @@ The fix (2026-10-25), both halves shipped:
 - gate=True, only_when_cut=True: when the chord to the look-ahead point would cross the next ring's plane outside the
   mouth less the hull's room, aim straight through the line's crossing point instead (RegattaRaceLine.AimThroughRing).
 
+The nose lead (AIPilot.NoseLeadGain, PR #1786; the shared piece is Tools/Build/ai_nose_lead.py), OFF by default:
+race(..., lag=True, nose_lead=2.5), where nose_lead is a gain, a {"gain", "max_extra_deg"} dict, a NoseLead, or None /
+0 for today's steering. With the lag on and a gain over 0 the pilot judges its error from the COMMAND and steers the
+command onto the nose turned toward the aim by the effective gain times its error - past the aim, at most
+max_extra_deg (40) past it - so the lagging nose is pulled from beyond the mouth instead of overshooting it; the stick
+law and the command / nose update are the ones above, untouched. The effective gain (AIPilot.EffectiveNoseLeadGain) is
+computed once a race from this model's own nose rate, NOSE_FOLLOW (the fleet's 1.5/s; there is no per-hull rate
+here), and is 0 with lag=False, where the nose IS the command and has nothing to lead, so a lag-free race - the
+default, and what the compute evaluator (race_models.py "line") races - is untouched by the knob. The command is
+steered onto the lead point by turn_with_lag's capped slerp (it stops AT the lead point; the game's Pitch / Yaw carry
+on past it, scarab_nose_lead_sim's capped=False), and the lead stays on through the orbit break-off's escape leg, as
+the game's does. What it buys here (the Scarab on the fix with the lag, 2026-11-07): I2 104.8 s / 21 missed mouths ->
+50.6 s / 0, I3 174.2 s / 51 -> 56.8 s / 0, I4 a DNF at 17 rings -> 56.7 s / 0; the one cell it hurts is the Manta at
+I3 (109.3 s / 9 -> 122.3 s / 17), the hull scarab_nose_lead_sim --fleet races on its own 9/s nose, which this model
+has no knob for. The self-test holds the default to today's numbers (TODAY) and the claim to its negative control.
+
     python3 Tools/Build/regatta_line_sim.py              # every styled hull, I1-I4, before vs the fix
+    python3 Tools/Build/regatta_line_sim.py --nose-lead 2.5   # the fix with the nose lag: today's steering vs the lead
     python3 Tools/Build/regatta_line_sim.py --self-test
 """
 import functools, math, os, re, sys
@@ -29,6 +46,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import situation_features as sf
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
 from scarab_drive_sim import ai_stick
+from ai_nose_lead import NoseLead, effective_gain, judge_and_want
 
 RAIL_OFFSET = 22.0   # RegattaCourse.DefaultRails.LaneOffset
 # hull: (speed u/s as an AI rival, RotationThrottleScaler, min(Pitch, Yaw), LaneShare, HullClearance, Risk)
@@ -182,8 +200,13 @@ def turn_with_lag(fwd, cmd, target, turn_rad, dt, lag):
     return rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * min(1.0, NOSE_FOLLOW * dt)), cmd
 
 
-def race(hull, intensity, exempt, T=240, dt=1 / 60, own=0, gate=False, only_when_cut=False, lag=False, look_s=None, max_look=None, blend=0.0):
+def race(hull, intensity, exempt, T=240, dt=1 / 60, own=0, gate=False, only_when_cut=False, lag=False, look_s=None, max_look=None, blend=0.0,
+         nose_lead=None):
     v, rts, base, share, clear, risk = HULLS[hull]
+    lead = NoseLead.from_config(nose_lead)
+    # the nose lead's gain, once per race from THIS model's nose rate (AIPilot.EffectiveNoseLeadGain): 0 with lag=False,
+    # where the nose IS the command and has nothing to lead
+    lead_gain = effective_gain(lead.gain, NOSE_FOLLOW) if lag else 0.0
     C = sf.course_from(sf.load_course_js(), intensity)
     gates = C['gates']; n = len(gates); total = 3 * n
     P = [g['p'] for g in gates]; A = [unit(g['a']) for g in gates]
@@ -226,10 +249,17 @@ def race(hull, intensity, exempt, T=240, dt=1 / 60, own=0, gate=False, only_when
             if (not closing and inside_turning_circle(to, fwd, R)) or orbit.tick(to):
                 extending = True; ext_t = 0.0; breaks += 1; orbit.reset()
         steer = add(fwd, mul(unit(to), -0.35)) if extending else to
-        # blend > 0: judge the error from where the nose is about to point (the nose moved blend of the way to the command)
-        judge = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * blend) if (lag and blend > 0) else fwd
-        s = ai_stick(ang(judge, steer))
-        fwd, cmd = turn_with_lag(fwd, cmd, steer, math.radians(omega * s) * dt, dt, lag)
+        if lead_gain > 0:
+            # the nose lead (AIPilot.NoseLeadGain): judge the error from the COMMAND, and steer the command onto the nose
+            # turned toward the steer direction by the effective gain times its error, past it (capped), where the nose is pulled
+            # from; on during the escape leg too, as the game keeps the lead on whatever the steer direction is
+            judge, want = judge_and_want(fwd, cmd, steer, lead_gain, lead.max_extra_deg)
+        else:
+            # blend > 0: judge the error from where the nose is about to point (the nose moved blend of the way to the command)
+            judge = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * blend) if (lag and blend > 0) else fwd
+            want = steer
+        s = ai_stick(ang(judge, want))
+        fwd, cmd = turn_with_lag(fwd, cmd, want, math.radians(omega * s) * dt, dt, lag)
         newpos = add(pos, mul(fwd, v * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
         if a0 * a1 <= 0 and a0 != a1:
@@ -248,6 +278,28 @@ def _before_after(job):
     return race(h, I, False), race(h, I, True, gate=True, only_when_cut=True)
 
 
+def _lag_today_lead(job):
+    """--nose-lead's pool worker: the fix with the nose lag, today's steering vs the lead at the job's gain."""
+    h, I, gain = job
+    fix = dict(gate=True, only_when_cut=True, lag=True)
+    return race(h, I, True, **fix), race(h, I, True, nose_lead=gain, **fix)
+
+
+# Today's numbers with the lead OFF (2026-11-07): the Scarab on the fix at I1-I4, (intensity, lag). The lag-off rows are
+# what the compute evaluator races; the lag-on rows are the overshoot the lead exists for. The self-test holds the knob's
+# default to them, so the lead cannot move a number nobody switched on.
+TODAY = {
+    (1, False): {"time": 43.8, "rings": 24, "rpm": 32.9, "breaks": 0, "misses": 0},
+    (1, True): {"time": 46.1, "rings": 24, "rpm": 31.2, "breaks": 0, "misses": 0},
+    (2, False): {"time": 48.2, "rings": 24, "rpm": 29.9, "breaks": 0, "misses": 0},
+    (2, True): {"time": 104.8, "rings": 24, "rpm": 13.7, "breaks": 6, "misses": 21},
+    (3, False): {"time": 53.6, "rings": 24, "rpm": 26.9, "breaks": 0, "misses": 0},
+    (3, True): {"time": 174.2, "rings": 24, "rpm": 8.3, "breaks": 15, "misses": 51},
+    (4, False): {"time": 53.3, "rings": 24, "rpm": 27.0, "breaks": 0, "misses": 0},
+    (4, True): {"time": None, "rings": 17, "rpm": 4.2, "breaks": 27, "misses": 91},
+}
+
+
 def self_test():
     bad = []
     o = Orbit(); c = [0, 0, 0]
@@ -262,6 +314,35 @@ def self_test():
     before, after = race("Scarab", 3, False), race("Scarab", 3, True, gate=True, only_when_cut=True)
     if not (before["breaks"] + before["misses"] > 0 and after["breaks"] + after["misses"] == 0):
         bad.append(f"Scarab I3: before {before}, after {after} (the fix no longer clears the misses, or the model lost them)")
+    fix = dict(gate=True, only_when_cut=True)
+    # the nose lead is OFF by default: with it unset the fix races today's numbers (TODAY), lag off and on...
+    got = {k: race("Scarab", k[0], True, lag=k[1], **fix) for k in TODAY}
+    for k, want in TODAY.items():
+        if got[k] != want: bad.append(f"Scarab I{k[0]} lag={k[1]} with the lead unset: {got[k]} is not today's {want}")
+    today = got[(3, True)]
+    # ...and NoseLead() (gain 0) is the unset knob
+    if race("Scarab", 3, True, lag=True, nose_lead=NoseLead(), **fix) != today:
+        bad.append("NoseLead() (gain 0) is not the unset lead")
+    # the claim: at I3 with the lag, judged from the nose the Scarab overshoots 51 mouths and breaks off 15 times; the
+    # lead at 2.5 clears them and finishes faster...
+    led = race("Scarab", 3, True, lag=True, nose_lead=2.5, **fix)
+    if not (today["misses"] >= 20 and led["misses"] <= 0.25 * today["misses"] and led["time"] is not None
+            and led["time"] < today["time"]):
+        bad.append(f"the lead no longer fixes Scarab I3 with the lag: today {today}, lead 2.5 {led}")
+    # ...the negative control: an effective gain of 1 (judged from the command, with no pull past the aim) does not...
+    pull_less = race("Scarab", 3, True, lag=True, nose_lead=1.0, **fix)
+    if pull_less["misses"] < 4 * led["misses"] + 5:
+        bad.append(f"gain 1.0 (no pull past the aim) now rivals the lead at I3: {pull_less} vs lead 2.5 {led}")
+    # ...it IS the lead with no room past the aim (max_extra_deg 0, the same wanted direction) and this file's own
+    # command-judged prediction (blend 1.0), so the pull is what the lead adds...
+    if race("Scarab", 3, True, lag=True, nose_lead={"gain": 2.5, "max_extra_deg": 0}, **fix) != pull_less:
+        bad.append("the lead with no room past the aim (max_extra_deg 0) is not gain 1.0")
+    pred = race("Scarab", 3, True, lag=True, blend=1.0, **fix)
+    if (pred["misses"], pred["breaks"], pred["rings"]) != (pull_less["misses"], pull_less["breaks"], pull_less["rings"]):
+        bad.append(f"gain 1.0 is not the command-judged (blend 1.0) steering: {pull_less} vs {pred}")
+    # ...and on a lag-free race (the nose IS the command, effective gain 0) the lead changes nothing
+    if race("Scarab", 3, True, nose_lead=2.5, **fix) != after:
+        bad.append(f"the lead moved a lag-free race: {race('Scarab', 3, True, nose_lead=2.5, **fix)} vs {after}")
     print("regatta_line_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 
@@ -271,8 +352,16 @@ if __name__ == "__main__":
         sys.exit(self_test())
     from concurrent.futures import ProcessPoolExecutor
     jobs = [(h, I) for h in HULLS for I in (1, 2, 3, 4)]
-    print("hull     I  before (s / rings, rings/min, break-offs, misses)       the fix")
+    if "--nose-lead" in sys.argv:
+        # the fix with the nose lag, today's steering vs the lead at this gain (a lag-free race has nothing to lead)
+        gain = float(sys.argv[sys.argv.index("--nose-lead") + 1])
+        worker, jobs = _lag_today_lead, [(h, I, gain) for h, I in jobs]
+        print(f"hull     I  the fix + nose lag, today (s / rings, rings/min, break-offs, misses)   nose lead {gain:g}")
+    else:
+        worker = _before_after
+        print("hull     I  before (s / rings, rings/min, break-offs, misses)       the fix")
     with ProcessPoolExecutor() as ex:
-        for (h, I), (a, b) in zip(jobs, ex.map(_before_after, jobs)):
+        for job, (a, b) in zip(jobs, ex.map(worker, jobs)):
+            h, I = job[0], job[1]
             f = lambda r: f"{str(r['time']):>5} / {r['rings']:2d}, {r['rpm']:5.1f} r/min, {r['breaks']:2d} brk, {r['misses']:2d} miss"
             print(f"{h:8} I{I}  {f(a)}     {f(b)}")

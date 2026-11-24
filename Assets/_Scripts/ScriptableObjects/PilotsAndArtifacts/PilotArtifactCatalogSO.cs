@@ -49,10 +49,15 @@ namespace CosmicShore.ScriptableObjects
             return _loaded;
         }
 
-        /// <summary>The pilot saved under <paramref name="id"/>. False for an empty or unknown id.</summary>
+        /// <summary>
+        /// The CALLSIGN pilot <paramref name="id"/> names: a callsign id (<c>pilot.callsign.volt</c>) or a unique pilot's
+        /// id (<c>pilot.callsign.volt#9f3c...</c>, a person on that callsign, Docs/Pilots/INVENTORY.md §3), whose
+        /// template part is the callsign. False for an empty or unknown id.
+        /// </summary>
         public bool TryGetPilot(string id, out PilotSO pilot)
         {
             pilot = null;
+            id = UniqueId.TemplateOf(id);
             if (string.IsNullOrEmpty(id) || pilots == null) return false;
 
             foreach (var candidate in pilots)
@@ -64,10 +69,15 @@ namespace CosmicShore.ScriptableObjects
             return false;
         }
 
-        /// <summary>The artifact saved under <paramref name="id"/>. False for an empty or unknown id.</summary>
+        /// <summary>
+        /// The artifact KIND <paramref name="id"/> names: a kind id (<c>artifact.javelin</c>) or a unique artifact's id
+        /// (<c>artifact.javelin#03aa...</c>, Docs/Pilots/INVENTORY.md §2), whose template part is the kind. False for an
+        /// empty or unknown id.
+        /// </summary>
         public bool TryGetArtifact(string id, out ArtifactSO artifact)
         {
             artifact = null;
+            id = UniqueId.TemplateOf(id);
             if (string.IsNullOrEmpty(id) || artifacts == null) return false;
 
             foreach (var candidate in artifacts)

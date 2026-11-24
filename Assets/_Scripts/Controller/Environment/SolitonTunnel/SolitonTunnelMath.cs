@@ -341,6 +341,42 @@ namespace CosmicShore.Gameplay
             return path;
         }
 
+        /// <summary>
+        /// Round 28's rift (the page's <c>riftLay</c>): a channel's centreline through points a hull flew, smoothed once (each
+        /// inner point averaged with its neighbours, the ends kept) and sampled evenly by length into <see cref="NS"/> points,
+        /// with a frame carried along it with no twist, as <see cref="ChanPath"/> carries one. Null with fewer than two points
+        /// or no length.
+        /// </summary>
+        public static Poly PolyFrom(IReadOnlyList<D3> pts)
+        {
+            int n = pts?.Count ?? 0;
+            if (n < 2) return null;
+            var raw = new D3[n];
+            raw[0] = pts[0];
+            raw[n - 1] = pts[n - 1];
+            for (int i = 1; i < n - 1; i++) raw[i] = (pts[i - 1] + pts[i] * 2 + pts[i + 1]) * 0.25;
+            var len = new double[n];
+            for (int i = 1; i < n; i++) len[i] = len[i - 1] + raw[i].DistanceTo(raw[i - 1]);
+            if (len[n - 1] < 1e-6) return null;
+            var path = new Poly { L = len[n - 1] };
+            for (int kk = 0, j = 0; kk < NS; kk++)
+            {
+                double want = path.L * kk / (NS - 1);
+                while (j < n - 2 && len[j + 1] < want) j++;
+                double f = (want - len[j]) / Math.Max(1e-6, len[j + 1] - len[j]);
+                path.P[kk] = D3.Lerp(raw[j], raw[j + 1], Clamp01(f));
+            }
+            for (int kk = 0; kk < NS; kk++) path.T[kk] = (path.P[Math.Min(NS - 1, kk + 1)] - path.P[Math.Max(0, kk - 1)]).Normalized;
+            for (int kk = 0; kk < NS; kk++)
+            {
+                var nrm = kk > 0 ? path.N[kk - 1] : (Math.Abs(path.T[0].Y) < 0.9 ? new D3(0, 1, 0) : new D3(1, 0, 0));
+                nrm = (nrm - path.T[kk] * nrm.Dot(path.T[kk])).Normalized;
+                path.N[kk] = nrm;
+                path.B[kk] = path.T[kk].Cross(nrm);
+            }
+            return path;
+        }
+
         // ------------------------------------------------------------------ the roots in the world (labBuild)
 
         /// <summary>The page's keys a channel's size reads.</summary>

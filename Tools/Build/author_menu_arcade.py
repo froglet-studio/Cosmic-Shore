@@ -28,6 +28,14 @@ on the "Menu Redesign B" canvas).
         old gradient Image is switched off, the two OfflineUIGates gate the new party panel, and the
         FTUE QuestGraphRunner's gameCards list names the 35 cards (7 rows of 5).
 
+    Upright (Docs/MENU_REDESIGN_B.md section 138, the picked Rev 63 B; PortraitRect in ArcadeView): the header right
+    under the band and the scroll filling the rest, at PC size, on the 1080-wide canvas; the left edge keeps the
+    100-unit friends-orb gutter (FriendsDrawerDock writes that authored edge back whenever the drawer moves), the right
+    edge 40. The scroll's content re-flows at the viewport's width (918 inside its padding): the two feature cards are one
+    GridLayoutGroup, 2 across on PC and stacked upright; the games are ONE wrapping GridLayoutGroup (the cards its own
+    children; ArcadeExploreView reads either shape), 5 across on PC at the old rows' card width and 3 across upright; an
+    option line of the vessel filter wider than 918 is scaled to fit. See UP_* below.
+
 Built from the kit generator's node model and component bodies (author_ui_kit_prefabs.py), so every
 body is Unity's serialization and every colour a UIThemeSO token. References into nested instances
 are stripped stubs whose fileID is Unity's derived id (source XOR instance, applied per level).
@@ -75,7 +83,8 @@ MASK63 = 0x7FFFFFFFFFFFFFFF
 SCROLL_RECT, RECT_MASK_2D, MASK = H.SCROLL_RECT, H.RECT_MASK_2D, H.MASK
 KIT_RECT_MASK_2D = H.KIT_RECT_MASK_2D
 BUTTON = T.BUTTON
-PACKAGE = H.PACKAGE | {BUTTON}
+GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"   # UnityEngine.UI.GridLayoutGroup (the game grid, the feature row)
+PACKAGE = H.PACKAGE | {BUTTON, GRID_LAYOUT}
 
 # --- project scripts ----------------------------------------------------------------------------
 def script(path):
@@ -109,6 +118,7 @@ S = dict(
     tile=K.kit_script("KitTile"),
     grid_options=script("Assets/_Scripts/UI/Elements/ArcadeGridOptions.cs"),
     text_tab=K.kit_script("KitTextTab"),
+    reveal=K.kit_script("KitPosterReveal"),
 )
 
 # Section 90 (Shombith, 2026-10-27: "Favorites to the top by default, A-Z under. Drop the sort controls, the
@@ -630,9 +640,8 @@ def build_slot():
     # not given one - RequestInfoEntry / OnlineInfoEntry already fade them in (entryFadeInSeconds).
     root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     occ = root.child(N("Occupied", "Occupied", STRETCH)).add("cg", 225, canvas_group(False))
-    oct_nodes(occ, "Occupied/Avatar/Ring", SOCK_AV + 6, "SurfaceDark")
-    oct_nodes(occ, "Occupied/Avatar/Gap", SOCK_AV + 2, "SurfaceVeryDark")
-    oct_nodes(occ, "Occupied/Avatar/Back", SOCK_AV, "SurfaceDark")
+    # The avatar's round cut, domain ring, waves and halo are built round the icon at run time (AvatarRippleBorder,
+    # Frogma Rev 127 D, Docs/MENU_REDESIGN_B.md section 217); the octagon ring, gap and backing it replaced are gone.
     art_node(occ, "Occupied/Avatar/Icon", "Avatar", R((0.5, 1), None, (0, -SOCK_AV_Y), (SOCK_AV, SOCK_AV)),
              AVATAR_PLACEHOLDER, preserve=True)
     # Rev 7: hovering a member's avatar opens their profile card (FriendProfilePopup); under the kick button.
@@ -675,13 +684,11 @@ def build_slot():
              f"  addButton: {ref(ctx.c('Empty', 'tile'))}\n"
              f"  displayNameText: {ref(ctx.c('Occupied/Name', 'tmp'))}\n"
              f"  kickButton: {ref(ctx.iref('KickButton', 'root#button'))}\n"
-             "  domainGlow: {fileID: 0}\n"
              f"  occupiedGroup: {ref(ctx.c('Occupied', 'cg'))}\n"
              f"  emptyGroup: {ref(ctx.c('Empty', 'cg'))}\n"
              f"  kickGroup: {ref(ctx.c('Occupied/Kick', 'cg'))}\n"
              f"  roleText: {ref(ctx.c('Occupied/Role', 'kt'))}\n"
-             f"  domainRing: {ref(ctx.c('Occupied/Avatar/Ring', 'img'))}\n"
-             f"  theme: {K.ref(11400000, K.THEME, 2)}\n"))
+             ))
     return root
 
 
@@ -812,13 +819,31 @@ WINDOW_BACKDROP_ALPHA = 0.95
 # below); the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.
 WINDOW_LEFT, WINDOW_RIGHT = 100, 60
 # Rev 6 (§45.4): the friends drawer's presence orb (author_menu_friends_drawer.py) sits in the bottom-left corner over
-# every window, inside the 100 px left gutter above: x 4 .. 96, y 44 .. 136 up from the bottom, its count under it.
-ORB_X, ORB_Y, ORB_SIZE = 4, 44, 92
+# every window, inside the 100 px left gutter above: x 16 .. 96, y 44 .. 124 up from the bottom, its count under it
+# (2026-11-09: was x 4 .. 96, 4 px off the wall; 16 in, the orb 92 -> 80 so the gutter and every window stay put).
+ORB_X, ORB_Y, ORB_SIZE = 16, 44, 80
 WINDOW_BODY = R((0, 0), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -78), (-(WINDOW_LEFT + WINDOW_RIGHT), -236))
 WINDOW_HEADER = R((0, 1), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -108), (-(WINDOW_LEFT + WINDOW_RIGHT), 64), (0.5, 1))
 EXPLORE_W = 1920 - WINDOW_LEFT - WINDOW_RIGHT      # at the 1920 reference width
 CONTENT_W = EXPLORE_W - 10 - 12                     # viewport inset, content padding
+GRID_CELL_W = round((CONTENT_W - (5 - 1) * 10) / 5, 2)   # what the old rows of five gave each game card (339.6)
 EMPTY_LINE = "No one else is online right now. Pilots who come online show here, ready to invite."
+
+# Upright (section 138, Rev 63 B), the Arcade window on Menu_Main's 1080-wide canvas. The header and the body keep their
+# PC tops and heights (the header 108 under the top, right under the 84 band; the body from 196 to 40 over the bottom), so
+# the scroll fills the rest. The left edge keeps WINDOW_LEFT: the friends orb lives in that gutter, and FriendsDrawerDock
+# writes its authored left back whenever the drawer moves. The right edge is the content margin, 40.
+UP_W, UP_MARGIN = 1080, 40
+UP_HEIGHTS = (1800, 2080, 2337)               # safe heights checked: a short phone, a notched phone's safe area, 390 x 844
+UP_LEFT, UP_RIGHT = WINDOW_LEFT, UP_MARGIN
+UP_HEADER = R((0, 1), (1, 1), ((UP_LEFT - UP_RIGHT) / 2, -108), (-(UP_LEFT + UP_RIGHT), 64), (0.5, 1))
+UP_BODY = R((0, 0), (1, 1), ((UP_LEFT - UP_RIGHT) / 2, -78), (-(UP_LEFT + UP_RIGHT), -236))
+UP_VIEWPORT_W = UP_W - UP_LEFT - UP_RIGHT - 10     # the explore scroll's viewport (inset 5 + 5), upright
+PC_CONTENT_W = EXPLORE_W - 10                      # the scroll content's PC width (CONTENT_W plus its 6 + 6 padding)
+UP_CONTENT_W = UP_VIEWPORT_W - 12                  # the content's inner width upright (its 6 + 6 padding): 918
+UP_COLS = 3                                        # the game grid upright (Rev 63 B: "grids 3 across")
+UP_CELL_W = (UP_CONTENT_W - (UP_COLS - 1) * 10) // UP_COLS   # 299
+UP_TITLE_W = 680                                   # the header's title rect, clear of Replays and Back upright
 
 
 DOCK_GAP = 24
@@ -994,13 +1019,16 @@ def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
     return n
 
 
-def art_band(parent, key, w, h, sprite):
+def art_band(parent, key, w, h, sprite, cover=False):
     """The card's art band: a RectMask2D the art drifts under, the art fitted COVER x ART_OVERSCAN."""
     band = parent.child(N(f"{key}", "ArtBand", R((0, 1), (1, 1), (0, -h / 2), (0, h), (0.5, 0.5))))
     band.add("mask", 114, rect_mask()) \
         .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c(key + '/Art', 'img'))}\n"
                                                                 f"  overscan: {ART_OVERSCAN}\n"))
-    drift_art(band, f"{key}/Art", "Art", R(size=(w * ART_OVERSCAN, w * ART_OVERSCAN * 510 / 768)), sprite)
+    # `cover`: a band taller than the art's aspect (the Poster) sizes the art to fill it both ways; the wide bands keep
+    # their width-fitted art (KitCoverImage fits both at run time).
+    fit_w = (max(w, h * 768 / 510) if cover else w) * ART_OVERSCAN
+    drift_art(band, f"{key}/Art", "Art", R(size=(fit_w, fit_w * 510 / 768)), sprite)
     return band
 
 
@@ -1022,37 +1050,55 @@ def body_sea(parent, key, body_h):
     return sea
 
 
+POSTER_SHADE_H = 200                   # Rev 128 E: the navy fade up from the foot the name sits on
+POSTER_OPEN_H = 112                    # the reveal panel's open height (KitPosterReveal.openHeight)
+POSTER_TITLE_H = 84                    # two lines of H1 (36, Aldrich), one word a line for a two-word name
+
+
 def build_card(placeholder_art):
+    # Rev 128 E, the Poster (Docs/MENU_REDESIGN_B.md section 222; Shombith 2026-11-23: "I like the poster style but use
+    # our font"): the picture fills the card and drifts, a navy fade rises from the foot, the mode's name sits on it in
+    # Aldrich (H1), the hull at the bottom right. Hover or pad focus slides a panel up from the foot with the mode's
+    # line and its pilots (KitPosterReveal); the name rides up with it and the hull fades.
     root = N("root", "ArcadeGameCard", R(size=(CARD_W, CARD_H)))
     ring_node(root, "FocusRing", 14)
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
-    # The card's cut-corner shape clips everything (stencil); the band clips the drifting art to the top.
+    # The card's cut-corner shape clips everything (stencil): the picture, the fade and the reveal panel.
     clip = root.child(N("Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
     clip.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("mask", 114, mask(False))
-    art_band(clip, "Clip/Band", CARD_W, ART_BAND_H, placeholder_art)
-    body_sea(clip, "Clip/Sea", BODY_H)
-    image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, BODY_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
+    art_band(clip, "Clip/Band", CARD_W, CARD_H, placeholder_art, cover=True)
+    image_node(clip, "Clip/Shade", "Shade", R((0, 0), (1, 0), (0, 0), (0, POSTER_SHADE_H), (0.5, 0)), "SurfaceBlack",
+               K.kit_sprite("kit_fade_v"))
+    reveal = clip.child(N("Clip/Reveal", "Reveal", R((0, 0), (1, 0), (0, 0), (0, 0), (0.5, 0))))
+    reveal.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.96))) \
+        .add("th", 114, themed("SurfaceBlack", 0.96)).add("mask", 114, rect_mask())
+    desc = reveal.child(N("Clip/Reveal/Description", "Description", R((0, 1), (1, 1), (0, -16), (-40, 44), (0.5, 1))))
+    desc.add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, ellipsis(text("Mode line", "BodySmall", tok("TextLight"), valign="top", wrap=True))) \
+        .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
+    pilots = reveal.child(N("Clip/Reveal/Pilots", "Pilots", R((0, 0), (1, 0), (0, 14), (-40, 18), (0.5, 0))))
+    pilots.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("2 pilots", "Label", tok("InactiveLight"))) \
+        .add("kt", 114, K.kit_text("Label", "InactiveLight"))
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
 
-    # The body: the hull, the name, the petals.
-    hull_icon(root, "VesselChip", R((0, 0), None, (12, BODY_H / 2), (HULL_ICON, HULL_ICON), (0, 0.5)), "VesselIcon", HULL_ICON)
-    text_x = 12 + HULL_ICON + 12
-    flowers_w = 12 + FLOWER + 8
-    title = root.child(N("Title", "Title", R((0, 0), (1, 0), ((text_x - flowers_w) / 2, BODY_H / 2), (-(text_x + flowers_w), 30),
-                                             (0.5, 0.5))))
-    title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
-        .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
+    # The foot: the name (bottom left, over the fade) and the hull (bottom right, faded while the panel is open).
+    hull_icon(root, "VesselChip", R((1, 0), None, (-12, 14), (HULL_ICON, HULL_ICON), (1, 0)), "VesselIcon", HULL_ICON) \
+        .add("cg", 225, canvas_group(True))
+    title_w = CARD_W - 20 - (12 + HULL_ICON + 8)
+    title = root.child(N("Title", "Title", R((0, 0), None, (20, 20), (title_w, POSTER_TITLE_H), (0, 0))))
+    title.add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, text("Game", "H1", tok("TextLight"), valign="bottom", wrap=True)) \
+        .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
     # Section 90 (Shombith 2026-10-27: "Arcade shows a single petal, not per-vessel upgrade numbers"): the genre's ONE
-    # element icon (GameCard.GenrePetal, in white), not the flower filled to a hull's bought level. On
-    # the body's right edge, small: a column centred in the body, so one petal sits in the middle and a two-genre mode's
-    # second stacks under it (GameCard hides an empty petal by disabling its image).
-    col = root.child(N("Flowers", "Flowers", R((1, 0), None, (-12, BODY_H / 2), (FLOWER, BODY_H - 8), (1, 0.5))))
-    col.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 4, (0, 0), (0, 0)))
+    # element icon (GameCard.GenrePetal, in white). Rev 128 E puts it in the tag at the top left, a two-genre mode's
+    # second under it (GameCard hides an empty petal by disabling its image).
+    col = root.child(N("Flowers", "Flowers", R((0, 1), None, (12, -10), (FLOWER, FLOWER * 2 + 4), (0, 1))))
+    col.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 1, (0, 0), (0, 0)))
     for key in ("Petal", "PetalSecondary"):
         slot = col.child(N(key, key, R(size=(FLOWER, FLOWER))))
         slot.add("le", 114, le(mw=FLOWER, mh=FLOWER, pw=FLOWER, ph=FLOWER))
@@ -1062,7 +1108,7 @@ def build_card(placeholder_art):
         image_node(slot, f"{key}/Image", "Image", R(size=(GENRE_SHAPE, GENRE_SHAPE)), "TextLight", None, preserve=True)
 
     # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
-    picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
+    picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12 + FLOWER + 8, -15), (200, 24), (0, 1))))
     picks.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 4, 3, (0, 0), (0, 0)))
     pick = picks.child(N("Picks/Pick", "AvatarIcon", R(size=(24, 24))))
     pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AVATAR_PLACEHOLDER, preserve=True)) \
@@ -1082,11 +1128,11 @@ def build_card(placeholder_art):
              + refs("texts", []) + refs("graphics", [ctx.c("Star/Glyph", "th")])))
     assert glyph
 
-    # Locked: the lock and its word in the middle of the art.
-    lock = root.child(N("Lock", "Lock", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 + 12), size=(30, 30))))
+    # Locked: the lock and its word in the middle of the picture.
+    lock = root.child(N("Lock", "Lock", R(pos=(0, 40), size=(30, 30))))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.0), K.chrome_sprite("chrome_lock"),
                                                                    preserve=True))
-    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 - 16), size=(200, 18))))
+    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, 12), size=(200, 18))))
     lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("LOCKED", "Label", tok("TextLight", 0.0), align="center")) \
         .add("kt", 114, K.kit_text("Label", "TextLight", driven=True))
 
@@ -1117,7 +1163,13 @@ def build_card(placeholder_art):
              "  lockOverlay: {fileID: 0}\n"
              "  lockedTintColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}\n"
              f"  tile: {ref(ctx.c('root', 'tile'))}\n"
-             f"  starPaint: {ref(ctx.c('Star/Glyph', 'th'))}\n"))
+             f"  starPaint: {ref(ctx.c('Star/Glyph', 'th'))}\n"
+             f"  descriptionText: {ref(ctx.c('Clip/Reveal/Description', 'tmp'))}\n"
+             f"  pilotsText: {ref(ctx.c('Clip/Reveal/Pilots', 'kt'))}\n"
+             "  pilotsLine: '{pilots} pilots'\n"))
+    root.add("reveal", 114, lambda ctx, go: mono(go, S["reveal"],
+             f"  panel: {ref(ctx.rt('Clip/Reveal'))}\n  title: {ref(ctx.rt('Title'))}\n  hull: {ref(ctx.c('VesselChip', 'cg'))}\n"
+             f"  openHeight: {POSTER_OPEN_H}\n  duration: 0.2\n"))
     root.add("audio", 114, menu_audio(2)).add("scroll", 114, scroll_into()) \
         .add("le", 114, le(mw=0, fw=1, ph=CARD_H))
     return root
@@ -1269,6 +1321,9 @@ def option_row(content, key, names):
     for li, line in enumerate(lines):
         holder = row.child(N(f"{key}/Line{li}", f"Line{li}", R((0, 1), None, (0, 0), (CONTENT_W, OPT_ROW_H), (0, 1))))
         holder.add("hlg", 114, K.hv_layout(False, (0, 0, 2, 2), 14, 3, (0, 0), (0, 0)))
+        lw = sum(K.label_width(names[i].upper(), "Label") + 16 for i in line) + 14 * (len(line) - 1)
+        if lw > UP_CONTENT_W:   # upright the line is scaled to the 918-wide column (it hangs from its top-left)
+            holder.add("portrait", 114, K.portrait_rect(scale=round(UP_CONTENT_W / lw, 4)))
         for i in line:
             n = names[i]
             H.text_tab(holder, f"{key}/Tab{i}", f"Tab{i}", n.upper(), "Label", K.label_width(n.upper(), "Label") + 16, 30)
@@ -1299,6 +1354,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     # reversed, panel on the left) and the header - whose Back would close the window on the first
     # A press - comes last.
     body = root.child(N("Body", "Body", WINDOW_BODY))
+    body.add("portrait", 114, K.portrait_rect(UP_BODY))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
     # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
@@ -1312,9 +1368,18 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
         .add("mask", 114, rect_mask())
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    # Upright the content re-flows at the viewport's width (918 inside its padding): the feature cards stack and the games
+    # go 3 across (their grids' upright columns below); nothing is scaled down.
 
     feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (CONTENT_W, FEATURE_H), (0, 1))))
-    feats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 0, (1, 1), (1, 1))).add("le", 114, le(ph=FEATURE_H))
+    # One GridLayoutGroup (was a row): the two cards side by side on PC (their old width), one above the other upright.
+    feats.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
+              "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+              "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+              f"  m_CellSize: {{x: {FEATURE_W}, y: {FEATURE_H}}}\n  m_Spacing: {{x: 20, y: 20}}\n"
+              "  m_Constraint: 1\n  m_ConstraintCount: 2\n")).add("le", 114, le(ph=FEATURE_H))
+    feats.add("portrait", 114, K.portrait_rect(layout=(0, 2 * FEATURE_H + 20),
+                                               grid=dict(columns=1, cell=(UP_CONTENT_W, FEATURE_H))))
 
     def weekly_extra(n):
         cd = n.child(N("Weekly/Countdown", "Countdown", R((0, 0), None, (26, 22), (420, 26), (0, 0))))
@@ -1346,23 +1411,29 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     label(empty.child(N("EmptyFilter/Line", "Line", STRETCH)), "No games match this filter.", "BodySmall", "NeutralLightest")
 
     grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (CONTENT_W, GRID_ROWS * (CARD_H + 10) - 10), (0, 1))))
-    grid.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 0, (1, 1), (1, 0)))
+    # ONE wrapping grid, the cards its own children (ArcadeExploreView reads either shape): GRID_COLS across on PC at
+    # the width the old rows gave each card, UP_COLS across upright (section 138). A fitter sizes it to its rows.
+    grid.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
+             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+             "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+             f"  m_CellSize: {{x: {K.f32(GRID_CELL_W)}, y: {CARD_H}}}\n  m_Spacing: {{x: 10, y: 10}}\n"
+             f"  m_Constraint: 1\n  m_ConstraintCount: {GRID_COLS}\n")).add("csf", 114, K.fitter(0, 2))
+    grid.add("portrait", 114, K.portrait_rect(grid=dict(columns=UP_COLS, cell=(UP_CELL_W, CARD_H))))
     for r in range(GRID_ROWS):
-        row = grid.child(N(f"Row{r + 1}", f"GameListRow{r + 1}", R((0, 1), None, (0, -r * (CARD_H + 10)), (CONTENT_W, CARD_H), (0, 1))))
-        row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 0, (1, 1), (1, 1))).add("le", 114, le(ph=CARD_H))
         for col in range(GRID_COLS):
-            row.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
-                                     R((0, 1), None, (col * (CARD_W + 10), 0), (CARD_W, CARD_H), (0, 1))))
+            grid.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
+                                      R((0, 1), None, (col * (GRID_CELL_W + 10), -r * (CARD_H + 10)), (GRID_CELL_W, CARD_H), (0, 1))))
     # Rev 3 (2026-10-16): the party panel left every window for ONE friends drawer on Menu_Main
     # (author_menu_friends_drawer.py), so the explore scroll takes the whole body.
 
     header = root.child(N("Header", "Header", WINDOW_HEADER))
     drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
+    header.add("portrait", 114, K.portrait_rect(UP_HEADER))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
           "NeutralLightest")
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore games", "H1",
-          "TextLight")
+          "TextLight").add("portrait", 114, K.portrait_rect(R((0, 1), None, (0, -20), (UP_TITLE_W, 46), (0, 1))))
     replays_button(header)
     back_button(header)
     return root
@@ -1626,7 +1697,7 @@ def check_fields(files, name, comp_key, wanted):
 TMP, IMG = K.TMP_UGUI, K.IMAGE
 FIELDS = [
     ("PartySlot", "root#slot", dict(avatarIcon=IMG, addButton=S["tile"], displayNameText=TMP, kickButton=S["button"],
-                                    occupiedGroup=225, emptyGroup=225, kickGroup=225, roleText=S["kt"], domainRing=IMG)),
+                                    occupiedGroup=225, emptyGroup=225, kickGroup=225, roleText=S["kt"])),
     ("PartyRequestRow", "root#row", dict(avatarIcon=IMG, usernameText=TMP, labelText=TMP, acceptButton=S["button"],
                                          declineButton=S["button"], kindText=S["kt"])),
     ("PartyOnlineRow", "root#row", dict(avatarIcon=IMG, usernameText=TMP, labelText=TMP, inviteButton=S["button"],
@@ -1639,7 +1710,7 @@ FIELDS = [
     ("PartyPanel", "root#friends", dict(onlineContent=224, requestsContent=224, onlineEmptyLine=225)),
     ("ArcadeGameCard", "root#card", dict(GameTitle=TMP, BackgroundImage=IMG, StarImage=IMG, VesselIcon=IMG,
                                          GenrePetal=IMG, GenrePetalSecondary=IMG, AvatarSpace=224, tile=S["tile"],
-                                         starPaint=S["th"])),
+                                         starPaint=S["th"], descriptionText=TMP, pilotsText=S["kt"])),
     ("ArcadeView", "Weekly#weekly", dict(GameTitle=TMP, TimeRemaining=TMP, BackgroundImage=IMG)),
 ]
 
@@ -1737,7 +1808,7 @@ def check_profile_hovers(files):
     assert "  m_RaycastTarget: 1\n" in hit, "the online row's avatar hit area does not take the pointer"
 
 
-def check_card_a(card, name, band_key, card_w, band_h):
+def check_card_a(card, name, band_key, card_w, band_h, sea=True):
     """Rev 18 A (section 72): the art drifts (Card_ArtDrift.mat) under a band that crops it, the drift never shows an edge;
     section 73: the hull is lit (no plate) and the body carries the sea. Shared with author_menu_arena.py."""
     F = K.FileIds(name)
@@ -1755,7 +1826,25 @@ def check_card_a(card, name, band_key, card_w, band_h):
     _, mk = doc_of(card, F(f"{band_key}#mask"))
     assert mk and KIT_RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
     assert f"guid: {HULL_LIT_MAT}" in card, f"{name}: the hull is not lit (Hull_Lit.mat) - it vanishes on the navy body"
-    assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
+    if sea:
+        assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
+
+
+def check_poster(card):
+    """Rev 128 E, the Poster (section 222): the picture fills the card, the name is Aldrich (H1) over a navy fade, and
+    hover or pad focus slides the reveal panel up (KitPosterReveal wired to the panel, the name and the hull)."""
+    F = K.FileIds("ArcadeGameCard")
+    _, band = doc_of(card, F("Clip/Band#mask"))
+    assert band, "ArcadeGameCard: no art band"
+    _, kt = doc_of(card, F("Title#kt"))
+    assert kt and f"  role: {K.ROLES['H1'][0]}\n" in kt, "ArcadeGameCard: the name is not H1 (Aldrich 36) - Rev 128 E"
+    _, shade = doc_of(card, F("Clip/Shade#img"))
+    assert shade and K.kit_sprite("kit_fade_v") in shade, "ArcadeGameCard: no navy fade under the name"
+    _, rv = doc_of(card, F("root#reveal"))
+    assert rv, "ArcadeGameCard: no KitPosterReveal"
+    for field in ("panel", "title", "hull"):
+        m = re.search(rf"^  {field}: \{{fileID: (-?\d+)\}}$", rv, re.M)
+        assert m and m.group(1) != "0", f"ArcadeGameCard: KitPosterReveal.{field} is not wired"
 
 
 def validate_prefabs(files, guids):
@@ -1784,7 +1873,8 @@ def validate_prefabs(files, guids):
     check_profile_hovers(files)
 
     check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
-                 ART_BAND_H)
+                 CARD_H, sea=False)
+    check_poster(files[prefab_path("ArcadeGameCard")])
     # 2026-10-28: the genre icon is the element's shape (Charge, Mass, Space, Time), never the lone HUD petal.
     _, card = doc_of(files[prefab_path("ArcadeGameCard")], K.FileIds("ArcadeGameCard")("root#card"))
     shapes = re.search(r"^  GenreShapes:\n((?:  - .*\n)*)", card, re.M)
@@ -1812,14 +1902,17 @@ def validate_prefabs(files, guids):
     for row in ("ElementRow", "VesselRow"):
         assert "  m_Alpha: 0\n" in doc_of(view, V(f"{row}#cg"))[1] and "  m_IgnoreLayout: 1\n" in doc_of(view, V(f"{row}#le"))[1], \
             f"{row} must start closed and out of the layout"
-    for r in range(GRID_ROWS):
-        _, row = doc_of(view, V(f"Row{r + 1}#rt"))
-        assert len(re.findall(r"^  - \{fileID:", row, re.M)) == GRID_COLS, f"grid row {r + 1} does not hold {GRID_COLS} cards"
+    _, grid_rt = doc_of(view, V("Grid#rt"))
+    assert len(re.findall(r"^  - \{fileID:", grid_rt, re.M)) == GRID_ROWS * GRID_COLS, \
+        f"the grid does not hold its {GRID_ROWS * GRID_COLS} cards directly (one wrapping GridLayoutGroup)"
+    assert f"  m_ConstraintCount: {GRID_COLS}\n" in doc_of(view, V("Grid#grid"))[1], f"the grid is not {GRID_COLS} across on PC"
+    assert "  m_ConstraintCount: 2\n" in doc_of(view, V("Features#grid"))[1], "the feature cards are not side by side on PC"
     order = [doc_of(view, k)[1] for k in re.findall(r"^  - \{fileID: (-?\d+)\}", doc_of(view, V("root#rt"))[1], re.M)]
     names = [re.search(r"m_Name: (.*)", doc_of(view, re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1))[1]).group(1)
              for b in order]
     assert names.index("Body") < names.index("Header"), "the header (Back) must come after the body in focus order"
     check_window_inset(view, "ArcadeView")
+    check_upright(view)
     _, body_rt = doc_of(view, V("Body#rt"))
     first = re.search(r"^  - \{fileID: (-?\d+)\}", body_rt, re.M).group(1)
     assert first == str(V("Explore#rt")), "the explore scroll must be the body's first child (focus lands on a card)"
@@ -1934,6 +2027,75 @@ def check_window_inset(view_text, view_name):
             f"{view_name} {key.split('#')[0]} starts {left:g} px from the left edge, under the friends orb (needs {ORB_CLEARANCE})"
 
 
+def _pv2(doc, name):
+    m = re.search(r"^  %s: \{x: (-?[\d.e+-]+), y: (-?[\d.e+-]+)\}" % name, doc, re.M)
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def _pose(view_text, key):
+    """The upright pose a node's PortraitRect holds (rect dict, scale), asserting it is a real pose."""
+    cls, doc = doc_of(view_text, K.FileIds("ArcadeView")(f"{key}#portrait"))
+    assert cls == 114 and f"guid: {K.meta_guid('Assets/_Scripts/UI/PortraitRect.cs')}, type: 3}}" in doc, \
+        f"ArcadeView {key}: no upright pose (PortraitRect)"
+    assert "  drawAtPcScale: 0\n" in doc and "  movesRect: 1\n" in doc, f"ArcadeView {key}: not a posed block"
+    v = [_pv2(doc, n) for n in ("anchorMin", "anchorMax", "pivot", "anchoredPosition", "sizeDelta")]
+    scale = float(re.search(r"^  scale: ([\d.e+-]+)$", doc, re.M).group(1))
+    return dict(amin=v[0], amax=v[1], pivot=v[2], pos=v[3], size=v[4]), scale
+
+
+def _box(r, w, h):
+    """A rect's (left, bottom, right, top) in a parent w x h, origin bottom-left."""
+    (ax0, ay0), (ax1, ay1) = r["amin"], r["amax"]
+    (px, py), (x, y), (sx, sy) = r["pivot"], r["pos"], r["size"]
+    bw, bh = (ax1 - ax0) * w + sx, (ay1 - ay0) * h + sy
+    cx, cy = (ax0 + (ax1 - ax0) * px) * w + x, (ay0 + (ay1 - ay0) * py) * h + y
+    return (cx - bw * px, cy - bh * py, cx - bw * px + bw, cy - bh * py + bh)
+
+
+def check_upright(view_text):
+    """Section 138: the Arcade window upright on the 1080-wide canvas - the header under the band, the scroll filling the
+    rest, nothing outside the margins or under the friends orb, and the PC content scaled to fit the viewport."""
+    header, _ = _pose(view_text, "Header")
+    body, _ = _pose(view_text, "Body")
+    title, _ = _pose(view_text, "Header/Title")
+    content, scale = None, 1.0
+    for key, cols in (("Grid", UP_COLS), ("Features", 1)):
+        cls, doc = doc_of(view_text, K.FileIds("ArcadeView")(f"{key}#portrait"))
+        assert cls == 114 and f"  gridColumns: {cols}\n" in doc, f"ArcadeView {key}: not {cols} across upright"
+    for h in UP_HEIGHTS:
+        hb, bb = _box(header, UP_W, h), _box(body, UP_W, h)
+        for name, (l, b, r, t) in (("header", hb), ("body", bb)):
+            assert l >= ORB_CLEARANCE - 0.01 and r <= UP_W - UP_MARGIN + 0.01, \
+                f"Arcade {name} upright spans x {l:g}..{r:g}: under the friends orb or outside the 40 margin"
+        assert hb[3] <= h - 84 + 0.01, "Arcade header upright reaches under the nav band"
+        assert bb[3] <= hb[1] + 0.01, f"Arcade body upright (top {bb[3]:g}) runs into the header (bottom {hb[1]:g})"
+        assert bb[1] >= UP_MARGIN - 0.01, "Arcade body upright runs off the bottom"
+        assert bb[3] - bb[1] >= 0.5 * h, "Arcade scroll upright does not fill the rest of the screen"
+        # In the header: the title clear of Replays and Back, which sit on its right edge.
+        hw = hb[2] - hb[0]
+        tl, _, tr, _ = _box(title, hw, hb[3] - hb[1])
+        buttons = back_width() + 12 + 16 + K.label_width("REPLAYS", "ButtonSmall") + 16
+        assert tr <= hw - buttons - 12 + 0.01, f"Arcade title upright (to {tr:g}) runs under Replays / Back (from {hw - buttons:g})"
+        # The scroll content re-flows at the viewport's width: the games 3 across and the feature cards stacked fit it.
+        vw = (bb[2] - bb[0]) - 10
+        assert UP_COLS * UP_CELL_W + (UP_COLS - 1) * 10 <= vw - 12 + 0.01, \
+            f"Arcade games upright ({UP_COLS} x {UP_CELL_W}) do not fit the {vw - 12:g}-wide content"
+        assert UP_CONTENT_W <= vw - 12 + 0.01, "Arcade feature cards upright are wider than the content"
+    return dict(header=header, body=body, title=title, content=content, scale=scale)
+
+
+def upright_table(view_text):
+    h = UP_HEIGHTS[-1]
+    u = check_upright(view_text)
+    hb, bb = _box(u["header"], UP_W, h), _box(u["body"], UP_W, h)
+    tl, _, tr, _ = _box(u["title"], hb[2] - hb[0], 64)
+    vw = bb[2] - bb[0] - 10
+    return [f"header    x {hb[0]:7.1f}..{hb[2]:7.1f}  y {h - hb[3]:7.1f}..{h - hb[1]:7.1f} (from top)",
+            f"  title   x {hb[0] + tl:7.1f}..{hb[0] + tr:7.1f}",
+            f"body      x {bb[0]:7.1f}..{bb[2]:7.1f}  y {h - bb[3]:7.1f}..{h - bb[1]:7.1f} (from top)",
+            f"content   re-flows at {vw - 12:g}: games {UP_COLS} x {UP_CELL_W} across, feature cards stacked {UP_CONTENT_W} wide"]
+
+
 def drift(files):
     out = []
     for p, t in files.items():
@@ -1977,6 +2139,9 @@ def self_test(current, files, guids):
         "the genre icon back to the petal": prefab_plant(card, lambda t: t.replace(GENRE_SHAPES[0], GENRE_SHAPES[1], 1)),
         "the hull back to a dark render": prefab_plant(card, lambda t: t.replace(HULL_LIT_MAT, ART_DRIFT_MAT)),
         "the art band with no overscan": prefab_plant(card, lambda t: re.sub(r"  overscan: [\d.]+\n", "  overscan: 1\n", t)),
+        "the Poster's name back in the small type": prefab_plant(card, lambda t: re.sub(
+            r"(role: )" + str(K.ROLES["H1"][0]) + r"\n", r"\g<1>" + str(K.ROLES["H3"][0]) + "\n", t)),
+        "the Poster's reveal unwired": prefab_plant(card, lambda t: re.sub(r"(  panel: \{fileID: )-?\d+", r"\g<1>0", t, count=1)),
         "lists not embedded": prefab_plant(panel, lambda t: t.replace("  embedded: 1\n", "  embedded: 0\n", 1)),
         "slot field unwired": prefab_plant(panel, lambda t: t.replace(f"  - {{fileID: {slot1}}}\n", "  - {fileID: 0}\n", 1)),
         "Back closes by persistent call": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
@@ -2013,6 +2178,17 @@ def self_test(current, files, guids):
             "  oneVerbPerRow: 1\n", "  oneVerbPerRow: 0\n", 1)),
         "the body back under the friends orb": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20")),
+        "the body with no upright pose": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
+            f"  - component: {{fileID: {K.FileIds('ArcadeView')('Body#portrait')}}}\n", "", 1).replace(
+            f"--- !u!114 &{K.FileIds('ArcadeView')('Body#portrait')}\n", "--- !u!114 &4242424242\n", 1)),
+        "the games back to 5 across upright": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Grid#portrait"), f"  gridColumns: {UP_COLS}\n", "  gridColumns: 5\n")),
+        "the upright body reaching into the orb's gutter": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Body#portrait"), f"  anchoredPosition: {K.v2(*UP_BODY['pos'])}\n",
+            f"  anchoredPosition: {K.v2(0, UP_BODY['pos'][1])}\n")),
+        "the upright title under Back": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Header/Title#portrait"), f"  sizeDelta: {K.v2(UP_TITLE_W, 46)}\n",
+            "  sizeDelta: {x: 760, y: 46}\n")),
         "unrelated document edited": scene_plant(lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1)),
         "the Join button loses its profile relay (pad focus shows no card)": prefab_plant(
             prefab_path("PartyOnlineRow"), lambda t: re.sub(

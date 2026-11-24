@@ -191,7 +191,7 @@ namespace CosmicShore.ScriptableObjects
             RevertCellOnStart = revertCellOnStart,
             TetherPrisms = tetherPrisms,
             ReturnStationRadius = returnStationRadius,
-            ReturnStationColor = returnStationColor,
+            ReturnStationColor = ColorTrace.Retrace(ColorTrace.World, returnStationColor),
         };
     }
 }

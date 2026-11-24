@@ -179,6 +179,32 @@ homeostasis the food web is meant to produce, both now gone:
 
 ---
 
+### 0.w Granted carve-out: possession, and wild strikes on escort vessels (Garrett, 2026-11-14)
+
+The Jewel Wasp (`Assets/_Scripts/Controller/Vessel/R_VesselActions/JEWEL_WASP.md`) possesses a creature and flies it.
+Garrett signed off three breaks with the concept ("any host should always be available"; "shielded prisms and
+supershielded prisms always edible"; "fauna missing this should have this and use it against vessels when attacking an
+ark"):
+
+- **Any creature can be possessed**, any diet, from any holder (`Fauna.TryPossess`; the old holder is told through
+  `IFaunaLeash.Released`). A worm is taken by its head, a murmuration whole. Grid colonies (builder, substrate, NCA) say
+  no (`Fauna.CanBePossessed`).
+- **A possessed creature eats every shield**, at its rider's word only. `Fauna.IsInedibleShield` returns false for it, and
+  `Fauna.BiteMass` drops a super-shield and eats the prism devastating. Mass is conserved: the ordinary consume and
+  implosion fill its stomach. The rider's own team's mass, creatures' bodies and the race corridor stay off the menu
+  (`Fauna.PossessedCanEat`).
+- **Wild strikes on Ark escort vessels.** On an escort world the squad has not pacified, a wild creature next to a squad
+  vessel plays its attack (`FaunaAttackDriver`) and lands the escort's danger contact, which costs petals only
+  (`ArkEscortRun.Strikes.cs`, `ArkEscortSO.faunaStrikeEffect`). It has one caller and runs in the escort's worlds only,
+  alongside the feeding lure (§0.z).
+
+The fence:
+- `IFaunaPossession` has one implementer, `JewelWaspExecutor`, and possession runs on the simulating peer only.
+- The host keeps its starvation clock (`Sustains` false), so no starvation exception enters.
+- Steering, the cell's grids, spawning and the one-fauna-colour rule are untouched.
+
+An exception, not a precedent: the next one needs its own sign-off.
+
 ### 0.x Granted carve-out: armour wears under creature bites in the Ark escort's worlds (2026-10-31)
 
 Resembles the rejected "make the Ark's plates edible by special-casing" and is NOT that. Asked for by Garrett
@@ -231,6 +257,29 @@ The fence:
   still hold.
 
 This is an exception, not a precedent: the next one needs its own sign-off.
+
+**Widened 2026-11-16 (Shombith, Voyages Milestone 1: "the cell faunas should attack the ark"), awaiting Garrett's
+sign-off through `/approve`:**
+- Assaults: the escort turns the lure on the Ark's own world up to the tier's `AssaultLureShare` (0.45 at d1 to 0.95 at
+  d9) for an announced assault, until the squad kills `AssaultRepelKills` attackers near the Ark or `AssaultSeconds` run
+  out (`ArkAssaultClock`, `ArkAssaultDriver`, `ArkEscortRun.Assault.cs`). Between assaults the steady `LureShare` holds.
+- A second caller, `VoyageRun.Assault.cs`: a job voyage's hostile cells (`VoyageJob.HostileCells`, per cell of the leg)
+  get the same lure, the same assaults and `ArmourIsFood`, at the escort's tier for the job's difficulty. Calm cells are
+  never lured, and everything is cleared when the leg changes and when the voyage ends.
+- The fence above still holds: steering only, never a cull, a diet or a population.
+
+**Widened again 2026-11-17 (Shombith: "more attacks outside the cell, big kaiju level fauna attacking the cell"; "all
+crystals and everything come in the same spot"), awaiting Garrett's sign-off through `/approve`
+(`Docs/Voyages/CRYSTAL_RUN.md` §8):**
+- Kaiju and raiders: `VoyageRun.Kaiju.cs` holds an `IFaunaLeash` (the Angler's contract) on the grown creatures a Crystal
+  Run sends at the Ark: a kaiju born in the open water between two cells on each crossing, and the raiders. The leash
+  steers them at the Ark and orders its nearest plate; the creature re-checks it with its own diet, eats with its own
+  mouthful and keeps its starvation clock. No mark, nothing sustained. At most `kaijuMax` (2) kaiju alive; a kaiju is
+  one creature of its species grown 12x (same body-prism and collider count, larger).
+- Scattered births: a voyage's satellite cells set `Cell.ScatterLifeSpawns`, so an unbanded, unpenned creature and every
+  plant is born at its own volume-uniform point between the nucleus and the membrane (`RandomPointInCytoplasm`) instead
+  of the wave's feeding ground. Placement only: populations, diets, steering and every later goal are untouched. Off
+  everywhere else.
 
 ## 1. The spine: everything keys off **prism count**
 
@@ -9052,6 +9101,42 @@ second unrequested look change and the amplitude is what "barely perceptible" is
 
 ---
 
+### 47.8 Grown sway: a wave every vertex carries (2026-11-17, the Ray)
+
+`SpindleSway` is one shear along z, which is right for a branch or a fish and cannot make a wing ripple from shoulder
+to tip with its hind edge a beat behind. A GROWN creature (`Tools/Build/fauna_kit`) knows each vertex's wave as two
+vectors, and `SpindleGrownSway.hlsl` adds them in the vertex stage, after `SpindleSway`:
+
+    offset = _GrownSway * (TEXCOORD1.xyz * sin(t) + TEXCOORD2.xyz * cos(t))        t = _PrismClock * _GrownFrequency + _Phase
+
+- **Default 0 is the blast-radius control again.** `_GrownSway` is 0 on every material but the ones
+  `fauna_kit/unity_port.py` writes (`Assets/_Graphics/Materials/Fauna/`), and at 0 the function is a bit-identical
+  passthrough whatever a mesh holds in TEXCOORD1 and 2 (`Tools/Shaders/verify_spindle_grown_sway.py` T2, compiled from
+  the shipped file; the braid's LOD meshes keep other data there).
+- **It is wired after `SpindleSway`** (`Tools/Shaders/wire_spindle_grown_sway.py`), so `wire_spindle_lod.py`, which
+  splices into the edge that FEEDS `SpindleSway`, needed no change, and the four graphs it generates inherit the wave.
+  A creature's body draws with `SpindleDepthGraph` (`SpindleLodSystem.AddBody`), so that inheritance is how the wave
+  reaches the game.
+- **A grown body's material turns the shear off** (`_SwayAmplitude` 0), so `PrismSway` stamps nothing on its prisms
+  (`Spindle.TryGetSwayConstants` is false for a material that authors no shear). Its prisms are carried on the CPU
+  instead, by `GrownLimbDriver`, each along the wave of the limb where it sits, from `PrismClock.Now` and the
+  spindle's own phase (`Spindle.TryGetSwayPhase`): a prism is a collider and must be where it is drawn. That is nine
+  transform writes a frame for a Ray. It is the one place this sway spends CPU; §47.3's "zero per-frame CPU" still
+  holds for the mesh.
+- **Pieces of a cut body keep the body's own space** (`unity_port.joints_of`): `SpindleSway` is a function of a
+  vertex's own z, so a piece with its origin at its hinge sheared about a different point than its neighbour.
+- **The body answers its own turning (2026-11-18).** The same function takes six more floats, all 0 by default
+  (`_GrownBendX/Y/Z`, `_GrownStrokeX/Y`, `_GrownTwist`): the far parts of the body LAG its rotation
+  (`cross(Bend, p) * |p|`), the outside of a turn beats harder than the inside (the wave scaled by
+  `1 + dot(Stroke, p.xy)`), and in a roll the hind edges deflect like ailerons (`cross((Twist * p.x, 0, 0), p)`).
+  `GrownLimbDriver.AnswerTheTurn` measures the root's angular velocity, springs the lag, banks the body under the
+  root, and hands the numbers to the creature's own renderers in a `MaterialPropertyBlock`. That is the one place a
+  spindle renderer carries a per-renderer block outside a fade (`Spindle.cs` avoids them to stay SRP-batchable): it is
+  ten renderers a Ray, and it is deliberate, because the numbers are per creature and change every frame.
+- Not measured: the cost of two more vertex channels on every spindle draw (read, multiplied by 0). Not seen in the
+  editor: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the Ray's entry, check 0.
+
+
 ## 48. Garland — a cell composed for the CAMERA, at a fifth of the weight (Sep 2026)
 
 The freestyle seven are 34–41k prisms each and are all composed for a pilot who is *inside*
@@ -12521,6 +12606,15 @@ With size Mass's, Space's fauna identity is three things, one number - the plant
   Boid, right after `Initialize`) admits each body prism's authored size (`Prism.AuthoredScale`) into the window and
   retargets it. Reproduced in Amoebius: without it, the shark's teeth target 10 against an authored 15.
 
+  **A body of several JOINTED skins is authored eroded instead (2026-11-17, the Ray).** The erosion runs on each skin
+  about its own spine, which suits one skin and a few wings; a wing cut into jointed pieces (`fauna_kit/unity_port.py`)
+  is drawn toward the middle of each piece and tears at its hinges (`Tools/Build/fauna_kit/erosion.py Ray`, a port of
+  `SpindleErosion` pinned to `FaunaElementalFormTests`' numbers: 6.7 u). Such a body's Space PREFAB is grown at the
+  law's girth (`ErodedGirth` limb by limb, the body's thickest girth the reference), its prisms authored as the law's
+  needles (`ShapeLeaf` in the socket, less 3%), and it says `Fauna.spindleAuthoredEroded`: `ErodeSpindle` then leaves
+  skins and prisms as authored and reports `ThickestGirth`, so the body-relative dials still read the Mass girth. Its
+  config is unchanged in shape (`BaseBodyScale` 1.647 x Mass, `ErodeSpindle` on).
+
   Authored on the Space SHARK only (`Docs/Ecology/FaunaScale/sharks_four_elements.png`). Another species takes it with
   `BaseBodyScale` = 1.647 x its Mass scale, `ErodeSpindle` on, and Read/Write on its model's import.
 
@@ -12674,6 +12768,20 @@ arbitrary in-plane axis squashed it into an ellipse. The four models import read
 flora branch spindles, which never erode: memory only). The Space tadpole's school spacing follows its body (x4.573,
 on top of the Space spread); its senses stay world. The Space shark is unchanged (334.8 long); its teeth still sit
 in its crystal, as §64.8 records. Measured through the game's own `AssignLineage` in Amoebius at bind pose.
+
+**The armour did not land on a creature whose prefab crystal is not its rolled element (found and fixed 2026-11-17).**
+`LightFauna` and `Boid` call `ArmourBody` in `Initialize`, and every spawner calls `Initialize` BEFORE `AssignLineage`,
+which is where the element is rolled and the heart of that element provisioned. So the body was armed for the PREFAB's
+authored crystal. A species whose four configs share one prefab was armed for that prefab's element whatever it rolled:
+the QuadFish (a Space crystal) wore no shield as Mass and no danger as Charge. Measured by running the game's own spawn
+order (`BindSpeciesData`, `Initialize`, `AssignLineage`, `FaunaNetworkSync.ServerSpawn`) on the shipped configs in
+Amoebius: QuadFish Mass 0 of 4 plain prisms shielded at 60 and 300 frames, QuadFish Charge 0 of 4 danger, with the
+heart's element correct in both. `Fauna.AssignLineage` now calls `ArmourBody` once the heart is provisioned (it takes a
+previous arming off first and does nothing until the body prisms exist). **This changes shipped creatures**: every
+Mass light fauna and boid is now shielded and re-armoured, and every Charge one is all danger, as this section always
+said. The numbers after the fix are in `Docs/Studios/FAUNA_LAB.md` round 9; nobody has seen it in the Unity editor
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
 
 ### 65.5 The Mandelbulb family
 
@@ -12970,3 +13078,48 @@ stays outside. Invariants: no culling, no teleport, no decay, no domain asymmetr
 
 **Side effect to know.** Anything else that reads the densest region in a corridor cell reads it without the corridor's
 mass: the spawner's fauna birth point (desired - nothing is born on the path) and the pilot-sight densest-mass hint.
+
+## 68. The IntensityWise spawner plants on prepared ground too; an environment may ask for a fauna corridor (2026-11-06)
+
+**The trap, live.** `CellLifeSpawnerBase.PlantFlora` (root a plant on the environment's prepared ground, else
+disperse) was called only by `RandomLifeSpawner`. `IntensityWiseLifeSpawner` called `SpawnFlora` directly, so a
+site-sowing world in an IntensityWise cell dispersed its plants over the whole cell, and it never waited for the
+deferred environment build either. It now plants through `PlantFlora` (for a cell whose world sows no sites that is
+exactly the old `SpawnFlora` call, so every shipped IntensityWise cell is unchanged) and waits on the build only when
+the environment declares `CellEnvironmentSpawnableBase.PreparesPlantingSites` (false by default; the Regatta rails
+override it when their course authors sites), so no other cell's planting clock moved.
+
+**An environment may describe a fauna corridor** (`ICellFaunaCorridorSource`): the `Cell` adopts it when it builds
+that environment (`Cell.AdoptFaunaCorridor`, the same `SetFaunaPathCorridor` Switchback's controller calls) and
+releases only a corridor it adopted itself, so a mode's corridor is never cleared by a world swap. Same diet +
+steering contract as section 67, never a wall.
+
+The first user is Regatta (`Assets/_Scripts/Controller/Arcade/REGATTA.md` 4.2): lifeforms as a course setting,
+off on every shipped course. Nothing in the locked law moves: the arena prepares ground and never spawns a
+lifeform, plants roll their colour and creatures take the cell's, rails stay super-shielded (never food), and the
+course's phase ladder is raised by the forest's measured volume.
+
+## 69. The element ladder's I4 fauna: one roster the spawners and the sync share (Garrett, 2026-11-16)
+
+Garrett's standard element ladder (`Docs/ElementalLoop/PLAYBOOK.md` step 2) makes I4 "fauna of the game's element",
+in the cell's colour (his answer kept the locked one-colour rule: "it is more consistent"). A cell whose I4 spawn
+profile carries NO fauna now gets `Resources/ElementLadderFauna`'s species (Harvest's I4 four, Shombith 2026-11-10),
+each a runtime clone with `SpreadElements` off and `Element` pinned to the game's element (the palette sibling's
+variant block when the species has one). A profile that authors fauna keeps its species, and under the same gate each
+is pinned the same way (Garrett's I4 card: "arenas with fauna keep theirs, recoloured to the element"). That reaches
+fourteen I4 profiles: Harvest, Shatterplane, Thresher Time, Serpentine, Rampage, Wildlife Liberation, Chum, Tollway,
+Glasshouse, Boneyard, Wrecking Ball, Kelpwood and the two Ark Escort cells (any of them a two-element or arena card
+stands down). No mode scores on a creature's element, so the change is the variant's look and stats, not a rule.
+
+- **One roster.** `Cell.FaunaRoster` is the profile's `SupportedFaunas` or, under the ladder gate (an arcade
+  controller in the scene, not an arena card, I4+, a one-element game), pinned clones of the authored species or, when
+  there are none, of the ladder's. Both spawners
+  (`IntensityWiseLifeSpawner`, `RandomLifeSpawner`) and `FaunaNetworkSync` (capture and resolve) read it, so the
+  config index means the same creature on every peer. Reproduction rides `SourceConfig` (the clone) unchanged.
+- **No asset is edited.** A null or prefab-less authored slot stays in place so the index still lines up. The clones live with the cell and are destroyed with it; nothing writes Harvest's assets.
+- **Invariants.** Continuity, no imposed death, wither-to-crystal: unchanged (same species, same code paths). Domain:
+  controlling colour, unchanged. **Collider budget:** at most 23 live creatures (3 + 10 + 4 + 6, the species' own
+  `MaxLivePopulation`), the set Harvest's 5,000-prism arena was sized with; arenas lighter than Harvest have more
+  headroom, none is measured yet in the editor.
+- **Not reached:** the Angler and Jacks keeper lookups and the toy Microscene still read the profile (no ladder fauna
+  there by design), and `Cell.IsBareCanvas` judges the authored config.

@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-22-inside-a-black-hole-s-pull-two-prisms-th-4dab07",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T02:50:48+00:00",
+  "area": "prism motion: the look of a collision (PRISM_MOTION.md 3a)",
+  "summary": "Inside a black hole's pull, two prisms that collide are now drawn consumed into the hole (the fauna's suction, Prism.Consume) instead of the explosion / collision burst. Both are still destroyed and scored as before; the Rhino, Jacks and Meerkat movers keep the explosion.",
+  "why": "Yash: the visuals of a black hole sucking prisms need to be the same as fauna devouring prisms",
+  "branch": "Ys-bleeding-edge",
+  "commit": "4d5df053c",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGravityField.cs",
+    "Assets/_Scripts/Controller/Prisms/PrismMotion.cs",
+    "Docs/PRISM_MOTION.md"
+  ]
+}

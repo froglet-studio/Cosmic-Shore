@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-20-risky-merge-pr-2281-went-in-without-wait-c53829",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-20T04:49:56+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2281 went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Orca.prefab; a swim lane someone else occupies (approvals.py check exit 2): Orca",
+  "branch": "claude/project-thread-sfixg0",
+  "pr": 2281,
+  "commit": "5a4838908",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Orca.prefab",
+    "Tools/Build/brood_trail_levers.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Orca.prefab"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Orca"
+    }
+  ]
+}

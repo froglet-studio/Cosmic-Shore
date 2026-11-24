@@ -273,7 +273,7 @@ for two hulls, in two different ways.
 | Squirrel | Strike (joust overtake) | **steal** |
 | Dolphin / Scarab | Debuff (cone / plate, one shared asset) | eject |
 | Manta | Debuff (bloom, Mass+Space only) | eject |
-| **Rhino** | reported a Strike that **drained nothing** | **steal** — `RhinoSwordStealBySkimmerEffect` (in the sword's container; runs only for a hit `VesselCombatHitBySword` admits, `stealScale` authored disabled = base magnitude — still true 2026-10-16) |
+| **Rhino** | reported a Strike that **drained nothing** | **steal** — `SwordfishSwordStealBySkimmerEffect` (in the sword's container; runs only for a hit `VesselCombatHitBySword` admits, `stealScale` authored disabled = base magnitude — still true 2026-10-16) |
 | **Serpent** | **no anti-vessel verb at all** | **eject** — the sniper cone strips pilots |
 
 The two gaps were not the same kind of gap, and that mattered:
@@ -456,7 +456,7 @@ Four effects broke the rule, across three hulls:
 | `VesselSpinBySparrowFullAutoProjectileEffect` | `SparrowFullAutoProjectileImpactContainer`, `SparrowPrismProjectileImpactContainer`, `SparrowExhaustProjectile.prefab` | the Sparrow's guns (both fire modes) snapped a victim's heading onto the impact vector |
 | the spin half of `VesselSpinBySkyBurstProjectileEffectSO` | `SparrowSkyBurstProjectileImpactContainer` | the Sparrow's rocket, on a direct hit |
 | `VesselSpinByUrchinSpikeProjectileEffect` | `UrchinSpikeProjectileImpactContainer` | the Urchin's spikes |
-| `VesselSpinBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | the Rhino's sword — a yaw **plus** a lateral `ModifyVelocity` shove |
+| `VesselSpinBySkimmerEffect` | `SwordfishForceFieldSkimmerImpactorDataContainer` | the Rhino's sword — a yaw **plus** a lateral `ModifyVelocity` shove |
 
 `VesselTransformer.SpinShip(Vector3)` — a snap re-aim onto a supplied heading — is deleted with
 them, because those three effects were its only callers. `VesselGentleSpinByProjectileEffectSO`
@@ -492,7 +492,7 @@ reach them, so they were flagged as a separate decision and then removed on the 
 | effect | wired into | what it took |
 |---|---|---|
 | `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` | the Sparrow's two gun containers | shrank a **Rhino's** skimmer to 0.7× for 3 s (`vesselTypesToImpact` was Rhino-only) — i.e. its blade |
-| `VesselDamageBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | muted the victim's `RightStickAction` for 5 s and cancelled the action it was driving |
+| `VesselDamageBySkimmerEffect` | `SwordfishForceFieldSkimmerImpactorDataContainer` | muted the victim's `RightStickAction` for 5 s and cancelled the action it was driving |
 | `VesselPrismSpawnerCooldownBySkimmerEffect` | `Rhino.prefab` | froze the victim's trail spawner for 10 s |
 | `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's vessel crystal blast (the sword crystal burst stopped spawning a blast 2026-10-08), and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
 
@@ -514,7 +514,7 @@ effect side: **a retired serialized key is indistinguishable from live wiring in
 
 **A shared config asset made one hit hit everybody.** `ApplyMaxSizeDebuff` mutated the
 `ShieldSkimmerScaleConfigSO` instance it was called on, and **ONE asset
-(`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`) drives every Rhino** — so a
+(`_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset`) drives every Rhino** — so a
 Sparrow shooting one pilot shrank every Rhino's blade in the match, and its own doc comment said
 so (*"if multiple skimmers share it, they share the debuff too"*). This is the twin of the
 `GrowSkimmerActionSO.ApplyMaxSizeDebuff` hazard `Docs/ElementalAbilitySystem/BACKLOG.md` 5.11a
@@ -529,7 +529,7 @@ Rhino's sword crystal burst, which stopped spawning a blast 2026-10-08 and is **
 since 2026-10-16 — `RhinoSwordCrystalBurstEffectSO`, the effect that also drained ALL the sword's
 energy on every elemental petal the blade touched. The sword now collects elemental crystals with
 no sword-side effect; the burst LOOK moved to the Rhino's omni-crystal **Surge**,
-`RhinoVesselSurgeByCrystalEffect`, which fills the energy instead of draining it). That is correct under this law and it is a hole rather than a
+`SwordfishVesselSurgeByCrystalEffect`, which fills the energy instead of draining it). That is correct under this law and it is a hole rather than a
 neutral outcome: if those blasts should reach a pilot, the sanctioned shape is a Debuff-class
 combat-hit report plus a drain, exactly as the Dolphin's cone and the Scarab's plate carry
 (`ScarabCavitationDebuffByExplosionEffect`), which is a Broadside **pricing** decision through

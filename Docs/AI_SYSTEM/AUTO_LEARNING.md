@@ -32,8 +32,11 @@ hold lifts, a vessel gains a learner), and one whose learner failed is tried aga
 
 ## 2. What the sweep does (the scheduled task's whole instruction)
 
-The scheduled task "AI learning sweep" (`trig_01VieYjD52nneXYEXHM8nUKY`, once a day at 03:47 IST (22:17 UTC) since 2026-11-02, hourly before that; created 2026-10-25 on
-Yash's request) wakes the session "AI learning sweep (daily)" (`session_01WGSY8UTqMrqdcy2tWPMkBD`). Change what the
+The scheduled task "AI learning sweep (daily, fresh session)" (`trig_01LvRJ9n1v7KsWBSQHxN4w9J`, once a day at 03:47
+IST (22:17 UTC)) starts a NEW session for every run (Yash, 2026-11-16: "use new sessions for token efficiency"); the
+state one run leaves for the next is this repo: `Docs/Reports/AI_LEARNING.md` ("What the sweep judged", "Waiting on")
+and `ai_learning_seen.json`. It replaced `trig_01VieYjD52nneXYEXHM8nUKY` (2026-10-25 to 2026-11-16, paused), which
+woke one long session (`session_01WGSY8UTqMrqdcy2tWPMkBD`) every time. Change what the
 sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARNING.md".
 
 
@@ -60,6 +63,16 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 5. Commit the learned files, `Docs/Reports/AI_LEARNING.md` and `Docs/AI_SYSTEM/ai_learning_seen.json` to
    `Ys-bleeding-edge` (`chore(ai-learn): <modes> from <n> new races`), and push (fetch, merge, push; retry on a race).
    Never push to `bleeding-edge`, never open a pull request.
+
+**A hull whose kit changed** (2026-11-07): the learner keeps a race only when the build it was flown on has the hull's
+current kit (`learn_drives_from_flights.py` `KIT_SINCE`; each flight names its build in `gitCommitHash` since that day,
+and older flights are judged by hand in `JUDGED_KIT`). A kit change by a vessel's owner gets a `KIT_SINCE` row in the same
+change, so the sweep never writes numbers from the old kit over the owner's tuning of the new one. The Stoat's trampoline
+(8abe1fe83b) is the first.
+
+**The Stoat is report only** (Yash, 2026-11-10: "The stoat is not ready, ignore its AI, I'm trying to make the Stoat
+ability better"): its races are reported, never written (`REPORT_ONLY` in `learn_drives_from_flights.py`), and the sweep
+does not judge its AI or ask about it until Yash says the kit is ready.
 
 ## 3. What a session owes the loop
 

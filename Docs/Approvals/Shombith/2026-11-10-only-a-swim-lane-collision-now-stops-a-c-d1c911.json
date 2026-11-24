@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-10-only-a-swim-lane-collision-now-stops-a-c-d1c911",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T15:33:07+00:00",
+  "area": "the team rules, /ship, /swimlanes, the hooks and the Claude tooling",
+  "summary": "Only a swim lane collision now stops a change to someone else's work; everything else goes through with a heads-up and an entry in the owner's new /approve queue (approvals.py, /approve skill, Docs/Approvals).",
+  "why": "Approval before every change to others' work was slowing everyone down (Garrett, 2026-11-10). Posting to the live backend still goes through you first.",
+  "branch": "cece/great-goodall-raz7gj",
+  "commit": "a7939b910",
+  "paths": [
+    ".claude/hooks/team_context.py",
+    ".claude/hooks/vessel_studio_nudge.py",
+    ".claude/skills/approve/SKILL.md",
+    ".claude/skills/ship/SKILL.md",
+    ".claude/skills/swimlanes/SKILL.md",
+    ".claude/skills/swimlanes/lanes.json",
+    ".claude/skills/swimlanes/swimlanes.py",
+    "CLAUDE.md",
+    "Docs/TEAM.md",
+    "Docs/claude/VIDEOS_AND_PREVIEWS.md",
+    "Tools/Build/approvals.py",
+    "Tools/Build/who_works_where.py"
+  ]
+}

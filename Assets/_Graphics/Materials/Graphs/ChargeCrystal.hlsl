@@ -216,6 +216,11 @@ float3 ChargeCrystalDischarge(
     float  nodeRadius,
     float  nodeIntensity)
 {
+    // Exact early-out: with both intensities at zero the result below is 0 * (finite) everywhere. That is the state
+    // every live Charge crystal body is drawn in: CrystalChargeArcs' seam walk replaces this crawl and holds both at
+    // zero through a property block (SilenceCrawl), as do the hearts CrystalHeartDraw poses. Uniform branch.
+    if (arcIntensity <= 0.0 && nodeIntensity <= 0.0) return float3(0.0, 0.0, 0.0);
+
     float arc, heat, node;
     ChargeCrystalArcs(bary, edgeH, edgeSeed, time,
                       arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius,

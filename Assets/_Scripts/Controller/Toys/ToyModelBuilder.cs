@@ -290,9 +290,9 @@ namespace CosmicShore.Gameplay
 
         static float SafeDiv(float a, float b) => Mathf.Abs(b) > 1e-6f ? a / b : a;
 
-        /// <summary>Recentres child meshes on the model origin and scales so max dimension ≈ radius*2.</summary>
         /// <summary>
-        /// Centre the harvested model on its own bounds and scale it to <paramref name="targetRadius"/>.
+        /// Centre the harvested model on its own bounds and scale it to <paramref name="targetRadius"/>:
+        /// recentres child meshes on the model origin and scales so max dimension ≈ radius*2.
         ///
         /// <para>A target of <b>zero or less means NATIVE</b>: keep the source's own scale and its
         /// own pivot, untouched. Every toy wants a model normalised into a station of a known size,

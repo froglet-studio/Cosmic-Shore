@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
         /// trigger the crystal burst — none of which they could hold themselves (effect SOs are
         /// singletons). See <c>RHINO_ENERGY_SWORD.md</c>.
         /// </summary>
-        public IRhinoSwordState SwordState { get; set; }
+        public ISwordfishSwordState SwordState { get; set; }
 
         SkimmerSwingKinematics _swingKinematics;
         bool _swingLookedUp;

@@ -1,0 +1,62 @@
+{
+  "_about": "How good each SOLO vessel is in each element's game, S (the best of the fleet) to C (the least): a person's call, rated by Shombith (Rev 84, section 155 of Docs/MENU_REDESIGN_B.md, 2026-11-10). Each vessel names its elements with a letter; a vessel left out, or an element left out, shows as not rated yet. Only elements the vessel has an arcade game of can be rated: the generator drops a letter for an element with no game and warns. Crews are never rated. Add `_by` and `_date` per vessel when a letter changes.",
+  "_example": {
+    "Squirrel": {
+      "Charge": "B",
+      "Mass": "A",
+      "Time": "S",
+      "_by": "Shombith",
+      "_date": "2026-11-10"
+    }
+  },
+  "Dolphin": {
+    "Time": "S",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "Grizzly": {
+    "Time": "S",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "Squirrel": {
+    "Time": "S",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "Serpent": {
+    "Time": "A",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "Sparrow": {
+    "Time": "A",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "Scarab": {
+    "Time": "A",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "Thresher": {
+    "Time": "B",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "BrittleStar": {
+    "Time": "B",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "Angler": {
+    "Time": "A",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  },
+  "TigerMoth": {
+    "Time": "S",
+    "_by": "Shombith",
+    "_date": "2026-11-11"
+  }
+}

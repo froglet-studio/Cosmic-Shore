@@ -6,8 +6,15 @@ A Dolphin that strikes an omni crystal fires Echo Obliteration: a conic blast do
 sweeps the prisms in front of it (`DOLPHIN_CRYSTAL_SEEDING.md` §2, `AOEConicExplosion`). Until now
 the crystal *also* burst into the shared spent-crystal husk spray, so the pickup read as two
 unrelated events: something shattered, and separately a cone went off. It now reads as one — the
-crystal's cage bursts open down-range, its plates land on the surface of the cone, and the cone
-takes the surface over while the crystal dissolves off it.
+crystal's cage stretches out onto the surface of the cone and thins to nothing as it goes, over a
+blast that is drawn, untouched, from its first frame.
+
+> **Rework, 2026-11-03 (Garrett):** "it occludes the explosion and destroying prism which were
+> already what looked great ... it should morph to the explosion surface and stretch to
+> transparently disappear without drawing too much attention." The first version hid the cone
+> until the plates landed (`SetMorphStandIn`, now removed) and drew the plates opaque with depth
+> write, so for ~0.37 s the crystal covered the blast and the prisms it breaks. Now the cone is
+> never held, and the crystal is a see-through layer (§3a).
 
 This is the third **per-vessel omni-crystal retirement** (`VesselImpactorDataContainerSO.OmniCrystalRetirement`),
 after the Squirrel's ring (`SQUIRREL_CRYSTAL_MORPH.md`) and the Scarab's ball (`SCARAB_CRYSTAL_MORPH.md`).
@@ -80,6 +87,21 @@ directions. The very tip still gets few plates; it is a few percent of the cone'
   integrated from `deltaTime`, so the cone can be up to one frame larger than the landed plates:
   about 0.9% of full size per 16 ms frame at that point of the curve.
 
+## 3a. See-through, and why it cannot cover anything
+
+- **The cone is never hidden.** It draws from its Initialize frame, exactly as with no morph.
+- **The body draws alpha-blended with no depth write** from the stamp on
+  (`CrystalMorphRunner.DrawsSeeThrough`): the runner hands the body copy a cached clone of its own
+  `OmniCrystalFresnelShader` material with `_BlendOpacity` 1, `Blend SrcAlpha OneMinusSrcAlpha`,
+  `ZWrite Off`, transparent queue. One clone per source material, shared by every pickup. The
+  crystal itself and every other retirement keep the opaque material (the new shader properties
+  default to the old pass, bit for bit).
+- **The plates thin as they stretch**: opacity = (1 − progress)^`fadePower` (on
+  `DolphinCrystalMorphByCrystal.asset`, default 2: a quarter left halfway out, zero at the landing).
+  Raise it for subtler. At frame 0 the opacity is 1, so the pickup frame is still the crystal.
+- The colour convergence and the hand-off still run, but the plates are invisible by the landing,
+  so the shader seam in §3 no longer shows.
+
 ## 4. How it runs
 
 ```
@@ -99,11 +121,10 @@ Dolphin hull touches an omni crystal
                             filters: same vessel · apex within ringCaptureRadius of the collect
                             cone at t = MorphSeconds → ConvexHullTarget (body frame)
                             CrystalMorphMeshBuilder.TryBuild(cage, cone, crystal centre)
-                            cone.SetMorphStandIn(true)
                             ONE stamp: _CrystalMorph = (PrismClock.Now, geometry s, stagger)
                 └─ Detonate → the sweep starts (live, invisible)
 
-  t = morphFraction · duration : cone.SetMorphStandIn(false) — the blast draws itself
+  every frame until landing    : body opacity = (1 − g)^fadePower, alpha-blended over the live cone
   t = duration                 : body dissolved; morph destroyed (mesh destroyed with it)
 ```
 
@@ -120,7 +141,9 @@ then fades it out with a warning that names the sibling.
 |---|---|
 | `R_VesselActions/DolphinCrystalMorph.cs` | the cone target: listen, read the cone at the hand-off, hold, reveal |
 | `…/Vessel Crystal Effects/DolphinCrystalMorphByCrystalEffectSO.cs` + `_SO_Assets/…/DolphinCrystalMorphByCrystal.asset` | the Dolphin's retirement, wired in `DolphinImpactorDataContainer` |
-| `Controller/Projectiles/AOEConicExplosion.cs` | `Initialized` (isolated), `ConeMesh`, `ApexPosition`, `TryGetConeLocalToWorldAt`, `TryGetConeColours`, `SetMorphStandIn` |
+| `Controller/Projectiles/AOEConicExplosion.cs` | `Initialized` (isolated), `ConeMesh`, `ApexPosition`, `TryGetConeLocalToWorldAt`, `TryGetConeColours` |
+| `R_VesselActions/CrystalMorphRunner.cs` | `DrawsSeeThrough` / `BodyOpacityDuringMorph`: the see-through body (off for every other runner) |
+| `_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader` | `_BlendOpacity`, `_SrcBlend`, `_DstBlend`, `_ZWrite` (header 2b); defaults are the old opaque pass |
 | `Utility/CrystalMorphMeshBuilder.cs` | the `sourceCentre` overload of the hull cast |
 | `ScriptableObjects/CrystalMorphConfigSO.cs` | tooltips only: the grace and capture radius now cover the cone |
 | `Tests/Editor/DolphinCrystalMorphGeometryTests.cs` | seven gates on the cone cast |
@@ -146,10 +169,11 @@ is within a few units of the crystal it touched. Inspection: set `duration` to 9
 ### In-editor verification
 
 1. **Any mode with a Dolphin and omni crystals** (freestyle, a Dolphin minigame). Fly through a crystal.
-   Expect: **no husk spray**; the cage bursts forward onto a cone down the nose; the cone appears where
-   the plates land and keeps growing; total ≈ 0.44 s before the crystal is gone. Set `duration` to 9 to
-   watch it slowly (the cone will then appear late, at its 9 × 0.85 s size — that is expected).
-2. **Prisms in front of the nose break from the first frame**, while the plates are still flying —
+   Expect: **no husk spray**; the blast cone and the prisms it breaks are fully visible from the first
+   frame; the crystal's plates stretch faintly onto the cone and are gone well before ~0.37 s; nothing
+   covers the explosion. Set `duration` to 9 to watch it slowly. Too visible or too faint: change
+   `fadePower` on `DolphinCrystalMorphByCrystal.asset` (higher is subtler).
+2. **Prisms in front of the nose break from the first frame** and stay visible through the plates —
    the blast is unchanged.
 3. **Echo Sight + a pickup**: the cone the morph lands on is the volume the sight highlighted.
 4. **Two pickups inside 0.15 s**: the second has no blast; expect that crystal to hold, then fade,

@@ -257,7 +257,7 @@ namespace CosmicShore.Utility
                 if (renderer == null) continue;
 
                 var resolved = VesselModelBuilder.ResolveDomainMaterials(
-                    renderer.sharedMaterials, identities, slot, domainMaterial);
+                    renderer.sharedMaterials, identities, slot, domainMaterial, renderer is SkinnedMeshRenderer);
                 if (resolved != null) renderer.sharedMaterials = resolved;
             }
         }

@@ -329,6 +329,7 @@ def section(col, key, name, caption, list_name):
 
 def build_browser():
     root = N("root", BROWSER, STRETCH)
+    root.add("portrait", 114, K.portrait_rect(pc_block=True))   # no upright pose yet: the PC layout fitted to the width (author_menu_portrait.py, section 138)
     root.add("cg", 225, CR.hidden_group()).add("anim", 95, CR.animator())
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.88, raycast=True)
     content = root.child(N("Content", "Content", STRETCH))

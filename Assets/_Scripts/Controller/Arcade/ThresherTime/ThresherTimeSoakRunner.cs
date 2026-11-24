@@ -35,6 +35,8 @@ namespace CosmicShore.Gameplay
             public int[] Intensities = { 1 };
             public int TotalPlayers = 3;
             public bool Aimed = true;
+            /// <summary>The Belfry AI (lead the swinging ring, duck the maces): off is an A/B's "before".</summary>
+            public bool BelfryAI = true;
             public int FirstSeed = 7001;
             public float TimeoutSeconds = 420f;
             public float TimeScale = 1f;
@@ -62,7 +64,7 @@ namespace CosmicShore.Gameplay
 
         Settings _s;
         GameDataSO _gameData;
-        GateRaceController _race;
+        ThresherTimeController _race;
         readonly List<Pilot> _pilots = new();
         bool _skippedName, _racing;
         float _raceStart;
@@ -123,6 +125,13 @@ namespace CosmicShore.Gameplay
             if (to.sqrMagnitude > 1e-4f && status.Course.sqrMagnitude > 1e-4f) p.OffRing.Add(Vector3.Angle(status.Course, to));
         }
 
+        int DucksOf(IPlayer player)
+        {
+            if (!_race) return 0;
+            _race.TryGetBelfryDiag(player, out _, out int ducks);
+            return ducks;
+        }
+
         void Write(string status, float raceTime)
         {
             var inv = CultureInfo.InvariantCulture;
@@ -135,6 +144,7 @@ namespace CosmicShore.Gameplay
                 sb.Append('{')
                   .Append("\"tag\":\"").Append(_s.Tag).Append("\",")
                   .Append("\"aimed\":").Append(_s.Aimed ? "true" : "false").Append(',')
+                  .Append("\"belfryAI\":").Append(_s.BelfryAI ? "true" : "false").Append(',')
                   .Append("\"intensity\":").Append(_intensity).Append(',')
                   .Append("\"race\":").Append(_raceNo).Append(',')
                   .Append("\"seed\":").Append(_s.FirstSeed + _raceNo).Append(',')
@@ -148,7 +158,9 @@ namespace CosmicShore.Gameplay
                   .Append("\"launches\":").Append(p.Launches).Append(',')
                   .Append("\"launchSpeedMedian\":").Append(Median(p.Speeds).ToString("F0", inv)).Append(',')
                   .Append("\"offRingMedian\":").Append(Median(p.OffRing).ToString("F1", inv)).Append(',')
-                  .Append("\"offRingWithin15\":").Append(within15)
+                  .Append("\"offRingWithin15\":").Append(within15).Append(',')
+                  .Append("\"ducks\":").Append(DucksOf(p.Player)).Append(',')
+                  .Append("\"belfryBroken\":").Append(_race ? _race.BelfryPrismsBroken : 0)
                   .Append("}\n");
             }
             try
@@ -234,7 +246,7 @@ namespace CosmicShore.Gameplay
                     if (SceneManager.GetActiveScene().name == _gameData.SceneName)
                     {
                         _race = FindAnyObjectByType<ThresherTimeController>();
-                        if (_race != null && SeatsReady()) break;
+                        if (_race != null && SeatsReady()) { _race.SetBelfryAI(_s.BelfryAI); break; }
                     }
                     yield return new WaitForSecondsRealtime(0.25f);
                 }
@@ -287,7 +299,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A watched run: the AI Diagnose panel (F2) open on the race, the AI's thinking, labels and trails on,
-        /// the camera chasing an AI Thresher. The panel closes itself when the race scene unloads, so every race opens it.</summary>
+        /// an AI Thresher picked for the info strip. The view is the game's own camera on the host's hull, which the AI
+        /// is flying: the panel has no camera that follows a hull (ThirdEye's summary). The panel closes itself when the
+        /// race scene unloads, so every race opens it.</summary>
         IEnumerator OpenAIDiagnose()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -296,8 +310,6 @@ namespace CosmicShore.Gameplay
             eye.SetPanel(true);
             var s = eye.Settings;
             s.ShowThinking = s.ShowLabels = s.ShowTrails = true;
-            eye.SetMode(ThirdEyeCameraMode.Chase);
-            eye.SetDriving(true);
             float until = Time.unscaledTime + 3f;
             while (Time.unscaledTime < until)
             {

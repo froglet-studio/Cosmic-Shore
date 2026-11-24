@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -719,12 +720,13 @@ namespace CosmicShore.Gameplay
                  "one HyperSea, one rule set\"). Do not re-add an arena-local edge cage or plankton system; " +
                  "tune those on the Astro League Cell Config / its prefabs instead.")]
         [SerializeField] Color jadeGoalColor = new(0.15f, 1f, 0.55f, 0.5f);
-        public Color JadeGoalColor => jadeGoalColor;
+        // Each as the worn colour set paints it (ColorTrace); the fields keep the authored colours.
+        public Color JadeGoalColor => ColorTrace.Retrace(ColorTrace.World, jadeGoalColor);
         [SerializeField] Color rubyGoalColor = new(1f, 0.22f, 0.35f, 0.5f);
-        public Color RubyGoalColor => rubyGoalColor;
+        public Color RubyGoalColor => ColorTrace.Retrace(ColorTrace.World, rubyGoalColor);
         [Tooltip("Gold's tint in the same per-domain family - no gold goal portal exists, but the ball " +
                  "tints to the LAST-HIT domain, which can be Gold.")]
         [SerializeField] Color goldGoalColor = new(1f, 0.82f, 0.2f, 0.5f);
-        public Color GoldGoalColor => goldGoalColor;
+        public Color GoldGoalColor => ColorTrace.Retrace(ColorTrace.World, goldGoalColor);
     }
 }

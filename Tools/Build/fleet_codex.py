@@ -35,10 +35,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 import vessel_mode_chart as vmc  # noqa: E402
+# The two readers the analytics console already keeps from the game: each mode's genre element (ModeGenre.cs) and the
+# colour-set themes (ColorSetCatalog: Nocturne, Photic, Dart Frog). The codex reads the same ones, never its own copy.
+sys.path.insert(0, os.path.join(REPO, "Tools", "Analytics", "server"))
+sys.path.insert(0, os.path.join(REPO, "Tools", "Analytics", "console"))
+import mode_elements  # noqa: E402
+import make_themes  # noqa: E402
 
 DEFAULT_OUT = os.path.join(REPO, "Docs", "FleetCodex", "build")
 GITHUB = "https://github.com/froglet-studio/Cosmic-Shore/blob/bleeding-edge/"
 ELEMENTS = ["Charge", "Mass", "Space", "Time"]   # the HUD's order (LOCKED four-icon row)
+# The codex's themes: the game's own colour sets (Docs/UI_STYLE_GUIDE.md section 14; Shombith 2026-11-08: "three themes:
+# Nocturne, Photic and Dart Frog"). The film-named themes (Silver Screen ... HyperSea) moved to these (Frogma, Style Guide).
+THEME_SETS = ("nocturne", "photic", "dartfrog")
 CHANGES_PER_VESSEL = 8
 
 
@@ -88,8 +97,20 @@ def yaml_scalar(text, key):
         return ""
     raw = " ".join(part.strip() for part in m.group(1).split("\n")).strip()
     if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "'\"":
-        raw = raw[1:-1].replace("''", "'") if raw[0] == "'" else raw[1:-1]
+        raw = raw[1:-1].replace("''", "'") if raw[0] == "'" else _yaml_unescape(raw[1:-1])
     return raw
+
+
+_YAML_ESC = {"n": "\n", "t": "\t", '"': '"', "\\": "\\", "/": "/", "0": "\0"}
+
+
+def _yaml_unescape(body):
+    """A double-quoted YAML scalar's escapes: Unity writes typographic characters as \\uXXXX ("You\\u2019re")."""
+    def one(m):
+        if m.group(1):
+            return chr(int(m.group(1), 16))
+        return _YAML_ESC.get(m.group(2), m.group(0))
+    return re.sub(r"\\(?:u([0-9a-fA-F]{4})|(.))", one, body)
 
 
 def guid_paths(roots, ext):
@@ -193,14 +214,37 @@ def card_facts():
             "golf": yaml_scalar(text, "GolfScoring") == "1",
             "asset": os.path.relpath(path, REPO),
         }
+    # What kind of game each mode is, as the game answers it (ModeGenre.TryElementsFor: the mode's own row, else its
+    # scoring metric's element): Joust a Charge game, Scurry a Mass game, Skim Race a Time game. A mode the game has no
+    # answer for carries no element and the page lists it under "other games".
+    genre = mode_elements.build()["modes"]
     out = {}
     for c in vmc.cards():
         facts = extra.get(c["name"], {})
+        elements = [e for e in genre.get(c["mode"]) or [] if e in ELEMENTS]
         for hull in c["hulls"]:
             out.setdefault(hull, []).append({
                 "name": c["name"], "mode": c["mode"], "rosters": c["lists"], "hullsOnCard": len(c["hulls"]),
-                **facts})
+                "elements": elements, **facts})
     return out
+
+
+def write_themes(out_dir):
+    """themes.css and theme.js for the page, from the analytics console's own theme builder (make_themes.build), limited
+    to the three colour sets players pick in the game. Returns a hash of both, so a palette change republishes."""
+    sets = [x for x in make_themes.catalog() if x["id"] in THEME_SETS]
+    missing = sorted(set(THEME_SETS) - {x["id"] for x in sets})
+    if missing:
+        sys.exit(f"fleet_codex: ColorSetCatalog has no colour set {', '.join(missing)}")
+    css, js, _ = make_themes.build(sets=sets)
+    css = css.replace("Tools/Analytics/console/make_themes.py", "Tools/Analytics/console/make_themes.py via Tools/Build/fleet_codex.py")
+    js = (js.replace("'fa-theme'", "'fleetCodexColourSet'").replace("window.FA_THEMES", "window.FC_THEMES")
+            .replace("Tools/Analytics/console/make_themes.py", "Tools/Analytics/console/make_themes.py via Tools/Build/fleet_codex.py"))
+    os.makedirs(out_dir, exist_ok=True)
+    for name, body in (("themes.css", css), ("theme.js", js)):
+        with open(os.path.join(out_dir, name), "w", encoding="utf-8") as fh:
+            fh.write(body)
+    return hashlib.sha256((css + js).encode()).hexdigest()[:16]
 
 
 def norm(s):
@@ -242,16 +286,58 @@ def vessel_paths(key):
     return [p for p in paths if os.path.exists(os.path.join(REPO, p))]
 
 
-def changes(key):
-    paths = vessel_paths(key)
-    if not paths:
+def changes(key, class_asset=None, cards=()):
+    """What changed lately, in plain words, never a commit message (Shombith 2026-11-08: "dont show commit messages",
+    then "show recent changes by when somebody updates a game or a vessel"). Each entry is a date with the PARTS of the
+    vessel whose files changed that day (its abilities, the vessel, its model, its icons...) and the games of it that
+    changed (a card asset or its scene), read from git's file lists, so the words come from what was touched."""
+    watch = [(f"Assets/Resources/ElementalAbilityMaps/{key}.asset", "abilities and level-5 upgrades"),
+             (f"Assets/_Prefabs/Spacevessels/{key}.prefab", "the vessel"),
+             (f"Assets/_SO_Assets/VesselActions/{key}", "how its abilities fire"),
+             (f"Assets/_Graphics/Icons/AbilityIcons/{key}", "its ability icons")]
+    if class_asset:
+        watch.append((class_asset, "its description and card"))
+    for p in glob.glob(os.path.join(REPO, "Assets", "_Scripts", "**", f"*{key}*.cs"), recursive=True):
+        watch.append((os.path.relpath(p, REPO), "how it plays"))
+    for p in glob.glob(os.path.join(REPO, "Assets", "_Models", "Vessel Models", "**", f"*{key}*"), recursive=True):
+        if not p.endswith(".meta"):
+            watch.append((os.path.relpath(p, REPO), "its model"))
+    games = []
+    for c in cards:
+        if not c.get("asset"):
+            continue
+        games.append((c["asset"], c["name"]))
+        scene = yaml_scalar(open(os.path.join(REPO, c["asset"]), encoding="utf-8").read(), "SceneName")
+        for sp in glob.glob(os.path.join(REPO, "Assets", "_Scenes", "**", f"{scene}.unity"), recursive=True) if scene else []:
+            games.append((os.path.relpath(sp, REPO), c["name"]))
+    watch = [(w, l) for w, l in watch if os.path.exists(os.path.join(REPO, w))]
+    games = [(w, n) for w, n in games if os.path.exists(os.path.join(REPO, w))]
+    if not watch and not games:
         return []
-    log = git("log", f"-n{CHANGES_PER_VESSEL}", "--no-merges", "--date=short", "--format=%h%x1f%ad%x1f%s", "--", *paths)
-    out = []
-    for line in log.splitlines():
-        sha, date, subject = (line.split("\x1f") + ["", "", ""])[:3]
-        out.append({"sha": sha, "date": date, "subject": subject})
-    return out
+    # a shallow clone's oldest commits look like they add every file: they are the history's edge, not an update
+    shallow_file = os.path.join(REPO, git("rev-parse", "--git-dir"), "shallow")
+    edge = set(open(shallow_file).read().split()) if os.path.exists(shallow_file) else set()
+    log = git("log", "-n40", "--no-merges", "--date=short", "--name-only", "--format=\x1e%H %ad", "--",
+              *[w for w, _ in watch], *[w for w, _ in games])
+    days = {}
+    for block in log.split("\x1e")[1:]:
+        lines = [x for x in block.splitlines() if x.strip()]
+        if not lines:
+            continue
+        sha, _, date = lines[0].partition(" ")
+        if sha in edge:
+            continue
+        day = days.setdefault(date, {"parts": [], "games": []})
+        for f in lines[1:]:
+            for w, label in watch:
+                if (f == w or f.startswith(w.rstrip("/") + "/")) and label not in day["parts"]:
+                    day["parts"].append(label)
+            for w, name in games:
+                if f == w and name not in day["games"]:
+                    day["games"].append(name)
+    out = [{"date": d, "parts": v["parts"], "games": v["games"]} for d, v in sorted(days.items(), reverse=True)
+           if v["parts"] or v["games"]]
+    return out[:CHANGES_PER_VESSEL]
 
 
 def write_image(guid, previews, key, out_dir):
@@ -439,15 +525,18 @@ def controls(key, elements, one_stick, bindings, atp, profile):
 
 ELEMENT_NUM = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 UI_ART = {
-    # the element marks: the Codex's shapes, never the HUD petal ("check codex for that")
-    "shape/Charge": "Assets/_Graphics/ElementShapes/charge_pentagon_label.png",
-    "shape/Mass": "Assets/_Graphics/ElementShapes/mass_triangle_label.png",
-    "shape/Space": "Assets/_Graphics/ElementShapes/space_kite_label.png",
-    "shape/Time": "Assets/_Graphics/ElementShapes/time_diamond_label.png",
+    # the element marks: the element's FLOWER drawn the way the HUD draws it (KitElementFlower / ElementalBarsView.
+    # ConfigurePetal): its petal sprite five times, each stretched over the flower and turned PetalSpacing (72) degrees
+    # clockwise from the last, tinted by the level's tick colour. Shombith 2026-11-08: "Use upgrade flowers and make them
+    # animated when l5 is clicked"; then "weird orientation" on the ElementIcons PNGs, an older drawing the game does not
+    # use for this, so the page builds the flower from the petal like the game. Copied uncropped (UNCROPPED): the petal
+    # sits in the sprite's upper half and the turn is about the sprite's centre.
+    **{f"petal/{el}": f"Assets/Resources/ElementPetals/{el.lower()}_petal.png" for el in ("Charge", "Mass", "Space", "Time")},
     "omni": "Assets/_Graphics/ElementIcons/OmniCrystal_Active.png",
     # the HUD's level-5 look: the bloom AbilityLockupView puts behind an upgraded card (AbilityLockupStyle.bloomSprite)
     "bloom": "Assets/_Graphics/Design Assests/HUD UI/AbilityLockup/LockupBloom.png",
 }
+UNCROPPED = {k for k in UI_ART if k.startswith("petal/")}
 PAD_ART = {   # a controls row's pad label -> the controller art (Xbox face buttons, the LT / RT trigger art)
     "A": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/A button.png",
     "B": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/B button.png",
@@ -471,14 +560,14 @@ class Art:
     def __init__(self, out_dir, enabled=True):
         self.out, self.enabled, self.done = out_dir, enabled, {}
 
-    def png(self, src, rel, box=128):
+    def png(self, src, rel, box=128, crop=True):
         if not self.enabled or not src or not os.path.exists(os.path.join(REPO, src)):
             return None
         rel = "img/" + rel
         if rel not in self.done:
             from PIL import Image
             im = Image.open(os.path.join(REPO, src)).convert("RGBA")
-            bb = im.getbbox()
+            bb = im.getbbox() if crop else None
             if bb:
                 im = im.crop(bb)
             im.thumbnail((box, box), Image.LANCZOS)
@@ -639,8 +728,10 @@ def palette():
         peak = max(ui[:3]) or 1.0
         sh = col(block, "ShieldedOutsideBlockColor")
         out[d] = {"signal": _hex([c / peak for c in ui[:3]]), "shielded": _hex([_linear_to_gamma(c) for c in sh[:3]])}
-    lime = re.search(r"limeColor: \{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+)", open(BARS_CONFIG, encoding="utf-8").read())
-    return {"domains": out, "default": DOMAINS[0], "omni": _hex([float(x) for x in lime.groups()]),
+    bars = open(BARS_CONFIG, encoding="utf-8").read()
+    lime = re.search(r"limeColor: \{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+)", bars)
+    tick = {k: _hex(list(_rgba(bars, k + "Color")[:3])) for k in ("grey", "white")}   # a petal's tick colours (0 and 1)
+    return {"domains": out, "default": DOMAINS[0], "omni": _hex([float(x) for x in lime.groups()]), "petal": tick,
             "sources": [os.path.relpath(COLOR_SET, REPO), os.path.relpath(BARS_CONFIG, REPO)]}
 
 
@@ -678,10 +769,29 @@ _METHOD = re.compile(r"^ {8}(?:\[[^\]]*\]\s*)?(?:(?:public|private|protected|int
                      r"async|new)\s+)*[\w<>\[\],.?]+\s+(\w+)\s*\([^;{]*$", re.M)
 
 
+_RETRACE = re.compile(r"\bColorTrace\.Retrace\(\s*(?:ColorTrace\.\w+|\"\w+\")\s*,\s*")
+
+
+def unwrap_retrace(expr):
+    """`ColorTrace.Retrace(role, c)` -> `c`, wherever it sits in the expression. Retrace is the worn colour set's
+    repaint of c at runtime (Docs/VesselModels/COLOR_TRACE.md); the codex reads the authored colour, so it reads c."""
+    while True:
+        m = _RETRACE.search(expr)
+        if not m:
+            return expr
+        depth, i = 1, m.end()
+        while i < len(expr) and depth:
+            depth += {"(": 1, ")": -1}.get(expr[i], 0)
+            i += 1
+        if depth:
+            return expr
+        expr = expr[:m.start()] + expr[m.end():i - 1].strip() + expr[i:]
+
+
 def resolve_colour(expr, method, view_body, aliases=None, depth=0):
     """A colour expression -> a token (domain, shielded, danger, blue, lime, fire, grey, petalwhite, white, hidden),
     an (r, g, b, a) the prefab authors, or None when the script does not say."""
-    expr = " ".join(expr.split())
+    expr = unwrap_retrace(" ".join(expr.split()))
     if "?" in expr and ":" in expr:
         cond, rest = expr.split("?", 1)
         a, b = rest.rsplit(":", 1)
@@ -733,6 +843,9 @@ def hud_colours(hud_path, scripts_by_guid):
         for m in re.finditer(r"(?<![.\w])(_\w+)\s*=(?!=)\s*([^;]+);", text):
             if not MOMENT_METHODS.search(method_at(m.start())):
                 aliases.setdefault(m.group(1), []).append((m.group(2), method_at(m.start())))
+        # a Color property is a name for its expression too (`Color HighLightColor => ColorTrace.Retrace(..., c)`)
+        for m in re.finditer(r"\bColor\s+(\w+)\s*=>\s*([^;]+);", text):
+            aliases.setdefault(m.group(1), []).append((m.group(2), ""))
         painted = {}
         for m in re.finditer(r"\b(\w+)\.color\s*=\s*([^;]+);", text):
             name = method_at(m.start())
@@ -1120,6 +1233,69 @@ def ability_words(key, elements, omni):
             e["words"]["tint"] = words["tint"]
 
 
+TIERS = os.path.join(REPO, "Docs", "FleetCodex", "tiers.json")
+CERT_CHECKS = ["Abilities", "Level 5", "Time game", "Mass or Space game", "Charge game"]
+CERT_STAGES = ["Arena Ready", "Fleet Ready", "Launch Ready", "In the hangar"]
+
+
+def element_games(cards):
+    """The vessel's ELEMENT games: each arcade card (on the ArcadeGames roster, or on no roster) under its first element,
+    the same rule the page uses for 'Its element games'."""
+    out = {e: [] for e in ELEMENTS}
+    for c in cards:
+        els = c.get("elements") or []
+        if els and ("ArcadeGames" in (c.get("rosters") or []) or not c.get("rosters")):
+            out[els[0]].append(c["name"])
+    return out
+
+
+def certificate(v):
+    """The Flight Certificate of a SOLO vessel (Rev 84 A, picked by Shombith 2026-11-10, section 155): five checks, 20 %
+    each - every element's ability in the map; the level-5 upgrades, 5 % per wired one; a Time game; a Mass or a Space
+    game (either); a Charge game. Launch Ready = the first three with all four upgrades wired (the minimum viable pass),
+    Fleet Ready = and the fourth, Arena Ready = all five; below Launch Ready a vessel is In the hangar. Crews and vessels
+    without a map get none (None)."""
+    if not v["status"]["hasMap"] or (v["crew"] or {}).get("seats", 1) > 1:
+        return None
+    els, games = v["elements"], element_games(v["cards"])
+    abil = all(e in els and not els[e]["open"] for e in ELEMENTS)
+    wired = sum(1 for e in ELEMENTS if e in els and els[e]["upgrade"]["status"] == "wired")
+    has = {"time": bool(games["Time"]), "ms": bool(games["Mass"] or games["Space"]), "charge": bool(games["Charge"])}
+    done = [abil, wired == 4, has["time"], has["ms"], has["charge"]]
+    launch = done[0] and done[1] and done[2]
+    stage = ("Arena Ready" if launch and done[3] and done[4] else "Fleet Ready" if launch and done[3]
+             else "Launch Ready" if launch else "In the hangar")
+    detail = ["All four" if abil else f"{sum(1 for e in ELEMENTS if e in els and not els[e]['open'])} of 4",
+              f"{wired} of 4 wired", ", ".join(games["Time"]) or "None yet",
+              ", ".join(games["Mass"] + games["Space"]) or "None yet", ", ".join(games["Charge"]) or "None yet"]
+    return {"pct": 20 * abil + 5 * wired + 20 * sum(has.values()), "stage": stage, "wired": wired,
+            "checks": [{"name": n, "done": d, "detail": t} for n, d, t in zip(CERT_CHECKS, done, detail)],
+            "next": next((n for n, d in zip(CERT_CHECKS, done) if not d), None)}
+
+
+def tiers_of(key, cert, games):
+    """Each element's tier (S, A, B, C) from Docs/FleetCodex/tiers.json, the one place a person rates a vessel: a letter,
+    null for not rated yet, or '-' where the vessel has no game of that element (no letter can be given there; one that is
+    is dropped with a warning)."""
+    if cert is None:
+        return None
+    table = json.load(open(TIERS, encoding="utf-8")).get(key, {}) if os.path.exists(TIERS) else {}
+    out = {}
+    for el in ELEMENTS:
+        letter = table.get(el)
+        if not games[el]:
+            if letter:
+                print(f"tiers.json: {key} {el} is rated {letter}, but {key} has no {el} game: dropped", file=sys.stderr)
+            out[el] = "-"
+        elif letter in ("S", "A", "B", "C"):
+            out[el] = letter
+        else:
+            if letter:
+                print(f"tiers.json: {key} {el} '{letter}' is not S, A, B or C: dropped", file=sys.stderr)
+            out[el] = None
+    return out
+
+
 def hud_l5_fields():
     """{field: element} for every Sprite a vessel HUD view serializes under a "(<ELEMENT> 5)" header - the art the HUD
     script swaps in itself when that upgrade comes on (the Serpent's five-row pellet slots, "Fifth pellet (TIME 5)")."""
@@ -1165,6 +1341,14 @@ def upgrade_art(key, elements, art, pngs_by_dir, png_index=None, l5_fields=None)
         e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
 
 
+def palette_bytes(path):
+    """A colour set's bytes without its TracedColors list. The colour trace (Docs/VesselModels/COLOR_TRACE.md) rewrites
+    that list on every set whenever any colour in the game is traced, and no render reads it, so it must not make every
+    vessel render again."""
+    text = open(path, encoding="utf-8").read()
+    return re.sub(r"^  TracedColors:.*\n(?:  - .*\n|    .*\n)*", "", text, flags=re.M).encode()
+
+
 def domain_images(vessels, preview_by_value, out_dir, render=False):
     """{domain: img/dom/<model>_<Domain>_<hash>.webp} per vessel: the hangar preview rendered in that domain's livery
     by Tools/Build/vessel_model/render_cards.py (its camera, look and the palette's domain colours), for the model the
@@ -1188,7 +1372,7 @@ def domain_images(vessels, preview_by_value, out_dir, render=False):
     tool = hashlib.sha256()
     for f in ("render_cards.py", "vessel_colors.py"):
         tool.update(open(os.path.join(vm, f), "rb").read())
-    tool.update(open(COLOR_SET, "rb").read())
+    tool.update(palette_bytes(COLOR_SET))
     dom_dir = os.path.join(out_dir, "img", "dom")
     os.makedirs(dom_dir, exist_ok=True)
     keep = set()
@@ -1275,7 +1459,8 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
         m = re.search(r"/AbilityIcons/([^/]+)/(?:[^/]+/)*[^/]+\.png$", path.replace(os.sep, "/"))
         if m:
             pngs_by_dir.setdefault(m.group(1), []).append(path)
-    ui = {k: art.png(v, "ui/" + k.replace("/", "_") + ".png", 96) for k, v in UI_ART.items()}
+    ui = {k: art.png(v, "ui/" + k.replace("/", "_") + ".png", 128 if k in UNCROPPED else 96, crop=k not in UNCROPPED)
+          for k, v in UI_ART.items()}
     l5_fields = hud_l5_fields()
     bases, by_guid = script_classes()
     atp, touch_rows = touch_profiles()
@@ -1291,7 +1476,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
                             {el: e["ability"] for el, e in elements.items() if not e["open"]}) if maps else {}
         for el, e in elements.items():
             e["icon"] = icons.get(el)
-            e["shape"] = ui.get("shape/" + el)
+            e["shape"] = ui.get("petal/" + el)
             e["upgrade"]["icon"] = icons.get(el + "@L5")
         omni = dict(omni_entry(key, asset_names), icon=icons.get("Omni"), mark=ui.get("omni")) if maps else None
         ability_words(key, elements, omni)
@@ -1315,7 +1500,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
             "seats": seats_of(key, c.get("crew", []), elements) if maps else None,
             "cards": sorted(cards.get(name, []) + (cards.get(key, []) if key != name else []), key=lambda x: x["name"]),
             "docs": docs_for(key, name, note),
-            "changes": changes(key),
+            "changes": changes(key, c.get("asset"), cards.get(name, []) + (cards.get(key, []) if key != name else [])),
             "image": write_image(c.get("previewGuid"), previews, key, out_dir) if images else None,
             "classAsset": c.get("asset"),
         })
@@ -1328,6 +1513,8 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
             upgrade_art(v["key"], v["elements"], art, pngs_by_dir, png_index, l5_fields)
         for card in v["cards"]:
             card["art"] = card_art(card.get("asset"), art, png_index, card["name"])
+        v["certificate"] = certificate(v)
+        v["tiers"] = tiers_of(v["key"], v["certificate"], element_games(v["cards"]))
 
     def icon_layers(rel):
         if not rel or not art.enabled:
@@ -1369,6 +1556,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
         "elements": ELEMENTS,
         "ui": ui,
         "palette": palette(),
+        "themes": write_themes(out_dir),
         "vessels": vessels,
     }
     # The content hash ignores the stamp, so a run that found nothing new says so.
@@ -1405,7 +1593,9 @@ def main():
     v = data["vessels"]
     print(f"fleet.json: {len(v)} vessels, {sum(x['status']['abilities'] for x in v)} abilities, "
           f"{sum(x['status']['upgradesWired'] for x in v)} L5 upgrades wired, "
-          f"{sum(len(x['cards']) for x in v)} card seats; content {data['contentHash']} at {data['commit']}")
+          f"{sum(len(x['cards']) for x in v)} card seats; "
+          + ", ".join(f"{sum(1 for x in v if (x.get('certificate') or {}).get('stage') == st)} {st}" for st in CERT_STAGES)
+          + f"; content {data['contentHash']} at {data['commit']}")
     print(f"written to {os.path.abspath(a.out)}")
     if a.files_json:
         out = os.path.abspath(a.out)

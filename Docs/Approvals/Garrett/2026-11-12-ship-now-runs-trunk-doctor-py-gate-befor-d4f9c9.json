@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-12-ship-now-runs-trunk-doctor-py-gate-befor-d4f9c9",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-12T16:42:33+00:00",
+  "area": "/ship merges on a GO (#1875)",
+  "summary": "/ship now runs trunk_doctor.py --gate before its push (1.5) and its merge (5.7): while bleeding-edge is red it stops and points to /trunk-doctor, unless the change is the fix or the person says go ahead anyway.",
+  "why": "31 PRs merged onto a red trunk 2026-11-09..11-12 (11 of them through your merges) while local gates stayed green; Docs/Reports/TRUNK_HEALTH.md",
+  "branch": "claude/intelligent-babbage-17s8os",
+  "lane": "claude-tooling",
+  "commit": "f4f8024bb",
+  "paths": [
+    ".claude/skills/ship/SKILL.md"
+  ]
+}

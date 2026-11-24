@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-20-voyage-hud-rev-120-plate-adds-6-traced-w-f2abfb",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-20T21:29:34+00:00",
+  "area": "colour sets / colour trace table",
+  "summary": "Voyage HUD Rev 120 plate adds 6 traced world colours; ran colour_trace.py --build and the documented writers, which rewrote every set's TracedColors and the table (it had drifted behind voyages).",
+  "branch": "claude/project-thread-xnd2ma",
+  "commit": "7a0d54163"
+}

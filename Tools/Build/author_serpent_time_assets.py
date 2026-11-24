@@ -125,7 +125,8 @@ htr.author(dict(
         "SerpentTimeCourseTests":  "Assets/_Scripts/Tests/Editor/SerpentTimeCourseTests.cs",
         "SerpentTimeCluster":      f"{MODE_DIR}/SerpentTimeCluster.cs",
         "SerpentTimeClusterTests": "Assets/_Scripts/Tests/Editor/SerpentTimeClusterTests.cs",
-        "SerpentineGate":          f"{MODE_DIR}/SerpentineGate.cs",
+        # Moved into Hood's folder on 2026-11-09 (same guid): Hood bends it into its covers and owns it (SERPENTHOOD.md).
+        "SerpentineGate":          "Assets/_Scripts/Controller/Arcade/SerpentHood/SerpentineGate.cs",
         "SerpentineGateTests":     "Assets/_Scripts/Tests/Editor/SerpentineGateTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/SERPENTTIME.md",

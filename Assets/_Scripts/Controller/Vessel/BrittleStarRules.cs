@@ -202,6 +202,160 @@ namespace CosmicShore.Gameplay
             return current + Mathf.DeltaAngle(current * Mathf.Rad2Deg, target * Mathf.Rad2Deg) * Mathf.Deg2Rad;
         }
 
+        // ------------------------------------------------------------------ the ring follows a spinning stick
+
+        /// <summary>Degrees between two of the ring's points (five-fold).</summary>
+        public const float PointSpacingDegrees = 360f / BrittleStarHullForm.Points;
+
+        /// <summary>One frame of the stick's sweep (<see cref="AimSweep.Step"/>).</summary>
+        public readonly struct AimSweepStep
+        {
+            /// <summary>The stick came out of the deadzone this frame (no sweep yet).</summary>
+            public readonly bool Entered;
+            /// <summary>The stick jumped across (more than the flick angle in one frame): a new aim, not a sweep.</summary>
+            public readonly bool Flick;
+            /// <summary>The smoothed signed sweep, degrees per second (positive = the phase's positive direction).</summary>
+            public readonly float RateDegrees;
+
+            public AimSweepStep(bool entered, bool flick, float rateDegrees)
+            {
+                Entered = entered;
+                Flick = flick;
+                RateDegrees = rateDegrees;
+            }
+        }
+
+        /// <summary>
+        /// The right stick's SWEEP: how fast, and which way, its angle is turning (Garrett, 2026-11-03, the ring spin
+        /// lab <c>Docs/Studios/BrittleStarRingLab.html</c>). The angle's frame-to-frame change, eased over
+        /// <c>smoothingSeconds</c>. Released, it forgets; a jump wider than <c>flickDegrees</c> is a flick, not a
+        /// sweep. Pure: time is passed in.
+        /// </summary>
+        public sealed class AimSweep
+        {
+            float? _previous;
+            public float RateDegrees { get; private set; }
+
+            public void Reset()
+            {
+                _previous = null;
+                RateDegrees = 0f;
+            }
+
+            public AimSweepStep Step(float? aimRadians, float dt, float smoothingSeconds, float flickDegrees)
+            {
+                if (aimRadians == null)
+                {
+                    Reset();
+                    return new AimSweepStep(false, false, 0f);
+                }
+                bool entered = _previous == null, flick = false;
+                if (!entered)
+                {
+                    float d = Mathf.DeltaAngle(_previous.Value * Mathf.Rad2Deg, aimRadians.Value * Mathf.Rad2Deg);
+                    if (Mathf.Abs(d) > flickDegrees)
+                    {
+                        flick = true;
+                        RateDegrees = 0f;
+                    }
+                    else if (dt > 0f)
+                    {
+                        float k = smoothingSeconds > 0f ? 1f - Mathf.Exp(-dt / smoothingSeconds) : 1f;
+                        RateDegrees += (d / dt - RateDegrees) * k;
+                    }
+                }
+                _previous = aimRadians;
+                return new AimSweepStep(entered, flick, RateDegrees);
+            }
+        }
+
+        /// <summary>
+        /// THE RING FOLLOWS A SPINNING STICK FORWARD (Garrett, 2026-11-03; lab <c>Docs/Studios/BrittleStarRingLab.html</c>,
+        /// "Keep turning forward"). The old rule re-picked the turret NEAREST the stick every frame and turned toward
+        /// it at <paramref name="turnRateDegrees"/>: a stick spun faster than that left the ring 36° behind, the next
+        /// turret became the nearest, it sat BEHIND the aim, and the ring turned backward to it. That read as a
+        /// wagon wheel and, past ~4 rev/s at 60 fps, as a static jitter (measured: 0.00 rev/s net, 20 backward
+        /// frames a second).
+        /// <para>Now the ring COMMITS to a turret (<paramref name="point"/>). While the stick sweeps faster than
+        /// <paramref name="sweepThresholdDegrees"/>, it hands over only to the turret AHEAD in the sweep direction, it
+        /// never turns against the sweep (ahead of the aim, it holds and the stick comes round), and while the stick
+        /// outruns it, it turns flat out. A slower stick, a still one, a fresh aim or a flick take the
+        /// nearest turret, exactly as before, so below the cap the ring moves frame for frame as it did.</para>
+        /// Returns the new phase (radians); <paramref name="point"/> is the committed (aimed) turret.
+        /// </summary>
+        public static float ForwardTurn(float aimRadians, float ringPhase, ref int point, in AimSweepStep sweep,
+                                        float sweepThresholdDegrees, float turnRateDegrees, float dt)
+        {
+            bool sweeping = Mathf.Abs(sweep.RateDegrees) > sweepThresholdDegrees;
+            float lag = CommittedLag(aimRadians, ringPhase, ref point, sweep.Entered || sweep.Flick,
+                                     sweeping ? Mathf.Sign(sweep.RateDegrees) : 0f);
+            float step = Mathf.Max(0f, turnRateDegrees) * Mathf.Deg2Rad * dt;
+            if (sweeping)
+            {
+                float s = Mathf.Sign(sweep.RateDegrees);
+                if (s * lag <= 0f) return ringPhase;                                  // ahead of the aim: hold
+                if (Mathf.Abs(sweep.RateDegrees) >= turnRateDegrees) return ringPhase + s * step;   // outrun: flat out
+            }
+            return Mathf.MoveTowards(ringPhase, ringPhase + lag * Mathf.Deg2Rad, step);
+        }
+
+        /// <summary>The degrees the ring must still turn to put its committed turret <paramref name="point"/> on the
+        /// aim. <paramref name="sweepSign"/> 0 = not sweeping (a lag past one point spacing re-takes the nearest);
+        /// ±1 = sweeping that way: the commitment moves to the next turret AHEAD once the lag passes a full spacing,
+        /// and a lag more than half a spacing against the sweep moves it the other way (the stick turned back).</summary>
+        public static float CommittedLag(float aimRadians, float ringPhase, ref int point, bool reacquire, float sweepSign)
+        {
+            const int n = BrittleStarHullForm.Points;
+            if (reacquire || point < 0 || point >= n) point = NearestPoint(aimRadians, ringPhase);
+            float lag = LagTo(aimRadians, ringPhase, point);
+            if (sweepSign != 0f)
+            {
+                float s = Mathf.Sign(sweepSign);
+                int guard = 0;
+                while (s * lag >= PointSpacingDegrees && guard++ < 16)
+                {
+                    lag -= s * PointSpacingDegrees;
+                    point = s > 0f ? (point + 1) % n : (point + n - 1) % n;
+                }
+                while (s * lag < -PointSpacingDegrees * 0.5f && guard++ < 16)
+                {
+                    lag += s * PointSpacingDegrees;
+                    point = s > 0f ? (point + n - 1) % n : (point + 1) % n;
+                }
+            }
+            else if (Mathf.Abs(lag) > PointSpacingDegrees)
+            {
+                point = NearestPoint(aimRadians, ringPhase);
+                lag = LagTo(aimRadians, ringPhase, point);
+            }
+            return lag;
+        }
+
+        static float LagTo(float aimRadians, float ringPhase, int point) =>
+            Mathf.DeltaAngle(ringPhase * Mathf.Rad2Deg, (aimRadians - BrittleStarHullForm.PointAngle(point)) * Mathf.Rad2Deg);
+
+        // ------------------------------------------------------------------ the ring's motion smear
+
+        /// <summary>
+        /// How many copies the ring's motion smear averages for a frame that turned it <paramref name="sweptDegrees"/>
+        /// (Garrett, 2026-11-03: the lab's "Forward + motion smear", the copies normalized so the smear adds no
+        /// brightness). One copy per <paramref name="stepDegrees"/> of the smeared arc, at least 2, at most
+        /// <paramref name="maxCopies"/>; 0 = no smear (the ring turned less than <paramref name="minDegrees"/>, or
+        /// the smear is off).
+        /// </summary>
+        public static int SmearCopies(float sweptDegrees, float amount, float minDegrees, float stepDegrees, int maxCopies)
+        {
+            float arc = Mathf.Abs(sweptDegrees) * Mathf.Max(0f, amount);
+            if (arc <= 0f || Mathf.Abs(sweptDegrees) <= minDegrees || maxCopies < 2) return 0;
+            return Mathf.Clamp(Mathf.CeilToInt(arc / Mathf.Max(0.1f, stepDegrees)), 2, maxCopies);
+        }
+
+        /// <summary>Copy <paramref name="k"/> of <paramref name="copies"/>: how far BACK from the drawn pose it sits,
+        /// degrees (copy 0 is the ring as it stands, the last is a whole smeared arc back). Every copy weighs
+        /// 1 / copies, so the weights sum to one.</summary>
+        public static float SmearCopyBack(int k, int copies, float sweptDegrees, float amount) =>
+            copies < 2 ? 0f : sweptDegrees * Mathf.Max(0f, amount) * k / (copies - 1);
+
         /// <summary>
         /// The hull's speed multiplier from the modes' eased blends: Speed Mode's ×N and Creation Mode's slow-down
         /// (the slowest of the modes), multiplied so a hand-over between the two eases through both. Destruction and

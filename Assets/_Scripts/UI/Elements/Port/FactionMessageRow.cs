@@ -66,6 +66,7 @@ namespace CosmicShore.UI
         public FactionMessage Message { get; private set; }
         public Button Button => button;
         Sprite _restAvatar;
+        bool _shown;
 
         void Awake()
         {
@@ -73,9 +74,20 @@ namespace CosmicShore.UI
             if (button) button.onClick.AddListener(() => Picked?.Invoke(this));
         }
 
+        // The card wears the worn colour set: it repaints when another is worn, and on enable, in case one was worn while
+        // it was hidden.
+        void OnEnable()
+        {
+            ColorTrace.Changed += Repaint;
+            Repaint();
+        }
+
+        void OnDisable() => ColorTrace.Changed -= Repaint;
+
         public void Show(in FactionMessage message, string time, SO_ProfileIconList icons)
         {
             Message = message;
+            _shown = true;
             bool own = message.FromSelf;
             if (nameText) nameText.text = message.SenderName;
             if (timeText) timeText.text = time;
@@ -101,13 +113,22 @@ namespace CosmicShore.UI
             if (timeText) timeText.text = time;
         }
 
+        void Repaint()
+        {
+            if (_shown) Paint(Message.FromSelf ? yoursLook : othersLook);
+        }
+
+        // Each colour as the worn colour set paints it (ColorTrace): the look holds the authored ones.
         void Paint(in Look look)
         {
-            if (cardBorder) cardBorder.SetColours(look.borderFrom, look.borderTo);
-            if (cardFill) cardFill.SetColours(look.fillFrom, look.fillTo);
-            if (cardGlow) cardGlow.color = look.glow;
-            if (avatarRing) avatarRing.SetColours(look.ringFrom, look.ringTo);
-            if (nameText) nameText.color = look.name;
+            if (cardBorder)
+                cardBorder.SetColours(ColorTrace.Retrace(ColorTrace.Ui, look.borderFrom), ColorTrace.Retrace(ColorTrace.Ui, look.borderTo));
+            if (cardFill)
+                cardFill.SetColours(ColorTrace.Retrace(ColorTrace.Ui, look.fillFrom), ColorTrace.Retrace(ColorTrace.Ui, look.fillTo));
+            if (cardGlow) cardGlow.color = ColorTrace.Retrace(ColorTrace.Ui, look.glow);
+            if (avatarRing)
+                avatarRing.SetColours(ColorTrace.Retrace(ColorTrace.Ui, look.ringFrom), ColorTrace.Retrace(ColorTrace.Ui, look.ringTo));
+            if (nameText) nameText.color = ColorTrace.Retrace(ColorTrace.Ui, look.name);
         }
 
         /// <summary>The card as wide as its words (or its name line), never wider than Max Card Width.</summary>

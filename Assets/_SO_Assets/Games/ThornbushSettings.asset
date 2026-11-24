@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbecc0b11c2564e984936d55c7113487, type: 3}
+  m_Name: ThornbushSettings
+  m_EditorClassIdentifier:
+  leadSampleSeconds: 1
+  leadAnnounceAfterSeconds: 15
+  leadAnnounceMinGapSeconds: 8
+  heapRadiusByIntensity:
+  - 360
+  - 470
+  - 570
+  - 680
+  aiPerchSeconds:
+  - 9
+  - 7
+  - 5.5
+  - 4
+  aiRaidChance:
+  - 0
+  - 0.2
+  - 0.35
+  - 0.5
+  aiAimError:
+  - 40
+  - 25
+  - 12
+  - 4
+  aiRaidSeconds:
+  - 3
+  - 4
+  - 5
+  - 6
+  aiPerchSpacing: 120
+  aiScanSeconds: 1
+  aiScanMargin: 200

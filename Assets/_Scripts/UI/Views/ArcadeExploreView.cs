@@ -6,7 +6,7 @@ using CosmicShore.Gameplay;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
@@ -245,30 +245,43 @@ namespace CosmicShore.UI
             // SO_GameList, because that list is also the roster the tournament pool and the
             // client-side mode lookup read.
             //
-            // Order and filters (sections 85 and 97): favourites first, A-Z under them, narrowed by the ELEMENT and
+            // Order and filters (sections 85 and 97): favourites first, A-Z under them, narrowed by the CATEGORY and
             // VESSEL dropdowns, applied by the one pure rule in ArcadeGridOrder. Without the options the grid shows
             // every game. A card a guided path points at always stays.
             var progressionService = GameModeProgressionService.Instance;
             var sortedGames = ArcadeGridOrder.Apply(
                 filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Maelstrom),
-                gridOptions ? gridOptions.Element : CosmicShore.Data.Element.None,
+                gridOptions ? gridOptions.Category : CosmicShore.Data.ArcadeCategory.None,
                 gridOptions ? gridOptions.Vessel : CosmicShore.Data.VesselClassType.Any,
                 g => FavoriteSystem.IsFavorited(g.Mode),
-                ArcadeGridOrder.HasGenre,
+                ArcadeGridOrder.InCategory,
                 g => MenuGuide.ExemptsMode(g.Mode));
 
             EnsureGridCapacity(sortedGames.Count);
             if (gameCountText) gameCountText.SetText(sortedGames.Count.ToString());
             if (emptyFilterLine) emptyFilterLine.SetActive(sortedGames.Count == 0);
 
-            // Deactivate all game cards and add them to the list of game cards
-            for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
+            // Deactivate all game cards and add them to the list of game cards: the cards are the grid's own children (one
+            // wrapping GridLayoutGroup, so an upright phone can lay them out fewer across), or, in a scene authored before that, the
+            // children of its rows.
+            if (IsFlatGrid)
             {
-                var gameSelectionRow = GameSelectionGrid.GetChild(i);
-                for (var j = 0; j < gameSelectionRow.childCount; j++)
+                for (var i = 0; i < GameSelectionGrid.childCount; i++)
                 {
-                    gameSelectionRow.GetChild(j).gameObject.SetActive(false);
-                    GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
+                    GameSelectionGrid.GetChild(i).gameObject.SetActive(false);
+                    GameCards.Add(GameSelectionGrid.GetChild(i).GetComponent<GameCard>());
+                }
+            }
+            else
+            {
+                for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
+                {
+                    var gameSelectionRow = GameSelectionGrid.GetChild(i);
+                    for (var j = 0; j < gameSelectionRow.childCount; j++)
+                    {
+                        gameSelectionRow.GetChild(j).gameObject.SetActive(false);
+                        GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
+                    }
                 }
             }
 
@@ -320,6 +333,11 @@ namespace CosmicShore.UI
              || QuestArcadeConstraints.IsModeBlocked(game.Mode))
             && !MenuGuide.ExemptsMode(game.Mode);
 
+        /// <summary>Whether the grid holds its cards directly (one wrapping GridLayoutGroup, Docs/MENU_REDESIGN_B.md section
+        /// 138: five across on PC, three when a phone is upright) rather than in rows.</summary>
+        bool IsFlatGrid => GameSelectionGrid != null && GameSelectionGrid.childCount > 0
+                           && GameSelectionGrid.GetChild(0).TryGetComponent<GameCard>(out _);
+
         /// <summary>
         /// Bring the grid's ROWS into line with the cards that were just filled: a row is shown
         /// iff it holds a visible card, and every row is the height of the first.
@@ -348,7 +366,8 @@ namespace CosmicShore.UI
         /// </summary>
         void NormalizeGridRows()
         {
-            if (GameSelectionGrid == null || GameSelectionGrid.childCount == 0) return;
+            // A flat grid has no rows: a GridLayoutGroup skips an inactive card, so the filled cards close up on their own.
+            if (GameSelectionGrid == null || GameSelectionGrid.childCount == 0 || IsFlatGrid) return;
 
             float height = GameSelectionGrid.GetChild(0) is RectTransform first
                 ? first.rect.height
@@ -393,12 +412,14 @@ namespace CosmicShore.UI
                 return;
 
             var template = GameSelectionGrid.GetChild(GameSelectionGrid.childCount - 1);
-            int perRow = template.childCount;
+            // A flat grid grows a CARD at a time, cloned from its last card; a row grid grows a row at a time.
+            bool flat = IsFlatGrid;
+            int perRow = flat ? 1 : template.childCount;
             if (perRow <= 0) return;   // an empty template can never close the gap
 
             int capacity = 0;
             for (int i = 0; i < GameSelectionGrid.childCount; i++)
-                capacity += GameSelectionGrid.GetChild(i).childCount;
+                capacity += flat ? 1 : GameSelectionGrid.GetChild(i).childCount;
 
             int rows = RowsNeeded(capacity, perRow, required);
             if (rows <= 0) return;

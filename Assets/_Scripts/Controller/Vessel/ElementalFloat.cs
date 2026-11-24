@@ -29,6 +29,13 @@ namespace CosmicShore.Gameplay
     /// (<c>t &lt; 0</c>) an unfloored multiplier with a large <see cref="Max"/> goes negative — a
     /// debuffed Sparrow's gun-range factor reaches <c>1 + (9-1)(-0.5) = -3</c> — which inverts the
     /// parameter instead of weakening it. Every migrated multiplier authors one.</para>
+    ///
+    /// <para><b>The fleet floor rule (2026-11-16): a rising parameter's Floor is half its Min.</b> At the deficit
+    /// band's bottom (level -5) an ability keeps at least half of what it does at rest, never less and never
+    /// nothing, and every rising parameter on every hull feels the deficit the same way. A FALLING parameter
+    /// (a cooldown, an interval, a minimum speed: Max &lt; Min) keeps its Floor as the guard on its level-15 end;
+    /// its deficit side is already bounded by the band. <c>Tools/Build/elemental_floor_rule.py --check</c> holds it
+    /// on every authored instance. ELEMENT_SCALING_UNIFICATION.md, "The fleet floor rule".</para>
     /// </summary>
     [Serializable]
     public class ElementalFloat
@@ -56,7 +63,8 @@ namespace CosmicShore.Gameplay
                  "the parameter rather than weakening it.")]
         [SerializeField] bool UseFloor;
 
-        [Tooltip("The lower clamp applied when UseFloor is set.")]
+        [Tooltip("The lower clamp applied when UseFloor is set. Fleet rule: half of Min on a rising parameter " +
+                 "(Max > Min), so an ability keeps at least half its resting strength at level -5.")]
         [SerializeField] float Floor;
 
         IVessel vessel;

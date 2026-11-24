@@ -49,7 +49,7 @@ subclass per MECHANIC, never per mode:
 | `SkimRingAIPolicySO` (a copy) | `StoatAIBoostPolicy` | the Squirrel's asset cloned onto `Stoat.prefab`. The Stoat binds no `SquirrelTubeActionSO`, so `CreateDriver` returns null and it is a quiet no-op; the Stoat's pace comes from its own executors' autopilot (dipole / sling) |
 
 The Rhino's **sword** has an autopilot too, and it is deliberately **not** a boost policy:
-`RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors (`InputStatus.LeftTriggerAnalog /
+`SwordfishSwordAutopilot` (Rhino root) writes the trigger mirrors (`InputStatus.LeftTriggerAnalog /
 RightTriggerAnalog`) on the machine that owns the AI's input, so the shipped sword code poses,
 swipes and energizes exactly as for a human and replicates the same way. Every `thinkSeconds`
 (0.15 s) it strokes at the nearest hostile prism in reach (stroke 0.3 s, rest 0.45 s), or holds the

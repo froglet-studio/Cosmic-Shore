@@ -90,5 +90,100 @@ note on what blocks each one.
 | Goby (+ Pistol) | The Time verb belongs to the Pistol seat, but the Goby flies the race | Needs a design decision: which seat races |
 | Jacks | Racing gates conflicts with herding | Needs a decision: hull flight or herding |
 | Starling | The pilot does not steer (a passive swarm), so a gate race contradicts the vessel | Needs a different kind of Time goal |
-| Meerkat | Already has one, Burrow Run (71), on `Ys-bleeding-edge` | - |
+| Meerkat | Already has one, Warpline (65). Burrow Run (71) was its second and moved to the Jewel Wasp on 2026-11-22 | - |
 | Termite, Falcon | Not live vessels (no ability map, not in the Vessel Changer) | - |
+
+## 2026-11-07, round 3: the unowned floors, raised
+
+Garrett: "solve all the problems with all of the time games ... find the floors that no one is working on and make
+those incredible. if it is a problem with the vessel ... propose fixes to the vessel." Yash's (Dolphin, Manta, Stoat,
+Thresher, Meerkat) and Shombith's (Angler, Brittle Star, Serpent) games were left alone; Squirrel's Skim Race is the bar.
+
+| Vessel | Game | Change | PR | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Rhino | Headlong | the stampede: hedges of mass to plough (I1), apex Time crystals (I2), thorn hedges with an escape window (I3), a Time-5 start with thorns where a clean exit reaches Momentum (I4); the AI takes thorn windows | #1796 | 9 | 7 | **9** | **5** | 2 | 2 | **5.7** |
+| Urchin | Skein | I3 at 3 laps: rides 32 / 63 / **95** / 190 s, next ring on screen 100 / 58 / **25** / 0 % | #1798 | 8 | **6** | **7** | 4 | 3 | 3 | **5.2** |
+| Shrike | **Thornline** (new, 79) | thorn to thorn on the Void Sling, a ring a leg; plain thorns and rim crystals (I2), snipes (I3), the smallest thorns (I4) | #1800 | 9 | 7 | 8 | 5 | 2 | 3 | **5.7** est. |
+
+Each change is measured offline (Headlong: `headlong_stampede_model.py`, a reading pilot beats the best fixed plan by
+1 / 4 / 4 % at I2-I4; Thornline: `thornline_course_harness/run.sh --sweep`, 17 / 29 / 36 % on the reload clock). None
+has been flown; Rivals and Fairness stay low until people race them.
+
+**Checked and left as they are** (ladders sound, generators pass `--check`; the floor is that nobody has raced them):
+Scarab Rally, Breakwater, Grizzly Time, Wrasse Run, Waystation.
+
+### Proposals for the vessels and their AIs (not changed: each is the owner's call)
+
+| Vessel | What the Time game exposed | Proposal | Owner to ask |
+|---|---|---|---|
+| Scarab | The AI holds full throttle and never drifts or jukes, so it races Scarab Rally's hairpins on the full-throttle circle and cannot learn the mode's verbs | give the Scarab autopilot a drift on corners tighter than its ~102 u circle and a juke when the next mouth is off its line (input-only, through the replicated press) | Garrett (his #1786 is in the Scarab AI files) |
+| Shrike | The autopilot presses Mass (detach and nest) after 3 s docked (`aiDockSeconds`), but a plain thorn's reload is 3.1 s at Time 0, so an AI leaves before the sling is ready and reloads at the undocked rate | raise `aiDockSeconds` past the docked reload, or detach only when the sling is ready and has no anchor | Garrett (the Shrike's designer) |
+| Shrike | Whether `AIPilot` can hold a zero-radius ray on a 32 u block at 1,000 u (2°) is unmeasured; if not, the AI crawls in Thornline | measure in the editor first (Thornline's checklist step 7); the fix is the AI's aim, not bigger thorns | Yash (AI) |
+| Rhino | The Headlong AI never reaches the ramp's top speed (the scorecard's Rivals 1) | Garrett's own #1790 turns on `AICommitFromApproachPoint`; #1796 only adds the thorn-window choice beside it | Garrett |
+| Starlings | Hairpins take 2-3x as long as open water (the Starlings lab), which matters for Regatta | a turn-rate floor for the swarm's centroid, decided in the Starlings lab before Unity | Garrett |
+
+### The four new vessels still without a Time game
+
+Orca, Honeyguide, Goby and Jacks are Garrett's own, all from October. Their hulls fly networked (as the Wrasse's does in
+Wrasse Run), but each one's second-seat trick runs on one machine only: the Orca's gunners and their bursts, the Ratel's
+Dynamo board and its battery, the Goby's Pistol. A race built on those tricks would only work for the person flying.
+One-paragraph designs, each built on what the hull does today:
+
+- **Jacks, "Decoy Run"**: the Jacks' Time card IS travel: herding, a pull lays a decoy at a jack; flying, a pull flies the
+  hull to it at 900 u/s (published, so every peer sees it). Rings in pairs across the cell: herd the jacks to drop the
+  two decoys beyond the next rings, switch to flight, and pull through them. I2 moves rings out of the board's plane, I3
+  needs Time 5's second decoy, I4 puts fauna in the way. Fully networked today.
+- **Goby, "Perch Run"**: a Thornline cousin. The Goby perches and darts, and a dart into open space makes its own perch,
+  so the course is rings at dart range with open water between, and the skill is how far each dart goes. Blocked on
+  whether the dart is networked (`GobyPistolDuo` simulates locally).
+- **Honeyguide, "Slip Line"**: rails of each domain between rings; the Slip zips along a rail whose domain the battery
+  holds. The Ratel's patterns decide which rails you can ride. Blocked on the battery being replicated.
+- **Orca, "Convoy"**: the helm's boost tank through rings, with walls only a gunner can clear. Blocked on bursts and
+  prism breaks replicating (today they do not).
+
+## 2026-11-07, round 4: the four new vessels get Time games
+
+All four are Garrett's hulls. Each race is built on what the hull's own flight does, which every peer sees; the
+second-seat tricks that run on one machine are used only where the owner's machine is the one that needs them. The
+review page for all four: https://claude.ai/artifact/LGPLko2T267Ac2q1nn4YSE.
+
+| Vessel | Game | The ladder (I1 / I2 / I3 / I4) | Reading the course saves (I1-I4) | PR | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Jacks | **Decoy Run** (80) | doors / skewers / skewers on rolled flats / Time 5 knots with hairpins | 0 / 14 / 13 / 20 % | #1809 | 9 | 6 | 8 | 5 | 2 | 3 | **5.5** est. |
+| Goby | **Perch Run** (81) | darts / hairpins (length) / coral (line) / reef with doubles | 7 / 22 / 25 / 37 % | #1812 | 9 | 7 | 9 | 5 | 2 | 3 | **5.8** est. |
+| Honeyguide | **Slip Line** (82) | three rails / one coloured rail, stubs / leaning rails / chains | 0 / 1.1 / 0.6 / 0.9 % (the catch is unmeasured) | #1822 | 8 | 6 | 6 | 6 | 2 | 3 | **5.2** est. |
+| Orca | **Breach** (83, was sketched as "Convoy") | open water / hard turns / danger walls before rings / both | 1.6 / 10.7 / 10.5 / 17.1 % | #1824 | 8 | 7 | 8 | 4 | 2 | 3 | **5.3** est. |
+
+Vessel changes (all small, all Garrett's to confirm): the Jacks' take-off mark and the Goby's reach ring (instruments a
+person already needed), and one AI race coach per hull (`IJacksRaceCoach`, `IGobyRaceCoach`, `IHoneyguideRaceCoach`,
+`IOrcaRaceCoach`), inert outside its race. **Found:** the shipped Orca AI helm never burns in any mode; a default
+gate-race coach from Breach's burn rule is proposed, not made. Slip Line's spending decision measured at about 1% and is
+documented as such. None of the four has been flown; Rivals and Fairness stay low until people race them.
+
+## 2026-11-11, round 5: the ten most-played vessels
+
+Ranked from 518 recorded flights on the `origin/bugledger/*` branches (the analytics read key was unavailable). Each
+vessel's Time game is upgraded in place by its own session; each adds its own row.
+
+| Vessel | Game | The change | Reading the course saves (I1-I4) | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Manta | Redline (53) | **Soar lit from the gun**: since 2026-11-07 Soar is the Time level-5 upgrade and the card seeded no Time, so every Manta raced at 180 u/s; the card now starts at Time 6 (1104 u/s). 8 laps; the AI on a race line through the mouths' centres with a throttle floor by difficulty (every difficulty finishes every level offline, Legendary 60-91 s against an ideal person's 38-89); the heat: shock rings off clean and redhot threads, called streaks, lap splits, clean-lap chases, the redline (toasts 360-366, 9 empty FMOD slots). REDLINE.md §0 | 0 / 0 / -11 / +0.3 % (a miss loops back in ~1.4 s at Soar speed; the re-cut for the flown hull is next) | 9 | **8** | 7 | **6** | **5** | **4** | **6.5** est. (was 5.5) | 4 Fairness |
+| Grizzly | Grizzly Time (63) | **Powder kegs**: a keg beside every ring - freeze a bomb in it, get on its exit side (you between the keg and the next ring), blow it: the keg opens the gate and the blast (which pushes away from the bomb) throws you down the next leg; the mouth still counts. I1 kegs / I2 bank shot (a chalk rail marks the exit lane) / I3 shielded cores (strip, then blow) / I4 the tightest credit and regrow. Mouths 96/84/74/66 (were 96/72/58/46). The AI commits from the approach point (Redline's 10/24 -> 24/24 fix), passes beside plain kegs, takes open ones, and is rescued after 18 s without a gate. Toasts 300-302 + the race beats; 5 sound slots (4 hold their ledger placeholders, `kegRammedEvent` empty). I4 twin kegs were measured fake (the inside keg right at 99% of gates) and dropped. GRIZZLYTIME.md §0, Docs/GrizzlyTime/POWDER_KEGS_SPEC.md | a bank shot lands a median 198 / 243 / 281 / 335 u nearer the next ring than a straight blow at corners over 60 deg (4.0 / 4.9 / 5.6 / 6.7 s of cruise each; `grizzly_time_course_harness --sweep`, a model; re-measured 2026-11-20 after the blow point moved to the keg's exit side). Fun pass 2026-11-20: a Rush rams a keg open (mirrored on the other peers), the AI Rushes on straights; scores not re-estimated, nothing played | **9** | 7 | 7 | **5** | **3** | **4** | **5.8** est. (was 4.8) | 3 Rivals |
+| Tiger Moth | Waystation (58) | **Lantern Towers**: every Drop Tower hop stands between two dotted lantern posts that end at its shelf (the deepest landing that still recharges and rolls by the next press point); from I2 some hops are tight, their lanterns short, and landing past them misses the next ring; a deep landing lights its lanterns in your colour and 3/6/10 in a row light the tower; at I4 a Time crystal on each plunge trades depth for +1 Time; the AI reads the lanterns per seat at live speed and turns round after an overshoot; a dust-stolen wall tile is no longer overlaid (no new toast ids; 7 empty FMOD slots). WAYSTATION.md "Lantern Towers" | -0.5 / 3.4 / 3.8 / 3.2 % of tower time vs the best fixed depth (I1 loose by design; 10-18 % vs today's AI) | 9 | **8** | **8** | **6** | **4** | 4 | **6.5** est. (was 5.8) | 4 Rivals/Fairness |
+| Shrike | Thornline (79) | **The honest line**: the sling catches a block only within 12 u of its CENTRE (`dockQueryReach`), so the I2/I3 rim crystal anchored on nothing and the AI (no nose lead, every difficulty alike) finished 14 of 20 I1 races offline at a median 216 s. Now the rim mark sits inside the 12 u; every seat starts one sling from the start thorn (`IPlayerSpawnLine`, the walk keeps the seat lines clear); a sight on the next thorn shows the part that catches (grey reloading, Lime ready); rivals' thorns glow in their colour; the AI aims at lanes 6.5 u off centre (anchors, stays off its own lance count, spreads the pack) with a nose lead by difficulty 2.5/3/8/16, snipes from Hard, crystal shots at Legendary, never a broken thorn; a broken thorn waits only for a hull inside it. Offline (`thornline_course_harness/run.sh --ai`, a model): every seat finishes every rung, solo and in a pack of four, ordered, Easy 64-103 s to Legendary 49-59 s. Toasts 420-426, 9 empty FMOD slots. Dropped by the numbers: a reaction delay per difficulty (the autopilot detaches at every plain thorn), 8.5 u lanes, nose-follow by difficulty. THORNLINE.md, Docs/Thornline/UPGRADE_SPEC.md | 0 / 9 / 15 / 19 % vs docking every thorn, aim modelled (`run.sh --read`; the clock-only 17 / 29 / 36 % counted no aim); 0 % vs the best fixed habit by construction | 9 | **8** | 8 | **6** | **5** | **4** | **6.7** est. (was 5.7) | 4 Fairness; kit proposals to Garrett (the 12 u reach, the detach) |
+| Brittle Star | Brittle Star Time (74) | **The Shift Line**: let-go gates (two columns of shielded Blue posts) stand only where a corner is tighter than the Speed the hull carries - the I3 hairpin apexes, the I4 return - and light in your colour on a clean shift; a race coach (server, input only through the hull's own Speed wish; the hull policy's mode variant stands its straight law down) flies the line and lets go at the gates, with a nose follow and corner share per difficulty and rung searched offline (AI today 244 / 95 / 124 / 368 s -> coached Medium 74 / 80 / 64 / 74 s, every seat finishes every rung, Easy-Legendary ordered); the heat grades threads by the speed they carried (flat out, clean shift), with flares, streaks, lap splits and a best lap; a start hint per rung and a dark-start reminder (the recorded I1 pilot crawled 41 s to ring 1 in Creation); laps 2/3/3/4 (the I2-I4 shapes ran 25-37 s). Toasts 410-419, 8 empty FMOD slots. Funnel rails measured fake (-2.3 / -4.3 / -0.7 %) and cut. BRITTLESTARTIME.md §0, Docs/BrittleStarTime/SHIFT_LINE_SPEC.md | none stand / none stand / 4.4 / 8.3 % (the let-go gates against the best line without them; `brittle_star_time_course_harness --check-race`, a model) | 7 | **8** | 7 | **6** | **5** | **4** | **6.2** est. (was 5.0) | 4 Fairness |
+| Swordfish | Spearline (96) | **The connected hole and armour**: the shipped rule (a share of a 22 u disc) could not be met in one pass at I2-I4 with the bill's real width, and grid luck decided it; a sealed ring now counts through a connected hole of 8 prisms (hull alone 3-7, hull + one stroke INTO the pane 8-19). From I2 every seal is armoured (a shielded 120 / 180 / 240 deg sector, the same every lap): read the plain face, cross it, swing into it. The worn seal (-2 a closed pass) traps nobody; mouths 96/84/74/66; the gentlest 2/3/3/4 rings sealed; 5 laps. The AI reads each seal (`SpearlineSeals.Read`) and strokes through a new `SwordfishSwordAutopilot.Coach` seam (no energize stance in front of a pane); toasts 400-402; 3 empty FMOD slots. Dropped by the numbers: the panel's sided guards and Time cadence (the bill cuts beside the hull, and a held stroke never meets Quickdraw's recovery), 4 laps, half-armoured I2. SPEARLINE.md, Docs/Spearline/FUN_PASS.md | 0 / 36 / 37 / 57 % of race time vs the best fixed habit (closed passes avoided; `spearline_race_model.py`, a model, 40 courses) | 7 | **7** | **7** | **5** | **4** | **5** | **5.8** est. (was 2.8) | 4 Rivals; Time is not asked (kit proposal to Garrett) |
+
+
+## 2026-11-16: Slip Line, the first fun pass from a person's card (elemental loop step 1)
+
+Garrett flew Slip Line I1 on 2026-11-13 and answered the fun card: fun almost, rung right, weakest Rivals. His flight
+showed the Medium rival cruising at 35-37 u/s, losing a ring to a ride whose last frame the race did not count, and
+circling that ring for 65 s. Fixed in the mode's AI (race line clear of every rail, the Regatta steering, a throttle
+floor by difficulty) and in `VesselTransformer.SetPose` (a zero-length pose write is no longer a teleport). Offline
+(`Tools/Build/slip_line_ai_sim.py`, 60 courses per intensity): the Medium rival's median I1 race 139.5 -> 106.5 s, and
+with an uncounted ring 0/60 -> 60/60 finished at every intensity. Details: `Controller/Arcade/SLIP_LINE.md` section 10.
+
+| Vessel | Game | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
+|---|---|---|---|---|---|---|---|---|---|
+| Honeyguide | Slip Line (82) | 8 | 6 | 6 (I1 "right", Garrett) | 6 | **5** (was 2) | **4** (was 3) | **5.8** est. (was 5.2) | 4 Fairness |

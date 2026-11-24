@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-10-its-ask-shombith-before-touching-the-ugs-a84ffa",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-10T15:33:07+00:00",
+  "area": "the /multiplayer skill",
+  "summary": "Its 'ask Shombith before touching the UGS layer' line now says: tell him and queue code changes for his /approve; posting to the live backend still goes through him first.",
+  "why": "Garrett's 2026-11-10 process change: only a swim lane collision waits.",
+  "branch": "cece/great-goodall-raz7gj",
+  "commit": "a7939b910",
+  "paths": [
+    ".claude/skills/multiplayer/SKILL.md"
+  ]
+}

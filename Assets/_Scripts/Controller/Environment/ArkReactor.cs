@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -22,6 +23,15 @@ namespace CosmicShore.Gameplay
             next = now - next >= period ? now + period : next + period;
             return true;
         }
+
+        /// <summary>
+        /// The fleet rule for where an Ark heals (Garrett, 2026-11-16: "the ark should only regenerate inside a cell
+        /// nucleus under control of the ark's domain"): true only when the Ark is inside a cell's nucleus control zone
+        /// and its own domain holds that nucleus's claim. A cell without a nucleus, open space, an unclaimed nucleus or
+        /// one another domain holds never heals it.
+        /// </summary>
+        public static bool MayRegrowIn(Domains arkDomain, bool hasNucleus, bool insideNucleus, bool claimed, Domains claimant) =>
+            hasNucleus && insideNucleus && claimed && claimant == arkDomain;
 
         /// <summary>
         /// The empty slot nearest <paramref name="reactor"/> (the regrowth spreads out from the reactor well), or -1 when

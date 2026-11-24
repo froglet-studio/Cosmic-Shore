@@ -14,6 +14,7 @@ namespace UnityEngine
         public static Vector3 down => new(0,-1,0);
         public static Vector3 forward => new(0,0,1);
         public static Vector3 right => new(1,0,0);
+        public static Vector3 left => new(-1,0,0);
         public static Vector3 back => new(0,0,-1);
         public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.x+b.x, a.y+b.y, a.z+b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x-b.x, a.y-b.y, a.z-b.z);
@@ -95,11 +96,13 @@ namespace UnityEngine
         public static float Acos(float v) => (float)Math.Acos(v); public static float Sqrt(float v) => (float)Math.Sqrt(v); public static float Abs(float v) => Math.Abs(v);
         public static float Max(float a, float b) => Math.Max(a,b); public static int Max(int a, int b) => Math.Max(a,b);
         public static float Min(float a, float b) => Math.Min(a,b); public static int Min(int a, int b) => Math.Min(a,b);
+        public static float Min(params float[] v) { float m = v[0]; for (int i = 1; i < v.Length; i++) m = Math.Min(m, v[i]); return m; }
         public static float Clamp(float v, float a, float b) => v < a ? a : (v > b ? b : v); public static int Clamp(int v, int a, int b) => v < a ? a : (v > b ? b : v);
         public static float Clamp01(float v) => Clamp(v, 0f, 1f); public static float Lerp(float a, float b, float t) => a + (b-a)*Clamp01(t);
         public static float LerpUnclamped(float a, float b, float t) => a + (b-a)*t;
         public static int RoundToInt(float v) => (int)Math.Round(v, MidpointRounding.ToEven); public static int CeilToInt(float v) => (int)Math.Ceiling(v); public static int FloorToInt(float v) => (int)Math.Floor(v);
         public static float Pow(float a, float b) => (float)Math.Pow(a, b);
+        public static float Exp(float v) => (float)Math.Exp(v); public static float Log(float v) => (float)Math.Log(v);
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Asin(float v) => (float)Math.Asin(v);
         public static float Floor(float v) => (float)Math.Floor(v);

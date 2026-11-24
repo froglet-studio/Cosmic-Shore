@@ -25,6 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats: []
-    m_Colors: []
+    m_Colors:
+    - _MWGlintColour: {r: 1, g: 0.9911565, b: 0.977691562, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocalizedText: 1

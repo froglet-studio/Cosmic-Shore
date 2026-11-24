@@ -354,6 +354,9 @@ ones.
   (`R_VesselActions/MEERKAT.md`) is the first maker, and its surface area and swallow are in Unity (Yash's round 23,
   `MeerkatSwallow`, `SolitonTunnelShapeMath`); the rest is design, `Docs/Studios/MEERKAT.md` § Garrett's direction, whose
   element definition is LOCKED (Garrett, 2026-10-28). The curation checks:
+  **A soliton is a structured vector field** (Garrett, 2026-11-16: "we can generalize solitons to structured vector fields. Thus what we just detailed are tubular solitons, but the pistol's vortex ring should be a moving ring soliton. the stoats source and sink should be point solitons."). Three shapes so far: the **tubular** soliton (the Meerkat's tunnel, everything above and the two lines below), the **moving ring** soliton (the Pistol's vortex ring) and the **point** soliton (the Stoat's source and sink). The ring and the points are not built as solitons yet.
+  **A tubular soliton is one way** (Garrett, 2026-11-16: "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited"): its exit mouth is its only source, its entrance mouth its only sink, and its wall lets anything in from outside but nothing out.
+  **Riding a tubular soliton is a waterslide** (Garrett, 2026-11-16: "also solitons should feel like a waterslide where there is a sense of "down" and sliding up and down the walls like a skater in a halfpipe. down should be defined by their entering orientation and controlling the vessel should feel like a fun sense of control over riding up and down the walls of the water slide. some mix of going with the flow and deciding how to roll with it.").
   1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
   2. **Reach.**
      - The Meerkat's Space ability makes one.
@@ -521,3 +524,10 @@ local workaround.
 Name the fundamentals involved, describe how each candidate solution
 interacts with them, and prefer the solution that leaves the fundamentals
 intact and more expressive for future features.
+
+
+## The principles ledger and the design brief (2026-11-07)
+
+The fundamentals above are the WHY; the owners' stated rules, in their words with their source lines, are the
+ledger `Docs/claude/PRINCIPLES.md` (`Tools/Build/principles.py --area <area>`; drafted, waiting on each owner).
+A feature is designed against both on one page before it is built: `Docs/claude/DESIGN_BRIEF.md`.

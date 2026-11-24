@@ -168,6 +168,44 @@ what fills them is the players' own trails. **Astro League and Scarab Scramble a
 remaining gap**: their arenas are built by their CONTROLLERS (goals, hoops, the ricochet court),
 which is the `StructurePrefab` extraction §7 already records.
 
+### 1.1.2b A GATE RACE shows its course, and every card follows the intensity row (2026-11-10)
+
+Shombith, 2026-11-10: "the preview screen in arcade does not work for most game modes, it does not
+show the preview + it does not change or respect the change of intensities". Measured, three causes
+stacked on the same cards:
+
+- **The course registry stopped at seven races.** `RaceCourseSource.For` answered Switchback,
+  Headlong, Redline, Breakwater, Skein, Regatta and Waystation while fifteen more gate races shipped
+  (every vessel's Time game: Breach, Thornline, Thresher Time, Grizzly Time, Scarab Rally, Decoy
+  Run, Burrow Run, Perch Run, Wrasse Run, Lantern Run, Warpline, Slip Line, Brittle Star Time,
+  Slingshot, Serpent Time). For those the preview had no course to draw or fly. All 22 are
+  registered now, and `RaceCourseSourceTests.EveryGateRaceControllerIsRegistered` walks the
+  `GateRaceController` subclasses so a new race cannot be left out again (the scene-knob test covers
+  the fifteen too; every one authors its source's defaults).
+- **The card's model never drew a course.** A gate race's arena is the course its controller lays
+  at match start, so the model showed a bare membrane and core that looked the same at every
+  intensity. `ModePreviewArena.AddCourseModel` now builds the course from the SAME source, seed,
+  gate target and shell the flight uses (`ModePreviewTrackModel.BuildGateCourseLays`; the nucleus
+  comes from `Cell.MeasureNucleusRadius(config)`, what the flight's cell reports), each ring a loop
+  of shards in its mouth plane, the first ring Gold. Every course setting is per-intensity, so the
+  session re-stands a gate race's MODEL when the row moves (`modelCourseChanges` in `SetDefinition`);
+  in flight only the rings follow, as before.
+- **Six Time games previewed another mode's world.** `hull_time_race.py` emitted every hull Time
+  race's definition with the Skim Race cell and `PreviewCellsByIntensity: []`, and
+  `author_preview_intensities.py` treated `[]` as authored, so Breach, Decoy Run, Perch Run, Serpent
+  Time, Slip Line and Thornline never showed their scenes' Thresher Time / Serpentine cells. The
+  generator now reads the preview's cells from the scene it emits, and the intensity tool treats
+  `[]` as unauthored, rewrites `PreviewCell` to the scene's intensity-1 cell, and `--check` exits 1
+  on drift.
+- **The row was switched off.** `ArcadeGameConfigureModal.previewFollowsIntensity` was off since
+  2026-10-17 ("the cell should not change for the preview"), a call made when each press built a
+  real cell. The card now stands a model and builds the cell only on the tap, so it is on again.
+
+Not changed: Rampage stays one cell (its four configs differ only in crystal count and wildlife,
+which a model cannot draw), and the cards whose intensity is genuinely not an arena (one cell, no
+track, no course: Astro League, Brood Rush, Scarab Scramble, Tapestry, Tandava, 2v2) still show the same model at
+every rung, because there is nothing different to show.
+
 ### 1.1.3 The vessel arrives where the MODE would put it
 
 `SpawnPose` used to build a one-player `Symmetric` ring at a standoff the preview definition

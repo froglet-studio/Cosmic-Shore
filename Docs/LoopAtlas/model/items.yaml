@@ -1,0 +1,54 @@
+# Product work beyond the gameplay loops: any area of the project (app shell, tooling, launch, backend, art, ...).
+# Items move through the same layers and steps as loops (PROCESS.md); a new idea starts here with in: x.
+areas:
+- id: game
+  name: Game
+  is: Gameplay that is not one loop on the map yet, such as a mode, a system or a feel.
+- id: app
+  name: App
+  is: The app around the game, such as menus, onboarding, the store and settings.
+- id: ai
+  name: AI
+  is: Vessel AIs, their training and the learning sweeps.
+- id: art
+  name: Art and sound
+  is: Models, icons, portraits, colour, music and sound.
+- id: launch
+  name: Launch
+  is: Platforms, stores, builds, live operations and analytics.
+- id: tooling
+  name: Tooling
+  is: The team's tools, such as studios, skills, Amoebius, CI and this atlas.
+items:
+- id: kit-drift
+  name: Kit drift check
+  area: tooling
+  is: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not.
+    On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche
+    and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed
+    creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table
+    reader already reads the shipped ability maps, so the check can compare against it.
+  in: x
+  prop:
+    s: add
+    note: Add a report check that flags a vessel whose abilities changed in the game while its kit in model/fleet/ did not.
+      On 2026-11-19 the Rhino (Time is now Momentum with oversteer, Unstoppable and the Momentum ward are base, L5s Avalanche
+      and Slingshot), the Shrike (trail almost nothing, a nest walled in super-shielded plates) and the Jewel Wasp (a possessed
+      creature is stolen for good) all changed, and their fleet YAML still describes the old kits. The element-ability-table
+      reader already reads the shipped ability maps, so the check can compare against it.
+  src:
+  - commits a67739a1e, b8f578023, c30156ef7
+- id: goby.perch-only
+  name: The Goby only moves perch to perch
+  area: game
+  is: 'The Goby never flies: it shoots itself from perch to perch, and two thumbs orient the Pistol''s plane.'
+  in: x
+  prop:
+    s: add
+    note: 'Garrett''s design: every move the Goby makes is a charged launch from one perch to the next. A tap is a short
+      hop (140 u) and a full 0.8 s charge goes 600 u; the landing is always a perch, so short hops count too. While perched,
+      the person''s two thumbs turn the hull, and the turn sets the Pistol''s plane. Today the Goby cruises between perches
+      on two-thumb flight (its AI at aiCruiseSpeed 100), only darts that end 900 u or more from the last perch make a perch,
+      and shorter ones are dashes.'
+  src:
+  - Garrett, project chat, 2026-11-24

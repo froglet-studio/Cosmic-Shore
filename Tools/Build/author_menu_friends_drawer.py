@@ -73,13 +73,15 @@ NORMAL_W = 460
 DOCK_TOP, DOCK_BOTTOM = 84, 0
 INSET = 0
 BTN = 28
+MIN_HIT, MIN_PLATE = 48, 36        # the friends drawer minimise: hit area, visible plate
 
 # The presence orb (section 45.4). Its place is author_menu_arcade.ORB_* (the windows' gutter gate reads it too);
 # its member seats sit on the shader's inner ring at author_ui_lattice.ORB_MEMBER_ANGLES.
 ORB = AR.ORB_SIZE
 YOU = 30            # your avatar's ring
 MEMBER = 22         # a member's ring
-COUNT_H = 18
+COUNT_H = 24         # the count line is the top menu's size (Button, 18); "99 ONLINE" is ~101 wide: wider than the orb
+COUNT_W = 104
 MAX_DOTS = 8
 
 
@@ -100,10 +102,14 @@ class Patch(HM.Patch):
 
 
 def seat_nodes(parent, key, size, pos=(0, 0)):
-    """An avatar in an octagon: the ring KitPresenceOrb paints the pilot's domain colour, a dark gap, the icon."""
+    """An avatar seat: the icon, which KitPresenceOrb / FriendProfilePopup wrap in the round avatar border
+    (AvatarRippleBorder, Rev 127 D, section 217) in the pilot's domain colour. The octagon Ring and Gap it used to sit
+    in stay as disabled Images, so the scripts' legacy ring fields keep their references."""
     for part, inset, colour in (("Ring", 0, tok("NeutralLightest")), ("Gap", 3, tok("SurfaceVeryDark"))):
         n = parent.child(N(f"{key}/{part}", part, R(pos=pos, size=(size - inset, size - inset))))
-        n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(colour, K.kit_sprite("kit_oct_fill")))
+        img = K.image(colour, K.kit_sprite("kit_oct_fill"))
+        n.add("cr", 222, K.canvas_renderer()).add(
+            "img", 114, lambda ctx, go, img=img: img(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
     icon = parent.child(N(f"{key}/Avatar", "Avatar", R(pos=pos, size=(size - 5, size - 5))))
     icon.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AR.AVATAR_PLACEHOLDER, preserve=True))
 
@@ -131,8 +137,9 @@ def orb_node(parent):
         seat_nodes(m, f"Drawer/Orb/Member{i + 1}", MEMBER)
     you = o.child(N("Drawer/Orb/You", "You", R(size=(YOU, YOU))))
     seat_nodes(you, "Drawer/Orb/You", YOU)
-    count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), (1, 0), (0, -4), (0, COUNT_H), (0.5, 1))))
-    AR.label_e(count, "Friends", "Label", "NeutralLightest", driven=True, align="center")
+    # Left-aligned on the orb's left edge and wider than the orb (the 16 px margin to the wall stays the margin).
+    count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), None, (0, -4), (COUNT_W, COUNT_H), (0, 1))))
+    AR.label_e(count, "Friends", "Button", "NeutralLightest", driven=True, align="left")
     o.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
           orb_tint() + f"  m_TargetGraphic: {ref(ctx.c('Drawer/Orb/Field', 'img'))}\n" + A.calls([])))
     o.add("audio", 114, A.menu_audio(11))
@@ -179,9 +186,11 @@ def window_node(parent):
     glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_people"), preserve=True))
     label(w.child(N("Drawer/Window/Title", "Title", TL(52, 18, 200, 22))), "Friends", "Label", "NeutralLightest")
     # Minimise (a bar): slides the window back to the handle. No maximise (Shombith, 2026-10-26).
-    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(16, 14, BTN, BTN))
+    # The panel starts below the title row; the minimise (drawn after it, so it keeps the clicks) is a 48 hit area round
+    # a 36 square plate: too small and plateless before, hard to hit on a phone (2026-11-09).
     w.children.append(K.Instance("Drawer/Window/PartyPanel", "PartyPanel", PARTY_GUID, "PartyPanel",
-                                 R((0, 0), (1, 1), (0, -28), (-40, -76)), ()))
+                                 R((0, 0), (1, 1), (0, -48), (-40, -96)), ()))
+    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(8, 6, MIN_HIT, MIN_HIT), plate=MIN_PLATE)
     return w
 
 
@@ -428,7 +437,9 @@ def validate_dock(sc, ctx, hub):
             rt = re.search(r"^--- !u!224 &%s\n(?:(?!--- ).*\n)*?  m_GameObject: \{fileID: (-?\d+)\}" % fid, text_, re.M)
             go = rt and re.search(r"^--- !u!1 &%s\n(?:(?!--- ).*\n)*?  m_Name: (\w+)" % rt.group(1), text_, re.M)
             names.add(go.group(1) if go else None)
-        assert names == {"Header", "Body"}, f"{path}: the dock must push the Header and the Body, pushes {names}"
+        # The Voyage window's dock also pushes its VoyagePages (the Mission window's own generator owns that wiring).
+        assert names == {"Header", "Body"} or names == {"Header", "Body", "VoyagePages"}, \
+            f"{path}: the dock must push the Header and the Body, pushes {names}"
 
 
 def validate_profile(sc, ctx):

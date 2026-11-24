@@ -10,51 +10,6 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// An <b>Ark</b> - a mothership: a prism-bodied home that travels the hypersea, wears a
-    /// domain, and lives or dies by the food web. The Ark is a first-class fundamental (added at
-    /// the prompter's request - CLAUDE.md, "The fundamentals"): it is the anchor of the faction-
-    /// mission arc, and its first vehicle is the Arkway toy, where it sets the pace of a voyage
-    /// through a corridor of cells.
-    ///
-    /// Everything about it composes with the shipped fundamentals instead of adding parallel
-    /// systems:
-    ///
-    ///   • Its HULL is ordinary conserved prism mass, laid through the canonical
-    ///     <see cref="PrismTrailBuilder"/> path in its owner's domain - so it registers with the
-    ///     spatial index, binds to the cell that contains it, feeds that cell's volume books, and
-    ///     is GRAZEABLE: in a nucleus-less cell, herbivores of another domain eat it and
-    ///     herbivores of its own never do. Protecting an Ark is therefore controlling the cell -
-    ///     no aggro system, no scripted threat.
-    ///   • It MOVES the way a creature moves: the hull prisms ride one container transform, and
-    ///     every frame each prism honours the mover contract
-    ///     (<see cref="Prism.NotifyPositionChanged"/> - spatial index + shell + render entity),
-    ///     exactly as fauna body prisms do. On a coarse cadence each prism also re-binds to the
-    ///     cell that actually contains it (<see cref="PrismSpatialIndex.NotifyCellChanged"/>),
-    ///     so the food web that can see it is always the local one. Between cells it binds to
-    ///     nothing - open water is nobody's feeding ground.
-    ///   • It DIES the way a creature dies - when its last hull prism is destroyed - but it is
-    ///     deliberately NOT a <see cref="LifeForm"/>: no elemental heart (the lifeform-crystal
-    ///     invariant governs lifeforms; an Ark is a vessel-like home, not a creature), no
-    ///     starvation clock, no reproduction. Its only deaths are active forces: fauna
-    ///     consumption and player abilities.
-    ///
-    ///   • It can be DRAWN as a model (<see cref="UseModel"/>, <see cref="ArkModel"/>; every Arkway voyage's
-    ///     Ark is ArkReverse): the hull is then laid into the model's sockets - each prism its socket's shield tier
-    ///     (super-shielded, shielded, plain, danger) and size - the model wears the hull's domain, and its jets and
-    ///     wings fly its turns. The hull is still the same conserved mass in the same domain; the model only says
-    ///     where each prism sits. Without a model it is the procedural spindle below.
-    ///
-    ///   • Its REACTOR (<see cref="UseReactor"/>; Garrett, 2026-10-28): the omni crystal aboard powers the Ark's prism
-    ///     creation. An Ark is the one body that can contain an omni crystal and harvest its power instead of morphing it
-    ///     into something else, so a destroyed or taken hull prism grows back into its own slot at a FIXED RATE, one
-    ///     prism a beat, nearest the reactor first (<see cref="ArkReactor"/>). The mass law's fourth sign-off fences it
-    ///     (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): only an Ark, only into its own empty slots, at the fixed rate,
-    ///     each prism growing in. A fallen Ark (no hull left) never regrows.
-    ///
-    /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
-    /// clock it owns is its own unhurried course.
-    /// </summary>
-    /// <summary>
     /// The cell-aware speed profile (<see cref="Ark.SetSpeedProfile(in ArkSpeedProfile)"/>): the Ark CRUISES in open water,
     /// brakes to <see cref="Entry"/> across the <see cref="MembraneBand"/> outside the destination membrane, eases on to
     /// <see cref="Crawl"/> over the same band inside it, crawls the cytoplasm to the core and on out through the far side
@@ -121,6 +76,53 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// An <b>Ark</b> - a mothership: a prism-bodied home that travels the hypersea, wears a
+    /// domain, and lives or dies by the food web. The Ark is a first-class fundamental (added at
+    /// the prompter's request - CLAUDE.md, "The fundamentals"): it is the anchor of the faction-
+    /// mission arc, and its first vehicle is the Arkway toy, where it sets the pace of a voyage
+    /// through a corridor of cells.
+    ///
+    /// Everything about it composes with the shipped fundamentals instead of adding parallel
+    /// systems:
+    ///
+    ///   • Its HULL is ordinary conserved prism mass, laid through the canonical
+    ///     <see cref="PrismTrailBuilder"/> path in its owner's domain - so it registers with the
+    ///     spatial index, binds to the cell that contains it, feeds that cell's volume books, and
+    ///     is GRAZEABLE: in a nucleus-less cell, herbivores of another domain eat it and
+    ///     herbivores of its own never do. Protecting an Ark is therefore controlling the cell -
+    ///     no aggro system, no scripted threat.
+    ///   • It MOVES the way a creature moves: the hull prisms ride one container transform, and
+    ///     every frame each prism honours the mover contract
+    ///     (<see cref="Prism.NotifyPositionChanged"/> - spatial index + shell + render entity),
+    ///     exactly as fauna body prisms do. On a coarse cadence each prism also re-binds to the
+    ///     cell that actually contains it (<see cref="PrismSpatialIndex.NotifyCellChanged"/>),
+    ///     so the food web that can see it is always the local one. Between cells it binds to
+    ///     nothing - open water is nobody's feeding ground.
+    ///   • It DIES the way a creature dies - when its last hull prism is destroyed - but it is
+    ///     deliberately NOT a <see cref="LifeForm"/>: no elemental heart (the lifeform-crystal
+    ///     invariant governs lifeforms; an Ark is a vessel-like home, not a creature), no
+    ///     starvation clock, no reproduction. Its only deaths are active forces: fauna
+    ///     consumption and player abilities.
+    ///
+    ///   • It can be DRAWN as a model (<see cref="UseModel"/>, <see cref="ArkModel"/>; every Arkway voyage's
+    ///     Ark is ArkReverse): the hull is then laid into the model's sockets - each prism its socket's shield tier
+    ///     (super-shielded, shielded, plain, danger) and size - the model wears the hull's domain, and its jets and
+    ///     wings fly its turns. The hull is still the same conserved mass in the same domain; the model only says
+    ///     where each prism sits. Without a model it is the procedural spindle below.
+    ///
+    ///   • Its REACTOR (<see cref="UseReactor"/>; Garrett, 2026-10-28): the omni crystal aboard powers the Ark's prism
+    ///     creation. An Ark is the one body that can contain an omni crystal and harvest its power instead of morphing it
+    ///     into something else, so a destroyed or taken hull prism grows back into its own slot at a FIXED RATE, one
+    ///     prism a beat, nearest the reactor first (<see cref="ArkReactor"/>). The mass law's fourth sign-off fences it
+    ///     (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): only an Ark, only into its own empty slots, at the fixed rate,
+    ///     each prism growing in. A fallen Ark (no hull left) never regrows. It heals only inside a cell nucleus its own
+    ///     domain holds (<see cref="InOwnNucleus"/>; Garrett, 2026-11-16), unless a run applies a stricter reading
+    ///     (<see cref="RegrowOverride"/>).
+    ///
+    /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
+    /// clock it owns is its own unhurried course.
+    /// </summary>
     public sealed class Ark : MonoBehaviour
     {
         // ── Hull proportions ─────────────────────────────────────────────────
@@ -259,7 +261,6 @@ namespace CosmicShore.Gameplay
         /// <summary>Range to the destination point, or -1 with none.</summary>
         public float DistanceToDestination => _hasDestination ? Vector3.Distance(transform.position, _destination) : -1f;
 
-        /// <summary>Create an Ark root at a pose. Lay the hull with <see cref="LayHullAsync"/>.</summary>
         /// <summary>Every enabled Ark (a cell's substrate senses the one inside it as a cling-only hull,
         /// <see cref="SubstrateCellHost"/>). Joined in OnEnable, left in OnDisable.</summary>
         public static readonly List<Ark> Live = new(2);
@@ -267,6 +268,7 @@ namespace CosmicShore.Gameplay
         void OnEnable() { if (!Live.Contains(this)) Live.Add(this); }
         void OnDisable() => Live.Remove(this);
 
+        /// <summary>Create an Ark root at a pose. Lay the hull with <see cref="LayHullAsync"/>.</summary>
         public static Ark Create(Transform parent, Vector3 position, Quaternion rotation)
         {
             var go = new GameObject("Ark");
@@ -589,16 +591,37 @@ namespace CosmicShore.Gameplay
         Transform ReactorTransform => _model ? _model.ReactorPivot : transform;
 
         /// <summary>
+        /// A run's own, stricter reading of where the Ark heals, replacing the fleet rule while it is set (null: the
+        /// fleet rule, <see cref="InOwnNucleus"/>). The Ark escort sets it (Garrett, 2026-10-31): the Ark heals only
+        /// inside the nucleus of a world the squad has pacified or kept, which its own hull alone never earns; the run
+        /// clears it when it ends. A closed gate is not saved up: beats that fall while closed are lost, exactly as a
+        /// beat with nothing to regrow is.
+        /// </summary>
+        public bool? RegrowOverride { get; set; }
+
+        /// <summary>
+        /// The fleet rule (<see cref="ArkReactor.MayRegrowIn"/>): the Ark is inside the nucleus of the cell it is in,
+        /// and its own domain holds that nucleus.
+        /// </summary>
+        public bool InOwnNucleus()
+        {
+            var at = Position;
+            var cell = Cell.FindCellContaining(at);
+            if (!cell) return false;
+            bool claimed = cell.TryGetNucleusClaim(out var claimant);
+            return ArkReactor.MayRegrowIn(Domain, cell.HasNucleusControlZone, cell.IsInsideNucleus(at), claimed, claimant);
+        }
+
+        /// <summary>
+        /// Whether the reactor may regrow a prism right now: the run's <see cref="RegrowOverride"/> when set, otherwise the
+        /// fleet rule (<see cref="InOwnNucleus"/>). The voyage HUD reads it for its "healing" mark.
+        /// </summary>
+        public bool RegrowAllowed => RegrowOverride ?? InOwnNucleus();
+
+        /// <summary>
         /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
         /// beat regrows one prism when a slot is empty. A beat with nothing to regrow is not saved up.
         /// </summary>
-        /// <summary>
-        /// Whether the reactor may regrow right now (default true). The Ark escort gates it (Garrett, 2026-10-31): the Ark
-        /// heals only inside the nucleus of a world the squad controls. A closed gate is not saved up: beats that fall
-        /// while closed are lost, exactly as a beat with nothing to regrow is.
-        /// </summary>
-        public bool RegrowAllowed { get; set; } = true;
-
         void TickReactor()
         {
             if (!_reactorDefinition || _retiring) return;
@@ -953,6 +976,28 @@ namespace CosmicShore.Gameplay
         public bool HasArrived(float within) =>
             _hasDestination && (transform.position - _destination).sqrMagnitude <= within * within;
 
+        /// <summary>True once <see cref="SetUnderway"/> has let the Ark sail (and until it is stopped).</summary>
+        public bool IsUnderway => _underWay;
+
+        bool _followPending;
+        Vector3 _followPosition;
+        Quaternion _followRotation;
+        float _followBlend;
+
+        /// <summary>
+        /// A party friend's Ark is kept where the host's is (Docs/Voyages/PARTY.md §2, <c>VoyageArkSync</c>): each machine
+        /// sails its own Ark through its own worlds, and this pulls this one a share <paramref name="blend"/> (0-1) of the way
+        /// toward <paramref name="position"/> and <paramref name="rotation"/> on its next step. The hull follows the move as it
+        /// follows the Ark's own course (the mover contract). A fallen hull is not moved.
+        /// </summary>
+        public void FollowPose(Vector3 position, Quaternion rotation, float blend)
+        {
+            _followPending = true;
+            _followPosition = position;
+            _followRotation = rotation;
+            _followBlend = Mathf.Clamp01(blend);
+        }
+
         void Update()
         {
             if (_retiring) return;
@@ -988,6 +1033,18 @@ namespace CosmicShore.Gameplay
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,
                         Quaternion.LookRotation(dir, Vector3.up),
                         TurnDegreesPerSecond * Time.deltaTime);
+                    moved = true;
+                }
+            }
+
+            // A party friend's Ark pulled toward the host's (FollowPose): after the course step, so the two add.
+            if (_followPending)
+            {
+                _followPending = false;
+                if (!_hullLost && _followBlend > 0f)
+                {
+                    transform.position = Vector3.Lerp(transform.position, _followPosition, _followBlend);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, _followRotation, _followBlend);
                     moved = true;
                 }
             }

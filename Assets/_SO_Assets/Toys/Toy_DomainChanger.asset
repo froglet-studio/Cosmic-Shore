@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.DomainChangerToyDefinitionSO
   id: domain_changer
   displayName: Domain Changer
-  description: Fly through to change your team colour.
+  description: Change your team colour.
   unlockedByDefault: 1
   placementAngleDegrees: 240
   accentColor: {r: 0.85, g: 0.3, b: 0.9, a: 1}

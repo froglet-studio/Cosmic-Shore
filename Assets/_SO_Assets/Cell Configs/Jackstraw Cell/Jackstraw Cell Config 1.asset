@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Jackstraw Cell Config 1
+  m_EditorClassIdentifier:
+  CellName: Jackstraw
+  Description: 'Loose Sticks - intensity 1 of Jackstraw: a loose heap of 34 sticks round one clearing -
+    room to learn the whip. 408 prisms, all neutral (0 shielded, 0 danger), heap radius 360
+    inside the standard 1200 u cell, spawn ring 450. Crystals float in the clearings, laid
+    by the controller. NO NUCLEUS, no flora, no fauna. Authored by
+    Tools/Build/author_jackstraw_assets.py from jackstraw_budget.py - re-run it rather than
+    hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 1
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 00ced68c6d43aa3520011dd898058c7e, type: 2}
+  EnvironmentPrefab: {fileID: 8400000000000203, guid: c7e87bccb59a10e20b7d4bd158c0b478, type: 3}
+  EnvironmentIntensity: 1
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 1108
+    RestlessExit: 908
+    FrenzyEnter: 4008
+    FrenzyExit: 3408
+    RestlessEnterVolume: 47736
+    RestlessExitVolume: 44536
+    FrenzyEnterVolume: 94136
+    FrenzyExitVolume: 84536

@@ -10,6 +10,18 @@ bleeding-edge by `feature/starling-element-draws` (`77fedb3ad`, `1421c3022`, `af
 generator left**, so the guard and Unity CI stay red on it alone. Amoebius is unchanged. Sections 1-3 are the
 18:50 measurement and are kept as the record.
 
+**Update, 2026-11-12 (`bleeding-edge` at `4d580c31`, #1914):** the guard has been red again since 2026-11-09 23:38
+(#1863), on three generators that cannot run on the runner (numpy is missing; nothing drifted). The fix and the
+whole red-trunk history now live in `Docs/Reports/TRUNK_HEALTH.md`, kept by `/trunk-doctor`
+(`.claude/skills/trunk-doctor/trunk_doctor.py` says green or red from the runs). Sections 1-3 below are the
+2026-11-01 measurement.
+
+**Update, 2026-11-13:** Amoebius parity CI no longer runs on every bleeding-edge push. It runs nightly at 11:17 UTC
+on `bleeding-edge` and by hand from the Actions tab (Shombith's decision: 83 of its last 100 runs failed at its first
+step, the live compile of `Assets/_Scripts`, nobody gates on it, and each red push run mailed "Run failed" to whoever
+merged). Only the trigger changed; no step was removed or made non-blocking. perf-daily's `amoebius` job is unchanged
+and stays red daily until the port compiles again.
+
 ## 1. In one minute
 
 - **Two separate problems make "all the CI runs" red.** Every red run on bleeding-edge and on PRs comes from one or both.
@@ -29,7 +41,7 @@ generator left**, so the guard and Unity CI stay red on it alone. Amoebius is un
   name only the first failure.
 - **The guard's autofix has never run:** neither `ANTHROPIC_API_KEY` nor `CLAUDE_CODE_OAUTH_TOKEN` is set as a repo
   secret, so that job skips every time.
-- **No Unity compile has run anywhere since 2026-10-13:** `UNITY_RUNNER_LABEL` is unset, so the `unity` / `Unity compile`
+- **(Superseded 2026-11-01: the guard's compile now runs on hosted runners, §4 step 7.) No Unity compile has run anywhere since 2026-10-13:** `UNITY_RUNNER_LABEL` is unset, so the `unity` / `Unity compile`
   jobs are skipped. A green Unity CI would still not be a Unity compile.
 
 ## 2. Every workflow
@@ -139,8 +151,12 @@ from CI run 41336210737.
    card with its owner.
 6. **Amoebius:** add the 16 missing shims (or `#if` the platform sign-in files out of the port), then see whether the
    three engine tests still fail. Owner: Shombith (Amoebius).
-7. **Decide on the autofix credential** (`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN`) and **the Unity runner**
-   (`UNITY_RUNNER_LABEL`). Both are repo settings only an admin can change.
+7. **Decide on the autofix credential** (`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN`), a repo setting only an
+   admin can change. **The Unity runner is no longer needed for the guard** (2026-11-01, `claude/ci-hosted-unity-compile`):
+   its compile runs on GitHub-hosted runners in GameCI's Unity image. It needs a Unity licence in the `unity-ci`
+   environment (`UNITY_EMAIL`, `UNITY_PASSWORD`, `UNITY_SERIAL` or `UNITY_LICENSE`, `Docs/BUILD_AND_DELIVERY.md`
+   §10.1); until then it runs the reference compile. `UNITY_RUNNER_LABEL` now matters only to `unity-ci.yml` and
+   `build-branch-ci.yml`.
 
 ## 5. Re-measuring this report
 

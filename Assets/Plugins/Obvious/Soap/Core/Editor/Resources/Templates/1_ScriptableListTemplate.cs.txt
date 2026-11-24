@@ -1,9 +1,0 @@
-﻿using UnityEngine;
-using Obvious.Soap;
-
-[CreateAssetMenu(fileName = "scriptable_list_#TYPE#", menuName = "Soap/ScriptableLists/#TYPE#")]
-public class ScriptableList#TYPENAME# : ScriptableList<#TYPE#>
-{
-    
-}
-

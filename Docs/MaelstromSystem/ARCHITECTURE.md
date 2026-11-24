@@ -2,7 +2,8 @@
 
 Canonical reference for **Maelstrom Mode** — the session-level meta (P3 / R2) that strings the
 competitive domain minigames into one tournament with a per-DOMAIN leaderboard. The pool is the
-sixteen modes that satisfy §1's admission criteria, laddered by pick-up difficulty (§1.1).
+**every arcade card** (83 on 2026-11-16; all satisfy §1's admission criteria), sorted into four exclusive
+intensity buckets - 1 Beginner, 2 Great, 3 Good, 4 Floor - by measured evidence and people's verdicts (§1.1).
 
 > **See also:** `MAELSTROM_UX_HANDOFF.md` (same folder) — session handoff for the between-game splash,
 > readable dwell, the Shuffle→Maelstrom display rename, and the summary `(You)` owner tag, with sequence
@@ -32,13 +33,17 @@ sixteen modes that satisfy §1's admission criteria, laddered by pick-up difficu
 
 ## 1. What it is
 
-One session plays a **randomized lineup** drawn from the competitive domain games — **sixteen** of
-them, every arcade mode that satisfies the three admission criteria below. Each game the host draws a
-random pool mode **from a bag** (no mode repeats until every drawable mode has been played — §1.2)
-**and** a random intensity in `[1..X]` (X = the lobby-chosen
-intensity ceiling), so a higher intensity widens the draw **twice over**: it raises each game's own
-intensity and it unlocks more modes (§1.1). Drawable modes × intensities: L1 = 6×1 = 6 experiences,
-L2 = 10×2 = 20, L3 = 13×3 = 39, L4 = 16×4 = **64**.
+One session plays a **randomized lineup** drawn from the competitive domain games — since 2026-11-16
+**every arcade card**, all of which satisfy the admission criteria below (sixteen before that). Each game
+the host draws a random mode **from the lobby intensity's bucket** and **from a bag** (no mode repeats
+until every drawable mode has been played — §1.2) **and** a random game intensity in `[1..X]` (X = the
+lobby-chosen intensity). The lobby intensity picks WHICH games are dealt (§1.1: 1 Beginner, 2 Great,
+3 Good, 4 Floor - exclusive buckets, not a ladder) and caps each game's own intensity.
+
+> **Sections below that count "sixteen" pool modes** (same-hull adjacency, previews, bot hulls)
+> describe the pool before 2026-11-16 and were measured then; their mechanisms still hold, their
+> numbers do not. Every one of the 83 cards has a `ModePreviewDefinitionSO` (checked 2026-11-16), and
+> every one passed all four criteria (card ranges and a scene scan) the same day (`maelstrom_tiers.py` §1.1).
 
 **The pool is authored, not coded** — it is `MaelstromData.asset`'s `GameQueue`, and every consumer
 (`DrawNextRound`, `IndexOfSceneName`, the hub's pool string, `ConnectingPanelController`) is
@@ -180,6 +185,42 @@ controllers rather than by a cell config), and those rounds show the honest "pre
 with the mode's name and description still on screen. A scene with no vessel still gets the orbiting
 look at the arena; only the tap-in is lost, and it says so once with the fix attached.
 
+### 1.5.1 The hand-over — the round reuses the hub's prisms (2026-11-17)
+
+The hub previews exactly the arena the round then lays, and until 2026-11-17 a round paid for it twice: the hub's
+prisms died with the hub scene on the `Single` load, and the round cloned the same 13-15 thousand again ("Prisms
+reused from the environment pool 0" on both lays). Each lay is a long frame with Relay live; one froze a host for 72 s
+and ended the tournament (`Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md` finding 1, `Docs/PartySystem/BUGS.md` B45).
+
+At the countdown's zero, on **every peer** (each machine lays its own arena), `MaelstromSceneView.RefreshCountdown`
+calls `MaelstromPreviewHost.ParkArenaForRound()`: it hides the preview window, waits for a preview that is still
+being laid, then `Cell.RetireWorldIntoPoolForSceneExit` eases the world away (`parkSuctionSeconds`, 0.5 s) and hands it
+to `EnvironmentPrismPool` a time slice per frame (`parkSliceMs`, 24 ms) - the first half of a cell swap, with no
+rebuild. The pool outlives the scene load, so the round's lay re-issues those prisms instead of cloning them.
+
+- **The world eases away, it is not covered.** `launchFlashSheet` is not wired in `Maelstrom.unity`, so at launch the
+  panel fades and the hub's own camera can see the arena; a world that left in batches would be seen doing it.
+- **A preview still building is waited for.** Everyone readying at once snaps the countdown to 3 s, usually before the
+  preview is laid; a lay cut off by the scene load is paid for twice.
+- **Life retires with the world** (`LifeForm.RetireWithWorld`: no death, no crystal, no sound), and a lifeform that is
+  a spawned NetworkObject is left for the scene's own teardown (Netcode refuses a plain parent).
+- **Only arenas that are a cell environment** are handed over: 32 of the 83 pool modes author an `EnvironmentPrefab`,
+  the same config assets in the hub's preview and in the round's scene, all laying `SpawnablePrism.prefab`. The other
+  51 have nothing to hand over and launch with no delay.
+
+Only the host can hold the load for it: `MaelstromLobby` makes the same call (it is idempotent) and holds
+`MaelstromController.BeginNextRound` until the hand-over finishes, or `parkArenaMaxSeconds` (5 s) at the latest
+(`MaelstromLobby.ShouldLaunchNow`; a hold cut at the limit writes `arenaParkCutShort`). A guest's hand-over is cut
+short by the scene load if it is slower; what was not parked dies with the scene and is cloned, as before. Nothing
+crosses the wire. Each hand-over writes one `arenaParked <n> prisms in <s>s` mark in the test log; the round's load
+report shows the reuse.
+
+Known limit: the pool never trims. A launch that parks and then never lays (the host drops during the hold or the
+load, and the guest lands on the menu) leaves that arena parked until a later lay of `SpawnablePrism` pulls it.
+
+**Not run in Unity yet** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Maelstrom: the round reuses the hub preview's
+prisms"). Not covered: the round's world going back to the pool on the way to the hub.
+
 ### 1.6 The AI roster is dealt ONCE — and the FIELD is fixed at four
 
 **A Maelstrom seats `MaelstromDataSO.SeatCount` pilots every round — four by default — and the AI
@@ -261,32 +302,42 @@ What deliberately does NOT persist is the bot's HULL: fifteen of the sixteen poo
 vessel, so the ship has to change with the round. A bot is its name, its face and its colours,
 exactly like a human pilot.
 
-### 1.1 The intensity ladder — which modes a run can draw
+### 1.1 The intensity tiers — four buckets, which games a run deals
 
-`MaelstromDataSO.IntensityTiers` is **cumulative**: a run at intensity N draws from every rung up to
-and including N, so a mode is authored once, at the rung it first appears on (a tier lists what it
-ADDS). The rungs are ordered by **how quickly a new player can pick the mode up** — intensity is
-therefore both "harder games" and "more games", and an intensity-1 Maelstrom is a legible party
-lineup rather than a random sample of the whole roster.
+**Garrett, 2026-11-16** ("we will have a development mindset guiding the maelstrom"): the four Maelstrom
+intensities are four exclusive buckets of games, and every arcade game is playable in exactly one.
 
-| Rung | Adds | Hull | Why here |
+| Intensity | Tier | Means | Garrett's example |
 |---|---|---|---|
-| **1** | Skim Race | Squirrel | Fly through the crystals in order. |
-| | Joust | Squirrel | Ram the other pilot. |
-| | Scurry | Sparrow / Manta / Squirrel | Collect crystals. |
-| | Wildlife Liberation | Sparrow | Shoot the animals. One verb, a target-rich arena, nothing to route. |
-| | Salvo | Sparrow | Shoot the wreckage. The quarry is static and the guns are free; the reload economy is optional depth. |
-| | Switchback | Dolphin | Follow the arrow through the rings — Skim Race's shape with rings for crystals. |
-| **2** | Rampage | Dolphin | Skim → catch a crystal → fire the cone: a three-step chain. |
-| | Cleave | Rhino | Break inward through the shells. |
-| | Dog Fight | Sparrow | Shoot the animals, except now they shoot back and evade. |
-| | Headlong | Rhino | A lapped circuit — you must brake for corners *and* know you are running laps. |
-| **3** | Scarab Scramble | Scarab | Forge a ball, then get it through a hoop. |
-| | Breakwater | Sparrow | Each gate is a plugged door: fire, saw or thread it, then cross. Two verbs per station, ×2 laps. |
-| | Hijack | Urchin | Grind the rails to STEAL mass — needs the ride mechanic and the domain-thirds speed cliff. |
-| **4** | The Bends | Dolphin | Rampage's chain aimed at a *moving pilot*. The most indirect kill in the game. |
-| | Skein | Urchin | Ride a knotted cable and change strands at aimed breaks — the hardest traversal on the platform. |
-| | Tollway | Scarab | Place rings on living flora hearts and get paid when ANY ball threads one: indirect, economic, two-layer. |
+| **1** | Beginner | only games a new player can pick up and play | Scarab Rally (the Scarab Time game: just a throttle) |
+| **2** | Great | games we are afraid to change because they are so polished | Skim Race |
+| **3** | Good | already very fun, room to improve: we want feedback on how to make it great | Joust |
+| **4** | Floor | everything else - we play it to find games we can raise into 1-3 | |
+
+"Once we empty 4 we can refill it with everything and set intensity two and three between beginner and
+everything." `MaelstromDataSO.GamesForIntensity(N)` returns **only** tier N's games (an empty or missing
+bucket falls back to the whole queue so the mode can always start); a card may be listed in several
+tiers when that day comes. Before 2026-11-16 the tiers were a cumulative pick-up ladder over sixteen
+modes (intensity N dealt tiers 1..N) - git history has that table.
+
+**The tiers are written by a tool, never by hand.** `python3 Tools/Build/maelstrom_tiers.py measure`
+measures every card - the human flight records and launches on `origin/bugledger/*` (which buttons people
+press per minute, how many people played it, how many flights they finished), the full history of
+`origin/bleeding-edge` matched to the game the way `/swimlanes` matches its game lanes (commits, authors,
+age, recent churn), the elemental loop's sign-offs and the fun cards - and places it; `--write` writes
+`GameQueue` (the whole arcade roster) and `IntensityTiers`; `--check` fails when the asset drifts, a card
+is in no tier or two, or a person's verdict is not honoured. The board with every game's numbers and
+reason is [`INTENSITY_TIERS.md`](INTENSITY_TIERS.md) (generated). A person moves a game with
+`maelstrom_tiers.py set <game> <1-4> --by <name>`, which beats the model.
+
+The model (first match wins, ordered by the strength of the evidence): a person's verdict; a known
+blocker (Floor); **Great** = mature + played by 3+ people over 20+ flights + settled (at most 10% of its
+commits in the last 14 days); **Good** = a person signed it off as fun; **Beginner** = human flights show
+at most 0.5 ability-button presses a minute (sticks and throttle only) and people finished or replayed
+it; **Good** = mature (the weakest evidence: the team kept investing in it); **Floor** = everything else,
+including every game nobody has flown yet. Run with the three examples' verdicts set aside, the model puts
+all three where Garrett did. Playing the Floor is what moves games up: every flight a person sends from
+Unity becomes evidence the next `measure` reads.
 
 **Not admitted — Astro League (37) and Brood Rush (38).** Both are domain-scored, both have their
 scenes in Build Settings, and both would otherwise be strong pool modes — but both pin

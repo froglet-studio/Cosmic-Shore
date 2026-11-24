@@ -36,6 +36,9 @@ args:
     policy             repo path of the anchor genome (the general policy): the space's `init`, the board's baseline
     genomes            repo paths of every genome to grow from and choose between (default: the policy alone)
     stay_near_shipped  weight of the pull toward the chosen genome's values (0 turns it off)
+    (no nose_lead)     the shipped Skim Race pilot leads its lagging nose already (SkimRaceDriver.Steer: LeadGain /
+                       MaxLeadDegrees, judged from the commanded forward), so the fleet's `nose_lead` job arg
+                       (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py) is not read here
 """
 import glob
 import hashlib

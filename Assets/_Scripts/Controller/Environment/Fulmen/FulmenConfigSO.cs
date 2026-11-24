@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -53,7 +54,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(1, 512)] int ignitesPerFrame = 96;
 
         [Header("Burn (server only, PrismBurnManager)")]
-        [Tooltip("Radius round each segment that catches fire (units). Was 6.")]
+        [Tooltip("A prism whose centre is this close to a stream is ON the bolt's path (units): it always burns. A spent ignite budget makes its segment wait a frame, and the burn manager's cap never refuses it. Capped at Burn Radius.")]
+        [SerializeField, Min(0.1f)] float pathRadius = 16f;
+        [Tooltip("Radius round each segment that catches fire (units). Was 6. Past Path Radius this is the halo: it burns while the burn manager has room (its Max Concurrent Burning), then stops.")]
         [SerializeField, Min(0.1f)] float burnRadius = 10f;
         [Tooltip("Seconds a struck prism burns (the laser burn's skin -> red-hot line -> ash -> gone) before it is consumed. Was 1.4, mostly hidden under the bolt flash.")]
         [SerializeField, Range(0.2f, 12f)] float burnSeconds = 5f;
@@ -99,10 +102,13 @@ namespace CosmicShore.Gameplay
         public int SegmentQueriesPerFrame => segmentQueriesPerFrame;
         public int IgnitesPerFrame => ignitesPerFrame;
         public float BurnRadius => burnRadius;
+        /// <summary>How close to a stream a prism's centre is to be ON the path (never wider than the burn radius).</summary>
+        public float PathRadius => Mathf.Min(pathRadius, burnRadius);
         public bool ConvertOnBurnout => convertOnBurnout;
         public PrismBurnSpread BurnSpread => burnSpread;
         public int MaxSegments => maxSegments;
-        public Color Tint => tint;
+        /// <summary>The bolts' tint as the worn colour set paints it (alpha kept).</summary>
+        public Color Tint => ColorTrace.Retrace(ColorTrace.World, tint);
         public float Width => width;
         public Material Material => material;
 

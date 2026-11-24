@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-11-labmaker-9-s-grep-the-id-before-claiming-e59cdc",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T02:18:35+00:00",
+  "area": "the Claude skills (/labmaker SKILL.md §9)",
+  "summary": "/labmaker §9's 'Grep the id before claiming it' now says to read the highest id in EVERY remote branch's LEARNINGS.md right before the push (a one-line command, about 3 s), and adds the rule for an id two entries hold: the entry that merged into bleeding-edge second moves to the next id free everywhere, read with git log --first-parent -m -S on bleeding-edge (not the author dates; deepen a shallow clone first), and only the citations that mean it move.",
+  "why": "/ship 3.5 skill capture from the L-STU-41/42/102 renumbering: a parallel branch took L-STU-171..174 between two scans of this session, so ids read once (or from bleeding-edge alone) would have collided again; the two L-STU-41s were authored 19 s apart, the Concept fleet's 102 was given in a merge resolution that a plain -S never lists, and in the shallow clone -S credited all six entries to the graft commit.",
+  "branch": "cece/ecstatic-einstein-r019ix",
+  "commit": "e74c31953",
+  "paths": [
+    ".claude/skills/labmaker/SKILL.md"
+  ]
+}

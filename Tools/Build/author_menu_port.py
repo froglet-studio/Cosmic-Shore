@@ -518,6 +518,7 @@ def leaderboard_pane(root):
 
 def build_view():
     root = N("root", "PortView", STRETCH)
+    root.add("portrait", 114, K.portrait_rect(pc_block=True))   # no upright pose yet: the PC layout fitted to the width (author_menu_portrait.py, section 138)
     # The sea, as behind every window (Shombith 2026-10-27: "use the sea line background like everywhere"): the veil
     # and the sea lines under the top bar, exactly the Codex's and the Hangar's.
     veil = root.child(N("Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -TOP_BAR / 2), (0, -TOP_BAR))))

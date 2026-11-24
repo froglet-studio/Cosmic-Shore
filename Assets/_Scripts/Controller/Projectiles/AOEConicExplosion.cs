@@ -51,8 +51,7 @@ namespace CosmicShore.Gameplay
         /// for the blast its own pickup fires and lands the spent crystal on it
         /// (<see cref="DolphinCrystalMorph"/>).
         ///
-        /// Listeners are visuals: they may hold the cone's PHOTONS
-        /// (<see cref="SetMorphStandIn"/>), never its sweep. Invoked isolated, so a throwing
+        /// Listeners are visuals: they read the cone, never change its sweep. Invoked isolated, so a throwing
         /// listener cannot unwind into the impact dispatch that fired the blast.
         /// </summary>
         public static event Action<AOEConicExplosion> Initialized;
@@ -107,18 +106,6 @@ namespace CosmicShore.Gameplay
             bright = mat.GetColor(EdgeColorId);
             dark.a = bright.a = 1f;
             return true;
-        }
-
-        /// <summary>
-        /// Holds the cone's PHOTONS while a morph draws in its place — nothing else. The sweep, the
-        /// trigger and the prism damage all run from the frame the blast detonates, exactly as
-        /// without a morph; only the drawing waits. Uses <see cref="Renderer.forceRenderingOff"/>,
-        /// so it composes with the renderer's own enabled state (which retires the visual at the
-        /// end of the sweep). Cleared by every <see cref="Initialize"/>.
-        /// </summary>
-        public void SetMorphStandIn(bool standIn)
-        {
-            if (meshRenderer) meshRenderer.forceRenderingOff = standIn;
         }
 
         static readonly int ColorId = Shader.PropertyToID("_Color");
@@ -204,9 +191,6 @@ namespace CosmicShore.Gameplay
             // destroying prisms for its whole duration after OnMiniGameTurnEnd, and survived
             // OnResetForReplay.
             SubscribeToGameEvents();
-
-            // A hold left by a morph on a previous life of this object never carries over.
-            SetMorphStandIn(false);
 
             // ISOLATED: a listener is a VISUAL and must never be able to stop the blast it watches.
             try

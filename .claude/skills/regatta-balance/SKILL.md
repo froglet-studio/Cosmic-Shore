@@ -32,7 +32,11 @@ whether it converged; what blocks the next stage; the ONE next step and who take
 - **Missing models are the real work of this stage** (each is a session, `/compute-job` section 7 "a port with a
   parity gate"): the Dolphin's Switchback (port `SwitchbackCourse`; `switchback_dolphin_sim.py` has the drive), the
   Urchin's Skein (a rail-ride model), the Squirrel's Skim Race (wrap `skimrace_sim_harness`'s `tuneall` as a command
-  job; needs `dotnet8`). The Stoat is **held** for Garrett's configuration (issue 1198): build nothing for it.
+  job; needs `dotnet8`). The Stoat's hold (issue 1198) was lifted on 2026-10-27: it trains on Slingshot, orbit only.
+- **Since 2026-11-06 (Garrett) stage 1 gates everything**: no course search until every Regatta hull's Time AI passes
+  the four-part "well trained" test in the plan doc's "The direction since 2026-11-06", and stage 2 is a POOL search
+  on a widened space (rail sections, gaps, alternate gates, sparse crystals, lifeforms) whose spreads cancel across
+  the pool, shuffled in ONE Regatta level. Read that section before saying where the plan stands.
 - **People's play stays the primary teacher** where they play (`AUTO_LEARNING.md`). Compute fills the intensities
   nobody plays and checks the person-learned drives; when the two disagree, show Yash both numbers and the races.
 - **Promotion (any of the core four; Yash, who owns the AI, is told)**: `compute.py promote drive-<hull>-<mode>`; with

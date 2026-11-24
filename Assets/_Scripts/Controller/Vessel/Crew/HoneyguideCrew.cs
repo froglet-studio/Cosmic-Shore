@@ -95,6 +95,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The battery the two seats share: slip charges, colours 1 Ruby, 2 Jade, 3 Gold, oldest first.</summary>
         public IReadOnlyList<int> Battery => _core != null ? _core.Battery : System.Array.Empty<int>();
 
+        /// <summary>How many charges the battery holds before a new one pushes the oldest out.</summary>
+        public int BatteryCap => _core != null ? _core.BatteryCap(_s) : 0;
+
+        /// <summary>The hull this crew flies (null while unbound).</summary>
+        public Transform RaceHull => _vessel?.Transform;
+
+        /// <summary>
+        /// A race's coach for this hull's AI (Slip Line). Set: the AI's slip guard measures a slip against the coach's
+        /// goal instead of the pilot's objective. Null: the shipped AI. A person's slips never ask it.
+        /// </summary>
+        public IHoneyguideRaceCoach RaceCoach { get; set; }
+
         // ------------------------------------------------------------------ binding
 
         // The local pilot's own hull, flown by a human - or handed to the AI by this component's own swap - or an AI crew: a
@@ -249,6 +261,9 @@ namespace CosmicShore.Gameplay
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             _startSeatPending = false;
             SetHumanEngineers(engineer);
+            // The seat the person picks is the one this hull starts on next time, the Wrasse's rule (CrewSeatChoice): a
+            // puzzle-first player who plays the Ratel lands on its board from then on (P14, the puzzle-first door).
+            if (_status != null) CrewSeatChoice.Set(_status.VesselType, engineer ? 1 : 0);
         }
 
         // ------------------------------------------------------------------ the Ratel on another machine (ICrewRelay)
@@ -297,14 +312,16 @@ namespace CosmicShore.Gameplay
             CrewRelay.SendState(this, _stateScratch.ToArray());
         }
 
-        // On the lowest preset the person starts on the Ratel (Garrett, 2026-10-22: "start the player in the wrasse and the
+        // The person starts on the Ratel when they last picked it on this hull (CrewSeatChoice, P14), and always on the
+        // lowest preset (Garrett, 2026-10-22: "start the player in the wrasse and the
         // ratel ... so the ratel should run fine on very old phones"): its board is UI, and with no picture-in-picture the
         // world under it is not drawn at all (CrewSingleView). Taken once the hull is really the person's - flown by them,
         // not parked on its AI by a menu or the Vessel Changer, with live input - the Wrasse's rule (KiteNavigator.ApplySeatChoice).
         void ApplyStartSeat()
         {
             if (!_startSeatPending) return;
-            if (_humanEngineers || !CrewSingleView.On) { _startSeatPending = false; return; }
+            bool wantsBoard = CrewSingleView.On || _status != null && CrewSeatChoice.Get(_status.VesselType) == 1;
+            if (_humanEngineers || !wantsBoard) { _startSeatPending = false; return; }
             var input = _player?.InputStatus;
             if (_status == null || _status.AutoPilotEnabled || input == null || input.Paused || PauseSystem.Paused) return;
             _startSeatPending = false;

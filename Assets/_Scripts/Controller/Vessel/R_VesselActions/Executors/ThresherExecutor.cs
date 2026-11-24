@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>Enemy vessels: petals only</b> (the LOCKED PvP rule). The ball's swept path and every chain
     /// link reach an enemy hull; a contact is a scored <see cref="CombatHitClass.Strike"/> that
-    /// STEALS <c>vesselHitPetals</c> (Charge-scaled) petals per element through
+    /// STEALS <c>vesselHitPetals</c> (fixed; Charge lowers the smash speed instead) petals per element through
     /// <see cref="CombatHitDrain.TryAdmit"/>, decided on the machine that owns this hull. Nothing
     /// else touches the victim. Charge L5 "Magnet" draws the free ball toward the nearest enemy hull.
     ///
@@ -152,6 +152,8 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ public surface
 
         public bool IsPivoting => _solver != null && _solver.Mode == ThresherMode.Pivot;
+        /// <summary>Mass Mode (A): the ball builds (steals, shields, lays its own prisms) instead of breaking. The HUD's Mass card.</summary>
+        public bool InMassMode => _massMode;
         /// <summary>Every Thresher dial (the transformer reads its release and planted-hull seams here).</summary>
         public ThresherConfigSO Config => config;
         /// <summary>Analog triggers are on (<c>dials.analogTriggers</c>): LT is a brake, RT the chain's rigidity.</summary>
@@ -177,6 +179,12 @@ namespace CosmicShore.Gameplay
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
+        /// <summary>The ball's velocity (world units/s); zero before the chain is seeded.</summary>
+        public Vector3 BallVelocity => _solver?.BallVelocity ?? Vector3.zero;
+        /// <summary>This frame's analog LT (Plant) depth 0..1 as PollTriggers read it (a press reads 1).</summary>
+        public float LeftTriggerDepth => _settings.Analog ? _ltDepth : (_plantHeld ? 1f : 0f);
+        /// <summary>This frame's analog RT (Winch) depth 0..1 as PollTriggers read it (a press reads 1).</summary>
+        public float RightTriggerDepth => _settings.Analog ? _rtDepth : (_payOut ? 1f : 0f);
 
         /// <summary>The ball threads race rings as the hull does (Garrett, 2026-10-19: "the thresher should
         /// activate rings like in its racing game with either the vessel or the ball"). The epoch changes on
@@ -261,6 +269,9 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
+            if (_anchorWardHeld && _status?.ResourceSystem)
+                _status.ResourceSystem.SetElementalDebuffImmunity(this, false, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = false;
             _touchLaunch.Clear();
             _snap.Clear();
             ClearAutopilotAim();
@@ -286,9 +297,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The four element scalings, read live (never cached) and folded into this frame's
         /// settings. Read through <c>EvaluateReplicated</c>, not <c>EvaluateLive</c>: every peer
         /// simulates this ball, and element levels themselves do not replicate, so a remote copy
-        /// reading its own (empty) ResourceSystem would fly a different ball. Only TIME lives in the
-        /// chain's settings (the spin-up rate and cap); Charge, Mass and Space are read where they
-        /// are spent (<see cref="TryHitVessel"/>, <see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
+        /// reading its own (empty) ResourceSystem would fly a different ball. TIME (the spin-up rate and
+        /// cap) and CHARGE (the smash and white-hot speeds) live in the chain's settings; Mass and Space
+        /// are read where they are spent (<see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
         void ApplyElementScaling()
         {
             _settings = _baseSettings;
@@ -296,6 +307,10 @@ namespace CosmicShore.Gameplay
             float spin = Mathf.Max(0.05f, config.SpinMultiplier.EvaluateReplicated(_status));
             _settings.LockSpinRate *= spin;
             _settings.LockMaxSpeed *= spin;
+            // CHARGE: a charged ball smashes at a lower speed (and goes white-hot sooner).
+            float smash = Mathf.Max(0.05f, config.SmashSpeedScale.EvaluateReplicated(_status));
+            _settings.SmashSpeed *= smash;
+            _settings.WhiteHotSpeed *= smash;
             _solver.Settings = _settings;
         }
 
@@ -312,16 +327,43 @@ namespace CosmicShore.Gameplay
         bool ArmouredTrailActive => Abilities && Abilities.IsUpgradeActive(Element.Mass);
         /// <summary>Space L5 "Breaker": a red ball's direct hit destroys super-shielded prisms.</summary>
         bool BreakerActive => Abilities && Abilities.IsUpgradeActive(Element.Space);
-        // Time L5: OPEN since 2026-10-13. "Perfect Release" (a timed aimed launch x1.6) retired when every
-        // aimed launch took the boost (LetGo) - its gate is deleted, not left beside the new rule (rule 26).
+        /// <summary>Time L5 "Anchor Ward" (2026-11-13; the slot was open since "Perfect Release" retired on 2026-10-13):
+        /// while the ball is planted as the pivot, the arena's danger prisms cannot drain the Thresher. Scoped to
+        /// <see cref="ElementalDebuffSources.DangerPrism"/> alone, the Dolphin's Drift Ward and the Rhino's Momentum
+        /// scoping, so a rival pilot's hit still lands on a spinning Thresher.</summary>
+        bool AnchorWardActive => Abilities && Abilities.IsUpgradeActive(Element.Time);
+
+        bool _anchorWardHeld;
+
+        /// <summary>Grant or revoke the Anchor Ward on the hull's ResourceSystem: held while planted at Time 5. Keyed on
+        /// this executor (the grantor), so another ward on the hull is never cleared by it.</summary>
+        void UpdateAnchorWard()
+        {
+            bool hold = _solver != null && _solver.Mode == ThresherMode.Pivot && AnchorWardActive;
+            if (hold == _anchorWardHeld) return;
+            var resources = _status?.ResourceSystem;
+            if (!resources) return;
+            resources.SetElementalDebuffImmunity(this, hold, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = hold;
+        }
+
+        /// <summary>True while the Anchor Ward holds (the HUD's Time card draws the ward).</summary>
+        public bool AnchorWardHeld => _anchorWardHeld;
 
         // ------------------------------------------------------------------ input edges
 
-        public void BeginPayOut() => _payOut = true;
-        public void EndPayOut() => _payOut = false;
+        /// <summary>RT (Winch) pressed / released - the raw input edges, on every peer (they round-trip through
+        /// <c>R_VesselActionHandler</c>). Listened to by <see cref="CosmicShore.Gameplay.Audio.ThresherAudioController"/>.</summary>
+        public event Action WinchPressed, WinchReleased;
+        /// <summary>LT (Plant) pressed / released - the raw input edges, on every peer.</summary>
+        public event Action PlantPressed, PlantReleased;
+
+        public void BeginPayOut() { _payOut = true; WinchPressed?.Invoke(); }
+        public void EndPayOut() { _payOut = false; WinchReleased?.Invoke(); }
 
         public void BeginPlant()
         {
+            PlantPressed?.Invoke();
             if (_solver == null) return;
             _plantHeld = true;
             // Analog triggers: the press is only a fallback depth (a source with no analog channel, a remote
@@ -331,6 +373,7 @@ namespace CosmicShore.Gameplay
 
         public void EndPlant()
         {
+            PlantReleased?.Invoke();
             if (_solver == null) return;
             _plantHeld = false;
             if (_settings.Analog)
@@ -460,6 +503,9 @@ namespace CosmicShore.Gameplay
             if (_solver != null && (_plantHeld || _solver.LaunchArmed || _solver.Mode == ThresherMode.Pivot || _solver.Mode == ThresherMode.Skidding))
                 _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            if (_anchorWardHeld && _status?.ResourceSystem)
+                _status.ResourceSystem.SetElementalDebuffImmunity(this, false, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = false;
             _touchLaunch.Clear();
             _snap.Clear();
             _ltDepth = 0f; _rtDepth = 0f;
@@ -527,6 +573,7 @@ namespace CosmicShore.Gameplay
             UpdateLaunchView(dt);
             UpdateAutopilotAim(shipPosition, dt);
             UpdateCombo(dt);
+            UpdateAnchorWard();
             return result.ShipVelocity;
         }
 
@@ -970,7 +1017,7 @@ namespace CosmicShore.Gameplay
         /// hull (every peer simulates the ball, so every peer sees the contact) — admitted through
         /// <see cref="CombatHitDrain.TryAdmit"/> (a warded victim is neither scored on nor robbed;
         /// <c>vesselHitCooldownSeconds</c> per victim), then a Strike-form STEAL of
-        /// <c>vesselHitPetals</c> (CHARGE) petals per element and the score on the stats channel.
+        /// <c>vesselHitPetals</c> petals per element and the score on the stats channel.
         /// </summary>
         void TryHitVessel(IVesselStatus victim, Vector3 velocity)
         {
@@ -1191,6 +1238,11 @@ namespace CosmicShore.Gameplay
         bool IsLocalPilot()
             => _status?.Player != null && _status.IsLocalUser && !_status.AutoPilotEnabled;
 
+        /// <summary>The local player's hull, whoever holds its sticks: the hull the camera frames
+        /// (<see cref="CameraManager.ActiveRigFollowing"/>). The camera's ball framing asks this; what the pilot's own
+        /// hand drives (the launch view's aim, haptics, hit-stop) asks <see cref="IsLocalPilot"/>.</summary>
+        bool IsLocalHull() => _status?.Player != null && _status.IsLocalUser;
+
         void UpdateCombo(float dt)
         {
             if (_combo == 0) return;
@@ -1304,11 +1356,17 @@ namespace CosmicShore.Gameplay
         /// </list>
         /// Pose only, through <see cref="CustomCameraController.SetCameraDistance"/> and
         /// <see cref="CustomCameraController.Spectate"/>; FOV belongs to the speed tunnel and is
-        /// only READ here. Remote replicas and AI hulls never touch a camera.
+        /// only READ here. Remote replicas and AI seats never touch a camera.
+        ///
+        /// <para><b>Who flies the local hull</b> (Yash, 2026-11-22): the ball framing runs for the local player's hull
+        /// whoever holds its sticks, so an AI flying it for the player keeps the player's distance (it used to fall
+        /// back to the prefab's, nearer). The launch view is the pilot's AIM - the sticks turn the launch direction
+        /// and the orbit's plane with it - so it stays with a human pilot: an AI aims by its own path
+        /// (<c>AutopilotAim</c>) and must fly the hull exactly as it flies an AI seat.</para>
         /// </summary>
         void UpdateCamera()
         {
-            if (!config || !config.CameraFraming || !_seeded || !IsLocalPilot()) { ReleaseCamera(); return; }
+            if (!config || !config.CameraFraming || !_seeded || !IsLocalHull()) { ReleaseCamera(); return; }
 
             var cam = CameraManager.Instance != null
                 ? CameraManager.Instance.GetActiveController() as CustomCameraController
@@ -1353,6 +1411,17 @@ namespace CosmicShore.Gameplay
             _cam.SetCameraDistance(_camWritten);
             _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
             _cam.MaxFollowAngularAcceleration = config.CameraMaxFollowAngularAcceleration;
+
+            // The AI holds the sticks: the framing above stands, the pilot's launch view does not (see the summary).
+            // A view that was up when the AI took over is dropped at once, as any teardown drops it.
+            if (!IsLocalPilot())
+            {
+                if (_spectating || _exiting || _cam.Spectate.HasValue) EndSpectate();
+                _snap.Clear();
+                _aimHeld = false;
+                _lastCamRotation = _cam.transform.rotation;
+                return;
+            }
 
             if (!IsPivoting)
             {

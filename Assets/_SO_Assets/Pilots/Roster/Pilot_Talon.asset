@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: TALON
   description: 
   flavor: 
-  portrait: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 5d686f06a397c8ea84573649f6fb1061, type: 3}
   portraitIsStandIn: 0
   icon: {fileID: 0}
   requirement:

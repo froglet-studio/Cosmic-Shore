@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-11-new-gate-doc-summaries-with-its-self-tes-33e3a9",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T01:55:20+00:00",
+  "area": "the /ship gates (Tools/Build/ship_gates.py) and the /ship skill",
+  "summary": "New gate doc_summaries (with its --self-test): fails when one C# doc comment under Assets/ carries two <summary> blocks, the stale doc of a member that moved or was deleted. The /ship SKILL.md section 2 bullet on this defect now points at the gate.",
+  "why": "Garrett asked for it on 2026-11-11, after the /ship pass of cece/nifty-cray-41hy43 found 55 such stale docs on bleeding-edge. This branch fixes all 76 under Assets/ (docs only), so the gate starts green and keeps it that way. Port/ and Tools/ still carry 24; they are not gated, and 'check_doc_summaries.py --root Port --root Tools' lists them.",
+  "branch": "cece/loving-volta-kkvnex",
+  "commit": "e3285c1b2",
+  "paths": [
+    ".claude/skills/ship/SKILL.md",
+    "Tools/Build/check_doc_summaries.py",
+    "Tools/Build/ship_gates.py"
+  ]
+}

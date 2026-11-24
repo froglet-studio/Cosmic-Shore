@@ -31,13 +31,13 @@ static class Program
         Console.WriteLine($"# Switchback Blast Run offline: {o.Gates} gates, seeds {string.Join(",", o.Seeds)}; " +
                           $"planner={(o.Planner ? "on" : "off")} sense={(o.Sense ? "on" : "off")} emergency={(o.Emergency ? "on" : "off")} " +
                           $"hit={o.Hit.Describe()} blast={(o.RealCone ? "asset cone" : "planner slot")} roll={(o.FlyRoll ? "flown" : "free")}");
-        Console.WriteLine("I  level      races finished  median_s  p90_s  rings/min  blasts thread direct  keys  hits(danger)  emerg  misses  taps/min  tap_s");
+        Console.WriteLine("I  level      races finished  median_s  p90_s  mean_s  rings/min  blasts thread direct  keys  hits(danger)  emerg  misses  taps/min  tap_s  passes  turnAways");
         foreach (int i in o.Intensities)
         foreach (int lvl in o.Levels)
         {
             var times = new List<float>();
             int carves = 0; float carveSecs = 0f, raceSecs = 0f;
-            int fin = 0, races = 0, blast = 0, thread = 0, direct = 0, keys = 0, hits = 0, dhits = 0, emerg = 0, misses = 0;
+            int fin = 0, races = 0, blast = 0, thread = 0, direct = 0, keys = 0, hits = 0, dhits = 0, emerg = 0, misses = 0, passes = 0, turnAways = 0;
             float ringsPerMin = 0f;
             foreach (int seed in o.Seeds)
             {
@@ -48,13 +48,16 @@ static class Program
                 blast += r.Blast; thread += r.Thread; direct += r.Direct; keys += r.Keys;
                 hits += r.Hits; dhits += r.DangerHits; emerg += r.Emergencies; misses += r.Misses;
                 carves += r.Carves; carveSecs += r.CarveSeconds; raceSecs += r.Time;
+                passes += r.Passes; turnAways += r.TurnAways;
             }
             times.Sort();
             string med = times.Count > 0 ? times[times.Count / 2].ToString("F1") : "-";
             string p90 = times.Count > 0 ? times[Math.Min(times.Count - 1, (int)(0.9f * times.Count))].ToString("F1") : "-";
-            Console.WriteLine($"{i}  {LevelName(lvl),-9} {races,6} {fin,8} {med,9} {p90,6} {ringsPerMin / races,10:F1} " +
+            float sum = 0f; foreach (float x in times) sum += x;
+            string mean = times.Count > 0 ? (sum / times.Count).ToString("F1") : "-";
+            Console.WriteLine($"{i}  {LevelName(lvl),-9} {races,6} {fin,8} {med,9} {p90,6} {mean,7} {ringsPerMin / races,10:F1} " +
                               $"{blast,7} {thread,6} {direct,6} {keys,5} {hits,7}({dhits}) {emerg,6} {misses,7} " +
-                              $"{carves * 60f / Mathf.Max(raceSecs, 1f),9:F1} {(carves > 0 ? carveSecs / carves : 0f),6:F2}");
+                              $"{carves * 60f / Mathf.Max(raceSecs, 1f),9:F1} {(carves > 0 ? carveSecs / carves : 0f),6:F2} {passes,7} {turnAways,10}");
         }
     }
 
@@ -83,10 +86,41 @@ static class Program
         var r = Race.Run(i, seed, lvl, o, log);
         foreach (var l in log) Console.WriteLine(l);
         Console.WriteLine($"# I{i} {LevelName(lvl)} seed {seed}: {(r.Finished ? r.Time.ToString("F1") + " s" : "DNF")} " +
-                          $"rings {r.Rings}, blasts {r.Blast}, keys {r.Keys}, hits {r.Hits} ({r.DangerHits} danger), emergencies {r.Emergencies}");
+                          $"rings {r.Rings}, blasts {r.Blast}, keys {r.Keys}, hits {r.Hits} ({r.DangerHits} danger), emergencies {r.Emergencies}, " +
+                          $"passes {r.Passes}, turn-aways {r.TurnAways}");
     }
 
     public static string LevelName(int l) => l switch { 1 => "Easy", 3 => "Hard", 4 => "Legendary", _ => "Medium" };
+
+    // Race.NoseLeadDirection / EffectiveNoseLeadGain against the values Tools/Build/ai_nose_lead.py's self-test holds
+    // (slerp_beyond / effective_gain), which are AIPilot's: the C#, the Python models and the game lead the same way.
+    static void NoseLeadParity(List<string> bad)
+    {
+        Vector3 f = new Vector3(1f, 0f, 0f);
+        Vector3 At(float deg) => new Vector3(Mathf.Cos(deg * Mathf.Deg2Rad), Mathf.Sin(deg * Mathf.Deg2Rad), 0f);
+        void Turn(string what, Vector3 d, float gain, float extra, float wantDeg)
+        {
+            Vector3 w = Race.NoseLeadDirection(f, d, gain, extra);
+            float got = Vector3.Angle(f, w);
+            if (Mathf.Abs(got - wantDeg) > 1e-3f) bad.Add($"NoseLeadDirection {what}: {got:F4} deg, wanted {wantDeg}");
+            if (Mathf.Abs(w.magnitude - 1f) > 1e-5f) bad.Add($"NoseLeadDirection {what}: not a unit vector ({w.magnitude:F6})");
+            if (w.y <= 0f || Mathf.Abs(w.z) > 1e-6f) bad.Add($"NoseLeadDirection {what}: not in the nose-aim plane toward the aim");
+        }
+        Turn("2.5 x 10 deg = 25 deg", At(10f), 2.5f, 40f, 25f);
+        Turn("gain 1 lands on the aim", At(10f), 1f, 40f, 10f);
+        Turn("capped at aim + 40", At(60f), 2.5f, 40f, 100f);
+        Turn("capped at 170", At(150f), 3f, 80f, 170f);
+        if (Vector3.Angle(Race.NoseLeadDirection(f, At(10f), 1f, 40f), At(10f)) > 1e-3f) bad.Add("NoseLeadDirection gain 1 is not the aim itself");
+        if (Vector3.Angle(Race.NoseLeadDirection(f, At(60f) * 5f, 2.5f, 40f), At(100f)) > 1e-3f) bad.Add("NoseLeadDirection does not normalise the aim");
+        if (Vector3.Angle(Race.NoseLeadDirection(f, At(60f), 0f, 40f), At(60f)) > 1e-3f) bad.Add("NoseLeadDirection with gain 0 is not the aim");
+        Vector3 same = Race.NoseLeadDirection(f, f, 2.5f, 40f);
+        if (same.x != 1f || same.y != 0f || same.z != 0f) bad.Add("NoseLeadDirection on the aim does not stay");
+        if (Vector3.Angle(Race.NoseLeadDirection(f, -f, 3f, 80f), -f) > 1e-3f) bad.Add("NoseLeadDirection on the anti-aim is not the aim");
+        foreach (var (g, rate, want) in new[] { (2.5f, 1.5f, 2.5f), (2.5f, 9f, 1f), (2.5f, 0.75f, 5f), (0f, 1.5f, 0f), (2.5f, 0f, 0f),
+                                                (2.5f, float.PositiveInfinity, 0f), (2.5f, float.NaN, 0f) })
+            if (Race.EffectiveNoseLeadGain(g, rate) != want)
+                bad.Add($"EffectiveNoseLeadGain({g}, {rate}) = {Race.EffectiveNoseLeadGain(g, rate)}, wanted {want}");
+    }
 
     static int SelfTest(Opts o)
     {
@@ -109,11 +143,24 @@ static class Program
         {
             var st = w.L.Stations[0];
             int before = w.Planner.Standing(0, w);
-            Vector3 f = (st.Door - st.Key).normalized;
+            Vector3 f = (st.Target - st.Key).normalized;
             Vector3 u = Vector3.Cross(f, Mathf.Abs(f.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
             int removed = w.Blast(st.Key, f, u, 0f, null);
             int after = w.Planner.Standing(0, w);
             if (removed <= 0 || after >= before) bad.Add($"a blast at station 0 removed nothing ({before} -> {after})");
+        }
+        // 4. The nose lead's parity with AIPilot and Tools/Build/ai_nose_lead.py (its self-test's values).
+        NoseLeadParity(bad);
+        // 5. The lead is wired: it changes a lagged race, and with no nose lag (an effective gain of 0) it changes nothing.
+        {
+            var lead = o.With(noLayout: o.NoLayout); lead.NoseLeadGain = 2.5f;
+            var r0 = Race.Run(1, 45501, 1, o, null); var r1 = Race.Run(1, 45501, 1, lead, null);
+            if (r0.Time == r1.Time) bad.Add("noseLead=2.5 changed nothing on the lagged I1 Easy nose");
+            var noLag = o.With(noLayout: o.NoLayout); noLag.NoseLag = false;
+            var noLagLead = o.With(noLayout: o.NoLayout); noLagLead.NoseLag = false; noLagLead.NoseLeadGain = 2.5f;
+            var n0 = Race.Run(1, 45501, 1, noLag, null); var n1 = Race.Run(1, 45501, 1, noLagLead, null);
+            if (n0.Time != n1.Time || n0.Hits != n1.Hits || n0.Rings != n1.Rings)
+                bad.Add("noseLead=2.5 changed a race flown with no nose lag (its effective gain must be 0)");
         }
         Console.WriteLine("switchback_sim self-test: " + (bad.Count == 0 ? "ok" : "FAILED " + string.Join("; ", bad)));
         return bad.Count == 0 ? 0 : 1;
@@ -134,8 +181,8 @@ sealed class Opts
     public bool Setup;   // SwitchbackController.aiStrikeSetupLeg (off since 2026-11-02, step 2); setup=1 = the old strike
     public bool StrikeAtKey;          // what-if B: the strike aims at the key itself (not 40 u past it on the fire line)
     public float StrikeCommitCos = 0.9f; // what-if C: the commit drift's alignment on a strike (AIPilot: 0.9 = 26 deg)
-    public bool PassedByTravel;
-    public bool BlastHarmless;
+    public bool PassedByTravel;       // what-if D: the strike ends when the key is behind the hull's travel
+    public bool BlastHarmless;        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)
     public float DriftTurnMult = 1.5f;  // DolphinDriftAction.Mult: the turn rate while drifting (BeginDrift); grip 0 freezes the course
     public float CarveDegrees;         // step 4 what-if: drift-carve when the aim is this far off the course (0 = off)
     public float CarveDoneDegrees = 8f;  // ...let go once the nose is this close to the aim
@@ -143,17 +190,28 @@ sealed class Opts
     // VesselTransformer.NoseFollowFraction: an AI hull's nose follows its commanded rotation at LERP_AMOUNT 1.5/s ALWAYS,
     // drifting included (only a local human pilot has no lag, Garrett 2026-10-21). The game: driftLag on, noseLag on.
     public bool DriftLag = true;
-    public bool NoseLag = true;
+    public bool NoseLag = true;       // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)
     // The AI nose's follow rate per second, one row per intensity (I1..I4), each Easy, Medium, Hard, Legendary: 1.5 = the
     // fleet lag, 0 = no lag. noseFollow=e,m,h,l sets every row (1.5,1.5,1.5,1.5 = the fleet lag, as before 2026-11-02);
-    // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity.
+    // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity for I1-I3 and, at I4 (the
+    // simulator always lays the gauntlet), SwitchbackController.aiNoseFollowGauntlet (2026-11-03, retuned 2026-11-13 for the plain seals; the old I4 row was
+    // 1.8, 2.2, 3.5, 6, which a mode without the gauntlet still flies).
     public float[][] NoseFollowTable =
     {
-        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.8f, 2.2f, 3.5f, 6f },
+        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.5f, 2.2f, 3.5f, 6f },
     };
-    public bool CmdSteer;              // what-if: the AI judges its stick from its COMMANDED heading, not the lagging nose
-    public float CmdLead;              // ...and leads the command past the aim by this share of the nose's lag        // what-if: noseLag=0 = the AI's nose with no lag, as a human's (stick and drift)        // a control: the key's blast destroys nothing (is it the blast or the line that pays?)       // what-if D: the strike ends when the key is behind the hull's travel  // the strike's setup leg behind the key (SwitchbackBlastAI.GateBlastAim); 0 = straight at the key, the drift swings the nose
+    // AIPilot.NoseLeadGain / NoseLeadMaxExtraDegrees (PR #1786; Tools/Build/ai_nose_lead.py is the Python twin): with a gain
+    // above 0 the pilot judges its error from the COMMAND, not the lagging nose, and wants the nose turned toward the aim by
+    // the gain times its error - past the aim, at most noseLeadExtra degrees past it and never past 170 deg from the nose
+    // (Race.NoseLeadDirection). The gain is stated at the fleet lag (1.5/s) and scaled by this level's nose rate
+    // (Race.EffectiveNoseLeadGain: never under 1, 0 with noseLag=0). Off while drifting. 0 = every shipped asset, today's
+    // steering (the races are byte-identical). noseLead=<gain> noseLeadExtra=<deg>. It retires the cmdSteer/cmdLead what-if
+    // (judged from the command with a fixed 60 deg extra cap, no 170 cap, no rate scaling; SWITCHBACK.md step 4).
+    public float NoseLeadGain;
+    public float NoseLeadMaxExtraDegrees = Race.DefaultNoseLeadMaxExtraDegrees;
     public bool DangerOnly = true;
+    // SwitchbackController.aiSpeedOverBreaking (Yash, 2026-11-17): speedOverBreaking=0 = the AI before the rule
+    public bool SpeedOverBreaking = true;
     public float NoDodgeNear = 200f;
     public HitModel Hit = HitModel.Default;
     public float PickupRadius = 12f;     // Dolphin EnergySkimmer: radius 0.5 x scale 20 = 10 u, plus the crystal's own
@@ -192,6 +250,7 @@ sealed class Opts
                 case "cone": o.RealCone = v != "0"; break;
                 case "roll": o.FlyRoll = v != "0"; break;
                 case "dangerOnly": o.DangerOnly = v != "0"; break;
+                case "speedOverBreaking": o.SpeedOverBreaking = v != "0"; break;
                 case "setup": o.Setup = v != "0"; break;
                 case "strikeAtKey": o.StrikeAtKey = v != "0"; break;
                 case "strikeCommit": o.StrikeCommitCos = float.Parse(v); break;
@@ -215,8 +274,8 @@ sealed class Opts
                 case "noseFollow": for (int r = 0; r < 4; r++) o.NoseFollowTable[r] = Array.ConvertAll(v.Split(','), float.Parse); break;
                 case "noseFollowI1": case "noseFollowI2": case "noseFollowI3": case "noseFollowI4":
                     o.NoseFollowTable[key[^1] - '1'] = Array.ConvertAll(v.Split(','), float.Parse); break;
-                case "cmdSteer": o.CmdSteer = v != "0"; break;
-                case "cmdLead": o.CmdLead = float.Parse(v); break;
+                case "noseLead": o.NoseLeadGain = float.Parse(v); break;
+                case "noseLeadExtra": o.NoseLeadMaxExtraDegrees = float.Parse(v); break;
                 case "noDodgeNear": o.NoDodgeNear = float.Parse(v); break;
                 case "pickup": o.PickupRadius = float.Parse(v); break;
                 case "hull": o.HullRadius = float.Parse(v); break;
@@ -261,6 +320,9 @@ sealed class World : ISwitchbackAIWorld
     public bool[] Standing;
     public bool[] Key;
     public int[] MoverOf;
+    /// <summary>What each layout prism is, for the trace's hit lines: d door, s seal (an I4 eye), t tunnel wall,
+    /// p plug (inside an I4 tunnel), f field, m mover.</summary>
+    public char[] Part;
     public int Intensity;
     readonly Dictionary<long, List<int>> _grid = new();
     const float Cell = 40f;
@@ -281,7 +343,7 @@ sealed class World : ISwitchbackAIWorld
         var w = new World { Intensity = intensity, Course = SwitchbackCourse.Generate(seed, s) };
         w.L = o.NoLayout ? new SwitchbackFeatureLayout()
                          : SwitchbackBlastRun.Layout(w.Course, intensity, Vector3.zero, Inner / 1.22f + 30f);
-        w.Planner = new SwitchbackBlastPlanner(w.L, w.Course.Count, intensity);
+        w.Planner = new SwitchbackBlastPlanner(w.L, w.Course.Count, intensity) { SpeedOverBreaking = o.SpeedOverBreaking };
         int n = w.L.Prisms.Count;
         w.Standing = new bool[n];
         for (int k = 0; k < n; k++) w.Standing[k] = true;
@@ -296,6 +358,23 @@ sealed class World : ISwitchbackAIWorld
         }
         for (int k = 0; k < n; k++)
             if (w.MoverOf[k] < 0) w.Add(k, w.L.Prisms[k].Position);
+        w.Part = new char[n];
+        int finals = 0;
+        foreach (var st in w.L.Stations) if (st.Final) finals++;
+        int perGate = SwitchbackBlastRun.DoorPrisms(intensity) * (SwitchbackBlastRun.HasDoubleDoor(intensity) ? 2 : 1);
+        int perDoor = SwitchbackBlastRun.DoorPrisms(intensity);
+        int seal = SwitchbackBlastRun.HasGauntlet(intensity) ? SwitchbackBlastRun.SealPrisms : 0;
+        int at = 0;
+        for (; at < Math.Min(n, finals * perGate); at++) w.Part[at] = at % perDoor >= perDoor - seal ? 's' : 'd';
+        foreach (var st in w.L.Stations)
+            for (int j = 0; j < st.WorldPrisms && at < n; j++, at++)
+            {
+                if (j >= st.TunnelPrisms) { w.Part[at] = 'f'; continue; }
+                Vector3 seg = st.Target - st.Key, p = w.L.Prisms[at].Position - st.Key;
+                float along = Vector3.Dot(p, seg.normalized);
+                w.Part[at] = (p - seg.normalized * along).magnitude < SwitchbackBlastRun.TunnelRadius ? 'p' : 't';
+            }
+        for (int k = 0; k < n; k++) if (w.MoverOf[k] >= 0) w.Part[k] = 'm';
         return w;
     }
 
@@ -373,6 +452,9 @@ sealed class Race
 {
     public float CarveSeconds; public int Carves;
     public bool Finished; public float Time; public int Rings, Blast, Thread, Direct, Keys, Hits, DangerHits, Emergencies, Misses;
+    // Speed over breaking (SwitchbackBlastAI.Pilot.Passes / TurnAways): blocked gates passed without a crystal run, and
+    // crystal runs taken while the ring could be flown (only with speedOverBreaking=0).
+    public int Passes, TurnAways;
 
     // AIPilot / GateRaceController / MinigameSwitchback.unity
     public const float CruiseSpeed = 68f;
@@ -413,6 +495,37 @@ sealed class Race
         return errDeg > 90f ? 1f : Mathf.Min(1f, a * Mathf.Sin(e));
     }
 
+    // AIPilot.NoseLeadGain's two pure functions, line for line from AIPilot.cs (Tools/Build/ai_nose_lead.py's slerp_beyond and
+    // effective_gain are the same maths in Python); Program.SelfTest holds them to the Python twin's self-test values.
+    public const float DefaultNoseLeadMaxExtraDegrees = 40f;   // AIPilot.DefaultNoseLeadMaxExtraDegrees
+    public const float NoseLeadMaxTurnDegrees = 170f;          // AIPilot.NoseLeadMaxTurnDegrees
+
+    /// <summary>AIPilot.NoseLeadDirection: <paramref name="nose"/> turned toward <paramref name="desired"/> by
+    /// <paramref name="gain"/> times the angle between them along the same great circle (past the aim when the gain is
+    /// over 1), never more than <paramref name="maxExtraDegrees"/> past it nor <see cref="NoseLeadMaxTurnDegrees"/> from
+    /// the nose; <paramref name="desired"/> itself when the two are (anti)parallel or the gain is 0.</summary>
+    public static Vector3 NoseLeadDirection(Vector3 nose, Vector3 desired, float gain, float maxExtraDegrees)
+    {
+        Vector3 n = nose.normalized, d = desired.normalized;
+        if (gain <= 0f || n.sqrMagnitude < 1e-8f || d.sqrMagnitude < 1e-8f) return d;
+        Vector3 perp = d - n * Vector3.Dot(n, d);
+        if (perp.sqrMagnitude < 1e-8f) return d;
+        perp.Normalize();
+        float error = Vector3.Angle(n, d);
+        float turn = Mathf.Min(gain * error, error + Mathf.Max(0f, maxExtraDegrees), NoseLeadMaxTurnDegrees) * Mathf.Deg2Rad;
+        return n * Mathf.Cos(turn) + perp * Mathf.Sin(turn);
+    }
+
+    /// <summary>AIPilot.EffectiveNoseLeadGain: the gain is stated at the fleet lag (VesselTransformer.RotationFollowRate,
+    /// <see cref="NoseFollow"/>) and buys the nose closing at gain x 1.5 per second, so a faster nose needs proportionally
+    /// less lead and never less than 1 (judging from the command); 0 when the lead is off or the nose has no lag.</summary>
+    public static float EffectiveNoseLeadGain(float gain, float noseFollowRate)
+    {
+        if (gain <= 0f || noseFollowRate <= 0f || float.IsInfinity(noseFollowRate) || float.IsNaN(noseFollowRate))
+            return 0f;
+        return Mathf.Max(1f, gain * NoseFollow / noseFollowRate);
+    }
+
     void Fly(World w, int intensity, int seed, int level, Opts o, List<string> log)
     {
         var skill = SwitchbackAISkill.ForLevel(level);
@@ -440,9 +553,10 @@ sealed class Race
         var d = default(SwitchbackAIDecision); d.Station = -1;
         Phase phase = Phase.None; int planned = -1, plans = 0; float nextPlan = 0f;
         float keyClosest = float.MaxValue; bool keyClosestDrift = false; Phase keyClosestPhase = Phase.None;
+        int passGate = -1, passCounted = -1; float passMinDist = 0f;   // SwitchbackBlastAI.Pilot.PassGate / PassCountedGate / PassMinDist
         float nextSense = 0f; var avoidAct = SwitchbackAvoidAction.Clear; Vector3 avoidAim = default, blastCrystal = default, blastLook = default;
         bool emergOn = false; float emergHoldUntil = 0f, hotUntil = 0f; Vector3 emergSteer = default; int frame = 0;
-        var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[32];
+        var pts = new Vector3[128]; var radii = new float[128]; var crystals = new Vector3[64];
 
         while (t < o.MaxSeconds && idx < total)
         {
@@ -460,7 +574,9 @@ sealed class Race
             }
             // ---- the gate race's own aim (GateRaceController.ArmRacer, Regatta steering), plus this pilot's lane at open gates
             float commit = Mathf.Min(CommitDist, lead + 0.5f * R);
-            Vector3 laneOff = w.Planner.StationFor(idx) >= 0 ? Vector3.zero
+            // SwitchbackBlastAI.LaneOffset: at a blocked gate zero, or on a pass the point the clear line runs through
+            Vector3 laneOff = w.Planner.StationFor(idx) >= 0
+                ? (passGate == idx && d.Gate == idx && d.Pass && d.Plan != SwitchbackAIPlan.Blast ? d.PassThrough - ring : Vector3.zero)
                 : SwitchbackPrismAvoidance.LaneOffset(pseed ^ (uint)(idx * 7919), ax, g.Radius, avoid.LaneShare);
             Vector3 ringAt = ring + laneOff;
             bool approaching = Vector3.Distance(ringAt, pos) > commit;
@@ -475,13 +591,33 @@ sealed class Race
                         (d.Plan == SwitchbackAIPlan.Blast ? $" closest to key {keyClosest:F0} u (drifting there {keyClosestDrift}, phase {keyClosestPhase})" : ""));
                     keyClosest = float.MaxValue;
                     planned = idx; plans = 0;
+                    passGate = -1;
                     Plan();
                 }
                 else
                 {
+                    // SwitchbackBlastAI.TrackPass: a pass is kept while the pilot closes on the ring
+                    if (passGate >= 0)
+                    {
+                        float pd = Vector3.Distance(pos, course[passGate].Position);
+                        if (pd < passMinDist) passMinDist = pd;
+                        else if (pd > passMinDist + 80f) passGate = -1;
+                    }
                     bool keyGone = d.Plan == SwitchbackAIPlan.Blast && phase != Phase.Done && !w.KeyAvailable(d.Station);
                     if (keyGone && Vector3.Distance(pos, d.Key) < 30f) phase = Phase.Done;
                     else if (keyGone || (skill.ReplanSeconds > 0f && t >= nextPlan && phase != Phase.Done && phase != Phase.Strike)) Plan();
+                    // An I4 gauntlet: past this key, the next one is the plan (SwitchbackBlastAI.TryAim).
+                    else if (d.Station >= 0 && w.Planner.StageFor(d.Gate, pos) != d.Station) Plan();
+                    // SwitchbackBlastAI.RingOpenedOnTheStrike: on a strike at a key chosen while the ring was not flyable, the
+                    // ring became flyable and the key is off the way and more than StrikeKeepSeconds (1 s) off
+                    else if (phase == Phase.Strike && skill.ReplanSeconds > 0f && t >= nextPlan)
+                    {
+                        nextPlan = t + Mathf.Max(skill.ReplanSeconds, 0.25f);
+                        if (w.Planner.SpeedOverBreaking && d.Plan == SwitchbackAIPlan.Blast && !d.Pass
+                            && Vector3.Distance(pos, d.Key) >= Mathf.Max(v, SwitchbackBlastPlanner.MinSpeed) * 1f
+                            && !w.Planner.KeyOnTheWay(d.Station, w, pos, course[d.Gate].Position, v)
+                            && w.Planner.Passable(d.Gate, w, pos, course[d.Gate].Position, course[d.Gate].Radius, t, v, false, default, out _)) Plan();
+                    }
                 }
                 bool gateAim = GateBlastAim(out Vector3 gAim);
                 if (gateAim && phase == Phase.Strike) { aim = gAim; avoidAct = SwitchbackAvoidAction.Clear; }
@@ -603,14 +739,18 @@ sealed class Race
             else
             {
                 Vector3 steer = extending ? (fwd + desired * -0.35f) : desired;
-                if (o.CmdSteer && o.CmdLead > 0f && Ang(fwd, steer) > 1f)
+                // AIPilot.TryNoseLead: with the lead on, the error is judged from the COMMAND and the wanted direction is the
+                // NOSE turned toward the steer by the lead (past it); the stick still turns the command and the nose still
+                // follows the command. Never while drifting (the branch above); 0 with noseLag=0 (the rate is 0); on during
+                // an orbit break-off and an emergency dodge, as in the game (the dodge keeps its full stick).
+                Vector3 judged = fwd;
+                float leadGain = EffectiveNoseLeadGain(o.NoseLeadGain, NoseRate());
+                if (leadGain > 0f)
                 {
-                    // lead: aim the command past the target by a share of the nose's remaining gap to it
-                    Vector3 axis = Vector3.Cross(fwd, steer);
-                    if (axis.sqrMagnitude > 1e-8f)
-                        steer = Quaternion.AngleAxis(Mathf.Min(Ang(fwd, steer) * o.CmdLead, 60f), axis.normalized) * steer;
+                    steer = NoseLeadDirection(fwd, steer, leadGain, o.NoseLeadMaxExtraDegrees);
+                    judged = cmd;
                 }
-                float s = emerg ? 1f : Stick(Ang(o.CmdSteer ? cmd : fwd, steer));
+                float s = emerg ? 1f : Stick(Ang(judged, steer));
                 cmd = RotateToward(cmd, steer, Turn * s * Mathf.Deg2Rad * dt);
                 fwd = NoseFollowTo(fwd, cmd);
                 travel = fwd;
@@ -632,7 +772,7 @@ sealed class Race
                     w.Key[s] = false; Keys++;
                     Vector3 gape = o.FlyRoll && d.Plan == SwitchbackAIPlan.Blast && d.Station == s ? d.FireUp : up;
                     int removed = o.BlastHarmless ? 0 : w.Blast(w.L.Stations[s].Key, fwd, gape, t, o);
-                    if (log != null) log.Add($"{t,6:F1} key {s} (gate {w.L.Stations[s].Gate}) taken, nose {Ang(fwd, w.L.Stations[s].Door - w.L.Stations[s].Key):F0} deg off the door, blasted {removed}");
+                    if (log != null) log.Add($"{t,6:F1} key {s} (gate {w.L.Stations[s].Gate}) taken, nose {Ang(fwd, w.L.Stations[s].Target - w.L.Stations[s].Key):F0} deg off its aim, blasted {removed}");
                 }
 
             // ---- prisms: the hull sphere against every standing prism's box
@@ -644,6 +784,7 @@ sealed class Race
                     if (w.BoxDistance(k, newPos, t) > o.HullRadius) continue;
                     bool danger = w.L.Prisms[k].Kind == PrismKind.Danger;
                     Hits++; if (danger) DangerHits++;
+                    if (log != null) log.Add($"{t,6:F1} hit {w.Part[k]}{(danger ? " DANGER" : "")} gate {idx} plan={d.Plan} phase={phase} drifting={drifting}");
                     slows.Add(new Vector3(danger ? o.Hit.DangerSlowFactor : o.Hit.SlowFactor, t,
                                           danger ? o.Hit.DangerSlowSeconds : o.Hit.SlowSeconds));
                     meter *= o.Hit.MeterKeep;
@@ -679,21 +820,40 @@ sealed class Race
             if (idx >= total) return;
             uint ps = pseed ^ (uint)(idx * 92821) ^ (uint)(plans * 68917);
             var prev = d;
-            d = w.Planner.Decide(idx, pos, v, course[idx].Position, t, in skill, w, ps);
+            var held = passGate == idx && prev.Gate == idx ? prev : default;
+            d = w.Planner.Decide(idx, pos, v, course[idx].Position, t, in skill, w, ps, in held, course[idx].Radius);
             plans++;
             nextPlan = t + Mathf.Max(skill.ReplanSeconds, 0.25f);
+            bool newBlast = d.Plan == SwitchbackAIPlan.Blast && (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != d.Gate || prev.Station != d.Station);
             if (d.Plan != SwitchbackAIPlan.Blast) phase = Phase.None;
-            else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != d.Gate) phase = Phase.None;
+            else if (newBlast) phase = Phase.None;
+            if (d.Why == "passable" || d.Why == "committed")
+            {
+                if (passGate != idx) { passGate = idx; passMinDist = Vector3.Distance(pos, course[idx].Position); }
+                if (passCounted != idx) { passCounted = idx; Passes++; }
+            }
+            else if (newBlast && d.Pass && !d.KeyOnWay)
+            {
+                TurnAways++;
+                if (log != null) log.Add($"{t,6:F1} gate {idx} TURN-AWAY to key {d.Station}: the ring was flyable and the key is off the way");
+            }
             if (plans == 1) { if (d.Plan == SwitchbackAIPlan.Blast) Blast++; else if (d.Plan == SwitchbackAIPlan.Thread) Thread++; else Direct++; }
             if (log != null && (plans == 1 || prev.Plan != d.Plan))
                 log.Add($"{t,6:F1} gate {idx} plan={d.Plan} why={d.Why} cost thread={d.CostThread:F1} blast={d.CostBlast:F1} standing={d.Standing} cover={d.Coverage:P0}");
         }
 
-        // VesselTransformer.NoseFollowFraction for an AI hull: the fleet's LERP_AMOUNT 1.5/s, or this level's rate; 0 = none
-        Vector3 NoseFollowTo(Vector3 nose, Vector3 command)
+        // This level's AI nose follow rate per second (VesselTransformer.NoseFollowRate: the row SwitchbackController sets, or
+        // the fleet's LERP_AMOUNT 1.5/s); 0 = no lag. The nose follow and the nose lead read the same number.
+        float NoseRate()
         {
             var row = o.NoseFollowTable[Mathf.Clamp(intensity - 1, 0, 3)];
-            float rate = o.NoseLag ? row[Mathf.Clamp(level - 1, 0, row.Length - 1)] : 0f;
+            return o.NoseLag ? row[Mathf.Clamp(level - 1, 0, row.Length - 1)] : 0f;
+        }
+
+        // VesselTransformer.NoseFollowFraction for an AI hull: the nose closes min(1, rate x dt) of its gap to the command
+        Vector3 NoseFollowTo(Vector3 nose, Vector3 command)
+        {
+            float rate = NoseRate();
             return rate <= 0f ? command : RotateToward(nose, command, Ang(nose, command) * Mathf.Deg2Rad * Mathf.Min(1f, rate * dt));
         }
 
@@ -706,7 +866,7 @@ sealed class Race
             if (o.PassedByTravel ? (Vector3.Dot(toKey, travel) < 0f && dist > o.PickupRadius) : Vector3.Dot(-toKey, fire) > 5f) { phase = Phase.Done; return false; }
             float off = dist > 1f ? Ang(toKey, fire) : 0f;
             if (o.Setup && dist > 60f && off > SetupAngle) { phase = Phase.Setup; a = key - fire * Mathf.Min(SetupBack, 0.5f * dist); }
-            else { phase = Phase.Strike; a = o.StrikeAtKey ? key + (dist > 1f ? toKey / dist : fire) * StrikeThrough : key + fire * StrikeThrough; }
+            else { phase = Phase.Strike; a = (o.StrikeAtKey || w.Planner.IsGauntlet(d.Station)) ? key + (dist > 1f ? toKey / dist : fire) * StrikeThrough : key + fire * StrikeThrough; }
             return true;
         }
 
@@ -719,7 +879,7 @@ sealed class Race
                 look = blastLook; return true;
             }
             if (d.Plan != SwitchbackAIPlan.Blast || phase != Phase.Strike) return false;
-            if (Vector3.Distance(pos, d.Key) > LookRange) return false;
+            if (Vector3.Distance(pos, d.Key) > w.Planner.LookRangeFor(d.Station, LookRange)) return false;
             look = d.AimPoint; return true;
         }
 
@@ -763,13 +923,23 @@ sealed class Race
             Vector3 blocker = SwitchbackPrismAvoidance.BlockerCentroid(pos, dir, range, avoid.Clearance * 2f, pts, n, out int blocking);
             int nc = 0;
             for (int s = 0; s < w.L.Stations.Count && nc < crystals.Length; s++) if (w.Key[s]) crystals[nc++] = w.L.Stations[s].Key;
-            if ((clear < avoid.Clearance || turn > 25f) &&
+            bool rule = w.Planner.SpeedOverBreaking;
+            if (SwitchbackPrismAvoidance.BlastsBlocker(clear, turn, avoid.Clearance, false, rule) &&
                 SwitchbackPrismAvoidance.TryBlast(pos, fwd, blocker, avoid.Clearance * 2f, pts, n, crystals, nc,
                                                   w.Planner.Slot, in avoid, out Vector3 crystal, out _, out _, out _))
             {
-                avoidAct = SwitchbackAvoidAction.Blast; blastCrystal = crystal; blastLook = blocker;
-                a = crystal + (blocker - crystal).normalized * StrikeThrough;
-                return true;
+                bool ringOpen = w.Planner.Passable(idx, w, pos, course[idx].Position, course[idx].Radius, t, v, false, default, out _);
+                if (SwitchbackPrismAvoidance.BlastsBlocker(clear, turn, avoid.Clearance, ringOpen, rule))
+                {
+                    if (!rule && (ringOpen || clear >= SwitchbackPrismAvoidance.PassClearance))
+                    {
+                        TurnAways++;
+                        if (log != null) log.Add($"{t,6:F1} gate {idx} TURN-AWAY to a crystal for a sensed prism: ring flyable {ringOpen}, corridor air {clear:F0} u");
+                    }
+                    avoidAct = SwitchbackAvoidAction.Blast; blastCrystal = crystal; blastLook = blocker;
+                    a = crystal + (blocker - crystal).normalized * StrikeThrough;
+                    return true;
+                }
             }
             avoidAct = SwitchbackAvoidAction.Avoid;
             avoidAim = corridor * range;

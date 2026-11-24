@@ -53,6 +53,7 @@ defect):
 | **The way in is the Toybox's Vessel Changer** ("bring it to Unity" = fly it from there, CLAUDE.md). The hull is on `ToyVesselRoster.Default`, the Vessel Prefab Container, `DefaultNetworkPrefabs`, both class lists, and has its four `CrystalHullFusionConfig` entries. Claim the enum value after checking bleeding-edge AND the in-flight branches. | the generator `--check`; `EnumIntegrityTests` |
 | **The seat wakes** only on the local pilot's own hull while a human flies it, or while the seat itself handed the hull to its AI. | `CrewSeat.ShouldWake` |
 | **ONE swap, seats then hulls** (Garrett, 2026-10-23): `PilotSwapGesture` (D-pad left / right, the left / right arrow keys, a two-finger swipe; no key picks a seat outright) steps the PERSON round one list of the domain's seats, the same for everyone on it - the seats of the hull they are on, then the next hull's - on `PilotSwap.CooldownSeconds`. A crew never reads the gesture itself: it implements `ICrewStations` (`SeatCount`, `LocalSeat`, `HostsRiders`, `TakeSeat`) and `CrewStations` moves the person through `TakeSeat`. A double tap on the small view (`CrewSmallViewDoubleTap`) still swaps a crew's two seats. `Docs/CREW_STATIONS.md`. | `CrewStations`, `LocalCrewStation` |
+| **A seat played upright turns with the phone** (Shombith, 2026-11-08): a crew whose seat suits a phone held upright implements `IUprightSeat` (the Goby: the Pistol, seat 1). On a phone, upright takes that seat and landscape the helm, through the crew's own `TakeSeat`; the screen may turn only while the person sits on that hull (`ScreenOrientationPolicy`). Every other hull keeps the screen landscape. Never turn the screen from a seat of its own beside this (the Wrasse's older `SeatOrientation.Portrait` is the one exception). | `CrewOrientation` (ticked by `LocalCrewStation`) |
 | **The empty seat is never pilotless.** Into the seat: the player's flight input paused, then the hull's `AIPilot` flies it; back: the opposite order, and only an autopilot the seat started is stopped. The seat has its own input-only AI for when the human flies the hull (`/vessel-ai`). | `CrewSeat.HandHullToAI` / `GiveHullBack`; `KiteNavigatorAI`, `PistolAI` |
 | **Two views, one layout**: flying the hull, the seat's view is a square in the lower left (`pipSize` 0.32 of the screen height, `viewMargin` 0.015); flying the seat, it fills the screen and the pilot's camera (`CameraManager.ViewCamera`) is lifted into the same square. The pilot camera's rect and depth are always restored. | `CrewPictureInPicture` (it frames the small square with the style guide's `PipViewFrame`; `Dispose` it when the seat lets go) |
 | **The seat camera renders the game** (Garrett, 2026-10-18, for both: "use the game's rendering", "as true to the game as possible"): the real prisms, hulls and materials under the game's lights and sky, never a re-styled copy, fog or tint. For its render only, the prisms' depth look measures distance **from the seat's plane** (`PrismDepthPlane`, `depthFullSpreadAt` 60), and the game's occlusion corridor (the screen-door dither) is **re-aimed for the seat's view** so mass in front of what the seat must see dithers instead of hiding it: the Kite's is a cone from its lens down to the board; the Pistol's is the game's own vessel corridor aimed from its lens at the Pistol. | `CrewViewRender` |
@@ -379,6 +380,18 @@ enum before taking a value.
 - **A chip can only name a control the glyph set has.** A seat that reads keys of its own (the Pistol's G and B) has
   no honest chip: `ControlGlyphSet` holds one row per fleet control (A / Space, B / T, X / Q, Y / F, the triggers and
   shifts, RB / E). Put each seat's moves on those controls, keep the old keys as quiet aliases, and the chips derive.
+- **A hull that lays prisms where it sits will ram them once the self-trail grace runs out.** The Goby's perch pad
+  (5 blocks under the hull) and the Pistol's den (40% shielded, and shielded prisms bounce a hull) both sit at the
+  perch, and `SelfTrailContactConfigSO`'s grace is seconds, so turning away from a perch stopped the Goby, a stop
+  players read as getting stuck (Will, 2026-11-24). The dart query already skipped the pair's own prisms
+  (`Perchable`); the HULL did not. A crew hull that lays its own ground leaves it alone by touch: `IHullPrismFilter`
+  on the root, read by `VesselImpactor.TouchesPrism` on both halves of a contact.
+- **A pin that only paces a person reads as a bug.** The Goby's 1.5 s perch hold did nothing for the Pistol (the
+  island, ground and den are laid the frame the dart lands; `islandQueue` keeps the Goby from running away), so a
+  person's Goby never holds at a perch now; the AI keeps it because its coach aims from there and Regatta is tuned on it.
+- **Moving a cooldown's start keeps its feel only if the length moves with it.** The dart's cooldown counted from
+  landing (1 s dart + 1.2 s); from launch it is 2.2 s, the same cycle at every Time level because Time divides both.
+  1.5x (1.8 s) shortened the cycle and sped the Goby up 5-13% in Perch Run's harness.
 
 ## 7. Glossary
 

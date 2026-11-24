@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-20-traininggames-asset-is-now-empty-all-fou-36d709",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-20T17:07:06+00:00",
+  "area": "the daily challenge and Hangar training, the game-list gate, the /bug-ledger skill",
+  "summary": "TrainingGames.asset is now empty: all four of its training games (Block Bandit, Dolphin Darts, Maze Run, Slip and Stride) led to scenes deleted on 2026-10-13 and are moved to Games/_Archive. So the daily challenge reports itself unavailable instead of loading a missing scene, and HangarScreen.DisplayTrainingModal opens only for a hull with two training games. Which live games the daily challenge should offer is your call. Tooling: check_gamelist_scenes.py now runs on Windows (forward-slash paths) and fails on any live asset that points at a dead archived asset; /bug-ledger section 6 has the sweep read phone sessions and run that check.",
+  "why": "A build's console showed \"Scene 'MinigameMazeRun' couldn't be loaded\" and the Bug Ledger had no record of it.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "eff4fb33e",
+  "paths": [
+    ".claude/skills/bug-ledger/SKILL.md",
+    "Assets/_SO_Assets/Games/GameLists/TrainingGames.asset",
+    "Assets/_Scripts/UI/Screens/HangarScreen.cs",
+    "Tools/Build/check_gamelist_scenes.py"
+  ]
+}

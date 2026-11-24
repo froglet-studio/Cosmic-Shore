@@ -1,0 +1,21 @@
+{
+  "id": "2026-11-18-waystation-tower-model-far-edge-give-40-46cfe1",
+  "to": "dbrutus",
+  "by": "Garrett",
+  "date": "2026-11-18T01:11:30+00:00",
+  "area": "Waystation Lantern Towers (#2051)",
+  "summary": "Waystation tower model: FAR_EDGE_GIVE 40 u for the 10 s Drop recharge, and the aibudget negative control now aims at the window's far edge",
+  "branch": "HEAD",
+  "commit": "0e4d695fd",
+  "paths": [
+    "Tools/Build/waystation_tower_course.py"
+  ],
+  "loop": {
+    "vessels": [
+      "TigerMoth"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

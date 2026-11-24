@@ -71,8 +71,9 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("How hard the FIRING pilot's Charge level makes this bite: the magnitude is multiplied " +
                  "by 1 at Charge 0 rising to this at Charge 10 (read off the attacker's replicated level, " +
-                 "so every peer agrees). 1 = Charge does nothing, the default for every blast but the " +
-                 "Scarab's shove, whose Charge row IS this number (SCARAB.md section 7). An anonymous " +
+                 "so every peer agrees). 1 = Charge does nothing, which every shipped blast authors since " +
+                 "2026-11-11: the Scarab's shove and the Manta's bloom both moved their Charge off the bite " +
+                 "(a dial in whole petals, too coarse to tune) onto a cooldown and a fuse. An anonymous " +
                  "blast has no pilot and bites at x1.")]
         [SerializeField, Min(0f)] private float magnitudeAtFullCharge = 1f;
 

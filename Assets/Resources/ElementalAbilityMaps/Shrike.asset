@@ -27,22 +27,23 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Salvo
+    UpgradeDescription: 'Every nest flora launches twice as often while you paint.'
   - Element: 2
     AbilityLabel: Nest
     AbilityDescription: 'A. Any block you touch docks you (the camera eases back); docked, every cooldown runs x1.6 (x2.5
-      on super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a cup of
-      super-shielded blocks round where you were, no two touching, the nose''s way out open, crowned
-      with a flora carrying ONE missile (8 s cooldown; at most three nests). Mass is volume - one
-      dial: 12 -> 32 blocks per nest at level 10 (ShrikeConfigSO.nestBlocks), and the cruising
-      trail''s wavelength 8 -> 4 u (trailWavelength).'
+      on super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a shell
+      of super-shielded plates round where you were (hoops of shielded twigs and a lining of plain
+      pads inside), no two touching, the nose''s way out open, crowned with a flora carrying ONE
+      missile (8 s cooldown; at most three nests). Mass is volume - one dial: 12 -> 32 blocks per nest
+      at level 10 (ShrikeConfigSO.nestBlocks), and the cruising trail''s wavelength 8 -> 4 u
+      (trailWavelength).'
     Input: 6
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Armed Nests
+    UpgradeDescription: 'A nest you leave behind carries two missiles.'
   - Element: 3
     AbilityLabel: Void Lance
     AbilityDescription: 'X: Space mode. RT (held) fires a hitscan beam 2400 u long that breaks every block it passes, any
@@ -65,5 +66,5 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Whipcrack
+    UpgradeDescription: 'The sling reaches its anchor in 0.6 s.'

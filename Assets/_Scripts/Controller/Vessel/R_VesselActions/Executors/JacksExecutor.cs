@@ -4,7 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
@@ -73,6 +73,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] Color dangerColor = new(1f, 0.353f, 0.235f, 1f);
         [Tooltip("The rings' dots.")]
         [SerializeField] Color ringColor = new(0.949f, 0.784f, 0.294f, 0.55f);
+        [Tooltip("Herding view only: the small ring halfway between the jacks, where the hull will be when they take off " +
+                 "(Decoy Run, 2026-11-07: the take-off jump is a travel, so its landing point is an instrument).")]
+        [SerializeField] Color takeOffColor = new(1f, 1f, 1f, 0.8f);
 
         [Header("The rings in the flight view (Garrett, 2026-10-21: \"make the dots that form the radius much more subtle\")")]
         [Tooltip("The rings' dots in the flight view: their alpha is multiplied by this. The herding view keeps them full.")]
@@ -160,6 +163,14 @@ namespace CosmicShore.Gameplay
         float _camWritten;
         float _swapReadyAt, _aiModeAt;
         JacksAI _ai;
+
+        // a race's AI coach (Decoy Run): when set, an AI Jacks herds and travels cycle by cycle on its plans
+        enum RacePhase { Flying, Herding, Travelling }
+        IJacksRaceCoach _coach;
+        RacePhase _racePhase;
+        JacksRacePlan _plan;
+        readonly int[] _planStep = new int[2];   // per jack: 0 running to its via point, 1 to its end, 2 there
+        int _travelStep;
         JacksView _view;
         AnglerWorldMarks _marks;         // the herding view: the jacks' instruments, full strength
         AnglerWorldMarks _flightMarks;   // the flight view: the same rings, subtle
@@ -191,9 +202,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The jacks are out herding and the hull holds still (false: they are flying it).</summary>
         public bool Herding => _herding;
         /// <summary>The share of the herd that is danger at the current Charge.</summary>
-        public float DangerShare => JacksMath.DangerShare(Level(Element.Charge));
-        /// <summary>Every herder's ring now (u).</summary>
-        public float Ring => config ? JacksMath.Ring(config.RingFloor, Level(Element.Space)) : 0f;
+        public float DangerShare => config ? config.DangerShareFor(_status) : JacksMath.DangerShare(0f);
+        /// <summary>Every herder's ring now (u): the Space ring, opened up to <c>wideRingScale</c> times while Wide (eased).</summary>
+        public float Ring => config ? config.RingFor(_status) * Mathf.Lerp(1f, config.WideRingScale, _wideBlend) : 0f;
+        /// <summary>0 tight, 1 Wide: the ring's ease between the two (so the herd scatters and gathers, never jumps).</summary>
+        float _wideBlend;
         internal JacksConfigSO Config => config;
         internal IVesselStatus Status => _status;
         /// <summary>The hull's impactor: the net hands it every prism it touches, and the jacks every crystal they collect.</summary>
@@ -212,6 +225,36 @@ namespace CosmicShore.Gameplay
         internal Vector3 HerdCentre { get; private set; }
         /// <summary>The cell the jacks are in (the herding view's whole-cell zoom).</summary>
         internal Cell CellHere => NearestCell(JacksCentre);
+
+        /// <summary>Time 5: each trigger has its own decoy (two decoys to lay and fly to).</summary>
+        public bool HasTwoDecoys => TimeUpgraded;
+
+        /// <summary>The board's normal (the hull's up, eased): what a race coach reads to tell whether a ring lies on it.</summary>
+        public Vector3 RaceBoardUp => _u;
+
+        /// <summary>The hull's position, the board's origin.</summary>
+        public Vector3 RaceHullPosition => HullPosition;
+
+        /// <summary>
+        /// A race's coach for this hull's AI (Decoy Run). Set: the AI herds and travels on the coach's cycles instead of
+        /// its herding rhythm (<c>aiHerdSeconds</c> / <c>aiFlightSeconds</c>), every one through the controls a human uses
+        /// (the jacks to points on the board, a trigger to lay a decoy, the seat swap, a trigger to fly to a decoy), and
+        /// under the same seat-swap cooldown. Null: the shipped AI. A human's hull ignores it.
+        /// </summary>
+        public IJacksRaceCoach RaceCoach
+        {
+            get => _coach;
+            set
+            {
+                if (_coach == value) return;
+                _coach = value;
+                _racePhase = RacePhase.Flying;
+            }
+        }
+
+        /// <summary>The AI is mid-cycle (herding its plan or flying to its decoys): the coach's flight aim should leave the
+        /// hull's board alone.</summary>
+        public bool RaceCycleBusy => _coach != null && _racePhase != RacePhase.Flying;
 
         // ------------------------------------------------------------------ lifecycle
 
@@ -233,6 +276,7 @@ namespace CosmicShore.Gameplay
             _callUntil = _callReadyAt = _teleReadyAt = 0f;
             _recruitAt = _floorBirthAt = 0f;
             _aiModeAt = Time.time + (config ? config.AIFlightSeconds : 6f);
+            _racePhase = RacePhase.Flying;
             _pooAt = Time.time + (config ? config.PooEvery : 6f);
             _seeding = false;
             _pointerJack.Clear();
@@ -282,12 +326,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The local human owns this hull (not an AI, not a remote copy).</summary>
         bool IsLocalHuman => _status != null && _status.Player != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
 
-        float Level(Element e)
-        {
-            var resources = _status?.ResourceSystem;
-            return resources ? resources.GetNormalizedLevel(e) * 10f : 0f;
-        }
-
         // The four level-5 upgrades, each its own gate with its element written out, so /element-ability-table reads the
         // live gate off the source (an upgrade passed through a variable read as prose there).
         R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
@@ -325,7 +363,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>THE SPACE ABILITY, WIDE (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"): herding,
-        /// the view eases out to the whole cell and back. Nothing while netting ("remove the space ability in net mode").</summary>
+        /// the view eases out to the whole cell and back, AND every ring opens to <c>wideRingScale</c> times its Space size
+        /// (2026-11-16, the weakest-abilities pass: Wide was only a camera), so the herd fans out across a wide field to graze
+        /// and bunches again when Wide closes. Nothing while netting ("remove the space ability in net mode").</summary>
         public void ToggleWide()
         {
             if (!_herding || Time.unscaledTime < _wideToggleReadyAt) return;
@@ -436,13 +476,18 @@ namespace CosmicShore.Gameplay
                 // wake rule as every crew seat (CrewSeat.ShouldWake), so the pad and the touchscreen are not read under a menu
                 bool human = IsLocalHuman && !_status.AutoPilotEnabled;
                 // (the human's mode changes by the seat swap, TakeSeat, never polled here)
-                if (!human && _status.AutoPilotEnabled) StepAIMode();
+                if (!human && _status.AutoPilotEnabled)
+                {
+                    if (_coach != null) StepAIRace();
+                    else StepAIMode();
+                }
                 else if (!human) StopHerding();   // nobody runs the jacks here yet: they fly, and nothing jumps
                 SetFlightInputPaused(human && _herding);
                 HoldHull(_herding);
 
                 if (!_herding) StepFlightJacks(dt);
                 else if (human) ReadHumanJacks(dt, ring);
+                else if (_coach != null) StepAIRaceJacks();
                 else StepAIJacks(dt, ring);
                 if (_herding) StepJacks(dt);
                 ListenToCards(human && _herding);
@@ -476,12 +521,16 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (_status == null || !config || !_status.Transform) return;
+            // WIDE opens every ring (the herd fans out to graze a wide field); off, the rings close and the herd bunches.
+            _wideBlend = Mathf.MoveTowards(_wideBlend, _wide && _herding ? 1f : 0f, Time.deltaTime / Mathf.Max(0.05f, config.WideRingSeconds));
             if (IsLocalHuman)
             {
                 _view ??= new JacksView(this);
                 _view.Frame(_herding, _wide, Time.deltaTime);
             }
-            if (IsLocalHuman && !_status.AutoPilotEnabled) UpdateNetCamera(Time.deltaTime);
+            // The local player's hull, whoever holds its sticks (CameraManager.ActiveRigFollowing's rule): the net is
+            // as wide when the AI flies the hull for the player, so the camera backs off as far.
+            if (IsLocalHuman) UpdateNetCamera(Time.deltaTime);
             else ReleaseCamera();
             DrawMarks();
         }
@@ -630,6 +679,67 @@ namespace CosmicShore.Gameplay
             _aiModeAt = Time.time + (herd ? config.AIHerdSeconds : config.AIFlightSeconds);
             SetHerding(herd);
             _planeAttract = true;
+        }
+
+        // ---- a race's AI cycles (RaceCoach) ----
+
+        /// <summary>
+        /// The AI's mode in a race: fly until the coach answers a cycle, herd it (the jacks run, the triggers lay its
+        /// decoys), take off when both jacks are there, then fly to its decoys in order, and fly on. Every swap waits out
+        /// <see cref="PilotSwap.CooldownSeconds"/>, as a person's does.
+        /// </summary>
+        void StepAIRace()
+        {
+            float now = Time.unscaledTime;
+            switch (_racePhase)
+            {
+                case RacePhase.Flying:
+                    if (_herding) { SetHerding(false); _swapReadyAt = now + PilotSwap.CooldownSeconds; return; }
+                    if (now < _swapReadyAt || !_coach.TryNextCycle(this, out _plan)) return;
+                    SetHerding(true);
+                    _swapReadyAt = now + PilotSwap.CooldownSeconds;
+                    _planStep[0] = _planStep[1] = 0;
+                    _racePhase = RacePhase.Herding;
+                    return;
+                case RacePhase.Herding:
+                    if (!_herding) { _racePhase = RacePhase.Flying; return; }
+                    if (_planStep[0] < 2 || _planStep[1] < 2 || now < _swapReadyAt) return;
+                    SetHerding(false);   // the take-off: the hull jumps to halfway between the jacks
+                    _swapReadyAt = now + PilotSwap.CooldownSeconds;
+                    _travelStep = 0;
+                    _racePhase = RacePhase.Travelling;
+                    return;
+                default:
+                    if (Travelling || Time.time < _teleReadyAt) return;
+                    int slot = _travelStep == 0 ? _plan.FirstTravel : _travelStep == 1 ? _plan.SecondTravel : -1;
+                    if (slot < 0 || !_decoyOn[TimeUpgraded ? slot : 0]) { _racePhase = RacePhase.Flying; return; }
+                    _travelStep++;
+                    Teleport(slot);
+                    return;
+            }
+        }
+
+        /// <summary>The coach's cycle on the board: each jack runs to its via point, lays its decoy there (the trigger on
+        /// that jack's side), then runs to its end and waits.</summary>
+        void StepAIRaceJacks()
+        {
+            for (int k = 0; k < 2; k++)
+            {
+                Vector3 via = k == 0 ? _plan.Jack0Via : _plan.Jack1Via;
+                Vector3 to = k == 0 ? _plan.Jack0To : _plan.Jack1To;
+                int lays = k == 0 ? _plan.Jack0Lays : _plan.Jack1Lays;
+                _byThumb[k] = false;   // a lift lays nothing: the plan's triggers do
+                _jackDown[k] = true;
+                if (_planStep[k] == 0)
+                {
+                    _jackTarget[k] = OnPlane(via);
+                    if ((OnPlane(_jack[k]) - _jackTarget[k]).sqrMagnitude > 0.25f) continue;
+                    if (lays >= 0) DropDecoy(lays, OnPlane(_jack[k]), k);
+                    _planStep[k] = 1;
+                }
+                _jackTarget[k] = OnPlane(to);
+                if (_planStep[k] == 1 && (OnPlane(_jack[k]) - _jackTarget[k]).sqrMagnitude <= 0.25f) _planStep[k] = 2;
+            }
         }
 
         // ---- the human on the jacks: thumbs, the mouse, the sticks ----
@@ -912,7 +1022,7 @@ namespace CosmicShore.Gameplay
             var herders = Herders(ring);
             Vector3 hull = HullPosition, jacks = JacksCentre, centre = Vector3.zero;
             bool calling = Calling;
-            float pace = JacksMath.SpeedMultiplier(Level(Element.Time));
+            float pace = config.HerdSpeedFor(_status);
             float sep = config.Separation, nr = config.NeighbourRadius, nr2 = nr * nr;
             float callDead = 30f * config.LabScale;
             bool attacks = ChargeUpgraded;
@@ -1192,7 +1302,7 @@ namespace CosmicShore.Gameplay
             if (_herd.Count == 0 || !ElementalTransfer.IsDecidedHere(_status)) return;
             if (_status.Player is { IsNetworkOwner: false }) return;
             ScanVessels();
-            float charge = Level(Element.Charge);
+            float share = DangerShare;
             bool bites = ChargeUpgraded;
             var own = _status.Domain;
             for (int v = 0; v < _vessels.Count; v++)
@@ -1209,7 +1319,7 @@ namespace CosmicShore.Gameplay
                     float reach = config.ContactReach + m.Creature.LeashMouthReach * 0.25f;
                     Vector3 to = hp - m.LastPos;
                     if (to.sqrMagnitude > reach * reach) continue;
-                    bool danger = JacksMath.IsDanger(m.Roll, charge);
+                    bool danger = m.Roll < share;
                     if (!danger && !bites) continue;
                     if (!Strike(victim, to)) break;   // latched: this hull was just scored on
                     if (danger && m.Creature.IsSimAuthority) m.Creature.Jousted(_status.PlayerName);   // the sting spends it
@@ -1318,7 +1428,7 @@ namespace CosmicShore.Gameplay
         public bool EatsShields(Fauna creature) => SpaceUpgraded;
 
         /// <summary>MASS: the herd's birth rate (<see cref="JacksMath.FeedsPerOffspringScale"/>).</summary>
-        public float FeedsPerOffspringScale(Fauna creature) => JacksMath.FeedsPerOffspringScale(Level(Element.Mass));
+        public float FeedsPerOffspringScale(Fauna creature) => config ? config.FeedsPerOffspringScaleFor(_status) : 1f;
 
         /// <summary>The herd's mark: its spindles lean toward our domain's hue (<c>herdHueLean</c>), and light up
         /// (<c>herdGlow</c>) while the herd is drawn to the plane - always while herding, by the call while netting
@@ -1413,23 +1523,31 @@ namespace CosmicShore.Gameplay
             float ringDot = flightView ? dot * flightRingDotScale : dot, ringPixels = flightView ? flightRingDotPixels : 3f;
             int ringDots = flightView ? flightRingDots : 48;
             var fade = new Color(1f, 1f, 1f, flightView ? flightRingAlpha : 1f);
+            // the marks wear the worn colour set (ColorTrace), asked once per draw rather than once per mark
+            Color jackTint = ColorTrace.Retrace(ColorTrace.World, jackColor);
+            Color ringTint = ColorTrace.Retrace(ColorTrace.World, ringColor);
+            Color decoyTint = ColorTrace.Retrace(ColorTrace.World, decoyColor);
+            Color dangerTint = ColorTrace.Retrace(ColorTrace.World, dangerColor);
             bool calling = Calling;
             for (int k = 0; k < 2; k++)
             {
-                if (!flightView || _herding) marks.Dot(_jack[k], jackColor, dot * 3f, 8f);
-                if (!calling) marks.Ring(_jack[k], _r, _f, ring, ringDots, ringColor * fade, ringDot, ringPixels);
+                if (!flightView || _herding) marks.Dot(_jack[k], jackTint, dot * 3f, 8f);
+                if (!calling) marks.Ring(_jack[k], _r, _f, ring, ringDots, ringTint * fade, ringDot, ringPixels);
             }
+            // where the hull will be when the jacks take off: halfway between them (the take-off jump, SetHerding)
+            if (!flightView && _herding)
+                marks.Ring(OnPlane(JacksCentre), _r, _f, Mathf.Max(6f, ring * 0.12f), 16, takeOffColor, ringDot, ringPixels);
             for (int s = 0; s < 2; s++)
             {
                 if (!_decoyOn[s]) continue;
                 // the decoy is drawn as a third jack (JacksBodies), so it wears a jack's mark; its ring keeps the decoy's colour
-                if (!flightView || _herding) marks.Dot(_decoys[s], jackColor, dot * 3f, 8f);
-                marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyColor * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
+                if (!flightView || _herding) marks.Dot(_decoys[s], jackTint, dot * 3f, 8f);
+                marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyTint * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
             }
-            float charge = Level(Element.Charge);
+            float share = DangerShare;
             for (int i = 0; i < _herd.Count; i++)
-                if (JacksMath.IsDanger(_herd[i].Roll, charge))
-                    marks.Dot(_herd[i].LastPos + _u * 4f, dangerColor, dot * 1.5f, 5f);
+                if (_herd[i].Roll < share)
+                    marks.Dot(_herd[i].LastPos + _u * 4f, dangerTint, dot * 1.5f, 5f);
             marks.End();
         }
 

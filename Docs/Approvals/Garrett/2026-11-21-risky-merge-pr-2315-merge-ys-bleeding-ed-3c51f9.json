@@ -1,0 +1,51 @@
+{
+  "id": "2026-11-21-risky-merge-pr-2315-merge-ys-bleeding-ed-3c51f9",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-21T15:01:28+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2315 (merge(Ys-bleeding-edge): the menu before the Relay host, the 41% boot fix, B45 load and menu perf, the Stoat ripple) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/Classes/SO_Class_Dolphin.asset, Assets/_SO_Assets/Classes/SO_Class_Grizzly.asset, Assets/_SO_Assets/Classes/SO_Class_Jacks.asset, Assets/_SO_Assets/Classes/SO_Class_Manta.asset and 7 more",
+  "branch": "Ys-bleeding-edge",
+  "pr": 2315,
+  "commit": "4f49c9a23",
+  "paths": [
+    "&",
+    ".claude/skills/bug-ledger/SKILL.md",
+    "Assests/TextMesh",
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_BroodRush.asset",
+    "Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_BroodRush.asset.meta",
+    "Assets/Resources/StoatRipple.mat",
+    "Assets/Unity",
+    "Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold",
+    "Assets/_Graphics/Materials/Graphs/StoatRipple.shader",
+    "Assets/_Graphics/Materials/Shaders/UI/Hull_Lit.mat",
+    "Assets/_Graphics/Materials/Shaders/UI/SelectionRim.mat",
+    "Assets/_SO_Assets/Classes/SO_Class_Dolphin.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Grizzly.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Jacks.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Manta.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Rhino.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Serpent.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Squirrel.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Swordfish.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Termite.asset",
+    "Assets/_SO_Assets/Classes/SO_Class_Urchin.asset",
+    "Assets/_SO_Assets/Games/GameLists/TrainingGames.asset",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_BlockBandit.asset",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_BlockBandit.asset.meta",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_DolphinDarts.asset",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_DolphinDarts.asset.meta",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_MazeRun.asset",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_MazeRun.asset.meta",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_SlipAndStride.asset",
+    "Assets/_SO_Assets/Games/_Archive/SO_TrainingGame_SlipAndStride.asset.meta"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/Classes/SO_Class_Dolphin.asset, Assets/_SO_Assets/Classes/SO_Class_Grizzly.asset, Assets/_SO_Assets/Classes/SO_Class_Jacks.asset, Assets/_SO_Assets/Classes/SO_Class_Manta.asset and 7 more"
+    }
+  ]
+}

@@ -57,6 +57,7 @@ namespace CosmicShore.Utility
             if (!IsActive || !gameData) return;
             StartAt = Mathf.Clamp(seconds, 0f, Recording.Duration);
             CourseSeedOverride.Forced = Summary != null ? Summary.CourseSeed : 0;
+            CourseVariantOverride.Forced = Summary != null ? Summary.CoursePoolEntry - 1 : -1;
             gameData.InvokeGameLaunch();
         }
 
@@ -67,6 +68,7 @@ namespace CosmicShore.Utility
             Summary = null;
             StartAt = 0f;
             CourseSeedOverride.Forced = 0;
+            CourseVariantOverride.Forced = -1;
         }
 
         /// <summary>The seat the local player takes: the recording's first human pilot, else its first track.</summary>
@@ -116,6 +118,7 @@ namespace CosmicShore.Utility
             gameData.RequestedDomainCount = Mathf.Max(1, domains.Count);
 
             CourseSeedOverride.Forced = Summary != null ? Summary.CourseSeed : 0;
+            CourseVariantOverride.Forced = Summary != null ? Summary.CoursePoolEntry - 1 : -1;
             MenuReturnCard.Clear();
         }
     }

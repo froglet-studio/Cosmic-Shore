@@ -88,17 +88,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheBreakwaterVariant_BoostsOnTheLegs_AndLetsGoBeforeEachStation()
+        public void TheBreakwaterVariant_HoldsTheAfterburnerAllRace()
         {
-            // Tools/Build/switchback_dolphin_sim.py --mode Breakwater (2026-10-26): with the base bands (12 deg, stick 0.35)
-            // an AI Sparrow boosted 8-18% of a lap and took 110-131 s; with these, 41-45% and 79-82 s, no station clipped.
-            // Under a 0.9 s release runway the boosted hull reaches the station too fast to line up on its 18 u eye
-            // and clips the danger weave.
+            // The trained Time drive (2026-11-08, job breakwater-sparrow-time, PR #1793, Tools/Build/promote_trained_drives.py):
+            // holding the afterburner all race beat letting go before each station on 8 fresh courses an intensity
+            // (breakwater_sparrow_sim.py: 115-124 s against 158-162 s for the old let-go drive), even though it clips the
+            // Danger weave 13-22 times a race. If a clip costs more in the game than the model's ~1.5 s, the let-go drive
+            // (alignDegrees 45, releaseRunwaySeconds 1.25) is the fallback: promote_trained_drives.py --revert.
             var variant = Resources.Load<HoldBoostAIPolicySO>("AIBoostPolicies/SparrowAIBoostPolicy_Breakwater");
             Assert.IsNotNull(variant, "Breakwater's Sparrow drive variant is missing");
-            Assert.GreaterOrEqual(variant.AlignDegrees, 30f, "the boost must start on a leg, not only dead on the station");
-            Assert.GreaterOrEqual(variant.ReleaseRunwaySeconds, 1f, "let go early enough to line up on the eye");
-            Assert.Greater(variant.EngageRunwaySeconds, variant.ReleaseRunwaySeconds, "engage needs more runway than release");
+            Assert.GreaterOrEqual(variant.AlignDegrees, 90f, "the boost starts at any heading");
+            Assert.AreEqual(0f, variant.EngageRunwaySeconds, "no runway needed to start");
+            Assert.AreEqual(0f, variant.ReleaseRunwaySeconds, "none to let go");
         }
     }
 }

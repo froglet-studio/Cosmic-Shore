@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,7 +21,8 @@ namespace CosmicShore.UI
     /// </list>
     /// These five cards (with the omni crystal's) are every control the Jacks have: the herding view draws no buttons of its
     /// own (2026-10-25: "on PC the gamepad view should only every have the 5 standard ability icons").
-    /// The view is the Rhino's HUD (the hull is a Rhino clone). The herd count is GENERATED into the Mass card at runtime
+    /// The view is the Jacks' own (<see cref="JacksHUDView"/>, JacksHUDVariant, forked from the Rhino's on 2026-11-13: the
+    /// Rhino's view built its katana over the cards), each card's level-5 picture swapped in by the base view. The herd count is GENERATED into the Mass card at runtime
     /// (the Wrasse's counts are the pattern), so the HUD prefab carries no extra object. Polled from this hull's own
     /// executor, a serialized reference (vessel rule 14), behind the fleet's pilot gate (rule 5); every push is
     /// change-detected.
@@ -81,7 +83,7 @@ namespace CosmicShore.UI
             {
                 _shownCount = count;
                 _count.text = TemplateText.Fill(countTemplate, "count", count.ToString());
-                _count.color = count > crew.MinHerd ? countLiveColor : countFloorColor;
+                _count.color = ColorTrace.Retrace(ColorTrace.Ui, count > crew.MinHerd ? countLiveColor : countFloorColor);
             }
 
             float danger = crew.DangerShare;

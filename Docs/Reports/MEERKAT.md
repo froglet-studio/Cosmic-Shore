@@ -1,15 +1,24 @@
 # Meerkat — where it stands (report)
 
-**From:** Yash's sessions and Garrett's kit work, 2026-10-27 to 2026-11-01.
+**From:** Yash's sessions and Garrett's kit work, 2026-10-27 to 2026-11-03.
 
-**Branch:** everything below is on `Ys-bleeding-edge`. Nothing of the Meerkat is on `bleeding-edge` until Yash has
-played it in the editor.
+**Branch:** everything below is on `Ys-bleeding-edge`, except the 2026-11-03 work (its own hull, HUD, icons, class cards,
+phone controls and round 27), which is on the local branch `meerkat/ready` until Yash merges it. Nothing of the Meerkat
+is on `bleeding-edge` until Yash has played it in the editor.
 
 **Status:**
 - Designed in the Vessel Studio artifact (rounds 1-26), cloned to Unity, then changed further in Unity by Yash
   (2026-10-29 to 11-01): Soliton Tunnels, the slip-and-slide ride and the plain-wormhole look.
-- The Unity code compiled clean at the last check (the reference compile, player and editor, 2026-10-28).
-- **None of it has been played in the Unity editor yet.** That is the next step (section 5).
+- **Round 27 (2026-11-03) brought those changes back into the artifact**, so the artifact and the game agree again
+  (`studio_to_unity.py --check`: 80 mapped, 0 Meerkat drift).
+- **2026-11-03, "ready with all its vessel skills" (Yash):** its own hull (`Meerkat.fbx` on the Stoat's rig), its own HUD
+  row and five icons (the four abilities and the omni card), its own class cards, and a phone profile (section 5).
+- The Unity code compiled clean at the last check (the reference compile, player and editor, 2026-10-28; the 2026-11-03
+  HUD files compiled with Unity's Roslyn against the project's built assemblies, not in the editor).
+- **2026-11-20, the wormhole revisited (Yash):** it looks and rides like a real wormhole, and nothing inside a tube
+  touches anything outside it, on every machine (sections 1, 3 and 4). Compiled and tested in the open editor; the look
+  was captured there on a test tunnel, not yet flown by a person.
+- **None of it has been played by a person in the Unity editor yet.** That is the next step (section 5).
 
 ## 1. In one minute
 
@@ -24,10 +33,16 @@ played it in the editor.
   the cell to the whole cell.
 - **You slip and slide through it.** Gravity presses you to the inner wall and you slide along it, bouncing now and then.
   There is no left stick; RT gives a small push, and you leave at the speed you carry, a little boosted (the slingshot).
-- **It looks like a plain wormhole** (2026-11-01): bent space, a mouth that lenses the world into an Einstein ring, and a
-  stretch inside (`Docs/Shaders/WORMHOLE_SHADERS.md` §16).
-- **Inside a tube is another dimension.** Nothing outside touches you, you collect nothing, and you are solid again when
-  you come out.
+- **It looks like a real wormhole** (2026-11-20, `Docs/Shaders/WORMHOLE_SHADERS.md` §17, on top of §16's bent space and
+  Einstein ring):
+  - a mouth shows the place round its other mouth, so it reads as a way through;
+  - its ring flares while it forms;
+  - riding, you see only the tube's inner wall (2026-11-22, §18): a grid on bent space that follows the tube's path and
+    rushes past, your hull, and a light at the way out that opens onto the world as you reach it. The outer world is not
+    drawn while you are inside. Leaving throws one ripple.
+- **Inside a tube is another dimension** (widened 2026-11-20, `R_VesselActions/MEERKAT.md` §11). No prism, crystal,
+  blast, round, mine, skimmer, zap or creature outside reaches a rider, and a rider reaches none of them. What a tunnel
+  carries is sealed until it is fired out. It holds on every player's machine. You are solid again when you come out.
 - **It swallows the world round its way in.**
   - Prisms and crystals near the mouth are pulled in.
   - They are carried through stretched and twisted, first in first out, so nothing catches you inside.
@@ -45,15 +60,15 @@ played it in the editor.
 - **In Unity** (pull `Ys-bleeding-edge`, open the project, wait for the compile):
   1. Toybox (Lava Lamp), Vessel Changer: the Meerkat. RT a short, fat wormhole. Inside, you drop onto the wall and slide.
      Hold RT for a small push. Fly out of the far mouth a little faster than you went in.
-  2. Look at a wormhole from outside: the world round its mouth bends into a ring. Inside, the view streams toward the
-     way out.
+  2. Look at a wormhole from outside: inside the ring round its mouth you see the place at its other end. Inside, you
+     see only the tube's wall and your hull, with a light at the way out that opens onto the world.
   3. Form a wormhole next to prisms: they are pulled in, stretched through and fired out. None catches you inside, and
      you lose no petal in the tube. Form one through a wall of prisms: you pass through and the wall stands.
   4. Fly into an omni crystal: a Soliton Network opens round you. Watch an AI Meerkat take one: its network opens too.
   5. Burrow Run (the Meerkat's Time mini-game): the AI forms wormholes, slides them and threads its rings.
   6. Y: Sentinel Mode. A sentinel stands at each new wormhole's way in.
-- **In the artifact:** https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa, the Meerkat card. It is round 26: it still has
-  round 24's left-stick slide and the older look, not the Unity changes above.
+- **In the artifact:** https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa, the Meerkat card. It is round 27: the game's
+  slip-and-slide, the plain wormhole and Yash's 14 Unity numbers, as above (`Docs/Studios/MEERKAT.md` round 27).
 
 The full hand tests are the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Two of them are marked SUPERSEDED
 (the left-stick slide and the tree); skip those.
@@ -78,10 +93,19 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
 | 2026-10-29 | Soliton Tunnels, the slip-and-slide, the Environmental Fundamentals window | `WORMHOLE_SHADERS.md` §15, `SolitonTunnelRider` |
 | 2026-10-29 | The Soliton Network omni ability; the Meerkat's own impactor container | `MeerkatImpactorDataContainer` |
 | 2026-11-01 | The plain wormhole: lensing mouths, Einstein ring, wider mouths | `WORMHOLE_SHADERS.md` §16 |
+| 2026-11-03 | Its own hull on the Stoat's rig (StoatAnimation still drives it), its class cards | `Docs/VesselModels/Meerkat.md`, `vessel_model/specs/meerkat.py`, `render_cards.py` |
+| 2026-11-03 | Its own HUD row (MeerkatHUDView, MeerkatHUDVariant), four ability icons and the omni card | MEERKAT.md §5, `icon_kit/specs/meerkat.py` |
+| 2026-11-03 | A phone profile (ThumbLifts, prototype) | MEERKAT.md §5, `author_touch_profiles.py` |
+| 2026-11-20 | A real wormhole: the far view, the throat, the forming flare, the exit ripple; the ridden tube is no longer marched | `WORMHOLE_SHADERS.md` §17, `SolitonTunnelLensPass.Throat` |
+| 2026-11-20 | Nothing inside a tube touches anything outside it, on every machine; carried prisms and crystals are sealed | MEERKAT.md §11, `SolitonIsolation`, `MeerkatSolitonExecutor.InsideTube` |
+| 2026-11-22 | Riding shows only the tube's inner wall, never the outer world | `WORMHOLE_SHADERS.md` §18, `SolitonTunnelLensPass.Throat`, `MWInside` |
 
 **Shared code touched (the trail):**
 - `OmniCrystalImpactor.CollectedByVessel`: an additive event in Garrett's area.
 - `SkimmerImpactor`: the prism skim honours a hull's `IHullContactGate`, a no-op for hulls without one.
+- 2026-11-20, the isolation: one guarded line each in the blast, round, mine, skimmer, hull and crystal impactors and in
+  `FulmenSystem`, and `Prism.SetSealed` with five guards (MEERKAT.md §11). All are no-ops in a match with no Meerkat.
+  Queued for Garrett's `/approve`.
 
 ## 4. Measured
 
@@ -89,34 +113,92 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
   - round 23 (the automatic ride): 67.9 / 66.9 / 87.8 / 68.5 s;
   - round 25 (the left-stick slide, phased): 79.6 / 77.3 / 90.7 / 78.1 s;
   - round 26 (the network): 77.6 / 78.1 / 99.1 / 77.5 s;
-  - without wormholes: about 110 / 111 / 120 / 110 s.
+  - without wormholes: about 110 / 111 / 120 / 110 s;
+  - round 27 (the game's slip-and-slide and numbers, 2026-11-03): 93.9 / 97.2 / 106.8 / 76.6 s, and 139.9 / 132.7 /
+    174.6 / 166.0 s without wormholes.
 
-  These are the artifact's rides. The Unity slip-and-slide has not been raced or timed.
+  In round 27 the network costs 10-20 s a race on I1-I3. Nothing steers inside it, so the AI comes out wherever it slid
+  and flies back. In a wormhole, holding RT, the AI slides 113-116 u/s on average against the 142.8 u/s it plans with.
+- **Round 28, the Rift** (artifact only; the same method: a fresh page, Warpline course seed 7, `runBatch([11])`):
+
+  | Warpline I1 / I2 / I3 / I4 (s) | Hard | Medium | Easy | No wormhole |
+  |---|---|---|---|---|
+  | the Rift | 70.1 / 72.4 / 76.1 / 76.6 | 75.8 / 74.3 / 85.1 / 75.5 | 77.8 / 79.3 / 86.2 / 83.1 | 103.5 / 103.3 / 107.6 / 91.0 (round 28b) |
+  | the network (round 27) | 93.9 / 97.2 / 106.8 / 76.6 | 99.1 / 98.5 / 85.1 / 87.1 | 107.3 / 105.5 / 86.2 / 83.1 | 139.9 / 132.7 / 174.6 / 166.0 |
+
+  - The network's 10-20 s loss is gone: the Rift is 24-31 s faster than the network on Hard I1-I3.
+  - Every AI rift ran the full 5 s, 712-716 u.
+  - Alone, the AI later rides its own rift in 6 of the 12 races that laid one; in field races 3 of 5 rides are by rivals.
+  - Round 28b: a sentinel no longer holds a rift past `riftLife` (45 s). Only the no-wormhole column moved (+6 s on
+    I1-I3): those three rides were of a rift older than 45 s, which only the bug allowed.
+  - The difficulty order now holds on I1-I3. On I4, Medium beats Hard by 1.1 s.
+
+  These are the artifact's races; the Unity build has still not been raced in the editor.
 - **Unity, without the editor (2026-10-28):** the maths tests pass in a dotnet harness, and the reference compile is
   clean, player and editor.
-- **The studio map today** (`studio_to_unity.py --check`, 2026-11-01): 69 mapped, **14 drift**. All 14 are Yash's Unity
-  tuning:
+- **The studio map** (`studio_to_unity.py --check`): on 2026-11-01, 69 mapped and **14 drift**, all 14 Yash's Unity tuning
+  (below). Round 27 (2026-11-03) brought them into the artifact and linked the slide's own numbers: **80 mapped, 0 drift**.
+  The 14:
   - the tunnel's throat 20 → 7.1 and mouth 40 → 44;
   - the network's forks 22 → 12, openings 12-56 → 16-50, radius 240-1,080 → 100-531, spread 360 → 273;
   - the network's diameters 40 / 46 → 10.5 / 18, tip 0.6 → 0.309, gnarl 0.3 → 0.779;
   - its top speed 90 → 119;
   - `suckRadius` 90 → 40.
 
+- **The wormhole's render cost (2026-11-20)**, in the Unity editor on an RTX 4070 Ti, the lens pass's GPU time per
+  1920x1080 frame (the method and the full table: `Docs/Shaders/WORMHOLE_SHADERS.md` §17.3):
+
+  | | Before (the plain wormhole) | Now (the real wormhole) |
+  |---|---|---|
+  | Riding inside, PC path | 5.85 ms | 0.50 ms |
+  | Riding inside, phone path | 5.90 ms (it fell back to the PC path while riding) | 0.66 ms |
+  | Outside views, PC path | 1.96 to 2.28 ms | 1.48 to 2.78 ms (unchanged within the noise) |
+  | Outside views, phone path | 0.50 to 1.22 ms | 0.36 to 0.61 ms (unchanged within the noise) |
+
+  Riding is about ten times cheaper because the tube you ride is no longer ray-marched. Not measured on a phone.
+
 ## 5. Open items, and what is asked of you
 
-1. **Play it in the editor** (section 2). Nothing of the Meerkat has been played there yet. When it passes, merge
-   `Ys-bleeding-edge` to `bleeding-edge`.
-2. **The artifact and the game have parted.** The game has the slip-and-slide, the plain-wormhole look and 14 tuned
-   numbers that the artifact does not. Either bring them into the artifact (it stays the source of truth), or call the
-   artifact the round-26 record and treat Unity as the source for the Meerkat from here.
-3. **Race time with the slip-and-slide** is unmeasured. The AI plans its tunnels as if it rides at the tube's top speed
-   (`SolitonTunnelConfigSO.MaxSpeed`, through `MeerkatSolitonConfigSO.SlideMaxSpeed`). With a small push (`thrust` 25) it
-   may not reach that, so it may form tunnels that do not pay. Time a Burrow Run once it is played.
+1. **Play it in the editor** (section 2). Nothing of the Meerkat has been played there by a person yet. When it passes,
+   merge `Ys-bleeding-edge` to `bleeding-edge`.
+   - For the look, judge what a still cannot show: whether the wall's rings rushing past feel like travelling (the
+     2026-11-22 ride), whether the ripple on leaving is welcome or a jolt, and whether a mouth's far view reads as "the
+     other end" when the other end is off screen (it then shows the mirrored edge of the frame).
+   - For the isolation, the checklist's hand test: ride through a rival's fire and a wall of prisms, with a second
+     player watching.
+2. **Done (round 27, 2026-11-03): the artifact and the game agree again.** The slip-and-slide, the plain-wormhole look
+   and the 14 tuned numbers are in the artifact, which stays the Meerkat's source of truth. The look's numbers sit in a
+   nested struct the clone script cannot write, so they are matched by hand (`Docs/Studios/MEERKAT.md` round 27).
+3. **Race time with the slip-and-slide** is measured in the artifact (round 27), not yet in the editor. The AI plans its
+   tunnels as if it rides at the tube's top speed (`SolitonTunnelConfigSO.MaxSpeed`, through
+   `MeerkatSolitonConfigSO.SlideMaxSpeed`). In the artifact, holding RT, it slides at about 80% of that, so some tunnels
+   pay less than planned. The network costs 10-20 s a race because nothing steers inside it. Time a Burrow Run once it is
+   played.
 4. **The Mix's Space L5 Burial** no longer lands, because a rider is phased. Keep it, change it or drop it: Yash's call
    with Garrett, whose design it extends.
-5. **The hull and its icons:** the Meerkat still wears the Stoat's model and placeholder icons (`/vessel-model`,
-   `/ability-icon`).
-6. **Touch:** no per-hull phone profile yet.
+5. **Done (2026-11-03): its own hull and icons.** `Meerkat.fbx` (`Docs/VesselModels/Meerkat.md`): a raised sensor head
+   with a visor band, ear dishes, digging claws, a plated back and a ringed tail, on the Stoat's rig and at its size, so
+   `StoatAnimation`, the colliders and the camera are unchanged. Its own HUD row and five icons (Sentinel Mode, Exit
+   Portal, Soliton, Faster Ride, the Soliton Network omni card) and its own class cards. Still for the owner's eye:
+   whether it reads as a meerkat in flight, and Garrett's pick on each icon (round 1, `Docs/Icons/sheets/meerkat.png`).
+6. **Done as a prototype (2026-11-03): touch.** A ThumbLifts profile: the left thumb flies, the right bends the reticle,
+   lift the left to form, lift the right to lengthen, tap the Charge card for Sentinel Mode. It needs a phone test and
+   Garrett's sign-off on the scheme; a bent long tunnel is not possible on a phone.
+7. **The AI's difficulty order** fails in the artifact's round-27 races: on Warpline I3, Medium and Easy beat Hard, and
+   on I4 Easy beats Medium. A finding for the AI plan (`Docs/AI_SYSTEM/AI_PLAN.md`), not tuned here. With round 28's Rift
+   it holds on I1-I3; on I4 Medium beats Hard by 1.1 s.
+8. **The Rift is in the artifact and cloned into Unity (round 28b, 2026-11-03), not yet played in the editor**
+   (`Docs/Studios/MEERKAT.md` rounds 28 and 28b, `R_VesselActions/MEERKAT.md` §7b).
+   - The omnicrystal's ultimate, after Apex's Wraith: into the void, then a soliton laid along the path flown, anyone's to
+     ride for 45 s. It replaces the Soliton Network; the network stays behind the `omniMode` selector.
+   - Its four keys (`omniMode`, `riftSpeed`, `riftSeconds`, `riftLife`) are on `MeerkatSolitonConfig` and mapped
+     (`studio_to_unity --vessel meerkat --check`: 84 mapped, 0 drift).
+   - In Unity: a void run in `MeerkatSolitonExecutor` (phased and faster through `MeerkatVesselTransformer`), its path
+     laid as a one-channel `SolitonNetwork` (`LayRift`), ridden by any Meerkat from its way in, gone after `riftLife`.
+   - Not in Unity yet: Garrett's kit on a rift (its swallow, exit portal and sentinel; the kit is bound to the conic
+     `SolitonTunnel`), and rifts are not replicated to other players (the hull's pose is).
+   - Yash's call before then: whether a long rift should stay as thin as Garrett's surface area makes it (a 712 u rift has
+     a 1.6 u throat).
 
 ## 6. Latest activity (generated)
 

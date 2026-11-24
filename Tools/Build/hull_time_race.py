@@ -106,6 +106,8 @@ def author(spec: dict):
     extra_toasts (optional: [(situation, template[, lib.toast kwargs])], the mode's own toasts after the race beats)
     extra_assets (optional: [(rel path, guid, content), ...] - assets the mode owns beyond its card, rule, toasts and
     preview, e.g. its own cell config; emitted and minted like them),
+    card_extra (optional: serialized card lines written before ComebackRatePerScoreDeficit, where SO_ArcadeGame declares
+                them - e.g. the StartingElements table; Brittle Star Time starts its I4 at Time 5),
     cell_configs (optional: [cell config guid, ...] - the scene Cell's CellConfigs; more than one is IntensityWise,
                   list order = intensity 1..n. Omitted: the donor's barren race cell stays)
     """
@@ -154,14 +156,14 @@ def author(spec: dict):
   Vessels:
   - {{fileID: 11400000, guid: {vessel_guid}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: {spec['comeback']}
+{spec.get('card_extra', '')}  ComebackRatePerScoreDeficit: {spec['comeback']}
 """)
 
     # 4. scene: clone the donor once, adopt it once committed.
@@ -184,7 +186,13 @@ def author(spec: dict):
 
     extra = spec.get("extra_assets", [])
     # Their folders are the mode's own (new) folders, so they get minted metas like the mode's script folder.
-    extra_dirs = sorted({os.path.dirname(rel) for rel, _, _ in extra})
+    # A folder that already exists with its own (not minted) meta is the project's, not the mode's (Brittle Star Time's
+    # AI policy variant lives in Resources/AIBoostPolicies): it keeps its meta and is not re-minted.
+    def foreign_folder(d: str) -> bool:
+        meta = os.path.join(ROOT, d + ".meta")
+        return os.path.exists(meta) and guid(f"folder/{d}") not in read_or_empty(d + ".meta")
+    extra_dirs = sorted({os.path.dirname(rel) for rel, _, _ in extra} - {d for d in
+                        {os.path.dirname(rel) for rel, _, _ in extra} if foreign_folder(d)})
     for d in extra_dirs:
         g.folder_meta(d)
     for rel, g_extra, content in extra:
@@ -208,16 +216,34 @@ def author(spec: dict):
     # controller block. Stands down once applied (the full block is then in the scene).
     if new_fields not in scene and new_fields != base_fields and scene.count(base_fields) == 1:
         scene = scene.replace(base_fields, new_fields)
+    # A donor controller's own fields left behind after the mode's block (a donor that grew fields after the clone).
+    # Unity drops them silently, so they are deleted here, and a tail still in the scene is an error.
+    tail = spec.get("donor_tail")
+    if tail:
+        scene = scene.replace(new_fields + tail, new_fields)
+        if tail in scene:
+            errors.append(f"{os.path.basename(scene_rel)}: the donor's retired controller fields are still in the scene")
     errors += [f"{os.path.basename(scene_rel)}: authored block no longer in the committed scene:\n{block}"
                for block in authored_blocks if block not in scene]
     g.emit_scene(scene_name, g_scene, scene)
 
-    # 5. preview - a card without one offers no Test Flight.
+    # 5. preview - a card without one offers no Test Flight. It previews the cells the SCENE runs:
+    # a mode with its own cell_configs used to be emitted with the Skim Race cell and an empty
+    # per-intensity list, so six Time cards (Breach, Decoy Run, Perch Run, Serpent Time, Slip Line,
+    # Thornline) showed another mode's world that never changed with the intensity row
+    # (author_preview_intensities.py --check holds the pair together).
+    # Read from the scene as emitted (its own cell_configs, or the donor's cells it inherited -
+    # Thornline, Breach and the other Thresher-cloned races pass none), so the two cannot disagree.
+    scene_cells = re.findall(r"^  CellConfigs:\n((?:  - \{[^\n]*\}\n)+)  cellTypeChoiceOptions: \d+\n", scene, re.M)
+    own_cells = (re.findall(r"guid: ([0-9a-f]{32})", scene_cells[0]) if len(scene_cells) == 1
+                 else spec.get("cell_configs") or [])
+    preview_cell = own_cells[0] if own_cells else PREVIEW_CELL
+    preview_by_intensity = ("\n" + "".join(f"  - {{fileID: 11400000, guid: {c}, type: 2}}\n" for c in own_cells)
+                            if len(own_cells) > 1 else " []\n")
     g.emit_asset(preview, g_preview, lib.header_for(lib.SCRIPT_GUIDS["ModePreviewDefinitionSO"], f"ModePreview_{member}") + f"""  Mode: {mid}
   Notes: '{spec['preview_notes']}'
-  PreviewCell: {{fileID: 11400000, guid: {PREVIEW_CELL}, type: 2}}
-  PreviewCellsByIntensity: []
-  StructurePrefab: {{fileID: 0}}
+  PreviewCell: {{fileID: 11400000, guid: {preview_cell}, type: 2}}
+  PreviewCellsByIntensity:{preview_by_intensity}  StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4

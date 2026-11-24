@@ -26,9 +26,9 @@ if (ti < 0) throw new Error("no embedded catalogue in voyage-board.html: run dee
 const data = html.slice(ti + tag.length, html.indexOf("</script>", ti));
 
 // deepzoom.js reads only these from the page at load; the exports below are its own internals.
-const exportsLine = "return { draw, TIERS,";
+const exportsLine = "return { draw, focusZ, TIERS,";
 if (!dz.includes(exportsLine)) throw new Error("deepzoom.js's return moved: update export_sky.js and golden.js");
-const dzOpen = dz.replace(exportsLine, "return { real, clusters: () => clusters, SRC: () => SRC, SY1, SY2, draw, TIERS,");
+const dzOpen = dz.replace(exportsLine, "return { real, clusters: () => clusters, SRC: () => SRC, SY1, SY2, draw, focusZ, TIERS,");
 const document = { getElementById: id => (id === "realsky" ? { textContent: data } : null) };
 const m = new Function("document", model + "\n" + dzOpen + "\nreturn { P, EXP, DZ };")(document);
 const { P, EXP, DZ } = m;

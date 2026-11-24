@@ -1,4 +1,6 @@
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -17,11 +19,14 @@ namespace CosmicShore.UI
         [Tooltip("This vessel's executor: the mode, the cooldowns, the dock, the missiles.")]
         [SerializeField] ShrikeExecutor shrike;
 
+        [Inject] GameDataSO _gameData;
+        IVesselStatus _status;
         bool _isLocalPilotHud;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
+            _status = vesselStatus;
 
             if (!view) view = GetComponentInChildren<ShrikeHUDView>(true);
 
@@ -41,6 +46,18 @@ namespace CosmicShore.UI
             view.SetMass(shrike.Nest01, shrike.Docked);
             view.SetSpace(shrike.Lance01, mode == ShrikeExecutor.Mode.Space);
             view.SetTime(shrike.Sling01, mode == ShrikeExecutor.Mode.Time);
+            view.SetDomainColor(ResolveDomainSignalColor());
+            view.SetKit(shrike.Painting && shrike.Locked && missiles > 0, shrike.Docked, shrike.FloraCount > 0,
+                        shrike.Lancing, shrike.Tethering, shrike.Slinging);
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Manta's and
+        /// the Brittle Star's HUDs read it; alpha 0 until the palette resolves (the view keeps its last colour).</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
     }
 }

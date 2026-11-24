@@ -60,6 +60,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | The Unity-side hardening programme (Blocks 1-6, status, decisions already made) | `Docs/prompts/MULTIPLAYER_HARDENING_PROMPT.md` |
 | Every party bug, with status | `Docs/PartySystem/BUGS.md` |
 | MPPM test procedures (smoke, stress, failure gates) | `Docs/PartySystem/TESTS.md` |
+| Automatic 2-4 player runs with built development players, no Editor (`-csMpAutoHost` / `-csMpAutoJoin`) | `python3 Tools/Build/mp_auto.py run --player <exe>`; `Docs/PartySystem/TESTS.md` § Automatic runs |
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 | A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
@@ -70,6 +71,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
 | The game's edit-mode tests, run in Amoebius | `Tools/Build/prisma_edit_mode_tests/run.sh` |
 | Amoebius online play: START ONLINE, + PLAYER 2, SETTINGS > ONLINE (UGS environment, UGS CHECK) | `Port/docs/LAUNCHER.md` § START ONLINE |
+| The Relay region a host's parties use (Settings > REGION, ping per region, Auto fallback) | `RelayRegionPreference.cs`, `RelayRegionProbe.cs` (`Assets/_Scripts/Controller/Multiplayer/`), `Assets/_Scripts/UI/Modals/RegionSettingsView.cs`; checklist entry "Settings > REGION" |
 | Netcode, transports, relay, UGS sign-in and Lobby, simulator, stats, faults (code; built in one place, `NetStack.cs`) | `Port/src/CosmicShore.Engine/Networking/Wire/` |
 
 ### 3.1 What reaches Claude by itself, and the sweep that reads it
@@ -92,8 +94,9 @@ online), the Bug Hunt's after-Play send (`BugHuntAutoSend`) pushes whatever is n
    every branch).
 3. Fix what can be fixed from the code, on `Ys-bleeding-edge` only, with the usual proof (§2: tests in Amoebius,
    `unity_refcompile`, the gates, the checklist entry). Never push to `bleeding-edge`; never touch the live UGS project.
-4. What needs a person (a hand retest, an editor step, a design call): *suggest* a Froglet Tasks ticket on the page
-   (one per branch; nobody is named or assigned; an approver approves it). Never file one unapproved.
+4. What needs a person (a hand retest, an editor step, a design call): a hand test in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and, with your person's yes, a swim-lane hand-off (`/handoff-for-test`,
+   `/handoff-open`; nobody is assigned).
 5. Add a dated row to `Docs/PartySystem/SWEEP_LOG.md`: tests read, what was found, what was fixed (commits),
    what was suggested. A sweep that found nothing new writes one line and changes nothing else.
 

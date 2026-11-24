@@ -14,6 +14,11 @@ namespace CosmicShore.ScriptableObjects
     /// throw), the elemental boost and the default "base kit" pilot are gone, because a pilot is no longer part of the
     /// kit. An empty seat is a pilot with no sight. Authored from <c>Docs/Pilots/pilots_and_artifacts.json</c> by
     /// <c>Tools/Build/author_pilot_assets.py</c>.</para>
+    ///
+    /// <para><b>2026-11-07 (Garrett): this asset is a CALLSIGN, not a person.</b> Callsigns are a fixed set, each one
+    /// vision power. The pilots a player owns are unique people layered on a callsign (<see cref="PilotRecord"/>,
+    /// Docs/Pilots/INVENTORY.md §3): their own name, story, faction and animal combo. A person's id is this asset's id plus
+    /// '#' and a seed, so <see cref="PilotArtifactCatalogSO.TryGetPilot"/> finds the callsign from any pilot's id.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "Pilot", menuName = "ScriptableObjects/Pilots/Pilot")]
     public class PilotSO : ScriptableObject

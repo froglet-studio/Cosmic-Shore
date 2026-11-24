@@ -63,9 +63,22 @@ namespace CosmicShore.UI
         Vector2 _amin, _amax, _omin, _omax;
         Vector2[] _followBase;
         bool _trayOut;      // the right side has been faded by the tray and is not fully back yet
+        AdaptiveCanvasScaler _scaler;
+        bool _capturedUpright;
+
+        // Upright (Docs/MENU_REDESIGN_B.md section 138) the window is stacked, so there is no settings column for the tray to
+        // slide over: FULL SCREEN grows the frame to the window instead.
+        bool UseTray => extendAsTray && !(_scaler && _scaler.UsesPortraitLayout);
 
         void OnEnable()
         {
+            if (!_scaler) _scaler = GetComponentInParent<AdaptiveCanvasScaler>(true);
+            if (_scaler)
+            {
+                _scaler.PortraitLayoutChanging += OnPortraitChanging;
+                _scaler.PortraitLayoutChanged += OnPortraitChanged;
+                if (_captured && _scaler.UsesPortraitLayout != _capturedUpright) _captured = false;
+            }
             Capture();
             _flying = preview && preview.HasFocus;
             _wantFull = false;
@@ -74,10 +87,34 @@ namespace CosmicShore.UI
             Apply();
         }
 
+        void OnDisable()
+        {
+            if (!_scaler) return;
+            _scaler.PortraitLayoutChanging -= OnPortraitChanging;
+            _scaler.PortraitLayoutChanged -= OnPortraitChanged;
+        }
+
+        // The frame and the tray parts are posed per orientation (PortraitRect): return them to rest in the old pose, then
+        // take the new pose as the rest the frame grows from.
+        void OnPortraitChanging(bool upright)
+        {
+            _wantFull = false;
+            _full = 0f;
+            Apply();
+        }
+
+        void OnPortraitChanged(bool upright)
+        {
+            _captured = false;
+            Capture();
+            Apply();
+        }
+
         void Capture()
         {
             if (_captured || !previewRect) return;
             _captured = true;
+            _capturedUpright = _scaler && _scaler.UsesPortraitLayout;
             _amin = previewRect.anchorMin; _amax = previewRect.anchorMax;
             _omin = previewRect.offsetMin; _omax = previewRect.offsetMax;
             _followBase = new Vector2[followTray?.Length ?? 0];
@@ -108,7 +145,7 @@ namespace CosmicShore.UI
         void Apply()
         {
             float f = _full * _full * (3f - 2f * _full);       // smoothstep
-            if (extendAsTray)
+            if (UseTray)
             {
                 ApplyTray(f);
                 return;

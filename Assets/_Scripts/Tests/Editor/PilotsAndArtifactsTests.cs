@@ -15,7 +15,9 @@ namespace CosmicShore.Tests
     /// The shipped roster that Tools/Build/author_pilot_assets.py writes (Garrett, 2026-10-27): eighteen pilots, one per
     /// callsign, on any vessel (Docs/Pilots/CALLSIGNS.md); Javelin and Aegis, payload transformations with four element
     /// tracks each and a twist at level 5 (Docs/Pilots/ARTIFACTS.md); the track numbers both transformations read; the
-    /// spend rule (<see cref="PilotLoadoutStore.Price"/>) and the Hangar's slot rule (<see cref="PilotLoadoutStore.Toggle"/>).
+    /// starter hoard, every kind rolling unique artifacts (Docs/Pilots/INVENTORY.md), the feed rule
+    /// (<see cref="PilotLoadoutStore.Check"/>) and the Hangar's slot rule (<see cref="PilotLoadoutStore.Toggle"/>). The
+    /// inventory's own rules are <see cref="AccountInventoryTests"/>.
     /// <see cref="PilotCatalogAssetTests"/> holds the catalog's own validation.
     /// </summary>
     public class PilotsAndArtifactsTests
@@ -84,8 +86,9 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, t.CostFrom(10), "nothing to raise at the top");
             Assert.IsFalse(ArtifactSO.Twisted(Element.Mass, new ArtifactLevels(4, 0, 0, 0)));
             Assert.IsTrue(ArtifactSO.Twisted(Element.Mass, new ArtifactLevels(5, 0, 0, 0)), "the twist is at level 5");
-            Assert.AreEqual(10, new ArtifactLevels(13, -2, 0, 0).Mass, "levels clamp to 0-10");
-            Assert.AreEqual(0, new ArtifactLevels(13, -2, 0, 0).Space);
+            Assert.AreEqual(10f, new ArtifactLevels(13, -2, 0, 0).Mass, "levels clamp to 0-10");
+            Assert.AreEqual(0f, new ArtifactLevels(13, -2, 0, 0).Space);
+            Assert.AreEqual(7f, t.Value(2.5f), 1e-4f, "levels are continuous since 2026-11-07");
         }
 
         [Test]
@@ -182,51 +185,55 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void VoyageFinds_AreLockedUntilFound_TheRestAreFree()
+        public void VoyageFinds_AreNotInTheStarterHoard_TheRestAre()
         {
             Assert.IsTrue(Artifact("artifact.hydra").FoundOnVoyages);
             Assert.IsTrue(Artifact("artifact.aftershock").FoundOnVoyages);
             Assert.IsFalse(Artifact("artifact.javelin").FoundOnVoyages);
             Assert.IsFalse(Artifact("artifact.aegis").FoundOnVoyages);
-            Assert.IsTrue(PilotLoadoutStore.Holds("artifact.javelin"), "a free artifact is always held");
 
-            bool had = PilotLoadoutStore.Holds("artifact.hydra");
-            try
-            {
-                PilotLoadoutStore.Forget("artifact.hydra");
-                Assert.IsFalse(PilotLoadoutStore.Holds("artifact.hydra"), "not found yet: locked");
-                PilotLoadoutStore.Grant("artifact.hydra");
-                Assert.IsTrue(PilotLoadoutStore.Holds("artifact.hydra"), "found and docked home: held");
-            }
-            finally
-            {
-                if (had) PilotLoadoutStore.Grant("artifact.hydra");
-                else PilotLoadoutStore.Forget("artifact.hydra");
-            }
+            // A fresh account's hoard (AccountInventoryStore.GrantStarter): one unique artifact of each free kind, none of
+            // a kind found only on voyages, and one pilot per callsign.
+            var inv = new AccountInventory();
+            AccountInventoryStore.GrantStarter(inv, Catalog(), 0);
+            Assert.AreEqual(1, inv.CountOfKind("artifact.javelin"));
+            Assert.AreEqual(1, inv.CountOfKind("artifact.aegis"));
+            Assert.AreEqual(0, inv.CountOfKind("artifact.hydra"), "found on voyages: not a starter");
+            Assert.AreEqual(Callsigns.All.Count, inv.Pilots.Count);
+            Assert.IsTrue(inv.ResolveArtifact("artifact.javelin") != null, "a legacy kind id resolves to the starter Javelin");
         }
 
         [Test]
-        public void Price_PaysTheNextLevel_RefusesShortBalances_AndStopsAtTheTop()
+        public void EveryKind_RollsUniqueArtifacts_AttunedToOneOfItsTracks()
         {
-            var t = new ArtifactTrack { baseCost = 2, costStep = 1 };
-            Assert.AreEqual(PilotLoadoutStore.RaiseResult.Raised, PilotLoadoutStore.Price(t, 3, 5, out int cost));
-            Assert.AreEqual(5, cost);
-            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NotEnoughCrystals, PilotLoadoutStore.Price(t, 3, 4, out _));
-            Assert.AreEqual(PilotLoadoutStore.RaiseResult.AtTop, PilotLoadoutStore.Price(t, ArtifactTrack.MaxLevel, 999, out _));
-            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NoSuchTrack, PilotLoadoutStore.Price(null, 0, 999, out _));
+            foreach (var kindSO in Catalog().Artifacts)
+            {
+                var kind = kindSO.ToArchetype();
+                var ids = new HashSet<string>();
+                for (ulong seed = 1; seed <= 64; seed++)
+                {
+                    var a = ArtifactGenerator.Roll(kind, seed);
+                    Assert.IsNotNull(a, kindSO.Id);
+                    Assert.IsTrue(ids.Add(a.Id));
+                    Assert.IsNotNull(kindSO.Track(a.Element), $"{a.Id} is attuned to a track {kindSO.Id} authors");
+                    Assert.IsTrue(Catalog().TryGetArtifact(a.Id, out var back) && back == kindSO, "the catalog finds the kind from the id");
+                }
+            }
         }
 
         [Test]
-        public void TryRaise_WithNoProfileLoaded_RefusesAndLeavesTheLevel()
+        public void Feed_WithNoProfileLoaded_RefusesAndLeavesTheArtifact()
         {
             Assume.That(!CosmicShore.UI.PlayerDataService.Instance, "a profile is loaded in this editor session");
-            var javelin = Artifact("artifact.javelin");
-            int before = PilotLoadoutStore.TrackLevel(javelin.Id, Element.Space);
-            Assert.AreEqual(0, PilotLoadoutStore.Crystals(Element.Space), "no profile, no crystals");
-            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NotEnoughCrystals, PilotLoadoutStore.TryRaise(javelin, Element.Space));
-            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NotEnoughCrystals, PilotLoadoutStore.TryRaise(javelin, Element.Space, payWithOmni: true));
-            Assert.AreEqual(before, PilotLoadoutStore.TrackLevel(javelin.Id, Element.Space));
-            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NoSuchTrack, PilotLoadoutStore.TryRaise(null, Element.Space));
+            var a = ArtifactGenerator.Roll(Artifact("artifact.javelin").ToArchetype(), 7);
+            Assert.AreEqual(0, PilotLoadoutStore.Crystals(a.Element), "no profile, no crystals");
+            Assert.AreEqual(PilotLoadoutStore.FeedOutcome.NotEnoughCrystals, PilotLoadoutStore.Check(a, a.Element, 5, 0));
+            Assert.AreEqual(PilotLoadoutStore.FeedOutcome.Fed, PilotLoadoutStore.Check(a, a.Element, 5, 5));
+            Assert.AreEqual(PilotLoadoutStore.FeedOutcome.Fed, PilotLoadoutStore.Check(a, Element.Omni, 5, 5), "omni feeds any artifact");
+            var other = a.Element == Element.Mass ? Element.Space : Element.Mass;
+            Assert.AreEqual(PilotLoadoutStore.FeedOutcome.WrongElement, PilotLoadoutStore.Check(a, other, 5, 99), "one element only");
+            Assert.AreEqual(PilotLoadoutStore.FeedOutcome.NothingToFeed, PilotLoadoutStore.Check(a, a.Element, 0, 99));
+            Assert.AreEqual(PilotLoadoutStore.FeedOutcome.NoSuchArtifact, PilotLoadoutStore.Check(null, a.Element, 5, 99));
         }
 
         [Test]

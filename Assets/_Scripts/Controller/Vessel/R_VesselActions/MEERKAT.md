@@ -10,14 +10,25 @@ Cloned from the Vessel Studio (2026-10-27, `/artifact-to-unity`): the Meerkat pa
   - the wormhole is a **Soliton Tunnel**, an environmental fundamental, and the omnicrystal grows a **Soliton Network**;
   - both ride as a **slip-and-slide** (`SolitonTunnelRider`, no left stick; this replaced round 24's left-stick slide);
   - the look is the **plain wormhole** of `Docs/Shaders/WORMHOLE_SHADERS.md` §16 (2026-11-01).
+- **2026-11-20 (Yash: "the visual will be like a wormhole ... anything inside a wormhole won't interact with anything
+  outside the hole"):**
+  - the look is a **real wormhole** (`WORMHOLE_SHADERS.md` §17): a mouth shows the place round its other mouth, its
+    ring flares as it forms, and leaving throws one ripple;
+  - **riding, the camera sees only the tube's inner wall** (2026-11-22, Yash: "players should not be able to see outer
+    world that time, it's like gliding through the inner surface of the space-time hole, and exiting to the universe
+    again"; `WORMHOLE_SHADERS.md` §18): a grid on bent space that follows the tube's path, the riders in it, and the way
+    out as a light that opens onto the world;
+  - **nothing inside a tube touches anything outside it**, on every machine: §11 is the audit.
 - **Still as built here:**
-  - inside any tube the hull is phased (§9, round 25);
+  - inside any tube the hull is phased (§9, round 25; widened to every machine and every kind of contact in §11);
   - Space's surface area sizes a wormhole (§8, round 23), and the swallow carries things first in first out;
   - Mass sizes the network (§7a, round 26);
   - Garrett's four abilities are in (§10).
-- **Unity tuning not in the artifact:** `studio_to_unity.py --check` reads 69 mapped, 14 drift. These are Yash's Unity
-  values for the tunnel's throat and mouth, the network's size, forks, diameters, tip and gnarl, its top speed, and
-  `suckRadius`. The decision is in `Docs/Reports/MEERKAT.md` §5.
+- **The artifact and the game agree again (round 27, 2026-11-03):** the slip-and-slide, the plain wormhole and Yash's 14
+  Unity numbers are in the artifact; `studio_to_unity.py --vessel meerkat --check` reads 80 mapped, 0 drift.
+- **The Rift (round 28, cloned 2026-11-03, round 28b):** the omni crystal's ultimate is a Wraith-style void run that
+  lays a rift (§7b); the Soliton Network is one selector away (`omniMode`).
+- **Its own hull, HUD, icons, class cards and phone profile (2026-11-03):** §5.
 - **Nothing here is editor-verified yet.** The open hand tests are the Meerkat entries in
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`; two of them are marked SUPERSEDED. The report is `Docs/Reports/MEERKAT.md`.
 
@@ -213,28 +224,44 @@ line for line:
    roots' `AiStick`).
 
 `aiNoise` bends it off the mark (0, Hard, by default). Easy and Medium race on the gate race's own handicap
-(`GateRaceHandicap`) in Burrow Run. `aiWormhole` off flies without tunnels.
+(`GateRaceHandicap`) in its gate race. `aiWormhole` off flies without tunnels.
 
 ## 4. Where it is offered
 
 - **The Toybox Vessel Changer (lava lamp):** `ToyVesselRoster.Default` + `Vessel Prefab Container`.
-- **Its Time mini-game:** `GameModes.BurrowRun = 71` (`Arcade/BURROWRUN.md`), in the arcade list.
+- **Its Time mini-game:** Warpline (`GameModes.Warpline = 65`, `Arcade/WARPLINE.md`), its only one since 2026-11-22
+  (Yash). Burrow Run (71), which was built as this hull's race, now seats the Jewel Wasp (`Arcade/BURROWRUN.md`).
+- **Its Charge, Mass and Space games** (2026-11-15, `Arcade/MEERKAT_GAMES.md`): Sentry (`GameModes.Sentry = 105`, Sentinel Mode), Warren (`Warren = 106`, the exit portal) and Cave-in (`CaveIn = 107`, the soliton swallow and fire), in the arcade list. Each changes nothing about the kit and steers the AI only.
 - **Its class card** (`SO_Class_Meerkat`, the Stoat's icons as placeholders) is in `SO_Classlist_All` / `_Classes`.
 
 ## 5. Stand-ins and open slots
 
-- **Hull:** the Stoat's model and lope, as in the studio. A real Meerkat hull is `/vessel-model` work.
-- **HUD:** the Stoat's `StoatHUDVariant` with `MeerkatHUDController` (the LOCKED four-icon row, charge → mass → space →
-  time): Charge, the sentinels standing out of the pool; Mass, the last exit portal's prisms still standing (of six);
-  Space, the reticle growing back (full once RT would form); Time, the ride's progress through any soliton (in the ready
-  colour while riding). The Stoat's view has no ready colour on its Charge and Space gauges.
+- **Hull (its own since 2026-11-03):** `Meerkat.fbx` (`Docs/VesselModels/Meerkat.md`, `vessel_model/specs/meerkat.py`), a
+  new hull on the Stoat's borrowed rig (the Goby's pattern): the same bones, rests, slots, shape keys and takes, so
+  `StoatAnimation` still drives it and `author_meerkat_assets.py` swaps it in by the model guid alone (`--check` fails on
+  a prefab still drawing `Stoat.fbx`). The class cards are rendered from it (`render_cards.py Meerkat`).
+- **HUD (its own since 2026-11-03):** `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs,
+  built by `author_meerkat_assets.py`, the Angler's pattern), `MeerkatHUDView` and `MeerkatHUDController` (the LOCKED
+  four-icon row, charge → mass → space → time). One plate gauge per card: Charge, the sentinels standing out of the pool,
+  in the ready colour while Sentinel Mode is on; Mass, the last exit portal's prisms still standing (of six); Space, the
+  reticle growing back, in the ready colour once RT would form; Time, what is left of the ride, in the ready colour while
+  riding.
 - **The element map** (`ElementalAbilityMaps/Meerkat.asset`): Garrett's four rows (§10; Space's area and swallow are §8), written by
-  `author_meerkat_assets.py`. `element_ability_table.py Meerkat`: 4/4 abilities, scaling 4/4, L5 gates 4/4.
-- **The ability icons** are the Stoat's placeholders (`StoatHUDVariant`); the Meerkat's own four are `/ability-icon` work.
+  `author_meerkat_assets.py`. `element_ability_table.py Meerkat`: 4/4 abilities, L5 gates 4/4; it prints Space as "NO SCALING"
+  because Space's surface area is a direct level read the table cannot attribute (`MeerkatSolitonExecutor.SpaceLevel`), not
+  because it does not scale.
+- **The ability icons (its own since 2026-11-03, round 1):** `Assets/_Graphics/Icons/AbilityIcons/Meerkat/` from
+  `Tools/Build/icon_kit/specs/meerkat.py` (guids in `Tools/Build/meerkat_icon_ids.py`): Sentinel Mode (the hull on sentry
+  over the mouth it guards), Exit Portal (the way out ringed by six prisms), Soliton (the wormhole, an arch from one mouth
+  to the other), Faster Ride (the hull shooting out of a mouth). Single white sprites; Garrett picks from the sheet
+  (`Docs/Icons/sheets/meerkat.png`) per the `/ability-icon` round.
 - **No `[CliCommand]`, no Unity tuning window:** tune in the artifact and clone. In play mode the
   `MeerkatSolitonConfig` asset's inspector changes are read live, for a quick look.
-- **Touch:** no per-hull phone profile yet (`TouchInputStrategy` raises RT/LT the fleet's way; the right stick on a phone
-  is not mapped for this hull).
+- **Touch (prototype, 2026-11-03, Yash; needs Garrett's sign-off and a phone test):** a ThumbLifts profile
+  (`Tools/Build/author_touch_profiles.py`). The Meerkat steers off the left stick alone, so two thumbs are the pad's two
+  sticks: the left flies, the right bends the reticle. Lift the left thumb to form the soliton (RT; held while riding it is
+  the slide's push), lift the right to lengthen the straight shaft (LT, ramped over `keyRampSeconds`). Sentinel Mode is the
+  Charge card's tap (a lift waits 0.12 s). A bend needs the right thumb down, so a long shaft forms straight.
 
 ## 6. Files
 
@@ -247,7 +274,9 @@ line for line:
 | Network | `Controller/Vessel/MeerkatSolitonNetworkRelay.cs` |
 | Look | `SolitonTunnelView.cs`, `SolitonTunnelLensPass.cs` (with the contour field, §2.1), `_Graphics/Materials/Graphs/SolitonTunnel*.shader`, `Resources/SolitonTunnel*.mat`, `Controller/Environment/SolitonTunnel/` |
 | The contour field's lab | `Docs/Studios/StoatTubeLensLab.html` (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF) |
-| HUD | `UI/Controller/MeerkatHUDController.cs` |
+| HUD | `UI/Controller/MeerkatHUDController.cs`, `UI/View/MeerkatHUDView.cs`, `_Prefabs/UI Elements/VesselHUD/MeerkatHUDVariant.prefab` |
+| Ability icons | `Tools/Build/icon_kit/specs/meerkat.py`, `Tools/Build/meerkat_icon_ids.py`, `_Graphics/Icons/AbilityIcons/Meerkat/` |
+| Phone controls | `Tools/Build/author_touch_profiles.py` (the Meerkat's row), `Resources/TouchControlProfiles.asset` |
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
 | The roots (§7) | `SolitonTunnelMath.cs`, `SolitonNetwork.cs`, `MeerkatOmnicrystalField.cs`, `Tests/Editor/SolitonTunnelMathTests.cs` |
 | ~~The tree and the roots' look (§7)~~ deleted 2026-10-29 (`2ad5882115`; restore: `Docs/Shaders/WORMHOLE_SHADERS.md` §12) | `MeerkatTreeMesh.cs`, `MeerkatTreeView.cs`, `_Graphics/Materials/Graphs/MeerkatTree.shader`, `MeerkatRootInside.shader`, `Resources/MeerkatTree.mat`, `Resources/MeerkatRootInside.mat` |
@@ -257,6 +286,27 @@ line for line:
 | Phased inside a tube (§9, round 25) | `MeerkatVesselTransformer.Phased` (the hull's `IHullContactGate`), `SkimmerImpactor.HullTakesPrisms`; the game's omni crystal arms the network through `OmniCrystalImpactor.CollectedByVessel` |
 | Studio map | `Tools/Build/studio_to_unity/meerkat.json` (69 mapped; `--check` 14 drift on 2026-11-01: Yash's Unity tuning, `Docs/Reports/MEERKAT.md` §5) |
 | Garrett's kit (§10) | `Executors/MeerkatSolitonKit.cs` (the kit, its four L5 gates, the zap), `MeerkatSentinels.cs`, `MeerkatExitPortal.cs`, `MeerkatSolitonMath.cs` + `Tests/Editor/MeerkatSolitonMathTests.cs` (run outside Unity: `Tools/Build/meerkat_kit_harness/run.sh --self-test`), `Data Containers/MeerkatSentinelModeActionSO.cs`, `_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset`; Space L5 Steal hooks `MeerkatSwallow` |
+
+## 7b. The Rift, the omnicrystal's ultimate (round 28, cloned 2026-11-03)
+
+Yash, 2026-11-03: "Yes, prototype the Rift" (after Apex's Wraith); then "the ability is not vanishing after certain time,
+also make it in unity". The artifact's rounds 28 and 28b (`Docs/Studios/MEERKAT.md`), line for line where the game has
+the same pieces:
+
+| Piece | In the game |
+|---|---|
+| Into the void | An omnicrystal taken with `omniMode` = Rift starts a run (`MeerkatSolitonExecutor.StartRift`): phased (`MeerkatVesselTransformer.Phased`), heading for `riftSpeed` x cruise x the Time rush (`ComputeThrottleTarget`), steering as ever; no reticle, no soliton entry |
+| Its end | `riftSeconds` (5), the length budget (the network's Mass reach x the cell's radius, `NetworkShare`, at least 100 u) or RT (a person only; the AI never ends one early) |
+| The rift | The path sampled every 12 u, smoothed and laid as ONE channel with a mouth at each end (`SolitonTunnelMath.PolyFrom`, `SolitonNetwork.LayRift`), with RT's tunnel config (its look and slide), sized as a soliton of its length (Garrett's surface area by Space). Under 20 u lays nothing |
+| Its life | `riftLife` (45 s) from the lay, then it collapses and fades (`SolitonNetwork.StayOverride`); nothing holds it for good (round 28b) |
+| Riding it | Any Meerkat at its way in slides it as a network (`TryRideAnySoliton`, `SolitonNetwork.RiftStanding`), out of its way out on the slingshot |
+| HUD | The Time card counts the run down in the ready colour (`MeerkatHUDView.SetRide`) |
+| Tests | `Tests/Editor/MeerkatRiftTests.cs` |
+
+**Not in the game yet:** Garrett's kit on a rift (the swallow at its way in, the exit portal at its way out, a sentinel in
+Sentinel mode): `MeerkatSolitonKit` and `MeerkatSwallow` are bound to the conic `SolitonTunnel`. Rifts are not replicated
+(`MeerkatSolitonNetworkRelay` publishes RT's tunnels and seeded networks; a rift's path would need a new payload and a
+protocol bump), so other players see the hull fly but not the rift. The omni card's icon is still the network's.
 
 ## 7. The tree and the roots (cloned 2026-10-28 from the artifact's rounds 13-21)
 
@@ -287,7 +337,8 @@ by left thumbstick."*
 - **The Omnicrystal ability, the roots** (rounds 16-21; `SolitonTunnelMath`, `SolitonNetwork`, `MeerkatOmnicrystalField`,
   the executor's roots half):
   - **Omnicrystals** (`omniCount`, gold; `omniOn` 0 switches the ability off):
-    - In Burrow Run, half way between the rings of a lap (`BurrowRunController.OnCourseRaised`).
+    - In no race since 2026-11-22: Burrow Run laid them half way between the rings of a lap (`ForCourse`) and now
+      seats the Jewel Wasp, so nothing calls `ForCourse`. Whether Warpline lays them is open.
     - In a scene with no course (the Toybox's Vessel Changer), the local Meerkat lays them ahead of itself, 300 u on and
       200 u apart. It lays them again 6 s after the last is taken.
     - Fly within 18 u of one and it is yours.
@@ -436,6 +487,8 @@ wormholes getting created"*.
   its touch takes no prism and no crystal. That is read by both halves of every contact: the hull's
   (`VesselImpactor`), the prism's (`PrismImpactor`), the crystals' (`ElementalCrystalImpactor`, `OmniCrystalImpactor`)
   and now the skimmer's prism skim too (`SkimmerImpactor.HullTakesPrisms`). Out of the mouth, it is solid again.
+  - 2026-11-20: that gate only ever covered prism and crystal touches, and only on the machine that flies the hull.
+    §11 lists what it left open and what closes each one.
   - A race ring threaded inside still counts: rings are a sweep (`CrystalRaceRing`), not a touch.
 - **First in, first out.** A carried prism or crystal moves at the slide's top speed, never nearer than
   `SolitonTunnelShapeMath.TubeGap` (6 u) behind this Meerkat's rider ahead of it (`TubeAdvance`). So a stream that went in
@@ -575,3 +628,64 @@ sounds are their brief.
 - The Meerkat's own HUD view and four icons (`/ability-icon`); a ready colour on the Charge and Space cards.
 - A zap's look in the world (today its cues are the victim's ejected crystals and the empty `zapEvent`).
 - The AI does not yet seek a soliton to ride (the page's `kitAiSoliton`); it only rides one it flies into.
+
+## 11. Nothing inside a tube touches anything outside it (2026-11-20)
+
+Yash, 2026-11-20: *"travelling through it without hitting any outside objects. So yes, anything inside a wormhole won't
+interact with anything outside the hole."*
+
+**The rule** (`SolitonIsolation`, `Controller/Environment/SolitonTunnel/`): two things interact only when they are in the
+same place. The world is one place; each tube is another. A rider and a rival outside are apart. So are two riders in
+different tubes. Two riders in the same tube are together, as before.
+
+**Who says where a thing is:**
+- **A hull:** `MeerkatSolitonExecutor.InsideTube`. The machine that flies the hull knows: the tunnel it slides, the
+  network it slides, or the void (a place of its own). A peer is not told a hull is riding (only its pose and the tubes
+  replicate), so a peer reads the hull's place against the tubes it has (`SolitonIsolation.TubeAt`, once a frame, with
+  a 4 u margin because the slide presses the hull to the wall).
+- **Cargo:** `MeerkatSwallow` seals a prism (`Prism.SetSealed`) and a crystal (`SolitonIsolation.Seal`) from the moment
+  it enters the tube until it is fired out, set down, or its tunnel is gone.
+
+**Who asks:** each place where one thing lands on another, with one line. In a match with no Meerkat every question
+answers "not apart" at once (`SolitonIsolation.Idle`).
+
+| # | What could interact | Before | Now | Where |
+|---|---|---|---|---|
+| 1 | The rider's hull and skimmer touching prisms and crystals, on the machine that flies it | closed (round 25) | unchanged | `IHullContactGate`, `MeerkatVesselTransformer.Phased` |
+| 2 | The same touches on every other machine. The server collects omni crystals for a client's hull | **open**: a peer's copy of a rider was never phased, because the riding flag is not replicated | closed: `Phased` is `InsideTube`, which a peer reads from the hull's place | `MeerkatSolitonExecutor.InsideTube`, `SolitonIsolation.TubeAt` |
+| 3 | Every scored hit and petal theft (rounds, blasts, rams, zaps, sniper shots: all pass `CombatHitDrain.TryAdmit`) and every elemental debuff (danger prisms, a wormhole toll) | **open** | closed: the hull holds a full ward while inside, on every machine | `MeerkatSolitonExecutor.StepWard` (`ResourceSystem.SetElementalDebuffImmunity`) |
+| 4 | A blast's other vessel effects (the knock, the slow, the camera rock) | **open** | closed | `ExplosionImpactor` asks `Apart(source, victim)` |
+| 5 | A round, by its trigger or its sweep. It also stopped on the hull | **open** | closed: it passes through | `ProjectileImpactor` |
+| 6 | A mine | **open** | closed | `MineImpactor` |
+| 7 | A rival's skimmer on the rider's hull, and the rider's skimmer on a rival's hull (jousts, overtakes, the Rhino's sword) | **open** | closed, both halves | `SkimmerImpactor`, `VesselImpactor` |
+| 8 | The rider's hull on an elemental crystal or a lifeform's heart. The crystal's half was gated; the hull's half was not | **open** | closed | `VesselImpactor` |
+| 9 | A sentinel zapping a rival that rides through its guarded mouth | **open** | closed: a rider is not picked, and row 3 refuses the hit | `MeerkatSentinels.NearestRival` |
+| 10 | Fulmen. It strikes prisms and crystals, never hulls. A bolt chained off a carried crystal | **open** | closed | `FulmenSystem` (candidates) |
+| 11 | A carried prism rammed or skimmed by a hull outside | **open**: it kept its collider | closed: the collider is held off while sealed | `Prism.SetSealed` |
+| 12 | A carried prism damaged from outside: a blast's batch pass, a swept round, a blade, a burn, a creature's bite, a consume, a vanish, a steal | **open** | closed: `Damage` (the funnel every damage source passes), `Consume`, `GnawArmour`, `Vanish` and `Steal` ignore a sealed prism; a swept round passes through it | `Prism.cs`, `ProjectileImpactor` |
+| 13 | A carried prism taken by another Meerkat's tunnel | **open** | closed | `MeerkatSwallow.CatchPrisms` |
+| 14 | A carried crystal collected by a hull or a skimmer outside. The swallow used to let it go | **open** | closed | `OmniCrystalImpactor`, `ElementalCrystalImpactor`, `VesselImpactor`, `SkimmerImpactor` |
+| 15 | A carried crystal pulled by something else | closed already: the swallow re-poses it every frame in the tube | unchanged. A move of more than 15 u (a respawn) still lets it go | `MeerkatSwallow.MoveCrystals` |
+| 16 | A carried crystal taken by another Meerkat's tunnel | **open** | closed | `MeerkatSwallow.CatchCrystals` |
+| 17 | Flora and fauna. They reach a hull only through their prisms and hearts (rows 1, 8) and their danger (row 3), and carried prisms through bites (row 12) | **open** where those rows were | closed with those rows | none of their own |
+| 18 | Riders in different tubes | not asked | apart: each tube is its own place | `SolitonIsolation.ApartPlaces` |
+| 19 | Riders in the same tube | together | unchanged; cargo still keeps first in, first out behind its maker's rider (§9) | |
+| 20 | A race ring threaded inside a tube | counts (a sweep, not a touch) | unchanged: every crystal gate lets a sweep through | `IsSweepDispatch` |
+
+**Still open, and why:**
+- **The Jacks' net** can still catch a sealed prism or a carried crystal, because it moves things it finds in the spatial
+  index and the crystal list. One line in `JacksNet` (Garrett's) would close it; it is not in the Meerkat's code.
+- **A rival's AI still aims at a rider.** Its shots pass through.
+- **A peer's read is by place.** A Meerkat that crosses a tube's hollow without riding it reads as inside on other
+  machines for those frames. Replicating the riding flag would be exact; it needs a protocol version bump.
+- **The Rift's void** counts as a place of its own on the machine that flies it only (rifts are not replicated, §7b).
+
+**Shared code touched (the trail):** one guarded line each in `ExplosionImpactor`, `ProjectileImpactor` (two),
+`MineImpactor`, `SkimmerImpactor` (two), `VesselImpactor` (three), `OmniCrystalImpactor`, `ElementalCrystalImpactor` and
+`FulmenSystem`; `Prism.SetSealed` / `IsSealed` and five guards in `Prism.cs`. Queued for Garrett's `/approve`.
+
+**Tests:** `Tests/Editor/SolitonIsolationTests.cs` (6): places are apart unless the same, the hollow's wall, window and
+margin, finding the tube a point is in, a dying or unformed tube holds nobody, cargo is sealed only while carried, a hull
+nobody flies through tubes is in the world.
+
+**Hand tests:** `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Meerkat: a real wormhole, and nothing inside touches outside".

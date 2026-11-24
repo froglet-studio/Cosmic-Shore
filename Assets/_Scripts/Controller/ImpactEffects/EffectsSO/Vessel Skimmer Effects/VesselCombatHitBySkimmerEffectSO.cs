@@ -109,6 +109,11 @@ namespace CosmicShore.Gameplay
 
             if (requireFasterThanVictim && shooterStatus.Speed <= victimStatus.Speed) return;
 
+            // The hull's own rule for whether this contact counts at all (the Squirrel's minimum joust speed, its
+            // Charge): asked before anything is admitted, so a refused contact claims no window, takes nothing and
+            // scores nothing.
+            if (!ContactAdmission.AdmittedBySiblings(impactee, shooterStatus, victimStatus)) return;
+
             // A take that sets its own pace and price (the Tiger Moth's shred) is admitted, taken
             // and scored per PETAL, not per hit class.
             var paced = PacedSibling(impactee);

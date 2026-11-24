@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-05 from canvas version `1793902693-58fe` of **Frogma**: Rev 3 to Rev 54, 478 boards on 7 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-23 from canvas version `1795406768-c5d4` of **Frogma**: Rev 41 to Rev 129, 342 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -33,355 +33,13 @@ Copied on 2026-11-05 from canvas version `1793902693-58fe` of **Frogma**: Rev 3 
 - [`SGButtons.dc.html`](SGButtons.dc.html) - Style Guide 5 - Buttons and their states
 - [`SGWindows.dc.html`](SGWindows.dc.html) - Style Guide 6 - Cards, windows and toasts
 - [`SGMotion.dc.html`](SGMotion.dc.html) - Style Guide 7 - Motion
-- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
 - [`SGChecklist.dc.html`](SGChecklist.dc.html) - Style Guide 9 - The UI checklist and the five screens to fix
 
+#### Play / Ready built in Unity: KitButton Commit, Maelstrom READY + PLAY AGAIN - in PR #1919 (2026-11-12, /frogma-to-unity)
+
+- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
+
 ### Tab: Menu Redesign  (`menu-redesign`)
-
-#### Rev 39-40 - Friends tray: a calmer party, rows that never overlap
-
-- [`R39Compare.dc.html`](R39Compare.dc.html) - Rev 39 - compare: the party piece of A, B and C side by side, and one online row in its four states (Invite, Join, Spect
-- [`R39A.dc.html`](R39A.dc.html) - Rev 39 A - Seat row: the four seats in one row, no bonds; one action per online row in a fixed slot (recommended) - inte - interactive
-- [`R39B.dc.html`](R39B.dc.html) - Rev 39 B - Roster list: the party as four stacked seat lines; online rows with two fixed action slots - interactive
-- [`R39C.dc.html`](R39C.dc.html) - Rev 39 C - Squad tiles: the party as a 2x2 tile grid; online pilots as compact cards - interactive
-- [`R39Notes.dc.html`](R39Notes.dc.html) - Rev 39 - notes: what changes against the built drawer, why A, what the build touches
-- [`R40D.dc.html`](R40D.dc.html) - Rev 40 D - Pilot rail: closed, a 72-wide rail keeps the four seats on screen; open, a 440 tray - interactive
-- [`R40E.dc.html`](R40E.dc.html) - Rev 40 E - Grouped by verb: online pilots under what you can do with them; the party as one card - interactive
-- [`R40F.dc.html`](R40F.dc.html) - Rev 40 F - Tabs: Party and Online share the tray, one at a time, at full size - interactive
-- [`R40Notes.dc.html`](R40Notes.dc.html) - Rev 40 - notes: what each adds against Rev 39, the pick across both rounds
-
-#### Rev 37 - Connection: lost, reconnecting, back online, rejoin
-
-- [`R37Flow.dc.html`](R37Flow.dc.html) - Rev 37 Flow - every state in one board: pick a state to play it (interactive) - interactive
-- [`R37Lost.dc.html`](R37Lost.dc.html) - Rev 37 Lost - menu: Connection Lost, RECONNECT or CONTINUE OFFLINE
-- [`R37Reconnecting.dc.html`](R37Reconnecting.dc.html) - Rev 37 Reconnecting - reconnecting: the line runs, the buttons wait
-- [`R37Online.dc.html`](R37Online.dc.html) - Rev 37 Online - back online: the window closes itself
-- [`R37Match.dc.html`](R37Match.dc.html) - Rev 37 Match - lost in a match: over the HUD, your seat is held for a while
-- [`R37HostLeft.dc.html`](R37HostLeft.dc.html) - Rev 37 HostLeft - the host left: the match is over, back to Home
-- [`R37Rejoin.dc.html`](R37Rejoin.dc.html) - Rev 37 Rejoin - boot while your match still runs: REJOIN or NOT NOW
-- [`R37Notes.dc.html`](R37Notes.dc.html) - Rev 37 - notes: every state, its words, the rejoin rules and the build
-
-#### Rev 36 - FTUE, redrawn: the captain arrives
-
-- [`R36Compare.dc.html`](R36Compare.dc.html) - Rev 36 - the three entrances side by side on the Home step, frame by frame
-- [`R36A.dc.html`](R36A.dc.html) - Rev 36 A - Wingman: her Squirrel streaks in on a skim trail that ends at the control, and her comm opens off the hull (r - interactive
-- [`R36B.dc.html`](R36B.dc.html) - Rev 36 B - Comms: a tall portrait window docks on the far edge with her voice line and the prompt - interactive
-- [`R36C.dc.html`](R36C.dc.html) - Rev 36 C - Cinematic: she leans in large from the edge, name and line set big beside her - interactive
-- [`R36Notes.dc.html`](R36Notes.dc.html) - Rev 36 - notes: what was wrong with Rev 34, the entrance timing, the words, the build
-
-#### Rev 35 - Hover: how the menu answers the pointer
-
-- [`R35Compare.dc.html`](R35Compare.dc.html) - Rev 35 - the same five controls (button, card, nav tab, hub tile, list row) at rest, hovered and focused, for all four l
-- [`R35A.dc.html`](R35A.dc.html) - Rev 35 A - Lift: the control rises 3 px, its border turns white and a white rule grows under it (recommended) - interact - interactive
-- [`R35B.dc.html`](R35B.dc.html) - Rev 35 B - Trace: one white light runs once around the cut border - interactive
-- [`R35C.dc.html`](R35C.dc.html) - Rev 35 C - Sheen: one soft band sweeps across the fill, nothing moves - interactive
-- [`R35D.dc.html`](R35D.dc.html) - Rev 35 D - Brackets: the corner brackets close in from outside, nothing moves - interactive
-- [`R35Notes.dc.html`](R35Notes.dc.html) - Rev 35 - notes: what hover means, how it differs from focus, timings and the build
-
-#### Rev 34 - FTUE: the captain guides from the side
-
-- [`R34Compare.dc.html`](R34Compare.dc.html) - Rev 34 - the three captains at the same step, and which side they enter from
-- [`R34A.dc.html`](R34A.dc.html) - Rev 34 A - Wingmate: the captain full-length at the screen edge, a speech plate pointing at the one control (recommended - interactive
-- [`R34B.dc.html`](R34B.dc.html) - Rev 34 B - Comm link: a compact incoming-transmission card that docks on the far side - interactive
-- [`R34C.dc.html`](R34C.dc.html) - Rev 34 C - Briefing: a lower-third bust and a wide line, letterbox-style - interactive
-- [`R34Notes.dc.html`](R34Notes.dc.html) - Rev 34 - notes: the old FTUE (Rev 21), what the captain changes, who speaks, the side rule
-
-#### Rev 33 - Into a game mode (loading, intro, countdown) and why it lags
-
-- [`R33A.dc.html`](R33A.dc.html) - Rev 33 A - Cell gate (recommended): the cell-change screen grown into the mode entry; the crystal fills with the build, - interactive
-- [`R33B.dc.html`](R33B.dc.html) - Rev 33 B - Lineup: Regatta's six pilots light up as they load, lock in with one impact, then the art pushes into the tit - interactive
-- [`R33C.dc.html`](R33C.dc.html) - Rev 33 C - Briefing: a calm Dog Fight briefing whose arena map develops as the cell builds, then grows into the intro - - interactive
-- [`R33D.dc.html`](R33D.dc.html) - Rev 33 D - Intro and countdown (shared by whichever loading screen wins): title slam, objective, pilot card, hold to ski - interactive
-- [`R33Notes.dc.html`](R33Notes.dc.html) - Rev 33 - notes: what 28 recorded launches measured, why entering a mode lags (code, checked twice), what the new screens
-
-#### Rev 32 - Port: brighter messages and field
-
-- [`R32PortCompare.dc.html`](R32PortCompare.dc.html) - Rev 32 - the four looks side by side: two messages, the field at rest, typing, not sent
-- [`R32PortA.dc.html`](R32PortA.dc.html) - Rev 32 A - Lit cards: slate cards with a periwinkle edge, yours on the right
-- [`R32PortB.dc.html`](R32PortB.dc.html) - Rev 32 B - Glass bubbles: translucent bubbles over the sea, yours tinted violet
-- [`R32PortC.dc.html`](R32PortC.dc.html) - Rev 32 C - Bright ribbons: alternating bright bands, name chips, a light field
-- [`R32PortD.dc.html`](R32PortD.dc.html) - Rev 32 D - Sea-lit panels: lit from the corner, gradient borders, a glowing field
-
-#### Rev 31 - Squads, the deck
-
-- [`R31DeckMake.dc.html`](R31DeckMake.dc.html) - Rev 31 - Make squad (interactive: pick a card, then its vessel, pilot, element, artifact; Create)
-- [`R31DeckMade.dc.html`](R31DeckMade.dc.html) - Rev 31 - Squad made: Take into Mission / Arena - interactive
-- [`R31DeckJoined.dc.html`](R31DeckJoined.dc.html) - Rev 31 - A joined squad (Kestrel's) - interactive
-- [`R31DeckEmpty.dc.html`](R31DeckEmpty.dc.html) - Rev 31 - No squad yet - interactive
-- [`R31DeckJoin.dc.html`](R31DeckJoin.dc.html) - Rev 31 - Join a friend's squad - interactive
-- [`R31DeckDecor.dc.html`](R31DeckDecor.dc.html) - Rev 31 - Decor locked
-- [`R31DeckNotes.dc.html`](R31DeckNotes.dc.html) - Rev 31 - notes
-
-#### Rev 30 - Codex rethought (Vault, Field Guide, Orbit, Lexicon)
-
-- [`R30CodexVault.dc.html`](R30CodexVault.dc.html) - Rev 30 - A Vault: list, living crystal, solid reading panel - interactive (press an entry)
-- [`R30CodexGuide.dc.html`](R30CodexGuide.dc.html) - Rev 30 - B Field Guide: the crystal as a plate, its page beside it, every entry on a strip
-- [`R30CodexOrbit.dc.html`](R30CodexOrbit.dc.html) - Rev 30 - C Orbit: Omni at the core, the elements orbiting, ecology and lexicon outside
-- [`R30CodexLexicon.dc.html`](R30CodexLexicon.dc.html) - Rev 30 - Lexicon: Arcade, Quests, Voyages, Missions, then Vessels, Pilots, Artifacts, Toys - interactive
-- [`R30Notes.dc.html`](R30Notes.dc.html) - Rev 30 - notes
-
-#### Rev 29 - Squads, six ways (quiet)
-
-- [`R29SquadsA.dc.html`](R29SquadsA.dc.html) - Rev 29 - A Hangar bay - interactive
-- [`R29SquadsB.dc.html`](R29SquadsB.dc.html) - Rev 29 - B Formation - interactive
-- [`R29SquadsC.dc.html`](R29SquadsC.dc.html) - Rev 29 - C The deck - interactive
-- [`R29SquadsD.dc.html`](R29SquadsD.dc.html) - Rev 29 - D The Ark's bays - interactive
-- [`R29SquadsE.dc.html`](R29SquadsE.dc.html) - Rev 29 - E Lineup - interactive
-- [`R29SquadsF.dc.html`](R29SquadsF.dc.html) - Rev 29 - F Dossier - interactive
-- [`R29Notes.dc.html`](R29Notes.dc.html) - Rev 29 - notes
-
-#### Rev 28 - Ark tabs (Squads, Decor)
-
-- [`R28SquadsMake.dc.html`](R28SquadsMake.dc.html) - Rev 28 - Make squad (interactive: pick a seat, its vessel, pilot, element, artifact; switch the domain; create)
-- [`R28SquadsMade.dc.html`](R28SquadsMade.dc.html) - Rev 28 - Squad made: the podium, then Take into Mission / Arena - interactive
-- [`R28SquadsJoined.dc.html`](R28SquadsJoined.dc.html) - Rev 28 - A squad you joined (Kestrel leads) - interactive
-- [`R28SquadsEmpty.dc.html`](R28SquadsEmpty.dc.html) - Rev 28 - Squads, no squad yet - interactive
-- [`R28SquadsJoin.dc.html`](R28SquadsJoin.dc.html) - Rev 28 - Join a friend's squad - interactive
-- [`R28Decor.dc.html`](R28Decor.dc.html) - Rev 28 - Decor tab locked: the press shakes, Not open yet
-- [`R28Notes.dc.html`](R28Notes.dc.html) - Rev 28 - notes and decisions
-
-#### Rev 27 - Port (faction messages, weekly leaderboard)
-
-- [`R27PortMessages.dc.html`](R27PortMessages.dc.html) - Rev 27 - Port: Faction messages (interactive: type, Enter or Send, 3 s cooldown)
-- [`R27PortLeaderboard.dc.html`](R27PortLeaderboard.dc.html) - Rev 27 - Port: the weekly leaderboard as the second tab
-- [`R27PortActions.dc.html`](R27PortActions.dc.html) - Rev 27 - Port: message actions - report, mute
-- [`R27PortStates.dc.html`](R27PortStates.dc.html) - Rev 27 - Port: empty, loading, offline, not sent
-- [`R27Notes.dc.html`](R27Notes.dc.html) - Rev 27 - notes and decisions
-
-#### Rev 26 - Codex
-
-- [`R26CodexHome.dc.html`](R26CodexHome.dc.html) - Rev 26 - Codex front page: seven chapters, recently found, closest to complete
-- [`R26CodexEthirions.dc.html`](R26CodexEthirions.dc.html) - Rev 26 - Ethirions: the five crystals, Charge open
-- [`R26CodexElements.dc.html`](R26CodexElements.dc.html) - Rev 26 - Elements: what each element wakes on every hull, Mass open
-- [`R26CodexFauna.dc.html`](R26CodexFauna.dc.html) - Rev 26 - Ecology > Fauna: the food web, Shark open (NEW)
-- [`R26CodexFlora.dc.html`](R26CodexFlora.dc.html) - Rev 26 - Ecology > Flora: sixteen plants, Arbor open with its elemental laws
-- [`R26CodexPilots.dc.html`](R26CodexPilots.dc.html) - Rev 26 - Pilots: one per element per hull, Shrapnel open
-- [`R26CodexVessels.dc.html`](R26CodexVessels.dc.html) - Rev 26 - Vessels: four abilities and their level-5 upgrades, Sparrow open
-- [`R26CodexArtifacts.dc.html`](R26CodexArtifacts.dc.html) - Rev 26 - Artifacts (proposed: no artifact data in the game yet)
-- [`R26CodexTools.dc.html`](R26CodexTools.dc.html) - Rev 26 - Tools: Pilot / World / Creation, Connect the Dots open
-- [`R26CodexDiscovery.dc.html`](R26CodexDiscovery.dc.html) - Rev 26 - Discovery: the in-match toast when you meet something new
-- [`R26Notes.dc.html`](R26Notes.dc.html) - Rev 26 - notes
-
-#### Rev 25 - Arcade card in Arena and Voyage
-
-- [`R25ArenaA.dc.html`](R25ArenaA.dc.html) - Rev 25 - Arena A (steppers, intensity as a number)
-- [`R25ArenaB.dc.html`](R25ArenaB.dc.html) - Rev 25 - Arena B (picked: vessel strip, signal, open border)
-- [`R25VoyageA.dc.html`](R25VoyageA.dc.html) - Rev 25 - Voyage A (steppers, number)
-- [`R25VoyageB.dc.html`](R25VoyageB.dc.html) - Rev 25 - Voyage B (picked: vessel strip, signal, open border)
-- [`R25Notes.dc.html`](R25Notes.dc.html) - Rev 25 - notes
-
-#### Rev 24 - Hangar C taken forward
-
-- [`R24HangarUpgrades.dc.html`](R24HangarUpgrades.dc.html) - Rev 24 - Overview > Upgrades: vessel list left, in-game element flowers with N/5, angled open border, vibe bars
-- [`R24HangarAbilities.dc.html`](R24HangarAbilities.dc.html) - Rev 24 - Overview > Abilities: the four abilities with their element flowers (info only)
-- [`R24HangarGames.dc.html`](R24HangarGames.dc.html) - Rev 24 - Overview > Games: the games that fly the Sparrow
-- [`R24HangarPilots.dc.html`](R24HangarPilots.dc.html) - Rev 24 - Pilots: the header names the pilot (Shrapnel); one pilot per element
-- [`R24HangarArtifacts.dc.html`](R24HangarArtifacts.dc.html) - Rev 24 - Artifacts: the header names the slot; equipped, carried, undiscovered
-- [`R24Borders.dc.html`](R24Borders.dc.html) - Rev 24 - The angled open border, four ways (Cradle, Rail, Split, Echo)
-- [`R24Notes.dc.html`](R24Notes.dc.html) - Rev 24 - notes
-
-#### Rev 23 - Scoreboard, six ways
-
-- [`R23ScoreA.dc.html`](R23ScoreA.dc.html) - Rev 23 - A Podium: team banner, the top three on steps, reward and actions in the corners
-- [`R23ScoreB.dc.html`](R23ScoreB.dc.html) - Rev 23 - B Results table: the glass ladder as a real table plus a 'Your race' card
-- [`R23ScoreC.dc.html`](R23ScoreC.dc.html) - Rev 23 - C Your result first: the big place and time, personal best, everyone in one strip
-- [`R23ScoreD.dc.html`](R23ScoreD.dc.html) - Rev 23 - D Team versus: two teams face each other with totals and the crystal share
-- [`R23ScoreE.dc.html`](R23ScoreE.dc.html) - Rev 23 - E Broadcast: a banner and four pilot cards over the world, esports lower third
-- [`R23ScoreF.dc.html`](R23ScoreF.dc.html) - Rev 23 - F Live board: hold Select mid-match for positions, gaps and team totals
-- [`R23Notes.dc.html`](R23Notes.dc.html) - Rev 23 - notes: the one match, what every option keeps, what each does
-
-#### Rev 22 - Hangar, six ways
-
-- [`R22HangarA.dc.html`](R22HangarA.dc.html) - Rev 22 - A Showroom: big hero, one quiet column (abilities, upgrades with price), hull filmstrip
-- [`R22HangarB.dc.html`](R22HangarB.dc.html) - Rev 22 - B Loadout: the four abilities as callouts pinned to the hull, hulls on a left rail
-- [`R22HangarC.dc.html`](R22HangarC.dc.html) - Rev 22 - C Dossier: today's Hangar quieter - stage left, one tabbed dossier, gold UPGRADE
-- [`R22HangarD.dc.html`](R22HangarD.dc.html) - Rev 22 - D Compass: upgrade-first, the vessel inside a four-point element compass
-- [`R22HangarE.dc.html`](R22HangarE.dc.html) - Rev 22 - E Cinematic: the vessel fills the screen; abilities and upgrades are drawers
-- [`R22HangarF.dc.html`](R22HangarF.dc.html) - Rev 22 - F Garage rail: neighbours dim in the bay, abilities read along the floor
-- [`R22Notes.dc.html`](R22Notes.dc.html) - Rev 22 - notes: what each Hangar option does and what stays
-
-#### Rev 21 - FTUE (first login to first finish)
-
-- [`R21F1Home.dc.html`](R21F1Home.dc.html) - Rev 21 - F1 Home: the guide lights ARCADE (Settings stays live)
-- [`R21F2Arcade.dc.html`](R21F2Arcade.dc.html) - Rev 21 - F2 Arcade: this week's card, Skim Race
-- [`R21F3Configure.dc.html`](R21F3Configure.dc.html) - Rev 21 - F3 Configure (Rev 20 G): fly the preview first; START grey
-- [`R21F4Lesson.dc.html`](R21F4Lesson.dc.html) - Rev 21 - F4 Lesson 1 of 4 - LEARN TO FLY, no skip the first time
-- [`R21F5Ghost.dc.html`](R21F5Ghost.dc.html) - Rev 21 - F5 Lesson 3 - WATCH FIRST: the autopilot shows drift
-- [`R21F6Mentor.dc.html`](R21F6Mentor.dc.html) - Rev 21 - F6 Lesson done: the Mentor's tips, START lime
-- [`R21F7Loading.dc.html`](R21F7Loading.dc.html) - Rev 21 - F7 Loading into the first race
-- [`R21G1Countdown.dc.html`](R21G1Countdown.dc.html) - Rev 21 - G1 In game: countdown with the goal
-- [`R21G2Hint.dc.html`](R21G2Hint.dc.html) - Rev 21 - G2 In game: an idle hint on the ready ability
-- [`R21G3Finish.dc.html`](R21G3Finish.dc.html) - Rev 21 - G3 In game: the first finish (placeholder for the scoreboard redesign)
-- [`R21Notes.dc.html`](R21Notes.dc.html) - Rev 21 - notes
-
-#### Rev 20 - Configuration + START
-
-- [`R20ConfigureE.dc.html`](R20ConfigureE.dc.html) - Rev 20 - E: squad cards; angled START slab with chevrons
-- [`R20ConfigureF.dc.html`](R20ConfigureF.dc.html) - Rev 20 - F: team bays you join; START beside the ready pips
-- [`R20ConfigureG.dc.html`](R20ConfigureG.dc.html) - Rev 20 - G: pedestals, intensity on LB / RB; LAUNCH held (ring fills, proposed)
-- [`R20Notes.dc.html`](R20Notes.dc.html) - Rev 20 - notes
-- [`R20ConfigureH.dc.html`](R20ConfigureH.dc.html) - Rev 20 - H: fireteam rail with console prompts; START with a slow sheen
-- [`R20ConfigureI.dc.html`](R20ConfigureI.dc.html) - Rev 20 - I: option D finished: lineup + focused seat actions; START inside the panel
-- [`R20ConfigureJ.dc.html`](R20ConfigureJ.dc.html) - Rev 20 - J: 2 x 2 seat tiles; hatched START slab
-- [`R20ConfigureG2.dc.html`](R20ConfigureG2.dc.html) - Rev 20 - G APPROVED (Shombith 2026-10-26): pedestals, Add AI pilot only, START pressed
-
-#### Rev 19 - Configure
-
-- [`R19ConfigureA.dc.html`](R19ConfigureA.dc.html) - Rev 19 - A: team columns - a seat tile per pilot (avatar, name, you / friend / AI), open seats with + AI and Invite
-- [`R19ConfigureB.dc.html`](R19ConfigureB.dc.html) - Rev 19 - B: roster - one row per seat, team picker on each, the open row with + AI and Invite friend
-- [`R19AddPilots.dc.html`](R19AddPilots.dc.html) - Rev 19 - adding pilots: open seat, + AI, Invite (online friends), invited then joined
-- [`R19Notes.dc.html`](R19Notes.dc.html) - Rev 19 - notes
-- [`R19ConfigureC.dc.html`](R19ConfigureC.dc.html) - Rev 19 - C: seat cards - team band, big avatar, the open card with + AI and Invite
-- [`R19ConfigureD.dc.html`](R19ConfigureD.dc.html) - Rev 19 - D: lineup of avatars; the seat you are on shows its actions under the row
-
-#### Rev 18 - Game and toy cards
-
-- [`R18CardsAArcade.dc.html`](R18CardsAArcade.dc.html) - Rev 18 - A, Arcade: art band on top, glass body below - hull on a pale plate, name, petals
-- [`R18CardsAArena.dc.html`](R18CardsAArena.dc.html) - Rev 18 - A, Arena and Toy Box in the same treatment
-- [`R18Notes.dc.html`](R18Notes.dc.html) - Rev 18 - notes
-- [`R18CardsBArcade.dc.html`](R18CardsBArcade.dc.html) - Rev 18 - B, Arcade: art on one side, words on the other
-- [`R18CardsBArena.dc.html`](R18CardsBArena.dc.html) - Rev 18 - B, Arena and Toy Box in the same treatment
-- [`R18CardsCArcade.dc.html`](R18CardsCArcade.dc.html) - Rev 18 - C, Arcade: the hull lit on a hex plate sitting on the seam
-- [`R18CardsCArena.dc.html`](R18CardsCArena.dc.html) - Rev 18 - C, Arena and Toy Box in the same treatment
-
-#### Rev 17 - Episodes back, voyages grow
-
-- [`R17VoyageJ.dc.html`](R17VoyageJ.dc.html) - Rev 17 - J, Episodes stacked: Episode 1 open with its quest tracker, Episode 2 a locked bar under it; Voyages a column t
-- [`R17VoyageK.dc.html`](R17VoyageK.dc.html) - Rev 17 - K, Episode spine: Episode 1 open, Episode 2 a locked spine beside it; Voyages a column that scrolls
-- [`R17VoyageL.dc.html`](R17VoyageL.dc.html) - Rev 17 - L, Voyages row on top: Tandava and the next voyages in a row that scrolls sideways; Episodes under it, Episode
-
-#### Rev 16 - Episodes apart from voyages
-
-- [`R16VoyageG.dc.html`](R16VoyageG.dc.html) - Rev 16 - G, Side by side: Episodes (Episode 1 tab, Episode 2 locked, the smaller quest tracker) in a glass panel; Tandav
-- [`R16VoyageH.dc.html`](R16VoyageH.dc.html) - Rev 16 - H, Voyage banner on top: Tandava full-bleed across the width, the Episodes panel under it with shorter quest ca
-- [`R16VoyageI.dc.html`](R16VoyageI.dc.html) - Rev 16 - I, Current quest open: as G, but only the quest in progress opens up and the locked ones fold to art, number an
-
-#### Rev 15 - Voyage, old quest tracker
-
-- [`R15VoyageD.dc.html`](R15VoyageD.dc.html) - Rev 15 - D, Track into the voyages: a slim Episode 1 strip, the old quest cards, and the track carrying on into Tandava
-- [`R15VoyageE.dc.html`](R15VoyageE.dc.html) - Rev 15 - E, Voyages at the side: Episode 1 as a chip beside the title, the old full-height quest cards, Tandava and Epis
-- [`R15VoyageF.dc.html`](R15VoyageF.dc.html) - Rev 15 - F, Tracker first: the Episode 1 strip, the old quest cards across the width, the voyages as a band underneath
-
-#### Rev 14 - Voyage + quest tracker
-
-- [`R14VoyageA.dc.html`](R14VoyageA.dc.html) - Rev 14 - A, Track on top: a slim Episode 1 strip, the old quest tracker (five cards on a track) across the width, Tandav
-- [`R14VoyageB.dc.html`](R14VoyageB.dc.html) - Rev 14 - B, Voyages first: Tandava and Episode 2 as one band on top, then the Episode 1 strip and the old quest tracker
-- [`R14VoyageC.dc.html`](R14VoyageC.dc.html) - Rev 14 - C, Episode chip: Episode 1 as a chip beside the title, the old full-height quest tracker on the left, Tandava t
-- [`R14Notes.dc.html`](R14Notes.dc.html) - Rev 14 - what changes from Rev 13
-
-#### Rev 13 - Voyage + profile
-
-- [`R13Voyage.dc.html`](R13Voyage.dc.html) - Rev 13 - Voyage replaces Mission: Episode 1 and its quest track on the left (quest 5 leads to Tandava), the voyages on t
-- [`R13Tandava.dc.html`](R13Tandava.dc.html) - Rev 13 - Voyage 1, Tandava: the four forms it grows through, how you win and lose, your vessel (Squirrel / Sparrow / Rhi
-- [`R13Profile.dc.html`](R13Profile.dc.html) - Rev 13 - the Profile, opened from the pilot card on Home: Rev 10's style with Episodes and Quests removed, the pilot car
-- [`R13Home.dc.html`](R13Home.dc.html) - Rev 13 - Home: four tabs (Hangar, Ark, Home, Port), the pilot card opens the profile, Voyage replaces Mission
-- [`R13Notes.dc.html`](R13Notes.dc.html) - Rev 13 - what changes, and the sea now vs brighter with gradients
-
-#### Rev 12 - Backgrounds
-
-- [`R12SeaArcade.dc.html`](R12SeaArcade.dc.html) - Rev 12 - H, Sea lines, under the Arcade: an 86 % veil (less see-through), thin wave lines in three depth layers sliding
-- [`R12SeaProfile.dc.html`](R12SeaProfile.dc.html) - Rev 12 - H, Sea lines, under the Profile: the same 86 % veil and moving wave lines
-- [`R12World.dc.html`](R12World.dc.html) - Rev 12 - from the game world: 0 the old background, I gyroid flora, J Schwarz P wall, K reef, L quasicrystal, M prism tr
-- [`R12Options.dc.html`](R12Options.dc.html) - Rev 12 - first round (none landed): A starfield, B prism shards, C contour map, D depth fog, E scan glass, F constellati
-
-#### Rev 11 - Backgrounds (scrapped)
-
-- [`R11HMotion.dc.html`](R11HMotion.dc.html) - Rev 11 - H chosen (frosted glass + faint hexagons): six ways it could move - H1 still, H2 centre ring, H3 cell shimmer,
-- [`R11Lattice.dc.html`](R11Lattice.dc.html) - Rev 11 - G full screen: the Arcade over the game world, a 62 % see-through veil with Amoebius's hexagons and its slow ce
-- [`R11Notes.dc.html`](R11Notes.dc.html) - Rev 11 - what changes, how it is built, and the questions for the owner
-- [`R11Glass.dc.html`](R11Glass.dc.html) - Rev 11 - six see-through options over the game world: G clear veil + lattice, H frosted glass, I edge veil, J hex staine
-- [`R11Toybox.dc.html`](R11Toybox.dc.html) - Rev 11 - H full screen: the Toy Box on frosted glass (the world blurred behind, 50 % veil, faint hexagons, no ring)
-- [`R11Profile.dc.html`](R11Profile.dc.html) - Rev 11 - I + tide full screen: Profile on the edge veil (clear centre, darker edges, hexagons only at the edges) with th
-- [`R11Solids.dc.html`](R11Solids.dc.html) - Rev 11 - for comparison only (rejected: too opaque): the solid surfaces A-F
-
-#### Rev 10 - Profile + music
-
-- [`R10Profile.dc.html`](R10Profile.dc.html) - Rev 10 - Profile: the pilot card with fly time / games / sessions, favourite vessel (most flown) and favourite pilot (yo
-- [`R10AudioStudio.dc.html`](R10AudioStudio.dc.html) - Rev 10 - Profile > Audio Studio, music only: now playing with back / pause / skip, shuffle, stop; every track with Play
-- [`R10NowPlaying.dc.html`](R10NowPlaying.dc.html) - Rev 10 - the now-playing card: slides in on a new track (FC style), resting and focused states, match and music-off beha
-- [`R10FavPilot.dc.html`](R10FavPilot.dc.html) - Rev 10 - choose your favourite pilot
-- [`R10Notes.dc.html`](R10Notes.dc.html) - Rev 10 - what the profile and soundtrack do, what has to be built, questions for the owner
-
-#### Rev 9 - Sign in
-
-- [`R9SteamAuto.dc.html`](R9SteamAuto.dc.html) - Rev 9 - sign-in 1: Steam signs you in on its own - your Steam name and avatar, a spinner, Y for other ways
-- [`R9Chooser.dc.html`](R9Chooser.dc.html) - Rev 9 - sign-in 2: the chooser on PC - Continue with Steam (focused), Google, Apple, then Play as guest (this device onl
-- [`R9Phones.dc.html`](R9Phones.dc.html) - Rev 9 - sign-in 3: phones - iPhone puts Apple first, Android puts Google first, guest last, no keycaps
-- [`R9Waiting.dc.html`](R9Waiting.dc.html) - Rev 9 - sign-in 4: Google on PC - finish in your browser (waiting), and the cancelled / timed-out window
-- [`R9Account.dc.html`](R9Account.dc.html) - Rev 9 - sign-in 5: Settings > Account for a guest - the guest warning, linked accounts with LINK buttons, Sign out, Dele
-- [`R9AccountLinked.dc.html`](R9AccountLinked.dc.html) - Rev 9 - sign-in 5b: Settings > Account once Steam is linked
-- [`R9Conflict.dc.html`](R9Conflict.dc.html) - Rev 9 - sign-in 6: the account you are linking already has a pilot - choose which pilot to fly
-- [`R9Notes.dc.html`](R9Notes.dc.html) - Rev 9 - the sign-in flow, guests and linking, what gets built, questions for the owner
-- [`R9bChooser.dc.html`](R9bChooser.dc.html) - Rev 9b - the sign-in chooser to Google's and Apple's brand rules: Google's official dark button (unaltered), Apple's whi
-
-#### Rev 8 - Scoreboard
-
-- [`R8ScoreboardA.dc.html`](R8ScoreboardA.dc.html) - Rev 8 - scoreboard, option A: the podium - the winning team on a podium (1st raised), the other team beside it, element
-- [`R8ScoreboardB.dc.html`](R8ScoreboardB.dc.html) - Rev 8 - scoreboard, option B: the glass ladder - ranked dark-glass rows with a thin team stripe, grouped under team head
-- [`R8ScoreboardC.dc.html`](R8ScoreboardC.dc.html) - Rev 8 - scoreboard, option C: your match first - a big card for you (place, hull, stats against your best), standings in
-- [`R8Notes.dc.html`](R8Notes.dc.html) - Rev 8 - what was wrong with the built board, what every option does, and the questions for the owner
-
-#### Rev 7 - Playtest
-
-- [`R7Selection.dc.html`](R7Selection.dc.html) - Rev 7 - selection: one glowing blue everywhere (a bright sweep running round the border, a breathing glow) instead of wh
-- [`R7AIDifficulty.dc.html`](R7AIDifficulty.dc.html) - Rev 7 - the AI row on the configure: AI PILOTS - EASY / MEDIUM / HARD under the pilots, the host picks, every AI seat we
-- [`R7WindowSlide.dc.html`](R7WindowSlide.dc.html) - Rev 7 - LT / RT inside a window: the hub strip under the nav (Toy Box, Arcade, Arena, Mission) and arrows on both edges;
-- [`R7FriendProfile.dc.html`](R7FriendProfile.dc.html) - Rev 7 - an online friend's profile: hover (or focus) their avatar in the party panel and a card pops beside it - avatar,
-- [`R7Loading.dc.html`](R7Loading.dc.html) - Rev 7 - changing cell: instead of black, the living lattice, an omni crystal filling as the cell builds, ENTERING GARLAN
-- [`R7Notes.dc.html`](R7Notes.dc.html) - Rev 7 - what changes, and the questions for the owner
-
-#### Rev 6 - Elemental
-
-- [`R6Language.dc.html`](R6Language.dc.html) - Rev 6 - the elemental design language: a living lattice (energy running along it) instead of the grid, and the four elem
-- [`R6Arcade.dc.html`](R6Arcade.dc.html) - Rev 6 - the Arcade in the elemental language: lattice backdrop, every card wears the element its mode leans on, PLAY is
-- [`R6Ark.dc.html`](R6Ark.dc.html) - Rev 6 - the Ark, under the nav where it belongs: lattice in the recipe panel, each element row in its own light, an omni
-- [`R6FriendsOrb.dc.html`](R6FriendsOrb.dc.html) - Rev 6 friends, option A (closed): the FRIENDS tab is gone - a presence orb bottom-left: you at the centre, your party bo
-- [`R6FriendsParty.dc.html`](R6FriendsParty.dc.html) - Rev 6 friends, option A (open): the orb blooms into your party as a molecule - bonds to each member in their domain colo
-- [`R6FriendsRail.dc.html`](R6FriendsRail.dc.html) - Rev 6 friends, option B: a bond rail on the left edge - you, your party bonded below you, an invite socket, then online
-- [`R6Notes.dc.html`](R6Notes.dc.html) - Rev 6 - what changes, how it is built in Unity, and the questions for the owner
-
-#### Rev 5
-
-- [`R5SeatHover.dc.html`](R5SeatHover.dc.html) - Rev 5 - AI seat hover: the row does not grow; its border lights in the domain colour and the role slot reads the hull (S
-- [`R5SeatInfoCard.dc.html`](R5SeatInfoCard.dc.html) - Rev 5 - the vessel info card: a glass popover beside the seat (a notch points at the row) - art, Ruby AI - Space vessel,
-- [`R5Notes.dc.html`](R5Notes.dc.html) - Rev 5 - Yash's AI seat info in style B: what changes, and what stays
-
-#### Rev 4
-
-- [`R4Configure.dc.html`](R4Configure.dc.html) - Rev 4 - Configure, simple: one framed live preview (background + glowing border) and ONE settings column - no step cards
-- [`R4ConfigureFlying.dc.html`](R4ConfigureFlying.dc.html) - Rev 4 - Configure while flying: you fly IN the frame; STOP and FULL SCREEN (the option) above it; settings stay put
-- [`R4Notes.dc.html`](R4Notes.dc.html) - Rev 4 - what changes, and the two questions for the owner
-- [`R4HangarStage.dc.html`](R4HangarStage.dc.html) - Rev 4 - Hangar stage: a lit hangar bay (holo floor, rings, lights, motes) instead of a black box; RT pressed - the Sparr
-- [`R4HangarUpgrade.dc.html`](R4HangarUpgrade.dc.html) - Rev 4 - Hangar upgrades: every element has an UPGRADE button with its crystal price; Mass selected
-- [`R4HangarUpgradeAnim.dc.html`](R4HangarUpgradeAnim.dc.html) - Rev 4 - Hangar upgrade animation (loops): press UPGRADE - crystals fly to the hull, the next pip fills white then Mass b
-
-#### Rev 3
-
-- [`R3HangarAbilities.dc.html`](R3HangarAbilities.dc.html) - Rev 3 - Hangar: Abilities tab, RT held - the 3D Sparrow fires its cannons
-- [`R3HangarUpgrades.dc.html`](R3HangarUpgrades.dc.html) - Rev 3 - Hangar: Upgrades tab on arrival - no element selected, the default hull
-- [`R3HangarUpgradesMass.dc.html`](R3HangarUpgradesMass.dc.html) - Rev 3 - Hangar: Upgrades tab with Mass previewed at level 3 - the hull morphs on the 3D model
-- [`R3HangarGames.dc.html`](R3HangarGames.dc.html) - Rev 3 - Hangar: Games tab - the vessel's games as wide art cards
-- [`R3HangarPilots.dc.html`](R3HangarPilots.dc.html) - Rev 3 - Hangar: Pilots tab - the old Captains back as pilots, one per element, with level, XP and quote
-- [`R3HangarArtifacts.dc.html`](R3HangarArtifacts.dc.html) - Rev 3 - Hangar: Artifacts tab - one slot, a real upgrade, flagged at risk
-- [`R3HangarTabSwap.dc.html`](R3HangarTabSwap.dc.html) - Rev 3 - Hangar: the tab swap in motion - loops through all five tabs
-- [`R3Home.dc.html`](R3Home.dc.html) - Rev 3 - Home: icons in the nav, white selection, cards docked under the pilot, toasts right, friends tab
-- [`R3HomeFriends.dc.html`](R3HomeFriends.dc.html) - Rev 3 - Home: friends drawer open from the left (minimise, maximise, close), weekly card minimised
-- [`R3Arcade.dc.html`](R3Arcade.dc.html) - Rev 3 - Arcade with the friends panel gone: three tall featured cards (the quest-view rhythm) and a filtered grid
-- [`R3ConfigureA.dc.html`](R3ConfigureA.dc.html) - Rev 3 - Configure option A: Cinematic - the live preview fills the window, settings on a bottom console
-- [`R3ConfigureB.dc.html`](R3ConfigureB.dc.html) - Rev 3 - Configure option B: three tall step cards (vessel, intensity, pilots) under a wide live preview
-- [`R3ConfigureC.dc.html`](R3ConfigureC.dc.html) - Rev 3 - Configure option C: split console - big preview with Briefing / Controls / Objective tabs, a clean settings list
-- [`R3ConfigureNotes.dc.html`](R3ConfigureNotes.dc.html) - Rev 3 - Configure: the three options compared
-- [`R3HudSquirrel.dc.html`](R3HudSquirrel.dc.html) - Rev 3 - Squirrel HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudSparrow.dc.html`](R3HudSparrow.dc.html) - Rev 3 - Sparrow HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudDolphin.dc.html`](R3HudDolphin.dc.html) - Rev 3 - Dolphin HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudScarab.dc.html`](R3HudScarab.dc.html) - Rev 3 - Scarab HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudUrchin.dc.html`](R3HudUrchin.dc.html) - Rev 3 - Urchin HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudManta.dc.html`](R3HudManta.dc.html) - Rev 3 - Manta HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudRhino.dc.html`](R3HudRhino.dc.html) - Rev 3 - Rhino HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudSerpent.dc.html`](R3HudSerpent.dc.html) - Rev 3 - Serpent HUD: its own icons, element colours drifting like a lava lamp
-- [`R3HudButterfly.dc.html`](R3HudButterfly.dc.html) - Rev 3 - Butterfly HUD: its own icons, element colours drifting like a lava lamp
-- [`ProfileNotes.dc.html`](ProfileNotes.dc.html) - Item 5 · Profile · what changes
-- [`LeaderboardEmpty.dc.html`](LeaderboardEmpty.dc.html) - Item 4 · Weekly leaderboard · no times yet
 
 #### Start flow
 
@@ -440,12 +98,14 @@ Copied on 2026-11-05 from canvas version `1793902693-58fe` of **Frogma**: Rev 3 
 
 - [`HangarNotes.dc.html`](HangarNotes.dc.html) - Item 2 · Hangar · what changes
 - [`HomeNotes.dc.html`](HomeNotes.dc.html) - Item 6 · Home · what changes
+- [`ProfileNotes.dc.html`](ProfileNotes.dc.html) - Item 5 · Profile · what changes
 
 #### Item 1 · Top nav
 
 - [`Main.dc.html`](Main.dc.html) - Item 1 · Top nav · interactive (click tabs, LT / RT)
 - [`TopNavHover.dc.html`](TopNavHover.dc.html) - Item 1 · Top nav · HANGAR active, pointer over ARK
 - [`TopNavLocked.dc.html`](TopNavLocked.dc.html) - Item 1 · Top nav · PORT pressed: locked, refused
+- [`LeaderboardEmpty.dc.html`](LeaderboardEmpty.dc.html) - Item 4 · Weekly leaderboard · no times yet
 
 #### Item 2 · Hangar
 
@@ -525,14 +185,8 @@ Copied on 2026-11-05 from canvas version `1793902693-58fe` of **Frogma**: Rev 3 
 
 ### Tab: Compute Console  (`compute-console`)
 
-#### Rev 38, 41, 42 - Compute console (the Computer artifact)
+#### Compute Console
 
-- [`R38Home.dc.html`](R38Home.dc.html) - Rev 38 Home - Home: what is running and what needs you
-- [`R38Computers.dc.html`](R38Computers.dc.html) - Rev 38 Computers - Computers: the machine list (Tailscale-style), filters and a row menu - interactive
-- [`R38Runs.dc.html`](R38Runs.dc.html) - Rev 38 Runs - Runs: running, sent, finished, each tagged by kind
-- [`R38Searches.dc.html`](R38Searches.dc.html) - Rev 38 Searches - Searches: list and an Optuna-style detail panel
-- [`R38NewRun.dc.html`](R38NewRun.dc.html) - Rev 38 NewRun - New run: vessel, mode, where, when
-- [`R38Notes.dc.html`](R38Notes.dc.html) - Rev 38 - Notes: what changes and why
 - [`R41Runs.dc.html`](R41Runs.dc.html) - Rev 41 Runs - Runs: a sent run shows at once as Starting, with a live bar and why a waiting run waits
 - [`R41NewRun.dc.html`](R41NewRun.dc.html) - Rev 41 NewRun - New run: Where defaults to the best live PC and the button says what happens
 - [`R41Computers.dc.html`](R41Computers.dc.html) - Rev 41 Computers - Computers: Starting is a status, never Working with nothing running
@@ -545,6 +199,26 @@ Copied on 2026-11-05 from canvas version `1793902693-58fe` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 127 - Avatar borders that sit on the domain halo: six animated rings
+
+- `R127Compare.dc.html` (not copied yet) - Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold
+- `R127A.dc.html` (not copied yet) - Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive
+- `R127B.dc.html` (not copied yet) - Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive
+- `R127C.dc.html` (not copied yet) - Rev 127 C - Dial: two counter-turning segmented rings - interactive
+- `R127D.dc.html` (not copied yet) - Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive
+- `R127E.dc.html` (not copied yet) - Rev 127 E - Current: a turning gradient ring with its own glow - interactive
+- `R127F.dc.html` (not copied yet) - Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive
+- `R127Notes.dc.html` (not copied yet) - Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick
+
+#### Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle
+
+- [`R112Compare.dc.html`](R112Compare.dc.html) - Rev 112 - the four layouts side by side, and how a Free and a Premium row read in each
+- [`R112A.dc.html`](R112A.dc.html) - Rev 112 A - Stage and list: a scrolling list on the left, Free then Premium; the set's world and what it repaints fill the right (recommended) - interactive
+- [`R112B.dc.html`](R112B.dc.html) - Rev 112 B - Wall: the world and what it repaints across the top; every set as a tile below, a wall that scrolls, Free and Premium as two shelves - interactive
+- [`R112C.dc.html`](R112C.dc.html) - Rev 112 C - Two shelves: Free down the left, Premium down the right, the world and what it repaints between them - interactive
+- [`R112D.dc.html`](R112D.dc.html) - Rev 112 D - The real cell: the world is the whole screen; a docked list on the right with Free / Premium filters, what it repaints along the foot - interactive
+- [`R112Notes.dc.html`](R112Notes.dc.html) - Rev 112 - notes: what was asked, the four, Free vs Premium, how it maps to the built Showroom, decisions
+
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
 - [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
@@ -556,161 +230,358 @@ Copied on 2026-11-05 from canvas version `1793902693-58fe` of **Frogma**: Rev 3 
 
 #### Rev 51 - Colour sets in the Profile: pick Photic, Nocturne or Dart Frog, and the repaint between them
 
-- [`R51Compare.dc.html`](R51Compare.dc.html) - Rev 51 - every colour set's card in each state it can show (equipped, owned; and later, when quests give sets, quest in progress and not started), its prisms in its own shipped colours
-- [`R51A.dc.html`](R51A.dc.html) - Rev 51 A - Profile tabs: Record | Colour sets | Audio Studio on LB / RB; the set cards beside a big live preview (recommended) - interactive
+- [`R51Compare.dc.html`](R51Compare.dc.html) - Rev 51 - every colour set's card in each state it can show (equipped, owned; and later, when quests give sets, quest in
+- [`R51A.dc.html`](R51A.dc.html) - Rev 51 A - Profile tabs: Record | Colour sets | Audio Studio on LB / RB; the set cards beside a big live preview (recomm - interactive
 - [`R51B.dc.html`](R51B.dc.html) - Rev 51 B - Pilot card chip: the colour set sits on the pilot card and opens a Colour sets window - interactive
 - [`R51C.dc.html`](R51C.dc.html) - Rev 51 C - Shelf: a full-width row of large set cards under the pilot card, the record below it
-- [`R51Locked.dc.html`](R51Locked.dc.html) - Rev 51 Locked - Later, once quests are planned: a set its quest has not given yet - which quest, how far you are, where to play it
+- [`R51Locked.dc.html`](R51Locked.dc.html) - Rev 51 Locked - Later, once quests are planned: a set its quest has not given yet - which quest, how far you are, where
 - [`R51Unlock.dc.html`](R51Unlock.dc.html) - Rev 51 Unlock - Later, once quests are planned: the quest claim in the Voyage window hands over the colour set
 - [`R51Loading.dc.html`](R51Loading.dc.html) - Rev 51 Loading - Changing colour set: the cell-change loading screen, repainting the HyperSea
-- [`R51Applied.dc.html`](R51Applied.dc.html) - Rev 51 Applied - Applied: back in the Profile, every prism, vessel and trail in the new set, the cell behind it repainted
-- [`R51Notes.dc.html`](R51Notes.dc.html) - Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, decisions
-
-#### Rev 49 - Voyage card I (picked): four more inviting looks, just the card
-
-- [`R49A.dc.html`](R49A.dc.html) - Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme - interactive
-- [`R49B.dc.html`](R49B.dc.html) - Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive
-- [`R49C.dc.html`](R49C.dc.html) - Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive
-- [`R49D.dc.html`](R49D.dc.html) - Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive
-- [`R49Notes.dc.html`](R49Notes.dc.html) - Rev 49 - notes: what was asked, what all four share, the recommendation
-- [`R49ACrew.dc.html`](R49ACrew.dc.html) - Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactiv - interactive
-- [`R49BCrew.dc.html`](R49BCrew.dc.html) - Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
-- [`R49CCrew.dc.html`](R49CCrew.dc.html) - Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
-- [`R49DCrew.dc.html`](R49DCrew.dc.html) - Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive
-- [`R49AStory.dc.html`](R49AStory.dc.html) - Rev 49 A - Destination glow, level 3, the story (optional) - interactive
-- [`R49BStory.dc.html`](R49BStory.dc.html) - Rev 49 B - Hangar light, level 3, the story (optional) - interactive
-- [`R49CStory.dc.html`](R49CStory.dc.html) - Rev 49 C - Route poster, level 3, the story (optional) - interactive
-- [`R49DStory.dc.html`](R49DStory.dc.html) - Rev 49 D - Split art, level 3, the story (optional) - interactive
-
-#### Rev 47 - Ark Squads: real domain colours, the Ark in 3D, nanobots or the Meerkat warp (six ways)
-
-- [`R47Compare.dc.html`](R47Compare.dc.html) - Rev 47 - The colour fix (built tint against ship colours, per hull and domain) and the two domain changes frame by frame
-- [`R47A.dc.html`](R47A.dc.html) - Rev 47 A - Escort: the Ark centre stage, its three escorts round it, seats along the bottom - nanobot swap (recommended) - interactive
-- [`R47B.dc.html`](R47B.dc.html) - Rev 47 B - Hangar: seats stacked left, the Ark large right - Meerkat warp - interactive
-- [`R47C.dc.html`](R47C.dc.html) - Rev 47 C - The deck, kept: the built deck, the Ark turning above it - nanobot swap - interactive
-- [`R47D.dc.html`](R47D.dc.html) - Rev 47 D - Bays: the Ark over three launch bays, an escort in each - Meerkat warp - interactive
-- [`R47E.dc.html`](R47E.dc.html) - Rev 47 E - Dossier: the Ark on the left half, three seat rows right - nanobot swap - interactive
-- [`R47F.dc.html`](R47F.dc.html) - Rev 47 F - Cinema: the Ark fills the screen, the squad floats over it - Meerkat warp - interactive
-- [`R47Notes.dc.html`](R47Notes.dc.html) - Rev 47 - notes: what was wrong with the colours, the Ark render, the recommendation
-
-#### Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)
-
-- [`R46Prototype.dc.html`](R46Prototype.dc.html) - Rev 46 Prototype - the prototype: press a card or a pin, zoom the map, step the levels - interactive
-- [`R46Cards.dc.html`](R46Cards.dc.html) - Rev 46 Cards - the voyages as four small cards, the HyperSea map at Sector with their pins - interactive
-- [`R46Open.dc.html`](R46Open.dc.html) - Rev 46 Open - a card slid open: Lantern Reach at level 1, the map on its course - interactive
-- [`R46FromMap.dc.html`](R46FromMap.dc.html) - Rev 46 FromMap - opened from the map: The Maw's pin pressed at Sector, its card slid open - interactive
-- [`R46Crew.dc.html`](R46Crew.dc.html) - Rev 46 Crew - the open voyage at level 2, Ark crew: the 12 settings - interactive
-- [`R46Story.dc.html`](R46Story.dc.html) - Rev 46 Story - the open voyage at level 3, its story (optional) - interactive
-- [`R46Notes.dc.html`](R46Notes.dc.html) - Rev 46 - notes: what was asked, what it is, what the build changes
-
-#### Rev 44 - Voyage window, four more: four tabs (Voyages, Saga, Quests, Episodes locked) on the sea lines
-
-- [`R44Compare.dc.html`](R44Compare.dc.html) - Rev 44 - the four options and their tab rows side by side
-- [`R44Notes.dc.html`](R44Notes.dc.html) - Rev 44 - notes: what changed from Rev 43, the recommendation
-- [`R44GVoyage.dc.html`](R44GVoyage.dc.html) - Rev 44 GVoyage - Crew's hand, level 1, the voyage card - each voyage a card your crew hands you, levels 2 and 3 its back - interactive
-- [`R44GCrew.dc.html`](R44GCrew.dc.html) - Rev 44 GCrew - Crew's hand, level 2, Ark crew (the 12 settings)
-- [`R44GStory.dc.html`](R44GStory.dc.html) - Rev 44 GStory - Crew's hand, level 3, the story (optional)
-- [`R44GSaga.dc.html`](R44GSaga.dc.html) - Rev 44 GSaga - Crew's hand, the Saga tab
-- [`R44GQuests.dc.html`](R44GQuests.dc.html) - Rev 44 GQuests - Crew's hand, the Quests tab (the quest tracker)
-- [`R44GEpisodes.dc.html`](R44GEpisodes.dc.html) - Rev 44 GEpisodes - Crew's hand, the Episodes tab, locked: coming soon
-- [`R44HVoyage.dc.html`](R44HVoyage.dc.html) - Rev 44 HVoyage - Logbook, level 1, the voyage card - the voyage a page of the Ark's log, levels 2 and 3 the next pages - - interactive
-- [`R44HCrew.dc.html`](R44HCrew.dc.html) - Rev 44 HCrew - Logbook, level 2, Ark crew (the 12 settings)
-- [`R44HStory.dc.html`](R44HStory.dc.html) - Rev 44 HStory - Logbook, level 3, the story (optional)
-- [`R44HSaga.dc.html`](R44HSaga.dc.html) - Rev 44 HSaga - Logbook, the Saga tab
-- [`R44HQuests.dc.html`](R44HQuests.dc.html) - Rev 44 HQuests - Logbook, the Quests tab (the quest tracker)
-- [`R44HEpisodes.dc.html`](R44HEpisodes.dc.html) - Rev 44 HEpisodes - Logbook, the Episodes tab, locked: coming soon
-- [`R44IVoyage.dc.html`](R44IVoyage.dc.html) - Rev 44 IVoyage - Formation, level 1, the voyage card - your Ark's three hulls lead the card, Ark crew opens the formatio - interactive
-- [`R44ICrew.dc.html`](R44ICrew.dc.html) - Rev 44 ICrew - Formation, level 2, Ark crew (the 12 settings)
-- [`R44IStory.dc.html`](R44IStory.dc.html) - Rev 44 IStory - Formation, level 3, the story (optional)
-- [`R44ISaga.dc.html`](R44ISaga.dc.html) - Rev 44 ISaga - Formation, the Saga tab
-- [`R44IQuests.dc.html`](R44IQuests.dc.html) - Rev 44 IQuests - Formation, the Quests tab (the quest tracker)
-- [`R44IEpisodes.dc.html`](R44IEpisodes.dc.html) - Rev 44 IEpisodes - Formation, the Episodes tab, locked: coming soon
-- [`R44JVoyage.dc.html`](R44JVoyage.dc.html) - Rev 44 JVoyage - On the sea, level 1, the voyage card - no card box, the levels are columns standing on the sea lines - - interactive
-- [`R44JCrew.dc.html`](R44JCrew.dc.html) - Rev 44 JCrew - On the sea, level 2, Ark crew (the 12 settings)
-- [`R44JStory.dc.html`](R44JStory.dc.html) - Rev 44 JStory - On the sea, level 3, the story (optional)
-- [`R44JSaga.dc.html`](R44JSaga.dc.html) - Rev 44 JSaga - On the sea, the Saga tab
-- [`R44JQuests.dc.html`](R44JQuests.dc.html) - Rev 44 JQuests - On the sea, the Quests tab (the quest tracker)
-- [`R44JEpisodes.dc.html`](R44JEpisodes.dc.html) - Rev 44 JEpisodes - On the sea, the Episodes tab, locked: coming soon
-
-#### Rev 43 - Voyage window: the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (six ways)
-
-- [`R43Compare.dc.html`](R43Compare.dc.html) - Rev 43 - where the voyage card goes at each level, all six side by side
-- [`R43Notes.dc.html`](R43Notes.dc.html) - Rev 43 - notes: what was asked, what all six share, the recommendation, what differs from the build
-- [`R43AVoyage.dc.html`](R43AVoyage.dc.html) - Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from - interactive
-- [`R43ACrew.dc.html`](R43ACrew.dc.html) - Rev 43 ACrew - Drawer, level 2, Ark crew (the 12 settings, presets)
-- [`R43AStory.dc.html`](R43AStory.dc.html) - Rev 43 AStory - Drawer, level 3, the story (optional)
-- [`R43ASaga.dc.html`](R43ASaga.dc.html) - Rev 43 ASaga - Drawer, Saga tab on LB / RB (content unchanged)
-- [`R43AEpisodes.dc.html`](R43AEpisodes.dc.html) - Rev 43 AEpisodes - Drawer, Episodes tab on LB / RB (content unchanged)
-- [`R43BVoyage.dc.html`](R43BVoyage.dc.html) - Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray, - interactive
-- [`R43BCrew.dc.html`](R43BCrew.dc.html) - Rev 43 BCrew - Tray, level 2, Ark crew (the 12 settings, presets)
-- [`R43BStory.dc.html`](R43BStory.dc.html) - Rev 43 BStory - Tray, level 3, the story (optional)
-- [`R43BSaga.dc.html`](R43BSaga.dc.html) - Rev 43 BSaga - Tray, Saga tab on LB / RB (content unchanged)
-- [`R43BEpisodes.dc.html`](R43BEpisodes.dc.html) - Rev 43 BEpisodes - Tray, Episodes tab on LB / RB (content unchanged)
-- [`R43CVoyage.dc.html`](R43CVoyage.dc.html) - Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / A - interactive
-- [`R43CCrew.dc.html`](R43CCrew.dc.html) - Rev 43 CCrew - Level tabs, level 2, Ark crew (the 12 settings, presets)
-- [`R43CStory.dc.html`](R43CStory.dc.html) - Rev 43 CStory - Level tabs, level 3, the story (optional)
-- [`R43CSaga.dc.html`](R43CSaga.dc.html) - Rev 43 CSaga - Level tabs, Saga tab on LB / RB (content unchanged)
-- [`R43CEpisodes.dc.html`](R43CEpisodes.dc.html) - Rev 43 CEpisodes - Level tabs, Episodes tab on LB / RB (content unchanged)
-- [`R43DVoyage.dc.html`](R43DVoyage.dc.html) - Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 ris - interactive
-- [`R43DCrew.dc.html`](R43DCrew.dc.html) - Rev 43 DCrew - Rising sheet, level 2, Ark crew (the 12 settings, presets)
-- [`R43DStory.dc.html`](R43DStory.dc.html) - Rev 43 DStory - Rising sheet, level 3, the story (optional)
-- [`R43DSaga.dc.html`](R43DSaga.dc.html) - Rev 43 DSaga - Rising sheet, Saga tab on LB / RB (content unchanged)
-- [`R43DEpisodes.dc.html`](R43DEpisodes.dc.html) - Rev 43 DEpisodes - Rising sheet, Episodes tab on LB / RB (content unchanged)
-- [`R43EVoyage.dc.html`](R43EVoyage.dc.html) - Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as num - interactive
-- [`R43ECrew.dc.html`](R43ECrew.dc.html) - Rev 43 ECrew - Dossier, level 2, Ark crew (the 12 settings, presets)
-- [`R43EStory.dc.html`](R43EStory.dc.html) - Rev 43 EStory - Dossier, level 3, the story (optional)
-- [`R43ESaga.dc.html`](R43ESaga.dc.html) - Rev 43 ESaga - Dossier, Saga tab on LB / RB (content unchanged)
-- [`R43EEpisodes.dc.html`](R43EEpisodes.dc.html) - Rev 43 EEpisodes - Dossier, Episodes tab on LB / RB (content unchanged)
-- [`R43FVoyage.dc.html`](R43FVoyage.dc.html) - Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide - interactive
-- [`R43FCrew.dc.html`](R43FCrew.dc.html) - Rev 43 FCrew - Two cards, level 2, Ark crew (the 12 settings, presets)
-- [`R43FStory.dc.html`](R43FStory.dc.html) - Rev 43 FStory - Two cards, level 3, the story (optional)
-- [`R43FSaga.dc.html`](R43FSaga.dc.html) - Rev 43 FSaga - Two cards, Saga tab on LB / RB (content unchanged)
-- [`R43FEpisodes.dc.html`](R43FEpisodes.dc.html) - Rev 43 FEpisodes - Two cards, Episodes tab on LB / RB (content unchanged)
+- [`R51Applied.dc.html`](R51Applied.dc.html) - Rev 51 Applied - Applied: back in the Profile, every prism, vessel and trail in the new set, the cell behind it repainte
+- [`R51Notes.dc.html`](R51Notes.dc.html) - Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, d
 
 ### Tab: Fleet Codex  (`fleet-codex`)
 
-#### Rev 48 - Fleet Codex, modern: one page, the kit with its controls, the omni crystal
+#### Rev 84 - Flight certificate and element tiers for the solo vessels: how ready each vessel is, and how good it is in each element's game
 
-- [`R48A.dc.html`](R48A.dc.html) - Rev 48 A - Marquee: the hull as a film still, five ability cards with every device's control on each card (recommended) - interactive
-- [`R48B.dc.html`](R48B.dc.html) - Rev 48 B - Bento: a fleet filmstrip on top, the vessel as a grid of tiles, one control map drawing all three devices tog - interactive
-- [`R48C.dc.html`](R48C.dc.html) - Rev 48 C - Ledger: the kit as one table, controller, PC and phone as columns of each ability row, the fleet as an index
-- [`R48Notes.dc.html`](R48Notes.dc.html) - Rev 48 - notes: what changed from Rev 45, the recommendation, what the build reads
+- [`R84A.dc.html`](R84A.dc.html) - Rev 84 A - On the vessel page: the certificate in the briefing, a tier beside each element game (recommended) - interactive
+- [`R84B.dc.html`](R84B.dc.html) - Rev 84 B - The whole fleet, sorted and filtered by completion and by tier, each on its own - interactive
+- [`R84C.dc.html`](R84C.dc.html) - Rev 84 C - Tier lists: one element at a time, S to C, with each vessel's certificate under its hull - interactive
+- [`R84Notes.dc.html`](R84Notes.dc.html) - Rev 84 - notes: the scoring rule, the names, the tier sheet to confirm
 
-#### Rev 45 - Fleet Codex - a vessel in tabs
+#### Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone
 
-- [`R45A.dc.html`](R45A.dc.html) - Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as devic - interactive
-- [`R45B.dc.html`](R45B.dc.html) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control - interactive
-- [`R45Notes.dc.html`](R45Notes.dc.html) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
+- [`R69Desktop.dc.html`](R69Desktop.dc.html) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight an - interactive
+- [`R69Phone.dc.html`](R69Phone.dc.html) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
+
+#### Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability
+
+- [`R68A.dc.html`](R68A.dc.html) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
+- [`R68B.dc.html`](R68B.dc.html) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
+- [`R68C.dc.html`](R68C.dc.html) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
+- [`R68D.dc.html`](R68D.dc.html) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
+- [`R68Notes.dc.html`](R68Notes.dc.html) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
+
+#### Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare
+
+- [`R66Switches.dc.html`](R66Switches.dc.html) - Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split
+- [`R66Live.dc.html`](R66Live.dc.html) - Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker
+- [`R66Alerts.dc.html`](R66Alerts.dc.html) - Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds
+- [`R66Funnel.dc.html`](R66Funnel.dc.html) - Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension
+- [`R66Releases.dc.html`](R66Releases.dc.html) - Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention
+- [`R66PlayerCompare.dc.html`](R66PlayerCompare.dc.html) - Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one
+- [`R66Notes.dc.html`](R66Notes.dc.html) - Rev 66 - notes: what each idea adds, what the server has, what is new
+
+#### Rev 65 - Froglet Analytics, the full tool: filters, charts, cohorts, eras and admin queries
+
+- [`R65Players.dc.html`](R65Players.dc.html) - Rev 65 Players - Players: filter bar, sortable columns, each player's play mix and lifespan
+- [`R65Profile.dc.html`](R65Profile.dc.html) - Rev 65 Profile - Player profile: charts, not lists (play-type donut, ranked modes and vessels, match timeline, crystals)
+- [`R65Lifespans.dc.html`](R65Lifespans.dc.html) - Rev 65 Lifespans - Cohorts: every player's lifespan as a Gantt, and return by cohort
+- [`R65Eras.dc.html`](R65Eras.dc.html) - Rev 65 Eras - Eras: the plan chart - Old PostHog data, Pre-beta editor testing, the betas ahead - and the eras compared
+- [`R65PlayTypes.dc.html`](R65PlayTypes.dc.html) - Rev 65 PlayTypes - Solo vs AI, Solo, Multiplayer side by side, and the Play filter
+- [`R65Query.dc.html`](R65Query.dc.html) - Rev 65 Query - Query Studio (admins): build a query, save it as a table, chart it
+- [`R65Dashboards.dc.html`](R65Dashboards.dc.html) - Rev 65 Dashboards - Dashboards (admins): pin saved queries into your own boards
+- [`R65Notes.dc.html`](R65Notes.dc.html) - Rev 65 - notes: what each board adds, what the server already answers, what is new
 
 #### Rev 50 - Froglet Analytics dashboard: our own backend replaces PostHog, three ways to read it
 
 - [`R50Compare.dc.html`](R50Compare.dc.html) - Rev 50 - the top of each option side by side: the overnight read, the console rail, the ask bar
-- [`R50A.dc.html`](R50A.dc.html) - Rev 50 A - Morning read: Claude's overnight read on top, then the numbers and charts on one page (recommended) - interactive
+- [`R50A.dc.html`](R50A.dc.html) - Rev 50 A - Morning read: Claude's overnight read on top, then the numbers and charts on one page (recommended) - interac - interactive
 - [`R50B.dc.html`](R50B.dc.html) - Rev 50 B - Console: a left rail of pages (Overview, Retention, Matches, Data health, Ask, Erasure), dense overview
 - [`R50C.dc.html`](R50C.dc.html) - Rev 50 C - Ask first: one question box on top, Claude's answer with its query, pinned charts below - interactive
 - [`R50Notes.dc.html`](R50Notes.dc.html) - Rev 50 - notes: where the numbers come from, what each option costs, the open colour question
 
-### Tab: Phone  (`phone`)
+### Tab: Portrait  (`phone`)
 
-#### Rev 53 - Phone fixes: the HUD on Garrett's touch scheme, sign-in with Apple and Google (replaces Rev 52 Hud and SignIn)
+#### Rev 78 - The UI moves with the phone: every piece travels to its upright place as the phone turns
 
-- `R53SignIn.dc.html` (not copied yet) - Rev 53 SignIn - Sign-in: two columns, the welcome left, Apple, Google and Play as guest right (iPhone order)
-- `R53HudLifts.dc.html` (not copied yet) - Rev 53 HudLifts - In game, a thumb-lifts hull (Squirrel): both thumbs fly, the cards show which lift fires them
-- `R53HudTotems.dc.html` (not copied yet) - Rev 53 HudTotems - In game, a totem-buttons hull (Sparrow): the cards are buttons round the right thumb
-- `R53Notes.dc.html` (not copied yet) - Rev 53 - notes: what changed from Rev 52 and why
+- [`R78Follow.dc.html`](R78Follow.dc.html) - Rev 78 Follow - Follow the turn (recommended): the pieces travel with the phone and stay level - interactive
+- [`R78Glide.dc.html`](R78Glide.dc.html) - Rev 78 Glide - Turn, then glide: the pieces turn with the phone, then glide into place - interactive
+- [`R78Notes.dc.html`](R78Notes.dc.html) - Rev 78 - notes: Follow vs Glide, and what only a device shows
 
-#### Rev 52 - Phone layouts at 800 x 450 (D6): sign-in, Home, Arcade, Configure, Hangar, the HUD, the finish
+#### Rev 76 - The turn: five transitions, each on the menu and on the Goby turning into the Pistol
 
-- `R52Compare.dc.html` (not copied yet) - Rev 52 - the same Home on a phone: today's PC layout shrunk vs the phone scale, at true size
-- `R52SignIn.dc.html` (not copied yet) - Rev 52 SignIn - Sign-in: the welcome and Play as guest, one column
-- `R52Home.dc.html` (not copied yet) - Rev 52 Home - Home: the four tabs as a left rail, the four modes as big buttons along the bottom (recommended) - interactive
-- `R52Arcade.dc.html` (not copied yet) - Rev 52 Arcade - Arcade: eight cards in a 4 x 2 grid, the game of the week marked
-- `R52Configure.dc.html` (not copied yet) - Rev 52 Configure - Configure: the picture left, intensity, pilots and START (Ruby) right; controls in a sheet - interactive
-- `R52Hangar.dc.html` (not copied yet) - Rev 52 Hangar - Hangar: the hull large, the fleet a row of Jade-selectable chips - interactive
-- `R52Hud.dc.html` (not copied yet) - Rev 52 Hud - In game: the four-icon ability row as thumb buttons, the race facts top centre
-- `R52Finish.dc.html` (not copied yet) - Rev 52 Finish - The finish: time, earned, Play again (Ruby) and Menu
-- `R52Notes.dc.html` (not copied yet) - Rev 52 - notes: the phone rules each board follows, and what each changes in Unity
+- `R76Compare.dc.html` (not copied yet) - Rev 76 - the five transitions side by side, in time: the menu row and the Goby row
+- [`R76A.dc.html`](R76A.dc.html) - Rev 76 A - Fade through (built) - interactive
+- [`R76B.dc.html`](R76B.dc.html) - Rev 76 B - Hold steady: the UI stays level while the phone turns; the Goby's camera swings to the side - interactive
+- `R76C.dc.html` (not copied yet) - Rev 76 C - Re-form (recommended): the UI re-forms in three bands; the Pistol's square grows to fill the screen - interactive
+- `R76D.dc.html` (not copied yet) - Rev 76 D - Sliver wipe: a cut-corner slab sweeps across on the turn - interactive
+- `R76E.dc.html` (not copied yet) - Rev 76 E - Focus pull: the world softens through the turn and sharpens with the UI - interactive
+- `R76Notes.dc.html` (not copied yet) - Rev 76 - notes: the recommendation and the cost of each
+
+#### Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)
+
+- [`R72Menu.dc.html`](R72Menu.dc.html) - Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - i - interactive
+- [`R72Goby.dc.html`](R72Goby.dc.html) - Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - int - interactive
+- [`R72Other.dc.html`](R72Other.dc.html) - Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive
+- [`R72Notes.dc.html`](R72Notes.dc.html) - Rev 72 - notes: the timings, the rules, what only the editor can show
+
+#### Rev 63 - Portrait menus: the same PC UI with the phone held upright (menus only; matches stay landscape)
+
+- [`R63A.dc.html`](R63A.dc.html) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
+- [`R63B.dc.html`](R63B.dc.html) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
+- [`R63C.dc.html`](R63C.dc.html) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
+- `R63Notes.dc.html` (not copied yet) - Rev 63 - notes: what each costs to build and how big the words are
+
+### Tab: Launch Console  (`launch-console`)
+
+#### Rev 117 - Launch Console, the release tool: six pages in one board - Mission, Pipeline, Builds, Release, Signals, Theme
+
+- `R117Console.dc.html` (not copied yet) - Rev 117 Console - Console: Mission, Pipeline, Builds, Release, Signals and Theme; the rail switches pages, the swatches switch the theme - interactive
+- `R117Notes.dc.html` (not copied yet) - Rev 117 - notes: what each page reads, what is sample data, the open questions
+
+#### Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads
+
+- `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactiv - interactive
+- `R58Narrow.dc.html` (not copied yet) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
+- `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
+
+### Tab: Ark  (`ark`)
+
+#### Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models
+
+- `R110B.dc.html` (not copied yet) - Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive
+- `R110Notes.dc.html` (not copied yet) - Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked
+
+#### Rev 109 - The crew PDA itself, redesigned: three devices from the Ark for the hangar bench
+
+- `R109Compare.dc.html` (not copied yet) - Rev 109 - the three devices lying on the bench and held up, beside the built slab
+- `R109A.dc.html` (not copied yet) - Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive
+- `R109B.dc.html` (not copied yet) - Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive
+- `R109C.dc.html` (not copied yet) - Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive
+- `R109Notes.dc.html` (not copied yet) - Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes
+
+#### Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges
+
+- `R106Compare.dc.html` (not copied yet) - Rev 106 - one seat at rest and open, in the build and in A, B and C
+- `R106A.dc.html` (not copied yet) - Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive
+- `R106B.dc.html` (not copied yet) - Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive
+- `R106C.dc.html` (not copied yet) - Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive
+- `R106Notes.dc.html` (not copied yet) - Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen
+
+#### Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room
+
+- `R105A.dc.html` (not copied yet) - Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive
+- `R105B.dc.html` (not copied yet) - Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive
+- `R105C.dc.html` (not copied yet) - Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive
+- `R105Notes.dc.html` (not copied yet) - Rev 105 - notes: no cards, three levels, real artifacts, the recommendation
+
+#### Rev 104 - Elemental Converter without the cards: the player's real crystal balances, inside the Ark
+
+- `R104A.dc.html` (not copied yet) - Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended) - interactive
+- `R104B.dc.html` (not copied yet) - Rev 104 B - Holo dais: a projection rises from the pier's edge like the bridge tables in the pilot scenes, the four round the omni - interactive
+- `R104C.dc.html` (not copied yet) - Rev 104 C - Wall gauges: each balance mounted on the pier's tiled walls, two a side, the omni count on the lintel - interactive
+
+#### Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it
+
+- `R99Compare.dc.html` (not copied yet) - Rev 99 - The PDA's three screens flat, and the three places it lies
+- `R99A.dc.html` (not copied yet) - Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive
+- `R99B.dc.html` (not copied yet) - Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive
+- `R99C.dc.html` (not copied yet) - Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive
+- `R99Notes.dc.html` (not copied yet) - Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation
+
+#### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
+
+- `R86ArtifactsAB.dc.html` (not copied yet) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
+
+#### Rev 85 - The Artifacts room, three still mockups - A Reliquary, B Gallery, C Orrery
+
+- `R85ArtifactsA.dc.html` (not copied yet) - Rev 85 ArtifactsA - A - The Reliquary
+- `R85ArtifactsB.dc.html` (not copied yet) - Rev 85 ArtifactsB - B - The Gallery
+- `R85ArtifactsC.dc.html` (not copied yet) - Rev 85 ArtifactsC - C - The Orrery
+
+#### Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)
+
+- [`R67Ark.dc.html`](R67Ark.dc.html) - Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive
+
+#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
+
+- `R64Live.dc.html` (not copied yet) - Rev 64 Live - Live scene (animated) - interactive
+
+#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
+
+- `R62A.dc.html` (not copied yet) - Rev 62 A - The pads (recommended) - interactive
+- `R62B.dc.html` (not copied yet) - Rev 62 B - The map wall - interactive
+- `R62C.dc.html` (not copied yet) - Rev 62 C - Down the bay - interactive
+- `R62D.dc.html` (not copied yet) - Rev 62 D - The porthole row - interactive
+- `R62E.dc.html` (not copied yet) - Rev 62 E - Across the bay - interactive
+- `R62F.dc.html` (not copied yet) - Rev 62 F - At a porthole - interactive
+
+#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
+
+- `R61C.dc.html` (not copied yet) - Rev 61 C - On the pads - interactive
+- `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
+
+### Tab: Voyages  (`voyages`)
+
+No boards yet.
+
+### Tab: Game Mode Codex  (`game-mode-codex`)
+
+#### Rev 75 - Game Mode Codex, A and C as one: enter an element, open a game, its level in 3D; and the same level inside the builder
+
+- `R75Codex.dc.html` (not copied yet) - Rev 75 Codex - Codex: element doors and game cards (A) around a large 3D level (C), the intensities and the prompt besid
+- `R75Builder.dc.html` (not copied yet) - Rev 75 Builder - Builder: the same game opened in the builder, its I1-I4 ladder, the dials, saved layouts and the layout
+- `R75Notes.dc.html` (not copied yet) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
+
+### Tab: Loading Screens  (`loading-screens`)
+
+#### Rev 94 - The boot splash: the crew before the domains (C, liked)
+
+- [`R94C.dc.html`](R94C.dc.html) - Rev 94 C - The crew before the domains, in the game's own art: the new captain busts, silver hulls, Omni crystals, a real cell, fauna and flora; the colour set changing
+- [`R94Notes.dc.html`](R94Notes.dc.html) - Rev 94 - notes: what is now the game's own art, the far background, what was kept
+
+#### Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show
+
+- [`R91Compare.dc.html`](R91Compare.dc.html) - Rev 91 - The progress bar on its own: live, and held at each step, a slow patch and done
+- [`R91A.dc.html`](R91A.dc.html) - Rev 91 A - Squad: your three seats arrive one by one as the load moves on
+- [`R91B.dc.html`](R91B.dc.html) - Rev 91 B - The Ark: the ship drifts across the sea, its four rooms lit in turn
+- [`R91C.dc.html`](R91C.dc.html) - Rev 91 C - Pilots: one pilot stands large, the roster beside
+- [`R91D.dc.html`](R91D.dc.html) - Rev 91 D - Vessels: one hull at a time, large, the fleet beside
+- [`R91E.dc.html`](R91E.dc.html) - Rev 91 E - Toy Box: the Vessel Changer cycling hulls, the seven toys lit in turn
+- [`R91F.dc.html`](R91F.dc.html) - Rev 91 F - The tour: Squad, Ark, Pilots, Vessels and Toy Box in turn while the bar fills (recommended)
+- [`R91Notes.dc.html`](R91Notes.dc.html) - Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build
+
+### Tab: Quests  (`quests`)
+
+#### Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no episode
+
+- [`R107Compare.dc.html`](R107Compare.dc.html) - Rev 107 - the colour set reward, drawn three ways
+- [`R107D.dc.html`](R107D.dc.html) - Rev 107 D - Route on top: the course across, the quest, its reward and Claim side by side below (recommended) - interactive
+- [`R107E.dc.html`](R107E.dc.html) - Rev 107 E - Route as the list: the course down the left, the quest and its checkpoints in the middle, the reward beside Claim - interactive
+- [`R107Notes.dc.html`](R107Notes.dc.html) - Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101
+
+#### Rev 101 - Quests as a screen of its own: the episode's five quests, each one's goals, claim and what it opens
+
+- [`R101Compare.dc.html`](R101Compare.dc.html) - Rev 101 - one quest's goals and its claim, as each option draws them
+- [`R101A.dc.html`](R101A.dc.html) - Rev 101 A - Star chart: the five quests as stars on the HyperSea, joined by the current that opens them (recommended) - interactive
+- [`R101B.dc.html`](R101B.dc.html) - Rev 101 B - Quest log: a calm list on the left, the open quest's goals as a ladder in the middle - interactive
+- [`R101C.dc.html`](R101C.dc.html) - Rev 101 C - The route: the quests as stations along one course across the screen - interactive
+- [`R101Notes.dc.html`](R101Notes.dc.html) - Rev 101 - notes: where the screen opens from, what each option changes, what is real data
+
+### Tab: Voyages playtest  (`voyages-playtest`)
+
+#### Rev 120 - B On the Ark on every in-game voyage screen
+
+- [`R120Intro.dc.html`](R120Intro.dc.html) - Rev 120 Intro - The intro: course title and objective, no HUD
+- [`R120SetOff.dc.html`](R120SetOff.dc.html) - Rev 120 SetOff - Setting off: the plate lights, the goal toast
+- [`R120Raid.dc.html`](R120Raid.dc.html) - Rev 120 Raid - Raiding a hostile cell: the plate over the Ark, the chip
+- [`R120Pickup.dc.html`](R120Pickup.dc.html) - Rev 120 Pickup - A crystal picked up: +1 toast, the plate's to-bank line
+- [`R120Banked.dc.html`](R120Banked.dc.html) - Rev 120 Banked - Banked at the Ark: the plate counts up, the split in the toast
+- [`R120Attack.dc.html`](R120Attack.dc.html) - Rev 120 Attack - The Ark under attack: the plate turns red
+- [`R120Leak.dc.html`](R120Leak.dc.html) - Rev 120 Leak - The hold leaking: hull under 30%
+- [`R120Sail.dc.html`](R120Sail.dc.html) - Rev 120 Sail - The raid countdown on the plate
+- [`R120Kaiju.dc.html`](R120Kaiju.dc.html) - Rev 120 Kaiju - Between cells: a kaiju in open water
+- [`R120Stray.dc.html`](R120Stray.dc.html) - Rev 120 Stray - Too far from the Ark: the plate small and far, the chip outlined
+- [`R120Goal.dc.html`](R120Goal.dc.html) - Rev 120 Goal - Goal met: the plate turns lime
+- [`R120Pause.dc.html`](R120Pause.dc.html) - Rev 120 Pause - Pause, goal met: Complete and set sail
+- [`R120Home.dc.html`](R120Home.dc.html) - Rev 120 Home - Sailing home: what is aboard
+- [`R120Escort.dc.html`](R120Escort.dc.html) - Rev 120 Escort - Escort the Ark: the hull is the score
+- [`R120Score.dc.html`](R120Score.dc.html) - Rev 120 Score - The end board: Finish here, Sail home, Venture further
+- [`R120Lost.dc.html`](R120Lost.dc.html) - Rev 120 Lost - The Ark lost
+- [`R120Notes.dc.html`](R120Notes.dc.html) - Rev 120 - notes: what each option changes, what is shared, what differs from the build
+
+#### Rev 116 - The in-game voyage UI, six ways: flight HUD, the Ark under attack, the toast spot, the raid countdown, pause, the scoreboard
+
+- [`R116A_Hud.dc.html`](R116A_Hud.dc.html) - 116A Marquee (recommended) - In flight
+- [`R116A_Attack.dc.html`](R116A_Attack.dc.html) - 116A Marquee (recommended) - The Ark under attack
+- [`R116A_Toasts.dc.html`](R116A_Toasts.dc.html) - 116A Marquee (recommended) - The toast spot
+- [`R116A_Sail.dc.html`](R116A_Sail.dc.html) - 116A Marquee (recommended) - The raid countdown
+- [`R116A_Pause.dc.html`](R116A_Pause.dc.html) - 116A Marquee (recommended) - Pause, goal met
+- [`R116A_Score.dc.html`](R116A_Score.dc.html) - 116A Marquee (recommended) - The end scoreboard
+- [`R116B_Hud.dc.html`](R116B_Hud.dc.html) - 116B Rail - In flight
+- [`R116B_Attack.dc.html`](R116B_Attack.dc.html) - 116B Rail - The Ark under attack
+- [`R116B_Toasts.dc.html`](R116B_Toasts.dc.html) - 116B Rail - The toast spot
+- [`R116B_Sail.dc.html`](R116B_Sail.dc.html) - 116B Rail - The raid countdown
+- [`R116B_Pause.dc.html`](R116B_Pause.dc.html) - 116B Rail - Pause, goal met
+- [`R116B_Score.dc.html`](R116B_Score.dc.html) - 116B Rail - The end scoreboard
+- [`R116C_Hud.dc.html`](R116C_Hud.dc.html) - 116C Console - In flight
+- [`R116C_Attack.dc.html`](R116C_Attack.dc.html) - 116C Console - The Ark under attack
+- [`R116C_Toasts.dc.html`](R116C_Toasts.dc.html) - 116C Console - The toast spot
+- [`R116C_Sail.dc.html`](R116C_Sail.dc.html) - 116C Console - The raid countdown
+- [`R116C_Pause.dc.html`](R116C_Pause.dc.html) - 116C Console - Pause, goal met
+- [`R116C_Score.dc.html`](R116C_Score.dc.html) - 116C Console - The end scoreboard
+- [`R116D_Hud.dc.html`](R116D_Hud.dc.html) - 116D Corners - In flight
+- [`R116D_Attack.dc.html`](R116D_Attack.dc.html) - 116D Corners - The Ark under attack
+- [`R116D_Toasts.dc.html`](R116D_Toasts.dc.html) - 116D Corners - The toast spot
+- [`R116D_Sail.dc.html`](R116D_Sail.dc.html) - 116D Corners - The raid countdown
+- [`R116D_Pause.dc.html`](R116D_Pause.dc.html) - 116D Corners - Pause, goal met
+- [`R116D_Score.dc.html`](R116D_Score.dc.html) - 116D Corners - The end scoreboard
+- [`R116E_Hud.dc.html`](R116E_Hud.dc.html) - 116E Edges - In flight
+- [`R116E_Attack.dc.html`](R116E_Attack.dc.html) - 116E Edges - The Ark under attack
+- [`R116E_Toasts.dc.html`](R116E_Toasts.dc.html) - 116E Edges - The toast spot
+- [`R116E_Sail.dc.html`](R116E_Sail.dc.html) - 116E Edges - The raid countdown
+- [`R116E_Pause.dc.html`](R116E_Pause.dc.html) - 116E Edges - Pause, goal met
+- [`R116E_Score.dc.html`](R116E_Score.dc.html) - 116E Edges - The end scoreboard
+- [`R116F_Hud.dc.html`](R116F_Hud.dc.html) - 116F Blocks - In flight
+- [`R116F_Attack.dc.html`](R116F_Attack.dc.html) - 116F Blocks - The Ark under attack
+- [`R116F_Toasts.dc.html`](R116F_Toasts.dc.html) - 116F Blocks - The toast spot
+- [`R116F_Sail.dc.html`](R116F_Sail.dc.html) - 116F Blocks - The raid countdown
+- [`R116F_Pause.dc.html`](R116F_Pause.dc.html) - 116F Blocks - Pause, goal met
+- [`R116F_Score.dc.html`](R116F_Score.dc.html) - 116F Blocks - The end scoreboard
+
+#### Rev 115 - Your Ark and the seat picker, five ways: hangar line-up, your seat first, pilot cards, formation, garage list
+
+- [`R115A.dc.html`](R115A.dc.html) - Rev 115 A - Ark A: Hangar line-up; the picker slides in from the right (recommended)
+
+### Tab: What's New  (`what-s-new`)
+
+#### Rev 121 - What's new: the pop-up after an update and from Settings, four ways, featuring Voyages
+
+- [`R121A.dc.html`](R121A.dc.html) - Rev 121 A - Poster: one window, the Ark over the HyperSea, three lines and Set sail (recommended) - interactive
+- [`R121B.dc.html`](R121B.dc.html) - Rev 121 B - Pages: one feature a page, paged with LB / RB, Set sail on the last - interactive
+- [`R121C.dc.html`](R121C.dc.html) - Rev 121 C - Changelog: the updates listed on the left, the picked one on the right - interactive
+- [`R121D.dc.html`](R121D.dc.html) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
+- [`R121Settings.dc.html`](R121Settings.dc.html) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
+- [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
+
+### Tab: Frogma Website  (`frogma-website`)
+
+#### Rev 126: calmer, made of the HyperSea - sky, cells, galaxy, flora and fauna; the galaxy map on Voyages; Tumult's storm hero
+
+- `R126A.dc.html` (not copied yet) - Rev 126 A - Home - interactive
+- `R126B.dc.html` (not copied yet) - Rev 126 B - Vessels - interactive
+- `R126C.dc.html` (not copied yet) - Rev 126 C - Arcade - interactive
+- `R126D.dc.html` (not copied yet) - Rev 126 D - Arena - interactive
+- `R126E.dc.html` (not copied yet) - Rev 126 E - Voyages - interactive
+- `R126F.dc.html` (not copied yet) - Rev 126 F - Pilots - interactive
+- `R126G.dc.html` (not copied yet) - Rev 126 G - Studio - interactive
+- `R126Notes.dc.html` (not copied yet) - Rev 126 notes
+
+#### Rev 125: E as a site of pages, with the Fleet Codex, the Pilot Codex and a moving background
+
+- `R125A.dc.html` (not copied yet) - Rev 125 A - Home: hero, story, four ways to play, fleet teaser, Press Start, get the game, latest news - interactive
+- `R125B.dc.html` (not copied yet) - Rev 125 B - Vessels: the racing lane; every card and the button open the Fleet Codex full screen - interactive
+- `R125C.dc.html` (not copied yet) - Rev 125 C - Arcade: all 49 arcade games in the Fleet Codex look, filtered and sorted by element - interactive
+- `R125D.dc.html` (not copied yet) - Rev 125 D - Arena: its own page, the four arena games and how a match works - interactive
+- `R125E.dc.html` (not copied yet) - Rev 125 E - Voyages: the story of the HyperSea, the squad and one Ark (in development) - interactive
+- `R125F.dc.html` (not copied yet) - Rev 125 F - Pilots: the Pilot Codex, all 18 callsigns filtered by what they see - interactive
+- `R125G.dc.html` (not copied yet) - Rev 125 G - Studio: blog, the team and contact - interactive
+- `R125Notes.dc.html` (not copied yet) - Rev 125 - notes: the seven pages, Tumult, the moving background and how the codex stays current
+
+#### Frogma Website
+
+- `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
+
+### Tab: Game Cards  (`game-cards`)
+
+#### Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell
+
+- [`R129Compare.dc.html`](R129Compare.dc.html) - Rev 129 - Compare: the Poster card in our font, Skim Race in four pictures, at rest and hovered
+- [`R129Row.dc.html`](R129Row.dc.html) - Rev 129 Row - Row: the Arcade with Skim Race inside the cell, and every state - interactive
+- [`R129Notes.dc.html`](R129Notes.dc.html) - Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes
+
+#### Rev 128 - Game cards, six ways: Skim Race's arcade card beside the card we ship - look, motion and hover, light on performance
+
+- [`R128Compare.dc.html`](R128Compare.dc.html) - Rev 128 - Compare: the shipped card and the six new ones side by side, hover each
+- [`R128A.dc.html`](R128A.dc.html) - Rev 128 A - Depth: the picture in three planes that tilt with the pointer - interactive
+- [`R128B.dc.html`](R128B.dc.html) - Rev 128 B - Racing line: a light runs the course through the rings; on hover the Squirrel flies it (recommended) - interactive
+- [`R128C.dc.html`](R128C.dc.html) - Rev 128 C - Hero hull: the Squirrel breaks out of the frame and surges on hover - interactive
+- [`R128D.dc.html`](R128D.dc.html) - Rev 128 D - Silver foil: a collectible card, foil that catches the light as it tilts - interactive
+- [`R128E.dc.html`](R128E.dc.html) - Rev 128 E - Poster: the picture full bleed under a big title; the card slides open on hover - interactive
+- [`R128F.dc.html`](R128F.dc.html) - Rev 128 F - Live loop: a still at rest, the game playing in the card on hover - interactive
+- [`R128Notes.dc.html`](R128Notes.dc.html) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
 
 <!-- frogma.py readme: end -->

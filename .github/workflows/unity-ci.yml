@@ -14,9 +14,9 @@
 #
 # claude/** BRANCHES DO NOT TRIGGER CI ON THEIR OWN. Agent sessions push often and open many
 # pull requests, so a pull_request event whose head is claude/** skips every job here. CI for such
-# a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml and
-# amoebius-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
-# command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
+# a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml runs on that
+# push; amoebius-parity-ci.yml runs nightly on bleeding-edge, not per push, since 2026-11-13) or
+# (b) a /ship, /ship-quick, /ship-deep or /ship-tools command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
 #
 # NO RUNNER IS ATTACHED (since 2026-10-13). The `unity` job is SKIPPED while the repository variable
 # UNITY_RUNNER_LABEL is unset, and when set it targets whatever label it names. The self-hosted
@@ -214,11 +214,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: false          # source-only check; binary assets are not needed
           fetch-depth: 1
+
+      # The generator --check loop below imports numpy (Tools/CI/requirements-checks.txt says
+      # which and why); the hosted image does not ship it. Same step as bleeding-edge-guard.yml.
+      - name: Install the Python packages the checks import
+        run: |
+          python3 -m pip install --user --quiet --break-system-packages --only-binary :all: -r Tools/CI/requirements-checks.txt
+          python3 -c "import numpy; print('numpy', numpy.__version__)"
 
       # The checker has no-opped before while still reporting "OK". Prove it can
       # still detect its own fixtures BEFORE trusting a clean scan.
@@ -319,7 +326,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: true          # the project stores binary assets in Git LFS
@@ -485,7 +492,7 @@ jobs:
       # red player build diagnosable without anyone copying lines out of a web page.
       - name: Upload build log
         if: failure() && env.MODE != 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-log-${{ env.MODE }}-${{ github.run_id }}
           path: ${{ env.UNITY_BUILD_LOG }}
@@ -494,7 +501,7 @@ jobs:
 
       - name: Upload test results
         if: always() && env.MODE == 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: editmode-results
           path: Artifacts/
@@ -503,7 +510,7 @@ jobs:
 
       - name: Upload build manifest
         if: always() && env.MODE != 'compile'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-manifest-${{ env.MODE }}
           path: ${{ env.BUILD_OUTPUT }}/build_manifest.txt

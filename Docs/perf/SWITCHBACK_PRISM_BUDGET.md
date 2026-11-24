@@ -65,6 +65,16 @@ Rationale: +1,000 static prisms ≈ +0.03 ms CPU (est.); the binding limit is co
 mobile memory/load time, not per-frame render cost. Keep obstacles ≥ the corridor's *visual* edge so pilots see them
 but most of their prisms sit beyond 200 u of the racing line; the `LayCapacity` 4096 budget is per-trail and separate.
 
+## The I4 gauntlet (2026-11-03): the I4 row spent, on the path
+
+Yash asked for 1.5x the I4 objects (`SWITCHBACK.md` "The I4 gauntlet"). `TotalCap(4)` 3400 -> 5100 (+1,700, a little
+over the +1,500 measured above), and unlike the probe's 80-within-200-u stress prisms these sit ON the path: tunnels,
+plugs, seals and a denser field, so `ColliderCap(4)` rose 400 -> 600 (Breakwater I1's shipped worst is 568) and the
+fixed seed 45_504 reaches it. Movers 28 / 140 -> 42 / 210. Measured headless only (layout counts; course average 4,933
+prisms against 3,231). **To verify:** the I4 soak above (3 AI, fixed seed) with the gauntlet - p50 / p95 / p99, live
+colliders, `Switchback.BlastRun.TickMovers`, load time - against the "Latest" row. If 600 near the path costs too much,
+lower `ColliderCap(4)` first: the layout then thins the field evenly (hashed cell order), and a gate's tunnels are laid before its field.
+
 ## Skipped
 - Distance culling / LOD for prism entities — changes visuals.
 - GameObject-less static prism path (entity-only, no collider GO) — biggest memory win but large and risky; next step if

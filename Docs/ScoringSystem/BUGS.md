@@ -585,3 +585,42 @@ predicate is covered by `ElementalTransferRouteTests.AHitIsDecidedOnlyOnTheShoot
 harness T10, which is negative-controlled. Engine verification is pending (MPPM, 1 host + 1
 client, Dog Fight): the client lands single bullets on a stationary host, and each one is +1 on
 both machines' domain panels, never +2. `DOGFIGHT.md` verification step 9.
+
+## B21 — the scoreboard's stat block was this machine's pilot only, and some hulls always read 0
+
+**Symptom.** Yash and a friend, two players (2026-11-10): Yash's scoreboard read "Prisms Damaged 0", the friend's
+read 39. Neither board showed the other pilot's numbers.
+
+**Root cause.** Two faults on top of each other.
+
+1. **Never synced.** The stat block (Longest Drift, Max Boost, Prisms Damaged; the Sparrow's and Squirrel's extras)
+   comes from `VesselTelemetry`, which counts only the LOCAL pilot, raises local `VesselStatEventSO` assets, and
+   `EventDrivenStatsProvider` reads them on that machine alone. The block has no names on it, so each board showed
+   its own pilot's numbers: the friend's 39 was the friend's own count. Every telemetry also tracked the local pilot,
+   whichever hull it sat on, so the local pilot was counted once per ship in the arena.
+2. **Some hulls never reported.** The Dolphin, Manta, Rhino, Serpent and Swordfish carry only
+   `VesselTelemetryBootstrapper`, which added a `DefaultVesselTelemetry` with no stat links (it warned so in the log),
+   so those pilots counted and raised nothing: 0 on every board. The Urchin, Falcon, Grizzly, Termite and Tiger Moth
+   carried no telemetry at all.
+
+**Fix.**
+- `VesselTelemetry` fills a missing base link from `Resources/GameModeStatsProfile` (new `vesselLongestDrift`,
+  `vesselMaxBoost`, `vesselPrismsDamaged`), and `VesselController.Initialize` calls
+  `VesselTelemetryBootstrapper.Ensure`, so every hull has a telemetry with its three stats. The Urchin prefab
+  carries a wired `DefaultVesselTelemetry`.
+- Only the telemetry on the local pilot's own ship tracks.
+- Every value goes through `Publish`: raised locally as before and reported to the pilot's `RoundStats`
+  (`ReportVesselStat`, every 0.5 s and at the turn's end). `RoundStats.n_VesselStats` is a server-written
+  `NetworkList` keyed by the stat asset's name; a client reports through `ReportVesselStat_ServerRpc` (owner only).
+  Cleared with the rest of the stats at the game's start and on replay.
+- `EventDrivenStatsProvider` shows every human pilot's value, this machine's first ("Yash 12 · Garrett 39", a dash
+  for a pilot with no value). Solo play reads as before. A value arriving after the board is drawn redraws the block.
+- `ProtocolVersion` 30 (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
+
+**Not covered.** AI pilots fly no telemetry, so they are not on the block. The Port copies of `VesselTelemetry` and
+`RoundStats` were already behind the Unity source and are unchanged.
+
+**Verified.** Assembly-CSharp and Assembly-CSharp-Editor compiled with the editor's Roslyn and today's response files
+(0 errors); `check_console_logging.py`, `check_conditional_compilation.py` and `gamecanvas_unification_report.py
+--check` pass. Not run: the EditMode tests (`VesselStatsSyncTests`, 7) and a two-player match:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "B21 (scoring)".

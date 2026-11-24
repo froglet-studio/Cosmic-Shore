@@ -51,7 +51,7 @@ which is a diagram at 128 px and noise at 40.
 
 **Does not read:** Angler Command (a hull, a beam, a reticle, a fish and a prism row in one box),
 Angler Tame (reads as `>=`), Brittle Star Creation / Destruction (scattered squares and hairlines),
-Butterfly Scale Dust (blobs), Manta Kabloom (a flower, not an explosion), Manta Yastri (one bent
+Butterfly Scale Dust (blobs), Manta Kabloom (a flower, not an explosion), Manta Yawstery (one bent
 arrow), Manta Soar (three chevrons - any boost on any hull), Urchin Charge Ring (a bare ring), Urchin
 Slip (three circles), Urchin Track Projector (a ladder), and all eleven placeholders (Rhino's three
 slashes / double arrow / ramp / lightning, Scarab's ball and ripple and switch, Serpent's reticle /
@@ -262,6 +262,11 @@ chevrons, a slope: "this ability is about the rhino and its invulnerability to d
 threshold as a line across ("not the bar across. updated sparrow has a better solution"), round 3 had the Rhino
 flying up into the plate's ticks ("travel left to right so it doesn't cause visual confusion between the impact event
 and the threshold"). `RhinoVesselHUDView.SetMomentum` / `SetMomentumMark`. The Rhino is done; next: the Scarab.
+**The Swordfish's row** (2026-11-12, `specs/swordfish.py`, no option round: Garrett's standing pick-the-recommended rule): the Swordfish ran the Rhino's HUD until now and gets its own (`SwordfishHUDVariant`, `SwordfishVesselHUDView`, `SwordfishHUDController`). **Charge** is the bill seen from the camera behind - a snout socket with the bill foreshortened at rest - that follows the real sword (side swing = yaw / 90, raise = -pitch / 90) and lights while energized; the plate is the energize. **Mass** is the bill swinging past two afterimages in the domain colour. **Space** is the bill laid flat between the reach posts, its live length the Space reach, and the prism ahead shatters once Shield Breaker is on. **Time** is Quickdraw: the bill with a tapered swoosh that brightens with Time's rate, the plate is the swing's recovery draining away, and Flurry (Time 5) flashes the card and adds the swoosh back. The omni core is the Surge, a ring of bills. Not yet run in Unity. Sheets: `Docs/Icons/sheets/swordfish*.png`.
+**The Angler's level-5 states** (2026-11-12, the fundamentals pass, `specs/angler.py`): Charge 5 Swallow adds one part, `Angler_LockPetal`, a Charge petal flying home above the hunter to the school (white, shown while a hunter is out); Time 5 Riptide shows the other group's hull too, dim (`AnglerHUDView.dashRiptideAlpha`), with no new part. Sheets `angler_lockon.png`, `angler_dash.png`.
+**The Orca's row** (2026-11-13, `specs/orca.py`, no option round): the Orca flew the Sparrow's HUD until now and gets its own (`OrcaHUDVariant`, written from the Sparrow's prefab with every fileID kept by `Tools/Build/author_orca_hud.py --check`, and `OrcaHUDView`). Each card is one picture and its level-5 card is the binding's `upgradedSprite`: **Charge** a flown missile on its dashed S path / Rearm two missiles racked; **Mass** the hull from above in a shell of prism plates open ahead / Bulwark two shells; **Space** a burst inside its blast ring with the missile that set it off / Chain Burst a second burst set off inside the first's ring; **Time** the hull with a speed wedge over its tank / Afterburner a double flame and the full tank with a feed chevron. The counts stay the controller's. Not yet run in Unity. Sheet: `Docs/Icons/sheets/orca.png`.
+**The Wrasse's row** (2026-11-13, `specs/wrasse.py`, no option round): the Wrasse flew the Sparrow's HUD and gets its own (`WrasseHUDVariant`, `WrasseHUDView`), forked by the same shared `Tools/Build/sparrow_hud_fork.py` the Orca's now uses (`author_wrasse_hud.py --check`). Every Wrasse ability is a loop the kite closes, so three cards are the kite (`WrasseKite.fbx` side on, thickened) at the top of its lasso with what the loop makes inside: **Mass** a cluster of prisms / Shielded Clusters inside a hex shell; **Space** a blast / Shield Breaker a prism split apart; **Time** three banked boost chevrons / Tailwind one boost drawn long. **Charge** is the kite ramming a rival hull with its petals knocked loose / Crystal Steal the petals arrowing back to the kite. The counts stay the controller's. Not yet run in Unity. Sheet: `Docs/Icons/sheets/wrasse.png`.
+**The Honeyguide's level-5 cards and its own HUD** (2026-11-13, `specs/honeyguide.py`): the round-1 cards never showed, because the hull ran the Sparrow's HUD and controller; `author_honeyguide_hud.py` forks its own (`HoneyguideHUDVariant`, `HoneyguideHUDView`, the base `VesselHUDController`) through `sparrow_hud_fork.py`. Four new cards: **Relentless** the hull darting on past two struck rivals; **Hive Chain** the full hive, a chevron and the next hive's walls; **Piercing Pecks** the shot through two holed prisms; **Slipstream** the hull leaving its trail with two long flames. Not yet run in Unity.
 **The Scarab's Charge card** (2026-10-28, four rounds; Garrett picked A3, "looks good enough. lets ship it"): Cavitation
 Blast drawn TO SCALE - the punch's swept volume (54 ahead of the hull, mirrored 54 behind, 90 across, measured from
 `Scarab.prefab` and `AOEScarabCavitation.prefab`) as one white bubble, square against the plate and rounded behind, the
@@ -359,7 +364,7 @@ HUD blue), which the kit's `card.py` does not draw yet.
 
 **Rhombus recut DONE 2026-11-01** (`claude/prism-recut`; Garrett: "you need to stop using the rhombuses for shielded
 prisms, that shape is owned by the time petal"): `motifs.prism` / `prism_lit` are two close triangles now, and every
-card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yastri, Scarab Cavitation Blast,
+card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yawstery, Scarab Cavitation Blast,
 Sparrow's shielded stance rounds, Squirrel's drift trail and Sharp Drift), plus the Serpent's shielded bricks (Wall
 Shield omni card) and the Squirrel's shielded-ring card (`author_squirrel_shielded_ring_icon.py`). No C# changed. The
 Rhino's super-shielded prism stays the stella octangula (its own shape, not a rhombus).
@@ -397,6 +402,96 @@ rain. Gilded Wake's keys go wider and taper sooner. The same round set a FLEET r
 negative-space X (`motifs.prism_square_x`), motes are little circles. Cards already shipped with the rhombus (Angler,
 Manta, Rhino, Scarab, Sparrow, Squirrel) are a later recut. The omni card stays one white sprite. Next: the Brittle
 Star.
+**The Meerkat (2026-11-03, round 1, Yash):** its first row of its own (it wore the Stoat's HUD and four Stoat
+placeholders). `specs/meerkat.py`, `Docs/Icons/sheets/meerkat.png`: Sentinel Mode (the hull on sentry over the mouth it
+guards, its guard an arc), Exit Portal (the way out face-on, ringed by its six prisms), Soliton (the wormhole, an arch
+pinched to its throat between two open mouths), Faster Ride (the hull shooting out of a mouth, one chamfered bar), and
+the omni card, the Soliton Network (three tunnels forking from a mouth). Single white sprites over the plate gauges
+`MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
+guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
+
+**The Stoat (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the shipped
+row still drew the retired kit (the mode switch, the field dipole, the pathfinder). The four cards now draw Yash's
+orbit-only kit from `Stoat.fbx` (dilated; side-on where the legs read) in parts `StoatHUDView.RefreshParts` paints:
+Ripple (the pair meeting throws white arcs at a fauna; Siphon's petals come back), Heavy Launch (the Stoat flung out
+of the orbit, its kick and wake; Armoured Wake rims the wake), Catch Orbit (attractor, repulsor, the Stoat caught on
+the orbit; Accretion pulls a rival prism in), Timed Slingshot (the orbit, the 90-degree window lit while in it, the
+Stoat off the tangent; Foresight's dashed rival path). Omni: Fulmen, a zigzag bolt from an omni crystal. The Time
+card's window colour is the domain, not the lime. Sheets: `Docs/Icons/sheets/stoat_{ripple,launch,orbit,sling,omni}.png`.
+
+**The Shrike (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the four
+glyphs drew a generic chevron; every card now draws the real hull from above (`Shrike.fbx`) in parts
+`ShrikeHUDView.RefreshParts` paints. Targeting Array: the Shrike paints a rival prism inside a reticle (a ring with four
+ticks, never the rhombus), solid once locked with the flora's missiles coming in. Nest: the Shrike docked in a cup of
+super-shielded blocks (squares with a negative-space X), a nest flora with its missile once one stands. Void Lance:
+the beam breaks the prism in its line; Void Pierce adds a super-shielded block the beam cuts. Void Sling: the tether to
+the anchor block, the thick blocks laid behind while slinging. Omni: the plain crystal. The selected mode's colour is
+the pilot's domain, not the CTA lime. Sheets: `Docs/Icons/sheets/shrike_{array,nest,lance,sling,omni}.png`.
+
+**The Urchin (2026-11-07, round 6, the roster pass; picks made by the session on Garrett's go-ahead to choose):**
+every card redrawn from the real mesh nose-on and in parts the HUD drives. Chain Spikes (A): the Urchin (domain) throws
+a spike into a rival prism (danger) that sprays the next generation; Overcharge swaps in the full-length spray and a
+generation deeper. Trail Rider (B, steal): riding a rival's trail, theirs ahead (danger), made its own under and behind
+(domain); off the trail the Urchin lifts and the trail fades; Reinforced Wake rims what it made. Track Projector (A):
+the Urchin from behind, its rail (white) running to the horizon, faint while recharging, Long Haul runs it further.
+Slip (A): riding, the Urchin sits on its trail; slipping (the executor's `IsGhosted`), it lifts clear and leaves its
+ghost; Slipstream turns the trail rival (danger) and adds the speed lines. The omni card is the plain omni crystal (the
+Urchin's only omni effect is haptics). `UrchinVesselHUDView.RefreshParts` paints them; `author_urchin_hud.py` stands
+down on the variant now that the kit owns its cards. Sheets: `Docs/Icons/sheets/urchin_{chain,rider,track,slip,omni}.png`.
+
+**The roster pass (2026-11-07, Garrett):** "do all of the icons. put the full care and attention into each one. and do
+this for all the remaining vessels ... so i can review the entire roster of remain icon revisions after". From here each
+card still gets an options sheet (the record of what was weighed), and the option recommended on it is built in full
+without waiting for a pick; Garrett reviews the whole roster at the end. **The Manta** (round 3, after Garrett's kit
+overhaul #1803 / #1804): every card is parts in its slot's container on `Manta.prefab` (`specs/manta.py`), tinted and
+shown by `MantaVesselHUDView`. Sting (Charge, A): the Manta and a rival wearing one bomb per plant (three drawn), the
+plate the ONE shared fuse, Contagion's second rival at Charge 5. Decoy (Mass, B): the decoy crystal with its heart
+plate frozen (the tell) over the danger prisms it springs, the omni decoy beside it while one stands (Mass 5;
+`MantaStingActionExecutor.HasElementalDecoy` / `HasOmniDecoy`). Skim (Space, A): the Manta skimming rival prisms that
+wear a crown of explosive spikes, brighter as the energy gathers; the plate is the energy (`energyFill`, bound as the
+card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yawstery (Time, A): the Manta and the hard
+corner its turn pair cuts, Soar's chevrons once Time 5 unlocks the boost. Omni: the cash-out, three blooms round an omni
+crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yawstery}_options.png`.
+
+**The Thresher (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the
+2026-10-13 glyphs were decent but drew no shark; every card now draws the real hull (`Thresher.fbx`, the whip tail cut
+where the chain takes over) in parts `ThresherHUDView.RefreshParts` paints. Wrecking Ball: the shark (domain) tows the
+ball into a rival prism; at smash speed the ball goes red-hot and the prism splits round a blast; Magnet adds field
+arcs. Mass Mode: the ball (domain) lays its own row; breaking, it is white and the row faint; Armoured Trail rims the
+row. Winch: released the chain sags, pulled it runs straight and the ball swings; Breaker shows a super-shielded
+prism ahead. Plant: the shark on its orbit round the stopped ball. Omni: Windmill. The Space plate's lime fill became
+the domain (the CTA lime is never an "on" colour). Sheets: `Docs/Icons/sheets/thresher_{wreck,massmode,winch,plant,omni}.png`.
+**The Goby & Pistol (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** both
+seats' cards were `author_goby_hud.py`'s placeholders (brackets, arrows, a pac-man). Every card now draws the hull that
+flies it (`specs/goby.py`; the Goby from just above, the Pistol three-quarter side-on so its claw, legs and antennae
+read), as single white sprites `GobyPistolHUDView.SetSeat` swaps per seat, guids kept. Goby: Lock (its nose on a rival
+held in four brackets), Perch (the Goby over the den its perch starts), Undertow (the plane, prisms pulled in beside it
+from their ghosts), Dart (its ghost, the Goby, the block it stops on). Pistol: Snap (the claw shut in its `snap` take,
+the vortex ring leaving it), Den (resting by the den its energy built), Ghost (the Pistol, faint, through a wall of
+prisms), the dive (nose-down over a hill). The HUD had no omni card: it now shows the omni crystal
+(`Core/Goby_OmniCrystal`). `author_goby_hud.py` keeps the metas and the variant and no longer writes the PNGs.
+Sheet: `Docs/Icons/sheets/goby.png`.
+
+**The Honeyguide (2026-11-07, the roster pass):** the rhombus recut changed `motifs.prism` to two close triangles but
+never re-authored the Honeyguide's set, so eight committed sprites still drew the rhombus and `author.py honeyguide
+--check` reported them as drift (and the new halves failed the piece-count gate). The spec's prisms are now a square
+with a negative-space X that stops short of the corners (one piece, not the Time petal's shape), and the eight are
+re-authored: Peck, Genesis Lance, Particle Harmonizer, Sepia Drone, Hexapod Eyelet Jet, Rosen Bridge, FTL Chromatool,
+Monte Cannon. Still unbound: the Honeyguide flies the Sparrow's HUD (its cards draw the Sparrow's kit), so a Honeyguide
+HUD variant that binds these is the open follow-up (`HONEYGUIDE.md`). Sheets: `Docs/Icons/sheets/honeyguide*.png`.
+
+**The Meerkat (2026-11-07, the roster pass; Yash's round-1 set kept):** the set already drew the real hull and
+passed every gate; two fixes only. The Exit Portal's six prisms were `prism_halves`, which read as rhombi at 40 px, so
+they are `prism_square_x` now; and the hull (`Meerkat.fbx`, a thin stick side-on) is dilated 2.6 px instead of 1.4 so
+Sentinel Mode and Faster Ride hold at 40 px. Guids kept (`meerkat_icon_ids.py`). Sheet: `Docs/Icons/sheets/meerkat.png`.
+**The Jacks (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** three of
+`author_jacks_icons.py`'s glyphs still drew the kit before round 10 (Breeding, a Herding Ring, Herd Speed). The kit
+now draws the round-10 cards from the real `Jack.fbx` side-on (`specs/jacks.py`): The Call (the two jacks facing in,
+the herd called into a knot between them), Wide (the whole cell's corner brackets round the herding view's, the herd
+inside), Decoys (a jack and its ghost decoy up and ahead). The files were renamed to the cards (`Jacks_TheCall`,
+`Jacks_Wide`, `Jacks_Decoys`) with their metas, so `Jacks.prefab`'s guids hold; Danger Share keeps its fish and bolt
+(a spiked creature stinging a rival was drawn and read worse at 40 px). `author_jacks_icons.py` now only guards the
+guids. Sheet: `Docs/Icons/sheets/jacks.png`.
 
 | Round | What | Why first |
 |---|---|---|
@@ -409,6 +504,17 @@ Star.
 
 Rounds 2-4 are each a branch, a sheet, a commit and a flight test; one hull failing never holds the
 others.
+
+**The Jewel Wasp (2026-11-14, its first row; picks made by the session on Garrett's standing go-ahead to choose):** ten
+cards (`specs/jewelwasp.py`), the wasp drawn from its own mesh (`JewelWasp.fbx`, top view) and a creature as the Jacks'
+herd fish (lens body, forked tail). Charge **Attack** (a creature lunging at a rival hull, the hit between them) / L5
+**Burst** (the wasp thrown clear of a blast); Mass **Root** (a plant growing, the wasp at its foot) / L5 **Overgrowth**
+(three plants); Space **Sting** (the wasp diving at a creature, its heart cut out) / L5 **Maw** (prisms drawn in from all
+four sides); Time **Swim** (a creature over the fleet's motion bar) / L5 **Restless** (the wasp and two ghosts on its
+line). Two cards swap in a host through `JewelWaspHUDView`: Space **Suction** (three prisms drawn into the mouth,
+smallest nearest) and Time **Dash** (the creature ahead of its own ghost). Its own HUD (`author_jewel_wasp_hud.py`,
+forked from the Tiger Moth's with `sparrow_hud_fork.BUTTERFLY`, which drops the Moth's wing-energy gauge). Not yet run in
+Unity; awaiting Garrett's review.
 
 ## 9. Who works here
 

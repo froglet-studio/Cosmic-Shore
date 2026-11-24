@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38b5a3806317cf23f0648110887bef1b, type: 3}
+  m_Name: Regatta Course Pool
+  m_EditorClassIdentifier:
+  entries:
+  - Label: Ref1 (Course3)
+    CellConfig: {fileID: 11400000, guid: 7fc59ba89af24bd423392e54e1692688, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 3: polished-five spread 1.11x card, 1.19x L5 (3 seeds, real-game
+    judge).'
+  - Label: Ref2 (Course7)
+    CellConfig: {fileID: 11400000, guid: b331d4a3860aff8cd93fb11cd0102ffc, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 7: polished-five spread 1.15x card, 1.12x L5 (3 seeds, real-game
+    judge).'
+  - Label: Ref3 (Course1)
+    CellConfig: {fileID: 11400000, guid: 65aff413873c2b50dccb97d0601b767c, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 1: polished-five spread 1.14x card, 1.13x L5 (3 seeds, real-game
+    judge).'
+  - Label: Ref4 (Course8)
+    CellConfig: {fileID: 11400000, guid: 89ec70ade92c6edcd61b9ebdbe27b96a, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 8: polished-five spread 1.23x card, 1.17x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course2
+    CellConfig: {fileID: 11400000, guid: 990476063f9591da21b377cc2a38dc88, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 2: polished-five spread 1.28x card, 1.21x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course4
+    CellConfig: {fileID: 11400000, guid: f7da5e947b36af11154512cb1b00d7e0, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 4: polished-five spread 1.13x card, 1.25x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course5
+    CellConfig: {fileID: 11400000, guid: 670f965a49bb827f9fc718ef447a2cb3, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 5: polished-five spread 1.12x card, 1.28x L5 (3 seeds, real-game
+    judge).'
+  - Label: Course6
+    CellConfig: {fileID: 11400000, guid: b4a170db9d53cc110baac5465cd9bd4b, type: 2}
+    Enabled: 1
+    Notes: 'Shuffle course 6: polished-five spread 1.34x card, 1.20x L5 (3 seeds, real-game
+    judge).'

@@ -26,10 +26,8 @@ namespace CosmicShore.Core
         /// </summary>
         public string ContentType;
 
-        /// <summary>
-        /// The images associated with this item. Images can be thumbnails or screenshots. Up to 100 images can be added to an item.
-        /// Only .png, .jpg, .gif, and .bmp file types can be uploaded
-        /// </summary>
+        // The images associated with this item. Images can be thumbnails or screenshots. Up to 100 images can be added to an item.
+        // Only .png, .jpg, .gif, and .bmp file types can be uploaded
         // public List<Image> Images;
         
         /// <summary>

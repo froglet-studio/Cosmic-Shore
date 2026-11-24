@@ -6,6 +6,7 @@ using FMODUnity;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
@@ -88,7 +89,7 @@ namespace CosmicShore.Gameplay
 
             var ease = animSettings ? animSettings.countdownScaleEase : Ease.OutQuad;
             float fadeIn = animSettings ? animSettings.countdownFadeInDuration : 0.1f;
-            var urgentColor = animSettings ? animSettings.countdownUrgentColor : new Color(1f, 0.3f, 0.2f, 1f);
+            var urgentColor = animSettings ? animSettings.CountdownUrgentColor : ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 0.3f, 0.2f, 1f));
             int urgentStart = animSettings ? animSettings.countdownUrgentStartIndex : 2;
 
             for (int i = 0; i < _sprites.Length; i++)

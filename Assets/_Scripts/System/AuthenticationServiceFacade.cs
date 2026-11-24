@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Services.Core;
+using Unity.Services.Core.Environments;
 using Unity.Services.Authentication;
 #if UNITY_EDITOR
 using Unity.Multiplayer.PlayMode;
@@ -71,6 +72,21 @@ namespace CosmicShore.Core
         readonly AuthenticationDataVariable _authenticationDataVariable;
         readonly bool _allowLog;
 
+        /// <summary>
+        /// The instance currently wired to <c>AuthenticationService.Instance</c>'s own events
+        /// (SignedIn/SignInFailed/SignedOut/Expired). <c>_eventsWired</c> below only stops THIS
+        /// instance re-wiring itself; it does nothing for a second instance, and with Domain
+        /// Reload + Scene Reload both off a Bootstrap re-entry constructs exactly that - a
+        /// fresh facade whose own <c>_eventsWired</c> starts false, wiring 4 more handlers onto
+        /// the SAME SDK-owned event the previous instance is still subscribed to. This is the
+        /// same defect class the constructor comment on <see cref="ResetRuntimeState"/> already
+        /// fixes for the SOAP mirror, and the one confirmed via production PostHog data on
+        /// AnalyticsServiceFacade. A double sign-in event would double-trigger everything
+        /// downstream of OnSignedIn (HostConnectionService, UGSDataService, PlayerDataService,
+        /// MultiplayerSetup).
+        /// </summary>
+        static AuthenticationServiceFacade _liveInstance;
+
         AuthenticationData authenticationData => _authenticationDataVariable.Value;
 
         bool _startupAttempted;
@@ -91,10 +107,48 @@ namespace CosmicShore.Core
         /// </summary>
         volatile bool _steamAttemptInFlight;
 
+        /// <summary>The facade every container of this Play hands out. See <see cref="Shared"/>.</summary>
+        static AuthenticationServiceFacade s_shared;
+
+        /// <summary>
+        /// The ONE facade of this Play, however many DI containers ask for it. Bindings resolve through here,
+        /// never through the constructor.
+        ///
+        /// <para>
+        /// AppManager's bindings are installed twice: into Reflex's root container (AppManager.prefab is a root
+        /// scope, installed from the prefab asset) and into the Bootstrap scene's container (the prefab's instance
+        /// in Bootstrap.unity carries a ContainerScope). A "singleton" factory is single per container, so
+        /// AppManager got one facade and every later scene got another. AppManager's facade started the boot
+        /// sign-in; the Authentication scene's facade had no <see cref="_signInTask"/> to join, so when it asked
+        /// while that sign-in was still in flight it issued a second <c>SignInAnonymouslyAsync</c>. The SDK
+        /// refused it ("The player is already signing in") and the facade stamped Failed over a sign-in that
+        /// then succeeded. When the first sign-in had already landed, the second facade raised OnSignedIn a
+        /// second time instead (its own success latch was clear). Docs/Multiplayer/BUGS.md, "already signing in".
+        /// </para>
+        /// </summary>
+        public static AuthenticationServiceFacade Shared(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
+        {
+            if (s_shared == null || s_shared._authenticationDataVariable != authenticationDataVariable)
+                s_shared = new AuthenticationServiceFacade(authenticationDataVariable, allowLog);
+
+            return s_shared;
+        }
+
+        /// <summary>A new Play builds its own facade (the project enters Play without a domain reload).</summary>
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        internal static void ResetShared() => s_shared = null;
+
+        /// <summary>True while the one shared sign-in is running. A caller that sees this joins it.</summary>
+        internal bool SignInInFlight => _signInTask is { IsCompleted: false };
+
         public AuthenticationServiceFacade(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
         {
             _authenticationDataVariable = authenticationDataVariable;
             _allowLog = allowLog;
+
+            // Must run before anything wires an event - see _liveInstance.
+            _liveInstance?.Unsubscribe();
+            _liveInstance = this;
 
             // State / IsSignedIn / PlayerId are plain auto-properties on a class held by a
             // ScriptableObject, so Unity does not serialize them and SOAP never resets them.
@@ -182,7 +236,16 @@ namespace CosmicShore.Core
             // so an off-thread continuation surfaces as EnsureRunningOnMainThread inside a
             // listener - swallowed by the async-void catch, leaving sign-in silently unfinished.
             // Docs/THREADING.md.
-            await UnityServices.InitializeAsync().AsMainThread();
+            //
+            // The UGS environment comes from the build stamp: release players talk to production,
+            // development builds and the Editor to development, unless the pipeline named one
+            // (BuildStamp.ResolveUgsEnvironment, Docs/LAUNCH/BUILD_STAMP.md). This is the ONLY
+            // UnityServices.InitializeAsync in the game; every other service rides on it.
+            var stamp = BuildStamp.Current;
+            CSDebug.LogVerbose(CSLogChannel.Boot,
+                $"[Auth] UGS environment '{stamp.ugsEnvironment}' (build {BuildStamp.Describe(stamp)}).");
+            var options = new InitializationOptions().SetEnvironmentName(stamp.ugsEnvironment);
+            await UnityServices.InitializeAsync(options).AsMainThread();
             SwitchMppmProfileIfNeeded();
             WireAuthEventsOnce();
 
@@ -233,7 +296,7 @@ namespace CosmicShore.Core
         /// </summary>
         Task SharedSignInAsync()
         {
-            if (_signInTask is { IsCompleted: false })
+            if (SignInInFlight)
                 return _signInTask;
 
             _signInTask = SignInAnonymouslyCore();
@@ -324,7 +387,7 @@ namespace CosmicShore.Core
                 return true;
             }
 
-            bool signInInFlight = _signInTask is { IsCompleted: false };
+            bool signInInFlight = SignInInFlight;
             if (!signInInFlight && !svc.SessionTokenExists)
                 return false;
 
@@ -367,8 +430,12 @@ namespace CosmicShore.Core
         public void ResetStartupState()
         {
             _startupAttempted = false;
-            _initTask = null;
-            _signInTask = null;
+
+            // Only FINISHED attempts are forgotten. An attempt still in flight stays joinable: forgetting it
+            // would let the next caller start a second SDK sign-in beside it, which the SDK refuses
+            // ("already signing in") and which was then reported as a failed sign-in.
+            if (_initTask is { IsCompleted: true }) _initTask = null;
+            if (!SignInInFlight) _signInTask = null;
         }
 
         /// <summary>
@@ -421,6 +488,20 @@ namespace CosmicShore.Core
         /// </summary>
         void SwitchMppmProfileIfNeeded()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // A standalone development player launched with -csMpProfile (MultiplayerAutoArgs) names its own
+            // profile, so two players on one PC are two UGS players. It wins over the MPPM tags below.
+            var autoArgs = CosmicShore.Gameplay.MultiplayerAutoPilot.Args;
+            if (autoArgs != null && !string.IsNullOrEmpty(autoArgs.Profile))
+            {
+                if (TryGetAuthService(out var autoSvc))
+                {
+                    autoSvc.SwitchProfile(autoArgs.Profile);
+                    Log($"Command line: switched to auth profile '{autoArgs.Profile}'.");
+                }
+                return;
+            }
+#endif
 #if UNITY_EDITOR
             if (CurrentPlayer.IsMainEditor)
                 return;
@@ -452,21 +533,45 @@ namespace CosmicShore.Core
 
             _eventsWired = true;
 
+            // Named handlers rather than inline lambdas: Unsubscribe() below needs the exact
+            // same delegate it subscribed with, which a freshly-written lambda expression at
+            // the unsubscribe site is not guaranteed to match.
+            //
             // Every one of these handlers writes the SOAP mirror and raises a SOAP event, which
             // runs its listeners INLINE. The SDK raises them on whatever thread finished the
             // request, so they are marshalled first. Docs/THREADING.md.
-            svc.SignedIn += () => OnMainThread(OnSignInSuccess);
+            svc.SignedIn += HandleSdkSignedIn;
+            svc.SignInFailed += HandleSdkSignInFailed;
+            svc.SignedOut += HandleSdkSignedOut;
+            svc.Expired += HandleSdkExpired;
+        }
 
-            svc.SignInFailed += (RequestFailedException ex) =>
-            {
-                if (_steamAttemptInFlight)
-                    return; // the anonymous fallback follows; SteamSignIn logs the refusal
-                OnMainThread(() => OnSignInFailed(ex));
-            };
+        void HandleSdkSignedIn() => OnMainThread(OnSignInSuccess);
 
-            svc.SignedOut += () => OnMainThread(() => OnSignedOut("Auth event: SignedOut"));
+        void HandleSdkSignInFailed(RequestFailedException ex)
+        {
+            if (_steamAttemptInFlight)
+                return; // the anonymous fallback follows; SteamSignIn logs the refusal
+            OnMainThread(() => OnSignInFailed(ex));
+        }
 
-            svc.Expired += () => OnMainThread(() => OnSignedOut("Auth event: Session Expired"));
+        void HandleSdkSignedOut() => OnMainThread(() => OnSignedOut("Auth event: SignedOut"));
+
+        void HandleSdkExpired() => OnMainThread(() => OnSignedOut("Auth event: Session Expired"));
+
+        /// <summary>Mirror image of <see cref="WireAuthEventsOnce"/>. See <see cref="_liveInstance"/>.</summary>
+        void Unsubscribe()
+        {
+            if (!_eventsWired)
+                return;
+
+            if (!TryGetAuthService(out var svc))
+                return;
+
+            svc.SignedIn -= HandleSdkSignedIn;
+            svc.SignInFailed -= HandleSdkSignInFailed;
+            svc.SignedOut -= HandleSdkSignedOut;
+            svc.Expired -= HandleSdkExpired;
         }
 
         /// <summary>

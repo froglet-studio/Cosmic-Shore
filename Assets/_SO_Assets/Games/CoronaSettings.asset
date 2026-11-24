@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f905d6c5615214b0778102ceecc0b69, type: 3}
+  m_Name: CoronaSettings
+  m_EditorClassIdentifier:
+  aiRetargetSeconds:
+  - 1.2
+  - 0.9
+  - 0.6
+  - 0.4
+  aiHuntRange:
+  - 350
+  - 500
+  - 650
+  - 850
+  aiLeadSeconds:
+  - 0
+  - 0.15
+  - 0.3
+  - 0.45
+  aiGrazeOffset:
+  - 9
+  - 7
+  - 5
+  - 4
+  aiSkimStandoff:
+  - 10
+  - 9
+  - 8
+  - 7
+  aiGateError:
+  - 0.5
+  - 0.35
+  - 0.2
+  - 0.1
+  aiCashAtBombs:
+  - 1
+  - 2
+  - 3
+  - 3
+  aiCashAtFuseSeconds:
+  - 11
+  - 9
+  - 7
+  - 6
+  aiBreakOffWhenSilencedChance:
+  - 0
+  - 0.5
+  - 1
+  - 1
+  aiSilencedPreyFocus:
+  - 1
+  - 1
+  - 1.5
+  - 2
+  aiHumanFocus: 2
+  aiGateApproach: 45
+  aiSkimLookahead: 60
+  aiBandClearance: 25

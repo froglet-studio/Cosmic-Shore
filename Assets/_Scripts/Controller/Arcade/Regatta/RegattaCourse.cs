@@ -36,6 +36,16 @@ namespace CosmicShore.Gameplay
         public readonly List<float> LaneLengths = new();
         public float SpineLength;
 
+        /// <summary>Per lane, per prism: which leg it lies on and how far along it, as <c>leg + share of the leg's spine
+        /// arc</c> (so 2.25 is a quarter of the way from gate 2 to gate 3). What <see cref="RegattaCourseFeatures"/>'
+        /// sections are measured in.</summary>
+        public readonly List<float[]> LaneLegParams = new();
+
+        /// <summary>The closed spine the lanes are braided round (the racing line), and its arc length at each sample
+        /// (one longer: the last entry is <see cref="SpineLength"/>).</summary>
+        public Vector3[] SpinePositions;
+        public float[] SpineArc;
+
         public int PrismCount
         {
             get
@@ -185,7 +195,19 @@ namespace CosmicShore.Gameplay
         /// exactly the lane offset, every lane is a closed loop of evenly spaced prisms, and the
         /// three lanes are within a few percent of one length.
         /// </summary>
-        public static RegattaRailLayout BuildRails(IReadOnlyList<RaceGate> gates, RegattaRailSettings rs)
+        public static RegattaRailLayout BuildRails(IReadOnlyList<RaceGate> gates, RegattaRailSettings rs) =>
+            BuildRails(gates, rs, null);
+
+        /// <summary>
+        /// <see cref="BuildRails(IReadOnlyList{RaceGate}, RegattaRailSettings)"/> with the course's
+        /// <paramref name="features"/>: a section's DETOUR swings the whole braid off the spine (a sine-squared bow, zero
+        /// at the section's ends, so every lane still threads every ring at the lane offset). Null or empty features lay
+        /// exactly the braid they always did, prism for prism. Which stretch each prism lies on is in
+        /// <see cref="RegattaRailLayout.LaneLegParams"/>; what it is made of and whether it is laid at all is the
+        /// arena's call (<see cref="SpawnableRegattaRails"/>), through <see cref="RegattaCourseFeatures.TrySectionAt"/>.
+        /// </summary>
+        public static RegattaRailLayout BuildRails(IReadOnlyList<RaceGate> gates, RegattaRailSettings rs,
+                                                   RegattaCourseFeatures features)
         {
             var layout = new RegattaRailLayout();
             int n = gates?.Count ?? 0;
@@ -220,7 +242,19 @@ namespace CosmicShore.Gameplay
                 s[j + 1] = s[j] + (spine[(j + 1) % total] - spine[j]).magnitude;
             float length = s[total];
             layout.SpineLength = length;
+            layout.SpinePositions = spine;
+            layout.SpineArc = s;
             if (length < 1f) return layout;
+
+            // Where each spine sample lies: leg + share of that leg's arc (RegattaRailLayout.LaneLegParams).
+            var legParam = new float[total];
+            for (int i = 0; i < n; i++)
+            {
+                float a0 = s[i * per], legArc = s[(i + 1) * per] - a0;
+                for (int k = 0; k < per; k++)
+                    legParam[i * per + k] = i + (legArc > 1e-6f ? (s[i * per + k] - a0) / legArc : k / (float)per);
+            }
+            bool detours = features != null && features.HasSections;
 
             // 3. A rotation-minimising frame (double reflection), closed by spreading the
             //    mismatch it accumulates round the loop evenly along it.
@@ -251,12 +285,21 @@ namespace CosmicShore.Gameplay
                     Vector3 bin = Vector3.Cross(tangent[j], normal[j]);
                     radial[j] = normal[j] * Mathf.Cos(theta) + bin * Mathf.Sin(theta);
                     dense[j] = spine[j] + radial[j] * rs.LaneOffset;
+                    if (detours)
+                    {
+                        int leg = Mathf.Min(n - 1, (int)legParam[j]);
+                        float bow = features.DetourAt(leg, legParam[j] - leg, out float bearing);
+                        if (bow != 0f)
+                            dense[j] += RaceCourseGeometry.RotateAbout(normal[j], tangent[j], bearing * Mathf.Deg2Rad) * bow;
+                    }
                 }
 
-                Resample(dense, radial, rs.PrismSpacing, out var positions, out var rotations, out float laneLength);
+                Resample(dense, radial, rs.PrismSpacing, out var positions, out var rotations, out float laneLength,
+                         legParam, n, out var prismParams);
                 layout.LanePositions.Add(positions);
                 layout.LaneRotations.Add(rotations);
                 layout.LaneLengths.Add(laneLength);
+                layout.LaneLegParams.Add(prismParams);
             }
 
             return layout;
@@ -364,7 +407,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Walk a closed polyline and drop a prism every <paramref name="spacing"/> - the
         /// spacing adjusted so a whole number of prisms closes the loop exactly.</summary>
         static void Resample(Vector3[] dense, Vector3[] radial, float spacing,
-                             out Vector3[] positions, out Quaternion[] rotations, out float laneLength)
+                             out Vector3[] positions, out Quaternion[] rotations, out float laneLength,
+                             float[] legParam, int legs, out float[] prismParams)
         {
             int m = dense.Length;
             var seg = new float[m];
@@ -378,6 +422,7 @@ namespace CosmicShore.Gameplay
             int count = Mathf.Max(3, Mathf.RoundToInt(laneLength / Mathf.Max(0.5f, spacing)));
             float step = laneLength / count;
             positions = new Vector3[count];
+            prismParams = new float[count];
             var ups = new Vector3[count];
 
             int j2 = 0;
@@ -388,6 +433,9 @@ namespace CosmicShore.Gameplay
                 while (j2 < m - 1 && into + seg[j2] < target) { into += seg[j2]; j2++; }
                 float u = seg[j2] > 1e-6f ? Mathf.Clamp01((target - into) / seg[j2]) : 0f;
                 positions[k] = Vector3.Lerp(dense[j2], dense[(j2 + 1) % m], u);
+                // The last sample's successor is gate 0 one lap on: unwrapped, so the share runs on to the leg's end.
+                float p0 = legParam[j2], p1 = j2 + 1 < m ? legParam[j2 + 1] : legs;
+                prismParams[k] = p0 + (p1 - p0) * u;
                 ups[k] = RaceCourseGeometry.SafeNormalize(
                     Vector3.Lerp(radial[j2], radial[(j2 + 1) % m], u), radial[j2]);
             }

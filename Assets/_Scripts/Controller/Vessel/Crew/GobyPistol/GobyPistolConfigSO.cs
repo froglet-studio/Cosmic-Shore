@@ -14,20 +14,21 @@ namespace CosmicShore.ScriptableObjects
     ///
     /// <para><b>The pair's four elements</b> (one meter, both seats):</para>
     /// <list type="bullet">
-    /// <item><b>Charge</b>: petals a vortex ring takes from a rival hull it hits (<see cref="RingPetals"/>).</item>
+    /// <item><b>Charge</b>: how hard a vortex ring homes on the locked rival (<see cref="RingHomingScale"/>).</item>
     /// <item><b>Mass</b>: den prisms per rest (<see cref="DenMassScale"/>); level 5 adds danger and super-shielded prisms.</item>
     /// <item><b>Space</b>: how far either side of the Pistol's plane mass is pulled into it (<see cref="PullReach"/>); level
     /// 5 pulls shielded prisms too.</item>
-    /// <item><b>Time</b>: the Pistol's jump cooldown (<see cref="JumpCooldown"/>); level 5 lets the Goby's darts pass through
-    /// prisms.</item>
+    /// <item><b>Time</b>: the Goby's DART - how fast it flies and how soon the next is ready (<see cref="DartPace"/>, x1 at
+    /// rest -> x2.2 at level 10); level 5 lets the darts pass through prisms. (2026-11-16, the weakest-abilities pass: Time
+    /// was the Pistol's aimed-jump cooldown, and the aimed jump is off, so Time changed nothing a pilot could feel.)</item>
     /// </list>
     /// </summary>
     [CreateAssetMenu(fileName = "GobyPistolConfig", menuName = "ScriptableObjects/Vessel Actions/Goby Pistol Config")]
     public sealed class GobyPistolConfigSO : ScriptableObject
     {
         [Header("Goby: dart and perch (the Shrike's sling: distance / dartSeconds, docks on the first block it touches)")]
-        [Tooltip("The farthest a full-charged dart goes, u. A dart is the Goby's burst between cruising; its end is the " +
-                 "next perch once it is islandMinLength from the last one.")]
+        [Tooltip("The farthest a full-charged dart goes, u. A dart is the Goby's only movement (it never flies); a landing " +
+                 "islandMinLength from the last island's end lays the Pistol's next island.")]
         [SerializeField, Min(10f)] float dartRange = 600f;
         [Tooltip("How far a tap darts, u. Holding the dart button charges it up to dartRange over dartChargeSeconds.")]
         [SerializeField, Min(5f)] float dartMinRange = 140f;
@@ -35,8 +36,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.05f)] float dartChargeSeconds = 0.8f;
         [Tooltip("Seconds a dart takes, whatever its length (the Shrike's slingSeconds).")]
         [SerializeField, Min(0.1f)] float dartSeconds = 1f;
-        [Tooltip("Seconds after a dart lands before the next can start.")]
-        [SerializeField, Min(0f)] float dartCooldown = 1.2f;
+        [Tooltip("Seconds from a dart's launch before the next can start (it runs while the dart flies; never ready mid-dart). " +
+                 "2.2 = the old 1 s dart + 1.2 s reload from landing, so a full dart's cycle is unchanged at every Time level " +
+                 "(Will, 2026-11-24: counted from launch so a longer charge costs no extra wait).")]
+        [SerializeField, Min(0f)] float dartCooldown = 2.2f;
+        [Tooltip("Time: the dart's pace, dividing both dartSeconds and dartCooldown (x1 at rest -> x2.2 at level 10, half " +
+                 "pace at level -5). A full dart takes 1 s and is ready again 2.2 s after launch at rest, 0.45 s and 1 s at Time 10.")]
+        [SerializeField] ElementalFloat dartPace = ElementalFloat.Multiplier(1f, 2.2f, Element.Time, 0.5f);
         [Tooltip("The hull's radius against a block's box: a dart stops this far off the block it reaches (the Shrike's 3).")]
         [SerializeField, Min(0.5f)] float hullRadius = 3f;
         [Tooltip("Extra reach of the spatial query round the dart's line, u.")]
@@ -46,17 +52,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A perch pad block's edge, u.")]
         [SerializeField, Min(0.5f)] float perchBlockSize = 4f;
 
-        [Header("Goby: cruise, perch and the Pistol's islands (Garrett, 2026-10-23: \"the goby is barely cruising around at all\")")]
-        [Tooltip("Seconds the Goby stays perched at the end of an island, aiming, before it lifts off and cruises (longer " +
-                 "while a person charges a dart from the perch).")]
+        [Header("Goby: perches and the Pistol's islands (Garrett, 2026-11-24: it never flies, only darts perch to perch)")]
+        [Tooltip("Seconds the AI Goby waits at the end of an island, aiming, before it darts on. A person's Goby is never " +
+                 "held there (Will, 2026-11-24).")]
         [SerializeField, Min(0f)] float perchSeconds = 1.5f;
-        [Tooltip("A dart's end is a perch (the end of the Pistol's next island) only this far from the last perch, u; " +
-                 "nearer, the dart is a dash and the Goby cruises on. A Tiny Wings island of about 35 hills.")]
+        [Tooltip("A landing lays the Pistol's next island only this far from the last island's end, u; nearer, it is a hop " +
+                 "and the Goby darts on from where it sits. A Tiny Wings island of about 35 hills.")]
         [SerializeField, Min(50f)] float islandMinLength = 900f;
         [Tooltip("A longer gap from the last perch is laid as islands of at most this, u (about 70 hills), each ending in a " +
                  "perch of its own.")]
         [SerializeField, Min(50f)] float islandMaxLength = 1800f;
-        [Tooltip("The Goby lays no new perch while this many islands wait ahead of the Pistol: a dart is a dash until the " +
+        [Tooltip("The Goby lays no new island while this many wait ahead of the Pistol: a landing is a hop until the " +
                  "Pistol catches up, so the two stay together.")]
         [SerializeField, Range(1, 8)] int islandQueue = 3;
 
@@ -74,22 +80,25 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 33f)] float slopeDegrees = 0f;
         [Tooltip("Tiny Wings' hills, as the game makes them (Docs/PISTOL_TINY_WINGS_STUDY.md): key points, alternately a crest and " +
                  "a trough, each a random distance on and height up or down from the last, a half-cosine between. The shortest " +
-                 "half-hill (crest to the next trough), u. The game: 160-240 pt for a 14 pt bird, 5.7-8.6 bird lengths.")]
-        [SerializeField, Min(1f)] float hillHalfLengthMin = 10f;
+                 "half-hill (crest to the next trough), u. The game: 160-240 pt for a 14 pt bird, 5.7-8.6 bird lengths. 10-15 u and 3.6-7.2 u " +
+                 "until 2026-11-24; widened about the same means for a little more variance (Garrett).")]
+        [SerializeField, Min(1f)] float hillHalfLengthMin = 9f;
         [Tooltip("The longest half-hill, u.")]
-        [SerializeField, Min(1f)] float hillHalfLengthMax = 15f;
+        [SerializeField, Min(1f)] float hillHalfLengthMax = 16f;
         [Tooltip("The least a half-hill rises or falls, u (the game: 60-120 pt, 2.1-4.3 bird lengths).")]
-        [SerializeField, Min(0f)] float hillHalfHeightMin = 3.6f;
+        [SerializeField, Min(0f)] float hillHalfHeightMin = 3f;
         [Tooltip("The most a half-hill rises or falls, u, on the first island.")]
-        [SerializeField, Min(0f)] float hillHalfHeightMax = 7.2f;
+        [SerializeField, Min(0f)] float hillHalfHeightMax = 7.8f;
         [Tooltip("The ground keeps within this far of the dart's line, u, either side.")]
         [SerializeField, Min(0f)] float hillBand = 9f;
         [Tooltip("Each island of a run is this much taller than the last (the game's later islands are taller).")]
         [SerializeField, Range(0f, 0.5f)] float hillGrowthPerIsland = 0.08f;
         [Tooltip("The most an island grows, as a multiple of the first.")]
         [SerializeField, Range(1f, 3f)] float hillGrowthMax = 1.5f;
-        [Tooltip("A trail block every this many u along the dart.")]
-        [SerializeField, Min(2f)] float trailBlockGap = 6f;
+        [Tooltip("A trail block every this many u along the dart (6 until 2026-11-24, Garrett: \"a bit more continuous with a shorter gap " +
+                 "between prisms and a few more prisms per hill\": about 6 a hill now, 4 before). energyPerSkippedBlock and " +
+                 "energyFlightBonus scale with it.")]
+        [SerializeField, Min(2f)] float trailBlockGap = 4f;
         [Tooltip("A trail block's cross-section: x across the plane (it grows here when flown over), y its thickness in the plane. " +
                  "Its length along the dart is not authored: it is the length whose SHIELD meets the next block's tip to tip " +
                  "(trailBlockGap / 3 x trailShieldFill), so a shielded trail is a chain of diamonds, never crossing spikes.")]
@@ -134,8 +143,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] bool aimedJump;
         [SerializeField, Min(10f)] float pLaunchSpeed = 30f;
         [SerializeField, Min(1f)] float pLaunchCharges = 1f;
-        [Tooltip("Time: the jump's cooldown, s (9 at rest -> 3 at level 10).")]
-        [SerializeField] ElementalFloat jumpCooldown = ElementalFloat.Multiplier(9f, 3f, Element.Time, 1f);
+        [Tooltip("The aimed jump's cooldown, s. Not Time's any more (Time is the dart's pace, dartPace): the aimed jump is " +
+                 "off (aimedJump), and an element should scale something the pilot plays.")]
+        [SerializeField] ElementalFloat jumpCooldown = new ElementalFloat(6f);
         [SerializeField, Min(0.1f)] float pGhostTime = 2.5f;
         [SerializeField, Min(0.1f)] float pGhostCd = 8f;
         [Tooltip("A slingshot pull this long (a share of the screen's short side) is a full jump.")]
@@ -155,11 +165,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.5f)] float fallRingRadius = 2.4f;
 
         [Header("Pistol: energy from skipped blocks (Garrett, 2026-10-29: \"this reward the player for making big jumps\")")]
-        [Tooltip("The energy one block flown over (not ridden) gives, the first of a flight.")]
-        [SerializeField, Min(0f)] float energyPerSkippedBlock = 1f;
-        [Tooltip("Each further block of the same flight gives this much more (x the first's): the nth gives 1 + bonus n, so a " +
-                 "flight over 10 blocks earns 19, over 20 earns 58.")]
-        [SerializeField, Range(0f, 1f)] float energyFlightBonus = 0.2f;
+        [Tooltip("The energy one block flown over (not ridden) gives, the first of a flight. Scales with trailBlockGap, so a " +
+                 "jump's energy is per u flown, not per block: 1 at a 6 u gap, 0.667 at the shipped 4 u (2026-11-24).")]
+        [SerializeField, Min(0f)] float energyPerSkippedBlock = 0.6667f;
+        [Tooltip("Each further block of the same flight gives this much more (x the first's): the nth gives 1 + bonus n. Scales " +
+                 "with trailBlockGap too (0.2 at 6 u, 0.1333 at 4 u), so a 60 u flight earns 19 and a 120 u one 58 at either gap.")]
+        [SerializeField, Range(0f, 1f)] float energyFlightBonus = 0.1333f;
         [Tooltip("The most energy the Pistol holds (its Mass card's gauge is full here): a full den's worth at Mass's rest.")]
         [SerializeField, Min(1f)] float energyMax = 640f;
         [Tooltip("A block flown over grows this much OUT OF THE PLANE (across the trail, its x), u a skip.")]
@@ -209,7 +220,7 @@ namespace CosmicShore.ScriptableObjects
                  "about 185 over a 900 u island and 385 over 1800 u, a sloppy one 20-70, one that never flies none.")]
         [SerializeField, Min(0.1f)] float energyPerDenPrism = 8f;
         [Tooltip("Mass: den prisms are scaled by this (x1 at rest -> x2.5 at level 10).")]
-        [SerializeField] ElementalFloat denMassScale = ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.25f);
+        [SerializeField] ElementalFloat denMassScale = ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.5f);
         [Tooltip("The most prisms one den holds.")]
         [SerializeField, Range(4, 200)] int denMax = 80;
         [Tooltip("Share of a den that is shielded.")]
@@ -229,7 +240,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Space: how far out of the plane mass is pulled in, u (40 at rest -> 200 at level 10), from the half the " +
                  "Pistol plays this way (one side of the trail riding ahead, the other riding back); crystals from either side. " +
                  "Danger, super-shielded and the pair's own prisms never move; shielded ones only with the Space upgrade.")]
-        [SerializeField] ElementalFloat pullReach = ElementalFloat.Multiplier(40f, 200f, Element.Space, 10f);
+        [SerializeField] ElementalFloat pullReach = ElementalFloat.Multiplier(40f, 200f, Element.Space, 20f);
         [Tooltip("How fast pulled mass moves toward the plane, u/s.")]
         [SerializeField, Min(1f)] float pullSpeed = 60f;
         [Tooltip("Mass this far along the plane either side of the Pistol is pulled, u.")]
@@ -249,8 +260,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float pVortexCollapse = 1f;
         [Tooltip("A ring fired at the Goby's locked rival turns toward it at this many degrees a second.")]
         [SerializeField, Min(0f)] float homingTurnRate = 240f;
-        [Tooltip("Charge: petals the ring takes from EACH element of a rival hull it hits (1 at rest -> 3 at level 10).")]
-        [SerializeField] ElementalFloat ringPetals = ElementalFloat.Multiplier(1f, 3f, Element.Charge, 1f);
+        [Tooltip("CHARGE: multiplier on homingTurnRate, x1 at rest -> x2.5 at Charge 10 (floor x0.5). A charged Pistol's " +
+                 "ring bends hard onto the locked rival instead of drifting past it. Read at the replicated level.")]
+        [SerializeField] ElementalFloat ringHomingScale = ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 0.5f);
+        [Tooltip("Petals the ring takes from EACH element of a rival hull it hits. Fixed at 1 since 2026-11-18: petals " +
+                 "per hit was the Charge placeholder; Charge now sharpens the ring's homing (ringHomingScale).")]
+        [SerializeField] ElementalFloat ringPetals = new(1f);
         [Tooltip("A ring hits a hull within its radius plus this, u.")]
         [SerializeField, Min(0f)] float ringHitPad = 4f;
         [Tooltip("The scored hit a ring lands (the PvP rule: a hit takes petals and nothing else).")]
@@ -346,13 +361,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.1f)] float diveTailRate = 10f;
 
         [Header("AI")]
-        [Tooltip("The Goby AI's dart, u: it darts once its island is as long as it planned, so the dart's end is the perch.")]
+        [Tooltip("The Goby AI's hop, u: it darts this far at a time along the island it means to lay.")]
         [SerializeField, Min(10f)] float aiDartLength = 300f;
-        [Tooltip("The Goby AI's cruise between perches, u/s (a person cruises on the hull's own two-thumb flight).")]
-        [SerializeField, Min(1f)] float aiCruiseSpeed = 100f;
-        [Tooltip("How fast the cruising Goby AI turns, degrees a second.")]
+        [Tooltip("How fast the Goby AI turns where it sits, degrees a second.")]
         [SerializeField, Min(1f)] float aiTurnRate = 90f;
-        [Tooltip("Seconds between the cruising Goby AI's choices of where to head.")]
+        [Tooltip("Seconds between the Goby AI's choices of where to hop.")]
         [SerializeField, Min(0.2f)] float aiRethinkSeconds = 2.5f;
         [Tooltip("The Goby AI keeps within this distance of where it started, u.")]
         [SerializeField, Min(100f)] float aiHomeRadius = 4000f;
@@ -386,6 +399,12 @@ namespace CosmicShore.ScriptableObjects
         public float DartChargeSeconds => dartChargeSeconds;
         public float DartSeconds => dartSeconds;
         public float DartCooldown => dartCooldown;
+        public ElementalFloat DartPace => dartPace;
+        /// <summary>Seconds a dart takes at the pair's replicated Time level (every peer agrees).</summary>
+        public float DartSecondsFor(IVesselStatus status) => dartSeconds / PaceFor(status);
+        /// <summary>The dart's recovery at the pair's replicated Time level.</summary>
+        public float DartCooldownFor(IVesselStatus status) => dartCooldown / PaceFor(status);
+        float PaceFor(IVesselStatus status) => Mathf.Max(0.1f, status != null ? dartPace.EvaluateReplicated(status) : dartPace.Value);
         public float HullRadius => hullRadius;
         public float QueryReach => queryReach;
         public int OwnPerchBlocks => ownPerchBlocks;
@@ -411,9 +430,10 @@ namespace CosmicShore.ScriptableObjects
         public float MapPickPixels => mapPickPixels;
         public float MapSpinDragScale => mapSpinDragScale;
         public float MapSpinRate => mapSpinRate;
-        public Color MapPathColdColor => mapPathColdColor;
-        public Color MapPathHotColor => mapPathHotColor;
-        public Color MapPickColor => mapPickColor;
+        // The path map's colours as the worn colour set paints them (ColorTrace); the fields keep the authored ones.
+        public Color MapPathColdColor => ColorTrace.Retrace(ColorTrace.World, mapPathColdColor);
+        public Color MapPathHotColor => ColorTrace.Retrace(ColorTrace.World, mapPathHotColor);
+        public Color MapPickColor => ColorTrace.Retrace(ColorTrace.World, mapPickColor);
         public GameObject PistolModel => pistolModel;
         public float PistolModelLength => pistolModelLength;
         public float SnapClawShut => snapClawShut;
@@ -442,7 +462,7 @@ namespace CosmicShore.ScriptableObjects
         public float JuiceReach => juiceReach;
         public float JuiceShardSize => juiceShardSize;
         public float JuicePulseScale => juicePulseScale;
-        public Color JuiceShieldColor => juiceShieldColor;
+        public Color JuiceShieldColor => ColorTrace.Retrace(ColorTrace.World, juiceShieldColor);
         public float JuiceRippleSpeed => juiceRippleSpeed;
         public EventReference GrowEvent => growEvent;
         public EventReference ShieldEvent => shieldEvent;
@@ -466,6 +486,7 @@ namespace CosmicShore.ScriptableObjects
         public int PullMaxPerFrame => pullMaxPerFrame;
         public float HomingTurnRate => homingTurnRate;
         public ElementalFloat RingPetals => ringPetals;
+        public ElementalFloat RingHomingScale => ringHomingScale;
         public float RingHitPad => ringHitPad;
         public CombatHitClass RingHitClass => ringHitClass;
         public float HitCooldown => hitCooldown;
@@ -482,7 +503,6 @@ namespace CosmicShore.ScriptableObjects
         public float ViewPistolAt => viewPistolAt;
         public float DepthFullSpreadAt => depthFullSpreadAt;
         public float AiDartLength => aiDartLength;
-        public float AiCruiseSpeed => aiCruiseSpeed;
         public float AiTurnRate => aiTurnRate;
         public float AiRethinkSeconds => aiRethinkSeconds;
         public float PerchSeconds => perchSeconds;

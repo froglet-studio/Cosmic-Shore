@@ -19,6 +19,14 @@
 //     is spent as a screen-door clip rather than blending (Docs/PRISM_ANIMATION.md §4.7). At
 //     coverage 1 nothing is clipped.
 //
+//  2b. A SEE-THROUGH variant of that fade, for a morph that lands on something the player has to
+//     keep seeing (the Dolphin's Echo Obliteration cone and the prisms it breaks: Garrett,
+//     2026-11-03, "it should be subtle ... not blocking our view of it"). _BlendOpacity 1 skips the
+//     screen-door and returns _Opacity as alpha; the runner sets it, with the blend and depth state
+//     below, on a CLONE of the material it hands only to the morph's body. The defaults
+//     (_BlendOpacity 0, Blend One Zero, ZWrite On) are exactly the opaque pass above, so every
+//     existing material and every other morph draws bit-identically.
+//
 //  3. Each element's shapes in that element's own shade of lime (Garrett, 2026-10-28: "change the
 //     omnicrystal to retain all four elemental colors of lime in all instances"; Docs/PALETTE.md
 //     §2.12). The mesh names every plate's element in TEXCOORD4.x (CrystalElementPlates: 1 Charge
@@ -42,6 +50,11 @@ Shader "Custom/OmniCrystalFresnelShader"
         _FresnelPower ("Fresnel Power", Range(1, 10)) = 5
         _CrystalMorph ("Crystal Morph (start, duration, stagger)", Vector) = (0,0,0,0)
         _Opacity ("Opacity", Range(0, 1)) = 1
+        // 2b in the header: set only on the runner's see-through clone, never on an asset.
+        [HideInInspector] _BlendOpacity ("Blend Opacity (alpha instead of screen-door)", Float) = 0
+        [HideInInspector] _SrcBlend ("Src Blend", Float) = 1
+        [HideInInspector] _DstBlend ("Dst Blend", Float) = 0
+        [HideInInspector] _ZWrite ("ZWrite", Float) = 1
         [ToggleUI] _ElementShades ("Element Shades (each plate in its element's colour)", Float) = 0
         [HDR]_ChargeColor ("Charge Color (pentagons)", Color) = (1,1,1,1)
         [HDR]_MassColor ("Mass Color (triangles)", Color) = (1,1,1,1)
@@ -64,7 +77,8 @@ Shader "Custom/OmniCrystalFresnelShader"
         {
             Name "CustomPass"
             Cull Off
-            ZWrite On
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
 
             CGPROGRAM
             #pragma vertex vert
@@ -122,6 +136,7 @@ Shader "Custom/OmniCrystalFresnelShader"
 
             float3 _CrystalMorph;
             float _Opacity;
+            float _BlendOpacity;
             float _PrismClock;   // UNEXPOSED global, published by PrismClock — the clock the stamp uses
 
             struct appdata
@@ -186,10 +201,17 @@ Shader "Custom/OmniCrystalFresnelShader"
                 // Interleaved gradient noise, nudged strictly inside (0,1): clip(0) KEEPS a
                 // fragment, so a raw 0 threshold would leave confetti at coverage 0.
                 float coverage = saturate(_Opacity);
+                half4 body = SpreadFresnelColor(i.worldPos, i.worldNormal, i.bright);
+                half4 col = lerp(body, PrismFresnelColor(i.worldPos, i.worldNormal), i.morphEase);
+                if (_BlendOpacity > 0.5)
+                {
+                    // 2b: real transparency; the blend state on the clone composites it.
+                    col.a = coverage;
+                    return col;
+                }
                 float n = frac(52.9829189 * frac(dot(i.vertex.xy, float2(0.06711056, 0.00583715))));
                 clip(coverage - (n * 0.998 + 0.001));
-                half4 body = SpreadFresnelColor(i.worldPos, i.worldNormal, i.bright);
-                return lerp(body, PrismFresnelColor(i.worldPos, i.worldNormal), i.morphEase);
+                return col;
             }
             ENDCG
         }

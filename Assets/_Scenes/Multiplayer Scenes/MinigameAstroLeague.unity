@@ -829,7 +829,6 @@ MonoBehaviour:
   teamSpawns:
   - {fileID: 1700000031}
   - {fileID: 1700000041}
-  - {fileID: 0}
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

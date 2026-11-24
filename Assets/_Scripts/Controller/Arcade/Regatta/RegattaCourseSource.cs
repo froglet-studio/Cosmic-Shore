@@ -91,7 +91,8 @@ namespace CosmicShore.Gameplay
             if (config == null)
             {
                 why = "No Cell whose config is knowable - the circuit's seed lives on the cell " +
-                      "config's arena prefab. A Regatta cell must be IntensityWise.";
+                      "config's arena prefab. A Regatta cell must be CourseVariantWise (its config is the " +
+                      "course-pool entry the host drew), and on a client the variant has not arrived yet.";
                 return false;
             }
 

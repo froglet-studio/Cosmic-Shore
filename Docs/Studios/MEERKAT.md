@@ -1,4 +1,4 @@
-# The Meerkat: the wormhole vessel (design studio, round 8, 2026-10-27)
+# The Meerkat: the wormhole vessel (design studio, round 28, 2026-11-03)
 
 **Wormhole look, 2026-10-29 (`feat/wormhole-pc-unified`, PR #1624, the calm-jelly round):** ONE look ships, the same
 for the trunk (a formed tunnel) and the root (an omnicrystal network's channel), each with its own numbers. It is a clear,
@@ -13,52 +13,64 @@ gone. Sections below that mention them are history. Every field, default and com
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
 **Owner:** Yash (the Vessel Studio). **Status:** in the game since 2026-10-27 (see "In the game" below).
 
-## Where it stands now (updated 2026-11-01, Ys-bleeding-edge)
+## Where it stands now (updated 2026-11-03, Ys-bleeding-edge)
 
-The round notes below are newest first. Rounds 1-26 were designed here in the artifact; since 2026-10-29 Yash has
-changed the Meerkat further in Unity, so the game and this page now differ in the ride, the look and some numbers.
+The round notes below are newest first. Rounds 1-26 were designed here in the artifact; from 2026-10-29 to 11-01 Yash
+changed the Meerkat further in Unity; **round 27 (2026-11-03) brought those changes back into the artifact, so the artifact
+and the game agree again** and the artifact is the Meerkat's source of truth (`studio_to_unity.py --vessel meerkat
+--check`: 80 mapped, 0 drift).
+
+**Round 28, the Rift** (Yash, 2026-11-03: "Yes, prototype the Rift"; cloned into Unity in round 28b, not yet played
+there). The omnicrystal's ability is
+now the Meerkat's ultimate, after Apex's Wraith (Dimensional Rift), in place of the network:
+- take an omnicrystal and you go into the void, phased and twice as fast, for up to 5 s or your Mass's length budget;
+- the path you flew stands as a soliton for 45 s, anyone's to ride.
+
+The network stays behind a selector (`omniMode`). The rift's four keys are mapped to `MeerkatSolitonConfig` (84 mapped,
+0 drift). In Unity a rift does not yet carry Garrett's kit (swallow, exit portal, sentinel) and is not replicated. The four element abilities and RT's soliton are unchanged.
 
 **In both the artifact and the game:**
-- **A wormhole** (RT): its centreline is one oval arc that bends round its middle, more oval as it gets longer (round
-  22). Its width is Garrett's surface area, set by the Space level: a longer wormhole is thinner (round 23).
-- **The network** (the omnicrystal, round 26) is sized by Mass, from half the cell at Mass 0 to the whole cell at Mass
-  10. It has no tree, roots or soil.
-- **The swallow** (rounds 23 and 25):
-  - prisms and crystals near a standing wormhole's way in are pulled in;
-  - they are carried through stretched and twisted, first in first out behind any rider;
-  - they are fired out of the far mouth as moving prisms (`Docs/PRISM_MOTION.md`).
-- **Garrett's kit, the four abilities** (approved by Yash 2026-10-28):
-  - Space: the Soliton (RT);
-  - Time: Faster Ride (passive);
-  - Charge: Sentinel Mode (Y);
-  - Mass: Exit Portal (passive).
+- **A wormhole** (RT), a **Soliton Tunnel**: its centreline is one oval arc that bends round its middle, more oval as it
+  gets longer (round 22). Its width is Garrett's surface area, set by the Space level: a longer wormhole is thinner (round
+  23). Throat 7.1 u and mouths 44 u (Yash's Unity numbers): in the kits the mouth stays 6.2 x the throat.
+- **The network** (the omnicrystal, round 26; in the artifact since round 28 behind `omniMode` 1), a **Soliton Network**, sized by Mass, from half the cell at Mass 0 to the
+  whole cell at Mass 10, with Yash's numbers: 6-12 forks, 16-50 openings, a 100-531 u reach, a 273 deg spread, 10.5 u
+  wormholes with 18 u mouths, tapering to 0.309, wandering 0.779.
+- **The ride is a slip-and-slide** (round 27; the game's `SolitonTunnelRider`, `SolitonTunnelMath.Step`), in a wormhole
+  and the network alike:
+  - radial gravity (`wallGravity` 60) presses you to the inner wall and you slide along it, bouncing now and then
+    (`rootBounce` 0.45, only off a landing faster than 4 u/s), sliding costing a little (`wallFriction` 0.05);
+  - there is no left stick inside: your nose is your velocity, your belly faces the wall;
+  - RT gives a small push (`thrust` 25 while `thrustOn`), never under `minSpeed` 30, never over `rootMaxSpeed` 119
+    (Garrett's Time rush multiplies all three);
+  - you leave on the slingshot: the velocity you carry x `rideExitMultiplier` 1.2, the way you were going, never more than
+    that x your cruise.
+- **The look is a plain wormhole** (round 27; the game's since 2026-11-01, `Docs/Shaders/WORMHOLE_SHADERS.md` §16):
+  - space bent along the tube's wall, with a faint clear rim in the maker's colour;
+  - mouths that lens the world into an Einstein ring round a hint of shadow;
+  - a stretch toward the way out inside;
+  - only the four tubes nearest the camera are drawn;
+  - no glass and no spindles over a formed tube (the reticle keeps its frame).
+- **Phased** inside any tube (round 25), and **the swallow** (rounds 23 and 25):
+  - prisms and crystals within `suckRadius` 40 of a standing wormhole's way in are pulled in;
+  - they are carried through first in first out;
+  - they are fired out of the far mouth as moving prisms.
+- **Garrett's kit, the four abilities** (approved by Yash 2026-10-28): Space the Soliton (RT), Time Faster Ride (passive),
+  Charge Sentinel Mode (Y), Mass Exit Portal (passive).
 
-**In the game only (Unity, Yash, 2026-10-29 to 11-01; `R_VesselActions/MEERKAT.md`):**
-- **Soliton Tunnels.** The wormhole is a **Soliton Tunnel** and the network a **Soliton Network**, an environmental
-  fundamental any vessel or scene can use (`Controller/Environment/SolitonTunnel/`). Each kind has its own
-  `SolitonTunnelConfigSO`, edited in FrogletTools > Environment > Environmental Fundamentals.
-- **The ride is a slip-and-slide** (`SolitonTunnelRider`):
-  - radial gravity presses you to the inner wall and you slide along it, bouncing now and then;
-  - there is no left stick;
-  - RT gives a small push;
-  - you leave at the speed you carry × `exitMultiplier`.
-
-  This replaced round 24's left-stick slide; the page's `root*` flight keys are marked retired.
-- **The look is a plain wormhole** (2026-11-01, `Docs/Shaders/WORMHOLE_SHADERS.md` §16): bent space, a lensing mouth
-  with an Einstein ring, and a stretch inside. The earlier looks are deleted, with restore steps in §12-§15.
-- **Phased** (round 25, game only): a hull inside a tube touches nothing and is touched by nothing until it is out. Any
-  omni crystal the Meerkat takes grows its Soliton Network, the game's own included (the Soliton Network omni ability,
-  2026-10-29).
-- **Yash's Unity tuning.** 14 numbers differ from this page (`studio_to_unity.py --check`, 2026-11-01):
-  - the tunnel's throat (7.1) and mouth (44);
-  - the network's forks, openings, radius, spread, diameters (10.5 and 18), tip and gnarl;
-  - its top speed (119);
-  - `suckRadius` (40).
+**The look's numbers are matched by hand.** They sit in a nested struct on each `SolitonTunnelConfigSO` (`look`, `ride`,
+`comfort`) that `studio_to_unity.py` cannot write, so the page carries them as `field` keys (`lookBend` ...
+`comfortMaxFlowSpeed`, `network*`), read from `SolitonTunnel.asset` and `SolitonNetwork.asset` on 2026-11-03. The slide's
+numbers and the 14 tuned ones are linked and held by the map.
 
 **Open:**
 - None of the Unity work is editor-verified yet (the Meerkat entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`; two of
   them are marked SUPERSEDED).
-- Bring the slip-and-slide and Yash's 14 numbers back into this page, or leave the page as the round-26 record.
+- **The Rift is in the artifact, not yet in Unity** (round 28): `/artifact-to-unity` next. In the artifact it removes
+  round 27's network loss (the network cost 10-20 s a race; the Rift gains 4-7 s).
+- **A long rift is very thin** under Garrett's surface area (a 712 u rift at Space 5: a 1.6 u throat, 10 u mouths), so from
+  outside it reads mostly by its mouths. Yash's call if a rift should be sized by its own rule.
+- The AI plans its tunnels at the slide's top speed (142.8 u/s with the rush); it slides them at 113-116 u/s (round 27).
 - The Mix's Space L5 Burial no longer lands, because a rider is phased.
 - A real Meerkat hull and its four icons are still to be made.
 
@@ -195,6 +207,189 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
 - Live races against three rivals (Hard, Medium, Easy) all ran to the end (all rivals 9-10 of 10 rings when the
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
+
+**Round 28b (Yash, 2026-11-03, testing version 93: "the ability is not vanishing after certain time").**
+- **The bug:** in Sentinel mode `kitSolitonMade` puts a sentinel at a rift's way in (`wh.held`), and the stay phase counted
+  `riftLife` only while nothing held it, so a guarded rift stood for good.
+- **The fix:** a rift always counts `riftLife`. When it runs out, its sentinel retires (`kitRemoveSentinel(..., 'retired')`)
+  and the rift collapses with it; with no sentinel it collapses directly. A plain soliton keeps Garrett's rule and stands
+  as long as its sentinel. The card text and the `riftLife` tooltip say so.
+- **Proof** (headless, Warpline seed 7, Garrett's kit, the hull idle once the 712 u rift is laid so no pool retires its
+  sentinel early):
+  - Sentinel mode on: the rift is held and guarded at lay; at 45.02 s it collapses and its sentinel is gone in the same
+    tick, and it has faded by 45.82 s.
+  - Sentinel mode off: no sentinel; it collapses at 45.02 s.
+  - Before the fix the guarded rift was still standing, `stay` 0, after 60 s.
+  - A plain soliton held by a sentinel still stands well past `staySeconds` (10 s): one stood 38 s, its `stay` at 0.
+- **Races** (round 28's method): Hard, Medium and Easy are unchanged to the tenth, and so are the field races. Only the
+  no-wormhole column moved, to 103.5 / 103.3 / 107.6 / 91.0 (from 97.4 / 97.2 / 101.6 / 91.0): its AI used to ride its own
+  rift again more than 45 s after laying it, which only the bug allowed (with `riftLife` set to 100,000 the old times come
+  back exactly). Solo self-rides are now 6 of 12, not 9.
+- **Cloned to Unity:** `MeerkatSolitonConfig` has `omniMode`, `riftSpeed`, `riftSeconds` and `riftLife` by the same names,
+  and `studio_to_unity/meerkat.json` maps all four. The page's game names for them are now ordinary linked
+  `MeerkatSolitonConfig.<key>` names, no longer 'new'.
+
+**Round 28 (Yash, 2026-11-03: "Yes, prototype the Rift"). Artifact only.** The omnicrystal's ability becomes the Meerkat's
+ultimate, after Apex's Wraith (Dimensional Rift), and replaces the Soliton Network. The four element abilities (Garrett's
+kit) and RT's soliton do not change.
+
+**Into the Void.**
+- Taking an omnicrystal opens a mouth where the hull is: the way in.
+- For the void run you fly phased, as inside any tube: nothing touches you and you collect nothing.
+- You fly at `riftSpeed` (2) x your cruise, x Garrett's Time rush as on any ride: 144 u/s at Time 5. You steer freely; the
+  AI flies its racing line to its next ring.
+- The run ends on the first of these:
+  - its length budget is spent: the network's Mass sizing, `networkReachAtZero` to `networkReachAtFull` x the cell's
+    radius by Mass, never under `labyrinthRadiusMin` (540-1,080 u on Warpline; 810 u at Mass 5);
+  - `riftSeconds` (5) runs out;
+  - RT is pressed.
+
+**The rift.**
+- The path flown (sampled every 6 u, smoothed by two passes of a 1-2-1 average, laid evenly with a carried frame) is laid as
+  a soliton along it. Its far mouth, the way out, opens where the run ended.
+- It is sized as a soliton of its length: Garrett's surface area in the kits, round 12's diameters otherwise.
+- It is drawn as the plain wormhole and slid as one (the slip-and-slide); anyone may ride it way in to way out, in every
+  kit.
+- Garrett's kit applies unchanged:
+  - the swallow at its way in;
+  - the exit portal's six prisms at its way out;
+  - a sentinel at its way in in Sentinel Mode (so, by his rule, it then stands as long as its sentinel);
+  - Faster Ride and every L5.
+- It stands `riftLife` (45 s), then collapses as a soliton does.
+
+**The comparison.** The `omniMode` selector ("the Rift (round 28)" default, "the network (round 27)") sits on the new
+**Omnicrystal · the Rift** card in Play Style Config, with the three new sliders and their tooltips (a new preview, the
+void run and the rift laid). In network mode every race is round 27's to the tenth of a second.
+
+**Choices made here (not specified):**
+- `riftSpeed` defaults to 2: 144 u/s with the rush, the slide's top speed, so a void run is as fast as a ridden soliton.
+- The rift always opens at once (`omniAtOnce` is the network's alone).
+- The run is ended by its budget measured as path length, its clock or RT. The AI never ends a run early.
+- No reticle, no soliton entered and no hop during a run. A hop from a sentinel seat first lays the rift where the flyer was.
+- The void run wears the inside-tube look: the wormhole's own throat stretch, fully inside, and the steady centre.
+- No trail is laid in the void: the rift is its trace.
+- While it grows, the rift is drawn behind the hull (way in only) and nobody can ride it yet.
+- A run shorter than 20 u lays nothing.
+- The HUD reads INTO THE VOID with the clock and the budget, then RIFT LAID; the omni card reads Rift / VOID.
+- The sounds reuse the studio's: the omnicrystal chord and the burrow's growl going in, the exit pop at the end.
+- In Chase, a trail prism under 1.2 s old within 30 u of the camera is not drawn. This is the skill's own trap: riding a
+  thin tube, the camera rode through it.
+
+**Fixed on the way:** `polyAt`, `polyFrame` and `chanNearest` read any number of path points (a channel's 26, a rift's 4-160),
+and `frozen()` keeps a path, so round 8's Cave-in and wall read a rift right.
+
+**Measured** (round 27's method: a fresh page, Warpline course seed 7, `runBatch([11])`, Garrett's kit; every race finished):
+
+| Warpline | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Hard · Rift | 70.1 | 72.4 | 76.1 | 76.6 |
+| Hard · network (round 27) | 93.9 | 97.2 | 106.8 | 76.6 |
+| Medium · Rift | 75.8 | 74.3 | 85.1 | 75.5 |
+| Medium · network | 99.1 | 98.5 | 85.1 | 87.1 |
+| Easy · Rift | 77.8 | 79.3 | 86.2 | 83.1 |
+| Easy · network | 107.3 | 105.5 | 86.2 | 83.1 |
+| No wormhole · Rift | 97.4 | 97.2 | 101.6 | 91.0 |
+| No wormhole · network | 139.9 | 132.7 | 174.6 | 166.0 |
+
+- **The network's 10-20 s loss is gone.** On I1-I3 the Hard AI takes one omnicrystal and is 23.8 / 24.8 / 30.7 s faster
+  than with the network, and faster than round 26's network too (77.6 / 78.1 / 99.1). I4 is unchanged at 76.6 s: no
+  omnicrystal is taken there.
+- **AI rifts:** every one ran the full 5 s, 712-716 u (the clock ends it before the 810 u budget).
+- **Rides:**
+  - alone, the AI later rides its own rift in 9 of the 12 races that laid one, because a rift lies along its racing line;
+  - in field races (Hard, with Hard, Medium and Easy rivals on Garrett's kit, I1-I4), one rift a race on I1-I3 is ridden
+    4, 1 and 0 times (3 of the 4 by rivals), and none is taken on I4.
+- **Difficulty order** (Hard < Medium < Easy) now holds on I1, I2 and I3. On I4, Medium (75.5 s, one rift) beats Hard
+  (76.6 s, no omnicrystal) by 1.1 s. In round 27 it failed on I3 and I4.
+
+**Not modelled:**
+- Unity has none of this yet.
+- The rift is laid from the AI's or your own flown path only; a rival's void run looks the same to you.
+- The void has no look of its own beyond the throat's stretch; Wraith's tint and whispers are not drawn.
+- A rift collapses as one soliton; it is not cut where a sentinel is lost.
+- **Gates:**
+  - `check_studio.cjs` and `verify_lab.cjs` pass, the batch deterministic.
+  - `studio_to_unity.py --vessel meerkat --check`: 80 mapped, 0 drift. Its `--self-test` passes in the full checkout and
+    fails in this sparse worktree only because other vessels' assets are not checked out there.
+  - `parity_gate.py`, `domain_colors.py --check`, `vessel_pages.py --check` and `build_artifact.py --self-test` pass.
+
+**Round 27 (Yash, 2026-11-03: bring the artifact up to what the Unity game has, so the artifact is the Meerkat's source of
+truth again; the direction this time is Unity to artifact, nothing written to Unity). Artifact only.**
+- **The slip-and-slide** (`labTransit`, a line-for-line port of `SolitonTunnelMath.Step` and `SolitonTunnelRider`):
+  - It replaces round 24's left-stick slide in the wormhole and the network: radial gravity out to the wall (`wallGravity`),
+    a bounce off a real landing (`rootBounce`), friction sliding (`wallFriction`), RT's small push (`thrustOn`, `thrust`), the
+    floor (`minSpeed`) and the cap (`rootMaxSpeed`), with no steering.
+  - You leave on the slingshot (`slingshotOut`): your own velocity x `rideExitMultiplier`, capped at that x your cruise, as
+    `MeerkatVesselTransformer.TrackedExitSpeed` does.
+  - Garrett's Time rush now scales the network's slide too, as in the game (it was the wormhole's only).
+  - The AI holds RT inside and touches no stick; at a fork it goes where it slides.
+  - Retired with the left stick: `rootCruise`, `rootThrust`, `rootMove`, `rootDrag`, `rootGravity` (the round-24 commit
+    `4f8269efe` restores them).
+- **The plain wormhole** (`updateTubeWarp`, `bankTubes`, `drawLookFilm`, `setMouthUniforms`, the lens pass), from
+  `SolitonTunnel.shader` and `SolitonTunnelLensPass.cs`:
+  - Only the four tubes nearest the camera are drawn (`MaxTubes`), and up to eight mouths (`MaxWells`).
+  - The wall bends what is seen through it along the tube, `lookBend` degrees a wall crossing x Unity's graze. It breathes
+    (`lookWobble*`, capped by `comfortMaxWobbleSpeed`), and a look that only clips the outer shell is drawn in toward the
+    axis (`lookLens`).
+  - Each wall has a faint rim, the sun's glint and a glow (`lookRim`, `lookRimTightness`, `lookGlint`, `lookGlow`), with the
+    maker's domain colour washed through it (`tintStrength`; a multiply pass and an additive pass per wall).
+  - Each live mouth is a point-mass lens, the scene at theta - thetaE^2 / theta: an Einstein ring (`lookEinsteinRing`) and a
+    throat shadow (`lookMouthShadow`). Its reach is `lookMouthFlare` x the mouth's radius, its strength `lookMouthLens`; it
+    fades as the camera comes up to it and to 0.3 for the tube you ride. A network's mouths use `network*` and lens only at
+    its true openings.
+  - Riding, the view stretches out from where you head and streams to the way out (`lookInsideStretch`, `lookInsideFlow`,
+    `lookInsideSwirl`). The middle of the screen stays still (`rideSteadyCentre`), the wall is calmer from inside
+    (`rideInsideBend`, `rideInsideWobble`), and `comfortDistortionIntensity` scales it all.
+  - A formed tube draws no glass and no spindles (`bridgeGlass` 0, `tubeInner` 0). The old bridge, calm wall, warp, dents
+    and ripple are kept, off, in **The old look**. The bridge's frame numbers moved to the Reticle card.
+- **What the page cannot show of the look** (said on its card):
+  - A hull in front of a tube is bent with it (the game skips what is in front of a shell).
+  - The bend's inner reach (`lookWallInside`).
+  - The game's exact ray march through the shell, which the page draws as one bend per wall crossing on a mesh inflated by
+    `lookWallOutside`.
+  - The domain wash is per wall, not once for the whole ray.
+- **Yash's 14 Unity numbers**, read from the assets on 2026-11-03:
+  - the tunnel's throat 20 -> 7.1 and mouth 40 -> 44;
+  - the network's forks 22 -> 12, openings 12-56 -> 16-50, reach 240-1,080 -> 100-531, spread 360 -> 273;
+  - the network's diameters 40 / 46 -> 10.5 / 18, tip 0.6 -> 0.309, gnarl 0.3 -> 0.779;
+  - the top speed 90 -> 119;
+  - `suckRadius` 90 -> 40.
+
+  The steps of their sliders now admit those values. A browser that saved settings before this round takes them once
+  (save version 8).
+- **The map** (`Tools/Build/studio_to_unity/meerkat.json`): `rootMaxSpeed`, `rootBounce`, `rideExitMultiplier` and the new
+  `wallGravity`, `wallFriction`, `thrustOn`, `thrust`, `minSpeed` set both `SolitonTunnel.asset` and `SolitonNetwork.asset`.
+  `--check`: 80 mapped, 0 drift (was 69 mapped, 14 drift).
+- **Three bugs fixed on the way:**
+  - 36 `GAME_NAMES` rows lost their closing bracket in `a8c7d6b07` (2026-10-29), a syntax error that stopped the page's
+    script; the published artifact still showed the older round-26 page.
+  - Off and Round 8 kept the last kit's Time rush (`slideRush`) after a switch from Garrett's kit or the Mix.
+  - Opening the network from an omnicrystal left a reticle shaped before it, so the AI's held RT formed a tunnel from it and
+    left the network at once. The game hides the reticle while riding (`StepReticle`); so does the page now.
+- **Measured** (the lab batch as `verify_lab.cjs` runs it: a fresh page, Warpline course seed 7, `runBatch([11])`,
+  Garrett's kit; every race finished):
+
+  | Warpline | I1 | I2 | I3 | I4 |
+  |---|---|---|---|---|
+  | Hard | 93.9 | 97.2 | 106.8 | 76.6 |
+  | Medium | 99.1 | 98.5 | 85.1 | 87.1 |
+  | Easy | 107.3 | 105.5 | 86.2 | 83.1 |
+  | No wormhole | 139.9 | 132.7 | 174.6 | 166.0 |
+  | Round 26, Hard (the same batch) | 77.6 | 78.1 | 99.1 | 77.5 |
+
+  - **The network is now the cost.** On I1-I3 the Hard AI takes one omnicrystal a race and spends 9-12 s in the network,
+    with no way to choose its fork. It comes out wherever it slid and flies back, and the race is 10-20 s slower. I4 (no
+    network) is unchanged at 76.6 s.
+  - The no-wormhole baseline takes omnicrystals too, which is why it slows most. Before the reticle fix the network was
+    left at once, and Hard read 76.3 / 80.5 / 109.0 / 76.6 s.
+  - **The AI's plan is optimistic:** it plans a wormhole at the slide's top speed (119 x the rush 1.2 = 142.8 u/s). Holding
+    RT it slides 113-116 u/s on average, on the wall 70-74% of the time, and about 10 wormholes a race take 45-60 s of it
+    (the report's open item 3).
+  - The level order (D24) does not hold: Medium and Easy beat Hard on I3, and Easy beats Medium on I4. A finding for Yash,
+    not tuned away.
+- **Gates:** `check_studio.cjs` and `verify_lab.cjs` pass (on Windows Chrome with ANGLE's SwiftShader: the gates'
+  `--use-gl=swiftshader` loses a WebGL context at start on desktop Chrome, on the round-26 page too). `build_artifact.py
+  --check` passes, and so do `parity_gate.py` and `studio_to_unity.py --check` (Meerkat 0 drift).
 
 **Round 26 (Yash, 2026-10-28: "When we collect the omnicrystal ... we create this omnicrystal network, burrow network. We
 can't make it a root, we need to make it smoother, like our tube, same visuals. And ... we have to turn off the tree

@@ -22,8 +22,9 @@ namespace CosmicShore.Data
     ///
     /// <para><b>Resolution.</b> A row with <see cref="Intensity"/> 0 applies at every intensity;
     /// a row naming an intensity wins over it for that intensity only, so a card can author a
-    /// baseline plus per-rung corrections. A hull with no row keeps the platform default (every
-    /// element at rest, level 0). See <see cref="TryResolve"/>.</para>
+    /// baseline plus per-rung corrections. A hull with no row starts at rest (level 0). A card that
+    /// authors no table at all is given the standard element ladder's rows (<see cref="ElementLadder"/>,
+    /// published by <c>GameDataSO.SyncFromArcadeGame</c>). See <see cref="TryResolve"/>.</para>
     ///
     /// <para>Levels are NORMALIZED (<c>ResourceCollection</c>: 0 = rest, 1 = level 10, the
     /// -0.5..1.5 band the resource system clamps to). The sustained ceiling still applies -

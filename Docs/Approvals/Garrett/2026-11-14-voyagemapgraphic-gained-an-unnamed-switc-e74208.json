@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-14-voyagemapgraphic-gained-an-unnamed-switc-e74208",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-14T18:54:41+00:00",
+  "area": "Voyages map",
+  "summary": "VoyageMapGraphic gained an Unnamed switch (hides place labels and the caption for the R111 table, whose pins name places instead), RectPointOf/PlaceRectPoint/InView for the pins, and tier steps and pans now ease on the board's cubic-bezier(.2,.7,.2,1); the long dive keeps its in-out. VoyageEdgeGraphic gained Uncaptioned.",
+  "why": "Shombith: rebuild the Voyages pages to Rev 111 and make them as smooth as Frogma",
+  "branch": "claude/project-thread-sbm2ns",
+  "commit": "021ed4e12",
+  "paths": [
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
+    "Assets/_Scripts/UI/Views/VoyageMapGraphic.cs"
+  ]
+}

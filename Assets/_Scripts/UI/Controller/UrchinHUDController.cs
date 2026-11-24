@@ -1,5 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -42,6 +44,11 @@ namespace CosmicShore.UI
                  "an unwired HUD is visible in the inspector; drives the Charge card's charge ring.")]
         [SerializeField] UrchinSpikeActionExecutor spikeExecutor;
 
+        [Tooltip("This vessel's Slip executor. Serialized rather than type-searched so an unwired HUD is " +
+                 "visible in the inspector; drives the Time card's lifted Urchin and its ghost.")]
+        [SerializeField] UrchinSlipActionExecutor slipExecutor;
+
+        [Inject] GameDataSO _gameData;
         IVesselStatus _status;
         ResourceSystem _resources;
 
@@ -127,6 +134,20 @@ namespace CosmicShore.UI
             // release is a tap the press already paid for, and the ring would promise a burst.
             if (spikeExecutor && view)
                 view.SetSpikeCharge(spikeExecutor.IsChargeArmed, spikeExecutor.ChargeProgress01);
+
+            if (!view) return;
+            if (trackExecutor) view.SetTrackReady(trackExecutor.TrackReady);
+            if (slipExecutor) view.SetSlipping(slipExecutor.IsGhosted);
+            view.SetDomainColor(ResolveDomainSignalColor());
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Manta's
+        /// HUD reads it; alpha 0 until the palette resolves (the view keeps its last colour).</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
     }
 }

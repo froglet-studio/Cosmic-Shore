@@ -1,0 +1,18 @@
+{
+  "id": "H-20261121-backend-d2b886",
+  "kind": "to",
+  "lane": "backend",
+  "laneName": "Backend (UGS, Cloud Code, cloud data)",
+  "laneKind": "system",
+  "by": "Yash",
+  "to": "Shombith",
+  "on": "2026-11-21T20:44:08+00:00",
+  "branch": "Ys-bleeding-edge",
+  "note": "The launch-flags Cloud Code script is not deployed on the backend Yash's editor signs in to: every sign-in gets 404 'Script could not be found' from CloudCodeService.CallEndpointAsync('launch-flags') (bug ledger E-930ca435ca, 3 sightings on 2026-11-21, LaunchFlagsService.FetchAsync). The script is in the repo at Tools/UGS/CloudCode/launch-flags.js and was never changed here. The game is not blocked: it keeps the default flags, so the live kill switches and the minimum-version gate do nothing until the script is deployed. Next: deploy launch-flags to the UGS environment(s) the editor and builds use. Nothing was deployed or changed by this session; the ledger issue stays open until a sign-in is clean. Branch: Ys-bleeding-edge.",
+  "signals": {
+    "laneKind": "system",
+    "handTests": true,
+    "merged": false
+  },
+  "source": "cli"
+}

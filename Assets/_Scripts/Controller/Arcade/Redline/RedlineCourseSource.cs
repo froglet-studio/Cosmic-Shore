@@ -14,7 +14,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Laps of the ring set that make one race.</summary>
         public int Laps = DefaultLaps;
 
-        public const int DefaultLaps = 5;
+        /// <summary>8 since 2026-11-11 (5 before): Soar lit from the gun makes a lap ~5-11 s (REDLINE.md section 0).</summary>
+        public const int DefaultLaps = 8;
 
         public override GameModes Mode => GameModes.Redline;
 

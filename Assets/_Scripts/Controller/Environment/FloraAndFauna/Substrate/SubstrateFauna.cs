@@ -42,6 +42,9 @@ namespace CosmicShore.Gameplay
     public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation,
         ISpeciesDataOverride
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Substrate")]
         [Tooltip("The species this population is (its parameters, drawing, proxy budget and feeding).")]
         [SerializeField] SubstrateSpeciesSO species;

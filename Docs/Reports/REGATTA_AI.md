@@ -16,6 +16,17 @@ those fixed AIs (step `time-arena-course`). The per-mode Regatta variants below 
 (AI_PLAN §7, decision 6). The work on the Time games is in `MINIGAME_TRAINING_PLAN.md` §9.1 (the Dolphin in Switchback),
 §11 (the Stoat) and §12 (the Thresher).
 
+## 2026-11-06: why each AI loses in a grid, measured (brief 9; detail in `REGATTA_GRID_LOSSES.md`)
+
+Read from all 183 recorded Regatta flights (`regatta_rival_report.py --grid`, AI rivals only, multiplayer records
+merged). **Garrett's 11-06 races were on the old I4 circuit** (54 u mouths, no neutral rail): no editor race has flown
+the branch `claude/regatta-overnight-balance`'s circuits yet. On the old circuit the Urchin, Squirrel and Serpent race
+as the measured-roster model says or better; the Rhino is 1.27x slower (it cruises at 50 u/s for 78% of an I4 race) and
+the Manta 1.48x (0.36 missed mouths a ring, 9-14 rail rams a race). Traffic is not a cause (3 of 389 slow-downs were
+beside another vessel). Three faults turned races into routs: an AI Squirrel flown by AIPilot when the person also
+flew a Squirrel, an AI Urchin riding a rival's rail, and an AI Urchin breaking off its own rail. The model's one
+MOUTH_ALPHA should be per hull (about 1.15 Manta, 0.9 Rhino, 0.5 Squirrel, 0.3 Serpent).
+
 ## 1. In one minute
 
 - **Regatta now races five different hulls at once.** The host picks the hull of every AI seat: Squirrel, Manta, Rhino,

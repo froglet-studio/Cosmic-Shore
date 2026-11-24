@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 

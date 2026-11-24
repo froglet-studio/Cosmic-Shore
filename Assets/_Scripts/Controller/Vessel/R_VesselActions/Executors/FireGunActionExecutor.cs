@@ -3,7 +3,7 @@ using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;

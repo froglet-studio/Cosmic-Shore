@@ -96,6 +96,9 @@ VESSELS = {
     "Wrasse":   "db96e34a6c3b4cb1b498f0529f765db1",
     # The Meerkat joined with Burrow Run (2026-10-27): the wormhole vessel (R_VesselActions/MEERKAT.md, author_meerkat_assets.py).
     "Meerkat":  "8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b",
+    # The Swordfish split off the Rhino with the sword on 2026-11-07 (R_VesselActions/SWORDFISH.md): Cleave and
+    # Astro League fly it; the Rhino keeps the plough and Headlong.
+    "Swordfish": "a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
@@ -103,7 +106,8 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
-    "Thresher": 14, "Stoat": 15, "Wrasse": 19, "Meerkat": 28, "TigerMoth": 29,
+    "Thresher": 14, "Stoat": 15, "BrittleStar": 16, "Angler": 17, "Goby": 18, "Wrasse": 19, "Orca": 20,
+    "Jacks": 22, "Honeyguide": 23, "Meerkat": 28, "TigerMoth": 29, "Swordfish": 30,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──
@@ -305,9 +309,12 @@ def wrap_yaml_scalar(text: str, width: int = 88, indent: str = "    ") -> str:
 
 def toast(situation: int, template: str, tint_domain: int = 0, domain_names: int = 1,
           every_n: int = 1, idle: int = 0, idle_seconds: int = 60, alpha=1) -> str:
-    """One GameToastDefinition entry (the field set GameToastConfigSO serializes today)."""
+    """One GameToastDefinition entry (the field set GameToastConfigSO serializes today). The template is a
+    single-quoted YAML scalar, so an apostrophe is doubled: unescaped, "a hood's cup" ended the scalar and the whole
+    toast config stopped parsing (2026-11-09, Hood; the /arcadegame trap Waystation hit first)."""
+    quoted = template.replace("'", "''")
     return (f"  - situation: {situation}\n"
-            f"    messageTemplate: '{template}'\n"
+            f"    messageTemplate: '{quoted}'\n"
             f"    tintWithDomainColor: {tint_domain}\n"
             f"    useDomainColoredNames: {domain_names}\n"
             f"    alpha: {num(alpha)}\n"
@@ -534,7 +541,7 @@ class Generator:
             full = os.path.join(ROOT, rel)
             os.makedirs(os.path.dirname(full), exist_ok=True)
             with open(full, "w", encoding="utf-8", newline="\n") as fh:
-                fh.write(content)
+                fh.write(placeholder_sounds(rel, content))
         for rel in self.stale:
             full = os.path.join(ROOT, rel)
             if os.path.exists(full):
@@ -549,6 +556,33 @@ def _meta_lines(text: str) -> "list[str]":
     return [ln.rstrip() for ln in text.splitlines()]
 
 
+def placeholder_sounds(rel: str, content: str) -> str:
+    """`content` with every FMOD slot the placeholder ledger lists holding what the tree holds (a recycled
+    placeholder, or its real event once promoted): Docs/AudioSystem/sound_placeholders.json, Garrett 2026-11-16.
+    Without it a generator re-emits those slots empty and wipes the sounds; with it, write and --check agree with
+    the tree. Unlisted files come back unchanged."""
+    try:
+        import sound_placeholders
+    except ImportError:
+        return content
+    return sound_placeholders.fill_text(rel, content, root=ROOT)
+
+
+def event_yaml(rel: str, field: str, indent: str = "    ") -> str:
+    """The `Guid:` / `Data1..4` / `Path:` lines of an FMOD slot a generator authors, holding what the placeholder
+    ledger says the slot holds (empty when the ledger does not list it). Use it wherever a generator spells an
+    EventReference out as text, instead of a literal empty block: the literal makes re-running the generator
+    duplicate or empty the slot."""
+    try:
+        import sound_placeholders
+        items = [it for it in sound_placeholders._lock(ROOT).get(rel.replace(os.sep, "/"), []) if it["field"] == field]
+    except ImportError:
+        items = []
+    data, path = (items[0]["data"], items[0]["path"]) if items else ([0, 0, 0, 0], "")
+    return (f"{indent}Guid:\n" + "".join(f"{indent}  Data{k + 1}: {data[k]}\n" for k in range(4))
+            + f"{indent}Path: {path}\n")
+
+
 def drift(files: "dict[str, str]", stale=()) -> "list[str]":
     """Every queued file that differs from disk, as "<rel> (<where>)" - the `--check` half of a
     generator, shared so the standalone generators diff the same way Generator.finish does.
@@ -559,6 +593,7 @@ def drift(files: "dict[str, str]", stale=()) -> "list[str]":
     makes a gate red for nothing. Every other file is compared byte for byte."""
     changed = []
     for rel, content in files.items():
+        content = placeholder_sounds(rel, content)
         full = os.path.join(ROOT, rel)
         if not os.path.exists(full):
             changed.append(f"{rel} (missing on disk)")
@@ -616,6 +651,12 @@ def _self_test() -> int:
         print(("  ok    " if cond else "  FAIL  ") + what)
         if not cond:
             fails.append(what)
+
+    # A toast template with an apostrophe still parses as YAML (the single-quoted scalar doubles it).
+    import yaml
+    entry = yaml.safe_load("toasts:\n" + toast(157, "Sit in a hood's cup"))
+    expect(entry["toasts"][0]["messageTemplate"] == "Sit in a hood's cup",
+           "toast() doubles an apostrophe, so the template round-trips through YAML")
 
     rel = f"{CARDS_DIR}/ArcadeGameBreakwater.asset"
     with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:

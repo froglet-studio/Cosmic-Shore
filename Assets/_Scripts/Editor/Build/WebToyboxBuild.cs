@@ -18,7 +18,7 @@ namespace CosmicShore.Editor
     /// Build Automation, the command line and the menu all run it, so the same commit always produces
     /// the same player.
     ///
-    /// <para><b>What it sets, for this build only.</b> The three scenes the toybox needs
+    /// <para><b>What it sets, for this build only.</b> The four scenes the toybox needs
     /// (<see cref="Scenes"/>, whatever the global Build Settings list holds) and the
     /// <see cref="WebToybox.Define"/> scripting define, passed through
     /// <see cref="BuildPlayerOptions.extraScriptingDefines"/> so it never lands in
@@ -46,12 +46,15 @@ namespace CosmicShore.Editor
     /// </summary>
     public static class WebToyboxBuild
     {
-        /// <summary>The toybox's scenes, in build-index order. Bootstrap must stay first.</summary>
+        /// <summary>The toybox's scenes, in build-index order. Bootstrap must stay first. The voyage scene rides along
+        /// because the app shell's Voyage window sets sail into it (<c>VoyageLaunch</c>); the sim farm's player
+        /// (<c>SimFarmBuild</c>) builds this same list, so its escort sims load it too.</summary>
         public static readonly string[] Scenes =
         {
             "Assets/_Scenes/Bootstrap.unity",
             "Assets/_Scenes/Authentication.unity",
             "Assets/_Scenes/Menu_Main.unity",
+            "Assets/_Scenes/Voyage.unity",
         };
 
         /// <summary>Default output folder, relative to the project root. Git-ignored (<c>/[Bb]uilds/</c>).</summary>
@@ -66,7 +69,7 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Build/WebGL Toybox", false, 123)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 3,
-            Description = "Browser Toybox WebGL build: three scenes, FROGLET_WEB_TOYBOX, Builds/WebGLToybox.",
+            Description = "Browser Toybox WebGL build: four scenes, FROGLET_WEB_TOYBOX, Builds/WebGLToybox.",
             DocPath = "Docs/WEBGL_TOYBOX.md")]
         public static void Build() => Run(development: HasFlag("-development"));
 

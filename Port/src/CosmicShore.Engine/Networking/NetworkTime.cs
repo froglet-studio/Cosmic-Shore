@@ -11,6 +11,9 @@ namespace CosmicShore.Engine.Networking
     {
         public double Time { get; }
 
+        /// <summary>Netcode's single-precision copy of <see cref="Time"/>.</summary>
+        public float TimeAsFloat => (float)Time;
+
         public NetworkTime(double time) => Time = time;
     }
 }

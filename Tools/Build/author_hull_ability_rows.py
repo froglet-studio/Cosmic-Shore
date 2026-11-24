@@ -219,14 +219,18 @@ def kit_container(img):
         "  m_Color: {r: 1, g: 1, b: 1, a: 1}", "  m_Color: {r: 1, g: 1, b: 1, a: 0}")
 
 
-def bindings(icon_ids, gauge_ids=None):
-    """Four entries in AbilityDisplayOrder; an open slot is bound with no icon (LOCKED card)."""
+def bindings(icon_ids, gauge_ids=None, upgraded=None):
+    """Four entries in AbilityDisplayOrder; an open slot is bound with no icon (LOCKED card). `upgraded`: element ->
+    (hull, png) of the card's level-5 picture (the binding's upgradedSprite)."""
     gauge_ids = gauge_ids or {}
+    upgraded = upgraded or {}
     out = []
     for element in ORDER:
+        up = (f"{{fileID: 21300000, guid: {sprite_guid(*upgraded[element])}, type: 3}}" if element in upgraded
+              else "{fileID: 0}")
         out.append(f"""  - element: {element}
     icon: {{fileID: {icon_ids.get(element, 0)}}}
-    upgradedSprite: {{fileID: 0}}
+    upgradedSprite: {up}
     gauge: {{fileID: {gauge_ids.get(element, 0)}}}""")
     return "  abilityIcons:\n" + "\n".join(out) + "\n"
 
@@ -251,9 +255,11 @@ RHINO_ROOT_RT = "1335802071243411841"
 RHINO_VIEW = "5161366343835098938"
 RHINO_BASE = 7720000000000003000
 # None: the icon kit owns that card (Tools/Build/icon_kit/specs/rhino.py) - its icon Image is a transparent, sprite-less
-# CONTAINER the view draws the art under (Charge: the katana; Mass: the afterimage trail; Space: Blade Reach; 2026-10-28), so this script
-# expects exactly that.
-RHINO_ICONS = {CHARGE: None, MASS: None, SPACE: None, TIME: None}
+# CONTAINER the view draws the art under (Time: Ramp Spool / Momentum's four parts), so this script expects exactly that.
+# Charge, Mass and Space were the sword's containers (katana, afterimage trail, Blade Reach) until 2026-11-13; they are
+# the plough's single sprites now (Tools/Build/author_rhino_hud.py), each with its level-5 picture (RHINO_UPGRADED).
+RHINO_ICONS = {CHARGE: "Rhino_Gore.png", MASS: "Rhino_Heft.png", SPACE: "Rhino_Blade.png", TIME: None}
+RHINO_UPGRADED = {CHARGE: "Rhino_GoreSteal.png", MASS: "Rhino_Berm.png", SPACE: "Rhino_Unstoppable.png"}
 # The Mass and Time hosts were the first pass (2026-10-06); Charge and Space were open design slots.
 RHINO_FIRST_PASS = (MASS, TIME)
 # Cards with a meter (2026-10-17): Charge fills with the sword's energy, Time with speed as a
@@ -263,6 +269,10 @@ RHINO_GAUGES = (CHARGE, TIME)
 
 def rhino_gauge_ids():
     return {el: slot_ids(RHINO_BASE, el)["gauge_img"] for el in RHINO_GAUGES}
+
+
+def rhino_upgraded():
+    return {el: ("Rhino", png) for el, png in RHINO_UPGRADED.items()}
 
 
 def rhino_frame(element):
@@ -297,7 +307,7 @@ def rhino(src):
     s, e = component_block(out, RHINO_VIEW)
     view = out[s:e]
     assert "abilityIcons" not in view, "Rhino view already serializes abilityIcons"
-    new_view = re.sub(r"  highlights:.*?\n(?=  \w)", lambda m: m.group(0) + bindings(icon_ids, rhino_gauge_ids()), view,
+    new_view = re.sub(r"  highlights:.*?\n(?=  \w)", lambda m: m.group(0) + bindings(icon_ids, rhino_gauge_ids(), rhino_upgraded()), view,
                       count=1, flags=re.S)
     assert new_view != view, "Rhino view highlights"
     out = out[:s] + new_view + out[e:]
@@ -324,6 +334,8 @@ def rhino_add_slots(src, late):
                                      + "  m_Father: {fileID: 0}\n", "Rhino root children") + out[e:]
 
     for element in RHINO_FIRST_PASS:
+        if RHINO_ICONS[element] is None:   # the kit's container: no sprite to swap
+            continue
         fid = slot_ids(RHINO_BASE, element)["icon_img"]
         s, e = component_block(out, fid)
         blk = out[s:e]
@@ -347,7 +359,7 @@ def rhino_add_slots(src, late):
     s, e = component_block(out, RHINO_VIEW)
     view = out[s:e]
     ids = {el: slot_ids(RHINO_BASE, el)["icon_img"] for el in RHINO_ICONS}
-    want = bindings(ids, rhino_gauge_ids())
+    want = bindings(ids, rhino_gauge_ids(), rhino_upgraded())
     new_view = re.sub(r"  abilityIcons:\n(?:  - element: .*\n(?:    .*\n)+)+", want, view, count=1)
     assert new_view != view or want in view, "Rhino view abilityIcons"
     out = out[:s] + new_view + out[e:]
@@ -538,7 +550,7 @@ def main() -> int:
             write(RHINO_PREFAB, want); wrote.append(RHINO_PREFAB)
     else:
         ids = {el: slot_ids(RHINO_BASE, el)["icon_img"] for el in RHINO_ICONS}
-        needles = [bindings(ids, rhino_gauge_ids())]
+        needles = [bindings(ids, rhino_gauge_ids(), rhino_upgraded())]
         for el, png in RHINO_ICONS.items():
             blocks = host_blocks(slot_ids(RHINO_BASE, el), el, RHINO_ROOT_RT, rhino_frame(el),
                                  sprite_guid("Rhino", png) if png else "0" * 32, gauge=el in RHINO_GAUGES)

@@ -31,6 +31,12 @@ Shader "CosmicShore/BlackHoleLens"
     Properties
     {
         [HideInInspector] _BHWellCount ("Holes in the bank (per camera, from BlackHoleLensPass)", Float) = 0
+        // The lens's own light (BlackHoleLens.hlsl), each the sRGB encoding of the studio's value: Unity reads a Color
+        // into linear, so the shader sees the studio's numbers exactly.
+        _BHRingColour ("Photon ring glow", Color) = (1, 0.906331753, 0.767375658, 1)
+        _BHCoreColour ("White core glow", Color) = (1, 0.986695246, 0.954687172, 1)
+        _BHShellColour ("Light shell glow", Color) = (1, 0.982207082, 0.935741027, 1)
+        _BHWaveColour ("Gravitational wave glow", Color) = (0.701410718, 0.797737733, 1, 1)
     }
 
     SubShader

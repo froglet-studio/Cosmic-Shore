@@ -136,8 +136,9 @@ def team_context(base):
             'files: run `git fetch origin` then `python3 Tools/Build/who_works_where.py query <the paths you will '
             'change>` (about 10 s). In your FIRST reply, tell the person in a line or two who else works in that '
             'area (in flight or recently landed: who, which branch or PR, what it does), or that nobody does. Then '
-            'read their work and BUILD ON IT. Never replace, retire, rename or re-tune another collaborator\'s work '
-            'without the person confirming (name the owner to check with). Look for an existing tool, system, '
+            'read their work and BUILD ON IT. Only an occupied swim lane waits (`Tools/Build/approvals.py check` '
+            'exits 2): otherwise a change to another collaborator\'s work goes through, named to the person and '
+            'queued for that collaborator\'s /approve (Docs/TEAM.md rules 3, 13). Look for an existing tool, system, '
             'skill, lab or doc before building a new one. Check bleeding-edge AND in-flight branches before '
             'claiming a shared number (enum value, GameModes id, learnings id). Write "Affects: <person>\'s '
             '<area>" in the commit when you touch someone else\'s area. ' +

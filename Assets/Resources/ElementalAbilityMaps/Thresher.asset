@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Wrecking Ball
-    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s; at smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion. The ball and the chain also reach ENEMY VESSELS: each contact is a scored Strike that STEALS petals (the PvP-is-petals-only rule). Charge scales how many: ThresherConfigSO.vesselHitPetals, 1 petal per element at rest -> 3 at level 10 (floor 0.5).'
+    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s; at smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion. The ball and the chain also reach ENEMY VESSELS: each contact is a scored Strike that STEALS petals (the PvP-is-petals-only rule). Charge lowers the smash speed: ThresherConfigSO.smashSpeedScale, x1 at rest -> x0.6 at level 10, so a charged ball turns red on a lazier swing.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -48,6 +48,6 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 'OPEN since 2026-10-13 (design needed). Time 5 was "Perfect Release" (a launch timed inside a 0.25 s window left x1.6 faster); it retired when EVERY aimed launch out of the crosshair view took the boost (ThresherConfigSO.launchBoost, x4.8) - the crosshair move is rewarded, not the timing. No IsUpgradeActive(Time) gate remains.'
+    UpgradeLabel: Anchor Ward
+    UpgradeDescription: 'While the ball is planted as the pivot, the arena''s danger prisms cannot drain the Thresher (ElementalDebuffSources.DangerPrism only, so a rival pilot''s hit still lands). Gated on IsUpgradeActive(Time) in ThresherExecutor.UpdateAnchorWard. Filled 2026-11-13; the slot was open since Time 5 "Perfect Release" retired on 2026-10-13.'
   omniAbilityLabel: windmills the ball round the ship

@@ -31,13 +31,6 @@ namespace CosmicShore.Utility
     public static class OctahedronMeshGenerator
     {
         /// <summary>
-        /// UV channel carrying each vertex's per-face centroid (object space) for the
-        /// GPU shield morph. TEXCOORD1 — read by the UV node wired into BlockGraph /
-        /// ExplodingBlockGraph by Tools/Shaders/wire_prism_shield_morph.py. Shared with
-        /// <see cref="StellatedOctahedronMeshGenerator"/> so ONE shader path serves both
-        /// shield tiers.
-        /// </summary>
-        /// <summary>
         /// UV channel carrying each face's own [0,1] frame, which
         /// <c>PrismErosionFade</c> sweeps its erosion front across when a shield shatters
         /// — the same body-anchored fade the exploding prism uses, instead of scaling each
@@ -45,6 +38,13 @@ namespace CosmicShore.Utility
         /// </summary>
         public const int ErosionUVChannel = 0;
 
+        /// <summary>
+        /// UV channel carrying each vertex's per-face centroid (object space) for the
+        /// GPU shield morph. TEXCOORD1 — read by the UV node wired into BlockGraph /
+        /// ExplodingBlockGraph by Tools/Shaders/wire_prism_shield_morph.py. Shared with
+        /// <see cref="StellatedOctahedronMeshGenerator"/> so ONE shader path serves both
+        /// shield tiers.
+        /// </summary>
         public const int FaceCentroidUVChannel = 1;
 
         /// <summary>

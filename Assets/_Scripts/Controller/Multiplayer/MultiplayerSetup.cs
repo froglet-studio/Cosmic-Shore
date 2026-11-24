@@ -199,6 +199,14 @@ namespace CosmicShore.Gameplay
 
         void OnSceneEventTrace(SceneEvent e)
         {
+            // A guest's notice that the host is changing scene: hand the trail back in slices while the new scene
+            // loads in the background, so the pools' release at the scene change has little left for the load's
+            // frame (B45). The host's own pools started at the SOAP scene-transition event, which a guest never gets.
+            if (e.SceneEventType == SceneEventType.Load
+                && e.LoadSceneMode == UnityEngine.SceneManagement.LoadSceneMode.Single
+                && networkManager != null && !networkManager.IsServer)
+                InteractivePrismPoolManager.BeginReleaseAllForSceneExit();
+
             if (!CSDebug.IsVerbose(CSLogChannel.NetworkFlow)) return;
             string done = e.ClientsThatCompleted != null ? $" completed={e.ClientsThatCompleted.Count}" : string.Empty;
             string late = e.ClientsThatTimedOut != null && e.ClientsThatTimedOut.Count > 0 ? $" timedOut={e.ClientsThatTimedOut.Count}" : string.Empty;
@@ -433,17 +441,21 @@ namespace CosmicShore.Gameplay
             var playerProperties  = await GetPlayerProperties();
             var sessionProperties = GetSessionProperties();
 
-            var sessionOpts = new SessionOptions
+            // Hosted in the player's chosen Relay region (Settings > REGION; Auto when none), falling back to Auto once.
+            var (session, _) = await RelayRegionPreference.CreateWithFallbackAsync(region =>
             {
-                MaxPlayers        = gameData.SelectedPlayerCount.Value,
-                IsLocked          = false,
-                IsPrivate         = false,
-                PlayerProperties  = playerProperties,
-                SessionProperties = sessionProperties
-            }.WithRelayNetwork();
-
-            gameData.ActiveSession = await Policy.ExecuteAsync("match:create",
-                async () => await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread());
+                var sessionOpts = new SessionOptions
+                {
+                    MaxPlayers        = gameData.SelectedPlayerCount.Value,
+                    IsLocked          = false,
+                    IsPrivate         = false,
+                    PlayerProperties  = playerProperties,
+                    SessionProperties = sessionProperties
+                }.WithRelayNetwork(region);
+                return Policy.ExecuteAsync("match:create",
+                    async () => await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread());
+            }, "match:create");
+            gameData.ActiveSession = session;
 
             gameData.InvokeSessionStarted();
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
@@ -464,16 +476,18 @@ namespace CosmicShore.Gameplay
         }
 
         // --------------------------
-        // Query Sessions (filtered by GameMode)
+        // Query Sessions (filtered by GameMode, seat count and protocol)
         // --------------------------
         private async UniTask<IList<ISessionInfo>> QuerySessions()
         {
             var gameModeString = gameData.GameMode.ToString();
             var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
 
+            // Only sessions made by a build that speaks this build's Netcode protocol (NetProtocol): an old build's
+            // session (bare game mode, no protocol) and a newer build's both miss this filter, so the two never meet
+            // and the host never has to refuse us with "NetworkConfig mismatch" (B35, launch blocker 6).
             var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
-            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
+            queryOptions.FilterOptions.AddRange(NetProtocol.MatchFilters(gameModeString, maxPlayers, NetProtocol.LocalTag));
 
             var results = await Policy.ExecuteAsync("match:query",
                 async () => await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread());
@@ -599,11 +613,10 @@ namespace CosmicShore.Gameplay
         {
             string gameMode   = gameData.GameMode.ToString();
             string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
-            return new Dictionary<string, SessionProperty>
-            {
-                { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
-                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
-            };
+            // The game mode is published scoped to this build's protocol, with the protocol beside it, so only a build
+            // that can play with this one finds the session (QuerySessions, NetProtocol.MatchFilters).
+            return NetProtocol.MatchSessionProperties(
+                GAME_MODE_PROPERTY_KEY, gameMode, MAX_PLAYERS_PROPERTY_KEY, maxPlayers, NetProtocol.LocalTag);
         }
 
         // --------------------------

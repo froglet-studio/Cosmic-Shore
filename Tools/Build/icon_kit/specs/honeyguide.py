@@ -38,7 +38,19 @@ import numpy as np
 
 import mesh_silhouette
 from canvas import SS, W_SECONDARY, band, disc, fill, ngon, rect, rotate, shift, stroke
-from motifs import arrowhead, burst, prism, speed_wedge, trail
+from motifs import arrowhead, burst, speed_wedge, trail
+
+
+def prism(cx, cy, s):
+    """The fleet's prism as a square with a negative-space X (the roster pass, 2026-11-07): `motifs.prism` became two
+    close triangles in the rhombus recut, which split every prism here into two components and never re-authored these
+    icons; the square holds one piece and still is not the Time petal's rhombus. `s` is the old diamond's half-height."""
+    h = s * 0.72
+    k = h * 0.55          # the X stops short of the corners, so the square stays ONE piece (the gates count pieces)
+    sq = fill([(cx - h, cy - h), (cx + h, cy - h), (cx + h, cy + h), (cx - h, cy + h)])
+    w = max(4.4, s * 0.13)   # wider than the gates' 5 px 'tight gap' opening at small sizes
+    x = stroke([(cx - k, cy - k), (cx + k, cy + k)], w=w) | stroke([(cx + k, cy - k), (cx - k, cy + k)], w=w)
+    return sq & ~x
 
 HULL = "Honeyguide"
 FBX = "Assets/_Models/Vessel Models/Honeyguide.fbx"
@@ -95,7 +107,7 @@ def slip():
 
 def peck():
     """A big prism with a bite knocked out of its right shoulder; the three shots of the burst going in."""
-    body = prism(50, 68, 50) & ~fill([(66, 26), (100, 52), (86, 72), (58, 52)])
+    body = prism(50, 68, 50) & ~fill([(60, 20), (100, 20), (100, 74), (80, 60), (64, 40)])
     shots = None
     for (x, y) in [(90, 22), (102, 40), (108, 60)]:
         sh = fill(rotate([(x - 10, y - 4), (x + 10, y - 4), (x + 6, y + 4), (x - 14, y + 4)], 35, x, y))
@@ -126,6 +138,46 @@ def hive():
     return [(walls | honey, 1.0), (laid, 0.6)]
 
 
+# ------------------------------------------------------------------ the level-5 cards (the vessel pass, 2026-11-13)
+
+def relentless():
+    """Charge 5: Flit again at once - the hull darting up a line of rivals, a strike burst on each one it has passed."""
+    hull = _hull(60, 92, 34, roll=-34)
+    out = hull
+    for (x, y, b) in [(26, 84, 34), (56, 56, 34)]:
+        rival = _hull(b, x, y, mirror=True, roll=34)
+        hit = burst(x + 22, y + 10, 12, spikes=7, inner=0.5)
+        out = out | _clear(hull, rival, 4) | _clear(hull, hit, 4)
+    return out
+
+
+def hive_chain():
+    """Mass 5: reach a hive and the next is planted at once - the full cell, a chevron, the next hive's walls going up."""
+    full = fill(ngon(6, 27.0, 38, 84, rot=0))
+    nxt = stroke(ngon(6, 22.0, 92, 44, rot=0), W_SECONDARY + 3, closed=True)
+    go = arrowhead((72.0, 62.0), (1.0, -0.35), 16.0, spread=0.7)
+    return [(full | go, 1.0), (nxt, 0.6)]
+
+
+def piercing_pecks():
+    """Space 5: a Peck goes through - two prisms in a line, each holed, the shot out the far side."""
+    a = prism(36, 70, 30) & ~fill([(8, 64), (64, 64), (64, 76), (8, 76)])
+    b = prism(80, 70, 30) & ~fill([(52, 64), (108, 64), (108, 76), (52, 76)])
+    shot = fill([(100, 64), (116, 64), (122, 70), (116, 76), (100, 76)])
+    return a | b | shot
+
+
+def slipstream():
+    """Time 5: out of a slip with twice the boost - the hull leaving the end of its trail, two long flames behind it."""
+    hull = _hull(56, 92, 36, roll=-34)
+    lane = trail([(16, 112), (44, 84)], 15, seg=18, gap=8)
+    flames = None
+    for off in (-13.0, 13.0):
+        f = fill(rotate([(18, 64 + off - 5), (66, 64 + off - 5), (72, 64 + off), (66, 64 + off + 5), (18, 64 + off + 5)], -34, 64, 64))
+        flames = f if flames is None else flames | f
+    return hull | _clear(hull, lane | shift(flames, 4, 2), 4)
+
+
 # ------------------------------------------------------------------ RT (Space): reduces opposing prism volume
 
 def genesis_lance():
@@ -133,7 +185,7 @@ def genesis_lance():
     behind it (two blocks)."""
     a = -45.0
     spear = fill(rotate([(30, 59), (86, 59), (86, 53), (118, 64), (86, 75), (86, 69), (30, 69)], a, 64, 64))
-    halves = _split_prism(96, 32, 16, gap=22, angle=a)
+    halves = _split_prism(96, 32, 18, gap=22, angle=a)
     lane = trail([(14, 114), (32, 96)], 13, seg=26, gap=7)
     return spear | _clear(spear, halves, 4) | _clear(spear, lane, 5)
 
@@ -242,10 +294,10 @@ def ftl_chromatool():
 
 def monte_cannon():
     """Three hops between prisms: three prisms on a line, a hop arc landing on each, the last ending in an arrowhead."""
-    ps = prism(18, 100, 15) | prism(64, 100, 15) | prism(110, 100, 15)
+    ps = prism(20, 100, 18) | prism(64, 100, 18) | prism(108, 100, 18)
     hops = band(41, 92, 23, 190, 350, w=W_SECONDARY + 1) | band(87, 92, 23, 190, 322, w=W_SECONDARY + 1)
     head = arrowhead((108, 84), (0.55, 0.85), 16)
-    return ps | hops | head
+    return ps | _clear(ps, hops | head, 5)
 
 
 SUB = "Upgrades"
@@ -254,6 +306,15 @@ ICONS = [
     dict(name="Honeyguide_Hive", element="Mass", act="Hive (passive): plant a hive", draw=hive),
     dict(name="Honeyguide_Peck", element="Space", act="Peck (RT base): a burst that knocks prism volume off", draw=peck),
     dict(name="Honeyguide_Slip", element="Time", act="Slip (passive): ride a trail to its end", draw=slip, exempt=HULL_GAP),
+    dict(name="Honeyguide_Relentless", element="Charge", act="Charge 5 Relentless: Flit again at once", draw=relentless,
+         exempt=dict(HULL_GAP, components="the hull, two rivals and a burst on each, by design")),
+    dict(name="Honeyguide_HiveChain", element="Mass", act="Mass 5 Hive Chain: the next hive at once", draw=hive_chain,
+         exempt={"components": "the full hive, the chevron and the next hive's walls, by design"}),
+    dict(name="Honeyguide_PiercingPecks", element="Space", act="Space 5 Piercing Pecks", draw=piercing_pecks,
+         exempt={"components": "two holed prisms and the shot through them, by design",
+                 "gap": "the prisms' negative-space X (the fleet's prism, roster pass 2026-11-07)"}),
+    dict(name="Honeyguide_Slipstream", element="Time", act="Time 5 Slipstream: twice the boost out of a slip", draw=slipstream,
+         exempt=dict(HULL_GAP, components="the hull, its trail blocks and two flames, by design")),
     # RT, Space
     dict(name="Honeyguide_GenesisLance", element="Space", act="Genesis Lance", draw=genesis_lance, subdir=SUB),
     dict(name="Honeyguide_LittleBangGrenade", element="Space", act="Little Bang Grenade", draw=little_bang_grenade, subdir=SUB),
@@ -268,7 +329,8 @@ ICONS = [
     dict(name="Honeyguide_AllTerrainPortals", element="Charge", act="All Terrain Portals", draw=all_terrain_portals, subdir=SUB, exempt=HULL_GAP),
     dict(name="Honeyguide_RosenBridge", element="Charge", act="Rosen Bridge", draw=rosen_bridge, subdir=SUB, exempt=HULL_GAP),
     dict(name="Honeyguide_FTLChromatool", element="Charge", act="FTL Chromatool", draw=ftl_chromatool, subdir=SUB, exempt=HULL_GAP),
-    dict(name="Honeyguide_MonteCannon", element="Charge", act="Monte Cannon", draw=monte_cannon, subdir=SUB),
+    dict(name="Honeyguide_MonteCannon", element="Charge", act="Monte Cannon", draw=monte_cannon, subdir=SUB,
+         exempt={"gap": "the three prisms' negative-space X (the fleet's prism, roster pass 2026-11-07)"}),
 ]
 
 # The two trigger cards' STATES sheets (states.py): the base ability, then an upgrade the Ratel banked as the card's

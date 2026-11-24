@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Shatterplane
+  m_EditorClassIdentifier:
+  Mode: 90
+  Notes: 'The Shatterplane cell at each intensity - billboards, the gallery, the shelves and the reliquary. A race to a
+    prism target; a solo preview teaches squaring up to a plate and the ring. Vessel pinned to BrittleStar(16).'
+  PreviewCell: {fileID: 11400000, guid: e587dffe16da31b86f5ca7ffb6ae7481, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: e587dffe16da31b86f5ca7ffb6ae7481, type: 2}
+  - {fileID: 11400000, guid: 0e873f261f89022aa05055d6ccfd5d35, type: 2}
+  - {fileID: 11400000, guid: 6d8bd95896a2a7ded7db84af5363892f, type: 2}
+  - {fileID: 11400000, guid: b9c1bb51536edb3a5bc6bfaf91851865, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 16
+  ObjectiveText: Square up to a plate and throw your ring
+  ObjectiveMetric: 5
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 780
+  SpawnFormation: 0
+  SpawnPoints: []

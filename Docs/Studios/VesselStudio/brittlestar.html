@@ -365,7 +365,7 @@
     // the guns (Garrett, 2026-10-16): RT's pull sets the rate, up to fireRate per gun; Space Mode fires all five, Cruise /
     // Speed / Creation the one aimed turret, no spread; base range 150% (4.5 s), x2 through Space; every round heats them
     fireRate: 90, projectileSpeed: 135, projectileTime: 4.5, projectileScale: 1, roundGrowthFactor: 3,
-    armFocusDistance: 120, armSplayDegrees: 25, aimDeadzone: 0.25, ringTurnRate: 540,
+    armFocusDistance: 120, armSplayDegrees: 25, aimDeadzone: 0.25, ringTurnRate: 1080, aimSweepThreshold: 90, aimSweepSmoothing: 0.06, aimFlickDegrees: 120,
     heatPerRound: 0.000637, coolRate: 0.12, chargeCoolRate: 0.6, overheatRecoverBelow: 0.35,
     // Charge Mode's five CORDS (BrittleStarCord): whips at 150% with RT released, sabers at 100% pulled, analog between
     cordLength: 80, cordLooseLengthScale: 1.5, cordLinks: 16, cordCutRadius: 0.6, cordLooseWave: 144, cordRigidWave: 2500,
@@ -778,13 +778,30 @@
     // the support ring turns with the firing rotation: GunRingTransformer spins it at 20 deg/s (branch); the Falcon's
     // GunTransformer turns it to the right stick instead (rotationSpeed 0 here)
     const am = Math.min(1, Math.hypot(inp.ax || 0, inp.ay || 0));
-    if (SHIP.unity) {   // BrittleStarExecutor.AimRing: the stick's direction brings the nearest point round, the short way, at ringTurnRate
+    if (SHIP.unity) {   // BrittleStarExecutor.AimRing -> BrittleStarRules.ForwardTurn (2026-11-03, the ring spin lab): the
+      // stick's direction brings a turret round at ringTurnRate; while the stick SWEEPS, the ring hands over only to the
+      // turret ahead and never turns back (the wagon-wheel fix); slower, it takes the nearest, the short way, as before
       if (am > U.aimDeadzone) {
-        const aim = Math.atan2(inp.ay, inp.ax); let best = 0, bd = Infinity;
-        for (let k = 0; k < 5; k++) { const d = Math.abs(angDelta(POD_ANG[k] + P.ringAngle, aim)); if (d < bd) { bd = d; best = k; } }
-        P.aimedPoint = best; const want = P.ringAngle + angDelta(P.ringAngle, aim - POD_ANG[best]), step = U.ringTurnRate * R * dt;
-        P.ringAngle += clamp(want - P.ringAngle, -step, step);
-      }   // the ring holds its last rotation, and its aimed turret (RT's one gun outside Space and Charge)
+        const aim = Math.atan2(inp.ay, inp.ax), D = 180 / Math.PI, SP = 72;
+        const nearest = () => { let best = 0, bd = Infinity;
+          for (let k = 0; k < 5; k++) { const d = Math.abs(angDelta(POD_ANG[k] + P.ringAngle, aim)); if (d < bd) { bd = d; best = k; } }
+          return best; };
+        const entered = P.prevAim == null, flick = !entered && Math.abs(angDelta(P.prevAim, aim)) * D > U.aimFlickDegrees;
+        if (flick) P.sweep = 0;
+        else if (!entered && dt > 0) P.sweep = (P.sweep || 0) + (angDelta(P.prevAim, aim) * D / dt - (P.sweep || 0)) * (1 - Math.exp(-dt / U.aimSweepSmoothing));
+        P.prevAim = aim;
+        const sweeping = Math.abs(P.sweep || 0) > U.aimSweepThreshold, s = Math.sign(P.sweep || 0);
+        if (entered || flick || P.aimedPoint == null) P.aimedPoint = nearest();
+        let lag = angDelta(P.ringAngle, aim - POD_ANG[P.aimedPoint]) * D;
+        if (sweeping) {
+          for (let g = 0; s * lag >= SP && g < 16; g++) { lag -= s * SP; P.aimedPoint = s > 0 ? (P.aimedPoint + 1) % 5 : (P.aimedPoint + 4) % 5; }
+          for (let g = 0; s * lag < -SP / 2 && g < 16; g++) { lag += s * SP; P.aimedPoint = s > 0 ? (P.aimedPoint + 4) % 5 : (P.aimedPoint + 1) % 5; }
+        } else if (Math.abs(lag) > SP) { P.aimedPoint = nearest(); lag = angDelta(P.ringAngle, aim - POD_ANG[P.aimedPoint]) * D; }
+        const step = U.ringTurnRate * R * dt;
+        if (sweeping && s * lag <= 0) { /* ahead of the aim: hold */ }
+        else if (sweeping && Math.abs(P.sweep) >= U.ringTurnRate) P.ringAngle += s * step;
+        else P.ringAngle += clamp(lag / D, -step, step);
+      } else { P.prevAim = null; P.sweep = 0; }   // the ring holds its last rotation, and its aimed turret (RT's one gun outside Space and Charge)
     } else if (SHIP.ringSpin > 0) P.ringAngle += SHIP.ringSpin * R * dt;
     else { if (am > 0.2) P.ringTarget = Math.atan2(inp.ay, inp.ax) - Math.PI / 2; let da = P.ringTarget - P.ringAngle; da = Math.atan2(Math.sin(da), Math.cos(da)); P.ringAngle += da * Math.min(1, 8 * dt); }
     P.focus = lerp(P.focus || SHIP.focus[0], SHIP.focus[0] + SHIP.focus[1] * am * am, Math.min(1, 10 * dt));   // GunFocus eases to 70 + 300 |R|^2

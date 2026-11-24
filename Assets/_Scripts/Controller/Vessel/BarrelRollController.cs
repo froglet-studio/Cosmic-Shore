@@ -94,6 +94,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Peak sideways displacement speed injected through ModifyVelocity (world " +
                  "units/second; the transformer clamps its channel at 100).")]
         [SerializeField, Min(0f)] float nudgeSpeed = 60f;
+        [Tooltip("TIME: multiplier on the roll's duration, x1 at rest -> x0.5 at Time 10 (falling; the floor guards the " +
+                 "Time 15 end). The sideways nudge speeds up by the inverse, so the dodge covers the same distance in half " +
+                 "the time: a Time-heavy Sparrow snaps its roll. A tempo dial beside the boost speed Time already raises " +
+                 "(2026-11-18, the element-placeholder pass). Read at the roll's start.")]
+        [SerializeField] ElementalFloat rollTimeScale = ElementalFloat.Multiplier(1f, 0.5f, Element.Time, 0.25f);
+        float _rollSeconds;
         [Tooltip("The transform that visually rolls. Defaults to the model's Animator " +
                  "transform, then the vessel root's first child.")]
         [SerializeField] Transform rollVisualTarget;
@@ -209,7 +215,9 @@ namespace CosmicShore.Gameplay
                     (restricted ? " (stopped — dodge)" : string.Empty));
 
             SetRollCharge(RollChargeState.Spent);
-            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds,
+            float timeScale = Mathf.Clamp(rollTimeScale.EvaluateLive(_status), 0.1f, 2f);
+            _rollSeconds = rollDurationSeconds * timeScale;
+            transformer.ModifyVelocity(nudge.normalized * (nudgeSpeed / timeScale), _rollSeconds,
                                        ignoresTranslationRestriction: true);
             StartCoroutine(RollRoutine(rollSign, transformer));
         }
@@ -248,10 +256,10 @@ namespace CosmicShore.Gameplay
             // Pitch and yaw are untouched. Cleared in the tail AND in OnDisable.
             transformer.BankIntoTurnSuppressed = true;
 
-            while (elapsed < rollDurationSeconds)
+            while (elapsed < _rollSeconds)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / rollDurationSeconds);
+                float t = Mathf.Clamp01(elapsed / _rollSeconds);
                 float eased = t * t * (3f - 2f * t);                 // smoothstep 0→1
                 float angle = rollSign * 360f * eased;
 

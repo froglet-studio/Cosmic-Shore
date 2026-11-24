@@ -397,6 +397,8 @@ namespace CosmicShore.Gameplay
         // the crew on the own hull, cached per hull
         IVessel _crewHull;
         ICrewStations _crew;
+        // a phone turned upright on a crew with an upright seat (the Goby's Pistol)
+        readonly CrewOrientation _orientation = new();
 
         public LocalCrewStation(Player player) => _player = player;
 
@@ -414,7 +416,7 @@ namespace CosmicShore.Gameplay
         public void Tick(GameDataSO gameData)
         {
             var home = _player.Vessel;
-            if (!IsAlive(home)) { LetGo(null); return; }
+            if (!IsAlive(home)) { LetGo(null); _orientation.Release(); return; }
 
             // an exchange made this person's own hull one they already sit on (someone took the hull they had left, and
             // they were handed the one they ride): they stay in their seat, which is now their own crew's to give them
@@ -446,6 +448,7 @@ namespace CosmicShore.Gameplay
                 if (_entryHull == 0) ReportOwnSeat(home, crew);   // a seat still to take is not one to report yet
             }
 
+            _orientation.Tick(crew, riding ? -1 : crew?.LocalSeat ?? -1, riding, PauseSystem.Paused);
             if (PauseSystem.Paused) return;
             int localSeat = crew?.LocalSeat ?? -1;
             // the gesture is live while the person flies, sits at a seat of their own hull, or rides; a hull a menu parked

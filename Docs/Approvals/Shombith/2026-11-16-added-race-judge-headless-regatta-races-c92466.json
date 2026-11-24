@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-16-added-race-judge-headless-regatta-races-c92466",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T20:43:11+00:00",
+  "area": "Amoebius player (headless runs)",
+  "summary": "Added --race-judge (headless Regatta races with every seat's shipped AI, RaceJudge.cs) and UnattendedBoot, which closes the first-run privacy overlay unanswered and skips the username step in --train and --race-judge runs; TrainingHost.LoadAsset/FindFirstAsset became internal.",
+  "why": "The headless trainer sat forever in the Authentication scene (the privacy overlay's no-timeout wait); the Regatta flywheel needs a real-game race judge (Garrett 2026-11-16).",
+  "branch": "claude/project-thread-sl73tv",
+  "lane": "amoebius",
+  "commit": "8d7c38c7c",
+  "paths": [
+    "Port/src/CosmicShore.Player/Program.cs",
+    "Port/src/CosmicShore.Player/RaceJudge.cs",
+    "Port/src/CosmicShore.Player/TrainingHost.cs",
+    "Port/src/CosmicShore.Player/UnattendedBoot.cs"
+  ]
+}

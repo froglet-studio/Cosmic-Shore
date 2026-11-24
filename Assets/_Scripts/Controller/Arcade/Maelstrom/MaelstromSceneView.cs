@@ -7,7 +7,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -448,7 +448,10 @@ namespace CosmicShore.Gameplay
             if (!_launched && lobby.Ticket.IsArmed && secs <= 0)
             {
                 _launched = true;
-                previewHost?.Hide();
+                // Hides the preview, then hands the arena it showed to the prism pool so the round
+                // re-issues those prisms instead of cloning the arena again (every peer lays its own;
+                // the host's lobby makes the same call and waits on it - see MaelstromLobby).
+                if (previewHost) previewHost.ParkArenaForRound();
                 MaelstromTransitions.LaunchFlourish(_configureGroup, launchFlashSheet);
             }
         }
@@ -921,10 +924,6 @@ namespace CosmicShore.Gameplay
 
         // ── Roster sourcing / ordering ───────────────────────────────────────────
 
-        /// <summary>
-        /// The roster for the round-0 preview - the connected human players (every peer sees all
-        /// Player NetworkObjects via the spawn manager). Between rounds the cards come from History.
-        /// </summary>
         /// <summary>
         /// Who is in this tournament: the live human pilots, plus the AI SEATS the hub dealt.
         ///

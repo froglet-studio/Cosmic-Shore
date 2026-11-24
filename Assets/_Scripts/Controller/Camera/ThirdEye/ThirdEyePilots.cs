@@ -179,13 +179,6 @@ namespace CosmicShore.Gameplay
         static int Rank(ThirdEyePilot p) => p.IsLocalHuman ? 0 : p.IsAI ? 2 : 1;
 
         /// <summary>
-        /// The pilot's aim this frame. The Skim Race pilot reports its aim point, its state and its
-        /// difficulty mistakes (the colours the Squirrel studio uses: amber = not noticed yet,
-        /// ruby = misjudged); any other hull on the platform autopilot reports the point it wants to reach,
-        /// and - where the mode says (<see cref="AIPilot.Objective"/>, every gate race) - the ring it is after, the lap,
-        /// the phase ("Approach ring 3", "Riding the rail", a difficulty mistake) and its boost policy's decision.
-        /// </summary>
-        /// <summary>
         /// The skim readout: how far the hull is from its own course's contact shell (what a skim
         /// touches and a strike hits), how far off its skim line, its boost, the non-course mass the
         /// mass guard is steering round, and the course's skim lift. A reader: one projection per
@@ -206,6 +199,13 @@ namespace CosmicShore.Gameplay
                    $"lift {course.SkimLift:F1} u, direct {(driver.AllowDirectFlight ? (driver.DirectFlight ? "ON" : "armed") : "off")}";
         }
 
+        /// <summary>
+        /// The pilot's aim this frame. The Skim Race pilot reports its aim point, its state and its
+        /// difficulty mistakes (the colours the Squirrel studio uses: amber = not noticed yet,
+        /// ruby = misjudged); any other hull on the platform autopilot reports the point it wants to reach,
+        /// and - where the mode says (<see cref="AIPilot.Objective"/>, every gate race) - the ring it is after, the lap,
+        /// the phase ("Approach ring 3", "Riding the rail", a difficulty mistake) and its boost policy's decision.
+        /// </summary>
         /// <param name="text">False skips every string (state, detail, skim): the Game-view aim lines need only the
         /// points and the colour, so drawing them every frame formats nothing.</param>
         public static ThirdEyeThinking Read(ThirdEyePilot pilot, bool text = true)

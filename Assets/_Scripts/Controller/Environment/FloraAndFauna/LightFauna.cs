@@ -172,13 +172,7 @@ namespace CosmicShore.Gameplay
             _clusterRadiusOverride = tuning.FeedingClusterRadius;
         }
 
-        protected override void OnTeamChanged()
-        {
-            var body = BodyPrisms;
-            if (body == null) return;
-            for (int i = 0; i < body.Length; i++)
-                if (body[i] && !body[i].destroyed) body[i].ChangeTeam(domain);
-        }
+        protected override void OnTeamChanged() => RecolourBodyPrisms();
 
         public override void Initialize(Cell cell)
         {
@@ -569,6 +563,10 @@ namespace CosmicShore.Gameplay
                 Die(StarvationKiller);
                 return;
             }
+
+            // POSSESSED (Fauna.Possession): the rider steers every frame (Update) and decides every meal; the tick decides
+            // nothing. The starvation test above still runs: a host its rider never feeds starves.
+            if (IsPossessed) return;
 
             Vector3 separation = Vector3.zero;
 
@@ -1084,6 +1082,8 @@ namespace CosmicShore.Gameplay
         /// Per-frame steer toward the holder's goal, the predator's homing (<see cref="UpdateHunting"/>) generalised: the
         /// heading slerps toward the goal at the holder's turn rate (or this creature's own rotationLerpSpeed) and the
         /// speed eases to the holder's at 2.5/s. The behaviour tick's separation still applies on its own cadence.
+        /// A species may answer more slowly (<see cref="LeashTurnScale"/>, <see cref="LeashSpeedEase"/>) and choose
+        /// its own up (<see cref="LeashUp"/>).
         /// </summary>
         void SteerOnLeash()
         {
@@ -1092,13 +1092,29 @@ namespace CosmicShore.Gameplay
             if (to.sqrMagnitude < 1e-4f) return;
             float current = currentVelocity.magnitude;
             Vector3 heading = current > 1e-3f ? currentVelocity / current : transform.forward;
-            float turn = turnRate > 0f ? turnRate : Mathf.Max(0.01f, data.rotationLerpSpeed);
+            float turn = (turnRate > 0f ? turnRate : Mathf.Max(0.01f, data.rotationLerpSpeed)) * LeashTurnScale;
             heading = Vector3.Slerp(heading, to.normalized, Mathf.Clamp01(Time.deltaTime * turn));
-            current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * 2.5f));
+            current = Mathf.Lerp(current, Mathf.Max(0f, speed) * LeashSpeedScale, Mathf.Clamp01(Time.deltaTime * LeashSpeedEase));
             currentVelocity = heading * current;
-            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, LeashUp(heading), out var rotation, this))
                 desiredRotation = rotation;
         }
+
+        /// <summary>How sharply this species answers its holder's turn rate: 1 for every creature, less for one that
+        /// banks slowly (the Ray's glide).</summary>
+        protected virtual float LeashTurnScale => 1f;
+
+        /// <summary>How fast this species' speed eases to its holder's, per second: 2.5 for every creature, less for
+        /// one that is slow to gain speed and slow to lose it.</summary>
+        protected virtual float LeashSpeedEase => 2.5f;
+
+        /// <summary>The share of its holder's speed this species swims at right now: 1 for every creature, more and
+        /// then less for one that swims in pulses (a kick, then a glide).</summary>
+        protected virtual float LeashSpeedScale => 1f;
+
+        /// <summary>The up a leashed creature flies with on <paramref name="heading"/>: the world's, for every creature
+        /// with a belly. A body with no up (two identical faces) may take its rider's instead.</summary>
+        protected virtual Vector3 LeashUp(Vector3 heading) => Vector3.up;
 
         public override void LeashLaunch(Vector3 velocity)
         {
@@ -1112,6 +1128,27 @@ namespace CosmicShore.Gameplay
         public override float LeashMinSpeed => data ? MinSpeed : 0f;
         public override float LeashMouthReach => data ? ConsumeRadius * GetAggressionConsumeRadiusMultiplier() : 0f;
         public override bool LeashCanEat(Prism prism) => IsEdibleForHerbivore(prism);
+
+        // --- Possession (Fauna.Possession) -------------------------------------
+
+        /// <summary>A predator's suction sink sits at its danger-prism centroid (its jaws); a grazer eats at its root.</summary>
+        public override Transform PossessionMouth => _mouth ? _mouth : transform;
+
+        /// <summary>The creature's own feeding reach: the mouthful's cluster, or a predator's attack range.</summary>
+        public override float PossessionMouthReach => data
+            ? Mathf.Max(ConsumeRadius, FeedingClusterRadius, AttackRange, 6f)
+            : base.PossessionMouthReach;
+
+        public override float PossessionTopSpeed => data ? MaxSpeed : base.PossessionTopSpeed;
+
+        protected override void OnPossessionChanged(bool possessed)
+        {
+            // drop whatever meal or prey the creature had picked for itself: the rider decides now (or, leaving, it
+            // picks again on its next tick)
+            _feedTarget = null;
+            _feedHoldUntil = -1f;
+            _targetPrey = null;
+        }
 
         // --- Hunting (predator, per-frame) -----------------------------------
 
@@ -1224,7 +1261,13 @@ namespace CosmicShore.Gameplay
 
             if (!_withering && data)
             {
-                if (diet == FaunaDiet.Herbivore)
+                if (IsPossessed)
+                {
+                    // the rider's sticks steer any diet (Fauna.Possession); a predator's jaws still close on prey in reach
+                    SteerOnLeash();
+                    if (diet == FaunaDiet.Predator) TryDevourPreyAtMouth();
+                }
+                else if (diet == FaunaDiet.Herbivore)
                 {
                     using (s_FeedMarker.Auto()) UpdateFeeding();
                     if (Leash != null && !IsFeedingEngaged) SteerOnLeash();

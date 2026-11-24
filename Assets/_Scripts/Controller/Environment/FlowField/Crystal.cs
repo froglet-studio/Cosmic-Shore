@@ -529,6 +529,13 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// Paints the models in the colours this crystal's state resolves to, NOW - for a copy that will never run its own
+        /// Start (the Manta's decoy strips this component before the copy ever wakes, MANTA_STING_KABLOOM.md §4a). The tint
+        /// rides each renderer's property block, so it outlives the component.
+        /// </summary>
+        public void PaintNow() => ApplyColorSetTint();
+
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
 
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;

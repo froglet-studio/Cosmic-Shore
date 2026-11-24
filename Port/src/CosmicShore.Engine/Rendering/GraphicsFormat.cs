@@ -18,6 +18,12 @@ namespace CosmicShore.Engine.Experimental.Rendering
         R32_SFloat = 49,
         R32G32_SFloat = 50,
         R32G32B32A32_SFloat = 52,
+        D16_UNorm = 90,
+        D24_UNorm = 91,
+        D24_UNorm_S8_UInt = 92,
+        D32_SFloat = 93,
+        D32_SFloat_S8_UInt = 94,
+        S8_UInt = 95,
     }
 }
 

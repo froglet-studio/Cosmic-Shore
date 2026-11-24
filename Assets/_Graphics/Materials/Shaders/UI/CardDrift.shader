@@ -58,7 +58,7 @@ Shader "CosmicShore/UI/CardDrift"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma target 2.0
+            #pragma target 3.0
 
             #include "UnityCG.cginc"
             #include "UnityUI.cginc"
@@ -66,6 +66,8 @@ Shader "CosmicShore/UI/CardDrift"
 
             #pragma multi_compile_local _ UNITY_UI_CLIP_RECT
             #pragma multi_compile_local _ UNITY_UI_ALPHACLIP
+            #pragma multi_compile _ COSMIC_COLOR_GRADE
+            #include "../ColorGrade.cginc"   // the card art follows the worn colour set
 
             struct appdata_t
             {
@@ -107,7 +109,9 @@ Shader "CosmicShore/UI/CardDrift"
 
             fixed4 frag(v2f IN) : SV_Target
             {
-                half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
+                half4 texel = tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd;
+                texel.rgb = COSMIC_GRADE_UI(texel.rgb);
+                half4 color = texel * IN.color;
 
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);

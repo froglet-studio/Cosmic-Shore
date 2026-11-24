@@ -15,6 +15,9 @@ namespace CosmicShore.Gameplay
     /// stick does nothing; on the way out it leaves with the velocity it had × the exit multiplier (the slingshot), and the
     /// turn picks up from that heading.</para>
     ///
+    /// <para><b>The Rift</b> (round 28): into the void the hull is phased too and flies faster
+    /// (<see cref="ComputeThrottleTarget"/>), steering as ever.</para>
+    ///
     /// <para><b>The AI shaping its reticle</b> holds its line (the page's left stick at rest while the right one bends):
     /// <see cref="MeerkatSolitonExecutor.AIHoldsLine"/> skips the turn for those frames.</para>
     /// </summary>
@@ -25,14 +28,16 @@ namespace CosmicShore.Gameplay
         /// like going through another dimension ... When it comes out of the hole, then it interactable again"): while a tunnel
         /// or a Soliton Network flies this hull it is PHASED - its touch meets no prism and takes no crystal, and no prism or crystal
         /// touches it (<see cref="IHullContactGate"/>, read by both halves of every contact, the skimmer's too). A race ring
-        /// threaded inside still counts (it is a sweep, not a touch).
+        /// threaded inside still counts (it is a sweep, not a touch). 2026-11-20: it is the executor's
+        /// <see cref="MeerkatSolitonExecutor.InsideTube"/>, so a peer's copy of a rider is phased too (it was not: the riding
+        /// flag is not replicated), and everything else that could land on a rider asks <see cref="SolitonIsolation"/>.
         /// </summary>
         public bool Phased
         {
             get
             {
                 var wormhole = Wormhole;
-                return wormhole && (wormhole.IsRiding || wormhole.IsInNetwork);
+                return wormhole && wormhole.InsideTube != null;   // a tunnel, a network, or the void (round 28)
             }
         }
 
@@ -48,6 +53,18 @@ namespace CosmicShore.Gameplay
             base.Initialize(vessel);
             _resolved = false;
             _rodeLastFrame = false;
+        }
+
+        /// <summary>
+        /// Round 28, the Rift: into the void the hull heads for <see cref="MeerkatSolitonExecutor.VoidSpeedFactor"/> × its
+        /// cruise (<c>riftSpeed</c> × the Time rush), eased toward it by the platform's own throttle smoothing, and back to
+        /// cruise when the run ends.
+        /// </summary>
+        protected override float ComputeThrottleTarget()
+        {
+            float target = base.ComputeThrottleTarget();
+            var wormhole = Wormhole;
+            return wormhole && wormhole.IsInVoid ? target * wormhole.VoidSpeedFactor : target;
         }
 
         MeerkatSolitonExecutor Wormhole

@@ -18,6 +18,10 @@ Fast means *less review depth*, not *less verification*. The two things that mak
 branch unsafe to merge — a half-landed editor tool and an unresolved base merge — are
 exactly the things a rushed ship drops, so they are the things this mode keeps whole.
 
+**Start with the triage** (`python3 Tools/Build/ship_triage.py`, `/ship` §0.0): its `depth` line measures the refusal
+rules below for you, and its trap and LAB / CODEX lines say what this branch still needs. Start the gates in the
+background straight away. **End with `/ship` §6.5** (offer the hand-off) on a GO.
+
 ## Refuse the fast lane when
 
 Any one of these means stop and run `/ship` (or `/ship-deep`) instead. Say which
@@ -58,6 +62,8 @@ one fired.
    branch. Not trimmed by fast mode; it is the branch's only pre-merge CI.
 10. **Refresh the Fleet Codex** — `/ship` §5.6: when the branch touched a vessel, rebuild the codex on bleeding-edge
    with this branch merged on top (`--pending`) and republish it. Not trimmed by fast mode.
+11. **Merge** — `/ship` §5.7: on the GO, merge the PR into `bleeding-edge` with a merge commit (auto-merge when a
+   review is required), unless the person said "PR only". Not trimmed by fast mode.
 
 ## What you skip
 
@@ -74,6 +80,6 @@ one fired.
 
 ## Report
 
-Two paragraphs: what shipped and the PR link, then the §2.5 verdict (tools classified,
+Two paragraphs: what shipped, the PR link and whether it merged (§5.7), then the §2.5 verdict (tools classified,
 where their output landed), the §3.55 lab line ("no lab touched", or the CATALOG/LEARNINGS
 changes), and anything you deliberately skipped so the prompter can call it back.

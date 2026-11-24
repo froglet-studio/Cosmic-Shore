@@ -77,6 +77,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Copy radius as a fraction of the scaled mean neighbour spacing. Picked by measurement at
+        /// density 5 (score_sortfeel, seeds 7/23, worst own-plan loss per element against the loss-8 bar):
+        /// 0.15 -> dragonfly 8.8 (FAILS), 0.45 -> 6.6, 0.6 -> 5.6 (others <= 2.1), 0.75 -> 5.5 but space
+        /// 2.3. 0.6 minimises the worst loss without pushing the other three up (§14).
+        /// </summary>
+        public const float DefaultUpsampleRadius = 0.6f;
+
+        /// <summary>
         /// The same creature with <paramref name="m"/> tadpoles where this plan has one (round 7,
         /// Docs/SWARM_FAUNA.md §14). The body is scaled by m^(1/3) so the DENSITY - and with it the
         /// tadpole spacing the sort core's collision and adhesion were tuned at - is unchanged, and each
@@ -86,14 +94,6 @@ namespace CosmicShore.Gameplay
         /// tier, prism, facing and per-frame look, and the offset is constant across frames, so the
         /// animation is the plan's own. Deterministic: no RNG state. m = 1 returns this plan.
         /// </summary>
-        /// <summary>
-        /// Copy radius as a fraction of the scaled mean neighbour spacing. Picked by measurement at
-        /// density 5 (score_sortfeel, seeds 7/23, worst own-plan loss per element against the loss-8 bar):
-        /// 0.15 -> dragonfly 8.8 (FAILS), 0.45 -> 6.6, 0.6 -> 5.6 (others <= 2.1), 0.75 -> 5.5 but space
-        /// 2.3. 0.6 minimises the worst loss without pushing the other three up (§14).
-        /// </summary>
-        public const float DefaultUpsampleRadius = 0.6f;
-
         public SwarmPlanData Upsample(int m) => Upsample(m, DefaultUpsampleRadius);
 
         public SwarmPlanData Upsample(int m, float radiusFraction)

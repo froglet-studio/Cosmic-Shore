@@ -238,6 +238,8 @@ namespace CosmicShore.Utility
             _recorder.Begin(theater, ResolveSceneName(), (int)_gameData.GameMode, configName);
             var replayConfig = ReplayConfigSO.Resolve();
             if (replayConfig.RecordWorld) _recorder.RecordWorld(replayConfig.NewWorldRecorder());
+            // Every crystal, plant, creature and shard too, so the replay stands each where it was (Docs/REPLAYS.md §6.4).
+            if (replayConfig.RecordActors) _recorder.RecordActors(replayConfig.NewActorRecorder());
             // Every vessel's actions too, so the replay re-runs them on the real vessels (Docs/REPLAYS.md §6.3).
             _recorder.RecordActions();
             _pending = NewSummary();
@@ -415,7 +417,8 @@ namespace CosmicShore.Utility
                 GameMode = (int)_gameData.GameMode,
                 GameModeName = _gameData.GameMode.ToString(),
                 SceneName = ResolveSceneName(),
-                Intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0
+                Intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0,
+                CoursePoolEntry = _gameData.CourseVariant >= 0 ? _gameData.CourseVariant + 1 : 0
             };
 
             var players = _gameData.Players;

@@ -64,38 +64,38 @@ namespace CosmicShore.Tests
             new Golden("mass-snowball", 1, StarlingStatKind.Linear, 2f, 1f, 0, 5, 6f),   // "6"
             new Golden("mass-snowball", 1, StarlingStatKind.Linear, 2f, 1f, 0, 10, 11f),   // "11"
             new Golden("mass-snowball", 1, StarlingStatKind.Linear, 2f, 1f, 0, 15, 16f),   // "16"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 1, 4f),   // "4%"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 5, 20f),   // "20%"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 10, 40f),   // "40%"
-            new Golden("time-quickening", 0, StarlingStatKind.Linear, 4f, 4f, 0, 15, 60f),   // "60%"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 1, 90f),   // "90°/s"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 5, 150f),   // "150°/s"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 10, 225f),   // "225°/s"
-            new Golden("time-agility", 0, StarlingStatKind.Linear, 90f, 15f, 0, 15, 300f),   // "300°/s"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 1, 2f),   // "2.00×"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 5, 2.6f),   // "2.60×"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 10, 3.35f),   // "3.35×"
-            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 2f, 0.15f, 2, 15, 4.1f),   // "4.10×"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 1, 1f),   // "1%"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 5, 6f),   // "6%"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 10, 12f),   // "12%"
+            new Golden("time-quickening", 0, StarlingStatKind.Linear, 1f, 1.25f, 0, 15, 18f),   // "18%"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 1, 72f),   // "72°/s"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 5, 94f),   // "94°/s"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 10, 121f),   // "121°/s"
+            new Golden("time-agility", 0, StarlingStatKind.Linear, 72f, 5.5f, 0, 15, 149f),   // "149°/s"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 1, 1.35f),   // "1.35×"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 5, 1.75f),   // "1.75×"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 10, 2.25f),   // "2.25×"
+            new Golden("time-dragonfly", 0, StarlingStatKind.Linear, 1.35f, 0.1f, 2, 15, 2.75f),   // "2.75×"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 1, 3f),   // "3.0 s"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 5, 4.6f),   // "4.6 s"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 10, 6.6f),   // "6.6 s"
             new Golden("time-dragonfly", 1, StarlingStatKind.Linear, 3f, 0.4f, 1, 15, 8.6f),   // "8.6 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 1, 24f),   // "24.0 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 5, 15.1f),   // "15.1 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 10, 8.4f),   // "8.4 s"
-            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 24f, 0.89f, 1, 15, 4.7f),   // "4.7 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 1, 54f),   // "54.0 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 5, 33.9f),   // "33.9 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 10, 18.9f),   // "18.9 s"
+            new Golden("time-skip-ahead", 0, StarlingStatKind.Geometric, 54f, 0.89f, 1, 15, 10.6f),   // "10.6 s"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 1, 300f),   // "300 u"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 5, 500f),   // "500 u"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 10, 750f),   // "750 u"
             new Golden("time-skip-ahead", 1, StarlingStatKind.Linear, 300f, 50f, 0, 15, 1000f),   // "1000 u"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 1, 3f),   // "3%"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 5, 11f),   // "11%"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 10, 21f),   // "21%"
-            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 3f, 2f, 0, 15, 31f),   // "31%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 1, 10f),   // "10%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 5, 26f),   // "26%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 10, 46f),   // "46%"
-            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 10f, 4f, 0, 15, 66f),   // "66%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 1, 6f),   // "6%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 5, 21f),   // "21%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 10, 40f),   // "40%"
+            new Golden("time-hurry-up", 0, StarlingStatKind.Linear, 6f, 3.85f, 0, 15, 59f),   // "59%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 1, 14f),   // "14%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 5, 36f),   // "36%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 10, 65f),   // "65%"
+            new Golden("time-blink-step", 0, StarlingStatKind.Linear, 14f, 5.7f, 0, 15, 93f),   // "93%"
             new Golden("space-hole-punch", 0, StarlingStatKind.Linear, 0.2f, 0.1f, 1, 1, 0.2f),   // "0.2/s"
             new Golden("space-hole-punch", 0, StarlingStatKind.Linear, 0.2f, 0.1f, 1, 5, 0.6f),   // "0.6/s"
             new Golden("space-hole-punch", 0, StarlingStatKind.Linear, 0.2f, 0.1f, 1, 10, 1.1f),   // "1.1/s"
@@ -336,6 +336,115 @@ namespace CosmicShore.Tests
             Assert.IsTrue(rules.ChooseDrawElement(element));
             rules.DealHand();
             Assert.IsTrue(rules.PickAt(0));
+        }
+
+        // ---- the four elements (Garrett, 2026-11-17: every vessel scales with every element and has its L5 upgrades) ----
+
+        [Test]
+        public void AnElementsLevel_AddsLevelsToItsDrawnCards()
+        {
+            var config = Config();
+            var rules = new StarlingRules(config);
+            float massFactor = 1f;
+            rules.ArrivalLevel = e => e == Element.Mass ? massFactor : 1f;
+            rules.DealHand();
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "at rest a card arrives at lvMass");
+
+            massFactor = 2f;
+            rules.DealHand();
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "one level gained");
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Time)).Level, "and no other element moves");
+
+            massFactor = 2.9f;
+            rules.DealHand();
+            Assert.AreEqual(2, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "the gain is rounded down");
+            massFactor = 0.5f;
+            rules.DealHand();
+            Assert.AreEqual(1, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "a deficit never deals below level 1");
+            massFactor = 40f;
+            rules.DealHand();
+            Assert.AreEqual(StarlingRules.MaxLevel, rules.HandCard(StarlingRules.SlotOf(Element.Mass)).Level, "nor above 15");
+        }
+
+        [Test]
+        public void TheShippedScaling_AddsOneLevelPerThreeElementLevels_PastLevelTen()
+        {
+            // Garrett, 2026-11-18: "+3 at L9 and +5 at L15".
+            var config = Config();
+            var rules = new StarlingRules(config);
+            int[] elementLevel = { 0, 2, 3, 5, 6, 8, 9, 10, 12, 14, 15 };
+            int[] gain = { 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5 };
+            foreach (var e in StarlingRules.HandOrder)
+            {
+                var factor = config.ArrivalLevel(e);
+                Assert.IsNotNull(factor, e.ToString());
+                for (int k = 0; k < elementLevel.Length; k++)
+                {
+                    float level = elementLevel[k];
+                    rules.ArrivalLevel = x => ElementalFloatAt(config.ArrivalLevel(x), level / 10f);
+                    rules.DealHand();
+                    Assert.AreEqual(1 + gain[k], rules.HandCard(StarlingRules.SlotOf(e)).Level, $"{e} at element level {level}");
+                }
+                Assert.AreEqual(0.5f, ElementalFloatAt(factor, -0.5f), 1e-5f, $"{e} floored at half its rest at level -5");
+            }
+        }
+
+        static float ElementalFloatAt(ElementalFloat f, float normalized) => f.EvaluateAtNormalizedLevel(normalized);
+
+        [Test]
+        public void Encore_APickOfAnUpgradedElement_LeavesTheRestOfTheSpreadHandUp_OncePerHand()
+        {
+            var rules = new StarlingRules(Config());
+            rules.EncoreActive = e => e == Element.Mass;
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Mass));
+            Assert.IsTrue(rules.HasHand, "Encore: the hand stays up");
+            Assert.IsTrue(rules.EncoreSpent);
+            Assert.IsTrue(rules.HandCard(StarlingRules.SlotOf(Element.Mass)).IsEmpty, "the taken card leaves its slot");
+            Assert.IsFalse(rules.Pick(Element.Mass), "and cannot be taken twice");
+            Assert.IsFalse(rules.HandCard(StarlingRules.SlotOf(Element.Time)).IsEmpty, "the other slots keep their cards");
+            Assert.IsTrue(rules.Pick(Element.Time));
+            Assert.IsFalse(rules.HasHand, "the second pick spends the hand");
+            Assert.AreEqual(1, rules.Level(StarlingCardIds.BigFamily));
+            Assert.AreEqual(1, rules.Level(StarlingCardIds.HurryUp));
+
+            rules.DealHand();
+            Assert.IsFalse(rules.EncoreSpent, "every hand has its own Encore");
+        }
+
+        [Test]
+        public void Encore_IsKeyedOnThePickedCardsElement_AndNothingWithoutTheUpgrade()
+        {
+            var rules = new StarlingRules(Config());
+            rules.DealHand();
+            Assert.IsTrue(rules.Pick(Element.Mass));
+            Assert.IsFalse(rules.HasHand, "no upgrade, one pick");
+
+            rules.EncoreActive = e => e == Element.Mass;
+            rules.ChooseDrawElement(Element.Time);
+            rules.DealHand();
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsFalse(rules.HasHand, "a Time card with only Mass upgraded is one pick");
+        }
+
+        [Test]
+        public void Encore_InAnElementHand_ClosesTheRowUp()
+        {
+            var rules = new StarlingRules(TimeHeavyConfig());
+            rules.EncoreActive = e => e == Element.Time;
+            Assert.IsTrue(rules.ChooseDrawElement(Element.Time));
+            rules.DealHand();
+            int size = rules.HandSize;
+            Assert.Greater(size, 1);
+            var second = rules.HandCard(1).Card.Id;
+            rules.MoveFocus(size - 1);
+            Assert.IsTrue(rules.PickAt(0));
+            Assert.IsTrue(rules.HasHand);
+            Assert.AreEqual(size - 1, rules.HandSize, "the row closes up");
+            Assert.AreEqual(second, rules.HandCard(0).Card.Id);
+            Assert.Less(rules.Focus, rules.HandSize, "the highlight stays on a card");
+            Assert.IsTrue(rules.PickFocus());
+            Assert.IsFalse(rules.HasHand);
         }
 
         // ---- the draw element (Garrett, 2026-11-01) ----

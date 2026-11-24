@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-11-vesselmodelbuilder-resolvedomainmaterial-c84829",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T00:26:17+00:00",
+  "area": "display hulls (toybox matrices, the theater's ghosts)",
+  "summary": "VesselModelBuilder.ResolveDomainMaterials now paints a SkinnedMeshRenderer's slot 0 when a vessel names no domain materials, exactly as the live ship does (ShipHelper.ApplyShipMaterial writes a skinned mesh's materials[0], the fleet's Domain slot). Display hulls used the slot index (1) for every renderer, so a toybox, preview or replay-ghost Goby or Squirrel wore its team colour on the body and the RedAccent placeholder on its accent. TheaterGhost passes the renderer kind; DomainMaterialSlotTests holds the rule.",
+  "why": "Garrett, 2026-11-10 (LOCKED): every colour comes from the colour set; a team's colour is its owner's domain.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "2fa2dbfcf",
+  "paths": [
+    "Assets/_Scripts/Controller/Managers/ThemeManagerDataContainerSO.cs",
+    "Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs",
+    "Assets/_Scripts/Tests/Editor/DomainMaterialSlotTests.cs",
+    "Assets/_Scripts/Utility/Theater/TheaterGhost.cs"
+  ]
+}

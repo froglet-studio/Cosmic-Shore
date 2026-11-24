@@ -92,7 +92,7 @@
         "isaiah.merrill@gmail.com"
       ],
       "branch_prefixes": [],
-      "role": "Wrote much of the game's foundation (Assets/_Scripts/_Core, Game, App; commits 2022-04 to 2025-12). An approver on Froglet Tasks with the core four (Shombith, 2026-10-25).",
+      "role": "Wrote much of the game's foundation (Assets/_Scripts/_Core, Game, App; commits 2022-04 to 2025-12). An approver with the core four (Shombith, 2026-10-25).",
       "confirmed": true
     },
     {
@@ -160,7 +160,7 @@
   ],
   "unattributed_prefixes": {
     "claude/": "a Claude Code session; the person is the one who merges or pushes it",
-    "cece/": "a Claude Code session; merged mostly by Garrett, sometimes Shombith",
+    "cece/": "Garrett or Shombith (cece/ branches: Garrett started them, Shombith said \"cece/ is mine\", both work in them, nobody else; Caleb, 2026-11-11)",
     "codex/": "a Codex session",
     "qa/": "QA results"
   },
@@ -198,5 +198,5 @@
       ]
     }
   ],
-  "approvers_note": "Approvers on Froglet Tasks (Docs/TEAM.md rule 9): Editors of the page, who can let other people in (Shombith, 2026-10-25). Everyone else they share it with is a Contributor."
+  "approvers_note": "The approvers (the core four and Iggy, Shombith 2026-10-25): the Editors of the Froglet Tasks page until it was retired for Swim Lanes on 2026-11-20."
 }

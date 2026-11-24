@@ -1,0 +1,180 @@
+# Loop Atlas model: vessel Goby. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Goby
+verbs:
+  Time:
+    ability: Quick Jump
+    does: 'Switched off: the Pistol''s aimed jump is disabled in the Goby and Pistol config, so nothing fires it right now,
+      neither a player nor the AI. Its level-5 upgrade is wired for when it returns.'
+    trigger: Switched off
+    scales: Time has nothing to act on while the jump is off.
+    source: Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset
+    arch: 'off'
+    t: [1, 1]
+  Charge:
+    ability: Vortex Sting
+    does: The Pistol's Snap fires a vortex ring that sweeps up rival prisms and smashes them as it collapses; a ring that
+      hits a rival hull takes petals. If the Goby holds a lock on a rival in the Pistol's view, the ring homes in.
+    trigger: Passive - Pistol fires, Goby locks
+    scales: More Charge makes each ring hit take more petals from every one of a rival's elements.
+    source: Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Dens
+    does: At each perch the Pistol rests and builds a den of prisms and shielded prisms, bigger the more energy it earned
+      flying over its ground. It can ride back to add to an old den; a fall loses the energy.
+    trigger: Passive - the Pistol rests at a perch
+    scales: More Mass builds more den prisms from the same energy.
+    source: Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Undertow
+    does: Mass either side of the Pistol's plane is pulled into it, and crystals drift in for the Pistol to collect. Danger,
+      super-shielded and your own prisms never move.
+    trigger: Always on
+    scales: More Space pulls mass in from further away and widens the hull's skim reach.
+    source: .claude/skills/duo-vessel/references/designs/goby-and-pistol.md
+    arch: passive
+    t: [2, 15]
+board:
+  Time: b ~ .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Perch Run]
+  Charge: [Snap]
+  Mass: [Den Builder]
+  Space: [Riptide]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: Perch to perch
+  t: [15, 60]
+  is: One seat lays the path, the other plays it.
+  chain:
+  - - ''
+    - 'The Goby darts: a path is laid'
+  - - Space
+    - The Pistol rides it; mass is pulled into its plane
+  - - Charge
+    - A vortex ring homes on the Goby's lock
+  - - Mass
+    - At the perch the Pistol builds a den
+  drivers: [crew, make, rival]
+  feel: Two games that need each other.
+  gene:
+    genome: Mass
+    cue: [crew_ready, open_space]
+    dials:
+    - - perchSpacing
+      - distance between the perches the Goby picks
+      - 20
+      - 250
+      - u
+    - - denEnergy
+      - energy earned over the ground before the Pistol rests to build
+      - 0.2
+      - 1.0
+      - fraction
+    done: A den is built at a perch the Pistol reached without a fall.
+    sight: ENSIGN
+- in: x
+  name: Length and line
+  t: [1, 4]
+  src: 'Garrett 2026-11-24 (project chat): the Goby never flies; its only movement is charged launches of different lengths
+    from perch to perch, and two thumbs orient the shrimp''s plane. Dart numbers from PERCH_RUN.md section 1; Goby Time step
+    1 signed fun by Will (loop.json).'
+  is: The Goby never flies. On a perch, two thumbs turn it to set the Pistol's plane; it charges a length and shoots itself
+    to the next perch, so every move is one choice of line and length.
+  chain:
+  - - ''
+    - 'Perched: two thumbs turn the hull, and the turn sets the Pistol''s plane'
+  - - ''
+    - Hold to charge the length, 140 u for a tap up to 600 u at a full charge
+  - - Time
+    - Let go; it lands in one second and the landing is the next perch
+  drivers: [mastery, joy]
+  feel: Reading the course one perch ahead.
+  gene:
+    genome: Time
+    cue: [gate_next, straight_ahead]
+    dials:
+    - - chargeFraction
+      - share of the full 0.8 s charge held before release
+      - 0
+      - 1
+      - fraction
+    - - lineOffset
+      - aim off the next ring's centre to clear a blocker or catch a double
+      - 0
+      - 60
+      - u
+    done: A ring is threaded with one launch from the perch before.
+    sight: NEEDLE
+- in: x
+  name: Lock and snap
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The Goby holds the lock, the Pistol snaps, and the ring homes.
+  chain:
+  - - ''
+    - The Goby locks a rival in the Pistol's view
+  - - Charge
+    - 'The Pistol snaps: the vortex ring homes'
+  - - Space
+    - The undertow pulls their loose mass in
+  drivers: [crew, rival]
+  feel: Spotter and shooter.
+  gene:
+    genome: Charge
+    cue: [rival_near, crew_ready]
+    dials:
+    - - lockHold
+      - seconds the Goby holds the lock before the snap
+      - 0.2
+      - 3
+      - s
+    - - snapRange
+      - rival distance at which the Pistol snaps
+      - 10
+      - 150
+      - u
+    done: A homed ring takes petals.
+    sight: BANDIT
+- in: x
+  name: The riptide
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Sit in dense mass, let the undertow fill the plane, then smash it in one ring.
+  chain:
+  - - Space
+    - Undertow pulls mass into the plane
+  - - Charge
+    - Snap a ring through what was pulled in
+  - - ''
+    - Crystals drift in to collect
+  drivers: [break, find]
+  feel: Drawing it all in, then letting go.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, dense_mass]
+    dials:
+    - - dwell
+      - seconds the Pistol stays in dense mass
+      - 1
+      - 10
+      - s
+    - - snapDensity
+      - prisms in the plane before the snap
+      - 5
+      - 200
+      - count
+    done: A ring collapses on mass the undertow pulled in.
+    sight: MANGER
+doc: Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset

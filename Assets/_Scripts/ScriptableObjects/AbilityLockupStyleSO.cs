@@ -186,11 +186,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Resting colour of the slant edge.")]
         [SerializeField] Color slantEdgeColor = new(0.51f, 0.53f, 0.61f, 0.85f);
-        public Color SlantEdgeColor => slantEdgeColor;
+        public Color SlantEdgeColor => ColorTrace.Retrace(ColorTrace.Ui, slantEdgeColor);
 
         [Tooltip("Slant edge while upgraded - the level-5 white the flowers already speak.")]
         [SerializeField] Color upgradedSlantEdgeColor = new(0.96f, 0.96f, 1f, 1f);
-        public Color UpgradedSlantEdgeColor => upgradedSlantEdgeColor;
+        public Color UpgradedSlantEdgeColor => ColorTrace.Retrace(ColorTrace.Ui, upgradedSlantEdgeColor);
 
         [Tooltip("Height of the gauge that fills the ability cell behind the icon, as a fraction of " +
                  "that cell. 1 = the gauge rises the full height of the icon's cell.")]
@@ -226,7 +226,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Plate fill. Near-black and translucent so the arena reads through the row. " +
                  "Borderless: there is no resting outline, by design.")]
         [SerializeField] Color plateColor = new(0.024f, 0.031f, 0.063f, 0.86f);
-        public Color PlateColor => plateColor;
+        public Color PlateColor => ColorTrace.Retrace(ColorTrace.Ui, plateColor);
 
         [Header("Element colour - the rev 3 lava lamp (retired 2026-10-24: elements carry no colour)")]
         [Tooltip("Each card wears its ELEMENT's colour: soft blobs drifting slowly behind the icon like a " +
@@ -238,16 +238,16 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] bool elementColour;
         public bool ElementColour => elementColour;
         [SerializeField] Color chargeColour = new(1f, 0.827f, 0.302f, 1f);
-        public Color ChargeColour => chargeColour;
+        public Color ChargeColour => ColorTrace.Retrace(ColorTrace.Ui, chargeColour);
         [SerializeField] Color massColour = new(0.498f, 0.659f, 1f, 1f);
-        public Color MassColour => massColour;
+        public Color MassColour => ColorTrace.Retrace(ColorTrace.Ui, massColour);
         [SerializeField] Color spaceColour = new(0.690f, 0.486f, 1f, 1f);
-        public Color SpaceColour => spaceColour;
+        public Color SpaceColour => ColorTrace.Retrace(ColorTrace.Ui, spaceColour);
         [SerializeField] Color timeColour = new(0.373f, 0.941f, 0.784f, 1f);
-        public Color TimeColour => timeColour;
+        public Color TimeColour => ColorTrace.Retrace(ColorTrace.Ui, timeColour);
         [Tooltip("The drift card (no element) - the control blue.")]
         [SerializeField] Color driftColour = new(0f, 0.831f, 1f, 1f);
-        public Color DriftColour => driftColour;
+        public Color DriftColour => ColorTrace.Retrace(ColorTrace.Ui, driftColour);
         [Tooltip("Blob alpha at its brightest. Low on purpose: the icon is the headline, the colour qualifies it.")]
         [SerializeField, Range(0f, 1f)] float lavaAlpha = 0.45f;
         public float LavaAlpha => lavaAlpha;
@@ -267,14 +267,15 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float elementEdgeAlpha = 0.9f;
         public float ElementEdgeAlpha => elementEdgeAlpha;
 
-        /// <summary>The colour an element's card wears (rev 3), or the resting edge grey for none.</summary>
+        /// <summary>The colour an element's card wears (rev 3), or the resting edge grey for none, as the worn colour
+        /// set paints it.</summary>
         public Color ColourFor(Element element) => element switch
         {
-            Element.Charge => chargeColour,
-            Element.Mass => massColour,
-            Element.Space => spaceColour,
-            Element.Time => timeColour,
-            _ => slantEdgeColor,
+            Element.Charge => ChargeColour,
+            Element.Mass => MassColour,
+            Element.Space => SpaceColour,
+            Element.Time => TimeColour,
+            _ => SlantEdgeColor,
         };
 
         [Header("Colours - upgraded")]
@@ -282,29 +283,29 @@ namespace CosmicShore.ScriptableObjects
                  "0.5, so glow is bought with lit AREA, never with intensity. With the rim retired " +
                  "this and the plate lift are the WHOLE upgrade signal, so the pair has to carry it.")]
         [SerializeField] Color bloomColor = new(0.96f, 0.96f, 1f, 0.3f);
-        public Color BloomColor => bloomColor;
+        public Color BloomColor => ColorTrace.Retrace(ColorTrace.Ui, bloomColor);
         [Tooltip("Plate fill while upgraded. It lifts further from the resting fill than it used to " +
                  "- the rim used to carry the state change and there is no rim now.")]
         [SerializeField] Color upgradedPlateColor = new(0.11f, 0.12f, 0.17f, 0.92f);
-        public Color UpgradedPlateColor => upgradedPlateColor;
+        public Color UpgradedPlateColor => ColorTrace.Retrace(ColorTrace.Ui, upgradedPlateColor);
 
         [Header("Gauge - fills the ability cell linearly, behind the icon")]
         [Tooltip("The gauge's unfilled track. Sits behind the icon and reads as part of the plate.")]
         [SerializeField] Color gaugeTrackColor = new(0.086f, 0.094f, 0.129f, 0.9f);
-        public Color GaugeTrackColor => gaugeTrackColor;
+        public Color GaugeTrackColor => ColorTrace.Retrace(ColorTrace.Ui, gaugeTrackColor);
         [Tooltip("The filled part. Rises bottom-to-top through the icon's cell, so the icon reads as " +
                  "filling up - one gauge shape for every meter on every vessel.")]
         [SerializeField] Color gaugeFillColor = new(0.22f, 0.51f, 1f, 0.55f);
-        public Color GaugeFillColor => gaugeFillColor;
+        public Color GaugeFillColor => ColorTrace.Retrace(ColorTrace.Ui, gaugeFillColor);
 
         [Header("Locked slot - an ability that is not designed yet")]
         [Tooltip("Plate fill for a slot whose ability does not exist. Honest rather than empty: the " +
                  "element flower above it is still live, because the element IS real.")]
         [SerializeField] Color lockedPlateColor = new(0.024f, 0.031f, 0.063f, 0.55f);
-        public Color LockedPlateColor => lockedPlateColor;
+        public Color LockedPlateColor => ColorTrace.Retrace(ColorTrace.Ui, lockedPlateColor);
         [Tooltip("The locked slot's placeholder mark - a short bar where the icon would be.")]
         [SerializeField] Color lockedMarkColor = new(0.361f, 0.373f, 0.439f, 0.55f);
-        public Color LockedMarkColor => lockedMarkColor;
+        public Color LockedMarkColor => ColorTrace.Retrace(ColorTrace.Ui, lockedMarkColor);
         [Tooltip("Thickness of that mark.")]
         [SerializeField, Min(0.5f)] float lockedMarkThickness = 2f;
         public float LockedMarkThickness => lockedMarkThickness;
@@ -315,19 +316,19 @@ namespace CosmicShore.ScriptableObjects
                  "motions that cannot be confused for each other, which is the whole reason a mode " +
                  "can show both on one card.")]
         [SerializeField] Color cooldownVeilColor = new(0.024f, 0.031f, 0.063f, 0.72f);
-        public Color CooldownVeilColor => cooldownVeilColor;
+        public Color CooldownVeilColor => ColorTrace.Retrace(ColorTrace.Ui, cooldownVeilColor);
 
         [Tooltip("A flat wash over the WHOLE card, icon included, for as long as the ability recharges, under the " +
                  "sweep. The sweep alone is a dark wedge on a dark plate and read as nothing until a press was " +
                  "refused (Garrett, 2026-10-29: \"cooldowns in general are signaled too faintly unless you try to use " +
                  "the ability\"); the wash says UNAVAILABLE at a glance and the sweep says for how long. Alpha 0 = off.")]
         [SerializeField] Color cooldownWashColor = new(0.024f, 0.031f, 0.063f, 0.55f);
-        public Color CooldownWashColor => cooldownWashColor;
+        public Color CooldownWashColor => ColorTrace.Retrace(ColorTrace.Ui, cooldownWashColor);
 
         [Tooltip("One-shot flash the moment an ability comes back. This is the beat the player is " +
                  "actually waiting for, so it is the loudest thing the card ever does.")]
         [SerializeField] Color cooldownReadyFlashColor = new(0.96f, 0.96f, 1f, 0.75f);
-        public Color CooldownReadyFlashColor => cooldownReadyFlashColor;
+        public Color CooldownReadyFlashColor => ColorTrace.Retrace(ColorTrace.Ui, cooldownReadyFlashColor);
         [SerializeField, Min(0.01f)] float cooldownReadyFlashDuration = 0.32f;
         public float CooldownReadyFlashDuration => cooldownReadyFlashDuration;
 
@@ -335,7 +336,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Flash the CARD takes on an ability press. Replaces the per-vessel circular glow, " +
                  "which was authored for the old round button and reads as a foreign shape now.")]
         [SerializeField] Color pressFlashColor = new(0.96f, 0.96f, 1f, 0.22f);
-        public Color PressFlashColor => pressFlashColor;
+        public Color PressFlashColor => ColorTrace.Retrace(ColorTrace.Ui, pressFlashColor);
         [SerializeField, Min(0.01f)] float pressFlashDuration = 0.18f;
         public float PressFlashDuration => pressFlashDuration;
 
@@ -369,25 +370,19 @@ namespace CosmicShore.ScriptableObjects
         public float FlowerLocalY => (abilityCellHeight + cellGap) * 0.5f;
 
         /// <summary>
-        /// The narrow edge as a fraction of the wide edge. Both plates read their edges from this
-        /// ONE number, mirrored - the element plate narrows upward, the ability plate downward - so
-        /// the slant can never disagree between the two halves of one totem.
-        /// </summary>
-        /// <summary>
         /// How far the slant band reaches inward from a plate's outline. Anything drawn ON a plate
         /// that is not meant to cover the band - the gauge and its clip - insets by this.
         /// </summary>
         public float PlateEdgeReach => slantEdgeThickness + slantEdgeAntialias;
 
+        /// <summary>
+        /// The narrow edge as a fraction of the wide edge. Both plates read their edges from this
+        /// ONE number, mirrored - the element plate narrows upward, the ability plate downward - so
+        /// the slant can never disagree between the two halves of one totem.
+        /// </summary>
         public float NarrowEdgeFraction =>
             plateWidth > 0.01f ? Mathf.Clamp01((plateWidth - trapezoidInset * 2f) / plateWidth) : 1f;
 
-        /// <summary>
-        /// The scale that draws an icon authored at <paramref name="authoredSize"/> at the fleet's
-        /// one drawn size. This is what makes "every vessel's icons are the same size" true without
-        /// anyone editing a prefab: the Dolphin authors 80 on three slots and 96 on its fourth, the
-        /// Squirrel scales its whole button 0.7, and all of them still draw at iconBoxSize.
-        /// </summary>
         /// <summary>
         /// How far the two plates are from being mirror images. 0 = perfectly balanced. The auditor
         /// and the tests both key off this, because "the totem drifted back into a coffin" is a
@@ -402,6 +397,12 @@ namespace CosmicShore.ScriptableObjects
             }
         }
 
+        /// <summary>
+        /// The scale that draws an icon authored at <paramref name="authoredSize"/> at the fleet's
+        /// one drawn size. This is what makes "every vessel's icons are the same size" true without
+        /// anyone editing a prefab: the Dolphin authors 80 on three slots and 96 on its fourth, the
+        /// Squirrel scales its whole button 0.7, and all of them still draw at iconBoxSize.
+        /// </summary>
         public float IconScaleFor(float authoredSize)
             => authoredSize > 0.01f ? iconBoxSize / authoredSize : 1f;
 

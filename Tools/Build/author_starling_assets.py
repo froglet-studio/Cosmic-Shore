@@ -174,11 +174,11 @@ def read_cards():
 
 
 def wired_ids():
-    """The Starlings Lab's IMPL: the cards the lab (and so the game) runs."""
+    """The Starlings Lab's IMPL_UNITY: the cards the game runs (the lab's IMPL also has the Time race's lab-only cards)."""
     text = open(LAB, encoding="utf-8").read()
-    m = re.search(r"const IMPL = \{(.*?)\n\s*\};", text, re.S)
+    m = re.search(r"const IMPL_UNITY = \{(.*?)\n\s*\};", text, re.S)
     if not m:
-        raise RuntimeError("StarlingsLab.html: const IMPL not found")
+        raise RuntimeError("StarlingsLab.html: const IMPL_UNITY not found")
     return re.findall(r"'([a-z]+-[a-z-]+)'", m.group(1))
 
 
@@ -390,6 +390,10 @@ def config_asset() -> str:
             "  tOmni: 30\n  tElem: 25\n  tVessel: 25\n  tMass: 25\n  goalY: 5\n  goalX: 30\n"
             "  startSize: 120\n  cap: 200\n  minSize: 30\n  cruise: 120\n  turn: 70\n"
             "  lvMass: 1\n  lvTime: 1\n  lvSpace: 1\n  lvCharge: 1\n"
+            "  arrivalLevelCharge:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 4.3333335\n    element: 1\n    UseFloor: 1\n    Floor: 0.5\n"
+            "  arrivalLevelMass:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 4.3333335\n    element: 2\n    UseFloor: 1\n    Floor: 0.5\n"
+            "  arrivalLevelSpace:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 4.3333335\n    element: 3\n    UseFloor: 1\n    Floor: 0.5\n"
+            "  arrivalLevelTime:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 4.3333335\n    element: 4\n    UseFloor: 1\n    Floor: 0.5\n"
             "  slab: 260\n  viewSpan: 1400\n"
             "  contactHz: 10\n  crystalReach: 28\n  omniReach: 20\n  prismReach: 25\n  baseBite: 0.5\n"
             "  rivalReach: 16\n  nipRate: 0.05\n  petalsPerHit: 0.33333334\n  hitCooldown: 0.5\n  fallbackCellRadius: 900\n"
@@ -406,13 +410,18 @@ def impact_container_asset() -> str:
     return S.replace_once(text, f"  - {{fileID: 11400000, guid: {ANGLER_TAME}, type: 2}}\n", "", "the Angler's omni tame")
 
 
+ELEMENT_NAME = {1: "Charge", 2: "Mass", 3: "Space", 4: "Time"}
+ENCORE = ("Level 5: picking a {name} card leaves the rest of the hand up for one more pick, once per hand. "
+          "R_VesselActions/STARLING.md §2.1.")
+
+
 def map_asset() -> str:
-    """The four buttons (the design's controls, SWARM_CARD_VESSEL.md). No element has a level-5 upgrade: every
-    UpgradeLabel stays empty, the honest state of an open design slot (vessel skill §3)."""
+    """The four buttons (the design's controls, SWARM_CARD_VESSEL.md), each with its level-5 upgrade Encore
+    (Garrett's every-vessel rule, 2026-11-17; STARLING.md §2.1)."""
     def entry(element, label, desc, inp):
         return (f"  - Element: {element}\n    AbilityLabel: {label}\n    AbilityDescription: {q(desc)}\n    Input: {inp}\n"
                 "    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
-                "    UpgradeLabel: \n    UpgradeDescription: \n")
+                f"    UpgradeLabel: Encore\n    UpgradeDescription: {q(ENCORE.format(name=ELEMENT_NAME[element]))}\n")
     common = (" card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an "
               "omnicrystal in another phase; a pick adds the card's level to what you hold of it (up to 15). "
               "R_VesselActions/STARLING.md.")
@@ -618,7 +627,7 @@ def check(files: "dict[str, str]") -> "list[str]":
     need("  farClipPlane: 12000\n" in files.get(CAMERA, ""), "the camera does not state the fleet's farClipPlane 12000")
     deck = files.get(DECK_PATH, "")
     need(deck.count("\n  - id: ") == 80, "the card deck does not hold the 80 cards")
-    need(deck.count("    wired: 1\n") == len(wired_ids()) == 24, "the deck's wired set is not the lab's 24 (IMPL)")
+    need(deck.count("    wired: 1\n") == len(wired_ids()) == 24, "the deck's wired set is not the lab's 24 (IMPL_UNITY)")
 
     need(f"  - {{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}\n" in files.get(CONTAINER, ""),
          "not registered in the Vessel Prefab Container (by its root TRANSFORM)")

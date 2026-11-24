@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-20-a-scene-load-repaints-only-that-scene-s-f11168",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-20T20:24:25+00:00",
+  "area": "colour trace / UIThemeLive",
+  "summary": "A scene load repaints only that scene's canvases, and the UI prefab assets two frames later in ONE FindObjectsOfTypeAll<UIBehaviour> pass instead of four; before, it ran the full RepaintAll (eleven whole-memory passes) inside the load's frame, 0.85-2.3 s with a match's prisms alive (B45).",
+  "why": "B45 lever 3. Same colours reach the same objects; a row built from a not-yet-painted prefab in those two frames is caught by the existing canvas sweep.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a66a05194",
+  "paths": [
+    "Assets/_Scripts/UI/UIThemeLive.cs"
+  ]
+}

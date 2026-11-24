@@ -489,23 +489,6 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
-        /// <b>The eye is the mode's central promise, so it is measured off the PRISMS rather than
-        /// off the constant that names it.</b>
-        ///
-        /// <para>EyeRadius is an input to the plug's clipping arithmetic, not a statement about
-        /// what the plug emits: a bar is <c>BarCross</c> wide, so a rake line clipped on its
-        /// CENTRELINE leaves half a cross-section of prism inside the hole. That shipped - the
-        /// k = 1 line stands at exactly 18.0, so the "is this line inside the eye" test was false
-        /// and six bar bodies straddled 16.5..19.5 at every station, a hexagon of inradius 16.5
-        /// against a documented 18. Every constant was individually correct and every other test
-        /// in this file passed.</para>
-        ///
-        /// <para>So this walks the emitted boxes and asks the only question that matters: how big
-        /// is the largest disc in the port plane that no prism intrudes on. The shadow of an
-        /// oriented box on that plane is a convex polygon, and the answer is the distance from the
-        /// station's axis to the nearest one.</para>
-        /// </summary>
-        /// <summary>
         /// <b>EVERY STATION OF A REAL COURSE BUILDS, and they all build the SAME structure.</b>
         ///
         /// <para>Every other builder test poses a SYNTHETIC station - origin, <c>Vector3.forward</c>,
@@ -579,6 +562,23 @@ namespace CosmicShore.Tests
             !float.IsInfinity(q.w) &&
             q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w > 1e-6f;
 
+        /// <summary>
+        /// <b>The eye is the mode's central promise, so it is measured off the PRISMS rather than
+        /// off the constant that names it.</b>
+        ///
+        /// <para>EyeRadius is an input to the plug's clipping arithmetic, not a statement about
+        /// what the plug emits: a bar is <c>BarCross</c> wide, so a rake line clipped on its
+        /// CENTRELINE leaves half a cross-section of prism inside the hole. That shipped - the
+        /// k = 1 line stands at exactly 18.0, so the "is this line inside the eye" test was false
+        /// and six bar bodies straddled 16.5..19.5 at every station, a hexagon of inradius 16.5
+        /// against a documented 18. Every constant was individually correct and every other test
+        /// in this file passed.</para>
+        ///
+        /// <para>So this walks the emitted boxes and asks the only question that matters: how big
+        /// is the largest disc in the port plane that no prism intrudes on. The shadow of an
+        /// oriented box on that plane is a convex polygon, and the answer is the distance from the
+        /// station's axis to the nearest one.</para>
+        /// </summary>
         [Test]
         public void ThePlugLeavesTheWholeEyeClear([Values(1, 2, 3, 4)] int intensity)
         {
@@ -833,11 +833,6 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
-        /// <b>The circuit closes.</b> The last station's leg has to land back on the first one, or
-        /// the second lap is not a lap - which is exactly what the player reported about the
-        /// out-and-back this replaced.
-        /// </summary>
-        /// <summary>
         /// <b>Every station has exactly one leg leaving it, and the closing leg is one of them.</b>
         /// This is the rule everything that walks the course has to share: iterating consecutive
         /// pairs and stopping at <c>Count - 1</c> silently skips the circuit's closing leg, which
@@ -868,6 +863,11 @@ namespace CosmicShore.Tests
                 "the last station does not close back onto the circuit.");
         }
 
+        /// <summary>
+        /// <b>The circuit closes.</b> The last station's leg has to land back on the first one, or
+        /// the second lap is not a lap - which is exactly what the player reported about the
+        /// out-and-back this replaced.
+        /// </summary>
         [Test]
         public void TheCircuitCloses([Values(1, 2, 3, 4)] int intensity)
         {

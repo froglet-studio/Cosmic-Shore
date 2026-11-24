@@ -87,7 +87,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.PrismsRemaining,   Element.Mass)]
         [TestCase(ScoringMetric.PrismsStolen,      Element.Mass)]   // Hijack - nothing is destroyed to score it
         [TestCase(ScoringMetric.VolumeRemaining,   Element.Mass)]   // Tapestry - the mass you hold standing
-        [TestCase(ScoringMetric.PrismsDestroyed,   Element.Space)]  // Rampage, Cleave, Salvo, Wrecking Ball
+        [TestCase(ScoringMetric.PrismsDestroyed,   Element.Space)]  // Rampage, Cleave, Salvo, Wrecking Ball, Harvest
         [TestCase(ScoringMetric.VolumeDestroyed,   Element.Space)]  // Bloomrush
         [TestCase(ScoringMetric.LifeformsKilled,   Element.Space)]  // Wildlife Liberation
         [TestCase(ScoringMetric.Jousts,            Element.Charge)] // Joust
@@ -137,6 +137,42 @@ namespace CosmicShore.Tests
                 "weight - delete the row, or the row is no longer saying what it was added to say.");
         }
 
+        // The vessels' own MASS games that need no row: their metric already says Mass, so the card's petal comes from
+        // the metric fallback. Pinned here so a metric change, or a row someone adds, cannot move them silently, and so
+        // the shipped preview definition is checked to carry that metric (the fallback reads it).
+        [Test]
+        [TestCase(GameModes.Glasshouse, ScoringMetric.VolumeRemaining)]   // the Angler's garden (GLASSHOUSE.md)
+        [TestCase(GameModes.Tapestry,   ScoringMetric.VolumeRemaining)]   // the Tiger Moth's painting war
+        public void MassGame_ResolvesMassThroughItsMetric(GameModes mode, ScoringMetric metric)
+        {
+            Assert.IsTrue(ModeGenre.TryElementsFor(mode, metric, out var first, out var second),
+                $"GameModes.{mode} lost its genre.");
+            Assert.AreEqual(Element.Mass, first, $"GameModes.{mode} no longer reads as a Mass game.");
+            Assert.AreEqual(Element.None, second, $"GameModes.{mode} grew a second genre.");
+            Assert.IsFalse(ModeGenre.TryElementsFor(mode, null, out _, out _),
+                $"GameModes.{mode} gained a row in ModeGenre; its metric already says Mass.");
+
+            var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            Assert.IsNotNull(library, $"Resources/{ModePreviewLibrarySO.ResourcePath} is missing.");
+            var definition = library.Resolve(mode);
+            Assert.IsNotNull(definition, $"GameModes.{mode} has no preview definition - its card would draw no petal.");
+            Assert.AreEqual(metric, definition.ObjectiveMetric,
+                $"ModePreview for {mode} carries a different metric - its card's genre would follow it.");
+        }
+
+        // A Space game reads Space through its METRIC, with no row of its own: Shatterplane (90), the Brittle Star's
+        // Space game, scores the prisms it breaks. If a row is ever added for it, or its rule moves off PrismsDestroyed,
+        // the Fleet Codex would show it as another element's game - this pins it (Docs/MassAndSpaceGames/PLAN.md §6).
+        [Test]
+        [TestCase(GameModes.Shatterplane, ScoringMetric.PrismsDestroyed)]
+        public void SpaceGame_ReadsSpaceThroughItsMetric(GameModes mode, ScoringMetric metric)
+        {
+            Assert.IsTrue(ModeGenre.TryElementsFor(mode, metric, out var first, out var second),
+                $"GameModes.{mode} has no genre.");
+            Assert.AreEqual(Element.Space, first, $"GameModes.{mode} is the Brittle Star's SPACE game.");
+            Assert.AreEqual(Element.None, second, $"GameModes.{mode} is a Space game only - never quietly a Mass game.");
+        }
+
         [Test]
         public void ASecondGenre_IsNeverTheFirstOneTwice()
         {
@@ -170,6 +206,57 @@ namespace CosmicShore.Tests
                     "is not in this list. Add it here and to Mode_OverridesItsMetricsGenre, so a " +
                     "shipped card's genre is pinned rather than merely present.");
             }
+        }
+
+        // Harvest is the Thresher's SPACE game (Docs/MassAndSpaceGames/PLAN.md): it has no row of its own, so it is
+        // Space through its metric. Pinned through the SHIPPED preview definition, so a definition that drifts to a
+        // stolen or remaining metric (Mass) fails here rather than quietly turning the card into a Mass game.
+        [Test]
+        public void Harvest_IsTheThreshersSpaceGame()
+        {
+            var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            Assert.IsNotNull(library, $"Resources/{ModePreviewLibrarySO.ResourcePath} is missing");
+            var definition = library.Resolve(GameModes.Harvest);
+            Assert.IsNotNull(definition, "Harvest has no preview definition in the library");
+            Assert.AreEqual(ScoringMetric.PrismsDestroyed, definition.ObjectiveMetric);
+            Assert.IsTrue(ModeGenre.TryElementsFor(GameModes.Harvest, definition.ObjectiveMetric,
+                                                   out var first, out var second));
+            Assert.AreEqual(Element.Space, first, "Harvest's card must read Space: its score is mass destroyed");
+            Assert.AreEqual(Element.None, second);
+        }
+
+        // The arcade's categories (Garrett, 2026-11-17, Docs/ArcadeRestructure/PLAN.md): Mass and Space are one
+        // category, the party rows win over their genre, and a mode with no genre is Party.
+        [Test]
+        [TestCase(GameModes.Scurry,         ScoringMetric.Crystals,        ArcadeCategory.Party)]
+        [TestCase(GameModes.ScarabScramble, ScoringMetric.Goals,           ArcadeCategory.Party)]
+        [TestCase(GameModes.Tollway,        ScoringMetric.Goals,           ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.BroodRush,      ScoringMetric.Goals,           ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.Rampage,        ScoringMetric.PrismsDestroyed, ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.Hijack,         ScoringMetric.PrismsStolen,    ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.SkimRace,       ScoringMetric.Crystals,        ArcadeCategory.Time)]
+        [TestCase(GameModes.Joust,          ScoringMetric.Jousts,          ArcadeCategory.Charge)]
+        public void Mode_FilesUnderItsArcadeCategory(GameModes mode, ScoringMetric metric, ArcadeCategory expected) =>
+            Assert.AreEqual(expected, ModeGenre.CategoryFor(mode, metric));
+
+        [Test]
+        public void Maelstrom_IsParty_WithOrWithoutAMetric() =>
+            Assert.AreEqual(ArcadeCategory.Party, ModeGenre.CategoryFor(GameModes.Maelstrom, null));
+
+        [Test]
+        public void APartyGame_KeepsItsGenreForItsLadder()
+        {
+            // Moving Scurry to Party changes the arcade filter and the card, not its element ladder or its analytics.
+            Assert.IsTrue(ModeGenre.TryElementsFor(GameModes.Scurry, ScoringMetric.Crystals, out var primary, out _));
+            Assert.AreEqual(Element.Mass, primary);
+        }
+
+        [Test]
+        public void AModeWithNoGenre_IsParty()                                                       // negative control
+        {
+            // Rampage has no row, so an unclassified metric leaves it genreless; genreless files under Party.
+            Assert.IsFalse(ModeGenre.TryElementsFor(GameModes.Rampage, (ScoringMetric)9999, out _, out _));
+            Assert.AreEqual(ArcadeCategory.Party, ModeGenre.CategoryFor(GameModes.Rampage, (ScoringMetric)9999));
         }
 
         // The end-to-end guard, and the one that catches the failure nobody would notice: a card

@@ -59,7 +59,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | **Dolphin** | **Switchback** (Blast Run since 2026-10-29) | gate race, blocked gates cleared by the key crystal's blast | **First, Yash's own.** The Blast Run AI rebuilt in four steps on 2026-11-02 and its difficulty levels set to Yash's time bands (§9.1): offline I4 medians 140 / 129 / 120 / 112 s, Easy to Legendary. Learned charge drive per intensity (§3.6-3.7). Not yet run in Unity since the steps (the soak is handed to a PC session) |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
 | **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, the catch orbit alone since 2026-11-02 (§11) | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
-| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
+| **Meerkat** | **Warpline** (since 2026-10-27; its 8-ring twin Burrow Run moved to the Jewel Wasp on 2026-11-22) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
 | **Manta** | **Redline** | gate race, laps of a circuit cut for Soar | **Started 2026-11-03 (Yash, §13).** No race recorded yet. The AI flies the Regatta steering; its Soar bands are searched on a Redline model of the shipped AI (`redline-manta-time`) |
 | Urchin | Skein | gate race on rails | none yet |
@@ -71,7 +71,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
 | **Thresher** | **Thresher Time** | gate race, the sling | **Next after the Stoat (Yash, 2026-11-02, §12).** 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3), learned into `ThresherAIBoostPolicy_ThresherTime` (2026-11-01; two of its three races are Garrett's). The AI plants on almost every corner and, since 2026-11-02, launches aimed like Garrett |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
-| Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
+| Jewel Wasp | **Burrow Run** | gate race, flying free | the Meerkat's until 2026-11-22 (Yash); the wasp's AI here is the gate race's own steering, untrained, and no learner reads its flights. The Meerkat's searched genes were for that hull and do not carry over |
 | Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
 | Brittle Star | **Brittle Star Time** (new 2026-10-27) | circuit race on Speed Mode | none yet |
 
@@ -263,13 +263,17 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races). **Boost, 2026-10-26:** on the legs, let go 1.25 s before each station (`BREAKWATER.md` "The boost"; offline 79-82 s a lap against 110-131 s, no station clipped) |
 | Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned per intensity (§3.6-3.7); no crystals: a racing AI flies the gates only (§6.1) |
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
-| Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26) |
+| Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26; both deleted since, Warpline seats the Meerkat) |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
 | Manta / Redline | Soar | the Soar executor's bands (0.35 / 0.75); searched by `redline-manta-time` (§13) |
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
 | Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
 
-### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26)
+### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26; RELAXED 2026-11-16)
+
+**Relaxed by Garrett, 2026-11-16:** the detour is now a learned gene of each hull's Time genome
+(`RaceAICrystalGenesSO`, read by `GateRaceController.AICrystalDetourSlackFor`; 0 until a search writes a row, which
+is the rule below). `AI_PLAN.md` rule 9. The history:
 
 > "While playing any racing game mode, AI should not go for crystals. It should only focus on waypoints. If the
 > crystals are the waypoints, then go for crystals. [...] I figured out the AI dolphins were collecting crystals more
@@ -301,6 +305,96 @@ extra press the same way (`measure_presses`: the press's distance to the ring an
 lead-in shifted every ring after the first lap and no Breakwater race measured. The guns stay on the timer: Yash held
 them 56-73% of a race, which is what the timer already gives. The same loop then gives each vessel above its own
 ability rule in its own minigame.
+
+### 6.2 Speed over breaking: an AI breaks only what it cannot pass (Yash, 2026-11-17)
+
+**The rule, for every AI in every Time game mode** (a mode whose genre petal is Time: the gate races and the crystal
+races, `ModeGenre.cs`). It is what a Time AI is trained toward and judged on:
+
+1. **Speed comes before breaking.** A Time game is won on the clock. Breaking something (a blast, a rocket, a ram, a
+   pickup that clears the way) is only ever a way to get through sooner.
+2. **It breaks only what it cannot pass.** If the hull can fly through from where it is, it flies through. A gap wide
+   enough for the hull counts however it got there: laid by the course, opened by its own earlier blast, by a rival's,
+   by a ram.
+3. **It passes as soon as it can.** The moment the way opens, the pilot commits to the ring and does not turn away
+   again for more breaking, even with a crystal close by.
+4. **When it must break, it takes what is on its way.** A pickup ahead on its line is preferred over one beside or
+   behind it. A pickup that costs no time to fly through (it is on the line anyway) may always be taken.
+5. **"Passable" is measured, not guessed**: from the game's own data (the prisms' real boxes against the hull's size,
+   movers where they will be when the pilot arrives), cheaply (at the AI's replan rate, never per frame, no allocation).
+
+Yash, after watching a Switchback race:
+
+> "While going towards a target ring which was obstructed with prisms, the AI use a crystal in front to break them,
+> succeeded a bit, but then again went back to another crystal that was somehow nearby to it. I should always pass
+> through the ring if that's possible. In this case, it already blew little bit of the ring through which it could
+> pass through then it should pass through, rather than searching for another crystal to break again, we should always
+> prioritize speed over breaking as it is time game. This is the general rule for AI training in Time Game Modes."
+
+The rule is about what the AI chooses. It changes nothing a vessel's ability does, and a mode never rations or alters
+an ability to enforce it (CLAUDE.md, LOCKED: a game mode never changes the vessel). It serves `AI_PLAN.md` step
+`time-arcade`; `AI_PLAN.md` itself is unchanged.
+
+It sits beside Garrett's learned crystal detour (2026-11-16, on `bleeding-edge`: how far a racing AI leaves its line
+for a crystal is a gene of the hull's Time genome, `RaceAICrystalGenesSO`, 0 until a search writes it). That gene is
+for a crystal that buys speed, and the clock sets it. This rule bounds a pickup that BREAKS: never while the way is
+open, whatever a gene says.
+
+**Switchback (the Dolphin), built 2026-11-17.** The Dolphin's AI was the one that broke it: its planner chose
+"take the key crystal" by cost alone, and its any-prism sense blasted any sensed obstacle whenever the dodge was poor.
+Now (`SWITCHBACK.md` "AI: speed over breaking"):
+
+- `SwitchbackBlastPlanner.Passable` answers "can the hull fly from here through the ring and past its doors?" with a
+  hull-wide straight line (the 6 u hull and 2 u of air each side, 5 u off a Danger prism) against every standing
+  prism's real box, through the mouth's centre and twelve points round it. `KeyOnTheWay` answers "does this key cost
+  under 0.15 s to fly through?".
+- `Decide` refuses a key that is off the way while the ring is passable (`why=passable`), at every difficulty. A pilot
+  that turned for the ring keeps it (`why=committed`), and flies through the point in the mouth the clear line runs
+  through.
+- A pilot flying for a key it chose because its ring was NOT passable keeps looking at the ring (at its replan rate)
+  and lets the key go if the ring opens while the key is still off its way and more than a second off.
+- The sense blasts a stray obstacle only when no corridor lets the hull by AND the ring is not passable; of several
+  crystals that would do, it takes the one most on its way.
+- `SwitchbackController.aiSpeedOverBreaking` (on) is the switch; off is the AI of before, for an A/B.
+
+Offline (`switchback_sim_harness`, one AI alone, 24 courses a cell, 26 gates; `speedOverBreaking=0` is before).
+Turn-aways are runs at a crystal that was off the way while the ring could be flown; passes are blocked gates where the
+rule kept the pilot on its ring:
+
+| | Turn-aways before (24 races) | after | Passes after | Median s before -> after |
+|---|---|---|---|---|
+| I1 Easy / Medium / Hard / Legendary | 0 / 0 / 11 / 2 | 0 | 0 / 2 / 26 / 8 | 85.1 -> 85.1, 80.6 -> 80.6, 70.2 -> 64.3, 60.8 -> 60.8 |
+| I2 | 0 / 1 / 5 / 0 | 0 | 3 / 15 / 91 / 15 | 129.6 -> 129.6, 119.6 -> 119.5, 111.6 -> 111.6, 98.2 -> 98.2 |
+| I3 | 0 / 8 / 41 / 2 | 0 | 33 / 150 / 203 / 30 | 127.5 -> 128.7, 120.6 -> 120.5, 107.5 -> 109.8, 102.3 -> 101.7 |
+| I4 (gauntlet) | 0 / 19 / 21 / 23 | 0 | 0 / 37 / 90 / 124 | 187.5 -> 187.5, 168.7 -> 166.4, 158.6 -> 157.3, 147.2 -> 144.4 |
+
+Every race finishes on both sides. Where it happened: the I4 gauntlet at every level that blasts (about one turn-away
+a race: the zig-zag's next key, 40-60 u off the line, after a blast had already opened the way), and Hard at I1 and I3
+(a pilot threading the bore whose next look re-rolled its choice and swung it out to the key beside it). Easy never
+blasts, so it never did it. The rule removes every one; in the model the clock is unchanged to within its noise (about
+2 s) at I1-I3 and 1-3 s faster at I4. Passes outnumber turn-aways because a pass is also counted where the old AI
+would have threaded anyway. It is a model, one AI alone, and it flies a line more exactly than the game's AI does.
+
+**In the editor** (2026-11-17: the I4 gauntlet, fixed seed 45_504, three Medium AI Dolphins, six races a side in
+swapped order): turn-aways 17 -> 0, every race finished, and the winner's time was 194.2 s before (184-215 s) and
+198.8 s after (189-209 s). That 4.6 s is inside the spread: the races show the rule holding and do not show the clock
+moving either way. Details, and a wider-lane variant that was tried, are in `SWITCHBACK.md`.
+
+**The other Time-mode pilots, read 2026-11-17.** None of them leaves an open way for a breaking pickup today:
+
+| Pilot / mode | What it breaks | The same fault? |
+|---|---|---|
+| Sparrow / Breakwater | the rocket at each station, once, on its own line (`HoldBoostAIPolicySO` "clear the way") | No turn-away: it never leaves its line. It does fire at a station whose eye it could thread; that costs ammunition, not time |
+| Grizzly / Grizzly Time | passes beside a keg within `AIKegAimRange`, then threads the mouth | Not a breaking pickup (a keg is the mode's own speed mechanic), but it is the one other pilot that leaves the mouth's line for something: check it against rule 1 when its AI is next worked on |
+| Thresher / Thresher Time | rams the Belfry's prisms it does not time | No detour; rule 2 says it should thread what it can, which is its known gap (`AI_PLAN.md` section 8, 2026-11-07) |
+| Rhino / Headlong | swerves to a hedge's plain window instead of ploughing | The opposite choice, and model-backed: it already avoids breaking where breaking costs more |
+| Manta / Redline | Time crystals on its way, off as shipped (`aiTimeCrystalSlack` 0) | A speed pickup bounded by a slack, not breaking |
+| Squirrel / Skim Race, Urchin / Skein, Stoat / Slingshot and Warpline, Scarab Rally, Waystation | nothing | No |
+
+Every other gate race keeps `GateRaceController.AIDetoursForCrystals` false (section 6.1), so no AI there steers at a
+crystal at all. A new Time-mode AI that can break things names how it holds this rule in its doc, and tests the
+decision as a pure function (`SwitchbackSpeedOverBreakingTests` is the model: blocked ring and a crystal ahead takes
+the crystal; a ring partly opened and passable is flown even with another crystal nearby; an open ring is never left).
 
 ## 5. What is done, what is next
 
@@ -372,7 +466,7 @@ the Stoat's other race, keeps its scene steering until its own races show the sa
   start as copies of the Warpline ones learned from Yash (the same hull, the same warp, the let-go at 250 u); the sweep
   relearns them from Slingshot races (`learn_drives_from_flights.py` reads any mode, and copies an existing variant first,
   so the hand-set let-go is kept).
-- **The Meerkat's AI in Warpline.** Its autopilot is the one Burrow Run flies; no learner covers the Meerkat yet, so its
+- **The Meerkat's AI in Warpline.** Its autopilot is the one it flew in Burrow Run (the Jewel Wasp's race since 2026-11-22); no learner covers the Meerkat yet, so its
   races are recorded and wait (`ai_learning_seen.json` "waiting", hull with no learner). A Meerkat learner (the tunnel's
   bend, length and when to press RT, measured from Yash's flights) is the next learner to join `ai_learn.py`.
 - **The courses.** Both races cut Slingshot's circuit. `FrogletTools > Game Modes > Time Race Prototyper`
@@ -504,7 +598,7 @@ press period and length are recorded in every race's `buttonEvents`).
 | Hull | Cruise / top, u/s | Own Time game, flights (finished) | Regatta, modelled seconds I1-I4 | For | Against |
 |---|---:|---|---|---|---|
 | **Stoat** | 60 / 164 warped (336 at Time 10) | Slingshot 4 (1), Warpline 15 | 60 / 61 / 65 / 94 AI at Time 10 (gate steering only) | In the pack with the Dolphin and Squirrel; Yash's own vessel (§8); the steering fix, a learner and starting numbers exist; the race asks a skill (where to turn, a timed release) | Hairpins cost it about twice the field trajectory's time; Mass and two level-5s have nothing to act on while parked; Yash's `stoat/skim-sling` branch rebuilds the same Time mode |
-| Manta | 180 / 720 | Redline 0 | 25 / 31 / 35 / 35 | The fastest hull, a learner and a drive model; tops the compute queue | Already twice the field: the plan's job is closing that gap, so more speed widens it. No races, and Redline lacks the Regatta steering |
+| Manta | 180 / 720 | Redline 0 | 25 / 31 / 35 / 35 | The fastest hull, a learner and a drive model; tops the compute queue | Already twice the field: the plan's job is closing that gap, so more speed widens it. No races, and Redline lacked the Regatta steering (it flies it since 2026-11-03, §13) |
 | Rhino | 50 / 840 | Headlong 0 | 51 / 63 / 75 / 61 | The highest top speed, a learner and a drive model | No element reaches it, so the balance stage cannot level it. No races, and Headlong lacks the Regatta steering |
 | Sparrow | 35 / 135 | Breakwater 12 (9) | 74-90 at Time 10 (competent-pilot model) | The most proven remaining game | The slowest modelled hull on the card; no drive model |
 
@@ -584,13 +678,18 @@ I2-I4, and more courses.
 
 > "Let's make Manta AI training, what is the time game mode of manta?" (Yash, 2026-11-03)
 
-**The Manta's Time game is Redline** (`GameModes.Redline` 53, `Assets/_Scripts/Controller/Arcade/REDLINE.md`): three
+**The Manta's Time game is Redline** (`GameModes.Redline` 53, `Assets/_Scripts/Controller/Arcade/REDLINE.md`): five
 laps of an eight-ring circuit cut around the Manta's full-Soar turning circle, where every corner asks how much Soar it is
 worth. Nobody has raced it yet, so the AI trains on a model first and on people's races when there are some.
 
+**Correction (2026-11-04).** The race has been five laps (40 gates) since the 2026-10-26 ~90 s target pass; the model
+raced three until 2026-11-04, so every race time in this section's first half is a three-lap time. It now reads the
+laps from `RedlineCourseSource.DefaultLaps`. The five-lap numbers are in `REDLINE.md` §5.1 and in §13.1 below; the
+findings did not change.
+
 **What was wrong with the model the queue raced.** `drive-manta-redline` (Shombith's machine ran it 34,070 times)
 raced `manta_drive_sim.py`, which is Regatta's model: a point mass at full throttle with no nose lag. Its
-best bands (BoostStickBand 1.0, YastriStickBand 0.63: always Soar) were an artefact of that. Redline flies none of the
+best bands (BoostStickBand 1.0, YawsteryStickBand 0.63: always Soar) were an artefact of that. Redline flies none of the
 three. The AI's throttle is the skill throttle (Lerp(0.2, 0.9, intensity x 0.25): 37.5% at I1), the AI nose follows
 its command at 1.5/s, and Redline flew the old gate steering. The editor's own AI Mantas in recorded Regatta races
 reached 12-21 of 24 rings in about 100 s at I1, where that model finished all 24 in 25-35 s.
@@ -620,7 +719,30 @@ the shipped bands' 24.91 and the Regatta genome's 24.94. It finished 5 of 6 at I
 4 of 6 for the shipped bands), but ran 3-6 s slower at I1-I3. A small gain, not promoted. The old job's 1.0 / 0.63
 scored 38.21 and finished none of the 12 races at I3-I4. The bands are a small lever; the nose lag is the big one.
 
+### 13.1 The ladder: Soar alone, introduced at I1, intense at I4 (Yash, 2026-11-04)
+
+> "I want a plan that gonna introduce the new player to the time ability of Manta in intensity 1, and in intensity 4,
+> it will get to intense. No other elemental abilities needed, only time." (Yash, 2026-11-04; "Build it")
+
+Built the same day (`REDLINE.md` §1, §4, §4a, §5.1):
+- **The course asks for Soar alone.** No corner of any seed is tighter than the 156 u both triggers released make, so
+  no level needs the Yawstery pivot (Mass): one corner that costs Soar a level, 0 / 1 / 2 / 3 (I2 217 u at half Soar, I3
+  184 u and 228 u, I4 171 u, 199 u and a 233 u knife-edge), through mouths of 110 / 88 / 72 / 44 (`RedlineCourse`,
+  `RedlineCourseTests`, run out of Unity by `Tools/Build/redline_course_harness`).
+- **Only Time is fed.** The cell's omni crystal is off; Time crystals (the elemental set's, one level each, +3% Soar top
+  speed) sit 0 / 1 / 2 / 3 a lap, on the line at I2-I3 and inside the apexes at I4 (`RedlineTimeCrystals`, laid on
+  every peer by `RedlineController`, `RedlineTimeCrystalsTests`).
+- **I1 teaches.** The Test Flight Lesson already teaches the Time ability; Redline's Mentor tips now say hold Soar, ease
+  both triggers for a corner, wind it back early, and what a Time crystal does (`Tips_Redline.asset`). The card says
+  "both triggers".
+- **The AI** finishes every level on five laps: 183 / 181 / 193 / 538 s (24 of 24 model races). It does not steer for
+  the crystals: with the fleet nose lag the speed they buy made it miss more mouths (1 of 6 at I4 at a 150 u slack),
+  and a full-throttle floor buys nothing the ladder needs. **So I4 is intense for a person but not yet against the
+  AI**: with no nose lag it runs 95 s at I4. That is decision 7 again.
+
 **Next, in order.** (1) Run Redline in the editor at I1-I4 with AI Mantas (`Docs/UNITY_VERIFICATION_CHECKLIST.md`):
-they should finish and re-attack a missed mouth. (2) Yash races Redline at each intensity: every race is recorded and
-the sweep learns `MantaSoarAITuning_Redline` on its own after three finished races. (3) Decision 7 for the Manta's nose
-rate. (4) The searched drive is promoted with Yash's yes, and stage 2 of `REGATTA_BALANCE_PLAN.md` races it.
+they should finish and re-attack a missed mouth, and every corner should go with both triggers eased. (2) Yash races
+Redline at each intensity: every race is recorded and the sweep learns `MantaSoarAITuning_Redline` on its own after
+three finished races. (3) Decision 7 for the Manta's nose rate, which also unlocks the AI taking Time crystals
+(`RedlineController.aiTimeCrystalSlack`). (4) The searched drive is promoted with Yash's yes, and stage 2 of
+`REGATTA_BALANCE_PLAN.md` races it. (The card art was re-rendered for the new I2 course the same day.)

@@ -64,10 +64,10 @@ namespace CosmicShore.Gameplay
         int _blocksAtStart = -1;
         string _runTag = "Switchback";   // the finish line's mode (Slingshot's Orrery reuses this runtime for its movers)
 
-        /// <summary>Hand over the match: the Blast Run layout and the container its prisms were laid into.</summary>
         /// <summary>True when <paramref name="p"/> is one of the course's moving prisms (once matched).</summary>
         public bool IsMover(Prism p) => p != null && _moverSet.Contains(p);
 
+        /// <summary>Hand over the match: the Blast Run layout and the container its prisms were laid into.</summary>
         public void Init(GameDataSO gameData, int intensity, int seed, int courseCount, System.Func<int> raceLength,
                          SwitchbackFeatureLayout layout, Transform prismContainer, bool trackAllPrisms = false,
                          string runTag = "Switchback")
@@ -117,6 +117,18 @@ namespace CosmicShore.Gameplay
         static Vector3Int CellOf(Vector3 p) => new(Mathf.FloorToInt(p.x / PrismMatchDistance),
                                                    Mathf.FloorToInt(p.y / PrismMatchDistance),
                                                    Mathf.FloorToInt(p.z / PrismMatchDistance));
+
+        /// <summary>
+        /// Start tracking every laid prism after <see cref="Init"/>: a guest that only now flies an AI hull
+        /// (SwitchbackController.OnRacerArmed). The scan window reopens so the prisms already laid are matched.
+        /// </summary>
+        public void TrackAllPrisms()
+        {
+            if (_trackAll || _layout == null) return;
+            BuildLaidIndex();
+            _scanDeadline = Time.time + PrismScanTimeout;
+            _nextScan = 0f;
+        }
 
         void BuildLaidIndex()
         {

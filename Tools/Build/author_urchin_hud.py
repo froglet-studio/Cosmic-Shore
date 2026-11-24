@@ -467,6 +467,7 @@ ROOT_GO = 6417075533431866457
 ROOT_TF = 5928382658856804067
 TRACK_EXECUTOR = 7770000000000000052      # UrchinTrackActionExecutor on VesselActions/Track
 SPIKE_EXECUTOR = 7770000000000000007      # UrchinSpikeActionExecutor (Chain Spikes)
+SLIP_EXECUTOR = 7770000000000000010   # UrchinSlipActionExecutor: the Time card's lifted Urchin and ghost
 
 U_BASE = 7791000000000000000
 SHC_GO, SHC_RT, SHC_CANVAS, SHC_SCALER, SHC_RAYCASTER = (U_BASE + 1, U_BASE + 2, U_BASE + 3,
@@ -642,6 +643,7 @@ MonoBehaviour:
   ammoIndex: 0
   trackExecutor: {{fileID: {TRACK_EXECUTOR}}}
   spikeExecutor: {{fileID: {SPIKE_EXECUTOR}}}
+  slipExecutor: {{fileID: {SLIP_EXECUTOR}}}
 """
 
 
@@ -670,7 +672,8 @@ def apply_vessel(clean: str) -> str:
     # The two executors the controller is bound to must still BE those executors - a wire to a
     # fileID that now names some other component would deserialize as a silent null.
     for fid, guid, what in ((TRACK_EXECUTOR, "377b57f5def70b3b58d3c6fe5393ae03", "Track"),
-                            (SPIKE_EXECUTOR, "e244ff59b5cb4f02a4cfd8779916ec34", "Chain Spikes")):
+                            (SPIKE_EXECUTOR, "e244ff59b5cb4f02a4cfd8779916ec34", "Chain Spikes"),
+                            (SLIP_EXECUTOR, "521e6be4d70e428686452cd4869bf5ca", "Slip")):
         doc = re.search(rf"(?ms)^--- !u!114 &{fid}\n.*?(?=^--- !u!)", clean)
         assert doc and f"guid: {guid}," in doc.group(0), \
             f"Urchin.prefab fileID {fid} is no longer the {what} executor"
@@ -696,7 +699,15 @@ def apply_vessel(clean: str) -> str:
 
 def main() -> int:
     writes = icon_writes()
-    writes[VARIANT] = variant_text()
+    # Since the 2026-11-07 roster pass the icon kit (Tools/Build/icon_kit/specs/urchin.py REBIND) owns the
+    # variant's ability cards: it seats each card's parts as children of the slot icon and binds them to the
+    # view. This tool's variant is the one-shot that variant grew from, so it STANDS DOWN once the kit's parts
+    # are there (a re-run would strip them) and `author.py urchin --check` is the variant's drift gate.
+    variant_path = os.path.join(ROOT, VARIANT)
+    kit_owns_variant = os.path.exists(variant_path) and \
+        "chainUrchinIcon:" in open(variant_path, encoding="utf-8").read()
+    if not kit_owns_variant:
+        writes[VARIANT] = variant_text()
     writes[VARIANT + ".meta"] = variant_meta()
 
     vessel_path = os.path.join(ROOT, VESSEL)

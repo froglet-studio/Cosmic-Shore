@@ -1,12 +1,17 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly Rush — Charge Forward (Button2). See GRIZZLY_RUSH.md.
-    /// Spend Energy to charge forward with a burst of momentum. Multiple charges.
-    /// Element link: Time reduces the Energy cost; Time 5 = Vector Control (steer mid-rush).
+    /// Grizzly Rush — the RAM (Button2). See GRIZZLY_RUSH.md.
+    /// Spend Energy to charge forward with a burst of momentum; for the burst's length the hull is a battering ram that
+    /// smashes every rival prism it ploughs into (plain and shielded; super-shielded mass deflects it). Banked charges.
+    ///
+    /// <para><b>Time is how often you can ram</b> (2026-11-16, the weakest-abilities pass: Time only made an invisible
+    /// energy cost cheaper). One dial, <see cref="refillSeconds"/>: a spent charge comes back in 6 s at rest, 2.5 s at
+    /// Time 10. Time 5 = Vector Control: the ram follows the nose, so a turn mid-rush carves a curved swathe.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "GrizzlyRushAction", menuName = "ScriptableObjects/Vessel Actions/Grizzly Rush")]
     public class GrizzlyRushActionSO : ShipActionSO
@@ -20,17 +25,23 @@ namespace CosmicShore.Gameplay
         [Header("Economy")]
         [SerializeField, Tooltip("Index of the Grizzly's single Energy resource.")]
         int energyIndex = 0;
-        [SerializeField, Tooltip("Base Energy cost per rush, before Time scaling.")]
+        [SerializeField, Tooltip("Energy cost per rush.")]
         float energyCost = 0.25f;
-        [SerializeField, Tooltip("Time element multiplier on the cost at level 10 (below 1 = cheaper).")]
-        float timeCostAtFull = 0.4f;
-        [SerializeField] float timeCostMinMul = 0.25f;
 
-        [Header("Charges")]
+        [Header("The ram")]
+        [SerializeField, Tooltip("While the burst lasts, rival prisms within this distance of the hull are smashed, u.")]
+        float ramRadius = 16f;
+        [SerializeField, Tooltip("Seconds between two ram sweeps while the burst lasts.")]
+        float ramTickSeconds = 0.05f;
+        [SerializeField, Tooltip("The kick a smashed prism's debris takes along the rush, u/s.")]
+        float ramImpactSpeed = 60f;
+
+        [Header("Charges (Time)")]
         [SerializeField, Tooltip("Maximum banked rush charges.")]
         int maxCharges = 3;
-        [SerializeField, Tooltip("Seconds to refill one spent charge.")]
-        float chargeRefillSeconds = 6f;
+        [SerializeField, Tooltip("Time: seconds to refill one spent charge (6 at rest -> 2.5 at level 10; slower in " +
+                                 "the deficit band, never under 1).")]
+        ElementalFloat refillSeconds = ElementalFloat.Multiplier(6f, 2.5f, Element.Time, 1f);
         [SerializeField, Tooltip("Minimum seconds between consecutive rushes.")]
         float cooldownSeconds = 2f;
 
@@ -42,10 +53,12 @@ namespace CosmicShore.Gameplay
         public float Duration => duration;
         public int EnergyIndex => energyIndex;
         public float EnergyCost => energyCost;
-        public float TimeCostAtFull => timeCostAtFull;
-        public float TimeCostMinMul => timeCostMinMul;
+        public float RamRadius => ramRadius;
+        public float RamTickSeconds => ramTickSeconds;
+        public float RamImpactSpeed => ramImpactSpeed;
         public int MaxCharges => maxCharges;
-        public float ChargeRefillSeconds => chargeRefillSeconds;
+        /// <summary>Seconds to refill one spent charge at this vessel's live Time level.</summary>
+        public float RefillSecondsFor(IVesselStatus status) => Mathf.Max(1f, refillSeconds.EvaluateLive(status));
         public float CooldownSeconds => cooldownSeconds;
         public int SteeringPulses => steeringPulses;
 

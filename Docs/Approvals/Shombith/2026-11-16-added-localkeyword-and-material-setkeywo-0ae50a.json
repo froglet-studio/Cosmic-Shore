@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-16-added-localkeyword-and-material-setkeywo-0ae50a",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T23:00:55+00:00",
+  "area": "the Amoebius engine",
+  "summary": "Added LocalKeyword and Material.SetKeyword to the engine so the live compile builds again after #1877 used Rendering.LocalKeyword",
+  "why": "every headless race judge on bleeding-edge failed to build",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "556d42650",
+  "paths": [
+    "Port/src/CosmicShore.Engine/Rendering/LocalKeyword.cs"
+  ]
+}

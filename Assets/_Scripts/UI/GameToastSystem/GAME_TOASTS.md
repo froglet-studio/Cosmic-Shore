@@ -75,6 +75,8 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `TapestryPaintHint` (124) / `TapestryRaidHint` (125) | controller config (idle hints) | — |
 | `SiroccoLeadChanged` (126) | `SiroccoController` (after 20% of the target) | `{0}` domain, `{1}` prisms, `{2}` target |
 | `SiroccoDustHint` (127) | controller config (idle hint) | — |
+| `StingherdHint` (192) / `TrawlHint` (193) | `StingherdController` / `TrawlController` (once, a few seconds after the countdown) | — |
+| `CleanerRamHint` (186) / `ReefbuildHint` (187) / `BlastlineHint` (188) | controller config (idle hints; the Wrasse reef games, `WRASSEREEF.md`) | — |
 | `DomainRaceQuarter` (128) / `DomainRaceHalf` (129) / `DomainRaceLeadChanged` (130) / `DomainRaceHomeStretch` (131) / `DomainRaceFinalLap` (132) | `DomainRaceToasts`, ticked by `GateRaceController` (every gate race) and by `RampageController` / `SalvoController` / `HijackController` | `{0}` leading domain, `{1}` its score, `{2}` target, `{3}` its best single pilot |
 | `AstroLeagueGoal` (133) / `AstroLeagueMatchPoint` (134) | `AstroLeagueController.AnnounceGoal_ClientRpc` | goal: `{0}` scorer, `{1}` their domain's goals, `{2}` goal limit; match point: `{0}` domain, same `{1}` `{2}` |
 | `AstroLeagueGoldenGoal` (135) | `AstroLeagueController.AnnounceOvertime_ClientRpc` | — |
@@ -130,6 +132,7 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Switchback` / `_Skein` | Switchback (45) / Skein (51) | halfway / lead change / home stretch (`gate` / `ring`), `Comeback system is on` — open chains, so no final lap |
 | `GameToastConfig_Headlong` / `_Redline` / `_Breakwater` | Headlong (49) / Redline (53) / Breakwater (50) | halfway / lead change / home stretch (`gate` / `gate` / `station`) + `{0} is on the final lap`, `Comeback system is on` |
 | `GameToastConfig_ThresherTime` | ThresherTime (66) | Redline's set word for word (halfway / lead change / home stretch `gate {1}/{2}`, `{0} is on the final lap`, `Comeback system is on`) — authored by `author_thresher_time_assets.py` |
+| `GameToastConfig_BrittleStarTime` | BrittleStarTime (74) | the race beats (129-132, 30) + the Shift Line's own 410-419 (2026-11-16): a start hint per rung (410 I1-I2 Speed Mode, 417 I3 the let-go posts, 418 I4 the roll), streak `{0}` (411), lap split / best lap `{0}` `{1}` (412/413), clean lap (414), first flat out (415), first clean shift (416), dark-start reminder (419) — authored by `author_brittle_star_time_assets.py`, posted by `BrittleStarTimeController.Heat` to the local pilot |
 | `GameToastConfig_AstroLeague` | AstroLeague (37) | `{0} scores! {1}/{2}`, `MATCH POINT - {0} needs one more goal`, `Golden goal - the next one wins`, `Comeback system is on` |
 | `GameToastLibrary` | — | shared + every mode config above |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |

@@ -101,7 +101,9 @@ ORBIT_CHAPTERS = ("Elements",)
 BOOK_BOTTOM = 232                                   # the book stops above the strip
 PLATE_SPLIT = 0.44                                  # the plate's share of the book's width
 PLATE_PORTRAIT = 520
-STRIP_LEFT, STRIP_H, STRIP_BOTTOM = 260, 184, 22    # the strip starts right of the friends orb
+STRIP_MASK_BLEED = 24                                # the strip's mask grows 24 past its rect (m_Padding -24): scrolled tiles show that far left of it
+# The orb's count line ends at ORB_X + COUNT_W (120); the scrolled tiles keep the orb's own 16 px wall margin from it.
+STRIP_LEFT, STRIP_H, STRIP_BOTTOM = 16 + 104 + 16 + STRIP_MASK_BLEED, 184, 22
 GUIDE_TILE, GUIDE_PORTRAIT, GUIDE_GAP = 150, 92, 14
 GUIDE_COLUMNS = 3                                   # element cells across the guide's wider page
 PAGE_PAD = 36
@@ -638,6 +640,7 @@ def screen_body(ctx):
 
 def build_view():
     root = N("root", "CodexView", STRETCH)
+    root.add("portrait", 114, K.portrait_rect(pc_block=True))   # no upright pose yet: the PC layout fitted to the width (author_menu_portrait.py, section 138)
     # The Hangar's backdrop exactly: the near-opaque veil and the sea lines over it, under the top bar.
     veil = root.child(N("Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84))))
     veil.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", H.WINDOW_BACKDROP_ALPHA), raycast=True)) \

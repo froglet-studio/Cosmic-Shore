@@ -75,18 +75,34 @@ for asset in sorted(glob.glob(f"{ROOT}/_SO_Assets/Mode Previews/ModePreview_*.as
     if len(refs) < 2:
         print(f"SKIP {name}: only {len(refs)} config"); skipped += 1; continue
 
-    if "PreviewCellsByIntensity:" in text:
-        print(f"SKIP {name}: already authored"); skipped += 1; continue
+    # The list the definition carries now. An EMPTY list ("PreviewCellsByIntensity: []") is NOT
+    # authored: it is what the definition generators emit by default, and treating it as authored
+    # left six Time games (Breach, Decoy Run, Perch Run, Serpent Time, Slip Line, Thornline)
+    # previewing the Skim Race cell at every intensity while their scenes run four cells of
+    # their own - the card showed a world the mode never plays in, and the intensity row did
+    # nothing to it.
+    listed = re.search(r"^  PreviewCellsByIntensity:(?: \[\])?\n((?:  - .*\n)*)", text, re.M)
+    have = [l.strip()[2:] for l in listed.group(1).splitlines()] if listed else None
+    if have == refs:
+        print(f"OK   {name}: {len(refs)} arenas match {scene}"); skipped += 1; continue
 
     lines = ["  PreviewCellsByIntensity:"] + [f"  - {r}" for r in refs]
-    new = re.sub(r"^  StructurePrefab:", "\n".join(lines) + "\n  StructurePrefab:",
-                 text, count=1, flags=re.M)
+    if listed:
+        new = text[:listed.start()] + "\n".join(lines) + "\n" + text[listed.end():]
+    else:
+        new = re.sub(r"^  StructurePrefab:", "\n".join(lines) + "\n  StructurePrefab:",
+                     text, count=1, flags=re.M)
     if new == text:
         print(f"SKIP {name}: no StructurePrefab anchor"); skipped += 1; continue
 
-    print(f"{'WOULD WRITE' if CHECK else 'WROTE'} {name}: {len(refs)} arenas (from {scene})")
+    # PreviewCell is the fallback past the list's end and what CanTestFlight reads first: it
+    # must be the mode's own intensity-1 cell, never another mode's.
+    new = re.sub(r"^  PreviewCell: .*$", f"  PreviewCell: {refs[0]}", new, count=1, flags=re.M)
+
+    print(f"{'DRIFT' if CHECK else 'WROTE'} {name}: {len(have or [])} -> {len(refs)} arenas (from {scene})")
     if not CHECK:
         open(asset, "w", encoding="utf-8").write(new)
     wrote += 1
 
-print(f"\n{wrote} authored, {skipped} skipped.")
+print(f"\n{wrote} {'drifted' if CHECK else 'authored'}, {skipped} unchanged or skipped.")
+sys.exit(1 if CHECK and wrote else 0)

@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-10-the-ftue-lane-s-ask-them-first-note-now-808309",
+  "to": "Caleb",
+  "by": "Garrett",
+  "date": "2026-11-10T15:33:07+00:00",
+  "area": "FTUE (with Shombith)",
+  "summary": "The FTUE lane's 'Ask them first' note now says: tell them, and queue changes for their /approve; a change waits only when the FTUE lane is occupied.",
+  "why": "Garrett's 2026-11-10 process change: only a swim lane collision waits.",
+  "branch": "cece/great-goodall-raz7gj",
+  "commit": "a7939b910",
+  "paths": [
+    ".claude/skills/swimlanes/lanes.json"
+  ]
+}

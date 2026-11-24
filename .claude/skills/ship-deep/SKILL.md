@@ -18,6 +18,13 @@ The premise: on a branch this size, "I read it and it looked right" has a known 
 rate, and every check below exists because a specific class of defect survived exactly
 that reading. Each pass produces EVIDENCE — a command and its output — not an impression.
 
+## D0. Read every trap, not the triage's pick
+
+`/ship` §0.0's triage picks the traps that match a branch's file kinds; deep mode does not trust the pick. Read all of
+`.claude/skills/ship/references/REVIEW_TRAPS.md`, all of `MERGE_TRAPS.md` when anything merged, and
+`REFACTOR_PASS.md` for D8. Still run the triage first: its trial merge, merge-base count and LAB / COMPUTE / CODEX lines
+are measurements, not a reading plan.
+
 ## D1. Adversarial re-read
 
 Walk the diff hunk by hunk and, for each, answer out loud: *what input makes this
@@ -207,7 +214,7 @@ If `/ship` §3.55's detect step hits, run §3.55 in full and then add three chec
 ## Then
 
 Return to `/ship` §3.5 (skill capture — a branch this size almost always taught
-something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once), §5.6 (refresh the Fleet Codex). The PR body carries D5's matrix and D2's sweep
+something), §3.55 (lab capture, fed by D9), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR), §5.5 (fire CI once), §5.6 (refresh the Fleet Codex), §5.7 (merge into bleeding-edge on the GO). The PR body carries D5's matrix and D2's sweep
 results; the report carries every pass's verdict, including the ones that found nothing —
 "D3 found no duplicate members across the 2 genuinely-merged files" is a result. D8's rows
 go in the report as rows, with where each one lives; a row that turned into a diff hunk on

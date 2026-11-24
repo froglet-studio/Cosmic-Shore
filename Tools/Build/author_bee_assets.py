@@ -542,7 +542,8 @@ def main():
     args = ap.parse_args()
     if args.self_test:
         return self_test()
-    out = emit()
+    import sound_placeholders  # listed placeholder sounds (Docs/AudioSystem/sound_placeholders.json) survive a re-run
+    out = {p: sound_placeholders.fill_file(p, t) for p, t in emit().items()}
     problems = verify(out)
     report()
     if args.check:

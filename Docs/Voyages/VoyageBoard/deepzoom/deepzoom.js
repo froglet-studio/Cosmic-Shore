@@ -143,7 +143,7 @@ const DZ = (() => {
     { name: "Sector", w: 4500, min: 2200, what: "star clusters and the brightest stars" },
     { name: "Region", w: 1200, min: 550, what: "clusters, clouds and the stars you see by eye" },
     { name: "Neighbourhood", w: 280, min: 110, what: "a slab of nearby stars around one height" },
-    { name: "Cell", w: 50, min: 22, what: "one 20 ly cell and the stars inside it" },
+    { name: "Cell", w: 50, min: 22, what: "one 20 ly cell: membrane, cytoplasm, nucleus, and its stars" },
     { name: "System", w: 10, min: 0, what: "single star systems a few ly apart" },
   ];
   const MIN_W = 4;
@@ -162,7 +162,7 @@ const DZ = (() => {
     const A = view.w * view.w * H / W;
     const Fcut = Math.min(1, 900 / Math.max(1e-6, sEff * A));
     const Lcut = Math.min(LMAX + 1, Math.max(0.3, Math.log(Fcut * NA / K) / Math.log(4)));
-    return { Lcut, zwin, slab, zf: slab ? focusZ() : 0 };
+    return { Lcut, zwin, slab, zf: slab ? CELLS.sliceZ() : 0 };
   }
 
   let sel = null, last = null, side = [];
@@ -268,5 +268,5 @@ const DZ = (() => {
     return `<b>${esc(o.name || o.desig || (o.real ? "Star" : "Uncharted star"))}</b> <span class="k">· ${classOf(o.ci)} star · ${lum(o.M)} Sun${o.real ? "" : " · model"}</span>`;
   }
   load();
-  return { draw, TIERS, tierOf, MIN_W, inspHTML, tipHTML, get sel() { return sel; }, set sel(v) { sel = v; }, get last() { return last; }, get side() { return side; } };
+  return { draw, focusZ, TIERS, tierOf, MIN_W, inspHTML, tipHTML, get sel() { return sel; }, set sel(v) { sel = v; }, get last() { return last; }, get side() { return side; } };
 })();

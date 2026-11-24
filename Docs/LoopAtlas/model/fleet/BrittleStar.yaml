@@ -1,0 +1,182 @@
+# Loop Atlas model: vessel BrittleStar. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Brittle Star
+verbs:
+  Time:
+    ability: Speed Mode
+    does: Ignite every thruster for a big jump in cruise speed. The trail spreads out and stretches so it still joins up,
+      without laying more prisms per second.
+    trigger: Tap to switch mode
+    scales: More Time makes Speed Mode faster still.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Charge:
+    ability: Charge Mode
+    does: 'Five cords, one per turret, slice prisms and strike rival hulls for petals: loose whips, or stiff sabers while
+      you fire. With a spare ring, throw the ring to burst a spinning disk that wrecks every prism in its plane.'
+    trigger: Tap to switch mode
+    scales: More Charge widens the cords' cut, grows the rounds and thickens the thrown ring's blast disk.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Mass:
+    ability: Creation Mode
+    does: 'Lay a trail behind each of the ring''s five corners instead of one behind the cockpit, the five lines turning
+      with the ring. The slowest mode: you cruise at half speed.'
+    trigger: Tap to switch mode
+    scales: More Mass makes every block you lay wider and taller, never longer.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Space:
+    ability: Space Mode
+    does: All five guns fire together, converged ahead or splayed by your aim, and rounds that hit rival hulls take petals.
+      Firing heats the guns; overheated they stop, and your trail lays danger prisms.
+    trigger: Tap to switch mode, hold to fire
+    scales: More Space gives every gun longer range and lets the guns hold more heat before they overheat.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: mode
+    t: [5, 30]
+  Omni:
+    ability: Ring Charge
+    does: Adds a spare ring to your stock, up to two, so you can throw your ring for a ring explosion.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: [Regatta]
+games:
+  Time: [Brittle Star Time]
+  Charge: [Flatline]
+  Mass: [Starweave]
+  Space: [Shatterplane]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The shift line
+  t: [10, 40]
+  is: Four modes, each the answer to the last one's cost.
+  chain:
+  - [Time, Speed Mode to get there]
+  - - Space
+    - 'Space Mode: five guns until they overheat'
+  - - Mass
+    - 'Creation Mode: five trails while the guns cool'
+  - - Charge
+    - Charge Mode when a rival comes close
+  drivers: [mastery, make, break]
+  feel: Always in the right gear.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, verb_ready]
+    dials:
+    - - heatCutoff
+      - how hot the guns run before the switch to Creation Mode
+      - 0.3
+      - 1.0
+      - fraction
+    - - coolLay
+      - seconds in Creation Mode while the guns cool
+      - 1
+      - 8
+      - s
+    - - chargeRange
+      - rival distance that switches to Charge Mode
+      - 10
+      - 120
+      - u
+    done: Guns break rival prisms and Creation lays trail while they cool, with no overheat lock-out.
+- name: The ring throw
+  t: [10, 30]
+  is: A spare ring is a thrown saw.
+  chain:
+  - - Omni
+    - An omni crystal adds a spare ring
+  - - Charge
+    - 'Throw it: a disk wrecks every prism in its plane'
+  drivers: [break, joy]
+  feel: One huge flat cut.
+  gene:
+    genome: Charge
+    cue: [omni_near, rival_mass_ahead]
+    dials:
+    - - omniDetour
+      - distance flown off the line for an omni crystal
+      - 0
+      - 200
+      - u
+    - - planeFill
+      - share of the ring's plane that must be rival prisms before the throw
+      - 0.1
+      - 0.9
+      - fraction
+    done: The thrown disk wrecks rival prisms within five seconds of the pickup.
+    sight: OPAL
+- in: x
+  name: Speed and settle
+  t: [8, 25]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Speed Mode on the straight, a slower mode before the turn, Speed again out of it.
+  chain:
+  - [Time, Speed Mode on a straight]
+  - - Mass
+    - Creation Mode into the hard turn
+  - [Time, Speed Mode out of it]
+  drivers: [joy, mastery]
+  feel: Shifting gears without a clutch.
+  gene:
+    genome: Time
+    cue: [straight_ahead, gate_next]
+    dials:
+    - - minStraight
+      - straight length that is worth Speed Mode
+      - 50
+      - 600
+      - u
+    - - turnShift
+      - heading change ahead that ends Speed Mode
+      - 20
+      - 120
+      - deg
+    done: A gate is threaded in Speed Mode.
+    sight: NEEDLE
+- in: x
+  name: Five-line weave
+  t: [10, 40]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Creation Mode near the nucleus, the ring turning, five lines weaving one sheet.
+  chain:
+  - - Mass
+    - Creation Mode by the nucleus
+  - - ''
+    - 'Turn the ring as you fly: the five lines weave'
+  - - Charge
+    - Charge Mode cords if a rival comes
+  drivers: [make, crew]
+  feel: Knitting a wall.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap, open_space]
+    dials:
+    - - weaveRadius
+      - distance from the nucleus the weave is flown
+      - 20
+      - 300
+      - u
+    - - ringTurn
+      - how fast the ring is turned while weaving
+      - 10
+      - 180
+      - deg/s
+    done: Creation Mode lays its five lines inside the claim for five seconds unbroken.
+    sight: ENSIGN
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md

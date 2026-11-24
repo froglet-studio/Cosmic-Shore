@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -171,7 +172,7 @@ namespace CosmicShore.UI
             if (!text || count == _shownCounts[seat]) return;
             _shownCounts[seat] = count;
             text.text = TemplateText.Fill(countTemplate, "count", count.ToString());
-            text.color = count > 0 ? countLiveColor : countEmptyColor;
+            text.color = ColorTrace.Retrace(ColorTrace.Ui, count > 0 ? countLiveColor : countEmptyColor);
         }
 
         // ------------------------------------------------------------------ a gunner's phone buttons

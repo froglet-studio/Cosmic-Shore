@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-15-the-self-test-s-hud-positive-control-now-7dd304",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-15T05:58:56+00:00",
+  "area": "Meerkat asset generator (author_meerkat_assets.py)",
+  "summary": "The self-test's HUD positive control now reads the shipped MeerkatHUDVariant instead of re-cloning the Stoat's HUD, whose icons moved on (it aborted with 'donor drifted'); the clone still runs only while the variant is absent.",
+  "branch": "claude/vessel-holes",
+  "commit": "4382c352e"
+}

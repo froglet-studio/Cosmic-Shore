@@ -18,7 +18,7 @@ Correct them in [`TEAM.json`](TEAM.json), which also maps each person's git name
 | **Caleb** | **Heads FTUE with Shombith**, inside the activation work Shombith leads; no one else is on it (Shombith, 2026-10-26). QA sessions (`Docs/QA/RESULTS`), the arcade mode map and previews, card art; merges some `claude/*` work (Skim Race race rings, #1096). | Caleb Steinhagen / FenrysUnchained |
 | **Shombith** | **Heads tooling**: the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the hooks (Shombith, 2026-10-23). **Leads activation** (onboarding, FTUE, the first-run flow), with Caleb heading FTUE; no one else is on it (2026-10-26). **Owns all cloud and backend services and data management** (UGS: Cloud Save and its data such as `HangarCloudData`, authentication, the backend; Shombith, 2026-10-18). UI: `Menu_Main`, the UI prefabs, colour tokens, the Codex; multiplayer scenes. He drives the **Amoebius engine** milestones (`Port/src/CosmicShore.Engine`, `Player`, tests, online play) and merges those pull requests (`cece/focused-planck-*`). | Shombith03, shombith@froglet.studio |
 | **Yash** | The Bug Hunt; party / multiplayer (UGS) hardening (the cloud and backend layer itself is Shombith's); diagnostics (redlog); leaderboards; the **Vessel Studio** (the artifact, studio pages, Sync panel); the **Amoebius launcher** (VESSEL STUDIO page, studio server, artifact library). Branches `Ys-*`, `vessel-studio*`, `amoebius-*`. | Yash Sadhukhan / YsKhan61 |
-| **Iggy** | Wrote much of the game's foundation (`Assets/_Scripts/_Core`, `Game`, `App`; 2022-04 to 2025-12). An **approver** on Froglet Tasks with the core four (Shombith, 2026-10-25). | KidIgarus, isaiah.merrill@gmail.com |
+| **Iggy** | Wrote much of the game's foundation (`Assets/_Scripts/_Core`, `Game`, `App`; 2022-04 to 2025-12). An **approver** with the core four (Shombith, 2026-10-25). | KidIgarus, isaiah.merrill@gmail.com |
 | Andrew | QA sessions and results. | Andrew Mokhtary (Soncub) |
 | aradia1 | Audio and haptics (FMOD project, drift / boost sounds), vessel feel. | unconfirmed |
 | dbrutus | Arcade and multiplayer code, tests. | unconfirmed |
@@ -38,7 +38,7 @@ full history, no commit, line, area owner or role moved credit from another coll
 1. **Look before you touch.** Run `git fetch origin`, then
    `python3 Tools/Build/who_works_where.py query <the paths you will change>` (about 10 s). It lists:
    - **Owner**: the owner `Docs/TEAM.json` declares for the area, when the owner has said so. **This decides who to
-     ask.** The counts below credit whoever MERGED a pull request, so work that reached `bleeding-edge` through
+     tell, and whose queue a change goes into (rule 13).** The counts below credit whoever MERGED a pull request, so work that reached `bleeding-edge` through
      someone's integration branch reads as theirs: FTUE came in through `Ys-bleeding-edge`, read as Yash's, and a
      session wrote "FTUE owner" on a task (2026-10-18) when Shombith leads activation (2026-10-26). Add an `owners`
      entry to `Docs/TEAM.json` whenever an owner tells you an area is theirs.
@@ -49,10 +49,18 @@ full history, no commit, line, area owner or role moved credit from another coll
 2. **Say it in one or two lines** when someone else is active there: who, which branch or PR, what it does.
    For example: "Garrett's `cece/zen-fermat` made the Stoat its own vessel on 10-13; this builds on its modes."
    Read their branch, docs and skill before writing your own.
-3. **Build on it; never override it silently.** If your change would replace, retire, rename or re-tune
-   something another collaborator built or decided, stop and ask the person you are working with first. Name
-   the owner to check with ("this re-tunes Garrett's play-tuned Stoat poles; check with him"). A design
-   choice between two collaborators' ideas belongs to them, not to the session.
+3. **Build on it; never override it silently - but only a collision waits** (Garrett, 2026-11-10: "only slow
+   people down when they collide with a swimlane"). Run `python3 Tools/Build/approvals.py check --me <person>`
+   before you commit:
+   - **A collision stops you.** The change is about a swim lane (rule 12) someone ELSE occupies right now. Tell the
+     person you work with in one line (who, which branch, PR, last push) before going on; they talk to the occupant
+     or decide to go ahead.
+   - **Anything else goes through, out loud.** Replacing, retiring, renaming or re-tuning something another
+     collaborator built or decided, or editing an area they own, no longer waits for their yes. Tell your person
+     whose toes it is on, in a line, so they talk ("this re-tunes Garrett's play-tuned Stoat poles; worth a word with
+     him"), write the "Affects:" line (rule 7), and queue it for that collaborator's after-the-fact approval (rule 13).
+   A design choice between two collaborators' ideas still belongs to them: the queue is how the one who was not asked
+   gets their say.
 4. **Do not reinvent the wheel.** Before you build a new tool, system, skill, studio, lab or doc, look for one
    that exists:
    - the skills list;
@@ -66,7 +74,10 @@ full history, no commit, line, area owner or role moved credit from another coll
    AND the in-flight branches. `who_works_where.py query Assets/_Scripts/Data/Enums` shows who else is adding
    one.
 6. **Merge `bleeding-edge` in often, and keep pull requests small.** The longer two branches run apart, the
-   more each re-solves what the other already did (below).
+   more each re-solves what the other already did (below). **`/ship` merges its PR on a GO** (Garrett, 2026-11-10:
+   "it is becoming fast to batch test in bleeding edge and fix what doesn't work than switch to each branch for
+   testing"): shipped work is tested together on `bleeding-edge`, and what fails is fixed on a new branch (`/ship`
+   §5.7; "PR only" opts out).
 7. **Leave a trail.** When work touches another collaborator's area, the commit or PR says so: "Affects:
    Garrett's Thresher HUD". The next session reads the trail; the owner sees it in review.
 8. **Read the team activity when you need it** (Yash, 2026-10-15: "stay updated by searching all git repos
@@ -76,37 +87,23 @@ full history, no commit, line, area owner or role moved credit from another coll
    it, and tell the person. It ran as a hook on every prompt until 2026-10-23, when Shombith switched it off as too
    noisy and too slow; it is now run on request (or from the session deck's Team button). Self-test:
    `python3 .claude/hooks/team_activity.py --self-test`.
-9. **Hand work to each other as tickets** (Yash, 2026-10-15: "ask them during their work to make to-dos and
-   tests for other collaborators"; Shombith, 2026-10-23 and 2026-10-25: never assigned, branch-tracked, a real ticket
-   tool). A session cannot open Unity, sign in to a dashboard or watch a first-timer play, so what its work leaves for
-   a person (the editor test, the playtest, the UGS or PostHog step, the missing content, the decision) is a ticket on
-   **Froglet Tasks**: a GitHub issue labelled `team-task`, read on the Froglet Tasks page
-   (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) and written through the page or the `/team-tasks` skill
-   (`Tools/Build/team_tasks.py`). Developers and testers file tickets themselves; a Claude session **suggests** one
-   and files it only when its person approves (no hook files, closes or re-ranks anything). People sign in with
-   claude.ai; the **approvers** (the core four and Iggy, `TEAM.json`) are the page's Editors, edit milestones and let
-   others in. Opening the page at the start of a day is recommended, never required. The rules:
-   - **Nobody's until taken.** A ticket names no one (rule 11); an assignee set on GitHub is cleared by the sweep.
-   - **Taking needs only your name** (`take <id>`, or Take it on the page): the ticket shows as yours to everyone.
-     **Naming a branch starts it** (`take <id> --branch <branch>`, a branch pasted on the page at the take or later, or
-     "Start in a new session", which opens a Claude Code session on the ticket from the base branch, `bleeding-edge` in
-     Beta phase 1). Not started within 14 days of the take, it goes back to open, nobody's (Shombith, 2026-10-25). It closes when that
-     branch merges into bleeding-edge, and goes back to open, nobody's, when the branch is deleted, released or idle
-     for 14 days (`.github/workflows/team-tasks.yml` runs the sweep on every merge, deletion and nightly).
-   - **14 days untaken: archived** (closed as not planned, label `archived`). Done tickets close as completed. Both
-     come back with `revive`, and the 14 days start again.
-   - **One ticket per branch.** Every hand test a branch leaves is a checklist line on its one ticket.
-   - **Priority ranks tickets, milestones rank time** (M1 closed testing on all platforms ... M5 full release). A person
-     re-ranks with `set` or on the page, and nothing automatic overrides that.
-   - **Done needs its proof**: `done <id> --note "<the check>"`; a failed test is not done.
-   `/ship` puts `team_tasks.py pr-section` in the PR body. The old markdown board (`TEAM_TASKS.md`) is a pointer now;
-   the `team_tasks_nudge.py` hook that pushed tasks into every prompt was switched off on 2026-10-23 and deleted on
-   2026-10-25 (Shombith). Self-test: `team_tasks.py --self-test`.
-   **An area's owner is not a ticket's assignee.** Tickets still name nobody; owners are who a session ASKS before
-   changing an area, and `who_works_where.py query` prints the owner `Docs/TEAM.json` declares (`owners`). **Anything
-   on UGS or the backend** (Cloud Code, Cloud Save, Access Control, Moderation, authentication, dashboards, deploys)
-   **is Shombith's: ask him directly** (Shombith, 2026-10-26). For now Yash does the Cloud Code work, and may set up
-   the AI flight data; **anything he posts into the backend goes through Shombith first**.
+9. **Hand work to each other on the swim lanes board** (Yash, 2026-10-15: "ask them during their work to make to-dos
+   and tests for other collaborators"; Shombith, 2026-11-20: Froglet Tasks retired for Swim Lanes). A session cannot
+   open Unity, sign in to a dashboard or watch a first-timer play, so what its work leaves for a person goes where the
+   board reads it: an editor hand test in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (the lane shows it as work waiting),
+   and a lane left for someone through `/handoff-to-<person>`, `/handoff-open` or `/handoff-for-test`
+   (`Tools/Build/handoff.py`, `.claude/skills/swimlanes/HANDOFF.md`), only once its person says yes. A hand-off names
+   no assignee (rule 11): it is a heads-up with a brief, and the recipient can hand it straight back to open.
+   **History:** from 2026-10-15 to 2026-11-20 hand-offs were Froglet Tasks tickets (GitHub issues labelled
+   `team-task`, the `/team-tasks` skill and `Tools/Build/team_tasks.py`, a claude.ai page and a nightly sweep). The
+   issues stay on GitHub as the record; the tool, skill and sweep were removed.
+   **An area's owner is not an assignee.** Hand-offs still name nobody; owners are who a session TELLS when it
+   changes their area, and whose approval queue the change goes into (rule 13); `who_works_where.py query` prints the
+   owner `Docs/TEAM.json` declares (`owners`). **Anything on UGS or the backend** (Cloud Code, Cloud Save, Access
+   Control, Moderation, authentication, dashboards, deploys) **is Shombith's** (Shombith, 2026-10-26): a code change
+   there goes through and into his queue like any other, but **posting to the live backend** (a deploy, a policy, a
+   write to production data) is an action on a running service, not a change on a branch, and still goes through
+   Shombith first. For now Yash does the Cloud Code work, and may set up the AI flight data.
 10. **Give a report to whoever asks** (Yash, 2026-10-15: "if someone asks you about a report of some other person
    working on some shared field, you should be able to give those reports to them"). Garrett asking for Yash's
    Regatta AI work, Shombith asking what changed in an area he shares: build the report from the system, never from
@@ -121,8 +118,34 @@ full history, no commit, line, area owner or role moved credit from another coll
 
 11. **No favourites among the core four** (Shombith, 2026-10-23). Garrett, Caleb, Shombith and Yash carry equal
    weight. Tasks are never assigned and nobody is a default taker; there are no standing volunteer offers. Never
-   let one person's request override another's area without whoever decides there. Shombith heads tooling: the Amoebius engine, editor tools, the Claude
+   let one person's request override another's area silently: whoever decides there hears of it through their queue
+   (rule 13) and can ask to talk. Shombith heads tooling: the Amoebius engine, editor tools, the Claude
    skills (`/ship` and the rest) and the hooks.
+12. **Find your lane with `/swimlanes`, and stay out of an occupied one** (Garrett, 2026-11-08: "instead of blocking
+   people because someone else worked on that area in the past, inform people that that swim lane is currently
+   occupied"). A lane is anything someone holds in their head that takes more than a couple of prompts and one pull
+   request to finish: a vessel (the Thresher), a game (Bloomrush), an app-shell section (the Voyages map) or a
+   mechanical system (ecology, netcode), never a task. **Everything that size gets a lane** (Caleb, 2026-11-11: "the
+   whole point of tracking them is to help us coordinate our efforts"): every vessel on the roster and every shipped
+   game card is one automatically; a shell section or system nobody's lane covers is added to
+   `.claude/skills/swimlanes/lanes.json` in the same commit that starts multi-PR work on it, and archived there once
+   it is truly closed out. Keep the list usable: add a system when work on it can collide, not for every folder. `python3 .claude/skills/swimlanes/swimlanes.py` lists open lanes with obvious work on top,
+   occupied lanes under them (unmerged work pushed in the last 7 days, with who and which branch), then lanes that
+   need polish, then polished ones. **An occupied lane is the one thing that stops a change** (rule 3); past work is
+   never a block. Who worked in an open lane before is context to build on, and if your change re-tunes or replaces
+   what they built it goes into their queue (rule 13) rather than waiting for them. A lane opens when its work merges
+   into `bleeding-edge`. `approvals.py check` reads the lanes for you: a change ABOUT an occupied lane (a quarter of
+   its files, or three) collides; one that only brushes it is a heads-up to the occupant.
+13. **Approve after the fact: `/approve`** (Garrett, 2026-11-10). Each person has a queue of changes other sessions
+   made to their work: `Docs/Approvals/<Person>/`, one small file per change, committed with the change on its branch
+   (`python3 Tools/Build/approvals.py add --to <them> --by <you> --area "..." --summary "..."`). Queue one for every
+   person `check` names whose work your change actually CHANGES (re-tunes, replaces, retires, renames, decides
+   otherwise, or edits an area they own); a pure addition beside their work needs none, and when unsure, queue it.
+   The person runs `/approve` to retrieve their list (it reads every branch, so an entry shows before its change
+   merges) and answers each: **approve** (they agree, on the record), **discuss** (they want to talk to whoever made
+   it; that person sees it under `approvals.py list --from <them>`), and **resolve** once they have talked. A change
+   they want undone is new work like any other. Files and format: [`Approvals/README.md`](Approvals/README.md).
+   Self-test: `approvals.py --self-test`.
 
 ## What happened without this (2026-10-13, one merge, measured)
 
@@ -219,11 +242,11 @@ volunteer.
 one way a branch reaches `bleeding-edge`. `/to-bleeding-edge`, written on 2026-10-15 for Yash's repeated promotion of
 `Ys-bleeding-edge`, duplicated `/ship`'s merge, gates, push and PR steps without either skill naming the other; it is
 now an alias of `/ship promote [branch]`, and its conflict rules and `gates.sh` live in `/ship` §1.5. Yash is asked to
-promote through `/ship promote` (a Froglet Tasks ticket) so the two habits cannot drift apart again.
+promote through `/ship promote` so the two habits cannot drift apart again.
 
 **Notices.** `team_context.py` used to show the person a team notice on a session's first prompt, and the tools
 decision on the first prompt about the engine or the tools. Shombith switched it off on 2026-10-23 with
 `team_activity.py` and `team_tasks_nudge.py` (deleted 2026-10-25): together they added about 7 KB to prompts and sent
 sessions off to fetch and query before answering. `vessel_studio_nudge.py` (once per session, on vessel work) and
-`report_request.py` (when a prompt asks for a report) still run. The Froglet Tasks page
-(https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) is the board for the team's tickets (rule 9).
+`report_request.py` (when a prompt asks for a report) still run. The Swim Lanes page
+(https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf) is the board for the team's hand-offs (rule 9).

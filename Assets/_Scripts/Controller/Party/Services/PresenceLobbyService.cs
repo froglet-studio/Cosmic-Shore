@@ -72,6 +72,21 @@ namespace CosmicShore.Gameplay
         /// pool (<see cref="CosmicShore.Core.FairPlayTrust"/>, phase B). With the trust gate off it is always the shore.
         /// </summary>
         private static string PresenceGameMode => CosmicShore.Core.FairPlayTrust.PresenceGameMode(PRESENCE_LOBBY_GAME_MODE);
+
+        /// <summary>
+        /// The one query every presence-lobby read makes - the join AND the converge - so both always see the same set:
+        /// the presence game mode scoped to this build's Netcode protocol, plus the protocol itself (NetProtocol, launch
+        /// blocker 6). Each protocol has its own presence lobby, named by protocol ("PRESENCE_LOBBY@p24"), and the
+        /// smallest-id converge runs inside it: a build never sees another version's lobbies, so it can neither invite nor
+        /// be invited across versions, and the converge cannot flip between two versions' lobbies. An old build (bare
+        /// "PRESENCE_LOBBY", no protocol) keeps its own lobby and never sees ours.
+        /// </summary>
+        private static QuerySessionsOptions PresenceQuery()
+        {
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.AddRange(NetProtocol.PresenceFilters(PresenceGameMode, NetProtocol.LocalTag));
+            return queryOptions;
+        }
         private const string DISPLAY_NAME_KEY         = "displayName";
         private const string AVATAR_ID_KEY            = "avatarId";
         private const string PARTY_COUNT_KEY          = "partyCount";
@@ -81,12 +96,6 @@ namespace CosmicShore.Gameplay
         private const string JOINED_PARTY_KEY         = "joined_party";
         private const string PARTY_SESSION_KEY        = "partySession";
 
-        /// <summary>
-        /// After creating a lobby, wait this long before re-querying to detect
-        /// a simultaneous-creation race (two clients both create a lobby at the
-        /// same millisecond in MPPM or near-simultaneous launches).
-        /// </summary>
-        private const int LOBBY_RACE_SETTLE_MS   = 1500;
 
         // ─────────────────────────────────────────────────────────────────────
         // Private state
@@ -168,9 +177,9 @@ namespace CosmicShore.Gameplay
         /// Three-step algorithm:
         /// <list type="number">
         ///   <item>Query UGS for an existing presence lobby.</item>
-        ///   <item>If none, create one; then re-query after a settling delay to detect
-        ///         a simultaneous creation by another client (MPPM / near-simultaneous
-        ///         launch). If a rival lobby is found, delete own and merge into it.</item>
+        ///   <item>If none, create one. A simultaneous creation by another client (MPPM /
+        ///         near-simultaneous launch) is healed by the caller's refresh loop, which
+        ///         converges on the canonical lobby a few seconds after the join.</item>
         ///   <item>On any exception, fall back to creating a new lobby.</item>
         /// </list>
         /// </remarks>
@@ -199,13 +208,13 @@ namespace CosmicShore.Gameplay
                     await CreateAsync(maxPlayers);
 
                     // A rival may have created a lobby at the same instant (MPPM or
-                    // near-simultaneous launch).  After a short settle for UGS session
-                    // indexing, converge on the canonical (smallest-id) lobby so both
-                    // sides deterministically pick the SAME one instead of staying
-                    // split.  A symmetric "join the first rival" merge could have both
-                    // sides swap into each other's lobby and end up split again.
-                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS, DelayType.UnscaledDeltaTime);
-                    await ConvergeToCanonicalAsync(maxPlayers);
+                    // near-simultaneous launch). That split is healed by the caller's refresh
+                    // loop, which converges on the canonical (smallest-id) lobby about 2 s and
+                    // 7 s after the join and on every safety poll after that
+                    // (HostConnectionService: ConvergeToCanonicalAsync on each fetch tick).
+                    // A 1.5 s settle and a converge used to run HERE as well: measured
+                    // 2026-11-17 they cost 1.9-2.6 s and one query on the boot's critical path,
+                    // in front of the party session create, for a check the loop repeats.
                 }
             }
             catch (Exception e)
@@ -241,10 +250,8 @@ namespace CosmicShore.Gameplay
         /// <inheritdoc/>
         public async UniTask ConvergeToCanonicalAsync(int maxPlayers)
         {
-            // Query the full presence-lobby set (rate-limit aware, like the join path).
-            var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
+            // Query the full presence-lobby set of this protocol (rate-limit aware, like the join path).
+            var queryOptions = PresenceQuery();
 
             IList<ISessionInfo> sessions;
             try
@@ -501,13 +508,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask<ISession> TryQueryAndJoinAsync(int maxPlayers)
         {
-            var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PresenceGameMode, FilterOperation.Equal));
+            var queryOptions = PresenceQuery();
 
+            float queryStart = UnityEngine.Time.realtimeSinceStartup;
             var results = await _policy.ExecuteAsync("presence:query",
                 async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
             IList<ISessionInfo> sessions = results.Sessions;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[PresenceLobbyService] Presence query: {sessions?.Count ?? 0} lobbies in " +
+                $"{UnityEngine.Time.realtimeSinceStartup - queryStart:0.0}s.");
 
             if (sessions == null || sessions.Count == 0) return null;
 
@@ -524,6 +533,7 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
+                    float joinStart = UnityEngine.Time.realtimeSinceStartup;
                     // The previous Play's membership (Stop without a leave) is cleared and the join made again.
                     var joined = await StaleLobbyMembership.JoinAsync(_policy, session.Id,
                         () => _policy.ExecuteAsync($"presence:join:{session.Id}",
@@ -531,7 +541,9 @@ namespace CosmicShore.Gameplay
                                 session.Id,
                                 new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread()),
                         leaveOnFailure: false, tag: "PresenceLobbyService");
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
+                    CSDebug.LogVerbose(CSLogChannel.Party,
+                        $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}) in " +
+                        $"{UnityEngine.Time.realtimeSinceStartup - joinStart:0.0}s.");
                     return joined;
                 }
                 catch (Exception e)
@@ -558,16 +570,8 @@ namespace CosmicShore.Gameplay
                     IsLocked          = false,
                     IsPrivate         = false,
                     PlayerProperties  = BuildLocalPlayerProperties(),
-                    SessionProperties = new Dictionary<string, SessionProperty>
-                    {
-                        {
-                            "gameMode",
-                            new SessionProperty(
-                                PresenceGameMode,
-                                VisibilityPropertyOptions.Public,
-                                PropertyIndex.String1)
-                        }
-                    }
+                    // Scoped to this build's protocol, with the protocol beside it: what PresenceQuery asks for.
+                    SessionProperties = NetProtocol.PresenceSessionProperties("gameMode", PresenceGameMode, NetProtocol.LocalTag)
                 };
 
                 SetActiveLobby(await _policy.ExecuteAsync("presence:create",

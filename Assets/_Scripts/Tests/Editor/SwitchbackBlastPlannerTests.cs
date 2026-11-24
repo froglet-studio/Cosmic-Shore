@@ -41,8 +41,9 @@ namespace CosmicShore.Tests
             return (course, new SwitchbackBlastPlanner(layout, course.Count, intensity));
         }
 
-        /// <summary>Where a pilot stands just upstream of station s's key, on the fire line.</summary>
-        static Vector3 UpstreamOfKey(BlastRunStation st, float by) => st.Key - (st.Door - st.Key).normalized * by;
+        /// <summary>Where a pilot stands just upstream of station s's key, on the fire line (at an I4 gauntlet's earlier
+        /// key the fire line runs to the next key, not the door).</summary>
+        static Vector3 UpstreamOfKey(BlastRunStation st, float by) => st.Key - (st.Target - st.Key).normalized * by;
 
         static SwitchbackAISkill Level(int level) => SwitchbackAISkill.ForLevel(level);
 
@@ -87,6 +88,48 @@ namespace CosmicShore.Tests
             }
             Assert.GreaterOrEqual(blasts, (planner.Layout.Stations.Count + 1) / 2,
                                   $"I{intensity}: blasted {blasts} of {planner.Layout.Stations.Count} stations");
+        }
+
+        /// <summary>The I4 gauntlet (SWITCHBACK.md "The I4 gauntlet"): a gate's keys are one station each, consecutive and
+        /// upstream first; the planner works on the first key a pilot has not passed (<see cref="SwitchbackBlastPlanner.StageFor"/>),
+        /// so flying past one key hands the plan to the next, and a Legendary pilot coming up each key's approach blasts
+        /// most of them, aimed down the segment to the next key (the last at the door).</summary>
+        [Test]
+        public void AtAGauntlet_TheKeysFollowOneAnother()
+        {
+            var (course, planner) = Fixed(4);
+            var world = new World();
+            var stations = planner.Layout.Stations;
+            int gauntlets = 0, keys = 0, blasts = 0;
+            for (int s = 0; s < stations.Count; s++)
+            {
+                var st = stations[s];
+                Assert.AreNotEqual(BlastRunTunnel.None, st.Tunnel, $"gate {st.Gate}: an I4 key without a tunnel");
+                Vector3 fire = (st.Target - st.Key).normalized;
+                if (st.Stage == 0)
+                {
+                    gauntlets++;
+                    Assert.AreEqual(s, planner.StationFor(st.Gate), "the gate maps to its first key");
+                }
+                // Short of this key: it is the one being worked on. Past it: the next (or, past the last, still the last).
+                Vector3 before = st.Key - fire * 20f, after = st.Key + fire * (SwitchbackBlastPlanner.PassedKeyDistance + 10f);
+                Assert.AreEqual(s, planner.StageFor(st.Gate, before), $"gate {st.Gate} key {st.Stage}: short of it");
+                Assert.AreEqual(st.Final ? s : s + 1, planner.StageFor(st.Gate, after), $"gate {st.Gate} key {st.Stage}: past it");
+
+                // Coming up its approach (from the key before, or down the leg to the first): the decision is about THIS key.
+                Vector3 from = st.Stage > 0 ? stations[s - 1].Key : course[st.Gate - 1].Position;
+                Vector3 self = st.Key + (from - st.Key).normalized * 60f;
+                if (planner.StageFor(st.Gate, self) != s) continue;
+                var d = planner.Decide(st.Gate, self, Speed, course[st.Gate].Position, 0f, Level(4), world, 11);
+                Assert.AreEqual(s, d.Station);
+                keys++;
+                if (d.Plan != SwitchbackAIPlan.Blast) continue;
+                blasts++;
+                Assert.Less(Vector3.Angle(d.AimPoint - st.Key, st.Target - st.Key), 2f, $"gate {st.Gate} key {st.Stage}: aimed off its target");
+            }
+            Assert.Greater(gauntlets, 0);
+            Assert.Greater(stations.Count, gauntlets, "every gate one key: no gauntlet");
+            Assert.GreaterOrEqual(blasts, 0.6f * keys, $"Legendary blasted {blasts} of {keys} gauntlet keys from their approach");
         }
 
         [Test]
@@ -160,16 +203,18 @@ namespace CosmicShore.Tests
             var (course, planner) = Fixed(intensity);
             var world = new World();
             float sum = 0f, ideal = 0f; int n = 0;
-            foreach (var st in planner.Layout.Stations)
+            for (int s = 0; s < planner.Layout.Stations.Count; s++)
             {
-                planner.SolveAim(planner.StationFor(st.Gate), world, 0f, out Vector3 f, out Vector3 u);
-                Assert.Less(Vector3.Angle(f, (st.Door - st.Key).normalized), 0.01f, "the nose is on the door");
-                Assert.IsTrue(planner.Slot.Covers(st.Key, f, u, st.Door, 0f), "the door is in the slot");
+                // The nose is on what the key's blast is for: the door, or (an I4 gauntlet's earlier key) the next key.
+                var st = planner.Layout.Stations[s];
+                planner.SolveAim(s, world, 0f, out Vector3 f, out Vector3 u);
+                Assert.Less(Vector3.Angle(f, (st.Target - st.Key).normalized), 0.01f, "the nose is on the target");
+                Assert.IsTrue(planner.Slot.Covers(st.Key, f, u, st.Target, 0f), "the target is in the slot");
                 var d = planner.Decide(st.Gate, UpstreamOfKey(st, 120f), Speed, course[st.Gate].Position, 0f, Level(4), world, (uint)st.Gate);
-                if (d.Plan != SwitchbackAIPlan.Blast) continue;   // see ABlockedGate_WithItsKeyClose_IsBlasted
+                if (d.Plan != SwitchbackAIPlan.Blast || d.Station != s) continue;   // see ABlockedGate_WithItsKeyClose_IsBlasted
                 Assert.Less(d.AimErrorDegrees, 1.2f);
-                Assert.IsTrue(planner.Slot.Covers(st.Key, d.FireForward, d.FireUp, st.Door, 0f), $"gate {st.Gate}: the erred slot misses the door");
-                ideal += planner.LaneCoverage(planner.StationFor(st.Gate), world, course[st.Gate].Position, 0f, f, u);
+                Assert.IsTrue(planner.Slot.Covers(st.Key, d.FireForward, d.FireUp, st.Target, 0f), $"gate {st.Gate}: the erred slot misses the target");
+                ideal += planner.LaneCoverage(s, world, st.Final ? course[st.Gate].Position : st.Target, 0f, f, u);
                 sum += d.Coverage; n++;
             }
             // The slot is narrow at its tip, so no aim covers the lane next to the key: Legendary must get what a perfect aim gets.

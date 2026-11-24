@@ -81,7 +81,7 @@ namespace CosmicShore.ScriptableObjects
         public List<CodexStat> Stats = new();
 
         /// <summary>The accent to draw with, resolving the alpha-0 "unset" sentinel.</summary>
-        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : AccentColor;
+        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : ColorTrace.Retrace(ColorTrace.Ui, AccentColor);
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ namespace CosmicShore.ScriptableObjects
         public List<CodexVariant> Variants = new();
 
         /// <summary>The accent to draw with, resolving the alpha-0 "unset" sentinel.</summary>
-        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : AccentColor;
+        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : ColorTrace.Retrace(ColorTrace.Ui, AccentColor);
 
         /// <summary>The variant matching <paramref name="element"/>, or null.</summary>
         public CodexVariant FindVariant(Element element)

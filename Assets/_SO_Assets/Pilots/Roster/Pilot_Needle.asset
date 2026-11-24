@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: NEEDLE
   description: 
   flavor: 
-  portrait: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 2da1c92a86f7276df84180cf04fb161a, type: 3}
   portraitIsStandIn: 0
   icon: {fileID: 0}
   requirement:

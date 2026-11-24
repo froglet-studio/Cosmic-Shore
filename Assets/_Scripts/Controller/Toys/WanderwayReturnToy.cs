@@ -7,14 +7,14 @@ namespace CosmicShore.Gameplay
     /// The far end of the Wanderway tether: the station that ends the run — fly into it and you
     /// are returned to the cell with the belt switched off.
     ///
-    /// It is a full <see cref="Toy"/> rather than a bespoke trigger so it inherits the whole
+    /// It is a full <see cref="ToyStation"/> rather than a bespoke trigger so it inherits the whole
     /// shared contract for free: local-user-only detection, freestyle-only gating, the
     /// continuity-law bloom-in, the deferred activation (toy effects must not run inside a
     /// physics callback — this one teleports a vessel and stops an async belt), and the
     /// exit-gated re-arm. It carries no definition of its own; the Wander toy hands it the
     /// Wanderway definition + context so its accent and gating match the toy that spawned it.
     /// </summary>
-    public sealed class WanderwayReturnToy : Toy
+    public sealed class WanderwayReturnToy : ToyStation
     {
         Action _onActivated;
 

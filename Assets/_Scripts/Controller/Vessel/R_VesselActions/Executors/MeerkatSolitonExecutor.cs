@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
     /// one it forms, and its rider's way out, through <see cref="MeerkatSolitonNetworkRelay"/>; every peer runs the
     /// same life from there. The hull's pose replicates as every vessel's does.</para>
     /// </summary>
-    public sealed class MeerkatSolitonExecutor : ShipActionExecutorBase, ISolitonTunnelMaker
+    public sealed class MeerkatSolitonExecutor : ShipActionExecutorBase, ISolitonTunnelMaker, SolitonIsolation.IOccupant
     {
         [Header("Config")]
         [Tooltip("The Meerkat's Soliton numbers (its reticle, kit, AI); the tunnel's and the network's own are in their SolitonTunnelConfigSO.")]
@@ -81,6 +81,7 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_mAutopilot = new("Meerkat.Executor.Autopilot");
         static readonly ProfilerMarker s_mOmni = new("Meerkat.Executor.StepOmni");
         static readonly ProfilerMarker s_mGrowNetwork = new("Meerkat.Executor.GrowNetwork");
+        static readonly ProfilerMarker s_mRift = new("Meerkat.Executor.Rift");
         static readonly ProfilerMarker s_mRideSoliton = new("Meerkat.Executor.TryRideAnySoliton");
         static readonly ProfilerMarker s_mReticle = new("Meerkat.Executor.StepReticle");
 
@@ -118,7 +119,6 @@ namespace CosmicShore.Gameplay
         CustomCameraController _rideCam;   // the camera this hull's ride is holding on the centreline (round 8)
         SolitonTunnel _camTunnel;                 // the tunnel the ride camera follows, through the ride and just past its way out
         float _rideCamBlendSeconds;        // the camera's own SpectateBlendSeconds, put back when the ride lets it go
-        bool _ridePiloted;                 // the ride was formed by the pilot, not by the autopilot (the lava lamp's AI)
         bool _wasAutopilot;                // last frame's AutoPilotEnabled, to see the hand-over
         float _camS;                       // how far along that tunnel's line the hull is (past L after the way out)
         float _rideS;
@@ -146,7 +146,17 @@ namespace CosmicShore.Gameplay
         InputEvents? _formInput;
         // the soliton's swallow (round 23): the prisms and crystals its tunnels pull in, carry through and fire out
         readonly MeerkatSwallow _swallow = new();
+        // round 28, the Rift: the void run in progress (the path flown, its length, its clock and its length budget)
+        const float RiftStep = 12f;      // the page's RIFT_STEP: the path is sampled every this many units
+        const float RiftMinLength = 20f; // the page's RIFT_MIN: a run shorter than this lays nothing
+        readonly List<Vector3> _riftPts = new();
+        float _riftLen, _riftT, _riftBudget;
+        bool _inVoid, _riftEndReq;
         readonly List<ShipActionSO> _bindScratch = new();
+        // isolation (2026-11-20): a peer's read of whether this hull is inside a tube, and the ward held while it is
+        object _peerInside;
+        int _peerInsideFrame = -1;
+        bool _warded;
 
         public MeerkatSolitonConfigSO Config => config;
         /// <summary>The hull this Meerkat flies.</summary>
@@ -163,6 +173,35 @@ namespace CosmicShore.Gameplay
         internal float RideAlong => _rideS;
         /// <summary>True while a tunnel flies this hull (from the press to its way out).</summary>
         public bool IsRiding => _ride != null;
+
+        /// <summary>
+        /// The tube this hull is inside now, or null in the world (<see cref="SolitonIsolation"/>, Yash, 2026-11-20: "anything
+        /// inside a wormhole won't interact with anything outside the hole"). The machine that flies the hull knows: the
+        /// tunnel it slides, the network it slides, or the void (a place of its own). A peer's copy is not told it is riding
+        /// (only the pose and the tubes replicate), so it reads the hull's place against the tubes it has
+        /// (<see cref="SolitonIsolation.TubeAt"/>, once a frame). Before 2026-11-20 a peer's copy was never phased, so the
+        /// server collected crystals for a client's rider and a rival's blast landed on it there.
+        /// </summary>
+        public object InsideTube
+        {
+            get
+            {
+                if (_ride != null) return _ride;
+                if (_netRider.Riding) return (object)_netRider.Network ?? this;
+                if (_inVoid) return this;
+                if (_status == null || IsAuthority) return null;
+                if (_peerInsideFrame != Time.frameCount)
+                {
+                    _peerInsideFrame = Time.frameCount;
+                    var hull = _status.Transform;
+                    _peerInside = hull ? SolitonIsolation.TubeAt(hull.position) : null;
+                }
+                return _peerInside;
+            }
+        }
+
+        IVesselStatus SolitonIsolation.IOccupant.Status => _status;
+        object SolitonIsolation.IOccupant.Tube => InsideTube;
         /// <summary>The way out's speed over the speed inside (the tunnel config's exitMultiplier, with the kit's Boost out, as
         /// <see cref="StepRide"/> applies it).</summary>
         public float RideExitMultiplier => config ? Mathf.Max(0.05f, RideExit(config.RideExitMultiplier)) : 1f;
@@ -178,6 +217,12 @@ namespace CosmicShore.Gameplay
         public int Formed => _seq;
         /// <summary>True while this hull slides a Soliton Network (from the omnicrystal, or a placed network's source, to its way out).</summary>
         public bool IsInNetwork => _netRider.Riding;
+        /// <summary>Round 28: true while this hull flies into the void (the Rift's run): phased, faster, steering freely.</summary>
+        public bool IsInVoid => _inVoid;
+        /// <summary>The void run's speed over cruise: <c>riftSpeed</c> × the Time rush (Garrett's kit, as on any ride).</summary>
+        public float VoidSpeedFactor => config ? Mathf.Max(0.1f, config.RiftSpeed) * Rush : 1f;
+        /// <summary>How much of the void run is left, 1..0 (0 when not in the void).</summary>
+        public float VoidLeft01 => _inVoid && config ? 1f - Mathf.Clamp01(_riftT / Mathf.Max(0.1f, config.RiftSeconds)) : 0f;
         /// <summary>The network the local pilot is inside, or null (the flight and the camera read it).</summary>
         public static SolitonNetwork LocalNetwork => s_localNetwork;
         /// <summary>The local pilot's hull (the lamp that lights the network's walls).</summary>
@@ -207,7 +252,12 @@ namespace CosmicShore.Gameplay
             _netRider.Clear();
             _omniArmed = _rtHeld = _freestyleChecked = false;
             _omniCrystal = -1;
+            _inVoid = _riftEndReq = false;
+            _riftPts.Clear();
             if (!s_executors.Contains(this)) s_executors.Add(this);
+            _peerInside = null;
+            _peerInsideFrame = -1;
+            SolitonIsolation.Register(this);
             if (config == null)
                 CSDebug.LogError($"[Meerkat] {name}: MeerkatSolitonExecutor has no MeerkatSolitonConfig - RT will form nothing. " +
                                  "Wire Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset on the prefab.");
@@ -222,6 +272,11 @@ namespace CosmicShore.Gameplay
         {
             _rtHeld = true;   // inside a tube RT gives the slide its small push while held
             if (!config || !IsAuthority) return;
+            if (_inVoid)
+            {
+                if (!_status.AutoPilotEnabled) _riftEndReq = true;   // round 28: RT ends a void run here (the AI never ends one early)
+                return;
+            }
             if (!_retLive || _retEmerge < SolitonTunnelShapeMath.FormableEmerge) return;   // still rippling into shape
             Commit();
         }
@@ -267,6 +322,7 @@ namespace CosmicShore.Gameplay
             using (s_mTunnels.Auto()) StepTunnels(dt);
             using (s_mSwallow.Auto()) _swallow.Step(this, dt);
             using (s_mNetworks.Auto()) StepNetworks(dt);
+            StepWard();
             TrackLocalPilot();
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
@@ -282,17 +338,42 @@ namespace CosmicShore.Gameplay
             if (autopilot) { using (s_mAutopilot.Auto()) Autopilot(dt); }
             else _aiShaping = false;
             using (s_mOmni.Auto()) StepOmni();
-            if (_kit) { using (s_mRideSoliton.Auto()) TryRideAnySoliton(); }   // [Garrett's kit hook] anyone rides any soliton
+            if (_inVoid) { using (s_mRift.Auto()) StepRift(dt); }   // round 28: the void run lays the rift behind the hull
+            if (_kit && !_inVoid) { using (s_mRideSoliton.Auto()) TryRideAnySoliton(); }   // [Garrett's kit hook] anyone rides any soliton
             using (s_mReticle.Auto()) StepReticle(dt);
         }
 
         void LateUpdate() => SolitonTunnelView.DrawOncePerFrame();
 
+        /// <summary>
+        /// Inside a tube the hull holds a full ward (<see cref="ResourceSystem.SetElementalDebuffImmunity"/>, every source):
+        /// the one gate every scored hit and petal theft passes (<c>CombatHitDrain.TryAdmit</c>) refuses a warded victim, and
+        /// no debuff lands. On every machine, so the one that decides a hit and the one that settles it agree. Out of the
+        /// mouth it lets go.
+        /// </summary>
+        void StepWard()
+        {
+            bool inside = InsideTube != null;
+            if (inside == _warded) return;
+            var resources = _status.ResourceSystem;
+            if (!resources) return;
+            resources.SetElementalDebuffImmunity(this, inside);
+            _warded = inside;
+        }
+
+        void ReleaseWard()
+        {
+            if (!_warded) return;
+            _warded = false;
+            var resources = _status?.ResourceSystem;
+            if (resources) resources.SetElementalDebuffImmunity(this, false);
+        }
+
         /// <summary>The page's <c>gateHold</c> reticle: on the nose, bent by last frame's stick, shortened by LT.</summary>
         void StepReticle(float dt)
         {
             var hull = _status.Transform;
-            bool live = hull && _ride == null && !_netRider.Riding && !_status.IsStationary;
+            bool live = hull && _ride == null && !_netRider.Riding && !_inVoid && !_status.IsStationary;   // round 28: no reticle in the void
             if (!live)
             {
                 _retLive = false;
@@ -311,7 +392,7 @@ namespace CosmicShore.Gameplay
             float ke = SolitonTunnelShapeMath.ReticleEase(dt, config.ReticleSmoothSeconds);
             _eased += (_stick - _eased) * ke;
             _easedLq += (LtLive() - _easedLq) * ke;
-            var sh = SolitonTunnelShapeMath.ShapeFor(config.Shape(SpaceLevel()), _easedLq, _eased.x, _eased.y);   // round 23: Space sets its area
+            var sh = SolitonTunnelShapeMath.ShapeFor(config.Shape(SpaceArea()), _easedLq, _eased.x, _eased.y);   // round 23: Space sets its area
             Vector3 c = sh.Stick >= 0.05f ? right * sh.Dx + up * sh.Dy : _retSide;
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
@@ -323,15 +404,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The hull's Space level, 0-10 (round 23, Garrett: "at a given Space level a soliton keeps one surface area"): read at
-        /// use time, every frame the reticle is shaped, so a crystal taken mid-flight resizes the next tunnel. -1 (the
-        /// authored fixed size) when the hull has no element levels.
+        /// The soliton's surface area on the hull's live Space (round 23, Garrett: "at a given Space level a soliton keeps one
+        /// surface area"; the config's <c>surfaceArea</c> ElementalFloat): read at use time, every frame the reticle is shaped,
+        /// so a crystal taken mid-flight resizes the next tunnel. 0 (the authored fixed size) without element levels.
         /// </summary>
-        float SpaceLevel()
-        {
-            var resources = _status?.ResourceSystem;
-            return resources ? Mathf.Clamp(resources.GetLevel(Element.Space), 0, 10) : -1f;
-        }
+        float SpaceArea() => config.SurfaceArea(_status);
 
         /// <summary>The page's <c>gateCommit</c>.</summary>
         void Commit()
@@ -348,7 +425,6 @@ namespace CosmicShore.Gameplay
             _ride = t;
             _slider.Enter(t, hull.position, vIn, hull.up);
             _rideS = _slider.Along;
-            _ridePiloted = !_status.AutoPilotEnabled;
             _retLive = false;
             _retAge = 0f;
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();   // the page's `if (stance) stance = false`
@@ -421,7 +497,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < nets.Count; i++)
             {
                 var n = nets[i];
-                if (n.Maker != null || !SolitonTunnelRider.AtSource(n, hull.position, hull.forward)) continue;   // placed networks only
+                // placed networks, and (round 28) any standing rift, anyone's, from its way in
+                if (n.IsRift ? !n.RiftStanding : n.Maker != null) continue;
+                if (!SolitonTunnelRider.AtSource(n, hull.position, hull.forward)) continue;
                 _netRider.Enter(n, 0, hull.position, Mathf.Max(1f, _status.Speed));
                 _retLive = false;
                 _retAge = 0f;
@@ -561,19 +639,20 @@ namespace CosmicShore.Gameplay
         /// <see cref="CustomCameraController.Spectate"/> with no blend: on the straight run in it is exactly where the follow
         /// camera already was, and round the bend it never cuts the chord out of the tube. Out of the far mouth it keeps to the
         /// tunnel's line until it is past the mouth itself (a straight-behind camera would jump sideways there). Only the local
-        /// human pilot's camera, and only while it follows this hull.
+        /// player's hull (whoever holds its sticks), and only while the camera follows this hull.
         /// </summary>
         void StepRideCamera()
         {
             if (StepNetworkCamera()) return;
             float dt = Time.deltaTime;
-            // only a ride the PILOT formed: the autopilot's (the lava lamp's AI) never moves anyone's camera, and a ride it
-            // was in the middle of when the pilot clicked to fly is left to the follow camera the menu just handed over to
-            if (_ride != null) { _camTunnel = _ridePiloted ? _ride : null; _camS = _rideS; }
+            // The local player's hull, whoever holds its sticks (CameraManager.ActiveRigFollowing's rule, Yash 2026-11-22):
+            // a ride the AI forms while flying the hull for the player is framed as the player's own is. The lava lamp's
+            // AI still moves nobody's camera: the menu has no active camera (the follow check below finds none), and a
+            // ride it was in the middle of when the pilot clicked to fly is ended by HandOver.
+            if (_ride != null) { _camTunnel = _ride; _camS = _rideS; }
             else if (_camTunnel != null) _camS += Mathf.Max(0f, _status.Speed) * dt;
             var t = _camTunnel;
-            bool mine = t != null && Contains(SolitonTunnel.Live, t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI
-                        && !_status.AutoPilotEnabled;
+            bool mine = t != null && Contains(SolitonTunnel.Live, t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
             var cam = mine && CameraManager.Instance != null
                 ? CameraManager.Instance.GetActiveController() as CustomCameraController
                 : null;
@@ -638,6 +717,7 @@ namespace CosmicShore.Gameplay
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (_netRider.Riding) return;   // inside a network the AI holds RT (RtLive) and slides: no steering inside
+            if (_inVoid) return;            // round 28: in the void it flies its racing line (AIPilot) and presses nothing
             if (!config.AiWormhole || !ai || !hull) return;
             if (_ride != null)
             {
@@ -663,7 +743,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             else if (d > Mathf.Min(config.AiStraightMinDistance, config.AiBentMinDistance) && CanForm &&
-                     SolitonTunnelShapeMath.TryPlan(config.Plan(TurnRateDegrees(), SpaceLevel()), local, Mathf.Max(1f, _status.Speed),
+                     SolitonTunnelShapeMath.TryPlan(config.Plan(TurnRateDegrees(), SpaceArea()), local, Mathf.Max(1f, _status.Speed),
                          SolitonTunnelShapeMath.Clamp01(config.AiNoise), (float)_aiRand.NextDouble(),
                          d <= config.AiStraightMinDistance, out float lq, out float m))
             {
@@ -750,7 +830,9 @@ namespace CosmicShore.Gameplay
                 _omniCrystal = index;
                 _omniSeed = unchecked((uint)(GetInstanceID() * 977 + index * 131 + Mathf.FloorToInt(Time.time * 10f)));
             }
-            if (_omniArmed && _ride == null && !_netRider.Riding) GrowNetworkHere();
+            if (!_omniArmed || _ride != null || _netRider.Riding || _inVoid) return;
+            if (config.OmniMode == MeerkatSolitonConfigSO.OmniAbility.Rift) StartRift();   // round 28: the Meerkat's ultimate
+            else GrowNetworkHere();
         }
 
         /// <summary>
@@ -830,7 +912,7 @@ namespace CosmicShore.Gameplay
             // out of a tip, or back out of the source: the slingshot
             cameOut = true;
             _netRider.Clear();
-            if (ReferenceEquals(net.Maker, this))
+            if (ReferenceEquals(net.Maker, this) && !net.IsRift)   // a rift is laid already out (and is not published, round 28)
             {
                 net.RiderOut();
                 if (_relay) _relay.PublishNetworkOut(net.Seq);
@@ -922,6 +1004,80 @@ namespace CosmicShore.Gameplay
             _networkCam = null;
         }
 
+        // ------------------------------------------------------------------ the Rift (round 28)
+
+        /// <summary>
+        /// The page's <c>riftStart</c> (round 28, Yash 2026-11-03: "Yes, prototype the Rift"; after Apex's Wraith): an
+        /// omnicrystal taken opens a mouth where the hull is and it goes INTO THE VOID - phased
+        /// (<see cref="MeerkatVesselTransformer.Phased"/>), at <c>riftSpeed</c> × cruise × the Time rush
+        /// (<see cref="VoidSpeedFactor"/>), steering freely. Its length budget is the network's Mass reach × the cell's radius
+        /// (round 26's sizing, so Mass keeps its meaning). Simulating machine only; not replicated yet (the hull's pose is).
+        /// </summary>
+        void StartRift()
+        {
+            var hull = _status.Transform;
+            _omniArmed = false;
+            if (!hull) return;
+            SolitonNetwork.ResolveCell(hull.position, out _, out float cellR);
+            _riftBudget = Mathf.Max(100f, config.NetworkShare(_status) * cellR);
+            _riftPts.Clear();
+            _riftPts.Add(hull.position);
+            _riftLen = _riftT = 0f;
+            _riftEndReq = false;
+            _inVoid = true;
+            _retLive = false;
+            _aiPlanned = _aiShaping = false;
+            if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
+            PlayOneShot(config.NetworkEvent, hull.position);
+        }
+
+        /// <summary>The page's <c>riftStep</c>: sample the path every <see cref="RiftStep"/> u; end the run on its budget, its
+        /// clock (<c>riftSeconds</c>) or RT.</summary>
+        void StepRift(float dt)
+        {
+            var hull = _status.Transform;
+            if (!hull || _ride != null || _netRider.Riding) { EndRift(); return; }
+            _riftT += dt;
+            var last = _riftPts[_riftPts.Count - 1];
+            float d = Vector3.Distance(hull.position, last);
+            if (d >= RiftStep)
+            {
+                _riftPts.Add(hull.position);
+                _riftLen += d;
+                d = 0f;
+            }
+            if (_riftEndReq || _riftLen + d >= _riftBudget || _riftT >= Mathf.Max(0.1f, config.RiftSeconds)) EndRift();
+        }
+
+        /// <summary>
+        /// The page's <c>riftEnd</c>: the far mouth opens where the run ended and the path flown is laid as ONE tube
+        /// (<see cref="SolitonNetwork.LayRift"/>) with the single soliton's look and slide (<see cref="MeerkatSolitonConfigSO.TunnelConfig"/>),
+        /// sized as a soliton of its length (Garrett's surface area by Space, round 23), standing <c>riftLife</c> s, a
+        /// sentinel or not (round 28b). Anyone rides it from its way in (<see cref="TryRideAnySoliton"/>).
+        /// </summary>
+        void EndRift()
+        {
+            if (!_inVoid) return;
+            _inVoid = false;
+            _riftEndReq = false;
+            var hull = _status.Transform;
+            if (hull)
+            {
+                float d = Vector3.Distance(hull.position, _riftPts[_riftPts.Count - 1]);
+                if (d > 0.5f) { _riftPts.Add(hull.position); _riftLen += d; }
+            }
+            if (_riftLen < RiftMinLength || _riftPts.Count < 2) { _riftPts.Clear(); return; }
+            var shape = config.Shape(SpaceArea());
+            float b = Mathf.Max(0.5f, shape.ThroatRadius), m = Mathf.Max(b, shape.MouthRadius);
+            if (shape.Area > 0f) SolitonTunnelShapeMath.SurfaceAreaThroat(shape.ThroatRadius, shape.MouthRadius, shape.Area, _riftLen, out b, out m);
+            var cfg = config.TunnelConfig ? config.TunnelConfig : config.NetworkConfig;
+            var rift = SolitonNetwork.LayRift(cfg, this, ++_networkSeq, _riftPts, b, m, config.RiftLife);
+            _riftPts.Clear();
+            if (rift == null) return;
+            if (hull) PlayOneShot(config.FormEvent, hull.position);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Meerkat] Rift {rift.Seq}: {rift.Channels[0].L:F0} u, throat {2 * rift.Channels[0].B:F1} u");
+        }
+
         // ------------------------------------------------------------------ helpers
 
         /// <summary>This pilot's domain colour, the one its tunnels and its reticle take (tinted by their
@@ -949,6 +1105,7 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             if (_status != null && !s_executors.Contains(this)) s_executors.Add(this);
+            if (_status != null) SolitonIsolation.Register(this);
             OmniCrystalImpactor.CollectedByVessel -= OnOmniCrystal;
             OmniCrystalImpactor.CollectedByVessel += OnOmniCrystal;
         }
@@ -974,10 +1131,15 @@ namespace CosmicShore.Gameplay
             OmniCrystalImpactor.CollectedByVessel -= OnOmniCrystal;
             SolitonTunnel.RemoveAllBy(this);
             s_executors.Remove(this);
+            SolitonIsolation.Unregister(this);
+            ReleaseWard();
+            _peerInside = null;
             ReleaseSpeedTunnelScale();
             ReleaseRideCamera();
             ReleaseNetworkCamera();
             _swallow.Release(this);
+            _inVoid = _riftEndReq = false;   // round 28: a pooled hull never comes back mid-run
+            _riftPts.Clear();
             var nets = SolitonNetwork.Live;
             for (int i = nets.Count - 1; i >= 0; i--)
                 if (ReferenceEquals(nets[i].Maker, this)) nets[i].Remove();
@@ -987,6 +1149,7 @@ namespace CosmicShore.Gameplay
             _omniArmed = _rtHeld = false;
             _camTunnel = null;
             _ride = null;
+            _camTunnel = null;   // the ride is dropped here, so its camera lets go with it (StepRideCamera releases it)
             _slider.Clear();
             _mine = null;
             _lastRide = null;
@@ -994,7 +1157,6 @@ namespace CosmicShore.Gameplay
             _ltHeld = false;
             _formInput = null;
             _aiShaping = _aiPlanned = false;
-            _ridePiloted = false;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -89,6 +89,12 @@ namespace CosmicShore.Utility
         public string SceneName;
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
+
+        [Tooltip("How a pilot is named when an earlier pilot in the same match already has the same display name. " +
+                 "Tokens: {name} the display name, {number} the pilot's place among the namesakes (2, 3, ...). " +
+                 "Keep {number} in it: the roster keys pilots by name, so two pilots must never read the same.")]
+        [SerializeField] string duplicatePlayerNameTemplate = "{name} ({number})";
+        public string DuplicatePlayerNameTemplate => duplicatePlayerNameTemplate;
         public int LocalPlayerAvatarId;
         public bool IsWeeklyChallenge;
         public bool IsTraining;
@@ -113,6 +119,16 @@ namespace CosmicShore.Utility
         /// authored; cleared on every runtime reset so a replay or a new scene re-arms the gate.
         /// </summary>
         [NonSerialized] public bool GameConfigSynced;
+
+        /// <summary>
+        /// Which entry of the mode's course POOL this match lays (0-based), or -1 when none has been drawn - a mode
+        /// with no pool keeps -1 for good. SERVER authority: the host draws it once per match
+        /// (<c>MultiplayerMiniGameControllerBase.DrawCourseVariant</c>, Regatta's <c>RegattaCoursePoolSO</c>) and
+        /// <c>SyncGameConfigToClients_ClientRpc</c> carries it, so a Cell choosing by it
+        /// (<c>CellTypeChoiceOptions.CourseVariantWise</c>) builds the same circuit on every machine. Cleared on every
+        /// runtime reset, like <see cref="GameConfigSynced"/>, so each match draws afresh.
+        /// </summary>
+        [NonSerialized] public int CourseVariant = -1;
 
         /// <summary>
         /// True while a Maelstrom session is in progress (set by
@@ -315,11 +331,6 @@ namespace CosmicShore.Utility
             OnDomainMetricSumsChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Server-authoritative winner name, written by game controllers in their
-        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
-        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
-        /// </summary>
         // ── Match envelope (SERVER authority; replicated by SyncGameConfigToClients_ClientRpc) ──
         // Stamped once by the host so every client emits an IDENTICAL identifier set on
         // game_started. See Docs/Analytics/DATA_ARCHITECTURE.md §6.
@@ -338,6 +349,11 @@ namespace CosmicShore.Utility
         /// <summary>Whether this party was formed through a formal invite rather than presence.</summary>
         [NonSerialized] public bool InviteTriggered;
 
+        /// <summary>
+        /// Server-authoritative winner name, written by game controllers in their
+        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
         [NonSerialized] public string WinnerName = "";
 
         /// <summary>
@@ -360,6 +376,13 @@ namespace CosmicShore.Utility
         /// See Docs/ScoringSystem/REFACTOR.md R10.
         /// </summary>
         [NonSerialized] public List<ScoreResult> Results = new();
+
+        /// <summary>
+        /// The match's volume books (created / destroyed per pilot, Garrett 2026-11-18). The server writes them as
+        /// prisms change hands; a mode that shows them sends the lines to its clients at the end. Cleared with the
+        /// round stats.
+        /// </summary>
+        [NonSerialized] public readonly VolumeLedger VolumeLedger = new();
 
         /// <summary>
         /// Sets <see cref="Results"/> (reusing the same list instance so existing references
@@ -525,7 +548,10 @@ namespace CosmicShore.Utility
             // hull list and shipped to every client by the config sync RPC: element levels are
             // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
             // vessel has to be seeded from the same table the host seeds its replica from.
-            PublishStartingElements(game.StartingElements);
+            // A card that authors no table gets the standard element ladder's (ElementLadder): I1 at rest, I2-I4
+            // at level 5 in the game's element. Resolved HERE, on the launching machine, so it rides the same
+            // config-sync arrays and a guest can never derive a different answer.
+            PublishStartingElements(ResolveStartingElements(game));
 
             ClampSelectedVesselToGame(game);
         }
@@ -534,12 +560,30 @@ namespace CosmicShore.Utility
         /// The CURRENT card's per-hull starting element levels
         /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
         /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client.
-        /// Empty means every hull starts at rest, which is every single-hull card and the menu.
+        /// Empty means every hull starts at rest (the menu, an arena card with no table, a card at I1). A card that
+        /// authors no table publishes the standard element ladder's (<see cref="ElementLadder"/>).
         /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
         /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
         /// the vessels that read it spawn.
         /// </summary>
         public readonly List<VesselStartingElements> StartingElements = new();
+
+        readonly List<VesselStartingElements> _ladderScratch = new();
+
+        /// <summary>
+        /// The table this card launches with: its own when it authors any row (it then owns every hull and rung),
+        /// none for an arena card (Regatta and Broadside solve their handicaps from balance models, and arena cards
+        /// play at one intensity), and otherwise the standard element ladder's default
+        /// (<see cref="ElementLadder.AppendDefaultStartingElements"/>) over the card's hulls.
+        /// </summary>
+        IList<VesselStartingElements> ResolveStartingElements(SO_ArcadeGame game)
+        {
+            if (game.StartingElements is { Count: > 0 } || game.ArenaRules) return game.StartingElements;
+            _ladderScratch.Clear();
+            if (ModePreviewLibrarySO.TryGenres(game.Mode, out var primary, out var secondary))
+                ElementLadder.AppendDefaultStartingElements(AllowedVesselClasses, primary, secondary, _ladderScratch);
+            return _ladderScratch;
+        }
 
         /// <summary>Replace the published starting-element table. Single writers: the card sync
         /// on the host, the config RPC on a client, the menu's reset.</summary>
@@ -839,6 +883,23 @@ namespace CosmicShore.Utility
             InvokeTurnStarted();
         }
 
+        /// <summary>
+        /// Joins a turn that is already running: a pilot who rejoined the match (<c>MatchRejoin</c>,
+        /// Docs/MENU_REDESIGN_B.md section 103) loaded the scene after the countdown's <see cref="StartTurn"/> had
+        /// gone out to everybody else. The turn clock is set back by the time the turn has run, so race timers read
+        /// the same here as on the other peers. Nothing is zeroed - the scores carried on through the drop - and
+        /// the flight clock starts now, because this pilot has flown only since they came back.
+        /// No-op when a turn is already running here.
+        /// </summary>
+        public void JoinRunningTurn(float elapsedSeconds)
+        {
+            if (IsTurnRunning) return;
+            IsTurnRunning = true;
+            TurnStartTime = Time.time - Mathf.Max(0f, elapsedSeconds);
+            FlightClock.OnTurnStarted();
+            InvokeTurnStarted();
+        }
+
         public void InvokeGameLaunch()
         {
             // Load Time Insights: a game launch is the recording trigger; every peer raises this
@@ -919,6 +980,7 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = false;
             GameConfigSynced = false;
+            CourseVariant = -1;
 
             // Scene teardown / mid-game exit: abandon the flight clock without publishing a
             // time, so an abandoned game cannot leak its seconds into the next one.
@@ -979,6 +1041,7 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = false;
             GameConfigSynced = false;
+            CourseVariant = -1;
             FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
@@ -1031,10 +1094,15 @@ namespace CosmicShore.Utility
 
         void CleanupAllRoundStats()
         {
+            VolumeLedger.Clear();
             if (RoundStatsList == null) return;
 
             for (int i = 0, count = RoundStatsList.Count; i < count; i++)
+            {
                 RoundStatsList[i]?.Cleanup();
+                // The scoreboard's per-pilot telemetry (Docs/ScoringSystem/BUGS.md B21) starts the game empty too.
+                if (RoundStatsList[i] is RoundStats rs && rs) rs.ClearVesselStats();
+            }
         }
         
         public void ResetAllData()

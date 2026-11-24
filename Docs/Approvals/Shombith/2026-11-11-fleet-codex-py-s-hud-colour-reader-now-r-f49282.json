@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-11-fleet-codex-py-s-hud-colour-reader-now-r-f49282",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T01:24:45+00:00",
+  "area": "the Fleet Codex generator",
+  "summary": "fleet_codex.py's HUD colour reader now reads ColorTrace.Retrace(role, c) as c and follows a Color X => ... property like a field. The colour trace wraps HUD colour writes that way, and without this three icon parts (Manta's armed count, Urchin's ammo fill and riding indicator) fell back to their prefab colour. Measured over all 18 vessel HUDs: 0 differences from bleeding-edge after the fix, and nothing changes on bleeding-edge alone. Also: the domain renders' cache hash now reads the live colour set without its TracedColors list (palette_bytes), because the trace rewrites that list on every set whenever any colour is traced and no render reads it; every palette field still counts, so this branch's Nocturne Gold move re-renders as it should.",
+  "why": "keep the codex reading the authored colours after the colour trace lands",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "73a986a5c",
+  "paths": [
+    ".claude/skills/fleet-codex/SKILL.md",
+    "Tools/Build/fleet_codex.py"
+  ]
+}
