@@ -1,0 +1,205 @@
+{
+    "schemaVersion": 1,
+    "reportId": "ddfb2a637d0c",
+    "timestamp": "2026-11-24T01:07:03.8671099Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "83DN (LENOVO)",
+        "unityVersion": "6000.4.11f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "4256b6c918",
+    "trigger": "Return to menu — Voyage → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "Menu shown - the splash faded",
+    "interrupted": false,
+    "sceneFrom": "Voyage",
+    "sceneTo": "Voyage",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 1709.9727783203125,
+    "visualReadyMs": 1709.965087890625,
+    "waitMs": 55.44499588012695,
+    "humanWaitMs": 0.0,
+    "workMs": 1654.52783203125,
+    "unattributedMs": 50.30460739135742,
+    "framesDuringLoad": 4,
+    "avgFpsDuringLoad": 2.3392186164855959,
+    "worstFrameMs": 1563.6680908203125,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 50.29890060424805,
+            "endMs": 105.74099731445313,
+            "durationMs": 55.44209671020508,
+            "exclusiveMs": 55.44209671020508,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene exit drain behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 105.74340057373047,
+            "endMs": 105.74430084228516,
+            "durationMs": 0.0009002685546875,
+            "exclusiveMs": 0.0009002685546875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Trail release behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 105.74649810791016,
+            "endMs": 105.74849700927735,
+            "durationMs": 0.0019989013671875,
+            "exclusiveMs": 0.0019989013671875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 105.74960327148438,
+            "endMs": 1709.9727783203125,
+            "durationMs": 1604.22314453125,
+            "exclusiveMs": 1604.22314453125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 1604.22314453125,
+            "percent": 93.81571197509766,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 55.44499588012695,
+            "percent": 3.2424490451812746,
+            "spanCount": 3,
+            "waitMs": 55.44499588012695
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 50.30460739135742,
+            "percent": 2.9418368339538576,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 1604.22314453125,
+            "exclusiveMs": 1604.22314453125,
+            "maxSingleMs": 1604.22314453125,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 55.44209671020508,
+            "exclusiveMs": 55.44209671020508,
+            "maxSingleMs": 55.44209671020508,
+            "isWait": true
+        },
+        {
+            "label": "Trail release behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 0.0019989013671875,
+            "exclusiveMs": 0.0019989013671875,
+            "maxSingleMs": 0.0019989013671875,
+            "isWait": true
+        },
+        {
+            "label": "Scene exit drain behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 0.0009002685546875,
+            "exclusiveMs": 0.0009002685546875,
+            "maxSingleMs": 0.0009002685546875,
+            "isWait": true
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 1673.273681640625,
+            "durationMs": 1563.6680908203125,
+            "during": "Scene load → activation (Menu_Main)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — Voyage → Menu_Main"
+        },
+        {
+            "atMs": 1012.619873046875,
+            "label": "Netcode scene load begins: Menu_Main"
+        },
+        {
+            "atMs": 1709.967041015625,
+            "label": "Client ready — splash cleared, vessel visible"
+        }
+    ],
+    "counters": [],
+    "accumulators": [],
+    "errors": [],
+    "hints": [
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 1.6s during \"Scene load → activation (Menu_Main)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}

@@ -1,0 +1,100 @@
+{
+    "schemaVersion": 1,
+    "reportId": "a1da7e76c85e",
+    "timestamp": "2026-11-24T01:10:15.1655382Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "83DN (LENOVO)",
+        "unityVersion": "6000.4.11f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "4256b6c918",
+    "trigger": "Return to menu — Voyage → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "Menu shown - the splash faded",
+    "interrupted": false,
+    "sceneFrom": "Voyage",
+    "sceneTo": "Voyage",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 85.21739959716797,
+    "visualReadyMs": 85.21019744873047,
+    "waitMs": 60.843101501464847,
+    "humanWaitMs": 0.0,
+    "workMs": 24.374298095703126,
+    "unattributedMs": 24.374300003051759,
+    "framesDuringLoad": 4,
+    "avgFpsDuringLoad": 46.93877029418945,
+    "worstFrameMs": 64.92179870605469,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 24.374300003051759,
+            "endMs": 85.21739959716797,
+            "durationMs": 60.843101501464847,
+            "exclusiveMs": 60.843101501464847,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 60.843101501464847,
+            "percent": 71.39750671386719,
+            "spanCount": 1,
+            "waitMs": 60.843101501464847
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 24.374300003051759,
+            "percent": 28.60249137878418,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 60.843101501464847,
+            "exclusiveMs": 60.843101501464847,
+            "maxSingleMs": 60.843101501464847,
+            "isWait": true
+        }
+    ],
+    "stalls": [],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — Voyage → Menu_Main"
+        },
+        {
+            "atMs": 85.21160125732422,
+            "label": "Client ready — splash cleared, vessel visible"
+        }
+    ],
+    "counters": [],
+    "accumulators": [],
+    "errors": [],
+    "hints": []
+}
