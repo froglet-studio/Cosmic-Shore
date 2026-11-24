@@ -325,7 +325,7 @@ anything: `SlipLineController.Ruins.cs` and the three lines added to `SlipLineCo
 - [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
 - [ ] Frame time at I4 with about 660 more prisms in the cell (not measured).
 
-## 🔴 Headlong: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+## 🟡 Headlong: garden ruins at I4 (2026-11-24, Yash, compiled and AI-raced in the editor; no person has looked)
 
 Headlong lays Spearline's ruins round its own circuit on I4, less what would stand in a hedge or on a Time crystal
 (`Assets/_Scripts/Controller/Arcade/HEADLONG.md` section 0a). Run without Unity: `HeadlongRuinsTests` 8 of 8 and
@@ -333,15 +333,23 @@ Headlong lays Spearline's ruins round its own circuit on I4, less what would sta
 eight negative controls), and `author_headlong_assets.py --check`. Not run: a Unity compile of
 `HeadlongController.Ruins.cs` and the hook in `HeadlongController.Stampede.cs`, and the race itself.
 
-- [ ] Unity compiles, and `HeadlongRuinsTests` pass in the Test Runner.
+**Run in the open editor, 2026-11-24** (Unity 6000.3.17f1): the editor compiled it (`recompile_status` errors `[]`),
+`HeadlongRuinsTests` 8 of 8 in 205 s, and two Headlong races at I4 through the mode smoke driver (`ModeSmokeLauncher`,
+3 AI Rhinos, Legendary, offline, time scale 4). Both reached game over with no error or exception in the match
+(169 and 197 game seconds); the smoke marks them failed for one boot error, `NotFound`, logged before the menu and not
+by Headlong. The courses laid 630 and 647 ruin prisms in Jade, Ruby and Gold, no wheel on either, and the Rhinos
+ploughed about a third of them in the first 30 game seconds. No race without ruins was run for comparison, and the
+frame rate read 62 to 85 fps between captures at time scale 4, which is not a measurement.
+
+- [x] Unity compiles, and `HeadlongRuinsTests` pass in the Test Runner.
 - [ ] Headlong at I4: about seven ruins a lap stand between the gates in Jade, Ruby and Gold, none at a gate, none
       inside a hedge (the Blue hedge shows whole through its ruin), none on a Time crystal.
 - [ ] I1 to I3: no ruins.
 - [ ] A Rhino that ploughs a ruin sprays its prisms as it does a hedge's; the ruin stays broken on the next lap while
       the hedges stand back up.
 - [ ] On a course with a wheel (about one in six): it turns at the same angle on host and client, and through no hedge.
-- [ ] Three AI Rhinos still finish the race at I4, and their times against a race without ruins (ploughed ruin prisms
-      feed the ramp's fuel like any prism: not measured).
+- [x] Three AI Rhinos still finish the race at I4 (twice, 169 and 197 game seconds).
+- [ ] Their times against a race without ruins (ploughed ruin prisms feed the ramp's fuel like any prism: not measured).
 - [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
 - [ ] Frame rate at I4 with about 680 more prisms in the cell (the hedges are about 1530).
 

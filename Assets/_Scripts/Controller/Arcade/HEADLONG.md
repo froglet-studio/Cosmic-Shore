@@ -75,7 +75,7 @@ plain hedge sprays aside with no speed lost; at I3 a thorn burns a petal (the Ti
 lets a Rhino through clean; at I4 the race starts at Time 5, a fast exit bulldozes a stampede hedge with no burn, a
 slow one burns; ploughed hedges are whole again on the next lap; an AI Rhino swerves through windows before its last lap.
 
-## 0a. Garden ruins at I4 (`HeadlongRuins`, `HeadlongController.Ruins.cs`; Yash, 2026-11-24) - NOT editor-verified
+## 0a. Garden ruins at I4 (`HeadlongRuins`, `HeadlongController.Ruins.cs`; Yash, 2026-11-24) - compiled and AI-raced in the editor, not looked at by a person
 
 The environment update Spearline got (`SPEARLINE.md` §2a), on Headlong's circuit. `HeadlongRuins.Lay` CALLS
 `SpearlineRuins.Lay` with the lap's gates (the generator is not copied and no Spearline file is changed): one ruin on
@@ -96,6 +96,10 @@ Each ruin is one domain colour, Jade, Ruby and Gold in turn round the lap, so th
 (`ruinDomains` on the controller; empty = Blue). They are laid in the hedges' prism by every peer from the broadcast
 course and returned to the pool with the stampede. Decoration, with the game's own prism rules and nothing else: the
 mode reads and writes no vessel.
+
+**In the editor, 2026-11-24:** it compiles, `HeadlongRuinsTests` pass 8 of 8, and three AI Rhinos finished two I4
+races (169 and 197 game seconds, 630 and 647 ruin prisms laid, no wheel on either course) with no error in the match.
+Details and what a person still has to look at: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 **Open, not measured:**
 - A Rhino ploughs a ruin as it ploughs any prism, and since #2233 ploughed prisms feed the ramp's fuel. So on Headlong
