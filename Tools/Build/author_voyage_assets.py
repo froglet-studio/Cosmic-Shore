@@ -93,11 +93,11 @@ LINES_FIELDS = [
 
 # Crystal Run (Docs/Voyages/CRYSTAL_RUN.md): the objective box, the toasts and the end-of-voyage scoreboard.
 LINES_FIELDS += [
-    "ObjectiveRaidKicker", "ObjectiveRaidGoal", "ObjectiveCrystals", "ObjectiveCount", "ObjectiveElement",
+    "ObjectiveRaidKicker", "ObjectiveVoyageKicker", "ObjectiveRaidGoal", "ObjectiveCrystals", "ObjectiveCount", "ObjectiveElement",
     "ObjectiveElementSeparator", "ObjectiveHull", "ObjectiveBreach", "ObjectiveCell", "ObjectiveCalm", "ObjectiveHostile",
     "ObjectiveGoalMet", "ObjectiveHomeKicker", "ObjectiveHomeGoal", "ObjectiveAtStake",
     "ToastCellCalm", "ToastCellHostile", "ToastFinalCell", "ToastGoalReached",
-    "ScoreKickerDone", "ScoreKickerFailed", "ScoreKickerLost", "ScoreKickerDocked", "ScoreRaidTitle", "ScoreRaidStats",
+    "ScoreKickerDone", "ScoreKickerFailed", "ScoreKickerLost", "ScoreKickerDocked", "ScoreRaidTitle", "ScoreRaidStats", "ScoreVoyageStats",
     "ScoreEscortTitle", "ScoreEscortStats", "ScoreLostTitle", "ScoreDockedTitle", "ScoreDockedStats", "ScoreHull",
     "ScoreHullValue", "ScoreColSeat", "ScoreColCrystals", "ScoreColKills", "ScoreRowSeat", "ScoreRowYou", "ScoreRewards",
     "ScoreStolen", "ScoreStolenBy", "ScoreStolenSeparator", "ScorePay", "ScoreEscortPay", "ScoreRewardValue",
@@ -112,7 +112,8 @@ LINES_FIELDS += [
 # Crystal Run's job keys (JobTemplate in VoyageContent.cs): an always-offered job counted from the moment the Ark sails.
 def crystal_run_fields(j):
     return {"Always": bool(j.get("always", False)), "CountsUnderway": bool(j.get("countsUnderway", False)),
-            "Cells": int(j.get("cells", 0)), "VentureGoal": j.get("ventureGoal", 0), "VentureCells": int(j.get("ventureCells", 0))}
+            "Cells": int(j.get("cells", 0)), "VentureGoal": j.get("ventureGoal", 0), "VentureCells": int(j.get("ventureCells", 0)),
+            "GoalPerCell": j.get("goalPerCell", 0)}
 
 
 def crystal_run_errors(j):
@@ -174,6 +175,8 @@ TOY_COLORS = ("routeColor", "hereColor", "portColor", "vaultColor", "coreColor",
 TOKENS = {"from", "to", "about", "pilot", "rival", "n", "kaiju", "relic", "saga", "faction", "tier", "holder", "home",
           "count", "seconds", "done", "goal", "percent"}
 SEALED = ("VaultField", "Hoard")
+# A voyage type's own name is never a voyage's title (Docs/Voyages/MILESTONE_2.md section 2).
+TYPE_NAMES = {"salvage", "escort", "escort the ark", "bounty", "hold the core", "piracy", "crystal run"}
 PORTS = ("Port", "Harbour")
 
 
@@ -534,6 +537,39 @@ def validate(spec):
     for key in ("cullRadius", "observeRadius", "rivalAbeam") + TOY_COLORS:
         if key not in toy:
             errors.append(f"toy.{key} is missing")
+
+    # The named voyages (Milestone 2): a type is a job template or the escort card; a voyage's name is its own, never a
+    # type's (Shombith 2026-11-24: "Bounty, salvage, piracy are voyage types they cannot be names").
+    job_ids = {j["id"] for j in spec["jobs"]}
+    voyage_ids = set()
+    for v in spec.get("voyages", []):
+        vid = v.get("id", "")
+        if not vid or vid in voyage_ids:
+            errors.append(f"voyage id {vid!r} is empty or used twice")
+        voyage_ids.add(vid)
+        if v.get("type") != "escort" and v.get("type") not in job_ids:
+            errors.append(f"voyage {vid}: type {v.get('type')} is no job and not 'escort'")
+        if v.get("type") == "job.return":
+            errors.append(f"voyage {vid}: the way home is never a named voyage")
+        if v.get("to") not in locs:
+            errors.append(f"voyage {vid}: unknown destination {v.get('to')}")
+        if v.get("from") and v["from"] not in locs:
+            errors.append(f"voyage {vid}: unknown start {v['from']}")
+        if v.get("from") and v.get("from") == v.get("to"):
+            errors.append(f"voyage {vid}: starts where it ends")
+        if v.get("type") == "escort" and not v.get("from"):
+            errors.append(f"voyage {vid}: an escort names where it sets out from")
+        if not 1 <= int(v.get("rung", 0)) <= 4:
+            errors.append(f"voyage {vid}: rung must be 1 to 4 (I1-I4)")
+        if not 1 <= int(v.get("cells", 0)) <= 6:
+            errors.append(f"voyage {vid}: cells must be 1 to 6")
+        name = v.get("name", "")
+        if not name.strip():
+            errors.append(f"voyage {vid}: no name")
+        elif name.strip().lower() in TYPE_NAMES:
+            errors.append(f"voyage {vid}: '{name}' is a voyage type, not a name")
+        text(f"voyage {vid}", name, tokens=False)
+        text(f"voyage {vid}", v.get("line", ""), tokens=False)
     return errors
 
 
@@ -632,6 +668,10 @@ def to_model(spec):
     m["Kaiju"] = {field: (bool(kaiju[key]) if kind is bool else kaiju[key]) for key, field, kind in KAIJU_FIELDS}
     words = spec.get("words", {})
     m["Words"] = {field: words.get(key, "") for key, field in WORDS_FIELDS}
+    # The named voyages (Milestone 2, Docs/Voyages/MILESTONE_2.md section 2).
+    m["Voyages"] = [{"Id": v["id"], "Type": v["type"], "Name": v["name"], "From": v.get("from", ""), "To": v["to"],
+                     "Rung": int(v.get("rung", 1)), "Cells": int(v.get("cells", 1)), "Line": v.get("line", "")}
+                    for v in spec.get("voyages", [])]
     return m
 
 
@@ -827,6 +867,12 @@ def self_test():
         "a rival at an unknown home": lambda s: s["rivals"][0].update(home="loc.nowhere"),
         "a rival of strength 4": lambda s: s["rivals"][0].update(strength=4),
         "a rival with no hulls": lambda s: s["rivals"][0].update(hulls=[]),
+        "a voyage named for its type": lambda s: s["voyages"][0].update(name="Salvage"),
+        "a voyage of seven cells": lambda s: s["voyages"][0].update(cells=7),
+        "a voyage at rung 5": lambda s: s["voyages"][0].update(rung=5),
+        "a voyage of an unknown type": lambda s: s["voyages"][0].update(type="job.nope"),
+        "a voyage to nowhere": lambda s: s["voyages"][0].update(to="loc.nowhere"),
+        "an escort from nowhere": lambda s: next(v for v in s["voyages"] if v["type"] == "escort").update(**{"from": ""}),
         "a rival with an unknown temper": lambda s: s["rivals"][0].update(temper="Sleepy"),
         "a saga chapter whose job is another type's work": lambda s: s["sagas"][0]["chapters"][0].update(job="job.courier.dispatch"),
         "a saga chapter opening an unknown chapter": lambda s: s["sagas"][0]["chapters"][0].update(opens="ch.nope"),
@@ -868,7 +914,7 @@ def self_test():
     # The twin is the model: every top-level C# field, enums as numbers, and it round-trips.
     twin = json.loads(emit_twin(spec))
     for field in ("Locations", "Lanes", "Crew", "Jobs", "Events", "Seeds", "SeedWrecks", "WreckLine", "WreckNewsLine",
-                  "Rivals", "Sagas", "World", "Kaiju", "Words"):
+                  "Rivals", "Sagas", "World", "Kaiju", "Words", "Voyages"):
         if field not in twin:
             failures.append(f"the twin lacks {field}")
     if twin["Jobs"] and not isinstance(twin["Jobs"][0]["Verb"], int):

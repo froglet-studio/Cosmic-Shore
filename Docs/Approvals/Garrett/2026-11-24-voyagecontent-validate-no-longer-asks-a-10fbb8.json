@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-24-voyagecontent-validate-no-longer-asks-a-10fbb8",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-24T11:42:41+00:00",
+  "area": "Voyage depth rules",
+  "summary": "VoyageContent.Validate no longer asks a job offered at every port (Always, e.g. Salvage) for a faction type, and the board test counts six options besides that work; both had failed since Crystal Run joined every board. Named Milestone 2 voyages now replace the generic Salvage card (Docs/Voyages/MILESTONE_2.md).",
+  "branch": "claude/project-thread-rkcg3z",
+  "commit": "248e6d904"
+}

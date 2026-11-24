@@ -83,7 +83,8 @@ namespace CosmicShore.Tests
             var crew = c.Crew.Select(p => p.PilotId).ToList();
             var seated = new[] { PilotOf(c, FactionType.Hunter), PilotOf(c, FactionType.Merchant), PilotOf(c, FactionType.Priest) };
             var board = VoyageRules.Board(s, c, seated, crew);
-            Assert.AreEqual(c.World.BoardSize, board.Count, "about six options at a port (the 2026-10-30 meeting)");
+            Assert.AreEqual(c.World.BoardSize, board.Count(j => !c.Job(j.TemplateId).Always),
+                "about six options at a port (the 2026-10-30 meeting), besides the work every port offers");
             Assert.AreEqual(FactionType.Hunter, c.Job(board[0].TemplateId).Faction, "the first seat's pilot leads");
             Assert.AreEqual(FactionType.Merchant, c.Job(board[1].TemplateId).Faction);
             Assert.AreEqual(FactionType.Priest, c.Job(board[2].TemplateId).Faction);

@@ -809,6 +809,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.courier.dispatch
       Kind: 0
       Faction: 1
@@ -846,6 +847,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.convoy.contract
       Kind: 17
       Faction: 1
@@ -882,6 +884,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.hunt.sighting
       Kind: 1
       Faction: 2
@@ -919,6 +922,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.hunt.rumour
       Kind: 1
       Faction: 2
@@ -955,6 +959,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.hunt.lair
       Kind: 18
       Faction: 2
@@ -991,6 +996,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.hunt.kaiju
       Kind: 18
       Faction: 2
@@ -1025,6 +1031,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.defence.aid
       Kind: 3
       Faction: 3
@@ -1061,6 +1068,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.defence.patrol
       Kind: 3
       Faction: 3
@@ -1096,6 +1104,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.defence.retake
       Kind: 3
       Faction: 3
@@ -1130,6 +1139,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.salvage.wreck
       Kind: 2
       Faction: 4
@@ -1165,6 +1175,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.raid.hoard
       Kind: 14
       Faction: 4
@@ -1200,6 +1211,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.bounty.crew
       Kind: 11
       Faction: 5
@@ -1234,6 +1246,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.bounty.writ
       Kind: 11
       Faction: 5
@@ -1268,6 +1281,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.survey.uncharted
       Kind: 4
       Faction: 6
@@ -1303,6 +1317,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.survey.fragment
       Kind: 4
       Faction: 6
@@ -1337,6 +1352,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.survey.sound
       Kind: 4
       Faction: 6
@@ -1371,6 +1387,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.liberate.pen
       Kind: 8
       Faction: 7
@@ -1406,6 +1423,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.lift.dispatch
       Kind: 10
       Faction: 8
@@ -1440,6 +1458,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.harvest.bloom
       Kind: 5
       Faction: 9
@@ -1475,6 +1494,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.harvest.glean
       Kind: 5
       Faction: 9
@@ -1509,6 +1529,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.raid.crystals
       Kind: 14
       Faction: 0
@@ -1565,6 +1586,64 @@ MonoBehaviour:
       Cells: 4
       VentureGoal: 10
       VentureCells: 1
+      GoalPerCell: 0
+    - Id: job.salvage.drift
+      Kind: 2
+      Faction: 0
+      Needs: 0
+      Goes: 1
+      Title: 'The drift to {to}'
+      Summary: 'An Ark broke up near {to} and her crystal is adrift in the cells on the way. Gather the loose crystal between the three of you while the Ark sails; how rough the water is depends on the voyage. Bring it home and it is yours; lose the Ark and you lose it.'
+      SuccessLine: 'The squad gathered the drift on the way to {to}.'
+      FailLine: 'The drift before {to} kept most of its crystal.'
+      SuccessLines:
+      - 'The squad gathered the drift on the way to {to}.'
+      - 'The hold is heavy with salvage from the drift before {to}.'
+      FailLines:
+      - 'The drift before {to} kept most of its crystal.'
+      Reward: 10
+      RewardElement: 5
+      OnSuccess: 
+      OnFail: 
+      Verb: 3
+      Goal: 50
+      HullFloor: 0
+      NoKill: 0
+      Role: 3
+      Tier: 0
+      StandingDelta: 0
+      NotorietyDelta: 0
+      GoesUncharted: 0
+      AvoidsOwnDomain: 0
+      RivalsMayTake: 1
+      ChronicleLine: 'Salvaged the drift before {to}.'
+      HostileCells:
+      - 0
+      - 1
+      - 1
+      - 1
+      BreachHull: 0.1
+      CellWorlds:
+      - Caldera
+      - Orrery
+      - Garland
+      - Geode
+      CellAnchorSeconds:
+      - 20
+      - 30
+      - 30
+      - 40
+      CellLife:
+      - 0.8
+      - 1.3
+      - 0.9
+      - 1.4
+      Always: 1
+      CountsUnderway: 1
+      Cells: 4
+      VentureGoal: 10
+      VentureCells: 1
+      GoalPerCell: 12
     - Id: job.build.breach
       Kind: 9
       Faction: 10
@@ -1599,6 +1678,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.build.shore
       Kind: 9
       Faction: 10
@@ -1633,6 +1713,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.exhibition.run
       Kind: 16
       Faction: 11
@@ -1667,6 +1748,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.study.creature
       Kind: 6
       Faction: 12
@@ -1702,6 +1784,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.study.bloom
       Kind: 6
       Faction: 12
@@ -1736,6 +1819,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.tend.nursery
       Kind: 15
       Faction: 13
@@ -1770,6 +1854,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.rescue.derelict
       Kind: 7
       Faction: 14
@@ -1805,6 +1890,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.vigil.shrine
       Kind: 12
       Faction: 15
@@ -1840,6 +1926,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.parley.accord
       Kind: 13
       Faction: 16
@@ -1874,6 +1961,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     - Id: job.parley.envoy
       Kind: 13
       Faction: 16
@@ -1908,6 +1996,7 @@ MonoBehaviour:
       Cells: 0
       VentureGoal: 0
       VentureCells: 0
+      GoalPerCell: 0
     Events:
     - Id: ev.courier.delivered
       Writes:
@@ -2825,6 +2914,103 @@ MonoBehaviour:
       RelationCoOp: '{rival} fly your colour. Three more wingmen.'
       RelationRace: '{rival} are after the same finds. First to crack a shell keeps it.'
       RelationHostile: '{rival} came for your Ark.'
+    Voyages:
+    - Id: voyage.salvage.spindrift
+      Type: job.salvage.drift
+      Name: Spindrift's Last Glitter
+      From: 
+      To: loc.spindrift
+      Rung: 1
+      Cells: 2
+      Line: 'A salvage run at the far end of Aurum Banks: the shallows still shine where a merchant Ark broke up last season. Calm water, slow drift, the first run anyone should sail.'
+    - Id: voyage.salvage.glassmere
+      Type: job.salvage.drift
+      Name: The Glassmere Shatter
+      From: 
+      To: loc.glassmere
+      Rung: 2
+      Cells: 4
+      Line: An Ark burst at Glassmere and her crystal is spread across four cells. Black Tide heard about it at the same time you did.
+    - Id: voyage.salvage.cinder
+      Type: job.salvage.drift
+      Name: Embers of Cinder Shoal
+      From: 
+      To: loc.cinder.shoal
+      Rung: 3
+      Cells: 5
+      Line: The richest drift in Carmine Drift, burning in cells the Ruby crews hold. Kaiju wait between the cells.
+    - Id: voyage.escort.lanterns
+      Type: escort
+      Name: Lanterns Home
+      From: loc.lantern
+      To: loc.harbour.jade
+      Rung: 1
+      Cells: 3
+      Line: Carry the Lantern Reach keepers home through quiet water. The first escort, and a short one.
+    - Id: voyage.escort.tollmoor
+      Type: escort
+      Name: The Tollmoor Crossing
+      From: loc.harbour.jade
+      To: loc.tollmoor
+      Rung: 2
+      Cells: 4
+      Line: A whole port's worth of traders aboard, through the busiest lane in the sea.
+    - Id: voyage.escort.maw
+      Type: escort
+      Name: Through the Maw's Teeth
+      From: loc.gnawreach
+      To: loc.maw
+      Rung: 4
+      Cells: 6
+      Line: Six cells of the Deep with a wounded crew aboard. Every cell is held against you.
+    - Id: voyage.bounty.spear
+      Type: job.bounty.crew
+      Name: Hush the Quiet Spear
+      From: 
+      To: loc.magpie
+      Rung: 1
+      Cells: 2
+      Line: A young crew with more nerve than skill. Catch them before they learn better.
+    - Id: voyage.bounty.tide
+      Type: job.bounty.crew
+      Name: Black Tide Rising
+      From: 
+      To: loc.gullbone
+      Rung: 2
+      Cells: 3
+      Line: Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them.
+    - Id: voyage.bounty.grin
+      Type: job.bounty.crew
+      Name: The Grin Runs Last
+      From: 
+      To: loc.ironmouth
+      Rung: 4
+      Cells: 4
+      Line: The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs.
+    - Id: voyage.hold.verdigris
+      Type: job.defence.aid
+      Name: The Verdigris Vigil
+      From: 
+      To: loc.verdigris
+      Rung: 1
+      Cells: 1
+      Line: A short hold under a calm core while the wardens rest. One wave, no rival.
+    - Id: voyage.hold.ironmouth
+      Type: job.defence.aid
+      Name: Ironmouth Holds
+      From: 
+      To: loc.ironmouth
+      Rung: 2
+      Cells: 2
+      Line: Another domain is laying mass at Ironmouth's core faster than the wardens can clear it.
+    - Id: voyage.hold.ninefold
+      Type: job.defence.aid
+      Name: The Ninefold Stand
+      From: 
+      To: loc.shrine.ninefold
+      Rung: 4
+      Cells: 3
+      Line: The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju.
   cellPool: []
   lines:
     VoyageName: VOYAGE
@@ -3264,6 +3450,7 @@ MonoBehaviour:
     KindHome: Home
     KindEscort: Ark escort
     ObjectiveRaidKicker: CRYSTAL RUN
+    ObjectiveVoyageKicker: '{name}'
     ObjectiveRaidGoal: 'Steal {goal} crystals before the Ark reaches {to}'
     ObjectiveCrystals: CRYSTALS
     ObjectiveCount: '{done} / {goal}'
@@ -3288,6 +3475,7 @@ MonoBehaviour:
     ScoreKickerDocked: HOME
     ScoreRaidTitle: '{done} of {goal} crystals stolen'
     ScoreRaidStats: 'Crystal Run to {to} - {cells} cells - {time}'
+    ScoreVoyageStats: '{name} - {cells} cells - {time}'
     ScoreEscortTitle: 'The Ark reached {to}'
     ScoreEscortStats: 'Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}'
     ScoreLostTitle: Everything aboard went down with it

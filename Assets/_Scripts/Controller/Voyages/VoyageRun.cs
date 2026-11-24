@@ -454,6 +454,9 @@ namespace CosmicShore.Gameplay
                 Resolve(VoyageRules.WorkDone(_state.Current, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
 
             if (!VoyageRules.Take(_state, Content, job)) return;
+            // A named voyage's sea (Milestone 2): its hostile cells, breach line and life from its rung, on the host, before
+            // the leg is sent to the party.
+            LaySea(job);
             var route = FitLeg(job, VoyageRules.Corridor(Content, job.From, job.To, _state.Day, _worlds, _state));
             if (route.Count == 0)
             {
@@ -498,10 +501,13 @@ namespace CosmicShore.Gameplay
         void PrepareLeg(VoyageJob job)
         {
             _profile = VoyageRules.CorridorProfile(_state, Content, job.From, job.To);
-            // The way home sails faster (nothing is stolen on it; Voyage.asset, Homeward Ark Speed Factor).
+            // The way home sails faster (nothing is stolen on it; Voyage.asset, Homeward Ark Speed Factor); a named
+            // voyage's Ark keeps the cell clock (VoyageRun.Sea.cs).
             if (_arkCfg != null && _baseArkSpeed > 0f)
-                _arkCfg.ArkSpeed = _baseArkSpeed * (job.IsReturn && _def ? Mathf.Max(1f, _def.HomewardArkSpeedFactor) : 1f);
+                _arkCfg.ArkSpeed = job.IsNamed ? PacedArkSpeed()
+                    : _baseArkSpeed * (job.IsReturn && _def ? Mathf.Max(1f, _def.HomewardArkSpeedFactor) : 1f);
             _hostileWorld = VoyageRules.HostileWorld(_state, Content, job.To);
+            BeginSea();
             BeginLegAssaults();
             BeginLegCount(job);
         }
@@ -523,6 +529,8 @@ namespace CosmicShore.Gameplay
             cell.RuntimeFloraShare = _def ? Mathf.Max(0.1f, _profile[routeIndex]) * Mathf.Max(0.1f, _def.CellFloraScale) / creatures : 1f;
             // A phone stills its creatures' rigs off screen (Voyage.asset, "Voyage - phones").
             cell.CullOffscreenAnimation = _def && _def.StillOffscreenCreatures;
+            // Salvage's loose crystals drift through the cell (VoyageRun.Sea.cs).
+            SeedDrift(cell, routeIndex);
             // The job's hostile cells (VoyageRun.Assault.cs); without a pattern, the destination when its place is hostile.
             if (PrepareAssaultCell(cell, routeIndex))
                 cell.SetReplicatedStartingController(CellControlRules.Opposing(LiveDomain(_context)));

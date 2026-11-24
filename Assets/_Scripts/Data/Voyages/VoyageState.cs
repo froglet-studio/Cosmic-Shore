@@ -261,6 +261,12 @@ namespace CosmicShore.Data
         public List<string> CellWorlds = new();
         public List<float> CellAnchorSeconds = new();
         public List<float> CellLife = new();
+        /// <summary>The named voyage this job sails (<see cref="NamedVoyage.Id"/>), or empty for unnamed work. A named
+        /// voyage's sea is laid by its rung (<see cref="VoyageSea.Lay"/>).</summary>
+        public string VoyageId;
+
+        /// <summary>True when this job sails a named voyage.</summary>
+        public bool IsNamed => !string.IsNullOrEmpty(VoyageId);
 
         /// <summary>A shallow copy (the warnings and news are shared): the voyage page sets a copy's difficulty, never the
         /// board's own job.</summary>

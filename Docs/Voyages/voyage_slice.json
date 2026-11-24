@@ -1433,6 +1433,64 @@
    ]
   },
   {
+   "id": "job.salvage.drift",
+   "kind": "Salvage",
+   "faction": "None",
+   "needs": "None",
+   "goes": "Port",
+   "verb": "Gather",
+   "goal": 50,
+   "role": "Cultivator",
+   "tier": 0,
+   "standing": 0,
+   "notoriety": 0,
+   "title": "The drift to {to}",
+   "summary": "An Ark broke up near {to} and her crystal is adrift in the cells on the way. Gather the loose crystal between the three of you while the Ark sails; how rough the water is depends on the voyage. Bring it home and it is yours; lose the Ark and you lose it.",
+   "success": [
+    "The squad gathered the drift on the way to {to}.",
+    "The hold is heavy with salvage from the drift before {to}."
+   ],
+   "fail": [
+    "The drift before {to} kept most of its crystal."
+   ],
+   "reward": 10,
+   "element": "Omni",
+   "onSuccess": "",
+   "onFail": "",
+   "chronicle": "Salvaged the drift before {to}.",
+   "always": true,
+   "countsUnderway": true,
+   "cells": 4,
+   "ventureGoal": 10,
+   "ventureCells": 1,
+   "hostileCells": [
+    false,
+    true,
+    true,
+    true
+   ],
+   "breachHull": 0.1,
+   "cellWorlds": [
+    "Caldera",
+    "Orrery",
+    "Garland",
+    "Geode"
+   ],
+   "cellAnchorSeconds": [
+    20,
+    30,
+    30,
+    40
+   ],
+   "cellLife": [
+    0.8,
+    1.3,
+    0.9,
+    1.4
+   ],
+   "goalPerCell": 12
+  },
+  {
    "id": "job.build.breach",
    "kind": "Build",
    "faction": "Contractor",
@@ -1667,6 +1725,128 @@
    "onSuccess": "ev.envoy.heard",
    "onFail": "",
    "chronicle": "Spoke for the accord at {to}."
+  }
+ ],
+ "voyages": [
+  {
+   "id": "voyage.salvage.spindrift",
+   "type": "job.salvage.drift",
+   "name": "Spindrift's Last Glitter",
+   "from": "",
+   "to": "loc.spindrift",
+   "rung": 1,
+   "cells": 2,
+   "line": "A salvage run at the far end of Aurum Banks: the shallows still shine where a merchant Ark broke up last season. Calm water, slow drift, the first run anyone should sail."
+  },
+  {
+   "id": "voyage.salvage.glassmere",
+   "type": "job.salvage.drift",
+   "name": "The Glassmere Shatter",
+   "from": "",
+   "to": "loc.glassmere",
+   "rung": 2,
+   "cells": 4,
+   "line": "An Ark burst at Glassmere and her crystal is spread across four cells. Black Tide heard about it at the same time you did."
+  },
+  {
+   "id": "voyage.salvage.cinder",
+   "type": "job.salvage.drift",
+   "name": "Embers of Cinder Shoal",
+   "from": "",
+   "to": "loc.cinder.shoal",
+   "rung": 3,
+   "cells": 5,
+   "line": "The richest drift in Carmine Drift, burning in cells the Ruby crews hold. Kaiju wait between the cells."
+  },
+  {
+   "id": "voyage.escort.lanterns",
+   "type": "escort",
+   "name": "Lanterns Home",
+   "from": "loc.lantern",
+   "to": "loc.harbour.jade",
+   "rung": 1,
+   "cells": 3,
+   "line": "Carry the Lantern Reach keepers home through quiet water. The first escort, and a short one."
+  },
+  {
+   "id": "voyage.escort.tollmoor",
+   "type": "escort",
+   "name": "The Tollmoor Crossing",
+   "from": "loc.harbour.jade",
+   "to": "loc.tollmoor",
+   "rung": 2,
+   "cells": 4,
+   "line": "A whole port's worth of traders aboard, through the busiest lane in the sea."
+  },
+  {
+   "id": "voyage.escort.maw",
+   "type": "escort",
+   "name": "Through the Maw's Teeth",
+   "from": "loc.gnawreach",
+   "to": "loc.maw",
+   "rung": 4,
+   "cells": 6,
+   "line": "Six cells of the Deep with a wounded crew aboard. Every cell is held against you."
+  },
+  {
+   "id": "voyage.bounty.spear",
+   "type": "job.bounty.crew",
+   "name": "Hush the Quiet Spear",
+   "from": "",
+   "to": "loc.magpie",
+   "rung": 1,
+   "cells": 2,
+   "line": "A young crew with more nerve than skill. Catch them before they learn better."
+  },
+  {
+   "id": "voyage.bounty.tide",
+   "type": "job.bounty.crew",
+   "name": "Black Tide Rising",
+   "from": "",
+   "to": "loc.gullbone",
+   "rung": 2,
+   "cells": 3,
+   "line": "Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them."
+  },
+  {
+   "id": "voyage.bounty.grin",
+   "type": "job.bounty.crew",
+   "name": "The Grin Runs Last",
+   "from": "",
+   "to": "loc.ironmouth",
+   "rung": 4,
+   "cells": 4,
+   "line": "The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs."
+  },
+  {
+   "id": "voyage.hold.verdigris",
+   "type": "job.defence.aid",
+   "name": "The Verdigris Vigil",
+   "from": "",
+   "to": "loc.verdigris",
+   "rung": 1,
+   "cells": 1,
+   "line": "A short hold under a calm core while the wardens rest. One wave, no rival."
+  },
+  {
+   "id": "voyage.hold.ironmouth",
+   "type": "job.defence.aid",
+   "name": "Ironmouth Holds",
+   "from": "",
+   "to": "loc.ironmouth",
+   "rung": 2,
+   "cells": 2,
+   "line": "Another domain is laying mass at Ironmouth's core faster than the wardens can clear it."
+  },
+  {
+   "id": "voyage.hold.ninefold",
+   "type": "job.defence.aid",
+   "name": "The Ninefold Stand",
+   "from": "",
+   "to": "loc.shrine.ninefold",
+   "rung": 4,
+   "cells": 3,
+   "line": "The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju."
   }
  ],
  "events": [
@@ -3021,6 +3201,7 @@
   "KindHome": "Home",
   "KindEscort": "Ark escort",
   "ObjectiveRaidKicker": "CRYSTAL RUN",
+  "ObjectiveVoyageKicker": "{name}",
   "ObjectiveRaidGoal": "Steal {goal} crystals before the Ark reaches {to}",
   "ObjectiveCrystals": "CRYSTALS",
   "ObjectiveCount": "{done} / {goal}",
@@ -3045,6 +3226,7 @@
   "ScoreKickerDocked": "HOME",
   "ScoreRaidTitle": "{done} of {goal} crystals stolen",
   "ScoreRaidStats": "Crystal Run to {to} - {cells} cells - {time}",
+  "ScoreVoyageStats": "{name} - {cells} cells - {time}",
   "ScoreEscortTitle": "The Ark reached {to}",
   "ScoreEscortStats": "Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}",
   "ScoreLostTitle": "Everything aboard went down with it",

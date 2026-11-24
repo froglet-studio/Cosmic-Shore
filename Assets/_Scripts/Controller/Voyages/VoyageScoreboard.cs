@@ -42,6 +42,8 @@ namespace CosmicShore.Gameplay
         public bool Succeeded;
         /// <summary>The place the voyage reached (a display name).</summary>
         public string To = string.Empty;
+        /// <summary>The voyage's own name (the job's title; a type's name is never one).</summary>
+        public string Name = string.Empty;
 
         public int Done;
         public int Goal;
@@ -166,6 +168,8 @@ namespace CosmicShore.Gameplay
         public Kind Goal;
         /// <summary>Where the voyage ends (a display name): the run's stop, home, the escort's last world.</summary>
         public string To;
+        /// <summary>The voyage's own name (the job's title).</summary>
+        public string Name;
         public int Done;
         public int Target;
         public int[] Crystals;

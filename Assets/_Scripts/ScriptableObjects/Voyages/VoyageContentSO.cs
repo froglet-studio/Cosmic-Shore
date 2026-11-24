@@ -889,6 +889,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Objective box: the kicker over a Crystal Run's goal.")]
         public string ObjectiveRaidKicker = "CRYSTAL RUN";
+        [Tooltip("Objective box: the kicker over a named voyage's goal ({name}: the voyage's own name, Milestone 2).")]
+        public string ObjectiveVoyageKicker = "{name}";
         [Tooltip("Objective box: a Crystal Run's goal ({goal}, {to}).")]
         public string ObjectiveRaidGoal = "Steal {goal} crystals before the Ark reaches {to}";
         [Tooltip("Objective box: the counter's label.")]
@@ -937,6 +939,8 @@ namespace CosmicShore.ScriptableObjects
         public string ScoreRaidTitle = "{done} of {goal} crystals stolen";
         [Tooltip("Scoreboard: a Crystal Run's line ({to}, {cells}, {time}).")]
         public string ScoreRaidStats = "Crystal Run to {to} - {cells} cells - {time}";
+        [Tooltip("Scoreboard: a named voyage's line ({name}, {to}, {cells}, {time}; Milestone 2).")]
+        public string ScoreVoyageStats = "{name} - {cells} cells - {time}";
         [Tooltip("Scoreboard: an escort's title ({to}).")]
         public string ScoreEscortTitle = "The Ark reached {to}";
         [Tooltip("Scoreboard: an escort's line ({difficulty}, {worlds}, {legs}, {time}).")]

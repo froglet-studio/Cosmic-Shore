@@ -25645,3 +25645,21 @@ packages this machine lacks). Seen in Amoebius on a Crystal Run, offline.
 - [ ] The chip top left shows crystals, hull and, while anchored, the clock; toasts stack under it as a feed, and a
       long toast line widens the band instead of being cut off.
 - [ ] Escort the Ark: the plate shows the hull and the way home; Ruby and the other domains read correctly.
+
+## Voyages Milestone 2: named voyages, the sea's danger, the cell clock, Salvage's drift (2026-11-24)
+
+`Docs/Voyages/MILESTONE_2.md`. Not run in the Unity editor: none in this session. The reference compile has 0 errors in
+the changed files (30 in untouched files, from packages this machine lacks); the headless voyage rules harness passes
+52 of 52, the new `VoyageSeaTests` among them.
+
+- [ ] The board at a port offers one Salvage voyage by its Codex name (e.g. "Spindrift's Last Glitter"), never
+      "Salvage"; the objective box and the end board show that name.
+- [ ] Crystal Run is still on the board beside it, and sails, reads ("CRYSTAL RUN", "Crystal Run to ...") and paces
+      exactly as before.
+- [ ] Sail it: the run has the voyage's cells (2 for Spindrift), each takes about 50 s (about 35 s crossing, 15 s at the
+      core), so a 4-cell run lands near 3.5 minutes.
+- [ ] Salvage cells hold about 18 loose crystals drifting slowly, half bunched where a hold burst; flying through one
+      collects it and counts toward the goal; none leaves its cell.
+- [ ] An I1 run (Spindrift) is calm: no held cells, no raiders, no kaiju. An I3 run (Cinder Shoal) holds two in three
+      cells, raiders come on the way out and a kaiju waits on the first crossing only.
+- [ ] Unnamed work (every other job on the board) sails exactly as before.

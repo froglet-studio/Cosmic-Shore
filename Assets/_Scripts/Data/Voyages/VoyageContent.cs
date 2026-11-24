@@ -40,8 +40,21 @@ namespace CosmicShore.Data
         public KaijuSpec Kaiju = new();
         /// <summary>The lines the rules themselves write into news, the story and the warnings.</summary>
         public VoyageWords Words = new();
+        /// <summary>The named voyages players sail (Milestone 2, Shombith 2026-11-24): a job template is a voyage TYPE
+        /// (the rules a run plays by); each of these is one voyage of a type, with its own name, place, danger and
+        /// length. A type's name is never a title (Docs/Voyages/MILESTONE_2.md §2).</summary>
+        public List<NamedVoyage> Voyages = new();
 
         [NonSerialized] Dictionary<string, VoyageLocation> _byId;
+
+        /// <summary>The named voyage with this id, or null (a probe).</summary>
+        public NamedVoyage Voyage(string id)
+        {
+            if (string.IsNullOrEmpty(id) || Voyages == null) return null;
+            foreach (var v in Voyages)
+                if (v != null && v.Id == id) return v;
+            return null;
+        }
 
         /// <summary>The location with this id, or null. A probe: a stale id in a saved record is a miss, not a fault.</summary>
         public VoyageLocation Location(string id)
@@ -179,7 +192,7 @@ namespace CosmicShore.Data
             {
                 if (j == null || string.IsNullOrEmpty(j.Id)) { errors.Add("a job template has no id"); continue; }
                 if (!jobIds.Add(j.Id)) errors.Add($"job id '{j.Id}' is used twice");
-                if (j.Faction == FactionType.None && j.Id != VoyageRules.ReturnJobId) errors.Add($"job '{j.Id}' names no faction type");
+                if (j.Faction == FactionType.None && j.Id != VoyageRules.ReturnJobId && !j.Always) errors.Add($"job '{j.Id}' names no faction type");
                 if (!string.IsNullOrEmpty(j.OnSuccess) && Event(j.OnSuccess) == null)
                     errors.Add($"job '{j.Id}' names unknown success event '{j.OnSuccess}'");
                 if (!string.IsNullOrEmpty(j.OnFail) && Event(j.OnFail) == null)
@@ -406,6 +419,36 @@ namespace CosmicShore.Data
         /// <summary>Each cell's life (its fauna and flora populations before the voyage's own life scale), in order; cells
         /// past the end take the lane's pacing. Empty: the lanes decide.</summary>
         public List<float> CellLife = new();
+        /// <summary>A named voyage's goal per cell of its leg (Salvage: about 12 crystals a cell). 0: <see cref="Goal"/>.</summary>
+        public float GoalPerCell;
+    }
+
+    /// <summary>
+    /// One named voyage (Docs/Voyages/MILESTONE_2.md §2): a voyage of <see cref="Type"/> (a job template id, or
+    /// <see cref="EscortType"/> for the Ark escort card) to <see cref="To"/>, sailed at rung <see cref="Rung"/> (I1-I4, how
+    /// dangerous the water is) over exactly <see cref="Cells"/> cells. A new voyage is a new entry, not new code.
+    /// </summary>
+    [Serializable]
+    public class NamedVoyage
+    {
+        /// <summary>The type of the Ark escort card, which is not a job template.</summary>
+        public const string EscortType = "escort";
+
+        public string Id;
+        /// <summary>The voyage type: a job template id (<see cref="JobTemplate.Id"/>) or <see cref="EscortType"/>.</summary>
+        public string Type;
+        /// <summary>The title players read (never the type's own name).</summary>
+        public string Name;
+        /// <summary>Where it sets out from (an escort's start), or empty: wherever the Ark lies.</summary>
+        public string From;
+        /// <summary>Where it ends (a location id).</summary>
+        public string To;
+        /// <summary>The sea's danger, I1-I4.</summary>
+        public int Rung = 1;
+        /// <summary>The cells the leg flies, 1-6.</summary>
+        public int Cells = 1;
+        /// <summary>The voyage's own line on its card.</summary>
+        public string Line;
     }
 
     /// <summary>What an outcome writes into the galaxy's news and state (VOYAGES.md §6.3, DEPTH.md §2): the chain.</summary>
