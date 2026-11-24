@@ -1,0 +1,266 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "bounce",
+  "user": "yskha",
+  "unityVersion": "6000.3.17f1",
+  "branch": "Ys-bleeding-edge",
+  "commit": "1460fb349e",
+  "playStartedUtc": "2026-11-24T13:44:18.8073597Z",
+  "playEndedUtc": "2026-11-24T14:02:44.9648025Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-24T13:44:29.9753604Z",
+    "durationSeconds": 1094.8812255859375,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "host",
+    "counters": {
+        "requests": 73,
+        "lobbyReads": 112,
+        "retries": 3,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 3,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 1,
+        "presenceForceReset": 1,
+        "offlineFallback": 0,
+        "partyRosterPush": 0,
+        "presencePush": 5,
+        "lobbyReadsPerSecond": 0.1022941991686821
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 1,
+        "budgetExhaustions": 0,
+        "rateLimited": 3
+    },
+    "lifecycle": [
+        {
+            "t": 0.0000028999929782003166,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.00001550000160932541,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 10.765976905822754,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 10.838353157043457,
+            "e": "netConfig",
+            "detail": "hash=8a386bf5ce8cd7d7 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 12.132492065429688,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 25.347681045532228,
+            "e": "readyGate",
+            "detail": "BrittleStarTimeController: Lion pressed Ready"
+        },
+        {
+            "t": 29.252187728881837,
+            "e": "readyGate",
+            "detail": "BrittleStarTimeController: Lion pressed Ready"
+        },
+        {
+            "t": 33.152156829833987,
+            "e": "readyGate",
+            "detail": "BrittleStarTimeController: Lion pressed Ready"
+        },
+        {
+            "t": 37.330265045166019,
+            "e": "readyGate",
+            "detail": "BrittleStarTimeController: Lion pressed Ready"
+        },
+        {
+            "t": 520.7576293945313,
+            "e": "stall",
+            "detail": "38.7s in MinigameBrittleStarTime"
+        },
+        {
+            "t": 520.7576293945313,
+            "e": "stallContext",
+            "detail": "focused no; Unity reserved 8384 MB, managed 2622 MB, of 32697 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 521.6592407226563,
+            "e": "stallFrame",
+            "detail": "no recorded marker held the frame (the time was outside the player loop)"
+        },
+        {
+            "t": 647.1904907226563,
+            "e": "party",
+            "detail": "InParty->Reconnecting"
+        },
+        {
+            "t": 651.3914184570313,
+            "e": "party",
+            "detail": "Reconnecting->InPresenceLobby"
+        },
+        {
+            "t": 653.9973754882813,
+            "e": "bounce",
+            "detail": "party session gone server-side"
+        },
+        {
+            "t": 659.2518920898438,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 668.6719970703125,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 668.7368774414063,
+            "e": "netConfig",
+            "detail": "hash=8a386bf5ce8cd7d7 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 670.0436401367188,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 713.7584838867188,
+            "e": "readyGate",
+            "detail": "BrittleStarTimeController: Lion pressed Ready"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 8,
+    "warnings": 40,
+    "dropped": 0,
+    "lines": [
+      {"t": 0.063, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 0.147, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@f6e02210e263/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 0.164, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:152)"},
+      {"t": 0.186, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 0.187, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 0.187, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 1.345, "type": "log", "msg": "Overriding environment to 'development' through InitializationOptions"},
+      {"t": 1.568, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:147)"},
+      {"t": 1.569, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 2.198, "type": "log", "msg": "Container Bootstrap (-1729526206) disposed"},
+      {"t": 2.203, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 3.125, "type": "error", "msg": "NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n", "at": "Unity.Services.CloudCode.CloudCodeInternal:BuildException (bool,long,int,string,Unity.Services.CloudCode.Internal.Http.HttpException) (at ./Library/PackageCache/com.unity.services.cloudcode@4d38bd1f7a5b/Runtime/CloudCode.cs:182)"},
+      {"t": 3.13, "type": "warning", "msg": "[LaunchFlags] The flags could not be fetched (NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n); keeping the Default flags.", "at": "CosmicShore.Core.LaunchFlagsService/<FetchAsync>d__7:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/CloudData/LaunchFlagsService.cs:62)"},
+      {"t": 3.139, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 5.074, "type": "log", "msg": "Container Authentication (682726915) disposed"},
+      {"t": 5.614, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.615, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.616, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.617, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.618, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.619, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.621, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.622, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 5.623, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 7.027, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."},
+      {"t": 20.163, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 20.163, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 0ms"},
+      {"t": 20.165, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 1ms"},
+      {"t": 20.165, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 0ms"},
+      {"t": 20.168, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 3ms"},
+      {"t": 20.169, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 20.172, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 3ms"},
+      {"t": 20.172, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 20.174, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 3ms"},
+      {"t": 20.175, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 20.175, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 1ms"},
+      {"t": 20.176, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 0ms"},
+      {"t": 20.527, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 351ms waiting avg 6ms per response"},
+      {"t": 20.527, "type": "log", "msg": "QosJob: took 365ms to process 11 servers"},
+      {"t": 22.016, "type": "warning", "msg": "[AuthScene] Relay session not ready (attempt 1/3) - retrying HCS init...", "at": "CosmicShore.Core.AuthenticationSceneController/<LoadMainMenuNetworkedAsync>d__71:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/AuthenticationSceneController.cs:976)"},
+      {"t": 24.021, "type": "log", "msg": "[BugLedger] Sent to Claude: 84 open error(s) and 12 report file(s) on branch bugledger/yskha. Ask Claude to fix them, or wait for the daily sweep."},
+      {"t": 28.544, "type": "log", "msg": "[LoadInsights] ● Recording load — Game launch — BrittleStarTime → MinigameBrittleStarTime"},
+      {"t": 30.054, "type": "log", "msg": "Container Menu_Main (-954562525) disposed"},
+      {"t": 30.116, "type": "log", "msg": "Scene (MinigameBrittleStarTime) Bindings Installed"},
+      {"t": 31.163, "type": "warning", "msg": "[CrystalMorph] [HullFusion] BrittleStar/Charge has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 31.172, "type": "warning", "msg": "[CrystalMorph] [HullFusion] BrittleStar/Mass has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 31.174, "type": "warning", "msg": "[CrystalMorph] [HullFusion] BrittleStar/Space has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 31.177, "type": "warning", "msg": "[CrystalMorph] [HullFusion] BrittleStar/Time has no bake. Solving it at runtime on a worker instead - run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 31.941, "type": "warning", "msg": "[Cell 0] Crystal spawned before Cell Initialized. Attempting lazy init.", "at": "CosmicShore.Gameplay.Cell:InitilizePostFirstCellItem () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Cell.cs:2190)"},
+      {"t": 33.146, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 4.60s · Loaded — arena complete (laid + grown), connecting screen done → C:/Users/yskha/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_MinigameBrittleStarTime_20261124_134451_45247f651de8.json"},
+      {"t": 51.847, "type": "warning", "msg": "[MouseFlight] One-thumb mouse controls are NOT engaged: unknown reason. Flight stays on the dual-WASD keyboard scheme. See _Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md.", "at": "CosmicShore.Gameplay.MouseFlightDiagnostics:Decline (CosmicShore.Gameplay.MouseFlightDiagnostics/Reason,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/IO/MouseFlightDiagnostics.cs:79)"},
+      {"t": 64.477, "type": "log", "msg": "[DiagnosticsHUD] capture MinigameBrittleStarTime-slow 15 → capture 'MinigameBrittleStarTime-slow': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 81.571, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\diag_MinigameBrittleStarTime_MinigameBrittleStarTime-slow_20261124_191540.json"},
+      {"t": 196.975, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 547.9 ms avg (p99 1269.6, max 1536.0), PlayerLoop 18.3 (max 31.8) - top self: Unaccounted time between: Profiler.SessionMetadata and PlayerLoop 2.89, Instantiate.Produce 1.23, PxScene.simulate 0.92 - top alloc: Instantiate.Produce 24.9 KB/f - saved C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\prof_MinigameBrittleStarTime_MinigameBrittleStarTime-slow_20261124_191735.json"},
+      {"t": 197.035, "type": "log", "msg": "[DiagnosticsHUD] cells: 1 | flora objects 0, fauna objects 56 | cell 0 'Skim Race Cell Config' Calm spawner=RandomLifeSpawner flora 0 fauna 0 planting on\n  saved C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\cells_MinigameBrittleStarTime_20261124_191735.json"},
+      {"t": 197.039, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\capture_MinigameBrittleStarTime_MinigameBrittleStarTime-slow_20261124_191735.json — type 'capture copy' and paste it"},
+      {"t": 197.583, "type": "log", "msg": "[DiagnosticsHUD] capture MinigameBrittleStarTime 15 → capture 'MinigameBrittleStarTime': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 214.509, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\diag_MinigameBrittleStarTime_MinigameBrittleStarTime_20261124_191753.json"},
+      {"t": 344.924, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 626.1 ms avg (p99 1470.1, max 2530.9), PlayerLoop 20.6 (max 76.5) - top self: Unaccounted time between: Profiler.SessionMetadata and PlayerLoop 3.13, Instantiate.Produce 1.45, PxScene.simulate 0.94 - top alloc: Instantiate.Produce 24.4 KB/f - saved C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\prof_MinigameBrittleStarTime_MinigameBrittleStarTime_20261124_192003.json"},
+      {"t": 345.017, "type": "log", "msg": "[DiagnosticsHUD] cells: 1 | flora objects 0, fauna objects 56 | cell 0 'Skim Race Cell Config' Calm spawner=RandomLifeSpawner flora 0 fauna 0 planting on\n  saved C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\cells_MinigameBrittleStarTime_20261124_192003.json"},
+      {"t": 345.022, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\capture_MinigameBrittleStarTime_MinigameBrittleStarTime_20261124_192003.json — type 'capture copy' and paste it"},
+      {"t": 498.254, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1530)"},
+      {"t": 503.76, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1530)"},
+      {"t": 509.265, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1530)"},
+      {"t": 514.791, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1530)"},
+      {"t": 520.298, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1530)"},
+      {"t": 525.298, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1530)"},
+      {"t": 530.3, "type": "error", "msg": "Failed to handle /api/exec request: Main thread operation timed out after 5000ms", "at": "Unity.Pipeline.BasePipelineServer/<HandleExecRequest>d__88:MoveNext () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:1530)"},
+      {"t": 531.927, "type": "warning", "msg": "[Net] The game froze for 38.7 s in MinigameBrittleStarTime while online. Unity Relay drops a connection after about 10 s without traffic, so this session may end with 'player timed out due to inactivity' (Docs/PartySystem/BUGS.md B36).", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:151)"},
+      {"t": 532.828, "type": "warning", "msg": "[Net] What held that frozen frame: no recorded marker held the frame (the time was outside the player loop)", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:112)"},
+      {"t": 658.358, "type": "warning", "msg": "[HostConnectionService] The presence lobby removed us or was deleted - rejoining at once", "at": "CosmicShore.Gameplay.HostConnectionService:HandlePresenceMembershipLost () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:1921)"},
+      {"t": 658.379, "type": "warning", "msg": "[CustomCameraController] The player camera lost its follow target while on screen, so it stopped following the ship. No live player vessel to re-latch onto. The Transform it was following was DESTROYED without the camera being re-pointed.", "at": "CosmicShore.Gameplay.CustomCameraController:RecoverLostFollowTarget () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:1086)"},
+      {"t": 665.159, "type": "warning", "msg": "[HostConnectionService] Party session gone server-side (SessionException): Player is not part of an active lobby. - auto-recovering to solo session.", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshPartyMembersAsync>d__170:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:2552)"},
+      {"t": 665.178, "type": "warning", "msg": "[HumanFlightRecorder] AI training record not stored (left before the end): only 1 hand-flown samples.", "at": "CosmicShore.Gameplay.HumanFlightRecorder:Finish (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/AI/SkimRace/HumanFlightRecorder.cs:823)"},
+      {"t": 666.775, "type": "warning", "msg": "No projectile factory found to release projectile!", "at": "CosmicShore.Gameplay.Projectile:ReturnToFactory () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:851)"},
+      {"t": 666.776, "type": "warning", "msg": "No projectile factory found to release projectile!", "at": "CosmicShore.Gameplay.Projectile:ReturnToFactory () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:851)"},
+      {"t": 666.778, "type": "warning", "msg": "No projectile factory found to release projectile!", "at": "CosmicShore.Gameplay.Projectile:ReturnToFactory () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:851)"},
+      {"t": 666.78, "type": "warning", "msg": "No projectile factory found to release projectile!", "at": "CosmicShore.Gameplay.Projectile:ReturnToFactory () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:851)"},
+      {"t": 667.588, "type": "log", "msg": "Container MinigameBrittleStarTime (-1082950637) disposed"},
+      {"t": 668.186, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.187, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.188, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.189, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.19, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.191, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.193, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.194, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 668.196, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 673.882, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (1941 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 678.464, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 678.465, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 0ms"},
+      {"t": 678.467, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 3ms"},
+      {"t": 678.468, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 0ms"},
+      {"t": 678.47, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 3ms"},
+      {"t": 678.471, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 678.473, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 2ms"},
+      {"t": 678.474, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 678.476, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 2ms"},
+      {"t": 678.477, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 678.479, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 2ms"},
+      {"t": 678.48, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 0ms"},
+      {"t": 678.828, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 347ms waiting avg 6ms per response"},
+      {"t": 678.828, "type": "log", "msg": "QosJob: took 365ms to process 11 servers"},
+      {"t": 712.719, "type": "log", "msg": "[LoadInsights] ● Recording load — Game launch — BrittleStarTime → MinigameBrittleStarTime"},
+      {"t": 712.75, "type": "warning", "msg": "[AppState] Invalid transition: InGame → LoadingGame", "at": "CosmicShore.Core.ApplicationStateMachine:LogWarning (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/ApplicationStateMachine.cs:312)"},
+      {"t": 714.63, "type": "log", "msg": "Container Menu_Main (-1727727605) disposed"},
+      {"t": 714.698, "type": "log", "msg": "Scene (MinigameBrittleStarTime) Bindings Installed"},
+      {"t": 718.211, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 5.49s · Loaded — arena complete (laid + grown), connecting screen done → C:/Users/yskha/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_MinigameBrittleStarTime_20261124_135617_39105384042b.json"},
+      {"t": 891.942, "type": "warning", "msg": "[HumanFlightRecorder] AI training record not stored (race over): only 0 hand-flown samples.", "at": "CosmicShore.Gameplay.HumanFlightRecorder:Finish (string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/AI/SkimRace/HumanFlightRecorder.cs:823)"}
+    ]
+  }
+}
