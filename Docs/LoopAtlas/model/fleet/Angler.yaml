@@ -1,0 +1,187 @@
+# Loop Atlas model: vessel Angler. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Angler
+verbs:
+  Time:
+    ability: Dash to the School
+    does: Dash most of the way to the centre of one half of your school in a blink; the next dash goes to the other half,
+      so you hop between your two groups.
+    trigger: Tap
+    scales: More Time makes your tamed creatures swim faster.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: tap
+    t: [2, 20]
+  Charge:
+    ability: Erase / Lock-on
+    does: 'A narrow beam unpaints prisms. Sweep it onto a rival vessel to lock on: one creature leaves your school and chases
+      that vessel until it dies, every bite taking petals.'
+    trigger: Hold
+    scales: Charge does not change this ability yet.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: hold
+    t: [2, 12]
+  Mass:
+    ability: Lure, Tame & Grow
+    does: 'Light the lure and stop: wild herbivores in reach turn to you, and one held in the light long enough joins your
+      school. Plants in the light grow faster; let go to plant any seed an omni crystal left.'
+    trigger: Hold
+    scales: Mass does not change this ability yet.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: hold
+    t: [2, 12]
+  Space:
+    ability: Paint
+    does: A long beam paints prisms, which light up while half your school balls up ahead. Let go to throw that half at
+      the newest painted prisms to eat them; the next throw sends the other half.
+    trigger: Hold, release to throw
+    scales: Space does not change this ability yet.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+    arch: hold_release
+    t: [2, 12]
+  Omni:
+    ability: Tame
+    does: The crystal turns into a random creature that joins your school, and leaves a plant seed that is planted in your
+      colour the next time you let go of the lure.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Lantern Run]
+  Charge: [Kelpwood]
+  Mass: [Glasshouse]
+  Space: [Chum]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The school play
+  t: [15, 60]
+  is: You fight with what you have gathered.
+  chain:
+  - - Mass
+    - 'Light the lure: tame and grow the school'
+  - - Space
+    - 'Paint prisms, let go: half the school is thrown at them'
+  - [Time, Dash to the other half]
+  - - Charge
+    - 'Lock a rival: a creature hunts them'
+  drivers: [make, crew, break]
+  feel: Conducting, not fighting.
+  gene:
+    genome: Space
+    cue: [herbivore_near, rival_mass_ahead]
+    dials:
+    - - tameHold
+      - seconds a herbivore is held in the light before moving on
+      - 1
+      - 6
+      - s
+    - - minSchool
+      - creatures in the school before a throw
+      - 2
+      - 20
+      - count
+    - - throwRange
+      - distance to the newest painted prisms when the throw is let go
+      - 20
+      - 200
+      - u
+    done: A thrown half eats painted prisms within ten seconds of the paint.
+    sight: DOE
+- in: x
+  name: Hop the school
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Two halves of the school are two stepping stones; the dash hops between them.
+  chain:
+  - [Time, Dash to one half]
+  - [Time, Dash to the other half]
+  - - ''
+    - Carry the line through the gate
+  drivers: [joy, mastery]
+  feel: Two places at once.
+  gene:
+    genome: Time
+    cue: [gate_next, verb_ready]
+    dials:
+    - - schoolSpread
+      - how far apart the two halves are kept
+      - 20
+      - 300
+      - u
+    - - dashLead
+      - distance before the gate at which to dash
+      - 0
+      - 150
+      - u
+    done: A gate is threaded within two seconds of a dash.
+    sight: NEEDLE
+- in: x
+  name: The sic
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Point the beam at a rival and send one of your own after them.
+  chain:
+  - [Charge, 'Beam a rival: lock on']
+  - - ''
+    - A creature leaves the school and hunts them
+  - - Mass
+    - Lure a herbivore to take its place
+  drivers: [rival, crew]
+  feel: Setting the hounds on them.
+  gene:
+    genome: Charge
+    cue: [rival_near, bank_full]
+    dials:
+    - - lockRange
+      - rival distance at which the beam is swept on
+      - 30
+      - 250
+      - u
+    - - keepSchool
+      - creatures kept in the school before one is spent
+      - 1
+      - 15
+      - count
+    done: The hunting creature takes a petal.
+    sight: BANDIT
+- in: x
+  name: The garden
+  t: [12, 40]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The omni crystal's seed and the lure's light make a plant in your colour.
+  chain:
+  - - Omni
+    - An omni crystal leaves a seed
+  - - Mass
+    - 'Light the lure over plants: they grow faster'
+  - - Mass
+    - 'Let go: the seed is planted'
+  drivers: [make, find]
+  feel: Tending something that will outlast the round.
+  gene:
+    genome: Mass
+    cue: [omni_near, flora_near]
+    dials:
+    - - gardenHold
+      - seconds the lure is held over plants
+      - 1
+      - 8
+      - s
+    - - seedSpacing
+      - distance kept between planted seeds
+      - 10
+      - 150
+      - u
+    done: A planted seed grows in your colour inside the claim.
+    sight: IVY
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md

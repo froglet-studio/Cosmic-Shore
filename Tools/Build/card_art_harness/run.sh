@@ -13,10 +13,18 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
-DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
+# A per-user install first, else the system dotnet (a cloud box has /usr/lib/dotnet and no ~/.dotnet).
+if [ -z "${DOTNET_ROOT:-}" ]; then
+  if [ -x "$HOME/.dotnet/dotnet" ]; then DOTNET_ROOT="$HOME/.dotnet"
+  else DOTNET_ROOT="$(dirname "$(readlink -f "$(command -v dotnet)")")"; fi
+fi
 DOTNET="$DOTNET_ROOT/dotnet"
 CSC=$(ls "$DOTNET_ROOT"/sdk/*/Roslyn/bincore/csc.dll | head -1)
-REFDIR=$(ls -d "$DOTNET_ROOT"/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 | head -1)
+# net8.0 when the SDK has it; otherwise the newest reference pack it does have (the harness is plain C# 9, and the
+# runtime config below names the same framework, so a dotnet 10-only box renders the same bytes).
+REFDIR=$(ls -d "$DOTNET_ROOT"/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 2>/dev/null | head -1 || true)
+[ -n "$REFDIR" ] || REFDIR=$(ls -d "$DOTNET_ROOT"/packs/Microsoft.NETCore.App.Ref/*/ref/net* | sort -V | tail -1)
+TFM=$(basename "$REFDIR")
 OUT="${TMPDIR:-/tmp}/card_art_harness"
 mkdir -p "$OUT"
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
@@ -40,6 +48,6 @@ python3 "$HERE/../render_card_backgrounds.py" --list-sources | sed "s|^|$ROOT/|"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0660,CS0661,CS0108,CS0162,CS0219 \
   -target:exe -main:Program -out:"$OUT/cardart.exe" "@$OUT/files.rsp"
-V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
-printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/cardart.runtimeconfig.json"
+V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | sort -V | tail -1)
+printf '{"runtimeOptions":{"tfm":"'"$TFM"'","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/cardart.runtimeconfig.json"
 "$DOTNET" "$OUT/cardart.exe" "$@"

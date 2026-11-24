@@ -90,9 +90,10 @@ namespace CosmicShore.ScriptableObjects
                  "a live mode preview lay trail as usual.")]
         [SerializeField] bool menuAutopilotLaysNoTrail;
 
-        [Tooltip("Freestyle trail WAITS while the pilot's cell holds more than this many live prisms " +
-                 "(the pen lifts), and comes back down at the resume count below once the food web has " +
-                 "grazed room. A spawner that waits - never a cap. 0 = the trail never waits.")]
+        [Tooltip("Freestyle trail, and the lava lamp's where it lays one, WAITS while the pilot's cell holds " +
+                 "more than this many live prisms (the pen lifts), and comes back down at the resume count " +
+                 "below once the food web has grazed room. A spawner that waits - never a cap. 0 = the " +
+                 "trail never waits.")]
         [SerializeField, Min(0)] int freestyleCellPrismBudget;
 
         [Tooltip("The freestyle pen comes back down when the cell drops to this many live prisms " +

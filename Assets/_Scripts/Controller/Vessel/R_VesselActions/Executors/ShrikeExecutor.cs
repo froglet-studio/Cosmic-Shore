@@ -73,6 +73,7 @@ namespace CosmicShore.Gameplay
             public readonly List<Prism> Blocks = new();
             public readonly List<float> Born = new();   // each block's TimeCreated at lay: a pooled reuse is not ours
             public Vector3 Centre;
+            public float Radius;                         // the shell's radius (the turret sits on it)
             public bool Dead;
         }
 
@@ -140,6 +141,7 @@ namespace CosmicShore.Gameplay
         float _lockScanAt;
 
         readonly List<Nest> _nests = new();
+        readonly List<ShrikeRules.NestPiece> _nestPieces = new();
         readonly List<Flora> _flora = new();
         readonly List<Missile> _missiles = new();
         readonly List<Missile> _idleMissiles = new();
@@ -164,6 +166,15 @@ namespace CosmicShore.Gameplay
         float _aiNextScan, _aiNextMode;
         int _aiTargetsAhead;
         bool _aiEnemyAhead, _aiHoldingTrigger;
+
+        /// <summary>
+        /// A race mode's AI coach (Regatta's <c>RegattaShrikeSling</c>): while set, the AUTOPILOT stays in Time mode and
+        /// slings the moment its axis anchors on a block this accepts (the anchor point, world space), instead of its own
+        /// "far target within 20 degrees" rule and the lance on rival mass ahead. An AI-skill setting a mode makes, as
+        /// <see cref="AIPilot.NoseLeadGain"/> is: a human's controls, the kit and every number of it are untouched, and
+        /// null (the default, every other mode) is the shipped autopilot.
+        /// </summary>
+        public System.Func<Vector3, bool> AiSlingAccept { get; set; }
 
         // ------------------------------------------------------------------ read by the HUD and the animation
 
@@ -341,8 +352,16 @@ namespace CosmicShore.Gameplay
             Vector3 at = HullPosition;
             Quaternion rot = _status.Transform.rotation;
             bool leaveNest = _nestCd <= 0f && _dock != DockKind.Nest;
+            var fromNest = _dock == DockKind.Nest ? _dockNest : null;
             Undock(push: true);
             PlayAt(config.UndockEvent, at);
+            if (fromNest != null)
+            {
+                // Leaving a nest from inside: the nest does not catch the hull on its way out either. Without this the
+                // dock grace ran out while the hull was still within the nest's blocks and it snapped back to the centre.
+                _leftNest = fromNest;
+                _leftNestUntil = Time.time + config.LeaveNestSeconds;
+            }
             if (!leaveNest) return;
             var nest = BuildNest(at, rot);
             if (nest == null) return;
@@ -351,8 +370,7 @@ namespace CosmicShore.Gameplay
             _leftNest = nest;
             _leftNestUntil = Time.time + config.LeaveNestSeconds;
             _nestCd = config.NestCooldown;
-            float radius = ShrikeRules.NestRadiusFor(nest.Blocks.Count, false, config.NestBlockSize, config.NestClearance);
-            AddFlora(at + rot * ShrikeRules.TurretLocal(radius), rot * Vector3.up, config.NestMissilesFor(_status), nest);   // Mass 5 Armed Nests
+            AddFlora(at + rot * ShrikeRules.TurretLocal(nest.Radius), rot * Vector3.up, config.NestMissilesFor(_status), nest);   // Mass 5 Armed Nests
             PlayAt(config.NestEvent, at);
         }
 
@@ -401,13 +419,22 @@ namespace CosmicShore.Gameplay
         /// <summary>The first block on the weapons' axis (<see cref="AimOrigin"/> along the hull's forward) within the
         /// sling's range that the tether may anchor to — never your own fresh trail, the block you sit on or the nest you
         /// sit in.</summary>
-        bool FindSlingAnchor(out Prism anchor, out Vector3 point)
+        bool FindSlingAnchor(out Prism anchor, out Vector3 point) =>
+            FindSlingAnchor(_status.Transform.forward, out anchor, out point);
+
+        /// <summary>Where a sling along <paramref name="direction"/> would anchor right now, by the press's own rule (the
+        /// first block on that line within the sling's range): a question an AI coach asks before it turns the nose, so it
+        /// never aims at a block a nearer one hides. Reads only.</summary>
+        public bool PreviewSlingAnchor(Vector3 direction, out Prism anchor, out Vector3 point) =>
+            FindSlingAnchor(direction.normalized, out anchor, out point);
+
+        bool FindSlingAnchor(Vector3 f, out Prism anchor, out Vector3 point)
         {
             anchor = null;
             point = default;
             var index = PrismSpatialIndex.Instance;
-            if (!index || !index.IsAvailable) return false;
-            Vector3 o = AimOrigin, f = _status.Transform.forward;
+            if (!index || !index.IsAvailable || f.sqrMagnitude < 1e-6f) return false;
+            Vector3 o = AimOrigin;
             float best = float.MaxValue;
             index.QuerySegment(o, o + f * config.SlingRange, config.DockQueryReach, _candidates);
             for (int i = 0; i < _candidates.Count; i++)
@@ -468,14 +495,23 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (!config || _status == null || !_status.Transform) return;
-            if (!IsLocalPilot())
+            if (!IsLocalHull())
             {
                 ReleaseCamera();
                 if (_overlay) _overlay.Hide();
                 return;
             }
             float dt = Time.deltaTime;
+            // The docked pull-back is the hull's own framing: it runs whoever holds the sticks. The scope, its zoom and
+            // its lighting are the pilot's hand and eye, so they stay with a human pilot.
             UpdateCamera(dt);
+            if (!IsLocalPilot())
+            {
+                _zoom01 = 0f;
+                ClearLit();
+                if (_overlay) _overlay.Hide();
+                return;
+            }
             UpdateZoom(dt);
             UpdateLit();
             if (!_overlay) _overlay = ShrikeScopeOverlay.Create();
@@ -510,6 +546,10 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ the local pilot's camera and zoom
 
         bool IsLocalPilot() => _status.Player != null && _status.Player.IsLocalPilot && !_status.AutoPilotEnabled;
+
+        /// <summary>The local player's hull, whoever holds its sticks: the hull the camera frames
+        /// (<see cref="CameraManager.ActiveRigFollowing"/>).</summary>
+        bool IsLocalHull() => _status.Player != null && _status.Player.IsLocalPilot;
 
         /// <summary>"After colliding with a prism the camera should move further away": docked, the chase eases back to
         /// <c>dockedCameraPullBack</c> × its authored distance; undocked, it eases home. Written only while this hull is
@@ -772,8 +812,9 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ nests and flora
 
-        /// <summary>A cup of super-shielded blocks round <paramref name="centre"/>, the nose's way out open, its radius
-        /// grown so that NO two blocks clip (<see cref="ShrikeRules.NestRadiusFor"/>), each block facing out.</summary>
+        /// <summary>The nest round <paramref name="centre"/> (<see cref="ShrikeRules.NestPieces"/>): a shell of
+        /// super-shielded plates on the cup, the nose's way out open, its radius grown so that NO two plates clip
+        /// (<see cref="ShrikeRules.NestRadiusFor"/>); inside it a weave of shielded twigs and a lining of plain pads.</summary>
         Nest BuildNest(Vector3 centre, Quaternion rot)
         {
             var prisms = _status.VesselPrismController;
@@ -788,18 +829,18 @@ namespace CosmicShore.Gameplay
             if (live >= config.MaxNests && oldest != null) RetireNest(oldest);
             _nests.RemoveAll(n => n.Dead);
 
-            var nest = new Nest { Centre = centre };
             int count = ShrikeRules.NestBlockCount(config.NestBlocks.EvaluateReplicated(_status));
             float size = config.NestBlockSize;
-            float radius = ShrikeRules.NestRadiusFor(count, false, size, config.NestClearance);
-            Vector3 scale = Vector3.one * size;
-            Vector3 up = rot * Vector3.up;
-            for (int i = 0; i < count; i++)
+            var nest = new Nest { Centre = centre, Radius = ShrikeRules.NestRadiusFor(count, false, size, config.NestClearance) };
+            ShrikeRules.NestPieces(_nestPieces, count, size, config.NestShellThickness, config.NestClearance, config.HullRadius,
+                config.NestHoops, config.NestTwigWidth, config.NestTwigLength, config.NestTwigTilt, config.NestLining,
+                config.NestLiningSize);
+            for (int i = 0; i < _nestPieces.Count; i++)
             {
-                Vector3 local = ShrikeRules.NestLocal(i, count, false, radius);
-                Vector3 outward = rot * local;
-                Quaternion face = SafeLookRotation.TryGet(outward, up, out var r, this, logError: false) ? r : rot;
-                var prism = BoostRingBuilder.LayOne(channel, centre + outward, face, scale, PrismKind.SuperShielded,
+                var piece = _nestPieces[i];
+                Vector3 forward = rot * piece.Forward, up = rot * piece.Up;
+                Quaternion face = SafeLookRotation.TryGet(forward, up, out var r, this, logError: false) ? r : rot;
+                var prism = BoostRingBuilder.LayOne(channel, centre + rot * piece.Local, face, piece.Scale, piece.Kind,
                     _status.Domain, _status.PlayerName, _status.PlayerName);
                 if (!prism) continue;
                 nest.Blocks.Add(prism);
@@ -1523,9 +1564,11 @@ namespace CosmicShore.Gameplay
             }
 
             Vector3 toTarget = ai.TargetPosition - pos;
+            var coach = AiSlingAccept;
             Mode want = _aiEnemyAhead && MissilesReady > 0 ? Mode.Charge
                       : _aiTargetsAhead >= config.AiLanceMinTargets ? Mode.Space
                       : Mode.Time;
+            if (coach != null) want = Mode.Time;   // a race coach flies the sling only
             if (want != _mode && now >= _aiNextMode && TryResolve(handler, ModeControl(want), out var modeInput))
             {
                 _aiNextMode = now + 0.5f;
@@ -1553,8 +1596,10 @@ namespace CosmicShore.Gameplay
                     else handler.StopShipControllerActionsReplicated(trigger);
                 }
                 if (_mode == Mode.Time && !_slinging && !_tethering && _slingCd <= 0f
-                    && toTarget.magnitude >= config.AiSlingMinDistance && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees
-                    && FindSlingAnchor(out _, out _))   // the press does nothing without one: never spam it
+                    && (coach != null
+                        ? FindSlingAnchor(out _, out var anchorPoint) && coach(anchorPoint)   // the coach's anchors only
+                        : toTarget.magnitude >= config.AiSlingMinDistance && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees
+                          && FindSlingAnchor(out _, out _)))   // the press does nothing without one: never spam it
                 {
                     handler.PerformShipControllerActionsReplicated(trigger);
                     handler.StopShipControllerActionsReplicated(trigger);

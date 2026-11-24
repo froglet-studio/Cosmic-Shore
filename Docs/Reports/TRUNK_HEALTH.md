@@ -51,11 +51,24 @@ Output of `trunk_doctor.py history --pages 9 --diagnose`, 2026-11-12 16:50 UTC:
 | 2026-10-28 23:28 | 2026-11-01 22:15 | 3d 22h 46m | #1630 | Yash (YsKhan61) | 48 | generator: author_meerkat_assets.py (drift); at the end: author_regatta_assets.py (drift) (#1631, #1681; Docs/Reports/CI.md) |
 | 2026-11-06 19:28 | 2026-11-06 19:55 | 0h 27m | #1766 | Shombith (Shombith03) | 0 | generator: author_payload_assets.py (drift); author_thresher_assets.py (drift) (#1767) |
 | 2026-11-09 23:38 | still red | 2d 17h 1m | #1863 | Shombith (Shombith03) | 31 | generator: author_flatline_assets.py (crash: numpy missing); at the end: + author_corona_assets.py, author_shatterplane_assets.py (crash: numpy missing) (#1867, #1872, #1889, #1897) |
+| 2026-11-21 12:19 | still red | 1d 16h | #2309 | Shombith (Shombith03) | 8 | infra, misclassified static: the Unity licence never activates (sign-in only; licensing 404 "com.unity.editor.headless was not found", the account has no headless entitlement), and the "Compile with Unity" step ran under GitHub's implicit `bash -e`, so it failed the job before the reference-compile fallback (which passed, exit 0, from run 1145) could stand in. Fix forward on `claude/charming-fermi-0l7h1x`: explicit `set +e`, fail only when the exit is not a licence failure. The licence itself still needs a UNITY_LICENSE (.ulf) or UNITY_SERIAL in the unity-ci environment (#2311) |
 
 ## Incidents
 
 One entry per incident `/trunk-doctor` handled, newest first. Shape: went red, cause, introduced by, red for, fix,
 pushes while red, notes.
+
+### 2026-11-21 12:32 UTC: the first hosted Unity compile cannot activate a licence
+
+- **Went red:** run 44903288768, `9ea0a6396`, #2309 (`launch-check`: every open launch PR, #1695's hosted compile among
+  them), merged with Shombith's go. Last green: `8289353c07`.
+- **Cause (class: infra, licence):** the `unity-ci` environment holds only `UNITY_EMAIL` and `UNITY_PASSWORD`, and that
+  account has no headless editor entitlement (`'com.unity.editor.headless' was not found`, four attempts). The compile
+  never ran, so nothing about the code was learned. Before #1695 the job was skipped, so this was the first try.
+- **Fix:** Shombith chose a fallback (2026-11-21): when activation fails, the guard runs the reference compile
+  (`Tools/Build/unity_refcompile`) and says it was not a Unity compile. A serial or a `.ulf` in `unity-ci` turns the
+  real compile on with no further change.
+- **Tracking issue:** #2311.
 
 ### 2026-11-09 23:38 UTC: three generators crash on the runner (numpy missing)
 

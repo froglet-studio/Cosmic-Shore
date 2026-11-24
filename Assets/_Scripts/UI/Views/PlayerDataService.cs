@@ -56,6 +56,7 @@ namespace CosmicShore.UI
             ColorSetCatalogSO.Purchased = id => IsRewardUnlocked(ColorSetCatalogSO.RewardId(id));
 
             CreateLocalDefaultProfile(null);
+            AccountInventoryStore.CrewReady += KeepAvatarInCrew;
         }
 
         void OnDestroy()
@@ -65,6 +66,7 @@ namespace CosmicShore.UI
                 Instance = null;
                 ColorSetCatalogSO.Purchased = null;
             }
+            AccountInventoryStore.CrewReady -= KeepAvatarInCrew;
 
             var ds = _ugsDataService;
             if (ds != null)
@@ -111,8 +113,8 @@ namespace CosmicShore.UI
             MergeCloudProfile();
             StampSessionLifecycle();
             ApplyPendingDebugCrystals();
-            if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.StateAsync());
-            if (ServerEntitlementGate.Enabled) EpisodeTokenService.RefreshFromServer().Forget();
+            if (ServerEconomyGate.IsActive) ConfirmWithServer(ServerEconomy.StateAsync());
+            if (ServerEntitlementGate.IsActive) EpisodeTokenService.RefreshFromServer().Forget();
 
             if (_ugsDataService.ProfileRepo != null)
             {
@@ -271,6 +273,19 @@ namespace CosmicShore.UI
             CurrentProfile = cloudData;
             // A profile saved before the starting grant (or on another device before it) gets it now, once.
             if (GrantStartingElementalCrystals()) needsResync = true;
+
+            // The avatar is one of the account's own crew (Garrett, 2026-11-19): an avatar from outside it becomes the
+            // crew's pilot on the same callsign.
+            if (AccountInventoryStore.IsCloudLoaded)
+            {
+                int own = CrewAvatars.Consistent(CurrentProfile.Identity.AvatarId, profileIcons ? profileIcons.ProfileIcons : null,
+                    AccountInventoryStore.Current.Crew, PaintedCrewSO.Load());
+                if (own != CurrentProfile.Identity.AvatarId)
+                {
+                    CurrentProfile.Identity.AvatarId = own;
+                    needsResync = true;
+                }
+            }
 
             if (needsResync)
             {
@@ -521,6 +536,16 @@ namespace CosmicShore.UI
 
         static bool IsElement(Element e) => e is Element.Charge or Element.Mass or Element.Space or Element.Time;
 
+        /// <summary>Once the account's crew is known (<see cref="AccountInventoryStore.CrewReady"/>), an avatar from
+        /// outside it becomes the crew's pilot on the same callsign (<see cref="CrewAvatars.Consistent"/>).</summary>
+        void KeepAvatarInCrew()
+        {
+            if (CurrentProfile?.Identity == null || !profileIcons || !AccountInventoryStore.IsCloudLoaded) return;
+            int own = CrewAvatars.Consistent(CurrentProfile.Identity.AvatarId, profileIcons.ProfileIcons,
+                AccountInventoryStore.Current.Crew, PaintedCrewSO.Load());
+            if (own != CurrentProfile.Identity.AvatarId) SetAvatarId(own);
+        }
+
         public void SetAvatarId(int avatarId)
         {
             if (CurrentProfile == null)
@@ -687,7 +712,7 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.Economy.CrystalBalance);
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
-            if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.EarnAsync(source ?? DebugSource, amount));
+            if (ServerEconomyGate.IsActive) ConfirmWithServer(ServerEconomy.EarnAsync(source ?? DebugSource, amount));
             return CurrentProfile.Economy.CrystalBalance;
         }
 
@@ -699,7 +724,7 @@ namespace CosmicShore.UI
         /// </summary>
         public bool TryBuyVessel(string vesselName, int cost)
         {
-            if (!ServerEconomyGate.Enabled) return cost <= 0 || TrySpendCrystals(cost, "vessel_unlock");
+            if (!ServerEconomyGate.IsActive) return cost <= 0 || TrySpendCrystals(cost, "vessel_unlock");
             if (cost > 0 && !TrySpendCrystals(cost, "vessel_unlock", reportToServer: false)) return false;
             ConfirmWithServer(ServerEconomy.UnlockVesselAsync(vesselName));
             return true;
@@ -708,7 +733,7 @@ namespace CosmicShore.UI
         /// <summary>Buys the next Hangar level, the server way when its wallet is on (<see cref="TryBuyVessel"/>).</summary>
         public bool TryBuyHangarLevel(int vessel, int element, int cost)
         {
-            if (!ServerEconomyGate.Enabled) return TrySpendCrystals(cost, "hangar_upgrade");
+            if (!ServerEconomyGate.IsActive) return TrySpendCrystals(cost, "hangar_upgrade");
             if (!TrySpendCrystals(cost, "hangar_upgrade", reportToServer: false)) return false;
             ConfirmWithServer(ServerEconomy.UpgradeHangarAsync(vessel, element));
             return true;
@@ -734,7 +759,7 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.Economy.CrystalBalance);
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
-            if (ServerEconomyGate.Enabled && reportToServer) ConfirmWithServer(ServerEconomy.SpendAsync(source ?? DebugSource, amount, source));
+            if (ServerEconomyGate.IsActive && reportToServer) ConfirmWithServer(ServerEconomy.SpendAsync(source ?? DebugSource, amount, source));
             return true;
         }
 
@@ -782,7 +807,7 @@ namespace CosmicShore.UI
             if (CurrentProfile == null || string.IsNullOrEmpty(rewardId) || IsRewardUnlocked(rewardId))
                 return;
 
-            if (!ServerEconomyGate.Enabled)
+            if (!ServerEconomyGate.IsActive)
             {
                 UnlockReward(rewardId);
                 if (crystals > 0) AddCrystals(crystals, source);
@@ -927,7 +952,7 @@ namespace CosmicShore.UI
             {
                 CurrentProfile.Economy.CrystalBalance += pending;
                 ScheduleSave();
-                if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.EarnAsync(DebugSource, pending));
+                if (ServerEconomyGate.IsActive) ConfirmWithServer(ServerEconomy.EarnAsync(DebugSource, pending));
                 OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             }

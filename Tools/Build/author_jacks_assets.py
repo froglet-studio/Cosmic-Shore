@@ -734,9 +734,9 @@ MAP_ENTRIES = [
         "drawn to the plane. Mass sets how fast the herd breeds: a birth takes the species' own feeds at -5 and a third of "
         "them at 15, and the herd never starves below its minimum size.",
      "Mass Clusters", "Every few seconds a creature of the herd lays a cluster of your mass."),
-    (3, 14, "Wide", "Herding, zoom out to the whole cell and back. Space widens the ring both jacks and the decoy push the "
-        "herd out of; it is never smaller than a big thumb.",
-     "Eat Shields", "The herd eats shielded prisms."),
+    (3, 14, "Wide", "Herding, Wide opens every ring to more than twice its size: the herd fans out across a wide field to "
+        "graze and the view pulls out to the whole cell; press again and the rings close and the herd bunches. Space sets "
+        "how big the ring is, never smaller than a big thumb.", "Eat Shields", "The herd eats shielded prisms."),
     (4, 13, "Decoys", "Herding, pull a trigger to lay the decoy at the jack on that side (on a phone, lift a thumb). "
         "Netting, pull a trigger to rush to the decoy at speed. There is always one decoy. Time makes the herd faster.",
      "Second Decoy", "A second decoy: each trigger has its own, laid by it while herding and rushed to by it while netting."),

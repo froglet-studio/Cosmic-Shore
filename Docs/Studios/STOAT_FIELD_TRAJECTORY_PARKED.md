@@ -1,5 +1,10 @@
 # Stoat: Mass mode and Gate mode, removed (2026-11-02)
 
+> **2026-11-21: the code is deleted, not parked.** Yash: "delete all other old pathfinding and other mechanics". The field
+> dipole (`StoatDipoleExecutor`, `StoatDipoleActionSO`, its assets and tests), its predicted path and Time 5's Foresight
+> were removed from the tree; the swing is the Stoat's only slingshot (`R_VesselActions/STOAT_DIPOLE.md` §6). To make
+> Mass mode again, start from the files at `4e5df7090a` (`git show 4e5df7090a:<path>`) and this page.
+
 **Why this file exists.** Yash, 2026-11-02, in two steps. First: *"keep only the orbit effect of stoat, and remove the
 pathfinding field trajectory effect, you can document this field trajectory effect so if garrett screams, we can add it
 back."* That shipped behind a switch (`orbitOnly`, commit `e9b924b884`). Then, after playing it: *"there are 3 ways to

@@ -35,8 +35,9 @@ namespace CosmicShore.Gameplay
     {
         [Header("Recharge (paid by distance)")]
         [Tooltip("The FULL recharge, seconds at the resting Time level: what a medium drop costs, and the most any drop " +
-                 "costs. Garrett, 2026-10-29: 20.")]
-        [SerializeField, Min(0f)] float fullCooldownSeconds = 20f;
+                 "costs. Garrett, 2026-10-29: 20; 10 from 2026-11-18 (Garrett picked a cheaper Drop recharge so the Tiger " +
+                 "Moth races Regatta's ten; the race judge's pace stops improving past 2x cheaper).")]
+        [SerializeField, Min(0f)] float fullCooldownSeconds = 10f;
 
         [Tooltip("The 'medium' drop, world units: a drop this long or longer pays the full recharge and leaves a " +
                  "wormhole; a shorter one pays its share (half the distance, half the wait). Past it a drop is free. " +

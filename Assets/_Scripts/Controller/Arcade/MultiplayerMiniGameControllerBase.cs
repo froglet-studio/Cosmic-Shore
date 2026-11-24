@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay
             RearmGameStartStatsReset();   // fresh scene = fresh game
 
             // Fair play (Threat Board T4, T9): every peer reports each match to the server.
-            if (CosmicShore.Core.MatchReportGate.Enabled) MatchReporter.Attach(gameObject, gameData);
+            if (CosmicShore.Core.MatchReportGate.IsActive) MatchReporter.Attach(gameObject, gameData);
 
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
@@ -868,7 +868,12 @@ namespace CosmicShore.Gameplay
             // The host is excluded because it DRIVES the load - it cannot be waiting on itself, and
             // bouncing it would tear down the party it is trying to move.
             if (!IsServer)
+            {
                 _sceneLoader?.ArmClientMenuReturnWatchdog("Return to menu (host-driven)");
+                // Behind the veil now: take this machine's copy of the world down in slices while the host
+                // does the same and holds the load for it (SceneLoader.DrainSceneForExitAsync).
+                _sceneLoader?.BeginSceneExitDrain();
+            }
         }
 
         // Play Again (scene reload): OnClientReady can arrive before InitializeGame has run, and

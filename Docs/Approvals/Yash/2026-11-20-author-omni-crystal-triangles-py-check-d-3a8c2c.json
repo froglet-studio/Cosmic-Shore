@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-20-author-omni-crystal-triangles-py-check-d-3a8c2c",
+  "to": "Yash",
+  "by": "Caleb",
+  "date": "2026-11-20T18:10:50+00:00",
+  "area": "the omni crystal triangles generator",
+  "summary": "author_omni_crystal_triangles.py --check drifts from the shipped assets: re-running it would overwrite later edits.",
+  "why": "Editor Churn W3 ran every generator --check on bleeding-edge 2026-11-20; nothing was changed, this is a heads-up so a re-run does not revert later work. Docs/EditorChurn/TRACKER.md section Generators (W3) lists them.",
+  "branch": "claude/editor-churn-w3-build-settings",
+  "commit": "58b09be53",
+  "paths": [
+    "Tools/Build/author_omni_crystal_triangles.py"
+  ]
+}

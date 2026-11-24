@@ -564,3 +564,15 @@ table.presets td:first-child { min-width: 240px; } table.presets td:nth-child(2)
 td.frame { min-width: 180px; max-width: 420px; }
 .tag.new-tag { margin-left: 8px; color: var(--fs-danger); box-shadow: inset 0 0 0 1px var(--fs-danger); }
 @media (max-width: 760px) { td.frame { min-width: 140px; } .tag.new-tag { margin-left: 0; display: inline-block; margin-top: 4px; } }
+
+/* Funnels and Releases (compare.js, Rev 66 A) */
+.mini-seg-in { display: contents; }
+.funnel-steps { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.funnel-step { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--fs-surface); box-shadow: inset 0 0 0 1px var(--fs-line); }
+.funnel-step .lab { color: var(--fs-selection); }
+.funnel-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.rel-pick .lab { font-size: 18px; }
+.rel-a .lab { color: var(--series-1); }
+.rel-b .lab { color: var(--series-2); }
+.ok-text { color: var(--fs-cta); }
+td.soft, .soft { color: var(--fs-text-soft); }

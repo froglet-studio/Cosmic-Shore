@@ -227,10 +227,30 @@ def sea_colours():
             "glow": prop("_GlowColor")}
 
 
-def theme_tokens(base, c, authored=False):
+# Two themes whose signature faces sit closer than this in hue would wear one panel colour (Dusk's Jade face is a dark
+# bronze like Dart Frog's, 2026-11-16): the later theme takes its next face whose hue is free (signature_face).
+MIN_HUE_APART = 3.0
+FACE_ORDER = ("jade", "blue", "gold", "ruby")
+
+
+def signature_face(c, taken):
+    """The face that re-hues a theme: its Jade face, unless an earlier theme already wears that hue; then the first of
+    its Blue, Gold and Ruby faces whose hue is free (Dusk takes its slate Blue face).
+    Returns (domain, face)."""
+    def free(rgb):
+        h = hue(rgb)
+        return all(min(abs(h - t), 360 - abs(h - t)) >= MIN_HUE_APART for t in taken)
+    for domain in FACE_ORDER:
+        if free(c["face"][domain]):
+            return domain, c["face"][domain]
+    return "jade", c["face"]["jade"]
+
+
+def theme_tokens(base, c, authored=False, face=None):
     """Every UI token for one theme, as hex, plus the rims and faces. The authored set's theme is the authored Deep
-    Sea as it is, with the sea material's own colours; its domain marks, data and rims are still its own pigments."""
-    face, rims = c["face"]["jade"], c["rim"]
+    Sea as it is, with the sea material's own colours; its domain marks, data and rims are still its own pigments.
+    `face` is the signature face (signature_face); its Jade face when not given."""
+    face, rims = (face if face is not None else c["face"]["jade"]), c["rim"]
     if authored:
         t = {k: hx(base[k]) for k in TINTED}
     else:
@@ -283,8 +303,11 @@ def build(tokens=None, sets=None, default=None):
             "   ground, panels, lines and text; its rims, call to action and danger paint everything else. */\n")
     rows = [f"  --fs-{k}: {v};" for k, v in base.items()] + ["  color-scheme: dark;"]
     css, reports = [head, ":root {\n" + "\n".join(rows) + "\n}\n"], {}
+    taken = []
     for s_ in sets:
-        vals, reports[s_["id"]] = theme_tokens(base, s_["colours"], s_["id"] == AUTHORED_SET)
+        _, face = signature_face(s_["colours"], taken)
+        vals, reports[s_["id"]] = theme_tokens(base, s_["colours"], s_["id"] == AUTHORED_SET, face)
+        taken.append(reports[s_["id"]]["surface-hue"])
         sel = f'[data-fs-theme="{s_["id"]}"]'
         if s_["id"] == default:
             sel = ":root:not([data-fs-theme]), " + sel     # the game's own set, before theme.js runs

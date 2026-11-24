@@ -41,7 +41,7 @@ jobs:
     name: Static validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
 
@@ -60,7 +60,7 @@ jobs:
     runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           # Do NOT clean: the default `git clean -ffdx` deletes Library/ and
@@ -114,7 +114,7 @@ jobs:
             -testResults "$GITHUB_WORKSPACE/test-results.xml" \
             -logFile - || exit 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: editmode-results-${{ github.run_id }}
@@ -144,14 +144,14 @@ jobs:
             echo "have=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.key.outputs.have == 'true'
         with:
           fetch-depth: 0
 
       - name: Fix and open a PR against trunk
         if: steps.key.outputs.have == 'true'
-        uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1 — pinned to a commit; re-pin deliberately
+        uses: anthropics/claude-code-action@cc98b3ae241b0fcfb6a42a2690751afffecb4452 # v1 — pinned to a commit; re-pin deliberately
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |

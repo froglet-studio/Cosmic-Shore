@@ -1251,7 +1251,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 1
+    Value: 1.419
     Min: 0
     Max: 0
     element: 0
@@ -1848,6 +1848,8 @@ MonoBehaviour:
     Min: 20
     Max: 40
     element: 3
+    UseFloor: 1
+    Floor: 10
   elongateYOnly: 0
   nudgeShardPoolManager: {fileID: 0}
   markerDistance: 70

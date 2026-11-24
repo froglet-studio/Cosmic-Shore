@@ -171,7 +171,16 @@ namespace CosmicShore.Gameplay
             var cfg = spawned.SourceConfig;
             if (!cfg || !cfg.NetworkSynced)
             {
-                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna species is not network-synced");
+                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna species is not network-synced", deferred: true);
+                return;
+            }
+
+            // A satellite cell (a voyage corridor's world) is stood by every peer for itself, at that peer's own
+            // coordinates and with its own creatures: the host's copy must not be spawned onto the friends' machines.
+            var homeCell = spawned.HostCell;
+            if (homeCell && homeCell.IsSatellite)
+            {
+                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna of a peer-local satellite cell", deferred: true);
                 return;
             }
 
@@ -180,7 +189,7 @@ namespace CosmicShore.Gameplay
             {
                 // A client's own locally-simulated fauna, or anything spawned while no session is
                 // live. The replicated copies arrive from the server as their own objects.
-                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna spawned outside a live server session");
+                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna spawned outside a live server session", deferred: true);
                 return;
             }
 

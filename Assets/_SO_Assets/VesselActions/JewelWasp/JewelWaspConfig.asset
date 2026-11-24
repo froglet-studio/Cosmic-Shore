@@ -33,7 +33,7 @@ MonoBehaviour:
     Max: 3
     element: 4
     UseFloor: 1
-    Floor: 1
+    Floor: 0.75
   hostSlowShare: 0.45
   burstMultiplier: 2.2
   burstSeconds: 1.2
@@ -71,7 +71,7 @@ MonoBehaviour:
     Max: 7
     element: 2
     UseFloor: 1
-    Floor: 2.2
+    Floor: 1.75
   overgrowthRadius: 200
   floraCameraDistance: 650
   floraMinDistance: 18
@@ -90,6 +90,7 @@ MonoBehaviour:
   abilityFlashSeconds: 0.6
   hostCameraBodies: 6
   hostCameraBase: 30
+  hostCameraFloor: 204
   cameraEase: 4
   omniPredators:
   - {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}

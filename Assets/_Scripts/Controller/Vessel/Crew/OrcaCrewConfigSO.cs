@@ -24,7 +24,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float boostTank = 3f;
         [Tooltip("lab boostRefill x Time: tank seconds regained per second while not boosting. 0.25 at rest; the lab's kTime 0.6 " +
                  "at level 15 is 0.35 at level 10 (the lab's 1 + k x level / 15 is this channel's line through 1 and 1 + 2k/3).")]
-        [SerializeField] ElementalFloat boostRefill = ElementalFloat.Multiplier(0.25f, 0.35f, Element.Time, 0.05f);
+        [SerializeField] ElementalFloat boostRefill = ElementalFloat.Multiplier(0.25f, 0.35f, Element.Time, 0.125f);
+
+        [Header("Helm: the charge (Garrett 2026-11-20: the helm charges into things like a real orca)")]
+        [Tooltip("The charge's speed: the hull's boost multiplier while the helm holds the boost (times the hull's own Time " +
+                 "BoostSpeedMultiplier). 0 = the prefab's boostMultiplier (5, the burn before the charge).")]
+        [SerializeField, Min(0f)] float chargeMultiplier = 0f;
+        [Tooltip("The charge's one radius (u past the hull's radius): a rival hull the charging nose passes this close to is " +
+                 "rammed. 0 = the charge strikes nothing (the burn before the charge).")]
+        [SerializeField, Min(0f)] float chargeRamReach = 0f;
+        [Tooltip("Petals per element a ram takes from the rival (a Strike: PvP is petals only, so no shove).")]
+        [SerializeField, Min(0f)] float chargeRamPetals = 1f;
+        [Tooltip("Seconds before the same rival can be rammed again (Thresher's vesselHitCooldownSeconds is 1).")]
+        [SerializeField, Min(0f)] float chargeRamCooldown = 1f;
+        [Tooltip("The AI helm charges a rival hull inside this range (u) with its nose on it, however near (the burn rule's " +
+                 "aiBurnMinDistance is for the course, not for prey). 0 = the AI never charges a rival.")]
+        [SerializeField, Min(0f)] float aiRamRange = 0f;
 
         [Header("Level-5 upgrades (game only: the fundamentals pass, Garrett 2026-11-12, ORCA_CREW.md 'Level 5')")]
         [Tooltip("CHARGE level-5 'Rearm': with this element's upgrade active every gunner's magazine regains one missile every " +
@@ -54,7 +69,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab shieldOpenDeg: half-angle of the open cone ahead of the hull (deg), so the helm can see and fly out.")]
         [SerializeField, Range(0f, 90f)] float shieldOpenDeg = 45f;
         [Tooltip("lab shieldTime x Mass: seconds the shield rides with the hull. 4 at rest; the lab's kMass 0.8 is 6.13 at level 10. Then it drops.")]
-        [SerializeField] ElementalFloat shieldSeconds = ElementalFloat.Multiplier(4f, 6.1333333f, Element.Mass, 0.5f);
+        [SerializeField] ElementalFloat shieldSeconds = ElementalFloat.Multiplier(4f, 6.1333333f, Element.Mass, 2f);
         [Tooltip("lab shieldCd: seconds between shields, counted from the raise.")]
         [SerializeField, Min(0f)] float shieldCooldown = 9f;
         [Tooltip("DangerHemisphereConfig baseBlockScale: each shield prism's size (u).")]
@@ -86,7 +101,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab launchCd: a turret's reload after its missile ends (s).")]
         [SerializeField, Min(0f)] float launchCooldown = 0.6f;
         [Tooltip("lab blastR x Space: the burst's radius (u). 30 at rest (AOEExplosion MaxScale 60 is twice it); the lab's kSpace 0.8 is 46 at level 10.")]
-        [SerializeField] ElementalFloat blastRadius = ElementalFloat.Multiplier(30f, 46f, Element.Space, 5f);
+        [SerializeField] ElementalFloat blastRadius = ElementalFloat.Multiplier(30f, 46f, Element.Space, 15f);
         [Tooltip("lab blastTime: seconds the burst takes to reach full size (AOEExplosion's own ExplosionDuration is 3 s). What it takes from a rival hull is the explosion's own vessel effect (VesselCombatHitByMissileBlast: petals, a scored hit).")]
         [SerializeField, Min(0.05f)] float blastSeconds = 0.5f;
         [Tooltip("lab: a crystal within this of a flown missile is collected for the hull (u; the lab's 81 = 9 squared).")]
@@ -194,8 +209,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float bombSpeed = 90f;
         [Tooltip("lab bombLife: a safety (s). The bomb cruises until its gunner presses again (Garrett 2026-10-21: \"it never goes on cooldown it can just only have one bomb at a time so it must blow up a bomb to fire another\"); it also bursts on a rival hull or a hostile prism, and at this. It never knocks our own hull about.")]
         [SerializeField, Min(0.1f)] float bombFuse = 10f;
+        [Tooltip("Seconds after a bomb bursts before the next can be thrown: still one bomb at a time, then this wait (Garrett 2026-11-19 amended his 2026-10-21 \"no cooldown\" rule for Broadside balance). 0 = no wait, the shipped round-6 behaviour.")]
+        [SerializeField, Min(0f)] float bombRearmSeconds = 0f;
         [Tooltip("lab bombBlastR x Space: the blast radius (u). 50 at rest (the Grizzly's mid-charge MaxScale 100); the lab's kSpace 0.8 is 76.7 at level 10.")]
-        [SerializeField] ElementalFloat bombBlastRadius = ElementalFloat.Multiplier(50f, 76.666667f, Element.Space, 10f);
+        [SerializeField] ElementalFloat bombBlastRadius = ElementalFloat.Multiplier(50f, 76.666667f, Element.Space, 25f);
         [Tooltip("The bomb's projectile scale (GrizzlyTriggerBombConfig 2.5-5 by charge; the middle).")]
         [SerializeField, Min(0.1f)] float bombScale = 3.75f;
         [Tooltip("The bomb's colour (the Grizzly's danger red).")]
@@ -262,6 +279,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference sniperShotSound;
         [SerializeField] EventReference bombThrowSound;
         [SerializeField] EventReference bombBurstSound;
+        [Tooltip("A charge ram landing on a rival hull. Shipped empty (no event chosen yet).")]
+        [SerializeField] EventReference chargeRamSound;
 
         [Header("Gunner buttons on a phone (the right thumb fires, the left thumb aims)")]
         [Tooltip("The Fire button's icon: the seat's gun, held to fire. Wears the seat's element colour.")]
@@ -290,6 +309,11 @@ namespace CosmicShore.Gameplay
         public float AIBurnMinDistance => aiBurnMinDistance;
         public float AIBurnMinTank => aiBurnMinTank;
         public float BoostRefillAt(IVesselStatus status) => boostRefill.EvaluateLive(status);
+        public float ChargeMultiplier => chargeMultiplier;
+        public float ChargeRamReach => chargeRamReach;
+        public float ChargeRamPetals => chargeRamPetals;
+        public float ChargeRamCooldown => chargeRamCooldown;
+        public float AIRamRange => aiRamRange;
         public float RearmSeconds => rearmSeconds;
         public float BulwarkGap => bulwarkGap;
         /// <summary>Charge 5 'Rearm': every gunner seat regains a missile every <see cref="RearmSeconds"/>.</summary>
@@ -352,6 +376,7 @@ namespace CosmicShore.Gameplay
         public float FastGunCoolSeconds => fastGunCoolSeconds;
         public float BombSpeed => bombSpeed;
         public float BombFuse => bombFuse;
+        public float BombRearmSeconds => bombRearmSeconds;
         public float BombBlastRadiusAt(IVesselStatus status) => bombBlastRadius.EvaluateLive(status);
         public float BombScale => bombScale;
         public Color BombColor => ColorTrace.Retrace(ColorTrace.World, bombColor);
@@ -360,6 +385,7 @@ namespace CosmicShore.Gameplay
         public EventReference SniperShotSound => sniperShotSound;
         public EventReference BombThrowSound => bombThrowSound;
         public EventReference BombBurstSound => bombBurstSound;
+        public EventReference ChargeRamSound => chargeRamSound;
         public Sprite FireButtonIcon => fireButtonIcon;
         public Sprite MissileButtonIcon => missileButtonIcon;
         public string FireButtonLabel => fireButtonLabel;

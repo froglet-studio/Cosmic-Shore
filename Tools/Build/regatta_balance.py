@@ -123,6 +123,10 @@ def read_vessel(name):
     }
 
 
+# (maxBoostMultiplier, accelerationPerSecond) the model prices the fuelled Rhino ramp at; see read_constants.
+RHINO_MODEL_RAMP = (16.8, 220.0)
+
+
 def read_constants():
     v = {h: read_vessel(h) for h in HULLS}
     c = {"vessels": v}
@@ -131,8 +135,13 @@ def read_constants():
     c["manta_trigger_yaw"] = _first_key(manta, "maxYawDegPerSec", "Manta")
 
     ramp = _read("Assets/_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset")
-    c["rhino_max_boost"] = _key(ramp, "maxBoostMultiplier", "RhinoRampBoost")
-    c["rhino_accel"] = _key(ramp, "accelerationPerSecond", "RhinoRampBoost")
+    # This model has no FUEL TANK (#2233, 2026-11-18): since then the tank, not the ramp's top or climb, sets the
+    # Rhino's Regatta pace. The real-game judge (Tools/Compute/evaluators/regatta_judge.py, shuffle set, 3 seeds) timed
+    # the Rhino alike at x16.8 / 220 and at the 2026-11-19 freight train x28 / 110 (Garrett: "set the top speed very
+    # high, but the acceleration low"), so the model prices the Rhino's ramp at the last numbers it was validated
+    # against, never above them, and the judge is the measure of the Rhino's pace.
+    c["rhino_max_boost"] = min(_key(ramp, "maxBoostMultiplier", "RhinoRampBoost"), RHINO_MODEL_RAMP[0])
+    c["rhino_accel"] = max(_key(ramp, "accelerationPerSecond", "RhinoRampBoost"), RHINO_MODEL_RAMP[1])
     c["rhino_grace"] = _key(ramp, "straightnessGraceBand", "RhinoRampBoost")
     c["rhino_plateau"] = 0.3          # HeadlongCircuitSettings.BoostPlateauDeviation
 

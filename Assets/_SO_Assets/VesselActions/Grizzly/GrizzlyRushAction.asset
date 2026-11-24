@@ -16,9 +16,17 @@ MonoBehaviour:
   duration: 1
   energyIndex: 0
   energyCost: 0.25
-  timeCostAtFull: 0.4
-  timeCostMinMul: 0.25
+  ramRadius: 16
+  ramTickSeconds: 0.05
+  ramImpactSpeed: 60
   maxCharges: 3
-  chargeRefillSeconds: 6
+  refillSeconds:
+    Enabled: 1
+    Value: 6
+    Min: 6
+    Max: 2.5
+    element: 4
+    UseFloor: 1
+    Floor: 1
   cooldownSeconds: 2
   steeringPulses: 4

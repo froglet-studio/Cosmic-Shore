@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-the-grizzly-time-ai-no-longer-passes-bes-788daa",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-21T02:35:28+00:00",
+  "area": "Grizzly Time AI (KegAim)",
+  "summary": "The Grizzly Time AI no longer passes beside a standing plain keg at I1-I2; it threads the mouth unless a keg is open. With the 20-80 blast that pass opened about one keg a race and cost ~55 s, running the I1-I4 ladder backwards (133/136/82/92 -> 77/82/80/92 s).",
+  "branch": "claude/project-thread-o7t29g",
+  "commit": "86af1b9a6"
+}

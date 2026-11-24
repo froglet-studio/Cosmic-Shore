@@ -209,6 +209,7 @@ namespace CosmicShore.UI
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
             int pcMax = Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers);
+            if (config.DomainCount > 0) pcMax = Mathf.Min(pcMax, SO_ArcadeGame.TeamSeatCap(config.DomainCount));
             // A party can be LARGER than the card allows (four humans on a 3-player card), and
             // then effectiveMin > pcMax. Mathf.Clamp resolves an inverted range by returning the
             // MAX, so the count silently came back as fewer players than are actually present -

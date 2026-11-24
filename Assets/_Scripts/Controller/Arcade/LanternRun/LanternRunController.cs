@@ -37,6 +37,14 @@ namespace CosmicShore.Gameplay
         [Tooltip("u a cluster keeps outside the nucleus.")]
         [SerializeField, Min(0f)] float nucleusMargin = 30f;
 
+        [Header("AI nose")]
+        [Tooltip("The AI nose lead and follow rate per hull in this mode (GateRaceController.AINoseLeadRow). Empty: the " +
+                 "fleet nose lag. Filled by the Angler's trained pair (time_ai_search.py --hull Angler, run1 2026-11-19: no " +
+                 "lead, nose 8.25/s).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Angler, 0f, noseFollow: 8.25f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         protected override string ModeName => "Lantern Run";
 
         /// <summary>Regatta's gate steering: commit from the approach point, aim through the ring's centre.</summary>

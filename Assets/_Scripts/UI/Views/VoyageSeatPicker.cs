@@ -11,21 +11,25 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The seat popup on the Ark page (Frogma Rev 100 P3A's picker, drawn as glass by Rev 108; Docs/MENU_REDESIGN_B.md
-    /// sections 201-202): one seat's Vessel, Pilot, Element and Artifact as four tabs, each showing what the seat has now;
-    /// the quick kits that set all four in one press (For this voyage, Last flown); the Sees filter over the pilots (what
-    /// a pilot's callsign shows in the world, grouped as crystals, prisms, life, vessels and paths); the grid of what the
-    /// seat may take, the voyage's own picks tagged; and the picked one's preview. One press takes it
-    /// (<see cref="VoyageSeats.Pick"/>, the Ark's rules), and the seat card behind updates.
+    /// The seat picker on the Ark page, as the Hangar line-up draws it (Frogma Rev 115 A, picked by Shombith 2026-11-16;
+    /// Docs/MENU_REDESIGN_B.md section 211.1): an 820 x 996 panel that slides in from the right over a light scrim, with
+    /// one thin line down its left edge, so the seats stay in view and your seat changes behind it as you pick. "Change
+    /// your seat" and Close; the tabs Vessel, Pilot, Element and Artifact, the open one underlined in cyan; the tab's
+    /// choices three across (200 x 150 tiles inside one thin line, the picked one cyan, "For this voyage" on the voyage's
+    /// own picks; the Sees filter over the pilots); the picked one's name and a line about it; "Your seat now"; and at the
+    /// foot what was saved and Done (A).
+    /// <para>One press saves the pick to the seat for THIS voyage (<see cref="VoyageSeats.PickVoyage"/> into
+    /// <see cref="VoyageSeatRecord"/>), never to a saved squad. Set sail reads the same seats.</para>
     /// </summary>
     public sealed class VoyageSeatPicker
     {
-        // Frogma Rev 108's picker, in its own units: a 1520 x 830 panel at (200, 154) of the 1920 x 1080 board.
+        // Frogma Rev 115 A, in its own units: an 820 x 996 panel at (1100, 84) of the 1920 x 1080 board, under the scrim
+        // that starts below the menu bar (y 84).
         static readonly Vector2 Screen = new(1920f, 1080f);
-        const float Width = 1520f, Height = 830f, PanelX = 200f, PanelY = 154f;
-        const float GridX = 40f, GridY = 374f, GridWidth = 1008f, GridHeight = 372f, CellWidth = 158f, CellHeight = 116f, CellGap = 12f;
-        const float KitWidth = 242f, KitHeight = 84f, KitGap = 14f, PreviewX = 1080f, PreviewY = 180f, PreviewWidth = 400f,
-            PreviewHeight = 548f;
+        const float Width = 820f, Height = 996f, PanelX = 1100f, PanelY = 84f, Pad = 40f;
+        const float TabsY = 96f, GridY = 160f, GridBottom = 500f, CellWidth = 200f, CellHeight = 150f, CellGap = 16f;
+        const float SeesHeight = 36f, NameY = 520f, NowY = 640f, FootHeight = 56f;
+        const float ScrimAlpha = 0.45f, OpenSeconds = 0.4f, DimSeconds = 0.3f;
 
         /// <summary>A whole seat in one value (a quick kit), written to and read from one line.</summary>
         public struct Kit
@@ -73,35 +77,25 @@ namespace CosmicShore.UI
         RectTransform _overlay;
         TMP_Text _title;
         readonly TabView[] _tabs = new TabView[4];
-        readonly KitView[] _kits = new KitView[2];
-        RectTransform _seesRow, _grid;
+        RectTransform _seesRow, _gridView, _grid, _saved;
         readonly List<Image> _seesFills = new();
         readonly List<TMP_Text> _seesTexts = new();
-        TMP_Text _count;
+        TMP_Text _count, _savedText, _pickedName, _pickedNote, _nowWords;
         readonly List<CellView> _cells = new();
-        Image _previewPicture;
-        RectTransform _previewFlower;
-        TMP_Text _previewName, _previewNote, _previewTag;
-        RectTransform _previewBox;
+        RectTransform _panel, _nowFlower;
+        Image _nowFace;
 
         VoyageBoard.Offer _offer;
+        string _key;
         int _seat, _kind, _sees;
-        Kit? _last;
+        string _savedLine;
         readonly List<VoyageSeats.Option> _options = new();
         readonly List<VoyageSeats.Option> _scratch = new();
 
         sealed class TabView
         {
-            public TMP_Text Name, Value;
+            public TMP_Text Name;
             public Image Bar;
-        }
-
-        sealed class KitView
-        {
-            public RectTransform Root;
-            public Button Button;
-            public Image Thumb;
-            public TMP_Text Name, Who;
         }
 
         sealed class CellView
@@ -126,43 +120,35 @@ namespace CosmicShore.UI
 
             _root = VoyageKit.Node("SeatPicker", parent);
             VoyageKit.Stretch(_root);
-            // The page behind stays seen, dimmed, and takes no press.
-            VoyageKit.Block(_root, VoyageKit.Fade(_kit.Popup, 0.85f), hit: true);
+            // Nothing behind takes a press while the picker is open; the scrim is light (45%) and starts under the menu bar,
+            // so the seats stay seen.
+            VoyageKit.Block(_root, VoyageKit.Clear, hit: true);
             // The board's 1920 x 1080 screen, scaled to the screen it opens over; the panel stands where the board drew it.
             _frame = VoyageKit.Node("Frame", _root);
             _frame.anchorMin = _frame.anchorMax = _frame.pivot = new Vector2(0.5f, 0.5f);
             _frame.sizeDelta = Screen;
-            var panel = At("Panel", PanelX, PanelY, Width, Height, _frame);
-            var glass = _kit.Glass(panel, hit: true);
-            // A window over the page: the glass's shading, with nothing behind reading through.
-            glass.Fill.Set(Opaque(VoyageKit.Fade(_kit.Outline, 0.36f)), _kit.Popup, _kit.Popup, 0.55f);
-            var c = glass.Content;
+            var scrim = At("Scrim", 0f, PanelY, Screen.x, Screen.y - PanelY, _frame);
+            _scrim = VoyageKit.Block(scrim, VoyageKit.Fade(_kit.Popup, ScrimAlpha));
+            _panel = At("Panel", PanelX, PanelY, Width, Height, _frame);
+            // A flat panel (#00041F) with one thin line (#434C89) down its left edge.
+            var plate = _kit.RowPicked;
+            VoyageKit.Block(_panel, new Color(plate.r, plate.g, plate.b, 1f), hit: true);
+            VoyageKit.Block(At("Edge", 0f, 0f, 1f, Height, _panel), _kit.Outline);
+            var c = _panel;
 
-            _title = _kit.Text(c, 32, _kit.Light, TextAlignmentOptions.Left);
-            VoyageKit.At(_title.rectTransform, 40f, 20f, 900f, 44f);
-            var close = At("Close", Width - 40f - 44f, 30f, 44f, 44f, c);
+            _title = _kit.Text(c, 26, _kit.Light, TextAlignmentOptions.Left);
+            VoyageKit.At(_title.rectTransform, Pad, 34f, 640f, 34f);
+            var close = At("Close", Width - Pad - 44f, 30f, 44f, 44f, c);
             _kit.Square(close, _lines?.PickClose, Close);
 
             BuildTabs(c);
-            BuildKits(c);
             BuildSees(c);
             BuildGrid(c);
-            BuildPreview(c);
-
-            var note = _kit.Text(c, 16, _kit.Sub, TextAlignmentOptions.Left);
-            VoyageKit.At(note.rectTransform, GridX, GridY + GridHeight + 12f, 900f, 24f);
-            VoyageKit.Set(note, _lines?.PickNote);
-            var done = At("Done", PreviewX + PreviewWidth - 296f, 744f, 296f, 56f, c);
-            _kit.Cta(done, _lines?.BoardSailKey, _lines?.BoardDone, Close);
+            BuildPicked(c);
+            BuildNow(c);
+            BuildFoot(c);
 
             _root.gameObject.SetActive(false);
-        }
-
-        // The glass's top colour over the dark ground, made opaque.
-        Color Opaque(Color c)
-        {
-            var under = _kit.Popup;
-            return new Color(Mathf.Lerp(under.r, c.r, c.a), Mathf.Lerp(under.g, c.g, c.a), Mathf.Lerp(under.b, c.b, c.a), 1f);
         }
 
         static RectTransform At(string name, float x, float y, float w, float h, RectTransform parent)
@@ -174,11 +160,11 @@ namespace CosmicShore.UI
 
         void BuildTabs(RectTransform c)
         {
-            // The seat's four settings: each its name (caps 15) over what the seat has now (15, Sub), 40 apart; the open one
-            // lit and underlined in cyan.
-            var row = At("Tabs", 40f, 76f, 900f, 56f, c);
-            var h = VoyageKit.Row(row, 40f, TextAnchor.UpperLeft);
+            // Vessel, Pilot, Element, Artifact (caps 15), 36 apart; the open one Light and underlined in cyan (2).
+            var row = At("Tabs", Pad, TabsY, Width - 2f * Pad, 34f, c);
+            var h = VoyageKit.Row(row, 36f, TextAnchor.UpperLeft);
             h.childForceExpandHeight = true;
+            h.childForceExpandWidth = false;
             string[] names = { _lines?.CardSettingVessel, _lines?.CardSettingPilot, _lines?.CardSettingElement, _lines?.CardSettingArtifact };
             for (int kind = 0; kind < 4; kind++)
             {
@@ -189,50 +175,24 @@ namespace CosmicShore.UI
                 b.targetGraphic = hit;
                 b.transition = Selectable.Transition.None;
                 b.onClick.AddListener(() => ShowKind(k));
-                VoyageKit.Column(tab, 4f, TextAnchor.UpperLeft);
+                var col = VoyageKit.Column(tab, 0f, TextAnchor.UpperLeft);
+                col.padding = new RectOffset(0, 0, 0, 10);
                 var view = new TabView();
                 view.Name = _kit.Label(tab, 15, _kit.Sub);
                 view.Name.overflowMode = TextOverflowModes.Overflow;
                 VoyageKit.Set(view.Name, names[kind]);
-                view.Value = _kit.Text(tab, 15, _kit.Sub, TextAlignmentOptions.Left);
-                view.Value.overflowMode = TextOverflowModes.Overflow;
                 var bar = VoyageKit.Node("Bar", tab);
-                VoyageKit.Le(bar).preferredHeight = 2f;
+                VoyageKit.Le(bar).ignoreLayout = true;
+                VoyageKit.Foot(bar, 0f, 2f);
                 view.Bar = VoyageKit.Block(bar, _kit.Cyan);
                 _tabs[kind] = view;
             }
         }
 
-        void BuildKits(RectTransform c)
-        {
-            var label = _kit.Label(c, 14, _kit.Sub);
-            VoyageKit.At(label.rectTransform, 40f, 182f, 900f, 20f);
-            VoyageKit.Set(label, _lines?.PickKits);
-            string[] names = { _lines?.PickKitVoyage, _lines?.PickKitLast };
-            for (int i = 0; i < 2; i++)
-            {
-                int which = i;
-                // A kit: 242 x 84, a thumb, its name (17) and what it sets (14, Sub).
-                var view = new KitView { Root = At("Kit" + i, 40f + i * (KitWidth + KitGap), 210f, KitWidth, KitHeight, c) };
-                var (fill, _) = _kit.Box(view.Root, VoyageKit.Fade(_kit.Popup, 0.7f), VoyageKit.Fade(_kit.Outline, 0.8f), hit: true);
-                view.Button = view.Root.gameObject.AddComponent<Button>();
-                view.Button.targetGraphic = fill;
-                view.Button.onClick.AddListener(() => TakeKit(which));
-                var thumb = At("Thumb", 14f, 14f, 46f, 56f, view.Root);
-                _kit.Box(thumb, VoyageKit.Clear, VoyageKit.Fade(_kit.Light, 0.6f));
-                view.Thumb = VoyageKit.CoverBox(thumb);
-                var words = At("Words", 74f, 18f, KitWidth - 74f - 12f, 52f, view.Root);
-                VoyageKit.Column(words, 4f, TextAnchor.UpperLeft);
-                view.Name = _kit.Text(words, 17, _kit.Light, TextAlignmentOptions.Left);
-                VoyageKit.Set(view.Name, names[i]);
-                view.Who = _kit.Text(words, 14, _kit.Sub, TextAlignmentOptions.Left);
-                _kits[i] = view;
-            }
-        }
-
         void BuildSees(RectTransform c)
         {
-            _seesRow = At("Sees", GridX, 316f, GridWidth, 36f, c);
+            // The pilots' Sees filter (the Pilot tab only), over the grid.
+            _seesRow = At("Sees", Pad, GridY, Width - 2f * Pad, SeesHeight, c);
             var row = VoyageKit.Row(_seesRow, 10f);
             row.childForceExpandHeight = true;
             var label = _kit.Label(_seesRow, 14, _kit.Sub);
@@ -244,11 +204,11 @@ namespace CosmicShore.UI
             for (int i = 0; i < names.Length; i++)
             {
                 int group = i;
-                // A chip: its word (15) in an outlined box, 14 in; the picked one filled with Light, its word dark.
+                // A chip: its word (15) inside one thin line, 14 in; the picked one filled with Light, its word dark.
                 var chip = VoyageKit.Node("Chip" + i, _seesRow);
                 var pad = VoyageKit.Row(chip, 0f, TextAnchor.MiddleCenter);
                 pad.padding = new RectOffset(14, 14, 0, 0);
-                var (fill, _) = _kit.Box(chip, VoyageKit.Fade(_kit.Popup, 0.7f), _kit.Outline, hit: true);
+                var (fill, _) = _kit.Box(chip, VoyageKit.Fade(_kit.Popup, 0.7f), VoyageKit.Fade(_kit.Outline, 0.6f), hit: true);
                 var b = chip.gameObject.AddComponent<Button>();
                 b.targetGraphic = fill;
                 b.transition = Selectable.Transition.None;
@@ -265,15 +225,15 @@ namespace CosmicShore.UI
 
         void BuildGrid(RectTransform c)
         {
-            // Six across, 158 x 116, 12 apart; more scroll.
-            var view = At("Choices", GridX, GridY, GridWidth, GridHeight, c);
-            view.gameObject.AddComponent<RectMask2D>();
-            var hit = VoyageKit.Block(view, VoyageKit.Clear, hit: true);
-            var scroll = view.gameObject.AddComponent<ScrollRect>();
+            // Three across, 200 x 150, 16 apart; more scroll.
+            _gridView = At("Choices", Pad, GridY, GridWidth, GridBottom - GridY, c);
+            _gridView.gameObject.AddComponent<RectMask2D>();
+            var hit = VoyageKit.Block(_gridView, VoyageKit.Clear, hit: true);
+            var scroll = _gridView.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.scrollSensitivity = 30f;
-            _grid = VoyageKit.Node("Grid", view);
+            _grid = VoyageKit.Node("Grid", _gridView);
             _grid.anchorMin = new Vector2(0f, 1f);
             _grid.anchorMax = Vector2.one;
             _grid.pivot = new Vector2(0.5f, 1f);
@@ -282,47 +242,99 @@ namespace CosmicShore.UI
             g.cellSize = new Vector2(CellWidth, CellHeight);
             g.spacing = new Vector2(CellGap, CellGap);
             g.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            g.constraintCount = 6;
+            g.constraintCount = 3;
             var fit = _grid.gameObject.AddComponent<ContentSizeFitter>();
             fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = _grid;
-            scroll.viewport = view;
+            scroll.viewport = _gridView;
             hit.raycastTarget = true;
         }
 
-        void BuildPreview(RectTransform c)
+        /// <summary>The grid's width: three tiles and the two gaps between them.</summary>
+        const float GridWidth = 3f * CellWidth + 2f * CellGap;
+
+        void BuildPicked(RectTransform c)
         {
-            // The picked one, 400 x 548: its picture filling the top, its house, its name (32) and what it sees (16).
-            _previewBox = At("Preview", PreviewX, PreviewY, PreviewWidth, PreviewHeight, c);
-            VoyageKit.Block(_previewBox, _kit.Popup);
-            _previewPicture = VoyageKit.CoverBox(_previewBox);
-            var shade = VoyageKit.Node("Shade", _previewBox);
-            VoyageKit.Stretch(shade);
-            shade.anchorMax = new Vector2(1f, 0.6f);
-            var g = shade.gameObject.AddComponent<VoyageGradient>();
-            g.raycastTarget = false;
-            g.Set(VoyageKit.Fade(_kit.Popup, 0f), VoyageKit.Fade(_kit.Popup, 0.92f), _kit.Popup, 0.5f);
-            var flower = At("Element", PreviewWidth * 0.5f - 64f, 120f, 128f, 128f, _previewBox);
-            _previewFlower = VoyageKit.Flower(flower, Element.Charge, _kit.Light);
-            VoyageKit.Stretch(_previewFlower);
-            var edge = VoyageKit.Node("Edge", _previewBox);
-            VoyageKit.Stretch(edge);
-            edge.gameObject.AddComponent<VoyageOutline>().Solid(VoyageKit.Fade(_kit.Outline, 0.8f));
-            var words = VoyageKit.Node("Words", _previewBox);
-            words.anchorMin = Vector2.zero;
-            words.anchorMax = new Vector2(1f, 0f);
-            words.pivot = new Vector2(0.5f, 0f);
-            words.sizeDelta = new Vector2(-56f, 200f);
-            words.anchoredPosition = new Vector2(0f, 28f);
-            VoyageKit.Column(words, 10f, TextAnchor.LowerLeft);
-            _previewTag = _kit.Label(words, 14, _kit.Light);
-            _previewName = _kit.Text(words, 32, _kit.Light, TextAlignmentOptions.Left);
-            _previewNote = _kit.Text(words, 16, _kit.Light, TextAlignmentOptions.TopLeft);
-            _previewNote.textWrappingMode = TextWrappingModes.Normal;
-            VoyageKit.Le(_previewNote).preferredHeight = 72f;
+            // The picked one's name (22) over a line about it (15, the quiet light).
+            var words = At("Picked", Pad, NameY, Width - 2f * Pad, 110f, c);
+            VoyageKit.Column(words, 10f, TextAnchor.UpperLeft);
+            _pickedName = _kit.Text(words, 22, _kit.Light, TextAlignmentOptions.Left);
+            _pickedNote = _kit.Text(words, 15, ForVoyageColor, TextAlignmentOptions.TopLeft);
+            _pickedNote.textWrappingMode = TextWrappingModes.Normal;
+            _pickedNote.lineSpacing = 12f;
+            VoyageKit.Le(_pickedNote).preferredHeight = 70f;
         }
 
-        /// <summary>Scale the board's screen to the screen the popup opens over (on open and when it is resized).</summary>
+        void BuildNow(RectTransform c)
+        {
+            // "Your seat now" (caps 14, Sub) over the seat as it stands: the pilot's face (44 x 52), "vessel - pilot -
+            // element - artifact" (16) and the element's flower (26).
+            var head = _kit.Label(At("NowHead", Pad, NowY, Width - 2f * Pad, 20f, c), 14, _kit.Sub);
+            VoyageKit.Stretch(head.rectTransform);
+            VoyageKit.Set(head, _lines?.PickSeatNow);
+            var row = At("Now", Pad, NowY + 34f, Width - 2f * Pad, 52f, c);
+            var h = VoyageKit.Row(row, 16f, TextAnchor.MiddleLeft);
+            h.childForceExpandWidth = false;
+            var face = VoyageKit.Node("Face", row);
+            var fle = VoyageKit.Le(face);
+            fle.preferredWidth = fle.minWidth = 44f;
+            fle.preferredHeight = fle.minHeight = 52f;
+            VoyageKit.Block(face, VoyageKit.Fade(_kit.Popup, 0.6f));
+            _nowFace = VoyageKit.CoverBox(face);
+            _nowWords = _kit.Text(row, 16, _kit.Light, TextAlignmentOptions.Left);
+            _nowWords.overflowMode = TextOverflowModes.Ellipsis;
+            VoyageKit.Le(_nowWords).flexibleWidth = 1f;
+            var flowerBox = VoyageKit.Node("Flower", row);
+            var ffl = VoyageKit.Le(flowerBox);
+            ffl.preferredWidth = ffl.minWidth = ffl.preferredHeight = ffl.minHeight = 26f;
+            _nowFlower = VoyageKit.Flower(flowerBox, Element.Charge, _kit.Light);
+            VoyageKit.Stretch(_nowFlower);
+        }
+
+        void BuildFoot(RectTransform c)
+        {
+            // What was saved, with a drawn tick, at the left; Done (A) at the right, 40 from the foot.
+            BuildSaved(c);
+            var done = At("Done", Width - Pad - 220f, Height - Pad - FootHeight, 220f, FootHeight, c);
+            _kit.Cta(done, _lines?.BoardSailKey, _lines?.BoardDone, Close);
+        }
+
+        void BuildSaved(RectTransform c)
+        {
+            // Under the grid: a tick and what was saved (17), no bar.
+            _saved = At("Saved", Pad, Height - Pad - FootHeight, Width - 2f * Pad - 240f, FootHeight, c);
+            VoyageKit.Row(_saved, 14f, TextAnchor.MiddleLeft).padding = new RectOffset(4, 4, 0, 0);
+            // The tick, drawn: two 2 unit strokes (the board's 18 x 14 path M1 7l5 5L17 1).
+            var tick = VoyageKit.Node("Tick", _saved);
+            var tle = VoyageKit.Le(tick);
+            tle.preferredWidth = tle.minWidth = 18f;
+            tle.preferredHeight = tle.minHeight = 14f;
+            Stroke(tick, new Vector2(1f, 7f), new Vector2(6f, 12f));
+            Stroke(tick, new Vector2(6f, 12f), new Vector2(17f, 1f));
+            _savedText = _kit.Text(_saved, 16, _kit.Light, TextAlignmentOptions.Left);
+            _savedText.textWrappingMode = TextWrappingModes.Normal;
+            VoyageKit.Le(_savedText).flexibleWidth = 1f;
+        }
+
+        // A 2 unit line from a to b in an 18 x 14 box drawn top-down (SVG units).
+        void Stroke(RectTransform box, Vector2 a, Vector2 b)
+        {
+            var rt = VoyageKit.Node("Stroke", box);
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            var d = b - a;
+            rt.sizeDelta = new Vector2(d.magnitude + 2f, 2f);
+            var mid = (a + b) * 0.5f;
+            rt.anchoredPosition = new Vector2(mid.x, -mid.y);
+            rt.localRotation = Quaternion.Euler(0f, 0f, -Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+            VoyageKit.Block(rt, _kit.Light);
+        }
+
+        // The board's quiet light (#B8C0F0): between Sub and Light, from the worn set.
+        Color ForVoyageColor => Color.Lerp(_kit.Sub, _kit.Light, 0.6f);
+
+        /// <summary>Scale the board's screen to the screen the picker opens over, and slide the panel in from the right
+        /// while the scrim fades up (Frogma's .4s cubic-bezier(.2,.7,.2,1)).</summary>
         public void Tick(float dt)
         {
             if (!IsOpen) return;
@@ -333,41 +345,42 @@ namespace CosmicShore.UI
             {
                 _fitFor = room;
                 _fitK = Mathf.Max(0.05f, Mathf.Min(room.x / Screen.x, room.y / Screen.y));
+                _frame.localScale = new Vector3(_fitK, _fitK, 1f);
             }
-            // Frogma's modal: the dim fades in (.35s ease) and the panel comes up 24 and from .97 (.45s
-            // cubic-bezier(.2,.7,.2,1)).
             _openT = Mathf.Min(1f, _openT + dt / OpenSeconds);
             _dimT = Mathf.Min(1f, _dimT + dt / DimSeconds);
-            float e = VoyageKit.Rise(_openT);
-            float k = _fitK * (0.97f + 0.03f * e);
-            _frame.localScale = new Vector3(k, k, 1f);
-            _frame.anchoredPosition = new Vector2(0f, -24f * (1f - e) * _fitK);
-            if (_frameGroup) _frameGroup.alpha = e;
-            if (_rootGroup) _rootGroup.alpha = Mathf.SmoothStep(0f, 1f, _dimT);
+            VoyageKit.At(_panel, PanelX + SlideOffset(VoyageKit.Rise(_openT)), PanelY, Width, Height);
+            _scrim.color = VoyageKit.Fade(_kit.Popup, ScrimAlpha * Mathf.SmoothStep(0f, 1f, _dimT));
         }
 
-        const float OpenSeconds = 0.45f, DimSeconds = 0.35f;
+        /// <summary>How far right of its place the panel stands at eased time <paramref name="e"/> (0 off the board's
+        /// right edge, 1 in place).</summary>
+        public static float SlideOffset(float e) => (1f - Mathf.Clamp01(e)) * Width;
+
         float _openT = 1f, _dimT = 1f, _fitK = 1f;
-        CanvasGroup _rootGroup, _frameGroup;
+        Image _scrim;
 
         // ── Opening ──────────────────────────────────────────────────────────
 
         /// <summary>Open on <paramref name="seat"/>'s <paramref name="kind"/> tab (<see cref="VoyageSeats.Vessel"/>...)
-        /// for <paramref name="offer"/>; <paramref name="last"/> is the Last flown kit, if any.</summary>
-        public void Open(VoyageBoard.Offer offer, int seat, int kind, Kit? last)
+        /// for <paramref name="offer"/>, whose own seats (<see cref="VoyageSeatRecord"/>) it changes: the record under
+        /// <paramref name="key"/> (a friend in the host's lobby changes <see cref="VoyageSeatRecord.PartyKey"/>), else the
+        /// offer's.</summary>
+        public void Open(VoyageBoard.Offer offer, int seat, int kind, string key = null)
         {
             _offer = offer;
+            _key = string.IsNullOrEmpty(key) ? offer?.Key : key;
             _seat = seat;
             _kind = kind;
-            _last = last;
             _sees = 0;
+            _savedLine = null;
+            bool wasOpen = IsOpen;
             Lift();
             _root.gameObject.SetActive(true);
             _root.SetAsLastSibling();
             _fitFor = new Vector2(-1f, -1f);
-            if (!_rootGroup && !_root.TryGetComponent(out _rootGroup)) _rootGroup = _root.gameObject.AddComponent<CanvasGroup>();
-            if (!_frameGroup && !_frame.TryGetComponent(out _frameGroup)) _frameGroup = _frame.gameObject.AddComponent<CanvasGroup>();
-            _openT = _dimT = 0f;
+            // Opening over an open picker (another seat) keeps it in place; a closed one slides in.
+            if (!wasOpen) _openT = _dimT = 0f;
             Tick(0f);
             Refresh();
         }
@@ -409,13 +422,17 @@ namespace CosmicShore.UI
         {
             _kind = kind;
             _sees = 0;
+            _savedLine = null;
             Refresh();
         }
+
+        /// <summary>The seats the popup changes: the open voyage's own.</summary>
+        SavedSquad Seats() => VoyageSeatRecord.Get(_key);
 
         public void Refresh()
         {
             if (!IsOpen) return;
-            var squad = VoyageSeats.Active;
+            var squad = Seats();
             if (squad == null || !VoyageSeats.CanEdit(squad, _seat))
             {
                 Close();
@@ -427,31 +444,21 @@ namespace CosmicShore.UI
             bool you = VoyageOpenCard.IsMySeat(squad, _seat);
             VoyageKit.Set(_title, you ? _lines?.PickTitle : TemplateText.Fill(_lines?.PickTitleSeat, "seat", _rules.Role(_seat)));
 
-            string[] values =
-            {
-                vessel ? vessel.CardName : null, VoyageSeats.PilotName(slot, pilot, true), _rules.ElementName(slot.Element),
-                _rules.ArtifactName(slot, vessel, true),
-            };
             for (int k = 0; k < 4; k++)
             {
                 bool on = k == _kind;
-                VoyageKit.Set(_tabs[k].Value, values[k]);
                 _tabs[k].Bar.enabled = on;
                 _tabs[k].Name.color = on ? _kit.Light : _kit.Sub;
-                _tabs[k].Value.color = on ? _kit.Light : _kit.Sub;
             }
-
-            // The quick kits: the voyage's own picks, and the seat last sailed with.
-            var voyage = ForThisVoyage();
-            DrawKit(_kits[0], voyage);
-            DrawKit(_kits[1], _last);
+            DrawNow(slot, vessel, pilot);
 
             _rules.Offer(_kind, squad, _seat, _scratch);
             _options.Clear();
             int total = _scratch.Count;
             foreach (var o in _scratch)
                 if (_kind != VoyageSeats.Pilot || _sees == 0 || SeesGroup(VisionOf(o.Id)) == _sees) _options.Add(o);
-            _seesRow.gameObject.SetActive(_kind == VoyageSeats.Pilot);
+            bool sees = _kind == VoyageSeats.Pilot;
+            _seesRow.gameObject.SetActive(sees);
             for (int i = 0; i < _seesTexts.Count; i++)
             {
                 bool on = i == _sees;
@@ -460,6 +467,12 @@ namespace CosmicShore.UI
             }
             VoyageKit.Set(_count, TemplateText.Fill(_lines?.PickCount, "shown", _options.Count.ToString(CultureInfo.InvariantCulture),
                 "total", total.ToString(CultureInfo.InvariantCulture)));
+
+            // The grid stands under the Sees row when it shows, and above the saved line.
+            float top = GridY + (sees ? SeesHeight + 14f : 0f);
+            VoyageKit.At(_gridView, Pad, top, GridWidth, GridBottom - top);
+            // What was just saved, else that a press saves to this voyage's seat.
+            VoyageKit.Set(_savedText, string.IsNullOrEmpty(_savedLine) ? _lines?.PickSavedHere : _savedLine);
 
             VoyageSeats.Option picked = default;
             bool any = false;
@@ -475,12 +488,12 @@ namespace CosmicShore.UI
                 bool tagged = ForVoyage(o);
                 cell.TagRoot.gameObject.SetActive(tagged);
                 VoyageKit.Set(cell.Tag, tagged ? _lines?.PickForVoyage : null);
-                cell.Edge.Solid(o.Picked ? _kit.Cyan : VoyageKit.Fade(_kit.Outline, 0.8f));
-                cell.Edge.Width = o.Picked ? 2f : 1f;
-                cell.Name.color = _kit.Light;
+                // One thin line round every tile; the picked one's is cyan.
+                cell.Edge.Solid(o.Picked ? _kit.Cyan : VoyageKit.Fade(_kit.Outline, 0.6f));
+                cell.Edge.Width = 1f;
                 var option = o;
                 cell.Button.onClick.RemoveAllListeners();
-                cell.Button.onClick.AddListener(() => _rules.Pick(_seat, _kind, option));
+                cell.Button.onClick.AddListener(() => Take(option));
                 if (o.Picked)
                 {
                     picked = o;
@@ -491,38 +504,69 @@ namespace CosmicShore.UI
             Preview(any ? picked : default, any);
         }
 
+        // One press saves the pick to this voyage's seat and says so under the grid.
+        void Take(VoyageSeats.Option option)
+        {
+            var squad = Seats();
+            bool you = squad != null && VoyageOpenCard.IsMySeat(squad, _seat);
+            if (!_rules.PickVoyage(_key, _seat, _kind, option)) return;
+            string setting = _kind switch
+            {
+                VoyageSeats.Vessel => _lines?.PickWordVessel,
+                VoyageSeats.Pilot => _lines?.PickWordPilot,
+                VoyageSeats.ElementKind => _lines?.PickWordElement,
+                _ => _lines?.PickWordArtifact,
+            };
+            _savedLine = you
+                ? TemplateText.Fill(_lines?.PickSaved, "choice", option.Name, "setting", setting, "voyage", _offer?.Title)
+                : TemplateText.Fill(_lines?.PickSavedSeat, "choice", option.Name, "setting", setting, "seat", _rules.Role(_seat),
+                    "voyage", _offer?.Title);
+            Refresh();
+        }
+
         void Preview(VoyageSeats.Option o, bool any)
         {
-            VoyageKit.ShowCover(_previewPicture, any ? o.Picture : null, new Vector2(PreviewWidth, PreviewHeight), new Vector2(0.5f, 0.2f));
-            _previewFlower.parent.gameObject.SetActive(any && _kind == VoyageSeats.ElementKind);
-            if (any && _kind == VoyageSeats.ElementKind) Petals(_previewFlower, o.Element);
-            VoyageKit.Set(_previewName, any ? o.Name : null);
-            // Over the name: a pilot's house (Rev 108), else the voyage's tag when it is one of its picks.
-            string house = any && _kind == VoyageSeats.Pilot && PilotLoadoutStore.TryGetPilot(o.Id, out var record)
-                ? record.FactionName : null;
-            VoyageKit.Set(_previewTag, !string.IsNullOrEmpty(house) ? house : any && ForVoyage(o) ? _lines?.PickForVoyage : null);
+            VoyageKit.Set(_pickedName, any ? o.Name : null);
             string note = any ? o.Note : null;
             if (any && _kind == VoyageSeats.Pilot && string.IsNullOrEmpty(note) && _catalog
                 && _catalog.TryGetPilot(o.Id, out var callsign) && callsign) note = callsign.Description;
-            VoyageKit.Set(_previewNote, note);
+            VoyageKit.Set(_pickedNote, note);
+        }
+
+        // "Your seat now": the seat as it stands after every press, the same seat the page behind shows.
+        void DrawNow(SquadSlot slot, SO_Vessel vessel, PilotSO pilot)
+        {
+            VoyageKit.ShowCover(_nowFace, pilot ? pilot.Portrait : null, new Vector2(44f, 52f), VoyageKit.FaceFocus);
+            VoyageKit.Set(_nowWords, TemplateText.Fill(_lines?.PickSeatLine,
+                "vessel", vessel ? vessel.CardName : null,
+                "pilot", VoyageSeats.PilotName(slot, pilot, true),
+                "element", _rules.ElementName(slot.Element),
+                "artifact", _rules.ArtifactName(slot, vessel, true)));
+            bool flower = slot.Element != Element.None && slot.Element != Element.Omni;
+            _nowFlower.parent.gameObject.SetActive(flower);
+            if (flower) Petals(_nowFlower, slot.Element);
         }
 
         CellView CellFor(int index)
         {
             while (_cells.Count <= index)
             {
-                // A choice: an outlined box (cyan when picked), its picture, its name (15) at the foot, the voyage's tag
-                // (caps 14, cyan, underlined) at the top.
+                // A 200 x 150 tile, rgba(0,4,31,.7) inside one thin line: its picture over its name (16), "For this voyage"
+                // in plain caps at its top left.
                 var view = new CellView { Root = VoyageKit.Node("Choice" + _cells.Count, _grid) };
-                var (fill, edge) = _kit.Box(view.Root, VoyageKit.Fade(_kit.Popup, 0.6f), _kit.Outline, hit: true);
+                var (fill, edge) = _kit.Box(view.Root, VoyageKit.Fade(_kit.RowPicked, 0.7f / 0.86f), VoyageKit.Fade(_kit.Outline, 0.6f), hit: true);
                 view.Edge = edge;
                 view.Button = view.Root.gameObject.AddComponent<Button>();
                 view.Button.targetGraphic = fill;
                 view.Button.transition = Selectable.Transition.None;
                 var pic = VoyageKit.Node("Picture", view.Root);
                 VoyageKit.Stretch(pic);
-                pic.offsetMin = new Vector2(6f, 30f);
-                pic.offsetMax = new Vector2(-6f, -6f);
+                pic.anchorMin = new Vector2(0.15f, 0f);
+                pic.anchorMax = new Vector2(0.85f, 1f);
+                pic.anchorMin = new Vector2(0.1f, 0f);
+                pic.anchorMax = new Vector2(0.9f, 1f);
+                pic.offsetMin = new Vector2(0f, 40f);
+                pic.offsetMax = new Vector2(0f, -26f);
                 view.Picture = VoyageKit.Picture(pic);
                 var flower = VoyageKit.Node("Element", pic);
                 flower.anchorMin = flower.anchorMax = flower.pivot = new Vector2(0.5f, 0.5f);
@@ -530,15 +574,16 @@ namespace CosmicShore.UI
                 var petals = VoyageKit.Flower(flower, Element.Charge, _kit.Light);
                 VoyageKit.Stretch(petals);
                 view.Flower = flower;
-                view.Name = _kit.Text(view.Root, 15, _kit.Light, TextAlignmentOptions.Left);
-                VoyageKit.At(view.Name.rectTransform, 10f, CellHeight - 8f - 20f, CellWidth - 20f, 20f);
-                view.TagRoot = At("Tag", 8f, 8f, CellWidth - 16f, 24f, view.Root);
-                view.Tag = _kit.Label(view.TagRoot, 14, _kit.Cyan, TextAlignmentOptions.Left);
+                view.Name = _kit.Text(view.Root, 16, _kit.Light, TextAlignmentOptions.Center);
+                view.Name.rectTransform.anchorMin = Vector2.zero;
+                view.Name.rectTransform.anchorMax = new Vector2(1f, 0f);
+                view.Name.rectTransform.pivot = new Vector2(0.5f, 0f);
+                view.Name.rectTransform.sizeDelta = new Vector2(-20f, 24f);
+                view.Name.rectTransform.anchoredPosition = new Vector2(0f, 12f);
+                view.TagRoot = At("Tag", 8f, 8f, CellWidth - 16f, 16f, view.Root);
+                view.Tag = _kit.Label(view.TagRoot, 11, ForVoyageColor, TextAlignmentOptions.Left);
                 VoyageKit.Stretch(view.Tag.rectTransform);
                 view.Tag.characterSpacing = 8f;
-                var line = VoyageKit.Node("Line", view.TagRoot);
-                VoyageKit.Foot(line, 0f, 2f);
-                VoyageKit.Block(line, _kit.Cyan);
                 _cells.Add(view);
             }
             return _cells[index];
@@ -559,82 +604,6 @@ namespace CosmicShore.UI
                 case VoyageSeats.ElementKind: return _offer.Pays && o.Element == _offer.Element;
                 default: return false;
             }
-        }
-
-        // ── Quick kits ───────────────────────────────────────────────────────
-
-        // The voyage's own kit: its first suggested vessel the seat may take, a suggested pilot who flies it, its element.
-        Kit? ForThisVoyage()
-        {
-            var squad = VoyageSeats.Active;
-            if (_offer == null || squad == null) return null;
-            var vessels = new List<VoyageSeats.Option>();
-            _rules.Offer(VoyageSeats.Vessel, squad, _seat, vessels);
-            VesselClassType? cls = null;
-            foreach (var v in _offer.SuggestedVessels)
-                if (vessels.Exists(o => o.Vessel == v)) { cls = v; break; }
-            if (cls == null) return null;
-            string pilot = null;
-            if (_catalog)
-            {
-                var crew = new List<PilotRecord>();
-                PilotLoadoutStore.GetCrew(crew);
-                var vessel = _rules.VesselOf(cls.Value);
-                foreach (var person in crew)
-                    if (_catalog.TryGetPilot(person.Id, out var callsign) && callsign && _offer.SuggestedPilots.Contains(callsign.Id)
-                        && vessel && callsign.Requirement != null && callsign.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
-                    {
-                        pilot = person.Id;
-                        break;
-                    }
-            }
-            var slot = squad.GetSlot(_seat);
-            return new Kit
-            {
-                Vessel = cls.Value, PilotId = pilot, Element = _offer.Pays ? _offer.Element : slot.Element, ArtifactId = slot.ArtifactId,
-            };
-        }
-
-        void DrawKit(KitView view, Kit? kit)
-        {
-            view.Root.gameObject.SetActive(kit != null);
-            if (kit == null) return;
-            var k = kit.Value;
-            var vessel = _rules.VesselOf(k.Vessel);
-            string pilot = PilotLoadoutStore.TryGetPilot(k.PilotId, out var person) ? person.DisplayName()
-                : _catalog && _catalog.TryGetPilot(k.PilotId, out var callsign) && callsign ? callsign.DisplayName : null;
-            VoyageKit.Set(view.Who, TemplateText.Fill(_lines?.PickKitWho, "vessel", vessel ? vessel.CardName : null,
-                "pilot", pilot, "element", _rules.ElementName(k.Element)));
-            var face = _catalog && _catalog.TryGetPilot(k.PilotId, out var seen) && seen ? seen.Portrait : null;
-            VoyageKit.ShowCover(view.Thumb, face, new Vector2(46f, 56f), VoyageKit.FaceFocus);
-        }
-
-        void TakeKit(int which)
-        {
-            var kit = which == 0 ? ForThisVoyage() : _last;
-            if (kit == null) return;
-            var k = kit.Value;
-            var squad = VoyageSeats.Active;
-            if (squad == null) return;
-            // Vessel first: the pilots and artifacts a seat may take follow its hull.
-            if (squad.GetSlot(_seat).Vessel != k.Vessel) _rules.Pick(_seat, VoyageSeats.Vessel, new VoyageSeats.Option { Vessel = k.Vessel });
-            TakeIfOffered(VoyageSeats.Pilot, o => o.Id == k.PilotId && !string.IsNullOrEmpty(k.PilotId));
-            TakeIfOffered(VoyageSeats.ElementKind, o => o.Element == k.Element);
-            TakeIfOffered(VoyageSeats.Artifact, o => o.Id == k.ArtifactId);
-            Refresh();
-        }
-
-        void TakeIfOffered(int kind, Predicate<VoyageSeats.Option> match)
-        {
-            var squad = VoyageSeats.Active;
-            if (squad == null) return;
-            _rules.Offer(kind, squad, _seat, _scratch);
-            foreach (var o in _scratch)
-                if (match(o))
-                {
-                    if (!o.Picked) _rules.Pick(_seat, kind, o);
-                    return;
-                }
         }
 
         /// <summary>Swap a <see cref="UI.VoyageKit.Flower"/>'s petals to <paramref name="element"/>'s.</summary>

@@ -178,6 +178,15 @@ namespace CosmicShore.Content.Serialization
         public static bool TryDecodeHexBlob(string hex, Type elem, out Array result)
         {
             result = null;
+            // An enum array is its underlying integer type's blob (Unity: "01000000020000000300000004000000" for
+            // Element[] {Mass, Charge, Space, Time}); read that, then cast each value to the enum.
+            if (elem.IsEnum)
+            {
+                if (!TryDecodeHexBlob(hex, Enum.GetUnderlyingType(elem), out var raw)) return false;
+                result = Array.CreateInstance(elem, raw.Length);
+                for (int i = 0; i < raw.Length; i++) result.SetValue(Enum.ToObject(elem, raw.GetValue(i)), i);
+                return true;
+            }
             int size = elem == typeof(byte) || elem == typeof(sbyte) || elem == typeof(bool) ? 1
                 : elem == typeof(short) || elem == typeof(ushort) || elem == typeof(char) ? 2
                 : elem == typeof(int) || elem == typeof(uint) || elem == typeof(float) ? 4

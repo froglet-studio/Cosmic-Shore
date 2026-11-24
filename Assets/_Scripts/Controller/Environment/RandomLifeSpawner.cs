@@ -267,6 +267,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Creatures instantiated per frame while seeding a population (see the caller).</summary>
         const int FaunaSpawnBatchPerFrame = 6;
 
+        /// <summary>Creatures instantiated per frame in a SATELLITE cell (a voyage's corridor world), which seeds beside
+        /// live play: a voyage profile (2026-11-17) caught a 41 ms spawn frame at the scene batch, ~2.7 ms per creature,
+        /// and the next one 13.9 ms at two a frame. One a frame (Shombith, 2026-11-17: "very choppy").</summary>
+        const int SatelliteFaunaSpawnBatchPerFrame = 1;
+
         IEnumerator SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
@@ -306,7 +311,7 @@ namespace CosmicShore.Gameplay
                 SpawnFaunaBanded(host, faunaCfg, color, goal,
                     banded ? null : goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter);
 
-                if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
+                if (i + 1 < count && (i + 1) % (host.IsSatellite ? SatelliteFaunaSpawnBatchPerFrame : FaunaSpawnBatchPerFrame) == 0)
                     yield return null;
             }
         }

@@ -8,12 +8,15 @@
 #   bash Tools/Build/switchback_sim_harness/run.sh trace i=3 level=4 seeds=45503 [flags]
 #   bash Tools/Build/switchback_sim_harness/run.sh selftest
 #   bash Tools/Build/switchback_sim_harness/run.sh tests [name filter]
-#        (the SHIPPED SwitchbackBlastRunTests + SwitchbackBlastPlannerTests EditMode tests, headless: NUnitShim.cs, TestRunner.cs)
+#        (the SHIPPED SwitchbackBlastRunTests + SwitchbackBlastPlannerTests + SwitchbackSpeedOverBreakingTests EditMode
+#        tests, headless: NUnitShim.cs, TestRunner.cs)
 #   bash Tools/Build/switchback_sim_harness/run.sh races i=1,2,3,4 level=3 seeds=45501,7000 [drive.<field>=v ...]
 #        (one line a race, for Tools/Compute/evaluators/switchback_fit.py; drive.<ChargeBoostAIPolicySO field> sets ONE
 #        drive for every intensity, maxSeconds=<s> cuts a race)
 #
 # Flags: planner=0 (the plain gate AI: no blast planner), sense=0, emergency=0, drive=0 (no charge drive),
+#        speedOverBreaking=0 (the AI before 2026-11-17: it may leave a passable ring for a crystal; the eval's
+#        turnAways column counts those, its passes column the gates the rule kept it on),
 #        cone=1 (blast with a cone nearer the asset's than the planner's under-promising slot), roll=1 (the gape
 #        flown as planned; the game does not fly roll), pickup=<u>, hull=<u>, dangerOnly=0|1 and noDodgeNear=<u> (the shipped SwitchbackController.aiDodgeDangerOnly 1 / aiNoDodgeNearRing 200; 0 0 = the old dodge-everything AI), setup=1 (the old strike's setup leg; shipped off), strikeAtKey / strikeCommit=<cos> / passedByTravel / blastHarmless
 #        (step 2's what-ifs and control), driftMult=<x> (the drift's turn multiplier, 1.5), driftLag=0|1 and
@@ -47,7 +50,10 @@ if [ "${1:-}" = "tests" ]; then
     "$A/Racing/RaceCourseGeometry.cs" "$A/Breakwater/BreakwaterStationBuilder.cs" "$A/Breakwater/BreakwaterCourse.cs" \
     "$ROOT/Assets/_Scripts/Data/Enums/PrismKind.cs" \
     "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastRunTests.cs" \
-    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastPlannerTests.cs" > "$OUT/tests.rsp"
+    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackBlastPlannerTests.cs" \
+    "$A/Switchback/SwitchbackPrismAvoidance.cs" \
+    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackSpeedOverBreakingTests.cs" \
+    "$ROOT/Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs" > "$OUT/tests.rsp"
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587,CS0219 \
     -target:exe -main:TestRunner -out:"$OUT/tests.dll" "@$OUT/tests.rsp" >&2

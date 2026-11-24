@@ -9,7 +9,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly Dig In: translation-restricted turret stance with boosted Energy regen.
+    /// Grizzly Dig In: translation-restricted turret stance that BRACES the hull: energy regenerates and the charged
+    /// cannon winds up faster by the Charge dial (<see cref="GrizzlyDigInActionSO.FillFor"/>), read live every frame.
     ///
     /// Every stuck-state from the restoration branch is closed here:
     ///  - un-plant ALWAYS routes through VesselController.SetTranslationRestricted so the
@@ -51,6 +52,10 @@ namespace CosmicShore.Gameplay
         public event System.Action<bool> OnDugInChanged;
         public bool IsDugIn { get; private set; }
 
+        /// <summary>How much faster the charged cannon winds up right now: the Charge dial while dug in, else 1.</summary>
+        public float CannonChargeMultiplier =>
+            IsDugIn && _activeConfig != null && _status != null ? _activeConfig.FillFor(_status) : 1f;
+
         IVesselStatus _status;
         GrizzlyDigInActionSO _activeConfig;
         int _lastToggleFrame = -1;
@@ -76,6 +81,10 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // The brace follows the live Charge level (a crystal, a debuff) while planted, and notices an external
+            // un-plant (a self-launch) the frame it happens.
+            if (IsDugIn) ReapplyRegen();
+
             bool sight = IsDugIn
                          && _status?.Player != null && _status.Player.IsLocalPilot && !_status.AutoPilotEnabled
                          && _status.ElementalAbilityHandler != null
@@ -199,16 +208,9 @@ namespace CosmicShore.Gameplay
 
             var resource = resources[so.EnergyIndex];
             if (boosted)
-            {
-                float chargeMul = ElementalScaling.Multiplier(
-                    _status, Element.Charge, so.ChargeScaleAtFull, so.ChargeScaleMinMul);
-                resource.resourceGainRate = resource.initialResourceGainRate *
-                                            so.StationaryGainMultiplier * chargeMul;
-            }
+                resource.resourceGainRate = resource.initialResourceGainRate * so.FillFor(_status);
             else
-            {
                 resource.resourceGainRate = resource.initialResourceGainRate;
-            }
         }
 
         void End()

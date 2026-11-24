@@ -344,10 +344,10 @@ namespace CosmicShore.Data
         // itself moves on without it (Garrett, 2026-10-26). See _Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md.
         TandavaSevering = 70,
 
-        // BurrowRun (71): the Meerkat's TIME race - Warpline's shape (a lapped gate circuit on the shared HeadlongCircuit
-        // solver, Slingshot's cut) with eight rings a lap, two laps: the Vessel Studio's Meerkat race. The Meerkat digs its
-        // own way - bend the reticle with the right stick, RT dives you through the tunnel it forms, out the far end with
-        // the speed you went in with. See _Scripts/Controller/Arcade/BURROWRUN.md.
+        // BurrowRun (71): the Jewel Wasp's TIME race - Warpline's shape (a lapped gate circuit on the shared HeadlongCircuit
+        // solver, Slingshot's cut) with eight rings a lap, two laps. Built as the Meerkat's race (the Vessel Studio's
+        // Meerkat race) and re-seated on the Jewel Wasp on 2026-11-22 (Yash: the Meerkat keeps one Time game, Warpline).
+        // See _Scripts/Controller/Arcade/BURROWRUN.md.
         BurrowRun = 71,
 
         // ScarabRally (72): the Scarab's TIME race - Switchback's walk (an open chain of rings flown in order,

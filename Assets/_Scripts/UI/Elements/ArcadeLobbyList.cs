@@ -25,8 +25,8 @@ namespace CosmicShore.UI
     /// seats whoever is looking at it first. Empty slots expose the "+" add button, which
     /// opens the <see cref="FriendsListPanel"/> (pre-wired in the scene).</para>
     ///
-    /// <para><b>Each occupied slot wears its pilot's domain</b> as an animated halo behind the
-    /// avatar (<see cref="PartySlotDomainGlow"/>, built by the slot itself). Domain is pushed
+    /// <para><b>Each occupied slot wears its pilot's domain</b> as the avatar's ring, its
+    /// waves and halo (<see cref="AvatarRippleBorder"/>, Frogma Rev 127 D, built by the slot itself). Domain is pushed
     /// LIVE every frame rather than snapshotted at population time: a pilot re-picks their
     /// domain from the same modal this panel lives in, and the platform rule is to read the
     /// live mirror each time rather than cache one at component-creation time.</para>

@@ -154,6 +154,13 @@ namespace CosmicShore.Gameplay
             gameData.CalculateDomainStats(UseGolfRules);
 
             _finalResultsSent = true;
+
+            // The second way to the number: what every pilot still owns, measured from the field, beside the books
+            // the match kept (Garrett, 2026-11-18). A difference names a pilot whose books miss an event.
+            gameData.VolumeLedger.CountLive(PrismSpatialIndex.Instance,
+                gameData.RoundStatsList.Where(s => s != null).Select(s => s.Name).ToList());
+            ReportBooksGaps();
+
             SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
 
@@ -167,6 +174,38 @@ namespace CosmicShore.Gameplay
             base.SetupNewRound();
         }
 
+        /// <summary>
+        /// The bug signal (Garrett, 2026-11-18: "a way for us to be sure we are reporting match victory and personal
+        /// scores accurately"): a pilot whose books (VC less what they lost) are not what the field holds, or a
+        /// two-team match whose difference of team totals is not the difference of volume left, is a warning naming
+        /// the numbers. A pilot-level gap is an event the books missed; a team-level gap with balanced pilots is
+        /// volume that moved by something no pilot did (fauna, a pilot destroying their own team's, shrinking).
+        /// </summary>
+        void ReportBooksGaps()
+        {
+            var books = gameData.VolumeLedger;
+            foreach (var s in gameData.RoundStatsList)
+            {
+                if (s == null || !books.TryGet(s.Name, out var line) || !line.HasCount) continue;
+                if (!VolumeLedger.Balances(line.Remaining, line.Counted))
+                    CSDebug.LogWarning($"[BroodRush] Volume books for '{s.Name}' say {line.Remaining:0.#} left " +
+                                       $"(VC {line.Created:0.#} - lost {line.Lost:0.#}) but the field holds {line.Counted:0.#}: " +
+                                       "an event is missing from the books (VolumeLedger).");
+            }
+
+            var teams = gameData.RoundStatsList.Where(s => s != null).Select(s => s.Domain).Distinct().ToList();
+            if (teams.Count != 2) return;
+            var a = books.Sum(gameData.RoundStatsList.Where(s => s != null && s.Domain == teams[0]).Select(s => s.Name));
+            var b = books.Sum(gameData.RoundStatsList.Where(s => s != null && s.Domain == teams[1]).Select(s => s.Name));
+            float totals = a.Total - b.Total, left = a.Counted - b.Counted;
+            if (!VolumeLedger.Balances(totals, left))
+                CSDebug.LogWarning($"[BroodRush] {teams[0]} - {teams[1]}: team totals differ by {totals:0.#}, volume left " +
+                                   $"by {left:0.#}. {teams[0]} lost {a.Lost:0.#} and {teams[1]} took {b.Reduced:0.#} of it; " +
+                                   $"{teams[1]} lost {b.Lost:0.#} and {teams[0]} took {a.Reduced:0.#} (VolumeLedger).");
+        }
+
+        const int BooksStride = 5;
+
         void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
         {
             var statsList = gameData.RoundStatsList;
@@ -176,6 +215,9 @@ namespace CosmicShore.Gameplay
             var scoreArray = new float[count];
             var domainArray = new int[count];
             var broodsArray = new int[count];
+            // The volume books, five numbers a pilot (VC, VD, lost, super-shields, counted): the server
+            // kept them, so every client's scoreboard shows the server's.
+            var booksArray = new float[count * BooksStride];
 
             for (int i = 0; i < count; i++)
             {
@@ -183,9 +225,16 @@ namespace CosmicShore.Gameplay
                 scoreArray[i] = statsList[i].Score;
                 domainArray[i] = (int)statsList[i].Domain;
                 broodsArray[i] = statsList[i].GoalsScored;
+                var line = gameData.VolumeLedger.Get(statsList[i].Name);
+                int o = i * BooksStride;
+                booksArray[o] = line.Created;
+                booksArray[o + 1] = line.Reduced;
+                booksArray[o + 2] = line.Lost;
+                booksArray[o + 3] = line.SuperShieldsBroken;
+                booksArray[o + 4] = line.HasCount ? line.Counted : float.NaN;
             }
 
-            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, broodsArray,
+            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, broodsArray, booksArray,
                 new FixedString64Bytes(winnerName), (int)winnerDomain);
         }
 
@@ -195,6 +244,7 @@ namespace CosmicShore.Gameplay
             float[] scores,
             int[] domains,
             int[] broods,
+            float[] books,
             FixedString64Bytes winnerName,
             int winnerDomain)
         {
@@ -211,6 +261,21 @@ namespace CosmicShore.Gameplay
                 stat.Score = scores[i];
                 stat.Domain = (Domains)domains[i];
                 stat.GoalsScored = broods[i];
+
+                int o = i * BooksStride;
+                if (books != null && o + BooksStride <= books.Length)
+                {
+                    float counted = books[o + 4];
+                    gameData.VolumeLedger.Set(sName, new VolumeLedger.Line
+                    {
+                        Created = books[o],
+                        Reduced = books[o + 1],
+                        Lost = books[o + 2],
+                        SuperShieldsBroken = Mathf.RoundToInt(books[o + 3]),
+                        Counted = float.IsNaN(counted) ? 0f : counted,
+                        HasCount = !float.IsNaN(counted),
+                    });
+                }
             }
 
             gameData.WinnerName = winnerName.ToString();

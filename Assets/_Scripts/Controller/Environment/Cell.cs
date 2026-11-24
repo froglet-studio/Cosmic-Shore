@@ -17,7 +17,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 namespace CosmicShore.Gameplay
 {
-    public class Cell : MonoBehaviour
+    public partial class Cell : MonoBehaviour
     {
         enum CellTypeChoiceOptions
         {
@@ -51,6 +51,12 @@ namespace CosmicShore.Gameplay
         [Header("Cell Config Selection")]
         [SerializeField] List<CellConfigDataSO> CellConfigs;
         [SerializeField] CellTypeChoiceOptions cellTypeChoiceOptions = CellTypeChoiceOptions.Random;
+
+        [SerializeField, Tooltip("Environment Free only: boot into the bare canvas (the first config that grows nothing), " +
+                                 "never the Boot Default world. For a scene that reverts its cell to the bare canvas as it " +
+                                 "starts anyway (Voyage.unity: the Arkway's revert), so the Boot Default world (Garland) is " +
+                                 "not built only to be thrown away behind the loading screen (Shombith 2026-11-20).")]
+        bool bootBareCanvas;
 
         [Header("Runtime Cell Swap (freestyle Cell Selector toy)")]
         [SerializeField, Min(0f), Tooltip("Seconds the retiring world suctions toward the cell centre " +
@@ -1826,6 +1832,12 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Read-only view of what this cell's spawners registered (plants, creatures and their managers). For the
+        /// match replay's census (<c>TheaterActorRecorder</c>, Docs/REPLAYS.md §6.4); entries may be destroyed.
+        /// </summary>
+        public IReadOnlyList<GameObject> SpawnedLifeForms => spawnedLifeForms;
+
         public void RegisterSpawnedObject(GameObject obj)
         {
             if (!obj) return;
@@ -2007,7 +2019,8 @@ namespace CosmicShore.Gameplay
         public int ResolveFloraPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored);
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored,
+                RuntimePopulationScale * RuntimeFloraShare);
         }
 
         /// <summary>
@@ -2016,10 +2029,11 @@ namespace CosmicShore.Gameplay
         /// keeps meaning exactly that), a non-zero number never rounds below 1, and scale 1 is
         /// exactly the identity so every cell that never sets the scale is bit-for-bit unchanged.
         /// </summary>
-        int ApplyRuntimePopulationScale(int resolved)
+        int ApplyRuntimePopulationScale(int resolved) => ApplyRuntimePopulationScale(resolved, RuntimePopulationScale);
+
+        static int ApplyRuntimePopulationScale(int resolved, float scale)
         {
             if (resolved <= 0) return resolved;
-            float scale = RuntimePopulationScale;
             if (scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
             return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
         }
@@ -2361,6 +2375,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         int ResolveBootIndex()
         {
+            if (bootBareCanvas)
+                for (int i = 0; i < CellConfigs.Count; i++)
+                    if (IsBareCanvas(CellConfigs[i]))
+                        return i;
+
             for (int i = 0; i < CellConfigs.Count; i++)
                 if (CellConfigs[i] && CellConfigs[i].BootDefault)
                     return i;
@@ -2402,6 +2421,15 @@ namespace CosmicShore.Gameplay
             countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue, cellCenter, worldDiameter);
         }
 
+        /// <summary>The membrane at <paramref name="factor"/> times its authored size: a capsule membrane through its own
+        /// runtime scale (its baked wobble kept), any other membrane by its transform (its radius is its scale).</summary>
+        void GrowMembrane(float factor)
+        {
+            if (!membrane) return;
+            if (membrane.TryGetComponent<CapsuleMembrane>(out var cm)) cm.SetRuntimeScale(factor);
+            else membrane.transform.localScale *= factor;
+        }
+
         /// <summary>
         /// Spawn the config's membrane, environment, and nucleus.
         /// </summary>
@@ -2423,7 +2451,10 @@ namespace CosmicShore.Gameplay
             // rendering on top of the real one that nothing can ever collect. Same reason a
             // duplicated 70k-prism environment would double the cell's mass.
             if (cellConfigData.MembranePrefab != null && membrane == null)
+            {
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
+                if (IsSatellite && SatelliteSizeScale > 1f) GrowMembrane(SatelliteSizeScale);
+            }
 
             if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
                 SpawnEnvironment();
@@ -2436,6 +2467,7 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
+            if (IsSatellite && SatelliteSizeScale > 1f) nucleus.transform.localScale *= SatelliteSizeScale;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
             ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
             RefreshNucleusControlRadius();
@@ -2483,14 +2515,14 @@ namespace CosmicShore.Gameplay
         IEnumerator DeferredEnvironmentBuild()
         {
             float deadline = Time.unscaledTime + 12f;
-            while (gameData != null && gameData.LocalPlayer == null && Time.unscaledTime < deadline)
+            while (gameData != null && gameData.LocalPlayer == null && Time.unscaledTime < deadline && !BuildsBeforeTheHost)
                 yield return null;
             // A settle beat after readiness so spawn-chain tail work (camera snap, autopilot
             // activation, HUD fades) clears the frame before the build takes the gate. Only for a
             // gate-less, booting scene (Menu_Main): when a loading screen already holds the gate, the
             // scene is quiescent and covered, and the beat was 0.75 s of waiting on every game entry
             // (Docs/MENU_REDESIGN_B.md section 99.2).
-            if (!PrismTrailBuilder.IsLoadGateHolding)
+            if (!PrismTrailBuilder.IsLoadGateHolding && !BuildsBeforeTheHost)
                 yield return new WaitForSecondsRealtime(0.75f);
             BuildEnvironmentNow();
         }
@@ -2815,6 +2847,27 @@ namespace CosmicShore.Gameplay
         public int SatellitePrismStride { get; set; } = 1;
 
         /// <summary>
+        /// A SATELLITE's membrane and nucleus at this many times their authored size (the voyages' cells, Shombith
+        /// 2026-11-16: "make the cell big by 50%"). The membrane's radius grows with it, so everything that reads
+        /// <see cref="MembraneRadius"/> or <see cref="SenseRadius"/> (the density grids, spawn points, the Ark's
+        /// approach, the leash) sees the bigger world; the config's environment mass keeps its authored size. Set
+        /// BEFORE <see cref="InitializeSatellite"/>. Honoured only while <see cref="IsSatellite"/>; 1 = as authored.
+        /// </summary>
+        public float SatelliteSizeScale { get; set; } = 1f;
+
+        /// <summary>
+        /// A SATELLITE whose life is born all through its open water (the voyages' cells, Shombith 2026-11-17: "the cell
+        /// is not big and all crystals and everything come in the same spot"): every fauna birth that has no band and no
+        /// pen of its own, and every flora planting, lands at a fresh volume-uniform point between the nucleus and the
+        /// membrane (<see cref="CellLifeSpawnerBase.RandomPointInCytoplasm"/>) instead of the wave's one feeding ground,
+        /// the densest mass (the environment at the core, or the Ark under a lure) or an authored planting site. Placement
+        /// only: diets, steering, populations and every creature's own goal picks are untouched, so the hearts (the
+        /// elemental crystals) start spread across the bigger cell. Set BEFORE <see cref="InitializeSatellite"/>. Honoured
+        /// only while <see cref="IsSatellite"/>; false = as authored.
+        /// </summary>
+        public bool ScatterLifeSpawns { get; set; }
+
+        /// <summary>
         /// Opt a SATELLITE into running its life spawner. Default false - the mode preview's
         /// satellites are structure-only, because a seeded ecology is most of a second world's
         /// frame cost beside a menu that is still running (see <see cref="StartSpawnerForMode"/>).
@@ -2854,6 +2907,22 @@ namespace CosmicShore.Gameplay
         /// lighter than its profile says.
         /// </summary>
         public float RuntimePopulationScale { get; set; } = 1f;
+
+        /// <summary>
+        /// The FLORA's share of <see cref="RuntimePopulationScale"/>: flora populations resolve at
+        /// RuntimePopulationScale x this, fauna at RuntimePopulationScale alone. Default 1 (both alike). A voyage doubles
+        /// its cells' creatures but keeps their plants near authored (a plant is the cell's growing prism mass, which
+        /// every sense, sweep and draw pays for; 2026-11-17). Production gating only, like the scale it shares; set by
+        /// code, never serialized.
+        /// </summary>
+        public float RuntimeFloraShare { get; set; } = 1f;
+
+        /// <summary>
+        /// Creatures born in this cell stop animating their rigs while no camera sees them (their Animators cull
+        /// completely; the body still swims where its code steers it). Off by default; a voyage on a phone sets it on its
+        /// cells (VoyageToyDefinitionSO.StillOffscreenCreatures, Shombith 2026-11-20). Set by code, never serialized.
+        /// </summary>
+        public bool CullOffscreenAnimation { get; set; }
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
@@ -3031,6 +3100,43 @@ namespace CosmicShore.Gameplay
             return retiring;
         }
 
+        /// <summary>The swap drain's frame slice (see <see cref="ReleaseRetiredWorld"/>).</summary>
+        const double DefaultReleaseSliceMs = 12.0;
+
+        int _lastReleaseParkedCount;
+        int _lastReleaseDestroyedCount;
+
+        /// <summary>
+        /// The bookkeeping a retired world leaves behind (the same set ResetCell clears). Run AFTER the drain:
+        /// every destroyed prism's OnDestroy routes through RemoveBlock, so clearing first would be undone.
+        /// </summary>
+        void ResetBooksAfterRetire()
+        {
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
+            ResetVolumeAccounting();
+            liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
+            liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
+            phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
+            _nucleusControlRadiusSqr = 0f;
+        }
+
         bool _swapping;
 
         /// <summary>
@@ -3071,7 +3177,7 @@ namespace CosmicShore.Gameplay
                 return false;
             }
             if (!Application.isPlaying) return false;
-            if (_swapping) return false;
+            if (_swapping || _retiringForSceneExit) return false;
             if (!runtime)
             {
                 CSDebug.LogWarning($"[Cell {ID}] RequestCellSwap needs a CellRuntimeDataSO - ignored.");
@@ -3085,6 +3191,7 @@ namespace CosmicShore.Gameplay
         IEnumerator SwapCellConfigRoutine(CellConfigDataSO config, bool clearLooseTrailMass)
         {
             _swapping = true;
+            WorldRetiredForSceneExit = false;   // the swap stands a new world
             // A world swap is a load the player waits through behind the veil, so with Record
             // Insight Mode armed (FrogletTools > Performance > Performance Benchmark > Load Time
             // Insights) it records like a game launch: the suction and release below, then the
@@ -3115,24 +3222,10 @@ namespace CosmicShore.Gameplay
             var retiring = RetireWorldIntoSuctionRoot(clearLooseTrailMass, out var pooledRetiring);
 
             // ── Suction (continuity law) ──────────────────────────────────────
-            float elapsed = 0f;
             float duration = retireSuctionSeconds > 0.01f ? retireSuctionSeconds : DefaultRetireSuctionSeconds;
             int suctionSpan = LoadInsights.Begin(LoadInsightCategory.ScriptedDelay,
                 $"Cell swap: the retiring world suctions away ({duration:F1}s)", isWait: true);
-            StampRetiredWorldSuction(retiring, duration);
-            while (elapsed < duration && retiring)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                // Smoothstep out, so the world eases away rather than snapping small.
-                // Instanced prism companions ignore parent scale (Docs/PRISM_ANIMATION.md
-                // §3.8 #1 / §5 C9) — those converge on the GPU stamp above. This remaining
-                // write is for the NON-PRISM riders on the same root (membrane / nucleus /
-                // cytoplasm / lifeform spindles).
-                float eased = 1f - (t * t * (3f - 2f * t));
-                retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
-                yield return null;
-            }
+            yield return SuctionRetiringWorld(retiring, duration);
             LoadInsights.End(suctionSpan);
             int trailSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
                 $"Cell swap: {pooledRetiring.Count} pooled trail prisms return to their pool");
@@ -3145,32 +3238,9 @@ namespace CosmicShore.Gameplay
             yield return ReleaseRetiredWorld(retiring);
             LoadInsights.End(releaseSpan);
 
-            // ── Bookkeeping reset (the same set ResetCell clears) ─────────────
             // After the drain: every prism's OnDestroy routes through RemoveBlock, so
             // clearing first would just be undone (and would mutate mid-iteration).
-            trackedBlocks.Clear();
-            domainBlockCounts.Clear();
-            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
-            gridTracked.Clear();
-            _replicatedDominantDomain = null;
-            ResetVolumeAccounting();
-            liveFaunaCounts.Clear();
-            liveFloraCounts.Clear();
-            liveFauna.Clear();
-            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
-            // outlives any individual plant by design - which means only the cell can retire it.
-            // Left behind, the next world grown here inherits the dead one's sites and plants
-            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
-            // the very scene this colony ships in). Keyed by cell, so this touches no other.
-            GyroidColonyFrontier.Clear(this);
-            NestedGyroidColony.Clear(this);
-            SchwarzPColonyFrontier.Clear(this);
-            SchwarzPTileRegistry.Clear(this);
-            QuasicrystalColonyFrontier.Clear(this);
-            QuasicrystalHeartRegistry.Clear(this);
-            phase = CellPhase.Calm;
-            SyncShieldFoodFiling();
-            _nucleusControlRadiusSqr = 0f;
+            ResetBooksAfterRetire();
 
             // ── Become the new config ────────────────────────────────────────
             // Direct write: AssignConfig is deliberately sticky (it must never re-roll under
@@ -3266,21 +3336,25 @@ namespace CosmicShore.Gameplay
         /// waiting to see the new world. The root is already suctioned to a point, so nothing
         /// is visible while it drains.
         /// </summary>
-        IEnumerator ReleaseRetiredWorld(GameObject retiring)
+        IEnumerator ReleaseRetiredWorld(GameObject retiring, double releaseSliceMs = DefaultReleaseSliceMs)
         {
+            _lastReleaseParkedCount = 0;
+            _lastReleaseDestroyedCount = 0;
             if (!retiring) yield break;
 
             // A time slice, not a count: 500 a frame took 1.1-1.4 s for 4,259 Garland prisms in the Orrery swap
             // captures because the frames were slow, not the work (T-20261021-a743, handed over by Garrett).
             // Destroy is deferred to the end of the frame, where the slice cannot see its cost (every
             // Prism.OnDestroy unregisters), so deferred destroys keep the old per-frame cap.
-            const double ReleaseSliceMs = 12.0;
+            double sliceMs = releaseSliceMs > 0.0 ? releaseSliceMs : DefaultReleaseSliceMs;
             const int MaxDeferredDestroysPerFrame = 500;
             double msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             var prisms = retiring.GetComponentsInChildren<Prism>(true);
             long sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
             int destroysThisFrame = 0;
-            for (int i = 0; i < prisms.Length; i++)
+            // Newest first, as ReturnRetiredTrailToPool does: the environment is one container of thousands of
+            // prisms, and detaching from the front of a parent shifts every later sibling (the square of the count).
+            for (int i = prisms.Length - 1; i >= 0; i--)
             {
                 var p = prisms[i];
                 if (!p) continue;
@@ -3288,9 +3362,14 @@ namespace CosmicShore.Gameplay
                 {
                     Destroy(p.gameObject);
                     destroysThisFrame++;
+                    _lastReleaseDestroyedCount++;
+                }
+                else
+                {
+                    _lastReleaseParkedCount++;
                 }
                 if (destroysThisFrame >= MaxDeferredDestroysPerFrame
-                    || (System.Diagnostics.Stopwatch.GetTimestamp() - sliceStart) * msPerTick >= ReleaseSliceMs)
+                    || (System.Diagnostics.Stopwatch.GetTimestamp() - sliceStart) * msPerTick >= sliceMs)
                 {
                     yield return null;
                     sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -3302,6 +3381,29 @@ namespace CosmicShore.Gameplay
             // with the root.
             if (retiring) Destroy(retiring);
             yield return null; // let the deferred destroys land before the bookkeeping reset
+        }
+
+        /// <summary>
+        /// The retiring world eases away to a point over <paramref name="duration"/> (continuity law): the prisms
+        /// converge on their GPU stamp, everything else rides the root's scale.
+        /// </summary>
+        IEnumerator SuctionRetiringWorld(GameObject retiring, float duration)
+        {
+            float elapsed = 0f;
+            StampRetiredWorldSuction(retiring, duration);
+            while (elapsed < duration && retiring)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                // Smoothstep out, so the world eases away rather than snapping small.
+                // Instanced prism companions ignore parent scale (Docs/PRISM_ANIMATION.md
+                // §3.8 #1 / §5 C9) — those converge on the GPU stamp above. This remaining
+                // write is for the NON-PRISM riders on the same root (membrane / nucleus /
+                // cytoplasm / lifeform spindles).
+                float eased = 1f - (t * t * (3f - 2f * t));
+                retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
+                yield return null;
+            }
         }
 
         /// <summary>Never exactly zero - a zero-scale parent makes every child's lossyScale degenerate.</summary>
@@ -3334,7 +3436,11 @@ namespace CosmicShore.Gameplay
         /// container of tens of thousands of prisms, so the expensive case costs one re-parent;
         /// lifeforms and (optionally) pooled trail prisms are re-parented individually.
         /// </summary>
-        GameObject RetireWorldIntoSuctionRoot(bool clearLooseTrailMass, out List<Prism> pooledRetiring)
+        /// <param name="leaveSpawnedNetworkLifeForms">Do not re-parent a lifeform that is a spawned NetworkObject:
+        /// Netcode refuses a parent that is not one and logs an exception per creature. The scene-exit retire sets
+        /// it (the scene's own teardown takes those creatures); the swap keeps its behaviour.</param>
+        GameObject RetireWorldIntoSuctionRoot(bool clearLooseTrailMass, out List<Prism> pooledRetiring,
+            bool leaveSpawnedNetworkLifeForms = false)
         {
             var root = new GameObject($"Cell{ID}_RetiringWorld");
             root.transform.SetPositionAndRotation(transform.position, Quaternion.identity);
@@ -3349,7 +3455,11 @@ namespace CosmicShore.Gameplay
             for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
             {
                 var lifeForm = spawnedLifeForms[i];
-                if (lifeForm) lifeForm.transform.SetParent(rootT, true);
+                if (!lifeForm) continue;
+                if (leaveSpawnedNetworkLifeForms
+                    && lifeForm.TryGetComponent(out NetworkObject netObject) && netObject.IsSpawned)
+                    continue;
+                lifeForm.transform.SetParent(rootT, true);
             }
             spawnedLifeForms.Clear();
 

@@ -214,7 +214,8 @@ namespace CosmicShore.Gameplay
             {
                 TryBind(); // re-check under the subscription; the pair may already be there
                 if (_watching) return true;
-                return await _watchingTcs.Task.AttachExternalCancellation(timeoutCts.Token);
+                // AsMainThread: the timeout fires on a timer thread (see PartyInviteController.WaitForClientReadyAsync).
+                return await _watchingTcs.Task.AttachExternalCancellation(timeoutCts.Token).AsMainThread();
             }
             catch (System.OperationCanceledException)
             {

@@ -172,6 +172,7 @@ namespace CosmicShore.Gameplay
             {
                 var victim = players[i]?.Vessel?.VesselStatus;
                 if (victim == null || ReferenceEquals(victim, maker) || victim.Domain == maker.Domain || !victim.Transform) continue;
+                if (SolitonIsolation.Sealed(victim)) continue;   // a rival riding a tube is not in the world a sentinel guards
                 float d = (victim.Transform.position - a).sqrMagnitude;
                 if (d > bd) continue;
                 bd = d;

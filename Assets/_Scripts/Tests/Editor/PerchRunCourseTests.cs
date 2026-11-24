@@ -255,5 +255,22 @@ namespace CosmicShore.Tests
             Assert.AreEqual(PerchRunCourse.PerchSeconds, Field("perchSeconds"), 0.001f, "perchSeconds");
             Assert.AreEqual(PerchRunCourse.IslandMinLength, Field("islandMinLength"), 0.01f, "islandMinLength");
         }
+
+        /// <summary>
+        /// The coach flies straight on when the ring sits inside the turning circle (the orbit the real game showed,
+        /// 2026-11-17), and turns for it otherwise: dead ahead, dead behind and far to the side all turn.
+        /// </summary>
+        [Test]
+        public void A_ring_inside_the_turning_circle_is_flown_away_from_first()
+        {
+            float r = PerchRunCourse.TurnRadius(144f);
+            Assert.AreEqual(144f / (90f * Mathf.Deg2Rad), r, 0.01f, "turning circle at 144 u/s");
+            Vector3 hull = Vector3.zero, fwd = Vector3.forward;
+            Assert.IsTrue(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(r, 0f, 0f), r), "abeam at one radius: orbited");
+            Assert.IsTrue(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(-r, 0f, 20f), r), "either side");
+            Assert.IsFalse(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(0f, 0f, 300f), r), "dead ahead");
+            Assert.IsFalse(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(0f, 0f, -300f), r), "dead behind");
+            Assert.IsFalse(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(4f * r, 0f, 0f), r), "far abeam");
+        }
     }
 }

@@ -29,6 +29,8 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
+                    // a hull inside a Soliton Tunnel is not in the world a mine sits in (SolitonIsolation)
+                    if (SolitonIsolation.Sealed(shipImpactee.Vessel?.VesselStatus)) return;
                     if(!DoesEffectExist(mineShipEffects)) return;
                     foreach (var effect in mineShipEffects)
                     {

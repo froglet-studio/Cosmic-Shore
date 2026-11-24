@@ -302,6 +302,7 @@ GameObject:
   - component: {fileID: -6368199322473003075}
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
+  - component: {fileID: 7740000000000002901}
   m_Layer: 0
   m_Name: Angler
   m_TagString: Player_Ship
@@ -1806,6 +1807,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 7.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: affectSelf
       value: 1
       objectReference: {fileID: 0}
@@ -1963,3 +1974,23 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 8546359282292252367}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7740000000000002901
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6b165a306614c8380842bdc72f94e2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autopilot: {fileID: 3440187540988767646}
+  vesselStatus: {fileID: 6441696348568773771}
+  refuelBelowSchool: 2
+  huntRange: 900
+  lockGateDegrees: 6
+  lockHoldSeconds: 0.3
+  lockIntervalSeconds: 0.8
+  maxHuntersOut: 4

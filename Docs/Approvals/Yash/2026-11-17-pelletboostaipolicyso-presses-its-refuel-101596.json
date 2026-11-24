@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-17-pelletboostaipolicyso-presses-its-refuel-101596",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T04:54:34+00:00",
+  "area": "the Time AIs (the Serpent's pellet boost policy)",
+  "summary": "PelletBoostAIPolicySO presses its refuel cloak only when the cloak is ready (it ran longer than its cooldown, so every second press was lost), and gains two genes that pick where to lay the wall (refuelMinCornerDegrees, refuelMaxRunwaySeconds; both 0 = old behaviour). CloakSeedWallActionExecutor gains read-only IsRunning and IsReady. No asset changed.",
+  "why": "Regatta flywheel: the Serpent's tank runs dry; pellet trace in /mnt/project-files/regatta-flywheel/train/Serpent/regatta-trace/FINDINGS.md",
+  "branch": "claude/project-thread-qaz3ia",
+  "commit": "fbbd97003",
+  "paths": [
+    "Assets/_Scripts/Controller/AI/Boost/PelletBoostAIPolicySO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/CloakSeedWallActionExecutor.cs",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Serpent"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

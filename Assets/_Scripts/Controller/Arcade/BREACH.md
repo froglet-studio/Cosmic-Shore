@@ -119,6 +119,21 @@ The AI flies the gate race's own steering, with two things from the coach:
 
 The Orca's own helm spends the tank. The gunners are the shipped AI gunners.
 
+### 5.1 Re-attack after a missed ring, from the real game (2026-11-17, elemental loop step 2)
+
+The race judge (`Tools/Build/time_ladder_judge.py --mode Breach --hull Orca`, Amoebius headless) showed the AI Orca
+timing out at I3 and I4. Only 1 of 8 Medium and Legendary races at those rungs finished on seeds 1-2. The trace showed
+it missing a walled ring by a few units and then wandering 50-150 u past it until the clock ran out. Breach now turns on
+the gate race's Regatta steering (`AICommitFromApproachPoint`: commit at the approach point and re-attack after a missed
+mouth), as Spearline, Grizzly Time, Burrow Run and Lantern Run already do.
+
+| Fresh seeds 4-6 | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Legendary, median s | 120 | 116 | 160 | 141 |
+| Medium, median s | 126 | 121 | 167 | 150 |
+
+All 24 races finished. Still open: I4 is easier than I3 (0.88x), and Medium is only about 1.05x slower than Legendary.
+
 ## 6. Numbers, and where they are authored
 
 | Knob | Where | Shipped |

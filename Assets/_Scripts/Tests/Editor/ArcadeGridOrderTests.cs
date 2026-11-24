@@ -19,7 +19,7 @@ namespace CosmicShore.Tests
     {
         readonly List<SO_ArcadeGame> _made = new();
         HashSet<string> _favourites;
-        Dictionary<string, Element> _genre;
+        Dictionary<string, ArcadeCategory> _genre;
 
         readonly List<ScriptableObject> _vessels = new();
 
@@ -44,7 +44,7 @@ namespace CosmicShore.Tests
         public void SetUp()
         {
             _favourites = new HashSet<string> { "Zeta" };
-            _genre = new Dictionary<string, Element> { ["Alpha"] = Element.Mass, ["Mid"] = Element.Time, ["Zeta"] = Element.Mass };
+            _genre = new Dictionary<string, ArcadeCategory> { ["Alpha"] = ArcadeCategory.MassSpace, ["Mid"] = ArcadeCategory.Time, ["Zeta"] = ArcadeCategory.MassSpace };
         }
 
         [TearDown]
@@ -56,7 +56,7 @@ namespace CosmicShore.Tests
             _vessels.Clear();
         }
 
-        List<string> Names(Element element, VesselClassType vessel = VesselClassType.Any, System.Func<SO_ArcadeGame, bool> always = null) =>
+        List<string> Names(ArcadeCategory element, VesselClassType vessel = VesselClassType.Any, System.Func<SO_ArcadeGame, bool> always = null) =>
             ArcadeGridOrder.Apply(new[] { Game("Mid", 1, VesselClassType.Sparrow), Game("Zeta"), Game("Alpha", 2, VesselClassType.Dolphin, VesselClassType.Sparrow) },
                     element, vessel, g => _favourites.Contains(g.DisplayName),
                     (g, e) => _genre.TryGetValue(g.DisplayName, out var x) && x == e, always)
@@ -64,27 +64,46 @@ namespace CosmicShore.Tests
 
         [Test]
         public void FavouritesComeFirst_ThenAToZ() =>
-            Assert.AreEqual(new[] { "Zeta", "Alpha", "Mid" }, Names(Element.None));
+            Assert.AreEqual(new[] { "Zeta", "Alpha", "Mid" }, Names(ArcadeCategory.None));
 
         [Test]
-        public void TheElementDropdown_KeepsItsGenre()
+        public void TheCategoryDropdown_KeepsItsCategory()
         {
-            Assert.AreEqual(new[] { "Zeta", "Alpha" }, Names(Element.Mass));
-            Assert.AreEqual(new[] { "Mid" }, Names(Element.Time));
-            Assert.IsEmpty(Names(Element.Charge));
+            Assert.AreEqual(new[] { "Zeta", "Alpha" }, Names(ArcadeCategory.MassSpace));
+            Assert.AreEqual(new[] { "Mid" }, Names(ArcadeCategory.Time));
+            Assert.IsEmpty(Names(ArcadeCategory.Charge));
         }
 
         [Test]
         public void TheVesselDropdown_KeepsTheGamesThatSeatIt()
         {
-            Assert.AreEqual(new[] { "Alpha", "Mid" }, Names(Element.None, VesselClassType.Sparrow));
-            Assert.AreEqual(new[] { "Alpha" }, Names(Element.None, VesselClassType.Dolphin));
-            Assert.AreEqual(new[] { "Alpha" }, Names(Element.Mass, VesselClassType.Sparrow));   // both at once
+            Assert.AreEqual(new[] { "Alpha", "Mid" }, Names(ArcadeCategory.None, VesselClassType.Sparrow));
+            Assert.AreEqual(new[] { "Alpha" }, Names(ArcadeCategory.None, VesselClassType.Dolphin));
+            Assert.AreEqual(new[] { "Alpha" }, Names(ArcadeCategory.MassSpace, VesselClassType.Sparrow));   // both at once
+        }
+
+        [Test]
+        public void TheCategoryTabs_AreTheEnumInOrder()
+        {
+            // ArcadeGridOptions reads tab i as ArcadeCategory i; the prefab's five tabs are authored in this order.
+            Assert.AreEqual(0, (int)ArcadeCategory.None);
+            Assert.AreEqual(1, (int)ArcadeCategory.Time);
+            Assert.AreEqual(2, (int)ArcadeCategory.Charge);
+            Assert.AreEqual(3, (int)ArcadeCategory.MassSpace);
+            Assert.AreEqual(4, (int)ArcadeCategory.Party);
+        }
+
+        [Test]
+        public void APartyGame_DrawsNoPetal()
+        {
+            Assert.IsFalse(ArcadeGridOrder.TryGenres(GameModes.Scurry, out var a, out var b));
+            Assert.AreEqual(Element.None, a);
+            Assert.AreEqual(Element.None, b);
         }
 
         [Test]
         public void AGuidedGame_IsNeverFilteredOut() =>
-            Assert.AreEqual(new[] { "Mid" }, Names(Element.Charge, VesselClassType.Any, g => g.DisplayName == "Mid"));
+            Assert.AreEqual(new[] { "Mid" }, Names(ArcadeCategory.Charge, VesselClassType.Any, g => g.DisplayName == "Mid"));
     }
 }
 #endif

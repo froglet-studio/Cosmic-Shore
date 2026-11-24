@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Game;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -113,6 +114,33 @@ namespace CosmicShore.Gameplay
         }
 
         public bool HasCells => _cells.Count > 0;
+
+        /// <summary>Centre to centre between traversal cells: the authored spacing grown with the cells
+        /// (<see cref="ArkwayConfig.CellScale"/>) so bigger cells never overlap, or, with a
+        /// <see cref="ArkwayConfig.CellGap"/>, two grown membranes and that much open water between them.</summary>
+        float Spacing => _cfg.CellGap > 0f
+            ? CellSpacingFor(_membraneRadius, _cfg.CellScale, _cfg.CellGap)
+            : _cfg.CellSpacing * Mathf.Max(1f, _cfg.CellScale);
+
+        /// <summary>The largest authored membrane radius among the corridor's worlds (read in <see cref="Begin"/>).</summary>
+        float _membraneRadius = MembraneRadiusFloor;
+
+        /// <summary>The freestyle membrane's authored radius: the least a world's membrane is taken to be.</summary>
+        public const float MembraneRadiusFloor = 1200f;
+
+        /// <summary>Centre to centre for cells of authored membrane <paramref name="radius"/> grown
+        /// <paramref name="scale"/> times, with <paramref name="gap"/> of open water between neighbouring membranes.</summary>
+        public static float CellSpacingFor(float radius, float scale, float gap) =>
+            2f * Mathf.Max(MembraneRadiusFloor, radius) * Mathf.Max(1f, scale) + Mathf.Max(0f, gap);
+
+        /// <summary>A world's membrane radius as authored: a capsule membrane's radius, any other membrane's scale.
+        /// 0 with no membrane.</summary>
+        public static float AuthoredMembraneRadius(CellConfigDataSO config)
+        {
+            var prefab = config ? config.MembranePrefab : null;
+            if (!prefab) return 0f;
+            return prefab.TryGetComponent<CapsuleMembrane>(out var cm) ? cm.Radius : prefab.transform.localScale.x;
+        }
 
         // The cell the Ark last left (its core reached, the corridor advanced): the departure anchor of the Ark's
         // cell-aware speed profile. None before the first advance (the voyage opens in open water).
@@ -238,8 +266,16 @@ namespace CosmicShore.Gameplay
             // membrane has spawned (the ModePreviewArena.FramingRadius bug class) - floor it
             // at the freestyle membrane's authored size so a mid-rebuild host can't fold the
             // corridor back onto itself.
+            // The corridor's membranes, for the gap spacing: the largest any of its worlds authors.
+            _membraneRadius = MembraneRadiusFloor;
+            var worlds = new List<CellConfigDataSO>();
+            if (cfg is { RouteWorldsAsAuthored: true, Cells: { Count: > 0 } }) worlds.AddRange(cfg.Cells);
+            else TraversalWorlds(cfg.Cells, _template, worlds);
+            foreach (var world in worlds)
+                _membraneRadius = Mathf.Max(_membraneRadius, AuthoredMembraneRadius(world));
+
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
-            Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
+            Vector3 first = origin + _heading * (hostRadius + Spacing * 0.5f);
             // No departure anchor at the start: the Ark sets sail from wherever the player stood in the host (often deep
             // inside it), and crawling out through the host would be a long empty opening. It cruises to the first cell.
             _departedCell = null;
@@ -301,6 +337,32 @@ namespace CosmicShore.Gameplay
                 _cells[i].RetireQueued = true;
 
             return true;
+        }
+
+        /// <summary>Open water the Ark must put between itself and the membrane of the cell it departed before that cell
+        /// is queued for its (off-screen-gated) retirement.</summary>
+        public const float DepartedRetireMargin = 600f;
+
+        /// <summary>The margin this conveyor uses (<see cref="DepartedRetireMargin"/> unless its owner sets one: a voyage on a
+        /// phone retires the cell behind sooner, VoyageToyDefinitionSO.RetireMargin).</summary>
+        public float RetireMargin { get; set; } = DepartedRetireMargin;
+
+        /// <summary>
+        /// Queue the cell the Ark departed for its off-screen retirement once the Ark is
+        /// <see cref="DepartedRetireMargin"/> clear of its membrane, instead of only when the Ark reaches the NEXT core.
+        /// Voyage cells are big (2.5x) and the Ark crawls inside them, so waiting kept the cell behind standing, still
+        /// growing its whole ecology, for the length of a cell: three full worlds plus one draining, the frame-rate fall
+        /// after a few cells (Shombith, 2026-11-17). The retirement itself is unchanged (off-screen gate, frame-sliced
+        /// drain, nothing dies), so nothing is watched popping out.
+        /// </summary>
+        public void QueueDepartedOnceClear(Vector3 arkPosition)
+        {
+            if (!_hasDeparture || _targetIndex < 1 || _targetIndex - 1 >= _cells.Count) return;
+            var record = _cells[_targetIndex - 1];
+            if (record.RetireQueued || !record.Root) return;
+            float r = record.Cell && record.Cell.MembraneRadius > 1f ? record.Cell.MembraneRadius : MembraneRadiusFloor;
+            float clear = r + Mathf.Max(0f, RetireMargin);
+            if ((arkPosition - record.Centre).sqrMagnitude > clear * clear) record.RetireQueued = true;
         }
 
         void Update()
@@ -385,6 +447,8 @@ namespace CosmicShore.Gameplay
             cell.SatellitePrismStride = Mathf.Max(1, _cfg.PrismStride);
             cell.SatelliteEcologyEnabled = true;
             cell.RuntimePopulationScale = Mathf.Clamp(_cfg.PopulationScale, 0.1f, 1f);
+            cell.SatelliteSizeScale = Mathf.Max(1f, _cfg.CellScale);
+            cell.ScatterLifeSpawns = _cfg.ScatterLifeSpawns;
             // NucleusIsControlZone is deliberately LEFT AT ITS DEFAULT (true). A traversal cell
             // is an ordinary cell, not a mode's borrowed play geometry: its nucleus is a claim
             // to contest, its interior is fauna sanctuary, and its exterior is the feeding
@@ -561,7 +625,7 @@ namespace CosmicShore.Gameplay
                 Vector3 axis = Quaternion.AngleAxis(roll, _heading) * side;
                 _heading = (Quaternion.AngleAxis(angle, axis) * _heading).normalized;
             }
-            return from + _heading * Mathf.Max(2000f, _cfg.CellSpacing);
+            return from + _heading * Mathf.Max(2000f, Spacing);
         }
 
         /// <summary>
@@ -802,13 +866,19 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
-            // Scene teardown: the drain coroutine dies with us - strike synchronously, pool-safe,
-            // and let the scene unload take the instantiated remainder in one sweep (the unload
-            // pays that cost anyway).
+            // The toybox root torn down while the scene lives: the drain coroutine dies with us, so
+            // strike synchronously, pool-safe.
+            // The scene itself closing is different: a strike gathers the world under a NEW
+            // GameObject, and one made while a scene closes is left behind ("Some objects were not
+            // cleaned up when closing the scene", Cell0_RetiringWorld, six machines) and re-parents
+            // creatures whose NetworkManager is already gone. The unload destroys every cell and
+            // its world in the same sweep, and Cell.OnDestroy retires the cell's own books, so
+            // there is nothing for a strike to do.
+            bool sceneClosing = !gameObject.scene.isLoaded;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var record = _cells[i];
-                if (record.Cell) record.Cell.StrikeSatelliteWorld();
+                if (record.Cell && !sceneClosing) record.Cell.StrikeSatelliteWorld();
                 if (record.Runtime) Destroy(record.Runtime);
             }
             _cells.Clear();

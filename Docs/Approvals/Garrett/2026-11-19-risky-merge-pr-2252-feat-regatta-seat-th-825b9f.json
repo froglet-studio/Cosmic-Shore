@@ -1,0 +1,41 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2252-feat-regatta-seat-th-825b9f",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T05:24:56+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2252 (feat(regatta): seat the Goby (Regatta dart coach, stick release, Time dart pace reshaped)) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset; a swim lane someone else occupies (approvals.py check exit 2): Regatta, Goby, The elemental vessel loop (process, board, sign-offs)",
+  "branch": "goby-wip",
+  "pr": 2252,
+  "commit": "528b9c5e2",
+  "paths": [
+    "Assets/_SO_Assets/Games/ArcadeGameRegatta.asset",
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset",
+    "Assets/_Scripts/Controller/Arcade/PERCH_RUN.md",
+    "Assets/_Scripts/Controller/Arcade/PerchRun/PerchRunController.cs",
+    "Assets/_Scripts/Controller/Arcade/PerchRun/PerchRunCourse.cs",
+    "Assets/_Scripts/Controller/Arcade/REGATTA.md",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaController.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaGobyDart.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaGobyDart.cs.meta",
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Docs/ElementalLoop/STATUS.md",
+    "Docs/ElementalLoop/loop.json",
+    "Tools/Build/author_regatta_assets.py",
+    "Tools/Compute/evaluators/time_ai_search.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Regatta, Goby, The elemental vessel loop (process, board, sign-offs)"
+    }
+  ]
+}

@@ -20,5 +20,5 @@ MonoBehaviour:
   spawnPerFrame: 8
   cooldown: 20
   lengthMultiplierAtFullSpace: 2
-  minLengthMultiplier: 0.4
+  minLengthMultiplier: 0.5
   upgradeExtraLength: 100

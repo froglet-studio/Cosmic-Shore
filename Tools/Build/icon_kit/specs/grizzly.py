@@ -3,15 +3,17 @@
   Charge  Dig In          the Grizzly (its REAL mesh, side-on, in its own `dig` take: the anchor raked forward, the
                           claws down) planted on a ground plate, the anchor's tines sunk into it - stop, dig in,
                           reload (before: SmashIcon-PLACEHOLDER.png, a fist)
-  Mass    Weapon Systems  the rotary drum the Y button turns: three chambers (explosives, sniper, plasma claw) round a
-                          hub, the live one under the pointer notch - cycle your weapons
-                          (before: ZapIcon-PLACEHOLDER.png, a lightning bolt)
+  Mass    Weapon Systems  the plasma claw's flame licking a rival prism that comes apart in two halves - Mass is the
+                          claw's weight, its reach and its bite (2026-11-16, the weakest-abilities pass; the Mass 5
+                          card is the same flame with the prism WHOLE, claimed). Before that: the rotary drum of the
+                          weapon cycle, which named the button but not what Mass does (and before it ZapIcon)
   Space   Charged Cannon  the shell leaving its muzzle blast: an angular round, nose up and to the right, its driving
                           band proud of the body, the blast it was charged with behind it - hold, release, boom
                           (before: CannonIcon-PLACEHOLDER.png)
-  Time    Rush            the Grizzly (its REAL mesh, side-on) leaning nose-down into the charge, one motion bar
-                          behind it - the burst of momentum (before: BoostIcon-PLACEHOLDER.png, three chevrons).
-                          Round 1 drew it from above with a ghost: the plan view read as a beetle, not a bear
+  Time    Rush            the RAM (2026-11-16): the Grizzly (its REAL mesh, side-on) leaning nose-down into the
+                          charge, a motion bar behind it, and a prism ahead of its nose bursting apart - the rush
+                          smashes what it ploughs into. Before: the same hull and two bars, a burst with nothing to
+                          hit (and before that BoostIcon-PLACEHOLDER.png, three chevrons)
 
 The hull is Grizzly.fbx (2026-10-27, Docs/VesselModels/Grizzly.md). Its HUD is the GrizzlyHUD canvas embedded in
 Grizzly.prefab (no <Hull>HUDVariant yet), whose four AbilityIconBinding entries draw the placeholders: REBIND swaps
@@ -57,19 +59,29 @@ def dig_in():
     return hull | plate
 
 
+def _split_prism(cx, cy, s, spread, tilt):
+    """A prism coming apart: its two halves (motifs.prism) pushed `spread` px apart and each turned `tilt` degrees
+    outward about its own centre - broken, not cut (LESSONS: a broken state is real pieces apart)."""
+    w = s * 0.8
+    left = [(cx - spread / 2, cy - s), (cx - spread / 2, cy + s), (cx - spread / 2 - w, cy)]
+    right = [(cx + spread / 2, cy - s), (cx + spread / 2, cy + s), (cx + spread / 2 + w, cy)]
+    return (fill(rotate(left, -tilt, cx - spread / 2 - w / 3, cy)) |
+            fill(rotate(right, tilt, cx + spread / 2 + w / 3, cy)))
+
+
+def _flame():
+    """The plasma claw's flame (the Mass 5 card's), its hollow core cut so it stays a fire at 40 px."""
+    flame = disc(38, 90, 24) | fill([(14, 92), (14, 64), (24, 76), (28, 46), (38, 64), (46, 18), (54, 56), (62, 44),
+                                      (62, 92)])
+    core = fill([(30, 104), (28, 88), (36, 94), (40, 72), (46, 92), (50, 86), (48, 104)])
+    return flame & ~core
+
+
 def weapon_systems():
-    """A twelve-sided drum; three round chambers on a ring at 120 degrees; a square hub; the pointer: a notch cut in
-    the rim over the top chamber, the one that fires."""
-    drum = fill(ngon(12, 54, 64, 66, rot=15))
-    hub = fill(ngon(4, 10, 64, 66, rot=45))
-    chambers = None
-    for a in (-90, 30, 150):
-        import math
-        x, y = 64 + 29 * math.cos(math.radians(a)), 66 + 29 * math.sin(math.radians(a))
-        c = disc(x, y, 15)
-        chambers = c if chambers is None else chambers | c
-    notch = fill([(56, 6), (72, 6), (64, 18)])
-    return drum & ~chambers & ~hub & ~notch
+    """Mass, the claw's weight: the flame and, beside it, the rival prism it burns coming apart - the base card of the
+    pair whose Mass 5 twin (claimed_fire) keeps the prism whole."""
+    broken = _split_prism(92, 74, 24, spread=26, tilt=30)
+    return (_flame() & ~_dilate(broken, 6)) | broken
 
 
 def charged_cannon():
@@ -89,26 +101,13 @@ def charged_cannon():
 
 
 def rush():
-    """The hull side-on, leaning nose-down into the charge (rolled 12 degrees), driven forward: two chamfered exhaust
-    bars trailing straight back from its two rows of haunch engines, leaned with it (two at most: the fleet's motion
-    mark). The rows are measured off the UNROLLED mesh's rear edge and the bars turned with the hull about the same
-    centre (canvas.rotate and the silhouette's roll share one convention), so each bar sits on its engine row."""
-    lean, box, cx, cy = 12, 80, 80, 62
-    flat = mesh_silhouette.silhouette(FBX, pitch=-90, yaw=0, box=box, cx=cx, cy=cy, dilate_px=1.4)
+    """The RAM: the hull side-on, leaning nose-down into the charge (rolled 12 degrees), and just off its nose a prism
+    bursting apart - the rush smashes what it ploughs into. No motion bar: the lean is the motion, and at 40 px the bar
+    and the shards fought for the card (round 1 of 2026-11-16)."""
+    lean, box, cx, cy = 12, 76, 49, 60
     hull = mesh_silhouette.silhouette(FBX, pitch=-90, yaw=0, box=box, cx=cx, cy=cy, dilate_px=1.4, roll=lean)
-    from canvas import GX, GY
-    x_rear = float(GX[flat].min())
-    ys = np.unique(np.round(GY[flat & (GX < x_rear + 3)]).astype(int))
-    rows = sorted(np.split(ys, np.where(np.diff(ys) > 2)[0] + 1), key=len, reverse=True)[:2]
-    bars = None
-    for r in rows:
-        yc, w = float(r.mean()), 11.0
-        x1 = x_rear - 8
-        x0 = 9 + w * 0.6                     # the bar's tail stays inside the optical box
-        pts = [(x0, yc - w / 2), (x1, yc - w / 2), (x1 - w * 0.6, yc + w / 2), (x0 - w * 0.6, yc + w / 2)]
-        bar = fill(rotate(pts, lean, cx, cy))
-        bars = bar if bars is None else bars | bar
-    return hull | (bars & ~_dilate(hull, 6))
+    shards = _split_prism(102, 80, 14, spread=12, tilt=24)
+    return hull | (shards & ~_dilate(hull, 6))
 
 
 # ---- level-5 cards (2026-11-13): each card's upgraded picture, bound as its binding's upgradedSprite ----
@@ -128,10 +127,7 @@ def battle_sight():
 def claimed_fire():
     """Mass 5 Claimed Fire: the plasma claw's flame, and beside it the prism it burnt standing whole and solid - the
     claw claims what it burns instead of destroying it. The flame's hollow core keeps it a fire at 40 px."""
-    flame = disc(38, 90, 24) | fill([(14, 92), (14, 64), (24, 76), (28, 46), (38, 64), (46, 18), (54, 56), (62, 44),
-                                      (62, 92)])
-    core = fill([(30, 104), (28, 88), (36, 94), (40, 72), (46, 92), (50, 86), (48, 104)])
-    flame = flame & ~core
+    flame = _flame()
     prism_m = prism(96, 72, 26)
     return (flame & ~_dilate(prism_m, 6)) | prism_m
 
@@ -155,13 +151,15 @@ ICONS = [
     dict(name="Grizzly_DigIn", element="Charge", act="Dig In", draw=dig_in, before=PH + "SmashIcon-PLACEHOLDER.png",
          exempt={"gap": "the hull's real mesh: the pods, ears and claw blades float across even gaps by design "
                         "(vessel-model SKILL 0.5), as on the Squirrel's joust"}),
-    dict(name="Grizzly_WeaponSystems", element="Mass", act="Weapon Systems", draw=weapon_systems,
-         before=PH + "ZapIcon-PLACEHOLDER.png"),
+    dict(name="Grizzly_WeaponSystems", element="Mass", act="Weapon Systems: the claw's flame breaking a prism",
+         draw=weapon_systems, exempt={"components": "the flame and the broken prism's two halves",
+                                      "gap": "the broken prism's halves and the flame's tongues"}),
     dict(name="Grizzly_ChargedCannon", element="Space", act="Charged Cannon", draw=charged_cannon,
          before=PH + "CannonIcon-PLACEHOLDER.png"),
-    dict(name="Grizzly_Rush", element="Time", act="Rush", draw=rush, before=PH + "BoostIcon-PLACEHOLDER.png",
+    dict(name="Grizzly_Rush", element="Time", act="Rush: the ram, a prism bursting at the nose", draw=rush,
          exempt={"gap": "the hull's real mesh: the pods, ears and claw blades float across even gaps by design "
-                        "(vessel-model SKILL 0.5)"}),
+                        "(vessel-model SKILL 0.5)",
+                 "components": "the hull and the broken prism's two halves"}),
     dict(name="Grizzly_BattleSight", element="Charge", act="Charge 5 Battle Sight: dug in, a rival marked in its ring",
          draw=battle_sight, exempt={"gap": "the hull's real mesh (vessel-model SKILL 0.5)",
                                     "components": "the hull, its plate and the marked rival"}),
