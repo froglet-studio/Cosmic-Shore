@@ -8907,3 +8907,147 @@ a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark
 `ArkwayVoyageHud` lays toasts out as a feed under the chip while it shows, widening to a long line. Every word is a
 `VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
 yet run in the Unity editor.
+
+## 226. Rev 133 mockups: the Milestone 2 Voyages UI, three ways (2026-11-24; Shombith picked a mix: Board B, Seats A+B, Pause A, Vote B, Awards A)
+
+**Asked** (Shombith, 2026-11-24, after the Milestone 2 design https://claude.ai/artifact/41YTUVhkuX1wPDwJQhub3g): "For
+this we have to create a well engaging UI and the world and the 4 missions very interesting ... How do we start? First
+the app shell and in game UI". Then, on the Voyage Codex (https://claude.ai/artifact/S4aH7rcMZhd6xrSen9oZSD): "Bounty,
+salvage, piracy are voyage types they cannot be names", and "the in game UI and world everything should be very well
+defined for these to work".
+
+**On the canvas**: tab Voyages, "Rev 133 - Milestone 2 Voyages UI, three ways". Generator
+`Docs/MenuRedesignB/rounds/r133_voyages_m2.py`; copies `Docs/MenuRedesignB/board/R133*.dc.html`. Five screens per
+direction, each its own board (Board, Seats, Pause, Vote, Awards), plus Notes:
+- **A The Chart (recommended)**: jobs are giver pins on the HyperSea map, a pin slides open the giver's card (classes
+  wanted, squad fit, pay); seats are Rev 115 A's line-up with class, mood and rank; pause is the chart framed on the lane
+  with the Ark live in its cell, events next door with timers and the rival; the vote is a lit membrane plus a low centre
+  D-pad vote; the end board draws the run on the chart over one award card per seat. Recommended because pillar 1 (the
+  sea is real) is one picture from the board to the run.
+- **B The Quay**: the givers stand on the quay (pilot scenes) and ask, your pilots answer in their mood; seats are pilot
+  cards; pause is the lane as a column beside the paused world; the pilot who saw the event asks the vote.
+- **C The Ledger**: a sortable list with fit, pay and danger columns and a detail pane; seats as rows with a refusal
+  line; pause is a course strip; the vote rides in the HUD chip; the end board is a table with the pay itemised.
+Same content in all three: docked at Gullbone Landing; the Codex's four voyages by name (The Glassmere Shatter, The
+Tollmoor Crossing, Black Tide Rising, Ironmouth Holds) with the type only as a small label; givers Cass Morrow, Captain
+Theo Lark, Juno Rask, Marshal Edda Kroll (shown with their callsign's portrait); the default squad Sparrow, Squirrel,
+Dolphin fits 1 of 3 for Salvage (+10%). Marks: the seven class glyphs (outline), mood as three bars (Refuses a struck
+circle in the threat red), rank as one to three chevrons per verb, fit as three segments; no domain colour. In-game
+boards keep Rev 120 B (plate over the Ark, chip, feed) at the game's text sizes. `check_mockup.py` noise: A Board 128
+and A Seats 105 (the picked Rev 115 A line-up) are over the budget of 60; the in-game boards are within it.
+
+**Differs from the build**: none of it is built. The job board today is the Rev 113 sea page and crew popup (no giver,
+classes, fit or pay); seats show no class, mood or rank; pause has no map; there is no detour vote or role award.
+
+**Next**: after the pick, one round of every screen and state of the picked direction (locked jobs, a refusing pilot,
+solo and party votes, a tie, the Ark lost, joining at the next cell) and how the world reads in play (zones, cell
+crossings, the five events next door, rival arrivals).
+
+**Picked (Shombith, 2026-11-24)**: "For the board I like B / Seats can be mixture of A and B / Pause A / Vote B / Awards A
+/ I think we are missing more screens". The mix on every screen and state, with the missing screens, is Rev 134.
+
+## 227. Rev 134 mockups: the picked Milestone 2 Voyages UI on every screen and state, and how the world reads (2026-11-24, awaiting board approval)
+
+**Asked**: the Rev 133 pick (section 226), "I think we are missing more screens", and "the in game UI and world everything
+should be very well defined for these to work".
+
+**On the canvas**: tab Voyages, "Rev 134 - The picked Milestone 2 Voyages UI on every screen and state". Generator
+`Docs/MenuRedesignB/rounds/r134_voyages_m2_all.py` (builds on r133); copies `Docs/MenuRedesignB/board/R134*.dc.html`.
+22 boards in the order a run meets them, plus Notes:
+- Shell: Board (B, the quay), BoardRefuse (a pilot refuses Black Tide Rising, in the crew's reply and on the sail line),
+  Seats (A's hulls standing, B's pilots speaking under them, with mood and rank), SeatsRefuse (Set sail held until the
+  refusing pilot is swapped), Pilots (the picker: each pilot's mood for this job and rank in its verb, who refuses
+  dimmed, how the mood moves the AI's rung), Party (a friend still choosing, Set sail waits).
+- Run: Intro (the voyage's name, giver, squad), Crossing (a membrane names the cell), Event (lit next door + the feed),
+  Vote (B, party), VoteTie (one each, a friend did not press: the host wins), VoteSolo (one press; none presses on),
+  Detour, Rival (racing), Hostile (attacking the Ark, plate red), Joins (a friend takes the AI's seat at the next cell),
+  Pause (A), Dock (banking), Awards (A), Lost (moods drop).
+- World: WorldEvents (the five events next door as they read through a membrane; each shows in the world, the feed
+  and the pause chart; only a rival wears the threat red), WorldSea (the five zones with who you meet and the danger,
+  a lane as the chart draws it; danger is the sea's, never the clock).
+
+**Differs from the build**: none of it is built (see section 226).
+
+## 228. Rev 135 mockups: the full-screen HyperSea kept, and the vessel classes screen (2026-11-24; classes boards rejected, see 229)
+
+**Asked** (Shombith, on Rev 134): "We can build these. ... in the board in the first screen please make sure the fullscreen
+of hypersea feature stays, show me the screen which differentiates vessels as per their classes and what to choose and
+how effective they are in the missions. That screen show me before you start building".
+
+**On the canvas**: tab Voyages, "Rev 135 - Voyages: the full-screen HyperSea stays, and the vessel classes screen";
+copies `Docs/MenuRedesignB/board/R135*.dc.html`, generator `Docs/MenuRedesignB/rounds/r135_voyages_classes.py`.
+- **BoardFull**: Rev 134's quay board with the built Rev 111 Full screen control on its chart, and See every class (Y).
+- **FullScreen**: the HyperSea edge to edge as built (zoom row inside the map, + and -, Back from full screen, Hide),
+  now carrying the four givers on the right, their pins, your lane, the wreck, the bloom, The Rusted Grin, and the
+  picked voyage along the foot with Take the job.
+- **ClassesA**: the fleet by class, seven classes x four voyages (Best / Good / Poor), every vessel under its class.
+- **ClassesB (recommended)**: this voyage's shelf. Every vessel sorted Best / Good / Poor for the voyage you are on, what
+  each class does there, which vessels the AI can fly, your squad's fit and pay, and the one swap that lifts it
+  (Seat 3 Dolphin to Scarab: fit 1 to 2 of 3, pay 33 to 36). Recommended because it answers "what do I choose" for
+  the voyage in hand; A makes you find your column.
+- **ClassesPick**: the same shelf as the seat picker; in an AI seat the vessels with no voyage AI are dimmed ("Needs a person").
+- Effectiveness: Best = the giver asks for the class (adds to squad fit and the pay bonus), Good = does the work, no
+  bonus, Poor = little to do there. The table matches each giver's ask in the Voyage Codex (asserted in the generator).
+  A class is a label for voyages and never changes a kit.
+
+**Differs from the build**: the built Voyages tab has the full screen but no givers column or events on it, and no class
+screen at all; vessels have no voyage class in data yet (the class sort is the Milestone 2 design's, Brood Rush wins).
+
+**Rejected (Shombith, 2026-11-24)**: "I dont like any of them, there can be CTA try 2 more variations for the classes its too
+noisy and confusing", "Even the classes pick section", and "I already selected 134 for seats and pilots and
+classes/vessels should be another section following the same design principle no?" Rev 134's Seats and Pilots stand as
+picked; BoardFull and FullScreen stand.
+
+## 229. Rev 136 mockups: Vessels, a section of Your Ark in Rev 134's look (2026-11-24; Shombith picked E)
+
+**Asked**: the rejection above. **On the canvas**: tab Voyages, Rev 136; copies `Docs/MenuRedesignB/board/R136*.dc.html`,
+generator `Docs/MenuRedesignB/rounds/r136_voyages_vessels.py`. Rev 134's look kept: the voyage line on top, the hangar
+floor, hulls standing on it, one line under each, fit and pay along the foot, Lime only on the one CTA (Put Scarab in
+Seat 3 / Take the vessel).
+- **E One class on the floor** (EVessels, ESeat): a class's vessels stand on the floor; the seven classes run along the
+  foot, the giver's three brighter.
+- **F The wanted three on the floor** (FVessels, FSeat): the giver's three classes stand like three seats, each with its
+  other vessels as chips; the rest is one line and See all seven.
+- The Seat boards are the same section opened from Change vessel on a seat: what the AI cannot fly is dimmed.
+
+## 230. Rev 137 mockups: rival Arks and runaway crews, and how you beat them (2026-11-24; in game approved, built in its own thread)
+
+**Asked** (Shombith): "Lets make rival ark thats cooler and makes sense there can be runaway crews as well no problem both
+can be there and how do i defeat theses players?" **On the canvas**: tab Voyages, Rev 137; copies
+`Docs/MenuRedesignB/board/R137*.dc.html`, generator `Docs/MenuRedesignB/rounds/r137_voyages_rivals.py`.
+Chart (a rival Ark on its own lane, a runaway crew next door), ArkMeet (their Ark lit red in the world with its plate:
+hold, hull, escorts), ArkOpen (two escorts silenced, her hull open), ArkBreak (hull broken, the hold bursts as loose
+crystal, the crew turns back), Runaway (a runaway crew raids your drift), Rout (all three silenced at once: they drop
+their haul and run), Fall (the end board's rival lines, grudge, Rival Breaker). All AI crews in Milestone 2; PvP petals
+only. Rules for the build: a per-crew Ark / runaway flag; rout = all three silenced at the same moment; a rival Ark crew
+turns back when its Ark breaks. The voyage-build thread waits on this round for those rules.
+
+## 231. Rev 138 mockups: the final Voyages app shell, every screen and what you press (2026-11-24, awaiting board approval)
+
+**Asked** (Shombith): "I like E but why cant I see the vessels screenshots, so draw me a final round of the app shell and
+each screen and where would i click to get to the next screen or select vessels, pilots or anything else, I like in game
+you can start building on it on a separate thread"; "do not delete the old milestone 1 salvage mission we had keep it as
+well in the selection lot but do not update anything about it".
+
+**On the canvas**: tab Voyages, Rev 138; copies `Docs/MenuRedesignB/board/R138*.dc.html`, generator
+`Docs/MenuRedesignB/rounds/r138_voyages_shell_final.py`. Flow (every screen and every press between them), then each
+picked screen with numbered marks on what you press and what it opens: Board (five jobs: the four voyages and the
+Milestone 1 Crystal Run as it is today), Full (the HyperSea full screen), Seats, Vessels (E, from Seat 3, with the game's
+hangar previews from `Assets/_Graphics/Design Assests/Hangar`, uploaded to the canvas), Pilots, Party. Nothing picked was
+redrawn; the marks are the only addition. Tiger Moth has no hangar preview yet.
+
+**Differs from the build**: the built shell has no Vessels section, no class marks, no givers on the quay; the Crystal Run
+is unchanged. The in-game UI (Rev 134 run screens, Rev 137 rivals) was approved and is built in its own thread.
+
+**Picked (Shombith, 2026-11-24)**: "lets go build it".
+
+**Built, stage 1 (2026-11-24, branch `claude/project-thread-31vs8r` into `voyages`)**: the voyage classes
+(`VoyageClass`, `VoyageClassesSO` in `Resources/Voyages/VoyageClasses.asset`, written by
+`Tools/Build/author_voyage_classes.py`, `--check`: the seven classes, their vessels, the three classes each M2 voyage kind
+wants; the Crystal Run wants none and stays as it was), the class glyphs (`VoyageGlyph` shapes 3-9), Vessels E
+(`VoyageVesselsPage`: the class's vessels standing on the hangar floor with their `PreviewImage`, the wanted line, the
+class row with LB / RB, the squad fit, Back and Take the vessel), and Your Ark's hooks (pressing a seat's hull opens
+Vessels; the class tag beside each vessel, muted when the voyage does not want it). Differs from the board: no "Pay 33 to
+36" (no pay bonus system exists yet); the previews are not faded at the edge; Change your seat (X) still opens the seat
+picker for pilot, element and artifact. Stage 2, the quay with givers and pilot mood and rank, waits on the givers and
+wanted classes per Codex voyage from the voyage-build thread.

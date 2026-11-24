@@ -25704,3 +25704,13 @@ compile (player and editor) has 0 errors in the changed files (30 in untouched f
 - [ ] Party of two: both screens show the Ark on the same course; the friend's Ark does not jitter or drift.
 - [ ] Phone: no visible frame cost from the Ark at anchor (its 108 hull prisms are re-filed every frame now).
 - [ ] Tune it in `ArkReverseModel.asset` > Helm if it is too much or too little.
+
+## Voyages M2 shell, stage 1: Vessels E and the class tags (2026-11-24)
+
+Not run in Unity (cloud session; the reference compile passed on the changed files). Open Voyages, pick a voyage, Your Ark:
+- [ ] Each seat shows its class beside the vessel (glyph and name); on a Salvage the Squirrel's Cultivator is bright, the Sparrow's and Dolphin's Destroyer muted; on the Crystal Run all are bright.
+- [ ] Pressing a seat's hull opens Vessels over the whole screen on that vessel's class; the hangar previews stand on the floor, the seat's vessel underlined in cyan.
+- [ ] On an AI seat, vessels the AI cannot fly are dimmed and do nothing when pressed; on your seat every one can be picked.
+- [ ] Pressing a class (or LB / RB on a pad) shows its vessels; "<Class>s are wanted on this voyage" shows only for wanted classes; the fit line reads "Squad fit 1 to 2 of 3" when the pick changes it.
+- [ ] Take the vessel (A) puts it in the seat and Your Ark shows it; Back (B) and the pad's B leave the seat unchanged.
+- [ ] Run the EditMode tests `VoyageClassesTests`.
