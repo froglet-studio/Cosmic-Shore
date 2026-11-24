@@ -89,7 +89,8 @@ mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated cop
   if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
   echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
 }
-mutate_ruins "ruins that block the lane" 's/PartLaneDistance(lap, part) >= s.ClearRadius \&\&/true \&\&/' 'true && PartRingClearance'
+# The lay clears its prisms through LaneCache.Stands (the sampled lines), so that is the lane check to break.
+mutate_ruins "ruins that block the lane" 's/if (!(Mathf.Sqrt(best) >= s.ClearRadius)) return false;/if (best < 0f) return false;/' 'if (best < 0f) return false;'
 mutate_ruins "ruins at a ring" 's/PartRingClearance(lap, part) >= s.RingMargin;/true;/' '&& true;'
 mutate_ruins "ruins on the easy rungs" 's/PerLapByRung = { 0, 0, 0, 7 }/PerLapByRung = { 0, 7, 0, 7 }/' '0, 7, 0, 7'
 mutate_ruins "a wheel with no open hub" 's/HubRadius + (k + 0.5f) \* spokeStone/(k + 0.5f) * spokeStone/' 'c + radial \* ((k + 0.5f)'

@@ -108,9 +108,19 @@ so how they read up close is still a person's look.
 The lay was then made to ask only the legs it keeps (it asked all 23 before). On the live I4 course in the editor it
 went from 1.2 s to 0.84 s (one course each; 0.57 s of it choosing, before the field is cut). On the ten test courses
 in the editor: 7 ruins on every course, 408-574 prisms (mean 479), 0.8 s a course to choose with the field, 0.17 s to
-lay the field out again. `ScarabRallyRuinsTests` 13/13 in the editor after the change. What is left is Spearline's
-own check of each prism against every leg's lane, three times dearer here than on its lap (24 legs, not 8); making
-that cheaper is a change inside `SpearlineRuins`, which this mode does not edit. The AI's I4 times in the table below were measured
+lay the field out again. `ScarabRallyRuinsTests` 13/13 in the editor after the change. What was left was Spearline's
+own check of each prism against every leg's lane, three times dearer here than on its lap (24 legs, not 8).
+
+That check was then made cheaper inside `SpearlineRuins` itself (Yash's go-ahead, 2026-11-24): the lay samples each
+leg's flown line once (`LaneCache`) and passes over a leg whose whole line is out of reach, where it worked every
+leg's curve out again for every prism. It lays the same prisms: old and new compared on 1,080 laps (Scarab Rally
+courses cut to 24, 12 and 8 rings, three clear radii, two leg floors), 1,394,903 prisms, identical to the bit, in
+2.3 s where the old code took 38 s. Every mode that calls the generator is the quicker for it. On this course in the
+editor: choosing the ruins with the field 0.8 s to 0.09 s a course (the same ten courses, the same 7 ruins and
+408-574 prisms), and laying them on the live I4 course 0.84 s to 0.33 s, of which about 0.17 s is laying the field
+out again and the rest is making the prisms. All 24 ruins test classes were run in the editor after the change: 23
+pass; Perch Run's `Every_dart_the_ai_plans_passes_the_standing_ruins` ran past its 180 s limit in its own loop (an
+assert with a formatted message for every prism sample), which is that test's cost and not the generator's. The AI's I4 times in the table below were measured
 before the ruins; the ruins stand outside the lane the AI flies, but that was not raced again.
 
 ## What is reused, and what is new

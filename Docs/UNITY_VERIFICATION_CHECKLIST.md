@@ -26903,9 +26903,11 @@ Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally
 
 - [x] The project compiles in the editor (batch mode, 2026-11-24).
 - [x] `ScarabRallyRuinsTests` passes 13/13 in the editor (2026-11-24).
-- [ ] Raising the I4 course does not hitch: MEASURED 0.84 s to lay the ruins on the live course in the editor (1.2 s
-      before the lay was made to ask only the legs it keeps), once, before Ready. Judge it in the editor and in a
-      player build. The rest is Spearline's lane check (SCARABRALLY.md, "The ruins").
+- [ ] Raising the I4 course does not hitch: MEASURED 0.33 s to lay the ruins on the live course in the editor, once,
+      before Ready (1.2 s at first; 0.84 s once the lay asked only the legs it keeps; 0.33 s once Spearline's lane
+      check sampled each leg's line once, SCARABRALLY.md "The ruins"). Judge it in the editor and in a player build.
+- [ ] `PerchRunRuinsTests.Every_dart_the_ai_plans_passes_the_standing_ruins` ran past its 180 s limit in the editor
+      (2026-11-24): its own loop asserts with a formatted message for every prism sample. Perch Run's to fix.
 - [x] `MinigameScarabRally`: the ruin prism prefab is wired (480 ruin prisms laid in Play, 2026-11-24). The scene
       still owes its first open-and-save.
 - [ ] Scarab Rally I4: up to seven ruins stand along the course in Jade, Ruby and Gold, apart from the Blue block

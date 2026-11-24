@@ -159,6 +159,7 @@ namespace CosmicShore.Gameplay
             int n = lap.Count;
             if (s.PerLap <= 0 || n < 3) return;
             int laid = 0;
+            LaneCache lanes = null;     // the lap's flown lines, worked out once and only if a leg lays a ruin
             for (int leg = 0; leg < n - 1 && laid < s.PerLap; leg++)
             {
                 var a = lap[leg];
@@ -186,7 +187,7 @@ namespace CosmicShore.Gameplay
                         wheels?.Add(new SpearlineRuinWheel(centre, dir, sense * WheelDegreesPerSecond, first, into.Count - first));
                         break;
                 }
-                if (kind != Wheel) Clear(lap, s, into, first);
+                if (kind != Wheel) Clear(lap, s, into, first, lanes ??= new LaneCache(lap));
                 for (int i = first; i < into.Count; i++) into[i] = into[i].OnLeg(leg);
                 if (into.Count > first) laid++;
             }
@@ -402,12 +403,13 @@ namespace CosmicShore.Gameplay
         // ── Clearance ────────────────────────────────────────────────────
 
         /// <summary>Drop every part from <paramref name="first"/> on that reaches into a leg's lane or too near a ring.</summary>
-        static void Clear(IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s, List<SpearlineRuinPart> parts, int first)
+        static void Clear(IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s, List<SpearlineRuinPart> parts, int first,
+                          LaneCache lanes)
         {
             int keep = first;
             for (int i = first; i < parts.Count; i++)
             {
-                if (!Stands(lap, s, parts[i])) continue;
+                if (!lanes.Stands(lap, s, parts[i])) continue;
                 parts[keep++] = parts[i];
             }
             parts.RemoveRange(keep, parts.Count - keep);
@@ -417,6 +419,75 @@ namespace CosmicShore.Gameplay
         /// lane and clear of every ring?</summary>
         public static bool Stands(IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s, in SpearlineRuinPart part) =>
             PartLaneDistance(lap, part) >= s.ClearRadius && PartRingClearance(lap, part) >= s.RingMargin;
+
+        /// <summary>
+        /// The lap's flown lines, sampled once, for <see cref="Clear"/>: the same answer as <see cref="Stands"/> for
+        /// every part (the same sample points, the same segment distances, the same comparison), without working each
+        /// leg's curve out again for every prism. A leg whose whole line lies further from a point than the clear
+        /// radius cannot fail that point, so it is passed over by its bounding ball (2026-11-24: Scarab Rally's 24-leg
+        /// course spent 0.6 s here in the editor).
+        /// </summary>
+        sealed class LaneCache
+        {
+            /// <summary>u of slack on the bounding-ball test, far above any rounding in it: a leg is passed over only
+            /// when it is at least this much further than the clear radius.</summary>
+            const float Slack = 0.5f;
+
+            readonly Vector3[] _points;     // LineSamples + 1 points a leg, the points LegDistance walks
+            readonly Vector3[] _centre;
+            readonly float[] _radius;
+            readonly int _legs;
+
+            public LaneCache(IReadOnlyList<RaceGate> lap)
+            {
+                _legs = lap.Count;
+                int per = LineSamples + 1;
+                _points = new Vector3[_legs * per];
+                _centre = new Vector3[_legs];
+                _radius = new float[_legs];
+                for (int leg = 0; leg < _legs; leg++)
+                {
+                    var a = lap[leg];
+                    var b = lap[(leg + 1) % _legs];
+                    _points[leg * per] = a.Position;
+                    Vector3 sum = a.Position;
+                    for (int k = 1; k <= LineSamples; k++)
+                    {
+                        Vector3 p = LinePoint(a, b, k / (float)LineSamples);
+                        _points[leg * per + k] = p;
+                        sum += p;
+                    }
+                    _centre[leg] = sum / per;       // any centre does: the radius below is measured from it
+                    float r = 0f;
+                    for (int k = 0; k < per; k++) r = Mathf.Max(r, (_points[leg * per + k] - _centre[leg]).magnitude);
+                    _radius[leg] = r;
+                }
+            }
+
+            /// <summary><see cref="SpearlineRuins.Stands"/>, from the sampled lines.</summary>
+            public bool Stands(IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s, in SpearlineRuinPart part)
+            {
+                int per = LineSamples + 1;
+                int samples = LengthSamples(part);
+                for (int k = 0; k < samples; k++)
+                {
+                    Vector3 p = LengthPoint(part, k, samples);
+                    for (int leg = 0; leg < _legs; leg++)
+                    {
+                        if ((p - _centre[leg]).magnitude - _radius[leg] > s.ClearRadius + Slack) continue;
+                        float best = float.MaxValue;
+                        int at = leg * per;
+                        for (int i = 1; i < per; i++)
+                        {
+                            float d = SegmentDistanceSqr(p, _points[at + i - 1], _points[at + i]);
+                            if (d < best) best = d;
+                        }
+                        if (!(Mathf.Sqrt(best) >= s.ClearRadius)) return false;
+                    }
+                }
+                return PartRingClearance(lap, part) >= s.RingMargin;
+            }
+        }
 
         /// <summary>How near <paramref name="part"/> comes to any leg's flown line, along its whole length.</summary>
         public static float PartLaneDistance(IReadOnlyList<RaceGate> lap, in SpearlineRuinPart part)
