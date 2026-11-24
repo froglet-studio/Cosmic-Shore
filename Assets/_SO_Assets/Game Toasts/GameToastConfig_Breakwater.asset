@@ -65,7 +65,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 430
-    messageTemplate: 'Thread the eye and spend nothing, or fire a rocket and open a door'
+    messageTemplate: 'Thread the eye, or fire a door open'
     tintWithDomainColor: 0
     useDomainColoredNames: 1
     alpha: 1
