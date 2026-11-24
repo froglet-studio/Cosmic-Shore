@@ -15,24 +15,6 @@ MonoBehaviour:
   clips:
   - room: 1
     run: 0
-    colourSet: Nocturne
-    domain: 1
-    anyDomain: 0
-    clip: {fileID: 32900000, guid: 519b16fe1322521d9534e1089f51864d, type: 3}
-  - room: 1
-    run: 0
-    colourSet: Nocturne
-    domain: 2
-    anyDomain: 0
-    clip: {fileID: 32900000, guid: dcbb4f3c0403573195eaa92c8f5934c9, type: 3}
-  - room: 1
-    run: 0
-    colourSet: Nocturne
-    domain: 4
-    anyDomain: 0
-    clip: {fileID: 32900000, guid: b144a8991eed5fa08a7433a96333572d, type: 3}
-  - room: 1
-    run: 0
     colourSet: Photic
     domain: 1
     anyDomain: 0
@@ -49,24 +31,6 @@ MonoBehaviour:
     domain: 4
     anyDomain: 0
     clip: {fileID: 32900000, guid: 63292eba3f465cb98573afde5bd90d68, type: 3}
-  - room: 1
-    run: 0
-    colourSet: DartFrog
-    domain: 1
-    anyDomain: 0
-    clip: {fileID: 32900000, guid: a3206808d72d565ebba68e8ce4f6d1b4, type: 3}
-  - room: 1
-    run: 0
-    colourSet: DartFrog
-    domain: 2
-    anyDomain: 0
-    clip: {fileID: 32900000, guid: 513d7e00c3e95bacad927003444f994a, type: 3}
-  - room: 1
-    run: 0
-    colourSet: DartFrog
-    domain: 4
-    anyDomain: 0
-    clip: {fileID: 32900000, guid: 67be507204c95df5ac827507f78552a8, type: 3}
   - room: 2
     run: 0
     colourSet: Nocturne

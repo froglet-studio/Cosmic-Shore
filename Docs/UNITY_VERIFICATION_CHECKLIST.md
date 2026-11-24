@@ -74,7 +74,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - [ ] Picking walks the view up to that hull in about 0.4 s, video and hulls together, with no gap at a screen edge;
       the other plates hide; the projection stands docked on the right and covers no hull.
 - [ ] Back / B walks back out; switching to another Ark tab while walked up shows that tab's picture whole.
-- [ ] Try each domain (Jade, Ruby, Gold) and colour set: the new clips play and loop without a jump.
+- [ ] Try each domain (Jade, Ruby, Gold) under Nocturne, Photic and Dart Frog: each plays the Photic clip of its domain
+      and loops without a jump.
 
 ### 🔴 The Squads rail on screen, 96 high, Back at every level (`claude/project-thread-ffv5m4`, 2026-11-24, Shombith) — NOT EDITOR-VERIFIED
 

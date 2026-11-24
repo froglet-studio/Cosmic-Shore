@@ -10162,8 +10162,9 @@ platforms ... the 3rd set is over the prism blocks which is wrong". Built in sec
 **The room.** `r67_ark_tabs_render.py` with `ARK_ROW=1`: the camera stands square to the tube at x 0 ((0, -85, -15.6)
 aimed at (0, -62, -20.6), Blender coordinates), the model's middle hex plate is copied to x -9 and +9 so the three pads
 are one row of the room's own platforms, and the prism heaps that stood under the old third pad move back to y -82.
-The nine hangar clips (Nocturne, Photic, Dart Frog x Jade, Ruby, Gold) were rendered again with it and replace
-`Assets/_Graphics/Video/Ark/squads_*_loop.mp4` (guids kept). Stills: `/mnt/project-files/ark-squads/rev141a/`.
+The hangar is now Photic only (Shombith, 2026-11-24: "Just do Photic x Jade, Ruby and Gold"): the three Photic clips
+were rendered again with it (guids kept), the six Nocturne and Dart Frog hangar clips were deleted, and every colour
+set plays the Photic clip of its squad's domain (`ArkBackdropConfigSO.Find` now falls back by domain before anything else). Stills: `/mnt/project-files/ark-squads/rev141a/`.
 `author_ark_backdrop_assets.py` HANGAR follows: camera (0, -15.6, -85) aimed at (0, -20.6, -62), pads (0, -23, -64),
 (-9, -23, -64), (9, -23, -64) in Unity coordinates, hulls 7 m long. On screen the pads stand at x 439, 960 and 1481 of
 1920, their feet 380 px up from the foot.

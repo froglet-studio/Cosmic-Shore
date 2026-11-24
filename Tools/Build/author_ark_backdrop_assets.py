@@ -76,7 +76,9 @@ def guid(path):
 def clips():
     """(file, room, run, set, domain or None)"""
     out = []
-    for s in SETS:
+    # The hangar is Photic only since Rev 141 A (Shombith 2026-11-24: "Just do Photic"): every colour set plays the
+    # Photic clip of its squad's domain (ArkBackdropConfigSO.Find falls back by domain).
+    for s in ("Photic",):
         for d in ("Jade", "Ruby", "Gold"):
             out.append((f"squads_{s}_{d}_loop.mp4", "Hangar", "loop", s, d))
     for run in ("loop", "convert", "done"):
