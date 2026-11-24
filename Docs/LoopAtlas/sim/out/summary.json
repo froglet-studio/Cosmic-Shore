@@ -1,0 +1,3109 @@
+{
+ "meta": {
+  "runs": 200,
+  "days": 42,
+  "seed": 20261121,
+  "fixes": {
+   "tide": "P6 The Tide: a daily job, a weekly card, a six-week season (era.tide, build queued 2026-11-20)",
+   "one_currency": "P10 One currency: a clean voyage pays about three arcade wins in crystals",
+   "sinks": "P7 More to spend crystals on: Ark refits, pilots, colour sets",
+   "chapters": "P13 Voyage chapters: dock at any location reached and resume next sitting",
+   "puzzle_door": "P14 A puzzle-first door: the Ratel's board is offered on Home and in the first-login guide",
+   "crew_seat": "P15 Every crew vessel seats an arena card and a voyage squad, so two people share one seat",
+   "quest_rung": "arc.unlock hole: a quest clears at I2, matching ECONOMY_TABLES' ~3 games to the Hangar",
+   "make_pays": "P16 Making pays: a finished painting pays a little and can be shared, so the Toybox feeds the long game",
+   "breath": "P5 The breath: after each result one offered next step, so a sitting crosses places"
+  }
+ },
+ "fit": {
+  "casual-mobile": {
+   "today:toybox": {
+    "fits": 0.75,
+    "match": 0.32,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 0.99,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 0.92,
+    "match": 0.56,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 0.14,
+    "match": 0.0,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 0.79,
+    "match": 0.32,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 0.99,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 0.94,
+    "match": 0.56,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 0.0,
+    "match": 0.0,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 0.75,
+    "match": 0.32,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 0.99,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 0.94,
+    "match": 0.56,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 0.5,
+    "match": 0.0,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 1,
+    "today": 0,
+    "planned": 0,
+    "proposed": 1
+   }
+  },
+  "east-asia-commute": {
+   "today:toybox": {
+    "fits": 0.72,
+    "match": 0.32,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 1.0,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 0.98,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 0.21,
+    "match": 0.0,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 0.76,
+    "match": 0.32,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 1.0,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 0.97,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 0.01,
+    "match": 0.0,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 0.69,
+    "match": 0.32,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 1.0,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 0.98,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 0.5,
+    "match": 0.0,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 1,
+    "today": 0,
+    "planned": 0,
+    "proposed": 1
+   }
+  },
+  "latam-sea-social": {
+   "today:toybox": {
+    "fits": 1.0,
+    "match": 0.74,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 1.0,
+    "match": 0.5,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 1.0,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 1.0,
+    "match": 0.25,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 1.0,
+    "match": 0.74,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 1.0,
+    "match": 0.5,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 1.0,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 0.5,
+    "match": 0.0,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 1.0,
+    "match": 0.74,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 1.0,
+    "match": 0.5,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 1.0,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 7,
+    "today": 0,
+    "planned": 0,
+    "proposed": 7
+   }
+  },
+  "teen-competitive": {
+   "today:toybox": {
+    "fits": 1.0,
+    "match": 0.63,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 1.0,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 1.0,
+    "match": 0.89,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 1.0,
+    "match": 0.63,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 1.0,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 1.0,
+    "match": 0.89,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 0.97,
+    "match": 0.0,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 1.0,
+    "match": 0.63,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 1.0,
+    "match": 0.75,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 1.0,
+    "match": 0.89,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 1.0,
+    "match": 0.6,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 7,
+    "today": 0,
+    "planned": 0,
+    "proposed": 7
+   }
+  },
+  "pc-core-adult": {
+   "today:toybox": {
+    "fits": 1.0,
+    "match": 0.53,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 1.0,
+    "match": 0.22,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 1.0,
+    "match": 0.53,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 1.0,
+    "match": 0.22,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 1.0,
+    "match": 0.53,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 1.0,
+    "match": 0.22,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 7,
+    "today": 0,
+    "planned": 0,
+    "proposed": 7
+   }
+  },
+  "steam-completionist": {
+   "today:toybox": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 1.0,
+    "match": 0.75,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 0,
+    "today": 0,
+    "planned": 0,
+    "proposed": 0
+   }
+  },
+  "creative-sandbox": {
+   "today:toybox": {
+    "fits": 1.0,
+    "match": 0.53,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 1.0,
+    "match": 0.22,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 1.0,
+    "match": 0.53,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 1.0,
+    "match": 0.22,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 0.59,
+    "match": 0.5,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 1.0,
+    "match": 0.53,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 1.0,
+    "match": 0.0,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 1.0,
+    "match": 0.22,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 0,
+    "today": 0,
+    "planned": 0,
+    "proposed": 0
+   }
+  },
+  "lapsed-adult": {
+   "today:toybox": {
+    "fits": 1.0,
+    "match": 0.74,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "today:arcade": {
+    "fits": 1.0,
+    "match": 0.5,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "today:arena": {
+    "fits": 1.0,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "today:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     9.0,
+     13.0
+    ]
+   },
+   "planned:toybox": {
+    "fits": 1.0,
+    "match": 0.74,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "planned:arcade": {
+    "fits": 1.0,
+    "match": 0.5,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "planned:arena": {
+    "fits": 1.0,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "planned:voyages": {
+    "fits": 0.29,
+    "match": 0.0,
+    "unit_min": [
+     20.0,
+     40.0
+    ]
+   },
+   "proposed:toybox": {
+    "fits": 1.0,
+    "match": 0.74,
+    "unit_min": [
+     0.5,
+     10.0
+    ]
+   },
+   "proposed:arcade": {
+    "fits": 1.0,
+    "match": 0.5,
+    "unit_min": [
+     1.0,
+     5.0
+    ]
+   },
+   "proposed:arena": {
+    "fits": 1.0,
+    "match": 0.67,
+    "unit_min": [
+     1.5,
+     6.0
+    ]
+   },
+   "proposed:voyages": {
+    "fits": 1.0,
+    "match": 1.0,
+    "unit_min": [
+     5.0,
+     10.0
+    ]
+   },
+   "reset": {
+    "wants": 7,
+    "today": 0,
+    "planned": 0,
+    "proposed": 7
+   }
+  }
+ },
+ "flags": [
+  {
+   "segment": "casual-mobile",
+   "scenario": "today",
+   "place": "voyages",
+   "kind": "unit-too-long",
+   "fits": 0.14,
+   "unit_min": [
+    9.0,
+    13.0
+   ]
+  },
+  {
+   "segment": "casual-mobile",
+   "scenario": "planned",
+   "place": "voyages",
+   "kind": "unit-too-long",
+   "fits": 0.0,
+   "unit_min": [
+    20.0,
+    40.0
+   ]
+  },
+  {
+   "segment": "casual-mobile",
+   "scenario": "planned",
+   "place": "era",
+   "kind": "no-reset-rhythm",
+   "wants": 1
+  },
+  {
+   "segment": "east-asia-commute",
+   "scenario": "today",
+   "place": "voyages",
+   "kind": "unit-too-long",
+   "fits": 0.21,
+   "unit_min": [
+    9.0,
+    13.0
+   ]
+  },
+  {
+   "segment": "east-asia-commute",
+   "scenario": "planned",
+   "place": "voyages",
+   "kind": "unit-too-long",
+   "fits": 0.01,
+   "unit_min": [
+    20.0,
+    40.0
+   ]
+  },
+  {
+   "segment": "east-asia-commute",
+   "scenario": "planned",
+   "place": "era",
+   "kind": "no-reset-rhythm",
+   "wants": 1
+  },
+  {
+   "segment": "latam-sea-social",
+   "scenario": "planned",
+   "place": "era",
+   "kind": "no-reset-rhythm",
+   "wants": 7
+  },
+  {
+   "segment": "teen-competitive",
+   "scenario": "planned",
+   "place": "era",
+   "kind": "no-reset-rhythm",
+   "wants": 7
+  },
+  {
+   "segment": "pc-core-adult",
+   "scenario": "planned",
+   "place": "era",
+   "kind": "no-reset-rhythm",
+   "wants": 7
+  },
+  {
+   "segment": "lapsed-adult",
+   "scenario": "planned",
+   "place": "voyages",
+   "kind": "unit-too-long",
+   "fits": 0.29,
+   "unit_min": [
+    20.0,
+    40.0
+   ]
+  },
+  {
+   "segment": "lapsed-adult",
+   "scenario": "planned",
+   "place": "era",
+   "kind": "no-reset-rhythm",
+   "wants": 7
+  }
+ ],
+ "personas": {
+  "mira": {
+   "name": "Mira",
+   "segment": "casual-mobile",
+   "scenarios": {
+    "today": {
+     "d1": 0.51,
+     "d7": 0.3,
+     "d30_window": 0.04,
+     "active_day_41": 0.03,
+     "hours_42d": 1.4,
+     "crystals_per_hour": 727,
+     "earned_42d": 956,
+     "unspent_42d": 956,
+     "milestones": {
+      "first_round": {
+       "median_day": 1.0,
+       "share": 0.99
+      },
+      "first_win": {
+       "median_day": 1,
+       "share": 0.96
+      },
+      "found_ratel": {
+       "median_day": 5,
+       "share": 0.49
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_voyage": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_dock": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 13.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 24,
+       "share": 0.07
+      }
+     },
+     "lost_haul_share": null,
+     "benched_share": 0.0,
+     "no_seat_per_run": 1.6,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.1,
+     "first_ten_rounds_win_rate": 0.17,
+     "arena_win_rate": 0.0,
+     "flew_unwanted_share": 0.62
+    },
+    "planned": {
+     "d1": 0.53,
+     "d7": 0.41,
+     "d30_window": 0.03,
+     "active_day_41": 0.02,
+     "hours_42d": 1.3,
+     "crystals_per_hour": 672,
+     "earned_42d": 906,
+     "unspent_42d": 906,
+     "milestones": {
+      "first_round": {
+       "median_day": 1,
+       "share": 0.98
+      },
+      "first_win": {
+       "median_day": 1,
+       "share": 0.95
+      },
+      "found_ratel": {
+       "median_day": 5,
+       "share": 0.56
+      },
+      "hangar": {
+       "median_day": 34,
+       "share": 0.01
+      },
+      "first_arena": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_voyage": {
+       "median_day": 13,
+       "share": 0.28
+      },
+      "first_dock": {
+       "median_day": 13.0,
+       "share": 0.15
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 11.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 16,
+       "share": 0.04
+      }
+     },
+     "lost_haul_share": 0.47,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.9,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.12,
+     "first_ten_rounds_win_rate": 0.16,
+     "arena_win_rate": 0.0,
+     "flew_unwanted_share": 1.0
+    },
+    "proposed": {
+     "d1": 0.78,
+     "d7": 0.71,
+     "d30_window": 0.94,
+     "active_day_41": 0.74,
+     "hours_42d": 7.8,
+     "crystals_per_hour": 712,
+     "earned_42d": 5596,
+     "unspent_42d": 1696,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 3.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 9.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 13.0,
+       "share": 1.0
+      },
+      "first_dock": {
+       "median_day": 20.0,
+       "share": 0.96
+      },
+      "first_vessel": {
+       "median_day": 27,
+       "share": 0.91
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 34.5,
+       "share": 0.48
+      },
+      "came_back": {
+       "median_day": 35.0,
+       "share": 0.03
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.13,
+     "first_ten_rounds_win_rate": 0.39,
+     "arena_win_rate": 0.18,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  },
+  "jonah": {
+   "name": "Jonah",
+   "segment": "teen-competitive",
+   "scenarios": {
+    "today": {
+     "d1": 0.71,
+     "d7": 0.8,
+     "d30_window": 0.99,
+     "active_day_41": 0.99,
+     "hours_42d": 49.0,
+     "crystals_per_hour": 1744,
+     "earned_42d": 85956,
+     "unspent_42d": 85956,
+     "milestones": {
+      "first_round": {
+       "median_day": 1.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 1.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 3.0,
+       "share": 1.0
+      },
+      "first_dock": {
+       "median_day": 3.5,
+       "share": 1.0
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": 39,
+       "share": 0.04
+      },
+      "lapsed": {
+       "median_day": 36.5,
+       "share": 0.01
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.07,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.39,
+     "first_ten_rounds_win_rate": 0.32,
+     "arena_win_rate": 0.58,
+     "flew_unwanted_share": 0.0
+    },
+    "planned": {
+     "d1": 0.79,
+     "d7": 0.93,
+     "d30_window": 1.0,
+     "active_day_41": 1.0,
+     "hours_42d": 53.1,
+     "crystals_per_hour": 1722,
+     "earned_42d": 91872,
+     "unspent_42d": 63872,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 2.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 3.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 5.5,
+       "share": 1.0
+      },
+      "first_dock": {
+       "median_day": 6.0,
+       "share": 1.0
+      },
+      "first_vessel": {
+       "median_day": 2.0,
+       "share": 1.0
+      },
+      "fleet_owned": {
+       "median_day": 14.0,
+       "share": 1.0
+      },
+      "nothing_to_buy": {
+       "median_day": 14.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": 29,
+       "share": 0.01
+      },
+      "lapsed": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.18,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.4,
+     "first_ten_rounds_win_rate": 0.37,
+     "arena_win_rate": 0.6,
+     "flew_unwanted_share": 0.0
+    },
+    "proposed": {
+     "d1": 0.81,
+     "d7": 1.0,
+     "d30_window": 1.0,
+     "active_day_41": 1.0,
+     "hours_42d": 66.2,
+     "crystals_per_hour": 1786,
+     "earned_42d": 118345,
+     "unspent_42d": 57345,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 2.0,
+       "share": 1.0
+      },
+      "first_dock": {
+       "median_day": 4.0,
+       "share": 1.0
+      },
+      "first_vessel": {
+       "median_day": 2.0,
+       "share": 1.0
+      },
+      "fleet_owned": {
+       "median_day": 12.0,
+       "share": 1.0
+      },
+      "nothing_to_buy": {
+       "median_day": 23.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": 39,
+       "share": 0.04
+      },
+      "lapsed": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.42,
+     "first_ten_rounds_win_rate": 0.53,
+     "arena_win_rate": 0.6,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  },
+  "night-crew": {
+   "name": "The Night Crew",
+   "segment": "pc-core-adult",
+   "scenarios": {
+    "today": {
+     "d1": 0.47,
+     "d7": 0.34,
+     "d30_window": 0.04,
+     "active_day_41": 0.04,
+     "hours_42d": 8.0,
+     "crystals_per_hour": 1146,
+     "earned_42d": 9355,
+     "unspent_42d": 9355,
+     "milestones": {
+      "first_round": {
+       "median_day": 5,
+       "share": 0.74
+      },
+      "first_win": {
+       "median_day": 5,
+       "share": 0.72
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 1,
+       "share": 0.98
+      },
+      "first_voyage": {
+       "median_day": 2,
+       "share": 0.98
+      },
+      "first_dock": {
+       "median_day": 2.0,
+       "share": 0.98
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": 13.0,
+       "share": 0.12
+      },
+      "lapsed": {
+       "median_day": 17.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 29,
+       "share": 0.07
+      }
+     },
+     "lost_haul_share": 0.03,
+     "benched_share": 0.49,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.26,
+     "first_ten_rounds_win_rate": 0.34,
+     "arena_win_rate": 0.47,
+     "flew_unwanted_share": 0.0
+    },
+    "planned": {
+     "d1": 0.64,
+     "d7": 0.5,
+     "d30_window": 0.42,
+     "active_day_41": 0.12,
+     "hours_42d": 21.7,
+     "crystals_per_hour": 1077,
+     "earned_42d": 23030,
+     "unspent_42d": 3170,
+     "milestones": {
+      "first_round": {
+       "median_day": 1.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 1.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 2.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 4.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 5,
+       "share": 0.99
+      },
+      "first_dock": {
+       "median_day": 5,
+       "share": 0.99
+      },
+      "first_vessel": {
+       "median_day": 3.0,
+       "share": 1.0
+      },
+      "fleet_owned": {
+       "median_day": 25,
+       "share": 0.26
+      },
+      "nothing_to_buy": {
+       "median_day": 25,
+       "share": 0.26
+      },
+      "sagas_spent": {
+       "median_day": 20.0,
+       "share": 0.36
+      },
+      "lapsed": {
+       "median_day": 30,
+       "share": 0.96
+      },
+      "came_back": {
+       "median_day": 38.5,
+       "share": 0.01
+      }
+     },
+     "lost_haul_share": 0.1,
+     "benched_share": 0.47,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.34,
+     "first_ten_rounds_win_rate": 0.43,
+     "arena_win_rate": 0.54,
+     "flew_unwanted_share": 0.0
+    },
+    "proposed": {
+     "d1": 0.56,
+     "d7": 0.8,
+     "d30_window": 1.0,
+     "active_day_41": 1.0,
+     "hours_42d": 72.9,
+     "crystals_per_hour": 1581,
+     "earned_42d": 115386,
+     "unspent_42d": 54386,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 1.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 1.0,
+       "share": 1.0
+      },
+      "first_dock": {
+       "median_day": 3.0,
+       "share": 1.0
+      },
+      "first_vessel": {
+       "median_day": 3.0,
+       "share": 1.0
+      },
+      "fleet_owned": {
+       "median_day": 13.0,
+       "share": 1.0
+      },
+      "nothing_to_buy": {
+       "median_day": 26.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": 19.0,
+       "share": 1.0
+      },
+      "lapsed": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.4,
+     "first_ten_rounds_win_rate": 0.54,
+     "arena_win_rate": 0.59,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  },
+  "commuter": {
+   "name": "The Commuter",
+   "segment": "east-asia-commute",
+   "scenarios": {
+    "today": {
+     "d1": 0.69,
+     "d7": 0.6,
+     "d30_window": 0.34,
+     "active_day_41": 0.12,
+     "hours_42d": 3.8,
+     "crystals_per_hour": 1017,
+     "earned_42d": 3994,
+     "unspent_42d": 3994,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 1,
+       "share": 0.99
+      },
+      "first_voyage": {
+       "median_day": 5.0,
+       "share": 0.96
+      },
+      "first_dock": {
+       "median_day": 12.0,
+       "share": 0.6
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 27.0,
+       "share": 0.95
+      },
+      "came_back": {
+       "median_day": 37.5,
+       "share": 0.02
+      }
+     },
+     "lost_haul_share": 0.67,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 0.98,
+     "arcade_win_rate": 0.16,
+     "first_ten_rounds_win_rate": 0.28,
+     "arena_win_rate": 0.33,
+     "flew_unwanted_share": 0.0
+    },
+    "planned": {
+     "d1": 0.85,
+     "d7": 0.86,
+     "d30_window": 0.94,
+     "active_day_41": 0.78,
+     "hours_42d": 7.5,
+     "crystals_per_hour": 1402,
+     "earned_42d": 10585,
+     "unspent_42d": 1945,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 6.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 9,
+       "share": 0.99
+      },
+      "first_voyage": {
+       "median_day": 13,
+       "share": 0.92
+      },
+      "first_dock": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_vessel": {
+       "median_day": 9.0,
+       "share": 1.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 38,
+       "share": 0.36
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 1.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.24,
+     "first_ten_rounds_win_rate": 0.32,
+     "arena_win_rate": 0.42,
+     "flew_unwanted_share": 0.0
+    },
+    "proposed": {
+     "d1": 0.94,
+     "d7": 0.98,
+     "d30_window": 1.0,
+     "active_day_41": 0.98,
+     "hours_42d": 11.3,
+     "crystals_per_hour": 1197,
+     "earned_42d": 13662,
+     "unspent_42d": 2022,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 1.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 3.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 2.0,
+       "share": 1.0
+      },
+      "first_dock": {
+       "median_day": 8.5,
+       "share": 1.0
+      },
+      "first_vessel": {
+       "median_day": 12.0,
+       "share": 0.99
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 37,
+       "share": 0.03
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.22,
+     "first_ten_rounds_win_rate": 0.51,
+     "arena_win_rate": 0.41,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  },
+  "painter": {
+   "name": "The Painter",
+   "segment": "creative-sandbox",
+   "scenarios": {
+    "today": {
+     "d1": 0.28,
+     "d7": 0.24,
+     "d30_window": 0.02,
+     "active_day_41": 0.03,
+     "hours_42d": 2.7,
+     "crystals_per_hour": 31,
+     "earned_42d": 84,
+     "unspent_42d": 84,
+     "milestones": {
+      "first_round": {
+       "median_day": 5,
+       "share": 0.14
+      },
+      "first_win": {
+       "median_day": 5.0,
+       "share": 0.13
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_voyage": {
+       "median_day": 7.5,
+       "share": 0.14
+      },
+      "first_dock": {
+       "median_day": 7.5,
+       "share": 0.14
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 13.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 27,
+       "share": 0.06
+      }
+     },
+     "lost_haul_share": 0.06,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.21,
+     "first_ten_rounds_win_rate": 0.25,
+     "arena_win_rate": 0.0,
+     "flew_unwanted_share": 0.0
+    },
+    "planned": {
+     "d1": 0.28,
+     "d7": 0.27,
+     "d30_window": 0.01,
+     "active_day_41": 0.02,
+     "hours_42d": 3.0,
+     "crystals_per_hour": 39,
+     "earned_42d": 144,
+     "unspent_42d": 144,
+     "milestones": {
+      "first_round": {
+       "median_day": 6,
+       "share": 0.2
+      },
+      "first_win": {
+       "median_day": 6.5,
+       "share": 0.18
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_arena": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_voyage": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_dock": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 14.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 29,
+       "share": 0.06
+      }
+     },
+     "lost_haul_share": null,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.27,
+     "first_ten_rounds_win_rate": 0.28,
+     "arena_win_rate": 0.0,
+     "flew_unwanted_share": 0.0
+    },
+    "proposed": {
+     "d1": 0.38,
+     "d7": 0.33,
+     "d30_window": 0.09,
+     "active_day_41": 0.07,
+     "hours_42d": 5.1,
+     "crystals_per_hour": 132,
+     "earned_42d": 660,
+     "unspent_42d": 660,
+     "milestones": {
+      "first_round": {
+       "median_day": 6,
+       "share": 0.38
+      },
+      "first_win": {
+       "median_day": 7,
+       "share": 0.36
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 9,
+       "share": 0.26
+      },
+      "first_arena": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "first_voyage": {
+       "median_day": 13,
+       "share": 0.04
+      },
+      "first_dock": {
+       "median_day": 17,
+       "share": 0.01
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 19,
+       "share": 0.99
+      },
+      "came_back": {
+       "median_day": 32.0,
+       "share": 0.08
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.37,
+     "first_ten_rounds_win_rate": 0.47,
+     "arena_win_rate": 0.0,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  },
+  "returner": {
+   "name": "The Returner",
+   "segment": "lapsed-adult",
+   "scenarios": {
+    "today": {
+     "d1": 0.16,
+     "d7": 0.14,
+     "d30_window": 0.01,
+     "active_day_41": 0.01,
+     "hours_42d": 0.8,
+     "crystals_per_hour": 1023,
+     "earned_42d": 794,
+     "unspent_42d": 794,
+     "milestones": {
+      "first_round": {
+       "median_day": 4,
+       "share": 0.61
+      },
+      "first_win": {
+       "median_day": 4.0,
+       "share": 0.6
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 5.0,
+       "share": 0.51
+      },
+      "first_voyage": {
+       "median_day": 5.0,
+       "share": 0.46
+      },
+      "first_dock": {
+       "median_day": 5,
+       "share": 0.46
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 13.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 29.0,
+       "share": 0.06
+      }
+     },
+     "lost_haul_share": 0.09,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.29,
+     "first_ten_rounds_win_rate": 0.33,
+     "arena_win_rate": 0.37,
+     "flew_unwanted_share": 0.0
+    },
+    "planned": {
+     "d1": 0.17,
+     "d7": 0.17,
+     "d30_window": 0.03,
+     "active_day_41": 0.02,
+     "hours_42d": 1.3,
+     "crystals_per_hour": 1327,
+     "earned_42d": 1707,
+     "unspent_42d": 1327,
+     "milestones": {
+      "first_round": {
+       "median_day": 3.0,
+       "share": 0.78
+      },
+      "first_win": {
+       "median_day": 3.0,
+       "share": 0.78
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 13.5,
+       "share": 0.18
+      },
+      "first_arena": {
+       "median_day": 16.5,
+       "share": 0.08
+      },
+      "first_voyage": {
+       "median_day": 19.0,
+       "share": 0.09
+      },
+      "first_dock": {
+       "median_day": 19,
+       "share": 0.06
+      },
+      "first_vessel": {
+       "median_day": 14,
+       "share": 0.1
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 15.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 30.5,
+       "share": 0.07
+      }
+     },
+     "lost_haul_share": 0.45,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.37,
+     "first_ten_rounds_win_rate": 0.4,
+     "arena_win_rate": 0.36,
+     "flew_unwanted_share": 0.0
+    },
+    "proposed": {
+     "d1": 0.15,
+     "d7": 0.29,
+     "d30_window": 0.1,
+     "active_day_41": 0.07,
+     "hours_42d": 1.8,
+     "crystals_per_hour": 1145,
+     "earned_42d": 2036,
+     "unspent_42d": 1616,
+     "milestones": {
+      "first_round": {
+       "median_day": 3,
+       "share": 0.93
+      },
+      "first_win": {
+       "median_day": 3.0,
+       "share": 0.92
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 5.0,
+       "share": 0.87
+      },
+      "first_arena": {
+       "median_day": 8,
+       "share": 0.56
+      },
+      "first_voyage": {
+       "median_day": 8.0,
+       "share": 0.7
+      },
+      "first_dock": {
+       "median_day": 12,
+       "share": 0.35
+      },
+      "first_vessel": {
+       "median_day": 19.0,
+       "share": 0.1
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 18.0,
+       "share": 1.0
+      },
+      "came_back": {
+       "median_day": 28.0,
+       "share": 0.22
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.38,
+     "first_ten_rounds_win_rate": 0.53,
+     "arena_win_rate": 0.35,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  },
+  "party-host": {
+   "name": "The Party Host",
+   "segment": "latam-sea-social",
+   "scenarios": {
+    "today": {
+     "d1": 0.53,
+     "d7": 0.44,
+     "d30_window": 0.39,
+     "active_day_41": 0.33,
+     "hours_42d": 7.9,
+     "crystals_per_hour": 909,
+     "earned_42d": 7784,
+     "unspent_42d": 7784,
+     "milestones": {
+      "first_round": {
+       "median_day": 2.0,
+       "share": 0.98
+      },
+      "first_win": {
+       "median_day": 2.0,
+       "share": 0.98
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 1,
+       "share": 0.98
+      },
+      "first_voyage": {
+       "median_day": 5,
+       "share": 0.92
+      },
+      "first_dock": {
+       "median_day": 5.0,
+       "share": 0.9
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 24,
+       "share": 0.77
+      },
+      "came_back": {
+       "median_day": 34,
+       "share": 0.04
+      }
+     },
+     "lost_haul_share": 0.08,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.19,
+     "first_ten_rounds_win_rate": 0.26,
+     "arena_win_rate": 0.34,
+     "flew_unwanted_share": 0.0
+    },
+    "planned": {
+     "d1": 0.6,
+     "d7": 0.6,
+     "d30_window": 0.8,
+     "active_day_41": 0.71,
+     "hours_42d": 15.0,
+     "crystals_per_hour": 1051,
+     "earned_42d": 16594,
+     "unspent_42d": 2374,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 7,
+       "share": 0.95
+      },
+      "first_arena": {
+       "median_day": 9,
+       "share": 0.92
+      },
+      "first_voyage": {
+       "median_day": 13,
+       "share": 0.88
+      },
+      "first_dock": {
+       "median_day": 17,
+       "share": 0.74
+      },
+      "first_vessel": {
+       "median_day": 9,
+       "share": 0.94
+      },
+      "fleet_owned": {
+       "median_day": 38,
+       "share": 0.14
+      },
+      "nothing_to_buy": {
+       "median_day": 38,
+       "share": 0.14
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": 31.0,
+       "share": 0.33
+      },
+      "came_back": {
+       "median_day": 37,
+       "share": 0.01
+      }
+     },
+     "lost_haul_share": 0.47,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.25,
+     "first_ten_rounds_win_rate": 0.3,
+     "arena_win_rate": 0.46,
+     "flew_unwanted_share": 0.0
+    },
+    "proposed": {
+     "d1": 0.56,
+     "d7": 0.86,
+     "d30_window": 0.99,
+     "active_day_41": 1.0,
+     "hours_42d": 27.2,
+     "crystals_per_hour": 1235,
+     "earned_42d": 33922,
+     "unspent_42d": 1367,
+     "milestones": {
+      "first_round": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_win": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.5,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 2.0,
+       "share": 1.0
+      },
+      "first_voyage": {
+       "median_day": 4.0,
+       "share": 1.0
+      },
+      "first_dock": {
+       "median_day": 8.0,
+       "share": 1.0
+      },
+      "first_vessel": {
+       "median_day": 8.0,
+       "share": 1.0
+      },
+      "fleet_owned": {
+       "median_day": 34.0,
+       "share": 0.8
+      },
+      "nothing_to_buy": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "sagas_spent": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "lapsed": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.26,
+     "first_ten_rounds_win_rate": 0.49,
+     "arena_win_rate": 0.47,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  },
+  "completionist": {
+   "name": "The Completionist",
+   "segment": "steam-completionist",
+   "scenarios": {
+    "today": {
+     "d1": 0.23,
+     "d7": 0.18,
+     "d30_window": 0.28,
+     "active_day_41": 0.15,
+     "hours_42d": 9.4,
+     "crystals_per_hour": 1098,
+     "earned_42d": 11209,
+     "unspent_42d": 11209,
+     "milestones": {
+      "first_round": {
+       "median_day": 5.0,
+       "share": 0.9
+      },
+      "first_win": {
+       "median_day": 5,
+       "share": 0.9
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "first_arena": {
+       "median_day": 6,
+       "share": 0.76
+      },
+      "first_voyage": {
+       "median_day": 4,
+       "share": 0.94
+      },
+      "first_dock": {
+       "median_day": 4,
+       "share": 0.94
+      },
+      "first_vessel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "fleet_owned": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "nothing_to_buy": {
+       "median_day": 0.0,
+       "share": 1.0
+      },
+      "sagas_spent": {
+       "median_day": 29,
+       "share": 0.07
+      },
+      "lapsed": {
+       "median_day": 27.0,
+       "share": 0.83
+      },
+      "came_back": {
+       "median_day": 34,
+       "share": 0.01
+      }
+     },
+     "lost_haul_share": 0.03,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.27,
+     "first_ten_rounds_win_rate": 0.33,
+     "arena_win_rate": 0.48,
+     "flew_unwanted_share": 0.0
+    },
+    "planned": {
+     "d1": 0.29,
+     "d7": 0.23,
+     "d30_window": 0.56,
+     "active_day_41": 0.35,
+     "hours_42d": 16.8,
+     "crystals_per_hour": 1180,
+     "earned_42d": 20557,
+     "unspent_42d": 3797,
+     "milestones": {
+      "first_round": {
+       "median_day": 2,
+       "share": 0.98
+      },
+      "first_win": {
+       "median_day": 2,
+       "share": 0.98
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 5,
+       "share": 0.97
+      },
+      "first_arena": {
+       "median_day": 11,
+       "share": 0.79
+      },
+      "first_voyage": {
+       "median_day": 7,
+       "share": 0.93
+      },
+      "first_dock": {
+       "median_day": 7,
+       "share": 0.93
+      },
+      "first_vessel": {
+       "median_day": 5,
+       "share": 0.95
+      },
+      "fleet_owned": {
+       "median_day": 29,
+       "share": 0.28
+      },
+      "nothing_to_buy": {
+       "median_day": 29,
+       "share": 0.28
+      },
+      "sagas_spent": {
+       "median_day": 33,
+       "share": 0.04
+      },
+      "lapsed": {
+       "median_day": 32,
+       "share": 0.59
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.1,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.32,
+     "first_ten_rounds_win_rate": 0.37,
+     "arena_win_rate": 0.56,
+     "flew_unwanted_share": 0.0
+    },
+    "proposed": {
+     "d1": 0.27,
+     "d7": 0.29,
+     "d30_window": 0.94,
+     "active_day_41": 0.94,
+     "hours_42d": 40.4,
+     "crystals_per_hour": 1448,
+     "earned_42d": 59599,
+     "unspent_42d": 8687,
+     "milestones": {
+      "first_round": {
+       "median_day": 2,
+       "share": 0.99
+      },
+      "first_win": {
+       "median_day": 2,
+       "share": 0.99
+      },
+      "found_ratel": {
+       "median_day": null,
+       "share": 0.0
+      },
+      "hangar": {
+       "median_day": 2,
+       "share": 0.99
+      },
+      "first_arena": {
+       "median_day": 6,
+       "share": 0.99
+      },
+      "first_voyage": {
+       "median_day": 5,
+       "share": 0.99
+      },
+      "first_dock": {
+       "median_day": 5.0,
+       "share": 0.99
+      },
+      "first_vessel": {
+       "median_day": 5,
+       "share": 0.99
+      },
+      "fleet_owned": {
+       "median_day": 24.5,
+       "share": 0.86
+      },
+      "nothing_to_buy": {
+       "median_day": 36,
+       "share": 0.54
+      },
+      "sagas_spent": {
+       "median_day": 34.0,
+       "share": 0.41
+      },
+      "lapsed": {
+       "median_day": 33.0,
+       "share": 0.03
+      },
+      "came_back": {
+       "median_day": null,
+       "share": 0.0
+      }
+     },
+     "lost_haul_share": 0.0,
+     "benched_share": 0.0,
+     "no_seat_per_run": 0.0,
+     "first_sitting_finished": 1.0,
+     "arcade_win_rate": 0.38,
+     "first_ten_rounds_win_rate": 0.52,
+     "arena_win_rate": 0.58,
+     "flew_unwanted_share": 0.0
+    }
+   }
+  }
+ },
+ "expectations": [
+  {
+   "id": "E1",
+   "persona": "mira",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E1",
+   "persona": "jonah",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E1",
+   "persona": "night-crew",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E1",
+   "persona": "commuter",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E1",
+   "persona": "painter",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E1",
+   "persona": "returner",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E1",
+   "persona": "party-host",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E1",
+   "persona": "completionist",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E2",
+   "persona": "mira",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E2",
+   "persona": "jonah",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E2",
+   "persona": "night-crew",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E2",
+   "persona": "commuter",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E2",
+   "persona": "painter",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E2",
+   "persona": "returner",
+   "today": "missed",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E2",
+   "persona": "party-host",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E2",
+   "persona": "completionist",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E3",
+   "persona": "mira",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E3",
+   "persona": "jonah",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E3",
+   "persona": "night-crew",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E3",
+   "persona": "commuter",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E3",
+   "persona": "painter",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E3",
+   "persona": "returner",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E3",
+   "persona": "party-host",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E3",
+   "persona": "completionist",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "mira",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "jonah",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "night-crew",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "commuter",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "painter",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "returner",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "party-host",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E4",
+   "persona": "completionist",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "mira",
+   "today": "n/a",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "jonah",
+   "today": "met",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "night-crew",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "commuter",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "painter",
+   "today": "met",
+   "planned": "n/a",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "returner",
+   "today": "met",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "party-host",
+   "today": "met",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E5",
+   "persona": "completionist",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E6",
+   "persona": "night-crew",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E6",
+   "persona": "party-host",
+   "today": "met",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E7",
+   "persona": "mira",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E8",
+   "persona": "mira",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "met"
+  },
+  {
+   "id": "E8",
+   "persona": "commuter",
+   "today": "missed",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E8",
+   "persona": "returner",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E8",
+   "persona": "party-host",
+   "today": "missed",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E8",
+   "persona": "completionist",
+   "today": "missed",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E8",
+   "persona": "jonah",
+   "today": "missed",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E8",
+   "persona": "night-crew",
+   "today": "missed",
+   "planned": "met",
+   "proposed": "met"
+  },
+  {
+   "id": "E9",
+   "persona": "returner",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E10",
+   "persona": "jonah",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E10",
+   "persona": "night-crew",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  },
+  {
+   "id": "E10",
+   "persona": "completionist",
+   "today": "missed",
+   "planned": "missed",
+   "proposed": "missed"
+  }
+ ]
+}

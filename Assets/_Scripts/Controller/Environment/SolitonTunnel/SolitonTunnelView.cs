@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// same wireframe, condensing the way the tunnel will, at its own brightness, in its pilot's domain colour toward white
     /// by <c>reticleWhite</c>.</item>
     /// </list>
-    /// One dynamic mesh rebuilt once a frame and drawn as one identity instance (the <c>StoatPathfinderWorldDots</c> pattern),
+    /// One dynamic mesh rebuilt once a frame and drawn as one identity instance (the <c>AnglerWorldMarks</c> pattern),
     /// additively, through <c>Resources/SolitonTunnelAdditive.mat</c>. A spindle is a six-sided bipyramid (the page's tapered
     /// lathe). Called by every maker's and every <see cref="SolitonTunnelPlacer"/>'s LateUpdate; draws once a frame.
     /// </summary>

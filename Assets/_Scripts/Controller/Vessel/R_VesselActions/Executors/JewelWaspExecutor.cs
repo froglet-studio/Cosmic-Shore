@@ -295,7 +295,9 @@ namespace CosmicShore.Gameplay
             }
             else if (Mirrors && Relay.IsOwner && _mode != WaspMode.Free)
                 _status.Transform.SetPositionAndRotation(Relay.NestPosition, Relay.NestRotation);   // the server's nest
-            if (IsLocalHuman && !_status.AutoPilotEnabled) UpdateCamera(Time.deltaTime);
+            // The local player's hull, whoever holds its sticks (CameraManager.ActiveRigFollowing's rule): a ridden
+            // creature or plant is framed the same when the AI flies the hull for the player.
+            if (IsLocalHuman) UpdateCamera(Time.deltaTime);
             else ReleaseCamera();
         }
 

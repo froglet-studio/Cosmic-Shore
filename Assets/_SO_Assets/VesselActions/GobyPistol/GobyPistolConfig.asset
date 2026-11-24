@@ -16,7 +16,7 @@ MonoBehaviour:
   dartMinRange: 140
   dartChargeSeconds: 0.8
   dartSeconds: 1
-  dartCooldown: 1.2
+  dartCooldown: 2.2
   dartPace:
     Enabled: 1
     Value: 1.45
@@ -37,14 +37,14 @@ MonoBehaviour:
   lockCone: 12
   lockKeepScale: 1.6
   slopeDegrees: 0
-  hillHalfLengthMin: 10
-  hillHalfLengthMax: 15
-  hillHalfHeightMin: 3.6
-  hillHalfHeightMax: 7.2
+  hillHalfLengthMin: 9
+  hillHalfLengthMax: 16
+  hillHalfHeightMin: 3
+  hillHalfHeightMax: 7.8
   hillBand: 9
   hillGrowthPerIsland: 0.08
   hillGrowthMax: 1.5
-  trailBlockGap: 6
+  trailBlockGap: 4
   trailBlockSection: {x: 1.4, y: 0.5}
   trailShieldFill: 0.9
   pGravity: 19
@@ -76,6 +76,8 @@ MonoBehaviour:
   pSlingPull: 0.22
   arriveDistance: 2
   restSeconds: 1.2
+  energyPerSkippedBlock: 0.6667
+  energyFlightBonus: 0.1333
   energyPerDenPrism: 8
   denMassScale:
     Enabled: 1
@@ -164,7 +166,6 @@ MonoBehaviour:
   diveTailCurl: 22
   diveTailRate: 10
   aiDartLength: 300
-  aiCruiseSpeed: 100
   aiTurnRate: 90
   aiRethinkSeconds: 2.5
   aiHomeRadius: 2000

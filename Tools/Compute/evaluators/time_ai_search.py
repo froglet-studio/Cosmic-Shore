@@ -211,13 +211,12 @@ GAMES = {
     },
     "Stoat": {
         "mode": "Slingshot",
-        # StoatSlingConfigSO's AI sling rule (StoatSlingExecutor.AutopilotSling), the Slingshot file; only the ai* knobs
-        # and the trampoline AI turn scale, never the sling's own physics (a mode never changes the vessel).
+        # StoatSlingConfigSO's AI swing rule (StoatSlingExecutor.AutopilotSwing), the Slingshot file; only the ai* knobs,
+        # never the swing's own physics (a mode never changes the vessel). aiReleaseConeDegrees, aiCatchGiveUpSeconds,
+        # aiHoldForWindowDegrees and trampolineAiTurnScale were the orbit's and the trampoline's: deleted 2026-11-21.
         "assets": {i: POL + "StoatSlingConfig_Slingshot.asset" for i in (1, 2, 3, 4)},
-        "fields": {"aiSlingMinTurnDegrees": (0.0, 180.0), "aiReleaseConeDegrees": (1.0, 90.0),
-                   "aiCatchGiveUpSeconds": (0.5, 10.0), "aiSlingIntervalSeconds": (0.5, 20.0),
-                   "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0),
-                   "aiHoldForWindowDegrees": (0.0, 360.0), "trampolineAiTurnScale": (40.0, 300.0)},
+        "fields": {"aiSlingMinTurnDegrees": (0.0, 180.0), "aiSlingIntervalSeconds": (0.5, 20.0),
+                   "aiSlingMinDistance": (0.0, 400.0), "aiWarpMinDistance": (0.0, 1200.0)},
         # SlingshotController.aiNoseLead: Stoat 2.62 at 10.43/s (run1, 2026-11-17).
         "lead": 2.62, "rows": [], "nose_gene": 10.43,
     },
@@ -258,17 +257,17 @@ GAMES = {
     },
     "Goby": {
         "mode": "PerchRun",
-        # The Goby's seat AI races on a coach's darts (IGobyRaceCoach), not the gate race's steering: it turns at its own
-        # aiTurnRate, cruises, and darts once the nose is on the coach's line. Perch Run's coach (PerchRunController)
-        # carries the two numbers a dart plan is made of that travel to any race: how far past the last ring it charges
-        # (aiOvershoot) and how wide the turning circle counts before it flies on instead of orbiting (aiTurnMargin).
-        # Regatta's coach (RegattaGobyDart, RegattaController.aiGobyDart) carries the same two, so a winner is copied
-        # there. No drive asset, no nose knob (the coach steers the hull itself), nothing on the vessel.
+        # The Goby's seat AI races on a coach's darts (IGobyRaceCoach), not the gate race's steering: it never flies
+        # (Garrett, 2026-11-24), turns where it sits at its own aiTurnRate, and darts once the nose is on the coach's line.
+        # Perch Run's coach (PerchRunController) carries the number a dart plan is made of that travels to any race: how
+        # far past the last ring it charges (aiOvershoot). Regatta's coach (RegattaGobyDart, RegattaController.aiGobyDart)
+        # carries the same one, so a winner is copied there. (aiTurnMargin, the turning circle a cruising Goby orbited
+        # in, went with the cruise.) No drive asset, no nose knob (the coach steers the hull itself), nothing on the vessel.
         "assets": {},
         "fields": {},
-        "ctrl_fields": {"aiOvershoot": (0.0, 300.0), "aiTurnMargin": (1.0, 3.0)},
-        "ctrl_defaults": {"aiOvershoot": 40.0, "aiTurnMargin": 1.25},
-        "ctrl": lambda p: {"aiOvershoot": float(p["aiOvershoot"]), "aiTurnMargin": float(p["aiTurnMargin"])},
+        "ctrl_fields": {"aiOvershoot": (0.0, 300.0)},
+        "ctrl_defaults": {"aiOvershoot": 40.0},
+        "ctrl": lambda p: {"aiOvershoot": float(p["aiOvershoot"])},
         "lead": None, "rows": [],
     },
     # The Meerkat's portable Time AI (loop step 3, 2026-11-19): its OWN wormhole autopilot

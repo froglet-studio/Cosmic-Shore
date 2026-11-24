@@ -119,7 +119,6 @@ namespace CosmicShore.Gameplay
         CustomCameraController _rideCam;   // the camera this hull's ride is holding on the centreline (round 8)
         SolitonTunnel _camTunnel;                 // the tunnel the ride camera follows, through the ride and just past its way out
         float _rideCamBlendSeconds;        // the camera's own SpectateBlendSeconds, put back when the ride lets it go
-        bool _ridePiloted;                 // the ride was formed by the pilot, not by the autopilot (the lava lamp's AI)
         bool _wasAutopilot;                // last frame's AutoPilotEnabled, to see the hand-over
         float _camS;                       // how far along that tunnel's line the hull is (past L after the way out)
         float _rideS;
@@ -426,7 +425,6 @@ namespace CosmicShore.Gameplay
             _ride = t;
             _slider.Enter(t, hull.position, vIn, hull.up);
             _rideS = _slider.Along;
-            _ridePiloted = !_status.AutoPilotEnabled;
             _retLive = false;
             _retAge = 0f;
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();   // the page's `if (stance) stance = false`
@@ -641,19 +639,20 @@ namespace CosmicShore.Gameplay
         /// <see cref="CustomCameraController.Spectate"/> with no blend: on the straight run in it is exactly where the follow
         /// camera already was, and round the bend it never cuts the chord out of the tube. Out of the far mouth it keeps to the
         /// tunnel's line until it is past the mouth itself (a straight-behind camera would jump sideways there). Only the local
-        /// human pilot's camera, and only while it follows this hull.
+        /// player's hull (whoever holds its sticks), and only while the camera follows this hull.
         /// </summary>
         void StepRideCamera()
         {
             if (StepNetworkCamera()) return;
             float dt = Time.deltaTime;
-            // only a ride the PILOT formed: the autopilot's (the lava lamp's AI) never moves anyone's camera, and a ride it
-            // was in the middle of when the pilot clicked to fly is left to the follow camera the menu just handed over to
-            if (_ride != null) { _camTunnel = _ridePiloted ? _ride : null; _camS = _rideS; }
+            // The local player's hull, whoever holds its sticks (CameraManager.ActiveRigFollowing's rule, Yash 2026-11-22):
+            // a ride the AI forms while flying the hull for the player is framed as the player's own is. The lava lamp's
+            // AI still moves nobody's camera: the menu has no active camera (the follow check below finds none), and a
+            // ride it was in the middle of when the pilot clicked to fly is ended by HandOver.
+            if (_ride != null) { _camTunnel = _ride; _camS = _rideS; }
             else if (_camTunnel != null) _camS += Mathf.Max(0f, _status.Speed) * dt;
             var t = _camTunnel;
-            bool mine = t != null && Contains(SolitonTunnel.Live, t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI
-                        && !_status.AutoPilotEnabled;
+            bool mine = t != null && Contains(SolitonTunnel.Live, t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
             var cam = mine && CameraManager.Instance != null
                 ? CameraManager.Instance.GetActiveController() as CustomCameraController
                 : null;
@@ -1150,6 +1149,7 @@ namespace CosmicShore.Gameplay
             _omniArmed = _rtHeld = false;
             _camTunnel = null;
             _ride = null;
+            _camTunnel = null;   // the ride is dropped here, so its camera lets go with it (StepRideCamera releases it)
             _slider.Clear();
             _mine = null;
             _lastRide = null;
@@ -1157,7 +1157,6 @@ namespace CosmicShore.Gameplay
             _ltHeld = false;
             _formInput = null;
             _aiShaping = _aiPlanned = false;
-            _ridePiloted = false;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

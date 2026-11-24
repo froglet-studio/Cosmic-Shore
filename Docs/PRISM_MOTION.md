@@ -135,6 +135,17 @@ ARE every body's pre-step positions. On the main thread `ApplyContacts` annihila
 capture or a throat transit on the same frame. A pair both bodies reported is annihilated once
 (`Damage` is idempotent on a destroyed prism).
 
+**A black hole EATS what collides in its pull (Yash, 2026-11-22).** *"The visuals of black hole sucking prisms need to
+be same as the fauna devouring the prisms, the same shader effect."* A horizon capture was already `Prism.Consume` (the
+suction a creature's meal uses, its shards drawn into the eater); but most of a dense trail never reaches the horizon:
+it collides on the way in, and those pairs exploded. In the black hole's field `ApplyContacts` now calls
+`PrismMotion.AnnihilateInto(mover, struck, hole.transform, …)`: both are destroyed exactly as before (rule 1 is
+unchanged: scored to the hole's owner, a shield no answer, a shielded contact still bounces), and both are DRAWN
+consumed into the nearest hole. The ladder still picks how contacts are FOUND (boxes or spheres); the look of a
+contact here is the suction's own detail levels (`PrismInteractionLod.TrySuction`, else the batched implosion), not
+the explosion table below. Every other mover (the Rhino's plough, Jacks' net, the Meerkat's swallow) keeps
+`PrismMotion.Annihilate` and its explosion. Held by `PrismMotionTests.BlackHoleContacts_AreDrawnAsTheHoleEatingThem_NotAsAnExplosion`.
+
 ## 3a. The look — the destruction detail levels (level 1)
 
 A prism destroyed by a level-1 collision is drawn at the **destruction detail level** the viewer's

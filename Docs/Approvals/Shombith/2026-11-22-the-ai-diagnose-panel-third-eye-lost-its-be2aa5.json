@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-22-the-ai-diagnose-panel-third-eye-lost-its-be2aa5",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-22T01:09:52+00:00",
+  "area": "tooling docs and skills: the AI Diagnose panel rows in Docs/TOOLING.md, /vessel-ai and /vessel-studio",
+  "summary": "The AI Diagnose panel (Third Eye) lost its Chase, Follow and Orbit cameras; Free fly is its one camera and a hull is watched through the game's own camera whoever flies it. The three doc rows that listed the removed cameras say so now. No tool behaviour of yours changed.",
+  "why": "Yash asked for one camera behaviour: the player's camera even when the AI flies, and only a free-fly view beside it.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "7189104a1",
+  "paths": [
+    ".claude/skills/vessel-ai/SKILL.md",
+    ".claude/skills/vessel-studio/SKILL.md",
+    "Docs/TOOLING.md"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-22-arcadegameconfiguremodal-onstartgameclic-5fd6b9",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-22T01:59:50+00:00",
+  "area": "the game card's configure modal",
+  "summary": "ArcadeGameConfigureModal.OnStartGameClicked refuses Start, with a warning, when the sync manager is not spawned (bug ledger E-31b2135ed2)",
+  "why": "an RPC on an unspawned NetworkBehaviour throws NullReferenceException inside Netcode after the ready latch, leaving the card on Waiting for others",
+  "branch": "Ys-bleeding-edge",
+  "commit": "860bc615d",
+  "paths": [
+    "Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs"
+  ]
+}

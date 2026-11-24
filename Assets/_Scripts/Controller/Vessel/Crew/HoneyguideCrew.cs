@@ -261,6 +261,9 @@ namespace CosmicShore.Gameplay
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             _startSeatPending = false;
             SetHumanEngineers(engineer);
+            // The seat the person picks is the one this hull starts on next time, the Wrasse's rule (CrewSeatChoice): a
+            // puzzle-first player who plays the Ratel lands on its board from then on (P14, the puzzle-first door).
+            if (_status != null) CrewSeatChoice.Set(_status.VesselType, engineer ? 1 : 0);
         }
 
         // ------------------------------------------------------------------ the Ratel on another machine (ICrewRelay)
@@ -309,14 +312,16 @@ namespace CosmicShore.Gameplay
             CrewRelay.SendState(this, _stateScratch.ToArray());
         }
 
-        // On the lowest preset the person starts on the Ratel (Garrett, 2026-10-22: "start the player in the wrasse and the
+        // The person starts on the Ratel when they last picked it on this hull (CrewSeatChoice, P14), and always on the
+        // lowest preset (Garrett, 2026-10-22: "start the player in the wrasse and the
         // ratel ... so the ratel should run fine on very old phones"): its board is UI, and with no picture-in-picture the
         // world under it is not drawn at all (CrewSingleView). Taken once the hull is really the person's - flown by them,
         // not parked on its AI by a menu or the Vessel Changer, with live input - the Wrasse's rule (KiteNavigator.ApplySeatChoice).
         void ApplyStartSeat()
         {
             if (!_startSeatPending) return;
-            if (_humanEngineers || !CrewSingleView.On) { _startSeatPending = false; return; }
+            bool wantsBoard = CrewSingleView.On || _status != null && CrewSeatChoice.Get(_status.VesselType) == 1;
+            if (_humanEngineers || !wantsBoard) { _startSeatPending = false; return; }
             var input = _player?.InputStatus;
             if (_status == null || _status.AutoPilotEnabled || input == null || input.Paused || PauseSystem.Paused) return;
             _startSeatPending = false;

@@ -2774,6 +2774,49 @@ a course's own prisms are not the cell's plants or environment, so they still di
 **Not measured:** two machines, a build, the hold on a focused editor, and any heavy mode other than Bloomrush.
 The second freeze on the menu a minute after a return (6.9-21.9 s, B45 of 2026-11-20) is untouched.
 
+### B45 on the return to the menu, built players (2026-11-22): reproduced with four on one PC
+
+Four development players on one PC (`mp_auto.py --players 4 --extra "-csMpLaunch Bloomrush"`, build of 17:42 from
+`de57912782`): party, launch and a running turn were fine. On the host's return to the menu every player froze while
+leaving Bloomrush (host 9.0 s, joiners 10.2, 11.0 and 11.4 s; `[Net] The game froze for ... in MinigameBloomrush`),
+Relay dropped the three joiners and each bounced to its own solo menu. With two players the host froze 9.3 s and the
+party survived. One joiner's load report (return to menu, 46.3 s, worst frame 13.4 s): scene exit drain 9.0 s, streamed
+prism lay of the menu's garland (4,259 prisms) 11.7 s, scene load to activation 6.6 s.
+
+**Read with care.** Four development players share one PC, so the times are inflated; the build carries the never-played
+flora limb pool (`e2a0bb1783`) and the trail release of this morning, and no older build is left to compare. Not yet
+known: which of the drain, the garland lay and the scene activation is the frozen frame. Logs: the run's folder is in
+the session scratchpad (`mpauto/m_run4`), not in the repo.
+
+### B45 on a launch from the menu (2026-11-22): the trail goes back to its pools before the load
+
+**Cause.** At a scene exit the host's trail pools handed their prisms back 100 a frame
+(`InteractivePrismPoolManager.HandleSceneTransition`), and the load began 0.1 s later, so the load's frame carried
+nearly every trail prism still active and the rest trickled back during the next scene. A guest never gets that
+event: its pools released the whole trail in one go inside the load's frame (`HandleActiveSceneChanged`, 1.15 s for
+57,000 prisms in the measurement of 2026-11-15).
+
+**Change.** The pools hand the trail back on a time budget, 12 ms a frame per pool
+(`GenericPoolManager.ReleaseAllActiveBudgetedAsync`), and the host holds the load until they are done, 4 s at most
+(`SceneLoader.WaitForTrailReleaseAsync`, `trailReleaseMaxSeconds`; a `trailRelease` mark when it had to wait). A
+guest starts the same release when the host's scene load arrives (`MultiplayerSetup.OnSceneEventTrace`). This is not
+a trail cap: nothing is removed during play, only the scene exit's own work is moved out of the load's frame.
+
+**Measured** (solo online host in the editor, unfocused, Photic colour set, Bloomrush launch, the menu's time scale
+raised to grow the trail; one launch each):
+
+| | Trail prisms / active in all | Load's frame | Menu frames before it | Trail still out 14 s into the match |
+|---|---|---|---|---|
+| Old rate (about 32 a frame, no wait) | 19,700 / 30,900 | 3.2 s | 1.5 s, 2.0 s | 10,300 |
+| New (12 ms a frame, wait up to 4 s) | 19,500 / 25,600 | 1.7 s | 1.2 s, 0.8 s | 0 |
+
+**What this does not show.** One launch each, and the two differ by 5,300 active prisms. The 8-13 s launch frames of
+2026-11-15 were NOT reproduced: the trail in these pools stopped near 19,700 prisms here, against 50,000-64,000 then,
+and that run wore a colour set other than Photic (`UIThemeLive.RepaintAll`, about 2 s a scene load). A first try with
+the new release and no wait, at 50,800 active prisms in all, had a 3.4 s load frame. Not measured: a guest, two
+machines, a build, a real 20-minute idle. The 21.9 s freeze on the menu after a return and the 72 s Cleave freeze are
+untouched; their cause is still unknown.
+
 ### B45 on the menu after a return (2026-11-21): not reproduced on one PC; the next freeze names its work
 
 **Seen** in the two-machine test of 2026-11-20 (`gradi+yskha-20261120_004226`, Garrett hosting, Yash a guest, both on

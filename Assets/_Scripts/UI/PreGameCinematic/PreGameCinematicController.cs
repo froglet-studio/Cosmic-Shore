@@ -510,6 +510,13 @@ namespace CosmicShore.UI
 
             while (elapsed < duration)
             {
+                // The vessel or the camera can be destroyed mid-move (the match ends, the scene unloads).
+                if (!_playerTarget || !_cameraTransform)
+                {
+                    onProgress?.Invoke(1f);
+                    yield break;
+                }
+
                 elapsed += ClockStep;
                 float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
 

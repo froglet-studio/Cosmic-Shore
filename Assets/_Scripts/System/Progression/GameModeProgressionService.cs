@@ -577,6 +577,13 @@ namespace CosmicShore.Core
 
             if (ProgressionData.IsQuestCompleted(mode.ToString()))
             {
+                // A quest completed on its intensity-2 goal still has its ladder above it: I4 opens on the I3 goal.
+                if (quest.TargetType == QuestTargetType.IntensityUnlocked && Config.QuestGoalIntensity < 3)
+                {
+                    int played = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
+                    RecordIntensityPlay(mode, quest, played, ExtractStatForIntensityGoal(quest));
+                    return;
+                }
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
                 return;
             }
@@ -621,6 +628,24 @@ namespace CosmicShore.Core
                        $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
                        $"statBased:{useStatBased}, statValue:{statValue}");
 
+            // The quest's goal at intensity 2 (SO_ProgressionConfig.QuestGoalIntensity): the plays or stat that would
+            // open I3 complete the quest, wherever I3 already stands. The ladder below is unchanged.
+            if (Config.QuestGoalIntensity <= 2 && playedIntensity == 2 && !ProgressionData.IsQuestCompleted(modeName))
+            {
+                bool met = useStatBased ? EvaluateIntensityStat(quest, statValue, 3) : newCount >= quest.PlaysToUnlockIntensity3;
+                if (met)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] {mode} quest complete at intensity 2.");
+                    ProgressionData.MarkQuestCompleted(modeName);
+                    quest.IsCompleted = true;
+                    OnQuestCompleted?.Invoke(quest);
+                    RecordQuestCompletedAnalytics(quest);
+                    RaiseProgressionChanged();
+                    SaveImmediateAsync();
+                    return;
+                }
+            }
+
             // Check if playing at intensity 2 should unlock intensity 3
             if (maxUnlocked == 2 && playedIntensity == 2)
             {
@@ -654,11 +679,14 @@ namespace CosmicShore.Core
                     OnIntensityUnlocked?.Invoke(mode, 4);
                     _analytics?.RecordIntensityUnlocked(mode, 4);
 
-                    // Intensity 4 unlocked = quest completed
-                    ProgressionData.MarkQuestCompleted(modeName);
-                    quest.IsCompleted = true;
-                    OnQuestCompleted?.Invoke(quest);
-                    RecordQuestCompletedAnalytics(quest);
+                    // Intensity 4 unlocked = quest completed (unless its intensity-2 goal already completed it)
+                    if (!ProgressionData.IsQuestCompleted(modeName))
+                    {
+                        ProgressionData.MarkQuestCompleted(modeName);
+                        quest.IsCompleted = true;
+                        OnQuestCompleted?.Invoke(quest);
+                        RecordQuestCompletedAnalytics(quest);
+                    }
                     RaiseProgressionChanged();
                     SaveImmediateAsync();
                     return;
