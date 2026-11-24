@@ -26806,7 +26806,7 @@ NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins 
 
 `GRIZZLYTIME.md` §0.2. Spearline's ruins called from Grizzly Time (`GrizzlyTimeRuins.cs`, `GrizzlyTimeController.Ruins.cs`,
 three hook lines in `GrizzlyTimeController.Kegs.cs`), cut back for the throw lanes and the kegs. Ran: the headless
-`grizzly_time_course_harness/run.sh --self-test` (see the commit for the counts) and `author_grizzly_time_assets.py
+`grizzly_time_course_harness/run.sh --self-test` (42 tests pass, 17 negative controls fire) and `author_grizzly_time_assets.py
 --check` (29 files match). Not run: a Unity compile, the EditMode tests in the editor, `unity_refcompile` (cannot run on
 this Windows box), any flight.
 
