@@ -294,6 +294,7 @@ namespace CosmicShore.Gameplay
             }
 
             TickFeedback();
+            TickRuins();
 
             if (_sealPrisms.Count == 0 || !sealPrefab) return;
             float now = Time.time;

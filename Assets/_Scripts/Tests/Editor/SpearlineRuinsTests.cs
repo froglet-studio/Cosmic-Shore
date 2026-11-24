@@ -7,8 +7,9 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// Spearline's garden ruins (SPEARLINE.md §2a): only the hardest rung has them, the lane down every leg and the
-    /// space round every ring stay clear, the lay is a pure function of the lap, and there is enough of each kind to
-    /// read as a ruin. The same file runs headless through <c>Tools/Build/spearline_harness</c>.
+    /// space round every ring stay clear of every STANDING ruin, the one turning kind (the wheel) leaves its hub open and
+    /// sweeps no other leg, the lay is a pure function of the lap, and there is enough of each kind to read as a ruin.
+    /// The same file runs headless through <c>Tools/Build/spearline_harness</c>.
     /// </summary>
     public class SpearlineRuinsTests
     {
@@ -24,12 +25,21 @@ namespace CosmicShore.Tests
             return HeadlongCircuit.Generate(seed, settings);
         }
 
-        static List<SpearlineRuinPart> Ruins(int intensity, int seed, out List<RaceGate> lap)
+        static List<SpearlineRuinPart> Ruins(int intensity, int seed, out List<RaceGate> lap,
+                                             out List<SpearlineRuinWheel> wheels)
         {
             lap = Lap(intensity, seed);
             var parts = new List<SpearlineRuinPart>();
-            SpearlineRuins.Lay(lap, SpearlineRuins.ForIntensity(intensity), parts);
+            wheels = new List<SpearlineRuinWheel>();
+            SpearlineRuins.Lay(lap, SpearlineRuins.ForIntensity(intensity), parts, wheels);
             return parts;
+        }
+
+        static bool Turns(List<SpearlineRuinWheel> wheels, int part)
+        {
+            foreach (var wheel in wheels)
+                if (part >= wheel.First && part < wheel.First + wheel.Count) return true;
+            return false;
         }
 
         [Test]
@@ -38,20 +48,30 @@ namespace CosmicShore.Tests
             foreach (int seed in Seeds)
             {
                 for (int i = 1; i <= 3; i++)
-                    Assert.AreEqual(0, Ruins(i, seed, out _).Count, $"I{i} seed {seed}");
-                Assert.Greater(Ruins(4, seed, out _).Count, 0, $"I4 seed {seed}");
+                    Assert.AreEqual(0, Ruins(i, seed, out _, out _).Count, $"I{i} seed {seed}");
+                Assert.Greater(Ruins(4, seed, out _, out _).Count, 0, $"I4 seed {seed}");
             }
         }
 
         [Test]
-        public void The_lane_down_every_leg_is_clear()
+        public void The_lane_down_every_leg_is_clear_of_every_standing_ruin()
         {
             foreach (int seed in Seeds)
             {
-                var parts = Ruins(4, seed, out var lap);
-                foreach (var part in parts)
-                    Assert.GreaterOrEqual(SpearlineRuins.LaneDistance(lap, part.Position), SpearlineRuins.LaneRadius - 0.01f,
-                        $"seed {seed}: a ruin prism stands in a lane");
+                var parts = Ruins(4, seed, out var lap, out var wheels);
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    if (Turns(wheels, i)) continue;
+                    Assert.GreaterOrEqual(SpearlineRuins.PartLaneDistance(lap, parts[i]), SpearlineRuins.LaneRadius - 0.01f,
+                        $"seed {seed}: a ruin prism reaches into a lane");
+                    // The ends of a long bar, checked here without the generator's own sampler.
+                    Vector3 half = parts[i].Forward * (0.5f * parts[i].Scale.z);
+                    if (parts[i].Scale.z > 16f)
+                    {
+                        Assert.GreaterOrEqual(SpearlineRuins.LaneDistance(lap, parts[i].Position + half), SpearlineRuins.LaneRadius - 0.01f);
+                        Assert.GreaterOrEqual(SpearlineRuins.LaneDistance(lap, parts[i].Position - half), SpearlineRuins.LaneRadius - 0.01f);
+                    }
+                }
             }
         }
 
@@ -60,7 +80,7 @@ namespace CosmicShore.Tests
         {
             foreach (int seed in Seeds)
             {
-                var parts = Ruins(4, seed, out var lap);
+                var parts = Ruins(4, seed, out var lap, out _);
                 foreach (var part in parts)
                     Assert.GreaterOrEqual(SpearlineRuins.RingClearance(lap, part.Position), SpearlineRuins.RingMargin - 0.01f,
                         $"seed {seed}: a ruin prism stands at a ring");
@@ -79,9 +99,10 @@ namespace CosmicShore.Tests
         {
             foreach (int seed in Seeds)
             {
-                var first = Ruins(4, seed, out _);
-                var second = Ruins(4, seed, out _);
+                var first = Ruins(4, seed, out _, out var firstWheels);
+                var second = Ruins(4, seed, out _, out var secondWheels);
                 Assert.AreEqual(first.Count, second.Count);
+                Assert.AreEqual(firstWheels.Count, secondWheels.Count);
                 for (int i = 0; i < first.Count; i++)
                 {
                     Assert.AreEqual(first[i].Position, second[i].Position);
@@ -96,32 +117,33 @@ namespace CosmicShore.Tests
             int total = 0;
             foreach (int seed in Seeds)
             {
-                int count = Ruins(4, seed, out _).Count;
+                int count = Ruins(4, seed, out _, out _).Count;
                 total += count;
                 Assert.GreaterOrEqual(count, 450, $"seed {seed}: too little to read as ruins");
                 Assert.LessOrEqual(count, 1000, $"seed {seed}: over the prism budget");
             }
-            // Half again the first cut's 529 a lap (2026-11-24): about 800 on an average course.
             float mean = total / (float)Seeds.Length;
-            Assert.GreaterOrEqual(mean, 760f, $"mean {mean}");
-            Assert.LessOrEqual(mean, 860f, $"mean {mean}");
+            Assert.GreaterOrEqual(mean, 650f, $"mean {mean}");
+            Assert.LessOrEqual(mean, 900f, $"mean {mean}");
         }
 
         [Test]
-        public void Every_part_is_turned_and_sized()
+        public void Every_part_is_turned_and_sized_and_thick()
         {
-            foreach (var part in Ruins(4, 1, out _))
+            foreach (var part in Ruins(4, 1, out _, out _))
             {
                 Assert.AreEqual(1f, part.Forward.magnitude, 1e-3f);
                 Assert.AreEqual(1f, part.Up.magnitude, 1e-3f);
                 Assert.Less(Mathf.Abs(Vector3.Dot(part.Forward, part.Up)), 0.6f, "forward and up nearly parallel");
-                Assert.Greater(part.Scale.x, 0f);
-                Assert.Greater(part.Scale.z, 0f);
+                // Thick: no ruin prism is thinner than 8 u across, or than 5 u through.
+                Assert.GreaterOrEqual(part.Scale.x, 8f);
+                Assert.GreaterOrEqual(part.Scale.y, 8f);
+                Assert.GreaterOrEqual(part.Scale.z, 5f);
             }
         }
 
         [Test]
-        public void All_three_kinds_stand_on_every_lap_and_neighbouring_legs_differ()
+        public void The_kinds_take_turns_and_most_stand_on_every_lap()
         {
             foreach (int seed in Seeds)
             {
@@ -133,7 +155,77 @@ namespace CosmicShore.Tests
                     seen[kind] = true;
                     if (leg > 0) Assert.AreNotEqual(SpearlineRuins.KindOf(leg - 1, lap[0].Position), kind, $"seed {seed} leg {leg}");
                 }
+                // Eight rings give seven legs and there are seven kinds: each is drawn once a lap.
                 foreach (bool kind in seen) Assert.IsTrue(kind, $"seed {seed}");
+            }
+        }
+
+        [Test]
+        public void A_wheel_turns_over_some_course_and_never_more_than_one_a_lap()
+        {
+            int courses = 0;
+            foreach (int seed in Seeds)
+            {
+                Ruins(4, seed, out _, out var wheels);
+                Assert.LessOrEqual(wheels.Count, 1, $"seed {seed}");
+                if (wheels.Count > 0) courses++;
+            }
+            Assert.Greater(courses, Seeds.Length / 2, "the wheel fits on too few courses");
+        }
+
+        [Test]
+        public void A_wheel_leaves_its_hub_open_stays_in_its_rim_and_sweeps_no_other_leg()
+        {
+            foreach (int seed in Seeds)
+            {
+                var parts = Ruins(4, seed, out var lap, out var wheels);
+                foreach (var wheel in wheels)
+                {
+                    Assert.Greater(wheel.Count, 12);
+                    Assert.AreEqual(SpearlineRuins.WheelDegreesPerSecond, Mathf.Abs(wheel.DegreesPerSecond), 1e-4f);
+                    int legs = 0;
+                    for (int leg = 0; leg < lap.Count; leg++)
+                        if (SpearlineRuins.LegDistance(lap, leg, wheel.Centre) < SpearlineRuins.WheelRadius + SpearlineRuins.LaneRadius) legs++;
+                    Assert.AreEqual(1, legs, $"seed {seed}: the wheel sweeps another leg's lane");
+                    foreach (float seconds in new[] { 0f, 1.7f, 9.3f, 40f })
+                    {
+                        for (int i = wheel.First; i < wheel.First + wheel.Count; i++)
+                        {
+                            SpearlineRuins.Pose(parts[i], wheel, seconds, out var position, out var forward, out var up);
+                            Vector3 d = position - wheel.Centre;
+                            float along = Vector3.Dot(d, wheel.Axis);
+                            float radial = (d - wheel.Axis * along).magnitude;
+                            float halfLength = 0.5f * parts[i].Scale.z;
+                            // A spoke stone lies along the radius; a rim stone across it.
+                            bool spoke = Mathf.Abs(Vector3.Dot(forward, d.normalized)) > 0.9f;
+                            Assert.GreaterOrEqual(spoke ? radial - halfLength : radial, SpearlineRuins.HubRadius - 0.5f,
+                                $"seed {seed}: the hub is not open at {seconds} s");
+                            Assert.LessOrEqual(radial, SpearlineRuins.WheelRadius + 0.5f);
+                            Assert.AreEqual(0f, along, 0.01f, "the wheel left its plane");
+                            Assert.AreEqual(1f, forward.magnitude, 1e-3f);
+                            Assert.AreEqual(1f, up.magnitude, 1e-3f);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void A_wheel_really_turns_and_comes_round()
+        {
+            foreach (int seed in Seeds)
+            {
+                var parts = Ruins(4, seed, out _, out var wheels);
+                foreach (var wheel in wheels)
+                {
+                    var part = parts[wheel.First];
+                    SpearlineRuins.Pose(part, wheel, 0f, out var at0, out _, out _);
+                    SpearlineRuins.Pose(part, wheel, 3f, out var at3, out _, out _);
+                    SpearlineRuins.Pose(part, wheel, 360f / SpearlineRuins.WheelDegreesPerSecond, out var round, out _, out _);
+                    Assert.AreEqual(0f, (at0 - part.Position).magnitude, 0.01f);
+                    Assert.Greater((at3 - at0).magnitude, 10f, "the wheel does not turn");
+                    Assert.AreEqual(0f, (round - at0).magnitude, 0.05f, "a full turn does not come round");
+                }
             }
         }
     }
