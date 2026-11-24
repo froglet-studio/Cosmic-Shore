@@ -455,7 +455,7 @@ namespace CosmicShore.Gameplay
             {
                 objective.Goal = VoyageObjective.Kind.CrystalRun;
                 objective.To = PlaceName(job.To);
-                objective.Name = job.Title;
+                objective.Name = job.IsNamed ? job.Title : null;
                 objective.Done = _raid.Total;
                 objective.Target = Mathf.CeilToInt(job.Goal);
                 objective.Crystals = new int[(int)Element.Omni + 1];
@@ -525,7 +525,7 @@ namespace CosmicShore.Gameplay
                 Board = VoyageScoreboard.Kind.CrystalRun,
                 Succeeded = r.Outcome == JobOutcome.Succeeded,
                 To = PlaceName(job.To),
-                Name = job.Title ?? string.Empty,
+                Name = job.IsNamed ? job.Title ?? string.Empty : string.Empty,
                 Done = _raid.Total,
                 Goal = Mathf.CeilToInt(job.Goal),
                 Cells = _profile?.Count ?? job.Cells,

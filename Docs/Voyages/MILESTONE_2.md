@@ -21,9 +21,13 @@ The in-game UI and the world's look are defined on Frogma first; no new screen i
 
 ## 2 Named voyages
 
+Crystal Run (`job.raid.crystals`, Milestone 1) stays on the board exactly as it was (Shombith, 2026-11-24: keep it in the
+lot, change nothing about it). The Salvage voyages are their own type, `job.salvage.drift`, beside it; unnamed work never
+reads the rungs, the cell clock or the drift.
+
 A named voyage is a type (a job template id, or `escort`), a name, where it sails to (and from, for an escort), its rung
 and its cells, and the Codex's line. A port offers ONE named voyage of each type whose template is offered at every port
-(today Salvage), picked by the day, so the board stays near six options. The job keeps the type's rules; the voyage gives
+(today `job.salvage.drift`), picked by the day, so the board stays near six options. The job keeps the type's rules; the voyage gives
 it the title, the summary, the intensity (rung), the cells and the goal (`GoalPerCell` x cells). Venture further sails the
 next named voyage of the type; try again sails the same one when it starts here.
 

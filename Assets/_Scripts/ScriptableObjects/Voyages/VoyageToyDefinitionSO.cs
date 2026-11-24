@@ -110,11 +110,15 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Tooltip("The job templates that still sail while jobs are locked (VoyageJob.TemplateId). Milestone 1 " +
                                  "keeps Sail home (job.return) and the crew's Crystal Run (job.raid.crystals, authored in " +
-                                 "voyage_slice.json). Add a template id here to open that job.")]
-        string[] openJobs = { VoyageRules.ReturnJobId, CrystalRunJobId };
+                                 "voyage_slice.json); Milestone 2 adds the Salvage voyages (job.salvage.drift). Add a template id here to open that job.")]
+        string[] openJobs = { VoyageRules.ReturnJobId, CrystalRunJobId, SalvageJobId };
 
         /// <summary>The Milestone 1 crew voyage, Crystal Run (Shombith, 2026-11-16: steal elemental crystals on the way).</summary>
         public const string CrystalRunJobId = "job.raid.crystals";
+
+        /// <summary>The Milestone 2 Salvage voyages' type (Shombith, 2026-11-24: collect loose crystals), beside Crystal
+        /// Run, which stays as it was.</summary>
+        public const string SalvageJobId = "job.salvage.drift";
 
         [Header("Voyage - arrivals")]
         [SerializeField, Min(80f), Tooltip("How far from the Ark a vault shell or a wreck stands.")]

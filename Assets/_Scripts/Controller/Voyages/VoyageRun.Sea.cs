@@ -33,6 +33,7 @@ namespace CosmicShore.Gameplay
             _kaijuCrossing = 0;
             var job = _state?.Current;
             if (job is { IsNamed: true }) _voyageRungHome = VoyageSea.Rung(job.Intensity);
+            else if (job is { IsReturn: false }) _voyageRungHome = 0; // unnamed work (Crystal Run) sails home as before
         }
 
         /// <summary>The Ark's crawl speed that crosses one cell, core to core, in the cell clock less its anchor

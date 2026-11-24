@@ -1387,20 +1387,77 @@
    "tier": 0,
    "standing": 0,
    "notoriety": 0,
-   "title": "The drift to {to}",
+   "title": "Crystal Run to {to}",
    "summary": "The Ark burns elemental crystal to cross the HyperSea, and her hold is nearly dry. Steal crystals between the three of you while she sails to {to}. Hostile cells are rich in crystals, but their fauna go for the Ark. Bring the crystals home and they are yours; lose the Ark and you lose them.",
    "success": [
     "The squad stole its crystals on the way to {to}.",
     "The hold is heavy with stolen crystal. {to} never saw them coming."
    ],
    "fail": [
-    "The run to {to} came up short."
+    "The Crystal Run to {to} came up short."
    ],
    "reward": 10,
    "element": "Omni",
    "onSuccess": "",
    "onFail": "",
    "chronicle": "Ran crystals to {to}.",
+   "always": true,
+   "countsUnderway": true,
+   "cells": 4,
+   "ventureGoal": 10,
+   "ventureCells": 1,
+   "hostileCells": [
+    false,
+    true,
+    true,
+    true
+   ],
+   "breachHull": 0.1,
+   "cellWorlds": [
+    "Caldera",
+    "Orrery",
+    "Garland",
+    "Geode"
+   ],
+   "cellAnchorSeconds": [
+    20,
+    30,
+    30,
+    40
+   ],
+   "cellLife": [
+    0.8,
+    1.3,
+    0.9,
+    1.4
+   ]
+  },
+  {
+   "id": "job.salvage.drift",
+   "kind": "Salvage",
+   "faction": "None",
+   "needs": "None",
+   "goes": "Port",
+   "verb": "Gather",
+   "goal": 50,
+   "role": "Cultivator",
+   "tier": 0,
+   "standing": 0,
+   "notoriety": 0,
+   "title": "The drift to {to}",
+   "summary": "An Ark broke up near {to} and her crystal is adrift in the cells on the way. Gather the loose crystal between the three of you while the Ark sails; how rough the water is depends on the voyage. Bring it home and it is yours; lose the Ark and you lose it.",
+   "success": [
+    "The squad gathered the drift on the way to {to}.",
+    "The hold is heavy with salvage from the drift before {to}."
+   ],
+   "fail": [
+    "The drift before {to} kept most of its crystal."
+   ],
+   "reward": 10,
+   "element": "Omni",
+   "onSuccess": "",
+   "onFail": "",
+   "chronicle": "Salvaged the drift before {to}.",
    "always": true,
    "countsUnderway": true,
    "cells": 4,
@@ -1673,7 +1730,7 @@
  "voyages": [
   {
    "id": "voyage.salvage.spindrift",
-   "type": "job.raid.crystals",
+   "type": "job.salvage.drift",
    "name": "Spindrift's Last Glitter",
    "from": "",
    "to": "loc.spindrift",
@@ -1683,7 +1740,7 @@
   },
   {
    "id": "voyage.salvage.glassmere",
-   "type": "job.raid.crystals",
+   "type": "job.salvage.drift",
    "name": "The Glassmere Shatter",
    "from": "",
    "to": "loc.glassmere",
@@ -1693,7 +1750,7 @@
   },
   {
    "id": "voyage.salvage.cinder",
-   "type": "job.raid.crystals",
+   "type": "job.salvage.drift",
    "name": "Embers of Cinder Shoal",
    "from": "",
    "to": "loc.cinder.shoal",
@@ -3143,7 +3200,8 @@
   "KindCull": "Hunt",
   "KindHome": "Home",
   "KindEscort": "Ark escort",
-  "ObjectiveRaidKicker": "{name}",
+  "ObjectiveRaidKicker": "CRYSTAL RUN",
+  "ObjectiveVoyageKicker": "{name}",
   "ObjectiveRaidGoal": "Steal {goal} crystals before the Ark reaches {to}",
   "ObjectiveCrystals": "CRYSTALS",
   "ObjectiveCount": "{done} / {goal}",
@@ -3167,7 +3225,8 @@
   "ScoreKickerLost": "THE ARK IS LOST",
   "ScoreKickerDocked": "HOME",
   "ScoreRaidTitle": "{done} of {goal} crystals stolen",
-  "ScoreRaidStats": "{name} - {cells} cells - {time}",
+  "ScoreRaidStats": "Crystal Run to {to} - {cells} cells - {time}",
+  "ScoreVoyageStats": "{name} - {cells} cells - {time}",
   "ScoreEscortTitle": "The Ark reached {to}",
   "ScoreEscortStats": "Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}",
   "ScoreLostTitle": "Everything aboard went down with it",

@@ -25653,7 +25653,9 @@ the changed files (30 in untouched files, from packages this machine lacks); the
 52 of 52, the new `VoyageSeaTests` among them.
 
 - [ ] The board at a port offers one Salvage voyage by its Codex name (e.g. "Spindrift's Last Glitter"), never
-      "Salvage" or "Crystal Run"; the objective box and the end board show that name.
+      "Salvage"; the objective box and the end board show that name.
+- [ ] Crystal Run is still on the board beside it, and sails, reads ("CRYSTAL RUN", "Crystal Run to ...") and paces
+      exactly as before.
 - [ ] Sail it: the run has the voyage's cells (2 for Spindrift), each takes about 50 s (about 35 s crossing, 15 s at the
       core), so a 4-cell run lands near 3.5 minutes.
 - [ ] Salvage cells hold about 18 loose crystals drifting slowly, half bunched where a hold burst; flying through one

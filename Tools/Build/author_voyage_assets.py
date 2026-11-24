@@ -93,11 +93,11 @@ LINES_FIELDS = [
 
 # Crystal Run (Docs/Voyages/CRYSTAL_RUN.md): the objective box, the toasts and the end-of-voyage scoreboard.
 LINES_FIELDS += [
-    "ObjectiveRaidKicker", "ObjectiveRaidGoal", "ObjectiveCrystals", "ObjectiveCount", "ObjectiveElement",
+    "ObjectiveRaidKicker", "ObjectiveVoyageKicker", "ObjectiveRaidGoal", "ObjectiveCrystals", "ObjectiveCount", "ObjectiveElement",
     "ObjectiveElementSeparator", "ObjectiveHull", "ObjectiveBreach", "ObjectiveCell", "ObjectiveCalm", "ObjectiveHostile",
     "ObjectiveGoalMet", "ObjectiveHomeKicker", "ObjectiveHomeGoal", "ObjectiveAtStake",
     "ToastCellCalm", "ToastCellHostile", "ToastFinalCell", "ToastGoalReached",
-    "ScoreKickerDone", "ScoreKickerFailed", "ScoreKickerLost", "ScoreKickerDocked", "ScoreRaidTitle", "ScoreRaidStats",
+    "ScoreKickerDone", "ScoreKickerFailed", "ScoreKickerLost", "ScoreKickerDocked", "ScoreRaidTitle", "ScoreRaidStats", "ScoreVoyageStats",
     "ScoreEscortTitle", "ScoreEscortStats", "ScoreLostTitle", "ScoreDockedTitle", "ScoreDockedStats", "ScoreHull",
     "ScoreHullValue", "ScoreColSeat", "ScoreColCrystals", "ScoreColKills", "ScoreRowSeat", "ScoreRowYou", "ScoreRewards",
     "ScoreStolen", "ScoreStolenBy", "ScoreStolenSeparator", "ScorePay", "ScoreEscortPay", "ScoreRewardValue",

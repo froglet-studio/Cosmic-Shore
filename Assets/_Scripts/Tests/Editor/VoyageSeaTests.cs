@@ -13,7 +13,8 @@ namespace CosmicShore.Tests
     /// </summary>
     public class VoyageSeaTests
     {
-        const string SalvageType = "job.raid.crystals";
+        const string SalvageType = "job.salvage.drift";
+        const string CrystalRunType = "job.raid.crystals";
 
         static VoyageContent Shipped() => VoyageDepthHarness.LoadShippedContent();
 
@@ -53,6 +54,20 @@ namespace CosmicShore.Tests
             Assert.AreEqual(v.To, job.To);
             float perCell = c.Job(SalvageType).GoalPerCell;
             if (perCell > 0f) Assert.AreEqual(perCell * v.Cells, job.Goal, 1e-3f, "the goal grows with the cells");
+        }
+
+        [Test]
+        public void CrystalRunStaysOnTheBoardAsItWas()
+        {
+            // Shombith, 2026-11-24: keep the Milestone 1 salvage mission in the lot, unchanged.
+            var c = Shipped();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            var run = VoyageRules.Board(s, c, new[] { c.Crew[0].PilotId }).FirstOrDefault(j => j.TemplateId == CrystalRunType);
+            Assert.IsNotNull(run, "Crystal Run is still offered");
+            Assert.IsFalse(run.IsNamed);
+            StringAssert.StartsWith("Crystal Run to ", run.Title);
+            Assert.AreEqual(0f, c.Job(CrystalRunType).GoalPerCell, "its goal does not grow with cells");
+            Assert.IsFalse(c.Voyages.Any(v => v.Type == CrystalRunType), "no named voyage takes Crystal Run's place");
         }
 
         [Test]
