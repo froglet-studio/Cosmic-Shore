@@ -80,22 +80,25 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 33f)] float slopeDegrees = 0f;
         [Tooltip("Tiny Wings' hills, as the game makes them (Docs/PISTOL_TINY_WINGS_STUDY.md): key points, alternately a crest and " +
                  "a trough, each a random distance on and height up or down from the last, a half-cosine between. The shortest " +
-                 "half-hill (crest to the next trough), u. The game: 160-240 pt for a 14 pt bird, 5.7-8.6 bird lengths.")]
-        [SerializeField, Min(1f)] float hillHalfLengthMin = 10f;
+                 "half-hill (crest to the next trough), u. The game: 160-240 pt for a 14 pt bird, 5.7-8.6 bird lengths. 10-15 u and 3.6-7.2 u " +
+                 "until 2026-11-24; widened about the same means for a little more variance (Garrett).")]
+        [SerializeField, Min(1f)] float hillHalfLengthMin = 9f;
         [Tooltip("The longest half-hill, u.")]
-        [SerializeField, Min(1f)] float hillHalfLengthMax = 15f;
+        [SerializeField, Min(1f)] float hillHalfLengthMax = 16f;
         [Tooltip("The least a half-hill rises or falls, u (the game: 60-120 pt, 2.1-4.3 bird lengths).")]
-        [SerializeField, Min(0f)] float hillHalfHeightMin = 3.6f;
+        [SerializeField, Min(0f)] float hillHalfHeightMin = 3f;
         [Tooltip("The most a half-hill rises or falls, u, on the first island.")]
-        [SerializeField, Min(0f)] float hillHalfHeightMax = 7.2f;
+        [SerializeField, Min(0f)] float hillHalfHeightMax = 7.8f;
         [Tooltip("The ground keeps within this far of the dart's line, u, either side.")]
         [SerializeField, Min(0f)] float hillBand = 9f;
         [Tooltip("Each island of a run is this much taller than the last (the game's later islands are taller).")]
         [SerializeField, Range(0f, 0.5f)] float hillGrowthPerIsland = 0.08f;
         [Tooltip("The most an island grows, as a multiple of the first.")]
         [SerializeField, Range(1f, 3f)] float hillGrowthMax = 1.5f;
-        [Tooltip("A trail block every this many u along the dart.")]
-        [SerializeField, Min(2f)] float trailBlockGap = 6f;
+        [Tooltip("A trail block every this many u along the dart (6 until 2026-11-24, Garrett: \"a bit more continuous with a shorter gap " +
+                 "between prisms and a few more prisms per hill\": about 6 a hill now, 4 before). energyPerSkippedBlock and " +
+                 "energyFlightBonus scale with it.")]
+        [SerializeField, Min(2f)] float trailBlockGap = 4f;
         [Tooltip("A trail block's cross-section: x across the plane (it grows here when flown over), y its thickness in the plane. " +
                  "Its length along the dart is not authored: it is the length whose SHIELD meets the next block's tip to tip " +
                  "(trailBlockGap / 3 x trailShieldFill), so a shielded trail is a chain of diamonds, never crossing spikes.")]
@@ -162,11 +165,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.5f)] float fallRingRadius = 2.4f;
 
         [Header("Pistol: energy from skipped blocks (Garrett, 2026-10-29: \"this reward the player for making big jumps\")")]
-        [Tooltip("The energy one block flown over (not ridden) gives, the first of a flight.")]
-        [SerializeField, Min(0f)] float energyPerSkippedBlock = 1f;
-        [Tooltip("Each further block of the same flight gives this much more (x the first's): the nth gives 1 + bonus n, so a " +
-                 "flight over 10 blocks earns 19, over 20 earns 58.")]
-        [SerializeField, Range(0f, 1f)] float energyFlightBonus = 0.2f;
+        [Tooltip("The energy one block flown over (not ridden) gives, the first of a flight. Scales with trailBlockGap, so a " +
+                 "jump's energy is per u flown, not per block: 1 at a 6 u gap, 0.667 at the shipped 4 u (2026-11-24).")]
+        [SerializeField, Min(0f)] float energyPerSkippedBlock = 0.6667f;
+        [Tooltip("Each further block of the same flight gives this much more (x the first's): the nth gives 1 + bonus n. Scales " +
+                 "with trailBlockGap too (0.2 at 6 u, 0.1333 at 4 u), so a 60 u flight earns 19 and a 120 u one 58 at either gap.")]
+        [SerializeField, Range(0f, 1f)] float energyFlightBonus = 0.1333f;
         [Tooltip("The most energy the Pistol holds (its Mass card's gauge is full here): a full den's worth at Mass's rest.")]
         [SerializeField, Min(1f)] float energyMax = 640f;
         [Tooltip("A block flown over grows this much OUT OF THE PLANE (across the trail, its x), u a skip.")]

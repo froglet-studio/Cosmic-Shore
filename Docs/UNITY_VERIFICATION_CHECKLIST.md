@@ -26627,3 +26627,18 @@ gives the reader the same clocks as before (36.0 / 37.8 / 36.8 / 30.5 s); `GobyP
 - [ ] Race Perch Run I1-I4 with an AI Goby: it finishes every race, hopping aside where coral blocks its line.
 - [ ] Race Regatta with an AI Goby: it never flies, and finishes (REGATTA.md 6.6 had card 78.1 s, L5 62.6 s).
 - [ ] Will's (ownerbynight) Perch Run sign-off from #2359 was flown with the cruise: re-fly it.
+
+## The Pistol's trail: closer prisms, a little more hill variance (2026-11-24)
+
+Garrett: "the trail it leaves should look a bit more continuous with a shorter gap between prisms and a few more prisms
+per hill. the hills should have a bit more frequency and amplitude variance, not a lot". `trailBlockGap` 6 -> 4 u (about
+6 prisms a hill, 4 before; each block's length follows the gap, so shielded neighbours still meet tip to tip). Half-hills
+10-15 -> 9-16 u on and 3.6-7.2 -> 3-7.8 u up or down, the same means, so the pace and screen-fit numbers hold. A jump's
+energy is kept per u flown: `energyPerSkippedBlock` 1 -> 0.6667 and `energyFlightBonus` 0.2 -> 0.1333, so dens stay the
+size they were. An island now has 1.5x the blocks (up to 450 on an 1800 u island). Not run in the Unity editor; the
+goby_pistol harness passes 14/14 (+ self-test) and the Perch Run harness 11/11; `GobyPistolTests` (the ride's pace) was
+not run.
+
+- [ ] Ride the Pistol over a fresh island: the trail reads as a near-continuous line, about 6 prisms a hill.
+- [ ] The hills vary a little more in length and height than before, and the ride still flies off crests.
+- [ ] Big jumps still build about the same size den as before; frame rate holds with three islands queued.
