@@ -26333,6 +26333,23 @@ Not run in the Unity editor. Reference compile: 0 errors in changed files; rules
 - [ ] Hold the clock to the end: the end board says "{place} held", with the held time and the wave reached; Venture
       further sails the next Hold the Core voyage, Finish sails home.
 
+### Bounty (2026-11-24)
+
+Not run in the Unity editor. Reference compile: 0 errors in changed files; rules harness 84 of 84.
+
+- [ ] Every port's board offers one Bounty voyage by its name (Hush the Quiet Spear, Black Tide Rising, The Grin Runs
+      Last); the objective box reads "Serve the warrant on {crew} at {place}".
+- [ ] Black Tide Rising: at the stop a smaller Ruby (or Gold) Ark appears abeam and sails off across the cell, three
+      hulls with her; toast "Black Tide sail their own Ark"; the rival plate shows her hold, hull and escorts.
+- [ ] Her hull shrugs off hits (super-shield wobble) while her escorts are free; silence two of them (one hit each)
+      and the toast "Undertow is unguarded" shows, the strip says she is open, and her plates break.
+- [ ] Break her to half: "Undertow's hold bursts", loose crystals drift where she was, "Black Tide turn back", she sails
+      away and the hulls leave a few seconds later; the end board says "Warrant served on Black Tide".
+- [ ] Hush the Quiet Spear: three hulls, no Ark ("The Quiet Spear are in your drift"); silencing two at once does
+      nothing; all three at once: "The Quiet Spear break and run", their haul drifts loose.
+- [ ] Let the clock run out: "{crew} MADE PORT", the end board says they got away, no pay.
+- [ ] The awards board's Rival Breaker goes to the seat that broke most of the rival hull.
+
 ## Voyages Milestone 2 in-game screens: Pause A, Vote B, Awards A, run toasts, rival plate (2026-11-24)
 
 `Docs/UI/specs/voyages-m2-ingame.md` (Frogma Rev 134 and Rev 137). Not run in the Unity editor: none in this session.

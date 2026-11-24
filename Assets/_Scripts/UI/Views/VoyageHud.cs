@@ -252,7 +252,8 @@ namespace CosmicShore.UI
             bool good = raid && o.Target > 0 && o.Done >= o.Target && !hot;
 
             // The crystals aboard against the goal, what you carry beside them (no count on an escort: its score is the hull).
-            bool count = o.Goal is not (VoyageObjective.Kind.Escort or VoyageObjective.Kind.CoreHold) && o.Target > 0;
+            bool count = o.Goal is not (VoyageObjective.Kind.Escort or VoyageObjective.Kind.CoreHold or VoyageObjective.Kind.Bounty)
+                         && o.Target > 0;
             _countGroup.gameObject.SetActive(count);
             var countInk = good ? Lime : _kit.Light;
             if (count)
@@ -367,7 +368,8 @@ namespace CosmicShore.UI
             VoyageObjective.Kind.Escort => string.IsNullOrEmpty(o.Name)
                 ? TemplateText.Fill(lines.ObjectiveEscortKicker, "difficulty", o.Difficulty.ToString())
                 : TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
-            VoyageObjective.Kind.CoreHold => TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
+            VoyageObjective.Kind.CoreHold or VoyageObjective.Kind.Bounty =>
+                TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
             _ => string.Empty,
         };
 
@@ -380,6 +382,7 @@ namespace CosmicShore.UI
                 : TemplateText.Fill(lines.ObjectiveEscortGoalNoBreach, "to", o.To),
             VoyageObjective.Kind.CoreHold => TemplateText.Fill(lines.ObjectiveCoreGoal, "to", o.To,
                 "goal", VoyageHudColors.Clock(o.HoldGoal)),
+            VoyageObjective.Kind.Bounty => TemplateText.Fill(lines.ObjectiveBountyGoal, "rival", o.Rival, "to", o.To),
             _ => string.Empty,
         };
 
@@ -391,7 +394,8 @@ namespace CosmicShore.UI
             VoyageObjective.Kind.Escort => string.IsNullOrEmpty(o.Name)
                 ? lines.ObjectiveStripEscort
                 : TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
-            VoyageObjective.Kind.CoreHold => TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
+            VoyageObjective.Kind.CoreHold or VoyageObjective.Kind.Bounty =>
+                TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
             _ => string.Empty,
         };
 
@@ -403,6 +407,10 @@ namespace CosmicShore.UI
                 "goal", o.Target.ToString()),
             VoyageObjective.Kind.CoreHold when o.AtCore => TemplateText.Fill(lines.ObjectiveCoreFigure,
                 "held", VoyageHudColors.Clock(o.Held), "goal", VoyageHudColors.Clock(o.HoldGoal)),
+            VoyageObjective.Kind.Bounty when o.RivalMet && string.IsNullOrEmpty(o.RivalArk) =>
+                TemplateText.Fill(lines.ObjectiveBountyFigure, "count", o.RivalSilenced.ToString(), "total", o.RivalEscorts.ToString()),
+            VoyageObjective.Kind.Bounty when o.RivalMet => TemplateText.Fill(lines.ObjectiveBountyArkFigure,
+                "hull", Percent(o.RivalHull), "breaks", Percent(o.RivalBreakAt)),
             _ => TemplateText.Fill(lines.ObjectiveStripHull, "hull", Percent(o.Hull)),
         };
 
@@ -454,6 +462,8 @@ namespace CosmicShore.UI
             }
             if (o.Goal == VoyageObjective.Kind.CoreHold && o.Assault != ArkAssaultPhase.Active)
                 return CoreLine(lines, o);
+            if (o.Goal == VoyageObjective.Kind.Bounty && o.Assault != ArkAssaultPhase.Active)
+                return BountyLine(lines, o);
             if (o.Goal == VoyageObjective.Kind.SailingHome && o.Assault != ArkAssaultPhase.Active)
             {
                 string leak = LeakLine(lines, o);
@@ -477,6 +487,23 @@ namespace CosmicShore.UI
             if (!o.CoreYours) return (lines.ObjectiveCoreBuild, false);
             return (TemplateText.Fill(lines.ObjectiveCoreYours, "share", Percent(o.Share), "wave", o.Wave.ToString(),
                 "waves", o.Waves.ToString()), false);
+        }
+
+        /// <summary>Bounty's strip line: the crew to reach; then a runaway crew's count, a rival Ark's escorts, or her hull
+        /// open (a call to strike); the clock before they make port turns it red in its last fifteen seconds.</summary>
+        public static (string line, bool threat) BountyLine(VoyageLines lines, in VoyageObjective o)
+        {
+            if (!o.RivalMet) return (TemplateText.Fill(lines.ObjectiveBountyReach, "rival", o.Rival, "to", o.To), false);
+            bool late = o.RivalLeft <= 15f;
+            string time = VoyageHudColors.Clock(o.RivalLeft);
+            if (string.IsNullOrEmpty(o.RivalArk))
+                return (TemplateText.Fill(lines.ObjectiveBountyRunaway, "count", o.RivalSilenced.ToString(),
+                    "total", o.RivalEscorts.ToString(), "time", time), late);
+            if (o.RivalOpen)
+                return (TemplateText.Fill(lines.ObjectiveBountyOpen, "ark", o.RivalArk,
+                    "time", VoyageHudColors.Clock(Mathf.Ceil(o.RivalOpenSeconds))), false);
+            return (TemplateText.Fill(lines.ObjectiveBountyArk, "ark", o.RivalArk, "count", o.RivalSilenced.ToString(),
+                "total", o.RivalEscorts.ToString(), "time", time), late);
         }
 
         /// <summary>A stop's name on the route: its own name (an escort's worlds), the destination's for the last stop of
@@ -662,6 +689,8 @@ namespace CosmicShore.UI
                 VoyageScoreboard.Kind.Docked => TemplateText.Fill(_lines.ScoreDockedTitle, "to", b.To),
                 VoyageScoreboard.Kind.CoreHold => TemplateText.Fill(b.Succeeded ? _lines.ScoreCoreTitle : _lines.ScoreCoreLostTitle,
                     "to", b.To),
+                VoyageScoreboard.Kind.Bounty => TemplateText.Fill(b.Succeeded ? _lines.ScoreBountyTitle : _lines.ScoreBountyLostTitle,
+                    "rival", b.Rival),
                 _ => _lines.ScoreLostTitle,
             };
             string stats = b.Board switch
@@ -678,6 +707,13 @@ namespace CosmicShore.UI
                 VoyageScoreboard.Kind.CoreHold => TemplateText.Fill(_lines.ScoreCoreStats, "name", b.Name,
                     "held", VoyageHudColors.Clock(b.Held), "goal", VoyageHudColors.Clock(b.HoldGoal),
                     "wave", b.Wave.ToString(), "waves", b.Waves.ToString(), "time", time),
+                VoyageScoreboard.Kind.Bounty => TemplateText.Fill(_lines.ScoreBountyStats, "name", b.Name, "rival", b.Rival,
+                    "how", b.BountyEnd switch
+                    {
+                        VoyageBountyFight.Outcome.Routed => _lines.ScoreBountyRouted,
+                        VoyageBountyFight.Outcome.Broken => _lines.ScoreBountyBroken,
+                        _ => _lines.ScoreBountyEscaped,
+                    }, "time", time),
                 _ => string.Empty,
             };
             _kit.Text(head, 60, _kit.Light, TextAlignmentOptions.Center).text = title;
@@ -772,7 +808,8 @@ namespace CosmicShore.UI
             VoyageHudColors.SetFill(fill, b.Hull);
             VoyageHudColors.SetBreach(breach, b.Breach);
 
-            if (b.Pay > 0 || b.Board is VoyageScoreboard.Kind.CrystalRun or VoyageScoreboard.Kind.Escort or VoyageScoreboard.Kind.CoreHold)
+            if (b.Pay > 0 || b.Board is VoyageScoreboard.Kind.CrystalRun or VoyageScoreboard.Kind.Escort or VoyageScoreboard.Kind.CoreHold
+                    or VoyageScoreboard.Kind.Bounty)
                 Tile(tiles, b.Board == VoyageScoreboard.Kind.Escort
                         ? TemplateText.Fill(_lines.ScoreEscortPay, "difficulty", b.Difficulty.ToString())
                         : _lines.ScorePay,
@@ -863,6 +900,8 @@ namespace CosmicShore.UI
                     ? TemplateText.Fill(_lines.ScoreVentureEscort, "difficulty", b.NextDifficulty.ToString())
                     : b.Board == VoyageScoreboard.Kind.CoreHold
                     ? TemplateText.Fill(_lines.ScoreVentureCore, "cells", b.NextCells.ToString())
+                    : b.Board == VoyageScoreboard.Kind.Bounty
+                    ? TemplateText.Fill(_lines.ScoreVentureBounty, "cells", b.NextCells.ToString())
                     : TemplateText.Fill(_lines.ScoreVentureRaid, "goal", b.NextGoal.ToString(), "cells", b.NextCells.ToString());
                 Caption(frame, both ? x : 0f, captionY, both ? ButtonWidth + 60f : 1920f, line,
                     both ? TextAlignmentOptions.Left : TextAlignmentOptions.Center);

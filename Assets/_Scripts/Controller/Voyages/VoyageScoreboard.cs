@@ -23,6 +23,8 @@ namespace CosmicShore.Gameplay
             Lost = 3,
             /// <summary>A Hold the Core voyage was decided at its core (held, or turned): Venture further or Finish.</summary>
             CoreHold = 4,
+            /// <summary>A Bounty was decided (the warrant served, or the crew made port): Venture further or Finish.</summary>
+            Bounty = 5,
         }
 
         /// <summary>One seat's row.</summary>
@@ -64,6 +66,9 @@ namespace CosmicShore.Gameplay
         public float HoldGoal;
         public int Wave;
         public int Waves;
+        /// <summary>Bounty: the hunted crew's name, and how it ended (<see cref="VoyageBountyFight.Outcome"/>).</summary>
+        public string Rival = string.Empty;
+        public VoyageBountyFight.Outcome BountyEnd;
 
         public readonly List<Row> Rows = new();
         /// <summary>A named voyage's places in order, for the run line over the awards (Frogma Rev 134 Awards A): where it
@@ -180,6 +185,8 @@ namespace CosmicShore.Gameplay
             Escort = 3,
             /// <summary>Hold the Core: reach the core, then keep it yours on the clock.</summary>
             CoreHold = 4,
+            /// <summary>Bounty: reach the hunted crew, then beat them before they make port.</summary>
+            Bounty = 5,
         }
 
         public Kind Goal;
@@ -247,6 +254,20 @@ namespace CosmicShore.Gameplay
         public int Waves;
         /// <summary>Seconds before a turned core is lost (0: not turning).</summary>
         public float TurnedLeft;
+
+        /// <summary>Bounty: the hunted crew (and their Ark's name, empty for a runaway crew); met is true once the fight is
+        /// on. Escorts silenced of all, the rival Ark's hull and where she breaks, her hull open now and for how long, and
+        /// the seconds before they make port.</summary>
+        public string Rival;
+        public string RivalArk;
+        public bool RivalMet;
+        public int RivalSilenced;
+        public int RivalEscorts;
+        public float RivalHull;
+        public float RivalBreakAt;
+        public bool RivalOpen;
+        public float RivalOpenSeconds;
+        public float RivalLeft;
 
         /// <summary>Copy the Ark's live state from an escort or a job voyage's <see cref="ArkEscortStatus"/>.</summary>
         public void TakeArk(in ArkEscortStatus s)
