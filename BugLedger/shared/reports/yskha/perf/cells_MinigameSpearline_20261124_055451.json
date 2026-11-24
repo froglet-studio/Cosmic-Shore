@@ -1,0 +1,121 @@
+{
+    "scene": "MinigameSpearline",
+    "timestamp": "2026-11-24 05:54:50",
+    "label": "",
+    "secondsSinceSceneLoad": 107.87751770019531,
+    "floraObjectsInScene": 34,
+    "faunaObjectsInScene": 24,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Thresher Time Cell Config 4",
+            "spawnProfile": "Thresher Time Spawn Profile 4",
+            "configChoice": "IntensityWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 223838.09375,
+            "liveEnvironmentVolume": 223479.5,
+            "livePrismCount": 11136,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 128000.0,
+            "frenzyEnterVolume": 240000.0,
+            "frenzyExitVolume": 224000.0,
+            "frenzyEnterCount": 2000,
+            "frenzyExitCount": 1600,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Gold",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 28,
+            "faunaLiveTotal": 0,
+            "flora": [
+                {
+                    "config": "Thresher Time I4 Cacti Flora",
+                    "prefab": "CactiFlora",
+                    "live": 14,
+                    "initialBatch": 14,
+                    "seedFloor": 14,
+                    "cap": 14,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Thresher Time I4 Spire Flora",
+                    "prefab": "SpireFlora",
+                    "live": 8,
+                    "initialBatch": 8,
+                    "seedFloor": 8,
+                    "cap": 8,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Thresher Time I4 Gyroid Flora",
+                    "prefab": "GyroidFlora",
+                    "live": 6,
+                    "initialBatch": 6,
+                    "seedFloor": 6,
+                    "cap": 6,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                }
+            ],
+            "fauna": [
+                {
+                    "config": "Thresher Time I4 Shark Fauna Config Data",
+                    "prefab": "MassSharkFauna",
+                    "live": 0,
+                    "initialBatch": 2,
+                    "cap": 3,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Thresher Time I4 Piranha Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 0,
+                    "initialBatch": 8,
+                    "cap": 12,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Thresher Time I4 Brittlestar Fauna Config Data",
+                    "prefab": "MassBrittlestarFauna",
+                    "live": 0,
+                    "initialBatch": 2,
+                    "cap": 4,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Thresher Time I4 Tadpole Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 0,
+                    "initialBatch": 4,
+                    "cap": 6,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}
