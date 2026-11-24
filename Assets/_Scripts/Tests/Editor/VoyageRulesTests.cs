@@ -344,6 +344,45 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ALegClosedAfterAWorldWasReachedWaitsThere_AndPicksUpThere()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            var job = Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt");
+            VoyageRules.Take(s, c, job);
+            VoyageWaypoint.Begin(s, new[] { 4, 7, 9 });
+            Assert.IsFalse(s.HasWaypoint(), "no world reached yet");
+            Assert.IsTrue(VoyageWaypoint.Mark(s, 1));
+            Assert.IsFalse(VoyageWaypoint.Mark(s, 0), "only forward");
+            s.Aboard.Add("artifact.a");
+
+            Assert.IsNull(VoyageRules.Anchor(s, c, workDone: false, keepWaypoint: true), "kept, not given up");
+            VoyageRules.Resume(s, c, Domains.Jade);
+            Assert.IsTrue(s.HasWaypoint(), "the voyage waits");
+            CollectionAssert.Contains(s.Aboard, "artifact.a", "what was found is still aboard");
+            CollectionAssert.AreEqual(new[] { 7, 9 }, VoyageWaypoint.Remaining(s), "from the world reached");
+            var board = VoyageRules.Board(s, c, new[] { Hunter });
+            Assert.AreEqual(1, board.Count, "the waiting voyage is the one card");
+            Assert.AreSame(s.Current, board[0]);
+
+            VoyageRules.Arrive(s, c);
+            Assert.IsFalse(s.HasWaypoint(), "arriving ends the chapter");
+        }
+
+        [Test]
+        public void AbandoningClearsTheWaypoint()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            VoyageRules.Take(s, c, Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt"));
+            VoyageWaypoint.Begin(s, new[] { 4, 7 });
+            VoyageWaypoint.Mark(s, 0);
+            VoyageRules.Abandon(s, c);
+            Assert.IsFalse(s.HasWaypoint());
+            CollectionAssert.IsEmpty(s.WaypointRoute);
+        }
+
+        [Test]
         public void AnEscortSailsFromWhereTheArkLiesToTheNearestBerth()
         {
             var c = Map();

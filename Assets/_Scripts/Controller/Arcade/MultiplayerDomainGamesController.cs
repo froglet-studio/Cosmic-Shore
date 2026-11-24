@@ -111,6 +111,9 @@ namespace CosmicShore.Gameplay
 
         protected override void OnReadyClicked_()
         {
+            // Ready pressed before the local player exists (the press can arrive in the frame the scene opens):
+            // leave the button up so the next press counts.
+            if (gameData.LocalPlayer == null) return;
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }

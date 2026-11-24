@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-21-party-matches-pay-every-party-member-by-afbf4d",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-21T22:17:25+00:00",
+  "area": "economy, voyages and the quest chain",
+  "summary": "Party matches pay every party member by the party's best placing; a voyage dock pays 600 wallet crystals per finished job (new Cloud Code earn source voyage_dock, not deployed); a quest completes on its intensity-2 goal (ProgressionConfig questGoalIntensity 2), I4 still opens on the I3 goal",
+  "why": "Loop Atlas retention build, Garrett 2026-11-21: 'Build everything proposed. Get all personas retained'",
+  "branch": "claude/retain-economy",
+  "commit": "ec4acd298",
+  "paths": [
+    "Assets/_Scripts/Controller/Voyages/VoyageRun.cs",
+    "Assets/_Scripts/System/Progression/GameModeProgressionService.cs",
+    "Assets/_Scripts/UI/Scoreboard.cs",
+    "Tools/UGS/CloudCode/economy.js"
+  ]
+}

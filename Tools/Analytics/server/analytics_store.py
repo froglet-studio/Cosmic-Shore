@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS dashboards(
 );
 -- Every $identify, kept (2026-11-06): its $set carries selected_vessel, preferred_vessel and
 -- total_flight_time_seconds, so the identify history is where the Toybox vessel picks before freestyle_vessel_changed
--- live. One row per (player, time, content): re-importing the PostHog history adds it once.
+-- live. One row per (player, time, content): re-importing a history adds it once.
 CREATE TABLE IF NOT EXISTS person_snapshots(
     id INTEGER PRIMARY KEY, distinct_id TEXT NOT NULL, ts_ms INTEGER NOT NULL, day TEXT NOT NULL,
     imported INTEGER NOT NULL, selected_vessel TEXT, preferred_vessel TEXT, total_flight_time_seconds REAL,
@@ -346,7 +346,7 @@ CREATE TABLE plays(              -- one row per (player, match) from game_starte
     flight_time_seconds REAL, duration_seconds REAL,
     won INTEGER,                 -- player_won from game_completed; NULL if not completed
     pause_seconds REAL,          -- duration_seconds - flight_time_seconds: paused or away from the controls
-    imported INTEGER,            -- 1: PostHog history (import_posthog.py, stored with its own time); 0: sent here live
+    imported INTEGER,            -- 1: PostHog history (imported once in 2026-11, stored with its own time); 0: sent here live
     country TEXT,                -- two-letter code of the game_started event (from IP at ingest); NULL if unknown
     element TEXT,                -- the mode's genre element (Charge | Mass | Space | Time | Omni); NULL: the mode has none
     element_secondary TEXT,      -- the second element of a two-element mode (Brood Rush: Space); else NULL
@@ -1156,7 +1156,7 @@ class Store:
         """Store a batch in the game's wire format ([{event, properties, timestamp}]). Returns counts per outcome.
         Nothing raises for one bad event: it is counted under rejects and the rest of the batch is stored.
 
-        `trusted` is for the server's own import of history (import_posthog.py), never for HTTP: each item may then
+        `trusted` is for the server's own import of history (the one-off PostHog import of 2026-11), never for HTTP: each item may then
         carry its own "country", its receive time is its event time, and events up to `max_age_days` old are kept."""
         received = received or now_ms()
         today = day_of(received)
@@ -1228,8 +1228,8 @@ class Store:
     def _identify(self, distinct_id, props, received, country=None, ts=None, trusted=False):
         person = props.get("$set") if isinstance(props.get("$set"), dict) else {}
         if person.get("gdpr_deletion_requested") is True:
-            # The in-game "delete my data" button flags the person (PostHogAnalyticsSink.RequestDataDeletion).
-            # PostHog could not finish that from the client; here it is finished at once.
+            # The in-game "delete my data" button flags the person (FrogletAnalyticsSink.RequestDataDeletion);
+            # the erasure is finished here at once.
             self._erase_locked(distinct_id, "in_game_request", received)
             return "erased"
         self._snapshot(distinct_id, person, ts or received, trusted)

@@ -12,11 +12,10 @@ using UnityEngine.Networking;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Froglet Analytics destination: our own analytics server (Tools/Analytics/server/), which
-    /// replaced PostHog on 2026-11-06. Batches events to the server's <c>/batch/</c> endpoint,
+    /// Froglet Analytics destination: our own analytics server (Tools/Analytics/server/).
+    /// Batches events to the server's <c>/batch/</c> endpoint,
     /// persists the queue so offline play is not lost, and identifies the player by UGS id with
-    /// display name as a person property. The wire format is the one the PostHog sink used, so the
-    /// server also imports PostHog's history unchanged. See Docs/Analytics/DATA_ARCHITECTURE.md.
+    /// display name as a person property. See Docs/Analytics/DATA_ARCHITECTURE.md.
     ///
     /// Consent and the age gate are enforced by AnalyticsServiceFacade upstream; this sink only
     /// runs between StartCollection and StopCollection.
@@ -152,8 +151,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Right to erasure. The client sends the deletion flag, and our server deletes every event
         /// and the person record for that id the moment the flag arrives (Store._identify), keeping
-        /// only a salted hash in its erasure log. This closes the gap PostHog left, where a
-        /// write-only key could only flag the person. If the flag cannot be sent (offline), the
+        /// only a salted hash in its erasure log. If the flag cannot be sent (offline), the
         /// Erasure page in the analytics console deletes the player by id.
         /// </summary>
         public void RequestDataDeletion(string distinctId)

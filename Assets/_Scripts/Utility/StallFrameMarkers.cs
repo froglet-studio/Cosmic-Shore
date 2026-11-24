@@ -46,6 +46,9 @@ namespace CosmicShore.Utility
             "Application.LoadLevelAsync Integrate", "Loading.AwakeFromLoad", "UnloadScene", "Destroy",
             "GameObject.Deactivate", "GameObject.ActivateAwakeRecursively", "GC.Collect", "Instantiate",
             "Physics.Simulate", "Physics.SyncColliderTransform", "Gfx.WaitForPresentOnGfxThread",
+            // The menu's first frame after a return (2026-11-22): one root canvas with about 6,900 graphics.
+            "Canvas.SendWillRenderCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Layout",
+            "Shader.CreateGPUProgram", "GarbageCollectAssetsProfile",
         };
 
         /// <summary>A hard ceiling on recorders, so a build with an unexpected marker set cannot start thousands.</summary>
@@ -67,6 +70,14 @@ namespace CosmicShore.Utility
         static readonly Dictionary<string, long> s_peak = new();
         static bool s_started;
 
+        /// <summary>
+        /// Also record each script's own LateUpdate and Start marker ("PrismRenderService.LateUpdate()"), so a frozen
+        /// frame names the script and not only the player-loop phase. Off by default (hundreds more recorders);
+        /// the automatic multiplayer run switches it on before the recorders start.
+        /// </summary>
+        public static bool IncludeScriptMarkers;
+        const int MaxRecordersWithScripts = 900;
+
         /// <summary>Start the recorders, once. Cheap to call every frame after the first.</summary>
         public static void EnsureStarted()
         {
@@ -79,7 +90,7 @@ namespace CosmicShore.Utility
                 var seen = new HashSet<string>();
                 foreach (var handle in handles)
                 {
-                    if (s_recorders.Count >= MaxRecorders) break;
+                    if (s_recorders.Count >= (IncludeScriptMarkers ? MaxRecordersWithScripts : MaxRecorders)) break;
                     var description = ProfilerRecorderHandle.GetDescription(handle);
                     if (description.UnitType != ProfilerMarkerDataUnit.TimeNanoseconds) continue;
                     string name = description.Name;
@@ -104,6 +115,9 @@ namespace CosmicShore.Utility
                 if (name == exact) return true;
             foreach (var prefix in PhasePrefixes)
                 if (name.StartsWith(prefix, StringComparison.Ordinal)) return true;
+            if (IncludeScriptMarkers
+                && (name.EndsWith(".LateUpdate()", StringComparison.Ordinal) || name.EndsWith(".Start()", StringComparison.Ordinal)))
+                return true;
             return false;
         }
 

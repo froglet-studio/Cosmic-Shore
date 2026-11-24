@@ -28,8 +28,8 @@ namespace CosmicShore.Gameplay
     /// <para><b>What the mode does NOT add:</b> no new ability, no cell of its own, no new
     /// scoring metric and no circuit generator - Redline's shape on Headlong's solver, with
     /// <see cref="SlingshotCourse"/> supplying the Stoat's cut. The autopilot slings through the
-    /// replicated press path (<c>StoatSlingExecutor.AutopilotSling</c>): to turn, and for the warp alone on a
-    /// long leg, since the orbit is the Stoat's whole kit (2026-11-02, <c>Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md</c>).</para>
+    /// replicated press path (<c>StoatSlingExecutor.AutopilotSwing</c>): to turn, and for the warp alone on a
+    /// long leg, since the swing is the Stoat's whole kit (2026-11-11; every other slingshot deleted 2026-11-21).</para>
     /// </summary>
     public class SlingshotController : GateRaceController
     {
@@ -131,9 +131,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>), as Warpline flew it for the
         /// Stoat: the scene's 180 u approach point lay outside its 160 u commit radius, Warpline's measured defect (no AI
-        /// Stoat finished any of Yash's 11 Warpline races on the scene steering). The Stoat's Warpline-learned pair and sling
-        /// numbers start its Slingshot variants (<c>Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot</c>,
-        /// <c>StoatSlingConfig_Slingshot</c>, the warp let go 250 u out) until its own Slingshot races replace them.
+        /// Stoat finished any of Yash's 11 Warpline races on the scene steering). Its Slingshot AI is the swing's trained copy
+        /// (<c>Resources/AIBoostPolicies/StoatSlingConfig_Slingshot</c>, Stoat run1, 2026-11-17).
         /// </summary>
         protected override bool AICommitFromApproachPoint => true;
     }

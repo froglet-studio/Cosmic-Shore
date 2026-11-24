@@ -26,10 +26,9 @@ namespace CosmicShore.UI
                  "the local player is the party host. Click removes that member from the party.")]
         [SerializeField] private Button kickButton;
 
-        [Tooltip("Optional. The animated domain halo drawn behind the avatar. Leave EMPTY - " +
-                 "the slot builds and binds one itself so every slot carries the signal with " +
-                 "no scene wiring to forget. Assign only to override the generated one.")]
-        [SerializeField] private PartySlotDomainGlow domainGlow;
+        // The avatar's round cut, domain ring, waves and halo (Frogma Rev 127 D, Docs/MENU_REDESIGN_B.md section 217),
+        // built round avatarIcon by the slot itself so no slot can lack it.
+        AvatarRippleBorder _avatarBorder;
 
         string _playerId;
         bool _isLocalPlayer;
@@ -41,14 +40,14 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Builds the domain halo behind this slot's avatar if one is not already authored.
-        /// Structural rather than opt-in: a slot that quietly lacks the halo is a slot whose
-        /// pilot has no visible team, and there is no per-slot reason to ever want that.
+        /// Builds the avatar's domain border (<see cref="AvatarRippleBorder"/>) if it is not built yet.
+        /// Structural rather than opt-in: a slot that quietly lacks it is a slot whose pilot has no
+        /// visible team, and there is no per-slot reason to ever want that.
         /// </summary>
-        protected virtual void EnsureDomainGlow()
+        void EnsureDomainGlow()
         {
-            if (domainGlow == null && avatarIcon != null)
-                domainGlow = PartySlotDomainGlow.EnsureFor(avatarIcon);
+            if (_avatarBorder == null && avatarIcon != null)
+                _avatarBorder = AvatarRippleBorder.EnsureFor(avatarIcon);
         }
 
         /// <summary>Whether this slot has a player assigned.</summary>
@@ -69,8 +68,8 @@ namespace CosmicShore.UI
         public GameObject AvatarIconGO => avatarIcon ? avatarIcon.gameObject : null;
 
         /// <summary>
-        /// Paints this slot's halo in the seated pilot's domain colour, or hides it when that
-        /// pilot's domain is not resolvable (<paramref name="domainColour"/> null). Cheap and
+        /// Paints this slot's avatar border in the seated pilot's domain colour, or the quiet
+        /// not-known-yet ring when that pilot's domain is not resolvable (<paramref name="domainColour"/> null). Cheap and
         /// idempotent, so the owning panel can push the LIVE domain every tick rather than
         /// snapshotting one at population time - domain is re-picked mid-lobby and a snapshot
         /// would go stale silently.
@@ -78,10 +77,10 @@ namespace CosmicShore.UI
         public virtual void SetDomainGlow(Color? domainColour)
         {
             EnsureDomainGlow();
-            if (domainGlow == null) return;
+            if (_avatarBorder == null) return;
 
-            if (domainColour.HasValue) domainGlow.Show(domainColour.Value);
-            else                       domainGlow.Hide();
+            if (domainColour.HasValue) _avatarBorder.Show(domainColour.Value);
+            else                       _avatarBorder.ShowUnknown();
         }
 
         /// <summary>

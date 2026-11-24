@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-22-humanflightrecorder-now-writes-a-skim-ra-053778",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T21:57:14+00:00",
+  "area": "Vessel AI platform and learning (the flight recorder)",
+  "summary": "HumanFlightRecorder now writes a Skim Race flight's raceTarget as the round's crystal target and its header rings as the pilot's team's summed crystals, so finished is true when the team reached the target (Yash's decision, 2026-11-23). Before, every Skim Race flight had raceTarget 0 and could never be marked finished. Only Skim Race changes; the per-sample rings column, every gate race and the flight's keys are as they were. Flights recorded earlier keep raceTarget 0. Compiled in batch Unity only; not run in the editor.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "5846326a4"
+}

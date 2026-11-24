@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < trunkCount; i++)
             {
                 Branch branch = new Branch();
-                branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
+                branch.gameObject = SpindlePool.Get(spindle, transform.position, transform.rotation).gameObject;
                 branch.gameObject.transform.rotation = RandomVectorRotation(0,180);
                 branch.gameObject.transform.parent = transform;
                 branch.depth = 0;
@@ -190,6 +190,14 @@ namespace CosmicShore.Gameplay
             List<Branch> branchesToRemove = new List<Branch>();
             foreach (Branch branch in activeBranches)
             {
+                // A branch whose limb died is no longer ours: destroyed, or back in the SpindlePool
+                // (and perhaps already another plant's limb).
+                if (!branch.gameObject || !branch.gameObject.transform.IsChildOf(transform))
+                {
+                    branchesToRemove.Add(branch);
+                    continue;
+                }
+
                 if (Random.value < growthChance && branch.depth < maxDepth)
                 {
                     Branch newBranch = new Branch();
@@ -228,7 +236,7 @@ namespace CosmicShore.Gameplay
                         int numBranches = Random.Range(minBranches, maxBranches + 1);
                         for (int i = 0; i < numBranches; i++)
                         {
-                            newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
+                            newBranch.gameObject = SpindlePool.Get(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
                             ScaleAndPositionBranch(ref newBranch, branch);
 
                             if (goal != Vector3.zero && SafeLookRotation.TryGet(goal - transform.position, out var branchRotation, newBranch.gameObject))

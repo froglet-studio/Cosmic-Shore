@@ -157,18 +157,25 @@ Climb it in order; each rung catches what the one below cannot.
 
 ### 4.1 The AI Diagnose panel (code name Third Eye; in the game scene, editor + development builds)
 
-The Third Eye is a camera tool INSIDE the game view (`Assets/_Scripts/Controller/Camera/ThirdEye/`, 2026-11-01;
-the old `FrogletTools > AI > Third Eye` window and its second render are gone). It drives the MAIN camera, so
-nothing is rendered twice. Compiled only into the editor and development builds; a release build has none of it.
+The Third Eye is a diagnose tool INSIDE the game view (`Assets/_Scripts/Controller/Camera/ThirdEye/`, 2026-11-01;
+the old `FrogletTools > AI > Third Eye` window and its second render are gone). Compiled only into the editor and
+development builds; a release build has none of it.
+
+**One camera rule (Yash, 2026-11-22): a hull is watched through the player's own camera, whoever flies it.** Handing
+your hull to the AI (Pilots: AI) changes the sticks and nothing else: the game's follow camera stays on it with the
+hull's own settings, zoom and framing. The panel has no camera that follows a hull (its Chase, Follow and Orbit cameras
+were removed: they sat at their own distances, nearer than the player flies). The one extra camera is **Free fly**,
+attached to no hull; it drives the MAIN camera, so nothing is rendered twice. To put the game's camera on another AI
+hull, take it over (You) and hand it back (AI). The same rule on the vessel side: anything a vessel does to the camera
+asks `CameraManager.ActiveRigFollowing(hull)`, never `!AutoPilotEnabled`.
 
 | Control | Does |
 |---|---|
 | **F2** | Open / close the **AI Diagnose** panel (the ONLY hotkey; ignored while the menu's god-mode camera is up or a text field has focus) |
-| Panel: Camera | Take / Release camera; Chase, Follow, Free fly, Orbit; Prev / Next / Frame pilot; Fly speed slider |
+| Panel: Camera | Free fly / Release camera (back to the game's); Prev / Next / Frame pilot (Frame jumps Free fly once to the picked pilot); Fly speed slider |
 | Panel: Pilots / Overlays / Settings | You / AI per pilot; AI thinking, trails, labels, mode gizmos |
 | Panel: Command + Send | Any DiagnosticsHUD console command (Enter also sends; `help` lists them), e.g. `aidiag cam on`, `aidiag fly`, `aidiag next`, `aidiag thinking on`, `aidiag overlay trails off`, `timescale 0.5` |
 | Free fly | Lavalamp's `FreeFlyCamera` (shared with `MenuGodModeCamera`): RMB look, WASD, E/Space up, Q/Ctrl down, Shift fast, Alt slow, wheel speed, gamepad. Your hull's input is paused while it flies. |
-| Orbit | Drag RMB round the watched pilot |
 
 - **AI thinking** (overlay): a line from each AI hull to its aim point, coloured by state, a ring on the crystal
   it is really after; the bottom strip reads the watched AI's state, heading error, recoveries, difficulty mistakes
