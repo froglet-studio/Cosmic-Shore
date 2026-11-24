@@ -33,7 +33,7 @@ two-trigger chip). Time stays `Input: 0`, the passive sentinel (the ramp gesture
 | Element | Ability | What the element scales | Level 5 |
 |---|---|---|---|
 | Charge | **Energize** (was Sword Steal, and Sword Energy before that, until 2026-10-26) | petals a sword hit takes from a rival, x1 at rest -> x2.5 at level 10, floored x1 (`SwordfishSwordStealBySkimmerEffect.stealScale`) | **Sword Steal** (was Live Wire until 2026-10-26) - the hit's petals land on the Rhino instead of being ejected as crystals (`VesselOvertakeBySkimmerEffectSO.stealUpgradeElement`) |
-| Mass | **Afterimage** | afterimage VOLUME, x1 -> x2.5, floored x0.25, read at the REPLICATED level (`SwordfishSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`SwordfishSwordAfterimageConfigSO.DangerActive`) |
+| Mass | **Afterimage** | afterimage VOLUME, x1.7 -> x4.25 (x1 -> x2.5 until 2026-11-21, `SWORDFISH.md` § "Brood Rush"), floored x0.5, read at the REPLICATED level (`SwordfishSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`SwordfishSwordAfterimageConfigSO.DangerActive`) |
 | Space | **Blade Reach** | the blade's length, 24 -> 40 (`Skimmer.Scale` on the Rhino's ForceFieldSkimmer instance) - Space ALONE since 2026-10-26, with the camera following it | **Shield Breaker** (was Breaker until 2026-10-26) - the sword can pop super-shielded prisms at all, with an energized blade (`ShieldSkimmerScaleConfigSO.superShieldUpgradeElement`) |
 | Time | **Ramp Spool** | the ramp's wind-up, 220 u/s per second x1 -> x2.5, floored x0.5 | **Momentum** - above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino's elements |
 
@@ -217,7 +217,7 @@ deleted (`ABILITY_LOCKUP.md`).
 | Budget | `maxAfterimagesPerWindow` | 16 |
 | Shape | `segmentLength` / `maxSegments` / `lengthCoverage` / `width` / `thickness` | 10 / 6 / 0.9 / 2 / 0.8 |
 | Collider delay | `colliderDelaySeconds` | 0.1 s |
-| Mass volume | `massVolumeMultiplier` | x1 -> x2.5, floor x0.25 |
+| Mass volume | `massVolumeMultiplier` | x1.7 -> x4.25, floor x0.5 (x1 -> x2.5 until 2026-11-21) |
 | Charge steal | `SwordfishSwordStealBySkimmerEffect.stealScale` | x1 -> x2.5, floor x1 |
 | Momentum | `VesselElementalImmunity.topSpeedFraction` (Rhino root) | 0.7 |
 | Surge | `SwordfishVesselSurgeByCrystalEffect` `surgeSeconds` | 8 (no fill, no element buff since 2026-10-26) |
