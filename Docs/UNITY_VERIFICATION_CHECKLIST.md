@@ -251,6 +251,21 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
+## 🔴 Burrow Run: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED, NOT RUN IN EDITOR)
+
+Burrow Run lays Spearline's ruins round its own racing line on I4 (`Assets/_Scripts/Controller/Arcade/BURROWRUN.md`
+section 4a). Run without Unity: `BurrowRunRuinsTests` 8 of 8 against the shipped sources, and
+`author_burrowrun_assets.py --check`. Not run: a Unity compile of `BurrowRunController.Ruins.cs`, and the race itself.
+
+- [ ] Unity compiles, and `BurrowRunRuinsTests` pass in the Test Runner.
+- [ ] Burrow Run at I4: four ruins a lap stand between the rings in Jade, Ruby and Gold, none at a ring, and the line
+      from ring to ring is open.
+- [ ] I1 to I3: no ruins.
+- [ ] A hull that strays into a ruin breaks its prisms at the usual cost; nothing grows back.
+- [ ] An AI Jewel Wasp still finishes the race at I4 (it flies the lane; it has no creature to sting).
+- [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
+- [ ] Frame rate at I4 with about 450 more prisms in the cell.
+
 ## 🔴 Burrow Run re-seated on the Jewel Wasp (2026-11-22, Yash, NOT COMPILED, NOT RUN IN EDITOR)
 
 Burrow Run (71) moved from the Meerkat to the Jewel Wasp (`Assets/_Scripts/Controller/Arcade/BURROWRUN.md` section 5).
@@ -26538,6 +26553,22 @@ Unity compile, no refcompile (it cannot run on this machine), no play.
 - [ ] An AI crew at I4 still finishes, and its time is no worse than before the ruins (it commits from 433 u out).
 - [ ] The frame rate at I4 is no worse than at I2 (~850 more prisms).
 - [ ] The wheel fits on about 1 course in 10 here: when it stands, it turns at the same angle on host and guest.
+
+### Warpline: the I4 garden ruins (2026-11-24) — NOT COMPILED IN UNITY, NOT WATCHED
+
+Spearline's generator called from `WarplineController.Ruins.cs` (WARPLINE.md §2a). Machine side: `WarplineRuinsTests`
+8 of 8 headless (Roslyn, the shipped C#, 10 seeds: four ruins and 357-527 prisms a lap), with negative controls that
+fail them; `author_warpline_assets.py --check` OK (it wrote `ruinPrefab` into the scene). No Unity compile, no
+refcompile (it cannot run on this machine), no play.
+
+- [ ] It compiles in the editor and `WarplineRuinsTests` pass there.
+- [ ] Warpline at I4: a ruin on each of the four legs between rings in Jade, Ruby and Gold, the line through each
+  open, none crowding a ring, none on the leg into ring 0. At I1-I3 there are none.
+- [ ] A Meerkat tunnel dug across a corner, off the curved lane, through a ruin: say what happens to the ruin and
+  whether the ride reads well.
+- [ ] An AI Meerkat at I4 still finishes, and its time is no worse than before the ruins.
+- [ ] The frame rate at I4 is no worse than at I2 (~360-530 more prisms).
+- [ ] The wheel stands on about 4 courses in 10: when it does, it turns at the same angle on host and guest.
 
 ## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
 
