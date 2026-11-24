@@ -252,6 +252,7 @@ namespace CosmicShore.Gameplay
             Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
             _modes.RetrySeconds = settings ? settings.aiModeRetrySeconds : 1f;
             _aiRaiding.Clear();
+            _wakes.Clear();
 
             int index = 0;
             foreach (var p in gameData.Players)
@@ -285,6 +286,9 @@ namespace CosmicShore.Gameplay
 
                     Vector3 selfPos = selfTf.position;
 
+                    SampleWakes();
+                    if (raid && settings.aiWakeSampleSeconds > 0f && TryRivalWake(captured, selfPos, out var wake))
+                        return wake + selfTf.up * settings.aiDustHover;
                     if (raid && arenaCell)
                         return arenaCell.GetExplosionTarget(captured.Domain) + selfTf.up * settings.aiDustHover;
 
@@ -327,6 +331,53 @@ namespace CosmicShore.Gameplay
 
         TimeBasedTurnMonitor _clock;
 
+        // Each pilot's recent path (its WAKE: a painter lays its keys where it flies), sampled on the server for the
+        // raiders. Oldest first; trimmed to aiWakeMemorySeconds.
+        readonly Dictionary<IPlayer, List<Vector3>> _wakes = new();
+        float _nextWakeSample;
+
+        void SampleWakes()
+        {
+            if (settings.aiWakeSampleSeconds <= 0f || Time.time < _nextWakeSample) return;
+            _nextWakeSample = Time.time + settings.aiWakeSampleSeconds;
+            int keep = Mathf.Max(2, Mathf.CeilToInt(settings.aiWakeMemorySeconds / settings.aiWakeSampleSeconds));
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var c = players[i];
+                var tf = c?.Vessel?.Transform;
+                if (tf == null) continue;
+                if (!_wakes.TryGetValue(c, out var list)) _wakes[c] = list = new List<Vector3>(keep + 1);
+                list.Add(tf.position);
+                if (list.Count > keep) list.RemoveAt(0);
+            }
+        }
+
+        /// <summary>
+        /// A point on a rival's wake: the sample nearest this raider across every rival's wake, advanced
+        /// <see cref="TapestrySettingsSO.aiWakeLeadSamples"/> samples toward that rival, so the raider flies DOWN the
+        /// line of fresh keys (and catches up to the painter laying it) rather than at one voxel.
+        /// </summary>
+        bool TryRivalWake(IPlayer self, Vector3 from, out Vector3 point)
+        {
+            point = default;
+            float bestSqr = float.MaxValue;
+            foreach (var kv in _wakes)
+            {
+                var c = kv.Key;
+                if (c == null || ReferenceEquals(c, self) || c.Domain == self.Domain) continue;
+                var list = kv.Value;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    float d = (list[i] - from).sqrMagnitude;
+                    if (d >= bestSqr) continue;
+                    bestSqr = d;
+                    point = list[Mathf.Min(list.Count - 1, i + settings.aiWakeLeadSamples)];
+                }
+            }
+            return bestSqr < float.MaxValue;
+        }
+
         bool TryNearestCrystal(Vector3 from, out Vector3 position)
         {
             position = default;
@@ -349,6 +400,7 @@ namespace CosmicShore.Gameplay
         {
             _modes.ReleaseAll();
             _aiRaiding.Clear();
+            _wakes.Clear();
             var players = gameData != null ? gameData.Players : null;
             if (players == null) return;
             foreach (var p in players)

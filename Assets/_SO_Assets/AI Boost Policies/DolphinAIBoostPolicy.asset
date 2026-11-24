@@ -20,7 +20,6 @@ MonoBehaviour:
   releaseRunwaySeconds: 0.5
   disabledInModes:
   - 42
-  - 2
   - 57
   requireAIPlayer: 0
   spendAtCharge01: 0.95
