@@ -1,0 +1,49 @@
+{
+    "scene": "MinigameBreakwater",
+    "timestamp": "2026-11-24 18:23:56",
+    "label": "",
+    "secondsSinceSceneLoad": 105.17830657958985,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 23,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Breakwater Cell Config 4",
+            "spawnProfile": "Breakwater Spawn Profile",
+            "configChoice": "IntensityWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 1670030.0,
+            "liveEnvironmentVolume": 1669715.25,
+            "livePrismCount": 3689,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 423020.0,
+            "frenzyEnterVolume": 603020.0,
+            "frenzyExitVolume": 573020.0,
+            "frenzyEnterCount": 5985,
+            "frenzyExitCount": 5385,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 0.0,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Gold",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 0,
+            "flora": [],
+            "fauna": []
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}

@@ -1,0 +1,5287 @@
+{
+  "kind": "perf-capture",
+  "version": 1,
+  "label": "MinigameBrittleStarTime-slow",
+  "scene": "MinigameBrittleStarTime",
+  "timestamp": "2026-11-24 19:10:06",
+  "gitCommitHash": "d1839423ce",
+  "gitBranch": "Ys-bleeding-edge",
+  "diagSeconds": 15,
+  "prismPath": "ON · ents=2019 meshes=7 mats=12",
+  "cameras": "1 enabled | CM PlayerCam screen depth 0",
+  "editor": "sceneViews 0 | gameView 1920x1080 | deepProfile 0 | profileEditor 0 | profilerRecording 0",
+  "burst": "burst: enabled=True compilation=True synchronous=True jobCompiler=True jobsDebugger=True debuggerAttached=False code=Release | probe job in Assembly-CSharp: Run() BURST, Schedule() BURST | log: no Burst refusal",
+  "renderers": "548 on · 2,076 off · 316 visible | mesh 486 · skinned 51 · particle 0 · trail 6 · line 5 · other 0 | top: ProjectileChargeFieldMaterial=213, SparrowProjectileMaterial=213, BlueCrystalFresnelMateriall=40, Default-Line=6, SpindleMaterial_Phase5_LodMid=5, ThresherChainMaterial=5, OmniChargeArcs=4, OmniCrystalBody=4 | spindle LOD (overt): 48 limbs - near 21 · mid 22 · braid 5 · low 0 · thread 0 (0 of the far ones instanced) · culled 0 · bodies 0",
+  "cells": "cells: 1 | flora objects 0, fauna objects 40 | cell 0 'Skim Race Cell Config' Calm spawner=RandomLifeSpawner flora 0 fauna 0 planting on | saved cells_MinigameBrittleStarTime_20261124_191006.json",
+  "diagPath": "C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\diag_MinigameBrittleStarTime_MinigameBrittleStarTime-slow_20261124_190954.json",
+  "profPath": "C:\\Users\\yskha\\OneDrive\\Documents\\CosmicShore Diagnostics\\prof_MinigameBrittleStarTime_MinigameBrittleStarTime-slow_20261124_191006.json",
+  "notes": [],
+  "log": [
+    {"count": 1, "message": "Warning: [Net] The game froze for 12.9 s in MinigameBrittleStarTime while online. Unity Relay drops a connection after about 10 s without traffic, so this session may end with 'player timed out due to inactivity' (Docs/PartySystem/BUGS.md B36)."},
+    {"count": 1, "message": "Warning: [Net] What held that frozen frame: PlayerLoop 12081 ms; Update.ScriptRunBehaviourUpdate 12057 ms"}
+  ],
+  "diag": {
+    "scene": "MinigameBrittleStarTime",
+    "timestamp": "2026-11-24 19:09:54",
+    "durationSec": 15.0,
+    "avgFps": 9.922809600830079,
+    "avgFrameMs": 100.77790832519531,
+    "p99FrameMs": 24.213096618652345,
+    "maxFrameMs": 12877.8232421875,
+    "p50FrameMs": 14.503600120544434,
+    "p95FrameMs": 21.907596588134767,
+    "markers": [
+        {
+            "name": "PlayerLoop",
+            "category": "PlayerLoop",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 90.30440521240235,
+            "p50Ms": 8.550100326538086,
+            "p95Ms": 20.578100204467775,
+            "maxMs": 12059.474609375,
+            "presentPct": 100.0,
+            "avgCalls": 4.926666736602783,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BehaviourUpdate",
+            "category": "PlayerLoop",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 82.4900894165039,
+            "p50Ms": 1.938599944114685,
+            "p95Ms": 3.774600028991699,
+            "maxMs": 12051.796875,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Inl_UniversalRenderTotal",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 1.6304960250854493,
+            "p50Ms": 1.6014000177383423,
+            "p95Ms": 1.9804999828338624,
+            "maxMs": 2.358299970626831,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "UniTaskLoopRunnerPreLateUpdate",
+            "category": "Other",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 1.3384406566619874,
+            "p50Ms": 1.281599998474121,
+            "p95Ms": 2.0541999340057375,
+            "maxMs": 2.6133999824523927,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "UGUI.Rendering.UpdateBatches",
+            "category": "UI Render",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.5729159712791443,
+            "p50Ms": 0.5336999893188477,
+            "p95Ms": 0.8924000263214111,
+            "maxMs": 1.405900001525879,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LateBehaviourUpdate",
+            "category": "PlayerLoop",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.5002986788749695,
+            "p50Ms": 0.43630000948905947,
+            "p95Ms": 0.8805999755859375,
+            "maxMs": 1.0894999504089356,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Projectile.Growth",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.4151093363761902,
+            "p50Ms": 0.40059998631477358,
+            "p95Ms": 0.6777999997138977,
+            "maxMs": 0.8427000045776367,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 201.82666015625,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Physics.Simulate",
+            "category": "Physics",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.19254666566848756,
+            "p50Ms": 0.0,
+            "p95Ms": 0.6166999936103821,
+            "maxMs": 1.9366999864578248,
+            "presentPct": 36.66666793823242,
+            "avgCalls": 0.41333332657814028,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Projectile.SweepPrisms",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.14629267156124116,
+            "p50Ms": 0.06340000033378601,
+            "p95Ms": 0.6266000270843506,
+            "maxMs": 0.836899995803833,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 201.82666015625,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "CoroutinesDelayedCalls",
+            "category": "Other",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.10606999695301056,
+            "p50Ms": 0.044199999421834949,
+            "p95Ms": 0.42820000648498537,
+            "maxMs": 1.0800000429153443,
+            "presentPct": 100.0,
+            "avgCalls": 4.386666774749756,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Fauna.BodySync",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.07234933227300644,
+            "p50Ms": 0.06790000200271607,
+            "p95Ms": 0.11969999969005585,
+            "maxMs": 0.15039999783039094,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 16.760000228881837,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Projectile.SweepVessels",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.06098200008273125,
+            "p50Ms": 0.059700001031160358,
+            "p95Ms": 0.09679999947547913,
+            "maxMs": 0.12380000203847885,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 201.82666015625,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "ShellContact.Query",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.047705333679914477,
+            "p50Ms": 0.04560000076889992,
+            "p95Ms": 0.06840000301599503,
+            "maxMs": 0.09510000050067902,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Animators.Update",
+            "category": "Animation",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.03775733336806297,
+            "p50Ms": 0.03519999980926514,
+            "p95Ms": 0.05700000002980232,
+            "maxMs": 0.07410000264644623,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 1.9866666793823243,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Projectile.Fuze",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.023059332743287088,
+            "p50Ms": 0.020999999716877939,
+            "p95Ms": 0.0414000004529953,
+            "maxMs": 0.06679999828338623,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 201.77999877929688,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.Tick",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.009565332904458046,
+            "p50Ms": 0.009200000204145909,
+            "p95Ms": 0.012400000356137753,
+            "maxMs": 0.028999999165534974,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "VesselSpeedTunnel.LateUpdate",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0045460001565515999,
+            "p50Ms": 0.00419999985024333,
+            "p95Ms": 0.008299999870359898,
+            "maxMs": 0.012199999764561654,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LOD.Sweep",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.00415266677737236,
+            "p50Ms": 0.0,
+            "p95Ms": 0.029600000008940698,
+            "maxMs": 0.1444000005722046,
+            "presentPct": 6.0,
+            "avgCalls": 0.05999999865889549,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "VesselPlacementView.LateUpdate",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0025913333520293237,
+            "p50Ms": 0.0023999998811632396,
+            "p95Ms": 0.004600000102072954,
+            "maxMs": 0.005400000140070915,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.Field",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0024846666492521765,
+            "p50Ms": 0.0023999998811632396,
+            "p95Ms": 0.0034000000450760128,
+            "maxMs": 0.004600000102072954,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "PrismLit.Flush",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0023446667473763229,
+            "p50Ms": 0.002199999988079071,
+            "p95Ms": 0.003599999938160181,
+            "maxMs": 0.004600000102072954,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "PrismCradle.Flush",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0021013333462178709,
+            "p50Ms": 0.0019000000320374966,
+            "p95Ms": 0.0034000000450760128,
+            "maxMs": 0.004399999976158142,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LOD.Drain",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0016220000106841326,
+            "p50Ms": 0.00019999999494757503,
+            "p95Ms": 0.00039999998989515007,
+            "maxMs": 0.10239999741315842,
+            "presentPct": 98.66666412353516,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.Lens",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0014540000120177866,
+            "p50Ms": 0.00139999995008111,
+            "p95Ms": 0.0019000000320374966,
+            "maxMs": 0.0026000000070780517,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "WormholeView.LateUpdate",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0011119999689981342,
+            "p50Ms": 0.0010999999940395356,
+            "p95Ms": 0.0015999999595806003,
+            "maxMs": 0.0020000000949949028,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.Warp",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0011020000092685223,
+            "p50Ms": 0.0010999999940395356,
+            "p95Ms": 0.001500000013038516,
+            "maxMs": 0.0017000000225380064,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "VesselRearView.LateUpdate",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0006980000180192292,
+            "p50Ms": 0.0005000000237487257,
+            "p95Ms": 0.0011999999405816198,
+            "maxMs": 0.0142000000923872,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.VesselPull",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0006813333020545542,
+            "p50Ms": 0.0005999999702908099,
+            "p95Ms": 0.0008999999845400453,
+            "maxMs": 0.008899999782443047,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Wormhole.Tick",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0006166666280478239,
+            "p50Ms": 0.0005999999702908099,
+            "p95Ms": 0.0008999999845400453,
+            "maxMs": 0.0011999999405816198,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.Waves",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0003406666510272771,
+            "p50Ms": 0.00029999998514540493,
+            "p95Ms": 0.0005000000237487257,
+            "maxMs": 0.0008999999845400453,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.Pairs",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0002853333135135472,
+            "p50Ms": 0.00029999998514540493,
+            "p95Ms": 0.00039999998989515007,
+            "maxMs": 0.000699999975040555,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.GravityField.Prune",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.00028199999360367656,
+            "p50Ms": 0.00029999998514540493,
+            "p95Ms": 0.0005000000237487257,
+            "maxMs": 0.0005999999702908099,
+            "presentPct": 99.33333587646485,
+            "avgCalls": 0.9933333396911621,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.GravityField.Admit",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.GravityField.BoxContacts",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.GravityField.Contacts",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.GravityField.IndexWrite",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHole.GravityField.Jobs",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "FullAuto.Fire",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LightFauna.Feed",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LightFauna.Hunt",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LightFauna.Tick.Goal",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LightFauna.Tick.PrismScan",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "LightFauna.Tick.Vessels",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "PrismDebris.RefreshConvergence",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "SkimRace.Pilot.Decide",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "SkimRace.Pilot.FillObstacles",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "Wormhole.SelectAndRender",
+            "category": "Scripts",
+            "found": true,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 150,
+            "runFrames": 150,
+            "truncated": false
+        },
+        {
+            "name": "BlackHoleRegistry.LateUpdate",
+            "category": "",
+            "found": false,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 0,
+            "runFrames": 149,
+            "truncated": false
+        },
+        {
+            "name": "SkimRace.Driver.GuardMass",
+            "category": "",
+            "found": false,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 0,
+            "runFrames": 149,
+            "truncated": false
+        },
+        {
+            "name": "SkimRace.Driver.TrackMpc",
+            "category": "",
+            "found": false,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 0,
+            "runFrames": 149,
+            "truncated": false
+        },
+        {
+            "name": "WarpFieldVesselScaler.LateUpdate",
+            "category": "",
+            "found": false,
+            "unit": "ms",
+            "avgMs": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "maxMs": 0.0,
+            "presentPct": 0.0,
+            "avgCalls": 0.0,
+            "framesWithData": 0,
+            "runFrames": 149,
+            "truncated": false
+        }
+    ],
+    "environment": {
+        "runtime": "Editor",
+        "codeOptimization": "Release",
+        "scriptingBackend": "Mono",
+        "platform": "WindowsEditor",
+        "unityVersion": "6000.3.17f1",
+        "appVersion": "0.3.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Ti",
+        "graphicsApi": "Direct3D12",
+        "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+        "cpuCores": 12,
+        "systemMemoryMB": 32697,
+        "resolution": "1920x1080",
+        "fullScreenMode": "Windowed",
+        "qualityLevel": "Ultra",
+        "burstEnabled": true,
+        "jobCompilerEnabled": true,
+        "debuggerAttached": false,
+        "profilerRecording": false,
+        "focused": true
+    },
+    "avgCpuMs": 141.34149169921876,
+    "avgCpuBusyMs": 131.59414672851563,
+    "avgGpuMs": 2.6312201023101808,
+    "boundVerdict": "CPU-bound",
+    "allocMB": 4850,
+    "reservedMB": 6201,
+    "systemMB": 32697,
+    "frames": 149,
+    "draws": 854,
+    "tris": 4805169,
+    "rttMs": 0.0,
+    "label": "MinigameBrittleStarTime-slow",
+    "avgDraws": 342.3892517089844,
+    "avgBatches": 336.9798583984375,
+    "avgSetPass": 74.51677703857422,
+    "avgGcKbPerFrame": 849.6427612304688,
+    "prismPath": "ON · ents=2140 meshes=7 mats=12",
+    "prismEnts": 2140,
+    "ecologyFrozen": false,
+    "frameCapVSync": 1,
+    "frameCapTarget": 75,
+    "idleMs": -30.816238403320314,
+    "renderers": {
+        "enabled": 375,
+        "disabled": 1921,
+        "visible": 177,
+        "mesh": 313,
+        "skinned": 51,
+        "particle": 0,
+        "trail": 6,
+        "line": 5,
+        "other": 0,
+        "topMaterials": [
+            "ProjectileChargeFieldMaterial=128",
+            "SparrowProjectileMaterial=128",
+            "BlueCrystalFresnelMateriall=40",
+            "SpindleMaterial_Phase5_LodFar=7",
+            "Default-Line=6",
+            "SpindleMaterial_Phase0_LodFar=6",
+            "SpindleMaterial_Phase1_LodFar=5",
+            "SpindleMaterial_Phase4_LodFar=5"
+        ],
+        "takenAt": 92.48745727539063
+    },
+    "spikes": [
+        {
+            "t": 13.490890502929688,
+            "ms": 12877.8232421875,
+            "fps": 0.07765287160873413,
+            "gcKB": 577.4951171875,
+            "cpuMs": 17.37470054626465,
+            "gpuMs": 1.8821120262145997,
+            "draws": 0,
+            "tris": 0,
+            "rttMs": 0.0
+        }
+    ]
+},
+  "prof": {
+    "scene": "MinigameBrittleStarTime",
+    "timestamp": "2026-11-24 19:09:54",
+    "label": "MinigameBrittleStarTime-slow",
+    "options": {
+        "label": "MinigameBrittleStarTime-slow",
+        "frames": 180,
+        "root": "",
+        "sort": "total",
+        "minMs": 0.05000000074505806,
+        "minGcKB": 1.0,
+        "depth": 6,
+        "top": 40
+    },
+    "framesRequested": 180,
+    "framesRead": 180,
+    "firstFrame": 2730,
+    "lastFrame": 2909,
+    "completed": true,
+    "deepProfiling": false,
+    "profilerWasRecording": false,
+    "mainThreadFrameMs": {
+        "avgMs": 55.300743103027347,
+        "p50Ms": 12.454500198364258,
+        "p99Ms": 25.241500854492189,
+        "minMs": 10.192700386047364,
+        "maxMs": 7457.4384765625
+    },
+    "playerLoopMs": {
+        "avgMs": 50.5921516418457,
+        "p50Ms": 8.622400283813477,
+        "p99Ms": 22.163400650024415,
+        "minMs": 7.161099910736084,
+        "maxMs": 7451.865234375
+    },
+    "framesPickedBy": "PlayerLoop",
+    "typicalFrame": 2762,
+    "spikeFrame": 2899,
+    "typicalFrameMs": 8.622400283813477,
+    "spikeFrameMs": 7451.865234375,
+    "rootsMatched": [
+        "PlayerLoop",
+        "EditorLoop",
+        "Profiler.FlushCounters",
+        "Profiler.CollectEditorStats",
+        "Profiler.SessionMetadata"
+    ],
+    "tree": [
+        {
+            "depth": 0,
+            "name": "PlayerLoop",
+            "path": "PlayerLoop",
+            "avgTotalMs": 50.5921516418457,
+            "avgSelfMs": 0.00052457774290815,
+            "maxTotalMs": 7451.865234375,
+            "avgGcKB": 9.73312759399414,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 3.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 1,
+            "name": "UpdateScene",
+            "path": "PlayerLoop / UpdateScene",
+            "avgTotalMs": 48.750186920166019,
+            "avgSelfMs": 0.09082186967134476,
+            "maxTotalMs": 7449.76611328125,
+            "avgGcKB": 8.65500259399414,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "Update.ScriptRunBehaviourUpdate",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate",
+            "avgTotalMs": 43.54439163208008,
+            "avgSelfMs": 0.0009401999996043742,
+            "maxTotalMs": 7442.72021484375,
+            "avgGcKB": 2.291156768798828,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "BehaviourUpdate",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate",
+            "avgTotalMs": 43.543453216552737,
+            "avgSelfMs": 0.2838478684425354,
+            "maxTotalMs": 7442.71875,
+            "avgGcKB": 2.291156768798828,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke]",
+            "avgTotalMs": 42.06067657470703,
+            "avgSelfMs": 41.72858428955078,
+            "maxTotalMs": 7441.240234375,
+            "avgGcKB": 0.7702365517616272,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 3.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "Projectile.SweepBatch",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / Projectile.SweepBatch",
+            "avgTotalMs": 0.16739332675933839,
+            "avgSelfMs": 0.11133277416229248,
+            "maxTotalMs": 0.5400000214576721,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.6777777671813965,
+            "presentPct": 67.77777862548828,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "PoolActivate.SparrowProjectile",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / PoolActivate.SparrowProjectile",
+            "avgTotalMs": 0.060038886964321139,
+            "avgSelfMs": 0.0013983333483338357,
+            "maxTotalMs": 0.41440001130104067,
+            "avgGcKB": 0.1136610209941864,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.9722222089767456,
+            "presentPct": 67.77777862548828,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "GameObject.Activate",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / PoolActivate.SparrowProjectile / GameObject.Activate",
+            "avgTotalMs": 0.058640554547309878,
+            "avgSelfMs": 0.001120000029914081,
+            "maxTotalMs": 0.4115000069141388,
+            "avgGcKB": 0.1136610209941864,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.9722222089767456,
+            "presentPct": 67.77777862548828,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::Boid.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::Boid.Update() [Invoke]",
+            "avgTotalMs": 0.1589433252811432,
+            "avgSelfMs": 0.007986110635101796,
+            "maxTotalMs": 0.33899998664855959,
+            "avgGcKB": 0.0065972222946584229,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 40.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "Fauna.Boid.Update",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::Boid.Update() [Invoke] / Fauna.Boid.Update",
+            "avgTotalMs": 0.15095722675323487,
+            "avgSelfMs": 0.08957388997077942,
+            "maxTotalMs": 0.33230000734329226,
+            "avgGcKB": 0.0065972222946584229,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 40.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "Fauna.BodySync",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::Boid.Update() [Invoke] / Fauna.Boid.Update / Fauna.BodySync",
+            "avgTotalMs": 0.05877555534243584,
+            "avgSelfMs": 0.05877555534243584,
+            "maxTotalMs": 0.13779999315738679,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 19.066667556762697,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "UnityEngine.UI.dll!UnityEngine.EventSystems::EventSystem.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / UnityEngine.UI.dll!UnityEngine.EventSystems::EventSystem.Update() [Invoke]",
+            "avgTotalMs": 0.12713778018951417,
+            "avgSelfMs": 0.12713778018951417,
+            "maxTotalMs": 0.2248000055551529,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Game::CapsuleMembrane.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Game::CapsuleMembrane.Update() [Invoke]",
+            "avgTotalMs": 0.11101888865232468,
+            "avgSelfMs": 0.0019938889890909197,
+            "maxTotalMs": 0.5320000052452087,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "CapsuleMembrane.UpdateMatrices",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Game::CapsuleMembrane.Update() [Invoke] / CapsuleMembrane.UpdateMatrices",
+            "avgTotalMs": 0.07765333354473114,
+            "avgSelfMs": 0.07765333354473114,
+            "maxTotalMs": 0.4876999855041504,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.25,
+            "presentPct": 25.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "FMODUnity.dll!FMODUnity::RuntimeManager.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / FMODUnity.dll!FMODUnity::RuntimeManager.Update() [Invoke]",
+            "avgTotalMs": 0.10911388695240021,
+            "avgSelfMs": 0.10911388695240021,
+            "maxTotalMs": 0.2531000077724457,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::PrismShellContactManager.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::PrismShellContactManager.Update() [Invoke]",
+            "avgTotalMs": 0.07715444266796112,
+            "avgSelfMs": 0.002633333206176758,
+            "maxTotalMs": 0.2168000042438507,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::VesselTransformer.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::VesselTransformer.Update() [Invoke]",
+            "avgTotalMs": 0.06953500211238861,
+            "avgSelfMs": 0.001289444393478334,
+            "maxTotalMs": 0.10930000245571137,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 3.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "Vessel.Transformer.Update",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::VesselTransformer.Update() [Invoke] / Vessel.Transformer.Update",
+            "avgTotalMs": 0.0682455524802208,
+            "avgSelfMs": 0.0682455524802208,
+            "maxTotalMs": 0.1080000028014183,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 3.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::SnowChanger.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::SnowChanger.Update() [Invoke]",
+            "avgTotalMs": 0.052381109446287158,
+            "avgSelfMs": 0.000981111079454422,
+            "maxTotalMs": 0.09179999679327011,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "SnowChanger.RenderMeshInstanced",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::SnowChanger.Update() [Invoke] / SnowChanger.RenderMeshInstanced",
+            "avgTotalMs": 0.05139999836683273,
+            "avgSelfMs": 0.05139999836683273,
+            "maxTotalMs": 0.09040000289678574,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Utility.PerformanceBenchmark::DiagnosticsHUD.Update() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Utility.PerformanceBenchmark::DiagnosticsHUD.Update() [Invoke]",
+            "avgTotalMs": 0.027223888784646989,
+            "avgSelfMs": 0.024497777223587037,
+            "maxTotalMs": 1.0901999473571778,
+            "avgGcKB": 1.104676604270935,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.9611111283302307,
+            "presentPct": 96.11111450195313,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Utility.PerformanceBenchmark::DiagnosticsHUD.Update() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00024722222588025033,
+            "avgSelfMs": 0.00024722222588025033,
+            "maxTotalMs": 0.00570000009611249,
+            "avgGcKB": 1.104676604270935,
+            "avgSelfGcKB": 1.104676604270935,
+            "avgCalls": 6.094444274902344,
+            "presentPct": 5.55555534362793,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "PreLateUpdate.ScriptRunBehaviourLateUpdate",
+            "path": "PlayerLoop / UpdateScene / PreLateUpdate.ScriptRunBehaviourLateUpdate",
+            "avgTotalMs": 0.915482223033905,
+            "avgSelfMs": 0.0006861111032776535,
+            "maxTotalMs": 1.9352999925613404,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "LateBehaviourUpdate",
+            "path": "PlayerLoop / UpdateScene / PreLateUpdate.ScriptRunBehaviourLateUpdate / LateBehaviourUpdate",
+            "avgTotalMs": 0.9147961139678955,
+            "avgSelfMs": 0.149717777967453,
+            "maxTotalMs": 1.933500051498413,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::CrystalFlipWave.LateUpdate() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / PreLateUpdate.ScriptRunBehaviourLateUpdate / LateBehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::CrystalFlipWave.LateUpdate() [Invoke]",
+            "avgTotalMs": 0.5093594193458557,
+            "avgSelfMs": 0.00792777817696333,
+            "maxTotalMs": 1.0293999910354615,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 48.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "CrystalFlipWave.LateUpdate",
+            "path": "PlayerLoop / UpdateScene / PreLateUpdate.ScriptRunBehaviourLateUpdate / LateBehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::CrystalFlipWave.LateUpdate() [Invoke] / CrystalFlipWave.LateUpdate",
+            "avgTotalMs": 0.5014316439628601,
+            "avgSelfMs": 0.5014316439628601,
+            "maxTotalMs": 1.0075000524520875,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 48.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.PlayerUpdateCanvases",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases",
+            "avgTotalMs": 0.7187600135803223,
+            "avgSelfMs": 0.0009599999757483602,
+            "maxTotalMs": 2.719099998474121,
+            "avgGcKB": 2.510286569595337,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UIEvents.WillRenderCanvases",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.WillRenderCanvases",
+            "avgTotalMs": 0.6140322089195252,
+            "avgSelfMs": 0.0007344444165937603,
+            "maxTotalMs": 2.5546000003814699,
+            "avgGcKB": 2.510286569595337,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "UGUI.Rendering.UpdateBatches",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.WillRenderCanvases / UGUI.Rendering.UpdateBatches",
+            "avgTotalMs": 0.6132977604866028,
+            "avgSelfMs": 0.24920666217803956,
+            "maxTotalMs": 2.5534000396728517,
+            "avgGcKB": 2.510286569595337,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.WillRenderCanvases / UGUI.Rendering.UpdateBatches / UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke]",
+            "avgTotalMs": 0.2130499929189682,
+            "avgSelfMs": 0.05850833281874657,
+            "maxTotalMs": 1.4702999591827393,
+            "avgGcKB": 2.510286569595337,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "Render",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.WillRenderCanvases / UGUI.Rendering.UpdateBatches / UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke] / Render",
+            "avgTotalMs": 0.14803221821784974,
+            "avgSelfMs": 0.004360555671155453,
+            "maxTotalMs": 1.1062999963760377,
+            "avgGcKB": 2.510286569595337,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "TransformChangeSystem",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.WillRenderCanvases / UGUI.Rendering.UpdateBatches / TransformChangeSystem",
+            "avgTotalMs": 0.056825555860996249,
+            "avgSelfMs": 0.026100555434823037,
+            "maxTotalMs": 0.15850000083446504,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 28.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UIEvents.UpdateCanvasRectTransform",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.UpdateCanvasRectTransform",
+            "avgTotalMs": 0.1036750003695488,
+            "avgSelfMs": 0.09943944215774536,
+            "maxTotalMs": 0.5874999761581421,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerPreLateUpdate",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerPreLateUpdate",
+            "avgTotalMs": 0.6283794641494751,
+            "avgSelfMs": 0.0003233333118259907,
+            "maxTotalMs": 3.214099884033203,
+            "avgGcKB": 0.01654730923473835,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerPreLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.6280561089515686,
+            "avgSelfMs": 0.12369389086961746,
+            "maxTotalMs": 3.213599920272827,
+            "avgGcKB": 0.01654730923473835,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.SweepPrisms",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerPreLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Projectile.SweepPrisms",
+            "avgTotalMs": 0.19792944192886353,
+            "avgSelfMs": 0.18428444862365724,
+            "maxTotalMs": 2.4951000213623049,
+            "avgGcKB": 0.01654730923473835,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 88.39444732666016,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.Growth",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerPreLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Projectile.Growth",
+            "avgTotalMs": 0.182378888130188,
+            "avgSelfMs": 0.182378888130188,
+            "maxTotalMs": 0.47099998593330386,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 88.39444732666016,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.SweepBatch",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerPreLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Projectile.SweepBatch",
+            "avgTotalMs": 0.060954999178647998,
+            "avgSelfMs": 0.040280554443597797,
+            "maxTotalMs": 0.3423999845981598,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.3222222328186035,
+            "presentPct": 32.22222137451172,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "PresentationSystemGroup",
+            "path": "PlayerLoop / UpdateScene / PresentationSystemGroup",
+            "avgTotalMs": 0.45709389448165896,
+            "avgSelfMs": 0.00035777775337919593,
+            "maxTotalMs": 0.8888000249862671,
+            "avgGcKB": 0.0034722222480922939,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / PresentationSystemGroup / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.45673611760139468,
+            "avgSelfMs": 0.0014122221618890763,
+            "maxTotalMs": 0.8880999684333801,
+            "avgGcKB": 0.0034722222480922939,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Default World Unity.Entities.PresentationSystemGroup",
+            "path": "PlayerLoop / UpdateScene / PresentationSystemGroup / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Default World Unity.Entities.PresentationSystemGroup",
+            "avgTotalMs": 0.45532387495040896,
+            "avgSelfMs": 0.00797333288937807,
+            "maxTotalMs": 0.885699987411499,
+            "avgGcKB": 0.0034722222480922939,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "Default World Unity.Rendering.EntitiesGraphicsSystem",
+            "path": "PlayerLoop / UpdateScene / PresentationSystemGroup / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Default World Unity.Entities.PresentationSystemGroup / Default World Unity.Rendering.EntitiesGraphicsSystem",
+            "avgTotalMs": 0.34045442938804629,
+            "avgSelfMs": 0.01115499995648861,
+            "maxTotalMs": 0.5745000243186951,
+            "avgGcKB": 0.0034722222480922939,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "UpdateEntitiesGraphicsBatches",
+            "path": "PlayerLoop / UpdateScene / PresentationSystemGroup / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Default World Unity.Entities.PresentationSystemGroup / Default World Unity.Rendering.EntitiesGraphicsSystem / UpdateEntitiesGraphicsBatches",
+            "avgTotalMs": 0.2711789011955261,
+            "avgSelfMs": 0.00045833332114852965,
+            "maxTotalMs": 0.4724000096321106,
+            "avgGcKB": 0.0034722222480922939,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "FixedUpdate.PhysicsFixedUpdate",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate",
+            "avgTotalMs": 0.33423665165901186,
+            "avgSelfMs": 0.0006355555378831923,
+            "maxTotalMs": 4.159800052642822,
+            "avgGcKB": 0.18612195551395417,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "presentPct": 35.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "Physics.RunSimulationStage",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.RunSimulationStage",
+            "avgTotalMs": 0.1898355633020401,
+            "avgSelfMs": 0.00022888889361638576,
+            "maxTotalMs": 2.440000057220459,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "presentPct": 35.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Physics.Simulate",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.RunSimulationStage / Physics.Simulate",
+            "avgTotalMs": 0.1896066665649414,
+            "avgSelfMs": 0.0002833333273883909,
+            "maxTotalMs": 2.437700033187866,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "presentPct": 35.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "PxScene.simulate",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.RunSimulationStage / Physics.Simulate / PxScene.simulate",
+            "avgTotalMs": 0.1893233358860016,
+            "avgSelfMs": 0.09715888649225235,
+            "maxTotalMs": 2.434999942779541,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "presentPct": 35.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "Physics.PrepareSimulationStage",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.PrepareSimulationStage",
+            "avgTotalMs": 0.08640500158071518,
+            "avgSelfMs": 0.00023722222249489278,
+            "maxTotalMs": 0.3846000134944916,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "presentPct": 35.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Physics.SyncTransforms",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.PrepareSimulationStage / Physics.SyncTransforms",
+            "avgTotalMs": 0.08616777509450913,
+            "avgSelfMs": 0.0051972223445773129,
+            "maxTotalMs": 0.38359999656677248,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "presentPct": 35.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "Physics.PublishResultsStage",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.PublishResultsStage",
+            "avgTotalMs": 0.05736055597662926,
+            "avgSelfMs": 0.00015666666149627417,
+            "maxTotalMs": 3.027899980545044,
+            "avgGcKB": 0.18612195551395417,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "presentPct": 35.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "TimeUpdate.WaitForLastPresentationAndUpdateTime",
+            "path": "PlayerLoop / UpdateScene / TimeUpdate.WaitForLastPresentationAndUpdateTime",
+            "avgTotalMs": 0.29047277569770815,
+            "avgSelfMs": 0.002343888860195875,
+            "maxTotalMs": 10.535499572753907,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "GfxDeviceD3D12.WaitForLastPresentation",
+            "path": "PlayerLoop / UpdateScene / TimeUpdate.WaitForLastPresentationAndUpdateTime / GfxDeviceD3D12.WaitForLastPresentation",
+            "avgTotalMs": 0.2854488790035248,
+            "avgSelfMs": 0.00009666667028795928,
+            "maxTotalMs": 10.529399871826172,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.05000000074505806,
+            "presentPct": 5.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU",
+            "path": "PlayerLoop / UpdateScene / TimeUpdate.WaitForLastPresentationAndUpdateTime / GfxDeviceD3D12.WaitForLastPresentation / GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU",
+            "avgTotalMs": 0.2853522300720215,
+            "avgSelfMs": 0.2853522300720215,
+            "maxTotalMs": 10.52750015258789,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.03888889029622078,
+            "presentPct": 3.8888888359069826,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.UpdateAllRenderers",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.UpdateAllRenderers",
+            "avgTotalMs": 0.2122933268547058,
+            "avgSelfMs": 0.004207222256809473,
+            "maxTotalMs": 0.4544999897480011,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "FinalizeUpdateRendererBoundingVolumes",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.UpdateAllRenderers / FinalizeUpdateRendererBoundingVolumes",
+            "avgTotalMs": 0.094559445977211,
+            "avgSelfMs": 0.0011394444154575468,
+            "maxTotalMs": 0.2551000118255615,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "MeshRendererFinalizeUpdate",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.UpdateAllRenderers / FinalizeUpdateRendererBoundingVolumes / MeshRendererFinalizeUpdate",
+            "avgTotalMs": 0.06428500264883042,
+            "avgSelfMs": 0.0010494444286450744,
+            "maxTotalMs": 0.2542000114917755,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.9888888597488403,
+            "presentPct": 98.88888549804688,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "WaitForJobGroupID",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.UpdateAllRenderers / FinalizeUpdateRendererBoundingVolumes / MeshRendererFinalizeUpdate / WaitForJobGroupID",
+            "avgTotalMs": 0.0632355585694313,
+            "avgSelfMs": 0.025763332843780519,
+            "maxTotalMs": 0.25279998779296877,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.9888888597488403,
+            "presentPct": 98.88888549804688,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.UpdateAllSkinnedMeshes",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.UpdateAllSkinnedMeshes",
+            "avgTotalMs": 0.1486794501543045,
+            "avgSelfMs": 0.006604999769479036,
+            "maxTotalMs": 0.47519999742507937,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "MeshSkinning.Update",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.UpdateAllSkinnedMeshes / MeshSkinning.Update",
+            "avgTotalMs": 0.14207445085048676,
+            "avgSelfMs": 0.045321665704250339,
+            "maxTotalMs": 0.46720001101493838,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "MeshSkinning.SkinOnGPU",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.UpdateAllSkinnedMeshes / MeshSkinning.Update / MeshSkinning.SkinOnGPU",
+            "avgTotalMs": 0.056084442883729938,
+            "avgSelfMs": 0.030373333021998407,
+            "maxTotalMs": 0.10239999741315842,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "NetworkPostLateUpdate",
+            "path": "PlayerLoop / UpdateScene / NetworkPostLateUpdate",
+            "avgTotalMs": 0.1471477746963501,
+            "avgSelfMs": 0.0015188888646662236,
+            "maxTotalMs": 0.6729999780654907,
+            "avgGcKB": 1.7109375,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / NetworkPostLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.1456288844347,
+            "avgSelfMs": 0.04478444531559944,
+            "maxTotalMs": 0.663100004196167,
+            "avgGcKB": 1.7109375,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "NetworkMetrics.DispatchFrame",
+            "path": "PlayerLoop / UpdateScene / NetworkPostLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / NetworkMetrics.DispatchFrame",
+            "avgTotalMs": 0.07018666714429856,
+            "avgSelfMs": 0.06837499886751175,
+            "maxTotalMs": 0.19709999859333039,
+            "avgGcKB": 1.7109375,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / NetworkPostLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / NetworkMetrics.DispatchFrame / GC.Alloc",
+            "avgTotalMs": 0.001048333360813558,
+            "avgSelfMs": 0.001048333360813558,
+            "maxTotalMs": 0.005799999926239252,
+            "avgGcKB": 1.7109375,
+            "avgSelfGcKB": 1.7109375,
+            "avgCalls": 11.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "NetworkEarlyUpdate",
+            "path": "PlayerLoop / UpdateScene / NetworkEarlyUpdate",
+            "avgTotalMs": 0.13633333146572114,
+            "avgSelfMs": 0.0010788888903334737,
+            "maxTotalMs": 0.38580000400543215,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / NetworkEarlyUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.1349305510520935,
+            "avgSelfMs": 0.07705610990524292,
+            "maxTotalMs": 0.38449999690055849,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "JobHandle.Complete",
+            "path": "PlayerLoop / UpdateScene / NetworkEarlyUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / JobHandle.Complete",
+            "avgTotalMs": 0.05746055394411087,
+            "avgSelfMs": 0.00602333340793848,
+            "maxTotalMs": 0.26499998569488528,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "WaitForJobGroupID",
+            "path": "PlayerLoop / UpdateScene / NetworkEarlyUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / JobHandle.Complete / WaitForJobGroupID",
+            "avgTotalMs": 0.051437221467494968,
+            "avgSelfMs": 0.00869444478303194,
+            "maxTotalMs": 0.2549999952316284,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerUpdate",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerUpdate",
+            "avgTotalMs": 0.11274722218513489,
+            "avgSelfMs": 0.00030666665406897664,
+            "maxTotalMs": 0.5024999976158142,
+            "avgGcKB": 0.9882161617279053,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.1124405562877655,
+            "avgSelfMs": 0.07716944813728333,
+            "maxTotalMs": 0.5022000074386597,
+            "avgGcKB": 0.9882161617279053,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "Update.ScriptRunDelayedDynamicFrameRate",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedDynamicFrameRate",
+            "avgTotalMs": 0.10157889127731323,
+            "avgSelfMs": 0.00046944443602114916,
+            "maxTotalMs": 0.8912000060081482,
+            "avgGcKB": 0.3086914122104645,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "CoroutinesDelayedCalls",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedDynamicFrameRate / CoroutinesDelayedCalls",
+            "avgTotalMs": 0.10110944509506226,
+            "avgSelfMs": 0.009473889134824276,
+            "maxTotalMs": 0.8906999826431274,
+            "avgGcKB": 0.3086914122104645,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "InitializationSystemGroup",
+            "path": "PlayerLoop / UpdateScene / InitializationSystemGroup",
+            "avgTotalMs": 0.08891221880912781,
+            "avgSelfMs": 0.00051277776947245,
+            "maxTotalMs": 0.1371999979019165,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / InitializationSystemGroup / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.08839944750070572,
+            "avgSelfMs": 0.002193888882175088,
+            "maxTotalMs": 0.13619999587535859,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Default World Unity.Entities.InitializationSystemGroup",
+            "path": "PlayerLoop / UpdateScene / InitializationSystemGroup / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Default World Unity.Entities.InitializationSystemGroup",
+            "avgTotalMs": 0.08620555698871613,
+            "avgSelfMs": 0.011253333650529385,
+            "maxTotalMs": 0.13279999792575837,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerEarlyUpdate",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerEarlyUpdate",
+            "avgTotalMs": 0.08760721981525421,
+            "avgSelfMs": 0.0003605555393733084,
+            "maxTotalMs": 0.43160000443458559,
+            "avgGcKB": 0.08771701157093048,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerEarlyUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.08724666386842728,
+            "avgSelfMs": 0.04207277670502663,
+            "maxTotalMs": 0.4311999976634979,
+            "avgGcKB": 0.08771701157093048,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "NetworkPreUpdate",
+            "path": "PlayerLoop / UpdateScene / NetworkPreUpdate",
+            "avgTotalMs": 0.07538555562496185,
+            "avgSelfMs": 0.00032166665187105536,
+            "maxTotalMs": 0.26179999113082888,
+            "avgGcKB": 0.0023437500931322576,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "path": "PlayerLoop / UpdateScene / NetworkPreUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgTotalMs": 0.07506389170885086,
+            "avgSelfMs": 0.015957221388816835,
+            "maxTotalMs": 0.26109999418258669,
+            "avgGcKB": 0.0023437500931322576,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "NetworkTickSystem.Tick",
+            "path": "PlayerLoop / UpdateScene / NetworkPreUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / NetworkTickSystem.Tick",
+            "avgTotalMs": 0.05910666659474373,
+            "avgSelfMs": 0.0006716666393913329,
+            "maxTotalMs": 0.21899999678134919,
+            "avgGcKB": 0.0023437500931322576,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.6944444179534913,
+            "presentPct": 42.77777862548828,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "NetworkBehaviour.NetworkBehaviourUpdate",
+            "path": "PlayerLoop / UpdateScene / NetworkPreUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / NetworkTickSystem.Tick / NetworkBehaviour.NetworkBehaviourUpdate",
+            "avgTotalMs": 0.058318886905908588,
+            "avgSelfMs": 0.0583166666328907,
+            "maxTotalMs": 0.21739999949932099,
+            "avgGcKB": 0.0023437500931322576,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.6944444179534913,
+            "presentPct": 42.77777862548828,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "EarlyUpdate.UpdateCanvasRectTransform",
+            "path": "PlayerLoop / UpdateScene / EarlyUpdate.UpdateCanvasRectTransform",
+            "avgTotalMs": 0.06102166697382927,
+            "avgSelfMs": 0.06102166697382927,
+            "maxTotalMs": 0.14669999480247498,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "EarlyUpdate.UpdateAsyncInstantiate",
+            "path": "PlayerLoop / UpdateScene / EarlyUpdate.UpdateAsyncInstantiate",
+            "avgTotalMs": 0.06071944534778595,
+            "avgSelfMs": 0.00026444444665685296,
+            "maxTotalMs": 0.33009999990463259,
+            "avgGcKB": 0.20238715410232545,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.4555555582046509,
+            "presentPct": 45.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "AsyncInstantiateOperation.IntegrateInMainThread",
+            "path": "PlayerLoop / UpdateScene / EarlyUpdate.UpdateAsyncInstantiate / AsyncInstantiateOperation.IntegrateInMainThread",
+            "avgTotalMs": 0.06045500189065933,
+            "avgSelfMs": 0.006041110958904028,
+            "maxTotalMs": 0.32910001277923586,
+            "avgGcKB": 0.20238715410232545,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.4888888895511627,
+            "presentPct": 45.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 1,
+            "name": "RenderPlayModeViewCameras",
+            "path": "PlayerLoop / RenderPlayModeViewCameras",
+            "avgTotalMs": 1.8411755561828614,
+            "avgSelfMs": 0.020651666447520257,
+            "maxTotalMs": 3.3619000911712648,
+            "avgGcKB": 1.078125,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 2,
+            "name": "UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke]",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke]",
+            "avgTotalMs": 1.7400799989700318,
+            "avgSelfMs": 0.024140555411577226,
+            "maxTotalMs": 3.1707000732421877,
+            "avgGcKB": 1.078125,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 3,
+            "name": "Inl_UniversalRenderTotal",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal",
+            "avgTotalMs": 1.7159394025802613,
+            "avgSelfMs": 0.016441110521554948,
+            "maxTotalMs": 3.122799873352051,
+            "avgGcKB": 1.078125,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "Inl_RenderCameraStack",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack",
+            "avgTotalMs": 1.6783183813095093,
+            "avgSelfMs": 0.0387561097741127,
+            "maxTotalMs": 3.060299873352051,
+            "avgGcKB": 1.078125,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack / Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "avgTotalMs": 0.8373110890388489,
+            "avgSelfMs": 0.05540944263339043,
+            "maxTotalMs": 1.9150999784469605,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "CullScriptable",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack / Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam / CullScriptable",
+            "avgTotalMs": 0.4160250127315521,
+            "avgSelfMs": 0.008825555443763733,
+            "maxTotalMs": 1.1655999422073365,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "Inl_ExecuteRenderGraph",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack / Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam / Inl_ExecuteRenderGraph",
+            "avgTotalMs": 0.17582888901233674,
+            "avgSelfMs": 0.01882833242416382,
+            "maxTotalMs": 0.3269999921321869,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "Inl_RecordRenderGraph",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack / Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam / Inl_RecordRenderGraph",
+            "avgTotalMs": 0.1559211164712906,
+            "avgSelfMs": 0.00523722218349576,
+            "maxTotalMs": 0.3328000009059906,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "Inl_ScriptableRenderContext.Submit",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack / Inl_ScriptableRenderContext.Submit",
+            "avgTotalMs": 0.7426855564117432,
+            "avgSelfMs": 0.041875556111335757,
+            "maxTotalMs": 1.063599944114685,
+            "avgGcKB": 1.078125,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack / Inl_ScriptableRenderContext.Submit / UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "avgTotalMs": 0.6989833116531372,
+            "avgSelfMs": 0.00917499978095293,
+            "maxTotalMs": 1.016800045967102,
+            "avgGcKB": 1.078125,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 0,
+            "name": "EditorLoop",
+            "path": "EditorLoop",
+            "avgTotalMs": 3.8832271099090578,
+            "avgSelfMs": 3.8832271099090578,
+            "maxTotalMs": 11.34220027923584,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 5.011111259460449,
+            "presentPct": 100.0,
+            "editorOnly": true
+        },
+        {
+            "depth": 0,
+            "name": "Profiler.FlushCounters",
+            "path": "Profiler.FlushCounters",
+            "avgTotalMs": 0.638759970664978,
+            "avgSelfMs": 0.0005188888753764331,
+            "maxTotalMs": 1.0190000534057618,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 1,
+            "name": "Profiler.FlushMemoryCounters",
+            "path": "Profiler.FlushCounters / Profiler.FlushMemoryCounters",
+            "avgTotalMs": 0.617080569267273,
+            "avgSelfMs": 0.6170188784599304,
+            "maxTotalMs": 0.9921000003814697,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 0,
+            "name": "Profiler.CollectEditorStats",
+            "path": "Profiler.CollectEditorStats",
+            "avgTotalMs": 0.14017611742019654,
+            "avgSelfMs": 0.004403333179652691,
+            "maxTotalMs": 1.5921000242233277,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 1,
+            "name": "Profiler.CollectUIStats",
+            "path": "Profiler.CollectEditorStats / Profiler.CollectUIStats",
+            "avgTotalMs": 0.13577277958393098,
+            "avgSelfMs": 0.13371777534484864,
+            "maxTotalMs": 1.5901999473571778,
+            "avgGcKB": 0.0,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        }
+    ],
+    "topSelf": [
+        {
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke]",
+            "avgSelfMs": 41.72858428955078,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 3.0,
+            "editorOnly": false
+        },
+        {
+            "name": "EditorLoop",
+            "avgSelfMs": 3.8832271099090578,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 5.011111259460449,
+            "editorOnly": true
+        },
+        {
+            "name": "Profiler.FlushMemoryCounters",
+            "avgSelfMs": 0.6170188784599304,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "CrystalFlipWave.LateUpdate",
+            "avgSelfMs": 0.5014316439628601,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 48.0,
+            "editorOnly": false
+        },
+        {
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "avgSelfMs": 0.44284722208976748,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 22.5222225189209,
+            "editorOnly": false
+        },
+        {
+            "name": "WaitForJobGroupID",
+            "avgSelfMs": 0.41394665837287905,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 26.561111450195314,
+            "editorOnly": false
+        },
+        {
+            "name": "GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU",
+            "avgSelfMs": 0.2853522300720215,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.03888889029622078,
+            "editorOnly": false
+        },
+        {
+            "name": "BehaviourUpdate",
+            "avgSelfMs": 0.2838478684425354,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "UGUI.Rendering.UpdateBatches",
+            "avgSelfMs": 0.24920666217803956,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Projectile.SweepPrisms",
+            "avgSelfMs": 0.1928122192621231,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 89.05000305175781,
+            "editorOnly": false
+        },
+        {
+            "name": "Projectile.Growth",
+            "avgSelfMs": 0.18445277214050294,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 89.27222442626953,
+            "editorOnly": false
+        },
+        {
+            "name": "Projectile.SweepBatch",
+            "avgSelfMs": 0.15161333978176118,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "LateBehaviourUpdate",
+            "avgSelfMs": 0.149717777967453,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "TransformChangeSystem",
+            "avgSelfMs": 0.14054888486862184,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 48.7055549621582,
+            "editorOnly": false
+        },
+        {
+            "name": "Inl_On Record Render Graph",
+            "avgSelfMs": 0.13381889462471009,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Profiler.CollectUIStats",
+            "avgSelfMs": 0.13371777534484864,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "UnityEngine.UI.dll!UnityEngine.EventSystems::EventSystem.Update() [Invoke]",
+            "avgSelfMs": 0.12713778018951417,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Material.SetPassFast",
+            "avgSelfMs": 0.12604054808616639,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 26.044445037841798,
+            "editorOnly": false
+        },
+        {
+            "name": "CanvasUpdate.PreRender",
+            "avgSelfMs": 0.11227055639028549,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "FMODUnity.dll!FMODUnity::RuntimeManager.Update() [Invoke]",
+            "avgSelfMs": 0.10911388695240021,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "GameObject.ActivateAwakeRecursively",
+            "avgSelfMs": 0.10199721902608872,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 5.9277777671813969,
+            "editorOnly": false
+        },
+        {
+            "name": "UIEvents.UpdateCanvasRectTransform",
+            "avgSelfMs": 0.09943944215774536,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "PxScene.simulate",
+            "avgSelfMs": 0.09715888649225235,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.41111111640930178,
+            "editorOnly": false
+        },
+        {
+            "name": "OnPerformCulling",
+            "avgSelfMs": 0.09372500330209732,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "UpdateScene",
+            "avgSelfMs": 0.09082186967134476,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "UpdateAllBatches",
+            "avgSelfMs": 0.08984222263097763,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Fauna.Boid.Update",
+            "avgSelfMs": 0.08957388997077942,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 40.0,
+            "editorOnly": false
+        },
+        {
+            "name": "DrawScreenSpaceUI",
+            "avgSelfMs": 0.0826883316040039,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 2.0,
+            "editorOnly": false
+        },
+        {
+            "name": "ExecuteRenderQueueJob",
+            "avgSelfMs": 0.07806333154439926,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.9611111283302307,
+            "editorOnly": false
+        },
+        {
+            "name": "CapsuleMembrane.UpdateMatrices",
+            "avgSelfMs": 0.07765333354473114,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 0.25,
+            "editorOnly": false
+        },
+        {
+            "name": "NetworkMetrics.DispatchFrame",
+            "avgSelfMs": 0.06837499886751175,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Vessel.Transformer.Update",
+            "avgSelfMs": 0.0682455524802208,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 3.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Canvas.RenderOverlays",
+            "avgSelfMs": 0.06702610850334168,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 9.0,
+            "editorOnly": false
+        },
+        {
+            "name": "EarlyUpdate.UpdateCanvasRectTransform",
+            "avgSelfMs": 0.06102166697382927,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Fauna.BodySync",
+            "avgSelfMs": 0.05877555534243584,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 19.066667556762697,
+            "editorOnly": false
+        },
+        {
+            "name": "UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke]",
+            "avgSelfMs": 0.05850833281874657,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "NetworkBehaviour.NetworkBehaviourUpdate",
+            "avgSelfMs": 0.0583166666328907,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.6944444179534913,
+            "editorOnly": false
+        },
+        {
+            "name": "Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "avgSelfMs": 0.05540944263339043,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        },
+        {
+            "name": "Idle",
+            "avgSelfMs": 0.05230777710676193,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.144444465637207,
+            "editorOnly": false
+        },
+        {
+            "name": "QueuePrepareIntegrateMainThreadObjects",
+            "avgSelfMs": 0.05156833305954933,
+            "avgSelfGcKB": 0.0,
+            "avgCalls": 1.0,
+            "editorOnly": false
+        }
+    ],
+    "topGc": [
+        {
+            "depth": 8,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.WillRenderCanvases / UGUI.Rendering.UpdateBatches / UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke] / Render / CanvasUpdate.PreRender / GC.Alloc",
+            "avgTotalMs": 0.000010555555491009727,
+            "avgSelfMs": 0.000010555555491009727,
+            "maxTotalMs": 0.0010999999940395356,
+            "avgGcKB": 2.4785590171813967,
+            "avgSelfGcKB": 2.4785590171813967,
+            "avgCalls": 0.03333333507180214,
+            "presentPct": 1.6666666269302369,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / NetworkPostLateUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / NetworkMetrics.DispatchFrame / GC.Alloc",
+            "avgTotalMs": 0.001048333360813558,
+            "avgSelfMs": 0.001048333360813558,
+            "maxTotalMs": 0.005799999926239252,
+            "avgGcKB": 1.7109375,
+            "avgSelfGcKB": 1.7109375,
+            "avgCalls": 11.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Utility.PerformanceBenchmark::DiagnosticsHUD.Update() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00024722222588025033,
+            "avgSelfMs": 0.00024722222588025033,
+            "maxTotalMs": 0.00570000009611249,
+            "avgGcKB": 1.104676604270935,
+            "avgSelfGcKB": 1.104676604270935,
+            "avgCalls": 6.094444274902344,
+            "presentPct": 5.55555534362793,
+            "editorOnly": false
+        },
+        {
+            "depth": 11,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / RenderPlayModeViewCameras / UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke] / Inl_UniversalRenderTotal / Inl_RenderCameraStack / Inl_ScriptableRenderContext.Submit / UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam / ExecuteRenderGraph / DrawScreenSpaceUI / GUI.Repaint / UnityEngine.IMGUIModule.dll!UnityEngine::GUIUtility.BeginGUI() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.0017616666154935957,
+            "avgSelfMs": 0.0017616666154935957,
+            "maxTotalMs": 0.010400000028312207,
+            "avgGcKB": 1.078125,
+            "avgSelfGcKB": 1.078125,
+            "avgCalls": 12.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.000028333333830232732,
+            "avgSelfMs": 0.000028333333830232732,
+            "maxTotalMs": 0.0011999999405816198,
+            "avgGcKB": 0.8573567867279053,
+            "avgSelfGcKB": 0.8573567867279053,
+            "avgCalls": 0.5333333611488342,
+            "presentPct": 7.222222328186035,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.0005205555353313685,
+            "avgSelfMs": 0.0005205555353313685,
+            "maxTotalMs": 0.008100000210106373,
+            "avgGcKB": 0.4428602457046509,
+            "avgSelfGcKB": 0.4428602457046509,
+            "avgCalls": 6.988888740539551,
+            "presentPct": 70.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / EarlyUpdate.UpdateAsyncInstantiate / AsyncInstantiateOperation.IntegrateInMainThread / UnityEngine.CoreModule.dll!UnityEngine::AsyncOperation.InvokeCompletionEvent() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00009333332855021581,
+            "avgSelfMs": 0.00009333332855021581,
+            "maxTotalMs": 0.0008999999845400453,
+            "avgGcKB": 0.17378471791744233,
+            "avgSelfGcKB": 0.17378471791744233,
+            "avgCalls": 1.3388888835906983,
+            "presentPct": 45.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedDynamicFrameRate / CoroutinesDelayedCalls / Assembly-CSharp.dll!CosmicShore.Utility.PerformanceBenchmark::DiagnosticsHUD.RunProf() [Coroutine: MoveNext] [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.000518333341460675,
+            "avgSelfMs": 0.000518333341460675,
+            "maxTotalMs": 0.006800000090152025,
+            "avgGcKB": 0.1725803017616272,
+            "avgSelfGcKB": 0.1725803017616272,
+            "avgCalls": 4.0,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedTasks / UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.ExecuteTasks() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.000047777775762369856,
+            "avgSelfMs": 0.000047777775762369856,
+            "maxTotalMs": 0.00279999990016222,
+            "avgGcKB": 0.17097438871860505,
+            "avgSelfGcKB": 0.17097438871860505,
+            "avgCalls": 0.9666666388511658,
+            "presentPct": 14.44444465637207,
+            "editorOnly": false
+        },
+        {
+            "depth": 9,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / PoolActivate.Sparrow Prism / GameObject.Activate / GameObject.ActivateAwakeRecursively / Assembly-CSharp.dll!CosmicShore.Gameplay::Prism.Awake() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00011000000085914508,
+            "avgSelfMs": 0.00011000000085914508,
+            "maxTotalMs": 0.003599999938160181,
+            "avgGcKB": 0.1009114608168602,
+            "avgSelfGcKB": 0.1009114608168602,
+            "avgCalls": 1.6666666269302369,
+            "presentPct": 9.44444465637207,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / ActionScheduler / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00003777777965296991,
+            "avgSelfMs": 0.00003777777965296991,
+            "maxTotalMs": 0.006800000090152025,
+            "avgGcKB": 0.0965711772441864,
+            "avgSelfGcKB": 0.0965711772441864,
+            "avgCalls": 0.9222221970558167,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 10,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / PoolActivate.Sparrow Prism / GameObject.Activate / GameObject.ActivateAwakeRecursively / Assembly-CSharp.dll!CosmicShore.Gameplay::PrismStateManager.Awake() [Invoke] / GameObject.AddComponent / GC.Alloc",
+            "avgTotalMs": 0.000052777777455048636,
+            "avgSelfMs": 0.000052777777455048636,
+            "maxTotalMs": 0.0010999999940395356,
+            "avgGcKB": 0.087890625,
+            "avgSelfGcKB": 0.087890625,
+            "avgCalls": 0.8333333134651184,
+            "presentPct": 9.44444465637207,
+            "editorOnly": false
+        },
+        {
+            "depth": 10,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / PoolActivate.SparrowProjectile / GameObject.Activate / GameObject.ActivateAwakeRecursively / Assembly-CSharp.dll!CosmicShore.Gameplay::Projectile.Awake() [Invoke] / GetComponentNullErrorMessage / GC.Alloc",
+            "avgTotalMs": 0.000010555555491009727,
+            "avgSelfMs": 0.000010555555491009727,
+            "maxTotalMs": 0.00029999998514540493,
+            "avgGcKB": 0.08544921875,
+            "avgSelfGcKB": 0.08544921875,
+            "avgCalls": 0.1388888955116272,
+            "presentPct": 10.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 8,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.PublishResultsStage / Physics.SendEvents / Physics.SendTriggerEvents / Assembly-CSharp.dll!CosmicShore.Gameplay::ImpactorBase.OnTriggerEnter() [Invoke] / SkimmerImpactor.AcceptImpactee / GC.Alloc",
+            "avgTotalMs": 0.00006611111166421324,
+            "avgSelfMs": 0.00006611111166421324,
+            "maxTotalMs": 0.011799999512732029,
+            "avgGcKB": 0.08422309160232544,
+            "avgSelfGcKB": 0.08422309160232544,
+            "avgCalls": 0.9222221970558167,
+            "presentPct": 1.1111111640930176,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::HumanFlightRecorder.Update() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00009833333024289459,
+            "avgSelfMs": 0.00009833333024289459,
+            "maxTotalMs": 0.0010999999940395356,
+            "avgGcKB": 0.08385416865348816,
+            "avgSelfGcKB": 0.08385416865348816,
+            "avgCalls": 1.8666666746139527,
+            "presentPct": 13.333333015441895,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ElementalComebackSystem.Update() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.0000088888882601168,
+            "avgSelfMs": 0.0000088888882601168,
+            "maxTotalMs": 0.0015999999595806003,
+            "avgGcKB": 0.0827907994389534,
+            "avgSelfGcKB": 0.0827907994389534,
+            "avgCalls": 0.17777778208255769,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 4,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerYieldUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00022555554460268468,
+            "avgSelfMs": 0.00022555554460268468,
+            "maxTotalMs": 0.0008999999845400453,
+            "avgGcKB": 0.07506510615348816,
+            "avgSelfGcKB": 0.07506510615348816,
+            "avgCalls": 1.1277778148651124,
+            "presentPct": 100.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerEarlyUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / PoolRefill.Sparrow Prism / GC.Alloc",
+            "avgTotalMs": 0.00015722222451586276,
+            "avgSelfMs": 0.00015722222451586276,
+            "maxTotalMs": 0.0007999999797903001,
+            "avgGcKB": 0.0698784738779068,
+            "avgSelfGcKB": 0.0698784738779068,
+            "avgCalls": 1.1666666269302369,
+            "presentPct": 38.88888931274414,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Vessel.Prism.CreateBlock / GC.Alloc",
+            "avgTotalMs": 0.000050555554480524734,
+            "avgSelfMs": 0.000050555554480524734,
+            "maxTotalMs": 0.000699999975040555,
+            "avgGcKB": 0.05876735970377922,
+            "avgSelfGcKB": 0.05876735970377922,
+            "avgCalls": 0.8222222328186035,
+            "presentPct": 15.55555534362793,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedDynamicFrameRate / CoroutinesDelayedCalls / Assembly-CSharp.dll!CosmicShore.Gameplay::BreakwaterController.SyncDomainSumsRoutine() [Coroutine: MoveNext] [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.000012777777556038927,
+            "avgSelfMs": 0.000012777777556038927,
+            "maxTotalMs": 0.00139999995008111,
+            "avgGcKB": 0.05138888955116272,
+            "avgSelfGcKB": 0.05138888955116272,
+            "avgCalls": 0.3777777850627899,
+            "presentPct": 1.1111111640930176,
+            "editorOnly": false
+        },
+        {
+            "depth": 7,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ElementalComebackSystem.Update() [Invoke] / TMP Parse Text / TMP.SetArraySizes / GC.Alloc",
+            "avgTotalMs": 5.555555162573e-7,
+            "avgSelfMs": 5.555555162573e-7,
+            "maxTotalMs": 0.00009999999747378752,
+            "avgGcKB": 0.04301215335726738,
+            "avgSelfGcKB": 0.04301215335726738,
+            "avgCalls": 0.0055555556900799278,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 8,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.PublishResultsStage / Physics.SendEvents / Physics.SendTriggerEvents / Assembly-CSharp.dll!CosmicShore.Gameplay::ImpactorBase.OnTriggerEnter() [Invoke] / VesselImpactor.AcceptImpactee / GC.Alloc",
+            "avgTotalMs": 0.000017777778339223005,
+            "avgSelfMs": 0.000017777778339223005,
+            "maxTotalMs": 0.002300000051036477,
+            "avgGcKB": 0.04244791716337204,
+            "avgSelfGcKB": 0.04244791716337204,
+            "avgCalls": 0.39444443583488467,
+            "presentPct": 1.6666666269302369,
+            "editorOnly": false
+        },
+        {
+            "depth": 9,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Vessel.Prism.CreateBlock / PoolActivate.Sparrow Prism / GameObject.Activate / GameObject.ActivateAwakeRecursively / Assembly-CSharp.dll!CosmicShore.Gameplay::Prism.Awake() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.000045000000682193786,
+            "avgSelfMs": 0.000045000000682193786,
+            "maxTotalMs": 0.0005999999702908099,
+            "avgGcKB": 0.03498264029622078,
+            "avgSelfGcKB": 0.03498264029622078,
+            "avgCalls": 0.5777778029441834,
+            "presentPct": 13.88888931274414,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedDynamicFrameRate / CoroutinesDelayedCalls / Assembly-CSharp.dll!CosmicShore.Gameplay::HealthPrism.CreateBlockCoroutine() [Coroutine: MoveNext] [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00007166666182456538,
+            "avgSelfMs": 0.00007166666182456538,
+            "maxTotalMs": 0.0007999999797903001,
+            "avgGcKB": 0.03263888880610466,
+            "avgSelfGcKB": 0.03263888880610466,
+            "avgCalls": 0.5222222208976746,
+            "presentPct": 19.44444465637207,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedDynamicFrameRate / CoroutinesDelayedCalls / Assembly-CSharp.dll!CosmicShore.Gameplay::HealthPrism.CreateBlockCoroutine() [Coroutine: MoveNext] [Invoke] / Prism.Create.SOAPRaise / GC.Alloc",
+            "avgTotalMs": 0.00004999999873689376,
+            "avgSelfMs": 0.00004999999873689376,
+            "maxTotalMs": 0.0052999998442828659,
+            "avgGcKB": 0.03263888880610466,
+            "avgSelfGcKB": 0.03263888880610466,
+            "avgCalls": 0.5222222208976746,
+            "presentPct": 19.44444465637207,
+            "editorOnly": false
+        },
+        {
+            "depth": 10,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / PostLateUpdate.PlayerUpdateCanvases / UIEvents.WillRenderCanvases / UGUI.Rendering.UpdateBatches / UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke] / Render / CanvasUpdate.PreRender / TMP Parse Text / TMP.SetArraySizes / GC.Alloc",
+            "avgTotalMs": 0.0000027777778086601758,
+            "avgSelfMs": 0.0000027777778086601758,
+            "maxTotalMs": 0.0005000000237487257,
+            "avgGcKB": 0.03172742947936058,
+            "avgSelfGcKB": 0.03172742947936058,
+            "avgCalls": 0.03888889029622078,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!::Driver.Update() [Invoke] / PrismRecycler.Drain / GC.Alloc",
+            "avgTotalMs": 0.00005777777550974861,
+            "avgSelfMs": 0.00005777777550974861,
+            "maxTotalMs": 0.00559999980032444,
+            "avgGcKB": 0.03055555559694767,
+            "avgSelfGcKB": 0.03055555559694767,
+            "avgCalls": 0.24444444477558137,
+            "presentPct": 6.666666507720947,
+            "editorOnly": false
+        },
+        {
+            "depth": 10,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / Vessel.Prism.CreateBlock / PoolActivate.Sparrow Prism / GameObject.Activate / GameObject.ActivateAwakeRecursively / Assembly-CSharp.dll!CosmicShore.Gameplay::PrismStateManager.Awake() [Invoke] / GameObject.AddComponent / GC.Alloc",
+            "avgTotalMs": 0.000019444443751126528,
+            "avgSelfMs": 0.000019444443751126528,
+            "maxTotalMs": 0.00029999998514540493,
+            "avgGcKB": 0.03046875074505806,
+            "avgSelfGcKB": 0.03046875074505806,
+            "avgCalls": 0.2888889014720917,
+            "presentPct": 13.88888931274414,
+            "editorOnly": false
+        },
+        {
+            "depth": 9,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke] / PoolActivate.SparrowProjectile / GameObject.Activate / GameObject.ActivateAwakeRecursively / Assembly-CSharp.dll!CosmicShore.Gameplay::Projectile.Awake() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00006333333294605836,
+            "avgSelfMs": 0.00006333333294605836,
+            "maxTotalMs": 0.001500000013038516,
+            "avgGcKB": 0.0282118059694767,
+            "avgSelfGcKB": 0.0282118059694767,
+            "avgCalls": 0.6944444179534912,
+            "presentPct": 10.0,
+            "editorOnly": false
+        },
+        {
+            "depth": 7,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ElementalComebackSystem.Update() [Invoke] / Instantiate / Instantiate.Copy / GC.Alloc",
+            "avgTotalMs": 0.0000044444441300584,
+            "avgSelfMs": 0.0000044444441300584,
+            "maxTotalMs": 0.0007999999797903001,
+            "avgGcKB": 0.02638888917863369,
+            "avgSelfGcKB": 0.02638888917863369,
+            "avgCalls": 0.0833333358168602,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 7,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / FixedUpdate.PhysicsFixedUpdate / Physics.PublishResultsStage / Physics.SendEvents / Physics.SendTriggerEvents / Assembly-CSharp.dll!CosmicShore.Gameplay::ImpactorBase.OnTriggerEnter() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00003611110878409818,
+            "avgSelfMs": 0.00003611110878409818,
+            "maxTotalMs": 0.0008999999845400453,
+            "avgGcKB": 0.02429470419883728,
+            "avgSelfGcKB": 0.02429470419883728,
+            "avgCalls": 0.36666667461395266,
+            "presentPct": 7.777777671813965,
+            "editorOnly": false
+        },
+        {
+            "depth": 8,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ElementalComebackSystem.Update() [Invoke] / Instantiate / Instantiate.Awake / Unity.TextMeshPro.dll!TMPro::TextMeshProUGUI.Awake() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.0000033333330975438004,
+            "avgSelfMs": 0.0000033333330975438004,
+            "maxTotalMs": 0.0005999999702908099,
+            "avgGcKB": 0.02243923582136631,
+            "avgSelfGcKB": 0.02243923582136631,
+            "avgCalls": 0.09444444626569748,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 8,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ElementalComebackSystem.Update() [Invoke] / Instantiate / Instantiate.Awake / Unity.TextMeshPro.dll!TMPro::TextMeshProUGUI.OnEnable() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.0000044444441300584,
+            "avgSelfMs": 0.0000044444441300584,
+            "maxTotalMs": 0.0007999999797903001,
+            "avgGcKB": 0.02105034701526165,
+            "avgSelfGcKB": 0.02105034701526165,
+            "avgCalls": 0.10555555671453476,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / EarlyUpdate.UpdateAsyncInstantiate / AsyncInstantiateOperation.IntegrateInMainThread / UnityEngine.CoreModule.dll!UnityEngine::AsyncInstantiateOperationHelper.CreateAsyncInstantiateOperationResultArray() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00006333333294605836,
+            "avgSelfMs": 0.00006333333294605836,
+            "maxTotalMs": 0.0013000000035390258,
+            "avgGcKB": 0.02048611082136631,
+            "avgSelfGcKB": 0.02048611082136631,
+            "avgCalls": 0.4888888895511627,
+            "presentPct": 45.55555725097656,
+            "editorOnly": false
+        },
+        {
+            "depth": 6,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunDelayedDynamicFrameRate / CoroutinesDelayedCalls / Destroy / Unity.TextMeshPro.dll!TMPro::TextMeshProUGUI.OnDestroy() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.0000027777778086601758,
+            "avgSelfMs": 0.0000027777778086601758,
+            "maxTotalMs": 0.0005000000237487257,
+            "avgGcKB": 0.01944444514811039,
+            "avgSelfGcKB": 0.01944444514811039,
+            "avgCalls": 0.06111111119389534,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 7,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ElementalComebackSystem.Update() [Invoke] / Instantiate / Instantiate.Produce / GC.Alloc",
+            "avgTotalMs": 0.0000033333330975438004,
+            "avgSelfMs": 0.0000033333330975438004,
+            "maxTotalMs": 0.0005999999702908099,
+            "avgGcKB": 0.01688368059694767,
+            "avgSelfGcKB": 0.01688368059694767,
+            "avgCalls": 0.08888889104127884,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / DOTween.dll!DG.Tweening.Core::DOTweenComponent.Update() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00004611110853147693,
+            "avgSelfMs": 0.00004611110853147693,
+            "maxTotalMs": 0.0005999999702908099,
+            "avgGcKB": 0.0164930559694767,
+            "avgSelfGcKB": 0.0164930559694767,
+            "avgCalls": 0.2611111104488373,
+            "presentPct": 17.77777862548828,
+            "editorOnly": false
+        },
+        {
+            "depth": 8,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ElementalComebackSystem.Update() [Invoke] / Instantiate / Instantiate.Produce / Unity.TextMeshPro.dll!TMPro::TextMeshProUGUI..ctor() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.000005555555617320351,
+            "avgSelfMs": 0.000005555555617320351,
+            "maxTotalMs": 0.0010000000474974514,
+            "avgGcKB": 0.01597222313284874,
+            "avgSelfGcKB": 0.01597222313284874,
+            "avgCalls": 0.17222222685813905,
+            "presentPct": 0.5555555820465088,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / UniTaskLoopRunnerEarlyUpdate / UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke] / PoolRefill.SparrowProjectile / GC.Alloc",
+            "avgTotalMs": 0.00002277777821291238,
+            "avgSelfMs": 0.00002277777821291238,
+            "maxTotalMs": 0.0005000000237487257,
+            "avgGcKB": 0.01297743059694767,
+            "avgSelfGcKB": 0.01297743059694767,
+            "avgCalls": 0.21666666865348817,
+            "presentPct": 6.666666507720947,
+            "editorOnly": false
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "path": "PlayerLoop / UpdateScene / Update.ScriptRunBehaviourUpdate / BehaviourUpdate / Assembly-CSharp.dll!CosmicShore.Gameplay::ThemeManager.Update() [Invoke] / GC.Alloc",
+            "avgTotalMs": 0.00002944444349850528,
+            "avgSelfMs": 0.00002944444349850528,
+            "maxTotalMs": 0.000699999975040555,
+            "avgGcKB": 0.01145833358168602,
+            "avgSelfGcKB": 0.01145833358168602,
+            "avgCalls": 0.28333333134651186,
+            "presentPct": 8.333333015441895,
+            "editorOnly": false
+        }
+    ],
+    "typicalFrameTree": [
+        {
+            "depth": 0,
+            "name": "PlayerLoop",
+            "totalMs": 8.622400283813477,
+            "selfMs": 0.00029999998514540493,
+            "gcKB": 3.1611328125,
+            "calls": 3.0
+        },
+        {
+            "depth": 1,
+            "name": "UpdateScene",
+            "totalMs": 6.766200065612793,
+            "selfMs": 0.10490000247955322,
+            "gcKB": 2.0830078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "Update.ScriptRunBehaviourUpdate",
+            "totalMs": 1.823099970817566,
+            "selfMs": 0.0008999999845400453,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "BehaviourUpdate",
+            "totalMs": 1.8221999406814576,
+            "selfMs": 0.27869999408721926,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Game::CapsuleMembrane.Update() [Invoke]",
+            "totalMs": 0.3312000036239624,
+            "selfMs": 0.002199999988079071,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "CapsuleMembrane.UpdateMatrices",
+            "totalMs": 0.30169999599456789,
+            "selfMs": 0.30169999599456789,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke]",
+            "totalMs": 0.27469998598098757,
+            "selfMs": 0.27469998598098757,
+            "gcKB": 0.0,
+            "calls": 3.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::Boid.Update() [Invoke]",
+            "totalMs": 0.14550000429153443,
+            "selfMs": 0.006399999838322401,
+            "gcKB": 0.0,
+            "calls": 40.0
+        },
+        {
+            "depth": 5,
+            "name": "Fauna.Boid.Update",
+            "totalMs": 0.13910000026226045,
+            "selfMs": 0.0835999995470047,
+            "gcKB": 0.0,
+            "calls": 40.0
+        },
+        {
+            "depth": 6,
+            "name": "Fauna.BodySync",
+            "totalMs": 0.05550000071525574,
+            "selfMs": 0.05550000071525574,
+            "gcKB": 0.0,
+            "calls": 19.0
+        },
+        {
+            "depth": 4,
+            "name": "UnityEngine.UI.dll!UnityEngine.EventSystems::EventSystem.Update() [Invoke]",
+            "totalMs": 0.11840000003576279,
+            "selfMs": 0.11840000003576279,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "FMODUnity.dll!FMODUnity::RuntimeManager.Update() [Invoke]",
+            "totalMs": 0.10209999978542328,
+            "selfMs": 0.10209999978542328,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::PrismShellContactManager.Update() [Invoke]",
+            "totalMs": 0.08609999716281891,
+            "selfMs": 0.003100000089034438,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "ShellContact.Query",
+            "totalMs": 0.05290000140666962,
+            "selfMs": 0.009399999864399434,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::VesselTransformer.Update() [Invoke]",
+            "totalMs": 0.07209999859333039,
+            "selfMs": 0.0011999999405816198,
+            "gcKB": 0.0,
+            "calls": 3.0
+        },
+        {
+            "depth": 5,
+            "name": "Vessel.Transformer.Update",
+            "totalMs": 0.07090000063180924,
+            "selfMs": 0.07090000063180924,
+            "gcKB": 0.0,
+            "calls": 3.0
+        },
+        {
+            "depth": 2,
+            "name": "PreLateUpdate.ScriptRunBehaviourLateUpdate",
+            "totalMs": 0.9332000017166138,
+            "selfMs": 0.0005999999702908099,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "LateBehaviourUpdate",
+            "totalMs": 0.9326000213623047,
+            "selfMs": 0.15809999406337739,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::CrystalFlipWave.LateUpdate() [Invoke]",
+            "totalMs": 0.5320000052452087,
+            "selfMs": 0.007300000172108412,
+            "gcKB": 0.0,
+            "calls": 48.0
+        },
+        {
+            "depth": 5,
+            "name": "CrystalFlipWave.LateUpdate",
+            "totalMs": 0.5246999859809876,
+            "selfMs": 0.5246999859809876,
+            "gcKB": 0.0,
+            "calls": 48.0
+        },
+        {
+            "depth": 2,
+            "name": "FixedUpdate.PhysicsFixedUpdate",
+            "totalMs": 0.7921000123023987,
+            "selfMs": 0.0015999999595806003,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Physics.RunSimulationStage",
+            "totalMs": 0.46709999442100527,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Physics.Simulate",
+            "totalMs": 0.46639999747276308,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "PxScene.simulate",
+            "totalMs": 0.4659000039100647,
+            "selfMs": 0.2651999890804291,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Physics.FetchPhysXResults",
+            "totalMs": 0.05620000138878822,
+            "selfMs": 0.0034000000450760128,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Physics.PrepareSimulationStage",
+            "totalMs": 0.2345000058412552,
+            "selfMs": 0.00139999995008111,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Physics.SyncTransforms",
+            "totalMs": 0.23309999704360963,
+            "selfMs": 0.01269999984651804,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Physics.CalculateChangedColliderTransforms",
+            "totalMs": 0.0681999996304512,
+            "selfMs": 0.00019999999494757503,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "TransformChangeSystem",
+            "totalMs": 0.06799999624490738,
+            "selfMs": 0.013100000098347664,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Physics.PublishResultsStage",
+            "totalMs": 0.08889999985694885,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.PlayerUpdateCanvases",
+            "totalMs": 0.5900999903678894,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UIEvents.WillRenderCanvases",
+            "totalMs": 0.5008999705314636,
+            "selfMs": 0.0005999999702908099,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "UGUI.Rendering.UpdateBatches",
+            "totalMs": 0.5002999901771545,
+            "selfMs": 0.22660000622272492,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke]",
+            "totalMs": 0.14300000667572022,
+            "selfMs": 0.05860000103712082,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Render",
+            "totalMs": 0.08110000193119049,
+            "selfMs": 0.0044999998062849049,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UIEvents.UpdateCanvasRectTransform",
+            "totalMs": 0.08839999884366989,
+            "selfMs": 0.08839999884366989,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerPreLateUpdate",
+            "totalMs": 0.4602000117301941,
+            "selfMs": 0.00019999999494757503,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.46000000834465029,
+            "selfMs": 0.09849999845027924,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.SweepBatch",
+            "totalMs": 0.15549999475479127,
+            "selfMs": 0.10859999805688858,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.Growth",
+            "totalMs": 0.10509999841451645,
+            "selfMs": 0.10509999841451645,
+            "gcKB": 0.0,
+            "calls": 62.0
+        },
+        {
+            "depth": 2,
+            "name": "PresentationSystemGroup",
+            "totalMs": 0.39590001106262209,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.3953999876976013,
+            "selfMs": 0.00139999995008111,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Default World Unity.Entities.PresentationSystemGroup",
+            "totalMs": 0.39399999380111697,
+            "selfMs": 0.00989999994635582,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Default World Unity.Rendering.EntitiesGraphicsSystem",
+            "totalMs": 0.2922999858856201,
+            "selfMs": 0.01209999993443489,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "UpdateEntitiesGraphicsBatches",
+            "totalMs": 0.23119999468326569,
+            "selfMs": 0.00029999998514540493,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerUpdate",
+            "totalMs": 0.19609999656677247,
+            "selfMs": 0.00039999998989515007,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.195700004696846,
+            "selfMs": 0.195700004696846,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.UpdateAllRenderers",
+            "totalMs": 0.164000004529953,
+            "selfMs": 0.003599999938160181,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "FinalizeUpdateRendererBoundingVolumes",
+            "totalMs": 0.08990000188350678,
+            "selfMs": 0.0008999999845400453,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "MeshRendererFinalizeUpdate",
+            "totalMs": 0.0625,
+            "selfMs": 0.0007999999797903001,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "WaitForJobGroupID",
+            "totalMs": 0.0617000013589859,
+            "selfMs": 0.016200000420212747,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.UpdateAllSkinnedMeshes",
+            "totalMs": 0.15449999272823335,
+            "selfMs": 0.00860000029206276,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "MeshSkinning.Update",
+            "totalMs": 0.14589999616146089,
+            "selfMs": 0.04479999840259552,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "MeshSkinning.SkinOnGPU",
+            "totalMs": 0.059300001710653308,
+            "selfMs": 0.0333000011742115,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "NetworkPostLateUpdate",
+            "totalMs": 0.14810000360012055,
+            "selfMs": 0.001500000013038516,
+            "gcKB": 1.7109375,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.14659999310970307,
+            "selfMs": 0.045099999755620959,
+            "gcKB": 1.7109375,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "NetworkMetrics.DispatchFrame",
+            "totalMs": 0.07100000232458115,
+            "selfMs": 0.06920000165700913,
+            "gcKB": 1.7109375,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "totalMs": 0.00139999995008111,
+            "selfMs": 0.00139999995008111,
+            "gcKB": 1.7109375,
+            "calls": 11.0
+        },
+        {
+            "depth": 2,
+            "name": "NetworkEarlyUpdate",
+            "totalMs": 0.12970000505447389,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.1289999932050705,
+            "selfMs": 0.07540000230073929,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "JobHandle.Complete",
+            "totalMs": 0.05310000106692314,
+            "selfMs": 0.0071000000461936,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "EarlyUpdate.UpdateAsyncInstantiate",
+            "totalMs": 0.11389999836683274,
+            "selfMs": 0.0008999999845400453,
+            "gcKB": 0.1337890625,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "AsyncInstantiateOperation.IntegrateInMainThread",
+            "totalMs": 0.11299999803304672,
+            "selfMs": 0.01360000018030405,
+            "gcKB": 0.1337890625,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "InstantiateMultiple.IntegrateInMainThread",
+            "totalMs": 0.054899998009204867,
+            "selfMs": 0.011500000022351742,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "InitializationSystemGroup",
+            "totalMs": 0.0697999969124794,
+            "selfMs": 0.00029999998514540493,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.06949999928474426,
+            "selfMs": 0.0015999999595806003,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Default World Unity.Entities.InitializationSystemGroup",
+            "totalMs": 0.06790000200271607,
+            "selfMs": 0.009200000204145909,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.UpdateRectTransform",
+            "totalMs": 0.05180000141263008,
+            "selfMs": 0.003100000089034438,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "EarlyUpdate.UpdateCanvasRectTransform",
+            "totalMs": 0.051500000059604648,
+            "selfMs": 0.051500000059604648,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 1,
+            "name": "RenderPlayModeViewCameras",
+            "totalMs": 1.8557000160217286,
+            "selfMs": 0.020600000396370889,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke]",
+            "totalMs": 1.774399995803833,
+            "selfMs": 0.024699999019503595,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Inl_UniversalRenderTotal",
+            "totalMs": 1.7496999502182007,
+            "selfMs": 0.016699999570846559,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Inl_RenderCameraStack",
+            "totalMs": 1.7110999822616578,
+            "selfMs": 0.04729999974370003,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "totalMs": 0.8616999983787537,
+            "selfMs": 0.0697999969124794,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "CullScriptable",
+            "totalMs": 0.4099999964237213,
+            "selfMs": 0.008999999612569809,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Inl_ExecuteRenderGraph",
+            "totalMs": 0.17980000376701356,
+            "selfMs": 0.018799999728798868,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Inl_RecordRenderGraph",
+            "totalMs": 0.1581999957561493,
+            "selfMs": 0.005100000184029341,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Inl_ScriptableRenderContext.Submit",
+            "totalMs": 0.6962000131607056,
+            "selfMs": 0.04190000146627426,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "totalMs": 0.6527000069618225,
+            "selfMs": 0.00989999994635582,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 0,
+            "name": "EditorLoop",
+            "totalMs": 2.5750999450683595,
+            "selfMs": 2.5750999450683595,
+            "gcKB": 0.0,
+            "calls": 4.0
+        },
+        {
+            "depth": 0,
+            "name": "Profiler.FlushCounters",
+            "totalMs": 0.6064000129699707,
+            "selfMs": 0.0005999999702908099,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 1,
+            "name": "Profiler.FlushMemoryCounters",
+            "totalMs": 0.5863000154495239,
+            "selfMs": 0.5863000154495239,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 0,
+            "name": "Profiler.CollectEditorStats",
+            "totalMs": 0.06620000302791596,
+            "selfMs": 0.0010000000474974514,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 1,
+            "name": "Profiler.CollectUIStats",
+            "totalMs": 0.06520000100135803,
+            "selfMs": 0.06340000033378601,
+            "gcKB": 0.0,
+            "calls": 1.0
+        }
+    ],
+    "spikeFrameTree": [
+        {
+            "depth": 0,
+            "name": "PlayerLoop",
+            "totalMs": 7451.865234375,
+            "selfMs": 0.0010239999974146486,
+            "gcKB": 45.1826171875,
+            "calls": 3.0
+        },
+        {
+            "depth": 1,
+            "name": "UpdateScene",
+            "totalMs": 7449.76611328125,
+            "selfMs": 0.14233599603176118,
+            "gcKB": 44.1044921875,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "Update.ScriptRunBehaviourUpdate",
+            "totalMs": 7442.72021484375,
+            "selfMs": 0.0015360000543296338,
+            "gcKB": 2.197265625,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "BehaviourUpdate",
+            "totalMs": 7442.71875,
+            "selfMs": 0.3164159953594208,
+            "gcKB": 2.197265625,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::BrittleStarExecutor.Update() [Invoke]",
+            "totalMs": 7441.240234375,
+            "selfMs": 7440.70751953125,
+            "gcKB": 2.173828125,
+            "calls": 3.0
+        },
+        {
+            "depth": 5,
+            "name": "Projectile.SweepBatch",
+            "totalMs": 0.33480000495910647,
+            "selfMs": 0.250900000333786,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "PrismSpatialIndex.SegmentsOccupied",
+            "totalMs": 0.08299999684095383,
+            "selfMs": 0.006099999882280827,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "PoolActivate.SparrowProjectile",
+            "totalMs": 0.11079999804496765,
+            "selfMs": 0.002099999925121665,
+            "gcKB": 0.818359375,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "GameObject.Activate",
+            "totalMs": 0.10869999974966049,
+            "selfMs": 0.0011999999405816198,
+            "gcKB": 0.818359375,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "TransformHandle.SetParent",
+            "totalMs": 0.05269999802112579,
+            "selfMs": 0.027300000190734865,
+            "gcKB": 0.0,
+            "calls": 2.0
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "totalMs": 0.000699999975040555,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 1.35546875,
+            "calls": 12.0
+        },
+        {
+            "depth": 4,
+            "name": "FMODUnity.dll!FMODUnity::RuntimeManager.Update() [Invoke]",
+            "totalMs": 0.1550000011920929,
+            "selfMs": 0.1550000011920929,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::Boid.Update() [Invoke]",
+            "totalMs": 0.14810000360012055,
+            "selfMs": 0.006500000134110451,
+            "gcKB": 0.0,
+            "calls": 40.0
+        },
+        {
+            "depth": 5,
+            "name": "Fauna.Boid.Update",
+            "totalMs": 0.14159999787807465,
+            "selfMs": 0.08259999752044678,
+            "gcKB": 0.0,
+            "calls": 40.0
+        },
+        {
+            "depth": 6,
+            "name": "Fauna.BodySync",
+            "totalMs": 0.05900000035762787,
+            "selfMs": 0.05900000035762787,
+            "gcKB": 0.0,
+            "calls": 21.0
+        },
+        {
+            "depth": 4,
+            "name": "UnityEngine.UI.dll!UnityEngine.EventSystems::EventSystem.Update() [Invoke]",
+            "totalMs": 0.1264999955892563,
+            "selfMs": 0.1264999955892563,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::PrismShellContactManager.Update() [Invoke]",
+            "totalMs": 0.08500000089406967,
+            "selfMs": 0.0027000000700354578,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "ShellContact.Query",
+            "totalMs": 0.05350000038743019,
+            "selfMs": 0.009499999694526196,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::VesselTransformer.Update() [Invoke]",
+            "totalMs": 0.0738999992609024,
+            "selfMs": 0.001500000013038516,
+            "gcKB": 0.0,
+            "calls": 3.0
+        },
+        {
+            "depth": 5,
+            "name": "Vessel.Transformer.Update",
+            "totalMs": 0.07239999622106552,
+            "selfMs": 0.07239999622106552,
+            "gcKB": 0.0,
+            "calls": 3.0
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerPreLateUpdate",
+            "totalMs": 1.0979000329971314,
+            "selfMs": 0.00039999998989515007,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 1.097499966621399,
+            "selfMs": 0.20229999721050263,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.Growth",
+            "totalMs": 0.4474000036716461,
+            "selfMs": 0.4474000036716461,
+            "gcKB": 0.0,
+            "calls": 151.0
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.SweepPrisms",
+            "totalMs": 0.375900000333786,
+            "selfMs": 0.375900000333786,
+            "gcKB": 0.0,
+            "calls": 151.0
+        },
+        {
+            "depth": 4,
+            "name": "Projectile.SweepVessels",
+            "totalMs": 0.05959999933838844,
+            "selfMs": 0.042799998074769977,
+            "gcKB": 0.0,
+            "calls": 151.0
+        },
+        {
+            "depth": 2,
+            "name": "FixedUpdate.PhysicsFixedUpdate",
+            "totalMs": 0.9509000182151794,
+            "selfMs": 0.00139999995008111,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Physics.RunSimulationStage",
+            "totalMs": 0.5516999959945679,
+            "selfMs": 0.0005999999702908099,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Physics.Simulate",
+            "totalMs": 0.5511000156402588,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "PxScene.simulate",
+            "totalMs": 0.550599992275238,
+            "selfMs": 0.2653000056743622,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Physics.FetchPhysXResults",
+            "totalMs": 0.07909999787807465,
+            "selfMs": 0.00279999990016222,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Physics.PrepareSimulationStage",
+            "totalMs": 0.28110000491142275,
+            "selfMs": 0.0005999999702908099,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Physics.SyncTransforms",
+            "totalMs": 0.28049999475479128,
+            "selfMs": 0.019600000232458116,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Physics.WriteRigidbodyPoses",
+            "totalMs": 0.08030000329017639,
+            "selfMs": 0.08030000329017639,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Physics.CalculateChangedColliderTransforms",
+            "totalMs": 0.07899999618530274,
+            "selfMs": 0.00019999999494757503,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "TransformChangeSystem",
+            "totalMs": 0.07880000025033951,
+            "selfMs": 0.02319999970495701,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Physics.CalculateChangedBodyTransforms",
+            "totalMs": 0.05379999801516533,
+            "selfMs": 0.0,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "TransformChangeSystem",
+            "totalMs": 0.05379999801516533,
+            "selfMs": 0.011500000022351742,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Physics.PublishResultsStage",
+            "totalMs": 0.11670000106096268,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Physics.ReadTransforms",
+            "totalMs": 0.06750000268220902,
+            "selfMs": 0.00019999999494757503,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Physics.UpdateRigidbodies",
+            "totalMs": 0.06679999828338623,
+            "selfMs": 0.06679999828338623,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "PreLateUpdate.ScriptRunBehaviourLateUpdate",
+            "totalMs": 0.9229999780654907,
+            "selfMs": 0.0005999999702908099,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "LateBehaviourUpdate",
+            "totalMs": 0.9223999977111816,
+            "selfMs": 0.14259999990463258,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Assembly-CSharp.dll!CosmicShore.Gameplay::CrystalFlipWave.LateUpdate() [Invoke]",
+            "totalMs": 0.5364999771118164,
+            "selfMs": 0.007499999832361937,
+            "gcKB": 0.0,
+            "calls": 48.0
+        },
+        {
+            "depth": 5,
+            "name": "CrystalFlipWave.LateUpdate",
+            "totalMs": 0.5289999842643738,
+            "selfMs": 0.5289999842643738,
+            "gcKB": 0.0,
+            "calls": 48.0
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.PlayerUpdateCanvases",
+            "totalMs": 0.8574000000953674,
+            "selfMs": 0.0008999999845400453,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UIEvents.WillRenderCanvases",
+            "totalMs": 0.7321000099182129,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "UGUI.Rendering.UpdateBatches",
+            "totalMs": 0.7314000129699707,
+            "selfMs": 0.26649999618530276,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "UnityEngine.UIModule.dll!UnityEngine::Canvas.SendWillRenderCanvases() [Invoke]",
+            "totalMs": 0.30809998512268069,
+            "selfMs": 0.054899998009204867,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Render",
+            "totalMs": 0.24940000474452973,
+            "selfMs": 0.0038999998942017557,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "TransformChangeSystem",
+            "totalMs": 0.06849999725818634,
+            "selfMs": 0.02710000053048134,
+            "gcKB": 0.0,
+            "calls": 28.0
+        },
+        {
+            "depth": 3,
+            "name": "UIEvents.UpdateCanvasRectTransform",
+            "totalMs": 0.12430000305175781,
+            "selfMs": 0.10159999877214432,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "PresentationSystemGroup",
+            "totalMs": 0.489300012588501,
+            "selfMs": 0.00029999998514540493,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.48899999260902407,
+            "selfMs": 0.0013000000035390258,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Default World Unity.Entities.PresentationSystemGroup",
+            "totalMs": 0.4876999855041504,
+            "selfMs": 0.02160000056028366,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Default World Unity.Rendering.EntitiesGraphicsSystem",
+            "totalMs": 0.352400004863739,
+            "selfMs": 0.011599999852478505,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "UpdateEntitiesGraphicsBatches",
+            "totalMs": 0.2924000024795532,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.UpdateAllRenderers",
+            "totalMs": 0.2915000021457672,
+            "selfMs": 0.003599999938160181,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "FinalizeUpdateRendererBoundingVolumes",
+            "totalMs": 0.11259999871253967,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "MeshRendererFinalizeUpdate",
+            "totalMs": 0.07609999924898148,
+            "selfMs": 0.0010000000474974514,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "WaitForJobGroupID",
+            "totalMs": 0.07509999722242356,
+            "selfMs": 0.01720000058412552,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "EngineJob",
+            "totalMs": 0.05770000070333481,
+            "selfMs": 0.00029999998514540493,
+            "gcKB": 0.0,
+            "calls": 2.0
+        },
+        {
+            "depth": 2,
+            "name": "Update.ScriptRunDelayedTasks",
+            "totalMs": 0.27410000562667849,
+            "selfMs": 0.0007999999797903001,
+            "gcKB": 22.259765625,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!UnityEngine::UnitySynchronizationContext.ExecuteTasks() [Invoke]",
+            "totalMs": 0.2732999920845032,
+            "selfMs": 0.2705000042915344,
+            "gcKB": 22.259765625,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "GC.Alloc",
+            "totalMs": 0.00279999990016222,
+            "selfMs": 0.00279999990016222,
+            "gcKB": 22.259765625,
+            "calls": 54.0
+        },
+        {
+            "depth": 2,
+            "name": "PostLateUpdate.UpdateAllSkinnedMeshes",
+            "totalMs": 0.25119999051094057,
+            "selfMs": 0.005400000140070915,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "MeshSkinning.Update",
+            "totalMs": 0.24580000340938569,
+            "selfMs": 0.05079999938607216,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "WaitForJobGroupID",
+            "totalMs": 0.10979999601840973,
+            "selfMs": 0.057500001043081287,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "EngineJob",
+            "totalMs": 0.05220000073313713,
+            "selfMs": 0.0031999999191612007,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "MeshSkinning.SkinOnGPU",
+            "totalMs": 0.0851999968290329,
+            "selfMs": 0.03539999946951866,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "NetworkEarlyUpdate",
+            "totalMs": 0.17679999768733979,
+            "selfMs": 0.00139999995008111,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.1754000037908554,
+            "selfMs": 0.1062999963760376,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "JobHandle.Complete",
+            "totalMs": 0.06870000064373017,
+            "selfMs": 0.006599999964237213,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "WaitForJobGroupID",
+            "totalMs": 0.06210000067949295,
+            "selfMs": 0.011799999512732029,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerUpdate",
+            "totalMs": 0.1639000028371811,
+            "selfMs": 0.00029999998514540493,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.16359999775886537,
+            "selfMs": 0.16359999775886537,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "NetworkPostLateUpdate",
+            "totalMs": 0.16009999811649323,
+            "selfMs": 0.0013000000035390258,
+            "gcKB": 1.7109375,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.15880000591278077,
+            "selfMs": 0.07109999656677246,
+            "gcKB": 1.7109375,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "NetworkMetrics.DispatchFrame",
+            "totalMs": 0.061900001019239429,
+            "selfMs": 0.0608999989926815,
+            "gcKB": 1.7109375,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "GC.Alloc",
+            "totalMs": 0.0007999999797903001,
+            "selfMs": 0.0007999999797903001,
+            "gcKB": 1.7109375,
+            "calls": 11.0
+        },
+        {
+            "depth": 2,
+            "name": "UniTaskLoopRunnerEarlyUpdate",
+            "totalMs": 0.15289999544620515,
+            "selfMs": 0.0005999999702908099,
+            "gcKB": 0.1796875,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.15230000019073487,
+            "selfMs": 0.05480000004172325,
+            "gcKB": 0.1796875,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "PoolRefill.SparrowProjectile",
+            "totalMs": 0.09749999642372132,
+            "selfMs": 0.01730000041425228,
+            "gcKB": 0.1796875,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "InstantiateAsync",
+            "totalMs": 0.07970000058412552,
+            "selfMs": 0.00029999998514540493,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "AsyncInstantiateOperation.Create",
+            "totalMs": 0.07940000295639038,
+            "selfMs": 0.005100000184029341,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "EarlyUpdate.UpdateAsyncInstantiate",
+            "totalMs": 0.12290000170469284,
+            "selfMs": 0.000699999975040555,
+            "gcKB": 0.1337890625,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "AsyncInstantiateOperation.IntegrateInMainThread",
+            "totalMs": 0.12219999730587006,
+            "selfMs": 0.01510000042617321,
+            "gcKB": 0.1337890625,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "InstantiateMultiple.IntegrateInMainThread",
+            "totalMs": 0.05400000140070915,
+            "selfMs": 0.009599999524652958,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "ActionScheduler",
+            "totalMs": 0.12070000171661377,
+            "selfMs": 0.0010000000474974514,
+            "gcKB": 17.3828125,
+            "calls": 3.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.11969999969005585,
+            "selfMs": 0.11289999634027481,
+            "gcKB": 17.3828125,
+            "calls": 3.0
+        },
+        {
+            "depth": 4,
+            "name": "GC.Alloc",
+            "totalMs": 0.006800000090152025,
+            "selfMs": 0.006800000090152025,
+            "gcKB": 17.3828125,
+            "calls": 166.0
+        },
+        {
+            "depth": 2,
+            "name": "InitializationSystemGroup",
+            "totalMs": 0.09229999780654907,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.09179999679327011,
+            "selfMs": 0.002300000051036477,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Default World Unity.Entities.InitializationSystemGroup",
+            "totalMs": 0.08950000256299973,
+            "selfMs": 0.011599999852478505,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "SimulationSystemGroup",
+            "totalMs": 0.08760000020265579,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "UnityEngine.CoreModule.dll!::UpdateFunction.Invoke() [Invoke]",
+            "totalMs": 0.08709999918937683,
+            "selfMs": 0.0020000000949949028,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Default World Unity.Entities.SimulationSystemGroup",
+            "totalMs": 0.08510000258684159,
+            "selfMs": 0.022600000724196435,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 1,
+            "name": "RenderPlayModeViewCameras",
+            "totalMs": 2.098299980163574,
+            "selfMs": 0.0340999998152256,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 2,
+            "name": "UnityEngine.CoreModule.dll!UnityEngine.Rendering::RenderPipelineManager.DoRenderLoop_Internal() [Invoke]",
+            "totalMs": 2.0064001083374025,
+            "selfMs": 0.02500000037252903,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 3,
+            "name": "Inl_UniversalRenderTotal",
+            "totalMs": 1.9814000129699708,
+            "selfMs": 0.01679999940097332,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 4,
+            "name": "Inl_RenderCameraStack",
+            "totalMs": 1.944599986076355,
+            "selfMs": 0.038100000470876697,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Inl_UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "totalMs": 0.9314000010490418,
+            "selfMs": 0.057500001043081287,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "CullScriptable",
+            "totalMs": 0.5206000208854675,
+            "selfMs": 0.008100000210106373,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Inl_ExecuteRenderGraph",
+            "totalMs": 0.1670999974012375,
+            "selfMs": 0.017899999395012857,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "Inl_RecordRenderGraph",
+            "totalMs": 0.15309999883174897,
+            "selfMs": 0.004799999762326479,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 5,
+            "name": "Inl_ScriptableRenderContext.Submit",
+            "totalMs": 0.9143999814987183,
+            "selfMs": 0.05290000140666962,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 6,
+            "name": "UniversalRenderPipeline.RenderSingleCameraInternal: CM PlayerCam",
+            "totalMs": 0.8598999977111816,
+            "selfMs": 0.009499999694526196,
+            "gcKB": 1.078125,
+            "calls": 1.0
+        },
+        {
+            "depth": 0,
+            "name": "EditorLoop",
+            "totalMs": 4.674699783325195,
+            "selfMs": 4.674699783325195,
+            "gcKB": 0.0,
+            "calls": 4.0
+        },
+        {
+            "depth": 0,
+            "name": "Profiler.FlushCounters",
+            "totalMs": 0.7404000163078308,
+            "selfMs": 0.0005000000237487257,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 1,
+            "name": "Profiler.FlushMemoryCounters",
+            "totalMs": 0.7045000195503235,
+            "selfMs": 0.7045000195503235,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 0,
+            "name": "Profiler.CollectEditorStats",
+            "totalMs": 0.1054999977350235,
+            "selfMs": 0.0013000000035390258,
+            "gcKB": 0.0,
+            "calls": 1.0
+        },
+        {
+            "depth": 1,
+            "name": "Profiler.CollectUIStats",
+            "totalMs": 0.10419999808073044,
+            "selfMs": 0.10239999741315842,
+            "gcKB": 0.0,
+            "calls": 1.0
+        }
+    ],
+    "threadSampleStride": 6,
+    "threadSampledFrames": 30,
+    "threads": [
+        {
+            "name": "Render Thread",
+            "group": "",
+            "samples": 30,
+            "avgBusyMs": 8.37403678894043,
+            "avgWaitMs": 6.4636664390563969,
+            "busyPct": 56.43755340576172,
+            "top": [
+                {
+                    "name": "RenderLoop",
+                    "avgMs": 8.37403678894043
+                },
+                {
+                    "name": "Gfx.WaitForGfxCommandsFromMainThread",
+                    "avgMs": 6.4636664390563969
+                }
+            ]
+        },
+        {
+            "name": "DataDeserializer",
+            "group": "Profiler",
+            "samples": 30,
+            "avgBusyMs": 2.453096628189087,
+            "avgWaitMs": 11.268783569335938,
+            "busyPct": 17.87726402282715,
+            "top": [
+                {
+                    "name": "Semaphore.WaitForSignal",
+                    "avgMs": 11.268783569335938
+                },
+                {
+                    "name": "Profiler.SyncGlobalData",
+                    "avgMs": 1.5493333339691163
+                },
+                {
+                    "name": "Profiler.ParseBlock",
+                    "avgMs": 0.9037633538246155
+                }
+            ]
+        },
+        {
+            "name": "Worker 1",
+            "group": "Background Job",
+            "samples": 28,
+            "avgBusyMs": 2.300666570663452,
+            "avgWaitMs": 10.86552619934082,
+            "busyPct": 17.47404670715332,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 10.86552619934082
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 2.300666570663452
+                }
+            ]
+        },
+        {
+            "name": "Worker",
+            "group": "D3D12 Task",
+            "samples": 30,
+            "avgBusyMs": 1.6794500350952149,
+            "avgWaitMs": 9.413076400756836,
+            "busyPct": 15.140374183654786,
+            "top": [
+                {
+                    "name": "GfxTask_ReadValue",
+                    "avgMs": 9.413076400756836
+                },
+                {
+                    "name": "GfxTask_Execute",
+                    "avgMs": 0.9096166491508484
+                },
+                {
+                    "name": "GfxTask_SyncJobFence",
+                    "avgMs": 0.6496400237083435
+                },
+                {
+                    "name": "GfxTask_InsertGpuFence",
+                    "avgMs": 0.05768666788935661
+                },
+                {
+                    "name": "GfxDeviceD3D12.Reuse",
+                    "avgMs": 0.05649333447217941
+                }
+            ]
+        },
+        {
+            "name": "Worker 2",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 1.493690013885498,
+            "avgWaitMs": 12.761796951293946,
+            "busyPct": 10.47800064086914,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 12.761796951293946
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.8094733357429504
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.6048799753189087
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.011816666461527348
+                },
+                {
+                    "name": "BoundsCheckMaterialMeshIndexJob (Burst)",
+                    "avgMs": 0.00803999975323677
+                }
+            ]
+        },
+        {
+            "name": "Worker 1",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 1.4037233591079713,
+            "avgWaitMs": 12.764019966125489,
+            "busyPct": 9.907882690429688,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 12.764019966125489
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.9775266647338867
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.2691933214664459
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.0325833335518837
+                },
+                {
+                    "name": "FindDensestRegionJob (Burst)",
+                    "avgMs": 0.021603334695100786
+                }
+            ]
+        },
+        {
+            "name": "Worker 3",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 1.1463866233825684,
+            "avgWaitMs": 13.13107967376709,
+            "busyPct": 8.029342651367188,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.13107967376709
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.6318299770355225
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.4099733531475067
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.0206366665661335
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.016173332929611207
+                }
+            ]
+        },
+        {
+            "name": "Worker 2",
+            "group": "Background Job",
+            "samples": 28,
+            "avgBusyMs": 0.9352566599845886,
+            "avgWaitMs": 12.235612869262696,
+            "busyPct": 7.100948333740234,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 12.235612869262696
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.9352566599845886
+                }
+            ]
+        },
+        {
+            "name": "Worker 4",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.8803333044052124,
+            "avgWaitMs": 13.436822891235352,
+            "busyPct": 6.148799896240234,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.436822891235352
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.4436799883842468
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.32858332991600039
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.02741999924182892
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.022273333743214608
+                }
+            ]
+        },
+        {
+            "name": "Worker 5",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.8035066723823547,
+            "avgWaitMs": 13.53792667388916,
+            "busyPct": 5.602694511413574,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.53792667388916
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.37033334374427798
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.333133339881897
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.022286666557192804
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.01874000020325184
+                }
+            ]
+        },
+        {
+            "name": "Worker 7",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.7273633480072022,
+            "avgWaitMs": 13.631119728088379,
+            "busyPct": 5.065739631652832,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.631119728088379
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.33485665917396548
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.3040599822998047
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.019216665998101236
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.01496999990195036
+                }
+            ]
+        },
+        {
+            "name": "Worker 8",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.6743299961090088,
+            "avgWaitMs": 13.690056800842286,
+            "busyPct": 4.694457054138184,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.690056800842286
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.36500999331474306
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.23006665706634522
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.016296666115522386
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.013036666437983513
+                }
+            ]
+        },
+        {
+            "name": "Worker 6",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.6672499775886536,
+            "avgWaitMs": 13.691280364990235,
+            "busyPct": 4.647063255310059,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.691280364990235
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.29630333185195925
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.2838333249092102
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.020356666296720506
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.01275333296507597
+                }
+            ]
+        },
+        {
+            "name": "Worker 9",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.5332966446876526,
+            "avgWaitMs": 13.84023666381836,
+            "busyPct": 3.710268259048462,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.84023666381836
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.23446667194366456
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.2319599986076355
+                },
+                {
+                    "name": "FrustumCullingJob (Burst)",
+                    "avgMs": 0.00984666682779789
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.009229999966919423
+                }
+            ]
+        },
+        {
+            "name": "Worker 0",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.4516400098800659,
+            "avgWaitMs": 13.93101692199707,
+            "busyPct": 3.1401708126068117,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.93101692199707
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.22743000090122224
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.1821499913930893
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.010263333097100258
+                },
+                {
+                    "name": "CollectWorkItemsJob (Burst)",
+                    "avgMs": 0.0050766668282449249
+                }
+            ]
+        },
+        {
+            "name": "Worker 10",
+            "group": "Job",
+            "samples": 30,
+            "avgBusyMs": 0.43509334325790408,
+            "avgWaitMs": 13.946682929992676,
+            "busyPct": 3.0253102779388429,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.946682929992676
+                },
+                {
+                    "name": "Profiler.ParseThreadData",
+                    "avgMs": 0.24929334223270417
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.14028999209403993
+                },
+                {
+                    "name": "EmitDrawCommandsJob (Burst)",
+                    "avgMs": 0.009493333287537098
+                },
+                {
+                    "name": "RenderBoundsUpdateSystem:BoundsJob (Burst)",
+                    "avgMs": 0.004936666693538427
+                }
+            ]
+        },
+        {
+            "name": "Worker 3",
+            "group": "Background Job",
+            "samples": 29,
+            "avgBusyMs": 0.1476433277130127,
+            "avgWaitMs": 13.660316467285157,
+            "busyPct": 1.0692623853683472,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.660316467285157
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.1476433277130127
+                }
+            ]
+        },
+        {
+            "name": "Worker 4",
+            "group": "Background Job",
+            "samples": 28,
+            "avgBusyMs": 0.1363566666841507,
+            "avgWaitMs": 12.5660400390625,
+            "busyPct": 1.0734719038009644,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 12.5660400390625
+                },
+                {
+                    "name": "EngineJob",
+                    "avgMs": 0.1363566666841507
+                }
+            ]
+        },
+        {
+            "name": "Dispatcher",
+            "group": "Profiler",
+            "samples": 30,
+            "avgBusyMs": 0.1296733319759369,
+            "avgWaitMs": 14.359522819519043,
+            "busyPct": 0.894965648651123,
+            "top": [
+                {
+                    "name": "Semaphore.WaitForSignal",
+                    "avgMs": 14.359522819519043
+                },
+                {
+                    "name": "Profiler.WriteBuffer",
+                    "avgMs": 0.1296733319759369
+                }
+            ]
+        },
+        {
+            "name": "Audio Mixer Thread",
+            "group": "Audio",
+            "samples": 19,
+            "avgBusyMs": 0.01310999970883131,
+            "avgWaitMs": 0.0,
+            "busyPct": 100.0,
+            "top": [
+                {
+                    "name": "Audio.Thread",
+                    "avgMs": 0.01310999970883131
+                }
+            ]
+        },
+        {
+            "name": "Audio (WASAPI) Feeder Thread",
+            "group": "Audio",
+            "samples": 19,
+            "avgBusyMs": 0.008603333495557309,
+            "avgWaitMs": 0.0,
+            "busyPct": 100.0,
+            "top": [
+                {
+                    "name": "Audio.Thread",
+                    "avgMs": 0.008603333495557309
+                }
+            ]
+        },
+        {
+            "name": "Audio Stream Thread",
+            "group": "Audio",
+            "samples": 30,
+            "avgBusyMs": 0.0021033333614468576,
+            "avgWaitMs": 0.0,
+            "busyPct": 100.0,
+            "top": [
+                {
+                    "name": "Audio.Thread",
+                    "avgMs": 0.0021033333614468576
+                }
+            ]
+        },
+        {
+            "name": "#18580",
+            "group": "Scripting Threads",
+            "samples": 1,
+            "avgBusyMs": 0.0007099999929778278,
+            "avgWaitMs": 0.0,
+            "busyPct": 100.0,
+            "top": [
+                {
+                    "name": "GC.Alloc",
+                    "avgMs": 0.0007099999929778278
+                }
+            ]
+        },
+        {
+            "name": "Timer-Scheduler",
+            "group": "Scripting Threads",
+            "samples": 7,
+            "avgBusyMs": 0.0002433333283988759,
+            "avgWaitMs": 0.0,
+            "busyPct": 100.0,
+            "top": [
+                {
+                    "name": "GC.Alloc",
+                    "avgMs": 0.0002433333283988759
+                }
+            ]
+        },
+        {
+            "name": "Thread Pool Worker",
+            "group": "Scripting Threads",
+            "samples": 8,
+            "avgBusyMs": 0.00020666666387114674,
+            "avgWaitMs": 0.0,
+            "busyPct": 100.0,
+            "top": [
+                {
+                    "name": "GC.Alloc",
+                    "avgMs": 0.00020666666387114674
+                }
+            ]
+        },
+        {
+            "name": "Worker 14",
+            "group": "Background Job",
+            "samples": 28,
+            "avgBusyMs": 0.0,
+            "avgWaitMs": 13.085550308227539,
+            "busyPct": 0.0,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.085550308227539
+                }
+            ]
+        },
+        {
+            "name": "Worker 6",
+            "group": "Background Job",
+            "samples": 28,
+            "avgBusyMs": 0.0,
+            "avgWaitMs": 13.169883728027344,
+            "busyPct": 0.0,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.169883728027344
+                }
+            ]
+        },
+        {
+            "name": "Worker 0",
+            "group": "BakingJobs",
+            "samples": 1,
+            "avgBusyMs": 0.0,
+            "avgWaitMs": 0.7253599762916565,
+            "busyPct": 0.0,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 0.7253599762916565
+                }
+            ]
+        },
+        {
+            "name": "Worker 1",
+            "group": "BakingJobs",
+            "samples": 29,
+            "avgBusyMs": 0.0,
+            "avgWaitMs": 13.80873966217041,
+            "busyPct": 0.0,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 13.80873966217041
+                }
+            ]
+        },
+        {
+            "name": "Worker 2",
+            "group": "BakingJobs",
+            "samples": 18,
+            "avgBusyMs": 0.0,
+            "avgWaitMs": 8.59494686126709,
+            "busyPct": 0.0,
+            "top": [
+                {
+                    "name": "Idle",
+                    "avgMs": 8.59494686126709
+                }
+            ]
+        },
+        {
+            "name": "BatchDeleteObjects",
+            "group": "Other Threads",
+            "samples": 1,
+            "avgBusyMs": 0.0,
+            "avgWaitMs": 0.7253599762916565,
+            "busyPct": 0.0,
+            "top": [
+                {
+                    "name": "Semaphore.WaitForSignal",
+                    "avgMs": 0.7253599762916565
+                }
+            ]
+        },
+        {
+            "name": "EnlightenWorker",
+            "group": "Other Threads",
+            "samples": 180,
+            "avgBusyMs": 0.0,
+            "avgWaitMs": 86.94700622558594,
+            "busyPct": 0.0,
+            "top": [
+                {
+                    "name": "Semaphore.WaitForSignal",
+                    "avgMs": 86.94700622558594
+                }
+            ]
+        }
+    ],
+    "environment": {
+        "runtime": "Editor",
+        "codeOptimization": "Release",
+        "scriptingBackend": "Mono",
+        "platform": "WindowsEditor",
+        "unityVersion": "6000.3.17f1",
+        "appVersion": "0.3.0",
+        "gpu": "NVIDIA GeForce RTX 4070 Ti",
+        "graphicsApi": "Direct3D12",
+        "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+        "cpuCores": 12,
+        "systemMemoryMB": 32697,
+        "resolution": "1920x1080",
+        "fullScreenMode": "Windowed",
+        "qualityLevel": "Ultra",
+        "burstEnabled": true,
+        "jobCompilerEnabled": true,
+        "debuggerAttached": false,
+        "profilerRecording": true,
+        "focused": true
+    },
+    "managedJobMs": 0.0,
+    "managedJobs": [],
+    "notes": [
+        "Times include the Profiler's own recording overhead - use this report to RANK rows, and diag/ab for the numbers to quote.",
+        "Averages are per captured frame, including frames a row did not appear in (presentPct says how often it did)."
+    ]
+}
+}
