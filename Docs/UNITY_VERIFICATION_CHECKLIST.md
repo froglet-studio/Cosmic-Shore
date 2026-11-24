@@ -26938,6 +26938,8 @@ Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally
 - [ ] Scarab Rally I1, I2 and I3: no ruins. Switchback: no Scarab Rally ruins (its own are the Switchback session's).
 - [x] Three Legendary AI Scarabs at I4 finish: the race ended after 139 s at 62-78 fps in the editor (2026-11-24,
       one race; the race model's Legendary time was 121 s). All 480 ruin prisms stood at the end. Medium was not raced.
+      Raced again with the quicker lay (2026-11-25, one race): 139 s, 59-78 fps while racing, 415 ruin prisms all
+      standing, the lay 0.27 s on that course.
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
 
 ### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)

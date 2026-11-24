@@ -120,7 +120,13 @@ editor: choosing the ruins with the field 0.8 s to 0.09 s a course (the same ten
 408-574 prisms), and laying them on the live I4 course 0.84 s to 0.33 s, of which about 0.17 s is laying the field
 out again and the rest is making the prisms. All 24 ruins test classes were run in the editor after the change: 23
 pass; Perch Run's `Every_dart_the_ai_plans_passes_the_standing_ruins` ran past its 180 s limit in its own loop (an
-assert with a formatted message for every prism sample), which is that test's cost and not the generator's. The AI's I4 times in the table below were measured
+assert with a formatted message for every prism sample), which is that test's cost and not the generator's.
+
+The I4 race was then run again with the new lay (2026-11-25, in the editor, three Legendary AI, offline, normal
+speed, one race): 7 ruins of 415 prisms (Jade 162, Ruby 111, Gold 142), laid again on the live course in 0.27 s; the
+race ended after 139 s of game time, the same as before the change; 59-78 fps while racing (one 15 fps sample as the
+end screen came up); all 415 ruin prisms stood at the end; the only error in the console was the Cloud Code 404 the
+first race also had. The AI's I4 times in the table below were measured
 before the ruins; the ruins stand outside the lane the AI flies, but that was not raced again.
 
 ## What is reused, and what is new
