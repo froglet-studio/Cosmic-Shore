@@ -66,6 +66,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f), Tooltip("Scale on every take. Capped at 1: the model's clearance gate proved one full take per bone (a bone two inputs move shares it), not more.")]
         float amplitude = 1f;
 
+        [Header("Helm - how the hull is sailed: way, steering, weave, lean, swell and flinch (ArkHelm)")]
+        [SerializeField, Tooltip("How the Ark gathers way, swings its bow, weaves, banks, breathes at anchor and flinches when a " +
+                                 "plate is struck. The course it sails is the same on every machine in a party.")]
+        CosmicShore.Gameplay.ArkHelmSettings helm = CosmicShore.Gameplay.ArkHelmSettings.Default;
+
         [Header("Actions - the model's other takes, played on events")]
         [SerializeField, Min(0.1f), Tooltip("Seconds the lance stays out of its cradles after the hold hands a payload over.")]
         float releaseSeconds = 1.2f;
@@ -87,6 +92,7 @@ namespace CosmicShore.ScriptableObjects
         public GameObject Model => model;
         public TextAsset RigTable => rigTable;
         public float Scale => scale;
+        public CosmicShore.Gameplay.ArkHelmSettings Helm => helm;
         public IReadOnlyList<Material> DomainReplacesMaterials => domainReplacesMaterials;
         public float YawRateFull => yawRateFull;
         public float PitchRateFull => pitchRateFull;

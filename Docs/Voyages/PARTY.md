@@ -37,6 +37,9 @@ Each machine starts its Ark when its own load veil drops, which is seconds apart
 times a second (`VoyageArkSync`), stamped with the network clock. A friend's Ark is pulled toward that pose, predicted
 forward by the message's age (`Ark.FollowPose`). Under 2 units nothing moves, so nothing jitters. Over 2500 units the
 worlds disagree and the friend's Ark sails on its own. Poses older than 1.5 s, or from another leg, are ignored.
+The pose sent and followed is the Ark's COURSE pose (`Ark.CoursePosition`, `Ark.CourseRotation`): its helm's bank,
+swell and flinch (`ArkHelm`, `Docs/Voyages/ARK_ESCORT.md` section 4.3) are drawn by each machine on top, and its weave
+follows distance sailed, so every machine draws the same course.
 
 Satellite cells (the corridor's worlds) never network-spawn fauna: `CellLifeSpawnerBase` and `FaunaNetworkSync` leave
 them local on every machine, and pacifying a world runs on every machine, not only the server.

@@ -23,6 +23,33 @@ MonoBehaviour:
   accelFull: 20
   response: 0.35
   amplitude: 1
+  helm:
+    Acceleration: 5
+    Braking: 8
+    SpeedResponse: 1.4
+    Jerk: 6
+    MaxTurnRate: 22
+    TurnGain: 1.2
+    TurnAcceleration: 18
+    CaptureRange: 40
+    WeaveYaw: 9
+    WeavePitch: 3.5
+    WeaveWavelength: 1100
+    WeaveFadeRange: 450
+    BankPerTurnRate: 2.2
+    MaxBank: 18
+    PitchPerAcceleration: 0.8
+    MaxPitch: 5
+    AttitudeResponse: 0.6
+    SwellHeave: 0.9
+    SwellRoll: 1.6
+    SwellPitch: 0.8
+    SwellPeriod: 9
+    FlinchRoll: 6
+    FlinchJink: 8
+    FlinchCooldown: 0.9
+    FlinchFrequency: 1.1
+    FlinchDamping: 0.3
   releaseSeconds: 1.2
   hangarReach: 0
   actionResponse: 0.3
