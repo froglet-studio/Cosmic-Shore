@@ -335,3 +335,33 @@
 2026-11-24T16:27:15.271Z editor load: play=False capture=True minPlay=15s issues=85
 2026-11-24T16:29:29.560Z editor load: play=False capture=True minPlay=15s issues=85
 2026-11-24T16:34:51.555Z PlayMode session ended (207s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T16:38:40.309Z PlayMode session ended (172s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T16:40:09.269Z PlayMode session ended (74s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T16:41:34.577Z PlayMode session ended (68s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T16:42:56.570Z PlayMode session ended (68s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T16:44:31.348Z PlayMode session ended (74s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T17:14:14.148Z PlayMode session ended (206s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T17:34:54.376Z EditMode session ended (67min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-8909c619e5 E-930ca435ca
+2026-11-24T17:35:04.502Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T17:41:48.348Z PlayMode session ended (39s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T17:50:28.698Z EditMode session ended (15min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-e5bc8c31c5
+2026-11-24T17:50:39.967Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T17:57:11.506Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T18:16:14.765Z PlayMode session ended (96s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T18:20:04.763Z EditMode session ended (29min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-8909c619e5 E-930ca435ca E-e5bc8c31c5
+2026-11-24T18:20:13.885Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T18:46:45.090Z PlayMode session ended (37s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-e5bc8c31c5
+2026-11-24T19:10:21.134Z EditMode session ended (50min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-e5bc8c31c5
+2026-11-24T19:10:29.956Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T19:39:11.338Z EditMode session ended (28min editor span, script reload): 0 fix(es) waiting; counted: none
+2026-11-24T19:39:19.295Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T19:53:55.339Z PlayMode session ended (775s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-e5bc8c31c5
+2026-11-24T19:55:33.367Z EditMode session ended (16min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-e5bc8c31c5 E-8749ab4fda
+2026-11-24T19:55:44.519Z scripts compiled clean: closed 1 compile error(s)
+2026-11-24T19:55:44.523Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T20:27:02.507Z PlayMode session ended (1777s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-e5bc8c31c5
+2026-11-24T20:28:09.229Z EditMode session ended (32min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-e5bc8c31c5
+2026-11-24T20:28:19.475Z editor load: play=False capture=True minPlay=15s issues=85
+2026-11-24T20:44:06.405Z PlayMode session ended (946s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-24T21:20:55.054Z PlayMode session ended (2203s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-24T21:24:32.856Z PlayMode session ended (201s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
