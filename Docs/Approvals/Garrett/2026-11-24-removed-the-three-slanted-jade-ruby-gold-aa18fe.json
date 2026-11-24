@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-24-removed-the-three-slanted-jade-ruby-gold-aa18fe",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-24T12:06:17+00:00",
+  "area": "Boot splash and sign-in poster (Rev 94 C, author_start_flow.py)",
+  "summary": "Removed the three slanted Jade/Ruby/Gold domain bands from the boot splash and sign-in poster at Shombith's request (2026-11-24: 'remove them'). The captains, hulls, life, prism runs and bar are unchanged. Lands on ark-rework, reaches bleeding-edge with it.",
+  "branch": "claude/project-thread-9i3ohq",
+  "commit": "1eac45dff"
+}
