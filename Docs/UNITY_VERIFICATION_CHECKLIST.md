@@ -422,13 +422,14 @@ compiled (`unity_refcompile` cannot run on this machine, and no Unity run was ma
 `BreakwaterBarriersTests` with the ruins and heat tests, and three negative controls for the barriers).
 
 **In the editor:**
-1. DONE 2026-11-25 in the open editor: compiles with no errors, `BreakwaterBarriersTests` pass (6 of 6); one three-racer I4 race with every seat AI-flown ran to 29 of 29 at 54 to 76 FPS (one sample at 41) with no exception in the log. 603 barrier prisms were laid; 17 were already destroyed before the start (cause not found), 405 by the leader's 14th crossing and 474 by the end, so the second lap meets little of them.
+1. DONE 2026-11-25 in the open editor: compiles with no errors, `BreakwaterBarriersTests` pass (6 of 6); one three-racer I4 race with every seat AI-flown ran to 29 of 29 at 54 to 76 FPS (one sample at 41) with no exception in the log. 603 barrier prisms were laid; 17 were already destroyed before the start (cause not found), 405 by the leader's 14th crossing and 474 by the end, so the second lap met little of them. Regrowth added the same day (a broken prism grows back 8 s after the last hull is 260 u away): compiles, 7 of 7 tests pass, and in a second AI race the broken count stayed between 40 and 180 of 609 at 51 to 77 FPS.
 2. Breakwater I4: between two ruins a Blue wall, a row of three walls or a cloud of danger cubes stands across the line; none touches a dish, a pad or the start gate.
 3. Fire a rocket at a curtain: it opens a hole a Sparrow fits through, and the rounds pay ammunition.
 4. Fly the line through a minefield without touching a mine; stray and a mine costs what a danger prism costs.
 5. Watch an AI lap: it gets through every barrier, and still has a rocket for the station after a curtain.
 6. Frame rate at I4 is still about where it was (about 70 FPS with three racers on Yash's PC, 2026-11-25).
 7. I1-I3: no barriers.
+8. Shoot a hole in a curtain, fly on, come back on lap 2: the wall is whole again, and it never closed while you were near it.
 
 ## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — COMPILED, EditMode tests pass (2026-11-24); NOT WATCHED
 

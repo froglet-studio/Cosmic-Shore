@@ -35,7 +35,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>Each stands at the middle of its leg's flown line, across it. Everything is laid Blue by the controller,
     /// as the stations are, so every pilot's rounds open a curtain and are paid for it. They are prisms with the
-    /// game's own rules: nothing here reads or writes a vessel.</para>
+    /// game's own rules: nothing here reads or writes a vessel. A broken prism grows back once the field has passed
+    /// (<see cref="Regrows"/>), so the second lap meets walls too.</para>
     ///
     /// <para>Pure: a function of the course and the rung, so every peer lays the same barriers from the broadcast
     /// course and the edit-mode tests hold it (<c>BreakwaterBarriersTests</c>).</para>
@@ -66,6 +67,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>A barrier that lost more than this share of its prisms to the clearances is not laid at all.</summary>
         public const float MinStandingShare = 0.5f;
+
+        /// <summary>A broken barrier prism grows back this long (s) after the field has passed: after the last moment
+        /// any hull was within <see cref="RegrowClear"/> (u) of its barrier. So the pilots close behind the one who
+        /// opened a wall fly through the hole, and the wall stands again for the next lap.</summary>
+        public const float RegrowSeconds = 8f, RegrowClear = 260f;
+
+        /// <summary>Is a hull at <paramref name="distance"/> (u) from a barrier's middle still "at" it? Then nothing
+        /// of that barrier grows back, and its clock restarts. Past a rocket's reach (229 u), so a wall never closes
+        /// on a round already fired at it.</summary>
+        public static bool FieldAt(float distance) => distance < RegrowClear;
+
+        /// <summary>Has a broken prism waited long enough since the field passed?</summary>
+        public static bool Regrows(float secondsSinceTheFieldPassed) => secondsSinceTheFieldPassed >= RegrowSeconds;
 
         /// <summary>Barriers stand on the hardest rung only, as the ruins do.</summary>
         public static bool OnRung(int intensity) => intensity >= 4;

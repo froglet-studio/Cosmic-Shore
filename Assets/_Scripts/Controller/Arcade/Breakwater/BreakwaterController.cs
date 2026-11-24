@@ -138,6 +138,7 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             TickRuins();
+            TickBarriers();
             TickHeat();
         }
 

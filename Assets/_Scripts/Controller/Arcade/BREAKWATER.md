@@ -1371,7 +1371,13 @@ ruins' 744 that is about 3,730 at I4, still under intensity 1's 4,144.
 
 **Rules kept.**
 - Everything is Blue, as the stations are, so every pilot's rounds open a curtain and are paid ammunition for it.
-- Prisms with the game's own rules: a hull or a round breaks them, nothing grows back, nothing reads or writes a vessel.
+- Prisms with the game's own rules: a hull or a round breaks them; nothing reads or writes a vessel.
+- **A broken prism grows back once the field has passed** (2026-11-25, the way Spearline's seals do): 8 s after the
+  last moment any hull was within 260 u of its barrier (`BreakwaterBarriers.FieldAt`, `Regrows`;
+  `BreakwaterController.TickBarriers`, on every peer, at most 24 prisms a frame). 260 u is past a rocket's reach
+  (229 u), so a wall never closes on a round already fired at it. The pilots close behind the one who opened a wall
+  fly through the hole; the next lap meets the wall again. Without it, one AI race broke 405 of 603 prisms by the
+  leader's 14th crossing and 474 by the end; with it the broken count stayed between 40 and 180 of 609 all race.
 - A minefield's thread is the station's eye radius (18 u), so the AI's floor holds: an AI on the line that fires
   nothing still passes a minefield, as it passes a station.
 - No prism comes into a station's reach, another leg's lane, or the way in from the pads; a barrier that would lose
@@ -1389,8 +1395,11 @@ is spent on a curtain that stands 150 to 190 u before the station; frame rate wi
 fixed pattern of danger prisms across the lane, silenced by shooting its core). An AIMED turret is a decision for
 Garrett: nothing in the game aims environment fire at a pilot today.
 
-**Tests:** `BreakwaterBarriersTests` (6, also run headless by the harness, whose `--self-test` proves three of them
-can fail). **Not compiled in Unity and not watched in the game.**
+**Tests:** `BreakwaterBarriersTests` (7, also run headless by the harness, whose `--self-test` proves three of them
+can fail). Compiled in Unity and passing there (2026-11-25); two AI-flown races watched, none flown by a person.
+
+**Open:** 17 and 39 barrier prisms were already broken before the start of the two watched races; the cause is not
+found (they grow back only once every hull has left, so a barrier near the pads can start with holes).
 
 ## Scoring and the end condition
 

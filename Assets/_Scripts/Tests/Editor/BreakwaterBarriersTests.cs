@@ -146,6 +146,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void A_broken_prism_grows_back_only_after_the_field_has_passed()
+        {
+            // A wall never closes on a round already in the air: the field is "at" a barrier past a rocket's reach.
+            const float rocketReach = 229f;
+            Assert.IsTrue(BreakwaterBarriers.FieldAt(rocketReach), "a hull a rocket's reach away is still at the barrier");
+            Assert.IsTrue(BreakwaterBarriers.FieldAt(0f));
+            Assert.IsFalse(BreakwaterBarriers.FieldAt(BreakwaterBarriers.RegrowClear));
+            Assert.IsFalse(BreakwaterBarriers.Regrows(0f));
+            Assert.IsFalse(BreakwaterBarriers.Regrows(BreakwaterBarriers.RegrowSeconds - 0.01f));
+            Assert.IsTrue(BreakwaterBarriers.Regrows(BreakwaterBarriers.RegrowSeconds));
+            // Short enough that the next lap meets the wall: I4 laps run from about 33 s.
+            Assert.Less(BreakwaterBarriers.RegrowSeconds, 20f);
+        }
+
+        [Test]
         public void The_lay_is_a_pure_function_of_the_course()
         {
             for (int seed = 1; seed <= 10; seed++)
