@@ -10,7 +10,7 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// FrogletTools &gt; Game Modes &gt; Time Race Prototyper - shape, see, save and play the courses of the time races
-    /// cut from Slingshot's circuit: the Stoat's Slingshot, the Meerkat's Warpline and Burrow Run (Yash, 2026-10-27:
+    /// cut from Slingshot's circuit: the Stoat's Slingshot, the Meerkat's Warpline and the Jewel Wasp's Burrow Run (Yash, 2026-10-27:
     /// "create prototypes with various configuration options that I can click and see and also save buttons ... inside
     /// Unity directly"). Edits the one <see cref="TimeRaceCourseConfigSO"/> at
     /// <c>Assets/Resources/TimeRaceCourseConfig.asset</c> (made on the first Save); the course sources read it, and a race
@@ -33,7 +33,9 @@ namespace CosmicShore.Editor
         {
             (GameModes.Slingshot, "Stoat", SlingshotCourse.StoatThrottleScaler, SlingshotCourse.SpeedAtSling(1f), "slung flat out"),
             (GameModes.Warpline, "Meerkat", 60f, 150f, "at a tunnel's throat"),
-            (GameModes.BurrowRun, "Meerkat", 60f, 150f, "at a tunnel's throat"),
+            // The wasp flies free at 55 u/s; its only faster leg is a sting's flight to a host, and the race cell has no
+            // creature yet (BURROWRUN.md "Open"), so both numbers are the cruise.
+            (GameModes.BurrowRun, "Jewel Wasp", 55f, 55f, "flying free (no creature to ride yet)"),
         };
 
         static readonly Color Accent = FrogletEditorPalette.ColorFor(FrogletToolCategory.GameModes);
@@ -52,7 +54,7 @@ namespace CosmicShore.Editor
 
         [MenuItem("FrogletTools/Game Modes/Time Race Prototyper", false, 165)]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 4,
-            Description = "Shape, see, save and play the Stoat's Slingshot and the Meerkat's Warpline / Burrow Run courses, per intensity, with named presets.")]
+            Description = "Shape, see, save and play the Stoat's Slingshot, the Meerkat's Warpline and the Jewel Wasp's Burrow Run courses, per intensity, with named presets.")]
         static void Open()
         {
             var w = GetWindow<TimeRacePrototyperWindow>("Time Race Prototyper");

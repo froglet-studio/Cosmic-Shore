@@ -65,6 +65,10 @@ namespace CosmicShore.ScriptableObjects
         public string Done = "JOB DONE";
         [Tooltip("Banner when a job is left undone.")]
         public string Failed = "JOB LEFT UNDONE";
+        [Tooltip("Banner when a voyage is left at sea after a world was reached: it waits as a chapter (P13). Empty shows nothing.")]
+        public string WaypointSaved = "THE VOYAGE WAITS: PICK IT UP FROM THE HARBOUR";
+        [Tooltip("Banner when a waiting voyage is picked up. Tokens: {to}. Empty shows nothing.")]
+        public string WaypointResumed = "VOYAGE RESUMED: ON TO {to}";
         [Tooltip("Banner when something is stowed aboard.")]
         public string Stowed = "STOWED ABOARD";
         [Tooltip("Banner on docking at home.")]
@@ -820,6 +824,18 @@ namespace CosmicShore.ScriptableObjects
         public string ArkLobbyLineGuest = "Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.";
         [Tooltip("The Set sail button's words on a friend's machine: only the host sets sail.")]
         public string ArkHostSails = "THE HOST SETS SAIL";
+        [Tooltip("Over the Ark's domain chips on the host's (or a solo pilot's) Ark page: the host picks the one domain every seat and the Ark fly.")]
+        public string ArkDomainHead = "ARK DOMAIN";
+        [Tooltip("Over the domain chips on a friend's Ark page: the host picks, a friend's press is a vote.")]
+        public string ArkDomainHeadGuest = "VOTE FOR THE ARK'S DOMAIN";
+        [Tooltip("The Jade chip.")]
+        public string ArkDomainJade = "Jade";
+        [Tooltip("The Ruby chip.")]
+        public string ArkDomainRuby = "Ruby";
+        [Tooltip("The Gold chip.")]
+        public string ArkDomainGold = "Gold";
+        [Tooltip("A chip some friends voted for: {domain} the chip's name, {votes} how many voted for it.")]
+        public string ArkDomainVotes = "{domain} - {votes}";
         [Tooltip("Under your seat on the Ark page (Rev 115 A): opens the seat picker.")]
         public string ArkChangeSeat = "CHANGE YOUR SEAT";
         [Tooltip("Change your seat's keycap.")]

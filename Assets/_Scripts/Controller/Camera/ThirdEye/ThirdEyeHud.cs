@@ -5,9 +5,10 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The AI Diagnose panel's IMGUI (F2): camera buttons, pilots with the You / AI toggle, overlays, settings and a
+    /// The AI Diagnose panel's IMGUI (F2): the Free fly camera button (the one camera the panel has; a hull is watched
+    /// through the game's own camera), pilots with the You / AI toggle, overlays, settings and a
     /// command field (DiagnosticsHUD's console), plus the
-    /// watched pilot's info strip, pilot labels and the hint bar. A separate component so the
+    /// picked pilot's info strip, pilot labels and the hint bar. A separate component so the
     /// <see cref="ThirdEye"/> can switch it off - Unity calls OnGUI (and allocates for it) on every enabled
     /// behaviour that has one, so it is enabled only while the camera, the panel or labels are on.
     /// </summary>
@@ -46,7 +47,7 @@ namespace CosmicShore.Gameplay
             var s = Eye.Settings;
 
             if (s.ShowLabels) DrawLabels();
-            if (Eye.Driving) DrawInfoStrip();
+            if (Eye.Driving || Eye.PanelOpen) DrawInfoStrip();
             DrawHint();
 
             if (Eye.PanelOpen)
@@ -63,19 +64,12 @@ namespace CosmicShore.Gameplay
             var s = Eye.Settings;
             _scroll = GUILayout.BeginScrollView(_scroll);
 
-            // Camera
+            // Camera: the game's own camera, or Free fly. No camera here follows a hull (ThirdEye's summary).
             GUILayout.Label("<b>Camera</b>", _label);
-            if (GUILayout.Button(Eye.Driving ? "Release camera (back to the game's)" : "Take camera")) Eye.SetDriving(!Eye.Driving);
-            GUILayout.BeginHorizontal();
-            bool chase = Eye.Driving && s.Mode == ThirdEyeCameraMode.Chase;
-            bool follow = Eye.Driving && s.Mode == ThirdEyeCameraMode.Follow;
-            bool fly = Eye.Driving && s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Fly;
-            bool orbit = Eye.Driving && s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Orbit;
-            if (GUILayout.Toggle(chase, "Chase", "Button") && !chase) { Eye.SetDriving(true); Eye.SetMode(ThirdEyeCameraMode.Chase); }
-            if (GUILayout.Toggle(follow, "Follow", "Button") && !follow) { Eye.SetDriving(true); Eye.SetMode(ThirdEyeCameraMode.Follow); }
-            if (GUILayout.Toggle(fly, "Free fly", "Button") && !fly) { Eye.SetDriving(true); Eye.SetFreeMode(ThirdEyeFreeMode.Fly); Eye.SetMode(ThirdEyeCameraMode.Free); }
-            if (GUILayout.Toggle(orbit, "Orbit", "Button") && !orbit) { Eye.SetDriving(true); Eye.SetFreeMode(ThirdEyeFreeMode.Orbit); Eye.SetMode(ThirdEyeCameraMode.Free); }
-            GUILayout.EndHorizontal();
+            bool fly = Eye.Driving;
+            GUILayout.Label(fly ? "Free fly (attached to no vessel)."
+                                : "The game's camera: the one you fly with, whoever flies the hull.", _small);
+            if (GUILayout.Button(fly ? "Release camera (back to the game's)" : "Free fly")) Eye.SetDriving(!fly);
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("◀ Prev pilot")) Eye.Step(-1);
             if (GUILayout.Button("Next pilot ▶")) Eye.Step(+1);
@@ -88,11 +82,10 @@ namespace CosmicShore.Gameplay
                 float sp = Eye.Fly.Speed;
                 if (Slider("Fly speed", ref sp, Eye.Fly.moveSpeedRange.x, Eye.Fly.moveSpeedRange.y)) Eye.Fly.Speed = sp;
             }
-            else if (orbit) GUILayout.Label("Orbit: hold RMB and drag to circle the pilot; distance in Settings.", _small);
 
             // Pilots
             GUILayout.Space(6f);
-            GUILayout.Label("<b>Pilots</b>  (click to watch; You / AI = who flies it)", _label);
+            GUILayout.Label("<b>Pilots</b>  (click to pick for the info strip and Frame pilot; You / AI = who flies it)", _label);
             bool host = PilotControl.CanControl;
             var you = Eye.LocalHuman();
             var watched = Eye.Watched;
@@ -156,16 +149,7 @@ namespace CosmicShore.Gameplay
             if (_showSettings)
             {
                 bool c = false;
-                c |= Slider("FOV", ref s.Fov, 20f, 120f);
-                c |= Slider("Chase distance", ref s.ChaseDistance, 2f, 400f);
-                c |= Slider("Chase height", ref s.ChaseHeight, -100f, 200f);
-                c |= Slider("Chase look-ahead", ref s.ChaseLookAhead, 0f, 400f);
-                c |= Slider("Chase smoothing", ref s.ChaseSmoothing, 0.5f, 30f);
-                c |= Slider("Follow distance", ref s.FollowDistance, 5f, 1000f);
-                c |= Slider("Follow height", ref s.FollowHeight, -200f, 500f);
-                c |= Slider("Follow smoothing", ref s.FollowSmoothing, 0.5f, 30f);
-                c |= Slider("Orbit distance", ref s.OrbitDistance, 2f, 2000f);
-                c |= Slider("Look sensitivity", ref s.LookSensitivity, 0.02f, 2f);
+                c |= Slider("Free fly FOV", ref s.Fov, 20f, 120f);
                 c |= Slider("Trail seconds", ref s.TrailSeconds, 1f, 30f);
                 if (c) _dirty = true;
                 if (_dirty && Event.current.rawType == EventType.MouseUp) { s.Save(); _dirty = false; }
@@ -245,27 +229,20 @@ namespace CosmicShore.Gameplay
         void DrawHint()
         {
             if (!Eye.Driving) return;
-            var s = Eye.Settings;
-            string mode = s.Mode == ThirdEyeCameraMode.Free ? $"Free {s.FreeMode}" : s.Mode.ToString();
-            string text = s.Mode == ThirdEyeCameraMode.Free && s.FreeMode == ThirdEyeFreeMode.Fly
-                ? $"AI DIAGNOSE [{mode}]  F2 panel · WASD move · E/Space up Q/Ctrl down · RMB look · Shift fast Alt slow · wheel speed {Eye.Fly.Speed:0.#}"
-                : $"AI DIAGNOSE [{mode}]  F2 panel" + (s.FreeMode == ThirdEyeFreeMode.Orbit && s.Mode == ThirdEyeCameraMode.Free ? " · RMB drag orbit" : "");
+            string text = $"AI DIAGNOSE [Free fly]  F2 panel · WASD move · E/Space up Q/Ctrl down · RMB look · Shift fast Alt slow · wheel speed {Eye.Fly.Speed:0.#}";
             GUI.Label(new Rect(10f, Screen.height - 28f, Screen.width - 20f, 24f), text, _pill);
         }
 
         // "You / AI  hull  speed" over each pilot, pinned to the screen edge when off-screen (as the window did).
         void DrawLabels()
         {
-            var cam = Eye.DrivenCamera ? Eye.DrivenCamera : Camera.main;
+            var cam = Eye.DrivenCamera ? Eye.DrivenCamera : ThirdEye.ViewCamera;
             if (!cam) return;
-            var watched = Eye.Watched;
-            bool chase = Eye.Driving && Eye.Settings.Mode == ThirdEyeCameraMode.Chase;
             foreach (var p in Eye.Pilots)
             {
                 if (!p.Alive) continue;
                 Vector3 vp = cam.WorldToViewportPoint(p.Hull.position + p.Hull.up * 4f);
                 bool onScreen = vp.z > 0f && vp.x >= 0f && vp.x <= 1f && vp.y >= 0f && vp.y <= 1f;
-                if (chase && onScreen && p == watched) continue;
                 Vector2 v = onScreen ? new Vector2(vp.x, vp.y) : ThirdEyeRig.EdgePoint(vp, 0.04f);
                 var pos = new Vector2(v.x * Screen.width, (1f - v.y) * Screen.height);
                 float speed = p.Status ? p.Status.Speed : 0f;

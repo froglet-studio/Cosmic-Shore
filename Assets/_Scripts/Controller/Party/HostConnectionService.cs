@@ -318,6 +318,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         static void LogJoinFailure(string what, Exception e)
         {
+            if (e is ProtocolMismatchException)
+            {
+                // Not a fault: the other build speaks another Netcode protocol (NetProtocol, launch blocker 6). The player
+                // is told to update by PartyInviteController's authored toast.
+                CSDebug.LogWarning($"[HostConnectionService] {what}: {e.Message}");
+                return;
+            }
             var failure = UgsRequestPolicy.Classify(e);
             if (failure == UgsFailureClass.Full)
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party is full ({e.Message}).");
@@ -830,14 +837,20 @@ namespace CosmicShore.Gameplay
                 SubscribeToPartySessionEvents();
                 SubscribeToFairPlayGuard();
 
+                float initStart = UnityEngine.Time.realtimeSinceStartup;
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
                 SyncLocalIdentity();
+                float profileAt = UnityEngine.Time.realtimeSinceStartup;
 
                 // Fair play (phase B): which presence lobby this account joins. A no-op while the trust gate is
                 // off; on failure it keeps the last answer, so it never blocks the join.
                 await CosmicShore.Core.FairPlayTrust.RefreshAsync();
+                float trustAt = UnityEngine.Time.realtimeSinceStartup;
 
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[HostConnectionService] Boot party start: profile {profileAt - initStart:0.0}s, fair-play trust " +
+                    $"{trustAt - profileAt:0.0}s, presence lobby {UnityEngine.Time.realtimeSinceStartup - trustAt:0.0}s.");
 
                 // Apply post-join state now that the lobby reference is live.
                 ApplyPostLobbyJoinState();
@@ -845,8 +858,12 @@ namespace CosmicShore.Gameplay
                 // Catch the case where the cloud profile resolved during
                 // JoinOrCreateAsync - HandleProfileChanged's republish
                 // would have been a no-op (lobby was still null at that moment).
+                // Only then: the join itself carried the name and avatar, and an unneeded republish is a lobby
+                // read and a write landing on the party session's create, which UGS then refused as rate-limited
+                // on most measured boots (2026-11-21).
                 SyncLocalIdentity();
-                RepublishLocalIdentityAsync().Forget();
+                if (IdentityDiffersFromLobby(_lobbyService.ActiveLobby))
+                    RepublishLocalIdentityAsync().Forget();
 
                 // Presence lobby joined - transient state, immediately creates solo Relay session.
                 // Transition flips IsInitialized to true (replaces the old _initialized boolean).
@@ -2834,6 +2851,30 @@ namespace CosmicShore.Gameplay
                 "ClearJoinedParty");
         }
 
+        /// <summary>
+        /// Whether this player's name or avatar in <paramref name="lobby"/> differs from what it should show now (a
+        /// lobby we cannot read counts as different, so it is republished as before).
+        /// </summary>
+        private bool IdentityDiffersFromLobby(ISession lobby)
+        {
+            var props = lobby?.CurrentPlayer?.Properties;
+            if (props == null) return true;
+            props.TryGetValue(DISPLAY_NAME_KEY, out var shownName);
+            props.TryGetValue(AVATAR_ID_KEY, out var shownAvatar);
+            return IdentityDiffers(shownName?.Value, shownAvatar?.Value,
+                connectionData.LocalDisplayName, connectionData.LocalAvatarId);
+        }
+
+        /// <summary>
+        /// The rule behind <see cref="IdentityDiffersFromLobby"/>: the shown name against the local one (an empty local
+        /// name shows as "Pilot", as the join writes it) and the shown avatar id against the local one.
+        /// </summary>
+        internal static bool IdentityDiffers(string shownName, string shownAvatar, string localName, int localAvatar)
+        {
+            string expectedName = string.IsNullOrEmpty(localName) ? "Pilot" : localName;
+            return shownName != expectedName || shownAvatar != localAvatar.ToString();
+        }
+
         private async UniTaskVoid RepublishLocalIdentityAsync()
         {
             var lobby = _lobbyService.ActiveLobby;
@@ -3164,7 +3205,7 @@ namespace CosmicShore.Gameplay
 
         private void SubscribeToFairPlayGuard()
         {
-            if (_fairPlayGuardSubscribed || !CosmicShore.Core.FairPlayTrustGate.Enabled) return;
+            if (_fairPlayGuardSubscribed || !CosmicShore.Core.FairPlayTrustGate.IsActive) return;
             connectionData.OnPartyMemberJoined.OnRaised += HandleMemberJoinedFairPlay;
             _fairPlayGuardSubscribed = true;
         }

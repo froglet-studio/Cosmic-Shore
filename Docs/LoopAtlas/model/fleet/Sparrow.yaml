@@ -74,6 +74,22 @@ combos:
   - [Charge, Skyburst on the rival]
   drivers: [break, rival]
   feel: Earning the big shot with the small ones.
+  gene:
+    genome: Charge
+    cue: [rival_mass_ahead, rival_near]
+    dials:
+    - - rocketRange
+      - rival distance at which the rocket is spent
+      - 30
+      - 250
+      - u
+    - - heatCutoff
+      - gun heat at which firing stops
+      - 0.2
+      - 1.0
+      - fraction
+    done: A Skyburst hits a pilot within eight seconds of the rocket being earned.
+    sight: BANDIT
 - name: The bunker
   t: [8, 30]
   is: Stop, build with bullets, roll out.
@@ -85,4 +101,62 @@ combos:
     - Strafing roll out under boost
   drivers: [make, joy]
   feel: A wall where there was none.
+  gene:
+    genome: Mass
+    cue: [open_space, threatened]
+    dials:
+    - [stanceTime, seconds in Turret Stance, 1, 10, s]
+    - - sweep
+      - how wide the aim sweeps while the stance fires
+      - 5
+      - 90
+      - deg
+    done: Turret Stance lays prisms between the Sparrow and the threat, and the roll out escapes it.
+- in: x
+  name: Strafe the gate
+  t: [4, 12]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Afterburn the line, roll past the mass at the mouth, cold shots clear the rest.
+  chain:
+  - [Time, Afterburn on the line]
+  - - Time
+    - A strafing roll past the mass at the mouth
+  - - Space
+    - Cold shots clear the gate
+  drivers: [joy, mastery]
+  feel: Threading a needle at speed.
+  gene:
+    genome: Time
+    cue: [gate_next, danger_ahead]
+    dials:
+    - - rollTrigger
+      - distance to an obstacle that triggers the roll
+      - 10
+      - 120
+      - u
+    done: A gate is threaded under boost.
+    sight: NEEDLE
+- in: x
+  name: Cold bursts
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Short bursts while the gun is cold and pin-accurate; let go before it heats.
+  chain:
+  - [Space, A short cold burst]
+  - ['', Let go before it heats]
+  - [Space, The next burst]
+  drivers: [break, mastery]
+  feel: Discipline on the trigger.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, fauna_near]
+    dials:
+    - [burstLength, seconds a burst is held, 0.2, 3, s]
+    - - coolPause
+      - seconds let go between bursts
+      - 0.1
+      - 2
+      - s
+    done: More prisms break per second of fire than holding the trigger down.
+    sight: HORNET
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md

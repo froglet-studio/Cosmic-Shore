@@ -59,13 +59,19 @@ namespace CosmicShore.Gameplay
         static readonly int Throat2Id = Shader.PropertyToID("_MWThroat2");
         static readonly int Throat3Id = Shader.PropertyToID("_MWThroat3");
         static readonly int ThroatTintId = Shader.PropertyToID("_MWThroatTint");
+        static readonly int RingCId = Shader.PropertyToID("_MWRingC");
+        static readonly int RingSId = Shader.PropertyToID("_MWRingS");
+        static readonly int HullId = Shader.PropertyToID("_MWHull");
+
+        /// <summary>Rings of the ridden tube's wall the shader finds each pixel's place between (the eye to the tube's end).</summary>
+        public const int Rings = 16;
+        /// <summary>The most riders kept in sight inside the tube a camera rides.</summary>
+        public const int MaxHulls = 4;
 
         /// <summary>The ride eases in and out of the throat over this long (s): no pop as the eye crosses a mouth.</summary>
         public const float RideEaseSeconds = 0.25f;
         /// <summary>The ripple thrown on leaving a tube lasts this long (s).</summary>
         public const float PopSeconds = 0.45f;
-        /// <summary>How far ahead along the tube the rider looks for the way ahead (u), at least.</summary>
-        public const float LookAhead = 60f;
 
         static SolitonTunnelLensPass s_pass;
         static Material s_lens;
@@ -78,8 +84,6 @@ namespace CosmicShore.Gameplay
         /// wall in either variant (the throat draws it, <see cref="Throat"/>), and every other tube is seen from outside.
         /// </summary>
         public static bool MarchFreeWhenOutside = Application.isMobilePlatform;
-        static LocalKeyword s_standinKeyword;
-        static bool s_standinKeywordReady;
         static bool s_resolved, s_holdingCameras;
         static readonly ProfilerMarker s_marker = new("SolitonTunnel.Maintain");
 
@@ -118,6 +122,9 @@ namespace CosmicShore.Gameplay
             public readonly Vector4[] WellF = new Vector4[MaxWells];   // its tube's other mouth on screen (x, y), the far view's amount
             public Vector4 Hole;                                       // mouths, throat stretch, flow phase, twist
             public Vector4 Throat, Throat2, Throat3, ThroatTint;       // riding: see Throat()
+            public readonly Vector4[] RingC = new Vector4[Rings];      // riding: a ring of the wall on screen (x, y, its radius)
+            public readonly Vector4[] RingS = new Vector4[Rings];      // ...how far along the tube, how far ahead, its frame's normal on screen
+            public readonly Vector4[] Hull = new Vector4[MaxHulls];    // a rider in the tube on screen (x, y, its radius, its depth)
             public Vector4 CamPos, CamR, CamU, CamF;
             /// <summary>How far the eye is inside a tube (0..1), and that tube's kind's steady centre.</summary>
             public float Inside, Steady;
@@ -139,6 +146,9 @@ namespace CosmicShore.Gameplay
                 System.Array.Copy(WellF, o.WellF, MaxWells);
                 o.Hole = Hole;
                 o.Throat = Throat; o.Throat2 = Throat2; o.Throat3 = Throat3; o.ThroatTint = ThroatTint;
+                System.Array.Copy(RingC, o.RingC, Rings);
+                System.Array.Copy(RingS, o.RingS, Rings);
+                System.Array.Copy(Hull, o.Hull, MaxHulls);
                 o.Inside = Inside; o.Steady = Steady;
                 o.CamPos = CamPos; o.CamR = CamR; o.CamU = CamU; o.CamF = CamF;
                 o.Count = Count;
@@ -160,12 +170,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Turns the march-free keyword on or off on the lens material; returns whether it is on.</summary>
         static bool SetStandin(bool on)
         {
-            if (!s_standinKeywordReady)
-            {
-                s_standinKeyword = new LocalKeyword(s_lens.shader, "_MW_STANDIN");
-                s_standinKeywordReady = true;
-            }
-            s_lens.SetKeyword(s_standinKeyword, on);
+            // A LocalKeyword is bound to the shader's keyword space at the moment it is made. Editing or reimporting the
+            // lens shader while playing replaces that space on the SAME Shader object, and a keyword cached from the old
+            // one throws "Local keyword _MW_STANDIN comes from a different shader" (Bug Ledger E-8ddade9b04). The lookup
+            // is one native name search per camera per frame, so it is made fresh from the material's current shader.
+            s_lens.SetKeyword(new LocalKeyword(s_lens.shader, "_MW_STANDIN"), on);
             return on;
         }
 
@@ -271,6 +280,9 @@ namespace CosmicShore.Gameplay
                     d.block.SetVector(Throat2Id, t.Throat2);
                     d.block.SetVector(Throat3Id, t.Throat3);
                     d.block.SetVector(ThroatTintId, t.ThroatTint);
+                    d.block.SetVectorArray(RingCId, t.RingC);
+                    d.block.SetVectorArray(RingSId, t.RingS);
+                    d.block.SetVectorArray(HullId, t.Hull);
                     if (d.standin)   // the shell LUT from the tunnel look's wall widths and rim tightness (_MWLook[0].zw, [2].y)
                         d.block.SetTexture(SolitonTunnelShellLut.LutId,
                             SolitonTunnelShellLut.Get(t.Look[0].z, t.Look[0].w, t.Look[2].y));
@@ -361,38 +373,36 @@ namespace CosmicShore.Gameplay
             bank.CamPos = new Vector4(eye.x, eye.y, eye.z, Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f));
             bank.CamR = ct.right; bank.CamU = ct.up; bank.CamF = ct.forward;
             int wells = ScreenWells(cam, bank);
-            float I = Mathf.Clamp01(comfort.DistortionIntensity), stretch = 0f, flow = 0f, swirl = 0f;
-            if (insideAt >= 0 && bank.Inside > 0f)
-            {
-                var il = s_near[insideAt].Config.Look;
-                stretch = Mathf.Clamp(il.InsideStretch, 0f, 0.5f) * I * bank.Inside;
-                swirl = Mathf.Clamp(il.InsideSwirl, 0f, 0.5f) * I * bank.Inside;
-                flow = s_phase[s_near[insideAt].Tunnel != null ? 1 : 3];
-            }
-            bank.Hole = new Vector4(wells, stretch, flow, swirl);
+            float I = Mathf.Clamp01(comfort.DistortionIntensity), flow = 0f;
+            if (insideAt >= 0 && bank.Inside > 0f) flow = s_phase[s_near[insideAt].Tunnel != null ? 1 : 3];
+            bank.Hole = new Vector4(wells, 0f, flow, 0f);   // z: the inner wall's ripple phase
             Throat(cam, bank, insideAt, I);
             return count;
         }
 
-        /// <summary>One camera's ride through a tube, kept between frames: how far into the throat it has eased, where the
-        /// way ahead was, and the ripple thrown since it left.</summary>
+        /// <summary>One camera's ride through a tube, kept between frames: how far into the throat it has eased and the
+        /// ripple thrown since it left.</summary>
         sealed class RideState
         {
             public int Frame = -1;
             public float Amount, Pop = 1f, PopStrength;
             public bool WasInside;
-            public Vector4 Ahead, Look, Tint;   // Ahead: x, y on screen, the disk's radius; Look: streak, dim, ring
         }
 
         static readonly Dictionary<int, RideState> s_rides = new();
 
         /// <summary>
-        /// THE THROAT, what a rider sees (2026-11-20, <c>_MWThroat*</c>): the way ahead - the tube's centreline
-        /// <see cref="LookAhead"/> on from the eye, or its way out once that is nearer - as a place on screen and the clear
-        /// disk round it (the tube's width there, never smaller than Comfort's steady centre: it grows as the way out
-        /// nears until it swallows the view); how far into the ride this camera has eased
-        /// (<see cref="RideEaseSeconds"/>); the look's streaks, dim and ring; and, for <see cref="PopSeconds"/> after it
-        /// leaves, the ripple. Kept per camera, stepped once a frame. No allocation after a camera's first ride.
+        /// THE THROAT, what a camera inside a tube sees (Yash, 2026-11-22: "the view camera should give view of inside the
+        /// worm hole path, players should not be able to see outer world that time, it's like gliding through the inner
+        /// surface of the space-time hole, and exiting to the universe again"). Nothing of the outer world is drawn. The
+        /// shader draws the tube's own inner wall from <see cref="Rings"/> rings of it: the centreline from just ahead of
+        /// the eye to the tube's end, at distances that grow geometrically (<see cref="RingAhead"/>), each as its place and
+        /// radius on screen, how far along the tube it is (the wall's grid stands still in the tube) and the tube's frame
+        /// there (so the grid does not turn with the camera). A pixel is on the wall between the last ring it is inside
+        /// and the first it is outside; a pixel inside them all looks out of the way out. The riders in this tube stay in
+        /// sight (<see cref="HullOnScreen"/>). <c>_MWThroat.w</c> is how far into the ride the camera has eased
+        /// (<see cref="RideEaseSeconds"/>); for <see cref="PopSeconds"/> after it leaves, the ripple. No allocation after
+        /// a camera's first ride.
         /// </summary>
         static void Throat(Camera cam, ContourTubes bank, int insideAt, float intensity)
         {
@@ -408,68 +418,139 @@ namespace CosmicShore.Gameplay
                 else if (ride.Pop < 1f) ride.Pop = Mathf.Min(1f, ride.Pop + dt / PopSeconds);
                 ride.WasInside = inside;
             }
+            float f = 0.5f / Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f);
+            for (int h = 0; h < MaxHulls; h++) bank.Hull[h] = Vector4.zero;
             if (inside)
             {
                 var near = s_near[insideAt];
                 var look = near.Config.Look;
+                var w2c = cam.worldToCameraMatrix;
                 var eye = cam.transform.position;
-                var fwd = cam.transform.forward;
-                Vector3 ahead; float radius;
+                // where the eye is along the tube, which way it is going, and how far its end is
+                float se, s0, s1;
+                bool mouthAhead;
                 if (near.Tunnel != null)
                 {
                     var t = near.Tunnel;
-                    float se = SolitonTunnelShapeMath.NearestAlong(t.A, t.T0, t.Side, t.Path, t.L, eye);
-                    t.At(Mathf.Clamp(se, 0f, t.L), out var tangent);
-                    float reach = Mathf.Max(LookAhead, 4f * t.Radius(se));
-                    float sa = Mathf.Clamp(se + (Vector3.Dot(fwd, tangent) >= 0f ? reach : -reach), t.W.S0, t.W.S1);
-                    ahead = t.At(sa, out _);
-                    radius = t.Radius(sa);
+                    se = SolitonTunnelShapeMath.NearestAlong(t.A, t.T0, t.Side, t.Path, t.L, eye);
+                    s0 = t.W.S0; s1 = t.W.S1;
                 }
                 else
                 {
-                    var c = near.Net.Channels[near.Channel];
                     ref var w = ref near.Net.Life[near.Channel];
-                    double tip = near.Config.NetworkTip;
-                    double se = SolitonTunnelMath.Nearest(c.Path, SolitonNetwork.D(eye));
-                    SolitonTunnelMath.At(c.Path, se, out var tangent);
-                    double reach = System.Math.Max(LookAhead, 4.0 * SolitonTunnelMath.Radius(c, se, tip));
-                    double sa = se + (Vector3.Dot(fwd, SolitonNetwork.V(tangent)) >= 0f ? reach : -reach);
-                    sa = System.Math.Max(w.S0, System.Math.Min(w.S1, sa));
-                    ahead = SolitonNetwork.V(SolitonTunnelMath.At(c.Path, sa, out _));
-                    radius = (float)SolitonTunnelMath.Radius(c, sa, tip);
+                    se = (float)SolitonTunnelMath.Nearest(near.Net.Channels[near.Channel].Path, SolitonNetwork.D(eye));
+                    s0 = (float)w.S0; s1 = (float)w.S1;
                 }
-                float f = 0.5f / Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f);
-                var view = cam.worldToCameraMatrix.MultiplyPoint3x4(ahead);
-                float steady = 0.4f * Mathf.Max(0f, near.Config.Ride.SteadyCentre);
-                ride.Ahead = ThroatAhead(f, view.x, view.y, -view.z, radius, steady);
-                ride.Look = new Vector4(Mathf.Clamp(look.InsideStreak, 0f, 0.9f) * intensity, Mathf.Clamp(look.InsideDim, 0f, 0.8f),
-                    Mathf.Clamp01(look.EinsteinRing), Mathf.Clamp(look.ExitPop, 0f, 0.3f) * intensity);
-                ride.Tint = bank.Tint[insideAt];
-                ride.PopStrength = ride.Look.w;
+                se = Mathf.Clamp(se, s0, s1);
+                SampleTube(near, se, out _, out float rHere, out _, out var tangent);
+                bool forward = Vector3.Dot(cam.transform.forward, tangent) >= 0f;
+                float end = forward ? s1 : s0, remaining = Mathf.Abs(end - se);
+                if (near.Tunnel != null) mouthAhead = true;
+                else
+                {
+                    var c = near.Net.Channels[near.Channel];
+                    mouthAhead = forward ? c.MouthOut && s1 >= c.L - 0.5 : c.MouthIn && s0 <= 0.5;
+                }
+                float d0 = Mathf.Max(0.5f, 0.3f * rHere);
+                for (int k = 0; k < Rings; k++)
+                {
+                    float d = RingAhead(d0, remaining, k, Rings), s = forward ? se + d : se - d;
+                    SampleTube(near, s, out var at, out float r, out var normal, out _);
+                    bank.RingC[k] = RingOnScreen(f, w2c.MultiplyPoint3x4(at), r);
+                    var nv = w2c.MultiplyVector(normal);
+                    float nm = Mathf.Sqrt(nv.x * nv.x + nv.y * nv.y);
+                    bank.RingS[k] = nm > 1e-4f ? new Vector4(s, d, nv.x / nm, nv.y / nm) : new Vector4(s, d, 1f, 0f);
+                }
+                // the riders in this tube stay in sight
+                object tube = near.Tunnel != null ? near.Tunnel : near.Net;
+                var riders = SolitonIsolation.Occupants;
+                float hullRadius = Mathf.Clamp(look.InsideHullRadius, 2f, 20f);
+                for (int i = 0, h = 0; i < riders.Count && h < MaxHulls; i++)
+                {
+                    if (!ReferenceEquals(riders[i].Tube, tube)) continue;
+                    var hull = riders[i].Status?.Transform;
+                    if (!hull) continue;
+                    var on = HullOnScreen(f, w2c.MultiplyPoint3x4(hull.position), hullRadius);
+                    if (on.w > 0f) bank.Hull[h++] = on;
+                }
+                float spacing = Mathf.Clamp(look.InsideGridSpacing, 2f, 40f);
+                bank.Throat = new Vector4(Mathf.Clamp(look.InsideFog, 20f, 600f), spacing, Mathf.Round(Mathf.Clamp(look.InsideGridSpokes, 4f, 48f)), ride.Amount);
+                bank.Throat2 = new Vector4(Mathf.Clamp01(look.InsideGrid), Mathf.Clamp01(look.InsideGlow), 0f, 0f);
+                bank.Throat3 = new Vector4(Mathf.Clamp(look.InsideStretch, 0f, 0.5f) * intensity,
+                    Mathf.Clamp(look.InsideSwirl, 0f, 0.5f) * intensity * SwirlPerUnit * (forward ? 1f : -1f), mouthAhead ? 1f : 0f, f);
+                bank.ThroatTint = bank.Tint[insideAt];
+                ride.PopStrength = Mathf.Clamp(look.ExitPop, 0f, 0.3f) * intensity;
+            }
+            else
+            {
+                // out of the tube (the ride easing away): every ring is passed, so the throat is the world itself
+                for (int k = 0; k < Rings; k++) { bank.RingC[k] = new Vector4(0f, 0f, WholeView, 0f); bank.RingS[k] = new Vector4(0f, 0f, 1f, 0f); }
+                bank.Throat = new Vector4(100f, 10f, 16f, ride.Amount);
+                bank.Throat2 = Vector4.zero;
+                bank.Throat3 = new Vector4(0f, 0f, 1f, f);
+                bank.ThroatTint = Vector4.zero;
             }
             float pop = ride.Pop < 1f ? ride.PopStrength * (1f - ride.Pop) * (1f - ride.Pop) : 0f;
-            bank.Throat = new Vector4(ride.Ahead.x, ride.Ahead.y, ride.Ahead.z, ride.Amount);
-            bank.Throat2 = new Vector4(ride.Look.x, ride.Look.y, pop, 0.12f + 0.9f * ride.Pop);
-            bank.Throat3 = new Vector4(ride.Look.z, 0f, 0f, 0f);
-            bank.ThroatTint = ride.Tint;
-            if (ride.Amount <= 0f) bank.Throat = new Vector4(0f, 0f, ride.Ahead.z, 0f);   // not riding: the stretch is centred
-            else bank.Steady = Mathf.Max(bank.Steady, ride.Ahead.z);   // the way ahead stays still, however big it has grown
+            bank.Throat2.z = pop;
+            bank.Throat2.w = 0.12f + 0.9f * ride.Pop;
         }
 
+        /// <summary>A ring's radius on screen (screen heights) once it is at the eye or behind it: it holds the whole view.</summary>
+        public const float WholeView = 8f;
+        /// <summary>The grid's twist per unit of <see cref="SolitonTunnelLook.InsideSwirl"/> (radians per u ahead).</summary>
+        public const float SwirlPerUnit = 0.05f;
+
         /// <summary>
-        /// The way ahead on screen: a point at view (<paramref name="x"/>, <paramref name="y"/>) and
-        /// <paramref name="depth"/> in front of the eye (focal length <paramref name="f"/>, screen heights), kept within
-        /// 0.4 of the middle so the clear disk never leaves the screen; its disk the tube's <paramref name="radius"/> seen
-        /// from there, at least <paramref name="steady"/> and, once the point is at the eye or behind it (the way out is
-        /// here), the whole view (2). Returns (x, y, the disk's radius, 0).
+        /// How far ahead of the eye ring <paramref name="k"/> of <paramref name="n"/> is (u): from <paramref name="d0"/>
+        /// (just ahead, so the first ring holds the whole view) to <paramref name="remaining"/> (the tube's end), growing
+        /// geometrically, because the wall near the eye fills most of the screen and needs the rings. With less than
+        /// <paramref name="d0"/> left, every ring is the end.
         /// </summary>
-        public static Vector4 ThroatAhead(float f, float x, float y, float depth, float radius, float steady)
+        public static float RingAhead(float d0, float remaining, int k, int n)
         {
-            const float Whole = 2f, Keep = 0.4f;
-            if (depth <= Mathf.Max(0.5f, radius * 0.25f)) return new Vector4(0f, 0f, Whole, 0f);
-            float px = f * x / depth, py = f * y / depth, m = Mathf.Sqrt(px * px + py * py);
-            if (m > Keep) { px *= Keep / m; py *= Keep / m; }
-            return new Vector4(px, py, Mathf.Clamp(f * radius / depth, steady, Whole), 0f);
+            if (remaining <= d0 || n < 2) return Mathf.Max(0f, remaining);
+            return d0 * Mathf.Pow(remaining / d0, Mathf.Clamp01(k / (float)(n - 1)));
+        }
+
+        /// <summary>A ring of the wall, centre at <paramref name="view"/> (camera space) and <paramref name="radius"/>
+        /// wide, as its place and radius on screen (focal length <paramref name="f"/>, screen heights). At the eye or
+        /// behind it, it holds the whole view.</summary>
+        public static Vector4 RingOnScreen(float f, Vector3 view, float radius)
+        {
+            float depth = -view.z;
+            if (depth <= 0.05f) return new Vector4(0f, 0f, WholeView, 0f);
+            return new Vector4(f * view.x / depth, f * view.y / depth, Mathf.Min(WholeView, f * Mathf.Max(0f, radius) / depth), 0f);
+        }
+
+        /// <summary>A rider at <paramref name="view"/> (camera space) as the disc that stays in sight: its place and
+        /// radius on screen and its depth (x, y, radius, depth). Zero when it is behind the eye.</summary>
+        public static Vector4 HullOnScreen(float f, Vector3 view, float radius)
+        {
+            float depth = -view.z;
+            if (depth <= 0.2f || radius <= 0f) return Vector4.zero;
+            return new Vector4(f * view.x / depth, f * view.y / depth, f * radius / depth, depth);
+        }
+
+        /// <summary>The banked tube's centreline at <paramref name="s"/>: the point, the wall's radius there, the tube's
+        /// frame normal and its heading (world).</summary>
+        static void SampleTube(in Near near, float s, out Vector3 at, out float radius, out Vector3 normal, out Vector3 tangent)
+        {
+            if (near.Tunnel != null)
+            {
+                var t = near.Tunnel;
+                float sc = Mathf.Clamp(s, 0f, t.L);
+                at = t.At(sc, out tangent);
+                t.Frame(sc, out normal, out _);
+                radius = t.Radius(sc);
+                return;
+            }
+            var c = near.Net.Channels[near.Channel];
+            double sd = System.Math.Max(0.0, System.Math.Min(c.L, s));
+            at = SolitonNetwork.V(SolitonTunnelMath.At(c.Path, sd, out var tan));
+            tangent = SolitonNetwork.V(tan);
+            SolitonTunnelMath.Frame(c.Path, sd, out var nd, out _);
+            normal = SolitonNetwork.V(nd);
+            radius = (float)SolitonTunnelMath.Radius(c, sd, near.Config.NetworkTip);
         }
 
         /// <summary>
@@ -685,7 +766,6 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogWarning($"[Soliton] The Soliton Tunnel lens cannot draw: {reason}. Tunnels are not shown.");
                 s_lens = null;
-                s_standinKeywordReady = false;
             }
             WorldColorTrace.Paint(s_lens);   // loaded after the scene's repaint: born in the worn colour set
             return s_lens;
@@ -714,7 +794,6 @@ namespace CosmicShore.Gameplay
         {
             s_resolved = false;
             s_lens = null;
-            s_standinKeywordReady = false;
             s_holdingCameras = false;
             s_phaseFrame = -1;
             s_rides.Clear();

@@ -326,9 +326,13 @@ namespace CosmicShore.Gameplay
         /// is exempt, because its tether and the way home riding it need the trail, and so is a
         /// mode preview, which shows a mode as it plays (<see cref="ModePreviewSession.AnyActive"/>).
         ///
+        /// On a tier that lays a lava-lamp trail (Desktop, MobileHigh), that trail waits at the same
+        /// budget as freestyle (B45, 2026-11-21): unbounded, it made every load out of the menu freeze
+        /// longer the longer the player had idled there.
+        ///
         /// Applies to every vessel in the scene, not just the local one: a party member's vessel
-        /// lays its trail on this device too. Desktop and MobileHigh set neither field, so there
-        /// this returns before touching anything.
+        /// lays its trail on this device too. A tier that sets neither field returns before touching
+        /// anything.
         /// </summary>
         void ApplyTierTrailPolicy()
         {
@@ -345,10 +349,13 @@ namespace CosmicShore.Gameplay
                 var controller = TrailControllerOf(player);
                 if (!controller) continue;
 
+                // The lava lamp waits at the same budget as freestyle (B45): its trail grew about 2,500 prisms a
+                // minute with no ceiling, and every scene load out of the menu froze for longer the longer the
+                // player had sat there (13.4 s after 17 minutes; Relay drops a host at 10 s).
                 bool hold = !ModePreviewSession.AnyActive
                             && (_isInFreestyle
-                                ? FreestyleTrailWaits(profile, controller.transform.position)
-                                : profile.MenuAutopilotLaysNoTrail);
+                                ? CellTrailWaits(profile, controller.transform.position)
+                                : profile.MenuAutopilotLaysNoTrail || CellTrailWaits(profile, controller.transform.position));
 
                 controller.SetTierHold(hold);
                 if (hold) _tierHeld.Add(controller);
@@ -358,7 +365,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The cell's freestyle trail budget, with hysteresis: waiting starts at the
         /// budget and ends at the (lower) resume count, so the pen does not flicker at the line.</summary>
-        bool FreestyleTrailWaits(PlatformProfileSO profile, Vector3 at)
+        bool CellTrailWaits(PlatformProfileSO profile, Vector3 at)
         {
             int budget = profile.FreestyleCellPrismBudget;
             if (budget <= 0 || WanderwayRun.AnyRunning) return false;

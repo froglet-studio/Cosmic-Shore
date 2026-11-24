@@ -2766,8 +2766,96 @@ cheap rate). From the button to the menu is about 17 s where it was about 10.5 s
 **Not found:** why a destroy during play costs nearly three times the unload's. The editor Profiler was switched on
 to look at one such frame and the editor crashed (native fault, 21:35); do not profile these frames on this PC.
 
-**Not measured:** a guest, two machines, a build, any mode other than Bloomrush, and the hold on a focused editor.
+**Two players (editor + MPPM Player 2, the same evening):** the load's frame was 5.7 s on the host and 4.5 s on the
+guest, with 74,000 prisms on each at the end; the drain's frames were 1.4-3.5 s and 0.5-1.8 s. Both reached the menu
+still in the party. In a gate race (Breakwater, inside a Maelstrom) the drain found nothing to take and cost 2.1 s:
+a course's own prisms are not the cell's plants or environment, so they still die in the load's frame.
+
+**Not measured:** two machines, a build, the hold on a focused editor, and any heavy mode other than Bloomrush.
 The second freeze on the menu a minute after a return (6.9-21.9 s, B45 of 2026-11-20) is untouched.
+
+### B45 on the return to the menu, built players (2026-11-22): reproduced with four on one PC
+
+Four development players on one PC (`mp_auto.py --players 4 --extra "-csMpLaunch Bloomrush"`, build of 17:42 from
+`de57912782`): party, launch and a running turn were fine. On the host's return to the menu every player froze while
+leaving Bloomrush (host 9.0 s, joiners 10.2, 11.0 and 11.4 s; `[Net] The game froze for ... in MinigameBloomrush`),
+Relay dropped the three joiners and each bounced to its own solo menu. With two players the host froze 9.3 s and the
+party survived. One joiner's load report (return to menu, 46.3 s, worst frame 13.4 s): scene exit drain 9.0 s, streamed
+prism lay of the menu's garland (4,259 prisms) 11.7 s, scene load to activation 6.6 s.
+
+**Read with care.** Four development players share one PC, so the times are inflated; the build carries the never-played
+flora limb pool (`e2a0bb1783`) and the trail release of this morning, and no older build is left to compare. Not yet
+known: which of the drain, the garland lay and the scene activation is the frozen frame. Logs: the run's folder is in
+the session scratchpad (`mpauto/m_run4`), not in the repo.
+
+### B45 on a launch from the menu (2026-11-22): the trail goes back to its pools before the load
+
+**Cause.** At a scene exit the host's trail pools handed their prisms back 100 a frame
+(`InteractivePrismPoolManager.HandleSceneTransition`), and the load began 0.1 s later, so the load's frame carried
+nearly every trail prism still active and the rest trickled back during the next scene. A guest never gets that
+event: its pools released the whole trail in one go inside the load's frame (`HandleActiveSceneChanged`, 1.15 s for
+57,000 prisms in the measurement of 2026-11-15).
+
+**Change.** The pools hand the trail back on a time budget, 12 ms a frame per pool
+(`GenericPoolManager.ReleaseAllActiveBudgetedAsync`), and the host holds the load until they are done, 4 s at most
+(`SceneLoader.WaitForTrailReleaseAsync`, `trailReleaseMaxSeconds`; a `trailRelease` mark when it had to wait). A
+guest starts the same release when the host's scene load arrives (`MultiplayerSetup.OnSceneEventTrace`). This is not
+a trail cap: nothing is removed during play, only the scene exit's own work is moved out of the load's frame.
+
+**Measured** (solo online host in the editor, unfocused, Photic colour set, Bloomrush launch, the menu's time scale
+raised to grow the trail; one launch each):
+
+| | Trail prisms / active in all | Load's frame | Menu frames before it | Trail still out 14 s into the match |
+|---|---|---|---|---|
+| Old rate (about 32 a frame, no wait) | 19,700 / 30,900 | 3.2 s | 1.5 s, 2.0 s | 10,300 |
+| New (12 ms a frame, wait up to 4 s) | 19,500 / 25,600 | 1.7 s | 1.2 s, 0.8 s | 0 |
+
+**What this does not show.** One launch each, and the two differ by 5,300 active prisms. The 8-13 s launch frames of
+2026-11-15 were NOT reproduced: the trail in these pools stopped near 19,700 prisms here, against 50,000-64,000 then,
+and that run wore a colour set other than Photic (`UIThemeLive.RepaintAll`, about 2 s a scene load). A first try with
+the new release and no wait, at 50,800 active prisms in all, had a 3.4 s load frame. Not measured: a guest, two
+machines, a build, a real 20-minute idle. The 21.9 s freeze on the menu after a return and the 72 s Cleave freeze are
+untouched; their cause is still unknown.
+
+### B45 on the menu after a return (2026-11-21): not reproduced on one PC; the next freeze names its work
+
+**Seen** in the two-machine test of 2026-11-20 (`gradi+yskha-20261120_004226`, Garrett hosting, Yash a guest, both on
+`bleeding-edge` `99f24a9bb8`, from before the return drain): a second freeze on the menu after a return, on top of the
+return's own load frame.
+- Garrett (host) 6.9 s, about 10 s after a Regatta return. Yash (guest) 8.2 s, about 11 s after a Brood Rush return.
+  Both with an async prism-clone batch waiting, and right after each, `[EnvironmentPrismPool] Async clone batch (163
+  prisms) not integrated after 4s - forcing WaitForCompletion`.
+- Garrett (host) **21.9 s**, about 62 s after the Brood Rush return, with nothing waiting. Relay dropped him and the
+  party ended. Nothing in either log says what that frame did.
+
+**Not reproduced** (2026-11-21, `Ys-bleeding-edge` `923711842b`, editor + MPPM Player 2 on one PC, every slow frame
+logged for 100 s after the return, no probe running in that window):
+- solo, Bloomrush (73,000 prisms) and back: nothing over 0.4 s once the load frame and the menu's first seconds were
+  past;
+- two players, Brood Rush and back: the menu's arena (the Garland, about 4,300 prisms) was laid within 5 s of arriving
+  in frames of 0.4-1.0 s, then nothing over 0.4 s for 80 s on either player; no clone-batch warning;
+- the same with the return drain switched off on both players (the code path of 2026-11-20): the same.
+
+**What the evidence says, and what it does not.**
+- The clone-batch warning is logged AFTER each of the two shorter freezes, not before (the stall mark comes first), so
+  the forced `WaitForCompletion` was not the frozen frame: the frame froze with a batch waiting, and the watchdog,
+  past its 4 s, fired as soon as the frame ended.
+- The batch is the menu's Garland being laid. `Cell.DeferredEnvironmentBuild` waits for the local player (up to 12 s)
+  before it builds on the menu. On one PC that is under a second; on two machines over the internet it can be the
+  10-11 s the freezes came at. A lead, not a finding: what made those frames seconds long is not known.
+- The 21.9 s frame had no clone waiting: its cause is not known.
+
+**Added** so the next freeze names itself: a `stallFrame` mark one frame after every `stall`, with the engine work
+the frozen frame was made of (`StallFrameMarkers`: about 120 profiler-marker recorders, started the first time the
+game is online, read only around a stall; never the editor Profiler window). Measured on a return's load frame:
+`PlayerLoop 5076 ms; EarlyUpdate.UpdatePreloading 2959 ms; Loading.UpdatePreloading 2959 ms; Application.Integrate
+Assets in Background 2959 ms; Application.LoadLevelAsync Integrate 2737 ms; EarlyUpdate.ScriptRunDelayedStartupFrame
+1291 ms; Loading.AwakeFromLoad 932 ms; GC.Collect 806 ms`. A release player has no recorders and says so.
+
+**Also fixed:** `FrameStallWatchTests` left the stall record switched off ("offline") for the next Play in the same
+editor (the tests restored a provider that always answered false). It now restores the real check.
+
+**Next:** the next two-machine test. A freeze on the menu then carries its `stallFrame` line in `net_logs.py show`.
 
 ## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
 

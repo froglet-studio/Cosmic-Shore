@@ -76,4 +76,97 @@ combos:
     - Slip along a trail to the next hive
   drivers: [crew, mastery]
   feel: My partner made that shot possible.
+  gene:
+    genome: Charge
+    cue: [crew_ready, rival_near]
+    dials:
+    - - hiveDetour
+      - distance flown for a hive
+      - 30
+      - 400
+      - u
+    - - bankedUses
+      - stronger uses banked before spending
+      - 1
+      - 6
+      - count
+    done: A banked Flit strikes a rival.
+    sight: BANDIT
+- in: x
+  name: Slip chain
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The Ratel's patterns fill the battery; the nose finds the next trail of that colour.
+  chain:
+  - - ''
+    - 'The Ratel makes patterns: colour charge'
+  - - Time
+    - 'Nose onto a trail of that colour: slip to its end'
+  - [Time, The next trail]
+  drivers: [crew, joy]
+  feel: The partner pays for the ride.
+  gene:
+    genome: Time
+    cue: [mass_ahead, bank_full]
+    dials:
+    - - slipAlign
+      - heading error onto a trail that still noses on
+      - 2
+      - 30
+      - deg
+    - - keepCharge
+      - colour charges kept in reserve
+      - 0
+      - 3
+      - count
+    done: A slip ends nearer the next gate than it began.
+    sight: NEEDLE
+- in: x
+  name: Peck the comb
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Space cards from the hive bank stronger pecks, spent on rival mass.
+  chain:
+  - [Mass, Fly into a hive]
+  - - ''
+    - The Ratel makes Space cards
+  - - Space
+    - Three-shot pecks into rival mass
+  drivers: [crew, break]
+  feel: Earned shots.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, bank_full]
+    dials:
+    - - peckRange
+      - distance to rival mass when pecking
+      - 20
+      - 200
+      - u
+    - [burstSpacing, seconds between bursts, 0.2, 2, s]
+    done: Banked pecks break rival prisms.
+- in: x
+  name: The hive build
+  t: [15, 45]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Hives near the nucleus are prisms for the claim.
+  chain:
+  - - Mass
+    - Fly into a hive near the nucleus
+  - - ''
+    - The Ratel's puzzle pays prisms
+  - [Mass, On to the next hive]
+  drivers: [crew, make]
+  feel: Building by solving.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap, crew_ready]
+    dials:
+    - - hiveRange
+      - distance from the nucleus a hive is worth flying to
+      - 30
+      - 400
+      - u
+    done: A hive pays its prisms inside the claim.
+    sight: ENSIGN
 doc: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md

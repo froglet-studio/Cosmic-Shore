@@ -198,16 +198,15 @@ def self_test(seeds):
     if f"DefaultLaps = {LAPS};" not in src:
         print(f"DRIFT: SpearlineCourseSource.DefaultLaps is not {LAPS}")
         ok = False
-    # The Swordfish's own ramp asset carries the numbers the model flies (the Rhino's), Time scaling off.
+    # The Swordfish's own ramp asset carries the numbers the model FLIES (headlong_stampede_model's airframe: the
+    # ramp the Rhino had when the model was built, which regatta_balance clamps to). Compared with those constants,
+    # not with the Rhino's asset: the Rhino's ramp was retuned (2026-11-20) and the Swordfish's was not.
     sw = open(os.path.join(ROOT, "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishRampBoostAction.asset"),
               encoding="utf-8").read()
-    rh = open(os.path.join(ROOT, "Assets/_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset"),
-              encoding="utf-8").read()
-    for key in ("maxBoostMultiplier", "accelerationPerSecond"):
+    for key, flown in (("maxBoostMultiplier", HS.C["rhino_max_boost"]), ("accelerationPerSecond", HS.ACCEL)):
         a = re.search(rf"{key}:\s*([0-9.]+)", sw)
-        b = re.search(rf"{key}:\s*([0-9.]+)", rh)
-        if not (a and b and float(a.group(1)) == float(b.group(1))):
-            print(f"DRIFT: the Swordfish ramp's {key} differs from the Rhino's the model flies")
+        if not (a and float(a.group(1)) == float(flown)):
+            print(f"DRIFT: the Swordfish ramp's {key} is {a.group(1) if a else 'missing'}, the model flies {flown}")
             ok = False
     if not re.search(r"timeAccelerationMultiplier:\s*\n\s+Enabled: 0", sw):
         print("DRIFT: the Swordfish ramp scales with Time now - the model flies it at Time 0")

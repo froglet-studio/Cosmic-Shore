@@ -66,4 +66,73 @@ combos:
     - Thrown prisms carry into the next and break both
   drivers: [break, make, joy]
   feel: Momentum that nothing stops.
+  gene:
+    genome: Mass
+    cue: [mass_ahead, straight_ahead]
+    dials:
+    - - spoolBeforeField
+      - share of top speed reached before the field
+      - 0.3
+      - 1.0
+      - fraction
+    - - throwHold
+      - seconds a trigger is held to throw the field to one side
+      - 0.3
+      - 4
+      - s
+    done: The thrown prisms settle in a line inside the claim.
+- in: x
+  name: Straight spool
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Hold the straight; the furrow shoves the mass aside so nothing costs speed.
+  chain:
+  - - Time
+    - 'Hold the straight: spool up'
+  - - Space
+    - The furrow shoves prisms aside
+  - - Time
+    - The spool carries into the gate
+  drivers: [joy, mastery]
+  feel: Nothing in the way matters.
+  gene:
+    genome: Time
+    cue: [straight_ahead, mass_ahead]
+    dials:
+    - - turnBudget
+      - heading error accepted before turning
+      - 1
+      - 30
+      - deg
+    done: A gate is threaded at better than three quarters of top speed.
+    sight: NEEDLE
+- in: x
+  name: The landslide
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Spool, plough a field, and aim the carry into rival mass.
+  chain:
+  - [Time, Spool up]
+  - - Charge
+    - 'Plough the field: throws carry into the next and break both'
+  - - Space
+    - 'Hold a trigger: aim the carry at rival mass'
+  drivers: [break, joy]
+  feel: Pushing a mountain over.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, straight_ahead]
+    dials:
+    - - fieldDensity
+      - prisms in a field worth ploughing
+      - 5
+      - 200
+      - count
+    - - aimHold
+      - seconds the trigger is held to aim the carry
+      - 0.3
+      - 4
+      - s
+    done: Carried prisms break rival prisms.
+    sight: MANGER
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md

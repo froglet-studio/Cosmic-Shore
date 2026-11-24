@@ -1,31 +1,22 @@
-// StoatRipple.shader — the Stoat's annihilation ripple (R_VesselActions/STOAT_DIPOLE.md §1c), a spherical
-// space-time wave that bends the scene as its front passes. StoatRipple.cs drives it; StoatRippleExecutor.cs is
-// what the front DOES (strips rivals, kills creatures) — this file is only the picture.
+// StoatRipple.shader — the Stoat's annihilation ripple (R_VesselActions/STOAT_DIPOLE.md §1c "The drawn wave"): a
+// space-time ripple with NO colour of its own. StoatRipple.cs keeps the live ripples, StoatRipplePass.cs draws them;
+// StoatRippleExecutor.cs is what the front DOES (strips rivals, kills creatures) — this file is only the picture.
 //
-// HOW IT DRAWS. The black-hole lens's own trick (BlackHoleLens.shader): one back-faced sphere circumscribing the
-// front, drawn by BlackHoleLensPass AFTER the transparents from its copy of the camera colour
-// (_BlackHoleSceneColor), with LightMode = BlackHoleLens so URP's own passes never draw it. Per pixel: the view
-// ray's closest approach b to the ripple's centre. A shell of radius R projects to the ring b = R; within a band
-// either side of it the ray is bent toward the centre (outside the front) and away from it (inside) by a
-// derivative-of-Gaussian profile, so the scene behind is pushed out ahead of the wave and pulled in behind it — a
-// travelling lens, not a painted ring. The red and blue channels bend a little more and less than green (the
-// fringe), and a thin rim at the front carries the owner's domain colour (pre-multiplied by the C# side's glow
-// and fade). Everything outside the band is discarded, so the pass leaves the rest of the screen untouched.
+// HOW IT DRAWS. One full-screen triangle after the transparents, from StoatRipplePass's copy of the camera colour
+// (_StoatRippleSceneColor). Screen positions are in the black-hole lens's units (screen heights from the centre, y up;
+// BlackHoleLens.ScreenWell): a spherical front of radius R seen from distance D projects to a circle of screen radius
+// rho around its centre. Per pixel, u = how many wavelengths the pixel sits BEHIND the front (inside the circle); the
+// wave's profile (StoatRippleProfile, = StoatRippleMath.Profile) is a sine that rises sharply at the front and rings
+// down over about three trailing crests. The pixel samples the scene displaced along the radius by the bend × the
+// profile, and its own light is raised on a crest and lowered in a trough by the shimmer × the profile. The bend is in
+// screen units already faded by age and by 1/r (StoatRippleMath.Amplitude). Nothing is ADDED: no rim, no tint, no
+// glow. When the front runs through the camera itself the whole view swells and settles (_StoatRippleView.y).
+// Pixels no wave reaches are discarded.
 //
-// LIMITS, STATED. No depth test: an opaque in front of the wave inside its band is bent with the background (the
-// wave is ~1 s long). A camera INSIDE the front sees nothing — the wave has already passed it.
+// LIMITS, STATED. No depth test (the URP asset keeps no depth texture): an opaque in front of the wave inside its band
+// is bent with what is behind it. The front is a circle on screen, exact for a sphere seen from outside it.
 Shader "CosmicShore/StoatRipple"
 {
-    Properties
-    {
-        [Header(Written per ripple by StoatRipple.cs through a MaterialPropertyBlock)]
-        _RippleRadius ("Front radius (world units)", Float) = 10
-        _RippleBand ("Band half-width (world units)", Float) = 2
-        _RippleBend ("Bend at the band's peak (radians, fades with age)", Float) = 0.025
-        _RippleSplit ("Red / blue split of the bend (0 = none)", Float) = 0.12
-        _RippleTint ("Rim colour (HDR, pre-multiplied by glow and fade); a = strength", Color) = (0, 0, 0, 0)
-    }
-
     SubShader
     {
         Tags
@@ -39,120 +30,88 @@ Shader "CosmicShore/StoatRipple"
         Pass
         {
             Name "StoatRipple"
-            // Drawn only by BlackHoleLensPass (after the transparents), never by URP's own passes.
-            Tags { "LightMode" = "BlackHoleLens" }
+            // Drawn only by StoatRipplePass (after the transparents), never by URP's own passes.
+            Tags { "LightMode" = "StoatRipple" }
 
             ZWrite Off
             ZTest Always
-            Cull Front
+            Cull Off
             Blend Off
 
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex StoatRippleVert
             #pragma fragment StoatRippleFrag
-            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            CBUFFER_START(UnityPerMaterial)
-                float _RippleRadius;
-                float _RippleBand;
-                float _RippleBend;
-                float _RippleSplit;
-                float4 _RippleTint;
-            CBUFFER_END
+            // Mirrors StoatRipple.MaxDrawn.
+            #define STOAT_RIPPLE_MAX 4
 
-            TEXTURE2D(_BlackHoleSceneColor);
+            // Per camera, with the draw (StoatRipplePass → StoatRipple.ScreenRipples), nearest first:
+            // C = (centre x, centre y, the front's screen radius, the wavelength on screen)
+            // A = (the bend on screen, the shimmer, 1 = live, 0)
+            float4 _StoatRippleC[STOAT_RIPPLE_MAX];
+            float4 _StoatRippleA[STOAT_RIPPLE_MAX];
+            float _StoatRippleCount;
+            // x the camera's aspect, y the swell of a wave passing through the camera
+            float4 _StoatRippleView;
+
+            TEXTURE2D(_StoatRippleSceneColor);
 
             struct Attributes
             {
-                float4 positionOS : POSITION;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
+                uint vertexID : SV_VertexID;
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float3 positionWS : TEXCOORD0;
-                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             Varyings StoatRippleVert(Attributes input)
             {
-                Varyings output = (Varyings)0;
-                UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                float4 positionCS = TransformWorldToHClip(positionWS);
-                // Pinned just inside the far plane (the lens's rule): a wave wider than the far distance is never cut.
-            #if UNITY_REVERSED_Z
-                positionCS.z = positionCS.w * 1e-5;
-            #else
-                positionCS.z = positionCS.w * (1.0 - 1e-5);
-            #endif
-                output.positionWS = positionWS;
-                output.positionCS = positionCS;
+                Varyings output;
+                output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
                 return output;
             }
 
-            // Screen uv of a world DIRECTION from the camera; onScreen fades over the outer 4% so a bent ray that
-            // leaves the screen does not tear.
-            float2 StoatRippleDirToUV(float3 dir, out float onScreen)
+            // = StoatRippleMath.Profile: u wavelengths behind the front (negative ahead of it).
+            float StoatRippleProfile(float u)
             {
-                float4 clip = mul(UNITY_MATRIX_VP, float4(dir, 0.0));
-                if (!(clip.w > 1e-5))
-                {
-                    onScreen = 0.0;
-                    return float2(0.5, 0.5);
-                }
-                float4 screen = ComputeScreenPos(clip);
-                float2 uv = screen.xy / screen.w;
-                float2 edge = min(uv, 1.0 - uv);
-                onScreen = saturate(min(edge.x, edge.y) / 0.04);
-                return uv;
+                if (u < -1.5 || u > 4.0) return 0.0;
+                float envelope = u < 0.0 ? exp(-6.0 * u * u) : exp(-0.45 * u * u);
+                return sin(6.2831853 * u) * envelope;
             }
 
             half4 StoatRippleFrag(Varyings input) : SV_Target
             {
-                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-                float radius = _RippleRadius;
-                float band = max(_RippleBand, 1e-3);
-                if (!(radius > 1e-3) || _RippleTint.a <= 0.0) discard;
+                float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
+                float aspect = _StoatRippleView.x;
+                float2 p = (uv - 0.5) * float2(aspect, 1.0);
 
-                float3 centre = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
-                float3 eye = _WorldSpaceCameraPos;
-                float3 d = normalize(input.positionWS - eye);
-                float3 toCentre = centre - eye;
-                float along = dot(toCentre, d);
-                // Inside the front: the wave has passed the camera. Behind the camera: nothing to see.
-                if (length(toCentre) < radius - band || along <= 0.0) discard;
-                float3 perp = toCentre - along * d;          // from the ray's closest point toward the centre
-                float b = length(perp);
-                float s = (b - radius) / band;               // -1 .. 1 across the band; 0 on the front
-                if (abs(s) >= 1.0) discard;
-                float3 inward = b > 1e-4 ? perp / b : float3(0.0, 0.0, 0.0);
+                // The wave passing through the camera: the whole view swells out from its centre and settles.
+                float2 disp = p * _StoatRippleView.y;
+                float shimmer = 0.0;
+                for (int k = 0; k < STOAT_RIPPLE_MAX; k++)
+                {
+                    if (k >= (int)_StoatRippleCount) break;
+                    float4 c = _StoatRippleC[k];
+                    float4 a = _StoatRippleA[k];
+                    if (a.z < 0.5) continue;
+                    float2 d = p - c.xy;
+                    float r = length(d);
+                    float profile = StoatRippleProfile((c.z - r) / max(c.w, 1e-4));
+                    if (profile == 0.0 || r < 1e-5) continue;
+                    disp += (d / r) * (a.x * profile);
+                    shimmer += a.y * profile;
+                }
+                if (dot(disp, disp) < 1e-12 && abs(shimmer) < 1e-5) discard;
 
-                // Derivative of a Gaussian, peak 1 at s = ±0.5, zero at the front and at the band's edges: outside the
-                // front the ray bends toward the centre (the scene is pushed out), inside it bends away (pulled in).
-                float profile = s * exp(0.5 - 2.0 * s * s) * (1.0 - s * s);
-                float bend = _RippleBend * profile;
-
-                float onR, onG, onB;
-                float2 uvR = StoatRippleDirToUV(normalize(d + inward * bend * (1.0 + _RippleSplit)), onR);
-                float2 uvG = StoatRippleDirToUV(normalize(d + inward * bend), onG);
-                float2 uvB = StoatRippleDirToUV(normalize(d + inward * bend * (1.0 - _RippleSplit)), onB);
-                float2 pixelUV = GetNormalizedScreenSpaceUV(input.positionCS);
-                float3 straight = SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, pixelUV, 0).rgb;
-                float3 bent;
-                bent.r = SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, uvR, 0).r;
-                bent.g = SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, uvG, 0).g;
-                bent.b = SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, uvB, 0).b;
-                float3 scene = lerp(straight, bent, min(onR, min(onG, onB)));
-
-                // A thin rim at the front, in the owner's domain colour.
-                float rim = exp(-12.0 * s * s);
-                return half4(scene + _RippleTint.rgb * rim, 1.0);
+                float2 suv = (p + disp) / float2(aspect, 1.0) + 0.5;
+                suv = 1.0 - abs(1.0 - abs(suv));   // mirrored at the edges, as the lens does
+                float3 col = SAMPLE_TEXTURE2D_LOD(_StoatRippleSceneColor, sampler_LinearClamp, suv, 0).rgb;
+                return half4(col * max(0.0, 1.0 + shimmer), 1.0);
             }
             ENDHLSL
         }

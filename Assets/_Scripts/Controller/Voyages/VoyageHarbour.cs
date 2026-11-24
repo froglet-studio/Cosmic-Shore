@@ -423,6 +423,7 @@ namespace CosmicShore.Gameplay
             if (x != null)
                 for (int e = 0; e < x.Crystals.Length; e++)
                     if (x.Crystals[e] > 0) PilotLoadoutStore.AddCrystals((Element)e, x.Crystals[e], "voyage");
+            VoyageRun.BankWalletCrystals(x);
             state.SavedAtMs = UniqueId.NowMs();
             VoyageStore.Save(state);
             var board = new VoyageScoreboard

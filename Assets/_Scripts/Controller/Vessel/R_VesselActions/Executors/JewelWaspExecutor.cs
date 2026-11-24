@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     [DefaultExecutionOrder(-50)]   // the hull is placed on its host in LateUpdate before the chase camera reads it
     [DisallowMultipleComponent]
-    public sealed class JewelWaspExecutor : ShipActionExecutorBase, IFaunaPossession
+    public sealed class JewelWaspExecutor : ShipActionExecutorBase, IFaunaPossession, IFaunaLeashFrame
     {
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number (Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspConfig.asset).")]
@@ -295,7 +295,9 @@ namespace CosmicShore.Gameplay
             }
             else if (Mirrors && Relay.IsOwner && _mode != WaspMode.Free)
                 _status.Transform.SetPositionAndRotation(Relay.NestPosition, Relay.NestRotation);   // the server's nest
-            if (IsLocalHuman && !_status.AutoPilotEnabled) UpdateCamera(Time.deltaTime);
+            // The local player's hull, whoever holds its sticks (CameraManager.ActiveRigFollowing's rule): a ridden
+            // creature or plant is framed the same when the AI flies the hull for the player.
+            if (IsLocalHuman) UpdateCamera(Time.deltaTime);
             else ReleaseCamera();
         }
 
@@ -612,7 +614,11 @@ namespace CosmicShore.Gameplay
             var host = _host;
             if (!host) return;
             float reach = config.AttackReach + host.PossessionBodyRadius;
-            var victim = NearestRival(host.PossessionNestPoint, _frame * Vector3.forward, reach * config.AttackAimReaches, 50f);
+            // a creature that aims ahead may aim farther than it strikes; one that aims all round (a cone toward 180) aims
+            // no farther than it strikes, or a rival anywhere near it would keep it from feeding
+            float cone = host.PossessionAimConeDegrees;
+            float aimReaches = Mathf.Lerp(config.AttackAimReaches, 1f, Mathf.InverseLerp(90f, 180f, cone));
+            var victim = NearestRival(host.PossessionNestPoint, _frame * Vector3.forward, reach * aimReaches, cone);
             if (victim != null)
             {
                 if (Time.time < _attackReadyAt) return;
@@ -874,6 +880,12 @@ namespace CosmicShore.Gameplay
             speed = creature.PossessionTopSpeed * SpeedScale;
             turnRate = 10f;
             return true;
+        }
+
+        bool IFaunaLeashFrame.TryFrameUp(Fauna creature, out Vector3 up)
+        {
+            up = _frame * Vector3.up;
+            return config && creature == _host && _mode == WaspMode.InFauna;
         }
 
         Prism IFaunaLeash.OrderedMeal(Fauna creature) => null;   // the rider's RT decides every mouthful

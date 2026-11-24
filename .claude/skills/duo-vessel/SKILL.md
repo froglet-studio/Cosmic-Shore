@@ -380,6 +380,18 @@ enum before taking a value.
 - **A chip can only name a control the glyph set has.** A seat that reads keys of its own (the Pistol's G and B) has
   no honest chip: `ControlGlyphSet` holds one row per fleet control (A / Space, B / T, X / Q, Y / F, the triggers and
   shifts, RB / E). Put each seat's moves on those controls, keep the old keys as quiet aliases, and the chips derive.
+- **A hull that lays prisms where it sits will ram them once the self-trail grace runs out.** The Goby's perch pad
+  (5 blocks under the hull) and the Pistol's den (40% shielded, and shielded prisms bounce a hull) both sit at the
+  perch, and `SelfTrailContactConfigSO`'s grace is seconds, so turning away from a perch stopped the Goby, a stop
+  players read as getting stuck (Will, 2026-11-24). The dart query already skipped the pair's own prisms
+  (`Perchable`); the HULL did not. A crew hull that lays its own ground leaves it alone by touch: `IHullPrismFilter`
+  on the root, read by `VesselImpactor.TouchesPrism` on both halves of a contact.
+- **A pin that only paces a person reads as a bug.** The Goby's 1.5 s perch hold did nothing for the Pistol (the
+  island, ground and den are laid the frame the dart lands; `islandQueue` keeps the Goby from running away), so a
+  person's Goby never holds at a perch now; the AI keeps it because its coach aims from there and Regatta is tuned on it.
+- **Moving a cooldown's start keeps its feel only if the length moves with it.** The dart's cooldown counted from
+  landing (1 s dart + 1.2 s); from launch it is 2.2 s, the same cycle at every Time level because Time divides both.
+  1.5x (1.8 s) shortened the cycle and sped the Goby up 5-13% in Perch Run's harness.
 
 ## 7. Glossary
 

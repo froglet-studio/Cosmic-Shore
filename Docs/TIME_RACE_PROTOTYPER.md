@@ -14,7 +14,7 @@ It shapes the courses of the three time races cut from Slingshot's circuit:
 |---|---|---|
 | Slingshot | Stoat (its Time race since 2026-10-27) | 2 laps x 8 rings |
 | Warpline | Meerkat (since 2026-10-27; the Stoat's before) | 2 laps x 5 rings |
-| Burrow Run | Meerkat | 2 laps x 8 rings |
+| Burrow Run | Jewel Wasp (the Meerkat until 2026-11-22) | 2 laps x 8 rings |
 
 For the race you pick:
 - **Use this course in the game**: off, the race flies its shipped course; on (after Save), it flies yours.

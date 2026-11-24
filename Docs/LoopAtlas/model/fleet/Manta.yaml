@@ -94,6 +94,22 @@ combos:
     repsOf: bombs planted before the cash-out
     feel: One more bomb is a bigger bloom, and one more chance to brush a prism and lose them all.
     src: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md section 0
+  gene:
+    genome: Charge
+    cue: [rival_near, bank_full]
+    dials:
+    - - plantsBeforeBloom
+      - bombs planted before the AI spends an omni crystal
+      - 1
+      - 8
+      - count
+    - - grazeGap
+      - how close a graze is flown
+      - 1
+      - 15
+      - u
+    done: A Kabloom takes petals from at least one rival.
+    sight: BANDIT
 - name: The bait
   t: [10, 40]
   is: Leave a decoy and let greed do the work.
@@ -105,4 +121,73 @@ combos:
     - A rival takes the decoy into danger prisms
   drivers: [rival, joy]
   feel: A trap someone chose to walk into.
+  gene:
+    genome: Mass
+    cue: [crystal_near, rival_ahead]
+    dials:
+    - - baitRange
+      - a crystal is taken as bait when a rival is within this of it
+      - 20
+      - 300
+      - u
+    - - yawAway
+      - seconds of hard yaw away after the pickup
+      - 0.3
+      - 3
+      - s
+    done: A rival takes the decoy and its danger prisms.
+- in: x
+  name: Soar the line
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: A hard flat yaw at the gate, a skim to arm, then soar the straight.
+  chain:
+  - - Time
+    - Hard flat yaw at the gate
+  - - Space
+    - Skim the gate's mass to arm
+  - [Time, Soar the straight]
+  drivers: [joy, mastery]
+  feel: Turning on a coin.
+  gene:
+    genome: Time
+    cue: [gate_next, mass_ahead]
+    dials:
+    - - yawCommit
+      - heading error that commits a hard yaw
+      - 10
+      - 90
+      - deg
+    - - skimDetour
+      - distance flown off the line to skim
+      - 0
+      - 60
+      - u
+    done: A gate is threaded with a skim inside two seconds.
+    sight: NEEDLE
+- in: x
+  name: Chain blow
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Skimmed rival mass turns explosive; one blast takes the field with it.
+  chain:
+  - - Space
+    - 'Skim rival mass: it turns explosive'
+  - - Charge
+    - Graze a creature or rival there and let the fuse go
+  - - ''
+    - The blasts take the explosive mass with them
+  drivers: [break, mastery]
+  feel: One match, a whole field.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, dense_mass]
+    dials:
+    - - skimPass
+      - prisms skimmed before the fuse is let go
+      - 3
+      - 60
+      - count
+    done: A chain of explosive prisms breaks more prisms than were skimmed.
+    sight: MANGER
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md

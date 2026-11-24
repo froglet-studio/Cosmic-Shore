@@ -137,6 +137,14 @@ is not in their checkout; no play-run lines at all means the ledger's play-mode 
 
 ## 6. The daily sweep (scheduled task, once a day)
 
+**A development build does not send to the ledger.** Only the editor does. A phone's sessions reach Git when it is
+plugged in and ingested (`Docs/perf/DEVICE_LOGS.md`), on `bugledger-android/<user>`, which `collect` does not read; a
+Windows development build sends nothing. So the sweep also runs `python3 Tools/Perf/android_logs_report.py report --new`
+and triages its "Top exceptions / errors" like ledger issues (they have no id: record them in `BUG_HUNT.md`), and runs
+`python3 Tools/Build/check_gamelist_scenes.py`, which finds a card or training game that leads to a deleted scene with
+no play test at all (2026-11-20: "Scene 'MinigameElimination' couldn't be loaded" showed in a build's console and was
+on no ledger branch).
+
 `collect` → fix what you can on `Ys-bleeding-edge` (§2-§3) → import bugs filed on the Team Bug Board
 (`ArtifactData list` of `filed`, rows with `status == "new"`: `bug_ledger.py file --title … --notes …
 --severity … --reporter "Team Bug Board"`, commit, then mark the row `imported` with `importedAs`) →

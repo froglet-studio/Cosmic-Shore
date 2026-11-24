@@ -68,4 +68,80 @@ combos:
     - At the perch the Pistol builds a den
   drivers: [crew, make, rival]
   feel: Two games that need each other.
+  gene:
+    genome: Mass
+    cue: [crew_ready, open_space]
+    dials:
+    - - perchSpacing
+      - distance between the perches the Goby picks
+      - 20
+      - 250
+      - u
+    - - denEnergy
+      - energy earned over the ground before the Pistol rests to build
+      - 0.2
+      - 1.0
+      - fraction
+    done: A den is built at a perch the Pistol reached without a fall.
+    sight: ENSIGN
+- in: x
+  name: Lock and snap
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The Goby holds the lock, the Pistol snaps, and the ring homes.
+  chain:
+  - - ''
+    - The Goby locks a rival in the Pistol's view
+  - - Charge
+    - 'The Pistol snaps: the vortex ring homes'
+  - - Space
+    - The undertow pulls their loose mass in
+  drivers: [crew, rival]
+  feel: Spotter and shooter.
+  gene:
+    genome: Charge
+    cue: [rival_near, crew_ready]
+    dials:
+    - - lockHold
+      - seconds the Goby holds the lock before the snap
+      - 0.2
+      - 3
+      - s
+    - - snapRange
+      - rival distance at which the Pistol snaps
+      - 10
+      - 150
+      - u
+    done: A homed ring takes petals.
+    sight: BANDIT
+- in: x
+  name: The riptide
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Sit in dense mass, let the undertow fill the plane, then smash it in one ring.
+  chain:
+  - - Space
+    - Undertow pulls mass into the plane
+  - - Charge
+    - Snap a ring through what was pulled in
+  - - ''
+    - Crystals drift in to collect
+  drivers: [break, find]
+  feel: Drawing it all in, then letting go.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, dense_mass]
+    dials:
+    - - dwell
+      - seconds the Pistol stays in dense mass
+      - 1
+      - 10
+      - s
+    - - snapDensity
+      - prisms in the plane before the snap
+      - 5
+      - 200
+      - count
+    done: A ring collapses on mass the undertow pulled in.
+    sight: MANGER
 doc: Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset
