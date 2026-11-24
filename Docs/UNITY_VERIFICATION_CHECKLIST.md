@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The per-attacker petal ledger counts what each pilot takes from opponents (`claude/project-thread-6znms8`, 2026-11-23, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed.** `PetalLedger` (SILENCE.md §6): every strip and steal is credited to its attacker, and every hostile
+danger burn to the pilot who laid the prism, with the whole petals that really came loose. On the server it lands in
+`IRoundStats.PetalsTaken` (a new `RoundStats` NetworkVariable), readable as `ScoringMetric.PetalsTaken` (13). The relayed eject and steal RPCs on `NetworkVesselImpactor` now
+carry the attacker's name, and a client owner forwards each credit to the server (`PetalsTaken_ServerRpc`).
+Reference compile (player and editor configs): 0 errors in changed files. `elemental_transfer_harness` T12 passes.
+
+1. **Offline, Broadside or Dog Fight with AIs**: after a minute, each pilot's `PetalsTaken` (inspector on its
+   `RoundStats`) is about its combat points divided by ten, and lower when it hits pilots who hold nothing.
+2. **A pilot flying into an opponent's danger trail**: the trail's layer gains the petals the burn took; flying into
+   your own trail credits nobody.
+3. **Host plus one client**: a hit by the client on an AI, and a hit by an AI on the client, each credit once on the
+   host (no double count), and the client's inspector mirrors the host's value.
+4. **A new match starts at 0** for every pilot.
+
+---
 ### 🔴 Skim Race: garden ruins at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT RUN IN EDITOR
 
 Skim Race lays Spearline's ruins round Relativity's ribbon on I4 (SKIMRACE.md §5b): 7 ruins, 516 prisms, Jade, Ruby and
@@ -26570,6 +26587,16 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] The choice survives a restart and shows over the menu, a match's HUD and the pause menu; it can be changed in a match.
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
+
+## Swordfish: bigger afterimages, its Brood Rush Mass lever (2026-11-21, NOT PLAYED)
+
+`SwordfishSwordAfterimageConfig.asset` `massVolumeMultiplier` x1 -> x2.5 became x1.7 -> x4.25 (`SWORDFISH.md` § "Brood
+Rush"). Measured in the Amoebius Brood Rush judge only (index 0.73 -> 1.03 at Medium, 3 teams of 3). No Unity editor ran;
+the reference compile has 0 errors in the changed files.
+
+- [ ] Toybox or Palisade: energize the Swordfish and let go. The afterimages laid in the next 5 s read as the sword's
+      ghost, about 1.2x thicker on every axis than before, and the bill still cuts them after a second.
+- [ ] Brood Rush with the Swordfish seated (once the card seats it again): its score sits with the field's, not at the bottom.
 
 ## Grizzly scope camera at teardown (2026-11-22)
 
