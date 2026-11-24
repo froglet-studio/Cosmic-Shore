@@ -26851,11 +26851,11 @@ session. The reference compile has 0 errors in the changed files; `economy.test.
 Spearline's ruins laid round Switchback's I4 gauntlet (`SwitchbackRuins`, `SwitchbackController.Ruins.cs`; SWITCHBACK.md
 "The I4 ruins"). Run headless: `SwitchbackRuinsTests` (7 pass, two negative controls fail as they should), the
 generator `--check`, the console-logging gate. Compiled in Unity on 2026-11-25 (the open editor rebuilt both script
-assemblies at 01:25 IST with `SwitchbackRuins`, `LaysRuins` and `SwitchbackRuinsTests` in them). NOT run: the EditMode
-suite in Unity, a race.
+assemblies at 01:25 IST with `SwitchbackRuins`, `LaysRuins` and `SwitchbackRuinsTests` in them), and the 7
+`SwitchbackRuinsTests` pass in its EditMode runner (98 s). NOT run: the rest of the EditMode suite, a race.
 
 - [x] Unity compiles with `SwitchbackController.Ruins.cs` (2026-11-25, the open editor's script assemblies).
-- [ ] `SwitchbackRuinsTests` pass in the Test Runner.
+- [x] `SwitchbackRuinsTests` pass in the Test Runner (2026-11-25, 7 of 7, EditMode in the open editor).
 - [ ] MinigameSwitchback, I4, fixed seed: 5 ruins in Jade, Ruby and Gold ahead of blocked gates 5, 10, 14, 18 and 23.
       None touches a tunnel, a key crystal, a path ray or a block field, and the way from ring to key is open.
 - [ ] Ruby ruins do not read as Danger prisms (else change `ruinDomains` on the controller).

@@ -746,8 +746,9 @@ negative controls fail as they should (no prism clearance: a ruin 38 u from a fi
 
 - **Compiled in Unity (2026-11-25):** the open editor (6000.3.17f1) rebuilt `Assembly-CSharp.dll` and
   `Assembly-CSharp-Editor.dll` at 01:25 IST, after these files were written, and they hold `SwitchbackRuins`,
-  `LaysRuins` and `SwitchbackRuinsTests` (Unity rewrites them only on a compile with no errors). The EditMode tests
-  were NOT run in Unity (headless only), and no race was watched.
+  `LaysRuins` and `SwitchbackRuinsTests` (Unity rewrites them only on a compile with no errors). The 7
+  `SwitchbackRuinsTests` pass in that editor's EditMode runner (98 s; they sweep 41 courses, so they are slow).
+  No race was watched.
 - **The prism budget.** Nearly every ruin prism is within 200 u of the route, where `PrismColliderLodManager` gives it
   a collider, and the I4 row is already spent (Docs/perf/SWITCHBACK_PRISM_BUDGET.md: `ColliderCap(4)` 600, reached on
   the fixed seed). A ruin adds up to about 110 colliders near a pilot as it is passed. Run the I4 soak before trusting it.
