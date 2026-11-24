@@ -14,7 +14,7 @@
   "reporter": "gradi",
   "machine": "GBOX",
   "createdUtc": "2026-11-23T17:57:20.381Z",
-  "lastSeenUtc": "2026-11-23T17:57:39.512Z",
+  "lastSeenUtc": "2026-11-23T17:57:20.381Z",
   "fixedBy": "claude",
   "fixedUtc": "2026-11-24T04:09:58.479Z",
   "fixCommit": "a5a7ef89c3",
