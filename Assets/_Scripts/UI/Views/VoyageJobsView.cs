@@ -334,7 +334,8 @@ namespace CosmicShore.UI
                 if (VoyageToyDefinitionSO.JobSails(j)) _sailing.Add(j);
             var jobs = _sailing;
             string here = state?.At;
-            int count = jobs.Count + (escort ? 1 : 0);
+            var named = escort ? NamedEscortsFrom(content, here) : new List<NamedVoyage>();
+            int count = jobs.Count + (escort ? 1 : 0) + named.Count;
             _destinations.Clear();
             if (count == 0)
             {
@@ -362,6 +363,15 @@ namespace CosmicShore.UI
                 {
                     if (course is { Count: >= 2 }) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
                     else Map(content, lines, style, here, null, null);
+                    Frame(map, _offers[^1].Course);
+                }
+                // The named escort voyages that set out from here (Milestone 2), beside the plain escort.
+                foreach (var v in named)
+                {
+                    var route = VoyageRules.Route(content, v.From, v.To);
+                    _offers.Add(NamedEscortOffer(content, lines, escort, v, route));
+                    if (_open != _offers.Count - 1) continue;
+                    Map(content, lines, style, here, route, CourseLine(content, lines, route));
                     Frame(map, _offers[^1].Course);
                 }
             }
@@ -543,6 +553,32 @@ namespace CosmicShore.UI
 
         /// <summary>The Ark escort as the board offers it: its title and line at the last picked difficulty, its course, and,
         /// before it sails, Set sail at the difficulty picked on the voyage page (its own 1-9).</summary>
+        /// <summary>The named escort voyages (Milestone 2) that set out from <paramref name="here"/>.</summary>
+        static List<NamedVoyage> NamedEscortsFrom(VoyageContent content, string here)
+        {
+            var list = new List<NamedVoyage>();
+            if (content?.Voyages == null || string.IsNullOrEmpty(here)) return list;
+            foreach (var v in content.Voyages)
+                if (v is { Type: NamedVoyage.EscortType } && v.From == here && content.Location(v.To) != null) list.Add(v);
+            return list;
+        }
+
+        /// <summary>A named escort voyage's offer: its own name and line, its own difficulty as the recommendation (the crew
+        /// may pick another, 1-9), and its course.</summary>
+        VoyageBoard.Offer NamedEscortOffer(VoyageContent content, VoyageLines lines, ArkEscortSO escort, NamedVoyage v,
+            List<string> route)
+        {
+            var offer = EscortOffer(content, lines, escort, VoyageDifficulty.Clamp(v.Difficulty), route, sail: false);
+            offer.Key = VoyageSeatRecord.EscortKey;
+            offer.Title = v.Name;
+            offer.Story = v.Line;
+            offer.SailLabel = null;
+            string id = v.Id;
+            offer.SetSail = picked => VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(VoyageDifficulty.Clamp(picked),
+                VoyageSeatRecord.Get(VoyageSeatRecord.EscortKey), false, id));
+            return offer;
+        }
+
         VoyageBoard.Offer EscortOffer(VoyageContent content, VoyageLines lines, ArkEscortSO escort, int difficulty,
             IReadOnlyList<string> course, bool sail, bool locked = false)
         {

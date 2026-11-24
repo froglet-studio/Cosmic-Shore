@@ -37,6 +37,7 @@ namespace CosmicShore.Gameplay
             int legs = _escort.Legs.Count;
             objective.Goal = VoyageObjective.Kind.Escort;
             objective.Difficulty = _difficulty;
+            objective.Name = _named?.Name;
             objective.Hull = s.HullTotal > 0 ? s.Hull : 1f;
             objective.Breach = s.BreachLine;
             objective.Cells = legs;

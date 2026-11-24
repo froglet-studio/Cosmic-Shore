@@ -3466,7 +3466,8 @@
     3,
     15
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": false
   },
   {
    "Type": "escort",
@@ -3482,7 +3483,8 @@
     6,
     8
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": false
   },
   {
    "Type": "job.bounty.crew",
@@ -3497,7 +3499,8 @@
     16,
     13
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": false
   },
   {
    "Type": "job.defence.aid",
@@ -3514,7 +3517,8 @@
     6,
     11
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": true
   }
  ],
  "Words": {

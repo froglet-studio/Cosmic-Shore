@@ -26302,6 +26302,37 @@ the changed files (30 in untouched files, from packages this machine lacks); the
       on the voyage page changes the sea the same way; no screen says I1-I4.
 - [ ] Unnamed work (every other job on the board) sails exactly as before.
 
+### Escort the Ark's named voyages (2026-11-24)
+
+Not run in the Unity editor. Reference compile: 0 errors in changed files; rules harness 68 of 68.
+
+- [ ] At a port an escort voyage sets out from (Lanterns Home's), the board shows it by name beside the plain escort, with
+      its own line, recommending its own difficulty (Lanterns Home 2, Tollmoor 4, the Maw 8).
+- [ ] Pick another difficulty and set sail: the escort sails at the pick, over the voyage's own number of cells.
+- [ ] The objective box and the end board name the voyage; the board's stats read "{name} - N of M cells - time".
+- [ ] Come through: Venture further sails the next named escort from where the Ark berthed, at its difficulty; fall: Try
+      again sails the same voyage at the same difficulty.
+- [ ] In a party, a friend sails the same named voyage (same name, same cells) as the host.
+- [ ] The plain escort card still sails and reads exactly as before.
+
+### Hold the Core (2026-11-24)
+
+Not run in the Unity editor. Reference compile: 0 errors in changed files; rules harness 73 of 73.
+
+- [ ] Every port's board offers one Hold the Core voyage by its name (e.g. "Ironmouth Holds"), beside Salvage and
+      Crystal Run; the defence jobs pilots bring from the news still appear as before.
+- [ ] Sail it: the objective box reads "Reach the core of ..."; at the core a toast says the Ark anchored and to lay mass
+      in the nucleus.
+- [ ] Lay mass in the nucleus: when your domain leads, "THE CORE IS YOURS" and the strip's clock runs ("0:12 / 1:00",
+      "Yours 61% - wave 1 of 2"); while it does not, the clock waits ("Build in the nucleus - the clock waits").
+- [ ] Let another domain lead after it was yours: "THE CORE IS TURNING", a 15 s countdown on the strip; take it back and
+      the countdown clears; let it run out and the end board says "{place} turned".
+- [ ] Waves: wave 1 at the anchor, wave 2 halfway (difficulty 4), each with a toast and fauna assaulting the anchored Ark.
+- [ ] Difficulty 3 and up: with wave 2 a toast says a crew comes to retake it, and AI hulls of another domain appear
+      and build in the nucleus; they go when the Ark sails on.
+- [ ] Hold the clock to the end: the end board says "{place} held", with the held time and the wave reached; Venture
+      further sails the next Hold the Core voyage, Finish sails home.
+
 ## Voyages Milestone 2 in-game screens: Pause A, Vote B, Awards A, run toasts, rival plate (2026-11-24)
 
 `Docs/UI/specs/voyages-m2-ingame.md` (Frogma Rev 134 and Rev 137). Not run in the Unity editor: none in this session.

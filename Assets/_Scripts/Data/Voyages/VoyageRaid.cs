@@ -35,7 +35,11 @@ namespace CosmicShore.Data
             var person = Bringer(content, seatedPilotIds);
             foreach (var t in content.Jobs)
             {
-                if (t == null || !t.Always || t.Id == VoyageRules.ReturnJobId) continue;
+                if (t == null || t.Id == VoyageRules.ReturnJobId) continue;
+                // A built voyage type is offered as its named voyages wherever it sails from (Milestone 2), even when its
+                // template is otherwise brought only by news (Hold the Core: job.defence.aid).
+                bool onBoard = content.VoyageType(t.Id) is { OnBoard: true } && HasNamed(content, t.Id);
+                if (!t.Always && !onBoard) continue;
                 // A type with named voyages is offered only as one of those (Milestone 2): its own title names the type,
                 // and one a port keeps the board near six options; the day picks which sails from here.
                 var job = HasNamed(content, t.Id)

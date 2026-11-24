@@ -2894,6 +2894,7 @@ MonoBehaviour:
       - 3
       - 15
       Refuse: []
+      OnBoard: 0
     - Type: escort
       Giver: pilot.callsign.wingman
       Say: I don't need you to win anything out there. I need her hull green when we dock.
@@ -2906,6 +2907,7 @@ MonoBehaviour:
       - 6
       - 8
       Refuse: []
+      OnBoard: 0
     - Type: job.bounty.crew
       Giver: pilot.callsign.bandit
       Say: BANDIT sees them through anything. You just have to be faster than their nerve.
@@ -2917,6 +2919,7 @@ MonoBehaviour:
       - 16
       - 13
       Refuse: []
+      OnBoard: 0
     - Type: job.defence.aid
       Giver: pilot.callsign.rampart
       Say: Build first. Shoot second. A wall that stands is worth ten kills.
@@ -2930,6 +2933,7 @@ MonoBehaviour:
       - 6
       - 11
       Refuse: []
+      OnBoard: 1
     Words:
       RestockNews: 'The shells at {about} are lit again.'
       BountyOnYou: 'A price is on an Ark out of {home}: yours. Writs are posted at every port.'
@@ -3538,6 +3542,26 @@ MonoBehaviour:
     ChartLegendEvent: Event next door
     ChartLegendRival: Rival crew
     SeaDifficulty: 'difficulty {difficulty}'
+    ToastCoreAnchor: 'ANCHORED UNDER {to}'
+    ToastCoreAnchorSub: Lay mass in the nucleus. The clock runs while the core is yours.
+    ToastCoreYours: THE CORE IS YOURS
+    ToastCoreYoursSub: '{left} to hold.'
+    ToastCoreWave: 'WAVE {wave} OF {waves}'
+    ToastCoreWaveSub: Their fauna push in on the Ark.
+    ToastCoreRetake: A CREW COMES TO RETAKE IT
+    ToastCoreRetakeSub: '{count} hulls. Silence them before they outbuild you.'
+    ToastCoreTurning: THE CORE IS TURNING
+    ToastCoreTurningSub: '{seconds} s to take it back.'
+    ObjectiveCoreGoal: 'Keep the core of {to} yours for {goal}'
+    ObjectiveCoreFigure: '{held} / {goal}'
+    ObjectiveCoreReach: 'Reach the core of {to}'
+    ObjectiveCoreBuild: Build in the nucleus - the clock waits
+    ObjectiveCoreYours: 'Yours {share}% - wave {wave} of {waves}'
+    ObjectiveCoreTurning: 'Turning - {seconds} s to take it back'
+    ScoreCoreTitle: '{to} held'
+    ScoreCoreLostTitle: '{to} turned'
+    ScoreCoreStats: '{name} - held {held} of {goal} - wave {wave} of {waves} - {time}'
+    ScoreVentureCore: 'Sail on to the next core - {cells} cells'
     SidePort: port
     SideStarboard: starboard
     VerbArrive: Arrive
@@ -3666,6 +3690,7 @@ MonoBehaviour:
     ScoreVoyageStats: '{name} - {cells} cells - {time}'
     ScoreEscortTitle: 'The Ark reached {to}'
     ScoreEscortStats: 'Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}'
+    ScoreEscortVoyageStats: '{name} - {worlds} of {legs} cells - {time}'
     ScoreLostTitle: Everything aboard went down with it
     ScoreDockedTitle: 'Docked at {to}'
     ScoreDockedStats: Everything aboard is yours now

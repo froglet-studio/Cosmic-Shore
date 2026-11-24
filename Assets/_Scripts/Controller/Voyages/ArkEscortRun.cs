@@ -125,6 +125,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Half the Ark hull's length: the sphere a weapon's lane keeps clear.</summary>
         public float HullHalfLength => _cfg != null ? Mathf.Max(30f, _cfg.ArkHullLength) * 0.5f : 55f;
 
+        NamedVoyage _named;
+
+        /// <summary>The named escort voyage this escort sails or last sailed (Milestone 2), or null for the plain escort.</summary>
+        public NamedVoyage Named => _named;
+
         /// <summary>The difficulty sailing now (1-9), or 0.</summary>
         public int Difficulty => _active ? _difficulty : 0;
 
@@ -151,7 +156,8 @@ namespace CosmicShore.Gameplay
         /// Deploy <paramref name="squad"/> and sail the escort at <paramref name="difficulty"/> (1-9).
         /// <paramref name="aiLocal"/> hands the local pilot's own seat to the AI too (the sim).
         /// </summary>
-        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal, VoyageCourse course = null)
+        public bool SetSail(IVesselStatus local, SavedSquad squad, int difficulty, bool aiLocal, VoyageCourse course = null,
+            NamedVoyage named = null)
         {
             if (_active || local?.Transform == null || !_def || !_escort || squad == null) return false;
             // A friend sails the host's escort (Docs/Voyages/PARTY.md): its difficulty, and its seed for the same roll.
@@ -160,7 +166,12 @@ namespace CosmicShore.Gameplay
                 difficulty = course.Difficulty;
                 if (course.Seed != 0) NextVoyageSeed = course.Seed;
                 aiLocal = false;
+                named = string.IsNullOrEmpty(course.VoyageId) ? null : VoyageContentSO.Load()?.Content?.Voyage(course.VoyageId);
             }
+            // A named escort (Milestone 2) sails its own cells at the difficulty the crew picked (its own is the board's
+            // recommendation; Docs/Voyages/MILESTONE_2.md §6).
+            _named = named is { Type: NamedVoyage.EscortType } ? named : null;
+            if (_named != null && difficulty <= 0) difficulty = VoyageDifficulty.Clamp(_named.Difficulty);
             UseRuntimeEscort(difficulty);
             var tier = _escort.TierFor(difficulty);
             if (tier == null || _escort.Legs.Count == 0)

@@ -82,6 +82,7 @@ namespace CosmicShore.Gameplay
             {
                 Kind = VoyageCourseKind.EscortSail,
                 Difficulty = _difficulty,
+                VoyageId = _named?.Id ?? string.Empty,
                 Seed = _voyageSeed,
                 LegSerial = 1,
             };

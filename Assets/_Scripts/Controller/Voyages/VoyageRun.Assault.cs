@@ -163,7 +163,9 @@ namespace CosmicShore.Gameplay
             bool homeward = job is { IsReturn: true };
             bool hostile = cell && _hostileCells.Contains(cell);
             bool inside = ArkEscortRun.ArkInsideWorld(cell, ark.Position);
-            Assaults.Tick(ark, _assaultLeg, inside, (hostile || homeward) && !_fallen && !_docked && _state is { AtSea: true });
+            // At a core under hold (Hold the Core) each wave's window lets the core's fauna assault the anchored Ark.
+            Assaults.Tick(ark, _assaultLeg, inside,
+                (hostile || homeward) && !_fallen && !_docked && _state is { AtSea: true } || CoreWaveOn);
 
             // The lure: every hostile cell of the leg at the tier's steady share, the Ark's own cell at the assault's. A
             // Crystal Run's calm cells, and every cell on the way home, go for the hull too ("make the cell's fauna attack

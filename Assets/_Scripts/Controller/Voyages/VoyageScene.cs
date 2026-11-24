@@ -206,7 +206,7 @@ namespace CosmicShore.Gameplay
             if (!_harbour) return;
             CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[VoyageScene] Sailing {request}.");
             if (request.Kind == VoyageLaunchKind.Escort)
-                _harbour.SetSailEscort(request.Difficulty, request.Squad, request.AiLocal);
+                _harbour.SetSailEscort(request.Difficulty, request.Squad, request.AiLocal, request.VoyageId);
             else
                 _harbour.SetSail(request.Job, request.Squad);
         }

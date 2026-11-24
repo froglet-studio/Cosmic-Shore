@@ -252,7 +252,7 @@ namespace CosmicShore.UI
             bool good = raid && o.Target > 0 && o.Done >= o.Target && !hot;
 
             // The crystals aboard against the goal, what you carry beside them (no count on an escort: its score is the hull).
-            bool count = o.Goal != VoyageObjective.Kind.Escort && o.Target > 0;
+            bool count = o.Goal is not (VoyageObjective.Kind.Escort or VoyageObjective.Kind.CoreHold) && o.Target > 0;
             _countGroup.gameObject.SetActive(count);
             var countInk = good ? Lime : _kit.Light;
             if (count)
@@ -364,7 +364,10 @@ namespace CosmicShore.UI
         {
             VoyageObjective.Kind.CrystalRun => RunKicker(lines, o),
             VoyageObjective.Kind.SailingHome => lines.ObjectiveHomeKicker,
-            VoyageObjective.Kind.Escort => TemplateText.Fill(lines.ObjectiveEscortKicker, "difficulty", o.Difficulty.ToString()),
+            VoyageObjective.Kind.Escort => string.IsNullOrEmpty(o.Name)
+                ? TemplateText.Fill(lines.ObjectiveEscortKicker, "difficulty", o.Difficulty.ToString())
+                : TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
+            VoyageObjective.Kind.CoreHold => TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
             _ => string.Empty,
         };
 
@@ -375,6 +378,8 @@ namespace CosmicShore.UI
             VoyageObjective.Kind.Escort => o.Breach > 0f
                 ? TemplateText.Fill(lines.ObjectiveEscortGoal, "breach", Percent(o.Breach), "to", o.To)
                 : TemplateText.Fill(lines.ObjectiveEscortGoalNoBreach, "to", o.To),
+            VoyageObjective.Kind.CoreHold => TemplateText.Fill(lines.ObjectiveCoreGoal, "to", o.To,
+                "goal", VoyageHudColors.Clock(o.HoldGoal)),
             _ => string.Empty,
         };
 
@@ -383,7 +388,10 @@ namespace CosmicShore.UI
         {
             VoyageObjective.Kind.CrystalRun => RunKicker(lines, o),
             VoyageObjective.Kind.SailingHome => lines.ObjectiveHomeKicker,
-            VoyageObjective.Kind.Escort => lines.ObjectiveStripEscort,
+            VoyageObjective.Kind.Escort => string.IsNullOrEmpty(o.Name)
+                ? lines.ObjectiveStripEscort
+                : TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
+            VoyageObjective.Kind.CoreHold => TemplateText.Fill(lines.ObjectiveVoyageKicker, "name", o.Name),
             _ => string.Empty,
         };
 
@@ -393,6 +401,8 @@ namespace CosmicShore.UI
             VoyageObjective.Kind.None => string.Empty,
             VoyageObjective.Kind.CrystalRun => TemplateText.Fill(lines.ObjectiveCount, "done", o.Done.ToString(),
                 "goal", o.Target.ToString()),
+            VoyageObjective.Kind.CoreHold when o.AtCore => TemplateText.Fill(lines.ObjectiveCoreFigure,
+                "held", VoyageHudColors.Clock(o.Held), "goal", VoyageHudColors.Clock(o.HoldGoal)),
             _ => TemplateText.Fill(lines.ObjectiveStripHull, "hull", Percent(o.Hull)),
         };
 
@@ -442,6 +452,8 @@ namespace CosmicShore.UI
                 return action.line == lines.ObjectiveHostile || action.line == lines.ObjectiveCalm
                     ? (string.Empty, false) : action;
             }
+            if (o.Goal == VoyageObjective.Kind.CoreHold && o.Assault != ArkAssaultPhase.Active)
+                return CoreLine(lines, o);
             if (o.Goal == VoyageObjective.Kind.SailingHome && o.Assault != ArkAssaultPhase.Active)
             {
                 string leak = LeakLine(lines, o);
@@ -453,6 +465,18 @@ namespace CosmicShore.UI
                 if (!string.IsNullOrEmpty(stake)) return (stake, false);
             }
             return action;
+        }
+
+        /// <summary>Hold the Core's strip line: the core to reach; at the core, turning (a threat), not yet yours, or yours
+        /// with the wave.</summary>
+        public static (string line, bool threat) CoreLine(VoyageLines lines, in VoyageObjective o)
+        {
+            if (!o.AtCore) return (TemplateText.Fill(lines.ObjectiveCoreReach, "to", o.To), false);
+            if (o.TurnedLeft > 0f)
+                return (TemplateText.Fill(lines.ObjectiveCoreTurning, "seconds", Mathf.CeilToInt(o.TurnedLeft).ToString()), true);
+            if (!o.CoreYours) return (lines.ObjectiveCoreBuild, false);
+            return (TemplateText.Fill(lines.ObjectiveCoreYours, "share", Percent(o.Share), "wave", o.Wave.ToString(),
+                "waves", o.Waves.ToString()), false);
         }
 
         /// <summary>A stop's name on the route: its own name (an escort's worlds), the destination's for the last stop of
@@ -636,6 +660,8 @@ namespace CosmicShore.UI
                 VoyageScoreboard.Kind.CrystalRun => TemplateText.Fill(_lines.ScoreRaidTitle, "done", b.Done.ToString(), "goal", b.Goal.ToString()),
                 VoyageScoreboard.Kind.Escort => TemplateText.Fill(_lines.ScoreEscortTitle, "to", b.To),
                 VoyageScoreboard.Kind.Docked => TemplateText.Fill(_lines.ScoreDockedTitle, "to", b.To),
+                VoyageScoreboard.Kind.CoreHold => TemplateText.Fill(b.Succeeded ? _lines.ScoreCoreTitle : _lines.ScoreCoreLostTitle,
+                    "to", b.To),
                 _ => _lines.ScoreLostTitle,
             };
             string stats = b.Board switch
@@ -643,16 +669,22 @@ namespace CosmicShore.UI
                 VoyageScoreboard.Kind.CrystalRun => string.IsNullOrEmpty(b.Name)
                     ? TemplateText.Fill(_lines.ScoreRaidStats, "to", b.To, "cells", b.Cells.ToString(), "time", time)
                     : TemplateText.Fill(_lines.ScoreVoyageStats, "name", b.Name, "to", b.To, "cells", b.Cells.ToString(), "time", time),
-                VoyageScoreboard.Kind.Escort => TemplateText.Fill(_lines.ScoreEscortStats, "difficulty", b.Difficulty.ToString(),
-                    "worlds", b.Worlds.ToString(), "legs", b.Legs.ToString(), "time", time),
+                VoyageScoreboard.Kind.Escort => string.IsNullOrEmpty(b.Name)
+                    ? TemplateText.Fill(_lines.ScoreEscortStats, "difficulty", b.Difficulty.ToString(),
+                        "worlds", b.Worlds.ToString(), "legs", b.Legs.ToString(), "time", time)
+                    : TemplateText.Fill(_lines.ScoreEscortVoyageStats, "name", b.Name, "worlds", b.Worlds.ToString(),
+                        "legs", b.Legs.ToString(), "time", time),
                 VoyageScoreboard.Kind.Docked => _lines.ScoreDockedStats,
+                VoyageScoreboard.Kind.CoreHold => TemplateText.Fill(_lines.ScoreCoreStats, "name", b.Name,
+                    "held", VoyageHudColors.Clock(b.Held), "goal", VoyageHudColors.Clock(b.HoldGoal),
+                    "wave", b.Wave.ToString(), "waves", b.Waves.ToString(), "time", time),
                 _ => string.Empty,
             };
             _kit.Text(head, 60, _kit.Light, TextAlignmentOptions.Center).text = title;
             if (!string.IsNullOrEmpty(b.Quote)) _kit.Text(head, 20, _kit.Sub, TextAlignmentOptions.Center).text = b.Quote;
 
             // The big count: every crystal the crew took, and beside it the count by element (Rev 116 A, Score).
-            if (b.Board != VoyageScoreboard.Kind.Escort)
+            if (b.Board is not (VoyageScoreboard.Kind.Escort or VoyageScoreboard.Kind.CoreHold))
             {
                 var count = VoyageKit.Node("Count", head);
                 VoyageKit.Row(count, 16f, TextAnchor.LowerCenter);
@@ -684,7 +716,7 @@ namespace CosmicShore.UI
             var col = VoyageKit.Column(panel, 0f);
             col.padding = new RectOffset(0, 0, 0, 0);
 
-            bool crystals = b.Board != VoyageScoreboard.Kind.Escort;
+            bool crystals = b.Board is not (VoyageScoreboard.Kind.Escort or VoyageScoreboard.Kind.CoreHold);
             Line(panel, 30f, _kit.Sub, true, _lines.ScoreColSeat, crystals ? _lines.ScoreColCrystals : string.Empty,
                 _lines.ScoreColKills, _lines.ScoreColGuarded, _lines.ScoreColScore);
             foreach (var r in b.Rows)
@@ -740,7 +772,7 @@ namespace CosmicShore.UI
             VoyageHudColors.SetFill(fill, b.Hull);
             VoyageHudColors.SetBreach(breach, b.Breach);
 
-            if (b.Pay > 0 || b.Board is VoyageScoreboard.Kind.CrystalRun or VoyageScoreboard.Kind.Escort)
+            if (b.Pay > 0 || b.Board is VoyageScoreboard.Kind.CrystalRun or VoyageScoreboard.Kind.Escort or VoyageScoreboard.Kind.CoreHold)
                 Tile(tiles, b.Board == VoyageScoreboard.Kind.Escort
                         ? TemplateText.Fill(_lines.ScoreEscortPay, "difficulty", b.Difficulty.ToString())
                         : _lines.ScorePay,
@@ -829,6 +861,8 @@ namespace CosmicShore.UI
                     ? TemplateText.Fill(_lines.ScoreRetryRaid, "goal", b.NextGoal.ToString(), "cells", b.NextCells.ToString())
                     : b.Board == VoyageScoreboard.Kind.Escort
                     ? TemplateText.Fill(_lines.ScoreVentureEscort, "difficulty", b.NextDifficulty.ToString())
+                    : b.Board == VoyageScoreboard.Kind.CoreHold
+                    ? TemplateText.Fill(_lines.ScoreVentureCore, "cells", b.NextCells.ToString())
                     : TemplateText.Fill(_lines.ScoreVentureRaid, "goal", b.NextGoal.ToString(), "cells", b.NextCells.ToString());
                 Caption(frame, both ? x : 0f, captionY, both ? ButtonWidth + 60f : 1920f, line,
                     both ? TextAlignmentOptions.Left : TextAlignmentOptions.Center);

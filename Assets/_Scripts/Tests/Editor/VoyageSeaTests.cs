@@ -77,8 +77,9 @@ namespace CosmicShore.Tests
             var c = Shipped();
             var s = VoyageRules.NewGalaxy(c, Domains.Ruby);
             foreach (var pilot in c.Crew.Select(p => p.PilotId))
-                CollectionAssert.IsEmpty(VoyageRules.Board(s, c, new[] { pilot }).Where(j => j.IsNamed && j.TemplateId != SalvageType)
-                    .Select(j => j.VoyageId), "Bounty and Hold the Core sail as named voyages once they are built");
+                CollectionAssert.IsEmpty(VoyageRules.Board(s, c, new[] { pilot })
+                    .Where(j => j.IsNamed && j.TemplateId != SalvageType && j.TemplateId != VoyageCoreHoldTests.HoldType)
+                    .Select(j => j.VoyageId), "Bounty sails as named voyages once it is built");
         }
 
         [Test]
@@ -95,6 +96,22 @@ namespace CosmicShore.Tests
                 Assert.IsNotEmpty(info.Say);
             }
             Assert.IsNull(c.VoyageType("job.nope"), "a probe, not a fault");
+        }
+
+        [Test]
+        public void NamedEscortsSetOutFromAKnownPortAtTheirOwnDifficulty()
+        {
+            var c = Shipped();
+            var escorts = c.Voyages.Where(v => v.Type == NamedVoyage.EscortType).ToList();
+            Assert.GreaterOrEqual(escorts.Count, 3);
+            foreach (var v in escorts)
+            {
+                Assert.IsNotNull(c.Location(v.From), $"{v.Id} sets out from a known port");
+                Assert.IsNotNull(c.Location(v.To), $"{v.Id} makes for a known port");
+                Assert.AreNotEqual(v.From, v.To);
+                Assert.That(v.Difficulty, Is.InRange(VoyageDifficulty.Min, VoyageDifficulty.Max), $"{v.Id}: difficulty 1-9");
+                Assert.That(VoyageSea.RunCells(v.Cells), Is.InRange(1, 6), $"{v.Id}: 1-6 cells");
+            }
         }
 
         [Test]

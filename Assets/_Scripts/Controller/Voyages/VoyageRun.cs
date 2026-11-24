@@ -625,6 +625,7 @@ namespace CosmicShore.Gameplay
             // Work decided by arriving (a courier, a convoy's hull floor) is decided now.
             else if (job.Verb == WorkVerb.Arrive) Resolve(VoyageRules.WorkDone(job, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
             else if (job.Verb == WorkVerb.Meet) CheckWork();
+            else if (IsCoreHold(job)) BeginCore(job);
             SaveState();
             VoyageHarbour.RaiseChanged();
             if (!_following) return;
@@ -801,6 +802,7 @@ namespace CosmicShore.Gameplay
                 if (swapper && Alive(r) != null) swapper.DespawnAiCompanion(r);
             _rivalVessels.Clear();
             _marks.Clear();
+            ClearCore();
             _arrival = null;
         }
 
@@ -904,6 +906,11 @@ namespace CosmicShore.Gameplay
         {
             var job = _state.Current;
             if (_arrival == null || job == null || job.Verb != WorkVerb.Hold || _held || _state.AtSea) return;
+            if (IsCoreHold(job))
+            {
+                TickCore();
+                return;
+            }
             var ark = _sea.Ark;
             var t = LocalVessel()?.Transform;
             if (!ark || !t) return;

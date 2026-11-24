@@ -396,6 +396,22 @@ namespace CosmicShore.ScriptableObjects
                                                    "asks: the escort keeps the Ark slower than the hulls guarding it.")]
         float arkCrawlCeiling = 75f;
 
+        [Header("Voyage - Hold the Core (Docs/Voyages/MILESTONE_2.md section 6)")]
+        [SerializeField, Tooltip("What holding a core asks at each difficulty, 1 first: the seconds the core must be yours, " +
+                                 "the waves, the hulls of the other domain's crew that come to retake it in wave 2, and how " +
+                                 "long it may stay theirs before the hold is lost.")]
+        VoyageCoreHoldPlan[] coreHold = VoyageCoreHoldPlan.Defaults();
+
+        [SerializeField, Range(5f, 60f), Tooltip("Seconds each wave's fauna may assault the Ark at the core (the assault " +
+                                                 "clock's warnings and assaults run inside it).")]
+        float coreWaveSeconds = 25f;
+
+        [SerializeField, Tooltip("The hulls a retaking crew flies, first first (a crew of N takes the first N).")]
+        VesselClassType[] coreRetakeHulls = { VesselClassType.Sparrow, VesselClassType.Rhino, VesselClassType.Dolphin };
+
+        [SerializeField, Range(100f, 1200f), Tooltip("How far from the Ark a retaking crew appears, u.")]
+        float coreRetakeDistance = 420f;
+
         [Header("Voyage - Salvage's loose crystals (Shombith 2026-11-24: \"collect loose crystals\")")]
         [SerializeField, Min(0), Tooltip("Loose elemental crystals that drift through each cell of a voyage whose type " +
                                          "gathers (Salvage), before the difficulty's life: about one and a half times the goal per " +
@@ -469,13 +485,16 @@ namespace CosmicShore.ScriptableObjects
         public IReadOnlyList<VesselClassType> FirstLineUp => firstLineUp;
 
         /// <summary>
-        /// True when <paramref name="job"/> may set sail: jobs are not locked, or its template is one of
-        /// <see cref="openJobs"/>. False for no job.
+        /// True when <paramref name="job"/> may set sail: jobs are not locked, it is a named voyage (Milestone 2), or its
+        /// template is one of <see cref="openJobs"/>. False for no job.
         /// </summary>
         public bool IsJobOpen(VoyageJob job)
         {
             if (job == null) return false;
             if (!lockJobs) return true;
+            // A named voyage (Milestone 2) sails: only a built type's named voyages reach the board (Salvage, Hold the
+            // Core; VoyageTypeInfo.OnBoard), so the lock keeps the news-brought work of the same template closed.
+            if (job.IsNamed) return true;
             if (openJobs == null) return false;
             foreach (var id in openJobs)
                 if (!string.IsNullOrEmpty(id) && id == job.TemplateId) return true;
@@ -585,6 +604,11 @@ namespace CosmicShore.ScriptableObjects
         public VoyageSeaDanger SeaDanger(int difficulty) => VoyageSea.At(seaDanger, difficulty);
         public float CellSeconds => cellSeconds;
         public float NamedAnchorSeconds => namedAnchorSeconds;
+        /// <summary>What holding a core asks at <paramref name="difficulty"/> (1-9).</summary>
+        public VoyageCoreHoldPlan CoreHold(int difficulty) => VoyageCoreHoldPlan.At(coreHold, difficulty);
+        public float CoreWaveSeconds => coreWaveSeconds;
+        public IReadOnlyList<VesselClassType> CoreRetakeHulls => coreRetakeHulls;
+        public float CoreRetakeDistance => coreRetakeDistance;
         public float ArkCrawlCeiling => arkCrawlCeiling;
         public int DriftCrystalsPerCell => driftCrystalsPerCell;
         public float DriftClusterShare => driftClusterShare;
