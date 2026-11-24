@@ -75,6 +75,22 @@ combos:
     - The red ball goes through their mass and their hull
   drivers: [break, joy, mastery]
   feel: A whip cracking.
+  gene:
+    genome: Charge
+    cue: [rival_near, verb_ready]
+    dials:
+    - - laps
+      - orbit laps round the planted ball before the winch
+      - 1
+      - 5
+      - count
+    - - winchDepth
+      - how deep the winch is pulled
+      - 0.3
+      - 1.0
+      - fraction
+    done: A red ball or its chain steals a rival's petals.
+    sight: BANDIT
 - name: Bank and burst
   t: [15, 50]
   is: Build first, and the next break is bigger.
@@ -86,4 +102,98 @@ combos:
     - A bigger blast from what was banked
   drivers: [make, break]
   feel: Patience paid back at once.
+  gene:
+    genome: Mass
+    cue: [rival_mass_ahead, own_mass_gap]
+    dials:
+    - - bankTarget
+      - energy banked in Mass Mode before switching back
+      - 0.2
+      - 1.0
+      - fraction
+    done: Mass Mode steals rival prisms, and the next blast is the larger one.
+- in: x
+  name: Plant and fling
+  t: [4, 12]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Anchor round the turn with a partial pull, ease off to launch onto the exit.
+  chain:
+  - - Time
+    - 'A partial pull: anchor round the turn'
+  - - Time
+    - 'Ease off: launch boosted onto the exit'
+  drivers: [joy, mastery]
+  feel: Swinging round a post.
+  gene:
+    genome: Time
+    cue: [gate_next]
+    dials:
+    - - anchorPull
+      - how far the trigger is pulled to anchor
+      - 0.2
+      - 0.9
+      - fraction
+    - - launchAlign
+      - heading error onto the exit at launch
+      - 0
+      - 20
+      - deg
+    done: A gate is threaded within two seconds of the launch.
+    sight: NEEDLE
+- in: x
+  name: Harvest
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Winch the chain stiff through rival mass to slice and bank, then smash.
+  chain:
+  - - Space
+    - 'Winch the chain stiff through rival mass: it slices and banks'
+  - [Charge, Swing to smash speed]
+  - - ''
+    - The red ball blows through
+  drivers: [break, mastery]
+  feel: Reaping.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, dense_mass]
+    dials:
+    - - sliceDepth
+      - how deep into the mass the chain is drawn
+      - 0
+      - 60
+      - u
+    done: A pass slices rival prisms and the banked blast breaks more.
+    sight: MANGER
+- in: x
+  name: Plant into Mass Mode into Winch
+  t: [9, 54]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 80% of the behaviour in an archive
+    cell at 99% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Plant (Time), then Mass Mode (Mass), then Winch (Space).'
+  chain:
+  - [Time, Plant]
+  - [Mass, Mass Mode]
+  - [Space, Winch]
+  drivers: [joy, mastery, make]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [gate_next]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Winch lands within the handoff of the Plant before it.
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md

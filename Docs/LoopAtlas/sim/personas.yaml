@@ -1,0 +1,112 @@
+# Loop timescale simulation: personas. One person (or one group) drawn from a segment, with what is particular to
+# them. Shared with the player-journeys work (Docs/LoopAtlas/personas/journeys.yaml on claude/player-journeys): the
+# ids and names are the same in both files. This file is the statistical definition the simulation runs; the
+# journeys file is the hand-authored path through the loops.
+# Read by Tools/Build/loop_timescale_sim.py. Docs/LoopAtlas/sim/README.md explains the fields.
+#
+# Fields:
+#   segment:  a segment id from segments.yaml; any segment field may be overridden under `override`
+#   skill:    0-1 at the first launch, against the ladder's ai_strength (economy.yaml)
+#   learns:   skill gained per 10 rounds played (it slows as skill rises)
+#   places:   weights over toybox, arcade, arena, voyages: what they would choose with everything open
+#   seat:     fly (default) or puzzle: a puzzle-seat player plays a crew vessel's puzzle seat (the Ratel) and does not fly
+#   people:   how many people the persona is (a group plays as one, in one sitting)
+#   with:     another persona whose sittings this one joins when a trigger says so
+#   triggers: things that happen to them on a given day (join: start playing with `with` in `place`)
+#   challenge: what this persona is meant to test, in one sentence
+
+personas:
+- id: mira
+  name: Mira
+  segment: casual-mobile
+  is: A mother who plays the Ratel's hex puzzle as a casual puzzle game on her phone, and gets roped into her son's
+    squad.
+  skill: 0.2
+  learns: 0.03
+  seat: puzzle
+  places: {toybox: 1, arcade: 3, arena: 0, voyages: 0}
+  people: 1
+  with: jonah
+  triggers:
+  - {day: 9, event: join, place: arena, note: Jonah asks her to be the Ratel on his Honeyguide in his arena squad.}
+  - {day: 13, event: join, place: voyages, note: Jonah's squad takes her on a weekend voyage.}
+  challenge: The game has no puzzle-first way in. The Ratel is reached only through the Toybox Vessel Changer and a seat
+    swap, the quest chain asks her to win four flying races first, and the Honeyguide has no arena card, so the day her
+    son asks her in, there is no seat for her.
+
+- id: jonah
+  name: Jonah
+  segment: teen-competitive
+  is: Mira's son, 14. Arena most days after school with two friends; flies the Honeyguide when his mum rides along.
+  skill: 0.45
+  learns: 0.05
+  places: {toybox: 0.5, arcade: 2, arena: 4, voyages: 1}
+  people: 1
+  challenge: The competitive core. How fast he reaches the arena decides whether he stays long enough to bring anyone in.
+
+- id: night-crew
+  name: The Night Crew
+  segment: pc-core-adult
+  is: Four friends in their 20s on PC. The arena most nights, voyages binged on weekends, all on voice.
+  skill: 0.55
+  learns: 0.04
+  places: {toybox: 0.2, arcade: 1, arena: 4, voyages: 3}
+  weekend_places: {toybox: 0, arcade: 0.5, arena: 1, voyages: 5}
+  people: 4
+  challenge: Four people, three seats. A squad and a voyage party are three, so one friend sits out every match unless
+    a crew vessel takes two of them; and a weekend binge of voyages runs out of authored sagas fast.
+
+- id: commuter
+  name: The Commuter
+  segment: east-asia-commute
+  is: Two 5 to 7 minute sittings on the train on an older phone, a third at lunch; plays to the daily reset.
+  skill: 0.4
+  learns: 0.04
+  places: {toybox: 0.3, arcade: 4, arena: 1, voyages: 1.5}
+  people: 1
+  override:
+    minutes: [5, 7, 8, 20]
+  challenge: Below the Session tier's 10-minute floor. Anything longer than one round does not fit a sitting, and a
+    voyage cannot be finished between two stations.
+
+- id: painter
+  name: The Painter
+  segment: creative-sandbox
+  is: Toybox only. Paints with trails, flies the Wanderway, shares what they make, never competes.
+  skill: 0.3
+  learns: 0.02
+  places: {toybox: 5, arcade: 0.2, arena: 0, voyages: 0.2}
+  people: 1
+  challenge: Earns nothing. Crystals come only from placing in matches, so the Toybox pays no progress and the long
+    game never starts.
+
+- id: returner
+  name: The Returner
+  segment: lapsed-adult
+  is: Played a lot of games once. Tries it in week 1, drifts off, and only comes back if the long game changes.
+  skill: 0.5
+  learns: 0.03
+  places: {toybox: 1, arcade: 2, arena: 1.5, voyages: 2}
+  people: 1
+  challenge: Needs a reason to come back. Today nothing in the build changes on a schedule (era), so a lapse is final.
+
+- id: party-host
+  name: The Party Host
+  segment: latam-sea-social
+  is: Gets three or four friends into a party most evenings on mid-range phones; picks whatever everyone can play.
+  skill: 0.35
+  learns: 0.04
+  places: {toybox: 1, arcade: 2, arena: 3, voyages: 1}
+  people: 3
+  challenge: Plays only when the friends do, and every friend gets the same winner-takes-200 payout, so two of three go
+    home with nothing from most matches.
+
+- id: completionist
+  name: The Completionist
+  segment: steam-completionist
+  is: Bought it on Steam, plays Saturday and Sunday for hours, wants every vessel and every saga done.
+  skill: 0.5
+  learns: 0.05
+  places: {toybox: 0.5, arcade: 2, arena: 1, voyages: 3}
+  people: 1
+  challenge: A finite-goal player. Measures how fast the fleet and the four sagas run out, and what is left after.

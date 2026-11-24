@@ -32,6 +32,10 @@ BACK_BLUR, BACK_DIM = 0.06, 0.7   # the field behind: blur radius as a share of 
 # reach out are listed here; the default is the face.
 KEEP = {"ANVIL": (0.12, 0.86), "Spare06": (0.26, 0.70), "Maestro": (0.28, 0.80)}
 KEEP_DEFAULT = (0.28, 0.72)
+# A sideways nudge in poster pixels (minus is left) for a bust whose face the neighbouring card covers: the middle
+# card is drawn in front, so the rabbit's face (right of the second card) and the platypus's beak (left of the fourth)
+# sat under its edges (Shombith, 2026-11-21).
+NUDGE = {"Spare06": -40, "Maestro": 40}
 
 
 def build(name, h, w, slant):
@@ -44,7 +48,7 @@ def build(name, h, w, slant):
     top = H - size
     head_row = top + size * 0.18                   # where the horns and ears are
     middle = (w * SCALE) / 2 + lean * (1 - head_row / H)    # the card's middle on that row
-    x = int(round(middle - size * (left + right) / 2))
+    x = int(round(middle - size * (left + right) / 2 + NUDGE.get(name, 0) * SCALE))
 
     # The field: the bust blurred to colour alone, covering the card.
     # The bust's own upper third (the sky and street behind the head), stretched over the card, so the field

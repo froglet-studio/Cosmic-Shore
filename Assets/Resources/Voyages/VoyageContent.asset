@@ -1531,7 +1531,7 @@ MonoBehaviour:
       VentureCells: 0
       GoalPerCell: 0
     - Id: job.raid.crystals
-      Kind: 14
+      Kind: 2
       Faction: 0
       Needs: 0
       Goes: 1
@@ -3071,6 +3071,8 @@ MonoBehaviour:
     HoldProgress: 'HOLDING {to}: {seconds}'
     Done: JOB DONE
     Failed: JOB LEFT UNDONE
+    WaypointSaved: 'THE VOYAGE WAITS: PICK IT UP FROM THE HARBOUR'
+    WaypointResumed: 'VOYAGE RESUMED: ON TO {to}'
     Stowed: STOWED ABOARD
     Extracted: 'DOCKED AT {to}: {count} FOUND ARTIFACTS ARE YOURS'
     ArkLost: THE ARK IS LOST
@@ -3466,6 +3468,12 @@ MonoBehaviour:
     ArkSailAs: 'You sail as {vessel} - {element}'
     ArkLobbyLineGuest: Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.
     ArkHostSails: THE HOST SETS SAIL
+    ArkDomainHead: ARK DOMAIN
+    ArkDomainHeadGuest: VOTE FOR THE ARK'S DOMAIN
+    ArkDomainJade: Jade
+    ArkDomainRuby: Ruby
+    ArkDomainGold: Gold
+    ArkDomainVotes: '{domain} - {votes}'
     ArkChangeSeat: CHANGE YOUR SEAT
     ArkChangeSeatKey: X
     PickSavedHere: Saved to your seat for this voyage.

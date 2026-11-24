@@ -49,7 +49,9 @@ them local on every machine, and pacifying a world runs on every machine, not on
 A friend's lobby choices (vessel, element, pilot, artifact) are sent to the host as a `Seat` report every 3 s while the
 Ark page is open, and at once when they change (`VoyagePartySeats.Publish`). The host's lobby draws the friend's card
 from it: pilot portrait and name, element petals and element name. The voyage's intro uses the same record to name each
-friend's pilot.
+friend's pilot. The host keeps its own seat in the same record, and the lobby (section 7) carries every seat to every
+friend, so a friend's Ark page shows the host's pilot and the other friends' too (Shombith, 2026-11-21: "The client
+cannot see the host's avatar").
 
 ## 4. One count
 
@@ -93,6 +95,28 @@ lines in `voyage_slice.json` (`ScoreHostChooses`, `ScoreKeepFlying`, `FollowerAr
 The host leaving the voyage scene takes the party back to the menu, as before. A friend pressing leave gets a toast
 (`GuestStays`) instead. Their controls are never locked by a menu return that only the host makes.
 
+## 7. The lobby: following the host, and the Ark's one domain (2026-11-21)
+
+Shombith, 2026-11-21: "if the host gets into the voyages screen and selects a voyage, just like arcade the client should be
+pulled inside that screen", and "one single domain for the Ark, the host can select it and the clients can vote, in the In
+your Ark part". Two more named messages (`VoyageLobbyLink`, protocol 38):
+
+| Message | Direction | Delivery | Carries |
+|---|---|---|---|
+| `cosmicshore.voyage.lobby` | host to all | reliable | `VoyageLobbyState` JSON: the host's Voyage window open or not, its open voyage's seat key, page and difficulty, the Ark's domain, the votes per domain, and every seat the host knows (`VoyageLobbySeat`: its own and each friend's vessel, element, pilot, artifact) |
+| `cosmicshore.voyage.domainvote` | friend to host | reliable | the domain the friend votes for (an int) |
+
+- **Following.** `ScreenSwitcher.VoyageLobby.cs` sends the host's state on each change and every 3 s. A friend's menu
+  follows each change: out of freestyle, the Voyage window open, the host's voyage open (`VoyageBoard.Follow`: the same
+  seat key, else the friend's own offer of the same job template) on the host's page and difficulty. On the Ark page the
+  friend picks their own seat, as before (section 3). When the host closes the window, the friend's closes too if
+  following opened it.
+- **The Ark's domain.** `VoyageLobbyLink.ArkDomain` is the host's pick (remembered on the device, Jade at first), and on a
+  friend's machine the host's as last heard. The Ark page draws it top right: Jade, Ruby, Gold. The host's press sets
+  it; a friend's press is a vote, counted on the host's chips. `VoyageRun.LiveDomain` returns it, and the voyage scene's
+  `MenuServerPlayerVesselInitializer` spawns every person's vessel in it, so every vessel, the AI wingmates, the Ark's
+  hull and its model fly the one domain.
+
 ## Not done
 
 - A job-voyage friend who rejoins on a later leg sails an unsynced corridor (section 5).
@@ -115,3 +139,10 @@ The host leaving the voyage scene takes the party back to the menu, as before. A
 7. Start Escort the Ark. Both sail the same difficulty and worlds. Let the friend's Ark fall first: the friend holds.
    Then the host's end reaches the friend, with every seat's row on the board.
 8. Drop the friend's connection mid-escort. The friend's own outcome stands within a frame.
+9. Section 7: the friend flies freestyle. The host opens the Voyage window and opens the Crystal Run: the friend leaves
+   freestyle and lands on the same voyage; the host goes to the voyage page, then the Ark page, and the friend follows.
+   The host closes the window: the friend's closes.
+10. Section 7: the friend presses Ruby on the Ark page; the host's Ruby chip shows one vote. The host presses Ruby: both
+    pages show Ruby picked. Set sail: both vessels, the AI wingmates and the Ark (hull and model) are Ruby.
+11. Section 3: on the friend's Ark page the host's seat shows the host's hull, pilot portrait, pilot name and element.
+    The host changes pilot: the friend's page changes within a few seconds.

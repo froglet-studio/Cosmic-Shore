@@ -80,6 +80,8 @@ namespace CosmicShore.Gameplay
         int _holdLineSecond = -1;
         int _progressBucket = -1;
         bool _active, _underway, _fallen, _fallTaken, _docked;
+        /// <summary>Where this leg's worlds start on the waypoint's route: 0 for a new leg, the world reached for a resumed one.</summary>
+        int _waypointBase;
         bool _following;
         VoyageCourse _pendingLeg;
         float _nextLeashCheck;
@@ -450,6 +452,13 @@ namespace CosmicShore.Gameplay
             var local = LocalVessel();
             if (local == null) return;
 
+            // A voyage left at sea waits at its waypoint: its job, sailed again, picks up at the last world reached (P13).
+            if (_state.HasWaypoint() && job == _state.Current)
+            {
+                ResumeWaypoint(local, job);
+                return;
+            }
+
             // A job still open here ends now: done if its work is done, otherwise left undone.
             if (_state.Current != null && !_state.AtSea)
                 Resolve(VoyageRules.WorkDone(_state.Current, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
@@ -470,6 +479,8 @@ namespace CosmicShore.Gameplay
             ClearStop();
             _legSerial++;
             PrepareLeg(job);
+            VoyageWaypoint.Begin(_state, route);
+            _waypointBase = 0;
             SaveState();
             PlaceCorridor(local, null);
             var course = Course(VoyageCourseKind.Leg);
@@ -494,6 +505,33 @@ namespace CosmicShore.Gameplay
             else Banner(Line(Lines.Depart, job.To));
             if (job.HullFloor > 0f && !string.IsNullOrEmpty(Lines.Convoy))
                 Banner(TemplateText.Fill(Lines.Convoy, "percent", Mathf.RoundToInt(job.HullFloor * 100f).ToString()));
+            VoyageHarbour.RaiseChanged();
+        }
+
+        /// <summary>Pick up a voyage left at sea (P13, voyage chapters): the same job, sailed from the last world the Ark
+        /// reached, with what was aboard still aboard.</summary>
+        void ResumeWaypoint(IVesselStatus local, VoyageJob job)
+        {
+            var route = VoyageWaypoint.Remaining(_state);
+            if (route.Count == 0) return;
+            _waypointBase = _state.WaypointReached;
+            ClearStop();
+            _legSerial++;
+            PrepareLeg(job);
+            SaveState();
+            PlaceCorridor(local, null);
+            var course = Course(VoyageCourseKind.Leg);
+            course.State = _state;
+            course.Job = job;
+            course.Route = route;
+            VoyageCourseLink.Send(course);
+            if (_sea.IsRunning) _sea.ContinueRoute(route);
+            else
+            {
+                _sea.SetRoute(route);
+                _sea.Begin(local);
+            }
+            if (!string.IsNullOrEmpty(Lines.WaypointResumed)) Banner(Line(Lines.WaypointResumed, job.To));
             VoyageHarbour.RaiseChanged();
         }
 
@@ -809,6 +847,11 @@ namespace CosmicShore.Gameplay
             if (cell == _legCell) return;
             _legCell = cell;
             if (!cell) return;
+            // The Ark reached a world of the leg: the voyage can pick up from here if it is closed now (P13). A resumed
+            // leg counts its worlds from where it picked up.
+            if (!_following && _legIndexOf.TryGetValue(cell, out int reached) &&
+                VoyageWaypoint.Mark(_state, _waypointBase + reached))
+                SaveState();
             for (int i = _pilots.Count - 1; i >= 0; i--)
             {
                 if (!_pilots[i]) { _pilots.RemoveAt(i); continue; }
@@ -1068,9 +1111,11 @@ namespace CosmicShore.Gameplay
         void EndAtStop()
         {
             bool atSea = _state.AtSea;
-            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()));
+            bool waits = atSea && !_following && _state.HasWaypoint();
+            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()), keepWaypoint: !_following);
             SaveState();
-            if (atSea) Banner(Lines.Failed);
+            if (waits) { if (!string.IsNullOrEmpty(Lines.WaypointSaved)) Banner(Lines.WaypointSaved); }
+            else if (atSea) Banner(Lines.Failed);
         }
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, a relic with its authored name and
@@ -1095,6 +1140,7 @@ namespace CosmicShore.Gameplay
                 }
                 for (int e = 0; e < x.Crystals.Length; e++)
                     if (x.Crystals[e] > 0) PilotLoadoutStore.AddCrystals((Element)e, x.Crystals[e], "voyage");
+                BankWalletCrystals(x);
                 Banner(TemplateText.Fill(Line(Lines.Extracted, _state.At), "count", x.Artifacts.Count.ToString()));
             }
             SaveState();
@@ -1108,6 +1154,29 @@ namespace CosmicShore.Gameplay
                 VoyageCourseLink.Send(end);
             }
             _sea.End(returnToCell: true, "the voyage docked at home");
+        }
+
+        /// <summary>
+        /// One currency (P10, Loop Atlas voyages hole): a docking also pays the crystals that buy vessels, for every job
+        /// finished since the last dock (<see cref="RetentionTuningSO.CrystalsPerVoyageJob"/>), so "the voyage ended, buy
+        /// a vessel" is a real path. The elemental crystals above still go to the Ark and the Hangar.
+        /// </summary>
+        public static int BankWalletCrystals(VoyageRules.Extraction x)
+        {
+            if (x == null) return 0;
+            var tuning = RetentionTuningSO.Load();
+            int pay = RetentionPay.VoyageWalletCrystals(x.JobsDone, tuning.CrystalsPerVoyageJob, tuning.VoyageDockCap);
+            if (pay <= 0 || PlayerDataService.Instance == null) return 0;
+            try
+            {
+                PlayerDataService.Instance.AddCrystals(pay, "voyage_dock");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[Voyage] Dock pay failed ({pay} crystals): {e}");
+                return 0;
+            }
+            return pay;
         }
 
         /// <summary>End the voyage here (freestyle left, the host's voyage ended): anchored at a stop, given up at sea.</summary>
@@ -1240,11 +1309,11 @@ namespace CosmicShore.Gameplay
         public static Domains LiveDomain(ToyContext context) => LiveDomain(context?.GameData);
 
         /// <inheritdoc cref="LiveDomain(ToyContext)"/>
-        public static Domains LiveDomain(GameDataSO gameData)
-        {
-            var domain = (gameData ? gameData.LocalPlayer?.Domain : null) ?? Domains.Jade;
-            return domain == Domains.Blue ? Domains.Jade : domain;
-        }
+        public static Domains LiveDomain(GameDataSO gameData) =>
+            // The Ark's one domain, the host's pick (VoyageLobbyLink.ArkDomain; Shombith, 2026-11-21): every seat, the
+            // Ark's hull and model and the home harbour fly it. The voyage scene spawns every person's vessel in it
+            // (MenuServerPlayerVesselInitializer), so the local player's domain agrees with it there.
+            VoyageLobbyLink.ArkDomain;
 
         IVesselStatus LocalVessel() => Alive(_context?.GameData?.LocalPlayer?.Vessel);
 

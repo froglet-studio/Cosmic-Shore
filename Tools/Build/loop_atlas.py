@@ -38,6 +38,9 @@ ROOT = REPO / "Docs" / "LoopAtlas"
 MODEL_DIR = ROOT / "model"
 SCHEMA = ROOT / "schema.json"
 MODEL_JSON = ROOT / "model.json"
+GENES_MD = ROOT / "GENES.md"
+GENOMES = ["Time", "Charge", "Mass", "Space"]
+ACTIVATION = "arc.activation"
 TEMPLATE = ROOT / "page" / "atlas.template.html"
 
 # Where each top-level key of the model lives. Nodes come from loops/*.yaml (in file-name order), the fleet from
@@ -49,11 +52,12 @@ FILES = {
     "proposals.yaml": ["proposals"],
     "edges.yaml": ["edges"],
     "items.yaml": ["areas", "items"],
+    "genes.yaml": ["genes", "senses", "sights"],
 }
 # The order of the assembled model's keys (the order the page was first published with).
 KEY_ORDER = ["schema", "updated", "layers", "tiers", "drivers", "handoffs", "nodes", "edges", "roles", "roleHoles",
              "kit", "pulse", "verbHole", "archetypes", "elementDrivers", "proposals", "fleet", "fleetOrder",
-             "defaultVessel", "artifact", "areas", "items"]
+             "defaultVessel", "artifact", "areas", "items", "genes", "senses", "sights"]
 # The loops/ files an import writes: each top-level subtree of the era goes in one file.
 LOOP_FILES = [
     ("00-long-game.yaml", ["era"]),
@@ -64,6 +68,7 @@ LOOP_FILES = [
     ("05-voyages.yaml", ["voyages"]),
     ("06-arcs.yaml", ["arc."]),
     ("07-era.yaml", ["era."]),
+    ("08-systems.yaml", ["sys."]),
 ]
 MODEL_MARK = "/*@loop-atlas-model*/null"
 PAGE_PATTERN = re.compile(r"var M = ")
@@ -279,14 +284,37 @@ def validate(model: dict) -> list[str]:
         errors.append(f"defaultVessel '{model['defaultVessel']}' is not in the fleet")
     archetypes = set(model["archetypes"])
 
-    def check_combo(c, where):
+    senses = dupes([s["id"] for s in model["senses"]], "sense")
+    sights = dupes([s["id"] for s in model["sights"]], "sight")
+
+    def check_gene(g, where, vessel):
+        where = f"{where} gene"
+        for c in g["cue"]:
+            if c not in senses:
+                errors.append(f"{where}: cue '{c}' is not in genes.yaml senses")
+        if "sight" in g and g["sight"] not in sights:
+            errors.append(f"{where}: sight '{g['sight']}' is not a callsign in genes.yaml sights")
+        if "in" in g:
+            check_layers(g["in"], where)
+        names = [d[0] for d in g["dials"]]
+        for d in g["dials"]:
+            if d[2] >= d[3]:
+                errors.append(f"{where}: dial '{d[0]}' range [{d[2]}, {d[3]}] is empty or backwards")
+        for nm in sorted({x for x in names if names.count(x) > 1}):
+            errors.append(f"{where}: dial '{nm}' named twice")
+        if g["genome"] not in vessel["verbs"] and vessel["verbs"]:
+            errors.append(f"{where}: genome '{g['genome']}' but the vessel has no {g['genome']} verb")
+
+    def check_combo(c, where, vessel=None):
         check_drivers(c["drivers"], where)
         if "in" in c:
             check_layers(c["in"], where)
+        if "gene" in c and vessel is not None:
+            check_gene(c["gene"], where, vessel)
         for j, s in enumerate(c.get("sub", [])):
             if "at" in s and s["at"] >= len(c["chain"]):
                 errors.append(f"{where} sub {j}: at={s['at']} but the combo has {len(c['chain'])} steps")
-            check_combo(s, f"{where} sub '{s['name']}'")
+            check_combo(s, f"{where} sub '{s['name']}'", vessel)
 
     for name, v in model["fleet"].items():
         for el, verb in v["verbs"].items():
@@ -298,8 +326,24 @@ def validate(model: dict) -> list[str]:
                     errors.append(f"vessel '{name}' {el}: hand loop at={hand['at']} past its {len(hand['phases'])} phases")
                 if "in" in hand:
                     check_layers(hand["in"], f"vessel '{name}' {el} hand loop")
+        dupes([c["name"] for c in v["combos"]], f"vessel '{name}' combo")
         for c in v["combos"]:
-            check_combo(c, f"vessel '{name}' combo '{c['name']}'")
+            check_combo(c, f"vessel '{name}' combo '{c['name']}'", v)
+    act = next((n for n in model["nodes"] if n["id"] == ACTIVATION), None)
+    events = {}
+    for n in model["nodes"]:
+        m = n.get("measure")
+        if not m:
+            continue
+        if "in" in m:
+            check_layers(m["in"], f"loop '{n['id']}' measure")
+        if act is None:
+            errors.append(f"loop '{n['id']}' measure: there is no '{ACTIVATION}' loop to expect it in")
+        elif m["first"] >= len(act["phases"]):
+            errors.append(f"loop '{n['id']}' measure: first={m['first']} but {ACTIVATION} has {len(act['phases'])} phases")
+        if m["event"] in events:
+            errors.append(f"loop '{n['id']}' measure: event '{m['event']}' already measures '{events[m['event']]}'")
+        events[m["event"]] = n["id"]
     return errors
 
 
@@ -326,6 +370,12 @@ def report(model: dict) -> list[str]:
         lo, hi = tier["span"]
         if n["t"][1] < lo or n["t"][0] > hi:
             lines.append(f"loop '{n['id']}': timescale {n['t']} s lies outside its tier {tier['term']} {tier['span']} s")
+    for name, v in model["fleet"].items():
+        have = {c["gene"]["genome"] for c in v["combos"] if "gene" in c}
+        for E in GENOMES:
+            if (E in v["verbs"] and v["verbs"][E]["arch"] != "off" and E not in have and E not in v["excused"]
+                    and (v["games"].get(E) or (E in ("Mass", "Space") and v["arenas"]))):
+                lines.append(f"vessel '{name}': has a {E} game or arena but no combo carries a {E} gene")
     open_holes = sum(len(n.get("holes", [])) for n in model["nodes"])
     lines.append(f"{len(model['nodes'])} loops, {len(model['edges'])} edges, {len(model['fleet'])} vessels, "
                  f"{open_holes} open holes on loops, {len(model['proposals'])} proposals, {len(cited)} docs cited")
@@ -724,7 +774,84 @@ def board_text(model: dict, ledger: list[dict]) -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
+def _layer_word(s: str) -> str:
+    return {"x": "Proposed", "px": "Planned", "npx": "Now"}.get(s, s)
+
+
+def genes_text(model: dict) -> str:
+    """GENES.md: every combo as an AI gene, the coverage per vessel and genome, and what activation expects of each
+    measured loop. Generated; --check keeps it in step with the model."""
+    out = ["# AI genes and activation expectations", "",
+           "Generated by `python3 Tools/Build/loop_atlas.py build` from `model/fleet/*.yaml`, `model/genes.yaml` and the",
+           "loops' `measure` blocks; do not edit. The rules: `Docs/LoopAtlas/README.md` (Genes), `Docs/AI_SYSTEM/AI_PLAN.md`.", "",
+           model["genes"]["is"], "", "**Activation:** " + model["genes"]["activation"], ""]
+    srch = model["genes"]["search"]
+    out += ["## How a search scores a genome", "", srch["is"], "",
+            "- **Keep small:** " + srch["cut"], "- **Weight toward:** " + srch["keep"],
+            "- **The ladder:** " + srch["ladder"], "- **Measured by:** " + srch["measure"], ""]
+
+    def esc(s):
+        return str(s).replace("|", "/").replace("\n", " ")
+
+    out += ["## Coverage", "",
+            "Genes per vessel and genome. A dash is a genome the vessel has a verb for and no combo carries yet, off is "
+            "a verb switched off, blank is no verb.", "",
+            "| Vessel | " + " | ".join(GENOMES) + " |", "|---|" + "---|" * len(GENOMES)]
+    for name in model["fleetOrder"]:
+        v = model["fleet"][name]
+        cells = []
+        for E in GENOMES:
+            n = sum(1 for c in v["combos"] if c.get("gene", {}).get("genome") == E)
+            off = E in v["verbs"] and v["verbs"][E]["arch"] == "off"
+            cells.append(str(n) if n else ("off" if off else "-" if E in v["verbs"] else ""))
+        out.append(f"| {v['label']} | " + " | ".join(cells) + " |")
+    out.append("")
+    out += ["## Genes, vessel by vessel", ""]
+    for name in model["fleetOrder"]:
+        v = model["fleet"][name]
+        genes = [c for c in v["combos"] if "gene" in c]
+        if not genes:
+            continue
+        out += [f"### {v['label']}", "", "| Combo | Genome | Starts when | Dials a search learns | Done when | Sight | Layer |",
+                "|---|---|---|---|---|---|---|"]
+        for c in genes:
+            g = c["gene"]
+            dials = "; ".join(f"`{d[0]}` {d[1]} ({d[2]:g} to {d[3]:g}{(' ' + d[4]) if d[4] else ''})" for d in g["dials"])
+            out.append(f"| {esc(c['name'])} | {g['genome']} | {', '.join(g['cue'])} | {esc(dials)} | {esc(g['done'])} | "
+                       f"{g.get('sight', '')} | {_layer_word(g.get('in', c.get('in', 'x')))} |")
+        out.append("")
+    act = next((n for n in model["nodes"] if n["id"] == ACTIVATION), None)
+    rows = sorted((n for n in model["nodes"] if "measure" in n), key=lambda n: (n["measure"]["first"], n["id"]))
+    out += ["## Activation expectations, by the step a new player meets each loop", "",
+            "| Activation step | Loop | Event | Target | Expected by then | Layer |", "|---|---|---|---|---|---|"]
+    for n in rows:
+        m = n["measure"]
+        step = act["phases"][m["first"]]["n"] if act and m["first"] < len(act["phases"]) else str(m["first"])
+        ev = m["event"] + (f" ({', '.join(m['params'])})" if m.get("params") else "")
+        out.append(f"| {m['first']} {esc(step)} | {n['id']} {esc(n['name'])} | `{esc(ev)}` | {esc(m['target'])} | "
+                   f"{esc(m['expect'])} | {_layer_word(m.get('in', 'x'))} |")
+    return "\n".join(out).rstrip() + "\n"
+
+
 # --------------------------------------------------------------------------------------------------------- self-test
+
+def _first_gene(m: dict, pick=None) -> dict:
+    """The first gene in the fleet (for a negative control), optionally on a vessel `pick` accepts."""
+    for v in m["fleet"].values():
+        if pick and not pick(v):
+            continue
+        for c in v["combos"]:
+            if "gene" in c:
+                return c["gene"]
+    raise AtlasError("self-test: no gene in the model to mutate")
+
+
+def _first_measure(m: dict) -> dict:
+    for n in m["nodes"]:
+        if "measure" in n:
+            return n["measure"]
+    raise AtlasError("self-test: no measure in the model to mutate")
+
 
 def self_test() -> int:
     model = assemble()
@@ -759,6 +886,16 @@ def self_test() -> int:
         "unknown default vessel": lambda m: m.__setitem__("defaultVessel", "Narwhal"),
         "unknown archetype": lambda m: next(iter(next(iter(m["fleet"].values()))["verbs"].values()))
                                        .__setitem__("arch", "telepathy"),
+        "gene cue not a sense": lambda m: _first_gene(m)["cue"].append("telepathy"),
+        "gene sight not a callsign": lambda m: _first_gene(m).__setitem__("sight", "HAWKEYE"),
+        "gene dial range backwards": lambda m: _first_gene(m)["dials"][0].__setitem__(2, 1e9),
+        "gene genome with no verb": lambda m: m["fleet"]["Sparrow"]["verbs"].pop(_first_gene(m, lambda v: v is m["fleet"]
+                                                                                    ["Sparrow"])["genome"]),
+        "gene genome not an element (schema)": lambda m: _first_gene(m).__setitem__("genome", "Omni"),
+        "gene search without the style term (schema)": lambda m: m["genes"]["search"].pop("keep"),
+        "measure past activation's phases": lambda m: _first_measure(m).__setitem__("first", 99),
+        "measure event twice": lambda m: [n for n in m["nodes"] if "measure" in n][1]["measure"].__setitem__(
+            "event", _first_measure(m)["event"]),
     }
     failed = 0
     for name, fn in cases.items():
@@ -956,6 +1093,7 @@ def main(argv=None) -> int:
             return 0
         text = model_json_text(model)
         board = board_text(model, read_ledger())
+        genes_md = genes_text(model)
         if args.check or args.cmd is None:
             current = MODEL_JSON.read_text(encoding="utf-8") if MODEL_JSON.exists() else ""
             if current != text:
@@ -964,13 +1102,17 @@ def main(argv=None) -> int:
             if (BOARD.read_text(encoding="utf-8") if BOARD.exists() else "") != board:
                 print(f"loop_atlas: {BOARD.relative_to(REPO)} is stale; run python3 Tools/Build/loop_atlas.py build")
                 return 1
+            if (GENES_MD.read_text(encoding="utf-8") if GENES_MD.exists() else "") != genes_md:
+                print(f"loop_atlas: {GENES_MD.relative_to(REPO)} is stale; run python3 Tools/Build/loop_atlas.py build")
+                return 1
             render_page(model)  # the template still takes the model
             print(f"loop_atlas: model valid ({len(model['nodes'])} loops, {len(model['edges'])} edges, "
                   f"{len(model['fleet'])} vessels) and model.json up to date")
             return 0
         MODEL_JSON.write_text(text, encoding="utf-8")
         BOARD.write_text(board, encoding="utf-8")
-        print(f"wrote {MODEL_JSON.relative_to(REPO)} and {BOARD.relative_to(REPO)}")
+        GENES_MD.write_text(genes_md, encoding="utf-8")
+        print(f"wrote {MODEL_JSON.relative_to(REPO)}, {BOARD.relative_to(REPO)} and {GENES_MD.relative_to(REPO)}")
         if args.html:
             args.html.write_text(render_page(model), encoding="utf-8")
             print(f"wrote {args.html}")

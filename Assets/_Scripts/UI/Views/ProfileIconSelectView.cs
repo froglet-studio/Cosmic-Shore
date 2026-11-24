@@ -306,6 +306,10 @@ namespace CosmicShore.UI
                 if (previewAvatar) previewAvatar.sprite = avatar;
                 if (previewSlotAvatar) previewSlotAvatar.sprite = avatar;
             }
+            // Rev 127 D (Docs/MENU_REDESIGN_B.md section 217): the preview shows the avatar the way others see it,
+            // round, ringed and glowing.
+            AvatarRippleBorder.EnsureFor(previewAvatar)?.ShowSelf();
+            AvatarRippleBorder.EnsureFor(previewSlotAvatar)?.ShowSelf();
 
             string current = profile != null ? profile.Identity.DisplayName : string.Empty;
             string typed = _tab == ProfileModalTab.DisplayName && displayNameInput

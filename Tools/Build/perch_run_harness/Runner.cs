@@ -78,7 +78,7 @@ public static class Runner
             while (next < rings.Count && PerchRunCourse.Threads(pos, stop, rings[next])) next++;
             if (next == before && go < (g.Position - pos).magnitude) blocked++;
             t += PerchRunCourse.DartSeconds;
-            reloadLeft = PerchRunCourse.DartCooldown;
+            reloadLeft = Mathf.Max(0f, PerchRunCourse.DartCooldown - PerchRunCourse.DartSeconds);   // the cooldown runs from launch
             if (go < 6f)
             {
                 // nose on the coral: cruise past it, then dart again

@@ -4,9 +4,9 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Third Eye's camera math, pure: no scene, no camera, no editor state, so every pose is a
-    /// function of its inputs and <c>ThirdEyeRigTests</c> pins it. The rules are the Vessel Studio's
-    /// (/vessel-studio D16 and §7): the Chase camera smooths its OFFSET from the hull, never its
-    /// position, so a 5x boost cannot leave the camera behind.
+    /// function of its inputs and <c>ThirdEyeRigTests</c> pins it. There is no pose here that FOLLOWS a
+    /// hull (Yash, 2026-11-22): a hull is watched through the game's own camera, whoever flies it, and
+    /// the one extra camera is Free fly. <see cref="FramePose"/> is a single still pose Free fly jumps to.
     /// </summary>
     public static class ThirdEyeRig
     {
@@ -40,40 +40,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Close behind the hull, in the hull's own frame, rolling with it. <paramref name="offset"/> and
-        /// <paramref name="up"/> carry the smoothing between frames; <paramref name="snap"/> jumps them to
-        /// the target (a new pilot, a new camera) instead of swooping.
+        /// One still pose that frames a hull for Free fly's "Frame pilot": behind the hull's heading flattened
+        /// onto the horizontal, <paramref name="height"/> above it, world-up, looking at the hull. A hull
+        /// pointing straight up or down is framed from world back. Free fly jumps here once and flies on;
+        /// nothing re-poses it to keep up with the hull.
         /// </summary>
-        public static Pose Chase(Vector3 hullPosition, Quaternion hullRotation, ref Vector3 offset, ref Vector3 up,
-                                 float distance, float height, float lookAhead, float smoothing, float dt, bool snap)
-        {
-            Vector3 desiredOffset = hullRotation * new Vector3(0f, height, -distance);
-            Vector3 desiredUp = hullRotation * Vector3.up;
-            float k = snap ? 1f : Damp(smoothing, dt);
-            offset = Vector3.Lerp(offset, desiredOffset, k);
-            up = Vector3.Slerp(up.sqrMagnitude > 1e-8f ? up : desiredUp, desiredUp, k);
-
-            Vector3 position = hullPosition + offset;
-            Vector3 look = hullPosition + hullRotation * Vector3.forward * lookAhead;
-            return new Pose(position, LookRotationSafe(look - position, up, hullRotation));
-        }
-
-        /// <summary>
-        /// Wider and world-up: behind the hull's heading flattened onto the horizontal, looking at the
-        /// hull. A hull flying straight up or down keeps the last horizontal heading in
-        /// <paramref name="heading"/>, so the camera does not spin.
-        /// </summary>
-        public static Pose Follow(Vector3 hullPosition, Quaternion hullRotation, ref Vector3 offset, ref Vector3 heading,
-                                  float distance, float height, float smoothing, float dt, bool snap)
+        public static Pose FramePose(Vector3 hullPosition, Quaternion hullRotation, float distance, float height)
         {
             Vector3 flat = Vector3.ProjectOnPlane(hullRotation * Vector3.forward, Vector3.up);
-            if (flat.sqrMagnitude > 1e-4f) heading = flat.normalized;
-            else if (heading.sqrMagnitude < 1e-8f) heading = Vector3.forward;
-
-            Vector3 desiredOffset = -heading * distance + Vector3.up * height;
-            offset = Vector3.Lerp(offset, desiredOffset, snap ? 1f : Damp(smoothing, dt));
-
-            Vector3 position = hullPosition + offset;
+            Vector3 heading = flat.sqrMagnitude > 1e-4f ? flat.normalized : Vector3.forward;
+            Vector3 position = hullPosition - heading * distance + Vector3.up * height;
             return new Pose(position, LookRotationSafe(hullPosition - position, Vector3.up, Quaternion.identity));
         }
 
@@ -83,13 +59,6 @@ namespace CosmicShore.Gameplay
             Quaternion rotation = Quaternion.Euler(Mathf.Clamp(pitchDegrees, -89f, 89f), yawDegrees, 0f);
             Vector3 step = move.sqrMagnitude > 1f ? move.normalized : move;
             return new Pose(position + rotation * step * (speed * Mathf.Max(0f, dt)), rotation);
-        }
-
-        /// <summary>Round the hull at <paramref name="distance"/>, looking at it.</summary>
-        public static Pose Orbit(Vector3 hullPosition, float yawDegrees, float pitchDegrees, float distance)
-        {
-            Quaternion rotation = Quaternion.Euler(Mathf.Clamp(pitchDegrees, -89f, 89f), yawDegrees, 0f);
-            return new Pose(hullPosition - rotation * Vector3.forward * distance, rotation);
         }
 
         /// <summary>A rotation's yaw and pitch in degrees, pitch in [-180, 180).</summary>

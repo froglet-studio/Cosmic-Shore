@@ -72,10 +72,10 @@ namespace CosmicShore.Tests
         [Test]
         public void APressAtThePressPoint_LaysThePairOnTheMoon()
         {
-            // StoatSlingConfig.asset: the attractor is laid catchAhead along the nose and catchSide to the pressed side.
+            // StoatSlingConfig.asset: the swing's hole is laid swingAhead along the nose. PressSide (45) is the retired catch
+            // pair's side, kept as the course's own number (the swing lays its hole 35 u aside).
             var sling = File.ReadAllText("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset").Replace("\r\n", "\n");
-            StringAssert.Contains($"  catchAhead: {SlingshotOrrery.PressAhead}\n", sling);
-            StringAssert.Contains($"  catchSide: {SlingshotOrrery.PressSide}\n", sling);
+            StringAssert.Contains($"  swingAhead: {SlingshotOrrery.PressAhead}\n", sling);
             var moons = new List<OrreryMoon>();
             Lay(Circuit(1, 17), 1, moons);
             foreach (var m in moons)

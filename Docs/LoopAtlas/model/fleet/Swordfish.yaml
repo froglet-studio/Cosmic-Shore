@@ -75,4 +75,91 @@ combos:
     - Afterimages stay as walls
   drivers: [break, rival, joy]
   feel: A charge with a blade at the end of it.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, straight_ahead]
+    dials:
+    - - lightLead
+      - seconds before contact the sword is lit
+      - 0.5
+      - 3
+      - s
+    done: A sword hit knocks a rival's petals loose.
+    sight: BANDIT
+- in: x
+  name: Spear
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Spool on the straight; the hull breaks what it rams, so the speed carries.
+  chain:
+  - [Time, Spool on the straight]
+  - - Space
+    - 'The hull breaks what it rams: no speed lost'
+  - [Time, Carry it into the gate]
+  drivers: [joy, break]
+  feel: Through, not round.
+  gene:
+    genome: Time
+    cue: [straight_ahead, gate_next]
+    dials:
+    - - turnBudget
+      - heading error accepted before turning
+      - 1
+      - 30
+      - deg
+    done: A gate is threaded at better than three quarters of top speed.
+    sight: NEEDLE
+- in: x
+  name: The palisade
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: 'Light the sword by the nucleus and swing as it goes out: the afterimages are walls.'
+  chain:
+  - - Charge
+    - Light the sword by the nucleus
+  - - Mass
+    - 'Swing as it goes out: afterimages stand'
+  - ['', Walls round the claim]
+  drivers: [make, mastery]
+  feel: Drawing walls with a blade.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap, verb_ready]
+    dials:
+    - - swingRate
+      - how fast the sword is swung while the afterimages lay
+      - 10
+      - 180
+      - deg/s
+    done: Afterimages stand inside the claim.
+    sight: ENSIGN
+- in: x
+  name: Cleave
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Squeeze hard through rival mass and keep the blade off super-shielded mass.
+  chain:
+  - - Space
+    - 'Squeeze hard: swing through rival mass'
+  - - ''
+    - Keep off super-shielded mass
+  - [Space, The next swath]
+  drivers: [break, joy]
+  feel: A clean cut.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, shielded_ahead]
+    dials:
+    - - superBerth
+      - distance kept from super-shielded mass
+      - 0
+      - 40
+      - u
+    - - squeeze
+      - how hard the swing is squeezed
+      - 0.3
+      - 1.0
+      - fraction
+    done: A swing cuts rival prisms without sticking.
+    sight: CITADEL
 doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md

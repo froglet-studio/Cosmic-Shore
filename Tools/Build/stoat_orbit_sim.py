@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """The AI Stoat on the orbit alone (2026-11-02, Yash): how fast it races Slingshot with only Time mode's catch.
 
+2026-11-21: the catch orbit, its aimed exit, the trampoline and the field dipole this file models were DELETED from the game
+(Yash: the swing is the Stoat's only slingshot, for every AI). Only --swing / --swing-grid model what ships; the other
+modes keep their last shipped numbers as the record. The C# names below (AutopilotSling, StepOrbit, CatchPair, Catches,
+OrbitRadius, SweetSpot, TimedKick, ...) are the deleted code at 4e5df7090a, not the tree today.
+
 Since the field dipole was parked (Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md) the catch sling is the Stoat's only
 speed: the hull's flight clock warps only while a pair is held (StoatSlingExecutor.WarpsFlight, from the press). So the
 AI's press rule decides its pace, and this model picks its numbers (StoatSlingConfig's ai* rows and autopilotHold01).

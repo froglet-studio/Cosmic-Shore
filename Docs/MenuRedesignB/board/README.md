@@ -201,14 +201,14 @@ Copied on 2026-11-24 from canvas version `1795522040-8997` of **Frogma**: Rev 41
 
 #### Rev 127 - Avatar borders that sit on the domain halo: six animated rings
 
-- `R127Compare.dc.html` (not copied yet) - Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold
-- `R127A.dc.html` (not copied yet) - Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive
-- `R127B.dc.html` (not copied yet) - Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive
-- `R127C.dc.html` (not copied yet) - Rev 127 C - Dial: two counter-turning segmented rings - interactive
-- `R127D.dc.html` (not copied yet) - Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive
-- `R127E.dc.html` (not copied yet) - Rev 127 E - Current: a turning gradient ring with its own glow - interactive
-- `R127F.dc.html` (not copied yet) - Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive
-- `R127Notes.dc.html` (not copied yet) - Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick
+- [`R127Compare.dc.html`](R127Compare.dc.html) - Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold
+- [`R127A.dc.html`](R127A.dc.html) - Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive
+- [`R127B.dc.html`](R127B.dc.html) - Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive
+- [`R127C.dc.html`](R127C.dc.html) - Rev 127 C - Dial: two counter-turning segmented rings - interactive
+- [`R127D.dc.html`](R127D.dc.html) - Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive
+- [`R127E.dc.html`](R127E.dc.html) - Rev 127 E - Current: a turning gradient ring with its own glow - interactive
+- [`R127F.dc.html`](R127F.dc.html) - Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive
+- [`R127Notes.dc.html`](R127Notes.dc.html) - Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick
 
 #### Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle
 
@@ -612,12 +612,12 @@ Copied on 2026-11-24 from canvas version `1795522040-8997` of **Frogma**: Rev 41
 
 #### Rev 121 - What's new: the pop-up after an update and from Settings, four ways, featuring Voyages
 
-- `R121A.dc.html` (not copied yet) - Rev 121 A - Poster: one window, the Ark over the HyperSea, three lines and Set sail (recommended) - interactive
-- `R121B.dc.html` (not copied yet) - Rev 121 B - Pages: one feature a page, paged with LB / RB, Set sail on the last - interactive
-- `R121C.dc.html` (not copied yet) - Rev 121 C - Changelog: the updates listed on the left, the picked one on the right - interactive
-- `R121D.dc.html` (not copied yet) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
-- `R121Settings.dc.html` (not copied yet) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
-- `R121Notes.dc.html` (not copied yet) - Rev 121 - notes: what each option does, where it opens from, what the build needs
+- [`R121A.dc.html`](R121A.dc.html) - Rev 121 A - Poster: one window, the Ark over the HyperSea, three lines and Set sail (recommended) - interactive
+- [`R121B.dc.html`](R121B.dc.html) - Rev 121 B - Pages: one feature a page, paged with LB / RB, Set sail on the last - interactive
+- [`R121C.dc.html`](R121C.dc.html) - Rev 121 C - Changelog: the updates listed on the left, the picked one on the right - interactive
+- [`R121D.dc.html`](R121D.dc.html) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
+- [`R121Settings.dc.html`](R121Settings.dc.html) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
+- [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
 
 ### Tab: Frogma Website  (`frogma-website`)
 
@@ -681,19 +681,19 @@ Copied on 2026-11-24 from canvas version `1795522040-8997` of **Frogma**: Rev 41
 
 #### Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell
 
-- `R129Compare.dc.html` (not copied yet) - Rev 129 - Compare: the Poster card in our font, Skim Race in four pictures, at rest and hovered
-- `R129Row.dc.html` (not copied yet) - Rev 129 Row - Row: the Arcade with Skim Race inside the cell, and every state - interactive
-- `R129Notes.dc.html` (not copied yet) - Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes
+- [`R129Compare.dc.html`](R129Compare.dc.html) - Rev 129 - Compare: the Poster card in our font, Skim Race in four pictures, at rest and hovered
+- [`R129Row.dc.html`](R129Row.dc.html) - Rev 129 Row - Row: the Arcade with Skim Race inside the cell, and every state - interactive
+- [`R129Notes.dc.html`](R129Notes.dc.html) - Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes
 
 #### Rev 128 - Game cards, six ways: Skim Race's arcade card beside the card we ship - look, motion and hover, light on performance
 
-- `R128Compare.dc.html` (not copied yet) - Rev 128 - Compare: the shipped card and the six new ones side by side, hover each
-- `R128A.dc.html` (not copied yet) - Rev 128 A - Depth: the picture in three planes that tilt with the pointer - interactive
-- `R128B.dc.html` (not copied yet) - Rev 128 B - Racing line: a light runs the course through the rings; on hover the Squirrel flies it (recommended) - interactive
-- `R128C.dc.html` (not copied yet) - Rev 128 C - Hero hull: the Squirrel breaks out of the frame and surges on hover - interactive
-- `R128D.dc.html` (not copied yet) - Rev 128 D - Silver foil: a collectible card, foil that catches the light as it tilts - interactive
-- `R128E.dc.html` (not copied yet) - Rev 128 E - Poster: the picture full bleed under a big title; the card slides open on hover - interactive
-- `R128F.dc.html` (not copied yet) - Rev 128 F - Live loop: a still at rest, the game playing in the card on hover - interactive
-- `R128Notes.dc.html` (not copied yet) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
+- [`R128Compare.dc.html`](R128Compare.dc.html) - Rev 128 - Compare: the shipped card and the six new ones side by side, hover each
+- [`R128A.dc.html`](R128A.dc.html) - Rev 128 A - Depth: the picture in three planes that tilt with the pointer - interactive
+- [`R128B.dc.html`](R128B.dc.html) - Rev 128 B - Racing line: a light runs the course through the rings; on hover the Squirrel flies it (recommended) - interactive
+- [`R128C.dc.html`](R128C.dc.html) - Rev 128 C - Hero hull: the Squirrel breaks out of the frame and surges on hover - interactive
+- [`R128D.dc.html`](R128D.dc.html) - Rev 128 D - Silver foil: a collectible card, foil that catches the light as it tilts - interactive
+- [`R128E.dc.html`](R128E.dc.html) - Rev 128 E - Poster: the picture full bleed under a big title; the card slides open on hover - interactive
+- [`R128F.dc.html`](R128F.dc.html) - Rev 128 F - Live loop: a still at rest, the game playing in the card on hover - interactive
+- [`R128Notes.dc.html`](R128Notes.dc.html) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
 
 <!-- frogma.py readme: end -->

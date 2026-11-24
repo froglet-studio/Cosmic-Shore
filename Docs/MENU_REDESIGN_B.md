@@ -8908,6 +8908,173 @@ a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark
 `VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
 yet run in the Unity editor.
 
+## 216. Rev 121 mockups: What's new, after an update and from Settings, four ways (2026-11-21, C picked, built)
+
+**Asked** (Shombith, 2026-11-21): "open a frogma board and create a new UI on main menu a pop up called what's new it
+can be accessed from settings or after an update this shows up. Create 4 mock-ups screens for this". Read as four
+options for the pop-up, each working, plus the Settings way in. The update featured is Voyages (Update 0.3).
+
+**On the canvas:** a new tab, **What's New**, round "Rev 121 - What's new: the pop-up after an update and from Settings,
+four ways, featuring Voyages". Copies in `Docs/MenuRedesignB/board/R121*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r121_whats_new.py <root> 121`.
+- **A Poster (recommended):** one window over Home: the Ark on the HyperSea, three features under it (Take a job,
+  Rival crews, Sagas and relics), the fixes folded under "Also in this update", Close and Set sail. One look tells
+  what is new.
+- **B Pages:** one feature a page with large art, LB / RB and dots to page, Skip, Set sail on the last page.
+- **C Changelog:** every update listed on the left, the picked one on the right with its features and fixes; Set
+  sail only on the newest. Update 0.2 and 0.1 are placeholders showing how the list grows.
+- **D Card:** a small card slides in at Home's lower right ("New in Update 0.3, Voyages", Later / See it) and opens
+  a tall drawer on the right.
+- **Settings:** Settings, Other, About: a "What's new" row (a mark until opened once), Credits, Version. Open shows A's
+  window with Back in place of Close.
+- **Notes:** when it opens (once, on the first Home visit after an update with an entry; never over a match or the
+  start flow), and that closing it says where it lives.
+
+**Differs from the build:** nothing exists yet. The build would add one authored What's new entry per update
+(version, name, line, features, fixes, art; every word a field), a seen-version flag saved on the device, the row on
+Settings' Other tab, and the window of the picked option on Menu_Main.
+
+**Picked (Shombith, 2026-11-21):** "I like C build C".
+
+**Built (2026-11-21, not yet run in the editor):** the window C as `WhatsNewModal` (modal type `WHATS_NEW = 22`), built
+in code beside the Quests window with the Voyage window's kit; its words in `Assets/Resources/WhatsNew.asset`
+(`WhatsNewSO`, one entry per update, newest first); it opens once by itself after an update (`WhatsNewRules`, the
+pref `WhatsNew.SeenId`) and from a WHAT'S NEW button beside CREDITS in Settings' General links
+(`author_menu_settings.py`). Spec `Docs/UI/specs/rev121-c-whats-new.md`, which lists where it differs from the board
+(no Ark picture yet, the door on General not Other, only Update 0.3 listed). Hand test in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 217. Rev 127 mockups: avatar borders that sit on the domain halo, six animated rings (2026-11-23; Shombith picked D, Ripple; built)
+
+**Asked** (Shombith, 2026-11-23): "The avatar backdrop have the glowing circle but the actual borders of the avatars
+do not align with it. Give me 6 variations on the design board for avatars with their animated glowing borders."
+
+**Read as**: the round domain halo drawn behind a player's avatar (`PartySlotDomainGlow` in the party panel,
+`ConnectingPlayerRoster` and `RematchVoteRoster` in matches; a radial glow 1.22x the avatar rect) sits behind SQUARE
+avatar art, whose corners reach 0.71 of its width from the centre against the halo's 0.61, so the border is a square
+that follows none of the circle.
+
+**On the canvas**: tab Menu Redesign A (`menu-redesign-c`), section `sec-rev127`; generator
+`Docs/MenuRedesignB/rounds/r127_avatar_borders.py`, copies `Docs/MenuRedesignB/board/R127*.dc.html`. Every option
+shares one geometry: the avatar masked to a circle, its ring on that circle's edge, the halo centred on it at 1.3x
+(up from 1.22) and at full colour from the ring outward; a pilot whose domain is not known yet keeps no halo and a quiet
+2 px ring. Each option board shows a 340 px avatar with domain, "show the circles" and motion switches, the party panel
+and a 3 v 2 v 1 match lobby. Colours are the style tokens' Jade `#21C0BD`, Ruby `#BD1BC8`, Gold `#FF9B11`.
+- **R127Compare**: today's square avatar over its halo, then all six side by side (Jade large, Ruby and Gold small, not known).
+- **R127A Breath (recommended)**: a 3 px ring that breathes with the halo at the game's 0.7 Hz; alpha only. It keeps
+  the motion the game already has and makes the ring part of it, the quietest answer.
+- **R127B Orbit**: a hairline ring with one bright arc circling it every 4 s; the halo holds still.
+- **R127C Dial**: a solid 2 px ring and two segmented rings turning opposite ways (18 s, 26 s).
+- **R127D Ripple**: a 3 px ring sending a wave out to the halo's rim, two waves 1.2 s apart.
+- **R127E Current**: a 4 px gradient ring (domain colour and white) turning every 3 s with its own glow.
+- **R127F Corona**: an eclipse rim, a crescent of light turning every 12 s, the halo brighter on its side.
+- **R127Notes**: the problem, the shared geometry, the motion per option, what the pick changes in Unity.
+
+**Differs from the build**: the avatar Image gets a round mask and a ring Image on its edge; the halo grows to 1.3x
+and its sprite starts at the ring's radius; the three halo call sites become one component
+(`Docs/PartySystem/TODOS.md` TODO-12) so the party panel, connecting roster and rematch vote share the border.
+
+**Picked (Shombith, 2026-11-23)**: "D build it", on every avatar with a domain glow ("All of them").
+
+**Built (2026-11-23)**: `AvatarRippleBorder` (`Assets/_Scripts/UI/Elements/`) builds the board's geometry round any avatar
+Image at run time: a holder in the avatar's place, a round mask holding the avatar, the ring on its edge (0.016 x diameter
++ 1.6 px), two waves (0.008 x diameter + 1 px) growing from 1 to 1.3x over 2.4 s on the board's ease-out and fading out at
+the rim, the halo at 1.3x and 0.45 alpha, the quiet 2 px `SurfaceLight` ring when the domain is not known. It is on the
+party seats (`FriendInfoSlot` / `KitPartySlot`, replacing the octagon ring, gap and backing, which
+`author_menu_arcade.py` no longer writes) and the scoreboard's rematch votes (`RematchVoteRoster`, replacing its own halo).
+`PartySlotDomainGlow` is retired. The connecting screen's roster draws no avatars today, so it has none. Not yet seen in
+Unity: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders, Rev 127 D Ripple".
+
+
+**Everywhere (2026-11-23).** Shombith sent screenshots of avatars still square or octagonal and asked for the border and
+glow on all of them. The same `AvatarRippleBorder` now wraps the Home pilot card, the friends orb (you and the members),
+the drawer's profile card, the profile window's preview and party-slot chip, the avatar picker and the Configure pilot
+seats. Your own avatar in a menu glows in `ControlActive` (no domain yet); the picker's pick ripples in `Selection` and
+the rest wear the quiet ring. The border cuts the largest circle that fits the avatar's rect, so a non-square region
+still gets a circle. Editor checks: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders everywhere".
+## 222. Rev 128 mockups: the arcade game card, six ways, beside the card we ship (2026-11-23; Shombith picked E, the Poster)
+
+**Asked (Shombith, 2026-11-23):** "Start a thread to redesign the arcade/ arena game cards. Currently they are still
+images generated by idk who. They need to get way way better in terms of lets say appearance, motion, hover features etc.
+They need to lively yet not affect performance. Create 6 different variations of one game mode's card have the card so we
+can compare the before look as well with the 6 new".
+
+**On the canvas:** a new tab, **Game Cards**, round "Rev 128 - Game cards, six ways"; the copies are
+`Docs/MenuRedesignB/board/R128*.dc.html`, written by `Docs/MenuRedesignB/rounds/r128_game_cards.py`. One mode, Skim Race
+(Squirrel, Time), at the shipped size (341 x 296), with the shipped words (name, hull, element shape, favourite star). The
+images are the shipped `CardBackground` renders and the colourful hull card renders, uploaded for this round.
+- **R128Compare:** the card we ship (Rev 18 A, section 73, hover 101.1 Sheen) and A-F side by side at 1.22 x; hover each.
+- **R128A Depth:** the render full bleed in three planes (stars, render, the Squirrel and motes), the name on a glass strip;
+  hover tilts the card toward the pointer and the planes part.
+- **R128B Racing line (recommended):** a light runs the course traced through the render's own rings to a crystal every
+  4 s; hover draws the line and the Squirrel flies it once.
+- **R128C Hero hull:** the Squirrel rides above the frame; hover surges it forward with speed lines.
+- **R128D Silver foil:** a collectible card, the render in a silver foil frame that shimmers; hover tilts it and the
+  light follows the pointer.
+- **R128E Poster:** the render full bleed under a big title; hover slides the card open (its Description, pilots, the
+  intensity signal sign).
+- **R128F Live loop:** at rest one frame of the race (trails running to the cell's rim, the Squirrel on the jade trail);
+  hover plays it, a crystal bursting into +1.
+- **R128Notes:** what each moves, what each costs in Unity, the rules every option keeps, why B.
+Each option board is the Arcade row (Skim Race, Dog Fight, Headlong, Joust) and Skim Race at rest, hovered, under pad
+focus and locked. Hover is CSS (a 3 x 3 grid of hover cells sets the tilt), so nothing runs at rest but each option's one loop.
+
+**Why B:** the card teaches the mode at a glance without a word, it is lively at rest for one scrolling line per card,
+and the line is data: each mode's course comes from the generator `/cardart` already renders.
+
+**Differs from the build:** today the card is one still render that drifts 5 px over 40 s (`CardDrift`), with the Sheen
+on hover. A pick would add per option: A three masked images and a pointer tilt; B a line mesh with a scrolling material
+and a hull tween, the line written per mode by the card-art harness; C the hull outside the mask with `PortraitBob`; D one
+foil overlay material and a tilt; E a body height tween; F a 24-frame flipbook per mode played only on the hovered or
+focused card. Touch keeps the rest state; the pad's focus plays what hover plays.
+
+**Gates:** `frogma.py check --only R128` OK; `check_mockup.py` passes colours, type and contrast on every board and fails
+the noise budget on the card sheets (150-382 elements: eight cards a board with their hover cells and F's trail prisms;
+one card is about 20). Joust's authored Description is still "Joust joust joust", which E shows on hover.
+
+**Picked (Shombith, 2026-11-23):** "I like the poster style but use our font. But for the insides I think you can do
+touch ups in the skim race cards its too blue and it does not look the cell in any of the card bg. Can you do something
+about that?" Followed up in Rev 129 (section 222.1).
+
+### 222.1 Rev 129: the Poster card in our font; Skim Race's picture made to look like the cell (2026-11-23; Shombith picked Inside the cell)
+
+**On the canvas:** tab Game Cards, round "Rev 129"; copies `Docs/MenuRedesignB/board/R129*.dc.html`, written by
+`Docs/MenuRedesignB/rounds/r129_poster_cell.py`; the pictures by `r129_card_art.py` (seeded) into `r129_assets/`.
+- The Poster's title is Aldrich (the style guide's reading face), capitals, tracked .06em; labels stay Chakra Petch.
+- **Why the pictures miss the cell:** `render_card_backgrounds.py` draws the arena's prisms, rings and trails and the
+  nucleus as glass on a purple-blue ground. It never draws the cell's wall (the net of many-sided panes the game shows
+  first, `Docs/Pilots/art/refs/sea_flight_trail.jpg`) or the white dust, and Skim Race's glass nucleus fills a third of
+  the picture in blue.
+- **R129Compare:** the Poster with four pictures, at rest and hovered: as shipped; **No blue wash** (ground to the
+  deep-sea navy, the nucleus to faint glass, the race's colours kept); **Inside the cell (recommended)** (that, plus the
+  wall's panes behind the race and the dust); **The whole cell** (the race inside a wire ball of panes in dusty space,
+  `sea_cell_outside.jpg`).
+- **R129Row:** the Arcade row with Skim Race inside the cell, and Skim Race in every state.
+- **R129Notes:** the above, and what a pick changes.
+
+**Differs from the build:** a pick goes into the card renderer (wall net, dust, the nucleus's grade), so every Arcade and
+Arena card changes at once and `--check` holds it; the Poster card goes into the Arcade and Arena card prefabs through
+`/frogma-to-unity`. The touch-ups here are made on the one Skim Race PNG only.
+
+**Picked (Shombith, 2026-11-23):** "Selected Inside the cell build it".
+
+**Built (2026-11-23, branch `claude/project-thread-lslakw`):**
+- **Every card's picture is inside the cell.** The card renderer (`Tools/Build/render_card_backgrounds.py`, the harness's
+  `Renderer.cs`) draws the cell's wall as a seeded Voronoi net of panes on the membrane sphere (depth-tested, the far wall
+  from inside, both walls from outside), white dust motes through the cell, the deep-sea ground without the violet nebula
+  or stars, and the glass nucleus as faint near-neutral glass (strength 0.14, was a 0.3 blue). All 90 cards re-rendered;
+  `--check` holds them.
+- **The Arcade card is the Poster** (`author_menu_arcade.py build_card`, `ArcadeGameCard.prefab`): the picture fills the
+  card and drifts, a navy fade (`kit_fade_v`, SurfaceBlack) rises 200 from the foot, the name sits on it in Aldrich at
+  H1 (36, shrinks to fit), the lit hull at the bottom right, the element tag at the top left with the party picks beside
+  it, the star at the top right. Hover or pad focus (never touch) slides a panel up 112 from the foot in 0.2 s with the
+  mode's line and "{pilots} pilots" (`KitPosterReveal`, new; `KitGameCard.descriptionText` / `pilotsText` / `pilotsLine`),
+  the name rides up with it and the hull fades. `check_poster` and two planted defects hold it.
+- **Differs from the board:** the name keeps the mode's own case (H1 is not an upper-case role; the board drew capitals);
+  the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
+  board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
+  picture; the Poster was drawn for the Arcade grid card.
+
 ## 226. Rev 133 mockups: the Milestone 2 Voyages UI, three ways (2026-11-24; Shombith picked a mix: Board B, Seats A+B, Pause A, Vote B, Awards A)
 
 **Asked** (Shombith, 2026-11-24, after the Milestone 2 design https://claude.ai/artifact/41YTUVhkuX1wPDwJQhub3g): "For
