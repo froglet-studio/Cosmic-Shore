@@ -25066,24 +25066,24 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
 3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
 
-## 🔴 The Artifacts tab as Rev 105 B, the lens (2026-11-13, Shombith, NOT RUN IN EDITOR)
+## 🔴 The Artifacts tab as Rev 140 A, lit where it stands (2026-11-24, Shombith, NOT RUN IN EDITOR)
 
-Branch `claude/project-thread-yzd03y`. Record: `Docs/MENU_REDESIGN_B.md` section 201. Compiled against the Unity
-reference assemblies; `author_menu_ark.py --check` and `--self-test` clean.
+Branch `claude/project-thread-lgiktq`, into `ark-rework`. Record: `Docs/MENU_REDESIGN_B.md` section 231 (replaces the
+Rev 105 B lens, section 201, whose test is retired with it). Compiled against the Unity reference assemblies;
+`author_menu_ark.py --check` and `--self-test` clean.
 
-1. Ark > ARTIFACTS: the Reliquary shows whole, no boxes. Along the floor a rail of medallions: one per held artifact
-   (its white mark, its kind's name), then "?" slots. One hint line above the rail.
-2. Pick Hydra: the lens grows open on the right; heads fan out from the diamond at its foot and burst, over prisms that
-   stay inside the round glass. Four arcs round the rim with their flowers, values and labels; the attuned arc full, the
-   others dimmed. The words stand on the left; the medallion is ringed and the other names dim. The trail reads
-   "Artifacts / Hydra". BACK appears top-left.
-3. Pick Javelin, Aftershock, Aegis in turn: each plays its own shape (a line, repeated cracks, a raised shell).
-4. FEED IT: the level band (now, next, the twist mark at 5), crystal icons of the artifact's element (10 with the
-   default), FEED and OMNI. Press FEED: the level, the band and the icons move; the result line reads.
-5. BACK twice returns to the hoard and the lens closes. Leave the tab and come back: it opens on the hoard.
-6. GIVE TO A SEAT still takes the artifact to the Squads tab.
-7. Switch the colour set: the marks, arcs, rim and rings recolour; nothing stays a fixed colour.
-8. Profiler with the lens open: no GC per frame from `ArtifactLens`.
+1. Ark > ARTIFACTS: the room only, no rail, no boxes. One hint line under the room: "Touch an artifact to see what it does."
+2. Point at each artifact in the room (Javelin, Hydra, Aftershock, Aegis): its pedestal ring and a halo light half way and
+   its name shows over it. The light sits ON the pedestal and the artifact (check at 16:9 and at a wider window).
+3. Click Hydra: its light goes full, the rest of the room dims round it, the words stand on the right tied to it by a line
+   (up from the artifact, across to the kicker). FEED IT, GIVE TO A SEAT and "Rolled with it, fixed" with three rows.
+   Trail "Artifacts / Hydra", BACK top-left.
+4. Click Aegis: the dim moves to it and the words move to the left; the line follows.
+5. Click a dark alcove: back to the room, the hint reads "An empty alcove...". With no Aftershock in the hoard, its
+   pedestal says "No Aftershock in your hoard yet...".
+6. D-pad moves between the artifacts and alcoves; A opens; B steps back (section 205).
+7. FEED IT: level band, crystals, FEED and OMNI work as before. BACK twice returns to the room.
+8. Switch the colour set: the rings, halo, dim and line recolour; nothing stays a fixed colour.
 
 ## 🔴 Voyages: the HyperSea's cells as an uneven wet Kelvin foam on the galaxy map (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
 

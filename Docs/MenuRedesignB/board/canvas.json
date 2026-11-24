@@ -3620,6 +3620,58 @@
       "h": 900,
       "page": "ark",
       "title": "Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build"
+    },
+    "R140Compare.dc.html": {
+      "x": 0,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 - Compare: what happens when you touch Hydra, in each option"
+    },
+    "R140A.dc.html": {
+      "x": 2100,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 A - Lit where it stands: touch it, its pedestal lights, the words hang beside it - interactive",
+      "is_interactive": true
+    },
+    "R140B.dc.html": {
+      "x": 4200,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 B - Step up to it: touch it and the view walks in to its pedestal - interactive",
+      "is_interactive": true
+    },
+    "R140C.dc.html": {
+      "x": 0,
+      "y": 47791,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 C - Written on the floor: the words lie on the deck in front of it - interactive",
+      "is_interactive": true
+    },
+    "R140D.dc.html": {
+      "x": 2100,
+      "y": 47791,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 D - The column shows it: touch it and the light column plays what it does (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R140Notes.dc.html": {
+      "x": 0,
+      "y": 49051,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 140 - Notes: what changes, what stays, what each costs to build"
     }
   },
   "createdOnFiles": {
@@ -3722,6 +3774,7 @@
     "sec-rev137",
     "sec-rev138",
     "sec-rev139",
+    "sec-rev140",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3823,7 +3876,8 @@
     "rev136",
     "rev137",
     "rev138",
-    "rev139"
+    "rev139",
+    "rev140"
   ],
   "notes": {
     "hud_end": {
@@ -6209,6 +6263,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "ark"
+    },
+    "rev140": {
+      "kind": "title1",
+      "text": "Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways",
+      "x": 0,
+      "y": 46131,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev140": {
+      "kind": "rect",
+      "x": -160,
+      "y": 45971,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
     }
   },
   "order": [
@@ -6645,7 +6723,13 @@
     "R139A.dc.html",
     "R139B.dc.html",
     "R139C.dc.html",
-    "R139Notes.dc.html"
+    "R139Notes.dc.html",
+    "R140Compare.dc.html",
+    "R140A.dc.html",
+    "R140B.dc.html",
+    "R140C.dc.html",
+    "R140D.dc.html",
+    "R140Notes.dc.html"
   ],
   "pages": [
     {

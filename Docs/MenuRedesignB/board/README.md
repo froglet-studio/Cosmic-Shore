@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795522142-18ae` of **Frogma**: Rev 41 to Rev 139, 434 boards on 17 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795522187-a454` of **Frogma**: Rev 41 to Rev 140, 440 boards on 17 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -339,6 +339,15 @@ Copied on 2026-11-24 from canvas version `1795522142-18ae` of **Frogma**: Rev 41
 - `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
 
 ### Tab: Ark  (`ark`)
+
+#### Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways
+
+- [`R140Compare.dc.html`](R140Compare.dc.html) - Rev 140 - Compare: what happens when you touch Hydra, in each option
+- [`R140A.dc.html`](R140A.dc.html) - Rev 140 A - Lit where it stands: touch it, its pedestal lights, the words hang beside it - interactive
+- [`R140B.dc.html`](R140B.dc.html) - Rev 140 B - Step up to it: touch it and the view walks in to its pedestal - interactive
+- [`R140C.dc.html`](R140C.dc.html) - Rev 140 C - Written on the floor: the words lie on the deck in front of it - interactive
+- [`R140D.dc.html`](R140D.dc.html) - Rev 140 D - The column shows it: touch it and the light column plays what it does (recommended) - interactive
+- [`R140Notes.dc.html`](R140Notes.dc.html) - Rev 140 - Notes: what changes, what stays, what each costs to build
 
 #### Rev 139 - The Converter redrawn: the pier stays, the UI starts again, and CONVERT plays at once
 
