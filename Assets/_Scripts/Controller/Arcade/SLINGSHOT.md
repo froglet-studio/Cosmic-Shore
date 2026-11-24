@@ -67,6 +67,34 @@ threads the last ring of the last lap wins (golf: finish time).
 | Generator | `Tools/Build/author_slingshot_assets.py` (`--check`) |
 | Course harness | `Tools/Build/slingshot_course_harness/run.sh` (the shipped solver, 400 seeds × 4 levels) |
 | Tests | `SlingshotCourseTests` (written, not run in the editor) |
+| Ruins (I4) | `SlingshotRuins` + `SlingshotController.Ruins.cs`, calling `SpearlineRuins`; `SlingshotRuinsTests`; `Tools/Build/slingshot_ruins_harness/run.sh` |
+
+## The ruins (I4, 2026-11-24) - NOT compiled in Unity, NOT watched
+
+Yash: "give this Time game the same environment update Spearline got". At I4 the legs between rings carry Spearline's
+garden ruins: decoration round the racing line. **The generator is Spearline's** (`SpearlineRuins`, SPEARLINE.md §2a);
+Slingshot calls it and owns nothing but the hook (`SlingshotRuins`, `SlingshotController.Ruins.cs`).
+
+- **Where.** One ruin on every leg of 380 u or more, never on the leg that closes the lap. Every ruin prism is at
+  least 8 u thick, none reaches within 60 u of any leg's flown line (the I4 mouth is 26 u), none stands within 120 u
+  of a ring, so the corner moons and their belts are left alone. None below I4.
+- **How many, measured** (`slingshot_ruins_harness/run.sh --report`, 14 seeds): **4 ruins a lap** (5 on one seed),
+  424 to 546 prisms. Spearline has 7 because its legs are longer; the Stoat's eight-ring lap has 4 or 5 legs that reach 380 u.
+- **No wheel.** The turning wheel needs 270 u from both rings (its 150 u rim and the ring margin) and the Stoat's legs
+  are about 460 u, so the generator lays a pergola in its place. Nothing on this course sweeps the line. A wheel or
+  more ruins would take longer legs or smaller margins: a course decision, not made here.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby, Gold in turn (`ruinDomains` on the controller; empty = Blue),
+  apart from the Orrery's Blue moons, belts and tails.
+- **Rules.** Plain prisms in `SpawnablePrism` (`ruinPrefab`, wired in the scene; `author_slingshot_assets.py --check`
+  fails without it) with the game's own rules: a hull breaks them, nothing grows back. Nothing reads or writes a vessel.
+  Laid on every peer from the broadcast rings; cleared with the Orrery.
+- **Not measured.** The swing throws the Stoat well off the flown line, so a slung Stoat (a person's or the AI's) can
+  meet a ruin outside the 60 u lane. The I4 times in STATUS.md (Legendary 75 s, Medium 95 s) were measured before the
+  ruins and have not been re-run. A comet tail or a shepherd can pass through a ruin: they are not kept apart.
+- **Tests.** `SlingshotRuinsTests` (9), run headless by `Tools/Build/slingshot_ruins_harness/run.sh` (`--self-test`: two
+  negative controls). **To check by hand:** Slingshot at I4 shows coloured ruins on the long legs and none at I1-I3; a
+  Stoat on the line flies through each without touching it; the console has no "no ruin prefab" warning; a second race
+  leaves no ruins from the first.
 
 ## 1. What the mode is asking
 
