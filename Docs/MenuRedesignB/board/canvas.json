@@ -3776,6 +3776,24 @@
       "page": "toy-box",
       "title": "Rev 143 E - D's Toy Box, A's Configure inside, gradient and sea lines behind, dark glass cards - interactive",
       "is_interactive": true
+    },
+    "R144F.dc.html": {
+      "x": 0,
+      "y": 7420,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 144 F - the 2D toy glyphs, flat as drawn - interactive",
+      "is_interactive": true
+    },
+    "R144G.dc.html": {
+      "x": 2100,
+      "y": 7420,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 144 G - the same 2D glyphs baked with depth: extruded, bevelled, tilting on hover - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -3882,6 +3900,7 @@
     "sec-rev141",
     "sec-rev142",
     "sec-rev143",
+    "sec-rev144",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3987,7 +4006,8 @@
     "rev140",
     "rev141",
     "rev142",
-    "rev143"
+    "rev143",
+    "rev144"
   ],
   "notes": {
     "hud_end": {
@@ -6469,6 +6489,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "toy-box"
+    },
+    "rev144": {
+      "kind": "title1",
+      "text": "Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs: flat, and with depth",
+      "x": 0,
+      "y": 7020,
+      "w": 240,
+      "maxW": 6120,
+      "page": "toy-box"
+    },
+    "sec-rev144": {
+      "kind": "rect",
+      "x": -160,
+      "y": 6860,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "toy-box"
     }
   },
   "order": [
@@ -6923,7 +6967,9 @@
     "R142C.dc.html",
     "R142D.dc.html",
     "R142Notes.dc.html",
-    "R143E.dc.html"
+    "R143E.dc.html",
+    "R144F.dc.html",
+    "R144G.dc.html"
   ],
   "pages": [
     {

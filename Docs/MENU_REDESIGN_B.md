@@ -9128,3 +9128,21 @@ makes the cards and variation tiles dark glass instead of solid navy.
 
 **On the canvas:** Toy Box tab, "Rev 143 - The Toy Box mix" (one interactive board, `R143E`). Generator
 `Docs/MenuRedesignB/rounds/r143_toybox_mix.py <root> 143` (reuses `r142_toybox.py`).
+
+### 235.2 Rev 144: the mix with the 2D toy glyphs, flat and with depth (2026-11-24, awaiting a pick)
+
+**Asked (Shombith, on Rev 143):** "I want the 2D icons they had which garrett added not these 3D icons", then "If you
+can make those 2D icons with a different variation to give them a 3D look you can try".
+
+The glyphs are the seven drawings of `Tools/Build/icon_kit/toy_portraits.py` (the white glyphs that teach what flying
+through the toy does, `Docs/CODEX.md` section 4, sheet `Docs/Icons/sheets/toybox.png`), rendered at 512 px for the
+board. Rev 142 / 143 used the older 3D ring emblems from Item 8's board.
+
+**On the canvas:** Toy Box tab, "Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs". `R144F`: the glyphs flat,
+as drawn. `R144G`: the same glyphs baked with depth (an extrusion down and right in the slate shades, a bevel lit from
+the top left on the white face, a soft contact shadow) that tilt in perspective on hover. Everything else is Rev 143.
+Generator `Docs/MenuRedesignB/rounds/r144_toybox_glyphs.py <root> 144`. If G is picked, the depth bake becomes a second
+sprite per toy written by the icon kit beside the flat one; the flat glyph stays the codex's.
+
+Note: `toy_portraits.py` does not write today: its Spawn Matrix glyph fails the `gap` gate, and no `tool_wander.png`
+exists on disk (the Wander codex page still shows the old emblem). Found while rendering this round; not fixed here.

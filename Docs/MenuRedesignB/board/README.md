@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795541516-0607` of **Frogma**: Rev 41 to Rev 143, 452 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795560467-8eb0` of **Frogma**: Rev 41 to Rev 144, 454 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -722,6 +722,11 @@ Copied on 2026-11-24 from canvas version `1795541516-0607` of **Frogma**: Rev 41
 - [`R128Notes.dc.html`](R128Notes.dc.html) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
 
 ### Tab: Toy Box  (`toy-box`)
+
+#### Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs: flat, and with depth
+
+- [`R144F.dc.html`](R144F.dc.html) - Rev 144 F - the 2D toy glyphs, flat as drawn - interactive
+- [`R144G.dc.html`](R144G.dc.html) - Rev 144 G - the same 2D glyphs baked with depth: extruded, bevelled, tilting on hover - interactive
 
 #### Rev 143 - The Toy Box mix: D's lens cards with A's Configure, on the menu's gradient and sea lines
 
