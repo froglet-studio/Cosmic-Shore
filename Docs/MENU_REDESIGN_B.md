@@ -8967,3 +8967,28 @@ should be very well defined for these to work".
   a lane as the chart draws it; danger is the sea's, never the clock).
 
 **Differs from the build**: none of it is built (see section 226).
+
+## 228. Rev 135 mockups: the full-screen HyperSea kept, and the vessel classes screen (2026-11-24, awaiting a pick)
+
+**Asked** (Shombith, on Rev 134): "We can build these. ... in the board in the first screen please make sure the fullscreen
+of hypersea feature stays, show me the screen which differentiates vessels as per their classes and what to choose and
+how effective they are in the missions. That screen show me before you start building".
+
+**On the canvas**: tab Voyages, "Rev 135 - Voyages: the full-screen HyperSea stays, and the vessel classes screen";
+copies `Docs/MenuRedesignB/board/R135*.dc.html`, generator `Docs/MenuRedesignB/rounds/r135_voyages_classes.py`.
+- **BoardFull**: Rev 134's quay board with the built Rev 111 Full screen control on its chart, and See every class (Y).
+- **FullScreen**: the HyperSea edge to edge as built (zoom row inside the map, + and -, Back from full screen, Hide),
+  now carrying the four givers on the right, their pins, your lane, the wreck, the bloom, The Rusted Grin, and the
+  picked voyage along the foot with Take the job.
+- **ClassesA**: the fleet by class, seven classes x four voyages (Best / Good / Poor), every vessel under its class.
+- **ClassesB (recommended)**: this voyage's shelf. Every vessel sorted Best / Good / Poor for the voyage you are on, what
+  each class does there, which vessels the AI can fly, your squad's fit and pay, and the one swap that lifts it
+  (Seat 3 Dolphin to Scarab: fit 1 to 2 of 3, pay 33 to 36). Recommended because it answers "what do I choose" for
+  the voyage in hand; A makes you find your column.
+- **ClassesPick**: the same shelf as the seat picker; in an AI seat the vessels with no voyage AI are dimmed ("Needs a person").
+- Effectiveness: Best = the giver asks for the class (adds to squad fit and the pay bonus), Good = does the work, no
+  bonus, Poor = little to do there. The table matches each giver's ask in the Voyage Codex (asserted in the generator).
+  A class is a label for voyages and never changes a kit.
+
+**Differs from the build**: the built Voyages tab has the full screen but no givers column or events on it, and no class
+screen at all; vessels have no voyage class in data yet (the class sort is the Milestone 2 design's, Brood Rush wins).

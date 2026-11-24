@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795520522-45c3` of **Frogma**: Rev 41 to Rev 134, 402 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795521164-0ea7` of **Frogma**: Rev 41 to Rev 135, 408 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -415,6 +415,15 @@ Copied on 2026-11-24 from canvas version `1795520522-45c3` of **Frogma**: Rev 41
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 135 - Voyages: the full-screen HyperSea stays, and the vessel classes screen
+
+- [`R135BoardFull.dc.html`](R135BoardFull.dc.html) - Rev 135 BoardFull - The quay board with its Full screen control kept
+- [`R135FullScreen.dc.html`](R135FullScreen.dc.html) - Rev 135 FullScreen - The HyperSea full screen: zoom inside the map, back from full screen, the givers on the right, the voyage along the foot
+- [`R135ClassesA.dc.html`](R135ClassesA.dc.html) - Rev 135 ClassesA - Classes A: the fleet by class, how each class fares in every voyage
+- [`R135ClassesB.dc.html`](R135ClassesB.dc.html) - Rev 135 ClassesB - Classes B: this voyage's shelf, every vessel by how well it fits (recommended)
+- [`R135ClassesPick.dc.html`](R135ClassesPick.dc.html) - Rev 135 ClassesPick - Classes B in the seat picker: swapping a hull, fit and pay change live
+- [`R135Notes.dc.html`](R135Notes.dc.html) - Rev 135 - notes: the classes screen, effectiveness and where it opens
 
 #### Rev 134 - The picked Milestone 2 Voyages UI on every screen and state (Board B, Seats A+B, Pause A, Vote B, Awards A), and how the world reads
 
