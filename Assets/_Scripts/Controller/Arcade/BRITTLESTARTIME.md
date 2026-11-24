@@ -153,6 +153,48 @@ unrolled, with a nose follow capped at 8/s.
 4. **`BrittleStarTimeCourseTests` reads `speedModeMultiplier.Value`, but the runtime evaluates `Min`.** Both are 6.
    `BrittleStarTimeLineTests` now holds `Min`.
 
+## 0a. Garden ruins at I4 (`BrittleStarTimeRuins`, `BrittleStarTimeController.Ruins.cs`; Yash, 2026-11-24)
+
+The environment update Spearline got (SPEARLINE.md section 2a), asked for every Time game. The ruins are **Spearline's
+generator, called, not copied**: `SpearlineRuins.Lay` with this mode's lap. No Spearline file is changed. Decoration
+only: plain prisms with the game's own rules (a hull breaks them, nothing grows back), laid by every peer from the
+broadcast course. Nothing reads or writes a vessel, and the kit is untouched.
+
+**What stands at I4: one ruin a lap, on the return straight.** The generator lays only on a leg of 380 u or more and
+120 u clear of every ring. The corkscrew's six coil rings stand about 170 u apart and the two turns of the return are
+300 and 360 u, so the only leg long enough is the return straight (about 670 u). Seven ruins a lap, as Spearline has,
+do not fit this course under the generator's own rules; putting ruins round the coil would need a change to the
+generator (a ruin laid round a whole run of rings, not one leg), which was not made.
+
+**The lap handed over is the flown line, not the raw rings** (`BrittleStarTimeRuins.RuinLap`). The generator keeps its
+60 u lane round a curve that leaves and arrives along each ring's axis. The two return rings face ACROSS the leg into
+them and are flown at their centre (`BrittleStarTimeLine.SteerPoint`): the pilot leaves the far ring on its facing, turns
+on Speed Mode's circle (162 u at Time 5) and runs straight at the near ring. So that leg is given as the turn's end
+(`TurnExit`, a ring of no radius) and then the straight, and the lane lies where the hull flies. The lap starts at ring
+1, so the kind is drawn from a ring the seed moves and changes from race to race.
+
+**Kept off the let-go gates.** A standing prism within 30 u of a let-go post is left out, and a wheel whose sweep would
+reach one is left out whole (`PostClearance`). On the shipped courses the ruin and the posts already stand apart; the
+rule is held by a test that stands a post inside a ruin.
+
+**Colour.** Each ruin is one domain colour from `ruinDomains` on the controller (Jade, Ruby, Gold in turn; empty = Blue,
+as the posts), so it reads apart from the Blue let-go posts. With one ruin a lap it is the first of the list (Jade).
+A ruin in a pilot's own domain is that pilot's prism to the game's rules, as on Spearline; not measured.
+
+**Measured in the model** (`brittle_star_time_course_harness/run.sh --ruins 200`, 200 seeds): every course carries one
+ruin, 72 to 121 prisms (mean 92); six kinds stand (pergola, flower head, vines, wall, tunnel, maze). **The wheel never
+fits**: the coil's lanes pass inside its sweep, so the generator stands a pergola there, and nothing turns or crosses
+the line at I4. The model's pilots flying two laps come no nearer a standing ruin prism than 8 u (Medium AI), 9 u
+(Easy), 15 u (Hard), 17 u (Legendary) and 31 u (a reading human). Laying the lane round a wider turn (1.2x to 2x the
+circle) put the AIs through the ruin on 21 to 52 of 60 courses, so the turn is modelled at the circle itself.
+
+**Held by** `BrittleStarTimeRuinsTests` (12) and three negative controls in the harness's `--self-test` (the raw rings
+handed over, ruins left in the let-go gates, ruins on an easier rung), and `author_brittle_star_time_assets.py --check`
+(the three scripts, the `ruinDomains` default, the three hook calls, the lay going through `SpearlineRuins.Lay`).
+
+**Not shown by any of this** (checklist entry): a Unity compile, the look, the frame rate, and whether the real AI (which
+the model only approximates) clips the ruin.
+
 ## Overview
 
 `GameModes.BrittleStarTime = 74` is the **Brittle Star's Time card**: a lapped race of eight rings, flown for two laps,

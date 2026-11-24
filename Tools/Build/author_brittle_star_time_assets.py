@@ -117,6 +117,15 @@ def shift_line_errors() -> "list[str]":
             errors.append(f"BrittleStarTimeController has no field {k}")
     if re.search(r"\bvoid Update\s*\(", cs):
         errors.append("a BrittleStarTimeController partial declares Update: it would hide GateRaceController.Update")
+    # The I4 garden ruins: laid by Spearline's generator and by nothing of this mode's own, in colours a person sets.
+    ruins = htr.read_or_empty(f"{MODE_DIR}/BrittleStarTimeRuins.cs")
+    if "SpearlineRuins.Lay(" not in ruins:
+        errors.append("BrittleStarTimeRuins does not lay through SpearlineRuins.Lay (the ruins are Spearline's generator)")
+    if "Domains[] ruinDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };" not in cs:
+        errors.append("BrittleStarTimeController.ruinDomains does not default to Jade, Ruby, Gold")
+    for call in ("LayRuins();", "TickRuins();", "ClearRuins();"):
+        if call not in cs:
+            errors.append(f"BrittleStarTimeController never calls {call}")
     v = variant_text()
     if "  engageRunwaySeconds: 999\n" not in v or "  alignDegrees: 0\n" not in v:
         errors.append("the AI policy variant's straight law can engage")
@@ -140,6 +149,11 @@ htr.author(dict(
         "BrittleStarTimeHeat":               f"{MODE_DIR}/BrittleStarTimeHeat.cs",
         "BrittleStarTimeCourseTests":        "Assets/_Scripts/Tests/Editor/BrittleStarTimeCourseTests.cs",
         "BrittleStarTimeLineTests":          "Assets/_Scripts/Tests/Editor/BrittleStarTimeLineTests.cs",
+        # The I4 garden ruins (BRITTLESTARTIME.md section 0a): Spearline's generator (SpearlineRuins) called on this
+        # mode's flown lap. ruinDomains keeps its C# default (Jade, Ruby, Gold), so the scene needs no line for it.
+        "BrittleStarTimeController.Ruins":   f"{MODE_DIR}/BrittleStarTimeController.Ruins.cs",
+        "BrittleStarTimeRuins":              f"{MODE_DIR}/BrittleStarTimeRuins.cs",
+        "BrittleStarTimeRuinsTests":         "Assets/_Scripts/Tests/Editor/BrittleStarTimeRuinsTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/BRITTLESTARTIME.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",

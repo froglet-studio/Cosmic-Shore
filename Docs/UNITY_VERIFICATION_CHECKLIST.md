@@ -26861,3 +26861,21 @@ Affects: Garrett's Shrike / Thornline.
 - [ ] Thornline at I1, I2 and I3: no ruins.
 - [ ] The hitch when the course is laid (about 0.2 s in the harness) and the frame rate at I4 with about 620 more prisms.
 - [ ] A rematch lays a fresh set and leaves none of the old one.
+
+### 🔴 Brittle Star Time: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
+
+`BRITTLESTARTIME.md` section 0a. Spearline's ruins called from Brittle Star Time (`BrittleStarTimeRuins.cs`,
+`BrittleStarTimeController.Ruins.cs`, three hook lines in `BrittleStarTimeController.cs`), laid round the flown line and
+kept off the let-go gates. Ran: the headless `brittle_star_time_course_harness/run.sh --self-test` (36 tests, the measured
+claims, 13 negative controls) and `author_brittle_star_time_assets.py --check` (35 files match). Not run: a Unity
+compile, the EditMode tests in the editor, `unity_refcompile` (cannot run on this Windows box), any flight.
+
+- [ ] The project compiles; `BrittleStarTimeRuinsTests` (12) pass in the editor.
+- [ ] Brittle Star Time at I4: ONE ruin stands on the return straight (the long leg back to the coil's mouth), in Jade,
+      apart from the Blue let-go posts; none round the coil, none at a ring. The line through it is open.
+- [ ] Nothing turns: the wheel never fits this course (a pergola stands in its place).
+- [ ] Three AI at I4 (Easy, Medium, Legendary) still finish and do not clip the ruin (the model has Medium 8 u and Easy
+      9 u off its nearest prism; that is close).
+- [ ] Brittle Star Time at I1, I2 and I3: no ruins.
+- [ ] Frame rate at I4 with the ruin (about 90 more prisms) against without.
+- [ ] A rematch lays a fresh ruin (often another kind) and leaves none of the old one.

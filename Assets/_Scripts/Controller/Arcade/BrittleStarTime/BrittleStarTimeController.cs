@@ -13,13 +13,15 @@ namespace CosmicShore.Gameplay
     /// early and coast in. I4 Corkscrew: start at Time 5 and roll (Speed Roll) to hold Speed through a coil. See
     /// <see cref="BrittleStarTimeCourse"/> and BRITTLESTARTIME.md.</para>
     ///
-    /// <para><b>The Shift Line (2026-11-16, BRITTLESTARTIME.md section 0).</b> Three partials on top of the race:
+    /// <para><b>The Shift Line (2026-11-16, BRITTLESTARTIME.md section 0).</b> Four partials on top of the race:
     /// <list type="bullet">
     /// <item><c>.Line</c> - a let-go gate (two columns of shielded Blue posts) before every ring whose corner is tighter
     /// than Speed Mode carries (<see cref="BrittleStarTimeLine"/>), laid on every peer from the broadcast course; it lights
     /// in the local pilot's colour on a clean shift.</item>
     /// <item><c>.Coach</c> - the server's race coach for every AI Brittle Star (<see cref="BrittleStarTimeCoach"/>): its
     /// Speed wish through the hull's own autopilot control, its line, its nose follow by difficulty.</item>
+    /// <item><c>.Ruins</c> - at I4, garden ruins round the flown line (<see cref="BrittleStarTimeRuins"/>, laid by
+    /// Spearline's generator): decoration, plain prisms with the game's own rules.</item>
     /// <item><c>.Heat</c> - the local pilot's threads graded and called (<see cref="BrittleStarTimeHeat"/>): shock rings
     /// off the gates, streaks, lap splits, a best lap, a clean lap, and a start hint per rung.</item>
     /// </list></para>
@@ -49,7 +51,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The Brittle Star's full Speed on this rung: x6 cruise, x7 at I4's Time 5 start.</summary>
         float TopSpeed => Intensity >= 4 ? BrittleStarTimeCourse.SpeedModeSpeedAtTime5 : BrittleStarTimeCourse.SpeedModeSpeed;
 
-        protected override void OnCourseRaised() => RaiseLetGoGates();
+        protected override void OnCourseRaised()
+        {
+            RaiseLetGoGates();
+            LayRuins();
+        }
 
         protected override void OnServerTick() => TickCoach();
 
@@ -60,6 +66,7 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             TickLetGoGates();
+            TickRuins();
             TickHeat();
         }
 
@@ -69,6 +76,7 @@ namespace CosmicShore.Gameplay
         {
             ReleaseEveryCoachedWish();
             ClearLetGoGates();
+            ClearRuins();
             ClearHeat();
             base.OnNetworkDespawn();
         }

@@ -36,6 +36,10 @@ COURSE="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeCourse.cs"
 LINE="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeLine.cs"
 COACH="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeCoach.cs"
 HEAT="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeHeat.cs"
+RUINS="$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeRuins.cs"
+# The I4 ruins are Spearline's generator (read, never copied): it, and the seals' hash and basis it uses.
+SPEAR_RUINS="$A/Controller/Arcade/Spearline/SpearlineRuins.cs"
+SPEAR_SEALS="$A/Controller/Arcade/Spearline/SpearlineSeals.cs"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
@@ -47,8 +51,9 @@ build() {
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$HERE/FlightSim.cs" "$HERE/RaceSweep.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" \
-    "$COURSE" "$LINE" "$COACH" "$HEAT" \
-    "$A/Tests/Editor/BrittleStarTimeCourseTests.cs" "$A/Tests/Editor/BrittleStarTimeLineTests.cs"; do
+    "$COURSE" "$LINE" "$COACH" "$HEAT" "$RUINS" "$A/Data/Enums/PrismKind.cs" "$SPEAR_SEALS" "$SPEAR_RUINS" \
+    "$A/Tests/Editor/BrittleStarTimeCourseTests.cs" "$A/Tests/Editor/BrittleStarTimeLineTests.cs" \
+    "$A/Tests/Editor/BrittleStarTimeRuinsTests.cs"; do
     [ "$f" = "${2:-}" ] && f="$3"
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
@@ -67,6 +72,8 @@ case "${1:-}" in
   --sweep) run bst --sweep; exit 0 ;;
   --gates) run bst --gates "$2" "$3"; exit 0 ;;
   --race) run bst --race "${2:-24}"; exit 0 ;;
+  --ruins) run bst --ruins "${2:-40}"; exit 0 ;;
+  --ruins) run bst --ruins "${2:-40}"; exit 0 ;;
   --tune) run bst --tune "${2:-16}"; exit 0 ;;
   --check-race) set +e; run bst --check-race "${2:-16}"; exit $? ;;
 esac
@@ -103,7 +110,7 @@ negative "a corkscrew coil so wide Speed Mode holds it unrolled (radius 160)" "$
 negative "a corkscrew sampled a half turn apart (aliases)" "$COURSE" \
   's/public const float CoilStepDegrees = 90f;/public const float CoilStepDegrees = 180f;/' 'CoilStepDegrees = 180f'
 negative "every rung flies two laps (the length re-cut undone)" "$COURSE" \
-  's/LapsByIntensity = { 2, 3, 3, 4 };/LapsByIntensity = { 2, 2, 2, 2 };/' 'LapsByIntensity = { 2, 2, 2, 2 };'
+  's/LapsByIntensity = { 2, 3, 6, 6 };/LapsByIntensity = { 2, 2, 2, 2 };/' 'LapsByIntensity = { 2, 2, 2, 2 };'
 negative "let-go gates only for corners under 40% of full Speed (the hairpins lose theirs)" "$LINE" \
   's/public const float LetGoBelowShare = 0.9f;/public const float LetGoBelowShare = 0.4f;/' 'LetGoBelowShare = 0.4f'
 negative "let-go columns standing in the line (outset -40)" "$LINE" \
@@ -114,4 +121,7 @@ negative "a flat-out grade that ignores the heart (heart share 1)" "$HEAT" \
   's/public const float HeartShare = 0.6f;/public const float HeartShare = 1.0f;/' 'HeartShare = 1.0f'
 negative "MEASURED: let-go gates that stand nowhere are worth nothing (the 3% bar fires)" "$LINE" \
   's/public const float LetGoBelowShare = 0.9f;/public const float LetGoBelowShare = 0.4f;/' 'LetGoBelowShare = 0.4f' race
+negative "RUINS: laid round the raw rings, not the flown line (no turn's end before the return straight)" "$RUINS"   's/(g.Position - exit).magnitude >= SpearlineRuins.MinLegLength)/false)/' '&& *$'
+negative "RUINS: ruins left standing in the let-go gates" "$RUINS"   's/if (PostDistance(posts, parts\[i\]) >= PostClearance) kept.Add(parts\[i\]);/kept.Add(parts[i]);/' '^ *kept.Add(parts\[i\]);'
+negative "RUINS: ruins on an easier rung" "$SPEAR_RUINS"   's/PerLapByRung = { 0, 0, 0, 7 }/PerLapByRung = { 7, 0, 0, 7 }/' '7, 0, 0, 7'
 echo "brittle_star_time_course_harness self-test: ok"

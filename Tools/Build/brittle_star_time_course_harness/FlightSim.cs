@@ -45,6 +45,8 @@ public static class FlightSim
         public Steering Steer = Steering.Approach;
         /// <summary>A pilot's reaction: the steering point it acts on is this many seconds old (a human at the controls).</summary>
         public float ReactSeconds;
+        /// <summary>Called with the hull's position after every step (the ruins' clearance is measured from it).</summary>
+        public Action<Vector3> Trace;
     }
 
     public struct Result
@@ -104,6 +106,7 @@ public static class FlightSim
             Vector3 prev = s.Pos;
             s.Pos += s.Fwd * (s.Speed * Dt);
             s.T += Dt;
+            o.Trace?.Invoke(s.Pos);
 
             float da = Vector3.Dot(prev - g.Position, g.Axis), db = Vector3.Dot(s.Pos - g.Position, g.Axis);
             if (da == 0f || Math.Sign(da) == Math.Sign(db)) continue;
