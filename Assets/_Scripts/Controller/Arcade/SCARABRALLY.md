@@ -90,9 +90,10 @@ Measured headless on ten I4 courses (`bash Tools/Build/scarab_rally_ruins_harnes
 `ScarabRallyRuinsTests`): 7 ruins on every course, 397-559 prisms (mean 467), 30-117 a ruin, beside a field of
 2,600-3,400; choosing them takes about 150 ms a course, once, while the course is raised. The race lays the field out a
 second time to cut the ruins round it (Switchback's layout is private to it). Compiled in Unity 6000.3.17f1 (batch mode,
-2026-11-24, no `error CS`); not seen in Play (the hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`). Under the
-editor's Mono a whole I4 lay (course, field and ruins) took about 1.2 s in the tests, against 150 ms for the ruins
-alone on .NET 8; how much of the 1.2 s is the ruins was not measured. The AI's I4 times in the table below were measured
+2026-11-24, no `error CS`); not seen in Play (the hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`). `ScarabRallyRuinsTests` passes 13/13
+in the open editor (34.6 s). Under the editor's Mono a lay is slower than on .NET 8: ten I4 courses with their ruins
+and no field took 9.6 s in the tests, so choosing the ruins is about a second a course there, once, while the course
+is raised (150 ms on .NET 8; a player build was not measured). The AI's I4 times in the table below were measured
 before the ruins; the ruins stand outside the lane the AI flies, but that was not raced again.
 
 ## What is reused, and what is new
