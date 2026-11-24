@@ -15,6 +15,12 @@ namespace CosmicShore.UI
     /// its effects (<see cref="OmniCombinePlayer"/>, the Omni Combine Lab's round-2 choreography). Every press
     /// draws a fresh choreography from <see cref="OmniCombineConfigSO"/>'s ranges, so no two plays are alike.
     ///
+    /// <para><b>Rev 139 C, the pad is the button</b> (Shombith, 2026-11-24, of the Rev 104 B dais: "No convert animation
+    /// happening even the UI is very weird"; Docs/MENU_REDESIGN_B.md section 223): CONVERT is the pier's own landing ring
+    /// (a KitButton laid over the clip's pad), the balances are one line at the screen's foot, and with backdrops the
+    /// overlay keeps the convert CLIP's clock (<see cref="landSeconds"/>), pulsing the pad (<see cref="padPulse"/>) as
+    /// each crystal lands. The clip itself was trimmed to start where the crystals leave: it used to idle 4.7 s first.</para>
+    ///
     /// <para><b>It converts the player's real crystals</b> (Shombith, 2026-11-13: "the elemental converter should show the
     /// actual elemental crystals balance the user has"; Docs/MENU_REDESIGN_B.md sections 195-196, Rev 104 A). The four
     /// balances and the omni wallet stand in one row at the foot of the pier (<see cref="ConverterBalance"/>); CONVERT
@@ -124,6 +130,22 @@ namespace CosmicShore.UI
         [SerializeField] string convertAgainButtonLine = "Convert again";
         [Tooltip("Pops the omni count in as the omni forms (ceremony). Optional.")]
         [SerializeField] KitEntrance omniPop;
+        [Tooltip("The ring that swells off the pier's pad as each crystal lands and as the omni forms (Rev 139 C). Optional.")]
+        [SerializeField] Image padPulse;
+        [Tooltip("Seconds one pad pulse takes to swell and fade.")]
+        [SerializeField, Range(0.2f, 2f)] float padPulseSeconds = 0.8f;
+        [Tooltip("How far a pad pulse swells, as a multiple of the pad's ring.")]
+        [SerializeField, Range(1f, 3f)] float padPulseScale = 1.9f;
+
+        [Header("Convert clip timing (with backdrops)")]
+        [Tooltip("Seconds after CONVERT at which each crystal lands in the convert clip, in fly-in order (Space, Charge, " +
+                 "Mass, Time). The overlay counts each one down as it leaves (the previous landing, or the press for the " +
+                 "first) and pulses the pad as it lands. Measured on converter_Nocturne_convert.mp4 as trimmed for Rev 139 " +
+                 "(Docs/MENU_REDESIGN_B.md section 223): it starts where the crystals leave.")]
+        [SerializeField] float[] landSeconds = { 1.6f, 2.6f, 3.4f, 4.2f };
+        [Tooltip("Seconds after CONVERT at which the omni has formed in the convert clip: the omni count steps up, CONVERT " +
+                 "reads its after-a-run label.")]
+        [SerializeField, Min(0.1f)] float omniFormedSeconds = 4.6f;
 
         [Header("Ark tabs (optional)")]
         [Tooltip("The Ark's tab row. Empty finds the one in the overlay; with none, the converter is the whole screen.")]
@@ -174,6 +196,10 @@ namespace CosmicShore.UI
         SquadVesselLayer _vessels;
         ArkArtifactsPage _artifactsPage;
         int _lastTab = -1;
+        // Seconds since CONVERT on the clip's clock, while the picture is the backdrop clip; -1 with no run on screen.
+        float _runClock = -1f;
+        int _landedShown;
+        float _pulse = -1f;
         bool _fadingOut;   // the picture is passing into a tab with no room; hidden once it is dark
 
         void Awake()
@@ -208,6 +234,7 @@ namespace CosmicShore.UI
             if (!EnsureStage()) return;
             // Arriving shows the four idling, waiting to be converted; a finished combine plays again.
             _player.Begin(convert: false);
+            _runClock = -1f;
             _pierRun = ArkBackdropRun.Loop;
             SettleBench();
             ShowBackdrop(ArkPassKind.Cut);   // arriving: the screen switcher has its own transition
@@ -409,9 +436,11 @@ namespace CosmicShore.UI
             if (!EnsureStage()) return;
             // A press mid-run used to restart the whole sequence; the run finishes first now (CONVERT reads
             // "Converting..." and is inactive meanwhile).
-            if (_player.IsRunning) return;
+            if (RunRunning) return;
             if (convertButton && !TryPay()) return;
             _player.Convert();
+            _runClock = 0f;
+            _landedShown = 0;
             _pierRun = ArkBackdropRun.Convert;   // the conversion's clip plays once, then the Omni made loops
             ShowBackdrop(ArkPassKind.Dissolve);
             DrawOverlay();
@@ -455,6 +484,8 @@ namespace CosmicShore.UI
                 // The backdrop plays the picture; the combine is still stepped (never drawn) because the recipe, the bar
                 // and CONVERT read its progress.
                 if (_room == ArkRoom.Pier) _player.Tick(dt, _stage.position + Vector3.back * 1000f);
+                if (_runClock >= 0f && _runClock < omniFormedSeconds + 1f) _runClock += dt;
+                TickPulse(dt);
                 if (_pierRun == ArkBackdropRun.Convert && _backdrop && _backdrop.Finished)
                 {
                     _pierRun = ArkBackdropRun.Done;
@@ -506,21 +537,27 @@ namespace CosmicShore.UI
         {
             if (!_player) return;
             var data = PlayerDataService.Instance;
-            bool running = _player.IsRunning;
-            if (_paidRun && !running && !_player.IsDone) _paidRun = false;   // the run was dropped (screen left, replayed)
+            bool running = RunRunning;
+            if (_paidRun && !running && !RunDone) _paidRun = false;   // the run was dropped (screen left, replayed)
 
             int shortest = -1, empty = 0;
             for (int k = 0; k < Elements; k++)
             {
                 int held = data ? data.GetElementalCrystalsHeld(FlyIn[k]) : 0;
-                float p = _player.ElementProgress(k);
+                float p = RunProgress(k);
                 if (_paidRun && running && p <= 0f) held += 1;   // still waiting on the pier
                 if (held < 1 && shortest < 0) shortest = k;
                 if (held < 1) empty++;
                 if (k < balances.Length && balances[k]) balances[k].Draw(held, running && p > 0f && p < 1f, running && p > 0f);
             }
 
-            bool formed = _player.OmniFormed;
+            bool formed = RunOmniFormed;
+            int landed = 0;
+            for (int k = 0; k < Elements; k++)
+                if (RunProgress(k) >= 1f) landed++;
+            if (running && landed > _landedShown) Pulse();
+            if (!running) landed = 0;
+            _landedShown = landed;
             int omni = data ? data.GetCrystalBalance() : 0;
             if (_paidRun && !formed) omni -= 1;
             if (omniCountText && omni != _omniShownCount)
@@ -531,6 +568,7 @@ namespace CosmicShore.UI
             if (formed != _omniShown || _phase == Phase.None)
             {
                 if (formed && !_omniShown && omniPop && isActiveAndEnabled) omniPop.Play();
+                if (formed && !_omniShown && _paidRun) Pulse();
                 _omniShown = formed;
                 if (omniCountText) omniCountText.SetColorToken(formed && _paidRun ? UIColorToken.Cta : UIColorToken.TextLight);
             }
@@ -551,7 +589,7 @@ namespace CosmicShore.UI
             }
 
             bool can = !running && data && shortest < 0;
-            var phase = running ? Phase.Converting : _player.IsDone ? Phase.Converted : Phase.Ready;
+            var phase = running ? Phase.Converting : RunDone ? Phase.Converted : Phase.Ready;
             if (phase != _phase || can != _canShown)
             {
                 _phase = phase;
@@ -565,6 +603,52 @@ namespace CosmicShore.UI
                     convertButton.interactable = can;
                 }
             }
+        }
+
+        // The run the overlay shows. With backdrops the picture is the convert clip, so the overlay keeps the clip's clock
+        // (landSeconds, omniFormedSeconds); the combine player runs its own randomised choreography that no one sees, and
+        // following it is how the counts stepped while the picture stood still (Rev 139, section 223).
+        bool ClipTimed => UsesBackdrops;
+        bool RunRunning => ClipTimed ? _runClock >= 0f && _runClock < omniFormedSeconds : _player && _player.IsRunning;
+        bool RunDone => ClipTimed ? _runClock >= omniFormedSeconds : _player && _player.IsDone;
+        bool RunOmniFormed => ClipTimed ? _runClock >= omniFormedSeconds : _player && _player.OmniFormed;
+
+        /// <summary>Element <paramref name="k"/>'s flight, 0 waiting to 1 landed: on the clip's clock it leaves when the one
+        /// before it lands (the first on the press) and lands at its <see cref="landSeconds"/>.</summary>
+        float RunProgress(int k)
+        {
+            if (!ClipTimed) return _player ? _player.ElementProgress(k) : 0f;
+            if (_runClock < 0f) return 0f;
+            if (k >= landSeconds.Length) return RunOmniFormed ? 1f : 0f;
+            float from = k == 0 ? 0f : landSeconds[k - 1], to = landSeconds[k];
+            if (_runClock >= to) return 1f;
+            if (_runClock <= from) return 0f;
+            return Mathf.Clamp01((_runClock - from) / Mathf.Max(1e-3f, to - from));
+        }
+
+        void Pulse()
+        {
+            if (!padPulse) return;
+            _pulse = 0f;
+            padPulse.enabled = true;
+            TickPulse(0f);
+        }
+
+        void TickPulse(float dt)
+        {
+            if (!padPulse || _pulse < 0f) return;
+            _pulse += dt / padPulseSeconds;
+            if (_pulse >= 1f)
+            {
+                _pulse = -1f;
+                padPulse.enabled = false;
+                return;
+            }
+            float e = 1f - (1f - _pulse) * (1f - _pulse);   // ease out
+            padPulse.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, padPulseScale, e);
+            var c = UITheme.Resolve(null, UIColorToken.Cta);
+            c.a *= 0.95f * (1f - _pulse);
+            padPulse.color = c;
         }
 
         /// <summary>"01:05" - minutes and seconds.</summary>

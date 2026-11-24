@@ -10041,7 +10041,7 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
 
-## 223. Rev 139 mockups: the Elemental Converter redrawn, three ways, and why CONVERT seemed to do nothing (2026-11-24, awaiting a pick)
+## 223. Rev 139 mockups: the Elemental Converter redrawn, three ways, and why CONVERT seemed to do nothing (2026-11-24, C picked, built in 223.1)
 
 **Asked** (Shombith, 2026-11-24, of the built Rev 104 B dais): "Converter - No convert animation happening even the UI
 is very weird and does not look good at all. Completely need to rework this. The BG is fine but not the UI." Kept: the
@@ -10071,3 +10071,21 @@ switch shows 10 each / short of Time / none yet).
 **Differs from the build:** the dais (`author_menu_ark.py` `dais()`, its rings, beams and `DAIS_*`) goes in every
 option; the convert clip is trimmed to start where the crystals leave (or the view seeks it to 4.7 s); the overlay's
 per-crystal steps are timed to the trimmed clip.
+
+**Picked (Shombith, 2026-11-24):** C, the pad is the button.
+
+### 223.1 Built: Rev 139 C (2026-11-24, `claude/project-thread-42b2am`, not seen in Unity)
+
+- **The clip:** `converter_Nocturne_convert.mp4` re-encoded from its 4.4 s mark (same guid, 6.3 s, 30 fps; the step is in
+  `r104_converter_recomp.py`'s header). The crystals now move on the press.
+- **The overlay keeps the clip's clock:** with backdrops, `ElementalConverterView` times the counts, the omni and CONVERT's
+  label from the press (`landSeconds` 1.6 / 2.6 / 3.4 / 4.2, `omniFormedSeconds` 4.6, measured on the trimmed clip), not
+  from the unseen combine player, whose randomised lead-in is why the counts stepped while the picture stood still.
+- **The pad** (`author_menu_ark.py` `converter_overlay()`): a KitButton (Purchase, transparent: the gold ring and its 12 %
+  tint) laid on the clip's pad, anchored at 603/1080 from the top because the picture stretches to the screen; a 420 x 170
+  hit area; CONVERT's word over it; `padPulse`, a lime ring the view swells off it as each crystal lands and as the omni
+  forms. The board drew the ring Lime; the build keeps gold because converting spends (`Docs/UI_COLOR_RULES.md`).
+- **The foot line:** the four `ConverterBalance`s (no beam), a hairline, the omni wallet with its ceremony pop, the line
+  over them. The dais, its beams and the foot CONVERT are retired with their scene stubs; `validate` fails if they return,
+  if the pad loses its ring or moves off the clip's pad.
+- **Hand test:** "The Ark converter, Rev 139 C" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

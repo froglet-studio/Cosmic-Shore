@@ -24965,6 +24965,16 @@ Not run: the Unity editor, the EditMode tests (`PlayerProfileDataTests` grant te
   each beam lights lime as its crystal flies and stays lit until the omni forms.
 - [ ] The pier's crystals (re-encoded clips) sit centred over the deck, never on the ceiling beam, in idle, convert and done.
 
+## 🔴 The Ark converter, Rev 139 C: the pad is the button, and CONVERT plays at once (2026-11-24, Shombith, `claude/project-thread-42b2am`, NOT RUN IN EDITOR)
+
+Ran: `author_menu_ark.py --check` / `--self-test`, `author_elemental_converter.py --check`, `unity_refcompile`.
+Not run: the Unity editor. Supersedes the dais lines of the Rev 104 B entry above (its balance and grant lines stand).
+- [ ] The CONVERTER tab shows no dais: the pier's ring carries a gold ring and the word CONVERT over it, the balances are one line at the foot (Space, Charge, Mass, Time, a hairline, Omni).
+- [ ] The gold ring lies on the pier's own landing ring on 16:9, 19.5:9 phone and 4:3 (the clip stretches to the screen; the ring is anchored at 603/1080 from the top).
+- [ ] Pressing the ring (mouse, touch, and A on a pad with it focused) starts the crystals moving at once (the convert clip now begins where they leave), and the counts step down one by one.
+- [ ] A lime ring swells off the pad as each crystal lands and as the omni forms; the omni count steps up then, and the label reads "Convert again".
+- [ ] With any element at 0 the ring goes grey and inactive and the foot line names the short element.
+
 ## 🔴 Goby: Vortex Steal (Charge 5) and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
 
 Branch `claude/goby-vortex-steal`. The changed files compile clean against the Unity reference assemblies
