@@ -9231,3 +9231,16 @@ this voyage". Words in `VoyageQuaySO` (`Resources/Voyages/VoyageQuay.asset`). Th
 story, no classes, no mood, no fit. Differs from the board: no work-verb rank (no XP system yet), no "Docked at" line, no
 danger meter under the chart (the cell count only); the tilted table, zoom row and Open now column show in the full screen
 only.
+
+**Built, stage 3 (2026-11-24, branch `claude/project-thread-31vs8r` into `voyages`; Shombith: "looks nothing like the frogma
+pages")**: the shell rebuilt to the Rev 138 boards and checked screen by screen in Amoebius beside the board renders. The
+full-screen HyperSea (`VoyageSeaFull`): the scale row, the jobs pinned at their places with giver, kind and classes (two at
+one place stand side by side), rival crews bound for the quay's places ("Also bound for ..."), wrecks and blooms from the
+living sea, the Work at column and the picked job's foot with Take the job; it opens framed on the jobs and the events.
+Your Ark (`VoyageArkPage`, `VoyageJobHeader`): the job header (giver, name, danger, sea, cells, for whom, WANTED), three
+seats each with its hull standing on the floor, vessel, class and element, the pilot's face, name and quote, mood and why,
+and the Set sail bar with squad fit, Ark domain and pay; pressing a pilot or Change wingmate opens Pilots. Vessels
+(`VoyageVesselsPage`, Vessels E): full page over the floor, the job header, the class's hulls standing in a row, the class
+tabs, Back and Take the vessel. Pilots (`VoyagePilotsPage`, new): the list with face, faction, why and mood, the picked
+pilot's scene with quote and mood, Take the seat and Back. Words in `VoyageQuaySO`. Differs from the board: no Saga /
+Episodes strip (Rev 138 draws none); no "Pay +10%" or zone names or stow ranks (no data); the pilot scene is the portrait.
