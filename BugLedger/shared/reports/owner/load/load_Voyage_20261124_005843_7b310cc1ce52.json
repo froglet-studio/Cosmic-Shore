@@ -1,0 +1,196 @@
+{
+    "schemaVersion": 1,
+    "reportId": "7b310cc1ce52",
+    "timestamp": "2026-11-24T00:58:43.1369840Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "83DN (LENOVO)",
+        "unityVersion": "6000.4.11f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "4256b6c918",
+    "trigger": "Return to menu — Voyage → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "Menu shown - the splash faded",
+    "interrupted": false,
+    "sceneFrom": "Voyage",
+    "sceneTo": "Voyage",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 1087.8897705078125,
+    "visualReadyMs": 1087.8848876953125,
+    "waitMs": 149.50381469726563,
+    "humanWaitMs": 0.0,
+    "workMs": 938.385986328125,
+    "unattributedMs": 61.09558868408203,
+    "framesDuringLoad": 4,
+    "avgFpsDuringLoad": 3.6768431663513185,
+    "worstFrameMs": 155.80789184570313,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 61.090599060058597,
+            "endMs": 141.0637969970703,
+            "durationMs": 79.97319793701172,
+            "exclusiveMs": 79.97319793701172,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene exit drain behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 141.0657958984375,
+            "endMs": 210.59359741210938,
+            "durationMs": 69.52780151367188,
+            "exclusiveMs": 69.52780151367188,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Trail release behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 210.59559631347657,
+            "endMs": 210.59840393066407,
+            "durationMs": 0.0028076171875,
+            "exclusiveMs": 0.0028076171875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 210.59939575195313,
+            "endMs": 1087.8897705078125,
+            "durationMs": 877.2904052734375,
+            "exclusiveMs": 877.2904052734375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 877.2904052734375,
+            "percent": 80.6414794921875,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 149.50381469726563,
+            "percent": 13.742551803588868,
+            "spanCount": 3,
+            "waitMs": 149.50381469726563
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 61.09558868408203,
+            "percent": 5.615972518920898,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (Menu_Main)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 877.2904052734375,
+            "exclusiveMs": 877.2904052734375,
+            "maxSingleMs": 877.2904052734375,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 79.97319793701172,
+            "exclusiveMs": 79.97319793701172,
+            "maxSingleMs": 79.97319793701172,
+            "isWait": true
+        },
+        {
+            "label": "Scene exit drain behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 69.52780151367188,
+            "exclusiveMs": 69.52780151367188,
+            "maxSingleMs": 69.52780151367188,
+            "isWait": true
+        },
+        {
+            "label": "Trail release behind the splash",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 0.0028076171875,
+            "exclusiveMs": 0.0028076171875,
+            "maxSingleMs": 0.0028076171875,
+            "isWait": true
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 141.70489501953126,
+            "durationMs": 155.80789184570313,
+            "during": "SceneLoader splash cover before load (0.1s)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — Voyage → Menu_Main"
+        },
+        {
+            "atMs": 1087.858154296875,
+            "label": "Netcode scene load begins: Menu_Main"
+        },
+        {
+            "atMs": 1087.88525390625,
+            "label": "Client ready — splash cleared, vessel visible"
+        }
+    ],
+    "counters": [],
+    "accumulators": [],
+    "errors": [],
+    "hints": []
+}
