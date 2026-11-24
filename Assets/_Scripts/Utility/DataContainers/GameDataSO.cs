@@ -1095,6 +1095,7 @@ namespace CosmicShore.Utility
         void CleanupAllRoundStats()
         {
             VolumeLedger.Clear();
+            PetalLedger.Reset();
             if (RoundStatsList == null) return;
 
             for (int i = 0, count = RoundStatsList.Count; i < count; i++)

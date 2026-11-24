@@ -279,6 +279,18 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 Tools/Build/retire_call_to_action.py --check
 
+      # Every element flower (HUD, menu, Fleet Codex, toy portraits, icon sheets) is one petal sprite
+      # turned five times about its centre, so the sprite carries the layout. mass_petal.png sat
+      # flipped and shrunk for four weeks (2026-10-27 to 2026-11-22) with nothing in any code diff.
+      # Standard library only; well under a second.
+      - name: Check the element petals point into the flower's centre
+        # Runs even after an earlier check failed, so one run reports every failure.
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_element_petals.py --self-test
+          python3 Tools/Build/check_element_petals.py
+
       # JetBrains Junie reads skills only from .junie/skills, which is a symlink to
       # .claude/skills. A real directory there is a second hand-maintained copy, and
       # the last one drifted 3,920 diff lines before anybody noticed. See AGENTS.md.
@@ -461,7 +473,10 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
-          set -uo pipefail
+          # `set +e` must be explicit: GitHub runs bash with -e, so a failed licence
+          # activation (the container exits 1) would end this step red before the
+          # fallback below can hand the run to the reference compile.
+          set +e -uo pipefail
           # The serial reaches the container through the environment, never argv.
           # Empty in login mode: the container then activates by signing in only.
           UNITY_SERIAL="$(cat "$RUNNER_TEMP/unity-serial" 2>/dev/null || true)"; export UNITY_SERIAL
@@ -473,10 +488,15 @@ jobs:
             --volume "$GITHUB_WORKSPACE:/github/workspace" \
             "$UNITY_IMAGE" \
             bash /github/workspace/Tools/CI/unity_compile_in_container.sh
-          echo "Container exited with $?."
+          rc=$?
+          echo "Container exited with $rc."
           # The container ran as root; hand its output back to the runner user so the
           # cache save and artifact upload can read it.
           sudo chown -R "$(id -u):$(id -g)" Library editmode-results.xml unity-editmode.log unity-exit-code.txt unity-activation-failed 2>/dev/null || true
+          # Only a licence that did not activate goes to the fallback. Any other non-zero
+          # exit (setup, a crash) still fails here; compile and test results are judged by
+          # "Classify the result" from unity-exit-code.txt.
+          if [ "$rc" -ne 0 ] && [ ! -f unity-activation-failed ]; then exit "$rc"; fi
 
       # No licence could be activated (the account has no headless entitlement, a seat is in use,
       # the licence server is down): that says nothing about the code, so the run falls back to
@@ -513,13 +533,28 @@ jobs:
           key: unity-refcompile-${{ hashFiles('Packages/packages-lock.json', 'Tools/Build/unity_refcompile/fetch.py', 'Tools/Build/unity_refcompile/source_patches.json') }}
           restore-keys: unity-refcompile-
 
+      # "Free disk space" deleted the runner's .NET in unity mode, so the fallback
+      # installs its own (to ~/.dotnet) before the reference compile.
+      - name: Install .NET for the fallback
+        id: fallbackdotnet
+        if: always() && steps.fallback.outputs.use == 'true'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '8.0.x'
+
       - name: Reference compile (no Unity licence)
         if: always() && (steps.mode.outputs.mode == 'refcompile' || steps.fallback.outputs.use == 'true')
+        env:
+          FALLBACK_DOTNET: ${{ steps.fallback.outputs.use == 'true' && 'true' || 'false' }}
         run: |
           set +e
           set -uo pipefail
           export UNITY_REFCOMPILE_CACHE="$HOME/.cache/unity_refcompile"
-          export DOTNET_ROOT=/usr/share/dotnet
+          if [ "$FALLBACK_DOTNET" = true ]; then
+            export DOTNET_ROOT="$(dirname "$(readlink -f "$(command -v dotnet)")")"
+          else
+            export DOTNET_ROOT=/usr/share/dotnet
+          fi
           bash Tools/Build/unity_refcompile/run.sh --quiet-buckets 2>&1 | tee unity-editmode.log
           echo "${PIPESTATUS[0]}" > unity-exit-code.txt
           echo "Reference compile exited with $(cat unity-exit-code.txt)."

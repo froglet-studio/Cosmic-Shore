@@ -1887,7 +1887,7 @@ Race was calibrated on.
 
 1. Open `MinigameRegatta`, put Squirrels on AI seats, and press **F2** (the AI Diagnose panel; Take camera in it) beside
    the Game view. Press Play.
-2. Pick an AI Squirrel in the AI Diagnose panel (Prev / Next, or `aidiag next`), camera **Chase** or **Follow**, Trails on.
+2. Pick an AI Squirrel in the AI Diagnose panel (Prev / Next, or `aidiag next`), take it over with **You** then hand it back with **AI** so the game's own camera is on it (or use **Free fly**; the panel's Chase / Follow cameras were removed 2026-11-22), Trails on.
 3. Read the third line of the info strip (the skim readout):
    `shell gap` (distance to its own rail's contact shell: it skims below 7.5, strikes at 0),
    `off line` (distance from its skim line), `boost`, `mass in view` (rival-rail prisms the guard is

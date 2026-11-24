@@ -59,6 +59,15 @@ ORBIT_ONLY = ("aiReleaseConeDegrees", "aiCatchGiveUpSeconds", "aiWarpMinDistance
 KIT_FIELDS = ("trampoline", "trampolineAhead", "trampolineRadius", "trampolineLine", "trampolineSoftSeconds", "trampolineSeconds",
               "trampolinePredictDegrees", "slingBoostMin", "slingBoostMax", "slingBoostSeconds", "speedCapShare",
               "warpKickCapCruise", "momentumSeconds", "pressWarpShare", "orbitSpeedBonus", "catchWarpShare", "catchWarpFromPress")
+# The trampoline's and the orbit's rows were deleted from StoatSlingConfigSO and its assets on 2026-11-21 (the swing is the
+# Stoat's only slingshot). This model still races the trampoline, so a row the repo no longer carries takes its last
+# shipped value (StoatSlingConfig.asset and StoatSlingConfig_Slingshot.asset at 4e5df7090a).
+RETIRED = {"trampoline": 0.0, "trampolineAhead": 140.0, "trampolineRadius": 30.0, "trampolineLine": 0.75,
+           "trampolineSoftSeconds": 0.35, "trampolineSeconds": 4.0, "trampolinePredictDegrees": 90.0,
+           "trampolineAiTurnScale": 55.0, "aiReleaseConeDegrees": 15.999, "aiCatchGiveUpSeconds": 4.0,
+           "aiHoldForWindowDegrees": 120.0}
+RETIRED_SLINGSHOT_AI = {"trampolineAiTurnScale": 67.159, "aiReleaseConeDegrees": 63.666, "aiCatchGiveUpSeconds": 5.181,
+                        "aiHoldForWindowDegrees": 58.721}
 SPAWN_RADIUS = 541.9      # the equatorial spawn ring (every recorded Slingshot race's seats, 2026-10-29..11-07)
 LIMITS = ["rivals", "Orrery prisms (contact costs nothing)", "hull roll", "crystals", "the cell's outer shell", "frame jitter"]
 TURN_EASE = 12.0          # StoatSlingExecutor.TrackTurn
@@ -96,6 +105,7 @@ def kit(root=ROOT):
     for f in KIT_FIELDS + AI_FIELDS + ORBIT_ONLY:
         v = _num(hull, f)
         k[f] = v if v is not None else _so_default(so, f)
+        if k[f] is None: k[f] = RETIRED.get(f)
     k["orbitReach"] = _element_value(hull, "orbitReach") or 1.0
     k["launchPower"] = _element_value(hull, "launchPower") or 1.0
     k["boost"] = _element_value(dip, "boost") or 2.5
@@ -116,6 +126,7 @@ def ai_rows(root=ROOT, rel=AI_VARIANT):
     for f in AI_FIELDS + ORBIT_ONLY:
         v = _num(text, f)
         out[f] = v if v is not None else _so_default(so, f)
+        if out[f] is None: out[f] = (RETIRED_SLINGSHOT_AI if rel == AI_VARIANT else {}).get(f, RETIRED.get(f))
     return out
 
 

@@ -258,7 +258,7 @@ namespace CosmicShore.Engine.UI
     }
 
     /// <summary>Drop-shadow mesh effect (original contract: Shadow).</summary>
-    public class Shadow : CosmicShore.Engine.UI.UIBehaviour
+    public class Shadow : UIBehaviour
     {
         [SerializeField] Color m_EffectColor = new(0f, 0f, 0f, 0.5f);
         [SerializeField] Vector2 m_EffectDistance = new(1f, -1f);

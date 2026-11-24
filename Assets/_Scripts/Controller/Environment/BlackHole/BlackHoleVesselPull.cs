@@ -190,12 +190,9 @@ namespace CosmicShore.Gameplay
                     var hole = _wellHoles[w];
                     // An owned hole (a pilot's slung pair) never moves an opposing vessel
                     // (Docs/ELEMENTAL_ECONOMY.md §9). An owned DRIFT pair does not pull its owner either:
-                    // its owner flies the orbit (StoatSlingExecutor), which IS that pull, held to a circle.
+                    // its owner flies the swing (StoatSlingExecutor), which IS that pull, held to a turn.
                     // An owned crystal pair keeps charming-cerf's felt pull on its owner. Environmental
                     // holes move everyone.
-                    // Skim Sling rival riding (ELEMENTAL_ECONOMY.md §9b, flagged for Garrett): a rival may ride a
-                    // Stoat's Skimshell only by its own choice (StoatSkimMath.RivalOptsIn) and is then flown by
-                    // its OWN executor on its own machine - never pulled from here. Not wired yet (the rule ships off).
                     if (_wellOwners[w] != null && (_wellOwners[w] != vessel.transform || hole == null || !hole.IsSmooth)) continue;
                     float d = math.length(pos - well.Position);
                     if (hole != null && hole.VesselFeltStrength > 0f)

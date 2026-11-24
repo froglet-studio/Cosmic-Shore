@@ -60,6 +60,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | The Unity-side hardening programme (Blocks 1-6, status, decisions already made) | `Docs/prompts/MULTIPLAYER_HARDENING_PROMPT.md` |
 | Every party bug, with status | `Docs/PartySystem/BUGS.md` |
 | MPPM test procedures (smoke, stress, failure gates) | `Docs/PartySystem/TESTS.md` |
+| Automatic 2-4 player runs with built development players, no Editor (`-csMpAutoHost` / `-csMpAutoJoin`) | `python3 Tools/Build/mp_auto.py run --player <exe>`; `Docs/PartySystem/TESTS.md` § Automatic runs |
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 | A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
