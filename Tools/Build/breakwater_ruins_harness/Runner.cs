@@ -1,4 +1,4 @@
-// Runs every [Test] of the compiled SHIPPED Breakwater ruin tests (BreakwaterRuinsTests) by reflection and prints a pass/fail line per test. Exit 0 = all passed.
+// Runs every [Test] of the compiled SHIPPED Breakwater ruin and heat tests (BreakwaterRuinsTests, BreakwaterHeatTests) by reflection and prints a pass/fail line per test. Exit 0 = all passed.
 //   --measure   instead: what the I4 courses of seeds 1-100 carry (ruins, prisms, wheels, kinds, the colour share).
 using System;
 using System.Collections.Generic;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED Breakwater ruin rule (BreakwaterRuins, with Spearline's ruin generator and Breakwater's course)
-# and its SHIPPED edit-mode tests (BreakwaterRuinsTests) against race_course_source_harness's Unity math stub and an
-# NUnit shim with Roslyn, and RUN every [Test] - no Unity.
+# and heat rule (BreakwaterHeat) and their SHIPPED edit-mode tests (BreakwaterRuinsTests, BreakwaterHeatTests) against
+# race_course_source_harness's Unity math stub and an NUnit shim with Roslyn, and RUN every [Test] - no Unity.
 #
 #   bash Tools/Build/breakwater_ruins_harness/run.sh              # every test; exit 0 = all passed
 #   bash Tools/Build/breakwater_ruins_harness/run.sh --self-test  # ...plus negative controls that must FAIL
@@ -38,7 +38,8 @@ build() {   # $1 = ruins source, $2 = output name
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Data/Enums/PrismKind.cs" "$A/Data/Enums/Domains.cs" \
     "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" "$A/Controller/Arcade/Spearline/SpearlineRuins.cs" \
     "$A/Controller/Arcade/Breakwater/BreakwaterCourse.cs" "$A/Controller/Arcade/Breakwater/BreakwaterStationBuilder.cs" \
-    "$1" "$A/Tests/Editor/BreakwaterRuinsTests.cs"; do
+    "$A/Controller/Arcade/Breakwater/BreakwaterHeat.cs" "$1" \
+    "$A/Tests/Editor/BreakwaterRuinsTests.cs" "$A/Tests/Editor/BreakwaterHeatTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \

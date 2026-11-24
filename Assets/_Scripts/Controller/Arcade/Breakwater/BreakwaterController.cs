@@ -134,7 +134,11 @@ namespace CosmicShore.Gameplay
 
         // GateRaceController.Update runs the race and a subclass must not declare Update; LateUpdate is free. Declared
         // once, here, for every partial.
-        void LateUpdate() => TickRuins();
+        void LateUpdate()
+        {
+            TickRuins();
+            TickHeat();
+        }
 
         // The ruins are not cleared on despawn: like the arena they stand under a scene object and go with the scene
         // (a replay reloads it), and LayRuins clears the last course's before it lays.

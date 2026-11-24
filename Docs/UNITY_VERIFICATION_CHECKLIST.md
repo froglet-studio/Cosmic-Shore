@@ -360,6 +360,26 @@ section 4a). Run without Unity: `BurrowRunRuinsTests` 8 of 8 against the shipped
 - [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
 - [ ] Frame rate at I4 with about 450 more prisms in the cell.
 
+## 🔴 Breakwater: the heat, the fun pass for the Sparrow's Time game (`Ys-bleeding-edge`, 2026-11-23, Yash) — NOT COMPILED IN UNITY, NOT RUN
+
+**What landed:** the local pilot's stations are graded and called (`BreakwaterHeat`, `BreakwaterController.Heat`): a
+thread through the 18 u eye throws a shock ring off it, a bigger one with the afterburner lit; a door (fired or sawn)
+holds the streak; streaks of eyes are called at 3, 7, 14; each lap is split. Toasts 430-436 on
+`GameToastConfig_Breakwater`; eight empty FMOD slots. Nothing is scored or networked, and the Sparrow is unchanged.
+
+**Verified without the editor:** `bash Tools/Build/breakwater_ruins_harness/run.sh` (the six `BreakwaterHeatTests`
+pass headless); `check_console_logging.py`; `author_breakwater_assets.py --check`. The controller's half was NOT
+compiled (`unity_refcompile` cannot run on this machine, and no Unity run was made).
+
+1. The project compiles, and `BreakwaterHeatTests` (EditMode) pass.
+2. Breakwater I2 as the Sparrow: one hint at the start ("Thread the eye...").
+3. Thread a station through the eye: a ring grows off the eye and vanishes, and the first time a line says so. Do it
+   with the afterburner held: the ring is bigger, and the first time a line says so.
+4. Fire a door open and fly through it outside the eye: no ring, and the streak is not lost.
+5. Three eyes in a row: "3 eyes in a row". Finish lap 1: "Lap 1 - N s". Lap 2 faster: "best lap".
+6. The start gate throws no ring. A guest in a two-machine lobby sees only their own rings.
+7. Answer the fun card when Play stops.
+
 ## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT WATCHED
 
 **What landed:** Spearline's I4 ruins, laid from Breakwater's circuit (`BreakwaterRuins`, `BreakwaterController.Ruins`):

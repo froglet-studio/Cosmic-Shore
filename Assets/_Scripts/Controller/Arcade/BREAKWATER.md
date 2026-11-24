@@ -1283,6 +1283,40 @@ ability driver.
 
 ---
 
+## The heat (2026-11-23, elemental loop step 1: the fun pass)
+
+The fun scores put Breakwater's floor on Feedback (4): the only words a pilot saw were the four shared race
+beats, and the mode's one choice (fire, saw or thread) was answered with nothing. Rivals and Fairness, the other
+low scores, have since been raced: 14 recorded flights by three people, 9 finished, a median 83.8 s against a
+Medium AI's 110-120 s (`Docs/AI_SYSTEM/VESSEL_MODE_CHART.md` §3).
+
+The heat grades each station the LOCAL pilot flies by the verb they chose, and calls it in the world first.
+It is local, unscored and not networked, and it changes nothing on the Sparrow.
+
+| pass | how it is read | what the pilot gets |
+|---|---|---|
+| **eye** | crossed the station's plane within the 18 u eye | a shock ring off the eye, +1 streak |
+| **hot eye** | the same with the afterburner lit (`IsBoosting`) | a bigger shock ring, +1 streak |
+| **door** | inside the port, outside the eye (fired or sawn open) | the streak holds; the door was its own reward |
+| **miss** | crossed the plane outside the port, within 2.5 port radii | the streak ends |
+
+- Streaks of eyes are called at 3, 7 and 14 (a whole lap), then every 14.
+- Each lap is split, the second against the first ("best lap"); a lap through every eye runs a chase of
+  shock rings round the circuit. The start gate is not part of a lap and is never graded: it has no eye.
+- One start hint, and one line the first time the pilot threads an eye and the first time they do it hot.
+- The hot eye is where the Time ability shows: the afterburner is the fast way through, and the eye is the
+  only way through that costs no rocket and no speed.
+
+**Where it lives:** `BreakwaterHeat.cs` (the pure rule, `BreakwaterHeatTests`, run headless by
+`Tools/Build/breakwater_ruins_harness/run.sh`), `BreakwaterController.Heat.cs` (the flares, toasts and sounds;
+`heatOn` switches it all off). Toasts 430-436 on `GameToastConfig_Breakwater` (437-439 are free in the band).
+Eight FMOD slots on the controller, all shipped empty.
+
+**Not compiled in Unity, not run.** The pure rule and its tests run headless; the controller's half was not compiled
+(`unity_refcompile` cannot run on the machine this was written on). See the checklist entry of the same date.
+
+---
+
 ## The ruins (2026-11-24, I4 only; decoration)
 
 Yash asked for the garden ruins Spearline lays round its racing line at I4 (SPEARLINE.md section 2a) on every Time
