@@ -271,6 +271,22 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
+## 🔴 Slip Line: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Slip Line lays Spearline's ruins round its straight ring-to-ring line on I4, less what would stand within 40 u of a
+rail (`Assets/_Scripts/Controller/Arcade/SLIP_LINE.md` §3a). Run headless: `Tools/Build/slip_line_harness/run.sh`
+(22 tests, Roslyn, covers `SlipLineRuins` and its tests) and `author_slip_line_assets.py --check`. NOT compiled by
+anything: `SlipLineController.Ruins.cs` and the three lines added to `SlipLineController.cs`.
+
+- [ ] The project compiles (the hook adds a `LateUpdate` to `SlipLineController`).
+- [ ] Slip Line at I4: seven Blue ruins stand between the rings down the whole course, none at a ring, none on a rail;
+      the straight line ring to ring is open through each one; where a rail runs through a ruin the ruin is cut open.
+- [ ] I1 to I3: no ruins.
+- [ ] Hold a charge and fly at a ruin: no slip starts on it.
+- [ ] Two AI Honeyguides still finish at I4; note a leg where one ploughs a ruin turning out to a leaning rail.
+- [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
+- [ ] Frame time at I4 with about 660 more prisms in the cell (not measured).
+
 ## 🔴 Burrow Run: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED, NOT RUN IN EDITOR)
 
 Burrow Run lays Spearline's ruins round its own racing line on I4 (`Assets/_Scripts/Controller/Arcade/BURROWRUN.md`
