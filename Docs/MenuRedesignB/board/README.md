@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795519699-558a` of **Frogma**: Rev 41 to Rev 133, 379 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795520522-45c3` of **Frogma**: Rev 41 to Rev 134, 402 boards on 17 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -415,6 +415,32 @@ Copied on 2026-11-24 from canvas version `1795519699-558a` of **Frogma**: Rev 41
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 134 - The picked Milestone 2 Voyages UI on every screen and state (Board B, Seats A+B, Pause A, Vote B, Awards A), and how the world reads
+
+- [`R134Board.dc.html`](R134Board.dc.html) - Rev 134 Board - The quay: the givers ask, your crew answers
+- [`R134BoardRefuse.dc.html`](R134BoardRefuse.dc.html) - Rev 134 BoardRefuse - A pilot refuses the job
+- [`R134Seats.dc.html`](R134Seats.dc.html) - Rev 134 Seats - Your Ark: A's line-up, B's pilots speaking
+- [`R134SeatsRefuse.dc.html`](R134SeatsRefuse.dc.html) - Rev 134 SeatsRefuse - A refusing pilot holds Set sail
+- [`R134Pilots.dc.html`](R134Pilots.dc.html) - Rev 134 Pilots - The pilot picker: mood for this job, rank
+- [`R134Party.dc.html`](R134Party.dc.html) - Rev 134 Party - A friend still choosing
+- [`R134Intro.dc.html`](R134Intro.dc.html) - Rev 134 Intro - The intro card: the voyage's name
+- [`R134Crossing.dc.html`](R134Crossing.dc.html) - Rev 134 Crossing - Through a membrane: the cell named
+- [`R134Event.dc.html`](R134Event.dc.html) - Rev 134 Event - An event lights next door
+- [`R134Vote.dc.html`](R134Vote.dc.html) - Rev 134 Vote - The vote: the pilot who saw it asks
+- [`R134VoteTie.dc.html`](R134VoteTie.dc.html) - Rev 134 VoteTie - A tie: the host's vote wins
+- [`R134VoteSolo.dc.html`](R134VoteSolo.dc.html) - Rev 134 VoteSolo - Solo: your call
+- [`R134Detour.dc.html`](R134Detour.dc.html) - Rev 134 Detour - The detour: one cell over
+- [`R134Rival.dc.html`](R134Rival.dc.html) - Rev 134 Rival - A rival crew arrives, racing
+- [`R134Hostile.dc.html`](R134Hostile.dc.html) - Rev 134 Hostile - A rival attacks the Ark
+- [`R134Joins.dc.html`](R134Joins.dc.html) - Rev 134 Joins - A friend joins at the next cell
+- [`R134Pause.dc.html`](R134Pause.dc.html) - Rev 134 Pause - Pause: the chart on your lane
+- [`R134Dock.dc.html`](R134Dock.dc.html) - Rev 134 Dock - Docking: the hold banks
+- [`R134Awards.dc.html`](R134Awards.dc.html) - Rev 134 Awards - The end board: one award per seat
+- [`R134Lost.dc.html`](R134Lost.dc.html) - Rev 134 Lost - The Ark lost
+- [`R134WorldEvents.dc.html`](R134WorldEvents.dc.html) - Rev 134 WorldEvents - The world: the five events next door
+- [`R134WorldSea.dc.html`](R134WorldSea.dc.html) - Rev 134 WorldSea - The world: zones, cells, danger
+- [`R134Notes.dc.html`](R134Notes.dc.html) - Rev 134 - notes: the picked mix on every screen
 
 #### Rev 133 - Milestone 2 Voyages UI, three ways: A The Chart (recommended), B The Quay, C The Ledger - the job board, seats, pause map, detour vote, role awards
 

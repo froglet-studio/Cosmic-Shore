@@ -8908,7 +8908,7 @@ a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark
 `VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
 yet run in the Unity editor.
 
-## 226. Rev 133 mockups: the Milestone 2 Voyages UI, three ways (2026-11-24, awaiting a pick)
+## 226. Rev 133 mockups: the Milestone 2 Voyages UI, three ways (2026-11-24; Shombith picked a mix: Board B, Seats A+B, Pause A, Vote B, Awards A)
 
 **Asked** (Shombith, 2026-11-24, after the Milestone 2 design https://claude.ai/artifact/41YTUVhkuX1wPDwJQhub3g): "For
 this we have to create a well engaging UI and the world and the 4 missions very interesting ... How do we start? First
@@ -8942,3 +8942,28 @@ classes, fit or pay); seats show no class, mood or rank; pause has no map; there
 **Next**: after the pick, one round of every screen and state of the picked direction (locked jobs, a refusing pilot,
 solo and party votes, a tie, the Ark lost, joining at the next cell) and how the world reads in play (zones, cell
 crossings, the five events next door, rival arrivals).
+
+**Picked (Shombith, 2026-11-24)**: "For the board I like B / Seats can be mixture of A and B / Pause A / Vote B / Awards A
+/ I think we are missing more screens". The mix on every screen and state, with the missing screens, is Rev 134.
+
+## 227. Rev 134 mockups: the picked Milestone 2 Voyages UI on every screen and state, and how the world reads (2026-11-24, awaiting board approval)
+
+**Asked**: the Rev 133 pick (section 226), "I think we are missing more screens", and "the in game UI and world everything
+should be very well defined for these to work".
+
+**On the canvas**: tab Voyages, "Rev 134 - The picked Milestone 2 Voyages UI on every screen and state". Generator
+`Docs/MenuRedesignB/rounds/r134_voyages_m2_all.py` (builds on r133); copies `Docs/MenuRedesignB/board/R134*.dc.html`.
+22 boards in the order a run meets them, plus Notes:
+- Shell: Board (B, the quay), BoardRefuse (a pilot refuses Black Tide Rising, in the crew's reply and on the sail line),
+  Seats (A's hulls standing, B's pilots speaking under them, with mood and rank), SeatsRefuse (Set sail held until the
+  refusing pilot is swapped), Pilots (the picker: each pilot's mood for this job and rank in its verb, who refuses
+  dimmed, how the mood moves the AI's rung), Party (a friend still choosing, Set sail waits).
+- Run: Intro (the voyage's name, giver, squad), Crossing (a membrane names the cell), Event (lit next door + the feed),
+  Vote (B, party), VoteTie (one each, a friend did not press: the host wins), VoteSolo (one press; none presses on),
+  Detour, Rival (racing), Hostile (attacking the Ark, plate red), Joins (a friend takes the AI's seat at the next cell),
+  Pause (A), Dock (banking), Awards (A), Lost (moods drop).
+- World: WorldEvents (the five events next door as they read through a membrane; each shows in the world, the feed
+  and the pause chart; only a rival wears the threat red), WorldSea (the five zones with who you meet and the danger,
+  a lane as the chart draws it; danger is the sea's, never the clock).
+
+**Differs from the build**: none of it is built (see section 226).

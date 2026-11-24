@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 134 Awards - The end board: one award per seat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+
+.soft-cta{clip-path:none;background:linear-gradient(90deg,rgba(153,255,128,0) 0,#99FF80 18%,#99FF80 82%,rgba(153,255,128,0) 100%);color:#00041F}
+.soft{clip-path:none;color:#E6E9FF;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.7) 20%,rgba(230,233,255,.7) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.7) 20%,rgba(230,233,255,.7) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat,linear-gradient(90deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 20%,rgba(0,4,31,.86) 80%,rgba(0,4,31,0) 100%)}
+.tier{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .55s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.pips{display:inline-block;width:124px;height:8px;background:repeating-linear-gradient(90deg,#434C89 0 12px,rgba(0,0,0,0) 12px 14px)}
+.pips>span{display:block;height:100%;background:repeating-linear-gradient(90deg,#E6E9FF 0 12px,rgba(0,0,0,0) 12px 14px);transition:width .4s ease}
+.rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+.pop{animation:pop .45s cubic-bezier(.3,1.4,.5,1) both}
+.draw{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 2.4s .3s cubic-bezier(.4,0,.2,1) forwards}
+.slide{transition:max-height .5s cubic-bezier(.2,.7,.2,1),opacity .4s ease;overflow:hidden}
+.spin{animation:spin 240s linear infinite}
+.sailer{offset-rotate:auto;animation:sail 3.2s .4s cubic-bezier(.4,0,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes sail{from{offset-distance:0%}to{offset-distance:100%}}
+
+.glass{position:relative;background:linear-gradient(170deg,rgba(67,76,137,.36),rgba(0,4,31,.88) 55%);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s ease}
+.glass::before{content:'';position:absolute;inset:0;padding:1px;pointer-events:none;background:linear-gradient(155deg,rgba(185,201,250,.75),rgba(67,76,137,.15) 38%,rgba(67,76,137,.15) 62%,rgba(0,212,255,.55));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.glass:hover{transform:translateY(-8px);box-shadow:0 0 0 1px rgba(0,212,255,.9),0 18px 60px rgba(0,212,255,.22)}
+.glass .ship{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.glass:hover .ship{transform:translateY(-10px) scale(1.05)}
+.glass.on{box-shadow:0 0 0 1px #00D4FF,0 0 48px rgba(0,212,255,.28)}
+.chipq{transition:background .25s,color .25s,box-shadow .25s}
+.chipq:hover{box-shadow:inset 0 0 0 1px #00D4FF}
+.tile{transition:transform .25s cubic-bezier(.2,.7,.2,1),box-shadow .25s,opacity .25s}
+.tile:hover{transform:translateY(-4px);box-shadow:0 0 0 1px rgba(0,212,255,.8),0 10px 30px rgba(0,212,255,.18)}
+.float{animation:float 9s ease-in-out infinite alternate}
+.drift{animation:drift 90s linear infinite}.drift2{animation:drift 150s linear infinite reverse}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-1920px)}}
+.sheen::after{content:'';position:absolute;top:0;bottom:0;width:40%;pointer-events:none;background:linear-gradient(100deg,rgba(230,233,255,0),rgba(230,233,255,.10),rgba(230,233,255,0));animation:sheen 11s ease-in-out infinite}
+.breathe{animation:breathe 2.8s ease-in-out infinite}
+.modal{animation:modal .45s cubic-bezier(.2,.7,.2,1) both}
+.fade{animation:fade .35s ease both}
+@keyframes float{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+@keyframes sheen{0%{transform:translateX(-120%)}55%,100%{transform:translateX(160%)}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 4px rgba(0,212,255,.25)}50%{box-shadow:0 0 0 12px rgba(0,212,255,0)}}
+@keyframes modal{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.glass{background:url(/_blob/54569e7d13034451941746e7057f92b0) 0 -40px/1100px 570px repeat-x,url(/_blob/cb1328da13e08b834c8ef0150bf33b83) 0 20px/1400px 726px repeat-x,linear-gradient(170deg,rgba(34,38,69,.96),rgba(0,4,31,.94) 55%,rgba(0,1,10,.97));animation:cardsea 40s linear infinite}
+.glass:not(.modal):hover{animation-duration:14s}
+.glass.modal{background-color:#00041F}
+@keyframes cardsea{from{background-position:0 -40px,0 20px,0 0}to{background-position:-1100px -40px,1400px 20px,0 0}}
+.toast{position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 140px;white-space:nowrap}
+.toast b{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:30px;letter-spacing:.18em}
+.toast i{font-style:normal;font-size:19px;color:#E6E9FF}
+.t-event{background:linear-gradient(90deg,rgba(0,4,31,0),rgba(0,4,31,.9) 22%,rgba(0,4,31,.9) 78%,rgba(0,4,31,0))}
+.t-event b{color:#E6E9FF}
+.t-threat{background:linear-gradient(90deg,rgba(80,10,20,0),rgba(80,10,20,.88) 22%,rgba(80,10,20,.88) 78%,rgba(80,10,20,0))}
+.t-threat b{color:#FF8A7C}
+.t-good{background:linear-gradient(90deg,rgba(0,4,31,0),rgba(0,4,31,.9) 22%,rgba(0,4,31,.9) 78%,rgba(0,4,31,0));box-shadow:inset 0 -2px 0 rgba(153,255,128,.0)}
+.t-good b{color:#99FF80}
+.obj{position:absolute;left:40px;top:40px;width:600px;padding:22px 26px;box-sizing:border-box;background:rgba(0,4,31,.84);box-shadow:inset 2px 0 0 #E6E9FF}
+.bar{position:relative;height:12px;background:rgba(67,76,137,.45)}
+.bar>span{position:absolute;left:0;top:0;bottom:0}
+.breach{position:absolute;top:-5px;bottom:-5px;width:2px;background:#FF4B3A}
+.tag{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase}
+.frame{position:absolute;overflow:hidden;background:#00010A}
+.frame>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cap2{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.note{font-size:16px;line-height:1.55;color:#B8C0F0}
+.mini{background:rgba(0,4,31,.82);box-shadow:inset 2px 0 0 #E6E9FF}
+.row{display:flex;align-items:center}
+.scr{position:absolute;overflow:hidden;background:#00010A}
+.big{font-family:'Chakra Petch',sans-serif;font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.hd{font-family:'Chakra Petch',sans-serif;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.skew{clip-path:polygon(28px 0,100% 0,calc(100% - 28px) 100%,0 100%)}
+.tin{animation:tin .5s cubic-bezier(.2,.9,.25,1) both}
+@keyframes tin{from{opacity:0;transform:translateY(-14px) scale(.96)}to{opacity:1;transform:none}}
+.slot{position:absolute;box-shadow:inset 0 0 0 1px rgba(0,212,255,.55);background:repeating-linear-gradient(135deg,rgba(0,212,255,.05) 0 10px,rgba(0,0,0,0) 10px 20px)}
+.slide-in{animation:slidein .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes slidein{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.vote-ring{transform:rotate(-90deg)}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img src="/_blob/bc6606a29087fada268cd6bfcc0a3650" alt="" style="position:absolute;inset:-30px;width:1980px;height:1140px;object-fit:cover;filter:blur(10px)"><div class="abs" style="inset:0;background:rgba(0,1,10,.66)"></div><div class="abs" style="left:0px;top:70px;width:1920px;display:flex;flex-direction:column;gap:8px;align-items:center;"><span class="cap2">The Glassmere Shatter  ·  3 cells and one detour  ·  4:12</span><span class="hd" style="font-size:44px">Voyage complete</span></div><div class="abs" style="left:240px;top:190px;width:1440px;height:110px"><svg class="abs" style="left:0px;top:0px" width="1440" height="110" aria-hidden="true"><path d="M20,60 L480,40 L700,90 L960,40 L1420,60" fill="none" stroke="rgba(230,233,255,.55)" stroke-width="2" stroke-dasharray="8 8"></path><path d="M20,60 L480,40 L700,90 L960,40 L1420,60" fill="none" stroke="#E6E9FF" stroke-width="3"></path></svg><span class="abs" style="left:13px;top:53px;width:14px;height:14px;border-radius:50%;background:#E6E9FF"></span><span class="abs" style="left:473px;top:33px;width:14px;height:14px;border-radius:50%;background:#E6E9FF"></span><span class="abs" style="left:953px;top:33px;width:14px;height:14px;border-radius:50%;background:#E6E9FF"></span><span class="abs" style="left:1413px;top:53px;width:14px;height:14px;border-radius:50%;background:#E6E9FF"></span><span class="abs" style="left:640px;top:96px;font-size:14px;color:#B8C0F0;white-space:nowrap">Detour: the wreck</span><span class="abs" style="left:0;top:80px;font-size:14px;color:#B8C0F0">Gullbone Landing</span><span class="abs" style="left:1340px;top:80px;font-size:14px;color:#B8C0F0">Glassmere</span></div><div class="glass" style="position:absolute;left:160px;top:340px;width:500px;height:400px;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 2px 0 #E6E9FF"><span class="hd" style="font-size:22px">Top Salvager</span><span style="font-size:16px;color:#B8C0F0">19 crystals stowed</span><img class="hull" src="/_blob/a2a4139d8e2822885778740d4f2fb92e" alt="Sparrow" style="width:100%;height:120px;object-fit:contain"><div class="row" style="gap:14px"><img src="/_blob/77e722ebf367c3b4093b2ae2778762e4" alt="" style="width:48px;height:58px;object-fit:cover;object-position:50% 28%;border-radius:4px;flex:none;opacity:1.0"><span style="display:flex;flex-direction:column;gap:4px"><span style="font-size:17px">You  ·  Sparrow</span><span style="font-size:14px;color:#747BAD">Wyvendo Waveline</span></span></div><div class="row" style="gap:20px;margin-top:auto;font-size:14px;color:#B8C0F0"><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" style="flex:none"><rect x="2" y="14" width="4" height="4" fill="#E6E9FF"></rect><rect x="8" y="10" width="4" height="8" fill="#E6E9FF"></rect><rect x="14" y="6" width="4" height="12" fill="#E6E9FF"></rect></svg>Keen<svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true" style="flex:none;transform:scaleY(-1)"><path d="M2 4l5 -3 5 3" fill="none" stroke="#E6E9FF" stroke-width="1.8"></path><path d="M2 9l5 -3 5 3" fill="none" stroke="#E6E9FF" stroke-width="1.8"></path><path d="M2 14l5 -3 5 3" fill="none" stroke="#E6E9FF" stroke-width="1.8"></path></svg>Stow Veteran</div></div><div class="glass" style="position:absolute;left:700px;top:340px;width:500px;height:400px;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 2px 0 #434C89"><span class="hd" style="font-size:22px">Wall of the Voyage</span><span style="font-size:16px;color:#B8C0F0">41% of the Ark's damage stopped</span><img class="hull" src="/_blob/694ae84ec6db347c4f034c8e03b56991" alt="Squirrel" style="width:100%;height:120px;object-fit:contain"><div class="row" style="gap:14px"><img src="/_blob/32a9eed26dda493c7334d13cddaf435e" alt="" style="width:48px;height:58px;object-fit:cover;object-position:50% 28%;border-radius:4px;flex:none;opacity:1.0"><span style="display:flex;flex-direction:column;gap:4px"><span style="font-size:17px">Rook  ·  Squirrel</span><span style="font-size:14px;color:#747BAD">Karenth Amberweaver</span></span></div><div class="row" style="gap:20px;margin-top:auto;font-size:14px;color:#B8C0F0"><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" style="flex:none"><rect x="2" y="14" width="4" height="4" fill="#E6E9FF"></rect><rect x="8" y="10" width="4" height="8" fill="#E6E9FF"></rect><rect x="14" y="6" width="4" height="12" fill="#E6E9FF"></rect></svg>Steady  to  Keen<svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true" style="flex:none;transform:scaleY(-1)"><path d="M2 4l5 -3 5 3" fill="none" stroke="#E6E9FF" stroke-width="1.8"></path><path d="M2 9l5 -3 5 3" fill="none" stroke="#E6E9FF" stroke-width="1.8"></path><path d="M2 14l5 -3 5 3" fill="none" stroke="rgba(67,76,137,.8)" stroke-width="1.8"></path></svg>Stow Seasoned</div></div><div class="glass" style="position:absolute;left:1240px;top:340px;width:500px;height:400px;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 2px 0 #434C89"><span class="hd" style="font-size:22px">Rival Breaker</span><span style="font-size:16px;color:#B8C0F0">Two Rusted Grin hulls broken</span><img class="hull" src="/_blob/e4ebf079ba441cd7141a2c8bc092d8ea" alt="Dolphin" style="width:100%;height:120px;object-fit:contain"><div class="row" style="gap:14px"><img src="/_blob/02126cf45624881e04e68ab3443b261b" alt="" style="width:48px;height:58px;object-fit:cover;object-position:50% 28%;border-radius:4px;flex:none;opacity:1.0"><span style="display:flex;flex-direction:column;gap:4px"><span style="font-size:17px">AI wingmate  ·  Dolphin</span><span style="font-size:14px;color:#747BAD">Quivera Pearlspark</span></span></div><div class="row" style="gap:20px;margin-top:auto;font-size:14px;color:#B8C0F0"><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" style="flex:none"><rect x="2" y="14" width="4" height="4" fill="#E6E9FF"></rect><rect x="8" y="10" width="4" height="8" fill="#E6E9FF"></rect><rect x="14" y="6" width="4" height="12" fill="rgba(67,76,137,.8)"></rect></svg>Reluctant  to  Steady<svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true" style="flex:none;transform:scaleY(-1)"><path d="M2 4l5 -3 5 3" fill="none" stroke="#E6E9FF" stroke-width="1.8"></path><path d="M2 9l5 -3 5 3" fill="none" stroke="rgba(67,76,137,.8)" stroke-width="1.8"></path><path d="M2 14l5 -3 5 3" fill="none" stroke="rgba(67,76,137,.8)" stroke-width="1.8"></path></svg>Stow Green, 2 of 3</div></div><div class="abs row" style="left:0;right:0;top:780px;justify-content:center;gap:40px;font-size:18px"><span class="row" style="gap:10px"><span class="row" style="gap:8px"><svg width="22" height="29" viewBox="0 0 20 26" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M10 1l8 12-8 12-8-12z"></path><path d="M2 13h16" opacity=".5"></path></svg><span class="big" style="font-size:26px">30</span></span><span style="color:#B8C0F0">Pay</span></span><span style="color:#B8C0F0">+ squad fit 10%  3</span><span style="color:#B8C0F0">+ wreck  8</span><span class="row" style="gap:10px"><span class="row" style="gap:8px"><svg width="26" height="34" viewBox="0 0 20 26" fill="none" stroke="#E6E9FF" stroke-width="2" aria-hidden="true"><path d="M10 1l8 12-8 12-8-12z"></path><path d="M2 13h16" opacity=".5"></path></svg><span class="big" style="font-size:30px">41</span></span><span>Banked</span></span></div><div class="abs row" style="left:0;right:0;top:880px;justify-content:center;gap:24px;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:8px;width:300px"><button class="btn def" type="button" style="height:60px;font-size:20px;width:100%"><span class="kc">X</span>Finish here</button><span style="font-size:15px;color:#B8C0F0;text-align:center;line-height:1.35">Bank it all and end the voyage</span></div><div style="display:flex;flex-direction:column;gap:8px;width:300px"><button class="btn cta" type="button" style="height:60px;font-size:20px;width:100%"><span class="kc">A</span>Venture further</button><span style="font-size:15px;color:#B8C0F0;text-align:center;line-height:1.35">Three jobs wait at Glassmere</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+
+</script>
+</body>
+</html>
