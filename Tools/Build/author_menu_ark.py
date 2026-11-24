@@ -922,9 +922,9 @@ FIXED_Y, FIXED_ROW = 556, 30
 BAND_Y, CRYSTAL_ICONS, CRYSTAL_ICON, CRYSTAL_STEP = 524, 10, 34, 40
 STATUS_Y = 776
 LEADER_W = 2
-# Rev 105 B's rail set RAIL_Y = 890 here, which also overrode the Squads rail's RAIL_Y (40, above) for every function that
-# reads it: the shipped Squads prefab was built with 890. Kept so this change leaves the Squads tab byte for byte as it is;
-# the Squads tab's own rework decides whether 40 was meant.
+# Nothing on the Artifacts page reads RAIL_Y any more. Rev 105 B's rail set it to 890 here, which overrode the Squads rail's
+# RAIL_Y (40, above), so the shipped Squads prefab was built with 890; it stays only to keep the Squads tab as it ships.
+# Delete this line once the Squads rail reads its own constant (SQUAD_RAIL_Y, PR #2365).
 RAIL_Y = 890
 assert WORDS_LEFT_X + COL_W < min(hx - w / 2 for _, hx, _, _, w, *_ in ART_SPOTS), "the left words run over the Javelin"
 assert WORDS_RIGHT_X > max(hx + w / 2 for _, hx, _, _, w, *_ in ART_SPOTS), "the right words run over the Aegis"
