@@ -68,6 +68,35 @@ whole reload; miss and the press does nothing (no anchor, no cooldown), so the c
 aiming. Every OTHER pair of thorns in sling range misses at least one ring between them by 15 u, so no ring is ever
 skipped by accident.
 
+## 2a. Ruins at I4 (2026-11-24, Yash: the environment update Spearline got)
+
+Decoration. At I4 the course stands in garden ruins: Spearline's own (`SPEARLINE.md` §2a: pergola, flower head, vines,
+a wall with a doorway, a tunnel, a maze of bars, a turning wheel), laid by Spearline's generator. `ThornlineRuins` does
+not copy it; it calls `SpearlineRuins.Lay` with a gate list that says where Thornline is flown. Nothing reads or
+writes a vessel, and the ruins are plain prisms with the game's own rules: a hull or a lance breaks them, a sling
+aimed at one docks on it (the caught-short dock), and nothing grows back.
+
+- **The lanes are the sling lines.** A Shrike slings straight from thorn to thorn, so the gate list is the thorn chain:
+  a gate at every thorn and every ring, each stretch straight. The three snipe lines are in it too. Every standing
+  ruin prism keeps the generator's 60 u clear lane from all of them, 120 u from every ring's mouth and 120 u from
+  every thorn's corner.
+- **Where a ruin stands.** On the second half of a leg, between its ring and its far thorn. Up to seven legs carry
+  one, the longest first. Never the first leg, never a snipe's two legs, never a half within 260 u of a line from a
+  start seat to the start thorn (any seat count), and only a half of 380 u or more. Every other stretch is cut into
+  pieces under 380 u, which the generator leaves bare.
+- **Kinds.** No kind twice in a course's first six ruins. **The wheel almost never stands here**: it wants 270 u clear
+  on both sides and Thornline's halves are 375-575 u, so it was drawn on 0 of 60 courses measured. Where one does
+  fit, its hub (30 u) is wider than the 12 u the sling catches, so the line through it stays open.
+- **Colours.** Each ruin one domain colour, Jade, Ruby, Gold in turn down the course, apart from the Blue thorns
+  (`ruinDomains` on the controller; empty = Blue).
+- **Measured** (`run.sh --ruins`, seeds 1-60 at I4): 4 to 7 ruins a course (mean 5.9), 319 to 841 prisms (mean 619),
+  about 0.2 s to lay in the harness. None at I1-I3.
+- **Not measured:** the I4 race times and the AI with the ruins standing. The AI's replica does not know them. A
+  mis-aimed sling can now dock on a ruin, and an AI nose sweeping across one may arm its lance.
+
+Held by `ThornlineRuinsTests` (11 tests, measured against the thorns, not the gate list) and three negative controls
+(`run.sh --ruins-self-test`).
+
 ### What it measures (offline)
 
 The AI race replica (`run.sh --ai --seeds 100`, aim modelled; RaceReplica.cs): median race, seconds, solo / a pack
@@ -186,7 +215,8 @@ was re-cut. Raw data: `regatta-flywheel/seat-sw/shrike/thornline/`.
 All authored by `Tools/Build/author_thornline_assets.py` (on `hull_time_race.py`, Thresher Time's scene as the donor):
 the card, the scoring rule (`GateRaceScoringRuleSO`, metric 9), the scene, the preview, the toasts, the registrations.
 The card background is the `/cardart` COURSE render (`CardBackgrounds/Thornline.png`, the `thornline` layer in the
-card-art harness: rings, path and thorns at intensity 2). `--check` is the drift gate.
+card-art harness: rings, path and thorns at intensity 2). `--check` is the drift gate. It also holds the scene's
+`ruinDomains` (§2a) and that the ruins are laid through `SpearlineRuins.Lay`.
 
 ## 7. In-editor verification (owed)
 
@@ -203,6 +233,9 @@ card-art harness: rings, path and thorns at intensity 2). `--check` is the drift
    Space mode (lancing trails) and Charge mode (painting a rival), and any detach that strands an AI.
 8. A rival docked on a thorn makes it glow faintly in their colour; passing and being passed calls 425 / 426.
 9. MPPM two clients: both see the same thorns, crystals and seats; the sight and glow are local.
+10. I4 ruins (§2a): four to seven ruins in Jade, Ruby and Gold between rings and far thorns; none at a ring, a thorn
+    or the start; every sling line open; none at I1-I3; a rematch leaves none of the old set. Four AI at I4 still
+    finish, and their times against §4.1's.
 
 ## 8. Known limitations
 
