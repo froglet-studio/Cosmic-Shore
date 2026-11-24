@@ -69,7 +69,7 @@ threads the last ring of the last lap wins (golf: finish time).
 | Tests | `SlingshotCourseTests` (written, not run in the editor) |
 | Ruins (I4) | `SlingshotRuins` + `SlingshotController.Ruins.cs`, calling `SpearlineRuins`; `SlingshotRuinsTests`; `Tools/Build/slingshot_ruins_harness/run.sh` |
 
-## The ruins (I4, 2026-11-24) - NOT compiled in Unity, NOT watched
+## The ruins (I4, 2026-11-24) - compiled in Unity, tests pass there, NOT watched in play
 
 Yash: "give this Time game the same environment update Spearline got". At I4 the legs between rings carry Spearline's
 garden ruins: decoration round the racing line. **The generator is Spearline's** (`SpearlineRuins`, SPEARLINE.md §2a);
@@ -92,7 +92,8 @@ Slingshot calls it and owns nothing but the hook (`SlingshotRuins`, `SlingshotCo
   meet a ruin outside the 60 u lane. The I4 times in STATUS.md (Legendary 75 s, Medium 95 s) were measured before the
   ruins and have not been re-run. A comet tail or a shepherd can pass through a ruin: they are not kept apart.
 - **Tests.** `SlingshotRuinsTests` (9), run headless by `Tools/Build/slingshot_ruins_harness/run.sh` (`--self-test`: two
-  negative controls). **To check by hand:** Slingshot at I4 shows coloured ruins on the long legs and none at I1-I3; a
+  negative controls). In the open Unity editor (6000.3.17f1, 2026-11-24): the project recompiles with no errors and
+  the 9 tests pass. No race was played with the ruins in. **To check by hand:** Slingshot at I4 shows coloured ruins on the long legs and none at I1-I3; a
   Stoat on the line flies through each without touching it; the console has no "no ruin prefab" warning; a second race
   leaves no ruins from the first.
 
