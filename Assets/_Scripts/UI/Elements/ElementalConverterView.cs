@@ -175,6 +175,12 @@ namespace CosmicShore.UI
         ArkArtifactsPage _artifactsPage;
         int _lastTab = -1;
         bool _fadingOut;   // the picture is passing into a tab with no room; hidden once it is dark
+        // The walk up to a picked seat's hull (Rev 141 A): the picture and its vessels scaled about the picture's centre and
+        // moved by this offset; both reset when the hangar is not the room.
+        float _zoomScale = 1f;
+        Vector2 _zoomOffset;
+        Vector2 _pictureBase;
+        bool _hasPictureBase;
 
         void Awake()
         {
@@ -290,6 +296,50 @@ namespace CosmicShore.UI
             if (_vessels) _vessels.Show(_squads);
         }
 
+        /// <summary>Walks the hangar's picture and its vessels up to the picked seat's hull (SquadsPage.ZoomSeat) and back,
+        /// easing over the page's zoomSeconds; any other room snaps them back to the whole picture.</summary>
+        void ZoomHangar(float dt)
+        {
+            if (!_surface) return;
+            var picture = _surface.rectTransform;
+            if (!_hasPictureBase)
+            {
+                _pictureBase = picture.anchoredPosition;
+                _hasPictureBase = true;
+            }
+            float scale = 1f, ease = 1f;
+            var offset = Vector2.zero;
+            if (_room == ArkRoom.Hangar && _squads)
+            {
+                ease = 1f - Mathf.Exp(-dt * 7f / Mathf.Max(0.01f, _squads.ZoomSeconds));
+                int seat = _squads.ZoomSeat;
+                if (seat >= 0 && _backdropConfig)
+                {
+                    scale = _squads.ZoomScale;
+                    var size = picture.rect.size;
+                    // ZoomOffset is about the picture's centre; the rect scales about its pivot.
+                    var centre = (new Vector2(0.5f, 0.5f) - picture.pivot) * size;
+                    offset = SquadVesselLayer.ZoomOffset(_backdropConfig.Hangar, seat, scale, _squads.ZoomFoot, size, out _)
+                             + centre - scale * centre;
+                }
+            }
+            _zoomScale = Mathf.Lerp(_zoomScale, scale, ease);
+            _zoomOffset = Vector2.Lerp(_zoomOffset, offset, ease);
+            if (Mathf.Abs(_zoomScale - scale) < 0.001f && (_zoomOffset - offset).sqrMagnitude < 0.25f)
+            {
+                _zoomScale = scale;
+                _zoomOffset = offset;
+            }
+            Place(picture);
+            if (_vessels) Place((RectTransform)_vessels.transform);   // made on the picture's rect (SquadVesselLayer.Create)
+        }
+
+        void Place(RectTransform rt)
+        {
+            rt.localScale = new Vector3(_zoomScale, _zoomScale, 1f);
+            rt.anchoredPosition = _pictureBase + _zoomOffset;
+        }
+
         static bool PlaysOnce(ArkBackdropRun run) =>
             run is ArkBackdropRun.Convert or ArkBackdropRun.PickUp or ArkBackdropRun.PutDown;
 
@@ -355,6 +405,7 @@ namespace CosmicShore.UI
             _lastTab = tab;
             var origin = TabOrigin(tab);
             _room = UsesBackdrops ? RoomFor(tab) : ArkRoom.Pier;
+            ZoomHangar(0f);   // out of the hangar: the whole picture again, at once
             SettleBench();
             bool shown = PictureFor(tab);
             if (shown == _pageShown)
@@ -467,6 +518,7 @@ namespace CosmicShore.UI
                 }
                 if (_surface && _backdrop && _surface.texture != _backdrop.Texture) _surface.texture = _backdrop.Texture;
                 if (_vessels && _room == ArkRoom.Hangar) _vessels.Tick(_backdrop ? _backdrop.LoopPhase : -1f);
+                ZoomHangar(dt);
                 DrawOverlay();
                 return;
             }

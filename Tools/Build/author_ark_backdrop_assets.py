@@ -32,17 +32,18 @@ VESSEL_PREFABS = "05f8f1205bd90e14b8e59cf78da1a6f2"   # Assets/_SO_Assets/Vessel
 OFFLINE_LIVERY = "bda6299e6e2046339d7a18b1a1ef8443"   # Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat (the Hangar's)
 # The squad's real vessels over the hangar clips (Docs/MENU_REDESIGN_B.md section 202): the clips' camera and pads from
 # r67_ark_tabs_render.py (CAM["squads"], SPOTS, Z0) with Blender's z up turned into Unity's y up, (x, z, y). Seat order:
-# the player's pad (the leader, a step back in the middle), then seats two (left) and three (right).
+# the player's pad (the leader, in the middle), then seats two (left) and three (right). Rev 141 A (section 234): the
+# camera stands square to the tube at x 0 and the three pads are one row on the clip's hex plates (ARK_ROW=1).
 HANGAR = {
     "enabled": 1,
-    "cameraPosition": (6.0, -15.6, -85.0),
-    "cameraAim": (6.0, -20.6, -62.0),
+    "cameraPosition": (0.0, -15.6, -85.0),
+    "cameraAim": (0.0, -20.6, -62.0),
     "verticalFov": 45.75,                  # 2 atan(18 / 24 * 9 / 16): the 24 mm lens on the 36 mm sensor at 16:9
     "cameraSway": (0.18, 0.08),
     "aimSway": 0.3,
     "loopSeconds": 3.2,
-    "pads": [(0.0, -23.0, -66.0), (-9.0, -23.0, -60.5), (9.6, -23.0, -60.5)],
-    "hullLength": 7.5,                     # Rev 110's check: 0.6 of the clip's Sparrow (12.5 m)
+    "pads": [(0.0, -23.0, -64.0), (-9.0, -23.0, -64.0), (9.0, -23.0, -64.0)],
+    "hullLength": 7.0,                     # Rev 141 A: the stills (ROW_HULL); the row pads stand 9 m apart
     "hullHeight": 3.4,                     # a round hull (the Urchin) is no taller than this: its pad is 7.5 m across
     "clearance": 0.6,                      # Amoebius check 2026-11-14: 1.6 left the hulls floating off their pads
     "hover": 0.12,

@@ -10090,3 +10090,34 @@ C's single pad are drawn over the current room.
 **Differs from the build:** the plates, the dome and the projection go. A needs the hangar clips re-rendered with the
 pads in a row and the pads moved in `ArkBackdropConfigSO.Hangar` (the wall pictures need stand-ins, section 202); B needs
 a hologram look on `SquadVesselLayer`'s hulls and no new clips; C needs one pad, re-rendered or cropped.
+
+**Picked (Shombith, 2026-11-24): A**, with notes: "the camera in the background can go more left like the tube and the
+center panel should be centered with the camera ... I want the vessels centered when all 3 shows up with the bg's
+platforms ... the 3rd set is over the prism blocks which is wrong". Built in section 234.
+
+## 234. Rev 141 A built: the line abreast in the game (2026-11-24, `claude/project-thread-ffv5m4`)
+
+**The room.** `r67_ark_tabs_render.py` with `ARK_ROW=1`: the camera stands square to the tube at x 0 ((0, -85, -15.6)
+aimed at (0, -62, -20.6), Blender coordinates), the model's middle hex plate is copied to x -9 and +9 so the three pads
+are one row of the room's own platforms, and the prism heaps that stood under the old third pad move back to y -82.
+The nine hangar clips (Nocturne, Photic, Dart Frog x Jade, Ruby, Gold) were rendered again with it and replace
+`Assets/_Graphics/Video/Ark/squads_*_loop.mp4` (guids kept). Stills: `/mnt/project-files/ark-squads/rev141a/`.
+`author_ark_backdrop_assets.py` HANGAR follows: camera (0, -15.6, -85) aimed at (0, -20.6, -62), pads (0, -23, -64),
+(-9, -23, -64), (9, -23, -64) in Unity coordinates, hulls 7 m long. On screen the pads stand at x 439, 960 and 1481 of
+1920, their feet 380 px up from the foot.
+
+**The page** (`author_menu_ark.py`, `SquadsPage`, `SquadSeatPlate`, `SquadVesselLayer`, `ElementalConverterView`):
+- The dome of light and the projection's beam are gone. Each seat's plate is a tag under its own pad (x -521, 0, +521
+  from the centre, top 356 up), with a clear hit area over it (300 x 240) covering the hull: pressing the vessel picks
+  the seat. `validate()` projects HANGAR through the clips' camera (`pad_on_screen`) and fails when a plate leaves its pad.
+- Picking a seat walks the view up to its hull: the picture and the vessel layer scale 1.45 about the pad so its feet
+  land at (-340, -220) from the centre, easing over 0.4 s (`SquadsPage.zoomScale / zoomFoot / zoomSeconds`,
+  `SquadVesselLayer.ZoomOffset`, played in `ElementalConverterView.ZoomHangar`). The picture always covers the screen,
+  so Rogue Two's hull stops at x +324. The other two plates hide; the picked plate stands under the walked-up feet.
+  Back (or B, or pressing the plate again) walks back; leaving the tab snaps the picture whole.
+- The projection (the seat's lines, its lists, the join list) is docked on the right (centre x 710, standing on the
+  rail), clear of every walked-up hull (`validate()` checks each seat).
+- The rail stays section 232's 96 px bar.
+
+**Not done here:** the 72 px foot of the mockups and the seat's words beside the hull (the projection carries them).
+Plates and zoom assume a 16:9 screen. Not yet opened in Unity (checklist entry).

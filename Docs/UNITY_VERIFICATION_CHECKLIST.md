@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Squads tab as Rev 141 A, the line abreast (`claude/project-thread-ffv5m4`, 2026-11-24, Shombith) — NOT EDITOR-VERIFIED
+
+`Docs/MENU_REDESIGN_B.md` 234. Compiled with `unity_refcompile` only; never opened in Unity.
+- [ ] Ark > SQUADS at 1920 x 1080: the clip shows the room square to the tube, three pads in one row; the three hulls
+      stand on them (Rogue One left, you in the middle, Rogue Two right), none over the prism heaps.
+- [ ] Each plate sits right under its hull; pressing the hull itself (not only the plate) picks the seat.
+- [ ] Picking walks the view up to that hull in about 0.4 s, video and hulls together, with no gap at a screen edge;
+      the other plates hide; the projection stands docked on the right and covers no hull.
+- [ ] Back / B walks back out; switching to another Ark tab while walked up shows that tab's picture whole.
+- [ ] Try each domain (Jade, Ruby, Gold) and colour set: the new clips play and loop without a jump.
+
 ### 🔴 The Squads rail on screen, 96 high, Back at every level (`claude/project-thread-ffv5m4`, 2026-11-24, Shombith) — NOT EDITOR-VERIFIED
 
 Menu_Main > Ark > Squads at 1920 x 1080: the foot shows the rail (< squad name >, Make, Join, Delete, the Jade / Ruby /
