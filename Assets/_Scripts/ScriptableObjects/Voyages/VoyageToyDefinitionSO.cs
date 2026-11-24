@@ -485,13 +485,16 @@ namespace CosmicShore.ScriptableObjects
         public IReadOnlyList<VesselClassType> FirstLineUp => firstLineUp;
 
         /// <summary>
-        /// True when <paramref name="job"/> may set sail: jobs are not locked, or its template is one of
-        /// <see cref="openJobs"/>. False for no job.
+        /// True when <paramref name="job"/> may set sail: jobs are not locked, it is a named voyage (Milestone 2), or its
+        /// template is one of <see cref="openJobs"/>. False for no job.
         /// </summary>
         public bool IsJobOpen(VoyageJob job)
         {
             if (job == null) return false;
             if (!lockJobs) return true;
+            // A named voyage (Milestone 2) sails: only a built type's named voyages reach the board (Salvage, Hold the
+            // Core; VoyageTypeInfo.OnBoard), so the lock keeps the news-brought work of the same template closed.
+            if (job.IsNamed) return true;
             if (openJobs == null) return false;
             foreach (var id in openJobs)
                 if (!string.IsNullOrEmpty(id) && id == job.TemplateId) return true;

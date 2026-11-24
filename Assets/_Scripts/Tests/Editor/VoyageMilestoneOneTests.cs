@@ -23,6 +23,10 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(settings.IsJobOpen(Job(VoyageRules.ReturnJobId)), "Sail home must stay open.");
                 Assert.IsTrue(settings.IsJobOpen(Job(VoyageToyDefinitionSO.CrystalRunJobId)), "Crystal Run must stay open.");
                 Assert.IsFalse(settings.IsJobOpen(Job("job.hunt.sighting")), "A crew job sails while jobs are locked.");
+                // Milestone 2: a built type's named voyage sails (Hold the Core), the news-brought job of its template does not.
+                Assert.IsTrue(settings.IsJobOpen(new VoyageJob { TemplateId = "job.defence.aid", VoyageId = "voyage.hold.ironmouth" }),
+                    "A named voyage is locked.");
+                Assert.IsFalse(settings.IsJobOpen(Job("job.defence.aid")), "The news-brought hold sails while jobs are locked.");
                 Assert.IsFalse(settings.IsJobOpen(null));
             }
             finally
