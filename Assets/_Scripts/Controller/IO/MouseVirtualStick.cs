@@ -190,10 +190,10 @@ namespace CosmicShore.Gameplay
                 stick += pixelDelta * unitsPerPixel;
             }
 
-            // Clamp to the UNIT CIRCLE, not per axis. LeftNormalizedJoystickPosition is read as a
-            // RADIUS by BarrelRollController (|stick| >= perimeterThreshold arms the Sparrow's
-            // strafing roll) and by ScarabJukeController, so the magnitude has to be able to
-            // reach exactly 1 and must never exceed it. Clamping the STATE (not just the report)
+            // Clamp to the UNIT CIRCLE, not per axis. A stick is read as a RADIUS by the
+            // perimeter abilities (|stick| >= perimeterThreshold: the Scarab's committed juke; the
+            // Sparrow's barrel roll read this left stick until it moved to the right stick on
+            // 2026-11-24), so the magnitude has to be able to reach exactly 1 and must never exceed it. Clamping the STATE (not just the report)
             // is also what stops a long sweep banking deflection the player then has to unwind —
             // which matters far more here than under the pure spring, because a stick parked in
             // the annulus has nothing pulling it back off an over-swept edge.

@@ -412,13 +412,13 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void DeflectionReachesExactlyOne_SoTheStrafingRollCanArm()
+        public void DeflectionReachesExactlyOne_SoPerimeterAbilitiesCanFire()
         {
             var sim = new Sim();
             sim.Push(new Vector2(10000f, 0f));
 
             Assert.AreEqual(1f, sim.Radius, 0.0001f,
-                "BarrelRollController arms on |stick| >= perimeterThreshold (1 by default), so " +
+                "Stick-perimeter abilities (the Scarab's committed juke, perimeterThreshold 1) fire on |stick| >= 1, so " +
                 "the mouse must be able to reach the perimeter exactly.");
         }
 

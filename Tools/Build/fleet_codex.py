@@ -1217,7 +1217,7 @@ def ability_words(key, elements, omni):
         return
     table = json.load(open(ABILITIES, encoding="utf-8")).get(key, {})
     for el, words in table.items():
-        if el.startswith("_"):
+        if el.startswith("_") or el == "Dynamics":   # Dynamics: vessel_dynamics() reads it
             continue
         if el == "Omni":
             if omni is not None:
@@ -1231,6 +1231,26 @@ def ability_words(key, elements, omni):
         e["words"] = {k: words.get(k, "") for k in ("does", "trigger", "scales", "source")}
         if words.get("tint"):   # the HUD paints this icon something other than the pilot's domain (the Dolphin's seed)
             e["words"]["tint"] = words["tint"]
+
+
+def vessel_dynamics(key, art):
+    """The hull's VESSEL DYNAMICS: core flight moves no element changes (the Sparrow's right-stick barrel roll), from
+    abilities.json `Dynamics` - a list per vessel, each entry {ability, does, trigger, pad, pc, touch, icon, source}.
+    `icon` is the repo PNG the HUD's core card shows (the icon kit's Core/ card); it is published as img/ab/<Key>_<Name>.png.
+    The ability maps carry only the four elemental abilities, so this hand table is where a dynamic is recorded; the
+    page draws each as a tile after the omni crystal and a row of its own, with no element and no level 5."""
+    if not os.path.exists(ABILITIES):
+        return []
+    out = []
+    for d in json.load(open(ABILITIES, encoding="utf-8")).get(key, {}).get("Dynamics", []):
+        slug = re.sub(r"\W", "", d.get("ability", ""))
+        icon = d.get("icon")
+        if icon and not os.path.exists(os.path.join(REPO, icon)):
+            print(f"abilities.json: {key} dynamic '{d.get('ability')}' names a missing icon {icon}", file=sys.stderr)
+            icon = None
+        out.append({k: d.get(k, "") for k in ("ability", "does", "trigger", "pad", "pc", "touch", "source")} |
+                   {"icon": art.png(icon, f"ab/{key}_{slug}.png", 128) if icon else None})
+    return out
 
 
 TIERS = os.path.join(REPO, "Docs", "FleetCodex", "tiers.json")
@@ -1480,6 +1500,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
             e["upgrade"]["icon"] = icons.get(el + "@L5")
         omni = dict(omni_entry(key, asset_names), icon=icons.get("Omni"), mark=ui.get("omni")) if maps else None
         ability_words(key, elements, omni)
+        dyn = vessel_dynamics(key, art) if maps else []
         retired = "RETIRED" in note.upper()
         vessels.append({
             "key": key, "id": value, "name": name,
@@ -1496,6 +1517,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
             "controls": controls(key, elements, bool(one_stick), prefab_bindings(key, asset_names), atp,
                                  touch_rows.get(key)) if maps else None,
             "omni": omni,
+            "dynamics": dyn,
             "crew": crew_of(c, note),
             "seats": seats_of(key, c.get("crew", []), elements) if maps else None,
             "cards": sorted(cards.get(name, []) + (cards.get(key, []) if key != name else []), key=lambda x: x["name"]),
@@ -1506,6 +1528,9 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
         })
     for v in vessels:
         if v["controls"]:
+            for d in v["dynamics"]:   # a vessel dynamic's own control (the barrel roll on the right stick)
+                v["controls"]["rows"].append({"action": d["ability"], "detail": "vessel dynamic", "pad": d["pad"] or "no button",
+                                              "pc": d["pc"] or "no button", "touch": d["touch"] or "no button"})
             icons = {el: e.get("icon") for el, e in v["elements"].items()}
             control_art(v["controls"]["rows"], v["elements"], icons, art)
             # the omni crystal's control: whatever the omni ability fires on, when the hull binds one (the Ring on LT)
