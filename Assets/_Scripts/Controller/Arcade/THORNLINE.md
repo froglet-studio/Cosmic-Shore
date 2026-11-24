@@ -99,8 +99,8 @@ Held by `ThornlineRuinsTests` (11 tests, measured against the thorns, not the ga
 
 **Compiled in Unity (2026-11-25):** the open editor (6000.3.17f1) rebuilt `Assembly-CSharp.dll` and
 `Assembly-CSharp-Editor.dll` at 01:58 IST, after these files were written, and they hold `ThornlineRuins`,
-`ruinDomains` and `ThornlineRuinsTests` (Unity rewrites them only on a compile with no errors). The EditMode tests were
-NOT run in Unity (headless only), and no race was watched.
+`ruinDomains` and `ThornlineRuinsTests` (Unity rewrites them only on a compile with no errors). The 11 `ThornlineRuinsTests`
+passed in that editor's EditMode runner the same day (29 s). No race was watched.
 
 ### What it measures (offline)
 

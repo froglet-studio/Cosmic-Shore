@@ -26942,7 +26942,7 @@ Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally
       standing, the lay 0.27 s on that course.
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
 
-### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, compiles in Unity 2026-11-25, NOT PLAYED)
+### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, compiles and tests pass in Unity 2026-11-25, NOT PLAYED)
 
 `THORNLINE.md` §2a. Spearline's ruins called from Thornline (`ThornlineRuins.cs`, `ThornlineController.Ruins.cs`, four
 hook lines and the `ruinDomains` field in `ThornlineController.cs`, one line in `MinigameThornline.unity`). Ran: the
@@ -26950,11 +26950,12 @@ headless `thornline_course_harness/run.sh` (11 `ThornlineRuinsTests` pass; one o
 `ThornlineCourseTests.A_snipe_is_worth_taking_and_a_crystal_is_worth_aiming_for`, already fails on the 4.4 s cooldown),
 `run.sh --ruins-self-test` (3 controls fire) and `author_thornline_assets.py --check` (30 files match). Compiled in
 Unity on 2026-11-25 (the open editor rebuilt both script assemblies at 01:58 IST with `ThornlineRuins`, `ruinDomains`
-and `ThornlineRuinsTests` in them). Not run: the EditMode tests in the editor, any flight.
+and `ThornlineRuinsTests` in them), and the 11 `ThornlineRuinsTests` passed in the open editor (EditMode, 29 s). Not
+run: any flight.
 Affects: Garrett's Shrike / Thornline.
 
 - [x] The project compiles (2026-11-25, the open editor's script assemblies).
-- [ ] `ThornlineRuinsTests` (11) pass in the editor.
+- [x] `ThornlineRuinsTests` (11) pass in the editor (2026-11-25, 11 of 11, 29 s).
 - [ ] Open `MinigameThornline`: the controller shows Ruin Domains Jade, Ruby, Gold (the scene line was written by hand
       as `010000000200000004000000`), and saving the scene does not change that line.
 - [ ] Thornline at I4: four to seven ruins in Jade, Ruby or Gold, each between a ring and its far thorn; none at a
