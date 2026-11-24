@@ -3794,6 +3794,33 @@
       "page": "toy-box",
       "title": "Rev 144 G - the same 2D glyphs baked with depth: extruded, bevelled, tilting on hover - interactive",
       "is_interactive": true
+    },
+    "R145H.dc.html": {
+      "x": 0,
+      "y": 9960,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 145 H - Shelf tiles in Configure; Today as a banner - interactive",
+      "is_interactive": true
+    },
+    "R145I.dc.html": {
+      "x": 2100,
+      "y": 9960,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 145 I - Slide-open list in Configure; Today with a clock ring - interactive",
+      "is_interactive": true
+    },
+    "R145J.dc.html": {
+      "x": 4200,
+      "y": 9960,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 145 J - Pedestal and chips in Configure; Today as a live strip - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -3901,6 +3928,7 @@
     "sec-rev142",
     "sec-rev143",
     "sec-rev144",
+    "sec-rev145",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -4007,7 +4035,8 @@
     "rev141",
     "rev142",
     "rev143",
-    "rev144"
+    "rev144",
+    "rev145"
   ],
   "notes": {
     "hud_end": {
@@ -6513,6 +6542,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "toy-box"
+    },
+    "rev145": {
+      "kind": "title1",
+      "text": "Rev 144 G, picked: the variation panel and Today's activity, three ways",
+      "x": 0,
+      "y": 9560,
+      "w": 240,
+      "maxW": 6120,
+      "page": "toy-box"
+    },
+    "sec-rev145": {
+      "kind": "rect",
+      "x": -160,
+      "y": 9400,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "toy-box"
     }
   },
   "order": [
@@ -6969,7 +7022,10 @@
     "R142Notes.dc.html",
     "R143E.dc.html",
     "R144F.dc.html",
-    "R144G.dc.html"
+    "R144G.dc.html",
+    "R145H.dc.html",
+    "R145I.dc.html",
+    "R145J.dc.html"
   ],
   "pages": [
     {

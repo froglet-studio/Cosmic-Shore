@@ -9129,7 +9129,7 @@ makes the cards and variation tiles dark glass instead of solid navy.
 **On the canvas:** Toy Box tab, "Rev 143 - The Toy Box mix" (one interactive board, `R143E`). Generator
 `Docs/MenuRedesignB/rounds/r143_toybox_mix.py <root> 143` (reuses `r142_toybox.py`).
 
-### 235.2 Rev 144: the mix with the 2D toy glyphs, flat and with depth (2026-11-24, awaiting a pick)
+### 235.2 Rev 144: the mix with the 2D toy glyphs, flat and with depth (2026-11-24, G picked)
 
 **Asked (Shombith, on Rev 143):** "I want the 2D icons they had which garrett added not these 3D icons", then "If you
 can make those 2D icons with a different variation to give them a 3D look you can try".
@@ -9146,3 +9146,20 @@ sprite per toy written by the icon kit beside the flat one; the flat glyph stays
 
 Note: `toy_portraits.py` does not write today: its Spawn Matrix glyph fails the `gap` gate, and no `tool_wander.png`
 exists on disk (the Wander codex page still shows the old emblem). Found while rendering this round; not fixed here.
+
+### 235.3 Rev 145: the variation panel and Today's activity, three ways (2026-11-24, awaiting a pick)
+
+**Asked (Shombith, on Rev 144):** G picked, then on the Configure variation tiles "for this layout for the cards I want
+you to change that. Make this cool too", and on the Toy Box header "I liked the top place where the todays card use to
+show up big, can you do some variation here as well".
+
+**On the canvas:** Toy Box tab, Rev 145. Each board is G (depth glyphs) with one variation-panel style and one Today
+style; the two halves can be mixed.
+- `R145H`: Shelf, a 3-column grid of glass tiles, each render standing on a floor glow; Today as a wide banner (world
+  behind, a light sweep, the toy's creature in a lens, the lime Try it +10).
+- `R145I`: Slide-open, a list of slim rows where the chosen row opens and its render flies in; Today with a clock ring
+  for the day left and a turning crystal for the +10.
+- `R145J`: Pedestal, the chosen variation large on a pedestal above a row of round chips; Today as a live strip the
+  creature swims across.
+The Toy Box grid is scaled to 0.84 under the taller Today card. Generator
+`Docs/MenuRedesignB/rounds/r145_toy_variations.py <root> 145`.

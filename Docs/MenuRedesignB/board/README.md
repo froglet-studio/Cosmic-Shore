@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795560467-8eb0` of **Frogma**: Rev 41 to Rev 144, 454 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795561163-fa75` of **Frogma**: Rev 41 to Rev 145, 457 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -722,6 +722,12 @@ Copied on 2026-11-24 from canvas version `1795560467-8eb0` of **Frogma**: Rev 41
 - [`R128Notes.dc.html`](R128Notes.dc.html) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
 
 ### Tab: Toy Box  (`toy-box`)
+
+#### Rev 144 G, picked: the variation panel and Today's activity, three ways
+
+- [`R145H.dc.html`](R145H.dc.html) - Rev 145 H - Shelf tiles in Configure; Today as a banner - interactive
+- [`R145I.dc.html`](R145I.dc.html) - Rev 145 I - Slide-open list in Configure; Today with a clock ring - interactive
+- [`R145J.dc.html`](R145J.dc.html) - Rev 145 J - Pedestal and chips in Configure; Today as a live strip - interactive
 
 #### Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs: flat, and with depth
 
