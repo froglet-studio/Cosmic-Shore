@@ -250,3 +250,12 @@
 2026-11-23T17:31:17.704Z editor load: play=False capture=True minPlay=15s issues=31
 2026-11-23T17:31:37.926Z E-6bc7e07601: fix 97aab2a6a is not in this checkout yet — waiting for a pull
 2026-11-23T18:20:03.661Z PlayMode session ended (2075s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-c8e2f49696
+2026-11-24T09:07:45.441Z EditMode session ended (936min editor session): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-c8e2f49696
+2026-11-24T17:09:01.824Z editor load: play=False capture=True minPlay=15s issues=31
+2026-11-24T17:09:35.751Z E-6bc7e07601: fix 97aab2a6a is not in this checkout yet — waiting for a pull
+2026-11-24T17:28:57.406Z EditMode session ended (19min editor span, script reload): 0 fix(es) waiting; counted: none
+2026-11-24T17:29:05.373Z editor load: play=False capture=True minPlay=15s issues=31
+2026-11-24T17:29:17.197Z E-6bc7e07601: fix 97aab2a6a taken (PlayMode); needs 2 clean run(s)
+2026-11-24T17:34:39.461Z editor load: play=False capture=True minPlay=15s issues=31
+2026-11-24T17:36:18.482Z PlayMode session ended (14s play run, exiting play mode): not counted (capture=True, long enough=False)
+2026-11-24T18:04:26.435Z PlayMode session ended (543s play run, exiting play mode): 1 fix(es) waiting; counted: E-6bc7e07601 1/2; fired: E-930ca435ca
