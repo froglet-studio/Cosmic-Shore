@@ -1,0 +1,207 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>One prism of a barrier: a box of <see cref="Scale"/> at <see cref="Position"/>, its long side along
+    /// <see cref="Forward"/>. <see cref="Leg"/> is the leg of the circuit it stands on, <see cref="Kind"/> the barrier
+    /// (<see cref="BreakwaterBarriers.Curtain"/>...), and <see cref="Danger"/> says it is a mine.</summary>
+    public readonly struct BreakwaterBarrierPart
+    {
+        public readonly Vector3 Position, Forward, Up, Scale;
+        public readonly int Leg, Kind;
+        public readonly bool Danger;
+
+        public BreakwaterBarrierPart(Vector3 position, Vector3 forward, Vector3 up, Vector3 scale, int leg, int kind,
+                                     bool danger)
+        {
+            Position = position;
+            Forward = forward;
+            Up = up;
+            Scale = scale;
+            Leg = leg;
+            Kind = kind;
+            Danger = danger;
+        }
+    }
+
+    /// <summary>
+    /// Breakwater's barriers (BREAKWATER.md "The barriers", Yash 2026-11-25: "pass by obstacles, shoot and make passage
+    /// if can't pass"): what stands ACROSS the racing line on the legs the garden ruins leave bare, at I4 only. Three
+    /// kinds take turns round the circuit:
+    /// a <b>curtain</b> (one thin wall of plates right across the lane: shoot a hole, ram it or fly round),
+    /// a <b>minefield</b> (danger prisms round the line with the thread down the middle left open, as a station's eye
+    /// is) and a <b>lock</b> (three smaller curtains in a row: more rounds to open, a shorter way round).
+    ///
+    /// <para>Each stands at the middle of its leg's flown line, across it. Everything is laid Blue by the controller,
+    /// as the stations are, so every pilot's rounds open a curtain and are paid for it. They are prisms with the
+    /// game's own rules: nothing here reads or writes a vessel.</para>
+    ///
+    /// <para>Pure: a function of the course and the rung, so every peer lays the same barriers from the broadcast
+    /// course and the edit-mode tests hold it (<c>BreakwaterBarriersTests</c>).</para>
+    /// </summary>
+    public static class BreakwaterBarriers
+    {
+        public const int Curtain = 0, Minefield = 1, Lock = 2;
+        public const int KindCount = 3;
+
+        /// <summary>A curtain reaches this far (u) from the line: past the lane (60), so the way round is a real detour.</summary>
+        public const float CurtainRadius = 72f;
+
+        /// <summary>A lock's three sheets are smaller and this far apart (u) along the line.</summary>
+        public const float LockRadius = 48f, LockSpacing = 18f;
+        public const int LockSheets = 3;
+
+        /// <summary>A curtain's plate: this wide and tall (u), this thin along the line, laid at this pitch.</summary>
+        public const float PlateSize = 13.4f, PlateThickness = 2f, PlatePitch = 14f;
+
+        /// <summary>A minefield: this many mines of this size (u), between <see cref="ThreadRadius"/> and
+        /// <see cref="MineRadius"/> from the line, over this depth (u) along it.</summary>
+        public const int Mines = 60;
+        public const float MineSize = 6f, MineRadius = 60f, MineDepth = 50f;
+
+        /// <summary>No mine comes nearer the flown line than this (u): the station's eye radius, so the thread a
+        /// pilot (and an AI on the line) flies through a station stays open through a minefield too.</summary>
+        public const float ThreadRadius = 18f;
+
+        /// <summary>A barrier that lost more than this share of its prisms to the clearances is not laid at all.</summary>
+        public const float MinStandingShare = 0.5f;
+
+        /// <summary>Barriers stand on the hardest rung only, as the ruins do.</summary>
+        public static bool OnRung(int intensity) => intensity >= 4;
+
+        /// <summary>The kind of the <paramref name="ordinal"/>th barrier leg round the circuit.</summary>
+        public static int KindOf(int ordinal) => ((ordinal % KindCount) + KindCount) % KindCount;
+
+        /// <summary>
+        /// Every barrier prism of <paramref name="course"/> on this rung into <paramref name="parts"/>.
+        /// <paramref name="lap"/> receives the circuit (the course without its first <paramref name="leadIn"/> gates);
+        /// a part's <c>Leg</c> indexes it. The lists are cleared first. A barrier stands on each leg the ruins leave
+        /// bare (<see cref="BreakwaterRuins.OnBareLeg"/>) that is long enough; a prism that would come into a
+        /// station's reach, another leg's lane or the way in from the pads is left out, and a barrier that loses more
+        /// than half its prisms that way is left out whole.
+        /// </summary>
+        public static void Lay(IReadOnlyList<RaceGate> course, int leadIn, int intensity, IReadOnlyList<Vector3> pads,
+                               List<RaceGate> lap, List<BreakwaterBarrierPart> parts)
+        {
+            lap.Clear();
+            parts.Clear();
+            if (course == null || !OnRung(intensity)) return;
+            leadIn = Mathf.Clamp(leadIn, 0, course.Count);
+            for (int i = leadIn; i < course.Count; i++) lap.Add(course[i]);
+            if (lap.Count < 3) return;
+
+            var settings = BreakwaterRuins.Settings(intensity);
+            var offered = new List<BreakwaterBarrierPart>();
+            int ordinal = 0;
+            for (int leg = 0; leg < lap.Count; leg++)
+            {
+                if (!BreakwaterRuins.OnBareLeg(leg)) continue;
+                var a = lap[leg];
+                var b = lap[(leg + 1) % lap.Count];
+                if ((b.Position - a.Position).magnitude < settings.MinLegLength) continue;
+                int kind = KindOf(ordinal++);
+
+                offered.Clear();
+                Offer(a, b, leg, kind, offered);
+                int first = parts.Count;
+                for (int i = 0; i < offered.Count; i++)
+                    if (Stands(offered[i], course, leadIn, pads, lap, settings)) parts.Add(offered[i]);
+                if (parts.Count - first < offered.Count * MinStandingShare)
+                    parts.RemoveRange(first, parts.Count - first);
+            }
+        }
+
+        /// <summary>Every prism of one barrier of <paramref name="kind"/> at the middle of the leg from
+        /// <paramref name="a"/> to <paramref name="b"/>, before the clearances.</summary>
+        public static void Offer(in RaceGate a, in RaceGate b, int leg, int kind, List<BreakwaterBarrierPart> into)
+        {
+            Vector3 centre = SpearlineRuins.LinePoint(a, b, 0.5f);
+            Vector3 forward = SpearlineRuins.LineDirection(a, b, 0.5f);
+            Vector3 right = Vector3.Cross(forward, Mathf.Abs(forward.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+            Vector3 up = Vector3.Cross(right, forward).normalized;
+            switch (kind)
+            {
+                case Curtain:
+                    Sheet(centre, forward, right, up, CurtainRadius, leg, kind, into);
+                    break;
+                case Lock:
+                    for (int n = 0; n < LockSheets; n++)
+                        Sheet(centre + forward * ((n - 0.5f * (LockSheets - 1)) * LockSpacing), forward, right, up,
+                              LockRadius, leg, kind, into);
+                    break;
+                default:
+                    MineCloud(a, b, centre, forward, right, up, leg, into);
+                    break;
+            }
+        }
+
+        // A disc of plates across the line: every plate of a square grid whose centre is inside the radius.
+        static void Sheet(Vector3 centre, Vector3 forward, Vector3 right, Vector3 up, float radius, int leg, int kind,
+                          List<BreakwaterBarrierPart> into)
+        {
+            int half = Mathf.CeilToInt(radius / PlatePitch);
+            var scale = new Vector3(PlateSize, PlateSize, PlateThickness);
+            for (int x = -half; x <= half; x++)
+                for (int y = -half; y <= half; y++)
+                {
+                    float u = x * PlatePitch, v = y * PlatePitch;
+                    if (u * u + v * v > radius * radius) continue;
+                    into.Add(new BreakwaterBarrierPart(centre + right * u + up * v, forward, up, scale, leg, kind, false));
+                }
+        }
+
+        // Mines on a golden-angle spiral round the line, spread along it. A mine the curve of the line would bring
+        // inside the thread is pushed straight out until it is clear.
+        static void MineCloud(in RaceGate a, in RaceGate b, Vector3 centre, Vector3 forward, Vector3 right, Vector3 up,
+                              int leg, List<BreakwaterBarrierPart> into)
+        {
+            const float golden = 2.39996323f;
+            float reach = 0.5f * MineSize * 1.7320508f;          // a cube's corner
+            float inner = ThreadRadius + reach + 1f, outer = MineRadius - reach;
+            var scale = new Vector3(MineSize, MineSize, MineSize);
+            for (int k = 0; k < Mines; k++)
+            {
+                float angle = k * golden + leg;
+                float r = Mathf.Lerp(inner, outer, Mathf.Sqrt((k + 0.5f) / Mines));
+                float along = ((k * 7 % Mines) / (float)(Mines - 1) - 0.5f) * MineDepth;
+                Vector3 radial = right * Mathf.Cos(angle) + up * Mathf.Sin(angle);
+                Vector3 p = centre + forward * along + radial * r;
+                for (int push = 0; push < 8 && LegDistance(a, b, p) < inner; push++) p += radial * 2f;
+                into.Add(new BreakwaterBarrierPart(p, forward, up, scale, leg, Minefield, true));
+            }
+        }
+
+        /// <summary>Does <paramref name="part"/> keep off every station's reach, every OTHER leg's lane and the way in
+        /// from the pads? Its own leg is the one it is meant to stand across.</summary>
+        public static bool Stands(in BreakwaterBarrierPart part, IReadOnlyList<RaceGate> course, int leadIn,
+                                  IReadOnlyList<Vector3> pads, IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s)
+        {
+            float half = 0.5f * Mathf.Max(part.Scale.x, Mathf.Max(part.Scale.y, part.Scale.z));
+            for (int g = 0; g < course.Count; g++)
+                if ((part.Position - course[g].Position).magnitude - course[g].Radius < s.RingMargin + half) return false;
+            for (int leg = 0; leg < lap.Count; leg++)
+                if (leg != part.Leg && SpearlineRuins.LegDistance(lap, leg, part.Position) < s.ClearRadius + half)
+                    return false;
+            var asRuin = new SpearlineRuinPart(part.Position, part.Forward, part.Up, part.Scale, part.Leg);
+            return !BreakwaterRuins.ReachesTheStart(asRuin, course, leadIn, pads, s, 0f);
+        }
+
+        /// <summary>How far <paramref name="p"/> is from the flown line from <paramref name="a"/> to <paramref name="b"/>.</summary>
+        public static float LegDistance(in RaceGate a, in RaceGate b, Vector3 p)
+        {
+            float best = float.MaxValue;
+            Vector3 prev = a.Position;
+            for (int k = 1; k <= SpearlineRuins.LineSamples; k++)
+            {
+                Vector3 cur = SpearlineRuins.LinePoint(a, b, k / (float)SpearlineRuins.LineSamples);
+                Vector3 ab = cur - prev;
+                float len = ab.sqrMagnitude;
+                float t = len > 1e-8f ? Mathf.Clamp01(Vector3.Dot(p - prev, ab) / len) : 0f;
+                best = Mathf.Min(best, (p - (prev + ab * t)).magnitude);
+                prev = cur;
+            }
+            return best;
+        }
+    }
+}

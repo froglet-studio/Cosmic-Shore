@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED Breakwater ruin rule (BreakwaterRuins, with Spearline's ruin generator and Breakwater's course)
-# and heat rule (BreakwaterHeat) and their SHIPPED edit-mode tests (BreakwaterRuinsTests, BreakwaterHeatTests) against
+# heat rule (BreakwaterHeat) and barrier rule (BreakwaterBarriers) and their SHIPPED edit-mode tests against
 # race_course_source_harness's Unity math stub and an NUnit shim with Roslyn, and RUN every [Test] - no Unity.
 #
 #   bash Tools/Build/breakwater_ruins_harness/run.sh              # every test; exit 0 = all passed
@@ -26,11 +26,12 @@ OUT="${TMPDIR:-/tmp}/breakwater_ruins_harness"
 mkdir -p "$OUT"
 
 RUINS="$A/Controller/Arcade/Breakwater/BreakwaterRuins.cs"
+BARRIERS="$A/Controller/Arcade/Breakwater/BreakwaterBarriers.cs"
 cd "$ROOT"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = ruins source, $2 = output name
+build() {   # $1 = ruins source, $2 = output name, $3 = barriers source (default: the shipped one)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
@@ -38,8 +39,8 @@ build() {   # $1 = ruins source, $2 = output name
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Data/Enums/PrismKind.cs" "$A/Data/Enums/Domains.cs" \
     "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" "$A/Controller/Arcade/Spearline/SpearlineRuins.cs" \
     "$A/Controller/Arcade/Breakwater/BreakwaterCourse.cs" "$A/Controller/Arcade/Breakwater/BreakwaterStationBuilder.cs" \
-    "$A/Controller/Arcade/Breakwater/BreakwaterHeat.cs" "$1" \
-    "$A/Tests/Editor/BreakwaterRuinsTests.cs" "$A/Tests/Editor/BreakwaterHeatTests.cs"; do
+    "$A/Controller/Arcade/Breakwater/BreakwaterHeat.cs" "${3:-$BARRIERS}" "$1" \
+    "$A/Tests/Editor/BreakwaterRuinsTests.cs" "$A/Tests/Editor/BreakwaterBarriersTests.cs" "$A/Tests/Editor/BreakwaterHeatTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -73,4 +74,15 @@ control() {   # $1 = what it proves, $2 = sed expression, $3 = text that must ap
 control "ruins on every leg" "s/=> (leg & 1) == 1;/=> false;/" "OnBareLeg(int leg) => false;"
 control "ruins on the way in from the pads" "s/PadKeep + half + sweep) return true;/-1f) return true;/" "pads[k], first) < -1f) return true;"
 control "ruins inside a station's reach" "s/- port + StationKeep;/- port - 60f;/" "- port - 60f;"
+barrier_control() {   # $1 = what it proves, $2 = sed expression, $3 = text that must appear after it
+  sed "$2" "$BARRIERS" > "$OUT/BreakwaterBarriers_neg.cs"
+  grep -qF -- "$3" "$OUT/BreakwaterBarriers_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$RUINS" neg "$OUT/BreakwaterBarriers_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; nrc=$?; set -e
+  [ $nrc -ne 0 ] || { echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; }
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+barrier_control "mines in the thread" "s/float inner = ThreadRadius + reach + 1f/float inner = 4f/" "float inner = 4f"
+barrier_control "barriers below I4" "s/=> intensity >= 4;/=> intensity >= 3;/" "=> intensity >= 3;"
+barrier_control "a curtain with the line left open" "s/if (u \* u + v \* v > radius \* radius) continue;/if (u * u + v * v > radius * radius || u * u + v * v < 400f) continue;/" "v * v < 400f) continue;"
 echo "self-test OK"

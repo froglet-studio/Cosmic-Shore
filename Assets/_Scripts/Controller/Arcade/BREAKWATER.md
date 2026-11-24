@@ -1350,6 +1350,48 @@ are unchanged; the legs were not lengthened. The shoals on the same legs are not
 **Tests:** `BreakwaterRuinsTests` (10, also run headless by the harness, whose `--self-test` proves three of them can
 fail). **Not compiled in Unity and not watched in the game.**
 
+## The barriers (2026-11-25, I4 only)
+
+Yash, after watching a three-racer I4 race: "pass by obstacles, shoot and make passage if can't pass". The ruins keep a
+clear lane, so a pilot on the line never had to shoot anything but a door. The barriers stand ACROSS the line, on the
+legs the ruins leave bare, so the circuit now alternates ruin, barrier, ruin. `BreakwaterBarriers.cs` is the pure rule;
+`BreakwaterController.Barriers.cs` lays it on every peer from the broadcast course (`layBarriers` switches it off).
+
+| kind | what stands | the pilot's choice |
+|---|---|---|
+| curtain | one disc of plain plates (13.4 x 13.4 x 2 u at a 14 u pitch) out to 72 u from the line | shoot a hole, ram it, or fly round (past the 60 u lane) |
+| minefield | 60 danger cubes (6 u) between the thread and 60 u from the line, over 50 u of it | hold the line through the 18 u thread, or clear a path |
+| lock | three 48 u discs, 18 u apart | more rounds to open, a shorter way round |
+
+They take turns in that order round the circuit. Each stands at the middle of its leg's flown line.
+
+**Measured** (`bash Tools/Build/breakwater_ruins_harness/run.sh --measure`, the I4 courses of seeds 1-100): 7 barriers
+on every course (3 curtains, 2 minefields, 2 locks), 604 prisms a course (586 to 609). With the arena's 2,385 and the
+ruins' 744 that is about 3,730 at I4, still under intensity 1's 4,144.
+
+**Rules kept.**
+- Everything is Blue, as the stations are, so every pilot's rounds open a curtain and are paid ammunition for it.
+- Prisms with the game's own rules: a hull or a round breaks them, nothing grows back, nothing reads or writes a vessel.
+- A minefield's thread is the station's eye radius (18 u), so the AI's floor holds: an AI on the line that fires
+  nothing still passes a minefield, as it passes a station.
+- No prism comes into a station's reach, another leg's lane, or the way in from the pads; a barrier that would lose
+  more than half its prisms to that is not laid.
+- I1-I3 are unchanged.
+
+**This changes one sentence above**: the shoals section says the mode's danger is all in the weave. At I4 a minefield
+is now a second place with danger prisms, on the line's surroundings, with the thread open.
+
+**Not known yet** (needs a flown race): how big a hole one rocket opens in a curtain; what ramming a curtain costs the
+Sparrow next to the detour; whether the AI's station rocket (fired between 60 and 220 u from the station, nose on it)
+is spent on a curtain that stands 150 to 190 u before the station; frame rate with about 600 more prisms.
+
+**Planned next, not built**: a turnstile and a shutter (moving, posed from the network clock), a flak battery (a
+fixed pattern of danger prisms across the lane, silenced by shooting its core). An AIMED turret is a decision for
+Garrett: nothing in the game aims environment fire at a pilot today.
+
+**Tests:** `BreakwaterBarriersTests` (6, also run headless by the harness, whose `--self-test` proves three of them
+can fail). **Not compiled in Unity and not watched in the game.**
+
 ## Scoring and the end condition
 
 **A domain's progress is its LEAD RUNNER, not its sum.** Every pilot flies the same course, so

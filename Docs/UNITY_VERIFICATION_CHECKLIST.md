@@ -413,6 +413,23 @@ compiled (`unity_refcompile` cannot run on this machine, and no Unity run was ma
 6. The start gate throws no ring. A guest in a two-machine lobby sees only their own rings.
 7. Answer the fun card when Play stops.
 
+## 🔴 Breakwater: barriers across the racing line at I4 (`Ys-bleeding-edge`, 2026-11-25, Yash) — NOT COMPILED, NOT WATCHED
+
+**What landed:** curtain walls, locks and minefields on the legs the ruins leave bare (`BreakwaterBarriers`,
+`BreakwaterController.Barriers`): 7 barriers and about 604 Blue prisms a course, I4 only. BREAKWATER.md "The barriers".
+
+**Verified without the editor:** `bash Tools/Build/breakwater_ruins_harness/run.sh --self-test` (the six
+`BreakwaterBarriersTests` with the ruins and heat tests, and three negative controls for the barriers).
+
+**In the editor:**
+1. The project compiles and `BreakwaterBarriersTests` pass.
+2. Breakwater I4: between two ruins a Blue wall, a row of three walls or a cloud of danger cubes stands across the line; none touches a dish, a pad or the start gate.
+3. Fire a rocket at a curtain: it opens a hole a Sparrow fits through, and the rounds pay ammunition.
+4. Fly the line through a minefield without touching a mine; stray and a mine costs what a danger prism costs.
+5. Watch an AI lap: it gets through every barrier, and still has a rocket for the station after a curtain.
+6. Frame rate at I4 is still about where it was (about 70 FPS with three racers on Yash's PC, 2026-11-25).
+7. I1-I3: no barriers.
+
 ## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — COMPILED, EditMode tests pass (2026-11-24); NOT WATCHED
 
 **What landed:** Spearline's I4 ruins, laid from Breakwater's circuit (`BreakwaterRuins`, `BreakwaterController.Ruins`):

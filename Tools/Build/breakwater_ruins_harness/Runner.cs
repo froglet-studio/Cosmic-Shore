@@ -48,7 +48,34 @@ public static class Runner
         Console.WriteLine($"courses {courses}/100  ruins {fewest}-{most}  prisms mean {prisms / Math.Max(1, courses)} ({minPrisms}-{maxPrisms})" +
                           $"  offered mean {offered / Math.Max(1, courses)}  wheel on {wheelCourses} courses");
         Console.WriteLine($"legs by kind (pergola flower vines wall tunnel maze wheel; a wheel that does not fit is laid as a pergola): {string.Join(" ", kinds)}");
+        MeasureBarriers(pads);
         Console.WriteLine($"ring margin {BreakwaterRuins.RingMargin(4):0.0}  station reach {BreakwaterCourse.StationReach(42f):0.0}  worst colour gap {worstGap} prisms");
+    }
+
+    static void MeasureBarriers(Vector3[] pads)
+    {
+        int courses = 0, minPrisms = int.MaxValue, maxPrisms = 0, fewest = int.MaxValue, most = 0;
+        long prisms = 0;
+        var kinds = new int[BreakwaterBarriers.KindCount];
+        for (int seed = 1; seed <= 100; seed++)
+        {
+            var settings = BreakwaterCourseSettings.ForIntensity(4);
+            settings.StationCount = 15;
+            var stations = BreakwaterCourse.Generate(seed, settings);
+            if (stations == null || stations.Count < 15) continue;
+            var course = stations.Select(s => new RaceGate(s.Position, s.Axis, s.PortRadius)).ToList();
+            var lap = new List<RaceGate>();
+            var parts = new List<BreakwaterBarrierPart>();
+            BreakwaterBarriers.Lay(course, 1, 4, pads, lap, parts);
+            courses++;
+            prisms += parts.Count;
+            minPrisms = Math.Min(minPrisms, parts.Count); maxPrisms = Math.Max(maxPrisms, parts.Count);
+            var legs = parts.GroupBy(p => p.Leg).ToList();
+            fewest = Math.Min(fewest, legs.Count); most = Math.Max(most, legs.Count);
+            foreach (var leg in legs) kinds[leg.First().Kind]++;
+        }
+        Console.WriteLine($"barriers {fewest}-{most} a course  prisms mean {prisms / Math.Max(1, courses)} ({minPrisms}-{maxPrisms})" +
+                          $"  by kind (curtain minefield lock): {string.Join(" ", kinds)}");
     }
 
     public static int Main(string[] args)
