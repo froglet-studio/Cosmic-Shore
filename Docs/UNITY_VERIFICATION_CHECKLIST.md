@@ -23143,6 +23143,29 @@ Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
 8. **Two players.** Host and client. **Pass:** both see the same balls. Known gap: a CLIENT pilot cannot dash (ANGLER.md
    follow-up 7).
 
+### Lantern Run: garden ruins at I4 (`Ys-bleeding-edge`, 2026-11-24) - NOT COMPILED IN UNITY, NOT WATCHED
+
+Spearline's ruins (`SpearlineRuins`, called, not copied) laid from Lantern Run's rings: `LanternRunRuins.cs`,
+`LanternRunController.Ruins.cs`, `LanternRunRuinsTests.cs`. What ran: `bash Tools/Build/lantern_run_harness/run.sh
+--self-test` (Roslyn, no Unity): 10 of 10 tests and 4 negative controls; `author_lantern_run_assets.py --check`.
+What did not run: a Unity compile (the controller partial is compiled by nothing outside Unity), the edit-mode suite in
+the editor, Play.
+
+1. **Compile.** Open the project. **Pass:** no errors in `LanternRunController.cs`, `LanternRunController.Ruins.cs`,
+   `LanternRunRuins.cs`; `LanternRunRuinsTests` passes (10).
+2. **Inspector.** `MinigameLanternRun.unity`, the controller. **Pass:** a "Garden ruins (I4)" header with Ruin Domains =
+   Jade, Ruby, Gold.
+3. **I1-I3.** Fly one each. **Pass:** no ruins; the race is as before.
+4. **I4.** **Pass:** a ruin on each of the seven legs between rings (none on the leg back into ring 0), in Jade, Ruby
+   and Gold in turn, every stone thick; a clear lane down the line; nothing at a ring; no ruin standing in a Blue ball.
+   About 800 prisms: watch the frame rate and the load.
+5. **The wheel** (about half the courses have one). **Pass:** it turns (25 deg/s), also during the countdown, and its
+   spokes cross the line.
+6. **Paint.** Hold RT with a ruin along the nose. **Expected, to judge:** the ruin lights up and the school goes for
+   it, since a ruin prism is an enemy prism to every pilot not of its colour. Is that wanted at I4 ("Sparse")?
+7. **AI.** **Pass:** the AI Anglers still finish I4, with times near the trained 154 s; say if they now throw at ruins.
+8. **Two players.** **Pass:** both see the same ruins and the same wheel angle.
+
 ## 🟡 Switchback fauna path corridor + prism budget (2026-11-02, NOT RUN IN EDITOR)
 Refcompile (player) error set identical to base; perf_hunt gates OK; EditMode tests (`FaunaCorridorTests`) NOT run — headless project busy.
 - [ ] Switchback I1–I4: no fauna born / steering within 220 u of the gate path; fauna elsewhere unchanged.
