@@ -8250,6 +8250,10 @@ Verified: `author_start_flow.py` nothing to write, `--check` and `--self-test` (
 `unity_refcompile` player and editor, `gates.sh`, `colour_trace.py --check`. Hand test: "Boot splash and sign-in scene:
 the poster" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+**2026-11-24, the bands taken off** (Shombith: "remove them"): the three slanted Jade, Ruby and Gold bands are gone
+from both posters (`RETIRED_BANDS` in `author_start_flow.py`, which removes them from the committed scenes and fails
+if one comes back). The two runs of prisms still take the worn set's rim colours. Not seen in Unity.
+
 ## 180. Rev 95 mockups: Voyages as two screens - the voyage on the map, then the squad (2026-11-12; Shombith picked 1A, the squad screens rejected, redrawn in section 181)
 
 **Asked (Shombith, 2026-11-12, with two screenshots of the built section 172 in Unity):**

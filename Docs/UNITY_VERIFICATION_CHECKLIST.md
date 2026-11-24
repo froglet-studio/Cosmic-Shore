@@ -24888,14 +24888,14 @@ reference assemblies (player and editor); `author_start_flow.py --check` and `--
 editor: this is the first screen of the game, so run step 1 before anything else and send a screenshot beside board `R94C`.
 
 1. Open `Bootstrap.unity` and press Play from a signed-out state. The game must reach the menu.
-2. Splash: a cell frame pushing in under the sea lines; three leaning Jade, Ruby and Gold bands with rim edges; five
+2. Splash: a cell frame pushing in under the sea lines; no coloured bands (taken off 2026-11-24, Shombith); five
    captains with bottoms aligned and Galleon largest; three silver hulls bobbing; crystals, fauna, flora and prism runs
    moving; both logos top-left; a dark foot.
 3. Bar: the percentage never drops; Connecting, Signing in, Loading profile, Creating session light in order; it holds
    while waiting; it ends at 100 with "Ready". Run EditMode tests `BootLoadProgressTests` and `BootPosterTests`.
 4. Sign-in scene: the same poster; the sign-in, pilot-name and consent windows are opaque and usable; the percentage carries over.
 5. Disconnect the network and boot: the retry window is opaque, the bar is hidden under it, and Retry works.
-6. Profile: change the colour set and return to the splash. The bands show the new set, blended over about 1 s.
+6. Profile: change the colour set and return to the splash. The two prism runs show the new set, blended over about 1 s.
 7. Play a match and return to the menu: the overlay shows "Building the world", no step labels, 0 to 100. If prisms
    were still growing in the scene being left, check the bar does not start above 0.
 8. A portrait or 4:3 Game view: the stage shrinks to fit.

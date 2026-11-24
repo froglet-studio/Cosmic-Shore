@@ -37,11 +37,10 @@ StartAgeGate / StartConsent boards).
         order, the silent provider, the stand-in marks) is written here too.
     Rev 94 C (Docs/MENU_REDESIGN_B.md section 177.2; Docs/MenuRedesignB/rounds/r94_posters.py, board R94C): the
         still feature art, its dim and its bottom fade give way to a POSTER on both the splash and the sign-in scene:
-        a real frame of a cell far behind, pushing in, under the sea lines; three slanted domain bands (Jade, Ruby,
-        Gold) painted as prisms of the WORN colour set (PosterDomainPaint: face colour body, rim colour edges, read
-        at runtime, blended when the set changes - no colour is written here); five captains in slanted cards
+        a real frame of a cell far behind, pushing in, under the sea lines; five captains in slanted cards
         (KitSlant); three hulls in silver, bobbing; Omni crystals, fauna, flora and two runs of prisms in the
-        margins (PosterDrift); the flat logos; a dark foot with the Rev 91 bar (BootStepBar, a KitStepBar that
+        margins (PosterDrift; the prisms painted in the WORN colour set's rim colours by PosterDomainPaint, read at
+        runtime - no colour is written here); the flat logos; a dark foot with the Rev 91 bar (BootStepBar, a KitStepBar that
         draws BootLoadProgress, whose shares this script reads from the C# so the bar's steps cannot disagree with
         the model). The poster's art is imported here from Docs/ into Assets/_Graphics/UI/Splash/. The start flow's
         windows become opaque: they no longer sit on a dimmed still.
@@ -225,7 +224,7 @@ def plain_kit_button(k, name, x, y, variant, opaque, caption, cap, active=True):
 # Positions are the board's, on its 1920 x 1080 page with y down. The foot is the bottom FOOT_H of the screen; the
 # STAGE is the board's area above it, 1920 wide, standing on the foot's top edge and scaled down by PosterFit on a
 # screen narrower than the board. No colour is typed: art is drawn white (the identity tint), chrome takes theme tokens,
-# and the domain colours are read from the worn colour set at runtime (PosterDomainPaint), so a band ships transparent.
+# and the domain colours are read from the worn colour set at runtime (PosterDomainPaint), so a painted shape ships transparent.
 
 SPLASH_DIR = "Assets/_Graphics/UI/Splash"
 # Names are the bust files' stems in Docs/Pilots/art/busts/, case and all (Shombith's second picks, 2026-11-17; the centre card is the third).
@@ -245,10 +244,9 @@ ART_META_DONOR = "Assets/_Graphics/CardImages/Squirrel_large.png.meta"     # a s
 HULLS = (("Squirrel", 500, 20, 9), ("Dolphin", 830, -10, 7), ("Sparrow", 1190, 20, 8))    # name, x, y, bob seconds
 HULL_SIZE = 300
 DOMAIN_VALUE = {"Jade": 1, "Ruby": 2, "Gold": 4}           # CosmicShore.Data.Domains
-BANDS = ("Jade", "Ruby", "Gold")
-BAND_X0, BAND_PITCH, BAND_W, BAND_ALPHA, RIM_W = 360, 400, 400, 0.74, 3
-BAND_MID = 440                 # the board's bands (top -60, 1000 tall) are centred here; the lean pivots on it
-BAND_TOP, BAND_BOTTOM = -4000, 940     # drawn far past the board's top, so a tall screen never shows a band's end
+# The three slanted domain bands (Jade, Ruby, Gold) were taken off the poster (Shombith, 2026-11-24: "remove them").
+RETIRED_BANDS = ("BandJade", "BandRuby", "BandGold")
+FACE_ALPHA = 0.74
 LEAN = 14.0
 SLANT = math.tan(math.radians(LEAN))
 FOOT_H, STAGE_W = 220, 1920
@@ -336,7 +334,7 @@ def slant(color, lean=LEAN, sprite=None, focus=(0.5, 0.5)):
 UNPAINTED = tok("SurfaceBlack", 0.0)      # what a domain shape ships as: clear until the worn set paints it
 
 
-def paint(domain, faces=(), rims=(), face_alpha=BAND_ALPHA, rim_alpha=1.0):
+def paint(domain, faces=(), rims=(), face_alpha=FACE_ALPHA, rim_alpha=1.0):
     """PosterDomainPaint: `faces` and `rims` are node keys of KitSlant shapes."""
     return lambda ctx, go: K.mono(go, S["paint"],
                                   f"  domain: {DOMAIN_VALUE[domain]}\n"
@@ -344,22 +342,6 @@ def paint(domain, faces=(), rims=(), face_alpha=BAND_ALPHA, rim_alpha=1.0):
                                   + f"  faceAlpha: {K.f32(face_alpha)}\n"
                                   + K.refs_list("rims", [ctx.c(k, "slant") for k in rims])
                                   + f"  rimAlpha: {K.f32(rim_alpha)}\n  blendSeconds: {K.f32(BLEND_SECONDS)}\n")
-
-
-def band_node(k, i, domain):
-    """One domain as its prism: the worn set's face colour as the body, its rim colour along both long edges."""
-    height = BAND_BOTTOM - BAND_TOP
-    reach = SLANT * height
-    cy = (BAND_TOP + BAND_BOTTOM) / 2
-    cx = BAND_X0 + i * BAND_PITCH + BAND_W / 2 + SLANT * (BAND_MID - cy)
-    key = f"{k}/Band{domain}"
-    n = N(key, f"Band {domain}", SC(cx, cy, BAND_W + reach, height))
-    n.child(N(f"{key}/Face", "Face", STRETCH)).add("cr", 222, K.canvas_renderer()).add("slant", 114, slant(UNPAINTED))
-    for side, ax in (("RimL", 0), ("RimR", 1)):
-        n.child(N(f"{key}/{side}", side, R((ax, 0), (ax, 1), (0, 0), (RIM_W + reach, 0), (ax, 0.5)))) \
-            .add("cr", 222, K.canvas_renderer()).add("slant", 114, slant(UNPAINTED))
-    n.add("paint", 114, paint(domain, [f"{key}/Face"], [f"{key}/RimL", f"{key}/RimR"]))
-    return n
 
 
 def prism_run(k, i, domain, x, y, count, phase):
@@ -380,7 +362,7 @@ def prism_run(k, i, domain, x, y, count, phase):
 
 
 def captain_card(k, name, cx, h, w):
-    """A captain's bust in a slanted card that leans the way the bands lean, an ink line round it."""
+    """A captain's bust in a slanted card that leans the way the poster leans, an ink line round it."""
     box = w + round(h * SLANT)
     key = f"{k}/{name.capitalize()}"
     n = N(key, name.capitalize(), TL(cx - box // 2, CAPTAIN_FOOT - h, box, h))
@@ -427,8 +409,6 @@ def poster_node(prefix):
     stage.add("fit", 114, lambda ctx, go: K.mono(go, S["fit"], f"  frame: {{fileID: {ctx.rt(k)}}}\n  authoredWidth: {STAGE_W}\n"))
     for n in life_nodes(f"{k}/Stage"):
         stage.child(n)
-    for i, domain in enumerate(BANDS):
-        stage.child(band_node(f"{k}/Stage", i, domain))
     for name, x, y, seconds in HULLS:
         hull = picture(N(f"{k}/Stage/{name}", name, SC(x + HULL_SIZE / 2, y + HULL_SIZE / 2, HULL_SIZE, HULL_SIZE)),
                        K.meta_guid(f"Assets/_Graphics/CardImages/{name}_large.png"))
@@ -461,7 +441,7 @@ def retire_backdrop(p, prefix):
     the old sea node, the bottom fade, and the 180 x 2 KitLoadBar on the readout's track."""
     for name in RETIRED_BACKDROP:
         remove_go(p, str(p.ctx.go(f"{prefix}/{name}")))
-    for name in RETIRED_CAPTAINS:
+    for name in RETIRED_CAPTAINS + RETIRED_BANDS:
         remove_go(p, str(p.ctx.go(f"{prefix}/Poster/Stage/{name}")))
     bar = str(p.ctx.c(f"{prefix}/Readout/Track", "bar"))
     if p.sc.has(bar):
@@ -1201,6 +1181,8 @@ def check_poster(path, sc, ctx, prefix, files):
         assert not sc.has(str(ctx.go(f"{prefix}/{name}"))), f"{path}: the still's {name} survives under the poster"
     for name in RETIRED_CAPTAINS:
         assert not sc.has(str(ctx.go(f"{prefix}/Poster/Stage/{name}"))), f"{path}: the retired captain {name} survives"
+    for name in RETIRED_BANDS:
+        assert not sc.has(str(ctx.go(f"{prefix}/Poster/Stage/{name}"))), f"{path}: the retired band {name} survives"
     # The bar: wired, on the boot status channel, cut where the model's shares end.
     _, bar = step_bar(path, sc)
     for f in ("fill", "fillGraphic", "glint", "stepText", "percentText", "stepRow", "bootWords", "returnWords"):
@@ -1228,10 +1210,8 @@ def check_poster(path, sc, ctx, prefix, files):
             rgb = colour_of(d)
             assert rgb and from_the_theme(rgb[:3]), f"{path}: a poster graphic carries a typed colour {rgb} (white, a theme token, or the worn set at runtime)"
     paints = [d for d in comps if f"guid: {S['paint']}" in d]
-    bands = [d for d in paints if "  faces:\n" in d]
-    assert sorted(int(re.search(r"^  domain: (\d+)", d, re.M).group(1)) for d in bands) == sorted(DOMAIN_VALUE[b] for b in BANDS), \
-        f"{path}: the poster needs one band each for {', '.join(BANDS)}"
-    assert len(paints) == len(bands) + 2, f"{path}: the poster needs its two runs of prisms"
+    assert not any(re.search(r"^  faces:\n  - ", d, re.M) for d in paints), f"{path}: a domain band is back on the poster"
+    assert len(paints) == 2, f"{path}: the poster needs its two runs of prisms, and nothing else painted by domain"
     for d in paints:
         shapes = re.findall(r"^  - \{fileID: (-?\d+)\}", d, re.M)
         assert shapes, f"{path}: a PosterDomainPaint paints nothing"
@@ -1239,10 +1219,6 @@ def check_poster(path, sc, ctx, prefix, files):
             sd = sc.docs.get(fid, "")
             assert f"guid: {S['slant']}" in sd, f"{path}: a PosterDomainPaint names a shape that is not a KitSlant"
             assert colour_of(sd)[3] == 0, f"{path}: a domain shape ships with a colour of its own (it must be clear until the worn colour set paints it)"
-    for d in bands:
-        rims = re.search(r"^  rims:\n((?:  - .*\n)*)", d, re.M)
-        assert rims and rims.group(1).count("{fileID: ") == 2, f"{path}: a band needs a rim along both long edges"
-        assert f"  blendSeconds: {K.f32(BLEND_SECONDS)}\n" in d, f"{path}: a band does not blend when the worn set changes"
     pictures = "".join(comps)
     for name, _, _ in CAPTAINS:
         assert f"  sprite: {K.sprite_ref(art_guid('captain_' + name.lower() + '.jpg'))}\n" in pictures, f"{path}: the poster lost {name}"
@@ -1347,7 +1323,7 @@ def self_test(files):
         ("Apple dropped from Android", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace(
             "  androidOrder:\n  - 3\n  - 4\n", "  androidOrder:\n  - 3\n"))),
         ("Steam no longer silent", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace("desktopSilentProvider: 2", "desktopSilentProvider: 0"))),
-        ("a band with a colour of its own", edit_doc(SPLASH, str(splash_ctx().c("Splash/Poster/Stage/BandJade/Face", "slant")),
+        ("a prism with a colour of its own", edit_doc(SPLASH, str(splash_ctx().c("Splash/Poster/Stage/RunJade/P0", "slant")),
                                              lambda d: d.replace("a: 0}", "a: 0.74}", 1))),
         ("a typed colour on the poster", edit_doc(AUTH, str(auth_ctx().c("Auth/Poster/Foot", "img")),
                                           lambda d: re.sub(r"  m_Color: .*", "  m_Color: {r: 0.1, g: 0.2, b: 0.3, a: 1}", d, count=1))),
@@ -1362,8 +1338,6 @@ def self_test(files):
         ("the poster lost its exit", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(f"guid: {S['exit']}", "0" * 32))),
         ("the Froglet logo back at the top left", edit_doc(SPLASH, str(splash_ctx().rt("Splash/Poster/Froglet")),
                                                   lambda d: d.replace("  m_AnchorMin: {x: 1, y: 0}", "  m_AnchorMin: {x: 0, y: 1}", 1))),
-        ("a band lost a rim", edit_doc(AUTH, str(auth_ctx().c("Auth/Poster/Stage/BandGold", "paint")),
-                               lambda d: re.sub(r"(  rims:\n  - .*\n)  - .*\n", r"\1", d, count=1))),
         ("the rule ticks judge another field", lambda f: f.__setitem__(AUTH, re.sub(r"(  input: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[AUTH], count=1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
