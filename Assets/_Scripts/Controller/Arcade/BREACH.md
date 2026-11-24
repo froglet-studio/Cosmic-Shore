@@ -95,6 +95,32 @@ A broken wall prism grows back **6 s** later, once no hull is at its wall, so ev
 breaches it breaches it for itself. Which rings are walled is the ring's index, and the wall stands on the ring's axis, so
 every peer lays the same walls from the broadcast rings wherever the cell is (a test holds it). Nothing new is replicated.
 
+## 3a. The garden ruins (I4 only, decoration; Yash, 2026-11-24)
+
+The same ruins Spearline lays round its racing line (`SPEARLINE.md` §2a): `BreachRuins` CALLS `SpearlineRuins.Lay` with
+Breach's rings and adds no ruin of its own. It states Breach's clearances and leaves out what the walls need left out.
+
+- **Clearances** (`BreachRuins`): a **70 u** clear lane down every leg's flown line (the I4 ring is 54), nothing within
+  **100 u** of a ring, only on legs of **300 u** or more. Spearline's own are 60, 120 and 380; Breach's ordinary legs
+  are 300 to 380 u, so Spearline's floor would lay none.
+- **Bare legs.** A hard-turn leg (160 to 220 u) is too short. A leg INTO a walled ring is left bare, because the hull
+  does not fly that leg's line: it swings out round the wall's edge, past the lane. No ruin prism of any leg stands
+  within 20 u of a wall's disc.
+- **What stands.** Six ruins on every course (the legs into rings 1, 2, 5, 8, 11 and 14), about 420 prisms, measured
+  over 100 seeds. **No wheel**: a wheel needs 250 u clear of every ring and no Breach leg has it, so the generator
+  stands a pergola there instead. The hook still poses a wheel from the network clock if a course ever fits one.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby, Gold in turn round the course (scene > `ruinDomains`; empty =
+  Blue), so they read apart from the Blue walls. They are PLAIN prisms in the walls' prefab, not danger.
+- **Rules.** The game's own for a prism: a hull or a gun breaks them and nothing grows back. Nothing reads or writes a
+  vessel. Every peer lays the same ruins from the broadcast rings (`BreachController.Ruins.cs`); nothing is replicated.
+
+Tests (`BreachRuinsTests`, 100 seeds, in `breach_harness/run.sh`): none below I4, the lane and the ring margin hold, no
+ruin on a walled or hard leg, none at a wall, a wheel whole or not at all, six ruins a course, the same lay for the
+same rings. Negative control: ruins allowed on a walled leg fail two tests.
+
+**Not measured:** the AI's I4 times with the ruins standing. The offline clock does not model prisms, and the AI
+gunners shoot any prism of another domain, so they will spend shots on ruins as well as walls.
+
 ## 4. The vessel change (OrcaCrew; the Orca is Garrett's)
 
 One, for the AI only: **`OrcaCrew.RaceCoach`** (`IOrcaRaceCoach`). **The shipped AI helm never burns**: `wantBoost` was
@@ -143,6 +169,8 @@ All 24 races finished. Still open: I4 is easier than I3 (0.88x), and Medium is o
 | Orca numbers the cut depends on | `BreachCourse` constants, read back off `Orca.prefab` and `OrcaCrewConfig.asset` by `The_course_is_cut_for_the_shipped_orca` | min speed 8.5, throttle 21.25, boost x5, turn 44 + 0.055/u, tank 3, refill 0.25, danger recovery 3 |
 | the burn's thresholds | `BreachCourse` (`BurnAlignDeg`, `HardTurnStop`, `WallStop`, `MinBurnStart`) | 8 deg, 150 u, 180 u, 1 s |
 | wall regrow | scene > `wallRegrowSeconds`, `wallRegrowPerFrame` | **6 s**, 40 |
+| ruin clearances (I4) | `BreachRuins` (`ClearRadius`, `RingMargin`, `MinLegLength`, `WallKeep`) | 70 u, 100 u, 300 u, 20 u |
+| ruin colours | scene > `ruinDomains` | Jade, Ruby, Gold |
 | detection clamp | scene > `maxPlausibleSpeed` | **500** (a 115 u/s burn, twice, with room) |
 | comeback rate | `ArcadeGameBreach.asset` | **0.25** |
 
@@ -163,6 +191,9 @@ drift gate. Card art: `render_card_backgrounds.py Breach` (an I4 course with its
 5. I4: a wall on the ring after each hard turn; neither ever meets the other.
 6. Two AI Orcas: they burn the straights, coast the turns and walls, and finish. Note any wall an AI hits.
 7. MPPM two clients: both see the same walls.
+8. I4 (§3a, owed since 2026-11-24, never compiled or run in Unity): six ruins stand between rings in Jade, Ruby and
+   Gold, none on a leg into a wall. Fly the line through each: the lane is open. Two AI Orcas still finish; note their
+   times against 141 s (Legendary) and whether the gunners waste the wall's shots on a ruin.
 
 ## 9. Known limitations
 
