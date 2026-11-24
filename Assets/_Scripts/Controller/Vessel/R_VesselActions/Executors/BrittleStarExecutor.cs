@@ -791,7 +791,11 @@ namespace CosmicShore.Gameplay
                 if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
                 prism.Slice(v * config.CordDebrisRestitution, _status.Domain, _status.PlayerName,
                             onCord, cutNormal.normalized, debrisSpeedLimit: config.CordDebrisSpeedLimit);
-                PlayAt(config.CordSliceEvent, onCord);
+                if (Time.time >= _nextCordSliceSoundAt)
+                {
+                    _nextCordSliceSoundAt = Time.time + config.CordSliceSoundMinSeconds;
+                    PlayAt(config.CordSliceEvent, onCord);
+                }
             }
         }
 
@@ -1019,8 +1023,16 @@ namespace CosmicShore.Gameplay
                 }
                 if (_heat.AddRounds(guns, config.HeatPerRound, HeatCapacity())) PlayAt(config.OverheatEvent, HullPosition);
             }
-            PlayAt(config.FireEvent, HullPosition);
+            if (Time.time >= _nextFireSoundAt)
+            {
+                _nextFireSoundAt = Time.time + config.FireSoundMinSeconds;
+                PlayAt(config.FireEvent, HullPosition);
+            }
         }
+
+        // The fire and cord-slice sounds are rate-limited per hull (config): unthrottled, three AI hulls started ~270
+        // fire sounds a second and FMOD's command queue stalled the game for minutes.
+        float _nextFireSoundAt, _nextCordSliceSoundAt;
 
         void FireAlong(Transform muzzle, Vector3 direction, float scale, float time, Vector3 inherit)
         {

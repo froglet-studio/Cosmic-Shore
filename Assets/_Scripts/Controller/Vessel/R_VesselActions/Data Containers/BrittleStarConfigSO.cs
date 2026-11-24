@@ -332,9 +332,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference destructionModeEvent;
         [SerializeField] EventReference chargeModeEvent;
         [SerializeField] EventReference modeOffEvent;
+        [Tooltip("The guns fire (at most one per Fire Sound Min Seconds).")]
         [SerializeField] EventReference fireEvent;
-        [Tooltip("A cord cuts a prism (one per cut, at the cut).")]
+        [Tooltip("A cord cuts a prism (one per cut, at the cut; at most one per Cord Slice Sound Min Seconds).")]
         [SerializeField] EventReference cordSliceEvent;
+        [Tooltip("The shortest gap (s) between two fire sounds from one hull. The guns fire 90 rounds a second, so " +
+                 "without it the sound started on nearly every frame; three AI Brittle Stars left thousands of FMOD " +
+                 "instances alive and stalled FMOD's command queue for minutes (Brittle Star Time I4, 2026-11-24). " +
+                 "0 = every volley.")]
+        [SerializeField, Min(0f)] float fireSoundMinSeconds = 0.08f;
+        [Tooltip("The shortest gap (s) between two cord-slice sounds from one hull (a cord can cut dozens of prisms " +
+                 "a frame). 0 = every cut.")]
+        [SerializeField, Min(0f)] float cordSliceSoundMinSeconds = 0.05f;
         [SerializeField] EventReference ringLaunchEvent;
         [SerializeField] EventReference ringBlastEvent;
         [SerializeField] EventReference ringRebuildEvent;
@@ -436,6 +445,8 @@ namespace CosmicShore.Gameplay
         public EventReference ModeOffEvent => modeOffEvent;
         public EventReference FireEvent => fireEvent;
         public EventReference CordSliceEvent => cordSliceEvent;
+        public float FireSoundMinSeconds => fireSoundMinSeconds;
+        public float CordSliceSoundMinSeconds => cordSliceSoundMinSeconds;
         public EventReference RingLaunchEvent => ringLaunchEvent;
         public EventReference RingBlastEvent => ringBlastEvent;
         public EventReference RingRebuildEvent => ringRebuildEvent;
