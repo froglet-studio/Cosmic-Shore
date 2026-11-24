@@ -2997,6 +2997,58 @@
       "h": 900,
       "page": "game-cards",
       "title": "Rev 131 - notes: what each option changes, what is shared, what differs from the build"
+    },
+    "R132Compare.dc.html": {
+      "x": 0,
+      "y": 20780,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 - Compare"
+    },
+    "R132M1.dc.html": {
+      "x": 2100,
+      "y": 20780,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M1 - M1 Frame + Light trail - interactive",
+      "is_interactive": true
+    },
+    "R132M2.dc.html": {
+      "x": 4200,
+      "y": 20780,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M2 - M2 Frame + Hero shot - interactive",
+      "is_interactive": true
+    },
+    "R132M3.dc.html": {
+      "x": 0,
+      "y": 22040,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M3 - M3 Frame + Diorama - interactive",
+      "is_interactive": true
+    },
+    "R132M4.dc.html": {
+      "x": 2100,
+      "y": 22040,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M4 - M4 Frame + Chase cam - interactive",
+      "is_interactive": true
+    },
+    "R132Notes.dc.html": {
+      "x": 0,
+      "y": 23300,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 132 - notes: what each option changes, what is shared, what differs from the build"
     }
   },
   "createdOnFiles": {
@@ -3090,6 +3142,7 @@
     "sec-rev129",
     "sec-rev130",
     "sec-rev131",
+    "sec-rev132",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3183,7 +3236,8 @@
     "rev128",
     "rev129",
     "rev130",
-    "rev131"
+    "rev131",
+    "rev132"
   ],
   "notes": {
     "hud_end": {
@@ -5362,6 +5416,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "game-cards"
+    },
+    "rev132": {
+      "kind": "title1",
+      "text": "Rev 132 - Real frames with the vessel acting",
+      "x": 0,
+      "y": 20380,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev132": {
+      "kind": "rect",
+      "x": -160,
+      "y": 20220,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
     }
   },
   "order": [
@@ -5721,7 +5799,13 @@
     "R131Y5.dc.html",
     "R131Y6.dc.html",
     "R131Y7.dc.html",
-    "R131Notes.dc.html"
+    "R131Notes.dc.html",
+    "R132Compare.dc.html",
+    "R132M1.dc.html",
+    "R132M2.dc.html",
+    "R132M3.dc.html",
+    "R132M4.dc.html",
+    "R132Notes.dc.html"
   ],
   "pages": [
     {

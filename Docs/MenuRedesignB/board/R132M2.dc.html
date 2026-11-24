@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 132 M2 - Frame + Hero shot: the Arcade row and every state - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+.soft{clip-path:none;box-shadow:none;color:#E6E9FF;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.8) 20%,rgba(230,233,255,.8) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.8) 20%,rgba(230,233,255,.8) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat,linear-gradient(90deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 20%,rgba(0,4,31,.86) 80%,rgba(0,4,31,0) 100%)}
+.softcta{clip-path:none;color:#00041F;background:linear-gradient(90deg,rgba(153,255,128,0) 0,#99FF80 20%,#99FF80 80%,rgba(153,255,128,0) 100%)}
+.softwait{clip-path:none;color:#747BAD;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(67,76,137,.9) 20%,rgba(67,76,137,.9) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(67,76,137,.9) 20%,rgba(67,76,137,.9) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat}
+.dia{display:inline-block;box-sizing:border-box;transform:rotate(45deg);flex:none}
+.lit{fill:none;stroke:#E6E9FF;stroke-opacity:.75;stroke-width:2;transition:stroke-dashoffset 1.1s ease}
+
+.gw{position:relative;width:341px;height:296px;perspective:900px}
+.gw .hz{position:absolute;z-index:6;width:33.34%;height:33.34%;display:block}
+.tilt{position:absolute;inset:0;transition:transform .22s cubic-bezier(.33,1,.68,1);transform-style:preserve-3d}
+.gc{position:absolute;inset:0;overflow:hidden;background:#00041F;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.edge{position:absolute;inset:0;pointer-events:none;z-index:5;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+ background:linear-gradient(#434C89,#434C89) top/100% 1px no-repeat,linear-gradient(#434C89,#434C89) bottom/100% 1px no-repeat,
+ linear-gradient(#434C89,#434C89) left/1px 100% no-repeat,linear-gradient(#434C89,#434C89) right/1px 100% no-repeat;transition:filter .2s}
+.edge::before,.edge::after{content:"";position:absolute;width:20px;height:1px;background:#434C89;transform-origin:0 0}
+.edge::before{left:0;top:14px;transform:rotate(-45deg)}
+.edge::after{right:0;bottom:14px;transform:rotate(-45deg);transform-origin:100% 100%}
+.band{position:absolute;left:0;top:0;width:341px;height:200px;overflow:hidden}
+.art{position:absolute;left:-9px;top:-6px;width:359px;height:212px;background-size:cover;background-position:center}
+.drift{animation:drift 40s ease-in-out infinite alternate}
+@keyframes drift{0%{transform:translate(0,0)}50%{transform:translate(-5px,3px)}100%{transform:translate(4px,-2px)}}
+.seam{position:absolute;left:0;right:0;top:200px;height:1px;background:#222645}
+.body{position:absolute;left:0;right:0;top:201px;bottom:0;background:#00041F}
+.nm{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:22px;letter-spacing:.04em;color:#E6E9FF;white-space:nowrap}
+.hl{object-fit:contain;filter:drop-shadow(0 0 1px rgba(230,233,255,.55))}
+.star{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,1,10,.72);display:flex;align-items:center;justify-content:center;z-index:4}
+.shp polygon{fill:none;stroke:#E6E9FF;stroke-width:1.6}
+.ring{position:absolute;left:-5px;top:-5px;pointer-events:none;opacity:0;overflow:visible}
+.ring polygon{fill:none;stroke:#00D4FF;stroke-width:2}
+.fc .ring{opacity:1}
+.lockv{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:4;background:rgba(0,1,10,.35)}
+.lk .lockv{display:flex}
+.lk .art,.lk .lay{filter:grayscale(1) brightness(.45)}
+.lk .hl{filter:grayscale(1) brightness(.5)}
+.lk .nm{color:#747BAD}
+.lk .hz{display:none}
+.capt{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.zoom{transform:scale(1.22);transform-origin:0 0}
+
+/* ---- Before: the shipped card (Rev 18 A, 73; hover is 101.1 Sheen) ---- */
+.o0 .sheen{position:absolute;top:0;bottom:0;left:-60%;width:45%;z-index:3;pointer-events:none;opacity:0;
+ background:linear-gradient(100deg,rgba(230,233,255,0) 0,rgba(230,233,255,.16) 50%,rgba(230,233,255,0) 100%)}
+.o0:hover .sheen,.o0.hv .sheen,.o0.fc .sheen{animation:sheen .52s cubic-bezier(.33,1,.68,1) both}
+@keyframes sheen{0%{left:-60%;opacity:1}100%{left:115%;opacity:1}}
+.o0:hover .body,.o0.hv .body,.o0.fc .body{background:#222645}
+
+/* ---- A Depth: a window into the race, the picture full bleed, a glass strip for the name ---- */
+.o1 .band{height:296px}
+.o1 .art{height:316px;top:-10px;left:-14px;width:369px;mix-blend-mode:lighten}
+.o1 .stars{position:absolute;inset:-24px;background:
+ radial-gradient(1px 1px at 20px 30px,#E6E9FF 50%,transparent 51%) 0 0/90px 70px,
+ radial-gradient(1.4px 1.4px at 60px 10px,#B8C0F0 50%,transparent 51%) 0 0/130px 110px,
+ radial-gradient(1px 1px at 45px 55px,#747BAD 50%,transparent 51%) 0 0/60px 80px;opacity:.8}
+.o1 .lay{position:absolute;inset:0;transition:transform .32s cubic-bezier(.22,1,.36,1)}
+.o1 .mote{position:absolute;width:3px;height:3px;border-radius:50%;background:#E6E9FF;opacity:0;animation:mote 9s linear infinite}
+@keyframes mote{0%{transform:translate(0,0);opacity:0}15%{opacity:.8}85%{opacity:.6}100%{transform:translate(-40px,-70px);opacity:0}}
+.o1 .fly{position:absolute;left:22px;top:150px;width:140px;height:47px;filter:drop-shadow(0 8px 10px rgba(0,1,10,.8)) drop-shadow(0 0 1px rgba(230,233,255,.6));
+ animation:glide 7s ease-in-out infinite alternate;transition:transform .32s cubic-bezier(.22,1,.36,1)}
+@keyframes glide{from{margin:0 0 0 0}to{margin:-6px 0 0 -10px}}
+.o1:hover .fly,.o1.hv .fly,.o1.fc .fly{transform:translate(14px,-10px) scale(1.12)}
+.o1 .glass{position:absolute;left:0;right:0;bottom:0;height:68px;z-index:3;background:rgba(0,4,31,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+ box-shadow:inset 0 1px 0 rgba(230,233,255,.14)}
+.o1:hover .edge,.o1.hv .edge,.o1.fc .edge{filter:brightness(2.4)}
+.o1 .glare{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity .25s;
+ background:radial-gradient(circle at 30% 20%,rgba(230,233,255,.16),rgba(230,233,255,0) 55%)}
+.o1:hover .glare,.o1.hv .glare,.o1.fc .glare{opacity:1}
+
+/* ---- B Racing line ---- */
+.o2 .art{filter:brightness(.78) saturate(.9);transition:filter .3s}
+.o2:hover .art,.o2.hv .art,.o2.fc .art{filter:brightness(.62) saturate(.8)}
+.o2 .route{position:absolute;left:0;top:0;width:341px;height:200px;overflow:visible}
+.o2 .base{fill:none;stroke:#E6E9FF;stroke-opacity:.22;stroke-dasharray:2 5;stroke-width:1.5;transition:stroke-opacity .4s}
+.o2:hover .base,.o2.hv .base,.o2.fc .base{stroke-opacity:.55;stroke-dasharray:2 5}
+.o2 .comet{fill:none;stroke:#E6E9FF;stroke-width:3;stroke-linecap:round;stroke-dasharray:9 120;stroke-dashoffset:129;
+ filter:drop-shadow(0 0 3px rgba(230,233,255,.9));animation:comet 4.2s cubic-bezier(.45,0,.4,1) infinite}
+@keyframes comet{0%{stroke-dashoffset:129}62%{stroke-dashoffset:9}63%,100%{stroke-dashoffset:-1;stroke-opacity:0}}
+.o2:hover .comet,.o2.hv .comet,.o2.fc .comet{animation:none;opacity:0}
+.o2 .cry{transform-box:fill-box;transform-origin:center;animation:cry 4.2s linear infinite}
+@keyframes cry{0%,60%{transform:scale(1);opacity:.75}66%{transform:scale(1.9);opacity:1}80%,100%{transform:scale(1);opacity:.75}}
+.o2 .pass{fill:none;stroke:#E6E9FF;stroke-width:1.4;opacity:0;transform-box:fill-box;transform-origin:center;animation:pass 4.2s linear infinite}
+@keyframes pass{0%,100%{opacity:0;transform:scale(.8)}}
+.o2 .p1{animation-name:pass1}.o2 .p2{animation-name:pass2}.o2 .p3{animation-name:pass3}
+@keyframes pass1{0%,30%{opacity:0;transform:scale(.8)}34%{opacity:.9;transform:scale(1.15)}44%,100%{opacity:0;transform:scale(1.4)}}
+@keyframes pass2{0%,44%{opacity:0;transform:scale(.8)}47%{opacity:.9;transform:scale(1.15)}56%,100%{opacity:0;transform:scale(1.4)}}
+@keyframes pass3{0%,51%{opacity:0;transform:scale(.8)}54%{opacity:.9;transform:scale(1.15)}62%,100%{opacity:0;transform:scale(1.4)}}
+.o2 .flyer{position:absolute;left:0;top:0;width:54px;height:18px;opacity:0;offset-rotate:auto 180deg;z-index:3;pointer-events:none}
+.o2:hover .flyer,.o2.hv .flyer,.o2.fc .flyer{animation:fly 1.7s cubic-bezier(.4,0,.2,1) both}
+@keyframes fly{0%{offset-distance:0%;opacity:0}6%{opacity:1}92%{opacity:1}100%{offset-distance:100%;opacity:0}}
+.o2.hv .flyer{animation:none;opacity:1;offset-distance:58%}
+.o2 .lit{fill:none;stroke:#E6E9FF;stroke-opacity:.85;stroke-width:1.6;stroke-linecap:round;stroke-dasharray:130;stroke-dashoffset:130;filter:drop-shadow(0 0 2px rgba(230,233,255,.8))}
+.o2:hover .lit,.o2.fc .lit{animation:litin 1.7s cubic-bezier(.4,0,.2,1) both}
+.o2.hv .lit{stroke-dashoffset:55}
+@keyframes litin{to{stroke-dashoffset:0}}
+.o2 .rule{position:absolute;left:84px;top:262px;height:1px;width:0;background:#E6E9FF;transition:width .3s cubic-bezier(.33,1,.68,1)}
+.o2:hover .rule,.o2.hv .rule,.o2.fc .rule{width:150px}
+
+/* ---- C Hero hull ---- */
+.o3 .gc{top:28px}
+.o3 .edge{top:28px}
+.o3 .band{height:172px}
+.o3 .art{height:190px;transition:transform .5s cubic-bezier(.22,1,.36,1)}
+.o3:hover .art,.o3.hv .art,.o3.fc .art{transform:scale(1.05)}
+.o3 .seam{top:172px}.o3 .body{top:173px}
+.o3 .hero{position:absolute;right:-26px;top:-4px;width:270px;height:90px;z-index:7;pointer-events:none;
+ filter:drop-shadow(0 10px 12px rgba(0,1,10,.75)) drop-shadow(0 0 1px rgba(230,233,255,.6));animation:bob 6s ease-in-out infinite alternate;
+ transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bob{from{margin-top:0}to{margin-top:5px}}
+.o3:hover .hero,.o3.hv .hero,.o3.fc .hero{transform:translate(-16px,-8px) rotate(-5deg) scale(1.06)}
+.o3 .streak{position:absolute;height:1.5px;right:150px;width:0;z-index:6;background:linear-gradient(270deg,rgba(230,233,255,.9),rgba(230,233,255,0));transition:width .45s cubic-bezier(.22,1,.36,1)}
+.o3:hover .streak,.o3.hv .streak,.o3.fc .streak{width:130px}
+.o3 .streak.s2{transition-delay:.05s}.o3 .streak.s3{transition-delay:.1s}
+
+/* ---- D Silver foil: a collectible, the picture set in a foil frame ---- */
+.o4 .gc{background:linear-gradient(135deg,#B8C0F0 0,#434C89 22%,#E6E9FF 40%,#747BAD 58%,#222645 76%,#B8C0F0 100%)}
+.o4 .inner{position:absolute;inset:6px;background:#00041F;overflow:hidden;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.o4 .band{left:0;top:0;width:329px;height:184px}
+.o4 .art{left:-10px;top:-8px;width:349px;height:202px}
+.o4 .seam{top:184px;background:#747BAD}
+.o4 .body{top:185px;background:linear-gradient(160deg,#222645 0,#00041F 70%)}
+.o4 .foil{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.35;
+ background:repeating-linear-gradient(115deg,rgba(230,233,255,0) 0,rgba(230,233,255,.0) 40px,rgba(230,233,255,.45) 52px,rgba(184,192,240,.12) 64px,rgba(230,233,255,0) 90px);
+ background-size:400% 400%;animation:foil 16s linear infinite alternate;transition:opacity .3s}
+@keyframes foil{from{background-position:0% 0%}to{background-position:100% 100%}}
+.o4 .gc::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.6;
+ background:linear-gradient(115deg,rgba(230,233,255,0) 30%,rgba(230,233,255,.9) 45%,rgba(230,233,255,0) 60%);background-size:300% 300%;animation:foil 9s ease-in-out infinite alternate}
+.o4:hover .foil,.o4.hv .foil,.o4.fc .foil{opacity:.7}
+.o4 .spec{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .25s,background-position .3s cubic-bezier(.22,1,.36,1);
+ background:linear-gradient(115deg,rgba(230,233,255,0) 35%,rgba(230,233,255,.38) 50%,rgba(230,233,255,0) 65%);background-size:250% 250%;background-position:50% 50%}
+.o4:hover .spec,.o4.hv .spec,.o4.fc .spec{opacity:1}
+.o4 .edge{display:none}
+.o4 .num{position:absolute;left:10px;top:10px;z-index:4;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.18em;color:#00041F;
+ padding:3px 8px;background:linear-gradient(90deg,#E6E9FF,#B8C0F0)}
+.o4 .hl{top:208px!important}
+.o4 .nm{top:220px!important}
+.o4 .shpw{top:222px!important}
+
+/* ---- E Poster ---- */
+.o5 .art{height:316px;top:-10px}
+.o5 .band{height:296px}
+.o5 .shade{position:absolute;left:0;right:0;bottom:0;height:200px;z-index:2;background:linear-gradient(180deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 58%,#00041F 100%)}
+.o5 .title{position:absolute;left:20px;bottom:22px;z-index:3;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:44px;line-height:.92;letter-spacing:.02em;
+ text-transform:uppercase;color:#E6E9FF;transition:transform .32s cubic-bezier(.22,1,.36,1)}
+.o5 .open{position:absolute;left:0;right:0;bottom:0;height:0;z-index:4;overflow:hidden;background:rgba(0,4,31,.96);
+ box-shadow:inset 0 1px 0 #434C89;transition:height .32s cubic-bezier(.22,1,.36,1)}
+.o5:hover .open,.o5.hv .open,.o5.fc .open{height:112px}
+.o5:hover .title,.o5.hv .title,.o5.fc .title{transform:translateY(-112px)}
+.o5 .tag{position:absolute;left:20px;top:16px;z-index:3;display:flex;gap:10px;align-items:center}
+.o5 .hp{position:absolute;right:8px;bottom:62px;z-index:3;width:120px;height:40px;transition:opacity .2s}
+.o5:hover .hp,.o5.hv .hp,.o5.fc .hp{opacity:0}
+.o5 .bars{display:flex;gap:4px;align-items:flex-end}
+.o5 .bars i{display:block;width:6px;background:#434C89}
+.o5 .bars i.on{background:#E6E9FF}
+
+/* ---- F Live loop: a frame of the game at rest, the game running on hover ---- */
+.o6 .live{position:absolute;inset:0;background:radial-gradient(ellipse 90% 80% at 50% 18%,#222645 0,#00041F 45%,#00041F 80%);overflow:hidden}
+.o6 .cellrim{position:absolute;left:-70px;right:-70px;top:-170px;height:250px;border-radius:50%;
+ background:radial-gradient(ellipse at 50% 100%,rgba(116,123,173,.35),rgba(116,123,173,0) 60%);box-shadow:inset 0 -2px 0 rgba(184,192,240,.55),0 0 40px rgba(116,123,173,.3)}
+.o6 .pz{position:absolute;left:0;top:0;width:16px;height:5px;background:#21C0BD;opacity:0;offset-rotate:auto;
+ animation:pz 1.8s cubic-bezier(.55,0,1,.6) infinite paused}
+.o6 .pz.r{background:#BD1BC8}.o6 .pz.g{background:#FF9B11}
+@keyframes pz{0%{offset-distance:0%;transform:scale(.15);opacity:0}12%{opacity:.95}100%{offset-distance:100%;transform:scale(2.6);opacity:1}}
+.o6 .spk{position:absolute;left:0;top:0;width:2px;height:2px;border-radius:1px;background:#E6E9FF;opacity:0;offset-rotate:auto;
+ animation:spk 1.2s cubic-bezier(.55,0,1,.6) infinite paused}
+@keyframes spk{0%{offset-distance:0%;opacity:0;transform:scale(1,1)}30%{opacity:.8}100%{offset-distance:100%;opacity:.9;transform:scale(9,1)}}
+.o6 .me{position:absolute;left:118px;top:128px;width:105px;height:35px;filter:drop-shadow(0 6px 8px rgba(0,1,10,.9));animation:sway 2.2s ease-in-out infinite alternate paused}
+@keyframes sway{from{transform:translate(-22px,2px) rotate(4deg)}to{transform:translate(22px,-2px) rotate(-4deg)}}
+.o6 .boost{position:absolute;left:150px;top:150px;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle,rgba(230,233,255,.55),rgba(230,233,255,0) 70%);animation:sway 2.2s ease-in-out infinite alternate paused}
+.o6 .cr{position:absolute;left:166px;top:52px;width:10px;height:10px;transform:rotate(45deg);border:1.5px solid #E6E9FF;background:rgba(230,233,255,.25);opacity:.8;animation:cr 3.2s linear infinite paused;animation-delay:-1.1s}
+@keyframes cr{0%{transform:translate(0,0) rotate(45deg) scale(.4);opacity:0}10%{opacity:1}55%{transform:translate(0,74px) rotate(45deg) scale(2.2);opacity:1}60%{transform:translate(0,78px) rotate(45deg) scale(4);opacity:0}100%{opacity:0}}
+.o6 .plus{position:absolute;left:190px;top:104px;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:15px;color:#E6E9FF;opacity:0;animation:plus 3.2s linear infinite paused;animation-delay:-1.1s}
+@keyframes plus{0%,56%{opacity:0;transform:translateY(0)}62%{opacity:1}85%{opacity:0;transform:translateY(-22px)}100%{opacity:0}}
+.o6:hover .pz,.o6.hv .pz,.o6.fc .pz,.o6:hover .spk,.o6.hv .spk,.o6.fc .spk,.o6:hover .me,.o6.hv .me,.o6.fc .me,
+.o6:hover .boost,.o6.hv .boost,.o6.fc .boost,.o6:hover .cr,.o6.hv .cr,.o6.fc .cr,.o6:hover .plus,.o6.hv .plus,.o6.fc .plus{animation-play-state:running}
+.o6 .rec{position:absolute;left:14px;top:14px;z-index:4;display:flex;gap:6px;align-items:center;opacity:.0;transition:opacity .3s}
+.o6:hover .rec,.o6.hv .rec,.o6.fc .rec{opacity:1}
+.lk .live{filter:grayscale(1) brightness(.45)}
+.o1>i.hz:nth-of-type(1):hover~.tilt{transform:rotateX(7deg) rotateY(-7deg)}
+.o1>i.hz:nth-of-type(1):hover~.tilt .far{transform:translate(4px,4px)}
+.o1>i.hz:nth-of-type(1):hover~.tilt .mid{transform:translate(-5px,-5px)}
+.o1>i.hz:nth-of-type(1):hover~.tilt .near{transform:translate(-12px,-12px)}
+.o1>i.hz:nth-of-type(2):hover~.tilt{transform:rotateX(7deg) rotateY(0deg)}
+.o1>i.hz:nth-of-type(2):hover~.tilt .far{transform:translate(0px,4px)}
+.o1>i.hz:nth-of-type(2):hover~.tilt .mid{transform:translate(0px,-5px)}
+.o1>i.hz:nth-of-type(2):hover~.tilt .near{transform:translate(0px,-12px)}
+.o1>i.hz:nth-of-type(3):hover~.tilt{transform:rotateX(7deg) rotateY(7deg)}
+.o1>i.hz:nth-of-type(3):hover~.tilt .far{transform:translate(-4px,4px)}
+.o1>i.hz:nth-of-type(3):hover~.tilt .mid{transform:translate(5px,-5px)}
+.o1>i.hz:nth-of-type(3):hover~.tilt .near{transform:translate(12px,-12px)}
+.o1>i.hz:nth-of-type(4):hover~.tilt{transform:rotateX(0deg) rotateY(-7deg)}
+.o1>i.hz:nth-of-type(4):hover~.tilt .far{transform:translate(4px,0px)}
+.o1>i.hz:nth-of-type(4):hover~.tilt .mid{transform:translate(-5px,0px)}
+.o1>i.hz:nth-of-type(4):hover~.tilt .near{transform:translate(-12px,0px)}
+.o1>i.hz:nth-of-type(5):hover~.tilt{transform:rotateX(0deg) rotateY(0deg)}
+.o1>i.hz:nth-of-type(5):hover~.tilt .far{transform:translate(0px,0px)}
+.o1>i.hz:nth-of-type(5):hover~.tilt .mid{transform:translate(0px,0px)}
+.o1>i.hz:nth-of-type(5):hover~.tilt .near{transform:translate(0px,0px)}
+.o1>i.hz:nth-of-type(6):hover~.tilt{transform:rotateX(0deg) rotateY(7deg)}
+.o1>i.hz:nth-of-type(6):hover~.tilt .far{transform:translate(-4px,0px)}
+.o1>i.hz:nth-of-type(6):hover~.tilt .mid{transform:translate(5px,0px)}
+.o1>i.hz:nth-of-type(6):hover~.tilt .near{transform:translate(12px,0px)}
+.o1>i.hz:nth-of-type(7):hover~.tilt{transform:rotateX(-7deg) rotateY(-7deg)}
+.o1>i.hz:nth-of-type(7):hover~.tilt .far{transform:translate(4px,-4px)}
+.o1>i.hz:nth-of-type(7):hover~.tilt .mid{transform:translate(-5px,5px)}
+.o1>i.hz:nth-of-type(7):hover~.tilt .near{transform:translate(-12px,12px)}
+.o1>i.hz:nth-of-type(8):hover~.tilt{transform:rotateX(-7deg) rotateY(0deg)}
+.o1>i.hz:nth-of-type(8):hover~.tilt .far{transform:translate(0px,-4px)}
+.o1>i.hz:nth-of-type(8):hover~.tilt .mid{transform:translate(0px,5px)}
+.o1>i.hz:nth-of-type(8):hover~.tilt .near{transform:translate(0px,12px)}
+.o1>i.hz:nth-of-type(9):hover~.tilt{transform:rotateX(-7deg) rotateY(7deg)}
+.o1>i.hz:nth-of-type(9):hover~.tilt .far{transform:translate(-4px,-4px)}
+.o1>i.hz:nth-of-type(9):hover~.tilt .mid{transform:translate(5px,5px)}
+.o1>i.hz:nth-of-type(9):hover~.tilt .near{transform:translate(12px,12px)}
+.o1.hv>.tilt{transform:rotateX(3deg) rotateY(3deg)}
+.o1.hv .far{transform:translate(-2px,2px)}
+.o1.hv .mid{transform:translate(2px,-3px)}
+.o1.hv .near{transform:translate(6px,-6px)}
+.o1.fc>.tilt{transform:rotateX(3deg) rotateY(3deg)}
+.o1.fc .far{transform:translate(-2px,2px)}
+.o1.fc .mid{transform:translate(2px,-3px)}
+.o1.fc .near{transform:translate(6px,-6px)}
+.o4>i.hz:nth-of-type(1):hover~.tilt{transform:rotateX(7deg) rotateY(-7deg)}
+.o4>i.hz:nth-of-type(1):hover~.tilt .spec{background-position:100% 100%}
+.o4>i.hz:nth-of-type(2):hover~.tilt{transform:rotateX(7deg) rotateY(0deg)}
+.o4>i.hz:nth-of-type(2):hover~.tilt .spec{background-position:50% 100%}
+.o4>i.hz:nth-of-type(3):hover~.tilt{transform:rotateX(7deg) rotateY(7deg)}
+.o4>i.hz:nth-of-type(3):hover~.tilt .spec{background-position:0% 100%}
+.o4>i.hz:nth-of-type(4):hover~.tilt{transform:rotateX(0deg) rotateY(-7deg)}
+.o4>i.hz:nth-of-type(4):hover~.tilt .spec{background-position:100% 50%}
+.o4>i.hz:nth-of-type(5):hover~.tilt{transform:rotateX(0deg) rotateY(0deg)}
+.o4>i.hz:nth-of-type(5):hover~.tilt .spec{background-position:50% 50%}
+.o4>i.hz:nth-of-type(6):hover~.tilt{transform:rotateX(0deg) rotateY(7deg)}
+.o4>i.hz:nth-of-type(6):hover~.tilt .spec{background-position:0% 50%}
+.o4>i.hz:nth-of-type(7):hover~.tilt{transform:rotateX(-7deg) rotateY(-7deg)}
+.o4>i.hz:nth-of-type(7):hover~.tilt .spec{background-position:100% 0%}
+.o4>i.hz:nth-of-type(8):hover~.tilt{transform:rotateX(-7deg) rotateY(0deg)}
+.o4>i.hz:nth-of-type(8):hover~.tilt .spec{background-position:50% 0%}
+.o4>i.hz:nth-of-type(9):hover~.tilt{transform:rotateX(-7deg) rotateY(7deg)}
+.o4>i.hz:nth-of-type(9):hover~.tilt .spec{background-position:0% 0%}
+.o4.hv>.tilt{transform:rotateX(3deg) rotateY(3deg)}
+.o4.fc>.tilt{transform:rotateX(3deg) rotateY(3deg)}
+/* ---- the Poster skeleton every option shares (Rev 128 E as built, PR #2345) ---- */
+.pk .pic{position:absolute;inset:0;overflow:hidden}
+.pk .shade{position:absolute;left:0;right:0;bottom:0;height:200px;z-index:2;background:linear-gradient(180deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 58%,#00041F 100%)}
+.pk .title{position:absolute;left:20px;bottom:20px;width:229px;z-index:3;font-family:'Aldrich',sans-serif;font-size:36px;line-height:1;color:#E6E9FF;transition:transform .2s ease}
+.pk .tag{position:absolute;left:12px;top:10px;z-index:3}
+.pk .hp{position:absolute;right:12px;bottom:14px;z-index:3;width:60px;height:60px;transition:opacity .2s}
+.pk .open{position:absolute;left:0;right:0;bottom:0;height:0;z-index:4;overflow:hidden;background:rgba(0,4,31,.96);transition:height .2s ease}
+.pk .open .sl{position:absolute;left:20px;right:20px;top:16px;font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.45;color:#E6E9FF}
+.pk .open .pl{position:absolute;left:20px;bottom:14px}
+.pk:hover .open,.pk.hv .open,.pk.fc .open{height:84px}
+.pk:hover .title,.pk.hv .title,.pk.fc .title{transform:translateY(-84px)}
+.pk:hover .hp,.pk.hv .hp,.pk.fc .hp{opacity:0}
+.lk .title{color:#747BAD}
+.lk .pic{filter:grayscale(1) brightness(.45)}
+.lk .open{display:none}
+.lk .acts *{animation:none!important}
+
+/* ---- S1 Frame: a real frame of the game, full bleed; hover pushes in ---- */
+.s1 .ph{position:absolute;inset:-8px;background-size:cover;background-position:center;transition:transform .6s cubic-bezier(.22,1,.36,1)}
+.s1 .ph{animation:drift 40s ease-in-out infinite alternate}
+.s1:hover .ph,.s1.hv .ph,.s1.fc .ph{transform:scale(1.08)}
+
+/* ---- S2 Night grade: the frame graded to the deep sea at rest; hover lights it in full colour ---- */
+.s2 .ph{position:absolute;inset:-8px;background-size:cover;background-position:center;filter:grayscale(1) brightness(.85) contrast(1.1);transition:filter .45s ease}
+.s2 .tint{position:absolute;inset:0;background:#434C89;mix-blend-mode:color;transition:opacity .45s ease}
+.s2:hover .ph,.s2.hv .ph,.s2.fc .ph{filter:none}
+.s2:hover .tint,.s2.hv .tint,.s2.fc .tint{opacity:0}
+
+/* ---- S3 Reel: three frames; hover plays them as a slide show, the ticks show which ---- */
+.s3 .ph{position:absolute;inset:-8px;background-size:cover;background-position:center;opacity:0}
+.s3 .ph.f0{opacity:1}
+.s3:hover .ph,.s3.hv .ph,.s3.fc .ph{animation:reel 4.5s linear infinite}
+.s3:hover .ph.f1,.s3.hv .ph.f1,.s3.fc .ph.f1{animation-delay:1.5s}
+.s3:hover .ph.f2,.s3.hv .ph.f2,.s3.fc .ph.f2{animation-delay:3s}
+@keyframes reel{0%{opacity:0;transform:scale(1)}6%{opacity:1}33%{opacity:1}40%{opacity:0;transform:scale(1.05)}100%{opacity:0}}
+.s3 .ticks{position:absolute;right:56px;top:20px;z-index:3;display:flex;gap:4px;opacity:0;transition:opacity .2s}
+.s3 .ticks i{display:block;width:14px;height:2px;background:#434C89;position:relative;overflow:hidden}
+.s3 .ticks i::after{content:"";position:absolute;inset:0;background:#E6E9FF;transform:translateX(-100%)}
+.s3:hover .ticks,.s3.hv .ticks,.s3.fc .ticks{opacity:1}
+.s3:hover .ticks i::after,.s3.hv .ticks i::after,.s3.fc .ticks i::after{animation:tick 4.5s linear infinite}
+.s3 .ticks i:nth-child(2)::after{animation-delay:1.5s!important}
+.s3 .ticks i:nth-child(3)::after{animation-delay:3s!important}
+@keyframes tick{0%{transform:translateX(-100%)}33%{transform:translateX(0)}34%{transform:translateX(100%)}100%{transform:translateX(100%)}}
+
+/* ---- S4 Window: the frame in a window, the hull in front of it, the short line always on the card ---- */
+.s4 .pic{inset:0 0 auto 0;height:182px;clip-path:polygon(0 0,100% 0,100% 168px,calc(100% - 14px) 182px,0 182px)}
+.s4 .ph{position:absolute;inset:-10px;background-size:cover;background-position:center;transition:transform 1.2s cubic-bezier(.22,1,.36,1)}
+.s4:hover .ph,.s4.hv .ph,.s4.fc .ph{transform:scale(1.1) translate(-10px,4px)}
+.s4 .shade{display:none}
+.s4 .rim{position:absolute;left:0;right:0;top:182px;height:1px;background:#434C89;z-index:2}
+.s4 .hp{right:auto;left:14px;bottom:auto;top:130px;width:96px;height:96px;filter:drop-shadow(0 10px 12px rgba(0,1,10,.9));transition:transform .3s cubic-bezier(.22,1,.36,1)}
+.s4:hover .hp,.s4.hv .hp,.s4.fc .hp{opacity:1;transform:translate(6px,-8px) rotate(-6deg)}
+.s4 .title{left:122px;bottom:auto;top:196px;width:205px;font-size:22px;white-space:nowrap}
+.s4 .open{display:none}
+.s4 .sl2{position:absolute;left:122px;right:16px;top:226px;font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#B8C0F0;z-index:3}
+.s4:hover .title,.s4.hv .title,.s4.fc .title{transform:none}
+.s4 .pl2{position:absolute;left:20px;bottom:12px;z-index:3}
+
+/* ---- the symbolic cards: a sign of the play on the deep sea, and the hull acting it out on hover ---- */
+.y .pic{background:#00041F}
+.y .acts{position:absolute;inset:0}
+.y .ves{position:absolute;left:0;top:0;width:76px;height:76px;offset-rotate:0deg;offset-distance:0%;z-index:2}
+.y .sil{filter:brightness(0) invert(.92)}
+.y .hp{display:none}
+.y .go{animation-duration:2.6s;animation-iteration-count:infinite;animation-timing-function:cubic-bezier(.45,0,.2,1);animation-play-state:paused}
+.y:hover .go,.y.hv .go,.y.fc .go{animation-play-state:running}
+.y .pop{position:absolute;font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;opacity:0;z-index:3}
+@keyframes run{0%,8%{offset-distance:0%}62%,100%{offset-distance:100%}}
+@keyframes ball{0%,40%{offset-distance:0%;opacity:1}72%{offset-distance:100%;opacity:1}80%,100%{offset-distance:100%;opacity:0}}
+@keyframes flash{0%,70%{opacity:.35}74%{opacity:1}100%{opacity:.35}}
+@keyframes pop{0%,70%{opacity:0;transform:translateY(0)}76%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+@keyframes spark{0%,55%{opacity:0;transform:scale(.4)}62%{opacity:1;transform:scale(1.4)}80%,100%{opacity:0;transform:scale(1.8)}}
+@keyframes shot{0%,20%{offset-distance:0%;opacity:0}24%{opacity:1}52%{offset-distance:100%;opacity:1}54%,100%{offset-distance:100%;opacity:0}}
+@keyframes hit{0%,50%{opacity:.9}54%{opacity:.2}58%{opacity:.9}62%{opacity:.2}66%,100%{opacity:.9}}
+@keyframes scatter{0%,46%{transform:translate(0,0) rotate(0);opacity:1}70%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+@keyframes draw{0%{stroke-dashoffset:400}60%,100%{stroke-dashoffset:0}}
+
+/* Y1 Pictogram: the sign big and flat, the hull a white silhouette */
+.y1 .sign{stroke:#E6E9FF;fill:none;stroke-width:3}
+.y1 .soft{stroke:#434C89;fill:none;stroke-width:2}
+
+/* Y2 Playbook: a chalk diagram on a grid; hover draws the line and the hull runs it */
+.y2 .pic{background:linear-gradient(#222645 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,#222645 1px,transparent 1px) 0 0/24px 24px,#00041F}
+.y2 .route{stroke:#B8C0F0;stroke-width:2;fill:none;stroke-dasharray:6 6}
+.y2 .ink{stroke:#E6E9FF;stroke-width:2.5;fill:none;stroke-dasharray:400;stroke-dashoffset:400}
+.y2:hover .ink,.y2.hv .ink,.y2.fc .ink{animation:draw 2.6s ease-out infinite}
+.y2 .mk{font-family:'Chakra Petch',sans-serif;font-size:14px;fill:#747BAD;letter-spacing:.12em}
+
+/* Y3 Diorama: layers at three depths; hover tilts them apart while the hull acts */
+.y3 .back,.y3 .mid,.y3 .front{position:absolute;inset:0;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.y3:hover .back,.y3.hv .back,.y3.fc .back{transform:translate(6px,-3px) scale(1.02)}
+.y3:hover .mid,.y3.hv .mid,.y3.fc .mid{transform:translate(-4px,2px)}
+.y3:hover .front,.y3.hv .front,.y3.fc .front{transform:translate(-12px,6px) scale(1.06)}
+.y3 .rimarc{stroke:#434C89;fill:none;stroke-width:1.2}
+.y3 .ves{width:84px;height:84px;filter:drop-shadow(0 10px 10px rgba(0,1,10,.9))}
+
+/* Y4 Crest: the play inside a badge; hover sends the hull round it and the badge lights */
+.y4 .crest{stroke:#434C89;fill:#00041F;stroke-width:2}
+.y4 .crest2{stroke:#E6E9FF;fill:none;stroke-width:2;opacity:.35}
+.y4:hover .crest2,.y4.hv .crest2,.y4.fc .crest2{animation:flash 2.6s infinite}
+
+@keyframes run5{0%{offset-distance:0%}62%,100%{offset-distance:100%}}
+@keyframes ink5{0%{stroke-dashoffset:520}62%,100%{stroke-dashoffset:0}}
+@keyframes ink5b{0%,40%{stroke-dashoffset:300}72%,100%{stroke-dashoffset:0}}
+@keyframes bloom{0%,62%{opacity:0;transform:scale(.3)}70%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(2)}}
+@keyframes word{0%,64%{opacity:0;transform:translateY(6px) scale(.8)}72%{opacity:1;transform:translateY(0) scale(1.1)}90%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-10px)}}
+
+/* ---- Y5 Light trail: a long exposure of the play; hover flies it live ---- */
+.y5 .pic{background:radial-gradient(120% 90% at 80% 10%,rgba(67,76,137,.45) 0,rgba(0,4,31,0) 60%),#00041F}
+.y5 .glow{fill:none;stroke:#B8C0F0;stroke-width:12;stroke-linecap:round;opacity:.22;filter:url(#blur5)}
+.y5 .core{fill:none;stroke:#E6E9FF;stroke-width:2.2;stroke-linecap:round}
+.y5 .thin{fill:none;stroke:#E6E9FF;stroke-width:1.4;stroke-linecap:round;stroke-dasharray:3 7}
+.y5 .ink{stroke-dasharray:520}
+.y5 .inkb{stroke-dasharray:300}
+.y5 .ves{offset-distance:100%;width:100px;height:100px}
+.y5 .tg{filter:drop-shadow(0 0 6px rgba(230,233,255,.9))}
+.y5 .bl,.y6 .bl,.y7 .bl{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;opacity:0;
+  background:radial-gradient(circle,rgba(230,233,255,.95) 0,rgba(184,192,240,.4) 35%,rgba(0,4,31,0) 70%);z-index:3}
+.y5 .wd,.y6 .wd{position:absolute;font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;opacity:0;z-index:4;white-space:nowrap}
+.y5:hover .ink,.y5.hv .ink,.y5.fc .ink{animation:ink5 2.6s cubic-bezier(.45,0,.2,1) infinite}
+.y5:hover .inkb,.y5.hv .inkb,.y5.fc .inkb{animation:ink5b 2.6s cubic-bezier(.45,0,.2,1) infinite}
+.y5:hover .ves,.y5.hv .ves,.y5.fc .ves{animation:run5 2.6s cubic-bezier(.45,0,.2,1) infinite}
+.y5:hover .bl,.y5.hv .bl,.y5.fc .bl{animation:bloom 2.6s ease-out infinite}
+.y5:hover .wd,.y5.hv .wd,.y5.fc .wd{animation:word 2.6s ease-out infinite}
+.y5:hover .sc,.y5.hv .sc,.y5.fc .sc{animation:scatter 2.6s ease-out infinite}
+
+/* ---- Y6 Chase cam: behind the hull, the world rushing at it; hover throttles up ---- */
+.y6 .pic{background:radial-gradient(60% 50% at 56% 20%,rgba(67,76,137,.55) 0,rgba(0,4,31,0) 70%),#00041F}
+.y6 .floor{position:absolute;left:-260px;right:-260px;top:50px;height:420px;transform-origin:50% 0;
+  transform:perspective(180px) rotateX(64deg);
+  background:repeating-linear-gradient(0deg,rgba(67,76,137,.9) 0 2px,rgba(0,4,31,0) 2px 34px),
+             repeating-linear-gradient(90deg,rgba(34,38,69,.95) 0 2px,rgba(0,4,31,0) 2px 40px);
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 40%);mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 40%)}
+@keyframes rush{from{background-position:0 0,0 0}to{background-position:0 34px,0 0}}
+.y6:hover .floor,.y6.hv .floor,.y6.fc .floor{animation:rush .32s linear infinite}
+.y6 .lines line{stroke:#B8C0F0;stroke-width:1.4;stroke-dasharray:14 220;stroke-dashoffset:0;opacity:0}
+@keyframes streak{0%{stroke-dashoffset:40;opacity:0}20%{opacity:.8}100%{stroke-dashoffset:-200;opacity:0}}
+.y6:hover .lines line,.y6.hv .lines line,.y6.fc .lines line{animation:streak .9s linear infinite}
+.y6 .tgt{position:absolute;left:192px;top:50px;width:0;height:0;transform:scale(.34);z-index:2}
+@keyframes approach{0%{transform:scale(.34)}60%{transform:scale(1)}70%{transform:scale(1.15)}100%{transform:scale(.34)}}
+.y6:hover .tgt,.y6.hv .tgt,.y6.fc .tgt{animation:approach 2.6s cubic-bezier(.6,0,.6,1) infinite}
+.y6 .hero{position:absolute;left:122px;top:58px;width:124px;height:124px;z-index:3;
+  filter:drop-shadow(0 14px 12px rgba(0,1,10,.95));animation:bob 3s ease-in-out infinite;animation-play-state:paused}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-1.5deg)}}
+@keyframes bank{0%{transform:translate(0,0) rotate(0)}30%{transform:translate(-10px,-2px) rotate(-8deg)}55%{transform:translate(8px,-8px) rotate(5deg) scale(.94)}
+  70%{transform:translate(0,-4px) rotate(0) scale(.96)}100%{transform:translate(0,0)}}
+.y6:hover .hero,.y6.hv .hero,.y6.fc .hero{animation:bank 2.6s ease-in-out infinite}
+.y6 .proj{position:absolute;left:0;top:0;z-index:2;opacity:0}
+@keyframes tovp{0%,28%{opacity:0;transform:translate(180px,150px) scale(1)}34%{opacity:1}60%{opacity:1;transform:translate(192px,52px) scale(.3)}62%,100%{opacity:0;transform:translate(192px,52px) scale(.3)}}
+.y6:hover .proj,.y6.hv .proj,.y6.fc .proj{animation:tovp 2.6s cubic-bezier(.3,0,.4,1) infinite}
+.y6:hover .bl,.y6.hv .bl,.y6.fc .bl{animation:bloom 2.6s ease-out infinite}
+.y6:hover .wd,.y6.hv .wd,.y6.fc .wd{animation:word 2.6s ease-out infinite}
+.y6:hover .sc,.y6.hv .sc,.y6.fc .sc{animation:scatter 2.6s ease-out infinite}
+
+/* ---- Y7 Hero shot: the hull huge on speed rays; hover lunges into the impact frame ---- */
+.y7 .pic{background:repeating-conic-gradient(from 0deg at 30% 46%,rgba(67,76,137,.34) 0 5deg,rgba(0,4,31,0) 5deg 13deg),
+  radial-gradient(70% 70% at 30% 46%,rgba(67,76,137,.5) 0,rgba(0,4,31,0) 70%),#00041F}
+.y7 .rays{position:absolute;inset:-120px;background:repeating-conic-gradient(from 3deg at 42% 46%,rgba(184,192,240,.16) 0 1.5deg,rgba(0,4,31,0) 1.5deg 17deg)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.y7 .rays{animation:spin 60s linear infinite;animation-play-state:paused}
+.y7:hover .rays,.y7.hv .rays,.y7.fc .rays{animation-play-state:running;animation-duration:4s}
+.y7 .big{position:absolute;left:-34px;top:-26px;width:236px;height:236px;z-index:2;transform:rotate(-12deg);
+  filter:drop-shadow(0 18px 16px rgba(0,1,10,.95))}
+@keyframes lunge{0%{transform:rotate(-12deg) translate(0,0) scale(1)}40%{transform:rotate(-14deg) translate(-14px,6px) scale(.96)}
+  56%{transform:rotate(-8deg) translate(46px,-16px) scale(1.08)}80%{transform:rotate(-10deg) translate(40px,-12px) scale(1.06)}100%{transform:rotate(-12deg) translate(0,0) scale(1)}}
+.y7:hover .big,.y7.hv .big,.y7.fc .big{animation:lunge 2.6s cubic-bezier(.5,0,.2,1) infinite}
+.y7 .tg7{position:absolute;z-index:2}
+.y7 .zip line{stroke:#E6E9FF;stroke-width:2;opacity:0}
+@keyframes zip{0%,40%{opacity:0;transform:translateX(30px)}50%{opacity:.8}62%,100%{opacity:0;transform:translateX(-40px)}}
+.y7:hover .zip line,.y7.hv .zip line,.y7.fc .zip line{animation:zip 2.6s linear infinite}
+.y7 .burst{position:absolute;left:0;top:0;width:150px;height:120px;margin:-60px 0 0 -75px;z-index:3;opacity:0;transform:scale(.3)}
+@keyframes burst{0%,52%{opacity:0;transform:scale(.3) rotate(-8deg)}58%{opacity:1;transform:scale(1.08) rotate(-8deg)}84%{opacity:1;transform:scale(1) rotate(-8deg)}100%{opacity:0;transform:scale(1.1) rotate(-8deg)}}
+.y7:hover .burst,.y7.hv .burst,.y7.fc .burst{animation:burst 2.6s ease-out infinite}
+.y7 .burst span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:0 4px;background:#E6E9FF;font-family:'Aldrich',sans-serif;font-size:28px;line-height:1;color:#00041F;white-space:nowrap}
+@keyframes shake{0%,54%{transform:translate(0,0)}56%{transform:translate(-4px,3px)}58%{transform:translate(4px,-3px)}60%{transform:translate(-3px,-2px)}62%,100%{transform:translate(0,0)}}
+.y7:hover .acts,.y7.hv .acts,.y7.fc .acts{animation:shake 2.6s linear infinite}
+.y7:hover .sc,.y7.hv .sc,.y7.fc .sc{animation:scatter 2.6s ease-out infinite}
+
+.lk .acts{filter:grayscale(1) brightness(.5)}
+.lk .rays,.lk .floor,.lk .hero,.lk .big{animation:none!important}
+
+/* ---- the mixes: a real frame of the game in the picture, the acting card on top ---- */
+.mx .pic{background:#00041F}
+.mx .ph{position:absolute;inset:-10px;background-size:cover;background-position:center;transition:transform .8s cubic-bezier(.22,1,.36,1),filter .5s}
+.mx .dim{position:absolute;inset:0}
+
+/* M1: dimmed and cooled so the light reads; hover pushes in */
+.m1 .ph{filter:saturate(.7) brightness(.62)}
+.m1 .dim{background:linear-gradient(180deg,rgba(0,4,31,.25) 0,rgba(0,4,31,.55) 100%)}
+.m1:hover .ph,.m1.hv .ph,.m1.fc .ph{transform:scale(1.08);filter:saturate(1) brightness(.8)}
+
+/* M2: the frame streaks behind the hero; the rays thin out over it */
+.m2 .ph{filter:blur(1.5px) brightness(.72);transform:scale(1.06)}
+.m2 .dim{background:radial-gradient(70% 70% at 30% 46%,rgba(0,4,31,.1) 0,rgba(0,4,31,.6) 100%)}
+.m2 .rays{opacity:.55}
+@keyframes zoomblur{0%,40%{transform:scale(1.06);filter:blur(1.5px) brightness(.72)}56%{transform:scale(1.22);filter:blur(4px) brightness(1)}100%{transform:scale(1.06);filter:blur(1.5px) brightness(.72)}}
+.m2:hover .ph,.m2.hv .ph,.m2.fc .ph{animation:zoomblur 2.6s cubic-bezier(.5,0,.2,1) infinite}
+
+/* M3: the frame is the diorama's back plane */
+.m3 .ph{filter:brightness(.7)}
+.m3 .dim{background:linear-gradient(180deg,rgba(0,4,31,.15) 0,rgba(0,4,31,.5) 100%)}
+.m3:hover .ph,.m3.hv .ph,.m3.fc .ph{transform:translate(8px,-4px) scale(1.03)}
+
+/* M4: the frame is the view ahead; the floor under the hull fades it out */
+.m4 .ph{filter:brightness(.75);transform-origin:56% 18%}
+.m4 .dim{background:linear-gradient(180deg,rgba(0,4,31,0) 0,rgba(0,4,31,.35) 30%,rgba(0,4,31,.85) 62%)}
+.m4 .floor{opacity:.75}
+@keyframes rushin{0%{transform:scale(1)}60%{transform:scale(1.45)}70%{transform:scale(1.55);filter:brightness(1.05)}100%{transform:scale(1)}}
+.m4:hover .ph,.m4.hv .ph,.m4.fc .ph{animation:rushin 2.6s cubic-bezier(.6,0,.6,1) infinite}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img src="/_blob/391619dde523174b4a9ead64e169b67a" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="abs" style="left:0;top:84px;width:1920px;height:996px;background:radial-gradient(ellipse 70% 55% at 50% 28%,rgba(117,143,251,.14),rgba(117,143,251,0) 70%),linear-gradient(180deg,rgba(34,38,69,.9) 0%,rgba(0,4,31,.92) 48%,rgba(0,1,10,.95) 100%)"></div><svg aria-hidden="true" width="1920" height="996" style="position:absolute;left:0;top:84px"><polyline points="0,338.0 32,342.5 64,346.7 96,350.3 128,353.2 160,355.1 192,356.0 224,355.7 256,354.3 288,351.9 320,348.6 352,344.6 384,340.3 416,335.7 448,331.4 480,327.4 512,324.1 544,321.7 576,320.3 608,320.0 640,320.9 672,322.8 704,325.7 736,329.3 768,333.5 800,338.0 832,342.5 864,346.7 896,350.3 928,353.2 960,355.1 992,356.0 1024,355.7 1056,354.3 1088,351.9 1120,348.6 1152,344.6 1184,340.3 1216,335.7 1248,331.4 1280,327.4 1312,324.1 1344,321.7 1376,320.3 1408,320.0 1440,320.9 1472,322.8 1504,325.7 1536,329.3 1568,333.5 1600,338.0 1632,342.5 1664,346.7 1696,350.3 1728,353.2 1760,355.1 1792,356.0 1824,355.7 1856,354.3 1888,351.9 1920,348.6" fill="none" stroke="#758FFB" stroke-opacity="0.22" stroke-width="1.5"></polyline><polyline points="0,595.8 32,594.7 64,592.5 96,589.4 128,585.6 160,581.3 192,576.8 224,572.4 256,568.3 288,564.8 320,562.2 352,560.6 384,560.0 416,560.6 448,562.3 480,564.9 512,568.4 544,572.5 576,576.9 608,581.4 640,585.7 672,589.5 704,592.6 736,594.8 768,595.9 800,595.9 832,594.7 864,592.5 896,589.4 928,585.6 960,581.3 992,576.8 1024,572.4 1056,568.3 1088,564.8 1120,562.2 1152,560.6 1184,560.0 1216,560.6 1248,562.3 1280,564.9 1312,568.4 1344,572.5 1376,576.9 1408,581.4 1440,585.7 1472,589.5 1504,592.6 1536,594.8 1568,595.9 1600,595.9 1632,594.7 1664,592.5 1696,589.4 1728,585.6 1760,581.3 1792,576.8 1824,572.4 1856,568.3 1888,564.8 1920,562.2" fill="none" stroke="#96ACFC" stroke-opacity="0.22" stroke-width="1.5"></polyline><polyline points="0,796.7 32,792.3 64,788.0 96,784.2 128,781.2 160,779.1 192,778.1 224,778.2 256,779.4 288,781.7 320,784.8 352,788.7 384,793.0 416,797.5 448,801.9 480,806.0 512,809.4 544,812.0 576,813.5 608,814.0 640,813.3 672,811.6 704,808.9 736,805.3 768,801.2 800,796.8 832,792.3 864,788.0 896,784.2 928,781.2 960,779.1 992,778.1 1024,778.2 1056,779.4 1088,781.7 1120,784.8 1152,788.7 1184,793.0 1216,797.5 1248,801.9 1280,806.0 1312,809.4 1344,812.0 1376,813.5 1408,814.0 1440,813.3 1472,811.6 1504,808.9 1536,805.3 1568,801.2 1600,796.8 1632,792.3 1664,788.0 1696,784.2 1728,781.2 1760,779.1 1792,778.1 1824,778.2 1856,779.4 1888,781.7 1920,784.8" fill="none" stroke="#B9C9FA" stroke-opacity="0.22" stroke-width="1.5"></polyline></svg><nav aria-label="Menu screens" class="abs" style="left:0;right:0;top:0;height:84px;background:rgba(0,1,10,.82);display:flex;align-items:center;justify-content:center;gap:48px;z-index:5"><span class="kc">LT</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/ec690d6b90d6fcdbc430b9bbaacf28a9" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">CODEX</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HANGAR</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#E6E9FF"><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:1">HOME<span class="abs" style="left:0;right:0;bottom:-12px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">ARK</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">PORT</span><span class="kc">RT</span></nav><div class="abs" aria-hidden="true" style="left:0;top:84px;width:1920px;height:996px;background:rgba(0,4,31,.95)"></div><div class="abs" style="left:64px;top:108px;display:flex;align-items:baseline;gap:22px;z-index:4"><span style="font-size:28px">Arcade</span><span class="lab">All games</span></div><div class="abs" style="left:64px;top:212px"><div class="gw pk y y7 mx m2 "><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/14f032df7a080228d778c912a82fb628)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><svg class="tg7" width="120" height="120" style="left:202px;top:10px" aria-hidden="true"><polygon points="60,27.6 85.2,60 60,92.4 34.8,60" fill="rgba(184,192,240,.25)" stroke="#E6E9FF" stroke-width="2.5"/><polygon points="34.8,60 60,27.6 60,92.4" fill="rgba(230,233,255,.35)"/></svg><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/0b59d109e643a6db63d1197fa68bec82" alt="Squirrel"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>FIRST</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Time" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,1.5 20,12 12,22.5 4,12"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/0b59d109e643a6db63d1197fa68bec82" alt="Squirrel"><div class="title">Skim<br>Race</div><div class="open"><div class="sl">Skim trails for speed. First to the crystal.</div><div class="pl"><span class="capt">1 - 12 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:445px;top:212px"><div class="gw pk y y7 mx m2 "><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/6bf62bd87cbcad958a4e4dadd5f8b207)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><svg class="tg7" width="120" height="160" style="left:202px;top:-10px" aria-hidden="true"><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#B8C0F0" stroke-width="8" opacity=".25"/><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#E6E9FF" stroke-width="3"/></svg><i class="tg7" style="left:192px;top:92px;width:16px;height:16px;border-radius:50%;background:#E6E9FF"></i><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>GOAL</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Mass" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2.5 21.5,20.5 2.5,20.5"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="title">Scarab<br>Scramble</div><div class="open"><div class="sl">Bat your ball through a ring. First to ten.</div><div class="pl"><span class="capt">1 - 9 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:826px;top:212px"><div class="gw pk y y7 mx m2 "><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/6df4474fc1dfb17232df79858552d3b4)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><img class="tg7 hl" src="/_blob/5d6e6caf494b25329c5384d72185255e" alt="Rival" style="left:220px;top:28px;width:84px;height:84px;transform:scaleX(-1)"><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/5d6e6caf494b25329c5384d72185255e" alt="Sparrow"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>HIT</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Charge" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2 21.5,9 18,20.5 6,20.5 2.5,9"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/5d6e6caf494b25329c5384d72185255e" alt="Sparrow"><div class="title">Dog<br>Fight</div><div class="open"><div class="sl">Guns and rockets in the Boneyard.</div><div class="pl"><span class="capt">2 - 9 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:1207px;top:212px"><div class="gw pk y y7 mx m2 "><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/90f2cd458ea26f18d40bd02550398ec7)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><div class="tg7" style="left:242px;top:14px;width:60px;height:120px"><i class="sc" style="position:absolute;left:0px;top:0px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:40px;--dy:-45px;--r:0deg"></i><i class="sc" style="position:absolute;left:16px;top:11px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:47px;--dy:-36px;--r:47deg"></i><i class="sc" style="position:absolute;left:0px;top:22px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:54px;--dy:-27px;--r:94deg"></i><i class="sc" style="position:absolute;left:16px;top:33px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:61px;--dy:-18px;--r:141deg"></i><i class="sc" style="position:absolute;left:0px;top:44px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:68px;--dy:-9px;--r:8deg"></i><i class="sc" style="position:absolute;left:16px;top:55px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:45px;--dy:0px;--r:55deg"></i><i class="sc" style="position:absolute;left:0px;top:66px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:52px;--dy:9px;--r:102deg"></i><i class="sc" style="position:absolute;left:16px;top:77px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:59px;--dy:18px;--r:149deg"></i><i class="sc" style="position:absolute;left:0px;top:88px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:66px;--dy:27px;--r:16deg"></i><i class="sc" style="position:absolute;left:16px;top:99px;width:14px;height:10px;border:1.5px solid #E6E9FF;--dx:43px;--dy:36px;--r:63deg"></i></div><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/45aa01c84539d8c2a79fe4b9adee898b" alt="Rhino"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>THROUGH</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Time" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,1.5 20,12 12,22.5 4,12"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/45aa01c84539d8c2a79fe4b9adee898b" alt="Rhino"><div class="title">Headlong</div><div class="open"><div class="sl">Fly straight, plough through the hedges.</div><div class="pl"><span class="capt">2 - 9 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:64px;right:64px;top:572px;height:1px;background:#222645"></div><span class="lab abs" style="left:64px;top:584px">Scarab Scramble, every state</span><div class="abs" style="left:64px;top:610px"><span class="capt" style="display:block;margin-bottom:16px">Rest</span><div class="gw pk y y7 mx m2 "><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/6bf62bd87cbcad958a4e4dadd5f8b207)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><svg class="tg7" width="120" height="160" style="left:202px;top:-10px" aria-hidden="true"><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#B8C0F0" stroke-width="8" opacity=".25"/><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#E6E9FF" stroke-width="3"/></svg><i class="tg7" style="left:192px;top:92px;width:16px;height:16px;border-radius:50%;background:#E6E9FF"></i><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>GOAL</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Mass" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2.5 21.5,20.5 2.5,20.5"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="title">Scarab<br>Scramble</div><div class="open"><div class="sl">Bat your ball through a ring. First to ten.</div><div class="pl"><span class="capt">1 - 9 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:445px;top:610px"><span class="capt" style="display:block;margin-bottom:16px">Hover (held)</span><div class="gw pk y y7 mx m2 hv"><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/6bf62bd87cbcad958a4e4dadd5f8b207)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><svg class="tg7" width="120" height="160" style="left:202px;top:-10px" aria-hidden="true"><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#B8C0F0" stroke-width="8" opacity=".25"/><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#E6E9FF" stroke-width="3"/></svg><i class="tg7" style="left:192px;top:92px;width:16px;height:16px;border-radius:50%;background:#E6E9FF"></i><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>GOAL</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Mass" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2.5 21.5,20.5 2.5,20.5"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="title">Scarab<br>Scramble</div><div class="open"><div class="sl">Bat your ball through a ring. First to ten.</div><div class="pl"><span class="capt">1 - 9 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:826px;top:610px"><span class="capt" style="display:block;margin-bottom:16px">Pad focus</span><div class="gw pk y y7 mx m2 fc"><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/6bf62bd87cbcad958a4e4dadd5f8b207)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><svg class="tg7" width="120" height="160" style="left:202px;top:-10px" aria-hidden="true"><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#B8C0F0" stroke-width="8" opacity=".25"/><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#E6E9FF" stroke-width="3"/></svg><i class="tg7" style="left:192px;top:92px;width:16px;height:16px;border-radius:50%;background:#E6E9FF"></i><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>GOAL</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Mass" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2.5 21.5,20.5 2.5,20.5"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="title">Scarab<br>Scramble</div><div class="open"><div class="sl">Bat your ball through a ring. First to ten.</div><div class="pl"><span class="capt">1 - 9 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:1207px;top:610px"><span class="capt" style="display:block;margin-bottom:16px">Locked</span><div class="gw pk y y7 mx m2 lk"><div class="tilt"><div class="gc"><div class="pic"><div class="ph" style="background-image:url(/_blob/6bf62bd87cbcad958a4e4dadd5f8b207)"></div><div class="dim"></div><div class="rays"></div></div><div class="acts"><svg class="tg7" width="120" height="160" style="left:202px;top:-10px" aria-hidden="true"><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#B8C0F0" stroke-width="8" opacity=".25"/><ellipse cx="60" cy="80" rx="26" ry="46.8" fill="none" stroke="#E6E9FF" stroke-width="3"/></svg><i class="tg7" style="left:192px;top:92px;width:16px;height:16px;border-radius:50%;background:#E6E9FF"></i><svg class="abs zip" width="341" height="296" style="left:0;top:0" aria-hidden="true"><line x1="150" y1="40" x2="220" y2="40" style="animation-delay:0.00s"/><line x1="170" y1="70" x2="240" y2="70" style="animation-delay:0.04s"/><line x1="140" y1="100" x2="210" y2="100" style="animation-delay:0.08s"/><line x1="180" y1="128" x2="250" y2="128" style="animation-delay:0.00s"/><line x1="160" y1="150" x2="230" y2="150" style="animation-delay:0.04s"/></svg><img class="big hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="burst" style="left:252px;top:80px"><svg width="150" height="120" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,0 61,30 95,12 78,44 120,50 80,66 104,100 64,84 54,120 42,86 6,104 26,70 0,50 30,40 12,8 42,28" fill="#E6E9FF"/></svg><span>GOAL</span></div></div><div class="shade"></div><div class="tag"><svg class="shp" aria-label="Mass" width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2.5 21.5,20.5 2.5,20.5"></polygon></svg></div><span class="star" aria-label="Favourite"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#E6E9FF" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg></span><img class="hp hl" src="/_blob/17f5b385c9d29ecd62531ae716ec35f6" alt="Scarab"><div class="title">Scarab<br>Scramble</div><div class="open"><div class="sl">Bat your ball through a ring. First to ten.</div><div class="pl"><span class="capt">1 - 9 pilots</span></div></div><span class="lockv" aria-label="Locked"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></div><div class="edge"></div></div><svg class="ring" width="351" height="306" style="top:-5px" aria-hidden="true"><polygon points="16,1 350,1 350,290 335,305 1,305 1,16"></polygon></svg></div></div><div class="abs" style="left:1600px;top:212px;width:256px;display:flex;flex-direction:column;gap:14px"><span class="lab" style="color:#E6E9FF">M2 &#183; Frame + Hero shot</span><span style="font-size:15px;line-height:1.55;color:#B8C0F0">The frame streaks behind the huge hull and its speed rays. Hover: the hull lunges, the frame zoom-blurs, and the card shakes on the impact burst.</span><span style="font-size:15px;line-height:1.55;color:#B8C0F0">On hover: Squirrel skims the trail to the crystal; Scarab bats the ball through the ring; Sparrow fires on a rival; Rhino ploughs through the hedge.</span><span style="font-size:14px;line-height:1.5;color:#747BAD">Point at any card above. The row below holds Scarab Scramble in each state.</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

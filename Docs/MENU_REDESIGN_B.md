@@ -9084,3 +9084,25 @@ played only on the hovered or focused card; Y6's floor is one scrolling texture,
 
 **Gates:** `check_mockup.py` passes colours, type and contrast on all 5 boards and fails only the noise budget on the card
 sheets, as every card round has; `frogma.py check` OK.
+
+### 222.4 Rev 132: real frames with the vessel acting, four mixes (2026-11-24; awaiting a pick)
+
+**Asked (Shombith, 2026-11-24):** "Create me some more variations mixing screenshots and the diagetic ideas, 4 more
+seperate".
+
+**On the canvas:** round "Rev 132 - Real frames with the vessel acting" on the Game Cards tab; copies
+`Docs/MenuRedesignB/board/R132*.dc.html`, written by `Docs/MenuRedesignB/rounds/r132_card_mixes.py` (each mix is an
+acting card from r130/r131 with S1's frame laid at the back of its picture). At rest the card shows the place; on hover
+the vessel scores in it.
+- **M1 Frame + Light trail:** the frame dimmed, the play written over it in light; hover flies it and the frame pushes in.
+- **M2 Frame + Hero shot:** the frame blurred behind the huge hull and thinned rays; hover lunges, the frame zoom-blurs,
+  the impact burst.
+- **M3 Frame + Diorama:** the frame as the diorama's back plane; hover parts the planes while the vessel acts.
+- **M4 Frame + Chase cam:** the frame is the view ahead; hover rushes into it while the target looms and the hull scores.
+- **R132Compare:** S1, Y3 and Y7 above the four mixes (Scarab Scramble); **R132Notes.**
+
+**Differs from the build:** one frame image per mode under the acting layer; the frame moves by a transform only. The
+frames are still S1's generic ones; a pick means one frame per mode, framed so the act happens over its centre.
+
+**Gates:** `check_mockup.py` passes colours, type and contrast on all 6 boards (noise budget fails on the card sheets, as
+every card round); `frogma.py check` OK.

@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795517328-108b` of **Frogma**: Rev 41 to Rev 131, 357 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795519477-9078` of **Frogma**: Rev 41 to Rev 132, 363 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -566,6 +566,15 @@ No boards yet.
 - `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
 
 ### Tab: Game Cards  (`game-cards`)
+
+#### Rev 132 - Real frames with the vessel acting
+
+- [`R132Compare.dc.html`](R132Compare.dc.html) - Rev 132 - Compare
+- [`R132M1.dc.html`](R132M1.dc.html) - Rev 132 M1 - M1 Frame + Light trail - interactive
+- [`R132M2.dc.html`](R132M2.dc.html) - Rev 132 M2 - M2 Frame + Hero shot - interactive
+- [`R132M3.dc.html`](R132M3.dc.html) - Rev 132 M3 - M3 Frame + Diorama - interactive
+- [`R132M4.dc.html`](R132M4.dc.html) - Rev 132 M4 - M4 Frame + Chase cam - interactive
+- [`R132Notes.dc.html`](R132Notes.dc.html) - Rev 132 - notes: what each option changes, what is shared, what differs from the build
 
 #### Rev 131 - Symbolic, three new ways
 
