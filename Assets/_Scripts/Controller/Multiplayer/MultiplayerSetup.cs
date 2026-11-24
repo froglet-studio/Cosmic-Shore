@@ -199,6 +199,14 @@ namespace CosmicShore.Gameplay
 
         void OnSceneEventTrace(SceneEvent e)
         {
+            // A guest's notice that the host is changing scene: hand the trail back in slices while the new scene
+            // loads in the background, so the pools' release at the scene change has little left for the load's
+            // frame (B45). The host's own pools started at the SOAP scene-transition event, which a guest never gets.
+            if (e.SceneEventType == SceneEventType.Load
+                && e.LoadSceneMode == UnityEngine.SceneManagement.LoadSceneMode.Single
+                && networkManager != null && !networkManager.IsServer)
+                InteractivePrismPoolManager.BeginReleaseAllForSceneExit();
+
             if (!CSDebug.IsVerbose(CSLogChannel.NetworkFlow)) return;
             string done = e.ClientsThatCompleted != null ? $" completed={e.ClientsThatCompleted.Count}" : string.Empty;
             string late = e.ClientsThatTimedOut != null && e.ClientsThatTimedOut.Count > 0 ? $" timedOut={e.ClientsThatTimedOut.Count}" : string.Empty;

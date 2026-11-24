@@ -1,5 +1,7 @@
--- Replay retention by play type (PostHog HogQL). Six queries, run each on its own:
---   in PostHog's SQL editor, or through the PostHog MCP (`call execute-sql {"query": "..."}`).
+-- Replay retention by play type. Six queries, written in July-November 2026 in PostHog's HogQL; PostHog was
+--   closed on 2026-11-23, so they no longer run anywhere as written. They are kept as Ian's DEFINITIONS: the
+--   Froglet Analytics server classifies plays the same way (analytics_store.py, play types) and its console's
+--   Play types and Retention pages answer these questions.
 --
 -- WHAT "PLAY TYPE" MEANS TODAY. Read off game_started, one row per (player, match):
 --   multi_human  more than one human in the match (coop and adversarial are NOT separable yet)
@@ -10,7 +12,8 @@
 -- expression, in each query below. When game_started carries the player's domain and a team
 -- composition field, split `multi_human` into coop and adversarial there and nowhere else.
 --
--- WHEN THE TEAM-COMPOSITION FIELDS SHIP (Docs/Analytics/proposals/team_composition_fields.patch),
+-- WHEN THE TEAM-COMPOSITION FIELDS SHIP (the proposal patch was removed 2026-11-23; see git history of
+-- Docs/Analytics/proposals/team_composition_fields.patch),
 -- replace the `play_type` expression in each `plays` subquery with the one below. It splits
 -- multi_human into coop / adversarial / mixed, and labels rows recorded before the fields
 -- existed 'multi_human_unknown' (tested against live data: all 309 older multi-human plays came

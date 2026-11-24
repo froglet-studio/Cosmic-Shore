@@ -24,6 +24,16 @@
    ]
   },
   {
+   "mode": "Blastline",
+   "name": "Blastline",
+   "hulls": [
+    "Wrasse"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Bloomrush",
    "name": "Bloomrush",
    "hulls": [
@@ -67,13 +77,12 @@
    "mode": "Broadside",
    "name": "Broadside",
    "hulls": [
-    "Manta",
-    "Dolphin",
-    "Swordfish",
-    "Urchin",
-    "Squirrel",
-    "Sparrow",
-    "Scarab"
+    "Scarab",
+    "Stoat",
+    "Brittle Star",
+    "Meerkat",
+    "Angler",
+    "Jacks"
    ],
    "lists": [
     "ArenaGames"
@@ -96,10 +105,50 @@
    ]
   },
   {
+   "mode": "Bullrush",
+   "name": "Bullrush",
+   "hulls": [
+    "Rhino"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "BurrowRun",
    "name": "Burrow Run",
    "hulls": [
+    "Jewel Wasp"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "CaveIn",
+   "name": "Cave-in",
+   "hulls": [
     "Meerkat"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Chum",
+   "name": "Chum",
+   "hulls": [
+    "Angler"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "CleanerRam",
+   "name": "Cleaner Ram",
+   "hulls": [
+    "Wrasse"
    ],
    "lists": [
     "ArcadeGames"
@@ -116,10 +165,40 @@
    ]
   },
   {
+   "mode": "Corona",
+   "name": "Corona",
+   "hulls": [
+    "Manta"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "DecoyRun",
    "name": "Decoy Run",
    "hulls": [
     "Jacks"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "DenBuilder",
+   "name": "Den Builder",
+   "hulls": [
+    "Goby"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "DepthCharge",
+   "name": "Depth Charge",
+   "hulls": [
+    "Orca"
    ],
    "lists": [
     "ArcadeGames"
@@ -146,6 +225,56 @@
    ]
   },
   {
+   "mode": "Flatline",
+   "name": "Flatline",
+   "hulls": [
+    "Brittle Star"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Flitstrike",
+   "name": "Flitstrike",
+   "hulls": [
+    "Honeyguide"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Fulmen",
+   "name": "Fulmen",
+   "hulls": [
+    "Stoat"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Glasshouse",
+   "name": "Glasshouse",
+   "hulls": [
+    "Angler"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Gorge",
+   "name": "Gorge",
+   "hulls": [
+    "Jewel Wasp"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "GrizzlyCharge",
    "name": "Grizzly Charge",
    "hulls": [
@@ -166,10 +295,40 @@
    ]
   },
   {
+   "mode": "Harvest",
+   "name": "Harvest",
+   "hulls": [
+    "Thresher"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Haul",
+   "name": "Haul",
+   "hulls": [
+    "Thresher"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Headlong",
    "name": "Headlong",
    "hulls": [
     "Rhino"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Hedgerow",
+   "name": "Hedgerow",
+   "hulls": [
+    "Serpent"
    ],
    "lists": [
     "ArcadeGames"
@@ -186,6 +345,36 @@
    ]
   },
   {
+   "mode": "Honeycomb",
+   "name": "Honeycomb",
+   "hulls": [
+    "Honeyguide"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "IceShelf",
+   "name": "Ice Shelf",
+   "hulls": [
+    "Orca"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Jackstraw",
+   "name": "Jackstraw",
+   "hulls": [
+    "Thresher"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Joust",
    "name": "Joust",
    "hulls": [
@@ -196,10 +385,60 @@
    ]
   },
   {
+   "mode": "Kelpwood",
+   "name": "Kelpwood",
+   "hulls": [
+    "Angler"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Lancefall",
+   "name": "Lancefall",
+   "hulls": [
+    "Shrike"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Landslide",
+   "name": "Landslide",
+   "hulls": [
+    "Rhino"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "LanternRun",
    "name": "Lantern Run",
    "hulls": [
     "Angler"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Larder",
+   "name": "Larder",
+   "hulls": [
+    "Shrike"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Longshot",
+   "name": "Longshot",
+   "hulls": [
+    "Serpent"
    ],
    "lists": [
     "ArcadeGames"
@@ -218,10 +457,50 @@
    ]
   },
   {
+   "mode": "Marionette",
+   "name": "Marionette",
+   "hulls": [
+    "Jewel Wasp"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Palisade",
+   "name": "Palisade",
+   "hulls": [
+    "Swordfish"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "PerchRun",
    "name": "Perch Run",
    "hulls": [
     "Goby"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "PodHunt",
+   "name": "Pod Hunt",
+   "hulls": [
+    "Orca"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Railrush",
+   "name": "Railrush",
+   "hulls": [
+    "Urchin"
    ],
    "lists": [
     "ArcadeGames"
@@ -248,6 +527,16 @@
    ]
   },
   {
+   "mode": "Reefbuild",
+   "name": "Reefbuild",
+   "hulls": [
+    "Wrasse"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Regatta",
    "name": "Regatta",
    "hulls": [
@@ -259,10 +548,35 @@
     "Serpent",
     "Sparrow",
     "Scarab",
-    "Stoat"
+    "Thresher",
+    "Brittle Star",
+    "Swordfish",
+    "Tiger Moth",
+    "Goby",
+    "Shrike"
    ],
    "lists": [
     "ArenaGames"
+   ]
+  },
+  {
+   "mode": "Riposte",
+   "name": "Riposte",
+   "hulls": [
+    "Swordfish"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Riptide",
+   "name": "Riptide",
+   "hulls": [
+    "Goby"
+   ],
+   "lists": [
+    "ArcadeGames"
    ]
   },
   {
@@ -308,6 +622,16 @@
    ]
   },
   {
+   "mode": "Sentry",
+   "name": "Sentry",
+   "hulls": [
+    "Meerkat"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "SerpentHood",
    "name": "Hood",
    "hulls": [
@@ -322,6 +646,26 @@
    "name": "Serpentine",
    "hulls": [
     "Serpent"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Shatterplane",
+   "name": "Shatterplane",
+   "hulls": [
+    "Brittle Star"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Shockfront",
+   "name": "Shockfront",
+   "hulls": [
+    "Stoat"
    ],
    "lists": [
     "ArcadeGames"
@@ -378,6 +722,56 @@
    ]
   },
   {
+   "mode": "Snap",
+   "name": "Snap",
+   "hulls": [
+    "Goby"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Spearline",
+   "name": "Spearline",
+   "hulls": [
+    "Swordfish"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Standoff",
+   "name": "Standoff",
+   "hulls": [
+    "Grizzly"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Starweave",
+   "name": "Starweave",
+   "hulls": [
+    "Brittle Star"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Stingherd",
+   "name": "Stingherd",
+   "hulls": [
+    "Jacks"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Switchback",
    "name": "Switchback",
    "hulls": [
@@ -392,6 +786,16 @@
    "name": "Tapestry",
    "hulls": [
     "Tiger Moth"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Thornbush",
+   "name": "Thornbush",
+   "hulls": [
+    "Shrike"
    ],
    "lists": [
     "ArcadeGames"
@@ -428,6 +832,16 @@
    ]
   },
   {
+   "mode": "Trawl",
+   "name": "Trawl",
+   "hulls": [
+    "Jacks"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
    "mode": "Undertow",
    "name": "Undertow",
    "hulls": [
@@ -440,6 +854,16 @@
   {
    "mode": "Warpline",
    "name": "Warpline",
+   "hulls": [
+    "Meerkat"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Warren",
+   "name": "Warren",
    "hulls": [
     "Meerkat"
    ],
@@ -462,6 +886,26 @@
    "name": "Wildlife Liberation",
    "hulls": [
     "Sparrow"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Windrow",
+   "name": "Windrow",
+   "hulls": [
+    "Rhino"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Woodpecker",
+   "name": "Woodpecker",
+   "hulls": [
+    "Honeyguide"
    ],
    "lists": [
     "ArcadeGames"
@@ -495,7 +939,23 @@
   "Breakwater",
   "Skein",
   "Regatta",
-  "Waystation"
+  "Waystation",
+  "Breach",
+  "Thornline",
+  "ThresherTime",
+  "GrizzlyTime",
+  "ScarabRally",
+  "DecoyRun",
+  "BurrowRun",
+  "PerchRun",
+  "WrasseRun",
+  "LanternRun",
+  "Warpline",
+  "SlipLine",
+  "BrittleStarTime",
+  "Slingshot",
+  "SerpentTime",
+  "Spearline"
  ],
  "hulls": [
   {
@@ -517,39 +977,78 @@
    "verb": "",
    "aiDrive": "",
    "regattaAI": false,
-   "tunedFor": [],
+   "tunedFor": [
+    "LanternRun",
+    "Regatta"
+   ],
    "offeredIn": [
+    "Broadside",
+    "Chum",
+    "Glasshouse",
+    "Kelpwood",
     "LanternRun"
    ],
-   "gateRacesOffered": [],
+   "gateRacesOffered": [
+    "LanternRun"
+   ],
    "flown": {
-    "LanternRun": {
-     "races": 1,
+    "Kelpwood": {
+     "races": 3,
      "finished": 0,
      "best": null,
      "median": null,
      "intensities": [
-      1
+      4
      ],
      "pilots": [
+      "gradi"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-12 21:53:32"
+    },
+    "LanternRun": {
+     "races": 3,
+     "finished": 1,
+     "best": 238.9,
+     "median": 238.9,
+     "intensities": [
+      1,
+      4
+     ],
+     "pilots": [
+      "gradi",
       "shombith"
      ],
      "rivalDifficulty": [
       "Medium"
      ],
-     "last": "2026-11-02 03:48:27"
+     "last": "2026-11-15 01:47:33"
     }
    },
    "asRival": {
+    "Kelpwood": {
+     "races": 3,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      4
+     ]
+    },
     "LanternRun": {
-     "races": 1,
+     "races": 3,
      "medianRings": 3,
      "target": 16,
      "difficulty": [
       "Medium"
      ],
      "intensities": [
-      1
+      1,
+      4
      ]
     }
    }
@@ -563,9 +1062,17 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
-    "BrittleStarTime"
+    "BrittleStarTime",
+    "Broadside",
+    "Flatline",
+    "Regatta",
+    "Shatterplane",
+    "Starweave"
    ],
-   "gateRacesOffered": [],
+   "gateRacesOffered": [
+    "BrittleStarTime",
+    "Regatta"
+   ],
    "flown": {},
    "asRival": {}
   },
@@ -588,7 +1095,10 @@
    "verb": "speed mode",
    "aiDrive": "BrittleStarSpeedModeAIPolicySO",
    "regattaAI": false,
-   "tunedFor": [],
+   "tunedFor": [
+    "BrittleStarTime",
+    "Regatta"
+   ],
    "offeredIn": [],
    "gateRacesOffered": [],
    "flown": {
@@ -608,9 +1118,69 @@
       "Medium"
      ],
      "last": "2026-11-02 23:17:28"
+    },
+    "Flatline": {
+     "races": 4,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1,
+      2,
+      4
+     ],
+     "pilots": [
+      "gradi",
+      "owner",
+      "shombith"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-21 01:58:56"
+    },
+    "Shatterplane": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      4
+     ],
+     "pilots": [
+      "shombith"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-11 02:55:25"
     }
    },
    "asRival": {
+    "Flatline": {
+     "races": 6,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2,
+      4
+     ]
+    },
+    "Regatta": {
+     "races": 1,
+     "medianRings": 20,
+     "target": 24,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      2
+     ]
+    },
     "BrittleStarTime": {
      "races": 2,
      "medianRings": 10,
@@ -622,6 +1192,17 @@
       1,
       4
      ]
+    },
+    "Shatterplane": {
+     "races": 1,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      4
+     ]
     }
    }
   },
@@ -631,7 +1212,7 @@
     "Charge": "Echo Sight",
     "Mass": "Crystal Seeding",
     "Space": "Echo Obliteration",
-    "Time": "Charge Fill Rate"
+    "Time": "Drift Charge"
    },
    "stats": {
     "ts": 68.0,
@@ -645,12 +1226,12 @@
    "aiDrive": "ChargeBoostAIPolicySO",
    "regattaAI": true,
    "tunedFor": [
+    "BroodRush",
     "Regatta",
     "Switchback"
    ],
    "offeredIn": [
     "Bends",
-    "Broadside",
     "BroodRush",
     "Rampage",
     "Regatta",
@@ -677,24 +1258,60 @@
      ],
      "last": "2026-10-28 23:57:21"
     },
-    "Rampage": {
-     "races": 1,
+    "Broadside": {
+     "races": 2,
      "finished": 0,
      "best": null,
      "median": null,
      "intensities": [
-      1
+      2
      ],
      "pilots": [
-      "belac"
+      "gradi"
      ],
      "rivalDifficulty": [
       "Medium"
      ],
-     "last": "2026-11-05 09:38:48"
+     "last": "2026-11-13 15:51:21"
+    },
+    "BroodRush": {
+     "races": 9,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1,
+      2
+     ],
+     "pilots": [
+      "gradi",
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-21 06:19:27"
+    },
+    "Rampage": {
+     "races": 2,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1,
+      3
+     ],
+     "pilots": [
+      "belac",
+      "shombith"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-11 03:04:15"
     },
     "Regatta": {
-     "races": 9,
+     "races": 18,
      "finished": 0,
      "best": null,
      "median": null,
@@ -706,20 +1323,21 @@
      ],
      "pilots": [
       "gradi",
-      "owner"
+      "owner",
+      "yskha"
      ],
      "rivalDifficulty": [
       "Hard",
       "Legendary",
       "Medium"
      ],
-     "last": "2026-11-07 22:27:51"
+     "last": "2026-11-20 06:35:27"
     },
     "Switchback": {
-     "races": 59,
-     "finished": 23,
+     "races": 71,
+     "finished": 24,
      "best": 58,
-     "median": 119.7,
+     "median": 118.2,
      "intensities": [
       1,
       2,
@@ -737,23 +1355,51 @@
       "Legendary",
       "Medium"
      ],
-     "last": "2026-11-04 15:41:44"
+     "last": "2026-11-20 19:54:41"
     }
    },
    "asRival": {
+    "Broadside": {
+     "races": 13,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
+    "BroodRush": {
+     "races": 12,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Easy",
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
     "Rampage": {
-     "races": 2,
+     "races": 3,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
       "Medium"
      ],
      "intensities": [
-      1
+      1,
+      3
      ]
     },
     "Regatta": {
-     "races": 80,
+     "races": 83,
      "medianRings": 13,
      "target": 24,
      "difficulty": [
@@ -769,8 +1415,8 @@
      ]
     },
     "Switchback": {
-     "races": 123,
-     "medianRings": 12,
+     "races": 138,
+     "medianRings": 15,
      "target": 20,
      "difficulty": [
       "Legendary",
@@ -793,30 +1439,6 @@
      "intensities": [
       2
      ]
-    },
-    "Broadside": {
-     "races": 1,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Medium"
-     ],
-     "intensities": [
-      1
-     ]
-    },
-    "BroodRush": {
-     "races": 3,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Easy",
-      "Legendary",
-      "Medium"
-     ],
-     "intensities": [
-      1
-     ]
     }
    }
   },
@@ -826,7 +1448,7 @@
     "Charge": "'Vortex Sting'",
     "Mass": "'Dens'",
     "Space": "'Undertow'",
-    "Time": "'Quick Jump'"
+    "Time": "'Dart'"
    },
    "stats": {
     "ts": 160.0,
@@ -841,9 +1463,16 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
-    "PerchRun"
+    "DenBuilder",
+    "PerchRun",
+    "Regatta",
+    "Riptide",
+    "Snap"
    ],
-   "gateRacesOffered": [],
+   "gateRacesOffered": [
+    "PerchRun",
+    "Regatta"
+   ],
    "flown": {},
    "asRival": {}
   },
@@ -869,9 +1498,12 @@
    "tunedFor": [],
    "offeredIn": [
     "GrizzlyCharge",
+    "GrizzlyTime",
+    "Standoff"
+   ],
+   "gateRacesOffered": [
     "GrizzlyTime"
    ],
-   "gateRacesOffered": [],
    "flown": {
     "GrizzlyCharge": {
      "races": 8,
@@ -890,35 +1522,42 @@
      "last": "2026-11-02 11:44:00"
     },
     "GrizzlyTime": {
-     "races": 5,
-     "finished": 2,
-     "best": 106.2,
-     "median": 192.2,
+     "races": 17,
+     "finished": 8,
+     "best": 81.4,
+     "median": 128.5,
      "intensities": [
       1,
+      2,
+      3,
       4
      ],
      "pilots": [
       "gradi",
+      "owner",
       "shombith",
       "yskha"
      ],
      "rivalDifficulty": [
+      "Legendary",
       "Medium"
      ],
-     "last": "2026-10-31 23:48:04"
+     "last": "2026-11-19 02:58:11"
     }
    },
    "asRival": {
     "GrizzlyTime": {
-     "races": 6,
-     "medianRings": 12,
+     "races": 24,
+     "medianRings": 9,
      "target": 16,
      "difficulty": [
+      "Legendary",
       "Medium"
      ],
      "intensities": [
       1,
+      2,
+      3,
       4
      ]
     },
@@ -967,11 +1606,45 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
+    "Flitstrike",
+    "Honeycomb",
+    "SlipLine",
+    "Woodpecker"
+   ],
+   "gateRacesOffered": [
     "SlipLine"
    ],
-   "gateRacesOffered": [],
-   "flown": {},
-   "asRival": {}
+   "flown": {
+    "SlipLine": {
+     "races": 4,
+     "finished": 1,
+     "best": 156.2,
+     "median": 156.2,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "gradi"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-15 02:25:30"
+    }
+   },
+   "asRival": {
+    "SlipLine": {
+     "races": 4,
+     "medianRings": 4,
+     "target": 16,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      1
+     ]
+    }
+   }
   },
   {
    "hull": "Jacks",
@@ -994,9 +1667,89 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
+    "Broadside",
+    "DecoyRun",
+    "Stingherd",
+    "Trawl"
+   ],
+   "gateRacesOffered": [
     "DecoyRun"
    ],
-   "gateRacesOffered": [],
+   "flown": {
+    "DecoyRun": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Legendary"
+     ],
+     "last": "2026-11-22 17:01:29"
+    },
+    "Trawl": {
+     "races": 2,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Legendary"
+     ],
+     "last": "2026-11-22 17:08:31"
+    }
+   },
+   "asRival": {
+    "DecoyRun": {
+     "races": 2,
+     "medianRings": 12,
+     "target": 12,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      1
+     ]
+    },
+    "Trawl": {
+     "races": 4,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      1
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Jewel Wasp",
+   "abilities": {},
+   "stats": null,
+   "verb": "",
+   "aiDrive": "",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "BurrowRun",
+    "Gorge",
+    "Marionette"
+   ],
+   "gateRacesOffered": [
+    "BurrowRun"
+   ],
    "flown": {},
    "asRival": {}
   },
@@ -1021,12 +1774,13 @@
    "regattaAI": true,
    "tunedFor": [
     "Bloomrush",
+    "Redline",
     "Regatta"
    ],
    "offeredIn": [
     "Bloomrush",
-    "Broadside",
     "BroodRush",
+    "Corona",
     "Maelstrom",
     "Redline",
     "Regatta",
@@ -1038,7 +1792,7 @@
    ],
    "flown": {
     "Bloomrush": {
-     "races": 7,
+     "races": 14,
      "finished": 0,
      "best": null,
      "median": null,
@@ -1053,10 +1807,48 @@
      "rivalDifficulty": [
       "Medium"
      ],
-     "last": "2026-10-26 04:52:37"
+     "last": "2026-11-22 21:55:39"
     },
     "Broadside": {
-     "races": 2,
+     "races": 9,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1,
+      2
+     ],
+     "pilots": [
+      "belac",
+      "gradi",
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-15 02:36:04"
+    },
+    "BroodRush": {
+     "races": 4,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1,
+      2
+     ],
+     "pilots": [
+      "belac",
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Easy",
+      "Legendary"
+     ],
+     "last": "2026-11-13 12:44:34"
+    },
+    "Corona": {
+     "races": 1,
      "finished": 0,
      "best": null,
      "median": null,
@@ -1069,27 +1861,10 @@
      "rivalDifficulty": [
       "Medium"
      ],
-     "last": "2026-10-23 14:16:13"
-    },
-    "BroodRush": {
-     "races": 3,
-     "finished": 0,
-     "best": null,
-     "median": null,
-     "intensities": [
-      1
-     ],
-     "pilots": [
-      "owner"
-     ],
-     "rivalDifficulty": [
-      "Easy",
-      "Legendary"
-     ],
-     "last": "2026-11-02 16:18:42"
+     "last": "2026-11-21 01:15:29"
     },
     "Regatta": {
-     "races": 18,
+     "races": 21,
      "finished": 10,
      "best": 29.4,
      "median": 46.7,
@@ -1111,13 +1886,13 @@
       "Legendary",
       "Medium"
      ],
-     "last": "2026-11-06 05:31:42"
+     "last": "2026-11-20 06:38:33"
     }
    },
    "asRival": {
     "Regatta": {
-     "races": 91,
-     "medianRings": 14,
+     "races": 99,
+     "medianRings": 13,
      "target": 24,
      "difficulty": [
       "Hard",
@@ -1131,8 +1906,34 @@
       4
      ]
     },
-    "Bloomrush": {
+    "Broadside": {
      "races": 8,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Easy",
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "BroodRush": {
+     "races": 11,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
+    "Bloomrush": {
+     "races": 23,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
@@ -1143,7 +1944,7 @@
       3
      ]
     },
-    "BroodRush": {
+    "Corona": {
      "races": 1,
      "medianRings": 0,
      "target": 0,
@@ -1162,7 +1963,7 @@
     "Charge": "'Sentinel Mode'",
     "Mass": "'Exit Portal'",
     "Space": "'Soliton'",
-    "Time": "'Faster Ride'"
+    "Time": "'Ride'"
    },
    "stats": {
     "ts": 60.0,
@@ -1177,13 +1978,18 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
-    "BurrowRun",
+    "Broadside",
+    "CaveIn",
+    "Sentry",
+    "Warpline",
+    "Warren"
+   ],
+   "gateRacesOffered": [
     "Warpline"
    ],
-   "gateRacesOffered": [],
    "flown": {
     "BurrowRun": {
-     "races": 1,
+     "races": 2,
      "finished": 0,
      "best": null,
      "median": null,
@@ -1191,15 +1997,29 @@
       1
      ],
      "pilots": [
-      "owner"
+      "owner",
+      "yskha"
      ],
      "rivalDifficulty": [
+      "Legendary",
       "Medium"
      ],
-     "last": "2026-10-31 12:59:00"
+     "last": "2026-11-22 17:04:06"
     }
    },
-   "asRival": {}
+   "asRival": {
+    "BurrowRun": {
+     "races": 2,
+     "medianRings": 10,
+     "target": 16,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      1
+     ]
+    }
+   }
   },
   {
    "hull": "Orca",
@@ -1222,19 +2042,24 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
+    "Breach",
+    "DepthCharge",
+    "IceShelf",
+    "PodHunt"
+   ],
+   "gateRacesOffered": [
     "Breach"
    ],
-   "gateRacesOffered": [],
    "flown": {},
    "asRival": {}
   },
   {
    "hull": "Rhino",
    "abilities": {
-    "Charge": "'Carry'",
-    "Mass": "'Blade'",
-    "Space": "'Furrow'",
-    "Time": "'Ramp Spool'"
+    "Charge": "'Gore'",
+    "Mass": "'Heft'",
+    "Space": "'Blade'",
+    "Time": "'Momentum'"
    },
    "stats": {
     "ts": 50.0,
@@ -1253,8 +2078,11 @@
    ],
    "offeredIn": [
     "BroodRush",
+    "Bullrush",
     "Headlong",
-    "Regatta"
+    "Landslide",
+    "Regatta",
+    "Windrow"
    ],
    "gateRacesOffered": [
     "Headlong",
@@ -1295,28 +2123,111 @@
      ],
      "last": "2026-10-26 13:52:23"
     },
-    "Regatta": {
-     "races": 6,
+    "Headlong": {
+     "races": 2,
      "finished": 2,
-     "best": 36.5,
-     "median": 49.0,
+     "best": 85.1,
+     "median": 115.5,
      "intensities": [
       1,
-      3
+      4
      ],
      "pilots": [
       "owner"
      ],
      "rivalDifficulty": [
       "Easy",
-      "Hard"
+      "Legendary"
      ],
-     "last": "2026-10-20 18:02:16"
+     "last": "2026-11-12 22:56:04"
+    },
+    "Landslide": {
+     "races": 4,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1,
+      4
+     ],
+     "pilots": [
+      "belac",
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "last": "2026-11-21 00:50:51"
+    },
+    "Regatta": {
+     "races": 10,
+     "finished": 2,
+     "best": 36.5,
+     "median": 49.0,
+     "intensities": [
+      1,
+      2,
+      3
+     ],
+     "pilots": [
+      "gradi",
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Easy",
+      "Hard",
+      "Legendary"
+     ],
+     "last": "2026-11-19 20:08:26"
+    },
+    "Windrow": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Easy"
+     ],
+     "last": "2026-11-18 00:29:15"
     }
    },
    "asRival": {
+    "BroodRush": {
+     "races": 14,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Easy",
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
+    "Landslide": {
+     "races": 8,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      4
+     ]
+    },
     "Regatta": {
-     "races": 51,
+     "races": 63,
      "medianRings": 11,
      "target": 24,
      "difficulty": [
@@ -1366,13 +2277,25 @@
       1
      ]
     },
-    "BroodRush": {
-     "races": 3,
-     "medianRings": 0,
-     "target": 0,
+    "Headlong": {
+     "races": 4,
+     "medianRings": 6,
+     "target": 40,
      "difficulty": [
       "Easy",
       "Legendary"
+     ],
+     "intensities": [
+      1,
+      4
+     ]
+    },
+    "Windrow": {
+     "races": 2,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Easy"
      ],
      "intensities": [
       1
@@ -1411,7 +2334,8 @@
     "WreckingBall"
    ],
    "gateRacesOffered": [
-    "Regatta"
+    "Regatta",
+    "ScarabRally"
    ],
    "flown": {
     "AstroLeague": {
@@ -1445,6 +2369,25 @@
       "Hard"
      ],
      "last": "2026-10-25 21:56:42"
+    },
+    "ScarabRally": {
+     "races": 10,
+     "finished": 2,
+     "best": 62.4,
+     "median": 96.1,
+     "intensities": [
+      1,
+      4
+     ],
+     "pilots": [
+      "gradi"
+     ],
+     "rivalDifficulty": [
+      "Easy",
+      "Legendary",
+      "Medium"
+     ],
+     "last": "2026-11-15 01:56:45"
     },
     "ScarabScramble": {
      "races": 6,
@@ -1510,15 +2453,42 @@
       4
      ]
     },
-    "Broadside": {
-     "races": 1,
-     "medianRings": 0,
-     "target": 0,
+    "ScarabRally": {
+     "races": 10,
+     "medianRings": 12,
+     "target": 24,
      "difficulty": [
+      "Easy",
+      "Legendary",
       "Medium"
      ],
      "intensities": [
-      1
+      1,
+      4
+     ]
+    },
+    "AstroLeague": {
+     "races": 2,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "Broadside": {
+     "races": 4,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
      ]
     }
    }
@@ -1547,12 +2517,15 @@
    ],
    "offeredIn": [
     "BroodRush",
+    "Hedgerow",
+    "Longshot",
     "Regatta",
     "SerpentHood",
     "SerpentTime"
    ],
    "gateRacesOffered": [
-    "Regatta"
+    "Regatta",
+    "SerpentTime"
    ],
    "flown": {
     "Regatta": {
@@ -1593,8 +2566,24 @@
      ],
      "last": "2026-11-07 21:06:38"
     },
+    "SerpentHood": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      4
+     ],
+     "pilots": [
+      "shombith"
+     ],
+     "rivalDifficulty": [
+      "Hard"
+     ],
+     "last": "2026-11-10 05:36:29"
+    },
     "SerpentTime": {
-     "races": 28,
+     "races": 29,
      "finished": 12,
      "best": 64.2,
      "median": 73.1,
@@ -1607,19 +2596,34 @@
      "pilots": [
       "gradi",
       "owner",
-      "shombith"
+      "shombith",
+      "yskha"
      ],
      "rivalDifficulty": [
       "Legendary",
       "Medium"
      ],
-     "last": "2026-11-07 21:11:20"
+     "last": "2026-11-20 16:03:22"
     }
    },
    "asRival": {
+    "BroodRush": {
+     "races": 13,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Easy",
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
     "Regatta": {
-     "races": 25,
-     "medianRings": 16,
+     "races": 32,
+     "medianRings": 14,
      "target": 24,
      "difficulty": [
       "Hard",
@@ -1634,8 +2638,8 @@
      ]
     },
     "SerpentTime": {
-     "races": 51,
-     "medianRings": 12,
+     "races": 54,
+     "medianRings": 13,
      "target": 16,
      "difficulty": [
       "Legendary",
@@ -1646,19 +2650,6 @@
       2,
       3,
       4
-     ]
-    },
-    "BroodRush": {
-     "races": 3,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Easy",
-      "Legendary",
-      "Medium"
-     ],
-     "intensities": [
-      1
      ]
     },
     "SerpentGulag": {
@@ -1674,6 +2665,17 @@
       1,
       2,
       3,
+      4
+     ]
+    },
+    "SerpentHood": {
+     "races": 1,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Hard"
+     ],
+     "intensities": [
       4
      ]
     }
@@ -1700,11 +2702,58 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
+    "Lancefall",
+    "Larder",
+    "Regatta",
+    "Thornbush",
     "Thornline"
    ],
-   "gateRacesOffered": [],
-   "flown": {},
-   "asRival": {}
+   "gateRacesOffered": [
+    "Regatta",
+    "Thornline"
+   ],
+   "flown": {
+    "Thornline": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Legendary"
+     ],
+     "last": "2026-11-22 17:02:31"
+    }
+   },
+   "asRival": {
+    "Regatta": {
+     "races": 1,
+     "medianRings": 20,
+     "target": 24,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "Thornline": {
+     "races": 2,
+     "medianRings": 12,
+     "target": 16,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      1
+     ]
+    }
+   }
   },
   {
    "hull": "Sparrow",
@@ -1726,11 +2775,11 @@
    "aiDrive": "HoldBoostAIPolicySO",
    "regattaAI": false,
    "tunedFor": [
-    "Breakwater"
+    "Breakwater",
+    "Regatta"
    ],
    "offeredIn": [
     "Breakwater",
-    "Broadside",
     "BroodRush",
     "DogFight",
     "Maelstrom",
@@ -1745,7 +2794,7 @@
    ],
    "flown": {
     "Breakwater": {
-     "races": 12,
+     "races": 14,
      "finished": 9,
      "best": 83.8,
      "median": 114.1,
@@ -1764,10 +2813,45 @@
       "Hard",
       "Medium"
      ],
-     "last": "2026-10-31 19:21:29"
+     "last": "2026-11-20 23:22:08"
+    },
+    "Broadside": {
+     "races": 3,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "owner",
+      "shombith"
+     ],
+     "rivalDifficulty": [
+      "Easy",
+      "Legendary",
+      "Medium"
+     ],
+     "last": "2026-11-13 20:25:20"
+    },
+    "BroodRush": {
+     "races": 2,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Legendary"
+     ],
+     "last": "2026-11-14 21:35:46"
     },
     "DogFight": {
-     "races": 4,
+     "races": 6,
      "finished": 0,
      "best": null,
      "median": null,
@@ -1775,12 +2859,14 @@
       1
      ],
      "pilots": [
-      "gradi"
+      "gradi",
+      "owner",
+      "yskha"
      ],
      "rivalDifficulty": [
       "Medium"
      ],
-     "last": "2026-10-21 07:29:28"
+     "last": "2026-11-20 15:56:31"
     },
     "Regatta": {
      "races": 65,
@@ -1803,12 +2889,43 @@
       "Medium"
      ],
      "last": "2026-11-03 11:39:33"
+    },
+    "WildlifeLiberation": {
+     "races": 6,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      3
+     ],
+     "pilots": [
+      "belac",
+      "gradi"
+     ],
+     "rivalDifficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "last": "2026-11-15 02:05:26"
     }
    },
    "asRival": {
+    "Broadside": {
+     "races": 12,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
     "Regatta": {
-     "races": 16,
-     "medianRings": 12,
+     "races": 24,
+     "medianRings": 14,
      "target": 24,
      "difficulty": [
       "Hard",
@@ -1817,11 +2934,24 @@
      ],
      "intensities": [
       1,
+      2,
+      3
+     ]
+    },
+    "WildlifeLiberation": {
+     "races": 18,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
       3
      ]
     },
     "DogFight": {
-     "races": 4,
+     "races": 8,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
@@ -1843,8 +2973,8 @@
      ]
     },
     "Breakwater": {
-     "races": 19,
-     "medianRings": 16,
+     "races": 25,
+     "medianRings": 21,
      "target": 29,
      "difficulty": [
       "Hard",
@@ -1855,17 +2985,6 @@
       2,
       3,
       4
-     ]
-    },
-    "Broadside": {
-     "races": 1,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Medium"
-     ],
-     "intensities": [
-      1
      ]
     },
     "BroodRush": {
@@ -1909,7 +3028,6 @@
    ],
    "offeredIn": [
     "AstroLeague",
-    "Broadside",
     "BroodRush",
     "Joust",
     "Maelstrom",
@@ -1921,8 +3039,24 @@
     "Regatta"
    ],
    "flown": {
-    "Joust": {
+    "Broadside": {
      "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-10 06:22:12"
+    },
+    "BroodRush": {
+     "races": 2,
      "finished": 0,
      "best": null,
      "median": null,
@@ -1930,12 +3064,29 @@
       1
      ],
      "pilots": [
-      "gradi"
+      "yskha"
      ],
      "rivalDifficulty": [
       "Medium"
      ],
-     "last": "2026-10-20 15:33:59"
+     "last": "2026-11-21 06:19:28"
+    },
+    "Joust": {
+     "races": 2,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "gradi",
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-17 01:09:15"
     },
     "Regatta": {
      "races": 57,
@@ -1961,24 +3112,26 @@
      "last": "2026-11-06 15:44:03"
     },
     "Scurry": {
-     "races": 10,
+     "races": 13,
      "finished": 0,
      "best": null,
      "median": null,
      "intensities": [
-      1
+      1,
+      2
      ],
      "pilots": [
+      "owner",
       "shombith",
       "yskha"
      ],
      "rivalDifficulty": [
       "Medium"
      ],
-     "last": "2026-10-25 07:03:19"
+     "last": "2026-11-21 01:29:00"
     },
     "SkimRace": {
-     "races": 25,
+     "races": 33,
      "finished": 0,
      "best": null,
      "median": null,
@@ -2002,7 +3155,7 @@
       "Legendary",
       "Medium"
      ],
-     "last": "2026-11-05 10:36:05"
+     "last": "2026-11-22 07:40:00"
     },
     "Tandava": {
      "races": 1,
@@ -2022,9 +3175,36 @@
     }
    },
    "asRival": {
+    "Broadside": {
+     "races": 14,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
+    "BroodRush": {
+     "races": 17,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Easy",
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2
+     ]
+    },
     "Regatta": {
-     "races": 57,
-     "medianRings": 19,
+     "races": 72,
+     "medianRings": 17,
      "target": 24,
      "difficulty": [
       "Easy",
@@ -2040,7 +3220,7 @@
      ]
     },
     "SkimRace": {
-     "races": 54,
+     "races": 73,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
@@ -2057,7 +3237,7 @@
      ]
     },
     "Joust": {
-     "races": 1,
+     "races": 4,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
@@ -2068,28 +3248,6 @@
      ]
     },
     "AstroLeague": {
-     "races": 1,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Medium"
-     ],
-     "intensities": [
-      1
-     ]
-    },
-    "Broadside": {
-     "races": 1,
-     "medianRings": 0,
-     "target": 0,
-     "difficulty": [
-      "Medium"
-     ],
-     "intensities": [
-      1
-     ]
-    },
-    "BroodRush": {
      "races": 4,
      "medianRings": 0,
      "target": 0,
@@ -2099,18 +3257,20 @@
       "Medium"
      ],
      "intensities": [
-      1
+      1,
+      2
      ]
     },
     "Scurry": {
-     "races": 23,
+     "races": 30,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
       "Medium"
      ],
      "intensities": [
-      1
+      1,
+      2
      ]
     }
    }
@@ -2138,11 +3298,13 @@
     "Regatta"
    ],
    "offeredIn": [
-    "Regatta",
+    "Broadside",
+    "Fulmen",
+    "Shockfront",
     "Slingshot"
    ],
    "gateRacesOffered": [
-    "Regatta"
+    "Slingshot"
    ],
    "flown": {
     "Regatta": {
@@ -2169,7 +3331,7 @@
      "last": "2026-11-06 05:37:01"
     },
     "Slingshot": {
-     "races": 35,
+     "races": 45,
      "finished": 4,
      "best": 75.2,
      "median": 90.9,
@@ -2188,7 +3350,7 @@
       "Legendary",
       "Medium"
      ],
-     "last": "2026-11-07 02:08:37"
+     "last": "2026-11-21 22:39:08"
     },
     "Warpline": {
      "races": 20,
@@ -2231,7 +3393,7 @@
      ]
     },
     "Slingshot": {
-     "races": 68,
+     "races": 88,
      "medianRings": 15,
      "target": 16,
      "difficulty": [
@@ -2270,7 +3432,7 @@
     "Charge": "'Energize'",
     "Mass": "'Afterimage'",
     "Space": "'Blade Reach'",
-    "Time": "'Ramp Spool'"
+    "Time": "'Quickdraw'"
    },
    "stats": {
     "ts": 50.0,
@@ -2283,16 +3445,126 @@
    "verb": "",
    "aiDrive": "",
    "regattaAI": false,
-   "tunedFor": [],
+   "tunedFor": [
+    "Regatta",
+    "Spearline"
+   ],
    "offeredIn": [
     "AstroLeague",
-    "Broadside",
     "BroodRush",
-    "Cleave"
+    "Cleave",
+    "Palisade",
+    "Regatta",
+    "Riposte",
+    "Spearline"
    ],
-   "gateRacesOffered": [],
-   "flown": {},
-   "asRival": {}
+   "gateRacesOffered": [
+    "Regatta",
+    "Spearline"
+   ],
+   "flown": {
+    "AstroLeague": {
+     "races": 3,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Easy",
+      "Legendary"
+     ],
+     "last": "2026-11-15 23:49:48"
+    },
+    "BroodRush": {
+     "races": 5,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "gradi"
+     ],
+     "rivalDifficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "last": "2026-11-19 20:17:04"
+    },
+    "Spearline": {
+     "races": 4,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "gradi",
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "last": "2026-11-22 07:46:42"
+    }
+   },
+   "asRival": {
+    "BroodRush": {
+     "races": 10,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "Broadside": {
+     "races": 8,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "Regatta": {
+     "races": 1,
+     "medianRings": 17,
+     "target": 24,
+     "difficulty": [
+      "Legendary"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "Spearline": {
+     "races": 9,
+     "medianRings": 2,
+     "target": 40,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1
+     ]
+    }
+   }
   },
   {
    "hull": "Thresher",
@@ -2314,18 +3586,63 @@
    "aiDrive": "",
    "regattaAI": false,
    "tunedFor": [
+    "Regatta",
     "ThresherTime"
    ],
    "offeredIn": [
+    "Harvest",
+    "Haul",
+    "Jackstraw",
+    "Regatta",
     "ThresherTime"
    ],
-   "gateRacesOffered": [],
+   "gateRacesOffered": [
+    "Regatta",
+    "ThresherTime"
+   ],
    "flown": {
+    "Harvest": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      4
+     ],
+     "pilots": [
+      "shombith"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-11 02:52:32"
+    },
+    "Jackstraw": {
+     "races": 13,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1,
+      2,
+      3
+     ],
+     "pilots": [
+      "gradi",
+      "shombith",
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "last": "2026-11-16 19:46:27"
+    },
     "ThresherTime": {
-     "races": 19,
-     "finished": 8,
+     "races": 23,
+     "finished": 9,
      "best": 64.6,
-     "median": 114.3,
+     "median": 120.1,
      "intensities": [
       1,
       2,
@@ -2343,12 +3660,12 @@
       "Legendary",
       "Medium"
      ],
-     "last": "2026-11-07 03:35:20"
+     "last": "2026-11-22 07:47:33"
     }
    },
    "asRival": {
     "ThresherTime": {
-     "races": 35,
+     "races": 43,
      "medianRings": 10,
      "target": 16,
      "difficulty": [
@@ -2359,6 +3676,43 @@
      "intensities": [
       1,
       2,
+      4
+     ]
+    },
+    "Jackstraw": {
+     "races": 37,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      2,
+      3
+     ]
+    },
+    "Regatta": {
+     "races": 9,
+     "medianRings": 24,
+     "target": 24,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      2
+     ]
+    },
+    "Harvest": {
+     "races": 1,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
       4
      ]
     }
@@ -2374,11 +3728,13 @@
    "tunedFor": [],
    "offeredIn": [
     "Dustup",
+    "Regatta",
     "Sirocco",
     "Tapestry",
     "Waystation"
    ],
    "gateRacesOffered": [
+    "Regatta",
     "Waystation"
    ],
    "flown": {},
@@ -2407,8 +3763,8 @@
     "Regatta"
    ],
    "offeredIn": [
-    "Broadside",
     "Hijack",
+    "Railrush",
     "Regatta",
     "Skein"
    ],
@@ -2417,6 +3773,22 @@
     "Skein"
    ],
    "flown": {
+    "Broadside": {
+     "races": 2,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      2
+     ],
+     "pilots": [
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Legendary"
+     ],
+     "last": "2026-11-13 20:13:29"
+    },
     "Hijack": {
      "races": 2,
      "finished": 0,
@@ -2432,6 +3804,22 @@
       "Medium"
      ],
      "last": "2026-10-31 13:17:54"
+    },
+    "Railrush": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      1
+     ],
+     "pilots": [
+      "owner"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-11-21 02:16:54"
     },
     "Regatta": {
      "races": 7,
@@ -2472,7 +3860,7 @@
    },
    "asRival": {
     "Regatta": {
-     "races": 63,
+     "races": 70,
      "medianRings": 24,
      "target": 24,
      "difficulty": [
@@ -2486,6 +3874,18 @@
       2,
       3,
       4
+     ]
+    },
+    "Broadside": {
+     "races": 8,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Legendary",
+      "Medium"
+     ],
+     "intensities": [
+      2
      ]
     },
     "Skein": {
@@ -2502,6 +3902,17 @@
     },
     "Hijack": {
      "races": 4,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      1
+     ]
+    },
+    "Railrush": {
+     "races": 1,
      "medianRings": 0,
      "target": 0,
      "difficulty": [
@@ -2534,9 +3945,14 @@
    "regattaAI": false,
    "tunedFor": [],
    "offeredIn": [
+    "Blastline",
+    "CleanerRam",
+    "Reefbuild",
     "WrasseRun"
    ],
-   "gateRacesOffered": [],
+   "gateRacesOffered": [
+    "WrasseRun"
+   ],
    "flown": {
     "WrasseRun": {
      "races": 9,
@@ -2571,7 +3987,7 @@
    }
   }
  ],
- "flights": 488,
+ "flights": 675,
  "pilots": [
   "belac",
   "gradi",

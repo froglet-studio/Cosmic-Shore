@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-21-grizzlyhudview-ondestroy-destroys-a-scop-5b5e4d",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-21T19:21:14+00:00",
+  "area": "the Grizzly HUD",
+  "summary": "GrizzlyHUDView.OnDestroy destroys a scope camera that is still out on a round and no longer reparents it onto the hull being destroyed (bug ledger E-5e0864d332)",
+  "why": "Unity refuses the reparent and logs an error; the camera was left in the scene root",
+  "branch": "Ys-bleeding-edge",
+  "commit": "feac78bf0",
+  "paths": [
+    "Assets/_Scripts/UI/View/GrizzlyHUDView.cs"
+  ]
+}

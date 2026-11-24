@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-21-the-stoat-s-field-dipole-stoatdipoleexec-a44897",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-21T18:04:35+00:00",
+  "area": "the Stoat's round-15 field dipole, slingshot_stoat_sim.py / slingshot_fit.py, the sound placeholder ledger, the colour trace",
+  "summary": "The Stoat's field dipole (StoatDipoleExecutor, its action SOs and assets, StoatDipoleTests, the predicted path, Time 5 Foresight) is deleted from the code, not parked; the swing is the only slingshot for every AI. slingshot_stoat_sim.py reads the deleted trampoline/orbit rows from a RETIRED table of their last shipped values (its self-test fails exactly as before); slingshot_fit.py unchanged and passing. 13 Stoat sounds left the placeholder ledger with their slots (list and lock rewritten by --write-md, so the shared ledger artifact is now stale). colour_trace.json lost world:040614 (StoatPathfinderDots); Photic's TracedColors rewritten by --write-photic. BlackHoleWaves now has no caller (its producer was the dipole).",
+  "why": "Yash 2026-11-21: 'I see the pathfinding dotted line in Stoat AIs while playing slingshot, make sure all AI uses our latest slingshot mechanics, and delete all other old pathfinding and other mechanics' (the dotted line was Foresight).",
+  "branch": "Ys-bleeding-edge",
+  "commit": "4e5df7090",
+  "paths": [
+    "Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md",
+    "Docs/AudioSystem/sound_placeholders.json",
+    "Docs/VesselModels/colour_trace.json",
+    "Tools/Build/slingshot_stoat_sim.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Stoat"
+    ]
+  }
+}

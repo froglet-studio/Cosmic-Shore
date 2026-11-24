@@ -7,10 +7,10 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// <see cref="ThirdEyeRig"/> - the in-game Third Eye's camera math. These pin the properties a
-    /// playtest would notice: the Chase camera sits behind and above the hull in the hull's own frame
-    /// and catches up without lag at speed, Follow stays world-up, a segment half behind the camera is
-    /// clipped rather than drawn backwards, and an off-screen pilot's marker lands on the edge you
-    /// would turn to.
+    /// playtest would notice: Frame pilot's one still pose is world-up and behind the hull's heading, the
+    /// rig has NO pose that follows a hull (a hull is watched through the game's own camera, whoever flies
+    /// it), a segment half behind the camera is clipped rather than drawn backwards, and an off-screen
+    /// pilot's marker lands on the edge you would turn to.
     /// </summary>
     public class ThirdEyeRigTests
     {
@@ -27,47 +27,43 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Chase_Snap_SitsBehindAndAboveInTheHullFrame()
+        public void FramePose_IsWorldUp_BehindTheHeading_AndFramesAHullPointingStraightUp()
         {
-            var hullRot = Quaternion.Euler(0f, 90f, 30f);
-            Vector3 hullPos = new(100f, 20f, -50f);
-            Vector3 offset = Vector3.zero, up = Vector3.up;
-
-            var pose = ThirdEyeRig.Chase(hullPos, hullRot, ref offset, ref up, 30f, 8f, 40f, 8f, 0.016f, true);
-
-            Vector3 local = Quaternion.Inverse(hullRot) * (pose.Position - hullPos);
-            Assert.AreEqual(-30f, local.z, Eps);
-            Assert.AreEqual(8f, local.y, Eps);
-            Assert.AreEqual(0f, local.x, Eps);
-            Assert.Greater(Vector3.Dot(pose.Rotation * Vector3.forward, hullRot * Vector3.forward), 0.9f,
-                "the chase camera looks the way the hull flies");
-            Assert.Greater(Vector3.Dot(pose.Rotation * Vector3.up, hullRot * Vector3.up), 0.9f, "it rolls with the hull");
-        }
-
-        [Test]
-        public void Chase_SmoothsTheOffsetNotThePosition_SoSpeedNeverAddsLag()
-        {
-            var rot = Quaternion.identity;
-            Vector3 offset = Vector3.zero, up = Vector3.up;
-            ThirdEyeRig.Chase(Vector3.zero, rot, ref offset, ref up, 30f, 8f, 40f, 4f, 0.016f, true);
-
-            // The hull jumps 500 u forward in one frame (a 5x boost at 30 fps): the camera keeps its offset.
-            var pose = ThirdEyeRig.Chase(new Vector3(0f, 0f, 500f), rot, ref offset, ref up, 30f, 8f, 40f, 4f, 0.033f, false);
-            Assert.AreEqual(470f, pose.Position.z, Eps);
-        }
-
-        [Test]
-        public void Follow_IsWorldUp_AndKeepsItsHeadingWhenTheHullPointsStraightUp()
-        {
-            Vector3 offset = Vector3.zero, heading = Vector3.zero;
-            var level = ThirdEyeRig.Follow(Vector3.zero, Quaternion.identity, ref offset, ref heading, 90f, 35f, 3f, 0.016f, true);
+            var level = ThirdEyeRig.FramePose(Vector3.zero, Quaternion.identity, 90f, 35f);
             Assert.AreEqual(-90f, level.Position.z, Eps);
             Assert.AreEqual(35f, level.Position.y, Eps);
             Assert.Greater(Vector3.Dot(level.Rotation * Vector3.up, Vector3.up), 0.9f);
+            Assert.Greater(Vector3.Dot(level.Rotation * Vector3.forward, -level.Position.normalized), 0.999f, "it looks at the hull");
+
+            // A rolled, yawed hull is still framed world-up from behind its flattened heading.
+            var banked = ThirdEyeRig.FramePose(new Vector3(10f, 0f, 0f), Quaternion.Euler(0f, 90f, 60f), 90f, 35f);
+            Assert.AreEqual(-80f, banked.Position.x, Eps);
+            Assert.AreEqual(35f, banked.Position.y, Eps);
 
             var straightUp = Quaternion.LookRotation(Vector3.up, Vector3.back);
-            var climbing = ThirdEyeRig.Follow(Vector3.zero, straightUp, ref offset, ref heading, 90f, 35f, 3f, 0.016f, true);
-            Assert.AreEqual(-90f, climbing.Position.z, Eps, "the last horizontal heading is kept");
+            var climbing = ThirdEyeRig.FramePose(Vector3.zero, straightUp, 90f, 35f);
+            Assert.AreEqual(-90f, climbing.Position.z, Eps, "no horizontal heading: framed from world back");
+        }
+
+        /// <summary>
+        /// The one camera rule (Yash, 2026-11-22): the AI Diagnose panel has no camera that follows a hull. Its Chase
+        /// (30 behind), Follow and Orbit poses watched an AI-flown hull from nearer than the player's own camera. A
+        /// pose that takes smoothing state by ref, or one of those names coming back, is a follow camera coming back.
+        /// </summary>
+        [Test]
+        public void TheRigHasNoPoseThatFollowsAHull()
+        {
+            var flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic |
+                        System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
+            foreach (var method in typeof(ThirdEyeRig).GetMethods(flags))
+            {
+                CollectionAssert.DoesNotContain(new[] { "Chase", "Follow", "Orbit" }, method.Name,
+                    "a hull is watched through the game's own camera; Free fly is the only extra camera");
+                if (method.ReturnType != typeof(ThirdEyeRig.Pose)) continue;
+                foreach (var parameter in method.GetParameters())
+                    Assert.IsFalse(parameter.ParameterType.IsByRef,
+                        $"{method.Name} carries state between frames ({parameter.Name}): that is a camera following something");
+            }
         }
 
         [Test]
@@ -80,16 +76,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Orbit_SitsAtTheDistance_LookingAtTheHull()
-        {
-            Vector3 hull = new(5f, 6f, 7f);
-            var pose = ThirdEyeRig.Orbit(hull, 45f, 20f, 80f);
-            Assert.AreEqual(80f, Vector3.Distance(pose.Position, hull), Eps);
-            Assert.Greater(Vector3.Dot(pose.Rotation * Vector3.forward, (hull - pose.Position).normalized), 0.999f);
-        }
-
-        [Test]
-        public void YawPitch_RoundTripsAnOrbit()
+        public void YawPitch_ReadsARotationsYawAndPitch()
         {
             ThirdEyeRig.YawPitch(Quaternion.Euler(-30f, 120f, 0f), out float yaw, out float pitch);
             Assert.AreEqual(120f, yaw, Eps);

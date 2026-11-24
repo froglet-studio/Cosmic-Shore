@@ -65,6 +65,10 @@ namespace CosmicShore.ScriptableObjects
         public string Done = "JOB DONE";
         [Tooltip("Banner when a job is left undone.")]
         public string Failed = "JOB LEFT UNDONE";
+        [Tooltip("Banner when a voyage is left at sea after a world was reached: it waits as a chapter (P13). Empty shows nothing.")]
+        public string WaypointSaved = "THE VOYAGE WAITS: PICK IT UP FROM THE HARBOUR";
+        [Tooltip("Banner when a waiting voyage is picked up. Tokens: {to}. Empty shows nothing.")]
+        public string WaypointResumed = "VOYAGE RESUMED: ON TO {to}";
         [Tooltip("Banner when something is stowed aboard.")]
         public string Stowed = "STOWED ABOARD";
         [Tooltip("Banner on docking at home.")]

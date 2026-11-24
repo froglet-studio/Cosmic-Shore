@@ -283,6 +283,7 @@ namespace CosmicShore.Gameplay
                 becomesTip = true,
                 decidedAt = Time.time,
             });
+            QueueDrain();
 
             // A whorl at this node - the leaf head. Terminal leaves (they never become tips),
             // which is what bounds a mature plant's cost.
@@ -346,6 +347,7 @@ namespace CosmicShore.Gameplay
                     becomesTip = false,
                     decidedAt = Time.time,
                 });
+                QueueDrain();
             }
         }
 
@@ -414,14 +416,18 @@ namespace CosmicShore.Gameplay
             return index.TryReserve(position, Mathf.Max(1.5f, ClaimRadiusFraction * spacing));
         }
 
-        void Update()
+        /// <summary>This plant's births for one frame, up to <c>maxSpawnsPerFrame</c>. It ran from this
+        /// plant's own Update; <see cref="FloraGrowthPump"/> now calls it, so every plant's births share
+        /// one time budget per frame.</summary>
+        internal override bool DrainQueuedGrowth(out bool worked)
         {
-            if (_pending.Count == 0) return;
+            worked = false;
+            if (_pending.Count == 0 || IsDying || !isActiveAndEnabled) return false;
             // Parity with the WaitForSeconds grow loop: frozen at timeScale 0 (menu pause).
-            if (Time.timeScale <= 0f) return;
+            if (Time.timeScale <= 0f) return true;
             // Orders decided just before Frenzy WAIT here (sites stay claimed) and execute when
             // growing re-enables - the same freeze-and-resume the tick gate gives.
-            if (cell && !cell.FloraGrowingEnabled) return;
+            if (cell && !cell.FloraGrowingEnabled) return true;
 
             int spawned = 0;
             while (spawned < maxSpawnsPerFrame && _pending.Count > 0)
@@ -431,6 +437,17 @@ namespace CosmicShore.Gameplay
                 Execute(order);
                 spawned++;
             }
+            worked = spawned > 0;
+            return _pending.Count > 0;
+        }
+
+        /// <summary>Hands this plant's waiting births to the shared growth budget; outside play mode
+        /// (no pump) they are carried out here.</summary>
+        void QueueDrain()
+        {
+            if (FloraGrowthPump.RequestDrain(this)) return;
+            bool worked;
+            do DrainQueuedGrowth(out worked); while (worked);
         }
 
         /// <summary>
@@ -488,12 +505,11 @@ namespace CosmicShore.Gameplay
         {
             // The parent spindle may have been eaten between decision and drain; the claimed site
             // simply lapses with its TTL.
-            if (!order.parent.gameObject) return;
+            // A pooled limb is not destroyed when it dies (SpindlePool), so also ask whether it is still ours.
+            if (!order.parent.gameObject || !order.parent.gameObject.transform.IsChildOf(transform)) return;
 
-            var newSpindle = Instantiate(spindle, order.parent.gameObject.transform);
+            var newSpindle = SpindlePool.Get(spindle, order.position, order.rotation, order.parent.gameObject.transform);
             newSpindle.LifeForm = this;
-            newSpindle.transform.position = order.position;
-            newSpindle.transform.rotation = order.rotation;
             AddSpindle(newSpindle);
 
             var leaf = EnvironmentPrismPool.Get(healthPrism, order.position, order.rotation);
