@@ -67,8 +67,65 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>What the ruins ask of an AI Shrike, kept per pilot while ruins stand.</summary>
+        sealed class RuinCoach
+        {
+            public ShrikeExecutor Executor;
+            public AIPilot Pilot;
+            public Transform Hull;
+            public System.Func<Vector3, bool> Accept;
+        }
+
+        readonly Dictionary<IPlayer, RuinCoach> _ruinCoaches = new();
+
+        /// <summary>
+        /// While ruins stand, an AI Shrike slings by its autopilot's own rule (a target 300 u or more away within 20
+        /// degrees of the nose, and a block on the axis) except that a RUIN is never the block it slings at, and it stays
+        /// in Time mode, so ruins of another domain ahead no longer switch it to the lance (THORNLINE.md §2a, §4: the
+        /// course never pulls an AI out of Time mode). Before this, the first two I4 races in the editor took 69 s
+        /// against 42-52 s with the ruins cleared. It sets the autopilot's race-coach hook
+        /// (<see cref="ShrikeExecutor.AiSlingAccept"/>, as Regatta does), so a human's controls, the kit and every number
+        /// of it are untouched. Called for each AI pilot from <see cref="TryOverrideAim"/>; nothing below I4.
+        /// </summary>
+        void CoachAroundRuins(IPlayer pilot)
+        {
+            if (_ruinPrisms.Count == 0 || pilot?.Vessel?.VesselStatus is not Component status || !status) return;
+            var hull = pilot.Vessel.Transform;
+            if (!hull) return;
+            if (!_ruinCoaches.TryGetValue(pilot, out var coach) || !coach.Executor || coach.Hull != hull)
+            {
+                // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a human's hull.
+                if (!status.TryGetComponent(out AIPilot autopilot)) return;
+                var executor = hull.GetComponentInChildren<ShrikeExecutor>(true);
+                if (!executor || !executor.Config) return;
+                coach = new RuinCoach { Executor = executor, Pilot = autopilot, Hull = hull };
+                var captured = coach;
+                coach.Accept = _ => SlingsPastRuins(captured);
+                _ruinCoaches[pilot] = coach;
+            }
+            if (coach.Executor.AiSlingAccept != coach.Accept) coach.Executor.AiSlingAccept = coach.Accept;
+        }
+
+        /// <summary>The autopilot's own sling rule (ShrikeExecutor.Autopilot), with a ruin never the anchor.</summary>
+        static bool SlingsPastRuins(RuinCoach coach)
+        {
+            if (!coach.Executor || !coach.Hull || !coach.Pilot) return false;
+            var config = coach.Executor.Config;
+            Vector3 fwd = coach.Hull.forward, toTarget = coach.Pilot.TargetPosition - coach.Hull.position;
+            if (toTarget.magnitude < config.AiSlingMinDistance || Vector3.Angle(fwd, toTarget) > config.AiSlingDegrees) return false;
+            return coach.Executor.PreviewSlingAnchor(fwd, out var anchor, out _) && anchor && anchor.ownerID != RuinOwnerId;
+        }
+
+        void ReleaseRuinCoaches()
+        {
+            foreach (var coach in _ruinCoaches.Values)
+                if (coach.Executor && coach.Executor.AiSlingAccept == coach.Accept) coach.Executor.AiSlingAccept = null;
+            _ruinCoaches.Clear();
+        }
+
         void ClearRuins()
         {
+            ReleaseRuinCoaches();
             for (int i = 0; i < _ruinPrisms.Count; i++)
             {
                 var prism = _ruinPrisms[i];

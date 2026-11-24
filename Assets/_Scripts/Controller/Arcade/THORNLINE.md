@@ -108,7 +108,18 @@ normal speed; the race ends on the first finisher). **With the ruins the AI is a
 the start (THORNLINE.md §4.1's trained Legendary I4 time is 41.6 s). Two races each and different courses, so the size
 is rough; the direction held in every race. In the first race one Shrike stayed near one point for about 60 s; in the
 second one passed 11 u from a ruin prism. 58 and 58 ruin prisms were broken during the two races. No error in any match
-(the boot logged the Cloud Code 404); 52-77 fps while racing. Why the AI loses the time is not known yet.
+(the boot logged the Cloud Code 404); 52-77 fps while racing.
+
+**Why, and the fix (2026-11-25).** The stock autopilot (`ShrikeExecutor.Autopilot`) slings at the FIRST block on its
+nose once the target is within 20 deg, so a ruin crossing the nose as it turned became the anchor; and it switches to
+Space and holds the lance whenever blocks of another domain lie ahead, which every Jade, Ruby and Gold ruin is (the 58
+broken prisms). §4 says the course must never pull an AI out of Time mode. While ruins stand, Thornline now sets the
+autopilot's race-coach hook (`ShrikeExecutor.AiSlingAccept`, the one Regatta uses; `ThornlineController.Ruins.cs`
+`CoachAroundRuins`): the autopilot's own sling rule (300 u, 20 deg, a block on the axis), except that a ruin is never
+the anchor, and Time mode only. A human's controls, the kit and its numbers are untouched; I1-I3 (no ruins) keep the
+stock autopilot. The cost: at I4 the AI no longer fires missiles at a rival in its cone. **After the fix, one race in
+the editor with the ruins standing (5 ruins, 549 prisms): the winner took 44.5 s (69.6 / 69.2 s before), and no ruin
+prism was broken.** More races were planned but the editor was taken by another session's test.
 
 ### What it measures (offline)
 
