@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b513d79f62946e1a8f5e4ed26a96b12, type: 3}
   m_Name: Scenario_BurrowRun
   m_EditorClassIdentifier: 
-  DisplayName: "Burrow Run · Meerkat · I4"
+  DisplayName: "Burrow Run · Jewel Wasp · I4"
   GameMode: 71
-  Vessel: 28
+  Vessel: 31
   Intensity: 4
   PopulationSize: 24
   EliteCount: 4

@@ -705,7 +705,7 @@ is what makes it read as a *slap* rather than a muzzle blast.
   `ExplosionImpactor.AcceptImpactee` (`affectSelf 0`), so the effect adds no second domain gate.
 - Super-shielded mass still both survives it and destroys the blast, so the Astro League edge
   lining protects itself for free.
-- **CHARGE owns its cooldown** (2.5 s → 1.25 s at Charge 10) and **CHARGE 5** makes it devastating
+- **CHARGE owns its cooldown** (4.25 s → 2.125 s at Charge 10 since 2026-11-19, from the Broadside judge; 2.5 s → 1.25 s before) and **CHARGE 5** makes it devastating
   (§7). The **dash itself is never gated**: `IsBlastReady` false declines the punch and lets the
   dodge through.
 

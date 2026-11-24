@@ -1779,7 +1779,7 @@
   },
   {
    "Id": "job.raid.crystals",
-   "Kind": 14,
+   "Kind": 2,
    "Faction": 0,
    "Needs": 0,
    "Goes": 1,
@@ -3046,7 +3046,8 @@
    "Story": "Three hulls and no flag. They take the roughest water because nobody follows them into it.",
    "ArriveLine": "BLACK TIDE ARE HERE",
    "FallLine": "Black Tide went down at {about}.",
-   "WinLine": "Black Tide cracked a shell at {to} before you reached it."
+   "WinLine": "Black Tide cracked a shell at {to} before you reached it.",
+   "ArkName": "Undertow"
   },
   {
    "Id": "rival.rusted-grin",
@@ -3064,7 +3065,8 @@
    "Story": "The best crew out of Gullbone, and they know it. They go where the pay is and leave nothing behind.",
    "ArriveLine": "THE RUSTED GRIN ARE HERE",
    "FallLine": "The Rusted Grin went down at {about}. Gullbone will not believe it.",
-   "WinLine": "The Rusted Grin opened a shell at {to} while you were still on the lane."
+   "WinLine": "The Rusted Grin opened a shell at {to} while you were still on the lane.",
+   "ArkName": "Old Jaw"
   },
   {
    "Id": "rival.longwake",
@@ -3082,7 +3084,8 @@
    "Story": "Old hunters who take the near work and come home every time. They have opened more vaults than anyone living.",
    "ArriveLine": "LONGWAKE LODGE ARE HERE",
    "FallLine": "Longwake Lodge went down at {about}.",
-   "WinLine": "Longwake Lodge opened a vault at {to} first."
+   "WinLine": "Longwake Lodge opened a vault at {to} first.",
+   "ArkName": ""
   },
   {
    "Id": "rival.quiet-spear",
@@ -3100,7 +3103,8 @@
    "Story": "Young, loud, and after the predators nobody else will hunt. They lose more hulls than they keep.",
    "ArriveLine": "THE QUIET SPEAR ARE HERE",
    "FallLine": "The Quiet Spear went down at {about}, as everyone said they would.",
-   "WinLine": "The Quiet Spear got to the shells at {to} ahead of you."
+   "WinLine": "The Quiet Spear got to the shells at {to} ahead of you.",
+   "ArkName": ""
   },
   {
    "Id": "rival.brass-lantern",
@@ -3118,7 +3122,8 @@
    "Story": "Couriers on a schedule. Half the news on the sea rides in their hold, and they charge for every word.",
    "ArriveLine": "BRASS LANTERN COMPANY ARE HERE",
    "FallLine": "A Brass Lantern Ark went down at {about}. The schedule will be kept anyway.",
-   "WinLine": "Brass Lantern Company took the find at {to} first."
+   "WinLine": "Brass Lantern Company took the find at {to} first.",
+   "ArkName": ""
   },
   {
    "Id": "rival.writ-and-hook",
@@ -3136,7 +3141,8 @@
    "Story": "They serve warrants for whoever pays, and read every bounty board on the sea. If there is a price on you, they know it.",
    "ArriveLine": "WRIT AND HOOK ARE HERE",
    "FallLine": "Writ and Hook went down at {about}. Someone collected on them for once.",
-   "WinLine": "Writ and Hook took the find at {to} ahead of you."
+   "WinLine": "Writ and Hook took the find at {to} ahead of you.",
+   "ArkName": ""
   },
   {
    "Id": "rival.house-verdance",
@@ -3154,7 +3160,8 @@
    "Story": "A house that holds cores and keeps them. Slow, heavy and never surprised.",
    "ArriveLine": "HOUSE VERDANCE ARE HERE",
    "FallLine": "A House Verdance Ark went down at {about}. The house will send another.",
-   "WinLine": "House Verdance claimed the find at {to} before you."
+   "WinLine": "House Verdance claimed the find at {to} before you.",
+   "ArkName": ""
   },
   {
    "Id": "rival.far-shoal",
@@ -3172,7 +3179,8 @@
    "Story": "They want to be first everywhere and are, often enough. A place they charted first pays you half.",
    "ArriveLine": "FAR SHOAL SOCIETY ARE HERE",
    "FallLine": "Far Shoal Society went down at {about}, somewhere nobody had charted.",
-   "WinLine": "Far Shoal Society reached the shells at {to} first."
+   "WinLine": "Far Shoal Society reached the shells at {to} first.",
+   "ArkName": ""
   },
   {
    "Id": "rival.driftnet",
@@ -3190,7 +3198,8 @@
    "Story": "Harvesters who follow the blooms and sell the crystal at Deepreed. Harmless, unless you wanted the bloom.",
    "ArriveLine": "DRIFTNET COOPERATIVE ARE HERE",
    "FallLine": "A Driftnet Ark went down at {about}.",
-   "WinLine": "Driftnet Cooperative skimmed the bloom at {to} before you."
+   "WinLine": "Driftnet Cooperative skimmed the bloom at {to} before you.",
+   "ArkName": ""
   }
  ],
  "Sagas": [
@@ -3466,7 +3475,8 @@
     3,
     15
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": false
   },
   {
    "Type": "escort",
@@ -3482,7 +3492,8 @@
     6,
     8
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": false
   },
   {
    "Type": "job.bounty.crew",
@@ -3497,7 +3508,8 @@
     16,
     13
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": true
   },
   {
    "Type": "job.defence.aid",
@@ -3514,7 +3526,8 @@
     6,
     11
    ],
-   "Refuse": []
+   "Refuse": [],
+   "OnBoard": true
   }
  ],
  "Words": {
@@ -3560,7 +3573,8 @@
    "To": "loc.spindrift",
    "Difficulty": 2,
    "Cells": 2,
-   "Line": "A salvage run at the far end of Aurum Banks: the shallows still shine where a merchant Ark broke up last season. Calm water, slow drift, the first run anyone should sail."
+   "Line": "A salvage run at the far end of Aurum Banks: the shallows still shine where a merchant Ark broke up last season. Calm water, slow drift, the first run anyone should sail.",
+   "Rival": ""
   },
   {
    "Id": "voyage.salvage.glassmere",
@@ -3570,7 +3584,8 @@
    "To": "loc.glassmere",
    "Difficulty": 4,
    "Cells": 4,
-   "Line": "An Ark burst at Glassmere and her crystal is spread across four cells. Black Tide heard about it at the same time you did."
+   "Line": "An Ark burst at Glassmere and her crystal is spread across four cells. Black Tide heard about it at the same time you did.",
+   "Rival": ""
   },
   {
    "Id": "voyage.salvage.cinder",
@@ -3580,7 +3595,8 @@
    "To": "loc.cinder.shoal",
    "Difficulty": 6,
    "Cells": 5,
-   "Line": "The richest drift in Carmine Drift, burning in cells the Ruby crews hold. Kaiju wait between the cells."
+   "Line": "The richest drift in Carmine Drift, burning in cells the Ruby crews hold. Kaiju wait between the cells.",
+   "Rival": ""
   },
   {
    "Id": "voyage.escort.lanterns",
@@ -3590,7 +3606,8 @@
    "To": "loc.harbour.jade",
    "Difficulty": 2,
    "Cells": 3,
-   "Line": "Carry the Lantern Reach keepers home through quiet water. The first escort, and a short one."
+   "Line": "Carry the Lantern Reach keepers home through quiet water. The first escort, and a short one.",
+   "Rival": ""
   },
   {
    "Id": "voyage.escort.tollmoor",
@@ -3600,7 +3617,8 @@
    "To": "loc.tollmoor",
    "Difficulty": 4,
    "Cells": 4,
-   "Line": "A whole port's worth of traders aboard, through the busiest lane in the sea."
+   "Line": "A whole port's worth of traders aboard, through the busiest lane in the sea.",
+   "Rival": ""
   },
   {
    "Id": "voyage.escort.maw",
@@ -3610,7 +3628,8 @@
    "To": "loc.maw",
    "Difficulty": 8,
    "Cells": 6,
-   "Line": "Six cells of the Deep with a wounded crew aboard. Every cell is held against you."
+   "Line": "Six cells of the Deep with a wounded crew aboard. Every cell is held against you.",
+   "Rival": ""
   },
   {
    "Id": "voyage.bounty.spear",
@@ -3620,7 +3639,8 @@
    "To": "loc.magpie",
    "Difficulty": 2,
    "Cells": 2,
-   "Line": "A young crew with more nerve than skill. Catch them before they learn better."
+   "Line": "A young crew with more nerve than skill. Catch them before they learn better.",
+   "Rival": "rival.quiet-spear"
   },
   {
    "Id": "voyage.bounty.tide",
@@ -3630,7 +3650,8 @@
    "To": "loc.gullbone",
    "Difficulty": 4,
    "Cells": 3,
-   "Line": "Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them."
+   "Line": "Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them.",
+   "Rival": "rival.black-tide"
   },
   {
    "Id": "voyage.bounty.grin",
@@ -3640,7 +3661,8 @@
    "To": "loc.ironmouth",
    "Difficulty": 8,
    "Cells": 4,
-   "Line": "The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs."
+   "Line": "The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs.",
+   "Rival": "rival.rusted-grin"
   },
   {
    "Id": "voyage.hold.verdigris",
@@ -3650,7 +3672,8 @@
    "To": "loc.verdigris",
    "Difficulty": 1,
    "Cells": 1,
-   "Line": "A short hold under a calm core while the wardens rest. One wave, no rival."
+   "Line": "A short hold under a calm core while the wardens rest. One wave, no rival.",
+   "Rival": ""
   },
   {
    "Id": "voyage.hold.ironmouth",
@@ -3660,7 +3683,8 @@
    "To": "loc.ironmouth",
    "Difficulty": 4,
    "Cells": 2,
-   "Line": "Another domain is laying mass at Ironmouth's core faster than the wardens can clear it."
+   "Line": "Another domain is laying mass at Ironmouth's core faster than the wardens can clear it.",
+   "Rival": ""
   },
   {
    "Id": "voyage.hold.ninefold",
@@ -3670,7 +3694,8 @@
    "To": "loc.shrine.ninefold",
    "Difficulty": 8,
    "Cells": 3,
-   "Line": "The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju."
+   "Line": "The oldest shrine in the sea, under the Leviathan's shadow. Three waves and a kaiju.",
+   "Rival": ""
   }
  ]
 }

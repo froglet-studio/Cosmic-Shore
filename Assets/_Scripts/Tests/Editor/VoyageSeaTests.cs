@@ -72,13 +72,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void NamedVoyagesOfTypesNotYetBuiltStayOffTheBoard()
+        public void EveryNamedVoyageOnTheBoardIsOfABuiltType()
         {
+            // All four Milestone 2 types are built (the escort's named voyages sail from its own card, not the board).
+            var built = new[] { SalvageType, VoyageCoreHoldTests.HoldType, VoyageBountyTests.BountyType };
             var c = Shipped();
             var s = VoyageRules.NewGalaxy(c, Domains.Ruby);
             foreach (var pilot in c.Crew.Select(p => p.PilotId))
-                CollectionAssert.IsEmpty(VoyageRules.Board(s, c, new[] { pilot }).Where(j => j.IsNamed && j.TemplateId != SalvageType)
-                    .Select(j => j.VoyageId), "Bounty and Hold the Core sail as named voyages once they are built");
+                CollectionAssert.IsEmpty(VoyageRules.Board(s, c, new[] { pilot })
+                    .Where(j => j.IsNamed && !built.Contains(j.TemplateId))
+                    .Select(j => j.VoyageId), "only built voyage types sail as named voyages");
         }
 
         [Test]
@@ -95,6 +98,22 @@ namespace CosmicShore.Tests
                 Assert.IsNotEmpty(info.Say);
             }
             Assert.IsNull(c.VoyageType("job.nope"), "a probe, not a fault");
+        }
+
+        [Test]
+        public void NamedEscortsSetOutFromAKnownPortAtTheirOwnDifficulty()
+        {
+            var c = Shipped();
+            var escorts = c.Voyages.Where(v => v.Type == NamedVoyage.EscortType).ToList();
+            Assert.GreaterOrEqual(escorts.Count, 3);
+            foreach (var v in escorts)
+            {
+                Assert.IsNotNull(c.Location(v.From), $"{v.Id} sets out from a known port");
+                Assert.IsNotNull(c.Location(v.To), $"{v.Id} makes for a known port");
+                Assert.AreNotEqual(v.From, v.To);
+                Assert.That(v.Difficulty, Is.InRange(VoyageDifficulty.Min, VoyageDifficulty.Max), $"{v.Id}: difficulty 1-9");
+                Assert.That(VoyageSea.RunCells(v.Cells), Is.InRange(1, 6), $"{v.Id}: 1-6 cells");
+            }
         }
 
         [Test]

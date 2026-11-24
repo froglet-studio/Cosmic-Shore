@@ -25,8 +25,14 @@ namespace CosmicShore.Gameplay
             var second = new GameObject("Stray");
             try
             {
-                first.AddComponent<NetworkObject>();
-                second.AddComponent<NetworkObject>();
+                // Two instances of ONE prefab carry one GlobalObjectIdHash; the guard reports once per hash. Two
+                // fresh GameObjects each get a hash of their own in the editor, so give them the same one here.
+                var hashField = typeof(NetworkObject).GetField("GlobalObjectIdHash",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                Assert.IsNotNull(hashField, "NetworkObject.GlobalObjectIdHash was renamed; update this test.");
+                const uint prefabHash = 0xC0FFEEu;
+                hashField.SetValue(first.AddComponent<NetworkObject>(), prefabHash);
+                hashField.SetValue(second.AddComponent<NetworkObject>(), prefabHash);
 
                 LogAssert.Expect(LogType.Warning, new Regex(@"\[NetworkSceneObjectGuard\] Stripped"));
 

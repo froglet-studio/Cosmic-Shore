@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-24-the-news-grown-share-bar-45-now-leaves-n-3e7be0",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-24T17:16:13+00:00",
+  "area": "Voyage depth scorecard (DEPTH.md)",
+  "summary": "The news-grown share bar (45%) now leaves named voyages out of its denominator: Milestone 2's named voyages (Salvage, Hold the Core, Bounty) sit on every board by design, so they diluted the share to 44% once Bounty went on the board. Unnamed work is measured exactly as before (69% now). VoyageDepthHarness.NamedJobs; NotorietyPutsAPriceOnTheArkAndItFades also accepts a named Bounty that hunts another crew.",
+  "branch": "claude/project-thread-rkcg3z",
+  "commit": "f3468bd1a"
+}

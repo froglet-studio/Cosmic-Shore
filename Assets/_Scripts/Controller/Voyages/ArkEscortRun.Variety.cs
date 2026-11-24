@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
@@ -43,7 +44,8 @@ namespace CosmicShore.Gameplay
             _voyageSeed = t?.VoyageSeed ?? (NextVoyageSeed != 0 ? NextVoyageSeed : NewSeed());
             if (_voyageSeed == 0) _voyageSeed = 1;
             NextVoyageSeed = 0;
-            _voyage = ArkEscortVariety.Roll(_escort, difficulty, _voyageSeed, t?.ModifierMask ?? -1);
+            _voyage = ArkEscortVariety.Roll(_escort, difficulty, _voyageSeed, t?.ModifierMask ?? -1,
+                _named != null ? VoyageSea.RunCells(_named.Cells) : -1);   // a named escort sails its own cells
             if (_voyage.Legs.Count > 0) _escort.SetLegs(new List<ArkEscortSO.Leg>(_voyage.Legs));
             foreach (var m in _voyage.Modifiers) ApplyModifier(m, t);
         }

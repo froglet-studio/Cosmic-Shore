@@ -21,6 +21,10 @@ namespace CosmicShore.Gameplay
             Docked = 2,
             /// <summary>The Ark fell and everything aboard with it: one way out.</summary>
             Lost = 3,
+            /// <summary>A Hold the Core voyage was decided at its core (held, or turned): Venture further or Finish.</summary>
+            CoreHold = 4,
+            /// <summary>A Bounty was decided (the warrant served, or the crew made port): Venture further or Finish.</summary>
+            Bounty = 5,
         }
 
         /// <summary>One seat's row.</summary>
@@ -57,6 +61,14 @@ namespace CosmicShore.Gameplay
         /// <summary>The Ark's hull as a share of full, and the breach line it sailed with (0 = none).</summary>
         public float Hull = 1f;
         public float Breach;
+        /// <summary>Hold the Core: seconds the core was yours, of the hold's goal, and the wave reached of the waves.</summary>
+        public float Held;
+        public float HoldGoal;
+        public int Wave;
+        public int Waves;
+        /// <summary>Bounty: the hunted crew's name, and how it ended (<see cref="VoyageBountyFight.Outcome"/>).</summary>
+        public string Rival = string.Empty;
+        public VoyageBountyFight.Outcome BountyEnd;
 
         public readonly List<Row> Rows = new();
         /// <summary>A named voyage's places in order, for the run line over the awards (Frogma Rev 134 Awards A): where it
@@ -171,6 +183,10 @@ namespace CosmicShore.Gameplay
             CrystalRun = 1,
             SailingHome = 2,
             Escort = 3,
+            /// <summary>Hold the Core: reach the core, then keep it yours on the clock.</summary>
+            CoreHold = 4,
+            /// <summary>Bounty: reach the hunted crew, then beat them before they make port.</summary>
+            Bounty = 5,
         }
 
         public Kind Goal;
@@ -224,6 +240,34 @@ namespace CosmicShore.Gameplay
         public float LeakLine;
         /// <summary>The goal is met and the pause window offers to complete the run here and set sail.</summary>
         public bool CanComplete;
+
+        /// <summary>Hold the Core: the Ark is anchored at the core and the clock is on.</summary>
+        public bool AtCore;
+        /// <summary>Seconds the core has been yours, of the hold's goal.</summary>
+        public float Held;
+        public float HoldGoal;
+        /// <summary>Your share of the nucleus against the strongest other domain, 0-1; the core is yours now.</summary>
+        public float Share;
+        public bool CoreYours;
+        /// <summary>The wave the hold is in, of its waves.</summary>
+        public int Wave;
+        public int Waves;
+        /// <summary>Seconds before a turned core is lost (0: not turning).</summary>
+        public float TurnedLeft;
+
+        /// <summary>Bounty: the hunted crew (and their Ark's name, empty for a runaway crew); met is true once the fight is
+        /// on. Escorts silenced of all, the rival Ark's hull and where she breaks, her hull open now and for how long, and
+        /// the seconds before they make port.</summary>
+        public string Rival;
+        public string RivalArk;
+        public bool RivalMet;
+        public int RivalSilenced;
+        public int RivalEscorts;
+        public float RivalHull;
+        public float RivalBreakAt;
+        public bool RivalOpen;
+        public float RivalOpenSeconds;
+        public float RivalLeft;
 
         /// <summary>Copy the Ark's live state from an escort or a job voyage's <see cref="ArkEscortStatus"/>.</summary>
         public void TakeArk(in ArkEscortStatus s)

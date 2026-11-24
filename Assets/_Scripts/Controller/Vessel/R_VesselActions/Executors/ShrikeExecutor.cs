@@ -495,14 +495,23 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (!config || _status == null || !_status.Transform) return;
-            if (!IsLocalPilot())
+            if (!IsLocalHull())
             {
                 ReleaseCamera();
                 if (_overlay) _overlay.Hide();
                 return;
             }
             float dt = Time.deltaTime;
+            // The docked pull-back is the hull's own framing: it runs whoever holds the sticks. The scope, its zoom and
+            // its lighting are the pilot's hand and eye, so they stay with a human pilot.
             UpdateCamera(dt);
+            if (!IsLocalPilot())
+            {
+                _zoom01 = 0f;
+                ClearLit();
+                if (_overlay) _overlay.Hide();
+                return;
+            }
             UpdateZoom(dt);
             UpdateLit();
             if (!_overlay) _overlay = ShrikeScopeOverlay.Create();
@@ -537,6 +546,10 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ the local pilot's camera and zoom
 
         bool IsLocalPilot() => _status.Player != null && _status.Player.IsLocalPilot && !_status.AutoPilotEnabled;
+
+        /// <summary>The local player's hull, whoever holds its sticks: the hull the camera frames
+        /// (<see cref="CameraManager.ActiveRigFollowing"/>).</summary>
+        bool IsLocalHull() => _status.Player != null && _status.Player.IsLocalPilot;
 
         /// <summary>"After colliding with a prism the camera should move further away": docked, the chase eases back to
         /// <c>dockedCameraPullBack</c> × its authored distance; undocked, it eases home. Written only while this hull is

@@ -54,7 +54,7 @@ namespace CosmicShore.Tests
         {
             public int Galaxies, VoyagesPerGalaxy;
             public int Boards, DeadBoards, StuckAtHome;
-            public int Jobs, NewsGrown, ChapterJobs, Successes, Failures_, ArksLost, Extractions, Extracted, Relics, RelicDuplicates;
+            public int Jobs, NamedJobs, NewsGrown, ChapterJobs, Successes, Failures_, ArksLost, Extractions, Extracted, Relics, RelicDuplicates;
             public int Meetings, HostileMeetings, CoOpMeetings, Races, KaijuMet, KaijuFelled, Charted;
             public int Days, RivalDeeds, RivalWrecks;
             public int MaxNewsAtPort;
@@ -74,7 +74,9 @@ namespace CosmicShore.Tests
 
             public double DeadBoardShare => Boards == 0 ? 0 : (double)DeadBoards / Boards;
             public double DistinctPairsMean => Galaxies == 0 ? 0 : DistinctPairsSum / Galaxies;
-            public double NewsGrownShare => Jobs == 0 ? 0 : (double)NewsGrown / Jobs;
+            /// <summary>News-grown work among the jobs the news can grow: a named voyage (Milestone 2) is the same card every
+            /// day by design, so it is left out of the share.</summary>
+            public double NewsGrownShare => Jobs - NamedJobs <= 0 ? 0 : (double)NewsGrown / (Jobs - NamedJobs);
             public double RivalEventsPer10Days => Days == 0 ? 0 : 10.0 * (RivalDeeds + RivalWrecks) / Days;
             public double SagaFinishShare => Galaxies == 0 ? 0 : (double)GalaxiesWithRelic / Galaxies;
             public double MeanPay => Jobs == 0 ? 0 : PaySum / Jobs;
@@ -109,7 +111,7 @@ namespace CosmicShore.Tests
                 sb.AppendLine($"Voyage depth scorecard: {Galaxies} galaxies x {VoyagesPerGalaxy} voyages ({Jobs} jobs, {Days} days)");
                 sb.AppendLine($"  dead boards              {DeadBoardShare:P1}  ({DeadBoards} of {Boards}; stuck at home {StuckAtHome})");
                 sb.AppendLine($"  distinct pairs / 20      {DistinctPairsMean:F1}");
-                sb.AppendLine($"  news-grown share         {NewsGrownShare:P0}  (chapters {ChapterJobs})");
+                sb.AppendLine($"  news-grown share         {NewsGrownShare:P0}  (chapters {ChapterJobs}; named voyages {NamedJobs}, not counted)");
                 sb.AppendLine($"  rival events / 10 days   {RivalEventsPer10Days:F1}  (deeds {RivalDeeds}, wrecks {RivalWrecks})");
                 sb.AppendLine($"  galaxies with a relic    {SagaFinishShare:P0}  (relics {Relics}, duplicates {RelicDuplicates})");
                 sb.AppendLine($"  max news at a port       {MaxNewsAtPort}");
@@ -269,6 +271,7 @@ namespace CosmicShore.Tests
                     if (!pick.IsReturn)
                     {
                         card.Jobs++;
+                        if (pick.IsNamed) card.NamedJobs++;
                         if (pick.Source != null) card.NewsGrown++;
                         if (!string.IsNullOrEmpty(pick.Chapter)) card.ChapterJobs++;
                         card.PaySum += pick.Pay;

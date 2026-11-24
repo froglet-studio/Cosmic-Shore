@@ -1377,7 +1377,7 @@
   },
   {
    "id": "job.raid.crystals",
-   "kind": "Raid",
+   "kind": "Salvage",
    "faction": "None",
    "needs": "None",
    "goes": "Port",
@@ -1796,7 +1796,8 @@
    "to": "loc.magpie",
    "difficulty": 2,
    "cells": 2,
-   "line": "A young crew with more nerve than skill. Catch them before they learn better."
+   "line": "A young crew with more nerve than skill. Catch them before they learn better.",
+   "rival": "rival.quiet-spear"
   },
   {
    "id": "voyage.bounty.tide",
@@ -1806,7 +1807,8 @@
    "to": "loc.gullbone",
    "difficulty": 4,
    "cells": 3,
-   "line": "Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them."
+   "line": "Black Tide strip wrecks they did not sink. Catch them between Gullbone and the port that hides them.",
+   "rival": "rival.black-tide"
   },
   {
    "id": "voyage.bounty.grin",
@@ -1816,7 +1818,8 @@
    "to": "loc.ironmouth",
    "difficulty": 8,
    "cells": 4,
-   "line": "The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs."
+   "line": "The Rusted Grin, strength 3 and greedy. They will come for your hold before you come for theirs.",
+   "rival": "rival.rusted-grin"
   },
   {
    "id": "voyage.hold.verdigris",
@@ -1895,11 +1898,13 @@
     "Diplomat",
     "Preservationist"
    ],
-   "refuse": []
+   "refuse": [],
+   "onBoard": true
   },
   {
    "type": "job.defence.aid",
    "giver": "pilot.callsign.rampart",
+   "onBoard": true,
    "say": "Build first. Shoot second. A wall that stands is worth ten kills.",
    "lore": "A core is a cell's heart, and whoever's mass holds it decides whose colour its waves wear. Ironmouth's core is wavering: another domain is laying mass faster than the wardens can clear it, and their creatures are already at the walls. Anchor the Ark under the nucleus and do not let it turn.",
    "keen": [
@@ -2398,7 +2403,8 @@
    "story": "Three hulls and no flag. They take the roughest water because nobody follows them into it.",
    "arrive": "BLACK TIDE ARE HERE",
    "fall": "Black Tide went down at {about}.",
-   "win": "Black Tide cracked a shell at {to} before you reached it."
+   "win": "Black Tide cracked a shell at {to} before you reached it.",
+   "ark": "Undertow"
   },
   {
    "id": "rival.rusted-grin",
@@ -2416,7 +2422,8 @@
    "story": "The best crew out of Gullbone, and they know it. They go where the pay is and leave nothing behind.",
    "arrive": "THE RUSTED GRIN ARE HERE",
    "fall": "The Rusted Grin went down at {about}. Gullbone will not believe it.",
-   "win": "The Rusted Grin opened a shell at {to} while you were still on the lane."
+   "win": "The Rusted Grin opened a shell at {to} while you were still on the lane.",
+   "ark": "Old Jaw"
   },
   {
    "id": "rival.longwake",
@@ -2839,6 +2846,8 @@
   "HoldProgress": "HOLDING {to}: {seconds}",
   "Done": "JOB DONE",
   "Failed": "JOB LEFT UNDONE",
+  "WaypointSaved": "THE VOYAGE WAITS: PICK IT UP FROM THE HARBOUR",
+  "WaypointResumed": "VOYAGE RESUMED: ON TO {to}",
   "Stowed": "STOWED ABOARD",
   "Extracted": "DOCKED AT {to}: {count} FOUND ARTIFACTS ARE YOURS",
   "ArkLost": "THE ARK IS LOST",
@@ -3234,6 +3243,12 @@
   "ArkSailAs": "You sail as {vessel} - {element}",
   "ArkLobbyLineGuest": "Pick your own seat. The host picks the voyage, fills the AI seats and sets sail.",
   "ArkHostSails": "THE HOST SETS SAIL",
+  "ArkDomainHead": "ARK DOMAIN",
+  "ArkDomainHeadGuest": "VOTE FOR THE ARK'S DOMAIN",
+  "ArkDomainJade": "Jade",
+  "ArkDomainRuby": "Ruby",
+  "ArkDomainGold": "Gold",
+  "ArkDomainVotes": "{domain} - {votes}",
   "ArkChangeSeat": "CHANGE YOUR SEAT",
   "ArkChangeSeatKey": "X",
   "PickSavedHere": "Saved to your seat for this voyage.",
@@ -3295,6 +3310,7 @@
   "ScoreVoyageStats": "{name} - {cells} cells - {time}",
   "ScoreEscortTitle": "The Ark reached {to}",
   "ScoreEscortStats": "Escort the Ark - difficulty {difficulty} - {worlds} of {legs} worlds - {time}",
+  "ScoreEscortVoyageStats": "{name} - {worlds} of {legs} cells - {time}",
   "ScoreLostTitle": "Everything aboard went down with it",
   "ScoreDockedTitle": "Docked at {to}",
   "ScoreDockedStats": "Everything aboard is yours now",
@@ -3455,6 +3471,44 @@
   "ChartLegendEvent": "Event next door",
   "ChartLegendRival": "Rival crew",
   "SeaDifficulty": "difficulty {difficulty}",
+  "ToastCoreAnchor": "ANCHORED UNDER {to}",
+  "ToastCoreAnchorSub": "Lay mass in the nucleus. The clock runs while the core is yours.",
+  "ToastCoreYours": "THE CORE IS YOURS",
+  "ToastCoreYoursSub": "{left} to hold.",
+  "ToastCoreWave": "WAVE {wave} OF {waves}",
+  "ToastCoreWaveSub": "Their fauna push in on the Ark.",
+  "ToastCoreRetake": "A CREW COMES TO RETAKE IT",
+  "ToastCoreRetakeSub": "{count} hulls. Silence them before they outbuild you.",
+  "ToastCoreTurning": "THE CORE IS TURNING",
+  "ToastCoreTurningSub": "{seconds} s to take it back.",
+  "ObjectiveCoreGoal": "Keep the core of {to} yours for {goal}",
+  "ObjectiveCoreFigure": "{held} / {goal}",
+  "ObjectiveCoreReach": "Reach the core of {to}",
+  "ObjectiveCoreBuild": "Build in the nucleus - the clock waits",
+  "ObjectiveCoreYours": "Yours {share}% - wave {wave} of {waves}",
+  "ObjectiveCoreTurning": "Turning - {seconds} s to take it back",
+  "ScoreCoreTitle": "{to} held",
+  "ScoreCoreLostTitle": "{to} turned",
+  "ScoreCoreStats": "{name} - held {held} of {goal} - wave {wave} of {waves} - {time}",
+  "ScoreVentureCore": "Sail on to the next core - {cells} cells",
+  "ToastRivalEscaped": "{name} MADE PORT",
+  "ToastRivalEscapedSub": "The warrant goes unserved. They will be harder to find.",
+  "ToastRivalTurnBack": "{name} TURN BACK",
+  "ToastRivalTurnBackSub": "Warrant served. Take what spilled before the fauna do.",
+  "ObjectiveBountyGoal": "Serve the warrant on {rival} at {to}",
+  "ObjectiveBountyReach": "{rival} are at {to}. Get there before they leave.",
+  "ObjectiveBountyRunaway": "Silence all {total} at once - {count} down - they run in {time}",
+  "ObjectiveBountyArk": "Silence her escorts - {count} of {total} - {ark} leaves in {time}",
+  "ObjectiveBountyOpen": "{ark} is open for {time}. Break her hull!",
+  "ObjectiveBountyFigure": "{count} / {total} silenced",
+  "ObjectiveBountyArkFigure": "Her hull {hull}% - breaks at {breaks}%",
+  "ScoreBountyTitle": "Warrant served on {rival}",
+  "ScoreBountyLostTitle": "{rival} got away",
+  "ScoreBountyStats": "{name} - {rival} {how} - {time}",
+  "ScoreBountyRouted": "routed",
+  "ScoreBountyBroken": "broken",
+  "ScoreBountyEscaped": "made port",
+  "ScoreVentureBounty": "Take the next warrant - {cells} cells",
   "SidePort": "port",
   "SideStarboard": "starboard",
   "VerbArrive": "Arrive",

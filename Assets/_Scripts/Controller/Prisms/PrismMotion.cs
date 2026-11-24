@@ -145,6 +145,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The same collision inside a black hole's pull: both prisms are destroyed exactly as
+        /// <see cref="Annihilate"/> destroys them (scored to <paramref name="playerName"/>, shields no answer), but each is
+        /// DRAWN as a creature's meal is, consumed into <paramref name="sink"/> (the hole) through
+        /// <see cref="Prism.Consume"/>: the one suction effect for anything that eats prisms (Yash, 2026-11-22: "the
+        /// visuals of black hole sucking prisms need to be same as the fauna devouring the prisms"). Super-shielded mass
+        /// still deflects and survives (<see cref="Prism.Consume"/>'s own gate).
+        /// </summary>
+        public static void AnnihilateInto(Prism mover, Prism struck, Transform sink, Domains domain, string playerName)
+        {
+            if (struck && !struck.destroyed)
+                struck.Consume(sink, domain, playerName, devastate: true);
+            if (mover && !mover.destroyed)
+                mover.Consume(sink, domain, playerName, devastate: true);
+        }
+
+        /// <summary>
         /// Whether <paramref name="mover"/> running into <paramref name="struck"/> BOUNCES instead of annihilating:
         /// either is shielded, or the struck prism is super-shielded and the mover shielded (<see cref="PrismBounce.Bounces"/>).
         /// </summary>

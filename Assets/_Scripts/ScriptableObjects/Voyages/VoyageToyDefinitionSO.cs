@@ -105,8 +105,17 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Voyage - which voyages can sail (Milestone 1)")]
         [SerializeField, Tooltip("Lock the crew's job voyages, except the ones listed below (Shombith, 2026-11-16: make one " +
-                                 "voyage good before the others open). The Ark escort is never locked. Off = every job sails.")]
+                                 "voyage good before the others open). A locked job is left off the board: no pilot recommends it. " +
+                                 "Off = every job sails.")]
         bool lockJobs = true;
+
+        [SerializeField, Tooltip("Lock the Ark escort (Shombith, 2026-11-21: Beta Phase 1 sails the Crystal Run only). " +
+                                 "Locked, its card still shows in the crew's locked voyages but cannot be opened or sailed.")]
+        bool lockEscort = true;
+
+        [SerializeField, Tooltip("Offer \"Fill the AI seats from a saved squad\" on Your Ark (Shombith, 2026-11-21: removed " +
+                                 "for now). Off = the button is hidden; each AI seat is still set on its own.")]
+        bool offerFillFromSquad;
 
         [SerializeField, Tooltip("The job templates that still sail while jobs are locked (VoyageJob.TemplateId). Milestone 1 " +
                                  "keeps Sail home (job.return) and the crew's Crystal Run (job.raid.crystals, authored in " +
@@ -387,6 +396,61 @@ namespace CosmicShore.ScriptableObjects
                                                    "asks: the escort keeps the Ark slower than the hulls guarding it.")]
         float arkCrawlCeiling = 75f;
 
+        [Header("Voyage - Hold the Core (Docs/Voyages/MILESTONE_2.md section 6)")]
+        [SerializeField, Tooltip("What holding a core asks at each difficulty, 1 first: the seconds the core must be yours, " +
+                                 "the waves, the hulls of the other domain's crew that come to retake it in wave 2, and how " +
+                                 "long it may stay theirs before the hold is lost.")]
+        VoyageCoreHoldPlan[] coreHold = VoyageCoreHoldPlan.Defaults();
+
+        [SerializeField, Range(5f, 60f), Tooltip("Seconds each wave's fauna may assault the Ark at the core (the assault " +
+                                                 "clock's warnings and assaults run inside it).")]
+        float coreWaveSeconds = 25f;
+
+        [SerializeField, Tooltip("The hulls a retaking crew flies, first first (a crew of N takes the first N).")]
+        VesselClassType[] coreRetakeHulls = { VesselClassType.Sparrow, VesselClassType.Rhino, VesselClassType.Dolphin };
+
+        [SerializeField, Range(100f, 1200f), Tooltip("How far from the Ark a retaking crew appears, u.")]
+        float coreRetakeDistance = 420f;
+
+        [Header("Voyage - events next door and the detour vote (Frogma Rev 134 WorldEvents, Vote B)")]
+        [SerializeField, Range(0f, 1f), Tooltip("The chance each cell of a named voyage (but its last) has an event next " +
+                                                "door: a wreck or a bloom beside the lane.")]
+        float neighbourChance = 0.5f;
+
+        [SerializeField, Range(10f, 180f), Tooltip("Seconds an event next door lasts once the Ark is in its cell, give or " +
+                                                   "take a quarter (the vote and the detour must fit inside it).")]
+        float neighbourSeconds = 60f;
+
+        [SerializeField, Range(0f, 60f), Tooltip("Seconds a detour holds the Ark in the cell while the squad takes the event " +
+                                                 "(added to the cell's anchor, or to the anchor already dropped).")]
+        float detourSeconds = 20f;
+
+        [SerializeField, Range(0, 40), Tooltip("Loose crystals a wreck next door spilled (a detour brings them to the lane's side).")]
+        int wreckCrystals = 10;
+
+        [SerializeField, Range(0, 40), Tooltip("Loose crystals a bloom next door holds.")]
+        int bloomCrystals = 14;
+
+        [Header("Voyage - Bounty (Docs/Voyages/MILESTONE_2.md section 7; Frogma Rev 137)")]
+        [SerializeField, Tooltip("What a Bounty asks at each difficulty, 1 first: seconds before the hunted crew makes port, " +
+                                 "the crystals it carries (all spill when it is beaten), the rival Ark's hull share at which " +
+                                 "she breaks, and how many escorts must be silenced at once to open her hull.")]
+        VoyageBountyPlan[] bounty = VoyageBountyPlan.Defaults();
+
+        [SerializeField, Range(150f, 1500f), Tooltip("How far from the squad's Ark the hunted crew is met, u (a rival Ark " +
+                                                     "lies abeam at this range; a runaway crew circles there).")]
+        float bountyDistance = 520f;
+
+        [SerializeField, Range(60f, 400f), Tooltip("How far apart a hunted crew's escorts stand round their centre, u.")]
+        float bountySpread = 140f;
+
+        [SerializeField, Range(1f, 20f), Tooltip("Seconds a beaten or escaping crew stays in sight, turning back or " +
+                                                 "running, before its hulls leave.")]
+        float bountyLeaveSeconds = 6f;
+
+        [SerializeField, Range(0.2f, 1f), Tooltip("A rival Ark's hull length against the squad's Ark (she is a smaller ship).")]
+        float rivalArkScale = 0.7f;
+
         [Header("Voyage - Salvage's loose crystals (Shombith 2026-11-24: \"collect loose crystals\")")]
         [SerializeField, Min(0), Tooltip("Loose elemental crystals that drift through each cell of a voyage whose type " +
                                          "gathers (Salvage), before the difficulty's life: about one and a half times the goal per " +
@@ -460,17 +524,40 @@ namespace CosmicShore.ScriptableObjects
         public IReadOnlyList<VesselClassType> FirstLineUp => firstLineUp;
 
         /// <summary>
-        /// True when <paramref name="job"/> may set sail: jobs are not locked, or its template is one of
-        /// <see cref="openJobs"/>. False for no job.
+        /// True when <paramref name="job"/> may set sail: jobs are not locked, it is a named voyage (Milestone 2), or its
+        /// template is one of <see cref="openJobs"/>. False for no job.
         /// </summary>
         public bool IsJobOpen(VoyageJob job)
         {
             if (job == null) return false;
             if (!lockJobs) return true;
+            // A named voyage (Milestone 2) sails: only a built type's named voyages reach the board (Salvage, Hold the
+            // Core; VoyageTypeInfo.OnBoard), so the lock keeps the news-brought work of the same template closed.
+            if (job.IsNamed) return true;
             if (openJobs == null) return false;
             foreach (var id in openJobs)
                 if (!string.IsNullOrEmpty(id) && id == job.TemplateId) return true;
             return false;
+        }
+
+        /// <summary>True when the Ark escort may set sail (<see cref="lockEscort"/> off).</summary>
+        public bool IsEscortOpen => !lockEscort;
+
+        /// <summary><see cref="IsEscortOpen"/> on the shipped settings; with no settings asset the escort is open.</summary>
+        public static bool EscortSails()
+        {
+            var settings = Load();
+            return !settings || settings.IsEscortOpen;
+        }
+
+        /// <summary>True when Your Ark offers to fill the AI seats from a saved squad (<see cref="offerFillFromSquad"/>).</summary>
+        public bool OffersFillFromSquad => offerFillFromSquad;
+
+        /// <summary><see cref="OffersFillFromSquad"/> on the shipped settings; with no settings asset it is offered.</summary>
+        public static bool FillFromSquadOffered()
+        {
+            var settings = Load();
+            return !settings || settings.OffersFillFromSquad;
         }
 
         /// <summary><see cref="IsJobOpen"/> on the shipped settings; with no settings asset every job is open.</summary>
@@ -556,6 +643,22 @@ namespace CosmicShore.ScriptableObjects
         public VoyageSeaDanger SeaDanger(int difficulty) => VoyageSea.At(seaDanger, difficulty);
         public float CellSeconds => cellSeconds;
         public float NamedAnchorSeconds => namedAnchorSeconds;
+        /// <summary>What holding a core asks at <paramref name="difficulty"/> (1-9).</summary>
+        public VoyageCoreHoldPlan CoreHold(int difficulty) => VoyageCoreHoldPlan.At(coreHold, difficulty);
+        public float CoreWaveSeconds => coreWaveSeconds;
+        public IReadOnlyList<VesselClassType> CoreRetakeHulls => coreRetakeHulls;
+        public float CoreRetakeDistance => coreRetakeDistance;
+        public float NeighbourChance => neighbourChance;
+        public float NeighbourSeconds => neighbourSeconds;
+        public float DetourSeconds => detourSeconds;
+        public int WreckCrystals => wreckCrystals;
+        public int BloomCrystals => bloomCrystals;
+        /// <summary>What a Bounty asks at <paramref name="difficulty"/> (1-9).</summary>
+        public VoyageBountyPlan Bounty(int difficulty) => VoyageBountyPlan.At(bounty, difficulty);
+        public float BountyDistance => bountyDistance;
+        public float BountySpread => bountySpread;
+        public float BountyLeaveSeconds => bountyLeaveSeconds;
+        public float RivalArkScale => rivalArkScale;
         public float ArkCrawlCeiling => arkCrawlCeiling;
         public int DriftCrystalsPerCell => driftCrystalsPerCell;
         public float DriftClusterShare => driftClusterShare;

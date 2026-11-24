@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-21-serpentwallassembler-reads-its-owner-s-a-9b0d8f",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-21T19:31:25+00:00",
+  "area": "the Serpent wall",
+  "summary": "SerpentWallAssembler reads its owner's abilities only while the owner is alive (bug ledger E-05e4645aad)",
+  "why": "a destroyed vessel is not null to ?., so the wall threw MissingReferenceException after its Serpent was destroyed",
+  "branch": "Ys-bleeding-edge",
+  "commit": "981fff05d",
+  "paths": [
+    "Assets/_Scripts/Controller/Assemblers/SerpentWallAssembler.cs"
+  ]
+}

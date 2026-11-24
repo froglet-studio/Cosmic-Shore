@@ -111,6 +111,9 @@ namespace CosmicShore.Core
         // GameDataSO's turn and end-screen events, and nothing else asks for it until the replay
         // browser does (Docs/REPLAYS.md).
         [Inject] ReplayService replayService;
+        // Eagerly resolved so its sign-in subscription exists from boot: the live flags (the remote kill switches, the
+        // minimum version) are fetched once after sign-in (Docs/LAUNCH/LIVE_FLAGS.md).
+        [Inject] LaunchFlagsService launchFlagsService;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -533,6 +536,12 @@ namespace CosmicShore.Core
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
+            // The live flags (Docs/LAUNCH/LIVE_FLAGS.md): one Cloud Code read after sign-in, under the same policy.
+            builder.RegisterFactory(
+                c => new LaunchFlagsService(authenticationDataVariable, c.Resolve<UgsRequestPolicy>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
             builder.RegisterFactory(
                 c => new LobbyPropertyWriter(c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
@@ -591,10 +600,23 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
+            // In-app account deletion (Docs/LAUNCH/READINESS.md §10 #15): Cloud Save, the analytics deletion request
+            // and the UGS account, then a device wipe and a fresh boot. Provider-independent, so every IPlatformSignIn
+            // delegates its DeleteAccountAsync here.
+            builder.RegisterFactory(
+                c => new AccountDeletionService(new UgsAccountDeletionSteps(
+                    c.Resolve<AuthenticationServiceFacade>(),
+                    c.Resolve<AnalyticsServiceFacade>(),
+                    () => c.Resolve<ReconnectService>().ReconnectAsync().Forget())),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
             // Platform sign-in (Steam / Google / Apple) behind the sign-in UI (Docs/MENU_REDESIGN_B.md §54). The
-            // login branch replaces NoPlatformSignIn - every provider unavailable - with the real providers.
+            // login branch replaces NoPlatformSignIn - every provider unavailable - with the real providers; it keeps
+            // passing AccountDeletionService through for Delete account.
             builder.RegisterFactory<IPlatformSignIn>(
-                c => new NoPlatformSignIn(),
+                c => new NoPlatformSignIn(c.Resolve<AccountDeletionService>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

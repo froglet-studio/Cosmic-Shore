@@ -1238,6 +1238,11 @@ namespace CosmicShore.Gameplay
         bool IsLocalPilot()
             => _status?.Player != null && _status.IsLocalUser && !_status.AutoPilotEnabled;
 
+        /// <summary>The local player's hull, whoever holds its sticks: the hull the camera frames
+        /// (<see cref="CameraManager.ActiveRigFollowing"/>). The camera's ball framing asks this; what the pilot's own
+        /// hand drives (the launch view's aim, haptics, hit-stop) asks <see cref="IsLocalPilot"/>.</summary>
+        bool IsLocalHull() => _status?.Player != null && _status.IsLocalUser;
+
         void UpdateCombo(float dt)
         {
             if (_combo == 0) return;
@@ -1351,11 +1356,17 @@ namespace CosmicShore.Gameplay
         /// </list>
         /// Pose only, through <see cref="CustomCameraController.SetCameraDistance"/> and
         /// <see cref="CustomCameraController.Spectate"/>; FOV belongs to the speed tunnel and is
-        /// only READ here. Remote replicas and AI hulls never touch a camera.
+        /// only READ here. Remote replicas and AI seats never touch a camera.
+        ///
+        /// <para><b>Who flies the local hull</b> (Yash, 2026-11-22): the ball framing runs for the local player's hull
+        /// whoever holds its sticks, so an AI flying it for the player keeps the player's distance (it used to fall
+        /// back to the prefab's, nearer). The launch view is the pilot's AIM - the sticks turn the launch direction
+        /// and the orbit's plane with it - so it stays with a human pilot: an AI aims by its own path
+        /// (<c>AutopilotAim</c>) and must fly the hull exactly as it flies an AI seat.</para>
         /// </summary>
         void UpdateCamera()
         {
-            if (!config || !config.CameraFraming || !_seeded || !IsLocalPilot()) { ReleaseCamera(); return; }
+            if (!config || !config.CameraFraming || !_seeded || !IsLocalHull()) { ReleaseCamera(); return; }
 
             var cam = CameraManager.Instance != null
                 ? CameraManager.Instance.GetActiveController() as CustomCameraController
@@ -1400,6 +1411,17 @@ namespace CosmicShore.Gameplay
             _cam.SetCameraDistance(_camWritten);
             _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
             _cam.MaxFollowAngularAcceleration = config.CameraMaxFollowAngularAcceleration;
+
+            // The AI holds the sticks: the framing above stands, the pilot's launch view does not (see the summary).
+            // A view that was up when the AI took over is dropped at once, as any teardown drops it.
+            if (!IsLocalPilot())
+            {
+                if (_spectating || _exiting || _cam.Spectate.HasValue) EndSpectate();
+                _snap.Clear();
+                _aimHeld = false;
+                _lastCamRotation = _cam.transform.rotation;
+                return;
+            }
 
             if (!IsPivoting)
             {

@@ -83,7 +83,9 @@ namespace CosmicShore.Tests
             var crew = c.Crew.Select(p => p.PilotId).ToList();
             var seated = new[] { PilotOf(c, FactionType.Hunter), PilotOf(c, FactionType.Merchant), PilotOf(c, FactionType.Priest) };
             var board = VoyageRules.Board(s, c, seated, crew);
-            Assert.AreEqual(c.World.BoardSize, board.Count(j => !c.Job(j.TemplateId).Always),
+            // Besides the work every port offers: the Always templates, and a built voyage type's named voyage (Hold the Core).
+            Assert.AreEqual(c.World.BoardSize, board.Count(j => !c.Job(j.TemplateId).Always
+                                                                && !(j.IsNamed && c.VoyageType(j.TemplateId) is { OnBoard: true })),
                 "about six options at a port (the 2026-10-30 meeting), besides the work every port offers");
             Assert.AreEqual(FactionType.Hunter, c.Job(board[0].TemplateId).Faction, "the first seat's pilot leads");
             Assert.AreEqual(FactionType.Merchant, c.Job(board[1].TemplateId).Faction);
@@ -244,7 +246,9 @@ namespace CosmicShore.Tests
             foreach (var port in c.Locations.Where(l => l.Experience is VoyageExperience.Port or VoyageExperience.Harbour))
                 Assert.IsTrue(s.Ledger(port.Id).News.Any(n => n.Tag == NewsTag.Bounty && n.Rival == VoyageRules.SelfRival), $"{port.Name} posts the price");
             var hunter = PilotOf(c, FactionType.BountyHunter);
-            Assert.IsNull(Offered(s, c, hunter, "job.bounty.crew"), "the crew's own bounty is never its work");
+            var bounty = Offered(s, c, hunter, "job.bounty.crew");
+            Assert.IsTrue(bounty == null || bounty.IsNamed && bounty.RivalId != VoyageRules.SelfRival,
+                "the crew's own bounty is never its work (a named Bounty hunts another crew)");
             var job = VoyageRules.Board(s, c, new[] { hunter }).First(j => !j.IsReturn);
             Assert.IsTrue(job.Warnings.Any(w => w == c.Words.WarningBounty), "and every card warns of it");
             VoyageWorld.TickDays(s, c, c.World.NotorietyDecayDays * c.World.BountyAt + 1);

@@ -57,6 +57,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("On: an AI Grizzly presses Rush for pace on a straight it is lined up on (its own bound control, through " +
                  "the replicated press). Off: it never presses Rush, as before 2026-11-20.")]
         [SerializeField] bool aiRushes = true;
+        [Tooltip("On: an AI Grizzly rams a STANDING keg open with Rush when the line through its core to the next ring is " +
+                 "no longer than the line through the mouth plus aiKegRamSlack (it opens any keg, shielded too, and clears " +
+                 "the gate). Off: it threads the mouth past every standing keg.")]
+        [SerializeField] bool aiRamsKegs = true;
+        [Tooltip("How much longer (u) the line through a keg's core to the next ring may be than the line through the " +
+                 "mouth for the AI still to ram the keg.")]
+        [SerializeField] float aiKegRamSlack = 0f;
 
         [Header("Powder kegs: toasts (GameToastConfig_GrizzlyTime)")]
         [Tooltip("Posted once to the local pilot as the race starts: how a keg is played.")]

@@ -37,11 +37,19 @@
     <Compile Include="../../../Assets/_Scripts/Data/Enums/SquadSeat.cs" />
     <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageRaid.cs" />
     <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageSea.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageCoreHold.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageBounty.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageNeighbours.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/PilotMood.cs" />
     <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageCourseFix.cs" />
     <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageDifficulty.cs" />
     <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageScreens.cs" />
+    <Compile Include="../../../Assets/_Scripts/Data/Voyages/VoyageWaypoint.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageRulesTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageSeaTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageCoreHoldTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageBountyTests.cs" />
+    <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageNeighboursTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageScreensTests.cs" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageDepthTests.cs" Condition="Exists('../../../Assets/_Scripts/Tests/Editor/VoyageDepthTests.cs')" />
     <Compile Include="../../../Assets/_Scripts/Tests/Editor/VoyageDepthHarness.cs" Condition="Exists('../../../Assets/_Scripts/Tests/Editor/VoyageDepthHarness.cs')" />

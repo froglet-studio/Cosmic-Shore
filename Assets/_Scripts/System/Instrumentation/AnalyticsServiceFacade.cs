@@ -205,8 +205,8 @@ namespace CosmicShore.Core
 
             _sinks.Add(new UgsAnalyticsSink(Log));
 
-            // Our own analytics server (Tools/Analytics/server/), which replaced PostHog on
-            // 2026-11-06. The asset ships pointed at the server; nothing is filled in by hand.
+            // Our own analytics server (Tools/Analytics/server/). The asset ships pointed at the
+            // server; nothing is filled in by hand.
             var frogletConfig = Resources.Load<FrogletAnalyticsConfigSO>("FrogletAnalyticsConfig");
             if (frogletConfig != null && frogletConfig.Enabled)
             {
@@ -722,6 +722,10 @@ namespace CosmicShore.Core
                 properties["total_flight_time_seconds"] = profile.Lifecycle.TotalFlightTimeSeconds;
             }
 
+            // Which build this person last played (BuildStamp). Person properties only, so no
+            // UGS Event Manager rows (Docs/Analytics/EVENT_SCHEMA.json person_properties).
+            AddBuildProperties(properties, BuildStamp.Current);
+
             var dataService = UGSDataService.Instance;
             var hangar = dataService?.Hangar?.Data;
             if (hangar != null)
@@ -752,6 +756,20 @@ namespace CosmicShore.Core
 
             foreach (var sink in _sinks)
                 sink.Identify(distinctId, properties);
+        }
+
+        /// <summary>
+        /// The build's identity as person properties: build_version, build_number, build_commit,
+        /// release_channel, ugs_environment. Public so a test holds the key names.
+        /// </summary>
+        public static void AddBuildProperties(IDictionary<string, object> properties, BuildStampData stamp)
+        {
+            if (properties == null || stamp == null) return;
+            properties["build_version"] = stamp.version ?? string.Empty;
+            properties["build_number"] = stamp.buildNumber ?? string.Empty;
+            properties["build_commit"] = stamp.commit ?? string.Empty;
+            properties["release_channel"] = stamp.channel ?? string.Empty;
+            properties["ugs_environment"] = stamp.ugsEnvironment ?? string.Empty;
         }
 
         /// <summary>

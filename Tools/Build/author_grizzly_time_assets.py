@@ -118,9 +118,10 @@ BASE_RADIUS = 800                 # GrizzlyTimeCourse.BaseRadius
 
 # AI approach geometry, sized to the Grizzly's 211 u full-launch circle the way Redline's were
 # sized to the Manta's 237 u (420 / 480 / 320 there - 1.8x, 2x and 1.35x the circle).
-AI_COMMIT_DISTANCE = 380
-AI_APPROACH_LEAD = 420
-AI_THROUGH_DISTANCE = 285
+# Retrained 2026-11-20 by time_ai_search against the 20-80 blast (was 380 / 420 / 285).
+AI_COMMIT_DISTANCE = 522
+AI_APPROACH_LEAD = 549
+AI_THROUGH_DISTANCE = 114
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. A launching
 # Grizzly makes 350 u/s (cruise + the bomb launch's own 300 u/s ceiling; Rush and the cannon stay

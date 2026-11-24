@@ -10,9 +10,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Stoat's ANNIHILATION RIPPLE — its Charge ability, passive (tuning: <see cref="StoatRippleConfigSO"/>, design:
-    /// <c>R_VesselActions/STOAT_DIPOLE.md</c> §1c). Whenever this hull's pair annihilates — the field dipole let go
-    /// (<see cref="StoatDipoleExecutor"/>), the orbit's pair closing after a slingshot (<see cref="StoatSlingExecutor"/>)
-    /// — the meeting point throws out a space-time ripple, and as its FRONT sweeps outward it strips every rival vessel
+    /// <c>R_VesselActions/STOAT_DIPOLE.md</c> §1c). Whenever this hull's swing hole collapses — passed, let go or out
+    /// of time (<see cref="StoatSlingExecutor"/>) — the hole throws out a space-time ripple, and as its FRONT sweeps outward it strips every rival vessel
     /// and kills every creature it passes. Nothing else: it touches no prism. Every rival it strips is a scored
     /// Debuff-class combat hit (<see cref="ReportHit"/>), which silences that rival and which a mode may pay.
     ///
@@ -89,8 +88,7 @@ namespace CosmicShore.Gameplay
             s_vessels.Clear();
             _waves.Add(wave);
 
-            StoatRipple.Spawn(at, wave.Radius, config.ExpandSeconds, config.FadeSeconds, config.BandWidth, config.Bend,
-                config.ChromaticSplit, DomainLight(), config.RimGlow);
+            StoatRipple.Spawn(at, wave.Radius, config);
             PlayOneShot(config.RippleEvent, at);
             CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] ripple at {at} radius {wave.Radius:F0} u (separation {separation:F0} u)");
         }
@@ -204,14 +202,6 @@ namespace CosmicShore.Gameplay
                 VictimName = victim.PlayerName,
                 HitClass = CombatHitClass.Debuff,
             });
-        }
-
-        /// <summary>The owner domain's LIGHT colour (the dipole's source core wears it), white without a palette.</summary>
-        Color DomainLight()
-        {
-            if (_status?.Player == null) return Color.white;
-            var colors = PrismLit.ColorSet;
-            return colors && colors.TryGetPrismKindColors(_status.Domain, PrismKind.Plain, out var light, out _) ? light : Color.white;
         }
 
         void PlayOneShot(EventReference reference, Vector3 at)

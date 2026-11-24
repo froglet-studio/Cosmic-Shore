@@ -47,7 +47,7 @@ AI_DRIVE = {
 }
 POLICY_ASSET = {  # hull -> its drive's asset/code file, checked to exist
     "Squirrel": "Assets/_Scripts/Controller/AI/SkimRace/SkimRacePilot.cs",
-    "Stoat": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatDipoleExecutor.cs",
+    "Stoat": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs",
     "Manta": "Assets/_Scripts/Controller/AI/Boost/MantaSoarAITuningSO.cs",
     "Rhino": "Assets/_SO_Assets/AI Boost Policies/RhinoAIBoostPolicy.asset",
     "Urchin": "Assets/_Scripts/Controller/AI/Urchin",

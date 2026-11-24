@@ -457,6 +457,16 @@ namespace CosmicShore.Gameplay
             objective.HostileCells = new bool[Mathf.Max(0, objective.Cells)];
             for (int i = 0; i < objective.HostileCells.Length; i++) objective.HostileCells[i] = LegHostile(i);
             objective.TakeArk(Status);
+            if (IsCoreHold(job))
+            {
+                FillCoreObjective(job, ref objective);
+                return true;
+            }
+            if (IsBounty(job))
+            {
+                FillBountyObjective(job, ref objective);
+                return true;
+            }
             if (job is { CountsUnderway: true })
             {
                 objective.Goal = VoyageObjective.Kind.CrystalRun;

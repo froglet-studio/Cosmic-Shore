@@ -60,7 +60,7 @@ other WebGL or low-end build.
 | Menu_Main | menu, then the player taps to fly | the same: the menu, then the player taps to fly |
 
 Because UGS never signs in, nothing that starts from `OnSignedIn` runs: Cloud Save, the presence lobby,
-Friends, party, leaderboards, UGS Analytics and PostHog. The local data layer still initialises from
+Friends, party, leaderboards, UGS Analytics and Froglet Analytics. The local data layer still initialises from
 `LocalCloudDataCache` (IndexedDB in a browser) through `OfflineModeService.InitializeLocalDataAsync`,
 so unlocks and painting progress persist per browser.
 

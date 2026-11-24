@@ -93,6 +93,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The mouth a possessed creature's suction pulls prisms into.</summary>
         public virtual Transform PossessionMouth => transform;
 
+        /// <summary>The half-angle (degrees) of the cone ahead in which a rider's attack finds a vessel to strike: 50 for
+        /// every creature; a body that is all reach attacks all round.</summary>
+        public virtual float PossessionAimConeDegrees => 50f;
+
         /// <summary>How far the creature's own suction reaches (u) before a rider's Space scales it.</summary>
         public virtual float PossessionMouthReach => Mathf.Max(LeashMouthReach, PossessionBodyRadius * 2f, 6f);
 

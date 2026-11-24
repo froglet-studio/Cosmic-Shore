@@ -342,7 +342,12 @@ namespace CosmicShore.UI
         {
             base.OnDestroy();
             _chasedRound = null;
-            RestoreScopeToHull();
+            // A scope camera still out on a round cannot go home here: this view is torn
+            // down with its hull, and Unity refuses a reparent onto an object it is
+            // destroying. Left alone it would stay in the scene root with no owner, so it
+            // is destroyed with the view. A camera already on the hull needs nothing.
+            if (_scopeRestCaptured && scopeCamera && scopeCamera.transform.parent != _scopeRestParent)
+                Destroy(scopeCamera.gameObject);
             if (_scopeRT != null)
             {
                 if (scopeCamera) scopeCamera.targetTexture = null;

@@ -227,7 +227,8 @@ namespace CosmicShore.UI
         /// <summary>Show <paramref name="page"/>. The voyage and Ark pages need an open voyage.</summary>
         public void ShowPage(Page page)
         {
-            if (page != Page.Sea && Open == null) page = Page.Sea;
+            // A locked voyage (no Set sail and not under way) stays on the HyperSea page: it shows but never opens.
+            if (page != Page.Sea && (Open == null || Open.Locked)) page = Page.Sea;
             bool changed = _page != page;
             _page = page;
             if (page != Page.Sea) _sea.ExitFull(instant: true);
@@ -313,6 +314,38 @@ namespace CosmicShore.UI
             if (_page != Page.Sea && shown == null) ShowPage(Page.Sea);
             else if (_page == Page.Voyage) _brief.Show(shown, _difficulty, replay: false);
             else if (_page == Page.Ark) _ark.Show(shown, _difficulty);
+        }
+
+        /// <summary>
+        /// A friend's menu follows the host into its voyage (<see cref="CosmicShore.Gameplay.VoyageLobbyLink"/>; Shombith, 2026-11-21: "just like
+        /// arcade the client should be pulled inside that screen"): open the offer with the host's seat key, else this
+        /// board's offer of the same job template (a friend's board can send the same job somewhere else), on the host's
+        /// page at the host's difficulty. False when this board offers nothing like it.
+        /// </summary>
+        public bool Follow(string key, Page page, int difficulty)
+        {
+            int index = IndexOfKey(_offers, key);
+            if (index < 0) return false;
+            if (index != _open) Pick(index);
+            if (_open != index) return false;
+            SetDifficulty(difficulty);
+            ShowPage(page);
+            return true;
+        }
+
+        /// <summary>The offer whose seat key is <paramref name="key"/>, else the first of the same job template (the key's
+        /// part before its first '|', <see cref="VoyageSeatRecord.JobKey"/>); -1 for none.</summary>
+        public static int IndexOfKey(IReadOnlyList<Offer> offers, string key)
+        {
+            if (offers == null || string.IsNullOrEmpty(key)) return -1;
+            for (int i = 0; i < offers.Count; i++)
+                if (offers[i] != null && offers[i].Key == key) return i;
+            int bar = key.IndexOf('|');
+            if (bar <= 0) return -1;
+            string template = key.Substring(0, bar + 1);
+            for (int i = 0; i < offers.Count; i++)
+                if (offers[i]?.Key != null && offers[i].Key.StartsWith(template, StringComparison.Ordinal)) return i;
+            return -1;
         }
 
         /// <summary>Pick offer <paramref name="index"/> (a portrait, a crew card, a place on the map).</summary>

@@ -63,6 +63,8 @@ namespace CosmicShore.Data
         // ── Ark escort ──
         /// <summary>EscortSail: the escort's difficulty (1-9).</summary>
         public int Difficulty;
+        /// <summary>The named escort voyage sailed (Milestone 2), or empty.</summary>
+        public string VoyageId;
         /// <summary>EscortEnd: the host's outcome (ArkEscortReport.Outcome as an int), the leg it fell in, overrun.</summary>
         public int Result;
         public int FallenLeg = -1;

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-fauna-assignlineage-now-arms-a-body-afte-597402",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-21T17:17:51+00:00",
+  "area": "Fauna in voyages and modes (element armour)",
+  "summary": "Fauna.AssignLineage now arms a body AFTER its element is rolled: every Mass light fauna and boid is shielded and re-armoured, every Charge one is all danger, as Docs/ECOSYSTEM.md 65.4 always said. Before, a species whose configs share one prefab (QuadFish) was armed for the prefab's crystal, so Mass wore no shield and Charge no danger. Voyages and modes that spawn Mass or Charge fauna will feel harder. Measured in Amoebius: QuadFish Mass 0 of 4 shielded before, 4 of 4 after. Also for you as the engine's owner: Amoebius does not build on bleeding-edge f9d8ff0cba (UIThemeLive.cs line 272 against the engine's Shadow : MonoBehaviour); nothing in this branch touches Port/.",
+  "branch": "cece/peaceful-babbage-tsg0kd",
+  "commit": "a543001e2"
+}

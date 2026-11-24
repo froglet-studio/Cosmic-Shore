@@ -43,7 +43,7 @@ policy as above.
 
 The game sends analytics only with consent, and only for players 13 or older. It goes to UGS
 Analytics and to **Froglet's own analytics server** (Oracle Cloud, `Tools/Analytics/server/`); PostHog
-left the game on 2026-11-06 (#1761) and its account closes on 23 Nov 2026. The server derives a
+left the game on 2026-11-06 (#1761) and its account was closed on 23 Nov 2026. The server derives a
 two-letter country from the IP address and never stores the IP. Add these rows to the tables above
 in the same release as the fair-play rows, or alone if fair play has not shipped:
 

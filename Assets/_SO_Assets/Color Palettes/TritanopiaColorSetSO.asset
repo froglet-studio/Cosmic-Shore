@@ -821,9 +821,6 @@ MonoBehaviour:
   - Id: world:030476
     Color: {r: 0.0588235296, g: 0.258823544, b: 0.4627451, a: 1}
     Note: '1 use: Assets/_Prefabs/Environment/Materials/FX/fx_BlueCrackle.prefab ParticleSystem'
-  - Id: world:040614
-    Color: {r: 0.0025004982, g: 0.0273142867, b: 0.0784313753, a: 1}
-    Note: '1 use: Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderDots.cs code'
   - Id: world:040EF8
     Color: {r: 0.175279677, g: 0.568601251, b: 0.971698105, a: 1}
     Note: '1 use: Assets/_Graphics/Materials/Shaders/TrailViewerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)'
@@ -855,7 +852,7 @@ MonoBehaviour:
     Color: {r: 0.184313729, g: 0.580392182, b: 0.996078432, a: 1}
     Note: '1 use: Assets/_Prefabs/Spacevessels/Components/Jet/VesselJet.prefab TrailRenderer'
   - Id: world:080614
-    Color: {r: 0, g: 0.0274509806, b: 0.0784313753, a: 1}
+    Color: {r: 0.00257163006, g: 0.0280912984, b: 0.0799999982, a: 1}
     Note: '1 use: Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)'
   - Id: world:080A0F
     Color: {r: 0.0299999993, g: 0.0399999991, b: 0.0599999987, a: 1}
@@ -1276,7 +1273,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/Graphs/CloakGhost.mat Material(CosmicShore/CloakGhost)'
   - Id: world:96A6C2
     Color: {r: 0.455008119, g: 0.563294768, b: 0.75999999, a: 1}
-    Note: '5 uses: Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO; Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO'
+    Note: '2 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController'
   - Id: world:96EB29
     Color: {r: 0.618914008, g: 0.920000017, b: 0.0855540037, a: 1}
     Note: '4 uses: Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO; Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalArcs.mat Material(Custom/CrystalChargeArcsShader)'
@@ -1306,7 +1303,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)'
   - Id: world:9DFF2E
     Color: {r: 0.843137264, g: 1, b: 0.337254912, a: 1}
-    Note: '10 uses: Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO; Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO'
+    Note: '7 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController; Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO'
   - Id: world:9E6BF0
     Color: {r: 0.800320506, g: 0.439464629, b: 0.939999998, a: 1}
     Note: '27 uses: Assets/Resources/Codex.asset CodexSO'

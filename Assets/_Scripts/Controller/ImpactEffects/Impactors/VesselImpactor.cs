@@ -39,6 +39,7 @@ namespace CosmicShore.Gameplay
         public override Domains OwnDomain => Vessel.VesselStatus.Domain;
 
         IHullContactGate _contactGate;
+        IHullPrismFilter _prismFilter;
 
         /// <summary>
         /// Whether this hull's TOUCH takes a crystal now (<see cref="IHullContactGate"/>; true for a hull without a gate).
@@ -50,11 +51,16 @@ namespace CosmicShore.Gameplay
         /// both halves of a prism contact.</summary>
         public bool TakesPrismsByContact => _contactGate == null || _contactGate.TakesPrismsByContact;
 
+        /// <summary>Whether this hull's TOUCH meets <paramref name="prism"/> now: <see cref="TakesPrismsByContact"/>, and no
+        /// <see cref="IHullPrismFilter"/> leaves this one alone. Read by both halves of a prism contact.</summary>
+        public bool TouchesPrism(Prism prism) => TakesPrismsByContact && (_prismFilter == null || !_prismFilter.LeavesAlone(prism));
+
         private void Awake()
         {
             Vessel ??= GetComponent<IVessel>();
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
             TryGetComponent(out _contactGate);
+            TryGetComponent(out _prismFilter);
         }
 
         // Shell-tier probes: the hull colliders whose trigger events land on THIS
@@ -124,7 +130,7 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
-                    if (!IsSweepDispatch && !TakesPrismsByContact) return;   // the Jacks' net takes it instead
+                    if (!IsSweepDispatch && !TouchesPrism(prismImpactee.Prism)) return;   // the Jacks' net takes it instead; the Goby leaves the pair's own alone
                     // A pilot does not ram the ribbon still coming out of their own ship. Sits
                     // above the SFX and the whole effect loop, because a self-ram used to cost
                     // real gameplay: VesselDamagePrismEffect shreds your own fresh trail, and on

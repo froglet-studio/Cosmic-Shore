@@ -455,6 +455,9 @@ namespace CosmicShore.Data
         public List<FactionType> Reluctant = new();
         /// <summary>Pilots of these faction types refuse it.</summary>
         public List<FactionType> Refuse = new();
+        /// <summary>The type is built: every port offers one of its named voyages on the board, picked by the day, even
+        /// when its job template is not offered everywhere (Hold the Core). False: its named voyages wait.</summary>
+        public bool OnBoard;
     }
 
     /// <summary>
@@ -483,6 +486,8 @@ namespace CosmicShore.Data
         public int Cells = 1;
         /// <summary>The voyage's own line on its card.</summary>
         public string Line;
+        /// <summary>The rival crew a Bounty voyage hunts (<see cref="RivalCrew.Id"/>), or empty.</summary>
+        public string Rival;
     }
 
     /// <summary>What an outcome writes into the galaxy's news and state (VOYAGES.md §6.3, DEPTH.md §2): the chain.</summary>
@@ -562,6 +567,13 @@ namespace CosmicShore.Data
         public string FallLine;
         /// <summary>The story when they beat the squad to a find ({rival}, {to}).</summary>
         public string WinLine;
+        /// <summary>The Ark the crew sails (Frogma Rev 137): a named rival Ark its hulls escort; empty for a runaway crew,
+        /// three hulls with no Ark and nothing to lose. Rival Arks sail The Crossing and Aurum Banks, runaways roam Carmine
+        /// Drift and The Deep.</summary>
+        public string ArkName;
+
+        /// <summary>True when the crew sails its own Ark (<see cref="ArkName"/>); false for a runaway crew.</summary>
+        public bool SailsArk => !string.IsNullOrEmpty(ArkName);
 
         /// <summary>The crew as a person on a board: it draws jobs by the same rules a pilot does.</summary>
         public CrewPerson AsPerson() => new() { PilotId = Id, Name = Name, Faction = Faction, Story = Story };

@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
         public const float DartRange = 600f, DartMinRange = 140f;
 
         /// <summary>`dartChargeSeconds`, `dartSeconds`, `dartCooldown`.</summary>
-        public const float DartChargeSeconds = 0.8f, DartSeconds = 1f, DartCooldown = 1.2f;
+        public const float DartChargeSeconds = 0.8f, DartSeconds = 1f, DartCooldown = 2.2f;
 
         /// <summary>`hullRadius`: the dart's line is this wide.</summary>
         public const float HullRadius = 3f;
