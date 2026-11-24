@@ -15,11 +15,12 @@ namespace CosmicShore.UI
     /// its effects (<see cref="OmniCombinePlayer"/>, the Omni Combine Lab's round-2 choreography). Every press
     /// draws a fresh choreography from <see cref="OmniCombineConfigSO"/>'s ranges, so no two plays are alike.
     ///
-    /// <para><b>Rev 139 C, the pad is the button</b> (Shombith, 2026-11-24, of the Rev 104 B dais: "No convert animation
-    /// happening even the UI is very weird"; Docs/MENU_REDESIGN_B.md section 223): CONVERT is the pier's own landing ring
-    /// (a KitButton laid over the clip's pad), the balances are one line at the screen's foot, and with backdrops the
-    /// overlay keeps the convert CLIP's clock (<see cref="landSeconds"/>), pulsing the pad (<see cref="padPulse"/>) as
-    /// each crystal lands. The clip itself was trimmed to start where the crystals leave: it used to idle 4.7 s first.</para>
+    /// <para><b>Garrett's live combine is back on the CONVERTER tab</b> (Shombith, 2026-11-24, after Rev 139 C's pad was built:
+    /// "No no bring back garretts older design where the crystals in the 3d view animates"; Docs/MENU_REDESIGN_B.md section
+    /// 223.2). With <see cref="livePier"/> on (the default) the converter's picture is the stage camera's, as on
+    /// bleeding-edge, while the other tabs keep their backdrop clips; the overlay is one line at the foot (the four
+    /// balances, CONVERT, the omni wallet) and follows the combine player's own timing. With it off the pier clip plays
+    /// and the overlay keeps the clip's clock (<see cref="landSeconds"/>).</para>
     ///
     /// <para><b>It converts the player's real crystals</b> (Shombith, 2026-11-13: "the elemental converter should show the
     /// actual elemental crystals balance the user has"; Docs/MENU_REDESIGN_B.md sections 195-196, Rev 104 A). The four
@@ -160,6 +161,10 @@ namespace CosmicShore.UI
                  "a tab with none (DECOR) shows none. Empty uses the shipped " +
                  "Resources/ArkBackdropConfig; with neither, the converter plays the combine live on its own stage as before.")]
         [SerializeField] ArkBackdropConfigSO backdrops;
+        [Tooltip("The CONVERTER tab plays Garrett's combine LIVE on its own stage (the crystals in 3D, the camera circling), " +
+                 "not the pier clip, while the other tabs keep their backdrops (Shombith, 2026-11-24: \"bring back garretts " +
+                 "older design where the crystals in the 3d view animates\"). Off plays the pier clip again.")]
+        [SerializeField] bool livePier = true;
 
         const int Elements = 4;
         const string ConvertSource = "ark_convert";
@@ -260,6 +265,9 @@ namespace CosmicShore.UI
         public int ConverterTab => converterTab;
 
         bool UsesBackdrops => _backdropConfig;
+        // The converter's own picture is the live combine: always without backdrops, and with them while livePier is on.
+        bool PierLive => livePier || !UsesBackdrops;
+        bool LivePicture => PierLive && _room == ArkRoom.Pier;
 
         void GiveToSeat(string artifactId, string artifactName)
         {
@@ -284,7 +292,20 @@ namespace CosmicShore.UI
                 ShowVessels();   // hides them: another room, or no picture
                 return;
             }
+            if (LivePicture)
+            {
+                // The live combine is the picture: the stage camera's target, drawn plain (no pass material).
+                if (_backdrop) _backdrop.Release();
+                if (_surface)
+                {
+                    _surface.material = null;
+                    _surface.texture = _target;
+                }
+                ShowVessels();
+                return;
+            }
             EnsureBackdrop();
+            if (_surface && _backdrop.Material && _surface.material != _backdrop.Material) _surface.material = _backdrop.Material;
             var run = _room switch
             {
                 ArkRoom.Pier => _pierRun,
@@ -381,7 +402,9 @@ namespace CosmicShore.UI
             int dir = _lastTab < 0 || tab >= _lastTab ? 1 : -1;
             _lastTab = tab;
             var origin = TabOrigin(tab);
+            bool wasLive = LivePicture;
             _room = UsesBackdrops ? RoomFor(tab) : ArkRoom.Pier;
+            if (wasLive && !LivePicture) ReleaseTarget();   // the live stage's target is the bulk of this screen's memory
             SettleBench();
             bool shown = PictureFor(tab);
             if (shown == _pageShown)
@@ -394,7 +417,7 @@ namespace CosmicShore.UI
             {
                 if (_vessels) _vessels.Hide();
                 // Into the dark of a tab with no room (Pilots, Decor), then the picture hides (LateUpdate).
-                if (_backdrop && _backdrop.Material && _active && _surface && _surface.enabled)
+                if (!wasLive && _backdrop && _backdrop.Material && _active && _surface && _surface.enabled)
                 {
                     _backdrop.ShowDark(ArkPassKind.Pass, dir, origin);
                     _fadingOut = true;
@@ -479,7 +502,7 @@ namespace CosmicShore.UI
             }
             if (!_active || !_pageShown || !_player) return;
             float dt = Time.unscaledDeltaTime;
-            if (UsesBackdrops)
+            if (UsesBackdrops && !LivePicture)
             {
                 // The backdrop plays the picture; the combine is still stepped (never drawn) because the recipe, the bar
                 // and CONVERT read its progress.
@@ -608,7 +631,7 @@ namespace CosmicShore.UI
         // The run the overlay shows. With backdrops the picture is the convert clip, so the overlay keeps the clip's clock
         // (landSeconds, omniFormedSeconds); the combine player runs its own randomised choreography that no one sees, and
         // following it is how the counts stepped while the picture stood still (Rev 139, section 223).
-        bool ClipTimed => UsesBackdrops;
+        bool ClipTimed => UsesBackdrops && !PierLive;
         bool RunRunning => ClipTimed ? _runClock >= 0f && _runClock < omniFormedSeconds : _player && _player.IsRunning;
         bool RunDone => ClipTimed ? _runClock >= omniFormedSeconds : _player && _player.IsDone;
         bool RunOmniFormed => ClipTimed ? _runClock >= omniFormedSeconds : _player && _player.OmniFormed;
@@ -679,7 +702,7 @@ namespace CosmicShore.UI
 
             // With backdrops the picture is a video: no camera and no render target (at screen pixels x2 with MSAA they
             // are the bulk of this screen's memory). The combine is stepped for the overlay and drawn by no camera.
-            if (UsesBackdrops) return true;
+            if (!PierLive) return true;
 
             var go = new GameObject("ElementalConverterCamera") { hideFlags = HideFlags.DontSave };
             go.transform.SetParent(_stage, false);

@@ -46074,9 +46074,9 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 316560766005946424, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1060801354526217483 stripped
+--- !u!114 &592029296974899447 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 43513729600153305, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 438363422299691813, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46085,9 +46085,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36c1a95b6e2ce113095054da8aaa40ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &550566355191409204 stripped
+--- !u!114 &862056330562694479 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 686288328874891750, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_CorrespondingSourceObject: {fileID: 420115824401079965, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
   m_PrefabInstance: {fileID: 1018427831440552914}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -46127,17 +46127,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &886129756253518759 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 175082821403428981, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
-  m_PrefabInstance: {fileID: 1018427831440552914}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &415689352332947796 stripped
@@ -46210,8 +46199,8 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: c1c7cfd1c4b61617e26da92823bd3add, type: 2}
   buttonLabel: Convert
   font: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
-  convertButton: {fileID: 1060801354526217483}
-  convertLabel: {fileID: 550566355191409204}
+  convertButton: {fileID: 592029296974899447}
+  convertLabel: {fileID: 862056330562694479}
   balances:
   - {fileID: 446135783012176130}
   - {fileID: 114817478248137123}
@@ -46220,7 +46209,6 @@ MonoBehaviour:
   omniCountText: {fileID: 581145194989758497}
   balanceLineText: {fileID: 599030149088224500}
   omniPop: {fileID: 1038416964343197351}
-  padPulse: {fileID: 886129756253518759}
   arkTabs: {fileID: 415689352332947796}
   converterTab: 0
 --- !u!222 &4102067197520110292

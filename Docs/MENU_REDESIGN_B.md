@@ -10041,7 +10041,7 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
 
-## 223. Rev 139 mockups: the Elemental Converter redrawn, three ways, and why CONVERT seemed to do nothing (2026-11-24, C picked, built in 223.1)
+## 223. Rev 139 mockups: the Elemental Converter redrawn, three ways, and why CONVERT seemed to do nothing (2026-11-24, C picked, built in 223.1; replaced by the live combine in 223.2)
 
 **Asked** (Shombith, 2026-11-24, of the built Rev 104 B dais): "Converter - No convert animation happening even the UI
 is very weird and does not look good at all. Completely need to rework this. The BG is fine but not the UI." Kept: the
@@ -10089,3 +10089,16 @@ per-crystal steps are timed to the trimmed clip.
   over them. The dais, its beams and the foot CONVERT are retired with their scene stubs; `validate` fails if they return,
   if the pad loses its ring or moves off the clip's pad.
 - **Hand test:** "The Ark converter, Rev 139 C" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+### 223.2 Built: Garrett's live combine back on the CONVERTER tab (2026-11-24, Shombith: "No no bring back garretts older design where the crystals in the 3d view animates")
+
+- **The picture:** the CONVERTER tab shows the live 3D combine again (`OmniCombinePlayer` rendered by the view's own
+  off-screen camera into the RawImage, the bleeding-edge design), not the pier clip. `ElementalConverterView.livePier`
+  (default on) chooses it; the other Ark tabs keep their video backdrops, and the stage's RenderTexture is released when
+  the player leaves the tab. With the live stage the overlay times off the combine player again (`ClipTimed` is false),
+  so the counts step as the crystals in the picture land.
+- **The overlay:** one foot line, no cards: Space, Charge, the gold CONVERT KitButton (Purchase, it spends), Mass, Time, a
+  hairline, the Omni wallet with its pop, the balance line over them. The pad, its pulse ring and the dais stay retired
+  with their scene stubs; `validate` fails if they return or if CONVERT leaves the foot line between Charge and Mass.
+- **Kept from 223.1:** the trimmed convert clip (unused while `livePier` is on) and the balances' 10-each default.
+- **Hand test:** "The Ark converter, live combine" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

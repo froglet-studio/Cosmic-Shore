@@ -93,40 +93,33 @@ def title_band(root, key="Title", heading="Elemental converter",
     label(band.child(N(f"{key}/Line", "Line", TL(22, 84, 480, 20))), line, "BodySmall", "NeutralLightest")
 
 
-# The pad is the button (Rev 139 C, Docs/MENU_REDESIGN_B.md section 223; Shombith 2026-11-24 of the Rev 104 B dais: "the
-# UI is very weird and does not look good at all. Completely need to rework this. The BG is fine but not the UI"). The
-# pier's own landing ring is CONVERT: a KitButton whose border is a ring laid on the ring in the clip and whose fill is the
-# 12 % tint over the pad, its word floating over it, and a pulse ring the view swells off it as each crystal lands. The
-# player's balances and the omni wallet are one line at the screen's foot, nothing else is drawn.
-#
-# The picture (ElementalConverterView's RawImage) stretches the 1920 x 1080 clip over the whole screen, so the pad sits
-# at a fixed fraction of the screen: centre x, 603 of 1080 from the top (measured on converter_Nocturne_loop.mp4), its
-# ring 284 x 40 there.
-PAD_ANCHOR_Y = round(1 - 603 / 1080, 4)
-PAD_RING = (300, 46)
-PAD_HIT = (420, 170)              # the hit area round the ring and its word: the ring alone is a thin target
-PAD_WORD_Y, PAD_WORD_W, PAD_WORD_H = 58, 360, 32   # the word's centre over the ring's centre
-# The foot line: four balances, a hairline, the omni wallet; measured from the foot, centred on the screen.
+# The converter's overlay over Garrett's live combine (Shombith, 2026-11-24: "No no bring back garretts older design where
+# the crystals in the 3d view animates"; Docs/MENU_REDESIGN_B.md section 223.2). The picture is the combine itself, so
+# nothing is laid on it: one line at the screen's foot holds the player's four balances, CONVERT between them, and the
+# omni wallet past a hairline, with the recipe line over it. (Rev 139 C's pad was the pier clip's ring, gone with the
+# clip; Rev 104 B's dais before it.)
 FOOT_Y, FOOT_H, FOOT_ITEM_W, FOOT_GAP, FOOT_ART = 40, 60, 170, 56, 44
-FOOT_OMNI_W = 220
+FOOT_OMNI_W, CONVERT_MIN_W = 220, 300
 FOOT_LINE_Y, FOOT_LINE_W = FOOT_Y + FOOT_H + 16, 1000
-FOOT_W = 4 * FOOT_ITEM_W + 3 * FOOT_GAP + 2 * FOOT_GAP + 1 + FOOT_OMNI_W
+FOOT_W = 4 * FOOT_ITEM_W + CONVERT_MIN_W + 6 * FOOT_GAP + 1 + FOOT_OMNI_W
 FOOT_X0 = -FOOT_W // 2
-FOOT_X = {n: FOOT_X0 + i * (FOOT_ITEM_W + FOOT_GAP) for i, n in enumerate(ORDER)}
-FOOT_RULE_X = FOOT_X0 + 4 * FOOT_ITEM_W + 4 * FOOT_GAP
+_x = FOOT_X0
+FOOT_X = {}
+for _i, _n in enumerate(ORDER):
+    FOOT_X[_n] = _x
+    _x += FOOT_ITEM_W + FOOT_GAP
+    if _i == 1:
+        FOOT_CONVERT_X = _x
+        _x += CONVERT_MIN_W + FOOT_GAP
+FOOT_RULE_X = _x
 FOOT_OMNI_X = FOOT_RULE_X + 1 + FOOT_GAP
-# Everything on the foot stays under the pier's lower crystals (their feet at about 800 of 1080 from the top).
+# The foot stays low: the live combine frames itself in the middle of the screen.
 FOOT_CEILING = 270
 
 
 def foot(x, y, w, h, pivot=(0, 0)):
     """A rect anchored at the screen's foot-centre: (x, y) is its pivot, y up from the foot."""
     return R((0.5, 0), None, (x, y), (w, h), pivot)
-
-
-def pad_rect(x, y, w, h):
-    """A rect centred (x, y) off the pad's centre, which is anchored where the clip's pad is."""
-    return R((0.5, PAD_ANCHOR_Y), None, (x, y), (w, h), (0.5, 0.5))
 
 
 def foot_item(parent, k, name, x, w, art_guid, art_size):
@@ -153,32 +146,13 @@ def converter_overlay(root):
     om = foot_item(f, "Foot/Omni", "Omni", FOOT_OMNI_X, FOOT_OMNI_W, OMNI, 48)
     om.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
 
-    pad = root.child(N("Pad", "Pad", pad_rect(0, 0, *PAD_HIT)))
-    pad.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
-    rw, rh = PAD_RING
-    ox, oy = (PAD_HIT[0] - rw) // 2, (PAD_HIT[1] - rh) // 2       # the ring at the hit area's centre
-    ring(pad, "Pad/Hit", "Hit", STRETCH, "SurfaceBlack", 0.0, "kit_ring_fill", raycast=True)
-    pad.child(N("Pad/FocusRing", "FocusRing", TL(ox - 10, oy - 6, rw + 20, rh + 12))).add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("TextLight", 0.0), K.kit_sprite("kit_ring_line")))
-    pad.child(N("Pad/Fill", "Fill", TL(ox, oy, rw, rh))).add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("Purchase", 0.0), K.kit_sprite("kit_ring_fill")))
-    pad.child(N("Pad/Ring", "Ring", TL(ox, oy, rw, rh))).add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("Purchase"), K.kit_sprite("kit_ring_line")))
-    ring(pad, "Pad/Pulse", "Pulse", TL(ox, oy, rw, rh), "Cta", 0.0, shown=False)
-    word = pad.child(N("Pad/Label", "Label", TL((PAD_HIT[0] - PAD_WORD_W) // 2, PAD_HIT[1] // 2 - PAD_WORD_Y - PAD_WORD_H // 2,
-                                                PAD_WORD_W, PAD_WORD_H)))
-    label(word, "CONVERT", "Button", "Purchase", align="center")
-
-    def button(ctx, go):
-        return K.mono(go, H.KIT_BUTTON,
-                      K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c('Pad/Fill', 'img'))}\n" + H.EMPTY_CALLS
-                      + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c('Pad/FocusRing', 'img'))}\n"
-                      f"  variant: {K.VARIANTS['Purchase']}\n  fill: 0\n"
-                      f"  fillGraphic: {ref(ctx.c('Pad/Fill', 'img'))}\n"
-                      f"  borderGraphic: {ref(ctx.c('Pad/Ring', 'img'))}\n"
-                      f"  contentGraphics:\n  - {ref(ctx.c('Pad/Label', 'tmp'))}\n  playGradient: {{fileID: 0}}\n")
-    pad.add("button", 114, button)
-    pad.add("audio", 114, lambda ctx, go: K.mono(go, H.MENU_AUDIO, "  category: 11\n"))
+    w, h = K.button_size("CONVERT")
+    w = max(w, CONVERT_MIN_W)
+    holder = root.child(N("Convert", "Convert", foot(FOOT_CONVERT_X, FOOT_Y + (FOOT_H - h) // 2, w, h)))
+    holder.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
+    holder.children.append(P.Inst("ConvertButton", "KitButton", "ConvertButton", STRETCH,
+                                  K.button_mods("KitButton", "Purchase", True, "CONVERT"),
+                                  added=[("mask", 114, A.rect_mask())], added_nodes=[C.sweep_node()]))
 
 
 # --------------------------------------------------------------------------------------------
@@ -1292,28 +1266,26 @@ def prefab_outputs():
 
 IDS = dict(go="7700130000000000001", rt="7700130000000000002", view="7700130000000000003")
 VIEW_REFS = {
-    "convertButton": ("Pad#button", "button"),
-    "convertLabel": ("Pad/Label#tmp", "tmp"),
+    "convertButton": ("ConvertButton|root#button", "button"),
+    "convertLabel": ("ConvertButton|Label#tmp", "tmp"),
     "omniCountText": ("Foot/Omni/Count#kt", "kt"),
     "balanceLineText": ("Foot/Line#kt", "kt"),
     "omniPop": ("Foot/Omni#pop", "entrance"),
-    "padPulse": ("Pad/Pulse#img", "img"),
     "arkTabs": ("root#tabs", "tabs"),
 }
 LISTS = {
     "balances": [(f"Foot/{n}#balance", "balance") for n in ORDER],
 }
-OVERLAY_ORDER = ("convertButton", "convertLabel", "balances", "omniCountText", "balanceLineText", "omniPop", "padPulse",
-                 "arkTabs")
+OVERLAY_ORDER = ("convertButton", "convertLabel", "balances", "omniCountText", "balanceLineText", "omniPop", "arkTabs")
 # The overlay fields Rev 104 A retired (section 196) with the cards they pointed into: their scene stubs are removed too.
 RETIRED_REFS = (["Bar/Status#kt", "Bar/Clock#tmp", "Recipe/Merged#kt", "Recipe/Omni#cg", "Recipe/Omni#pop"]
                 + [f"Bar/Seg{n}#img" for n in ORDER] + [f"Bar/Seg{n}/SparkGroup#cg" for n in ORDER]
                 + [f"Recipe/{n}#row" for n in ORDER]
                 # Rev 104 A's ledger, built first and replaced by B's dais (Shombith picked B, 2026-11-13)
                 + ["Ledger/Omni/Count#kt", "Ledger/Line#kt", "Ledger/Omni#pop"] + [f"Ledger/{n}#balance" for n in ORDER]
-                # Rev 104 B's holo dais and its CONVERT, replaced by Rev 139 C's pad (section 223)
-                + ["ConvertButton|root#button", "ConvertButton|Label#tmp", "Dais/Omni/Count#kt", "Dais/Line#kt",
-                   "Dais/Omni#pop"] + [f"Dais/{n}#balance" for n in ORDER])
+                # Rev 104 B's holo dais (section 223), and Rev 139 C's pad, gone with the pier clip (section 223.2)
+                + ["Dais/Omni/Count#kt", "Dais/Line#kt", "Dais/Omni#pop"] + [f"Dais/{n}#balance" for n in ORDER]
+                + ["Pad#button", "Pad/Label#tmp", "Pad/Pulse#img"])
 
 
 class ArkMount(C.Mount):
@@ -1450,20 +1422,19 @@ def validate(files):
     assert f"guid: {OMNI}" in A.doc_of(view, V("Foot/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
     assert FOOT_LINE_Y + 20 <= FOOT_CEILING, "the foot line reaches up into the pier's crystals"
     assert FOOT_OMNI_X + FOOT_OMNI_W <= 960 and FOOT_X0 >= -960, "the foot line runs off a 1920 screen"
-    # Rev 139 C: CONVERT is the pier's pad, not a button at the foot, and the dais is gone.
-    _, pad_btn = A.doc_of(view, V("Pad#button"))
-    assert pad_btn and H.KIT_BUTTON in pad_btn, "the pad is not CONVERT (no KitButton on Pad)"
-    for field, key in (("borderGraphic", "Pad/Ring#img"), ("fillGraphic", "Pad/Fill#img"), ("focusRing", "Pad/FocusRing#img")):
-        assert f"  {field}: {{fileID: {V(key)}}}" in pad_btn, f"the pad's {field} is not its {key.split('#')[0]}"
-    assert re.search(r"m_AnchorMin: \{x: 0\.5, y: " + re.escape(str(PAD_ANCHOR_Y)), A.doc_of(view, V("Pad#rt"))[1]), \
-        "the pad is not anchored where the clip's pad is"
-    for retired in ("Dais", "Convert"):
-        assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the Rev 104 B {retired} is back (Rev 139 C has the pad)"
+    assert FOOT_OMNI_X + FOOT_OMNI_W - FOOT_X0 == FOOT_W, "the foot line's width does not add up"
+    # 223.2: CONVERT sits in the foot line between Charge and Mass; the dais and the pad stay gone.
+    _, conv_rt = A.doc_of(view, V("Convert#rt"))
+    assert conv_rt and re.search(r"m_AnchorMin: \{x: 0\.5, y: 0\}", conv_rt), "CONVERT is not on the foot line"
+    cx = float(re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+)", conv_rt).group(1))
+    assert FOOT_X["Charge"] + FOOT_ITEM_W < cx and cx + CONVERT_MIN_W <= FOOT_X["Mass"], "CONVERT is not between Charge and Mass"
+    for retired in ("Dais", "Pad"):
+        assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the retired {retired} is back (the converter is Garrett's live combine)"
     # Rev 104: no cards on the converter (Shombith 2026-11-13: "The UI cards on top of each screen. I do not like them
     # at all"). The retired title band, recipe panel and converter bar stay gone.
     for retired in ("Title", "Recipe", "Bar"):
         assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the converter's {retired} card is back (Rev 104 has none)"
-    assert view.count("guid: " + S["spark"]) == 0, "a sweep is back on the Ark (the pad CONVERT has none)"
+    assert view.count("guid: " + S["spark"]) == 1, "ArkView needs exactly the CONVERT sweep"
     validate_tabs(view, V)
 
     sc = T.Scene(files[SCENE])
@@ -1874,12 +1845,10 @@ def self_test(files):
     cases = [
         ("a balance with no count", lambda f: f.__setitem__(view, re.sub(r"(  countText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
         ("the recipe card back", lambda f: f.__setitem__(view, recipe_card_plant(f[view])), "card is back"),
-        ("the pad's ring unwired", lambda f: f.__setitem__(view, f[view].replace(
-            f"  borderGraphic: {{fileID: {V('Pad/Ring#img')}}}", "  borderGraphic: {fileID: 0}")), "borderGraphic"),
-        ("the pad moved off the clip's pad", lambda f: f.__setitem__(view, in_doc(f[view], V("Pad#rt"), lambda d: d.replace(
-            f"y: {PAD_ANCHOR_Y}", "y: 0.5", 1))), "anchored where"),
+        ("CONVERT moved off the foot line", lambda f: f.__setitem__(view, in_doc(f[view], V("Convert#rt"), lambda d: re.sub(
+            r"(m_AnchoredPosition: \{x: )-?[\d.e-]+", r"\g<1>700", d, count=1))), "between Charge and Mass"),
         ("CONVERT unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
-            f"  convertButton: {{fileID: {mount.stub_fid('Pad#button')}}}", "  convertButton: {fileID: 0}"))),
+            f"  convertButton: {{fileID: {mount.stub_fid('ConvertButton|root#button')}}}", "  convertButton: {fileID: 0}"))),
         ("the converter grown up under the nav again", lambda f: f.__setitem__(SCENE, re.sub(
             r"(--- !u!224 &" + IDS["rt"] + r"\n(?:(?!--- ).*\n)*?  m_SizeDelta: )\{x: 0, y: 0\}", r"\1{x: 0, y: 170.4}",
             f[SCENE], count=1))),
