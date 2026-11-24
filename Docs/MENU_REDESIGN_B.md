@@ -10041,7 +10041,7 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
 
-## 230. Fixed: the Squads rail stood under the screen; a slimmer rail; Back on every level (2026-11-24, claude/project-thread-ffv5m4, not run in Unity)
+## 232. Fixed: the Squads rail stood under the screen; a slimmer rail; Back on every level (2026-11-24, claude/project-thread-ffv5m4, not run in Unity)
 
 **Asked (Shombith, 2026-11-24, of the Squads tab in Unity):** "Same problem there is no UI, the footer tab is too big the
 vessels appear out of world, once select cannot press the back button the vessels go out of screen this is the worst
@@ -10060,11 +10060,11 @@ the projection's Back shows at every level, so a picked seat can be closed on sc
 
 **Not changed here:** where the hulls stand. They stand on the clip's own pads, and those sit left of centre (projected
 at x 207, 579 and 1141 of 1920, Rogue One's at the screen's edge), while the plates are centred at 640, 960 and 1280.
-That is a layout question, drawn in section 231.
+That is a layout question, drawn in section 233.
 
 Affects: Shombith's Ark screen (`author_menu_ark.py`, `ArkView.prefab`, `SquadsPage`).
 
-## 231. Rev 141 mockups: the Squads tab started again - the vessels in the room, press the vessel itself, a slim foot (2026-11-24, awaiting a pick)
+## 233. Rev 141 mockups: the Squads tab started again - the vessels in the room, press the vessel itself, a slim foot (2026-11-24, awaiting a pick)
 
 **Asked (Shombith, 2026-11-24):** the Squads tab is "the worst of the lot" (no UI, a big footer, vessels out of the world and
 off screen, no way back from a seat); of Artifacts the same day, "I cannot click in the image itself, that should be

@@ -69,7 +69,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 Menu_Main > Ark > Squads at 1920 x 1080: the foot shows the rail (< squad name >, Make, Join, Delete, the Jade / Ruby /
 Gold light, Mission, Arena) inside a 96 px bar, not an empty dark bar. Press a plate: the projection shows Back; Back
-closes the seat. Open a list (Vessel): Back returns to the seat, a second Back closes it. `Docs/MENU_REDESIGN_B.md` 230.
+closes the seat. Open a list (Vessel): Back returns to the seat, a second Back closes it. `Docs/MENU_REDESIGN_B.md` 232.
 
 ### 🔴 The Squads tab as the holo table, Rev 110 B (`claude/project-thread-sdvd40`, 2026-11-14, Shombith) — NOT EDITOR-VERIFIED
 

@@ -357,7 +357,7 @@ def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=No
 EDGE = 40                                      # the boards' margin, left and right
 RAIL_H = 96                                    # the brass rail (was R110B's 136: Shombith 2026-11-24, "the footer is too big")
 # Its controls' top, down from the rail's top edge. Its own name: the Artifacts section below defines a RAIL_Y of its own
-# (890), and while both were RAIL_Y every Squads rail control was written 850 px under the screen (section 230).
+# (890), and while both were RAIL_Y every Squads rail control was written 850 px under the screen (section 232).
 SQUAD_RAIL_Y = (RAIL_H - 48) // 2
 RAIL_BTN_H = 48
 DOME = (0, 144, 1260, 520)                     # centre x, centre y up from the foot, width, height (R110B left 330 top 676)
@@ -1695,7 +1695,7 @@ def validate_tabs(view, V):
         xs.append(x)
         assert y - PLATE_H >= RAIL_H, f"seat {seat}'s plate runs into the rail"
     # The rail's controls stand inside the rail (top-anchored: y 0 is its top edge, -RAIL_H its foot). A name clash once
-    # wrote them all 850 px under the screen (section 230), and nothing here said so.
+    # wrote them all 850 px under the screen (section 232), and nothing here said so.
     for key in ("Prev", "Name", "Whose", "Next", "Make", "Join", "Squad/Remove", "Squad/Mission", "Squad/Arena"):
         rt = V(f"Squads/Rail/{key}#rt")
         _, y = rect_xy(view, rt, "m_AnchoredPosition")
