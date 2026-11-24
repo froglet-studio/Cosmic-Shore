@@ -242,7 +242,7 @@ namespace CosmicShore.UI
             // Settings is a window ON the pause window now: closing it goes back to the pause
             // window, never straight into the match - with the pad back on Settings.
             SetWindowInteractable(true);
-            Select(settingsButton);
+            if (_stage == null) Select(settingsButton);
         }
 
         /// <summary>Settings (X): the Settings window, over the pause window.</summary>
@@ -256,9 +256,50 @@ namespace CosmicShore.UI
         void SetWindowInteractable(bool on)
         {
             if (!windowGroup) return;
-            windowGroup.interactable = on;
-            windowGroup.blocksRaycasts = on;
+            // A game's own pause screen stands in for the window: the window stays hidden and silent, and the screen
+            // steps aside while Settings is over it.
+            bool live = on && _stage == null;
+            windowGroup.interactable = live;
+            windowGroup.blocksRaycasts = live;
+            _stage?.Cover(!on);
         }
+
+        // ── A game's own pause screen (PauseMenuStage: a voyage's chart, Frogma Rev 134 Pause A) ──
+
+        IPauseMenuStage _stage;
+
+        /// <summary>When the running game has its own pause screen, it opens in place of the window: the window is hidden
+        /// and silenced (its pad shortcuts with it), and the screen's buttons call this menu's Resume, Settings and Leave,
+        /// so pausing, Settings and leaving behave exactly as they do from the window.</summary>
+        void OpenStage()
+        {
+            _stage = windowGroup && PauseMenuStage.Current is { Wanted: true } stage ? stage : null;
+            if (_stage == null) return;
+            windowGroup.alpha = 0f;
+            SetWindowInteractable(true);
+            _stage.Open(this);
+        }
+
+        void CloseStage()
+        {
+            var stage = _stage;
+            _stage = null;
+            if (windowGroup) windowGroup.alpha = 1f;
+            stage?.Close();
+        }
+
+        /// <summary>Leave reads "Leave party" for a guest (the window's own rule), for a game's own pause screen.</summary>
+        public bool LeavesParty
+        {
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return nm != null && nm.IsListening && !nm.IsServer;
+            }
+        }
+
+        /// <summary>Anyone else shares this session, so time is not frozen while this pilot looks.</summary>
+        public static bool SharedSession => InNetworkedSession();
 
         /// <summary>
         /// Toggles the Master Volume On/Off
@@ -415,6 +456,7 @@ namespace CosmicShore.UI
             ShowGameAction();
             LinkDpadNavigation();
             Select(resumeButton);
+            OpenStage();
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
         }
 
@@ -570,6 +612,7 @@ namespace CosmicShore.UI
             if (settingsModalWindowManager != null) settingsModalWindowManager.ModalWindowOut();
             isHidingFromCode = false;
 
+            CloseStage();
             if (Panel != null) Panel.SetActive(false);
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
         }

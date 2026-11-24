@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-24-pausemenu-gains-a-stage-hook-pausemenust-d5c7ce",
+  "to": "Yash",
+  "by": "Shombith",
+  "date": "2026-11-24T12:29:18+00:00",
+  "area": "the in-game HUD's pause menu",
+  "summary": "PauseMenu gains a stage hook (PauseMenuStage): while a voyage runs, the voyage's pause chart (Rev 134 Pause A) replaces the window and calls the menu's own Resume, Settings and Leave. With no stage registered every mode pauses exactly as before.",
+  "why": "Shombith picked Rev 134 Pause A for voyages; one shared PauseMenu stays the only pause logic.",
+  "branch": "claude/project-thread-n8v0f3",
+  "lane": "game-hud",
+  "commit": "13969a7b2",
+  "paths": [
+    "Assets/_Scripts/UI/PauseMenu.cs",
+    "Assets/_Scripts/UI/PauseMenuAction.cs"
+  ]
+}

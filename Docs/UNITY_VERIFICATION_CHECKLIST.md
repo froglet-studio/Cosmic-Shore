@@ -25663,3 +25663,29 @@ the changed files (30 in untouched files, from packages this machine lacks); the
 - [ ] An I1 run (Spindrift) is calm: no held cells, no raiders, no kaiju. An I3 run (Cinder Shoal) holds two in three
       cells, raiders come on the way out and a kaiju waits on the first crossing only.
 - [ ] Unnamed work (every other job on the board) sails exactly as before.
+
+## Voyages Milestone 2 in-game screens: Pause A, Vote B, Awards A, run toasts, rival plate (2026-11-24)
+
+`Docs/UI/specs/voyages-m2-ingame.md` (Frogma Rev 134 and Rev 137). Not run in the Unity editor: none in this session.
+The reference compile has 0 errors in the changed files, player and editor configs (the rest are in UGS files whose
+packages this machine could not fetch); the headless voyage harness passes, `VoyageScreensTests` among its tests. The
+events next door, the rivals and the vote appear only once the gameplay fills them, so the last four checks wait for that.
+
+- [ ] Pause during a Salvage voyage (e.g. Spindrift's Last Glitter): the voyage's chart replaces the pause window. Left:
+      the voyage's name, crystals and goal, "Cell n of m - sea", then Resume (B), the game action, Settings, Leave. Right:
+      the lane through its cells, the cell the Ark is in lit and named, the Ark ring with "You - m:ss to the next cell".
+- [ ] Resume, B on the pad, Settings (its window opens over the chart and closes back to it) and Leave all work; in a
+      party the note under Leave says what leaving does and time is not frozen.
+- [ ] Pause in Crystal Run and in any other mode: the old pause window, exactly as before.
+- [ ] Each crossing into a cell of a named voyage toasts the cell's name over "Cell n of m - sea"; Crystal Run's toasts
+      are as before.
+- [ ] Dock a named voyage: the Awards board (name, the run line through its places, up to three award cards with the
+      hull and who flew it, the pay), then the board's usual buttons. Lose the Ark: "<name> ends at <place>" and the squad.
+      Crystal Run's end board is unchanged.
+- [ ] (Once the gameplay fills them) Events next door sit beside their cell on the pause chart with a timer; a rival is
+      drawn in red with its course.
+- [ ] (Once the gameplay opens a vote) The vote band low left: the pilot who spotted it asks, D-pad or arrows choose,
+      5 s clock; solo closes on the press, a party shows a ballot per seat and the host breaks a tie.
+- [ ] (Once a rival is in the cell) The rival plate top right: name, faction and temper, hold and hull, a row per escort,
+      silenced escorts dim; it hides during the intro and the end board.
+- [ ] Phone and iPad: the same layout inside the safe area; nothing clipped, text at today's sizes.

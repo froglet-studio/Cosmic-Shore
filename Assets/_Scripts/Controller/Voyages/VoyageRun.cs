@@ -206,6 +206,7 @@ namespace CosmicShore.Gameplay
             Deploy(local, domain);
             VoyageObjective.Source = this;
             PauseMenuAction.Current = this;
+            HookScreens(true);
             (_alarms ??= new ArkAlarmToasts(this, () => _sea)).Hook();
             if (!_attackerMarks) _attackerMarks = ArkAttackerMarks.Create(transform, this, () => Ark);
             if (!_plate) _plate = ArkHudPlate.Create(transform, () => Ark);

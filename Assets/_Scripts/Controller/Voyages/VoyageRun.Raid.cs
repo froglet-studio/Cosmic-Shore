@@ -389,6 +389,12 @@ namespace CosmicShore.Gameplay
             int cell = LegCell(out int cells);
             if (cell <= 0 || cell == _toastedCell) return;
             _toastedCell = cell;
+            // A named voyage names the cell it crosses into (Frogma Rev 134 Crossing); Crystal Run keeps its own toasts.
+            if (_state.Current.IsNamed && TryGetObjective(out var objective))
+            {
+                VoyageScreenToasts.Crossing(_sea, Lines, VoyageObjectiveText.StopName(Lines, objective, cell - 1), cell, cells, SeaRung);
+                return;
+            }
             if (cell == cells && cells > 1)
             {
                 VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Event, Lines.ToastFinalCell);
@@ -539,6 +545,7 @@ namespace CosmicShore.Gameplay
             };
             foreach (var e in VoyageRaid.Elements) board.Crystals[(int)e] = _raid.Of(e);
             AddRows(board);
+            TellScreens(board, job);
 
             if (missed && Lines != null)
                 VoyageToasts.Show(_sea, ArkwayVoyageHud.Mood.Threat,
@@ -715,6 +722,7 @@ namespace CosmicShore.Gameplay
             };
             for (int e = 0; e < board.Crystals.Length && stake != null && e < stake.Length; e++) board.Crystals[e] = stake[e];
             AddVoyageRows(board);
+            TellScreens(board, lost);
             // Try again: the same work from wherever the fall left the crew, once the sea has ended.
             string template = lost?.TemplateId;
             if (!_following && lost is { CountsUnderway: true } && !string.IsNullOrEmpty(template))
@@ -738,6 +746,7 @@ namespace CosmicShore.Gameplay
             _plate = null;
             if (ReferenceEquals(VoyageObjective.Source, this)) VoyageObjective.Source = null;
             PauseMenuAction.Release(this);
+            HookScreens(false);
         }
     }
 }

@@ -16,6 +16,17 @@ namespace CosmicShore.UI
             Gem = 0,
             Ark = 1,
             Clock = 2,
+            /// <summary>An event next door (Rev 134 Pause A: a flag).</summary>
+            Flag = 3,
+            /// <summary>A rival crew (Rev 134 Pause A: a warning triangle).</summary>
+            Warn = 4,
+            /// <summary>A distress call (Rev 134 WorldEvents: a flare over a still hull).</summary>
+            Flare = 5,
+            /// <summary>A predator pack (Rev 134 WorldEvents: three bodies gathering).</summary>
+            Pack = 6,
+            /// <summary>The vote's keycaps (Rev 134 Vote B: D-pad left and right).</summary>
+            Left = 7,
+            Right = 8,
         }
 
         const float Stroke = 2f;
@@ -46,6 +57,34 @@ namespace CosmicShore.UI
                     Poly(vh, r, 40f, 20f, true, color, (1, 12), (39, 12), (33, 19), (7, 19));
                     Poly(vh, r, 40f, 20f, false, color, (10, 12), (10, 6), (24, 6), (29, 12));
                     Poly(vh, r, 40f, 20f, false, color, (15, 6), (15, 2));
+                    break;
+                case Shape.Flag:
+                    // viewBox 20 x 20: the pole M5 2 V18, the flag M5 3 h10 l-3 3.5 3 3.5 H5.
+                    Poly(vh, r, 20f, 20f, false, color, (5, 2), (5, 18));
+                    Poly(vh, r, 20f, 20f, false, color, (5, 3), (15, 3), (12, 6.5f), (15, 10), (5, 10));
+                    break;
+                case Shape.Warn:
+                    // viewBox 22 x 20: M11 2 L20 18 H2 z, the mark M11 8 v5, the dot M11 15.5 v0.5.
+                    Poly(vh, r, 22f, 20f, true, color, (11, 2), (20, 18), (2, 18));
+                    Poly(vh, r, 22f, 20f, false, color, (11, 8), (11, 13));
+                    Poly(vh, r, 22f, 20f, false, color, (11, 15.2f), (11, 16));
+                    break;
+                case Shape.Flare:
+                    // viewBox 20 x 20: the trail M10 18 V8, the burst a small diamond round (10, 5).
+                    Poly(vh, r, 20f, 20f, false, Fade(color, 0.6f), (10, 18), (10, 8));
+                    Poly(vh, r, 20f, 20f, true, color, (10, 2), (13, 5), (10, 8), (7, 5));
+                    break;
+                case Shape.Pack:
+                    // viewBox 22 x 20: three small diamonds.
+                    Poly(vh, r, 22f, 20f, true, color, (6, 3), (9, 6), (6, 9), (3, 6));
+                    Poly(vh, r, 22f, 20f, true, color, (16, 3), (19, 6), (16, 9), (13, 6));
+                    Poly(vh, r, 22f, 20f, true, color, (11, 11), (14, 14), (11, 17), (8, 14));
+                    break;
+                case Shape.Left:
+                    Poly(vh, r, 20f, 20f, true, color, (14, 4), (14, 16), (5, 10));
+                    break;
+                case Shape.Right:
+                    Poly(vh, r, 20f, 20f, true, color, (6, 4), (6, 16), (15, 10));
                     break;
                 default:
                     // viewBox 22 x 22: a ring r 9 at (11, 11) and the hands M11 6 v5 l3 2.
