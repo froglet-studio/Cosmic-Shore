@@ -26903,16 +26903,17 @@ Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally
 
 - [x] The project compiles in the editor (batch mode, 2026-11-24).
 - [x] `ScarabRallyRuinsTests` passes 13/13 in the editor (2026-11-24).
-- [ ] Raising the I4 course does not hitch: choosing the ruins took about a second a course under the editor's Mono.
-- [ ] `MinigameScarabRally`: the controller shows `Scarab Ruin Prism Prefab` = SpawnablePrism (written into the scene
-      as text; the scene still owes its first open-and-save).
+- [ ] Raising the I4 course does not hitch: MEASURED 1.2 s to lay the ruins on the live course in the editor (0.9 s
+      choosing them), once, before Ready. Judge it in the editor and in a player build.
+- [x] `MinigameScarabRally`: the ruin prism prefab is wired (480 ruin prisms laid in Play, 2026-11-24). The scene
+      still owes its first open-and-save.
 - [ ] Scarab Rally I4: up to seven ruins stand along the course in Jade, Ruby and Gold, apart from the Blue block
       fields and the lime ring; none at a ring; nothing in them moves.
 - [ ] From each ring the next lime ring is in plain sight, as before the ruins (Garrett's 2026-11-14 rule).
 - [ ] No ruin prism stands inside a block-field prism.
 - [ ] Scarab Rally I1, I2 and I3: no ruins. Switchback: no Scarab Rally ruins (its own are the Switchback session's).
-- [ ] Three AI Scarabs at I4 finish in about the times they did (Medium 161 s, Legendary 121 s), and the frame rate
-      holds with about 470 more prisms and the 150 ms the ruins take to choose while the course is raised.
+- [x] Three Legendary AI Scarabs at I4 finish: the race ended after 139 s at 62-78 fps in the editor (2026-11-24,
+      one race; the race model's Legendary time was 121 s). All 480 ruin prisms stood at the end. Medium was not raced.
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
 
 ### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)

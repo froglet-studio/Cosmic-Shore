@@ -93,7 +93,15 @@ second time to cut the ruins round it (Switchback's layout is private to it). Co
 2026-11-24, no `error CS`); not seen in Play (the hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`). `ScarabRallyRuinsTests` passes 13/13
 in the open editor (34.6 s). Under the editor's Mono a lay is slower than on .NET 8: ten I4 courses with their ruins
 and no field took 9.6 s in the tests, so choosing the ruins is about a second a course there, once, while the course
-is raised (150 ms on .NET 8; a player build was not measured). The AI's I4 times in the table below were measured
+is raised (150 ms on .NET 8; a player build was not measured).
+
+One race in the editor (2026-11-24, Play from Bootstrap, offline, I4, three Scarabs all flown by the Legendary AI,
+normal speed, driven through the Pipeline): the course raised 480 ruin prisms from 1,835 candidates (Jade 245, Ruby
+131, Gold 104) beside about 3,400 field prisms; the race ended after 139 s of game time at 62-78 fps; all 480 ruin
+prisms still stood at the end (no pilot flew into one); the only console error in the run was a Cloud Code 404 the
+offline boot logs. **Laying the ruins took 1.2 s on the live course** (0.9 s of it choosing them, before the field is
+cut out), once, before Ready: a hitch a person may notice as the scene comes up. The stills showed ruins only far off,
+so how they read up close is still a person's look. The AI's I4 times in the table below were measured
 before the ruins; the ruins stand outside the lane the AI flies, but that was not raced again.
 
 ## What is reused, and what is new
