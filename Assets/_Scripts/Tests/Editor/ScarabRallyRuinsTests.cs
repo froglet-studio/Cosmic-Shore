@@ -62,6 +62,17 @@ namespace CosmicShore.Tests
         /// rung has it, no gauntlet), and the ruins round both.</summary>
         static Lay Ruins(int intensity, int seed, bool withField = true)
         {
+            var key = (intensity, seed, withField);
+            if (!Cache.TryGetValue(key, out var lay)) Cache[key] = lay = Fresh(intensity, seed, withField);
+            return lay;
+        }
+
+        // One lay takes about a second under the editor's Mono (the field layout is most of it), so the tests share
+        // them. Fresh() is the uncached lay, for the test that asks whether two lays agree.
+        static readonly Dictionary<(int, int, bool), Lay> Cache = new();
+
+        static Lay Fresh(int intensity, int seed, bool withField = true)
+        {
             var lay = new Lay { Course = Course(intensity, seed) };
             Assert.IsNotNull(lay.Course, $"I{intensity} seed {seed}: no course");
             lay.Field = withField && ScarabRallyCourse.LaysBlastRun(intensity)
@@ -133,6 +144,7 @@ namespace CosmicShore.Tests
             {
                 var lay = Ruins(4, seed);
                 Assert.Greater(lay.Field.Count, 0, $"seed {seed}: I4 lays a field");
+                int inside = 0;
                 for (int i = 0; i < lay.Parts.Count; i++)
                 {
                     if (!lay.Laid[i]) continue;
@@ -146,11 +158,12 @@ namespace CosmicShore.Tests
                         for (int k = 0; k < samples; k++)
                         {
                             float along = samples == 1 ? 0f : (k / (float)(samples - 1) - 0.5f) * part.Scale.z;
-                            Assert.GreaterOrEqual((part.Position + part.Forward * along - prism.Position).magnitude,
-                                reach - 0.01f, $"seed {seed}: a ruin prism stands in the block field");
+                            // Counted, and asserted once a seed: an assert a pair is millions of them.
+                            if ((part.Position + part.Forward * along - prism.Position).magnitude < reach - 0.01f) inside++;
                         }
                     }
                 }
+                Assert.AreEqual(0, inside, $"seed {seed}: ruin prisms stand in the block field");
             }
         }
 
@@ -267,10 +280,11 @@ namespace CosmicShore.Tests
         [Test]
         public void The_lay_is_a_pure_function_of_the_course()
         {
-            foreach (int seed in Seeds)
+            for (int s = 0; s < 3; s++)
             {
+                int seed = Seeds[s];
                 var first = Ruins(4, seed);
-                var second = Ruins(4, seed);
+                var second = Fresh(4, seed);
                 Assert.AreEqual(first.Parts.Count, second.Parts.Count);
                 for (int i = 0; i < first.Parts.Count; i++)
                 {

@@ -26867,13 +26867,18 @@ this Windows box), any flight.
 
 ## Scarab Rally: the I4 garden ruins (2026-11-24)
 
-NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Scarab Rally lays Spearline's ruins round its own rings at I4, cut clear
+COMPILED IN UNITY (batch mode, 2026-11-24, no `error CS`); NOT SEEN IN PLAY. The EditMode tests ran there once: 8 of
+13 passed and 5 failed on no assertion, but on another session's `/api/exec` request that timed out while the tests
+held the main thread for 7 minutes (an unhandled error log fails the running test). The tests now share their lays and
+run in seconds; that version compiled in Unity and passes 13/13 headless, and was not run again in Unity because the
+editor was in Play for another session. Scarab Rally lays Spearline's ruins round its own rings at I4, cut clear
 of the block field and of the sight line to the next ring (SCARABRALLY.md, "The ruins"; `ScarabRallyRuins`, the hook in
 `ScarabRallyController`). Run outside Unity only: `ScarabRallyRuinsTests` 13/13 and six negative controls
 (`bash Tools/Build/scarab_rally_ruins_harness/run.sh --self-test`), and the game assembly compiled with Roslyn on
 Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally_assets.py --check` OK.
 
-- [ ] The project compiles in the editor and `ScarabRallyRuinsTests` passes there.
+- [x] The project compiles in the editor (batch mode, 2026-11-24).
+- [ ] `ScarabRallyRuinsTests` passes 13/13 in the editor.
 - [ ] `MinigameScarabRally`: the controller shows `Scarab Ruin Prism Prefab` = SpawnablePrism (written into the scene
       as text; the scene still owes its first open-and-save).
 - [ ] Scarab Rally I4: up to seven ruins stand along the course in Jade, Ruby and Gold, apart from the Blue block
