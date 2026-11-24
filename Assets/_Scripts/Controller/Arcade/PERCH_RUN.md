@@ -88,6 +88,33 @@ shows the length (§4).
 (`PerchRunCourse.CoralFor`): nothing new is replicated. The Goby's dart stops on any prism not its own
 (`Perchable`), so a coral head is just a block; a dart that stops on one is a dash or a perch like any other.
 
+## 3a. Garden ruins at I4 (`PerchRunRuins`, `PerchRunController.Ruins.cs`; Yash, 2026-11-24)
+
+The same environment update Spearline got (`SPEARLINE.md` 2a): at I4 the long legs stand in the ruins of old flora
+gardens. Decoration only. The generator is Spearline's (`SpearlineRuins.Lay`), called, not copied; Perch Run adds
+only the lap it is given and the hook that lays the prisms.
+
+- **Round the dart's line, not a curve.** Spearline keeps its lane clear round a curve through the rings' axes. The
+  Goby darts straight from ring to ring and a dart stops on the first block on its line, so `PerchRunRuins.DartLap`
+  hands the generator every leg as a straight line (each ring twice, on its leg in and its leg out), with the run from
+  the start line to ring 0 ahead of them. The 60 u clear lane is then the lane of every dart; it is wider than the I4
+  mouth (54), so a centre dart and a rim shot both pass.
+- **Where.** Only on legs of 380 u or more: the three hairpins' legs out always, the first leg and the two blocked
+  legs when they are long enough. Never on a double or on a hairpin's short leg in. So **3 to 6 ruins a course, 5.3 on
+  average, about 520 prisms** (196 to 719; 400 seeds), not Spearline's seven. Nothing within 120 u of a ring's mouth.
+- **Kinds.** Pergola, flower head, vines, wall with a doorway, tunnel and 3D maze take turns. **The turning wheel
+  never stands here:** it needs 270 u from its hub to every ring, a leg of about 650 u, and the longest leg is 560, so
+  the generator lays a pergola on its turn. Nothing sweeps a dart's line and nothing is posed per frame.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby and Gold in turn along the course, apart from the Blue rings
+  and coral (`ruinDomains` on the controller; empty = Blue).
+- **Rules.** Plain prisms from the coral's prefab (owner "PerchRunRuins"), laid by every peer from the broadcast
+  rings, returned to the pool with the coral. They follow the game's own rules: a Goby that strays off its line can
+  stop a dart on one or perch on one, like any prism. Nothing reads or writes a vessel, and the AI's coach does not
+  know them: every dart it plans from a ring's centre passes them (a test), a dart from somewhere else may not.
+
+Held by `PerchRunRuinsTests` (9) and three negative controls in `perch_run_harness`. Not compiled or flown in Unity
+yet (§8).
+
 ## 4. The vessel changes (GobyPistolDuo; the Goby is Garrett's)
 
 Two, both kept to what a person already has:
@@ -182,6 +209,9 @@ is the drift gate. Card art: `render_card_backgrounds.py PerchRun` (an I4 course
 5. I4: a double, darted from the ring before on the right line, counts both rings.
 6. Two AI Gobys: they dart ring to ring and finish; note any ring where one turns in place or cruises.
 7. MPPM two clients: both see the same rings and coral.
+8. The I4 ruins (§3a) have not been compiled or seen in Unity: at I4, 3 to 6 ruins stand on the long legs in Jade,
+   Ruby and Gold; a dart down a leg's line passes through each; none at I1-I3; two clients see the same ruins; note
+   the frame cost of about 520 more prisms, and any ruin an AI Goby stops on.
 
 ## 9. Known limitations
 
