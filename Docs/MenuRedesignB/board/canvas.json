@@ -3767,6 +3767,15 @@
       "h": 900,
       "page": "toy-box",
       "title": "Rev 142 - notes: what was asked, the four, and what each costs in Unity"
+    },
+    "R143E.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 143 E - D's Toy Box, A's Configure inside, gradient and sea lines behind, dark glass cards - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -3872,6 +3881,7 @@
     "sec-rev140",
     "sec-rev141",
     "sec-rev142",
+    "sec-rev143",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3976,7 +3986,8 @@
     "rev139",
     "rev140",
     "rev141",
-    "rev142"
+    "rev142",
+    "rev143"
   ],
   "notes": {
     "hud_end": {
@@ -6434,6 +6445,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "toy-box"
+    },
+    "rev143": {
+      "kind": "title1",
+      "text": "Rev 143 - The Toy Box mix: D's lens cards with A's Configure, on the menu's gradient and sea lines",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "toy-box"
+    },
+    "sec-rev143": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "toy-box"
     }
   },
   "order": [
@@ -6887,7 +6922,8 @@
     "R142B.dc.html",
     "R142C.dc.html",
     "R142D.dc.html",
-    "R142Notes.dc.html"
+    "R142Notes.dc.html",
+    "R143E.dc.html"
   ],
   "pages": [
     {

@@ -9114,3 +9114,17 @@ the verb and NAVIGATE are cuts with a toast, and NAVIGATE closes the window and 
 variation layout), and adds the open / switch / spawn tweens and the Navigate hand-over from `ToyPreviewCamera` to the
 gameplay camera with an arrival effect at the station. Not checked in the board: the gameplay camera blend and the
 vessel's arrival effect are faked with the in-game cell frame; only the Unity editor can judge them.
+
+### 235.1 Rev 143: the mix, D's Toy Box with A's Configure, on the gradient and sea lines (2026-11-24, awaiting board approval)
+
+**Asked (Shombith, on Rev 142):** "I think I like the main design of toy box. I mean the first UI ... when I click,
+let's say vessel changer, and then that UI comes, I don't like that. I think rather in that place you can put the A UI
+for the inside views ... it's too blue, bro. There is no gradient behind. There's no sea lines. There's nothing."
+
+Read as: keep D's Toy Box screen (the lens cards), replace D's round Configure with A's (preview on the left, the
+variations on the right, A's film-strip switch, ring spawn, and A's Navigate through the toy's ring). Rev 142 laid a
+flat 95 % navy window over the menu backdrop, hiding its gradient and sea lines; Rev 143 draws them over the window and
+makes the cards and variation tiles dark glass instead of solid navy.
+
+**On the canvas:** Toy Box tab, "Rev 143 - The Toy Box mix" (one interactive board, `R143E`). Generator
+`Docs/MenuRedesignB/rounds/r143_toybox_mix.py <root> 143` (reuses `r142_toybox.py`).

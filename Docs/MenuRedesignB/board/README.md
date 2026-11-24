@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795540960-fef0` of **Frogma**: Rev 41 to Rev 142, 451 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795541516-0607` of **Frogma**: Rev 41 to Rev 143, 452 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -722,6 +722,10 @@ Copied on 2026-11-24 from canvas version `1795540960-fef0` of **Frogma**: Rev 41
 - [`R128Notes.dc.html`](R128Notes.dc.html) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
 
 ### Tab: Toy Box  (`toy-box`)
+
+#### Rev 143 - The Toy Box mix: D's lens cards with A's Configure, on the menu's gradient and sea lines
+
+- [`R143E.dc.html`](R143E.dc.html) - Rev 143 E - D's Toy Box, A's Configure inside, gradient and sea lines behind, dark glass cards - interactive
 
 #### Rev 142 - The Toy Box with motion: open, switch, spawn, and Navigate into the preview, four ways
 
