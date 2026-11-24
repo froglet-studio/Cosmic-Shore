@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795522511-7239` of **Frogma**: Rev 41 to Rev 141, 445 boards on 17 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795536907-a490` of **Frogma**: Rev 41 to Rev 141, 445 boards on 17 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -359,11 +359,11 @@ Copied on 2026-11-24 from canvas version `1795522511-7239` of **Frogma**: Rev 41
 
 #### Rev 139 - The Converter redrawn: the pier stays, the UI starts again, and CONVERT plays at once
 
-- `R139Compare.dc.html` (not copied yet) - Rev 139 - the convert moment of A, B and C side by side, frame by frame
-- `R139A.dc.html` (not copied yet) - Rev 139 A - Light paths: the five readings in one quiet line at the foot; on CONVERT each crystal's path lights up to the pad - interactive
-- `R139B.dc.html` (not copied yet) - Rev 139 B - Glass orb: the converter as a small glass sphere at the foot, the four inside fuse into the omni - interactive
-- `R139C.dc.html` (not copied yet) - Rev 139 C - The pad is the button: press the pier's own ring; the counts are one line at the foot (recommended) - interactive
-- `R139Notes.dc.html` (not copied yet) - Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build
+- [`R139Compare.dc.html`](R139Compare.dc.html) - Rev 139 - the convert moment of A, B and C side by side, frame by frame
+- [`R139A.dc.html`](R139A.dc.html) - Rev 139 A - Light paths: the five readings in one quiet line at the foot; on CONVERT each crystal's path lights up to the pad - interactive
+- [`R139B.dc.html`](R139B.dc.html) - Rev 139 B - Glass orb: the converter as a small glass sphere at the foot, the four inside fuse into the omni - interactive
+- [`R139C.dc.html`](R139C.dc.html) - Rev 139 C - The pad is the button: press the pier's own ring; the counts are one line at the foot (recommended) - interactive
+- [`R139Notes.dc.html`](R139Notes.dc.html) - Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build
 
 #### Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models
 

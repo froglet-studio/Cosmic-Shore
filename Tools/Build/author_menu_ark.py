@@ -93,73 +93,62 @@ def title_band(root, key="Title", heading="Elemental converter",
     label(band.child(N(f"{key}/Line", "Line", TL(22, 84, 480, 20))), line, "BodySmall", "NeutralLightest")
 
 
-# The holo dais (Rev 104 B, Shombith 2026-11-13: "I like B"; no cards on top, "the elemental converter should show the
-# actual elemental crystals balance the user has"): a projection rises from the pier's edge like the bridge tables in the
-# pilot scenes, the four balances standing round its arc and the omni wallet at its centre, a beam from each crystal to
-# the omni, the line over the dais and CONVERT under it. Measured from the screen's foot (y up) and its centre line: the
-# rings are centred on the foot, so only their upper halves show. The dais is board R104B's, pressed down under the
-# pier's crystals (Shombith, of the first build: "The actual crystals are clipping and does not seem to be the center of
-# attraction"): the recomposed clips (r104_converter_recomp.py) hold the crystals between 362 and 809 of 1080 from the
-# top (the ceiling beam's foot is at 350), so everything here stays under DAIS_CEILING (270 over the foot) and the outer
-# ring caps each column.
-DAIS_CEILING = 270
-DAIS_RINGS = (("Outer", "kit_ring_line", 1280, 600, 0.35), ("Inner", "kit_ring_line", 1000, 440, 0.18),
-              ("Floor", "kit_pool_rim", 1300, 70, 0.26))
-DAIS_GLOW = (1300, 600, 0.12)
-DAIS_COL_W, DAIS_COL_H, DAIS_ART = 140, 140, 64
-DAIS_POS = {"Space": (-470, 172), "Charge": (-230, 238), "Mass": (230, 238), "Time": (470, 172)}   # column top-centres
-DAIS_OMNI_W, DAIS_OMNI_ART, DAIS_OMNI_TOP = 200, 92, 212
-DAIS_OMNI_CENTRE = (0, DAIS_OMNI_TOP - DAIS_OMNI_ART // 2)
-DAIS_LINE_Y, DAIS_LINE_W = 266, 1000
-CONVERT_Y, CONVERT_MIN_W = 22, 300
+# The converter's overlay over Garrett's live combine (Shombith, 2026-11-24: "No no bring back garretts older design where
+# the crystals in the 3d view animates"; Docs/MENU_REDESIGN_B.md section 223.2). The picture is the combine itself, so
+# nothing is laid on it: one line at the screen's foot holds the player's four balances, CONVERT between them, and the
+# omni wallet past a hairline, with the recipe line over it. (Rev 139 C's pad was the pier clip's ring, gone with the
+# clip; Rev 104 B's dais before it.)
+FOOT_Y, FOOT_H, FOOT_ITEM_W, FOOT_GAP, FOOT_ART = 40, 60, 170, 56, 44
+FOOT_OMNI_W, CONVERT_MIN_W = 220, 300
+FOOT_LINE_Y, FOOT_LINE_W = FOOT_Y + FOOT_H + 16, 1000
+FOOT_W = 4 * FOOT_ITEM_W + CONVERT_MIN_W + 6 * FOOT_GAP + 1 + FOOT_OMNI_W
+FOOT_X0 = -FOOT_W // 2
+_x = FOOT_X0
+FOOT_X = {}
+for _i, _n in enumerate(ORDER):
+    FOOT_X[_n] = _x
+    _x += FOOT_ITEM_W + FOOT_GAP
+    if _i == 1:
+        FOOT_CONVERT_X = _x
+        _x += CONVERT_MIN_W + FOOT_GAP
+FOOT_RULE_X = _x
+FOOT_OMNI_X = FOOT_RULE_X + 1 + FOOT_GAP
+# The foot stays low: the live combine frames itself in the middle of the screen.
+FOOT_CEILING = 270
 
 
-def foot(x, y, w, h, pivot=(0.5, 1)):
+def foot(x, y, w, h, pivot=(0, 0)):
     """A rect anchored at the screen's foot-centre: (x, y) is its pivot, y up from the foot."""
     return R((0.5, 0), None, (x, y), (w, h), pivot)
 
 
-def dais_beam(x0, y0, x1, y1):
-    """The beam's rect and its turn: pivoted at its start, as long as the gap, turned to the end."""
-    dx, dy = x1 - x0, y1 - y0
-    return foot(x0, y0, round(math.hypot(dx, dy), 2), 2, (0, 0.5)), round(math.degrees(math.atan2(dy, dx)), 3)
+def foot_item(parent, k, name, x, w, art_guid, art_size):
+    item = parent.child(N(k, name, foot(x, FOOT_Y, w, FOOT_H)))
+    art_node(item, f"{k}/Art", "Art", TL(0, (FOOT_H - art_size) // 2, art_size, art_size), art_guid, preserve=True)
+    label(item.child(N(f"{k}/Count", "Count", TL(art_size + 12, 0, w - art_size - 12, 40))), "0", "Data", "TextLight")
+    label(item.child(N(f"{k}/Name", "Name", TL(art_size + 12, 42, w - art_size - 12, 18))), name, "Label",
+          "NeutralLightest")
+    return item
 
 
-def dais(root):
-    d = root.child(N("Dais", "Dais", R((0, 0), (1, 1), (0, 0), (0, 0))))
-    d.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
-    gw, gh, ga = DAIS_GLOW
-    image_node(d, "Dais/Glow", "Glow", foot(0, 0, gw, gh, (0.5, 0.5)), "TextLight", K.kit_sprite("kit_pool"), alpha=ga)
-    for name, sprite, w, h, alpha in DAIS_RINGS:
-        image_node(d, f"Dais/{name}Ring", f"{name}Ring", foot(0, 0, w, h, (0.5, 0.5)), "TextLight", K.kit_sprite(sprite),
-                   alpha=alpha)
-    label(d.child(N("Dais/Line", "Line", foot(0, DAIS_LINE_Y, DAIS_LINE_W, 20))), "One of each makes one omni crystal",
-          "Label", "NeutralLightest", align="center")
+def converter_overlay(root):
+    f = root.child(N("Foot", "Foot", R((0, 0), (1, 1), (0, 0), (0, 0))))
+    f.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
+    label(f.child(N("Foot/Line", "Line", foot(0, FOOT_LINE_Y, FOOT_LINE_W, 20, (0.5, 0)))),
+          "One of each makes one omni crystal", "Label", "NeutralLightest", align="center")
     for name in ORDER:
-        x, top = DAIS_POS[name]
-        r, deg = dais_beam(x, top - DAIS_ART // 2, *DAIS_OMNI_CENTRE)
-        image_node(d, f"Dais/{name}Beam", f"{name}Beam", r, "TextLight", alpha=0.18).rot = deg
-    for name in ORDER:
-        k = f"Dais/{name}"
-        x, top = DAIS_POS[name]
-        col = d.child(N(k, name, foot(x, top, DAIS_COL_W, DAIS_COL_H)))
-        art_node(col, f"{k}/Art", "Art", TL((DAIS_COL_W - DAIS_ART) // 2, 0, DAIS_ART, DAIS_ART), CRYSTAL[name],
-                 preserve=True)
-        label(col.child(N(f"{k}/Count", "Count", TL(0, 68, DAIS_COL_W, 50))), "0", "DataLarge", "TextLight",
-              align="center")
-        label(col.child(N(f"{k}/Name", "Name", TL(0, 120, DAIS_COL_W, 18))), name, "Label", "NeutralLightest",
-              align="center")
-        col.add("balance", 114, lambda ctx, go, k=k, name=name: mono(go, S["balance"],
-                f"  art: {ref(ctx.c(f'{k}/Art', 'img'))}\n  countText: {ref(ctx.c(f'{k}/Count', 'kt'))}\n"
-                f"  nameText: {ref(ctx.c(f'{k}/Name', 'kt'))}\n  beam: {ref(ctx.c(f'Dais/{name}Beam', 'th'))}\n"))
-    om = d.child(N("Dais/Omni", "Omni", foot(0, DAIS_OMNI_TOP, DAIS_OMNI_W, 140)))
-    art_node(om, "Dais/Omni/Art", "Art", TL((DAIS_OMNI_W - DAIS_OMNI_ART) // 2, 0, DAIS_OMNI_ART, DAIS_OMNI_ART), OMNI,
-             preserve=True)
-    label(om.child(N("Dais/Omni/Count", "Count", TL(0, 96, DAIS_OMNI_W, 40))), "0", "Data", "TextLight", align="center")
+        k = f"Foot/{name}"
+        foot_item(f, k, name, FOOT_X[name], FOOT_ITEM_W, CRYSTAL[name], FOOT_ART)
+        f.children[-1].add("balance", 114, lambda ctx, go, k=k: mono(go, S["balance"],
+                           f"  art: {ref(ctx.c(f'{k}/Art', 'img'))}\n  countText: {ref(ctx.c(f'{k}/Count', 'kt'))}\n"
+                           f"  nameText: {ref(ctx.c(f'{k}/Name', 'kt'))}\n  beam: {{fileID: 0}}\n"))
+    image_node(f, "Foot/Rule", "Rule", foot(FOOT_RULE_X, FOOT_Y + 2, 1, FOOT_H - 4), "NeutralLightest", alpha=0.45)
+    om = foot_item(f, "Foot/Omni", "Omni", FOOT_OMNI_X, FOOT_OMNI_W, OMNI, 48)
     om.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
+
     w, h = K.button_size("CONVERT")
     w = max(w, CONVERT_MIN_W)
-    holder = root.child(N("Convert", "Convert", R((0.5, 0), None, (0, CONVERT_Y), (w, h), (0.5, 0))))
+    holder = root.child(N("Convert", "Convert", foot(FOOT_CONVERT_X, FOOT_Y + (FOOT_H - h) // 2, w, h)))
     holder.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
     holder.children.append(P.Inst("ConvertButton", "KitButton", "ConvertButton", STRETCH,
                                   K.button_mods("KitButton", "Purchase", True, "CONVERT"),
@@ -1249,7 +1238,7 @@ def build_view(veiled=VEILED):
     # The converter's overlay keeps its node keys (and so every fileID the scene's stubs point at) under its page.
     conv = page_node(root, "Converter", True)
     page_shade(conv, "Converter")
-    dais(conv)
+    converter_overlay(conv)
     squads_page(root, veiled)
     pilots_page(root, veiled)
     artifacts_page(root, veiled)
@@ -1288,13 +1277,13 @@ IDS = dict(go="7700130000000000001", rt="7700130000000000002", view="77001300000
 VIEW_REFS = {
     "convertButton": ("ConvertButton|root#button", "button"),
     "convertLabel": ("ConvertButton|Label#tmp", "tmp"),
-    "omniCountText": ("Dais/Omni/Count#kt", "kt"),
-    "balanceLineText": ("Dais/Line#kt", "kt"),
-    "omniPop": ("Dais/Omni#pop", "entrance"),
+    "omniCountText": ("Foot/Omni/Count#kt", "kt"),
+    "balanceLineText": ("Foot/Line#kt", "kt"),
+    "omniPop": ("Foot/Omni#pop", "entrance"),
     "arkTabs": ("root#tabs", "tabs"),
 }
 LISTS = {
-    "balances": [(f"Dais/{n}#balance", "balance") for n in ORDER],
+    "balances": [(f"Foot/{n}#balance", "balance") for n in ORDER],
 }
 OVERLAY_ORDER = ("convertButton", "convertLabel", "balances", "omniCountText", "balanceLineText", "omniPop", "arkTabs")
 # The overlay fields Rev 104 A retired (section 196) with the cards they pointed into: their scene stubs are removed too.
@@ -1302,7 +1291,10 @@ RETIRED_REFS = (["Bar/Status#kt", "Bar/Clock#tmp", "Recipe/Merged#kt", "Recipe/O
                 + [f"Bar/Seg{n}#img" for n in ORDER] + [f"Bar/Seg{n}/SparkGroup#cg" for n in ORDER]
                 + [f"Recipe/{n}#row" for n in ORDER]
                 # Rev 104 A's ledger, built first and replaced by B's dais (Shombith picked B, 2026-11-13)
-                + ["Ledger/Omni/Count#kt", "Ledger/Line#kt", "Ledger/Omni#pop"] + [f"Ledger/{n}#balance" for n in ORDER])
+                + ["Ledger/Omni/Count#kt", "Ledger/Line#kt", "Ledger/Omni#pop"] + [f"Ledger/{n}#balance" for n in ORDER]
+                # Rev 104 B's holo dais (section 223), and Rev 139 C's pad, gone with the pier clip (section 223.2)
+                + ["Dais/Omni/Count#kt", "Dais/Line#kt", "Dais/Omni#pop"] + [f"Dais/{n}#balance" for n in ORDER]
+                + ["Pad#button", "Pad/Label#tmp", "Pad/Pulse#img"])
 
 
 class ArkMount(C.Mount):
@@ -1415,7 +1407,7 @@ def check_sources(path, text_, files, memo):
 
 
 TMP, IMG = K.TMP_UGUI, K.IMAGE
-BALANCE_FIELDS = dict(art=IMG, countText=S["kt"], nameText=S["kt"], beam=A.S["th"])
+BALANCE_FIELDS = dict(art=IMG, countText=S["kt"], nameText=S["kt"])
 
 
 def validate(files):
@@ -1431,23 +1423,22 @@ def validate(files):
     view = files[f"{OUT_DIR}/{VIEW}.prefab"]
     V = K.FileIds(VIEW)
     for n in ORDER:
-        _, body = A.doc_of(view, V(f"Dais/{n}#balance"))
+        _, body = A.doc_of(view, V(f"Foot/{n}#balance"))
         assert body and S["balance"] in body, f"ArkView: the {n} balance carries no ConverterBalance"
         for field, want in BALANCE_FIELDS.items():
             C.wired(view, body, field, want, f"the {n} balance")
-        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Dais/{n}/Art#img"))[1], f"the {n} balance shows the wrong crystal"
-    assert f"guid: {OMNI}" in A.doc_of(view, V("Dais/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
-    assert max([t for _, t in DAIS_POS.values()] + [DAIS_OMNI_TOP, DAIS_LINE_Y]) <= DAIS_CEILING, \
-        "the dais reaches up into the pier's crystals"
-    for n in ORDER:                             # each beam runs from its crystal's centre to the omni's
-        x, top = DAIS_POS[n]
-        _, rt = A.doc_of(view, V(f"Dais/{n}Beam#rt"))
-        start = [float(v) for v in re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+), y: (-?[\d.e-]+)\}", rt).groups()]
-        a = math.radians(float(re.search(r"m_LocalEulerAnglesHint: \{x: 0, y: 0, z: (-?[\d.e-]+)\}", rt).group(1)))
-        length = float(re.search(r"m_SizeDelta: \{x: (-?[\d.e-]+)", rt).group(1))
-        end = (start[0] + length * math.cos(a), start[1] + length * math.sin(a))
-        assert abs(start[0] - x) < 0.5 and abs(start[1] - (top - DAIS_ART // 2)) < 0.5, f"the {n} beam does not start at its crystal"
-        assert math.hypot(end[0] - DAIS_OMNI_CENTRE[0], end[1] - DAIS_OMNI_CENTRE[1]) < 1.0, f"the {n} beam ends at {end}, not the omni"
+        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Foot/{n}/Art#img"))[1], f"the {n} balance shows the wrong crystal"
+    assert f"guid: {OMNI}" in A.doc_of(view, V("Foot/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
+    assert FOOT_LINE_Y + 20 <= FOOT_CEILING, "the foot line reaches up into the pier's crystals"
+    assert FOOT_OMNI_X + FOOT_OMNI_W <= 960 and FOOT_X0 >= -960, "the foot line runs off a 1920 screen"
+    assert FOOT_OMNI_X + FOOT_OMNI_W - FOOT_X0 == FOOT_W, "the foot line's width does not add up"
+    # 223.2: CONVERT sits in the foot line between Charge and Mass; the dais and the pad stay gone.
+    _, conv_rt = A.doc_of(view, V("Convert#rt"))
+    assert conv_rt and re.search(r"m_AnchorMin: \{x: 0\.5, y: 0\}", conv_rt), "CONVERT is not on the foot line"
+    cx = float(re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+)", conv_rt).group(1))
+    assert FOOT_X["Charge"] + FOOT_ITEM_W < cx and cx + CONVERT_MIN_W <= FOOT_X["Mass"], "CONVERT is not between Charge and Mass"
+    for retired in ("Dais", "Pad"):
+        assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the retired {retired} is back (the converter is Garrett's live combine)"
     # Rev 104: no cards on the converter (Shombith 2026-11-13: "The UI cards on top of each screen. I do not like them
     # at all"). The retired title band, recipe panel and converter bar stay gone.
     for retired in ("Title", "Recipe", "Bar"):
@@ -1849,13 +1840,6 @@ def drift(files):
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
 
 
-def beam_turn_plant(view, rt_fid):
-    """Turn one beam ten degrees off its line to the omni."""
-    head, doc = A.doc_of(view, rt_fid)
-    z = float(re.search(r"m_LocalEulerAnglesHint: \{x: 0, y: 0, z: (-?[\d.e-]+)\}", doc).group(1))
-    return view.replace(doc, re.sub(r"(m_LocalEulerAnglesHint: \{x: 0, y: 0, z: )-?[\d.e-]+", rf"\g<1>{z + 10}", doc), 1)
-
-
 def recipe_card_plant(view):
     """The view with a RectTransform document under the retired Recipe card's fileID (the self-test's plant)."""
     fid = str(K.FileIds(VIEW)("Recipe#rt"))
@@ -1914,8 +1898,8 @@ def self_test(files):
     cases = [
         ("a balance with no count", lambda f: f.__setitem__(view, re.sub(r"(  countText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
         ("the recipe card back", lambda f: f.__setitem__(view, recipe_card_plant(f[view])), "card is back"),
-        ("a balance with no beam", lambda f: f.__setitem__(view, re.sub(r"(  beam: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
-        ("a beam turned off the omni", lambda f: f.__setitem__(view, beam_turn_plant(f[view], V("Dais/MassBeam#rt"))), "the Mass beam ends"),
+        ("CONVERT moved off the foot line", lambda f: f.__setitem__(view, in_doc(f[view], V("Convert#rt"), lambda d: re.sub(
+            r"(m_AnchoredPosition: \{x: )-?[\d.e-]+", r"\g<1>700", d, count=1))), "between Charge and Mass"),
         ("CONVERT unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  convertButton: {{fileID: {mount.stub_fid('ConvertButton|root#button')}}}", "  convertButton: {fileID: 0}"))),
         ("the converter grown up under the nav again", lambda f: f.__setitem__(SCENE, re.sub(

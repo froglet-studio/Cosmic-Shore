@@ -10,6 +10,9 @@ the ceiling beam: the crystals span y 362-809 of 1080 over every frame of all th
 then, per run (loop, convert, done):
     ffmpeg -framerate 10 -i <out_dir>/<run>/f_%04d.png -vf "hqdn3d=2:2:8:8,framerate=fps=30" -c:v libx264
            -preset slow -crf 24 -pix_fmt yuv420p -movflags +faststart -an Assets/_Graphics/Video/Ark/converter_Nocturne_<run>.mp4
+and for the convert run only, trim its idle lead-in (Rev 139, Docs/MENU_REDESIGN_B.md section 223: the crystals idled
+4.7 s after CONVERT, so the press looked dead): re-encode with `-ss 4.4` in front of `-i`, 6.3 s left.
+ElementalConverterView.landSeconds / omniFormedSeconds are measured on the trimmed clip; re-measure them if it changes.
 """
 import os, sys
 import numpy as np
