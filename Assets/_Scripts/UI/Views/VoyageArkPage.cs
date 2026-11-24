@@ -60,6 +60,7 @@ namespace CosmicShore.UI
         VoyageSeatPicker _picker;
         VoyageVesselsPage _vessels;
         readonly VoyageClassesSO _classes = VoyageClassesSO.Load();
+        readonly VoyageQuaySO _quayWords = VoyageQuaySO.Load();
 
         // The voyage, top left.
         Image _voyageFace;
@@ -82,7 +83,11 @@ namespace CosmicShore.UI
         sealed class SeatView
         {
             public RectTransform Root, StateRoot, Flower, Change, AiButtons;
-            public TMP_Text Role, State, Vessel, Pilot, Element, Line, Class;
+            public TMP_Text Role, State, Vessel, Pilot, Element, Line, Class, Mood;
+            public VoyageMoodMark MoodMark;
+            public RectTransform MoodRow;
+            public PilotMood Feels;
+            public string PilotName;
             public VoyageGlyph ClassGlyph;
             public VoyageRing StateDot;
             public VoyageSeats.HullView Hull;
@@ -259,6 +264,17 @@ namespace CosmicShore.UI
             view.Flower = VoyageKit.Flower(flowerBox, Element.Charge, _kit.Light);
             VoyageKit.Stretch(view.Flower);
             view.Element = _kit.Text(At("Element", w - 96f, NamesY + 40f, 96f, 18f, c), 13, _kit.Sub, TextAlignmentOptions.Center);
+            // The pilot's mood for this voyage (Rev 134 seats): the mark (16), the mood (14) and why (14, Sub).
+            view.MoodRow = At("Mood", 76f, NamesY + 76f, w - 76f, 22f, c);
+            VoyageKit.Row(view.MoodRow, 8f).childForceExpandHeight = false;
+            var mark = VoyageKit.Node("Mark", view.MoodRow);
+            var mle = VoyageKit.Le(mark);
+            mle.preferredWidth = mle.minWidth = mle.preferredHeight = mle.minHeight = 16f;
+            view.MoodMark = mark.gameObject.AddComponent<VoyageMoodMark>();
+            view.MoodMark.raycastTarget = false;
+            view.Mood = _kit.Text(view.MoodRow, 14, _kit.Light, TextAlignmentOptions.Left);
+            view.Mood.overflowMode = TextOverflowModes.Ellipsis;
+            VoyageKit.Le(view.Mood).flexibleWidth = 1f;
             VoyageKit.Stretch(view.Element.rectTransform);
 
             // The foot: Change your seat (X) on yours; a friend's line; Invite a friend and Change wingmate on an AI seat.
@@ -415,8 +431,12 @@ namespace CosmicShore.UI
             _fillButton.gameObject.SetActive(!guest);
             if (guest) _fillList.gameObject.SetActive(false);
             if (_fillList.gameObject.activeSelf) DrawFill();
-            _sail.interactable = !guest && _offer?.SetSail != null;
+            // A pilot who refuses the voyage holds Set sail until their seat changes (Shombith, 2026-11-24: "refusals yes").
+            int refusing = Refusing();
+            _sail.interactable = !guest && _offer?.SetSail != null && refusing < 0;
             VoyageKit.Set(_sailWords, guest ? _lines?.ArkHostSails : _lines?.CardSetSail);
+            if (refusing >= 0 && _quayWords)
+                VoyageKit.Set(_sailAs, TemplateText.Fill(_quayWords.RefusesBlock, "pilot", _seatViews[refusing].PilotName));
             if (_picker.IsOpen) _picker.Refresh();
             if (_vessels.IsOpen) _vessels.Refresh();
         }
@@ -508,6 +528,7 @@ namespace CosmicShore.UI
                 VoyageKit.Show(view.Portrait, null);
                 VoyageKit.Set(view.Vessel, null);
                 DrawClass(view, null);
+                DrawMood(view, PilotMood.None, null);
                 view.HullButton.interactable = false;
                 VoyageKit.Set(view.Pilot, null);
                 VoyageKit.Set(view.Element, null);
@@ -523,6 +544,7 @@ namespace CosmicShore.UI
             VoyageKit.Show(view.Portrait, pilot ? pilot.Portrait : null);
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
             DrawClass(view, vessel);
+            DrawMood(view, VoyageQuay.MoodOf(_offer, slot, pilot), VoyageSeats.PilotName(slot, pilot, true));
             string artifact = vessel ? _rules.ArtifactName(slot, vessel, canEdit) : null;
             string pilotName = VoyageSeats.PilotName(slot, pilot, canEdit);
             // "Tamako Deephook - No artifact": the pilot, then what the seat carries.
@@ -553,6 +575,8 @@ namespace CosmicShore.UI
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : name);
             DrawClass(view, vessel);
+            // A friend's mood is theirs to show on their own page.
+            DrawMood(view, PilotMood.None, null);
             // A friend picks their own vessel on their own page.
             view.HullButton.interactable = false;
             if (reported != null)
@@ -591,6 +615,31 @@ namespace CosmicShore.UI
             view.ClassGlyph.color = col;
             VoyageKit.Set(view.Class, _classes.NameOf(c));
             view.Class.color = col;
+        }
+
+        /// <summary>The seat pilot's mood for the open voyage: the mark, the mood and why; nothing for a voyage with no
+        /// giver (the Crystal Run).</summary>
+        void DrawMood(SeatView view, PilotMood mood, string pilotName)
+        {
+            view.Feels = mood;
+            view.PilotName = pilotName;
+            bool any = mood != PilotMood.None && _quayWords;
+            view.MoodRow.gameObject.SetActive(any);
+            if (!any) return;
+            var refuse = ColorTrace.Retrace(ColorTrace.Ui, VoyageHudColors.ThreatAuthored);
+            view.MoodMark.Set(mood, _kit.Light, VoyageKit.Fade(_kit.Outline, 0.8f), refuse);
+            string light = ColorUtility.ToHtmlStringRGB(mood == PilotMood.Refuses ? refuse : _kit.Light);
+            view.Mood.richText = true;
+            VoyageKit.Set(view.Mood, "<color=#" + light + ">" + _quayWords.MoodName(mood) + "</color>  " + _quayWords.Why(mood));
+            view.Mood.color = _kit.Sub;
+        }
+
+        /// <summary>The first seat whose pilot refuses the open voyage, or -1 (Set sail waits until it is changed).</summary>
+        int Refusing()
+        {
+            for (int i = 0; i < _seatViews.Count; i++)
+                if (_seatViews[i].Root.gameObject.activeSelf && _seatViews[i].Feels == PilotMood.Refuses) return i;
+            return -1;
         }
 
         // ── Invite a friend ──────────────────────────────────────────────────
@@ -695,6 +744,21 @@ namespace CosmicShore.UI
             _picker.Close();
             _vessels.Open(_offer, seat, SeatKey);
         }
+
+        /// <summary>Vessels opened from the quay (See every class): your seat of <paramref name="offer"/>'s voyage, made
+        /// now as Your Ark would make it.</summary>
+        public void BrowseVessels(VoyageBoard.Offer offer, int difficulty)
+        {
+            _offer = offer;
+            _difficulty = difficulty;
+            var squad = Seats();
+            if (squad == null || string.IsNullOrEmpty(SeatKey)) return;
+            _picker.Close();
+            _vessels.Open(offer, Mathf.Max(0, VoyageSeatRecord.MySeatOf(squad)), SeatKey);
+        }
+
+        /// <summary>The overlays that can stand over another page (Vessels over the quay).</summary>
+        public void TickOverlays(float dt) => _vessels.Tick(dt);
 
         public void ClosePicker()
         {

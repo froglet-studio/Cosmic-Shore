@@ -21,6 +21,11 @@ ASSET = ROOT / "Assets/Resources/Voyages/VoyageClasses.asset"
 SCRIPT_META = ROOT / "Assets/_Scripts/ScriptableObjects/Voyages/VoyageClassesSO.cs.meta"
 ENUM = ROOT / "Assets/_Scripts/Data/Enums/VesselClassType.cs"
 ASSET_GUID = "5b0f3c7e2a9d4e6f8c1a2b3d4e5f6a7b"
+# The quay's and moods' words (VoyageQuaySO): the generator makes the asset once with the SO's own defaults and never
+# rewrites a person's words; --check only asserts it exists on the right script.
+QUAY = ROOT / "Assets/Resources/Voyages/VoyageQuay.asset"
+QUAY_META = ROOT / "Assets/_Scripts/ScriptableObjects/Voyages/VoyageQuaySO.cs.meta"
+QUAY_GUID = "7c1d2e3f4a5b46c7d8e9f0a1b2c3d4e5"
 
 # VoyageClass values (Assets/_Scripts/Data/Voyages/VoyageClass.cs).
 CLASS = {"Guardian": 1, "Protector": 2, "Destroyer": 3, "Cultivator": 4, "Hunter": 5, "Shepherd": 6, "Pathfinder": 7}
@@ -83,9 +88,23 @@ def yaml_str(text):
     return "'" + text.replace("'", "''") + "'" if (": " in text or text[:1] in "'\"&*!|>%@`#{[") else text
 
 
-def script_guid():
-    m = re.search(r"guid: (\w+)", SCRIPT_META.read_text())
+def script_guid(meta=None):
+    m = re.search(r"guid: (\w+)", (meta or SCRIPT_META).read_text())
     return m.group(1)
+
+
+def quay_asset():
+    return "\n".join([
+        "%YAML 1.1", "%TAG !u! tag:unity3d.com,2011:", "--- !u!114 &11400000", "MonoBehaviour:",
+        "  m_ObjectHideFlags: 0", "  m_CorrespondingSourceObject: {fileID: 0}", "  m_PrefabInstance: {fileID: 0}",
+        "  m_PrefabAsset: {fileID: 0}", "  m_GameObject: {fileID: 0}", "  m_Enabled: 1", "  m_EditorHideFlags: 0",
+        f"  m_Script: {{fileID: 11500000, guid: {script_guid(QUAY_META)}, type: 3}}", "  m_Name: VoyageQuay",
+        "  m_EditorClassIdentifier:"]) + "\n"
+
+
+def quay_ok():
+    return QUAY.exists() and f"guid: {script_guid(QUAY_META)}" in QUAY.read_text() \
+        and QUAY.with_suffix(".asset.meta").exists()
 
 
 def words_block(existing):
@@ -162,12 +181,16 @@ def main():
     text = render(values, existing)
     meta_path = ASSET.with_suffix(".asset.meta")
     if "--check" in sys.argv:
-        drift = existing != text or not meta_path.exists() or meta_path.read_text() != META
+        drift = existing != text or not meta_path.exists() or meta_path.read_text() != META or not quay_ok()
         print("drift: re-run author_voyage_classes.py" if drift else "VoyageClasses.asset up to date")
         return 1 if drift else 0
     ASSET.write_text(text)
     meta_path.write_text(META)
     print(f"wrote {ASSET.relative_to(ROOT)}")
+    if not quay_ok():
+        QUAY.write_text(quay_asset())
+        QUAY.with_suffix(".asset.meta").write_text(META.replace(ASSET_GUID, QUAY_GUID))
+        print(f"wrote {QUAY.relative_to(ROOT)}")
     return 0
 
 

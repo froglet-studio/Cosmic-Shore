@@ -28,6 +28,10 @@ namespace CosmicShore.UI
     /// crew faces and their sliding drawer.</item>
     /// <item><b>The picked voyage</b>: its kind and pilot, its name, its difficulty pips and pay, and Open voyage.</item>
     /// </list>
+    /// <para><b>In the window the page is the quay</b> (Frogma Rev 134 Board B, kept in Rev 138; <see cref="VoyageQuay"/>):
+    /// the jobs along the top, the map flat in the chart at the top right with Full screen in its corner, the giver's ask,
+    /// your crew's answers and Take the job. The tilted table, the zoom row, Open now and the picked voyage's card above
+    /// now show in the full screen only.</para>
     /// Every number is the board's: the page is laid out in a frame of the board's own units (1840 x 748 in the window,
     /// 1920 x 1080 in full screen) scaled evenly to the room it has (<see cref="Layout"/>).
     /// </summary>
@@ -36,14 +40,14 @@ namespace CosmicShore.UI
         const float FullSeconds = 0.9f;
         // Frogma Rev 111 Full, in its own units: the page in the window (x 40-1880, y 172-920 of the 1920 x 1080 board) and
         // the full screen.
-        static readonly Vector2 WindowSize = new(1840f, 748f), ScreenSize = new(1920f, 1080f);
+        static readonly Vector2 WindowSize = new(1840f, 874f), ScreenSize = new(1920f, 1080f);
         const float RowHeight = 44f, BandHeight = 40f, StepSize = 44f, TierWidth = 178f, DeepTierWidth = 236f;
         // Rev 113 Sea's "Open now" column: x 1400, y 176 of the board (1360, 4 here), 480 wide; cards 140 tall, 14 apart.
-        const float SideX = 1360f, SideY = 4f, SideWidth = 480f, SideLabel = 20f, SideGap = 14f, OpenCardHeight = 140f,
+        const float SideWidth = 480f, SideLabel = 20f, SideGap = 14f, OpenCardHeight = 140f,
             ButtonHeight = 56f, ButtonLift = 10f, LockedLine = 20f;
-        const float TableX = 112f, TableY = 64f, TableWidth = 1216f, TableHeight = 540f, EdgeHeight = 96f;
+        const float EdgeHeight = 96f;
         const float FullButtonWidth = 220f, BackFullWidth = 320f, Margin = 40f;
-        const float CardX = 860f, CardY = 628f, CardWidth = 860f, CardFullWidth = 1180f, CardHeight = 108f;
+        const float CardFullWidth = 1180f, CardHeight = 108f;
         // The tiers the zoom row offers, narrow to wide (HyperSeaSky.Tiers), on the table and in full screen alike.
         static readonly int[] RowTiers = { 5, 4, 3, 2, 1, 0 };
         // Pins: names show from Sector inwards; past Region they stand down (only the picked one stays at Region).
@@ -65,7 +69,8 @@ namespace CosmicShore.UI
         readonly RectTransform _frame;
         RectTransform _table, _column, _mapHost, _edgeHost, _controls, _band, _side, _card, _fullButton, _backFull,
             _crewButton, _lockedRow, _message, _pins;
-        CanvasGroup _edgeGroup, _fullGroup, _backGroup;
+        CanvasGroup _edgeGroup, _fullGroup, _backGroup, _controlsGroup, _sideGroup, _cardGroup;
+        readonly VoyageQuay _quay;
         VoyageTableTilt _tilt;
         VoyageTableRim _rim;
         VoyageMapGraphic _map;
@@ -126,7 +131,7 @@ namespace CosmicShore.UI
         /// <summary>The window's map, once it is lent to the table.</summary>
         public VoyageMapGraphic Map => _map;
 
-        public VoyageSeaPage(VoyageBoard board, VoyageKit kit, RectTransform pages)
+        public VoyageSeaPage(VoyageBoard board, VoyageKit kit, VoyageSeats rules, RectTransform pages)
         {
             _board = board;
             _kit = kit;
@@ -148,6 +153,10 @@ namespace CosmicShore.UI
             BuildControls();
             BuildCard();
             BuildSide();
+            _controlsGroup = Group(_controls);
+            _sideGroup = Group(_side);
+            _cardGroup = Group(_card);
+            _quay = new VoyageQuay(board, kit, rules, _frame);
         }
 
         RectTransform Node(string name)
@@ -303,8 +312,9 @@ namespace CosmicShore.UI
             cta.pivot = new Vector2(1f, 0.5f);
             cta.sizeDelta = new Vector2(300f, 56f);
             cta.anchoredPosition = new Vector2(-24f, 0f);
-            (_openButton, _) = _kit.Cta(cta, _lines?.BoardSailKey, _lines?.SeaOpenVoyage,
-                () => _board.ShowPage(VoyageBoard.Page.Voyage));
+            // Take the job (A): straight to Your Ark (Rev 138 Flow).
+            var quay = VoyageQuaySO.Load();
+            (_openButton, _) = _kit.Cta(cta, quay ? quay.TakeJobKey : null, quay ? quay.TakeJob : null, _board.TakeJob);
         }
 
         /// <summary>The board's meta line: pips, the difficulty, the element's flower (18) and the pay, 14 apart in Sub.</summary>
@@ -413,6 +423,7 @@ namespace CosmicShore.UI
         public void Redraw()
         {
             var offer = _open >= 0 && _open < _offers.Count ? _offers[_open] : null;
+            _quay.Draw(_offers, _openNow, _open, _board.Difficulty);
             _card.gameObject.SetActive(offer != null);
             if (offer == null) return;
             int d = _board.Difficulty;
@@ -780,13 +791,20 @@ namespace CosmicShore.UI
             Rect Full(float x, float y, float w, float h) => new(x, F.y - y - h, w, h);
             Rect At(Rect a, Rect b) => e <= 0f ? a : e >= 1f ? b : Lerp(a, b, e);
 
-            // The zoom row: over the table, then inside the map's top-left corner.
-            Place(_controls, At(Win(0f, 0f, ControlsWidth(), RowHeight), Full(Margin, Margin, ControlsWidth(), RowHeight)));
+            // The quay (Rev 134 Board B) in the window, fading as the full screen opens.
+            _quay.Lay(Win(0f, 0f, WindowSize.x, WindowSize.y), e);
+
+            // The zoom row lives in the full screen only, in the map's top-left corner.
+            Place(_controls, Full(Margin, Margin, ControlsWidth(), RowHeight));
+            _controlsGroup.alpha = e;
+            _controlsGroup.blocksRaycasts = e >= 0.5f;
             LayoutTiers();
 
             // Full screen sits under the table's left corner, beside the picked voyage: the zoom row, now all six tiers,
             // runs past the place it had over the table.
-            Place(_fullButton, Win(TableX, CardY, FullButtonWidth, RowHeight));
+            // Full screen stands in the chart's top-right corner (Rev 135 Board).
+            var chart = VoyageQuay.Chart;
+            Place(_fullButton, Win(chart.xMax - 16f - FullButtonWidth, chart.y + 14f, FullButtonWidth, RowHeight));
             _fullGroup.alpha = 1f - e;
             _fullGroup.blocksRaycasts = e < 0.5f;
             Place(_backFull, Full(F.x - Margin - BackFullWidth, Margin, BackFullWidth, RowHeight));
@@ -796,14 +814,17 @@ namespace CosmicShore.UI
 
             // Open now down the right (Rev 113 Sea), then in the full screen's right margin under Back from full screen.
             float sideH = SideHeight();
-            Place(_side, At(Win(SideX, SideY, SideWidth, sideH), Full(F.x - Margin - SideWidth, 100f, SideWidth, sideH)));
+            Place(_side, Full(F.x - Margin - SideWidth, 100f, SideWidth, sideH));
+            _sideGroup.alpha = e;
+            _sideGroup.blocksRaycasts = e >= 0.5f;
 
             // The picked voyage: under the table's right half, then at the full screen's foot.
-            Place(_card, At(Win(CardX, CardY, CardWidth, CardHeight),
-                Full(Margin, F.y - Margin - CardHeight, CardFullWidth, CardHeight)));
+            Place(_card, Full(Margin, F.y - Margin - CardHeight, CardFullWidth, CardHeight));
+            _cardGroup.alpha = e;
+            _cardGroup.blocksRaycasts = e >= 0.5f;
 
             // The table, then the whole screen.
-            var table = At(Win(TableX, TableY, TableWidth, TableHeight), Full(0f, 0f, F.x, F.y));
+            var table = At(Win(chart.x, chart.y, chart.width, chart.height), Full(0f, 0f, F.x, F.y));
             Place(_table, table);
             Place(_pins, table);
             Place(_message, table);
@@ -842,7 +863,8 @@ namespace CosmicShore.UI
         void LayoutTable(Vector2 size, float e)
         {
             if (!_mapHost) return;
-            float edge = _edgeHost ? EdgeHeight * (1f - e) : 0f;
+            // The quay's chart lies flat (Rev 134 Board B): no side view under it.
+            float edge = 0f;
             float seen = Mathf.Max(1f, size.y - edge);
             Place(_mapHost, new Rect(0f, edge, size.x, seen));
             if (_edgeHost)
@@ -853,10 +875,10 @@ namespace CosmicShore.UI
                     _edgeGroup.alpha = 1f - e;
                     _edgeGroup.blocksRaycasts = e < 0.5f;
                 }
-                _edgeHost.gameObject.SetActive(e < 1f && _map && _map.Chart != null);
+                _edgeHost.gameObject.SetActive(false);
             }
             if (!_map) return;
-            float angle = VoyageTableTilt.TableAngle * (1f - e);
+            const float angle = 0f;
             if (_tilt) _tilt.Angle = angle;
             if (_rim) _rim.SetVerticesDirty();
             // The flat map is as tall as it must be for its far edge to be seen at the host's top.

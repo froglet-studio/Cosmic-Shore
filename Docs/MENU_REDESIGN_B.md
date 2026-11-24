@@ -9051,3 +9051,16 @@ Vessels; the class tag beside each vessel, muted when the voyage does not want i
 36" (no pay bonus system exists yet); the previews are not faded at the edge; Change your seat (X) still opens the seat
 picker for pilot, element and artifact. Stage 2, the quay with givers and pilot mood and rank, waits on the givers and
 wanted classes per Codex voyage from the voyage-build thread.
+
+**Built, stage 2 (2026-11-24, branch `claude/project-thread-31vs8r` into `voyages`, on the giver data of #2370)**: the
+quay (Rev 134 Board B as kept in Rev 138: `VoyageQuay`, laid out by `VoyageSeaPage` in the window): the jobs as 230 x 420
+cards along the top (the giver's portrait, the kind, the voyage's name, the classes it wants; the picked one with a cyan foot
+line), the map flat in the 620 x 420 chart with Full screen in its corner, the giver's ask with "Bring me" and See every
+class (Y, Vessels over the quay), Your crew says (each seat's face, line and mood mark), the squad fit, the pay and Take the
+job (A), which now opens Your Ark directly (Back from Your Ark returns to the quay; the briefing page stays reachable from
+the header only). Pilot mood (`PilotMood`, `VoyageMood.Of`: the voyage type's Keen / Reluctant / Refuse factions against
+the pilot's) shows on the quay and under each seat on Your Ark; a seat that refuses holds Set sail with "<pilot> refuses
+this voyage". Words in `VoyageQuaySO` (`Resources/Voyages/VoyageQuay.asset`). The Crystal Run card shows its own pilot and
+story, no classes, no mood, no fit. Differs from the board: no work-verb rank (no XP system yet), no "Docked at" line, no
+danger meter under the chart (the cell count only); the tilted table, zoom row and Open now column show in the full screen
+only.

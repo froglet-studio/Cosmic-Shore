@@ -15,7 +15,7 @@ namespace CosmicShore.UI
     static class VoyageHudColors
     {
         static readonly Color SecondAuthored = new(0.722f, 0.753f, 0.941f, 1f);   // #B8C0F0
-        static readonly Color ThreatAuthored = new(1f, 0.541f, 0.486f, 1f);       // #FF8A7C
+        internal static readonly Color ThreatAuthored = new(1f, 0.541f, 0.486f, 1f);     // #FF8A7C
         static readonly Color BreachAuthored = new(1f, 0.294f, 0.227f, 1f);       // #FF4B3A
         static readonly Color ThreatBandAuthored = new(0.314f, 0.039f, 0.078f, 0.88f);
         static readonly Color GoldAuthored = new(1f, 0.682f, 0f, 1f);             // #FFAE00
