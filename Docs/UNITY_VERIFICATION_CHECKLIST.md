@@ -271,6 +271,26 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
+## 🔴 Skein: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Skein lays Spearline's ruins from its own rings on I4, on every third leg, less what would reach a rail or a launch's
+path (`Assets/_Scripts/Controller/Arcade/SKEIN.md` section 20). Run without Unity: `SkeinRuinsTests` 11 of 11 against
+the shipped sources (`bash Tools/Build/skein_ruins_harness/run.sh --self-test`, five negative controls). Not run: a
+Unity compile of `SkeinController.Ruins.cs`, `SkeinRuins.cs` and the `RailPrism` accessor on `SpawnableSkein`, and the
+race itself.
+
+- [ ] Unity compiles, and `SkeinRuinsTests` pass in the Test Runner.
+- [ ] Skein at I4: seven Blue ruins (about 215 prisms) stand along the race, none at a ring, none on a rail.
+- [ ] I1 to I3: no ruins.
+- [ ] Ride every rail of one race: the Urchin never brushes a ruin while attached, and no launch hits one.
+- [ ] Fly an Urchin into a ruin: it does NOT latch (no grind, no marble roll); the prism breaks as any prism and the
+      Urchin flies on. This is the check that matters most: each ruin prism is a trail of one so the game reads it as
+      a lone prism. If it latches, the ruins must come out.
+- [ ] Three AI Urchins still finish I4, and their times against the 331-391 s of section 19 (not measured: the model
+      has no ruins in it).
+- [ ] Leave the race and start another: the old ruins are gone.
+- [ ] Frame rate at I4 with about 215 more prisms in the cell (the cable is 6165).
+
 ## 🔴 Slip Line: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
 
 Slip Line lays Spearline's ruins round its straight ring-to-ring line on I4, less what would stand within 40 u of a
@@ -286,6 +306,26 @@ anything: `SlipLineController.Ruins.cs` and the three lines added to `SlipLineCo
 - [ ] Two AI Honeyguides still finish at I4; note a leg where one ploughs a ruin turning out to a leaning rail.
 - [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
 - [ ] Frame time at I4 with about 660 more prisms in the cell (not measured).
+
+## 🔴 Headlong: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Headlong lays Spearline's ruins round its own circuit on I4, less what would stand in a hedge or on a Time crystal
+(`Assets/_Scripts/Controller/Arcade/HEADLONG.md` section 0a). Run without Unity: `HeadlongRuinsTests` 8 of 8 and
+`HeadlongHedgesTests` 9 of 9 against the shipped sources (`bash Tools/Build/headlong_course_harness/run.sh --self-test`,
+eight negative controls), and `author_headlong_assets.py --check`. Not run: a Unity compile of
+`HeadlongController.Ruins.cs` and the hook in `HeadlongController.Stampede.cs`, and the race itself.
+
+- [ ] Unity compiles, and `HeadlongRuinsTests` pass in the Test Runner.
+- [ ] Headlong at I4: about seven ruins a lap stand between the gates in Jade, Ruby and Gold, none at a gate, none
+      inside a hedge (the Blue hedge shows whole through its ruin), none on a Time crystal.
+- [ ] I1 to I3: no ruins.
+- [ ] A Rhino that ploughs a ruin sprays its prisms as it does a hedge's; the ruin stays broken on the next lap while
+      the hedges stand back up.
+- [ ] On a course with a wheel (about one in six): it turns at the same angle on host and client, and through no hedge.
+- [ ] Three AI Rhinos still finish the race at I4, and their times against a race without ruins (ploughed ruin prisms
+      feed the ramp's fuel like any prism: not measured).
+- [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
+- [ ] Frame rate at I4 with about 680 more prisms in the cell (the hedges are about 1530).
 
 ## 🔴 Burrow Run: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED, NOT RUN IN EDITOR)
 
@@ -26717,6 +26757,19 @@ the EditMode suite in Unity, a race.
 - [ ] Three AI at I4 finish in the times they did before (the ruins stand off their route).
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race.
 
+## Thresher Time: the I4 garden ruins (2026-11-24)
+
+Compiled and tested outside Unity only (`ThresherTimeRuinsTests` 7/7 with Roslyn, the game assembly with Unity's own
+compiler arguments). Not compiled in the editor, no edit-mode run in Unity, never seen in Play. `THRESHERTIME.md` §0b.
+
+- [ ] The project compiles in the editor and `ThresherTimeRuinsTests` passes there.
+- [ ] Thresher Time I4: each leg but the last runs through a ruin in Jade, Ruby or Gold; the Belfry stays Blue.
+- [ ] The way to a ring is open wherever the ring is in its swing; no mace swings through a ruin.
+- [ ] The wheel (about half the courses have one) turns, and host and guest see it at the same angle.
+- [ ] I1, I2 and I3 have no ruins.
+- [ ] Three AI at I4 still finish (one race before: 159 s, seed 7001), and the frame rate holds with about 1,000 more prisms.
+- [ ] The ruins are gone after leaving the race and on Play Again.
+
 ## Serpentine: the I4 garden ruins (2026-11-24)
 
 NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins round its own lap at I4
@@ -26731,18 +26784,23 @@ NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins 
 - [ ] Frame rate at I4 with the ruins (about 840 more prisms) against without.
 - [ ] A rematch lays a fresh set and leaves none of the old one.
 
-## Thresher Time: the I4 garden ruins (2026-11-24)
+### 🔴 Grizzly Time: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
 
-Compiled and tested outside Unity only (`ThresherTimeRuinsTests` 7/7 with Roslyn, the game assembly with Unity's own
-compiler arguments). Not compiled in the editor, no edit-mode run in Unity, never seen in Play. `THRESHERTIME.md` §0b.
+`GRIZZLYTIME.md` §0.2. Spearline's ruins called from Grizzly Time (`GrizzlyTimeRuins.cs`, `GrizzlyTimeController.Ruins.cs`,
+three hook lines in `GrizzlyTimeController.Kegs.cs`), cut back for the throw lanes and the kegs. Ran: the headless
+`grizzly_time_course_harness/run.sh --self-test` (see the commit for the counts) and `author_grizzly_time_assets.py
+--check` (29 files match). Not run: a Unity compile, the EditMode tests in the editor, `unity_refcompile` (cannot run on
+this Windows box), any flight.
 
-- [ ] The project compiles in the editor and `ThresherTimeRuinsTests` passes there.
-- [ ] Thresher Time I4: each leg but the last runs through a ruin in Jade, Ruby or Gold; the Belfry stays Blue.
-- [ ] The way to a ring is open wherever the ring is in its swing; no mace swings through a ruin.
-- [ ] The wheel (about half the courses have one) turns, and host and guest see it at the same angle.
-- [ ] I1, I2 and I3 have no ruins.
-- [ ] Three AI at I4 still finish (one race before: 159 s, seed 7001), and the frame rate holds with about 1,000 more prisms.
-- [ ] The ruins are gone after leaving the race and on Play Again.
+- [ ] The project compiles; `GrizzlyTimeRuinsTests` (8) pass in the editor.
+- [ ] Grizzly Time at I4: a ruin on each long leg in Jade, Ruby or Gold, none at a ring, none round a keg, none on the
+      leg into the start ring. The ring-to-ring line and the keg-to-keg line are both open.
+- [ ] A bank shot from a keg's exit side throws you down the leg without meeting a standing ruin prism.
+- [ ] Where a wheel stands, it turns before and during the race, alike on host and guest. Is it fair at bank-shot speed?
+- [ ] Three AI at I4 still finish with the ruins standing (watch for one stuck in a wall, maze or wheel).
+- [ ] Grizzly Time at I1, I2 and I3: no ruins.
+- [ ] Frame rate at I4 with the ruins (about 570 more prisms) against without.
+- [ ] A rematch lays a fresh set and leaves none of the old one.
 
 ## Scarab Rally: the I4 garden ruins (2026-11-24)
 
@@ -26763,3 +26821,25 @@ Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally
 - [ ] Three AI Scarabs at I4 finish in about the times they did (Medium 161 s, Legendary 121 s), and the frame rate
       holds with about 470 more prisms and the 150 ms the ruins take to choose while the course is raised.
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
+
+### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
+
+`THORNLINE.md` §2a. Spearline's ruins called from Thornline (`ThornlineRuins.cs`, `ThornlineController.Ruins.cs`, four
+hook lines and the `ruinDomains` field in `ThornlineController.cs`, one line in `MinigameThornline.unity`). Ran: the
+headless `thornline_course_harness/run.sh` (11 `ThornlineRuinsTests` pass; one older test,
+`ThornlineCourseTests.A_snipe_is_worth_taking_and_a_crystal_is_worth_aiming_for`, already fails on the 4.4 s cooldown),
+`run.sh --ruins-self-test` (3 controls fire) and `author_thornline_assets.py --check` (30 files match). Not run: a
+Unity compile, the EditMode tests in the editor, `unity_refcompile` (cannot run on this Windows box), any flight.
+Affects: Garrett's Shrike / Thornline.
+
+- [ ] The project compiles; `ThornlineRuinsTests` (11) pass in the editor.
+- [ ] Open `MinigameThornline`: the controller shows Ruin Domains Jade, Ruby, Gold (the scene line was written by hand
+      as `010000000200000004000000`), and saving the scene does not change that line.
+- [ ] Thornline at I4: four to seven ruins in Jade, Ruby or Gold, each between a ring and its far thorn; none at a
+      ring, a thorn or under the start; every thorn-to-thorn line and every snipe line open.
+- [ ] A sling aimed at a thorn through a ruin anchors on the thorn, not on the ruin.
+- [ ] Four AI at I4 still finish with the ruins standing; note their times against THORNLINE.md §4.1 and any seconds
+      spent lancing ruins.
+- [ ] Thornline at I1, I2 and I3: no ruins.
+- [ ] The hitch when the course is laid (about 0.2 s in the harness) and the frame rate at I4 with about 620 more prisms.
+- [ ] A rematch lays a fresh set and leaves none of the old one.
