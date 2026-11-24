@@ -87,6 +87,7 @@ namespace CosmicShore.UI
         VoyageBoard _board;
         VoyageLockedStrip _lockedStrip;
         readonly List<VoyageBoard.Offer> _offers = new();
+        readonly List<int> _quayOrder = new();
         // Who is in the player's lobby: the Ark page's lobby view reads it.
         [Inject] HostConnectionDataSO _party;
 
@@ -335,6 +336,14 @@ namespace CosmicShore.UI
                 _board.Show(_offers, -1, _ => { }, map, lines.NoWork);
                 return true;
             }
+            // Every Milestone 2 voyage type's giver stands on the quay (Rev 138 Board): a type the port does not offer on its
+            // own (Bounty, Hold the Core) shows its named voyage of the day, Set sail waiting until its rules are built
+            // (Docs/Voyages/MILESTONE_2.md section 2).
+            jobs = new List<VoyageJob>(jobs);
+            int waiting = AddGivers(content, state, jobs);
+            count += waiting;
+            _board.Here = content.Location(here)?.Name;
+            _board.State = state;
             if (_open < 0 || _open >= count) _open = 0;
             for (int i = 0; i < jobs.Count; i++)
             {
@@ -342,6 +351,7 @@ namespace CosmicShore.UI
                 _destinations.Add(job.To);
                 var route = VoyageRules.Route(content, job.From, job.To);
                 _offers.Add(JobOffer(content, lines, job, route));
+                if (i >= jobs.Count - waiting) _offers[^1].SetSail = null;
                 if (i != _open) continue;
                 Map(content, lines, style, here, route, CourseLine(content, lines, route));
                 Frame(map, _offers[i].Course);
@@ -357,8 +367,36 @@ namespace CosmicShore.UI
                     Frame(map, _offers[^1].Course);
                 }
             }
+            // The open job is always one the quay stands (Rev 138 Board): a first look opens its first card.
+            VoyageQuay.Order(_offers, _quayOrder);
+            if (_quayOrder.Count > 0 && !_quayOrder.Contains(_open))
+            {
+                _open = _quayOrder[0];
+                Refresh();
+                return true;
+            }
             _board.Show(_offers, _open, PickBoardRow, map, null);
             return true;
+        }
+
+        /// <summary>Add to <paramref name="jobs"/> the day's named voyage of each voyage type the board has no job of (the
+        /// escort has its own card); returns how many were added, at the list's end.</summary>
+        static int AddGivers(VoyageContent content, VoyageState state, List<VoyageJob> jobs)
+        {
+            var here = state != null ? content.Location(state.At) : null;
+            if (content.VoyageTypes == null || here == null) return 0;
+            int added = 0;
+            foreach (var info in content.VoyageTypes)
+            {
+                if (info == null || info.Type == NamedVoyage.EscortType || jobs.Exists(j => j != null && j.TemplateId == info.Type))
+                    continue;
+                var giver = content.Person(info.Giver) ?? new CrewPerson { PilotId = info.Giver, Name = string.Empty };
+                var job = VoyageRaid.NamedOfTheDay(state, content, info.Type, here, giver);
+                if (job == null) continue;
+                jobs.Add(job);
+                added++;
+            }
+            return added;
         }
 
         /// <summary>Frame the table on <paramref name="course"/>, or on the whole galaxy right after the window opened.</summary>
@@ -462,6 +500,8 @@ namespace CosmicShore.UI
                 Kind = KindName(lines, job),
                 Title = job.Title,
                 Place = to?.Name,
+                From = content.Location(job.From)?.Name,
+                Cells = job.Cells > 0 ? job.Cells : Mathf.Max(1, (route?.Count ?? 1) - 1),
                 Pilot = person?.Name,
                 Key = VoyageSeatRecord.JobKey(job),
                 Faction = PilotLoadoutStore.TryGetPilot(job.PilotId, out var record) ? record.FactionName : null,
@@ -548,7 +588,11 @@ namespace CosmicShore.UI
                 Title = TemplateText.Fill(escort.CardTitle, "difficulty", d, "legs", legs),
                 Story = TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d),
                 Recommended = VoyageDifficulty.Clamp(difficulty),
+                Cells = escort.Legs.Count,
             };
+            // A type is never a title (Voyage Codex): the escort carries its named voyage's name, the one that ends where
+            // this course ends, else the first the Codex names.
+            if (NamedEscort(content, course) is { } named) offer.Title = named.Name;
             if (course is { Count: >= 2 })
             {
                 var sea = VoyageChart.For(content)?.Along(course);
@@ -559,6 +603,7 @@ namespace CosmicShore.UI
                     offer.Minutes = sea.Minutes.ToString("N0", CultureInfo.InvariantCulture);
                 }
                 offer.Place = content.Location(course[^1])?.Name;
+                offer.From = content.Location(course[0])?.Name;
                 for (int i = 1; i < course.Count; i++)
                 {
                     var place = content.Location(course[i]);
@@ -574,6 +619,18 @@ namespace CosmicShore.UI
                 };
             else offer.SailLabel = lines?.BoardUnderway;
             return offer;
+        }
+
+        static NamedVoyage NamedEscort(VoyageContent content, IReadOnlyList<string> course)
+        {
+            NamedVoyage first = null;
+            foreach (var v in content.Voyages ?? new List<NamedVoyage>())
+            {
+                if (v == null || v.Type != NamedVoyage.EscortType || string.IsNullOrEmpty(v.Name)) continue;
+                first ??= v;
+                if (course is { Count: >= 2 } && v.To == course[^1]) return v;
+            }
+            return first;
         }
 
         /// <summary>Open card <paramref name="index"/> (closing any other), or close it if it is the open one.</summary>

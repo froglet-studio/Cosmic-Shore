@@ -88,8 +88,9 @@ namespace CosmicShore.Data
         }
 
         /// <summary>The one named voyage of <paramref name="type"/> a port offers today: of those that sail from
-        /// <paramref name="here"/>, the one the day picks (seeded, so every machine in a party sees the same board).</summary>
-        static VoyageJob NamedOfTheDay(VoyageState state, VoyageContent content, string type, VoyageLocation here,
+        /// <paramref name="here"/>, the one the day picks (seeded, so every machine in a party sees the same board). Null
+        /// when none sails from here.</summary>
+        public static VoyageJob NamedOfTheDay(VoyageState state, VoyageContent content, string type, VoyageLocation here,
             CrewPerson person)
         {
             var open = new List<VoyageJob>();

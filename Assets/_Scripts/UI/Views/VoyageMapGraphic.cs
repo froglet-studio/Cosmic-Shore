@@ -249,6 +249,41 @@ namespace CosmicShore.UI
         /// </summary>
         public bool Plain;
 
+        /// <summary>
+        /// The Milestone 2 full screen's map (Frogma Rev 138 Full): the sea alone, no lanes, no course, no place marks and no
+        /// galaxy corner; the page stands its own lane, pins and places over it (<see cref="VoyageSeaFull"/>).
+        /// </summary>
+        public bool Quiet
+        {
+            get => _quiet;
+            set
+            {
+                if (_quiet == value) return;
+                _quiet = value;
+                _viewDirty = true;
+            }
+        }
+
+        bool _quiet;
+
+        /// <summary>
+        /// How bright the painted sea is drawn, 0 to 1 (1 as painted). The Milestone 2 full screen lays its givers and
+        /// events over a quiet, dark sea (Frogma Rev 138 Full), so it draws the water at a fraction of its light.
+        /// </summary>
+        public float SeaLight
+        {
+            get => _seaLight;
+            set
+            {
+                value = Mathf.Clamp01(value);
+                if (Mathf.Approximately(_seaLight, value)) return;
+                _seaLight = value;
+                _viewDirty = true;
+            }
+        }
+
+        float _seaLight = 1f;
+
         bool _unnamed;
 
         /// <summary>
@@ -841,12 +876,13 @@ namespace CosmicShore.UI
                 var lo = SeaUv(FromRect(r.min));
                 var hi = SeaUv(FromRect(r.max));
                 Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax),
-                    new Vector2(r.xMax, r.yMin), SeaTint, lo, new Vector2(lo.x, hi.y), hi, new Vector2(hi.x, lo.y));
+                    new Vector2(r.xMax, r.yMin), new Color(SeaTint.r * _seaLight, SeaTint.g * _seaLight, SeaTint.b * _seaLight, SeaTint.a), lo, new Vector2(lo.x, hi.y), hi, new Vector2(hi.x, lo.y));
                 // The stars, clusters and landmarks over the water, under the corner, the lanes and the places.
                 SkyOf.Populate(vh, white, _style);
                 // Under the lanes and places, so a place in the corner still shows over it.
-                Inset(vh, white);
+                if (!_quiet) Inset(vh, white);
             }
+            if (_quiet) return;
 
             foreach (var lane in _content.Lanes ?? new List<VoyageLane>())
             {

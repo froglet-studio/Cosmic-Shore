@@ -40,7 +40,7 @@ namespace CosmicShore.UI
         const float FullSeconds = 0.9f;
         // Frogma Rev 111 Full, in its own units: the page in the window (x 40-1880, y 172-920 of the 1920 x 1080 board) and
         // the full screen.
-        static readonly Vector2 WindowSize = new(1840f, 874f), ScreenSize = new(1920f, 1080f);
+        static readonly Vector2 WindowSize = new(1840f, 886f), ScreenSize = new(1920f, 1080f);
         const float RowHeight = 44f, BandHeight = 40f, StepSize = 44f, TierWidth = 178f, DeepTierWidth = 236f;
         // Rev 113 Sea's "Open now" column: x 1400, y 176 of the board (1360, 4 here), 480 wide; cards 140 tall, 14 apart.
         const float SideWidth = 480f, SideLabel = 20f, SideGap = 14f, OpenCardHeight = 140f,
@@ -52,6 +52,8 @@ namespace CosmicShore.UI
         static readonly int[] RowTiers = { 5, 4, 3, 2, 1, 0 };
         // Pins: names show from Sector inwards; past Region they stand down (only the picked one stays at Region).
         const int NamedFrom = 2, PinsTo = 3;
+        // The full screen's sea, dark under its givers and events (Rev 138 Full draws them on the plain ground).
+        const float FullSeaLight = 0.3f;
         // The map zooms down to the row's closest tier, Cell, on the table as in full screen (Shombith, 2026-11-20: "i want
         // the full zoom to work even if we are not in full screen"). The table held at Region while the closer tiers ran
         // at 2 fps there (2026-11-14); the cell foam has kept to its mesh budget since 2026-11-17.
@@ -71,6 +73,9 @@ namespace CosmicShore.UI
             _crewButton, _lockedRow, _message, _pins;
         CanvasGroup _edgeGroup, _fullGroup, _backGroup, _controlsGroup, _sideGroup, _cardGroup;
         readonly VoyageQuay _quay;
+        readonly VoyageSeaFull _fullLayer;
+        RectTransform _dim;
+        CanvasGroup _tableGroup, _dimGroup;
         VoyageTableTilt _tilt;
         VoyageTableRim _rim;
         VoyageMapGraphic _map;
@@ -157,6 +162,16 @@ namespace CosmicShore.UI
             _sideGroup = Group(_side);
             _cardGroup = Group(_card);
             _quay = new VoyageQuay(board, kit, rules, _frame);
+            // The full screen's own marks over the map (Rev 138 Full); Open now and the picked voyage's card stand down.
+            _dim = Node("Dim");
+            VoyageKit.Block(_dim, VoyageKit.Fade(_kit.Popup, 0.45f));
+            _dimGroup = Group(_dim);
+            _dimGroup.blocksRaycasts = false;
+            _fullLayer = new VoyageSeaFull(board, kit, rules, _quay, _frame);
+            _tableGroup = Group(_table);
+            _side.gameObject.SetActive(false);
+            _card.gameObject.SetActive(false);
+            _pins.gameObject.SetActive(false);
         }
 
         RectTransform Node(string name)
@@ -387,6 +402,8 @@ namespace CosmicShore.UI
             map.Tilt = _tilt;
             map.Plain = true;
             map.Unnamed = true;
+            map.Quiet = true;
+            map.SeaLight = FullSeaLight;
             map.NarrowestLy = FloorLy;
             // The table's rim, drawn over the map at the same tilt.
             var rim = VoyageKit.Node("Rim", map.transform);
@@ -423,8 +440,8 @@ namespace CosmicShore.UI
         public void Redraw()
         {
             var offer = _open >= 0 && _open < _offers.Count ? _offers[_open] : null;
-            _quay.Draw(_offers, _openNow, _open, _board.Difficulty);
-            _card.gameObject.SetActive(offer != null);
+            _quay.Draw(_offers, _open, _board.Difficulty);
+            _fullLayer.Draw(_offers, _open, _board.Difficulty, _map);
             if (offer == null) return;
             int d = _board.Difficulty;
             VoyageKit.Set(_cardKicker, string.IsNullOrEmpty(offer.Pilot) ? offer.Kind
@@ -674,9 +691,31 @@ namespace CosmicShore.UI
                 Root.SetParent(_overlay, true);
                 _overlay.gameObject.SetActive(true);
                 _overlay.SetAsLastSibling();
+                FrameJobs();
             }
             _laidFull = -1f;
             _board.RaiseScreenChanged();
+        }
+
+        // Full screen opens on the neighbourhood the quay's jobs are in: home and every job's end, framed together.
+        void FrameJobs()
+        {
+            if (!_map) return;
+            var points = new List<Vector2>();
+            var here = _map.Content?.Location(_map.Here);
+            if (here != null) points.Add(VoyageMapGraphic.PlacePoint(here));
+            foreach (var offer in _offers)
+                if (offer != null && TryEnd(offer, out var end)) points.Add(end);
+            _fullLayer.EventPoints(_map.Content, points);
+            if (points.Count == 0) return;
+            // The givers' column takes the right fifth and the foot the bottom sixth: frame as if the jobs reached into
+            // them, so every pin stands in the open sea left of the column and above the foot.
+            Vector2 lo = points[0], hi = points[0];
+            foreach (var p in points) { lo = Vector2.Min(lo, p); hi = Vector2.Max(hi, p); }
+            var span = Vector2.Max(hi - lo, Vector2.one);
+            points.Add(new Vector2(hi.x + span.x * 0.45f, hi.y + span.y * 0.15f));
+            points.Add(new Vector2(lo.x, lo.y - span.y * 0.4f));
+            _map.FrameOn(points, 1.25f);
         }
 
         /// <summary>Leave full screen; <paramref name="instant"/> skips the animation (the window closing, another page).</summary>
@@ -732,7 +771,20 @@ namespace CosmicShore.UI
             }
             Layout();
             MarkTier();
-            PlacePins();
+            if (_map) _fullLayer.Follow(_map, Project);
+        }
+
+        /// <summary>Where flat map point <paramref name="flat"/> is seen, in the full-screen layer's units from its top left.</summary>
+        bool Project(Vector2 flat, out Vector2 at)
+        {
+            at = default;
+            if (!_map || !_map.InView(flat)) return false;
+            var seen = _map.SeenAt(flat, out _);
+            var root = _fullLayer.Root;
+            Vector2 local = root.InverseTransformPoint(_map.rectTransform.TransformPoint(seen));
+            var r = root.rect;
+            at = new Vector2(local.x - r.xMin, r.yMax - local.y);
+            return true;
         }
 
         void MarkTier()
@@ -812,27 +864,25 @@ namespace CosmicShore.UI
             _backGroup.blocksRaycasts = e >= 0.5f;
             _backFull.gameObject.SetActive(e > 0f);
 
-            // Open now down the right (Rev 113 Sea), then in the full screen's right margin under Back from full screen.
-            float sideH = SideHeight();
-            Place(_side, Full(F.x - Margin - SideWidth, 100f, SideWidth, sideH));
-            _sideGroup.alpha = e;
-            _sideGroup.blocksRaycasts = e >= 0.5f;
-
-            // The picked voyage: under the table's right half, then at the full screen's foot.
-            Place(_card, Full(Margin, F.y - Margin - CardHeight, CardFullWidth, CardHeight));
-            _cardGroup.alpha = e;
-            _cardGroup.blocksRaycasts = e >= 0.5f;
+            // The full screen's marks, givers and foot (Rev 138 Full), over the whole screen.
+            Place(_fullLayer.Root, Full(0f, 0f, F.x, F.y));
+            _fullLayer.Lay(Full(0f, 0f, F.x, F.y), e);
 
             // The table, then the whole screen.
             var table = At(Win(chart.x, chart.y, chart.width, chart.height), Full(0f, 0f, F.x, F.y));
             Place(_table, table);
-            Place(_pins, table);
+            Place(_dim, table);
             Place(_message, table);
             LayoutTable(table.size, e);
+            // In the window the quay's own chart stands where the table grows from; the live map shows in full screen.
+            _tableGroup.alpha = e;
+            _tableGroup.blocksRaycasts = e >= 0.5f;
+            _dimGroup.alpha = e;
 
-            // Back to front: the table, its pins, then the rest.
+            // Back to front: the table, its dim, the full screen's marks, then the rest.
             _table.SetAsFirstSibling();
-            _pins.SetSiblingIndex(1);
+            _dim.SetSiblingIndex(1);
+            _fullLayer.Root.SetSiblingIndex(2);
         }
 
         float ControlsWidth()

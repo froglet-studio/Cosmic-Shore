@@ -57,6 +57,10 @@ namespace CosmicShore.UI
             /// <summary>The card's picture when it has no pilot (the Ark for the escort).</summary>
             public Sprite Picture;
             public string Title, Place;
+            /// <summary>The place it sails from (the quay's chart draws the lane from it).</summary>
+            public string From;
+            /// <summary>The cells it crosses (a named voyage's own; else its stops).</summary>
+            public int Cells;
             /// <summary>Who recommends it, their house and their portrait; empty for the escort.</summary>
             public string Pilot, Faction, Story;
             public Sprite Portrait;
@@ -100,9 +104,9 @@ namespace CosmicShore.UI
         /// <summary>True on the Ark page (the map behind is the course alone).</summary>
         public bool OnSquadScreen => _page == Page.Ark;
 
-        /// <summary>True while the locked Saga and Episodes strip belongs at the page's foot: the HyperSea page, not full
-        /// screen.</summary>
-        public bool ShowsStrip => _page == Page.Sea && !_sea.IsFull;
+        /// <summary>True while the locked Saga and Episodes strip belongs at the page's foot. Never in the Milestone 2 shell:
+        /// Rev 138 Board gives the quay the whole page (Docs/MENU_REDESIGN_B.md section 231).</summary>
+        public bool ShowsStrip => false;
 
         /// <summary>The difficulty picked for the open voyage (its pilot's recommendation until another is picked).</summary>
         public int Difficulty => _difficulty;
@@ -116,6 +120,12 @@ namespace CosmicShore.UI
 
         /// <summary>The voyages on offer, in the board's order.</summary>
         public IReadOnlyList<Offer> Offers => _offers;
+
+        /// <summary>The galaxy as the crew knows it (rival crews, wrecks, blooms for the full screen's map); may be null.</summary>
+        public VoyageState State { get; set; }
+
+        /// <summary>The port the Ark is docked at (the quay's first line names it); may be empty.</summary>
+        public string Here { get; set; }
 
         /// <summary>The lock the window's tabs use (the crew popup marks locked voyages with it); may be null.</summary>
         public Sprite LockSprite { get; set; }

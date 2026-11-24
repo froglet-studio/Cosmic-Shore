@@ -159,11 +159,11 @@ namespace CosmicShore.Tests
 
                 // The HyperSea: the crew's voyages and the picked one's card.
                 Assert.AreEqual(VoyageBoard.Page.Sea, board.Shown);
-                Assert.IsTrue(board.ShowsStrip);
+                Assert.IsFalse(board.ShowsStrip, "Rev 138 draws no Saga / Episodes strip");
                 Assert.AreEqual(4, board.Difficulty, "a voyage opens on its pilot's recommendation");
                 var texts = Texts(host);
                 CollectionAssert.Contains(texts, "Meet the Gallows crew at Lantern Reach");
-                CollectionAssert.Contains(texts, TemplateText.Fill(lines.SeaOfferKicker, "kind", lines.KindBounty, "pilot", "Oriel Vance"));
+                CollectionAssert.Contains(texts, lines.KindBounty, "the job's kind on its quay card (Rev 138)");
                 CollectionAssert.Contains(texts, ScriptableObjects.VoyageQuaySO.Load().TakeJob, "Take the job on the quay (Rev 138)");
                 board.Pick(0);
                 Assert.AreEqual(0, picked);
