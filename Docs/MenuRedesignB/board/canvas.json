@@ -2954,6 +2954,49 @@
       "h": 900,
       "page": "game-cards",
       "title": "Rev 130 - Notes"
+    },
+    "R131Compare.dc.html": {
+      "x": 0,
+      "y": 15900,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 - Compare"
+    },
+    "R131Y5.dc.html": {
+      "x": 2100,
+      "y": 15900,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 Y5 - Y5 Light trail - interactive",
+      "is_interactive": true
+    },
+    "R131Y6.dc.html": {
+      "x": 4200,
+      "y": 15900,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 Y6 - Y6 Chase cam - interactive",
+      "is_interactive": true
+    },
+    "R131Y7.dc.html": {
+      "x": 0,
+      "y": 17160,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 Y7 - Y7 Hero shot - interactive",
+      "is_interactive": true
+    },
+    "R131Notes.dc.html": {
+      "x": 0,
+      "y": 18420,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 131 - notes: what each option changes, what is shared, what differs from the build"
     }
   },
   "createdOnFiles": {
@@ -3046,6 +3089,7 @@
     "sec-rev128",
     "sec-rev129",
     "sec-rev130",
+    "sec-rev131",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3138,7 +3182,8 @@
     "rev127",
     "rev128",
     "rev129",
-    "rev130"
+    "rev130",
+    "rev131"
   ],
   "notes": {
     "hud_end": {
@@ -5293,6 +5338,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "game-cards"
+    },
+    "rev131": {
+      "kind": "title1",
+      "text": "Rev 131 - Symbolic, three new ways",
+      "x": 0,
+      "y": 15500,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev131": {
+      "kind": "rect",
+      "x": -160,
+      "y": 15340,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
     }
   },
   "order": [
@@ -5647,7 +5716,12 @@
     "R130Y2.dc.html",
     "R130Y3.dc.html",
     "R130Y4.dc.html",
-    "R130Notes.dc.html"
+    "R130Notes.dc.html",
+    "R131Compare.dc.html",
+    "R131Y5.dc.html",
+    "R131Y6.dc.html",
+    "R131Y7.dc.html",
+    "R131Notes.dc.html"
   ],
   "pages": [
     {

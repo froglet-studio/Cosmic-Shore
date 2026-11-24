@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-23 from canvas version `1795461723-7362` of **Frogma**: Rev 41 to Rev 130, 352 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795517328-108b` of **Frogma**: Rev 41 to Rev 131, 357 boards on 17 tabs. The canvas opens on the tab `game-cards`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -566,6 +566,14 @@ No boards yet.
 - `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
 
 ### Tab: Game Cards  (`game-cards`)
+
+#### Rev 131 - Symbolic, three new ways
+
+- [`R131Compare.dc.html`](R131Compare.dc.html) - Rev 131 - Compare
+- [`R131Y5.dc.html`](R131Y5.dc.html) - Rev 131 Y5 - Y5 Light trail - interactive
+- [`R131Y6.dc.html`](R131Y6.dc.html) - Rev 131 Y6 - Y6 Chase cam - interactive
+- [`R131Y7.dc.html`](R131Y7.dc.html) - Rev 131 Y7 - Y7 Hero shot - interactive
+- [`R131Notes.dc.html`](R131Notes.dc.html) - Rev 131 - notes: what each option changes, what is shared, what differs from the build
 
 #### Rev 130 - The card's picture, eight more ways: real frames and signs of the play; the short line
 

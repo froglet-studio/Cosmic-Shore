@@ -9027,7 +9027,7 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
 
-### 222.2 Rev 130: the card's short line, and its picture eight more ways (2026-11-23; awaiting a pick)
+### 222.2 Rev 130: the card's short line, and its picture eight more ways (2026-11-23; S1 and Y3 kept, Y1, Y2, Y4 replaced in Rev 131)
 
 **Asked (Shombith, 2026-11-23):** "For the arcade game cards - the description is too big there should be a short
 description. For the arcade game cards bg - I need 8 more variations 4 of them with screenshots and the directions we are
@@ -9058,3 +9058,29 @@ frame per mode (the look sheet, `Docs/LOOK_SHEET.md`). A pick of Y1-Y4 means an 
 path and two or three props), played only on the hovered or focused card.
 
 **Gates:** `check_mockup.py` OK on all 10 boards; `frogma.py check` OK on 352 boards.
+
+**Feedback (Shombith, 2026-11-24):** "keep the S1 frames but for the Y1 I only like Y3, change Y1,2 and 4 to make them more
+interesting i dont like crest playbook pictogram at all not that interesting and does not give me the impression".
+Followed up in Rev 131 (section 222.3).
+
+### 222.3 Rev 131: three new symbolic card pictures beside the Frame and the Diorama (2026-11-24; awaiting a pick)
+
+**Asked:** the feedback above. S1 Frame and Y3 Diorama stay as drawn; Pictogram, Playbook and Crest are dropped. They were
+flat signs of the rules; the three new ones show the feel of the moment the vessel scores, each with the real hull.
+
+**On the canvas:** round "Rev 131 - Symbolic, three new ways" on the Game Cards tab; copies
+`Docs/MenuRedesignB/board/R131*.dc.html`, written by `Docs/MenuRedesignB/rounds/r131_card_acts.py` (which reuses
+r130's skeleton, S1 and Y3). Same four modes and states as Rev 130.
+- **Y5 Light trail:** a long exposure; at rest the play is written across the card in light with the hull at its end.
+  Hover erases it and flies it live, the target blooms and the word rises.
+- **Y6 Chase cam:** the view from behind the hull on a perspective floor, the target far ahead. Hover throttles up: the
+  floor rushes, streaks fly past, the target looms, the hull banks and scores.
+- **Y7 Hero shot:** the hull huge and cropped on speed rays, the target in its sights. Hover winds it up, lunges, and the
+  card shakes on a comic impact burst with the word (GOAL, FIRST, HIT, THROUGH).
+- **R131Compare:** Scarab Scramble as built, S1, Y3 and the three new ones; **R131Notes.**
+
+**Differs from the build:** each is a per-mode UI animation (a path or a scale, one hull sprite, one prop, a bloom),
+played only on the hovered or focused card; Y6's floor is one scrolling texture, Y7's rays one rotating image.
+
+**Gates:** `check_mockup.py` passes colours, type and contrast on all 5 boards and fails only the noise budget on the card
+sheets, as every card round has; `frogma.py check` OK.
