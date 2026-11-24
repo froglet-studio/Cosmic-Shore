@@ -1364,18 +1364,28 @@ legs the ruins leave bare, so the circuit now alternates ruin, barrier, ruin. `B
 | lock | three 48 u discs, 18 u apart | more rounds to open, a shorter way round |
 | turnstile | two wheels 24 u apart turning opposite ways at 36 deg/s, four blades each (14 u wide, from 20.5 to 72.5 u out) | hold the thread through the hubs, time a gap between blades, or shoot a blade off |
 | shutter | a 60 u disc whose halves slide 22 u apart: shut 2 s, opening 1 s, open 2 s, closing 1 s | time it, or shoot it open |
+| flak battery | a core of 8 plain blocks (9 u) plugging the line, and 8 guns round the lane, each firing 3 danger shells (6 u) at 45 u/s across it along a 90 u chord that passes 28 or 40 u from the line, spread over 40 u along it | shoot the core (the line opens and the guns stop), ram it, or fly round through the crossfire |
 
 They take turns in that order round the circuit. Each stands at the middle of its leg's flown line.
 
-**The two that move** (2026-11-25) are posed every frame from the network clock (`BreakwaterBarriers.Pose`,
+**The flak battery** (2026-11-25, batch 3) fires a FIXED pattern: nothing aims, so this is not the aimed turret that
+waits on Garrett. Its shells never come into the 18 u thread (checked through the whole flight, since the line curves
+and a shell flies straight), so the only thing on the line is the core. Break half the core or more and the battery
+is silenced (`BreakwaterBarriers.Silenced`, read every frame from the core's own prisms on each peer): its shells go
+back to the pool, and they come back only once the core has grown back, which needs the field gone (the regrow rule
+below). A shell that hits a hull is spent like a mine and also waits for the field to pass. The shells fly ACROSS the
+lane, not down it: a leg is at least 300 u and each station keeps 112 u clear, so a battery firing down the leg had
+no room and stood on 0 of 100 courses. Across, it stands on 83.
+
+**The movers** (2026-11-25: turnstile, shutter, and the flak shells) are posed every frame from the network clock (`BreakwaterBarriers.Pose`,
 `BreakwaterController.PoseBarriers`), as the ruins' wheel is, so every peer sees the same moment. A mover is laid
 whole, clear of every station's reach and every other leg's lane through its whole cycle (16 sampled phases), or a
 curtain stands there instead: over seeds 1-100 the turnstile stands on 86 courses and the shutter on 88. A shutter's
 clock is out of step from leg to leg. A broken blade or plate grows back like any other barrier prism.
 
 **Measured** (`bash Tools/Build/breakwater_ruins_harness/run.sh --measure`, the I4 courses of seeds 1-100): 7 barriers
-on every course (2 curtains, 2 minefields, a lock, a turnstile and a shutter, or a curtain where a mover does not fit),
-509 prisms a course (478 to 581). With the arena's 2,385 and the ruins' 744 that is about 3,640 at I4, still under
+on every course (a curtain, 2 minefields, a lock, a turnstile, a shutter and a flak battery, then a curtain again, with
+a curtain wherever a mover does not fit), 498 prisms a course (460 to 561); the flak battery stands on 83 of 100. With the arena's 2,385 and the ruins' 744 that is about 3,640 at I4, still under
 intensity 1's 4,144.
 
 **Rules kept.**
@@ -1400,11 +1410,10 @@ is now a second place with danger prisms, on the line's surroundings, with the t
 Sparrow next to the detour; whether the AI's station rocket (fired between 60 and 220 u from the station, nose on it)
 is spent on a curtain that stands 150 to 190 u before the station; frame rate with about 600 more prisms.
 
-**Planned next, not built**: a flak battery (a
-fixed pattern of danger prisms across the lane, silenced by shooting its core). An AIMED turret is a decision for
-Garrett: nothing in the game aims environment fire at a pilot today.
+**Planned next, not built**: piers and a corked tunnel (batch 4). An AIMED turret is a decision for Garrett: nothing
+in the game aims environment fire at a pilot today, and the flak battery does not either.
 
-**Tests:** `BreakwaterBarriersTests` (11, also run headless by the harness, whose `--self-test` proves five of them
+**Tests:** `BreakwaterBarriersTests` (13, also run headless by the harness, whose `--self-test` proves seven of them
 can fail). Compiled in Unity and passing there (2026-11-25); three AI-flown races watched, none flown by a person.
 
 **Open:** 17 and 39 barrier prisms were already broken before the start of the two watched races; the cause is not

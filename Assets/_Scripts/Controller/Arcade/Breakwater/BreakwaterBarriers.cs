@@ -5,16 +5,18 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>One prism of a barrier: a box of <see cref="Scale"/> at <see cref="Position"/>, its long side along
     /// <see cref="Forward"/>. <see cref="Leg"/> is the leg of the circuit it stands on, <see cref="Kind"/> the barrier
-    /// (<see cref="BreakwaterBarriers.Curtain"/>...), and <see cref="Danger"/> says it is a mine.</summary>
+    /// (<see cref="BreakwaterBarriers.Curtain"/>...), <see cref="Danger"/> says it is a mine or a flak shell, and
+    /// <see cref="Core"/> says it is part of a flak battery's core (break the core and the battery stops).</summary>
     public readonly struct BreakwaterBarrierPart
     {
         public readonly Vector3 Position, Forward, Up, Scale;
         public readonly int Leg, Kind;
-        public readonly bool Danger;
+        public readonly bool Danger, Core;
 
         public BreakwaterBarrierPart(Vector3 position, Vector3 forward, Vector3 up, Vector3 scale, int leg, int kind,
-                                     bool danger)
+                                     bool danger, bool core = false)
         {
+            Core = core;
             Position = position;
             Forward = forward;
             Up = up;
@@ -28,7 +30,8 @@ namespace CosmicShore.Gameplay
     /// <summary>The parts <see cref="First"/>..<see cref="First"/>+<see cref="Count"/> of a barrier that MOVE, about
     /// <see cref="Centre"/> on the line: a turnstile wheel turns about <see cref="Axis"/> at <see cref="Rate"/>
     /// degrees a second; a shutter's halves slide along <see cref="Right"/>, <see cref="Rate"/> seconds out of step
-    /// with the clock.</summary>
+    /// with the clock; a flak gun's shells fly along <see cref="Axis"/> from its muzzle <see cref="Centre"/> at
+    /// <see cref="Rate"/> u a second.</summary>
     public readonly struct BreakwaterBarrierMover
     {
         public readonly int Kind, First, Count;
@@ -57,9 +60,13 @@ namespace CosmicShore.Gameplay
     /// a <b>minefield</b> (danger prisms round the line with the thread down the middle left open, as a station's eye
     /// is), a <b>lock</b> (three smaller curtains in a row: more rounds to open, a shorter way round),
     /// a <b>turnstile</b> (two bladed wheels turning opposite ways about the line, the thread through their hubs open)
-    /// and a <b>shutter</b> (a curtain whose two halves slide apart and shut again on a clock). The two that move are
-    /// POSED from a clock the controller gives (<see cref="Pose"/>); one that would sweep into a station's reach or
-    /// another leg's lane is laid as a curtain instead.
+    /// a <b>shutter</b> (a curtain whose two halves slide apart and shut again on a clock) and a <b>flak battery</b>
+    /// (a core of blocks plugging the line, and guns round the lane firing danger shells ACROSS it in a FIXED
+    /// crossfire - nothing aims - that never enters the thread: shoot the core and the line is open and the guns
+    /// stop (<see cref="Silenced"/>), or fly round through the crossfire). The three that move are POSED from a
+    /// clock the controller gives
+    /// (<see cref="Pose"/>); one that would sweep into a station's reach or another leg's lane is laid as a curtain
+    /// instead.
     ///
     /// <para>Each stands at the middle of its leg's flown line, across it. Everything is laid Blue by the controller,
     /// as the stations are, so every pilot's rounds open a curtain and are paid for it. They are prisms with the
@@ -71,8 +78,26 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class BreakwaterBarriers
     {
-        public const int Curtain = 0, Minefield = 1, Lock = 2, Turnstile = 3, Shutter = 4;
-        public const int KindCount = 5;
+        public const int Curtain = 0, Minefield = 1, Lock = 2, Turnstile = 3, Shutter = 4, Flak = 5;
+        public const int KindCount = 6;
+
+        /// <summary>A flak battery: this many guns round the lane, each firing this many shells at a time across it
+        /// along a chord that passes <see cref="FlakInner"/> or <see cref="FlakOuter"/> (u) from the line (the guns
+        /// take turns), spread over <see cref="FlakDepth"/> (u) along it. A shell flies <see cref="FlakRange"/> (u)
+        /// at <see cref="FlakSpeed"/> (u/s), then the gun fires it again.</summary>
+        public const int FlakGuns = 8, FlakShellsPerGun = 3;
+        public const float FlakInner = 28f, FlakOuter = 40f, FlakRange = 90f, FlakSpeed = 45f, FlakShellSize = 6f;
+        public const float FlakDepth = 40f;
+        /// <summary>A gun's barrel: a plain block this wide and this long (u) behind its muzzle.</summary>
+        public const float FlakBarrelWidth = 8f, FlakBarrelLength = 14f;
+        /// <summary>The core: a cube of 2 x 2 x 2 plain blocks of this size at this pitch (u), on the line just
+        /// behind the guns, so a pilot on the line has it dead ahead.</summary>
+        public const float FlakCoreBlock = 9f, FlakCorePitch = 10f;
+        public const int FlakCoreBlocks = 8;
+
+        /// <summary>Is a battery silenced? When half its core or more is broken. Its shells are taken away until
+        /// the core has grown back.</summary>
+        public static bool Silenced(int coreStanding, int coreTotal) => coreTotal > 0 && coreStanding * 2 <= coreTotal;
 
         /// <summary>A turnstile: two wheels this far (u) either side of the leg's middle, turning opposite ways at
         /// this rate, each with this many blades of this many segments from <see cref="BladeInner"/> out.</summary>
@@ -90,7 +115,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Phases of a mover's cycle sampled for its clearances.</summary>
         public const int SweepSamples = 16;
 
-        public static bool Moves(int kind) => kind == Turnstile || kind == Shutter;
+        public static bool Moves(int kind) => kind == Turnstile || kind == Shutter || kind == Flak;
+
+        /// <summary>Is this part posed from the clock? Every part of a turnstile or a shutter; of a flak battery,
+        /// only the shells.</summary>
+        public static bool Moves(in BreakwaterBarrierPart part) => Moves(part.Kind) && (part.Kind != Flak || part.Danger);
 
         /// <summary>A curtain reaches this far (u) from the line: past the lane (60), so the way round is a real detour.</summary>
         public const float CurtainRadius = 72f;
@@ -171,7 +200,9 @@ namespace CosmicShore.Gameplay
                     offered.Clear();
                     offeredMovers.Clear();
                     Offer(a, b, leg, kind, offered, offeredMovers);
-                    if (SweepsClear(offered, offeredMovers, course, leadIn, pads, lap, settings))
+                    if (SweepsClear(offered, offeredMovers, course, leadIn, pads, lap, settings)
+                        && RestStands(offered, course, leadIn, pads, lap, settings)
+                        && ShellsMissTheThread(offered, offeredMovers, a, b))
                     {
                         if (movers != null)
                             foreach (var m in offeredMovers) movers.Add(m.From(parts.Count + m.First));
@@ -225,6 +256,9 @@ namespace CosmicShore.Gameplay
                                                            into.Count - first));
                     break;
                 }
+                case Flak:
+                    Battery(centre, forward, right, up, leg, into, movers);
+                    break;
                 case Lock:
                     for (int n = 0; n < LockSheets; n++)
                         Sheet(centre + forward * ((n - 0.5f * (LockSheets - 1)) * LockSpacing), forward, right, up,
@@ -269,6 +303,42 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // A flak battery: the core on the line, then per gun a barrel behind its muzzle and its shells strung along
+        // its chord. Gun g's chord turns g/FlakGuns of a circle round the line, so the crossfire covers every way
+        // round the core; gun g fires g/FlakGuns of a shell-gap after gun 0.
+        static void Battery(Vector3 centre, Vector3 forward, Vector3 right, Vector3 up, int leg,
+                            List<BreakwaterBarrierPart> into, List<BreakwaterBarrierMover> movers)
+        {
+            var block = new Vector3(FlakCoreBlock, FlakCoreBlock, FlakCoreBlock);
+            for (int k = 0; k < FlakCoreBlocks; k++)
+            {
+                float x = (k & 1) - 0.5f, y = ((k >> 1) & 1) - 0.5f, z = ((k >> 2) & 1) - 0.5f;
+                into.Add(new BreakwaterBarrierPart(centre + (right * x + up * y + forward * z) * FlakCorePitch,
+                                                   forward, up, block, leg, Flak, false, core: true));
+            }
+            var barrel = new Vector3(FlakBarrelWidth, FlakBarrelWidth, FlakBarrelLength);
+            var shell = new Vector3(FlakShellSize, FlakShellSize, FlakShellSize);
+            for (int g = 0; g < FlakGuns; g++)
+            {
+                float angle = g * (2f * Mathf.PI / FlakGuns) + leg;
+                Vector3 across = right * Mathf.Cos(angle) + up * Mathf.Sin(angle);   // the way it fires
+                Vector3 aside = Vector3.Cross(forward, across);                       // its chord's offset
+                float offset = g % 2 == 0 ? FlakInner : FlakOuter;
+                float along = ((g * 3 % FlakGuns) / (float)(FlakGuns - 1) - 0.5f) * FlakDepth;
+                Vector3 muzzle = centre + forward * along + aside * offset - across * (0.5f * FlakRange);
+                Vector3 barrelUp = Mathf.Abs(Vector3.Dot(across, forward)) < 0.9f ? forward : aside;
+                into.Add(new BreakwaterBarrierPart(muzzle - across * (0.5f * FlakBarrelLength), across, barrelUp, barrel,
+                                                   leg, Flak, false));
+                int first = into.Count;
+                for (int n = 0; n < FlakShellsPerGun; n++)
+                {
+                    float flown = (n + g / (float)FlakGuns) / FlakShellsPerGun * FlakRange;
+                    into.Add(new BreakwaterBarrierPart(muzzle + across * flown, across, barrelUp, shell, leg, Flak, true));
+                }
+                movers?.Add(new BreakwaterBarrierMover(Flak, muzzle, across, aside, FlakSpeed, first, FlakShellsPerGun));
+            }
+        }
+
         /// <summary>How far open a shutter is at <paramref name="seconds"/> of its cycle: 0 shut, 1 open.</summary>
         public static float ShutterOpening(float seconds)
         {
@@ -298,6 +368,16 @@ namespace CosmicShore.Gameplay
                 up = part.Up;
                 return;
             }
+            if (mover.Kind == Flak)
+            {
+                float rest = Vector3.Dot(part.Position - mover.Centre, mover.Axis);
+                float flown = (rest + mover.Rate * seconds) % FlakRange;
+                if (flown < 0f) flown += FlakRange;
+                position = part.Position + mover.Axis * (flown - rest);
+                forward = part.Forward;
+                up = part.Up;
+                return;
+            }
             float angle = mover.Rate * seconds * Mathf.Deg2Rad;
             float cos = Mathf.Cos(angle), sin = Mathf.Sin(angle);
             position = mover.Centre + Turn(part.Position - mover.Centre, mover.Axis, cos, sin);
@@ -307,7 +387,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The seconds one cycle of <paramref name="mover"/> takes.</summary>
         public static float Period(in BreakwaterBarrierMover mover) =>
-            mover.Kind == Shutter ? ShutterPeriod : 360f / Mathf.Abs(mover.Rate);
+            mover.Kind == Shutter ? ShutterPeriod
+            : mover.Kind == Flak ? FlakRange / Mathf.Abs(mover.Rate)
+            : 360f / Mathf.Abs(mover.Rate);
 
         static Vector3 Turn(Vector3 p, Vector3 axis, float cos, float sin) =>
             p * cos + Vector3.Cross(axis, p) * sin + axis * (Vector3.Dot(axis, p) * (1f - cos));
@@ -326,6 +408,34 @@ namespace CosmicShore.Gameplay
                         Pose(offered[i], mover, k * period / SweepSamples, out var p, out var f, out var u);
                         var posed = new BreakwaterBarrierPart(p, f, u, offered[i].Scale, offered[i].Leg, offered[i].Kind, false);
                         if (!Stands(posed, course, leadIn, pads, lap, s)) return false;
+                    }
+            }
+            return true;
+        }
+
+        // Does every part stand where it was offered? (A battery's core and barrels are in no mover.)
+        static bool RestStands(List<BreakwaterBarrierPart> offered, IReadOnlyList<RaceGate> course, int leadIn,
+                               IReadOnlyList<Vector3> pads, IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s)
+        {
+            for (int i = 0; i < offered.Count; i++)
+                if (!Stands(offered[i], course, leadIn, pads, lap, s)) return false;
+            return true;
+        }
+
+        // Does every flak shell keep out of the thread the whole way down its flight? The line curves and a shell
+        // flies straight, so this is checked and not assumed.
+        static bool ShellsMissTheThread(List<BreakwaterBarrierPart> offered, List<BreakwaterBarrierMover> movers,
+                                        in RaceGate a, in RaceGate b)
+        {
+            foreach (var mover in movers)
+            {
+                if (mover.Kind != Flak) continue;
+                float period = Period(mover);
+                for (int i = mover.First; i < mover.First + mover.Count; i++)
+                    for (int k = 0; k < SweepSamples; k++)
+                    {
+                        Pose(offered[i], mover, k * period / SweepSamples, out var p, out _, out _);
+                        if (LegDistance(a, b, p) - 0.5f * offered[i].Scale.magnitude < ThreadRadius) return false;
                     }
             }
             return true;

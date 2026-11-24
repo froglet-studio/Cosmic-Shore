@@ -180,10 +180,11 @@ namespace CosmicShore.Tests
                         Assert.AreEqual(mover.Kind, laid.Parts[i].Kind, $"seed {seed} part {i}");
                         Assert.IsTrue(moved.Add(i), $"seed {seed} part {i}: in two movers");
                     }
-                    if (mover.Kind == BreakwaterBarriers.Shutter) shutters++; else turnstiles++;
+                    if (mover.Kind == BreakwaterBarriers.Shutter) shutters++;
+                    else if (mover.Kind == BreakwaterBarriers.Turnstile) turnstiles++;
                 }
                 for (int i = 0; i < laid.Parts.Count; i++)
-                    Assert.AreEqual(BreakwaterBarriers.Moves(laid.Parts[i].Kind), moved.Contains(i), $"seed {seed} part {i}");
+                    Assert.AreEqual(BreakwaterBarriers.Moves(laid.Parts[i]), moved.Contains(i), $"seed {seed} part {i}");
             }
             Assert.Greater(turnstiles, 0, "no turnstile stood on any course");
             Assert.Greater(shutters, 0, "no shutter stood on any course");
@@ -271,6 +272,82 @@ namespace CosmicShore.Tests
                     Assert.Less(nearestShut, 0.75f * BreakwaterBarriers.PlatePitch, $"seed {seed}: shut, the line is open");
                     Assert.GreaterOrEqual(nearestOpen - 0.5f * BreakwaterBarriers.PlateSize, BreakwaterBarriers.ThreadRadius,
                         $"seed {seed}: open, a plate is in the thread");
+                }
+            }
+        }
+
+        [Test]
+        public void A_flak_battery_fires_across_the_lane_and_never_into_the_thread()
+        {
+            var batteries = new HashSet<(int, int)>();
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var laid = Barriers(4, seed);
+                if (laid == null) continue;
+                foreach (var mover in laid.Movers)
+                {
+                    if (mover.Kind != BreakwaterBarriers.Flak) continue;
+                    batteries.Add((seed, laid.Parts[mover.First].Leg));
+                    Assert.AreEqual(BreakwaterBarriers.FlakShellsPerGun, mover.Count, $"seed {seed}");
+                    float period = BreakwaterBarriers.Period(mover);
+                    for (int i = mover.First; i < mover.First + mover.Count; i++)
+                    {
+                        var part = laid.Parts[i];
+                        Assert.IsTrue(part.Danger, $"seed {seed}: a shell is a danger prism");
+                        var a = laid.Lap[part.Leg];
+                        var b = laid.Lap[(part.Leg + 1) % laid.Lap.Count];
+                        // Fired across the lane, not along it.
+                        Assert.Less(Mathf.Abs(Vector3.Dot(mover.Axis, (b.Position - a.Position).normalized)), 0.5f,
+                            $"seed {seed}: fired along the lane");
+                        for (int k = 0; k < 60; k++)
+                        {
+                            BreakwaterBarriers.Pose(part, mover, k * period / 60f + 0.21f, out var p, out _, out _);
+                            Assert.GreaterOrEqual(BreakwaterBarriers.LegDistance(a, b, p) - Reach(part),
+                                BreakwaterBarriers.ThreadRadius, $"seed {seed} leg {part.Leg}: a shell in the thread");
+                            float flown = Vector3.Dot(p - mover.Centre, mover.Axis);
+                            Assert.GreaterOrEqual(flown, -1e-2f, $"seed {seed}: a shell behind its gun");
+                            Assert.LessOrEqual(flown, BreakwaterBarriers.FlakRange + 1e-2f, $"seed {seed}: a shell past its range");
+                        }
+                    }
+                }
+            }
+            Assert.Greater(batteries.Count, 0, "no flak battery stood on any course");
+        }
+
+        [Test]
+        public void A_flak_battery_has_a_core_on_the_line_and_breaking_half_of_it_silences_the_guns()
+        {
+            Assert.IsFalse(BreakwaterBarriers.Silenced(BreakwaterBarriers.FlakCoreBlocks, BreakwaterBarriers.FlakCoreBlocks));
+            Assert.IsFalse(BreakwaterBarriers.Silenced(BreakwaterBarriers.FlakCoreBlocks / 2 + 1, BreakwaterBarriers.FlakCoreBlocks));
+            Assert.IsTrue(BreakwaterBarriers.Silenced(BreakwaterBarriers.FlakCoreBlocks / 2, BreakwaterBarriers.FlakCoreBlocks));
+            Assert.IsTrue(BreakwaterBarriers.Silenced(0, BreakwaterBarriers.FlakCoreBlocks));
+            // A barrier with no core is never silenced.
+            Assert.IsFalse(BreakwaterBarriers.Silenced(0, 0));
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var laid = Barriers(4, seed);
+                if (laid == null) continue;
+                var cores = new Dictionary<int, int>();
+                var middles = new Dictionary<int, Vector3>();
+                foreach (var part in laid.Parts)
+                {
+                    if (!part.Core) continue;
+                    Assert.AreEqual(BreakwaterBarriers.Flak, part.Kind, $"seed {seed}");
+                    Assert.IsFalse(part.Danger, $"seed {seed}: the core is plain, a round or a hull breaks it");
+                    cores[part.Leg] = (cores.TryGetValue(part.Leg, out int n) ? n : 0) + 1;
+                    middles[part.Leg] = (middles.TryGetValue(part.Leg, out var sum) ? sum : Vector3.zero) + part.Position;
+                }
+                foreach (var mover in laid.Movers)
+                {
+                    if (mover.Kind != BreakwaterBarriers.Flak) continue;
+                    int leg = laid.Parts[mover.First].Leg;
+                    Assert.IsTrue(cores.TryGetValue(leg, out int blocks), $"seed {seed} leg {leg}: a gun with no core");
+                    Assert.AreEqual(BreakwaterBarriers.FlakCoreBlocks, blocks, $"seed {seed} leg {leg}");
+                    var a = laid.Lap[leg];
+                    var b = laid.Lap[(leg + 1) % laid.Lap.Count];
+                    // Dead ahead of a pilot on the line.
+                    Assert.Less(BreakwaterBarriers.LegDistance(a, b, middles[leg] / blocks), BreakwaterBarriers.FlakCorePitch,
+                        $"seed {seed} leg {leg}: the core is off the line");
                 }
             }
         }

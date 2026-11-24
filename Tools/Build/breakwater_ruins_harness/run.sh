@@ -86,5 +86,7 @@ barrier_control "mines in the thread" "s/float inner = ThreadRadius + reach + 1f
 barrier_control "barriers below I4" "s/=> intensity >= 4;/=> intensity >= 3;/" "=> intensity >= 3;"
 barrier_control "a curtain with the line left open" "s/if (u \* u + v \* v > radius \* radius) continue;/if (u * u + v * v > radius * radius || u * u + v * v < 400f) continue;/" "v * v < 400f) continue;"
 barrier_control "a blade in the thread" "s/BladeInner = 20.5f/BladeInner = 8f/" "BladeInner = 8f"
+barrier_control "a flak shell in the thread" "s/FlakInner = 28f/FlakInner = 12f/" "FlakInner = 12f"
+barrier_control "a battery nothing silences" "s/coreStanding \* 2 <= coreTotal/coreStanding < 0/" "coreStanding < 0"
 barrier_control "a shutter that never opens" "s/ShutterTravel = 22f/ShutterTravel = 2f/" "ShutterTravel = 2f"
 echo "self-test OK"
