@@ -16,7 +16,7 @@ MonoBehaviour:
   dartMinRange: 140
   dartChargeSeconds: 0.8
   dartSeconds: 1
-  dartCooldown: 1.2
+  dartCooldown: 1.8
   dartPace:
     Enabled: 1
     Value: 1.45

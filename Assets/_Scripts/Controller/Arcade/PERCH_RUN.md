@@ -14,8 +14,8 @@ flight and **darts**:
 
 - **Hold** the dart button to charge a length: 140 u untouched, 600 u at a full charge after 0.8 s (`dartMinRange`,
   `dartRange`, `dartChargeSeconds`).
-- **Let go** and it flies there in **one second** (`dartSeconds`), whatever the length. Then a **1.2 s** reload
-  (`dartCooldown`).
+- **Let go** and it flies there in **one second** (`dartSeconds`), whatever the length. The next dart is ready **1.8 s
+  after launch** (`dartCooldown`, counted from launch since 2026-11-24, so a long charge costs no extra wait).
 - It **stops on the first block on its line** (`FirstOnLine`, padded by `hullRadius` 3 u). With the Time upgrade
   (Time 5) it phases through.
 - A dart that ends 900 u or more from the last perch, with fewer than three islands queued, is a **perch**: the Goby is

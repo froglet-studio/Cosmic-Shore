@@ -26586,3 +26586,16 @@ session. The reference compile has 0 errors in the changed files; `economy.test.
 - [ ] Fly the Honeyguide in freestyle, swap to the Ratel, leave and fly it again: it starts on the Ratel's board. Swap
       back to flying, leave and return: it starts flying.
 - [ ] Finish a painting in the Toybox gallery: the wallet rises by 150. A third painting the same day pays nothing.
+
+## The Goby's dart cooldown runs from launch (2026-11-24)
+
+The Goby's dart cooldown now starts when the dart launches, not when it lands (`GobyPistolDuo.FireDart`), and
+`dartCooldown` goes 1.2 s -> 1.8 s (x1.5 at every Time level). The Time HUD card now shows the cooldown filling while
+the dart flies. Not run in the Unity editor: none in this session. The reference compile has 0 errors in the changed
+files; the Perch Run harness tests pass (11 of 11), and `GobyPistolTests` was not run.
+
+- [ ] Fly the Goby in freestyle and dart: the Time card's cooldown starts at launch, and the next dart is ready 1.8 s
+      after launch at rest (about 0.8 s after a 1 s dart lands).
+- [ ] Hold a full charge, then a tap: both are ready at the same time after launch.
+- [ ] At Time 10 a dart is ready again about 0.8 s after launch, and never mid-dart.
+- [ ] Race Perch Run and Regatta with an AI Goby: it still darts through every ring.

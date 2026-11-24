@@ -213,7 +213,7 @@ namespace CosmicShore.Gameplay
         public float Energy01 => Config ? Mathf.Clamp01(_energy / Mathf.Max(1f, Config.EnergyMax)) : 0f;
         // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
         public bool LockHeld => _lockHeld && _human == Half.Goby;
-        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldownFor(_status)));
+        public float DartCooldown01 => _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldownFor(_status)));
         public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
         public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
         public bool SnapHeld => _p != null && _p.prevVortex;
@@ -486,6 +486,8 @@ namespace CosmicShore.Gameplay
             if (go < 6f) return;
             _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
             _dartSpeed = go / Mathf.Max(0.05f, Config.DartSecondsFor(_status));   // Time: the dart's pace
+            // the cooldown runs from launch, not landing, so a longer charge costs no extra wait (Will, 2026-11-24)
+            _dartReadyAt = _t + Config.DartCooldownFor(_status);
             _perched = false; Pin(true);
         }
 
@@ -519,7 +521,6 @@ namespace CosmicShore.Gameplay
             _dartWent += move;
             if (_dartWent < _dartDist - 0.01f) return;
             _darting = false;
-            _dartReadyAt = _t + Config.DartCooldownFor(_status);
             Vector3 at = _gt.position;
             var prev = _perches[_perches.Count - 1];
             // a dash, not a perch: too close to the last perch for an island, or the Pistol already has its islands ahead

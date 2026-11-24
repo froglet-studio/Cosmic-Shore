@@ -36,10 +36,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.05f)] float dartChargeSeconds = 0.8f;
         [Tooltip("Seconds a dart takes, whatever its length (the Shrike's slingSeconds).")]
         [SerializeField, Min(0.1f)] float dartSeconds = 1f;
-        [Tooltip("Seconds after a dart lands before the next can start.")]
-        [SerializeField, Min(0f)] float dartCooldown = 1.2f;
+        [Tooltip("Seconds from a dart's launch before the next can start (it runs while the dart flies; never ready mid-dart).")]
+        [SerializeField, Min(0f)] float dartCooldown = 1.8f;
         [Tooltip("Time: the dart's pace, dividing both dartSeconds and dartCooldown (x1 at rest -> x2.2 at level 10, half " +
-                 "pace at level -5). A full dart takes 1 s and recovers in 1.2 s at rest, 0.45 s and 0.55 s at Time 10.")]
+                 "pace at level -5). A full dart takes 1 s and is ready again 1.8 s after launch at rest, 0.45 s and 0.82 s at Time 10.")]
         [SerializeField] ElementalFloat dartPace = ElementalFloat.Multiplier(1f, 2.2f, Element.Time, 0.5f);
         [Tooltip("The hull's radius against a block's box: a dart stops this far off the block it reaches (the Shrike's 3).")]
         [SerializeField, Min(0.5f)] float hullRadius = 3f;
