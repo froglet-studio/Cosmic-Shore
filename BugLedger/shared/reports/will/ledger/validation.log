@@ -57,3 +57,6 @@
 2026-11-24T05:17:26.597Z E-e061201544: fix e357fbad6 taken (PlayMode); needs 2 clean run(s)
 2026-11-24T05:35:24.075Z PlayMode session ended (1070s play run, exiting play mode): 17 fix(es) waiting; counted: E-17461650a8 1/2 E-251530c87b 1/2 E-2f25b16a12 1/2 E-4065bcae2a 1/2 E-4ad9e5ca21 1/2 E-5103c76904 1/2 E-5a15f5e924 1/2 E-6020da4524 1/2 E-8780898fab 1/2 E-e061201544 1/2; fired: E-930ca435ca
 2026-11-24T05:39:02.797Z PlayMode session ended (58s play run, exiting play mode): 17 fix(es) waiting; counted: E-17461650a8 2/2 E-251530c87b 2/2 E-2f25b16a12 2/2 E-4065bcae2a 2/2 E-4ad9e5ca21 2/2 E-5103c76904 2/2 E-5a15f5e924 2/2 E-6020da4524 2/2 E-8780898fab 2/2 E-e061201544 2/2; fired: E-930ca435ca
+2026-11-24T05:49:02.444Z EditMode session ended (33min editor span, script reload): 7 fix(es) waiting; counted: E-0de9ec6c70 1/2 E-1f1ff22829 2/2 E-5713660fbd 2/2 E-603d7f129d 1/2 E-c52c39070d 1/2 E-cb11787d50 2/2 E-edc6a81429 2/2; fired: E-ca127debd0 E-930ca435ca E-3e9077e16b
+2026-11-24T05:49:06.955Z editor load: play=False capture=True minPlay=15s issues=42
+2026-11-24T05:55:00.997Z PlayMode session ended (234s play run, exiting play mode): 3 fix(es) waiting; counted: none; fired: E-930ca435ca
