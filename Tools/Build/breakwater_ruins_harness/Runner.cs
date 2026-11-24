@@ -75,7 +75,7 @@ public static class Runner
             foreach (var leg in legs) kinds[leg.First().Kind]++;
         }
         Console.WriteLine($"barriers {fewest}-{most} a course  prisms mean {prisms / Math.Max(1, courses)} ({minPrisms}-{maxPrisms})" +
-                          $"  by kind (curtain minefield lock): {string.Join(" ", kinds)}");
+                          $"  by kind (curtain minefield lock turnstile shutter): {string.Join(" ", kinds)}");
     }
 
     public static int Main(string[] args)

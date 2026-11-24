@@ -1362,12 +1362,21 @@ legs the ruins leave bare, so the circuit now alternates ruin, barrier, ruin. `B
 | curtain | one disc of plain plates (13.4 x 13.4 x 2 u at a 14 u pitch) out to 72 u from the line | shoot a hole, ram it, or fly round (past the 60 u lane) |
 | minefield | 60 danger cubes (6 u) between the thread and 60 u from the line, over 50 u of it | hold the line through the 18 u thread, or clear a path |
 | lock | three 48 u discs, 18 u apart | more rounds to open, a shorter way round |
+| turnstile | two wheels 24 u apart turning opposite ways at 36 deg/s, four blades each (14 u wide, from 20.5 to 72.5 u out) | hold the thread through the hubs, time a gap between blades, or shoot a blade off |
+| shutter | a 60 u disc whose halves slide 22 u apart: shut 2 s, opening 1 s, open 2 s, closing 1 s | time it, or shoot it open |
 
 They take turns in that order round the circuit. Each stands at the middle of its leg's flown line.
 
+**The two that move** (2026-11-25) are posed every frame from the network clock (`BreakwaterBarriers.Pose`,
+`BreakwaterController.PoseBarriers`), as the ruins' wheel is, so every peer sees the same moment. A mover is laid
+whole, clear of every station's reach and every other leg's lane through its whole cycle (16 sampled phases), or a
+curtain stands there instead: over seeds 1-100 the turnstile stands on 86 courses and the shutter on 88. A shutter's
+clock is out of step from leg to leg. A broken blade or plate grows back like any other barrier prism.
+
 **Measured** (`bash Tools/Build/breakwater_ruins_harness/run.sh --measure`, the I4 courses of seeds 1-100): 7 barriers
-on every course (3 curtains, 2 minefields, 2 locks), 604 prisms a course (586 to 609). With the arena's 2,385 and the
-ruins' 744 that is about 3,730 at I4, still under intensity 1's 4,144.
+on every course (2 curtains, 2 minefields, a lock, a turnstile and a shutter, or a curtain where a mover does not fit),
+509 prisms a course (478 to 581). With the arena's 2,385 and the ruins' 744 that is about 3,640 at I4, still under
+intensity 1's 4,144.
 
 **Rules kept.**
 - Everything is Blue, as the stations are, so every pilot's rounds open a curtain and are paid ammunition for it.
@@ -1391,12 +1400,12 @@ is now a second place with danger prisms, on the line's surroundings, with the t
 Sparrow next to the detour; whether the AI's station rocket (fired between 60 and 220 u from the station, nose on it)
 is spent on a curtain that stands 150 to 190 u before the station; frame rate with about 600 more prisms.
 
-**Planned next, not built**: a turnstile and a shutter (moving, posed from the network clock), a flak battery (a
+**Planned next, not built**: a flak battery (a
 fixed pattern of danger prisms across the lane, silenced by shooting its core). An AIMED turret is a decision for
 Garrett: nothing in the game aims environment fire at a pilot today.
 
-**Tests:** `BreakwaterBarriersTests` (7, also run headless by the harness, whose `--self-test` proves three of them
-can fail). Compiled in Unity and passing there (2026-11-25); two AI-flown races watched, none flown by a person.
+**Tests:** `BreakwaterBarriersTests` (11, also run headless by the harness, whose `--self-test` proves five of them
+can fail). Compiled in Unity and passing there (2026-11-25); three AI-flown races watched, none flown by a person.
 
 **Open:** 17 and 39 barrier prisms were already broken before the start of the two watched races; the cause is not
 found (they grow back only once every hull has left, so a barrier near the pads can start with holes).

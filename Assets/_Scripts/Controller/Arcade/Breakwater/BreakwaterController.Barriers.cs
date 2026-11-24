@@ -10,8 +10,10 @@ namespace CosmicShore.Gameplay
     /// own colour (Blue, so every pilot's rounds open a curtain and are paid for it), once a course. A curtain's
     /// plates are plain prisms and a minefield's mines are danger prisms, both with the game's own rules: a hull or a
     /// round breaks them. A broken one grows back once the field has passed its barrier (<see cref="TickBarriers"/>,
-    /// the way Spearline's seals do), so the second lap meets walls too. Nothing here moves, and nothing reads or
-    /// writes a vessel or a station.
+    /// the way Spearline's seals do), so the second lap meets walls too. A turnstile's wheels and a shutter's halves
+    /// are POSED here every frame from the network clock, as the ruins' wheel is, so every peer sees the same
+    /// moment (a posed prism is the shape of its owner, not a moving prism: Docs/PRISM_MOTION.md 1). Nothing reads
+    /// or writes a vessel or a station.
     /// </summary>
     public partial class BreakwaterController
     {
@@ -26,6 +28,7 @@ namespace CosmicShore.Gameplay
 
         readonly List<RaceGate> _barrierLap = new();
         readonly List<BreakwaterBarrierPart> _barrierParts = new();
+        readonly List<BreakwaterBarrierMover> _barrierMovers = new();
         readonly List<Prism> _barrierPrisms = new();
         // For each part: when it was first seen broken (-1 while it stands), and which barrier it belongs to.
         readonly List<float> _barrierGoneAt = new();
@@ -41,7 +44,7 @@ namespace CosmicShore.Gameplay
             var prefab = arenaPrefab ? arenaPrefab.PrismPrefab : null;
             if (!layBarriers || !prefab) return;
             var pads = BreakwaterCourse.SpawnPadRing(ResolveCellCentre(), BreakwaterCourseSettings.DefaultSpawnRingRadius);
-            BreakwaterBarriers.Lay(_course, LeadInGates, Intensity, pads, _barrierLap, _barrierParts);
+            BreakwaterBarriers.Lay(_course, LeadInGates, Intensity, pads, _barrierLap, _barrierParts, _barrierMovers);
             if (_barrierParts.Count == 0) return;
             _barrierRoot = new GameObject("BreakwaterBarriers").transform;
             int leg = -1, first = 0;
@@ -90,6 +93,7 @@ namespace CosmicShore.Gameplay
         void TickBarriers()
         {
             if (_barrierPrisms.Count == 0 || gameData == null) return;
+            PoseBarriers();
             var prefab = arenaPrefab ? arenaPrefab.PrismPrefab : null;
             if (!prefab) return;
             var players = gameData.Players;
@@ -124,6 +128,25 @@ namespace CosmicShore.Gameplay
             _barrierCursor = (_barrierCursor + scan) % count;
         }
 
+        // Each mover's standing prisms at the shared clock's moment. A prism that just grew back is posed here on
+        // the next frame.
+        void PoseBarriers()
+        {
+            if (_barrierMovers.Count == 0) return;
+            float seconds = RuinClock;
+            for (int m = 0; m < _barrierMovers.Count; m++)
+            {
+                var mover = _barrierMovers[m];
+                for (int i = mover.First; i < mover.First + mover.Count && i < _barrierPrisms.Count; i++)
+                {
+                    var prism = _barrierPrisms[i];
+                    if (!prism || prism.destroyed || prism.ownerID != BarrierOwnerId) continue;
+                    BreakwaterBarriers.Pose(_barrierParts[i], mover, seconds, out var position, out var forward, out var up);
+                    prism.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
+                }
+            }
+        }
+
         void ClearBarriers()
         {
             for (int i = 0; i < _barrierPrisms.Count; i++)
@@ -139,6 +162,7 @@ namespace CosmicShore.Gameplay
             _barrierFieldAt.Clear();
             _barrierCursor = 0;
             _barrierParts.Clear();
+            _barrierMovers.Clear();
             _barrierLap.Clear();
             if (_barrierRoot) Destroy(_barrierRoot.gameObject);
             _barrierRoot = null;

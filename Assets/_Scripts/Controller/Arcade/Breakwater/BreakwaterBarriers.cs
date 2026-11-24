@@ -25,13 +25,41 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>The parts <see cref="First"/>..<see cref="First"/>+<see cref="Count"/> of a barrier that MOVE, about
+    /// <see cref="Centre"/> on the line: a turnstile wheel turns about <see cref="Axis"/> at <see cref="Rate"/>
+    /// degrees a second; a shutter's halves slide along <see cref="Right"/>, <see cref="Rate"/> seconds out of step
+    /// with the clock.</summary>
+    public readonly struct BreakwaterBarrierMover
+    {
+        public readonly int Kind, First, Count;
+        public readonly Vector3 Centre, Axis, Right;
+        public readonly float Rate;
+
+        public BreakwaterBarrierMover(int kind, Vector3 centre, Vector3 axis, Vector3 right, float rate, int first, int count)
+        {
+            Kind = kind;
+            Centre = centre;
+            Axis = axis;
+            Right = right;
+            Rate = rate;
+            First = first;
+            Count = count;
+        }
+
+        public BreakwaterBarrierMover From(int first) => new(Kind, Centre, Axis, Right, Rate, first, Count);
+    }
+
     /// <summary>
     /// Breakwater's barriers (BREAKWATER.md "The barriers", Yash 2026-11-25: "pass by obstacles, shoot and make passage
     /// if can't pass"): what stands ACROSS the racing line on the legs the garden ruins leave bare, at I4 only. Three
     /// kinds take turns round the circuit:
     /// a <b>curtain</b> (one thin wall of plates right across the lane: shoot a hole, ram it or fly round),
     /// a <b>minefield</b> (danger prisms round the line with the thread down the middle left open, as a station's eye
-    /// is) and a <b>lock</b> (three smaller curtains in a row: more rounds to open, a shorter way round).
+    /// is), a <b>lock</b> (three smaller curtains in a row: more rounds to open, a shorter way round),
+    /// a <b>turnstile</b> (two bladed wheels turning opposite ways about the line, the thread through their hubs open)
+    /// and a <b>shutter</b> (a curtain whose two halves slide apart and shut again on a clock). The two that move are
+    /// POSED from a clock the controller gives (<see cref="Pose"/>); one that would sweep into a station's reach or
+    /// another leg's lane is laid as a curtain instead.
     ///
     /// <para>Each stands at the middle of its leg's flown line, across it. Everything is laid Blue by the controller,
     /// as the stations are, so every pilot's rounds open a curtain and are paid for it. They are prisms with the
@@ -43,8 +71,26 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class BreakwaterBarriers
     {
-        public const int Curtain = 0, Minefield = 1, Lock = 2;
-        public const int KindCount = 3;
+        public const int Curtain = 0, Minefield = 1, Lock = 2, Turnstile = 3, Shutter = 4;
+        public const int KindCount = 5;
+
+        /// <summary>A turnstile: two wheels this far (u) either side of the leg's middle, turning opposite ways at
+        /// this rate, each with this many blades of this many segments from <see cref="BladeInner"/> out.</summary>
+        public const float WheelOffset = 12f, WheelDegreesPerSecond = 36f, BladeInner = 20.5f;
+        public const int WheelBlades = 4, BladeSegments = 4;
+        /// <summary>A blade segment: this wide across the blade, this thin along the line, this long outward (u).</summary>
+        public const float BladeWidth = 14f, BladeThickness = 3f, BladeLength = 13f;
+
+        /// <summary>A shutter: a disc of plates this far (u) from the line whose halves each slide this far apart.
+        /// One cycle: shut, opening, open, closing (s).</summary>
+        public const float ShutterRadius = 60f, ShutterTravel = 22f;
+        public const float ShutterShut = 2f, ShutterMove = 1f, ShutterOpen = 2f;
+        public const float ShutterPeriod = ShutterShut + ShutterMove + ShutterOpen + ShutterMove;
+
+        /// <summary>Phases of a mover's cycle sampled for its clearances.</summary>
+        public const int SweepSamples = 16;
+
+        public static bool Moves(int kind) => kind == Turnstile || kind == Shutter;
 
         /// <summary>A curtain reaches this far (u) from the line: past the lane (60), so the way round is a real detour.</summary>
         public const float CurtainRadius = 72f;
@@ -96,10 +142,12 @@ namespace CosmicShore.Gameplay
         /// than half its prisms that way is left out whole.
         /// </summary>
         public static void Lay(IReadOnlyList<RaceGate> course, int leadIn, int intensity, IReadOnlyList<Vector3> pads,
-                               List<RaceGate> lap, List<BreakwaterBarrierPart> parts)
+                               List<RaceGate> lap, List<BreakwaterBarrierPart> parts,
+                               List<BreakwaterBarrierMover> movers = null)
         {
             lap.Clear();
             parts.Clear();
+            movers?.Clear();
             if (course == null || !OnRung(intensity)) return;
             leadIn = Mathf.Clamp(leadIn, 0, course.Count);
             for (int i = leadIn; i < course.Count; i++) lap.Add(course[i]);
@@ -107,6 +155,7 @@ namespace CosmicShore.Gameplay
 
             var settings = BreakwaterRuins.Settings(intensity);
             var offered = new List<BreakwaterBarrierPart>();
+            var offeredMovers = new List<BreakwaterBarrierMover>();
             int ordinal = 0;
             for (int leg = 0; leg < lap.Count; leg++)
             {
@@ -115,6 +164,22 @@ namespace CosmicShore.Gameplay
                 var b = lap[(leg + 1) % lap.Count];
                 if ((b.Position - a.Position).magnitude < settings.MinLegLength) continue;
                 int kind = KindOf(ordinal++);
+
+                if (Moves(kind))
+                {
+                    // A mover is laid whole, clear through its whole cycle, or not at all: then a curtain stands here.
+                    offered.Clear();
+                    offeredMovers.Clear();
+                    Offer(a, b, leg, kind, offered, offeredMovers);
+                    if (SweepsClear(offered, offeredMovers, course, leadIn, pads, lap, settings))
+                    {
+                        if (movers != null)
+                            foreach (var m in offeredMovers) movers.Add(m.From(parts.Count + m.First));
+                        parts.AddRange(offered);
+                        continue;
+                    }
+                    kind = Curtain;
+                }
 
                 offered.Clear();
                 Offer(a, b, leg, kind, offered);
@@ -128,7 +193,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Every prism of one barrier of <paramref name="kind"/> at the middle of the leg from
         /// <paramref name="a"/> to <paramref name="b"/>, before the clearances.</summary>
-        public static void Offer(in RaceGate a, in RaceGate b, int leg, int kind, List<BreakwaterBarrierPart> into)
+        public static void Offer(in RaceGate a, in RaceGate b, int leg, int kind, List<BreakwaterBarrierPart> into,
+                                 List<BreakwaterBarrierMover> movers = null)
         {
             Vector3 centre = SpearlineRuins.LinePoint(a, b, 0.5f);
             Vector3 forward = SpearlineRuins.LineDirection(a, b, 0.5f);
@@ -139,6 +205,26 @@ namespace CosmicShore.Gameplay
                 case Curtain:
                     Sheet(centre, forward, right, up, CurtainRadius, leg, kind, into);
                     break;
+                case Turnstile:
+                    for (int w = 0; w < 2; w++)
+                    {
+                        float side = w == 0 ? -1f : 1f;
+                        Vector3 hub = centre + forward * (side * WheelOffset);
+                        int first = into.Count;
+                        Wheel(hub, forward, right, up, leg, into);
+                        movers?.Add(new BreakwaterBarrierMover(Turnstile, hub, forward, right,
+                                                               side * WheelDegreesPerSecond, first, into.Count - first));
+                    }
+                    break;
+                case Shutter:
+                {
+                    int first = into.Count;
+                    Sheet(centre, forward, right, up, ShutterRadius, leg, kind, into, 0.5f * PlatePitch);
+                    // Out of step from leg to leg, so two shutters are not open at the same moment of a lap.
+                    movers?.Add(new BreakwaterBarrierMover(Shutter, centre, forward, right, leg * 1.3f, first,
+                                                           into.Count - first));
+                    break;
+                }
                 case Lock:
                     for (int n = 0; n < LockSheets; n++)
                         Sheet(centre + forward * ((n - 0.5f * (LockSheets - 1)) * LockSpacing), forward, right, up,
@@ -151,18 +237,98 @@ namespace CosmicShore.Gameplay
         }
 
         // A disc of plates across the line: every plate of a square grid whose centre is inside the radius.
+        // offsetU moves the columns sideways: a shutter's are half a pitch off, so its seam is on the line.
         static void Sheet(Vector3 centre, Vector3 forward, Vector3 right, Vector3 up, float radius, int leg, int kind,
-                          List<BreakwaterBarrierPart> into)
+                          List<BreakwaterBarrierPart> into, float offsetU = 0f)
         {
-            int half = Mathf.CeilToInt(radius / PlatePitch);
+            int half = Mathf.CeilToInt(radius / PlatePitch) + 1;
             var scale = new Vector3(PlateSize, PlateSize, PlateThickness);
             for (int x = -half; x <= half; x++)
                 for (int y = -half; y <= half; y++)
                 {
-                    float u = x * PlatePitch, v = y * PlatePitch;
+                    float u = x * PlatePitch + offsetU, v = y * PlatePitch;
                     if (u * u + v * v > radius * radius) continue;
                     into.Add(new BreakwaterBarrierPart(centre + right * u + up * v, forward, up, scale, leg, kind, false));
                 }
+        }
+
+        // One wheel of a turnstile: blades at right angles, each a row of segments from the open hub outward.
+        static void Wheel(Vector3 hub, Vector3 forward, Vector3 right, Vector3 up, int leg, List<BreakwaterBarrierPart> into)
+        {
+            var scale = new Vector3(BladeWidth, BladeThickness, BladeLength);
+            for (int blade = 0; blade < WheelBlades; blade++)
+            {
+                float angle = blade * (2f * Mathf.PI / WheelBlades);
+                Vector3 radial = right * Mathf.Cos(angle) + up * Mathf.Sin(angle);
+                for (int n = 0; n < BladeSegments; n++)
+                {
+                    float r = BladeInner + (n + 0.5f) * BladeLength;
+                    // Long side outward, thin side along the line.
+                    into.Add(new BreakwaterBarrierPart(hub + radial * r, radial, forward, scale, leg, Turnstile, false));
+                }
+            }
+        }
+
+        /// <summary>How far open a shutter is at <paramref name="seconds"/> of its cycle: 0 shut, 1 open.</summary>
+        public static float ShutterOpening(float seconds)
+        {
+            float t = seconds % ShutterPeriod;
+            if (t < 0f) t += ShutterPeriod;
+            if (t < ShutterShut) return 0f;
+            t -= ShutterShut;
+            if (t < ShutterMove) return Smooth(t / ShutterMove);
+            t -= ShutterMove;
+            if (t < ShutterOpen) return 1f;
+            t -= ShutterOpen;
+            return 1f - Smooth(t / ShutterMove);
+        }
+
+        static float Smooth(float x) => x * x * (3f - 2f * x);
+
+        /// <summary>Where <paramref name="part"/> of <paramref name="mover"/> is at <paramref name="seconds"/> on the
+        /// clock every peer shares.</summary>
+        public static void Pose(in BreakwaterBarrierPart part, in BreakwaterBarrierMover mover, float seconds,
+                                out Vector3 position, out Vector3 forward, out Vector3 up)
+        {
+            if (mover.Kind == Shutter)
+            {
+                float side = Vector3.Dot(part.Position - mover.Centre, mover.Right) >= 0f ? 1f : -1f;
+                position = part.Position + mover.Right * (side * ShutterTravel * ShutterOpening(seconds + mover.Rate));
+                forward = part.Forward;
+                up = part.Up;
+                return;
+            }
+            float angle = mover.Rate * seconds * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(angle), sin = Mathf.Sin(angle);
+            position = mover.Centre + Turn(part.Position - mover.Centre, mover.Axis, cos, sin);
+            forward = Turn(part.Forward, mover.Axis, cos, sin);
+            up = Turn(part.Up, mover.Axis, cos, sin);
+        }
+
+        /// <summary>The seconds one cycle of <paramref name="mover"/> takes.</summary>
+        public static float Period(in BreakwaterBarrierMover mover) =>
+            mover.Kind == Shutter ? ShutterPeriod : 360f / Mathf.Abs(mover.Rate);
+
+        static Vector3 Turn(Vector3 p, Vector3 axis, float cos, float sin) =>
+            p * cos + Vector3.Cross(axis, p) * sin + axis * (Vector3.Dot(axis, p) * (1f - cos));
+
+        // Does every part of every mover stand at every sampled phase of its cycle?
+        static bool SweepsClear(List<BreakwaterBarrierPart> offered, List<BreakwaterBarrierMover> movers,
+                                IReadOnlyList<RaceGate> course, int leadIn, IReadOnlyList<Vector3> pads,
+                                IReadOnlyList<RaceGate> lap, in SpearlineRuinSettings s)
+        {
+            foreach (var mover in movers)
+            {
+                float period = Period(mover);
+                for (int i = mover.First; i < mover.First + mover.Count; i++)
+                    for (int k = 0; k < SweepSamples; k++)
+                    {
+                        Pose(offered[i], mover, k * period / SweepSamples, out var p, out var f, out var u);
+                        var posed = new BreakwaterBarrierPart(p, f, u, offered[i].Scale, offered[i].Leg, offered[i].Kind, false);
+                        if (!Stands(posed, course, leadIn, pads, lap, s)) return false;
+                    }
+            }
+            return true;
         }
 
         // Mines on a golden-angle spiral round the line, spread along it. A mine the curve of the line would bring

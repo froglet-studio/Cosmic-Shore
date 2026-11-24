@@ -429,6 +429,7 @@ compiled (`unity_refcompile` cannot run on this machine, and no Unity run was ma
 5. Watch an AI lap: it gets through every barrier, and still has a rocket for the station after a curtain.
 6. Frame rate at I4 is still about where it was (about 70 FPS with three racers on Yash's PC, 2026-11-25).
 7. I1-I3: no barriers.
+9. Turnstile: two bladed wheels turn opposite ways about the line; the line through the hubs is open; a blade costs what a plain prism costs. Shutter: the wall parts and shuts on a 6 s cycle; fly through while it is open. (Seen in stills of one AI race, 2026-11-25: 11 of 11 tests pass in the editor, 46 to 74 FPS.) On a second machine the wheels and the shutter are at the same moment as on the host.
 8. Shoot a hole in a curtain, fly on, come back on lap 2: the wall is whole again, and it never closed while you were near it.
 
 ## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — COMPILED, EditMode tests pass (2026-11-24); NOT WATCHED

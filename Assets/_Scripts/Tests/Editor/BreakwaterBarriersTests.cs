@@ -35,13 +35,14 @@ namespace CosmicShore.Tests
         {
             public List<RaceGate> Course, Lap = new();
             public List<BreakwaterBarrierPart> Parts = new();
+            public List<BreakwaterBarrierMover> Movers = new();
         }
 
         static Laid Barriers(int intensity, int seed)
         {
             var laid = new Laid { Course = Course(intensity, seed) };
             if (laid.Course == null) return null;
-            BreakwaterBarriers.Lay(laid.Course, LeadIn, intensity, Pads, laid.Lap, laid.Parts);
+            BreakwaterBarriers.Lay(laid.Course, LeadIn, intensity, Pads, laid.Lap, laid.Parts, laid.Movers);
             return laid;
         }
 
@@ -89,7 +90,7 @@ namespace CosmicShore.Tests
                 var crossed = new Dictionary<int, bool>();
                 foreach (var part in laid.Parts)
                 {
-                    if (part.Danger) continue;
+                    if (part.Kind != BreakwaterBarriers.Curtain && part.Kind != BreakwaterBarriers.Lock) continue;
                     var a = laid.Lap[part.Leg];
                     var b = laid.Lap[(part.Leg + 1) % laid.Lap.Count];
                     bool onLine = BreakwaterBarriers.LegDistance(a, b, part.Position) < 0.5f * BreakwaterBarriers.PlatePitch;
@@ -158,6 +159,120 @@ namespace CosmicShore.Tests
             Assert.IsTrue(BreakwaterBarriers.Regrows(BreakwaterBarriers.RegrowSeconds));
             // Short enough that the next lap meets the wall: I4 laps run from about 33 s.
             Assert.Less(BreakwaterBarriers.RegrowSeconds, 20f);
+        }
+
+        [Test]
+        public void A_mover_is_laid_whole_and_names_only_its_own_parts()
+        {
+            int turnstiles = 0, shutters = 0;
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var laid = Barriers(4, seed);
+                if (laid == null) continue;
+                var moved = new HashSet<int>();
+                foreach (var mover in laid.Movers)
+                {
+                    Assert.IsTrue(BreakwaterBarriers.Moves(mover.Kind), $"seed {seed}");
+                    Assert.Greater(mover.Count, 0, $"seed {seed}");
+                    Assert.LessOrEqual(mover.First + mover.Count, laid.Parts.Count, $"seed {seed}");
+                    for (int i = mover.First; i < mover.First + mover.Count; i++)
+                    {
+                        Assert.AreEqual(mover.Kind, laid.Parts[i].Kind, $"seed {seed} part {i}");
+                        Assert.IsTrue(moved.Add(i), $"seed {seed} part {i}: in two movers");
+                    }
+                    if (mover.Kind == BreakwaterBarriers.Shutter) shutters++; else turnstiles++;
+                }
+                for (int i = 0; i < laid.Parts.Count; i++)
+                    Assert.AreEqual(BreakwaterBarriers.Moves(laid.Parts[i].Kind), moved.Contains(i), $"seed {seed} part {i}");
+            }
+            Assert.Greater(turnstiles, 0, "no turnstile stood on any course");
+            Assert.Greater(shutters, 0, "no shutter stood on any course");
+        }
+
+        [Test]
+        public void A_mover_keeps_its_clearances_through_its_whole_cycle()
+        {
+            float reach = BreakwaterCourse.StationReach(BreakwaterCourseSettings.PortRadiusForIntensity(4));
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var laid = Barriers(4, seed);
+                if (laid == null) continue;
+                foreach (var mover in laid.Movers)
+                {
+                    float period = BreakwaterBarriers.Period(mover);
+                    for (int i = mover.First; i < mover.First + mover.Count; i++)
+                        for (int k = 0; k < 40; k++)
+                        {
+                            BreakwaterBarriers.Pose(laid.Parts[i], mover, k * period / 40f + 0.37f, out var p, out _, out _);
+                            foreach (var gate in laid.Course)
+                                Assert.GreaterOrEqual((p - gate.Position).magnitude, reach, $"seed {seed}: a mover in a station's reach");
+                            for (int leg = 0; leg < laid.Lap.Count; leg++)
+                                if (leg != laid.Parts[i].Leg)
+                                    Assert.GreaterOrEqual(SpearlineRuins.LegDistance(laid.Lap, leg, p),
+                                        BreakwaterRuins.ClearRadius - 4f, $"seed {seed}: a mover in leg {leg}'s lane");
+                        }
+                }
+            }
+        }
+
+        [Test]
+        public void A_turnstile_never_sweeps_the_thread()
+        {
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var laid = Barriers(4, seed);
+                if (laid == null) continue;
+                foreach (var mover in laid.Movers)
+                {
+                    if (mover.Kind != BreakwaterBarriers.Turnstile) continue;
+                    for (int i = mover.First; i < mover.First + mover.Count; i++)
+                    {
+                        var part = laid.Parts[i];
+                        var a = laid.Lap[part.Leg];
+                        var b = laid.Lap[(part.Leg + 1) % laid.Lap.Count];
+                        for (int k = 0; k < 24; k++)
+                        {
+                            BreakwaterBarriers.Pose(part, mover, k * 0.41f, out var p, out _, out _);
+                            // The blade's long side points outward, so its inner end is half its length nearer.
+                            Assert.GreaterOrEqual(BreakwaterBarriers.LegDistance(a, b, p) - 0.5f * part.Scale.z,
+                                BreakwaterBarriers.ThreadRadius, $"seed {seed} leg {part.Leg}: a blade in the thread");
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void A_shutter_is_shut_across_the_line_and_open_round_the_thread()
+        {
+            Assert.AreEqual(0f, BreakwaterBarriers.ShutterOpening(0f), 1e-4f);
+            Assert.AreEqual(0f, BreakwaterBarriers.ShutterOpening(BreakwaterBarriers.ShutterPeriod), 1e-4f);
+            float openAt = BreakwaterBarriers.ShutterShut + BreakwaterBarriers.ShutterMove + 0.5f * BreakwaterBarriers.ShutterOpen;
+            Assert.AreEqual(1f, BreakwaterBarriers.ShutterOpening(openAt), 1e-4f);
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var laid = Barriers(4, seed);
+                if (laid == null) continue;
+                foreach (var mover in laid.Movers)
+                {
+                    if (mover.Kind != BreakwaterBarriers.Shutter) continue;
+                    float nearestShut = float.MaxValue, nearestOpen = float.MaxValue;
+                    for (int i = mover.First; i < mover.First + mover.Count; i++)
+                    {
+                        var part = laid.Parts[i];
+                        var a = laid.Lap[part.Leg];
+                        var b = laid.Lap[(part.Leg + 1) % laid.Lap.Count];
+                        // mover.Rate is the shutter's step out of time with the clock.
+                        BreakwaterBarriers.Pose(part, mover, -mover.Rate, out var shut, out _, out _);
+                        BreakwaterBarriers.Pose(part, mover, openAt - mover.Rate, out var open, out _, out _);
+                        nearestShut = Mathf.Min(nearestShut, BreakwaterBarriers.LegDistance(a, b, shut));
+                        nearestOpen = Mathf.Min(nearestOpen, BreakwaterBarriers.LegDistance(a, b, open));
+                    }
+                    Assert.Less(nearestShut, 0.75f * BreakwaterBarriers.PlatePitch, $"seed {seed}: shut, the line is open");
+                    Assert.GreaterOrEqual(nearestOpen - 0.5f * BreakwaterBarriers.PlateSize, BreakwaterBarriers.ThreadRadius,
+                        $"seed {seed}: open, a plate is in the thread");
+                }
+            }
         }
 
         [Test]
