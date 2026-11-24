@@ -2866,6 +2866,812 @@
       "h": 900,
       "page": "game-cards",
       "title": "Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes"
+    },
+    "R130Compare.dc.html": {
+      "x": 0,
+      "y": 9760,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 - Compare"
+    },
+    "R130S1.dc.html": {
+      "x": 2100,
+      "y": 9760,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S1 - S1 Frame - interactive",
+      "is_interactive": true
+    },
+    "R130S2.dc.html": {
+      "x": 4200,
+      "y": 9760,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S2 - S2 Night grade - interactive",
+      "is_interactive": true
+    },
+    "R130S3.dc.html": {
+      "x": 0,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S3 - S3 Reel - interactive",
+      "is_interactive": true
+    },
+    "R130S4.dc.html": {
+      "x": 2100,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 S4 - S4 Window - interactive",
+      "is_interactive": true
+    },
+    "R130Y1.dc.html": {
+      "x": 4200,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y1 - Y1 Pictogram - interactive",
+      "is_interactive": true
+    },
+    "R130Y2.dc.html": {
+      "x": 0,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y2 - Y2 Playbook - interactive",
+      "is_interactive": true
+    },
+    "R130Y3.dc.html": {
+      "x": 2100,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y3 - Y3 Diorama - interactive",
+      "is_interactive": true
+    },
+    "R130Y4.dc.html": {
+      "x": 4200,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 130 Y4 - Y4 Crest - interactive",
+      "is_interactive": true
+    },
+    "R130Notes.dc.html": {
+      "x": 0,
+      "y": 13540,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 130 - Notes"
+    },
+    "R131Compare.dc.html": {
+      "x": 0,
+      "y": 15900,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 - Compare"
+    },
+    "R131Y5.dc.html": {
+      "x": 2100,
+      "y": 15900,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 Y5 - Y5 Light trail - interactive",
+      "is_interactive": true
+    },
+    "R131Y6.dc.html": {
+      "x": 4200,
+      "y": 15900,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 Y6 - Y6 Chase cam - interactive",
+      "is_interactive": true
+    },
+    "R131Y7.dc.html": {
+      "x": 0,
+      "y": 17160,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 131 Y7 - Y7 Hero shot - interactive",
+      "is_interactive": true
+    },
+    "R131Notes.dc.html": {
+      "x": 0,
+      "y": 18420,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 131 - notes: what each option changes, what is shared, what differs from the build"
+    },
+    "R132Compare.dc.html": {
+      "x": 0,
+      "y": 20780,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 - Compare"
+    },
+    "R132M1.dc.html": {
+      "x": 2100,
+      "y": 20780,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M1 - M1 Frame + Light trail - interactive",
+      "is_interactive": true
+    },
+    "R132M2.dc.html": {
+      "x": 4200,
+      "y": 20780,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M2 - M2 Frame + Hero shot - interactive",
+      "is_interactive": true
+    },
+    "R132M3.dc.html": {
+      "x": 0,
+      "y": 22040,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M3 - M3 Frame + Diorama - interactive",
+      "is_interactive": true
+    },
+    "R132M4.dc.html": {
+      "x": 2100,
+      "y": 22040,
+      "w": 1920,
+      "h": 1080,
+      "page": "game-cards",
+      "title": "Rev 132 M4 - M4 Frame + Chase cam - interactive",
+      "is_interactive": true
+    },
+    "R132Notes.dc.html": {
+      "x": 0,
+      "y": 23300,
+      "w": 1920,
+      "h": 900,
+      "page": "game-cards",
+      "title": "Rev 132 - notes: what each option changes, what is shared, what differs from the build"
+    },
+    "R133ABoard.dc.html": {
+      "x": 0,
+      "y": 23680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 ABoard - The Chart: jobs as giver pins on the HyperSea (recommended)"
+    },
+    "R133ASeats.dc.html": {
+      "x": 2100,
+      "y": 23680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 ASeats - The Chart: seats with class, mood and rank"
+    },
+    "R133APause.dc.html": {
+      "x": 4200,
+      "y": 23680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 APause - The Chart: pause is the chart on your lane"
+    },
+    "R133AVote.dc.html": {
+      "x": 0,
+      "y": 24940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 AVote - The Chart: the detour vote"
+    },
+    "R133AAwards.dc.html": {
+      "x": 2100,
+      "y": 24940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 AAwards - The Chart: role awards"
+    },
+    "R133BBoard.dc.html": {
+      "x": 4200,
+      "y": 24940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 BBoard - The Quay: the givers on the quay"
+    },
+    "R133BSeats.dc.html": {
+      "x": 0,
+      "y": 26200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 BSeats - The Quay: pilot cards"
+    },
+    "R133BPause.dc.html": {
+      "x": 2100,
+      "y": 26200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 BPause - The Quay: the lane as a column"
+    },
+    "R133BVote.dc.html": {
+      "x": 4200,
+      "y": 26200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 BVote - The Quay: the pilot asks"
+    },
+    "R133BAwards.dc.html": {
+      "x": 0,
+      "y": 27460,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 BAwards - The Quay: role awards"
+    },
+    "R133CBoard.dc.html": {
+      "x": 2100,
+      "y": 27460,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 CBoard - The Ledger: the job list"
+    },
+    "R133CSeats.dc.html": {
+      "x": 4200,
+      "y": 27460,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 CSeats - The Ledger: seats as rows"
+    },
+    "R133CPause.dc.html": {
+      "x": 0,
+      "y": 28720,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 CPause - The Ledger: the course strip"
+    },
+    "R133CVote.dc.html": {
+      "x": 2100,
+      "y": 28720,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 CVote - The Ledger: the vote in the chip"
+    },
+    "R133CAwards.dc.html": {
+      "x": 4200,
+      "y": 28720,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 133 CAwards - The Ledger: role awards"
+    },
+    "R133Notes.dc.html": {
+      "x": 0,
+      "y": 29980,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 133 - notes: what each direction answers"
+    },
+    "R134Board.dc.html": {
+      "x": 0,
+      "y": 32340,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Board - The quay: the givers ask, your crew answers"
+    },
+    "R134BoardRefuse.dc.html": {
+      "x": 2100,
+      "y": 32340,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 BoardRefuse - A pilot refuses the job"
+    },
+    "R134Seats.dc.html": {
+      "x": 4200,
+      "y": 32340,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Seats - Your Ark: A's line-up, B's pilots speaking"
+    },
+    "R134SeatsRefuse.dc.html": {
+      "x": 0,
+      "y": 33600,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 SeatsRefuse - A refusing pilot holds Set sail"
+    },
+    "R134Pilots.dc.html": {
+      "x": 2100,
+      "y": 33600,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Pilots - The pilot picker: mood for this job, rank"
+    },
+    "R134Party.dc.html": {
+      "x": 4200,
+      "y": 33600,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Party - A friend still choosing"
+    },
+    "R134Intro.dc.html": {
+      "x": 0,
+      "y": 34860,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Intro - The intro card: the voyage's name"
+    },
+    "R134Crossing.dc.html": {
+      "x": 2100,
+      "y": 34860,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Crossing - Through a membrane: the cell named"
+    },
+    "R134Event.dc.html": {
+      "x": 4200,
+      "y": 34860,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Event - An event lights next door"
+    },
+    "R134Vote.dc.html": {
+      "x": 0,
+      "y": 36120,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Vote - The vote: the pilot who saw it asks"
+    },
+    "R134VoteTie.dc.html": {
+      "x": 2100,
+      "y": 36120,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 VoteTie - A tie: the host's vote wins"
+    },
+    "R134VoteSolo.dc.html": {
+      "x": 4200,
+      "y": 36120,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 VoteSolo - Solo: your call"
+    },
+    "R134Detour.dc.html": {
+      "x": 0,
+      "y": 37380,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Detour - The detour: one cell over"
+    },
+    "R134Rival.dc.html": {
+      "x": 2100,
+      "y": 37380,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Rival - A rival crew arrives, racing"
+    },
+    "R134Hostile.dc.html": {
+      "x": 4200,
+      "y": 37380,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Hostile - A rival attacks the Ark"
+    },
+    "R134Joins.dc.html": {
+      "x": 0,
+      "y": 38640,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Joins - A friend joins at the next cell"
+    },
+    "R134Pause.dc.html": {
+      "x": 2100,
+      "y": 38640,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Pause - Pause: the chart on your lane"
+    },
+    "R134Dock.dc.html": {
+      "x": 4200,
+      "y": 38640,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Dock - Docking: the hold banks"
+    },
+    "R134Awards.dc.html": {
+      "x": 0,
+      "y": 39900,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Awards - The end board: one award per seat"
+    },
+    "R134Lost.dc.html": {
+      "x": 2100,
+      "y": 39900,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 Lost - The Ark lost"
+    },
+    "R134WorldEvents.dc.html": {
+      "x": 4200,
+      "y": 39900,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 WorldEvents - The world: the five events next door"
+    },
+    "R134WorldSea.dc.html": {
+      "x": 0,
+      "y": 41160,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 134 WorldSea - The world: zones, cells, danger"
+    },
+    "R134Notes.dc.html": {
+      "x": 0,
+      "y": 42420,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 134 - notes: the picked mix on every screen"
+    },
+    "R135BoardFull.dc.html": {
+      "x": 0,
+      "y": 44780,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 135 BoardFull - The quay board with its Full screen control kept"
+    },
+    "R135FullScreen.dc.html": {
+      "x": 2100,
+      "y": 44780,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 135 FullScreen - The HyperSea full screen: zoom inside the map, back from full screen, the givers on the right, the voyage along the foot"
+    },
+    "R135ClassesA.dc.html": {
+      "x": 4200,
+      "y": 44780,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 135 ClassesA - Classes A: the fleet by class, how each class fares in every voyage"
+    },
+    "R135ClassesB.dc.html": {
+      "x": 0,
+      "y": 46040,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 135 ClassesB - Classes B: this voyage's shelf, every vessel by how well it fits (recommended)"
+    },
+    "R135ClassesPick.dc.html": {
+      "x": 2100,
+      "y": 46040,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 135 ClassesPick - Classes B in the seat picker: swapping a hull, fit and pay change live"
+    },
+    "R135Notes.dc.html": {
+      "x": 0,
+      "y": 47300,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 135 - notes: the classes screen, effectiveness and where it opens"
+    },
+    "R136EVessels.dc.html": {
+      "x": 0,
+      "y": 49660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 EVessels - E One class on the floor"
+    },
+    "R136ESeat.dc.html": {
+      "x": 2100,
+      "y": 49660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 ESeat - E opened from Seat 3"
+    },
+    "R136FVessels.dc.html": {
+      "x": 4200,
+      "y": 49660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 FVessels - F The wanted three on the floor"
+    },
+    "R136FSeat.dc.html": {
+      "x": 0,
+      "y": 50920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 136 FSeat - F opened from Seat 3"
+    },
+    "R136Notes.dc.html": {
+      "x": 0,
+      "y": 52180,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 136 - notes: Vessels in Rev 134's look"
+    },
+    "R137Chart.dc.html": {
+      "x": 0,
+      "y": 54540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Chart - Pause: a rival Ark and a runaway crew"
+    },
+    "R137ArkMeet.dc.html": {
+      "x": 2100,
+      "y": 54540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 ArkMeet - A rival Ark arrives"
+    },
+    "R137ArkOpen.dc.html": {
+      "x": 4200,
+      "y": 54540,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 ArkOpen - Escorts silenced, her hull open"
+    },
+    "R137ArkBreak.dc.html": {
+      "x": 0,
+      "y": 55800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 ArkBreak - Her hold bursts"
+    },
+    "R137Runaway.dc.html": {
+      "x": 2100,
+      "y": 55800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Runaway - A runaway crew raids"
+    },
+    "R137Rout.dc.html": {
+      "x": 4200,
+      "y": 55800,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Rout - They break and run"
+    },
+    "R137Fall.dc.html": {
+      "x": 0,
+      "y": 57060,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 137 Fall - The end board: who you beat"
+    },
+    "R137Notes.dc.html": {
+      "x": 0,
+      "y": 58320,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 137 - notes: rivals"
+    },
+    "R138Flow.dc.html": {
+      "x": 0,
+      "y": 60680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Flow - Flow: every screen, every press"
+    },
+    "R138Board.dc.html": {
+      "x": 2100,
+      "y": 60680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Board - The quay, five jobs"
+    },
+    "R138Full.dc.html": {
+      "x": 4200,
+      "y": 60680,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Full - HyperSea full screen"
+    },
+    "R138Seats.dc.html": {
+      "x": 0,
+      "y": 61940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Seats - Your Ark"
+    },
+    "R138Vessels.dc.html": {
+      "x": 2100,
+      "y": 61940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Vessels - Vessels E with hangar previews"
+    },
+    "R138Pilots.dc.html": {
+      "x": 4200,
+      "y": 61940,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Pilots - Pilots"
+    },
+    "R138Party.dc.html": {
+      "x": 0,
+      "y": 63200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 138 Party - Party"
+    },
+    "R138Notes.dc.html": {
+      "x": 0,
+      "y": 64460,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 138 - notes: the final shell"
+    },
+    "R139Compare.dc.html": {
+      "x": 0,
+      "y": 41651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 - the convert moment of A, B and C side by side, frame by frame"
+    },
+    "R139A.dc.html": {
+      "x": 2100,
+      "y": 41651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 A - Light paths: the five readings in one quiet line at the foot; on CONVERT each crystal's path lights up to the pad - interactive",
+      "is_interactive": true
+    },
+    "R139B.dc.html": {
+      "x": 4200,
+      "y": 41651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 B - Glass orb: the converter as a small glass sphere at the foot, the four inside fuse into the omni - interactive",
+      "is_interactive": true
+    },
+    "R139C.dc.html": {
+      "x": 0,
+      "y": 42911,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 C - The pad is the button: press the pier's own ring; the counts are one line at the foot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R139Notes.dc.html": {
+      "x": 0,
+      "y": 44171,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build"
+    },
+    "R140Compare.dc.html": {
+      "x": 0,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 - Compare: what happens when you touch Hydra, in each option"
+    },
+    "R140A.dc.html": {
+      "x": 2100,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 A - Lit where it stands: touch it, its pedestal lights, the words hang beside it - interactive",
+      "is_interactive": true
+    },
+    "R140B.dc.html": {
+      "x": 4200,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 B - Step up to it: touch it and the view walks in to its pedestal - interactive",
+      "is_interactive": true
+    },
+    "R140C.dc.html": {
+      "x": 0,
+      "y": 47791,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 C - Written on the floor: the words lie on the deck in front of it - interactive",
+      "is_interactive": true
+    },
+    "R140D.dc.html": {
+      "x": 2100,
+      "y": 47791,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 D - The column shows it: touch it and the light column plays what it does (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R140Notes.dc.html": {
+      "x": 0,
+      "y": 49051,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 140 - Notes: what changes, what stays, what each costs to build"
     }
   },
   "createdOnFiles": {
@@ -2874,7 +3680,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "game-cards",
+    "page": "ark",
     "view": "canvas"
   },
   "noteOrder": [
@@ -2957,6 +3763,18 @@
     "sec-rev127",
     "sec-rev128",
     "sec-rev129",
+    "sec-rev130",
+    "sec-rev131",
+    "sec-rev132",
+    "sec-rev133",
+    "sec-rev134",
+    "sec-rev134-2",
+    "sec-rev135",
+    "sec-rev136",
+    "sec-rev137",
+    "sec-rev138",
+    "sec-rev139",
+    "sec-rev140",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3048,7 +3866,18 @@
     "rev126",
     "rev127",
     "rev128",
-    "rev129"
+    "rev129",
+    "rev130",
+    "rev131",
+    "rev132",
+    "rev133",
+    "rev134",
+    "rev135",
+    "rev136",
+    "rev137",
+    "rev138",
+    "rev139",
+    "rev140"
   ],
   "notes": {
     "hud_end": {
@@ -5179,6 +6008,285 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "game-cards"
+    },
+    "rev130": {
+      "kind": "title1",
+      "text": "Rev 130 - The card's picture, eight more ways: real frames and signs of the play; the short line",
+      "x": 0,
+      "y": 9360,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev130": {
+      "kind": "rect",
+      "x": -160,
+      "y": 9200,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
+    },
+    "rev131": {
+      "kind": "title1",
+      "text": "Rev 131 - Symbolic, three new ways",
+      "x": 0,
+      "y": 15500,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev131": {
+      "kind": "rect",
+      "x": -160,
+      "y": 15340,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
+    },
+    "rev132": {
+      "kind": "title1",
+      "text": "Rev 132 - Real frames with the vessel acting",
+      "x": 0,
+      "y": 20380,
+      "w": 240,
+      "maxW": 6120,
+      "page": "game-cards"
+    },
+    "sec-rev132": {
+      "kind": "rect",
+      "x": -160,
+      "y": 20220,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "game-cards"
+    },
+    "rev133": {
+      "kind": "title1",
+      "text": "Rev 133 - Milestone 2 Voyages UI, three ways: A The Chart (recommended), B The Quay, C The Ledger - the job board, seats, pause map, detour vote, role awards",
+      "x": 0,
+      "y": 23280,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev133": {
+      "kind": "rect",
+      "x": -160,
+      "y": 23120,
+      "w": 6440,
+      "h": 7920,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev134": {
+      "kind": "title1",
+      "text": "Rev 134 - The picked Milestone 2 Voyages UI on every screen and state (Board B, Seats A+B, Pause A, Vote B, Awards A), and how the world reads",
+      "x": 0,
+      "y": 31940,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev134": {
+      "kind": "rect",
+      "x": -160,
+      "y": 31780,
+      "w": 6440,
+      "h": 5850,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 0px 3px",
+        "border-radius": "40px 40px 0px 0px"
+      },
+      "page": "voyages"
+    },
+    "sec-rev134-2": {
+      "kind": "rect",
+      "x": -160,
+      "y": 37630,
+      "w": 6440,
+      "h": 5850,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "0px 3px 3px 3px",
+        "border-radius": "0px 0px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev135": {
+      "kind": "title1",
+      "text": "Rev 135 - Voyages: the full-screen HyperSea stays, and the vessel classes screen",
+      "x": 0,
+      "y": 44380,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev135": {
+      "kind": "rect",
+      "x": -160,
+      "y": 44220,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev136": {
+      "kind": "title1",
+      "text": "Rev 136 - Voyages: Vessels, a section of Your Ark in Rev 134's look (two ways)",
+      "x": 0,
+      "y": 49260,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev136": {
+      "kind": "rect",
+      "x": -160,
+      "y": 49100,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev137": {
+      "kind": "title1",
+      "text": "Rev 137 - Voyages: rival Arks and runaway crews, and how you beat them",
+      "x": 0,
+      "y": 54140,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev137": {
+      "kind": "rect",
+      "x": -160,
+      "y": 53980,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(255, 77, 77, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 77, 77, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev138": {
+      "kind": "title1",
+      "text": "Rev 138 - Voyages: the final app shell, every screen and what you press",
+      "x": 0,
+      "y": 60280,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev138": {
+      "kind": "rect",
+      "x": -160,
+      "y": 60120,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev139": {
+      "kind": "title1",
+      "text": "Rev 139 - The Converter redrawn: the pier stays, the UI starts again, and CONVERT plays at once",
+      "x": 0,
+      "y": 41251,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev139": {
+      "kind": "rect",
+      "x": -160,
+      "y": 41091,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev140": {
+      "kind": "title1",
+      "text": "Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways",
+      "x": 0,
+      "y": 46131,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev140": {
+      "kind": "rect",
+      "x": -160,
+      "y": 45971,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
     }
   },
   "order": [
@@ -5523,7 +6631,105 @@
     "R128Notes.dc.html",
     "R129Compare.dc.html",
     "R129Row.dc.html",
-    "R129Notes.dc.html"
+    "R129Notes.dc.html",
+    "R130Compare.dc.html",
+    "R130S1.dc.html",
+    "R130S2.dc.html",
+    "R130S3.dc.html",
+    "R130S4.dc.html",
+    "R130Y1.dc.html",
+    "R130Y2.dc.html",
+    "R130Y3.dc.html",
+    "R130Y4.dc.html",
+    "R130Notes.dc.html",
+    "R131Compare.dc.html",
+    "R131Y5.dc.html",
+    "R131Y6.dc.html",
+    "R131Y7.dc.html",
+    "R131Notes.dc.html",
+    "R132Compare.dc.html",
+    "R132M1.dc.html",
+    "R132M2.dc.html",
+    "R132M3.dc.html",
+    "R132M4.dc.html",
+    "R132Notes.dc.html",
+    "R133ABoard.dc.html",
+    "R133ASeats.dc.html",
+    "R133APause.dc.html",
+    "R133AVote.dc.html",
+    "R133AAwards.dc.html",
+    "R133BBoard.dc.html",
+    "R133BSeats.dc.html",
+    "R133BPause.dc.html",
+    "R133BVote.dc.html",
+    "R133BAwards.dc.html",
+    "R133CBoard.dc.html",
+    "R133CSeats.dc.html",
+    "R133CPause.dc.html",
+    "R133CVote.dc.html",
+    "R133CAwards.dc.html",
+    "R133Notes.dc.html",
+    "R134Board.dc.html",
+    "R134BoardRefuse.dc.html",
+    "R134Seats.dc.html",
+    "R134SeatsRefuse.dc.html",
+    "R134Pilots.dc.html",
+    "R134Party.dc.html",
+    "R134Intro.dc.html",
+    "R134Crossing.dc.html",
+    "R134Event.dc.html",
+    "R134Vote.dc.html",
+    "R134VoteTie.dc.html",
+    "R134VoteSolo.dc.html",
+    "R134Detour.dc.html",
+    "R134Rival.dc.html",
+    "R134Hostile.dc.html",
+    "R134Joins.dc.html",
+    "R134Pause.dc.html",
+    "R134Dock.dc.html",
+    "R134Awards.dc.html",
+    "R134Lost.dc.html",
+    "R134WorldEvents.dc.html",
+    "R134WorldSea.dc.html",
+    "R134Notes.dc.html",
+    "R135BoardFull.dc.html",
+    "R135FullScreen.dc.html",
+    "R135ClassesA.dc.html",
+    "R135ClassesB.dc.html",
+    "R135ClassesPick.dc.html",
+    "R135Notes.dc.html",
+    "R136EVessels.dc.html",
+    "R136ESeat.dc.html",
+    "R136FVessels.dc.html",
+    "R136FSeat.dc.html",
+    "R136Notes.dc.html",
+    "R137Chart.dc.html",
+    "R137ArkMeet.dc.html",
+    "R137ArkOpen.dc.html",
+    "R137ArkBreak.dc.html",
+    "R137Runaway.dc.html",
+    "R137Rout.dc.html",
+    "R137Fall.dc.html",
+    "R137Notes.dc.html",
+    "R138Flow.dc.html",
+    "R138Board.dc.html",
+    "R138Full.dc.html",
+    "R138Seats.dc.html",
+    "R138Vessels.dc.html",
+    "R138Pilots.dc.html",
+    "R138Party.dc.html",
+    "R138Notes.dc.html",
+    "R139Compare.dc.html",
+    "R139A.dc.html",
+    "R139B.dc.html",
+    "R139C.dc.html",
+    "R139Notes.dc.html",
+    "R140Compare.dc.html",
+    "R140A.dc.html",
+    "R140B.dc.html",
+    "R140C.dc.html",
+    "R140D.dc.html",
+    "R140Notes.dc.html"
   ],
   "pages": [
     {

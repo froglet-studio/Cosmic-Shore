@@ -10040,3 +10040,35 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
+
+## 230. Rev 140 mockups: the Artifacts tab, touch the artifacts in the room - four ways (2026-11-24, awaiting a pick)
+
+**Asked (Shombith, 2026-11-24, on the built section 201):** "Artifacts again doesnt make sense I cannot click in the image
+itself that should be what I should be able to do. Rework on this and give me different design variations."
+
+**On the canvas:** tab **Ark**, round "Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways", six
+boards, written by `Docs/MenuRedesignB/rounds/r140_artifacts_in_room.py` (it reuses `r105_artifacts.py`'s content and
+logic; copies in `Docs/MenuRedesignB/board/R140*.dc.html`). In every option the rail of medallions is gone: the four
+artifacts on their pedestals in the backdrop ARE the buttons (a hit area over each one's place in the clip, measured on
+`artifacts_Nocturne_loop.mp4`; hover or pad focus lights its pedestal ring and a halo, its name above it), and the dark
+prisms in the alcoves are the slots still to find. Rev 105's three levels, words, feed of 5 and 10 crystals of each stay.
+Only what happens on a touch differs:
+
+- **A - Lit where it stands (`R140A`):** its pedestal lights, the room dims round it, the words hang in the open air on
+  the side with room, tied to it by a line.
+- **B - Step up to it (`R140B`):** the view walks in (1.9x) to its pedestal; the words and its four tracks stand on the
+  right; the neighbours are one press either side. Back walks out.
+- **C - Written on the floor (`R140C`):** the words lie on the deck in front of its pedestal, lit like the floor rings;
+  the buttons stay upright under it.
+- **D - The column shows it (`R140D`, recommended):** a beam ties it to the column of light, whose upper half becomes
+  the lens Shombith picked in Rev 105 B and plays what it does (Hydra's heads fan out); words left, tracks right.
+- **Compare (`R140Compare`):** the moment after touching Hydra, four ways. **Notes (`R140Notes`).**
+
+**Recommended: D** - it keeps the part of Rev 105 B that was picked (seeing what an artifact does) and moves it into the
+room, so the whole tab is the room. A is the quietest; B reads best on a phone but needs sharper clips; C is the most
+in-world but long words get hard to read on the floor.
+
+**Differs from the build (section 201):** `ArtifactMedallion`'s rail goes; each artifact gets an invisible button over
+its place in the backdrop with a ring and halo on top; D re-shapes `ArtifactLens` into the column. No new data.
+
+Affects: Shombith's Ark screen (the Artifacts tab, `ArkArtifactsPage`, `author_menu_ark.py`) once picked.
