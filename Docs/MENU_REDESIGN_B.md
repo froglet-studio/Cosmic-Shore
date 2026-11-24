@@ -4374,9 +4374,9 @@ cloud data and tell me what to do"; "in the controls tab the omni crystal abilit
   (0.50, 0.56, 0.70). It is set as `HangarVesselStage.liveryMaterial` in place of the prefab's placeholder.
 - **The Mass icon is upside down.**
   - `mass_triangle_label.png` is flipped in place.
-  - `mass_petal.png` is flipped and set at 60 %, so the five petals keep their gaps; the flower reads as a star of five
-    triangles.
-  - Every flower and the HUD pips draw it.
+  - `mass_petal.png` was flipped and set at 60 % here too, so the flower read as a star of five triangles. **Reverted
+    2026-11-22 (Garrett):** the Mass petals point into the centre again, as every element's petal does
+    (`ElementPetalGeometry`'s traced outline never changed). The flipped label icon stays.
 - **2D and 3D in one tab.** Each ABILITIES row shows the element's 2D flower and icon, and now its crystal in 3D: the
   Codex flipbook, still on its first frame. Playing a row turns the 2D flower one petal and swells it (rotate and
   scale, 0.6 s), and runs the crystal's loop once.
