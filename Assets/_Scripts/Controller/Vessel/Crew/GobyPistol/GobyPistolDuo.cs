@@ -552,15 +552,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Islands laid ahead of the one the Pistol is on (none counted while it flies on another machine).</summary>
         int IslandsAhead => _remotePistol ? 0 : GobyIslands.Ahead(_perches.Count, _resting, _at, _seg, _dir);
 
-        /// <summary>Perched, the Goby aims for <c>perchSeconds</c> (longer while a person charges a dart from it), then lifts
-        /// off and cruises on its own flight.</summary>
+        /// <summary>Perched, the AI Goby aims for <c>perchSeconds</c>, then lifts off and cruises on its own flight. A person's
+        /// Goby is never held at a perch (Will, 2026-11-24: the hold read as getting stuck after a dart): the island, its
+        /// ground and its den are laid the frame the dart lands, so the Pistol loses nothing; only the flight is pinned.</summary>
         void StepPerch(float dt)
         {
             if (_perched)
             {
                 _perchT += dt;
-                bool charging = _human == Half.Goby && !_aiCrew && _charging;
-                if (_perchT >= Config.PerchSeconds && !charging) _perched = false;
+                bool personFlies = _human == Half.Goby && !_aiCrew;
+                if (personFlies || _perchT >= Config.PerchSeconds) _perched = false;
             }
             Pin(_perched || _darting);
         }

@@ -19,8 +19,9 @@ flight and **darts**:
   same cycle as the old 1.2 s reload from landing).
 - It **stops on the first block on its line** (`FirstOnLine`, padded by `hullRadius` 3 u). With the Time upgrade
   (Time 5) it phases through.
-- A dart that ends 900 u or more from the last perch, with fewer than three islands queued, is a **perch**: the Goby is
-  pinned for 1.5 s while the Pistol's island is laid.
+- A dart that ends 900 u or more from the last perch, with fewer than three islands queued, is a **perch**: the Pistol's island is
+  laid at once. The AI Goby stays pinned there for 1.5 s (`perchSeconds`); a person's Goby flies straight on
+  (2026-11-24).
 
 A dart costs the same second whatever its length. So the clock of a Goby race is **how many darts it takes**, and each
 dart has exactly two numbers a person chooses: its **length** (how long they hold) and its **line** (where the nose

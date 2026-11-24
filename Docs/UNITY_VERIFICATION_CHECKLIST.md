@@ -26602,5 +26602,8 @@ editor: none in this session. The reference compile has 0 errors in the changed 
 - [ ] Charge fully, then tap: each is ready 2.2 s after its own launch.
 - [ ] Dart until the Goby perches and lays its 5-block pad, then turn hard and pitch away from it: the hull passes
       through the pad and the den without stopping, bouncing or destroying them. A rival's prisms still stop a dart.
+- [ ] A person's Goby is never held at a perch (2026-11-24): dart until a perch lays an island, then steer at once;
+      it flies on with no pause. The Pistol still gets the island, its ground and its den. The AI Goby still pauses
+      1.5 s at a perch.
 - [ ] Race Perch Run and Regatta with an AI Goby: it still darts through every ring, and the Regatta Goby's times are
       about the same as before (REGATTA.md 6.6: card 78.1 s, L5 62.6 s).

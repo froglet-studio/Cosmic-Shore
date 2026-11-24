@@ -53,8 +53,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.5f)] float perchBlockSize = 4f;
 
         [Header("Goby: cruise, perch and the Pistol's islands (Garrett, 2026-10-23: \"the goby is barely cruising around at all\")")]
-        [Tooltip("Seconds the Goby stays perched at the end of an island, aiming, before it lifts off and cruises (longer " +
-                 "while a person charges a dart from the perch).")]
+        [Tooltip("Seconds the AI Goby stays perched at the end of an island, aiming, before it lifts off and cruises. A " +
+                 "person's Goby is never held at a perch (Will, 2026-11-24).")]
         [SerializeField, Min(0f)] float perchSeconds = 1.5f;
         [Tooltip("A dart's end is a perch (the end of the Pistol's next island) only this far from the last perch, u; " +
                  "nearer, the dart is a dash and the Goby cruises on. A Tiny Wings island of about 35 hills.")]
