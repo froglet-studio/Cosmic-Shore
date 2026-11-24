@@ -250,27 +250,35 @@ namespace CosmicShore.Tests
             Assert.AreEqual(PerchRunCourse.DartSeconds, Field("dartSeconds"), 0.001f, "dartSeconds");
             Assert.AreEqual(PerchRunCourse.DartCooldown, Field("dartCooldown"), 0.001f, "dartCooldown");
             Assert.AreEqual(PerchRunCourse.HullRadius, Field("hullRadius"), 0.001f, "hullRadius");
-            Assert.AreEqual(PerchRunCourse.AiCruiseSpeed, Field("aiCruiseSpeed"), 0.01f, "aiCruiseSpeed");
             Assert.AreEqual(PerchRunCourse.AiTurnRate, Field("aiTurnRate"), 0.01f, "aiTurnRate");
             Assert.AreEqual(PerchRunCourse.PerchSeconds, Field("perchSeconds"), 0.001f, "perchSeconds");
             Assert.AreEqual(PerchRunCourse.IslandMinLength, Field("islandMinLength"), 0.01f, "islandMinLength");
         }
 
         /// <summary>
-        /// The coach flies straight on when the ring sits inside the turning circle (the orbit the real game showed,
-        /// 2026-11-17), and turns for it otherwise: dead ahead, dead behind and far to the side all turn.
+        /// The Goby never flies (Garrett, 2026-11-24), so when coral walls every line to the ring the coach hops aside: the
+        /// shortest dart, off the line, on a line the coral leaves clear. The control: with the way ahead open it aims at
+        /// the ring itself.
         /// </summary>
         [Test]
-        public void A_ring_inside_the_turning_circle_is_flown_away_from_first()
+        public void A_walled_in_ring_is_reached_by_a_hop_aside()
         {
-            float r = PerchRunCourse.TurnRadius(144f);
-            Assert.AreEqual(144f / (90f * Mathf.Deg2Rad), r, 0.01f, "turning circle at 144 u/s");
-            Vector3 hull = Vector3.zero, fwd = Vector3.forward;
-            Assert.IsTrue(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(r, 0f, 0f), r), "abeam at one radius: orbited");
-            Assert.IsTrue(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(-r, 0f, 20f), r), "either side");
-            Assert.IsFalse(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(0f, 0f, 300f), r), "dead ahead");
-            Assert.IsFalse(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(0f, 0f, -300f), r), "dead behind");
-            Assert.IsFalse(PerchRunCourse.InsideTurn(hull, fwd, new Vector3(4f * r, 0f, 0f), r), "far abeam");
+            Vector3 hull = Vector3.zero;
+            var rings = new List<RaceGate> { new RaceGate(new Vector3(0f, 0f, 400f), Vector3.forward, 30f) };
+            // a wall of coral across the whole mouth, 100 u ahead
+            var wall = new List<Coral>();
+            for (int x = -3; x <= 3; x++)
+                for (int y = -3; y <= 3; y++)
+                    wall.Add(new Coral(new Vector3(x * 20f, y * 20f, 100f), Quaternion.identity, 20f, 0));
+            Vector3 aim = PerchRunCourse.PlanDart(hull, rings, 0, wall, out float length);
+            Assert.AreEqual(PerchRunCourse.DartMinRange, length, 1e-3f, "the hop is the shortest dart");
+            Vector3 dir = (aim - hull).normalized;
+            Assert.IsFalse(PerchRunCourse.FirstCoral(hull, dir, length, wall, out _), "on a line the coral leaves clear");
+            Assert.Greater(Vector3.Angle(dir, Vector3.forward), 30f, "off the line to the ring");
+
+            Vector3 open = PerchRunCourse.PlanDart(hull, rings, 0, new List<Coral>(), out float l2);
+            Assert.Greater(l2, 0f);
+            Assert.Less(Vector3.Angle(open - hull, Vector3.forward), 5f, "the control: an open ring is aimed at directly");
         }
     }
 }

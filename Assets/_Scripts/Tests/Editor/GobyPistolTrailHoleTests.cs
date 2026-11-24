@@ -28,8 +28,8 @@ namespace CosmicShore.Tests
             pLaunchCd = 9f, pGhostTime = 2.5f, pGhostCd = 8f, pVortexCd = 4f, pEdgeGrace = 1.2f,
         };
 
-        static readonly PistolPlane.HillSpec Hills = new(10f, 15f, 3.6f, 7.2f, 9f, 0.08f, 1.5f);
-        const float Gap = 6f;
+        static readonly PistolPlane.HillSpec Hills = new(9f, 16f, 3f, 7.8f, 9f, 0.08f, 1.5f);
+        const float Gap = 4f;
 
         static PistolPlane.Frame Island(float length, int dir, PistolGround ground, bool flat = false, uint seed = 1u)
             => PistolPlane.For(new PlaneSegment(Vector3.zero, Vector3.forward * length, Vector3.up), dir, 0f,
@@ -171,7 +171,7 @@ namespace CosmicShore.Tests
         public void Ground_AFallRestoresWhatItGotPast_AndLandsBeyondTheGap()
         {
             // a gap from 120 to 156 u (blocks at 123 ... 153); the Pistol sinks into it at 133 u
-            var g = new PistolGround(300f, Gap);
+            var g = new PistolGround(300f, 6f);   // the slot arithmetic at a 6 u gap (the numbers below)
             Break(g, 120f, 155f);
             var passed = new List<int>();
             float land = g.AfterGap(133f, 1, passed);
@@ -190,7 +190,7 @@ namespace CosmicShore.Tests
             g.AfterGap(121f, 1, passed);
             Assert.AreEqual(1, passed.Count, "sinking into the gap's first block still restores that one: every fall makes progress");
             passed.Clear();
-            var whole = new PistolGround(300f, Gap);
+            var whole = new PistolGround(300f, 6f);
             Assert.AreEqual(127.5f, whole.AfterGap(127f, 1, passed), 1e-3f, "the control: no gap, it stays on its own block");
             Assert.AreEqual(0, passed.Count, "and restores nothing");
         }

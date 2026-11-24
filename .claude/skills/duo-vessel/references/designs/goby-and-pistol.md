@@ -7,15 +7,17 @@
 >
 > - "it should not have the squirrels abilities or be anything like the squirrel. it should be a goby with its own kit
 >   that represents a goby and synergizes with the pistol and its kit" **[stated]**
-> - "The goby should dart and perch similar to the way the shrike shoots itself" **[stated]**. **[read]:** the Goby is
->   CRUISES between perches, as the Shrike does between docks (2026-10-23; it was always pinned until then, which left it
->   "barely cruising around at all"): a person on the hull's own two-thumb flight, the seat's AI at `aiCruiseSpeed` 100.
->   Hold Dart to charge the distance (`dartMinRange` 140 -> `dartRange` 600 over 0.8 s), let go, and it flies there in
+> - "The goby should dart and perch similar to the way the shrike shoots itself" **[stated]**. **[read]:** the Goby
+>   NEVER FLIES (Garrett, 2026-11-24: "I want the goby's only movement to be stretches of different length between
+>   perches. it should never fly. only shoot itself from perch to perch. it can charge up its distance so it can still go
+>   short distances. it should have two thumb controls so it can orient the shrimp's plane." **[stated]**). It cruised
+>   between perches from 2026-10-23 to 2026-11-24; now it is pinned always and turns where it sits on the two thumbs,
+>   which sets the Pistol's plane at the next launch. Hold Dart to charge the distance (`dartMinRange` 140 -> `dartRange` 600 over 0.8 s), let go, and it flies there in
 >   `dartSeconds` 1 (the Shrike's distance / 1 s), stopping on the first block on its line. The dart's end is a PERCH
 >   (the end of the Pistol's next island) once it is `islandMinLength` 900 from the last perch, while fewer than
 >   `islandQueue` 3 islands wait ahead of the Pistol; a longer gap is laid as islands of at most `islandMaxLength` 1800.
->   Otherwise the dart is a dash and it cruises on. Perched, it is pinned and aims for `perchSeconds` 1.5 (longer while a
->   dart charges), then lifts off (`GobyIslands`).
+>   Otherwise the landing still holds the Goby still (it lays no island). Perched, it aims for `perchSeconds` 1.5 (longer
+>   while a dart charges) (`GobyIslands`).
 > - "the goby may shoot into open space and make its own perch" **[stated]**. **[read]:** a dart that reaches nothing
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
@@ -175,7 +177,7 @@ table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's binding
 | Mass | **Perches** (the Pistol's dens) | Passive: a dart's end becomes a perch once it is 900 u from the last one; the Pistol builds its den there. The card counts them and flashes on each. | (Fortress, on the Pistol's dens) | passive | passive | passive |
 | Space | **Undertow** (the Pistol's) | Passive: mass beside the Pistol's plane is pulled into it; the card's gauge is the reach (40 -> 200 u with Space). | (Deep Undertow) | passive | passive | passive |
 | Time | **Dart** | Hold to charge the distance (140 -> 600 u over 0.8 s), let go to dart; it stops on the first block on its line. The gauge is the charge, the veil the cooldown. | **Phase Dart**: darts pass through prisms | Dart button: hold, let go | X or RT: hold, let go | Q: hold, let go |
-| (flight) | the hull's own flight | Cruises; perched, it is pinned and aims. | | two thumbs | both sticks | the desktop flight scheme |
+| (turn) | the hull's own two-thumb turn | Never flies: pinned on every landing, the thumbs turn it (and the Pistol's plane). | | two thumbs | both sticks | the desktop flight scheme |
 
 **The Pistol seat** (the 2D sidescroller that rides the islands, Tiny Wings style):
 
