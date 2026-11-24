@@ -9074,3 +9074,43 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
+
+## 235. Rev 142 mockups: the Toy Box with motion, open, switch, spawn and Navigate into the preview, four ways (2026-11-24, awaiting a pick)
+
+**Asked (Shombith, 2026-11-24):** "I want to redesign the toybox UI in a more innovative way, spawning or switching or
+navigating should have aniamtions and the whole cards (bg is good) orientation inside each main card and the preview
+screen with a navigate animation which takes you inside the preview screen and spawns you on a cool way. Create 4
+different UI variations for this".
+
+**On the canvas:** a new tab, **Toy Box** (`toy-box`), round "Rev 142 - The Toy Box with motion: open, switch, spawn,
+and Navigate into the preview, four ways". Copies in `Docs/MenuRedesignB/board/R142*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r142_toybox.py <root> 142`. Each option board is the whole flow and playable: the Toy Box
+window, open a toy, pick a variation (the switch animation), its verb (the spawn animation in the preview), NAVIGATE
+(the dive into the preview), and the world where your vessel arrives. "Board: start again" returns to the Toy Box.
+Kept in all four: the card background (navy, the sea lines, the codex portrait), the seven toys and their words,
+Toy configure's variations and its two actions.
+
+- **Compare**: the Spawn Matrix card four ways, at rest and pointed at, and a table of the five moments per option.
+- **A Portal**: tall cards dealt in a row; pointing lifts a card and slides its verb up; open grows the card into the
+  preview on the left; switch is a film strip with a light sweep; the verb is two rings and a pop; Navigate flies you
+  through the toy's ring and your vessel streaks in from the horizon.
+- **B Orbit**: the toys on a 3D ring around you, LT / RT turns it, only the facing card has words (the name up its
+  spine); open flips the card; switch turns the preview like a cube; the verb builds the thing from prisms; Navigate
+  is a warp and your vessel is built from prisms.
+- **C Slide open**: seven strips with their names up the spine, the pointed one slides open (Rev 117's "cards that
+  slide open"); open widens the strip into the window; a diagonal wipe; five petals bloom on the verb; the window
+  splits into slats as you leave and your vessel drops in on a trail.
+- **D Lens (recommended)**: each card is a round lens onto the cell with the toy inside; open irises the lens into a
+  big round preview with the variations on a dial; switching blinks the lens; the verb ripples; Navigate grows the
+  lens past the screen through a tunnel of rings and your vessel rises out of a point on a ripple. Recommended because
+  it is the one where "inside the preview" is literal (the same circle carries you from card to world) and its ripple
+  matches the avatar ring picked in Rev 127.
+- **Notes**: the ask, the four, and what each costs in Unity.
+
+**Differs from the build:** today the Toy Box (17.3, Rev 18 A in section 72) is a four-column grid of cards (portrait
+well over an opaque body) that pop in, and Toy configure (17.4) opens with its panels rising; switching a variation,
+the verb and NAVIGATE are cuts with a toast, and NAVIGATE closes the window and flies the vessel there. A pick changes
+`author_menu_toybox.py` (the card's layout and its hover), `author_menu_toyconfigure.py` (the preview's shape and the
+variation layout), and adds the open / switch / spawn tweens and the Navigate hand-over from `ToyPreviewCamera` to the
+gameplay camera with an arrival effect at the station. Not checked in the board: the gameplay camera blend and the
+vessel's arrival effect are faked with the in-game cell frame; only the Unity editor can judge them.
