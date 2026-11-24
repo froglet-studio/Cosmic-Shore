@@ -29,8 +29,8 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
-                    // a hull whose touch leaves prisms alone (the Jacks netting, IHullContactGate)
-                    if (!IsSweepDispatch && !shipImpactee.TakesPrismsByContact) return;
+                    // a hull whose touch leaves prisms alone (the Jacks netting, IHullContactGate), or this one (IHullPrismFilter)
+                    if (!IsSweepDispatch && !shipImpactee.TouchesPrism(Prism)) return;
                     // ExecuteEffect(impactee, vesselPrismEffects);
                     if(!DoesEffectExist(vesselPrismEffects)) return;
                     foreach (var effect in vesselPrismEffects)

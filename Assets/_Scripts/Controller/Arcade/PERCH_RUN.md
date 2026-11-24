@@ -14,12 +14,14 @@ flight and **darts**:
 
 - **Hold** the dart button to charge a length: 140 u untouched, 600 u at a full charge after 0.8 s (`dartMinRange`,
   `dartRange`, `dartChargeSeconds`).
-- **Let go** and it flies there in **one second** (`dartSeconds`), whatever the length. Then a **1.2 s** reload
-  (`dartCooldown`).
+- **Let go** and it flies there in **one second** (`dartSeconds`), whatever the length. The next dart is ready **2.2 s
+  after launch** (`dartCooldown`; counted from launch since 2026-11-24, so a long charge costs no extra wait - the
+  same cycle as the old 1.2 s reload from landing).
 - It **stops on the first block on its line** (`FirstOnLine`, padded by `hullRadius` 3 u). With the Time upgrade
   (Time 5) it phases through.
-- A dart that ends 900 u or more from the last perch, with fewer than three islands queued, is a **perch**: the Goby is
-  pinned for 1.5 s while the Pistol's island is laid.
+- A dart that ends 900 u or more from the last perch, with fewer than three islands queued, is a **perch**: the Pistol's island is
+  laid at once. The AI Goby stays pinned there for 1.5 s (`perchSeconds`); a person's Goby flies straight on
+  (2026-11-24).
 
 A dart costs the same second whatever its length. So the clock of a Goby race is **how many darts it takes**, and each
 dart has exactly two numbers a person chooses: its **length** (how long they hold) and its **line** (where the nose

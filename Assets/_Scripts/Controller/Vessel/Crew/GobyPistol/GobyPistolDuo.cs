@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (CrewSeat):
     /// the Pistol, the dens, the pull and the rings are simulated on that one machine until the crew is networked.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay, IUprightSeat
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay, IUprightSeat, IHullPrismFilter
     {
         enum Half { Goby = 0, Pistol = 1 }
 
@@ -213,7 +213,7 @@ namespace CosmicShore.Gameplay
         public float Energy01 => Config ? Mathf.Clamp01(_energy / Mathf.Max(1f, Config.EnergyMax)) : 0f;
         // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
         public bool LockHeld => _lockHeld && _human == Half.Goby;
-        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldownFor(_status)));
+        public float DartCooldown01 => _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldownFor(_status)));
         public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
         public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
         public bool SnapHeld => _p != null && _p.prevVortex;
@@ -486,6 +486,8 @@ namespace CosmicShore.Gameplay
             if (go < 6f) return;
             _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
             _dartSpeed = go / Mathf.Max(0.05f, Config.DartSecondsFor(_status));   // Time: the dart's pace
+            // the cooldown runs from launch, not landing, so a longer charge costs no extra wait (Will, 2026-11-24)
+            _dartReadyAt = _t + Config.DartCooldownFor(_status);
             _perched = false; Pin(true);
         }
 
@@ -508,6 +510,11 @@ namespace CosmicShore.Gameplay
 
         bool Perchable(Prism prism) => prism && !prism.destroyed && prism.prismProperties != null && prism.ownerID != _status.PlayerName;
 
+        /// <summary>The Goby's hull leaves the pair's own prisms alone (<see cref="IHullPrismFilter"/>): its perch pads, the
+        /// Pistol's dens and the ground all sit where it perched, and turning away from a perch rammed or bounced off them
+        /// (Will, 2026-11-24). Its darts already ignore them (<see cref="Perchable"/>).</summary>
+        public bool LeavesAlone(Prism prism) => prism && _status != null && prism.ownerID == _status.PlayerName;
+
         void StepDart(float dt)
         {
             if (!_darting) return;
@@ -519,7 +526,6 @@ namespace CosmicShore.Gameplay
             _dartWent += move;
             if (_dartWent < _dartDist - 0.01f) return;
             _darting = false;
-            _dartReadyAt = _t + Config.DartCooldownFor(_status);
             Vector3 at = _gt.position;
             var prev = _perches[_perches.Count - 1];
             // a dash, not a perch: too close to the last perch for an island, or the Pistol already has its islands ahead
@@ -546,15 +552,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Islands laid ahead of the one the Pistol is on (none counted while it flies on another machine).</summary>
         int IslandsAhead => _remotePistol ? 0 : GobyIslands.Ahead(_perches.Count, _resting, _at, _seg, _dir);
 
-        /// <summary>Perched, the Goby aims for <c>perchSeconds</c> (longer while a person charges a dart from it), then lifts
-        /// off and cruises on its own flight.</summary>
+        /// <summary>Perched, the AI Goby aims for <c>perchSeconds</c>, then lifts off and cruises on its own flight. A person's
+        /// Goby is never held at a perch (Will, 2026-11-24: the hold read as getting stuck after a dart): the island, its
+        /// ground and its den are laid the frame the dart lands, so the Pistol loses nothing; only the flight is pinned.</summary>
         void StepPerch(float dt)
         {
             if (_perched)
             {
                 _perchT += dt;
-                bool charging = _human == Half.Goby && !_aiCrew && _charging;
-                if (_perchT >= Config.PerchSeconds && !charging) _perched = false;
+                bool personFlies = _human == Half.Goby && !_aiCrew;
+                if (personFlies || _perchT >= Config.PerchSeconds) _perched = false;
             }
             Pin(_perched || _darting);
         }
