@@ -26602,8 +26602,28 @@ editor: none in this session. The reference compile has 0 errors in the changed 
 - [ ] Charge fully, then tap: each is ready 2.2 s after its own launch.
 - [ ] Dart until the Goby perches and lays its 5-block pad, then turn hard and pitch away from it: the hull passes
       through the pad and the den without stopping, bouncing or destroying them. A rival's prisms still stop a dart.
-- [ ] A person's Goby is never held at a perch (2026-11-24): dart until a perch lays an island, then steer at once;
-      it flies on with no pause. The Pistol still gets the island, its ground and its den. The AI Goby still pauses
-      1.5 s at a perch.
+- [x] ~~A person's Goby is never held at a perch~~: superseded the same day by "The Goby never flies" below.
 - [ ] Race Perch Run and Regatta with an AI Goby: it still darts through every ring, and the Regatta Goby's times are
       about the same as before (REGATTA.md 6.6: card 78.1 s, L5 62.6 s).
+
+## The Goby never flies: it only darts perch to perch (2026-11-24)
+
+Garrett: "I want the goby's only movement to be stretches of different length between perches. it should never fly.
+only shoot itself from perch to perch. it can charge up its distance so it can still go short distances. it should
+have two thumb controls so it can orient the shrimp's plane." The Goby is pinned always (`GobyPistolDuo.Pin`, every
+landing), so the person's two thumbs only turn it, and the turn sets the Pistol's plane at the next launch. A dart
+(140-600 u by charge) is its only movement. The Pistol's islands keep their rule (a landing 900 u past the last island
+end, while fewer than 3 wait). The AI Goby, the Perch Run coach and the Regatta coach turn where they sit and hop
+aside (the shortest dart, 45/70/100 degrees off the line) when coral stops the dart at the nose; `aiCruiseSpeed`,
+`aiTurnMargin`, `InsideTurn` and `TurnRadius` are gone. Not run in the Unity editor: none in this session. The
+reference compile has 0 errors in the changed files; the Perch Run harness passes 11/11 (+ self-test), and its sweep
+gives the reader the same clocks as before (36.0 / 37.8 / 36.8 / 30.5 s); `GobyPistolTests` was not run.
+
+- [ ] Fly the Goby in freestyle: the sticks turn it in place and never move it; only Dart moves it, a tap 140 u and a
+      full 0.8 s charge 600 u. It stays put after every landing.
+- [ ] Turn the Goby, dart, then swap to the Pistol: the Pistol's plane follows the hull's turn at that launch.
+- [ ] Dart into a block at point-blank: it does not move, and the next dart turned aside gets it out.
+- [ ] Short hops only (under 900 u): no island is laid; a landing 900 u past the last island end lays one.
+- [ ] Race Perch Run I1-I4 with an AI Goby: it finishes every race, hopping aside where coral blocks its line.
+- [ ] Race Regatta with an AI Goby: it never flies, and finishes (REGATTA.md 6.6 had card 78.1 s, L5 62.6 s).
+- [ ] Will's (ownerbynight) Perch Run sign-off from #2359 was flown with the cruise: re-fly it.
