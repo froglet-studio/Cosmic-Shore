@@ -70,8 +70,8 @@ mutate() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must
 }
 mutate "the field is not cut out" 's/laid\[i\] = laid\[i\] && !ReachesField(parts\[i\], field, near);/laid[i] = laid[i] \&\& true;/' 'laid\[i\] && true;'
 mutate "the sight line is not kept" 's/ && !ReachesSightLine(course, intensity, parts\[i\])//' 'laid.Add(WheelOf(wheels, i) < 0);'
-mutate "no budget: every leg keeps its ruin" 's/if (standing.Count <= budget)/if (true)/' 'if (true)'
-mutate "scraps are laid" 's/if (left >= MinRuinPrisms) standing.Add(leg);/if (left > 0) standing.Add(leg);/' 'if (left > 0)'
-mutate "the budget is spent on the first legs" 's|k \* (standing.Count - 1) / (budget - 1)|k|' 'keep\[standing\[budget == 1 ? 0 : k\]\]'
+mutate "no budget: every leg keeps its ruin" 's/for (int k = 0; k < budget; k++)/for (int k = 0; k < 3 * budget; k++)/' 'k < 3 \* budget'
+mutate "scraps are laid" 's/if (left >= MinRuinPrisms) return true;/if (left > 0) return true;/' 'if (left > 0) return true;'
+mutate "the budget is spent on the first legs" 's|k \* (eligible.Count - 1) / (budget - 1)|k|' 'int place = budget == 1 ? 0 : k;'
 mutate "the wrong nucleus margin" 's/FieldNucleusMargin = 30f/FieldNucleusMargin = 45f/' 'FieldNucleusMargin = 45f'
 echo "self-test OK"

@@ -9,9 +9,9 @@ namespace CosmicShore.Gameplay
     /// Scarab Rally's rings. This file adds no ruin of its own. It decides which of Spearline's prisms this course
     /// lays, because the course differs from Spearline's lap in two ways:
     ///
-    /// <para><b>It is an open chain of 24 rings, not a lap of eight.</b> Every leg is asked for a ruin, and at most
-    /// <see cref="SpearlineRuinSettings.PerLap"/> (seven) of them are laid, spread along the whole chain, so the ruins
-    /// do not all stand on the first third of the race and the prism count stays Spearline's.</para>
+    /// <para><b>It is an open chain of 24 rings, not a lap of eight.</b> At most
+    /// <see cref="SpearlineRuinSettings.PerLap"/> (seven) ruins are laid, on legs spread along the whole chain, so the
+    /// ruins do not all stand on the first third of the race and the prism count stays Spearline's.</para>
     ///
     /// <para><b>Its I4 legs already carry Switchback's block fields.</b> A ruin prism that would reach within
     /// <see cref="FieldKeep"/> of a field prism is left out, and a ruin with fewer than <see cref="MinRuinPrisms"/>
@@ -39,11 +39,15 @@ namespace CosmicShore.Gameplay
         public const int MinRuinPrisms = 24;
 
         /// <summary>
-        /// Every candidate ruin prism of <paramref name="course"/> on this rung into <paramref name="parts"/>, the
-        /// turning ones named in <paramref name="wheels"/>, and for each part whether Scarab Rally lays it
-        /// (<paramref name="laid"/>, the same length as <paramref name="parts"/>). The lists are cleared first. A part
-        /// that is not laid keeps its place in the list, so a wheel's <c>First</c> and <c>Count</c> stay true.
+        /// The ruin prisms of <paramref name="course"/> on this rung into <paramref name="parts"/>, in leg order, and
+        /// for each part whether Scarab Rally lays it (<paramref name="laid"/>, the same length as
+        /// <paramref name="parts"/>; a part the field or the sight line cuts out stays in the list, not laid). Only the
+        /// ruins that stand are listed. <paramref name="wheels"/> is cleared and left empty: no wheel turns here.
         /// <paramref name="field"/> is the course's Blast Run prisms (null or empty: none).
+        ///
+        /// <para>Spearline's lane check is the cost (every raw prism against every leg), so a ruin is asked for only on
+        /// the legs that may keep one: the budget's places, spread evenly along the legs long enough for a ruin, and
+        /// the nearest untried leg where a place's ruin does not stand.</para>
         /// </summary>
         public static void Lay(IReadOnlyList<RaceGate> course, int intensity, IReadOnlyList<SwitchbackFeaturePrism> field,
                                List<SpearlineRuinPart> parts, List<SpearlineRuinWheel> wheels, List<bool> laid)
@@ -55,52 +59,108 @@ namespace CosmicShore.Gameplay
             var settings = SpearlineRuins.ForIntensity(intensity);
             int budget = settings.PerLap;
             if (budget <= 0) return;
-            settings.PerLap = course.Count;     // every leg is a candidate; the budget is applied below
-            SpearlineRuins.Lay(course, settings, parts, wheels);
-            if (parts.Count == 0) return;
+            settings.PerLap = 1;                // one leg a call: the leg the course is turned to
 
-            int legs = course.Count;
-            var first = new int[legs];
-            var count = new int[legs];
-            for (int i = 0; i < parts.Count; i++)
-            {
-                int leg = parts[i].Leg;
-                if (count[leg]++ == 0) first[leg] = i;
-            }
+            // The legs long enough for a ruin (Spearline's own floor; the closing leg of a lap does not exist here).
+            var eligible = new List<int>(course.Count);
+            for (int leg = 0; leg + 1 < course.Count; leg++)
+                if ((course[leg + 1].Position - course[leg].Position).magnitude >= settings.MinLegLength) eligible.Add(leg);
+            if (eligible.Count == 0) return;
 
-            // 1. The sight line from each ring to the next stays open; a wheel sweeps it, so no wheel.
-            for (int i = 0; i < parts.Count; i++)
-                laid.Add(WheelOf(wheels, i) < 0 && !ReachesSightLine(course, intensity, parts[i]));
-
-            // 2. Cut the field out of every ruin. A leg's ruin is tested against the field prisms near it only.
+            var turned = new TurnedCourse(course);
+            var tried = new bool[eligible.Count];
             var near = new List<int>(256);
-            for (int leg = 0; leg < legs; leg++)
+            var ruins = new List<(int leg, int first, int count)>(budget);
+            for (int k = 0; k < budget; k++)
             {
-                if (count[leg] == 0) continue;
-                int end = first[leg] + count[leg];
-                Near(parts, first[leg], end, field, near);
-                if (near.Count == 0) continue;
-                for (int i = first[leg]; i < end; i++) laid[i] = laid[i] && !ReachesField(parts[i], field, near);
+                // The budget: at most `budget` ruins, spread evenly along the chain.
+                int place = budget == 1 ? 0 : k * (eligible.Count - 1) / (budget - 1);
+                // The nearest untried leg to that place whose ruin stands.
+                for (int step = 0; step < 2 * eligible.Count; step++)
+                {
+                    int e = place + ((step & 1) == 0 ? step / 2 : -(step + 1) / 2);
+                    if (e < 0 || e >= eligible.Count || tried[e]) continue;
+                    tried[e] = true;
+                    int first = parts.Count;
+                    if (!LayLeg(course, turned, intensity, settings, eligible[e], field, parts, wheels, laid, near)) continue;
+                    ruins.Add((eligible[e], first, parts.Count - first));
+                    break;
+                }
             }
+            InLegOrder(ruins, parts, laid);
+        }
 
-            // 3. A ruin that the field left in scraps is not laid.
-            var standing = new List<int>(legs);
-            for (int leg = 0; leg < legs; leg++)
+        /// <summary>One leg's ruin, appended to <paramref name="parts"/> and <paramref name="laid"/>; false, and nothing
+        /// appended, where it does not stand (no prism, a wheel, or scraps once the field and the sight line are cut out).</summary>
+        static bool LayLeg(IReadOnlyList<RaceGate> course, TurnedCourse turned, int intensity, in SpearlineRuinSettings settings,
+                           int leg, IReadOnlyList<SwitchbackFeaturePrism> field, List<SpearlineRuinPart> parts,
+                           List<SpearlineRuinWheel> wheels, List<bool> laid, List<int> near)
+        {
+            int first = parts.Count, firstWheel = wheels.Count;
+            // The same rings and the same lanes, counted from this leg: Spearline lays its first leg and stops.
+            turned.Start = leg;
+            SpearlineRuins.Lay(turned, settings, parts, wheels);
+            int left = 0;
+            // A leg whose every prism Spearline cleared away lets the lay run on to the next leg: not this leg's ruin.
+            if (parts.Count > first && parts[first].Leg == 0)
             {
-                int left = 0;
-                for (int i = first[leg]; i < first[leg] + count[leg]; i++)
+                // 1. The sight line from each ring to the next stays open; a wheel sweeps it, so no wheel.
+                for (int i = first; i < parts.Count; i++)
+                {
+                    parts[i] = parts[i].OnLeg(leg);
+                    laid.Add(WheelOf(wheels, i) < 0 && !ReachesSightLine(course, intensity, parts[i]));
+                }
+                // 2. Cut the field out of the ruin. It is tested against the field prisms near it only.
+                Near(parts, first, parts.Count, field, near);
+                for (int i = first; i < parts.Count; i++)
+                {
+                    if (near.Count > 0) laid[i] = laid[i] && !ReachesField(parts[i], field, near);
                     if (laid[i]) left++;
-                if (left >= MinRuinPrisms) standing.Add(leg);
+                }
+            }
+            // 3. A ruin that the field left in scraps is not laid.
+            if (left >= MinRuinPrisms) return true;
+            parts.RemoveRange(first, parts.Count - first);
+            laid.RemoveRange(first, laid.Count - first);
+            wheels.RemoveRange(firstWheel, wheels.Count - firstWheel);
+            return false;
+        }
+
+        /// <summary>The standing ruins, put in the order of their legs (they were laid in the order of the budget's
+        /// places). No wheel stands, so no wheel's part numbers move.</summary>
+        static void InLegOrder(List<(int leg, int first, int count)> ruins, List<SpearlineRuinPart> parts, List<bool> laid)
+        {
+            ruins.Sort((x, y) => x.leg.CompareTo(y.leg));
+            var p = new List<SpearlineRuinPart>(parts.Count);
+            var l = new List<bool>(laid.Count);
+            foreach (var (_, first, count) in ruins)
+            {
+                p.AddRange(parts.GetRange(first, count));
+                l.AddRange(laid.GetRange(first, count));
+            }
+            parts.Clear();
+            parts.AddRange(p);
+            laid.Clear();
+            laid.AddRange(l);
+        }
+
+        /// <summary>The course counted from ring <see cref="Start"/> and wrapping: the same rings and, to
+        /// <see cref="SpearlineRuins"/>, the same legs (it wraps the last ring to the first itself), with the wanted
+        /// leg first.</summary>
+        sealed class TurnedCourse : IReadOnlyList<RaceGate>
+        {
+            readonly IReadOnlyList<RaceGate> _course;
+            public int Start;
+            public TurnedCourse(IReadOnlyList<RaceGate> course) => _course = course;
+            public int Count => _course.Count;
+            public RaceGate this[int index] => _course[(index + Start) % _course.Count];
+
+            public IEnumerator<RaceGate> GetEnumerator()
+            {
+                for (int i = 0; i < Count; i++) yield return this[i];
             }
 
-            // 4. The budget: at most `budget` ruins, spread evenly along the chain.
-            var keep = new bool[legs];
-            if (standing.Count <= budget)
-                for (int k = 0; k < standing.Count; k++) keep[standing[k]] = true;
-            else
-                for (int k = 0; k < budget; k++)
-                    keep[standing[budget == 1 ? 0 : k * (standing.Count - 1) / (budget - 1)]] = true;
-            for (int i = 0; i < parts.Count; i++) laid[i] = laid[i] && keep[parts[i].Leg];
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         /// <summary>How many ruins (legs with a laid prism) a lay has.</summary>

@@ -84,6 +84,17 @@ namespace CosmicShore.Tests
             return lay;
         }
 
+        static Dictionary<int, (int listed, int laid)> PerLeg(Lay lay)
+        {
+            var legs = new Dictionary<int, (int listed, int laid)>();
+            for (int i = 0; i < lay.Parts.Count; i++)
+            {
+                legs.TryGetValue(lay.Parts[i].Leg, out var n);
+                legs[lay.Parts[i].Leg] = (n.listed + 1, n.laid + (lay.Laid[i] ? 1 : 0));
+            }
+            return legs;
+        }
+
         [Test]
         public void Only_the_hardest_rung_has_ruins()
         {
@@ -170,13 +181,24 @@ namespace CosmicShore.Tests
         [Test]
         public void The_field_takes_prisms_out_and_never_puts_one_in()
         {
+            // Leg by leg: a ruin that stands with and without the field has the same prisms listed either way, and
+            // never more of them laid with the field. Over the seeds the field takes some out.
+            int cutOut = 0, shared = 0;
             foreach (int seed in Seeds)
             {
-                var bare = Ruins(4, seed, withField: false);
-                var cut = Ruins(4, seed);
-                Assert.AreEqual(bare.Parts.Count, cut.Parts.Count, "the candidates do not depend on the field");
-                Assert.Less(cut.Count, bare.Count, $"seed {seed}: the field cut nothing");
+                var bare = PerLeg(Ruins(4, seed, withField: false));
+                var cut = PerLeg(Ruins(4, seed));
+                foreach (var kv in cut)
+                {
+                    if (!bare.TryGetValue(kv.Key, out var b)) continue;
+                    shared++;
+                    Assert.AreEqual(b.listed, kv.Value.listed, $"seed {seed} leg {kv.Key}: the field changed the ruin itself");
+                    Assert.LessOrEqual(kv.Value.laid, b.laid, $"seed {seed} leg {kv.Key}: the field put a prism in");
+                    cutOut += b.laid - kv.Value.laid;
+                }
             }
+            Assert.Greater(shared, Seeds.Length, "the lays with and without the field share ruins to compare");
+            Assert.Greater(cutOut, 0, "the field cut nothing");
         }
 
         [Test]

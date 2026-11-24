@@ -69,9 +69,11 @@ below I4.
 
 What this course changes, and why:
 
-- **Up to seven ruins, spread along the 24 rings.** Spearline's lap has seven legs; this chain has 23. Every leg is
-  asked for a ruin and seven are kept, evenly spaced along the legs where one can stand, so the prism count stays
-  Spearline's and the ruins do not all stand in the first third of the race. A ruin's kind follows its leg, so the
+- **Up to seven ruins, spread along the 24 rings.** Spearline's lap has seven legs; this chain has 23. Seven places
+  are spread evenly along the legs long enough for a ruin, and each place takes the nearest leg whose ruin stands, so
+  the prism count stays Spearline's and the ruins do not all stand in the first third of the race. A ruin is asked
+  for only on those legs (Spearline is called with the course counted from that leg, the same rings and lanes),
+  because Spearline's lane check on every raw prism is the cost. A ruin's kind follows its leg, so the
   seven are a mix of the kinds and a kind can repeat.
 - **Cut clear of the block field.** Every I4 leg from the second ring on carries Switchback's block field. A ruin
   prism within 6 u of a field prism's bounding ball is left out, and a ruin with fewer than 24 prisms left is not laid.
@@ -101,7 +103,14 @@ normal speed, driven through the Pipeline): the course raised 480 ruin prisms fr
 prisms still stood at the end (no pilot flew into one); the only console error in the run was a Cloud Code 404 the
 offline boot logs. **Laying the ruins took 1.2 s on the live course** (0.9 s of it choosing them, before the field is
 cut out), once, before Ready: a hitch a person may notice as the scene comes up. The stills showed ruins only far off,
-so how they read up close is still a person's look. The AI's I4 times in the table below were measured
+so how they read up close is still a person's look.
+
+The lay was then made to ask only the legs it keeps (it asked all 23 before). On the live I4 course in the editor it
+went from 1.2 s to 0.84 s (one course each; 0.57 s of it choosing, before the field is cut). On the ten test courses
+in the editor: 7 ruins on every course, 408-574 prisms (mean 479), 0.8 s a course to choose with the field, 0.17 s to
+lay the field out again. `ScarabRallyRuinsTests` 13/13 in the editor after the change. What is left is Spearline's
+own check of each prism against every leg's lane, three times dearer here than on its lap (24 legs, not 8); making
+that cheaper is a change inside `SpearlineRuins`, which this mode does not edit. The AI's I4 times in the table below were measured
 before the ruins; the ruins stand outside the lane the AI flies, but that was not raced again.
 
 ## What is reused, and what is new
