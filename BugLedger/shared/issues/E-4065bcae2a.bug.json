@@ -22,7 +22,7 @@
   "resolution": "",
   "timesSeen": 8,
   "regressions": 0,
-  "cleanSessions": 0,
+  "cleanSessions": 1,
   "cleanSessionsRequired": 2,
   "validationPaused": false
 }
