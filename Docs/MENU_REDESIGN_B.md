@@ -9038,3 +9038,16 @@ redrawn; the marks are the only addition. Tiger Moth has no hangar preview yet.
 
 **Differs from the build**: the built shell has no Vessels section, no class marks, no givers on the quay; the Crystal Run
 is unchanged. The in-game UI (Rev 134 run screens, Rev 137 rivals) was approved and is built in its own thread.
+
+**Picked (Shombith, 2026-11-24)**: "lets go build it".
+
+**Built, stage 1 (2026-11-24, branch `claude/project-thread-31vs8r` into `voyages`)**: the voyage classes
+(`VoyageClass`, `VoyageClassesSO` in `Resources/Voyages/VoyageClasses.asset`, written by
+`Tools/Build/author_voyage_classes.py`, `--check`: the seven classes, their vessels, the three classes each M2 voyage kind
+wants; the Crystal Run wants none and stays as it was), the class glyphs (`VoyageGlyph` shapes 3-9), Vessels E
+(`VoyageVesselsPage`: the class's vessels standing on the hangar floor with their `PreviewImage`, the wanted line, the
+class row with LB / RB, the squad fit, Back and Take the vessel), and Your Ark's hooks (pressing a seat's hull opens
+Vessels; the class tag beside each vessel, muted when the voyage does not want it). Differs from the board: no "Pay 33 to
+36" (no pay bonus system exists yet); the previews are not faded at the edge; Change your seat (X) still opens the seat
+picker for pilot, element and artifact. Stage 2, the quay with givers and pilot mood and rank, waits on the givers and
+wanted classes per Codex voyage from the voyage-build thread.

@@ -192,6 +192,11 @@ namespace CosmicShore.Gameplay
             _ => new HeartChaserRole(),
         };
 
+        /// <summary>Whether the AI has a role of its own for <paramref name="vessel"/> (the hulls above); any other hull
+        /// only chases hearts, so Vessels marks it as needing a person in a wingmate seat (Frogma Rev 136 E).</summary>
+        public static bool HasRole(VesselClassType vessel) => vessel is VesselClassType.Sparrow or VesselClassType.Squirrel
+            or VesselClassType.Dolphin or VesselClassType.Serpent or VesselClassType.Scarab;
+
         /// <summary>
         /// The element an unmanned sim seat is levelled in. Picked for the level-5 safety each kit has (the toy seeds
         /// seats at 0.5, level 5): the Sparrow's Domain-Safe Skybursts (Charge), the Dolphin's Clean Blast (Space),

@@ -25645,3 +25645,13 @@ packages this machine lacks). Seen in Amoebius on a Crystal Run, offline.
 - [ ] The chip top left shows crystals, hull and, while anchored, the clock; toasts stack under it as a feed, and a
       long toast line widens the band instead of being cut off.
 - [ ] Escort the Ark: the plate shows the hull and the way home; Ruby and the other domains read correctly.
+
+## Voyages M2 shell, stage 1: Vessels E and the class tags (2026-11-24)
+
+Not run in Unity (cloud session; the reference compile passed on the changed files). Open Voyages, pick a voyage, Your Ark:
+- [ ] Each seat shows its class beside the vessel (glyph and name); on a Salvage the Squirrel's Cultivator is bright, the Sparrow's and Dolphin's Destroyer muted; on the Crystal Run all are bright.
+- [ ] Pressing a seat's hull opens Vessels over the whole screen on that vessel's class; the hangar previews stand on the floor, the seat's vessel underlined in cyan.
+- [ ] On an AI seat, vessels the AI cannot fly are dimmed and do nothing when pressed; on your seat every one can be picked.
+- [ ] Pressing a class (or LB / RB on a pad) shows its vessels; "<Class>s are wanted on this voyage" shows only for wanted classes; the fit line reads "Squad fit 1 to 2 of 3" when the pick changes it.
+- [ ] Take the vessel (A) puts it in the seat and Your Ark shows it; Back (B) and the pad's B leave the seat unchanged.
+- [ ] Run the EditMode tests `VoyageClassesTests`.
