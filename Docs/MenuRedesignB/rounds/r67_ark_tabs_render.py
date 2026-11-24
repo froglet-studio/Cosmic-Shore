@@ -34,6 +34,11 @@ SETS = (sys.argv[4] if len(sys.argv) > 4 else "Nocturne,Photic,DartFrog").split(
 W = int(sys.argv[5]) if len(sys.argv) > 5 else 960
 H = int(sys.argv[6]) if len(sys.argv) > 6 else 540
 SAMPLES = int(sys.argv[7]) if len(sys.argv) > 7 else 16
+# ARK_ROW: the squad line abreast (Rev 141 A): three hulls side by side at the middle floor plate's depth, each on a floor
+# plate (the model's middle hex plate, and a copy of it either side), the block heaps beside them pushed back to the mouth
+ROW = SCENE == "squads" and os.environ.get("ARK_ROW") == "1"
+ROW_X, ROW_Y = 9.0, -64.0
+ROW_HULL = 7.0                                   # metres: a hull's longest side on its plate (preview only)
 LOOP = int(os.environ.get("ARK_LOOP", "40"))
 CONV = int(os.environ.get("ARK_CONV", "48"))
 ONLY = os.environ.get("ARK_ONLY")            # "f0,f1,..." render only these frame numbers (tests)
@@ -209,6 +214,30 @@ if SCENE == "pier":
         _b.rotation_quaternion = Quaternion((1, 0, 0), math.radians(_deg))
     bpy.context.view_layer.update()
 paint(ark, FLEET, BODY, DOMAIN_ARK, ENGINE_ARK)
+if ROW:
+    # the model's middle hex floor plate (its Engine faces round (0, ROW_Y) on the floor), copied either side
+    _dg = bpy.context.evaluated_depsgraph_get()
+    _me = ark.evaluated_get(_dg).to_mesh()
+    _Mw = ark.matrix_world
+    _vs, _fs, _ix = [], [], {}
+    for _p in _me.polygons:
+        _c = _Mw @ _p.center
+        if _p.material_index == 3 and abs(_c.x) < 3.8 and abs(_c.y - ROW_Y) < 4.3 and _c.z > -22.85:
+            _f = []
+            for _v in _p.vertices:
+                if _v not in _ix:
+                    _ix[_v] = len(_vs)
+                    _vs.append(_Mw @ _me.vertices[_v].co)
+                _f.append(_ix[_v])
+            _fs.append(_f)
+    assert len(_fs) >= 8, f"the middle floor plate was not found ({len(_fs)} faces)"
+    for _sx in (-ROW_X, ROW_X):
+        _pm = bpy.data.meshes.new(f"row_plate_{_sx:+.0f}")
+        _pm.from_pydata([(v.x + _sx, v.y, v.z + 0.02) for v in _vs], [], _fs)
+        _pm.materials.append(ark.material_slots[3].material)
+        _po = bpy.data.objects.new(_pm.name, _pm)
+        sc.collection.objects.link(_po)
+    ark.evaluated_get(_dg).to_mesh_clear()
 
 # the hull's prisms in the model's own sockets, each socket's kind at its real size, in the Ark's (the squad's) domain
 SLAB = (1.8, 0.8, 4.5)
@@ -279,7 +308,9 @@ HW, Z0, Z1, BACK, FRONT = 14.0, -23.0, -12.0, -44.0, -88.0
 PADS = [Vector((0.0, -52.0, Z0)), Vector((0.0, -64.0, Z0)), Vector((0.0, -76.0, Z0))]
 TUNNEL = Vector((0.0, -44.5, -17.5))       # the back wall's tunnel mouth: the ripples' source, the converter's heart
 CAM = {   # scene -> (location, aim, lens, focus, f-stop): Rev 61 C's camera and its siblings
-    "squads": ((6.0, -85.0, -15.6), (6.0, -62.0, -20.6), 24, 23.0, 3.6),     # the line in the left two-thirds, the cards' side clear
+    # the line in the left two-thirds, the cards' side clear; ARK_ROW (Rev 141 A, Shombith 2026-11-24: "the camera ... can
+    # go more left like the tube and the center panel should be centered with the camera"): square on to the tunnel
+    "squads": ((0.0, -85.0, -15.6), (0.0, -62.0, -20.6), 24, 23.0, 3.6) if ROW else ((6.0, -85.0, -15.6), (6.0, -62.0, -20.6), 24, 23.0, 3.6),
     "converter": ((2.6, -70.0, -19.0), (0.0, -47.0, -19.0), 30, 17.0, 3.4),
     "artifacts": ((0.6, -74.0, -17.4), (12.5, -72.6, -18.0), 26, 11.6, 3.0),   # the cabinet right of the list
     "decor": ((4.0, -73.5, -17.6), (-13.0, -79.0, -17.8), 30, 17.0, 3.2),
@@ -330,10 +361,19 @@ if SCENE == "squads":
         for n in names:
             if n not in ("Sparrow", "Dolphin", "Serpent"):           # the shipped three keep the clip's sizes
                 meshes[n].transform(Matrix.Scale(0.6 * span(ref) / span(meshes[n]), 4))
+    if ROW:                                          # line abreast: every hull the length the game's pads fit it to
+        for n in names:
+            m_ = meshes[n]
+            sp_ = max(max(v.co[i] for v in m_.vertices) - min(v.co[i] for v in m_.vertices) for i in (0, 1, 2))
+            m_.transform(Matrix.Scale(ROW_HULL / sp_, 4))
+            c_ = [(max(v.co[i] for v in m_.vertices) + min(v.co[i] for v in m_.vertices)) / 2 for i in (0, 1, 2)]
+            m_.transform(Matrix.Translation(Vector((-c_[0], -c_[1], -c_[2]))))     # stood by its middle, not its origin
     off = dark_vessel_mats()
     swap = {DOMAIN_V.name: off["domain"], ENGINE.name: off["engine"], WINDOW.name: off["window"]}
     # the squad lined up across the bay, facing the door: Rogue One, the leader a step back in the middle, Rogue Two
     SPOTS = [Vector((-9.0, -60.5, Z0 + 2.3)), Vector((0.0, -66.0, Z0 + 2.8)), Vector((9.6, -60.5, Z0 + 2.5))]
+    if ROW:                                          # Rogue One left, the leader in the middle, Rogue Two right, one depth
+        SPOTS = [Vector((-ROW_X, ROW_Y, Z0 + 1.8)), Vector((0.0, ROW_Y, Z0 + 1.8)), Vector((ROW_X, ROW_Y, Z0 + 1.8))]
     LINE = []
     for k, n in enumerate(names):
         me = meshes[n]
@@ -414,6 +454,8 @@ HEAPS = {
 }.get(SCENE, [(-11.5, -48.0, 1.3, 2.2, 650, 5.0), (11.5, -47.0, 1.3, 2.2, 650, 5.5), (-12.0, -71.0, 0.9, 3.5, 380, 3.0),
               (12.0, -75.0, 0.9, 4.0, 420, 3.5)])
 THICKETS = [(-11.5, -84.0, 9), (11.5, -84.0, 9), (10.0, -79.5, 5)] + ([] if SCENE == "decor" else [(-9.5, -80.5, 5)])
+if ROW:                                              # the side heaps clear of the side plates: back toward the mouth
+    HEAPS = [h if h[1] > -60 else (h[0], -82.0, h[2], 2.2, h[4], h[5]) for h in HEAPS]
 for hp in HEAPS:
     heap(*hp)
 # danger thickets in the mouth's corners: the way out has teeth
