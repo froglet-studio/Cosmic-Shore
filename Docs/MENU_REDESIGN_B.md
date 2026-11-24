@@ -8907,3 +8907,38 @@ a fallen Ark. `VoyageObjectiveBox` is the chip (`VoyageGlyph` draws its gem, Ark
 `ArkwayVoyageHud` lays toasts out as a feed under the chip while it shows, widening to a long line. Every word is a
 `VoyageLines` field (`Plate*`, `Chip*`). Seen in Amoebius on a Crystal Run (calm, under attack, assault, anchored); not
 yet run in the Unity editor.
+
+## 226. Rev 133 mockups: the Milestone 2 Voyages UI, three ways (2026-11-24, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-24, after the Milestone 2 design https://claude.ai/artifact/41YTUVhkuX1wPDwJQhub3g): "For
+this we have to create a well engaging UI and the world and the 4 missions very interesting ... How do we start? First
+the app shell and in game UI". Then, on the Voyage Codex (https://claude.ai/artifact/S4aH7rcMZhd6xrSen9oZSD): "Bounty,
+salvage, piracy are voyage types they cannot be names", and "the in game UI and world everything should be very well
+defined for these to work".
+
+**On the canvas**: tab Voyages, "Rev 133 - Milestone 2 Voyages UI, three ways". Generator
+`Docs/MenuRedesignB/rounds/r133_voyages_m2.py`; copies `Docs/MenuRedesignB/board/R133*.dc.html`. Five screens per
+direction, each its own board (Board, Seats, Pause, Vote, Awards), plus Notes:
+- **A The Chart (recommended)**: jobs are giver pins on the HyperSea map, a pin slides open the giver's card (classes
+  wanted, squad fit, pay); seats are Rev 115 A's line-up with class, mood and rank; pause is the chart framed on the lane
+  with the Ark live in its cell, events next door with timers and the rival; the vote is a lit membrane plus a low centre
+  D-pad vote; the end board draws the run on the chart over one award card per seat. Recommended because pillar 1 (the
+  sea is real) is one picture from the board to the run.
+- **B The Quay**: the givers stand on the quay (pilot scenes) and ask, your pilots answer in their mood; seats are pilot
+  cards; pause is the lane as a column beside the paused world; the pilot who saw the event asks the vote.
+- **C The Ledger**: a sortable list with fit, pay and danger columns and a detail pane; seats as rows with a refusal
+  line; pause is a course strip; the vote rides in the HUD chip; the end board is a table with the pay itemised.
+Same content in all three: docked at Gullbone Landing; the Codex's four voyages by name (The Glassmere Shatter, The
+Tollmoor Crossing, Black Tide Rising, Ironmouth Holds) with the type only as a small label; givers Cass Morrow, Captain
+Theo Lark, Juno Rask, Marshal Edda Kroll (shown with their callsign's portrait); the default squad Sparrow, Squirrel,
+Dolphin fits 1 of 3 for Salvage (+10%). Marks: the seven class glyphs (outline), mood as three bars (Refuses a struck
+circle in the threat red), rank as one to three chevrons per verb, fit as three segments; no domain colour. In-game
+boards keep Rev 120 B (plate over the Ark, chip, feed) at the game's text sizes. `check_mockup.py` noise: A Board 128
+and A Seats 105 (the picked Rev 115 A line-up) are over the budget of 60; the in-game boards are within it.
+
+**Differs from the build**: none of it is built. The job board today is the Rev 113 sea page and crew popup (no giver,
+classes, fit or pay); seats show no class, mood or rank; pause has no map; there is no detour vote or role award.
+
+**Next**: after the pick, one round of every screen and state of the picked direction (locked jobs, a refusing pilot,
+solo and party votes, a tie, the Ark lost, joining at the next cell) and how the world reads in play (zones, cell
+crossings, the five events next door, rival arrivals).
