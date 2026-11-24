@@ -230,6 +230,14 @@
      "by": "Claude",
      "date": "2026-11-19",
      "evidence": "Perch Run coach searched (time_ai_search.py --hull Goby, I1-I4 + I1@T5 + wide): best confirmed on seeds 101-103 within 0.4% of the shipped coach, so the shipped coach stays (PERCH_RUN.md 5.0). Regatta flies its own Goby dart coach (RegattaGobyDart): 15 seeds card 78.1 s / L5 62.6 s after dartPace rest 1.25 (REGATTA.md 6.6)."
+    },
+    "1": {
+     "state": "done",
+     "by": "Will",
+     "date": "2026-11-24",
+     "evidence": "Will flew the Goby in Perch Run (its ring game) on 2026-11-24 and said it passes the fun test: 'I think the ring game mode is fun'. Asked in the same session for the dart cooldown to run from launch and for the Goby to stop hitting the pair's own perch prisms (both changed in that commit).",
+     "kind": "human",
+     "loop": 1
     }
    },
    "Mass": {

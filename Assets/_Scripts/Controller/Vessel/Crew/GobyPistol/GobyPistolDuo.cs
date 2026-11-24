@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (CrewSeat):
     /// the Pistol, the dens, the pull and the rings are simulated on that one machine until the crew is networked.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay, IUprightSeat
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay, IUprightSeat, IHullPrismFilter
     {
         enum Half { Goby = 0, Pistol = 1 }
 
@@ -509,6 +509,11 @@ namespace CosmicShore.Gameplay
         }
 
         bool Perchable(Prism prism) => prism && !prism.destroyed && prism.prismProperties != null && prism.ownerID != _status.PlayerName;
+
+        /// <summary>The Goby's hull leaves the pair's own prisms alone (<see cref="IHullPrismFilter"/>): its perch pads, the
+        /// Pistol's dens and the ground all sit where it perched, and turning away from a perch rammed or bounced off them
+        /// (Will, 2026-11-24). Its darts already ignore them (<see cref="Perchable"/>).</summary>
+        public bool LeavesAlone(Prism prism) => prism && _status != null && prism.ownerID == _status.PlayerName;
 
         void StepDart(float dt)
         {
