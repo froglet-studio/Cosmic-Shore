@@ -117,9 +117,10 @@ broken prisms). §4 says the course must never pull an AI out of Time mode. Whil
 autopilot's race-coach hook (`ShrikeExecutor.AiSlingAccept`, the one Regatta uses; `ThornlineController.Ruins.cs`
 `CoachAroundRuins`): the autopilot's own sling rule (300 u, 20 deg, a block on the axis), except that a ruin is never
 the anchor, and Time mode only. A human's controls, the kit and its numbers are untouched; I1-I3 (no ruins) keep the
-stock autopilot. The cost: at I4 the AI no longer fires missiles at a rival in its cone. **After the fix, one race in
-the editor with the ruins standing (5 ruins, 549 prisms): the winner took 44.5 s (69.6 / 69.2 s before), and no ruin
-prism was broken.** More races were planned but the editor was taken by another session's test.
+stock autopilot. The cost: at I4 the AI no longer fires missiles at a rival in its cone. **After the fix, three races in
+the editor with the ruins standing: 44.5 s (5 ruins, 549 prisms, none broken), 42.7 s (7 ruins, 484 prisms) and 48.3 s
+(6 ruins, 610 prisms, 25 broken by hulls; no lance fires now). Before the fix: 69.6 / 69.2 s with ruins, 42.0 / 52.3 s
+with them cleared.** So the ruins no longer cost the AI time beyond the course-to-course spread.
 
 ### What it measures (offline)
 

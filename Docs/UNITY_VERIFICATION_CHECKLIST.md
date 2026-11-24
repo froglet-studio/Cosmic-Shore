@@ -26897,7 +26897,12 @@ NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins 
 - [ ] Frame rate at I4 with the ruins (about 840 more prisms) against without.
 - [ ] A rematch lays a fresh set and leaves none of the old one.
 
-### 🔴 Grizzly Time: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
+### 🔴 Grizzly Time: ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, EDITMODE TESTS NOT RUN, NOT PLAYED)
+
+2026-11-25: the open editor (6000.3.17f1) compiles `2a3e56faac` with 0 errors and 0 warnings (`unity recompile`). The
+first push (`f2e457b577`) did not compile: the ruins file lacked `using CosmicShore.Utility;`, fixed in `2a3e56faac`.
+`GrizzlyTimeRuinsTests` in the editor (Pipeline `run_tests`) did not finish: the run was invalidated while the editor sat
+in Play mode spamming `CrystalFlipWave.cs:128` NullReferenceExceptions and stopped answering commands. Re-run it.
 
 `GRIZZLYTIME.md` §0.2. Spearline's ruins called from Grizzly Time (`GrizzlyTimeRuins.cs`, `GrizzlyTimeController.Ruins.cs`,
 three hook lines in `GrizzlyTimeController.Kegs.cs`), cut back for the throw lanes and the kegs. Ran: the headless
@@ -26946,7 +26951,7 @@ Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally
       standing, the lay 0.27 s on that course.
 - [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
 
-### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, compiles and tests pass in Unity 2026-11-25, AI slowed by ruins, fixed 2026-11-25, NOT PLAYED by a person)
+### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, compiles and tests pass in Unity 2026-11-25, AI fixed 2026-11-25, NOT PLAYED by a person)
 
 `THORNLINE.md` §2a. Spearline's ruins called from Thornline (`ThornlineRuins.cs`, `ThornlineController.Ruins.cs`, four
 hook lines and the `ruinDomains` field in `ThornlineController.cs`, one line in `MinigameThornline.unity`). Ran: the
@@ -26967,11 +26972,11 @@ Affects: Garrett's Shrike / Thornline.
 - [ ] Thornline at I4: four to seven ruins in Jade, Ruby or Gold, each between a ring and its far thorn; none at a
       ring, a thorn or under the start; every thorn-to-thorn line and every snipe line open.
 - [ ] A sling aimed at a thorn through a ruin anchors on the thorn, not on the ruin.
-- [ ] Four AI at I4 still finish with the ruins standing; note their times against THORNLINE.md §4.1 and any seconds
+- [x] Four AI at I4 still finish with the ruins standing; note their times against THORNLINE.md §4.1 and any seconds
       spent lancing ruins. **2026-11-25, three Legendary AI, four races in the editor: they finish, but the winner took
       69.6 s and 69.2 s with the ruins and 42.0 s and 52.3 s with the ruins cleared at the start (§4.1: 41.6 s).** Fixed
-      the same day (THORNLINE.md §2a: the AI no longer anchors on or lances a ruin): one race with the ruins standing,
-      44.5 s, no ruin prism broken. Not ticked until a few more races agree; four AI not raced.
+      the same day (THORNLINE.md §2a: the AI no longer anchors on or lances a ruin): three races with the ruins standing,
+      44.5 s, 42.7 s and 48.3 s (three Legendary AI; four AI not raced).
 - [ ] Thornline at I1, I2 and I3: no ruins.
 - [ ] The hitch when the course is laid (about 0.2 s in the harness) and the frame rate at I4 with about 620 more prisms.
 - [ ] A rematch lays a fresh set and leaves none of the old one.
