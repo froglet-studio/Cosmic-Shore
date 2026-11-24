@@ -20,9 +20,9 @@
   "fixCommit": "1424652888",
   "resolvedUtc": "",
   "resolution": "",
-  "timesSeen": 5,
+  "timesSeen": 1,
   "regressions": 0,
-  "cleanSessions": 0,
+  "cleanSessions": 1,
   "cleanSessionsRequired": 2,
   "validationPaused": false
 }
