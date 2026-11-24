@@ -41,6 +41,19 @@ can press and not get a game from:
                     in the project window.
   duplicate-card    the same card appears twice in one roster, which draws the
                     same mode twice in the grid.
+  archived-reference  an asset outside `Games/_Archive/` still points at a DEAD
+                    asset inside it: an archived card whose scene cannot be
+                    loaded, or an archived asset that points at one. Archiving a
+                    card takes it off the rosters, but a vessel's `Games` list
+                    and a training game's `Game` field are not rosters, so the
+                    card stays in the build and something launches it. Measured
+                    2026-11-20: the vessel class assets still listed five cards
+                    archived on 2026-10-13, and all four entries of
+                    `TrainingGames` (the daily challenge's whole pool) led to
+                    deleted scenes; a development build logged "Scene
+                    'MinigameElimination' couldn't be loaded". An archived card
+                    whose scene still loads (parked, not retired) is not a
+                    failure.
 
 WHAT IT DELIBERATELY DOES NOT DO: there is no `--fix`. Two of the failures above
 have two possible repairs and the tool cannot tell them apart -- `not-in-build`
@@ -67,14 +80,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 # The script asset every roster's `m_Script` points at. Resolved from the .cs.meta
 # rather than hardcoded, so moving the file does not silently reduce this gate to
 # "found no rosters, OK" -- the one failure mode a scanner cannot report on itself.
-GAMELIST_SCRIPT = os.path.join(
-    "Assets", "_Scripts", "ScriptableObjects", "SO_GameList.cs")
+# Forward slashes, as Unity writes paths (the build settings, every asset reference): on
+# Windows `os.path.join` and `os.path.relpath` answer backslashes, no scene path then
+# matched the build settings, and this gate failed every card on every roster.
+GAMELIST_SCRIPT = "Assets/_Scripts/ScriptableObjects/SO_GameList.cs"
 # Both the concrete card type and its base, so a roster holding a bare SO_Game is
 # still read rather than reported as not-a-card.
 CARD_SCRIPTS = [
-    os.path.join("Assets", "_Scripts", "ScriptableObjects", "SO_ArcadeGame.cs"),
-    os.path.join("Assets", "_Scripts", "ScriptableObjects", "SO_Game.cs"),
+    "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs",
+    "Assets/_Scripts/ScriptableObjects/SO_Game.cs",
 ]
+
+# Where a retired card (and anything retired with it) is parked.
+ARCHIVE_MARK = "/Games/_Archive/"
 
 GUID_RE = re.compile(r"^guid: ([0-9a-f]{32})", re.M)
 SCRIPT_RE = re.compile(r"^\s*m_Script: \{fileID: \d+, guid: ([0-9a-f]{32})", re.M)
@@ -85,6 +103,11 @@ GAMES_RE = re.compile(r"^(\s*)Games:\s*(\S*)\s*$", re.M)
 
 # `- enabled: 1` / `path: ...` pairs in EditorBuildSettings.
 BUILD_ENTRY_RE = re.compile(r"-\s+enabled:\s*(\d)\s*\n\s*path:\s*(.*)")
+
+
+def rel_path(path: str) -> str:
+    """Repo-relative, with forward slashes on every OS."""
+    return os.path.relpath(path, ROOT).replace(os.sep, "/")
 
 
 def read(path: str) -> str:
@@ -118,7 +141,7 @@ def index_guids(assets_dir: str) -> "dict[str, str]":
                 continue
             m = GUID_RE.search(head)
             if m:
-                out[m.group(1)] = os.path.relpath(meta[:-5], ROOT)
+                out[m.group(1)] = rel_path(meta[:-5])
     return out
 
 
@@ -128,9 +151,43 @@ def index_scenes(assets_dir: str) -> "dict[str, list[str]]":
     for dirpath, _, files in os.walk(assets_dir):
         for name in files:
             if name.endswith(".unity"):
-                rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
-                out.setdefault(name[:-6], []).append(rel)
+                out.setdefault(name[:-6], []).append(rel_path(os.path.join(dirpath, name)))
     return out
+
+
+def dead_archived(archived: "dict[str, str]", card_guids: "set[str]",
+                  scenes: "dict[str, list[str]]",
+                  build: "dict[str, bool]") -> "dict[str, str]":
+    """guid -> why, for every archived asset that can only fail: a card whose scene cannot
+    be loaded, and (to a fixed point) any archived asset that points at one."""
+    texts = {}
+    for guid, path in archived.items():
+        if path.endswith(".asset"):
+            try:
+                texts[guid] = read(os.path.join(ROOT, path))
+            except OSError:
+                continue
+    dead: "dict[str, str]" = {}
+    for guid, text in texts.items():
+        m = SCRIPT_RE.search(text)
+        if not m or m.group(1) not in card_guids:
+            continue
+        sm = SCENE_NAME_RE.search(text)
+        scene = unquote(sm.group(1)) if sm else ""
+        found = scenes.get(scene, []) if scene else []
+        if len(found) != 1 or (build and not build.get(found[0], False)):
+            dead[guid] = f"its scene '{scene}' cannot be loaded"
+    changed = True
+    while changed:
+        changed = False
+        for guid, text in texts.items():
+            if guid in dead:
+                continue
+            hit = next((x for x in ENTRY_GUID_RE.findall(text) if x in dead), None)
+            if hit:
+                dead[guid] = f"it points at {archived[hit]}"
+                changed = True
+    return dead
 
 
 def index_build_settings(path: str) -> "dict[str, bool]":
@@ -255,6 +312,10 @@ def scan(assets_dir: str, build_settings: str) -> "tuple[list[str], list[str]]":
                  f"moved? This gate cannot find any roster without it."], [])
     card_guids = {by_path[p] for p in CARD_SCRIPTS if p in by_path}
 
+    archived = {g: p for g, p in guids.items() if ARCHIVE_MARK in p}
+    dead = dead_archived(archived, card_guids, scenes, build)
+    archive_refs: "list[str]" = []
+
     rosters = []
     for dirpath, _, files in os.walk(assets_dir):
         for name in files:
@@ -262,12 +323,18 @@ def scan(assets_dir: str, build_settings: str) -> "tuple[list[str], list[str]]":
                 continue
             path = os.path.join(dirpath, name)
             text = read(path)
+            rel = rel_path(path)
             m = SCRIPT_RE.search(text)
             if m and m.group(1) == list_guid:
-                rosters.append((os.path.relpath(path, ROOT), text))
+                rosters.append((rel, text))
+            if dead and ARCHIVE_MARK not in rel:
+                for g in sorted({x for x in ENTRY_GUID_RE.findall(text) if x in dead}):
+                    archive_refs.append(
+                        f"{rel}  [ref]  archived-reference: still points at {archived[g]} "
+                        f"({dead[g]}); take the entry out")
     rosters.sort()
 
-    failures: "list[str]" = []
+    failures: "list[str]" = sorted(archive_refs)
     report: "list[str]" = []
 
     if not rosters:
@@ -356,7 +423,8 @@ def run_self_test() -> int:
         scripts = os.path.join(assets, "_Scripts", "ScriptableObjects")
         scenedir = os.path.join(assets, "_Scenes")
         cards = os.path.join(assets, "Cards")
-        for d in (scripts, scenedir, cards, os.path.join(tmp, "ProjectSettings")):
+        archive = os.path.join(assets, "Games", "_Archive")
+        for d in (scripts, scenedir, cards, archive, os.path.join(tmp, "ProjectSettings")):
             os.makedirs(d, exist_ok=True)
 
         def meta(path: str, guid: str) -> None:
@@ -371,7 +439,8 @@ def run_self_test() -> int:
         g = {n: f"{i:032x}" for i, n in enumerate(
             ["list", "card", "arcadecard", "gamecard", "sceneok", "scenegone",
              "scenedup", "scenenobuild", "sceneempty", "dupA", "wrongtype",
-             "notacard", "roster"], start=1)}
+             "notacard", "roster", "oldcard", "oldtraining", "vessel", "parkedcard"],
+            start=1)}
 
         write(os.path.join(scripts, "SO_GameList.cs"), "// list\n", g["list"])
         write(os.path.join(scripts, "SO_ArcadeGame.cs"), "// card\n", g["arcadecard"])
@@ -450,6 +519,49 @@ def run_self_test() -> int:
             os.remove(os.path.join(assets, name + ".asset"))
             os.remove(os.path.join(assets, name + ".asset.meta"))
 
+        # Archived assets: a reference from inside the archive is fine, one from outside
+        # fails, whatever kind of asset holds it (a vessel's list is not a roster).
+        settings = os.path.join(tmp, "ProjectSettings", "EditorBuildSettings.asset")
+        roster("Clean", [g["sceneok"]])
+        write(os.path.join(archive, "Old.asset"),
+              "%YAML 1.1\n--- !u!114 &11400000\nMonoBehaviour:\n"
+              f"  m_Script: {{fileID: 11500000, guid: {g['arcadecard']}, type: 3}}\n"
+              "  m_Name: Old\n  SceneName: SceneGone\n", g["oldcard"])
+        write(os.path.join(archive, "OldTraining.asset"),
+              "%YAML 1.1\n--- !u!114 &11400000\nMonoBehaviour:\n  m_Name: OldTraining\n"
+              f"  Game: {{fileID: 11400000, guid: {g['oldcard']}, type: 2}}\n", g["oldtraining"])
+        write(os.path.join(archive, "Parked.asset"),
+              "%YAML 1.1\n--- !u!114 &11400000\nMonoBehaviour:\n"
+              f"  m_Script: {{fileID: 11500000, guid: {g['arcadecard']}, type: 3}}\n"
+              "  m_Name: Parked\n  SceneName: SceneOk\n", g["parkedcard"])
+        found, _ = scan(assets, settings)
+        archive_cases = [("an archived asset pointing at an archived card passes", not found)]
+
+        def vessel(points_at: str) -> "list[str]":
+            write(os.path.join(assets, "Vessel.asset"),
+                  "%YAML 1.1\n--- !u!114 &11400000\nMonoBehaviour:\n  m_Name: Vessel\n  Games:\n"
+                  f"  - {{fileID: 11400000, guid: {points_at}, type: 2}}\n", g["vessel"])
+            return scan(assets, settings)[0]
+
+        def one_archive_failure(lines: "list[str]") -> bool:
+            return (len(lines) == 1 and lines[0].startswith("Assets/Vessel.asset")
+                    and "archived-reference" in lines[0])
+
+        archive_cases.append(("a live asset pointing at an archived card with no scene fails",
+                              one_archive_failure(vessel(g["oldcard"]))))
+        archive_cases.append(("a live asset pointing at an archived asset that leads to one fails",
+                              one_archive_failure(vessel(g["oldtraining"]))))
+        archive_cases.append(("a live asset pointing at an archived card that still loads passes",
+                              not vessel(g["parkedcard"])))
+        for label, ok in archive_cases:
+            print(f"  {'PASS' if ok else 'FAIL'}  {label}")
+            if not ok:
+                failures += 1
+        for name in ("Vessel.asset", "Clean.asset"):
+            os.remove(os.path.join(assets, name))
+            os.remove(os.path.join(assets, name + ".meta"))
+        extra = len(archive_cases)
+
         # The no-op guard: with SO_GameList.cs gone the scan must ERROR, never
         # report a clean project.
         os.remove(os.path.join(scripts, "SO_GameList.cs"))
@@ -463,7 +575,8 @@ def run_self_test() -> int:
             failures += 1
 
         ROOT = real_root
-        print(f"\nself-test: {len(cases) + 1 - failures}/{len(cases) + 1} passed")
+        total = len(cases) + 1 + extra
+        print(f"\nself-test: {total - failures}/{total} passed")
         return 1 if failures else 0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -511,15 +624,16 @@ def main() -> int:
         print()
 
     if failures:
-        print(f"{len(failures)} unlaunchable card(s):", file=sys.stderr)
+        print(f"{len(failures)} problem(s):", file=sys.stderr)
         for line in failures:
             print(f"  {line}", file=sys.stderr)
         print("\nA card must name a scene that exists on disk AND is enabled in "
               "ProjectSettings/EditorBuildSettings.asset. Add the scene to the "
-              "build settings, or remove the card from the roster.", file=sys.stderr)
+              "build settings, or remove the card from the roster. Nothing outside "
+              "Games/_Archive/ may point at an asset inside it.", file=sys.stderr)
         return 1
 
-    print("OK: every SO_GameList card names a loadable scene.")
+    print("OK: every SO_GameList card names a loadable scene, and nothing live points into the archive.")
     return 0
 
 

@@ -521,7 +521,7 @@ def page_content(snap):
         css += handle.read()
     with open(os.path.join(HERE, "console.js"), encoding="utf-8") as handle:
         js = handle.read()
-    for name in ("notebook.css", "notebook.js"):          # the Notebook page, in its own files
+    for name in ("notebook.css", "notebook.js", "compare.js"):   # the Notebook, Funnels and Releases pages, in their own files
         with open(os.path.join(HERE, name), encoding="utf-8") as handle:
             if name.endswith(".css"):
                 css += "\n" + handle.read()

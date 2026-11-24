@@ -22,13 +22,14 @@ MonoBehaviour:
     Max: 2
     element: 1
     UseFloor: 1
-    Floor: 1
+    Floor: 0.5
   expandSeconds: 0.9
   fadeSeconds: 0.5
-  bandWidth: 0.08
-  bend: 0.008
-  chromaticSplit: 0.03
-  rimGlow: 0.15
+  wavelength: 9
+  bend: 0.012
+  nearRadius: 22
+  shimmer: 0.05
+  passShare: 0.35
   petalsPerElement: 1
   shedSpeed: 8
   siphonOnChargeUpgrade: 1

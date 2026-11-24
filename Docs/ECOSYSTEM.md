@@ -258,6 +258,29 @@ The fence:
 
 This is an exception, not a precedent: the next one needs its own sign-off.
 
+**Widened 2026-11-16 (Shombith, Voyages Milestone 1: "the cell faunas should attack the ark"), awaiting Garrett's
+sign-off through `/approve`:**
+- Assaults: the escort turns the lure on the Ark's own world up to the tier's `AssaultLureShare` (0.45 at d1 to 0.95 at
+  d9) for an announced assault, until the squad kills `AssaultRepelKills` attackers near the Ark or `AssaultSeconds` run
+  out (`ArkAssaultClock`, `ArkAssaultDriver`, `ArkEscortRun.Assault.cs`). Between assaults the steady `LureShare` holds.
+- A second caller, `VoyageRun.Assault.cs`: a job voyage's hostile cells (`VoyageJob.HostileCells`, per cell of the leg)
+  get the same lure, the same assaults and `ArmourIsFood`, at the escort's tier for the job's difficulty. Calm cells are
+  never lured, and everything is cleared when the leg changes and when the voyage ends.
+- The fence above still holds: steering only, never a cull, a diet or a population.
+
+**Widened again 2026-11-17 (Shombith: "more attacks outside the cell, big kaiju level fauna attacking the cell"; "all
+crystals and everything come in the same spot"), awaiting Garrett's sign-off through `/approve`
+(`Docs/Voyages/CRYSTAL_RUN.md` §8):**
+- Kaiju and raiders: `VoyageRun.Kaiju.cs` holds an `IFaunaLeash` (the Angler's contract) on the grown creatures a Crystal
+  Run sends at the Ark: a kaiju born in the open water between two cells on each crossing, and the raiders. The leash
+  steers them at the Ark and orders its nearest plate; the creature re-checks it with its own diet, eats with its own
+  mouthful and keeps its starvation clock. No mark, nothing sustained. At most `kaijuMax` (2) kaiju alive; a kaiju is
+  one creature of its species grown 12x (same body-prism and collider count, larger).
+- Scattered births: a voyage's satellite cells set `Cell.ScatterLifeSpawns`, so an unbanded, unpenned creature and every
+  plant is born at its own volume-uniform point between the nucleus and the membrane (`RandomPointInCytoplasm`) instead
+  of the wave's feeding ground. Placement only: populations, diets, steering and every later goal are untouched. Off
+  everywhere else.
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count
@@ -9078,6 +9101,42 @@ second unrequested look change and the amplitude is what "barely perceptible" is
 
 ---
 
+### 47.8 Grown sway: a wave every vertex carries (2026-11-17, the Ray)
+
+`SpindleSway` is one shear along z, which is right for a branch or a fish and cannot make a wing ripple from shoulder
+to tip with its hind edge a beat behind. A GROWN creature (`Tools/Build/fauna_kit`) knows each vertex's wave as two
+vectors, and `SpindleGrownSway.hlsl` adds them in the vertex stage, after `SpindleSway`:
+
+    offset = _GrownSway * (TEXCOORD1.xyz * sin(t) + TEXCOORD2.xyz * cos(t))        t = _PrismClock * _GrownFrequency + _Phase
+
+- **Default 0 is the blast-radius control again.** `_GrownSway` is 0 on every material but the ones
+  `fauna_kit/unity_port.py` writes (`Assets/_Graphics/Materials/Fauna/`), and at 0 the function is a bit-identical
+  passthrough whatever a mesh holds in TEXCOORD1 and 2 (`Tools/Shaders/verify_spindle_grown_sway.py` T2, compiled from
+  the shipped file; the braid's LOD meshes keep other data there).
+- **It is wired after `SpindleSway`** (`Tools/Shaders/wire_spindle_grown_sway.py`), so `wire_spindle_lod.py`, which
+  splices into the edge that FEEDS `SpindleSway`, needed no change, and the four graphs it generates inherit the wave.
+  A creature's body draws with `SpindleDepthGraph` (`SpindleLodSystem.AddBody`), so that inheritance is how the wave
+  reaches the game.
+- **A grown body's material turns the shear off** (`_SwayAmplitude` 0), so `PrismSway` stamps nothing on its prisms
+  (`Spindle.TryGetSwayConstants` is false for a material that authors no shear). Its prisms are carried on the CPU
+  instead, by `GrownLimbDriver`, each along the wave of the limb where it sits, from `PrismClock.Now` and the
+  spindle's own phase (`Spindle.TryGetSwayPhase`): a prism is a collider and must be where it is drawn. That is nine
+  transform writes a frame for a Ray. It is the one place this sway spends CPU; §47.3's "zero per-frame CPU" still
+  holds for the mesh.
+- **Pieces of a cut body keep the body's own space** (`unity_port.joints_of`): `SpindleSway` is a function of a
+  vertex's own z, so a piece with its origin at its hinge sheared about a different point than its neighbour.
+- **The body answers its own turning (2026-11-18).** The same function takes six more floats, all 0 by default
+  (`_GrownBendX/Y/Z`, `_GrownStrokeX/Y`, `_GrownTwist`): the far parts of the body LAG its rotation
+  (`cross(Bend, p) * |p|`), the outside of a turn beats harder than the inside (the wave scaled by
+  `1 + dot(Stroke, p.xy)`), and in a roll the hind edges deflect like ailerons (`cross((Twist * p.x, 0, 0), p)`).
+  `GrownLimbDriver.AnswerTheTurn` measures the root's angular velocity, springs the lag, banks the body under the
+  root, and hands the numbers to the creature's own renderers in a `MaterialPropertyBlock`. That is the one place a
+  spindle renderer carries a per-renderer block outside a fade (`Spindle.cs` avoids them to stay SRP-batchable): it is
+  ten renderers a Ray, and it is deliberate, because the numbers are per creature and change every frame.
+- Not measured: the cost of two more vertex channels on every spindle draw (read, multiplied by 0). Not seen in the
+  editor: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the Ray's entry, check 0.
+
+
 ## 48. Garland — a cell composed for the CAMERA, at a fifth of the weight (Sep 2026)
 
 The freestyle seven are 34–41k prisms each and are all composed for a pilot who is *inside*
@@ -12547,6 +12606,15 @@ With size Mass's, Space's fauna identity is three things, one number - the plant
   Boid, right after `Initialize`) admits each body prism's authored size (`Prism.AuthoredScale`) into the window and
   retargets it. Reproduced in Amoebius: without it, the shark's teeth target 10 against an authored 15.
 
+  **A body of several JOINTED skins is authored eroded instead (2026-11-17, the Ray).** The erosion runs on each skin
+  about its own spine, which suits one skin and a few wings; a wing cut into jointed pieces (`fauna_kit/unity_port.py`)
+  is drawn toward the middle of each piece and tears at its hinges (`Tools/Build/fauna_kit/erosion.py Ray`, a port of
+  `SpindleErosion` pinned to `FaunaElementalFormTests`' numbers: 6.7 u). Such a body's Space PREFAB is grown at the
+  law's girth (`ErodedGirth` limb by limb, the body's thickest girth the reference), its prisms authored as the law's
+  needles (`ShapeLeaf` in the socket, less 3%), and it says `Fauna.spindleAuthoredEroded`: `ErodeSpindle` then leaves
+  skins and prisms as authored and reports `ThickestGirth`, so the body-relative dials still read the Mass girth. Its
+  config is unchanged in shape (`BaseBodyScale` 1.647 x Mass, `ErodeSpindle` on).
+
   Authored on the Space SHARK only (`Docs/Ecology/FaunaScale/sharks_four_elements.png`). Another species takes it with
   `BaseBodyScale` = 1.647 x its Mass scale, `ErodeSpindle` on, and Read/Write on its model's import.
 
@@ -12700,6 +12768,20 @@ arbitrary in-plane axis squashed it into an ellipse. The four models import read
 flora branch spindles, which never erode: memory only). The Space tadpole's school spacing follows its body (x4.573,
 on top of the Space spread); its senses stay world. The Space shark is unchanged (334.8 long); its teeth still sit
 in its crystal, as §64.8 records. Measured through the game's own `AssignLineage` in Amoebius at bind pose.
+
+**The armour did not land on a creature whose prefab crystal is not its rolled element (found and fixed 2026-11-17).**
+`LightFauna` and `Boid` call `ArmourBody` in `Initialize`, and every spawner calls `Initialize` BEFORE `AssignLineage`,
+which is where the element is rolled and the heart of that element provisioned. So the body was armed for the PREFAB's
+authored crystal. A species whose four configs share one prefab was armed for that prefab's element whatever it rolled:
+the QuadFish (a Space crystal) wore no shield as Mass and no danger as Charge. Measured by running the game's own spawn
+order (`BindSpeciesData`, `Initialize`, `AssignLineage`, `FaunaNetworkSync.ServerSpawn`) on the shipped configs in
+Amoebius: QuadFish Mass 0 of 4 plain prisms shielded at 60 and 300 frames, QuadFish Charge 0 of 4 danger, with the
+heart's element correct in both. `Fauna.AssignLineage` now calls `ArmourBody` once the heart is provisioned (it takes a
+previous arming off first and does nothing until the body prisms exist). **This changes shipped creatures**: every
+Mass light fauna and boid is now shielded and re-armoured, and every Charge one is all danger, as this section always
+said. The numbers after the fix are in `Docs/Studios/FAUNA_LAB.md` round 9; nobody has seen it in the Unity editor
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
 
 ### 65.5 The Mandelbulb family
 

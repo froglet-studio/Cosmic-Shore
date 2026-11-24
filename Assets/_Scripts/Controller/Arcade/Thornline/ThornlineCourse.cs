@@ -66,9 +66,11 @@ namespace CosmicShore.Gameplay
         /// <summary>`slingSeconds`: a sling takes this long at any distance.</summary>
         public const float SlingSeconds = 1f;
 
-        /// <summary>`slingCooldown` at Time 0 and at Time 10.</summary>
-        public const float SlingCooldownTimeZero = 6f;
-        public const float SlingCooldownTimeTen = 2.5f;
+        /// <summary>`slingCooldown` at Time 0 and at Time 10 (4.4 -> 4.1 since the Time curve was flattened at rest on
+        /// 2026-11-19, e8e669df46; 4.75 -> 3.75 at the Regatta knee, #2253, before that; was
+        /// 6 -> 2.5).</summary>
+        public const float SlingCooldownTimeZero = 4.4f;
+        public const float SlingCooldownTimeTen = 4.1f;
 
         /// <summary>`dockBonus` / `dockBonusShielded`: how much faster the cooldown runs docked.</summary>
         public const float DockBonus = 1.6f;

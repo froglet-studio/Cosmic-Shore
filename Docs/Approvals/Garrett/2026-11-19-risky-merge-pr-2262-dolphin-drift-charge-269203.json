@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2262-dolphin-drift-charge-269203",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T07:58:24+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2262 (Dolphin Drift Charge rest x1.375) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+  "branch": "claude/project-thread-frbecj",
+  "pr": 2262,
+  "commit": "819803861",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset",
+    "Docs/Approvals/Yash/2026-11-19-dolphin-drift-charge-rest-multiplier-x1-4db457.json",
+    "Docs/ElementalLoop/REDESIGN.md"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Dolphin/ChargeBoostAction.asset"
+    }
+  ]
+}

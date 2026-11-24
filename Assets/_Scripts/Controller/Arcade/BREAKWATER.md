@@ -1217,6 +1217,38 @@ races at I1-I4 (6 courses per rung, seeds 21-23 and 31-33):
 0.5 and 1.0 race identically (`AIPilot.EffectiveNoseLeadGain` floors the effective gain at 1). Regatta's Sparrow lead
 (`RaceLines/Sparrow_Regatta`, 2.0) is unchanged: there the card starts the Sparrow at Time 10 and it finishes 4/4.
 
+### AI: pace by difficulty (2026-11-17, elemental loop step 2)
+
+Raced in the real game (Amoebius headless, `Tools/Build/time_ladder_judge.py --mode Breakwater --hull Sparrow`, the
+shipped AI alone, course seeds 1-3), the ladder has two facts a person cannot see from the editor:
+
+- **The course rungs do not slow the AI.** At rest (no level-5 start) Legendary flies I1-I4 in 99 / 99 / 107 / 97 s;
+  with the standard ladder's Time 5 start at I2-I4, 99 / 82 / 82 / 81. The narrowing port and sharper corners are a
+  demand on a person's precision, which the AI meets by ramming: plain prisms cost the Sparrow about 0.25 s a clip and
+  it takes 500-750 a race. So for the AI the only step is the level-5 start, which makes I2-I4 about 20 % FASTER than I1
+  (Garrett, 2026-11-16: "faster is not easier").
+- **Difficulty barely spread.** Every level flew the trained nose (7.9/s, #2095), and the lobby levels differ only in
+  `GateRaceHandicap`'s belief. Medium raced I2-I4 in 89 / 78 / 83 s against Legendary's 82 / 82 / 81: at the default
+  level the rival was as fast as the hardest one on every rung a person finds hardest (Yash's I3 races before the
+  level-5 start took 128-238 s).
+
+`aiNoseFollowByDifficulty` now sets the nose by level as each AI is armed (Legendary keeps the trained row). Measured
+(seeds 1-3, every rung finished):
+
+| Level | nose /s | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|---|
+| Easy | 1.8 | 133 | 132 | 126 | 132 |
+| Medium | 2.0 | 112 | 110 | 120 | 111 |
+| Hard | 3.5 | 109 | 87 | 84 | 84 |
+| Legendary | 7.9 (the row) | 99 | 82 | 82 | 81 |
+
+Confirmed through the shipped code (the table above, not an override) on fresh course seeds 4-6: Easy 129 / 121 /
+121 s at I1 / I3 / I4, Medium 111 / 108 / 110, Hard 109 / 87 / 83, Legendary 97 / 82 / 80, every race finished.
+
+The rival a person meets by default is now about the same pace on every rung, so a harder rung is harder because of
+what the course and the faster hull ask of the person, not because the rival got faster with it. This changes the
+mode's AI, never the vessel (the LOCKED mode rule).
+
 ### The crystal detour
 
 > **Retired 2026-10-26 (Yash):** *"while playing any racing game mode, AI should not go for crystals. It should only

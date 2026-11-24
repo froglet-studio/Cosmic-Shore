@@ -1,0 +1,6 @@
+# Exact repo paths allowed to be ADDED to git over the size limit outside LFS (Tools/Build/check_large_files.py).
+# One path per line. Add one only after the repo owner agrees; prefer .gitignore or `git lfs track`.
+# Docs/BRANCH_POLICY.md.
+# 2026-11-21: already on bleeding-edge outside LFS; allowed so the bleeding-edge -> development promotion (#2320) passes. Move to LFS later.
+Port/dist/Amoebius-Windows.zip
+Assets/_Models/Vessel Models/ArkReverse.fbx

@@ -8768,9 +8768,9 @@ MonoBehaviour:
     pilots: Meerkat
   - mode: 71
     title: Burrow Run
-    tagline: Eight rings. Dig to every one.
+    tagline: Eight rings a lap. Thread every one.
     objective: Lead runner home wins
-    pilots: Meerkat
+    pilots: Jewel Wasp
   - mode: 66
     title: Thresher Time
     tagline: Plant the ball. Orbit it. Let go.

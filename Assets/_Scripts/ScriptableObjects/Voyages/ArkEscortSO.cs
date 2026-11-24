@@ -10,9 +10,10 @@ namespace CosmicShore.ScriptableObjects
     /// The <b>Ark escort</b> (Garrett, 2026-10-29): a voyage of its own where a squad of any three vessels escorts its Ark
     /// through a run of cells on the HyperSea, at a difficulty from 1 (an easy crossing) to 9 (not meant to be survived).
     /// The cells are authored worlds with their own fauna; the difficulty is a tier of numbers applied to all of them.
-    /// Nothing here is a scripted threat: a tier only says how many creatures each world seeds and caps, who controls the
-    /// world when the Ark arrives, and how fast the Ark's reactor regrows its hull. The food web does the rest
-    /// (Docs/Voyages/ARK_ESCORT.md).
+    /// A tier says how many creatures each world seeds and caps, who controls the world when the Ark arrives, how fast the
+    /// Ark's reactor regrows its hull, and how hard a hostile world's fauna are lured onto the Ark, steadily and in
+    /// announced assaults. The food web does the rest (Docs/Voyages/ARK_ESCORT.md). The job voyages' hostile cells read the
+    /// same tiers at the job's difficulty (VoyageRun.Assault.cs): one rule for fauna that attack an Ark.
     /// </summary>
     [CreateAssetMenu(fileName = "ArkEscort", menuName = "ScriptableObjects/Voyages/Ark Escort")]
     public sealed class ArkEscortSO : ScriptableObject
@@ -121,9 +122,9 @@ namespace CosmicShore.ScriptableObjects
                                  "worlds stay short and the Ark never outruns its escort.")]
             public float ArkSpeed = 1f;
 
-            [Range(0f, 0.95f), Tooltip("Optional: the Ark is overrun when its hull falls below this share. Since the escort's " +
-                                       "fauna gnaw through the armoured plates (platesAreFood), the hull can truly fall, so " +
-                                       "0 (only the true fall, the last plate) is the default; kept for experiments.")]
+            [Range(0f, 0.95f), Tooltip("The breach line: the Ark is overrun when its hull falls below this share. 0 = only " +
+                                       "the true fall (the last plate). Set it above the armoured share of the hull (about " +
+                                       "0.21) on tiers whose fauna cannot gnaw armour, or the Ark cannot be lost there.")]
             public float BreachHull;
 
             [Range(0f, 1f), Tooltip("Share of a hostile world's fauna goal picks that steer onto the Ark (the escort's " +
@@ -142,6 +143,22 @@ namespace CosmicShore.ScriptableObjects
             public float SuperShieldBiteMin;
             [Min(0f), Tooltip("Multiplier on every armour bite in the escort's worlds.")]
             public float BiteScale = 1f;
+
+            [Header("Assaults (the fauna attack the Ark in waves)")]
+            [Range(0f, 1f), Tooltip("During an ASSAULT, this share of the Ark's world's fauna goal picks steer onto the Ark " +
+                                    "(the feeding lure at full strength, Docs/ECOSYSTEM.md 0.z): the world's creatures " +
+                                    "converge on the hull. 0 = no assaults at this difficulty.")]
+            public float AssaultLureShare;
+
+            [Min(1f), Tooltip("Seconds an assault lasts if the squad does not drive it off first.")]
+            public float AssaultSeconds = 30f;
+
+            [Min(1f), Tooltip("Seconds of lull between one assault's end and the next one's warning.")]
+            public float AssaultGapSeconds = 35f;
+
+            [Min(1), Tooltip("Attackers the squad must kill near the Ark (inside the escort's guard radius) to drive an " +
+                             "assault off before its time is up.")]
+            public int AssaultRepelKills = 6;
         }
 
         [Header("The run")]
@@ -206,6 +223,14 @@ namespace CosmicShore.ScriptableObjects
                                           "inside its nucleus: cultivation is deliberate work, not a pass through the core.")]
         float pacifyNucleusSeconds = 40f;
 
+        [Header("Assaults")]
+        [SerializeField, Min(0f), Tooltip("Seconds after the Ark crosses into a hostile world before its first assault is " +
+                                          "announced.")]
+        float assaultFirstDelay = 10f;
+
+        [SerializeField, Min(0f), Tooltip("Seconds of warning between an assault being announced and the fauna turning on " +
+                                          "the Ark (the HUD's \"incoming\" moment).")]
+        float assaultWarningSeconds = 5f;
         [Header("Wild strikes (Garrett, 2026-11-14)")]
         [SerializeField, Tooltip("On a hostile world the escort has not pacified, a wild creature within reach of a squad vessel " +
                                  "plays its ATTACK at it (a Brittlestar's legs whip out; a body with no limbs lunges) and this " +
@@ -261,6 +286,20 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("Under the made-it banner when the escort berths at a place on the chart (token {to}).")]
         string berthedLine = "BERTHED AT {to}";
 
+        [SerializeField, Tooltip("When an assault is announced (tokens {name}, {seconds}). Empty shows nothing.")]
+        [TextArea] string assaultIncomingLine = "THE FAUNA OF {name} ARE CIRCLING THE ARK";
+
+        [SerializeField, Tooltip("When the fauna turn on the Ark (tokens {name}, {kills}). Empty shows nothing.")]
+        [TextArea] string assaultLine = "THE ARK IS UNDER ATTACK - KILL {kills} ATTACKERS NEAR IT";
+
+        [SerializeField, Tooltip("When the squad drives an assault off (tokens {name}, {lost}: hull plates it cost). " +
+                                 "Empty shows nothing.")]
+        [TextArea] string assaultRepelledLine = "ATTACK DRIVEN OFF";
+
+        [SerializeField, Tooltip("When an assault runs out its time without being driven off (tokens {name}, {lost}). " +
+                                 "Empty shows nothing.")]
+        [TextArea] string assaultPassedLine = "THE ATTACKERS FALL BACK - THE ARK LOST {lost} PLATES";
+
         public IReadOnlyList<Leg> Legs => legs;
         public IReadOnlyList<VoyageModifier> Modifiers => modifiers;
         public int WorldsPerVoyage { get => worldsPerVoyage; set => worldsPerVoyage = Mathf.Max(0, value); }
@@ -286,6 +325,12 @@ namespace CosmicShore.ScriptableObjects
         public float FaunaStrikeSeconds => faunaStrikeSeconds;
         public float FaunaStrikeWeight => faunaStrikeWeight;
         public string OverrunLine => overrunLine;
+        public float AssaultFirstDelay { get => assaultFirstDelay; set => assaultFirstDelay = Mathf.Max(0f, value); }
+        public float AssaultWarningSeconds { get => assaultWarningSeconds; set => assaultWarningSeconds = Mathf.Max(0f, value); }
+        public string AssaultIncomingLine => assaultIncomingLine;
+        public string AssaultLine => assaultLine;
+        public string AssaultRepelledLine => assaultRepelledLine;
+        public string AssaultPassedLine => assaultPassedLine;
         public string CourseLine => courseLine;
         public string BerthedLine => berthedLine;
         public float MaxPopulation { get => maxPopulation; set => maxPopulation = Mathf.Max(0.1f, value); }

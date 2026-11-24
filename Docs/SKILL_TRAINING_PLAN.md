@@ -449,7 +449,7 @@ and "again" every month so a repeat is seen.
 | 3.1 See the real game | R0 the real editor compiles every PR | `claude/ci-hosted-unity-compile` exists (2026-11-01); waits on the licence secrets and a merge (D1) |
 | 3.1 See the real game | R1-R2 the look-sheet kit | **built 2026-11-07 night**, not yet run in Unity: `Docs/LOOK_SHEET.md`, `/unity-look`, the CI job `look-sheet.yml`; the first run is a checklist entry |
 | 3.2 The world's look | R0 the audit, the baseline gate, the language, the vocabulary, the lessons, the skill | **built 2026-11-07 night**: `/world-look`, `Tools/Build/look_kit/audit.py` (67 effects, 72 signals on 25 as the baseline), `Docs/Shaders/WORLD_LOOK_SKILL_PLAN.md`; the language is a draft for Garrett (D2). **2026-11-16**: the gate is rename-safe (a moved offender passes as `moved`, fingerprinted in the baseline, three negative controls in `--self-test`) and the baseline rewritten after the Swordfish rename turned it red; 68 effects, 72 signals |
-| 3.3 Decide before building | R0 the ledger, the check, the brief, the brief step in four skills | **built 2026-11-07 night**: `Docs/claude/PRINCIPLES.md` (271 entries, every one verified at its source line by `principles.py --check`), `DESIGN_BRIEF.md`; every entry drafted, waiting on its owner (D3) |
+| 3.3 Decide before building | R0 the ledger, the check, the brief, the brief step in four skills | **built 2026-11-07 night**: `Docs/claude/PRINCIPLES.md` (271 entries, every one verified at its source line by `principles.py --check`), `DESIGN_BRIEF.md`. **R1 under way (D3)**: on 2026-11-16 Garrett answered 15 AI, economy and modes entries one card at a time (13 confirmed, P-ai-15 merged into P-ai-14, P-economy-01 rewritten, P-modes-04 struck as covered by P-ecology-08); the ledger is 267 entries, 35 confirmed, 232 drafted |
 | 3.4 UI | R0 `UI_LESSONS.md`; R1 the mockup gate | **built 2026-11-07 night**: `.claude/skills/frogma/references/UI_LESSONS.md` + `ui_lessons.py`, `check_mockup.py` (measured on five boards: the noise gate tells a rejected round from a picked one in four cases of five); the parity sheet (R2) waits on 3.1 (D4) |
 | 3.5 Sound | R0 the audit and the language; R1 the Meerkat briefs | **R0 built 2026-11-07 night**: `sound_slots.py` (13 real failures on the tree: three one-shots in loop slots, seven unbanked events, one renamed, no mobile banks), `SOUND_LANGUAGE.md` (draft), `/sound-brief`; the tool's self-test has one open assertion; the Meerkat briefs are owed (D5) |
 | 3.6 Multiplayer | R0 the skill; R1 the scenario scaffold | **built 2026-11-07 night**: `/multiplayer` + `references/HAND_TESTS.md`, `net_scenarios.py` (rows 2-5 as data, a judge over `net_logs.py`, `--run` unverified: no port build here); B48 is claimed twice, next free B50 (D6) |
@@ -495,6 +495,13 @@ and "again" every month so a repeat is seen.
   steering fails it 0/60 where the new one finishes 60/60; without it the steering change measured as 2-3 s and would
   have looked unnecessary. (4) **A person going idle on a ring is data too**: Garrett's hull sat 70 s on the same ring
   with the autopilot holding it, so his "won" was not a contest; the card cannot say that, the record can.
+
+- 2026-11-16, Garrett's AI, economy and modes principles: (1) **one card per rule gets real edits, not rubber
+  stamps**: of 15 asked, 11 were confirmed as written, but two near-duplicates were merged, one clause was cut because it
+  came from a retired mechanic and not from Garrett's words ("control theft"), and one rule written around a single
+  case (Tandava) was struck as already covered. (2) **Offer "strike as covered" when a rule repeats another**: the
+  owner sees the overlap faster from the option than from the rule text. (3) **Put the owner's own quote next to a
+  clause the owner questions**: the source's `words` settled what the clause meant in one message.
 
 ## 8. Appendix A: the skills, hand-audited (2026-11-07)
 

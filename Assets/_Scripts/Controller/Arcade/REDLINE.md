@@ -87,6 +87,33 @@ touched the trail, haptics and camera, not the race). Re-measured there, nothing
   lifting at I1-I2. A real pilot misses mouths a perfect aim does not, so whether a lift pays is the fun card's
   question, and the re-cut of section 9 waits on that flight.
 
+### 0.3 The rivals in the real game (2026-11-17, elemental loop step 2)
+
+Raced in Amoebius headless (`Tools/Build/time_ladder_judge.py --mode Redline --hull Manta`, the shipped AI alone,
+course seeds 1-3), the Legendary ladder reads well: 58 / 62 / 75 / 96 s at I1-I4, each rung a step up. The levels below
+it did not match the model of section 0.2. At Soar speed the slower noses could not hold the 72 / 44 u mouths:
+
+| Level | nose /s (I1-I4) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|---|
+| Easy, before | 2 / 2 / 2.5 / 4 | 454 (2 of 3 finished) | DNF 0 of 3 | DNF 0 of 3 | 318 |
+| Medium (the default), before | 3 / 3 / 3 / 5 | 152 | 298 (a 101 s stall at one gate) | 226 | 214 |
+| Hard, before | 6 | 91 | 88 | 117 | 152 |
+| Legendary | 15 / 15 / 9 / 9 | 58 | 62 | 75 | 96 |
+
+So the rival a player met by default circled mouths for minutes, and Easy often never finished. `aiNoseFollowByIntensity`
+is now Easy 5 and Medium 7 at every rung, Hard 7 at I1-I2 and 9 at I3-I4 (at 6 or 7 it raced no faster than Medium
+there), Legendary unchanged. Confirmed through the shipped table on fresh
+seeds 4-6, every race finished:
+
+| Level | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Easy | 236 | 216 | 215 | 272 |
+| Medium | 91 | 118 | 137 | 160 |
+| Hard | 91 (at 7) | 86 (at 7) | 121 (at 9) | 142 (at 9) |
+
+Easy stays slow because of its 0.7 throttle floor, and Medium sits behind Hard and Legendary through its 0.85 floor and
+its handicap belief, so the levels keep their order. This changes the mode's AI, never the vessel.
+
 ## 1. What the mode is asking
 
 > **Sections 1-5 are the 2026-11-04 design, on the hull before Soar's unlock; section 0 is how the race is flown now.**

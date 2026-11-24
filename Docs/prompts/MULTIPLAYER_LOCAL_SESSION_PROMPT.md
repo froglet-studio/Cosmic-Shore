@@ -74,7 +74,7 @@ ask; never touch the live UGS project (anything on UGS or the backend goes throu
 - Port (Amoebius engine) commits are separate and Port-only. No Unity or package version changes. No raw `Debug.Log`
   (CSDebug channels; `check_console_logging.py`). Player-facing text is an authored field. No model ids in code,
   commits or docs. "Affects: <person>'s <area>" in commits that touch someone else's area.
-- Froglet Tasks: suggest only, never file unapproved, never name or assign a person.
+- Hand-offs (`/handoff-*`): only on my yes, never name or assign a person.
 - Never ask me to run a command, a learner or a test: run it yourself. Ask me only for what needs a second real
   machine, another person, or a decision that is someone else's.
 - Plain-language replies: what you tested, what passed, what failed, what you fixed, what waits on whom.

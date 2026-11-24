@@ -87,6 +87,7 @@ namespace CosmicShore.UI
         VoyageBoard _board;
         VoyageLockedStrip _lockedStrip;
         readonly List<VoyageBoard.Offer> _offers = new();
+        readonly List<VoyageJob> _sailing = new();
         // Who is in the player's lobby: the Ark page's lobby view reads it.
         [Inject] HostConnectionDataSO _party;
 
@@ -253,13 +254,15 @@ namespace CosmicShore.UI
                 shown[i].ShowStepper(null, null, null, null);
                 // With the slide-in voyage the cards stay small: the open one slides over them instead.
                 bool expand = open && !slide;
+                // A locked job is shown but cannot sail (VoyageToyDefinitionSO.IsJobOpen, Milestone 1).
+                System.Action sailJob = VoyageToyDefinitionSO.JobSails(taken) ? () => SetSail(taken) : null;
                 shown[i].Show(eyebrow, job.Title, course, expand ? Brief(content, lines, job, route) : null, expand,
-                    () => OpenCard(index), lines.CardOpen, lines.CardClose, () => SetSail(taken));
+                    () => OpenCard(index), lines.CardOpen, lines.CardClose, sailJob);
                 if (open)
                 {
                     Map(content, lines, style, here, route, course);
                     focused = true;
-                    if (slide) ShowCard(OpenModel(content, lines, job, route, i, jobs.Count, () => SetSail(taken)));
+                    if (slide) ShowCard(OpenModel(content, lines, job, route, i, jobs.Count, sailJob));
                 }
             }
             bool jobOpen = _open >= 0 && _open < jobs.Count;
@@ -322,8 +325,14 @@ namespace CosmicShore.UI
             }
 
             var gameData = VoyageLaunch.ResolveGameData();
-            var jobs = harbour ? harbour.Board(out VoyageState state)
+            var board = harbour ? harbour.Board(out VoyageState state)
                 : VoyageHarbour.Board(style, VoyageRun.ActiveSquad(gameData), VoyageRun.LiveDomain(gameData), out state);
+            // A locked job is not on offer (VoyageToyDefinitionSO.IsJobOpen; Shombith, 2026-11-21: the crew recommends
+            // only what sails, the Crystal Run, so no other voyage can be opened).
+            _sailing.Clear();
+            foreach (var j in board)
+                if (VoyageToyDefinitionSO.JobSails(j)) _sailing.Add(j);
+            var jobs = _sailing;
             string here = state?.At;
             int count = jobs.Count + (escort ? 1 : 0);
             _destinations.Clear();
@@ -347,7 +356,8 @@ namespace CosmicShore.UI
             if (escort)
             {
                 var course = VoyageRules.EscortRoute(state, content);
-                _offers.Add(EscortOffer(content, lines, escort, Difficulty, course, sail: true));
+                _offers.Add(EscortOffer(content, lines, escort, Difficulty, course, sail: true,
+                    locked: !VoyageToyDefinitionSO.EscortSails()));
                 if (_open == jobs.Count)
                 {
                     if (course is { Count: >= 2 }) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
@@ -364,7 +374,7 @@ namespace CosmicShore.UI
         {
             if (!map) return;
             if (_openAtGalaxy) map.FrameGalaxy();
-            else map.FrameOn(course);
+            else map.FrameOn(course, minWidth: VoyageSeaPage.CourseFrameLy);
         }
 
         void PickBoardRow(int index)
@@ -407,6 +417,7 @@ namespace CosmicShore.UI
             }
             _lockedStrip = VoyageLockedStrip.Create(page, new VoyageKit(style, lines, template ? template.LabelTemplate : null),
                 lockSprite);
+            _board.LockSprite = lockSprite;
             return true;
         }
 
@@ -460,9 +471,12 @@ namespace CosmicShore.UI
                 Title = job.Title,
                 Place = to?.Name,
                 Pilot = person?.Name,
+                Key = VoyageSeatRecord.JobKey(job),
                 Faction = PilotLoadoutStore.TryGetPilot(job.PilotId, out var record) ? record.FactionName : null,
+                House = record != null ? record.FactionType : person?.Faction ?? FactionType.None,
                 Story = !string.IsNullOrEmpty(job.Summary) ? job.Summary : person?.Story,
                 Portrait = callsign ? callsign.Portrait : null,
+                Callsign = callsign ? callsign.Id : null,
                 Ly = sea != null ? sea.LightYears.ToString("N0", CultureInfo.InvariantCulture) : null,
                 Minutes = sea != null ? sea.Minutes.ToString("N0", CultureInfo.InvariantCulture) : null,
                 Role = VoyageRules.RoleName(content, job.Role),
@@ -491,7 +505,9 @@ namespace CosmicShore.UI
                     }
             }
             var taken = job;
-            offer.SetSail = difficulty => SetSail(VoyageDifficulty.At(taken, difficulty));
+            // A locked job (Milestone 1, VoyageToyDefinitionSO.IsJobOpen) shows, with its Set sail greyed.
+            if (VoyageToyDefinitionSO.JobSails(taken))
+                offer.SetSail = difficulty => SetSail(VoyageDifficulty.At(taken, difficulty));
             return offer;
         }
 
@@ -528,13 +544,15 @@ namespace CosmicShore.UI
         /// <summary>The Ark escort as the board offers it: its title and line at the last picked difficulty, its course, and,
         /// before it sails, Set sail at the difficulty picked on the voyage page (its own 1-9).</summary>
         VoyageBoard.Offer EscortOffer(VoyageContent content, VoyageLines lines, ArkEscortSO escort, int difficulty,
-            IReadOnlyList<string> course, bool sail)
+            IReadOnlyList<string> course, bool sail, bool locked = false)
         {
             string legs = escort.Legs.Count.ToString(CultureInfo.InvariantCulture);
             string d = difficulty.ToString(CultureInfo.InvariantCulture);
             var offer = new VoyageBoard.Offer
             {
+                Key = VoyageSeatRecord.EscortKey,
                 Kind = lines?.KindEscort,
+                Picture = VoyageBoardStyleSO.Load() is { } look ? look.ArkPicture : null,
                 Title = TemplateText.Fill(escort.CardTitle, "difficulty", d, "legs", legs),
                 Story = TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", d),
                 Recommended = VoyageDifficulty.Clamp(difficulty),
@@ -556,6 +574,8 @@ namespace CosmicShore.UI
                         offer.Stops.Add(new VoyageBoard.Stop { Name = place.Name, Line = place.Blurb, At = VoyageMapGraphic.PlacePoint(place) });
                 }
             }
+            // Locked (VoyageToyDefinitionSO.IsEscortOpen): no Set sail and no label, so the board shows it locked.
+            if (locked) return offer;
             if (sail)
                 offer.SetSail = picked =>
                 {
@@ -888,11 +908,16 @@ namespace CosmicShore.UI
         }
 
         // Set sail loads the voyage scene with the choice (VoyageLaunch); freestyle is not involved.
+        // The seats the Ark page set for this voyage sail (VoyageSeatRecord); with none made, the active squad.
         static void SetSailEscort(int difficulty) =>
-            VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(difficulty));
+            VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(difficulty, VoyageSeatRecord.Get(VoyageSeatRecord.EscortKey)));
 
-        static void SetSail(VoyageJob job) =>
-            VoyageLaunch.Begin(VoyageLaunchRequest.ForJob(job));
+        static void SetSail(VoyageJob job)
+        {
+            var request = VoyageLaunchRequest.ForJob(job);
+            request.Squad = VoyageSeatRecord.Get(VoyageSeatRecord.JobKey(job));
+            VoyageLaunch.Begin(request);
+        }
 
         // ── The open voyage (slides over the cards) ──────────────────────────
 

@@ -15,8 +15,8 @@ namespace CosmicShore.UI
     /// <list type="number">
     /// <item><b>The HyperSea</b> (<see cref="VoyageSeaPage"/>, Rev 111 Full on Rev 108's table): the live map lying back as a
     /// 50 degree table on the moving sea lines, its side view joined to its front edge and sliding with it, the zoom row
-    /// and + / - above it, Full screen (the table animates flat to a borderless full-screen map whose zoom goes down to
-    /// Neighbourhood and Cell), the crew's portraits down the right with a sliding Crew / Hide toggle, and the picked
+    /// and + / - above it, Full screen (the table animates flat to a borderless full-screen map; both zoom down to Neighbourhood
+    /// and Cell), the crew's portraits down the right with a sliding Crew / Hide toggle, and the picked
     /// voyage with Open voyage.</item>
     /// <item><b>The voyage</b> (<see cref="VoyageBriefPage"/>, Rev 100 P2A Briefing): the offering pilot's portrait and
     /// story, the route drawing itself stop by stop, the difficulty 1-9 with the pilot's recommendation marked, the
@@ -48,12 +48,20 @@ namespace CosmicShore.UI
         /// <summary>A voyage on offer: a job a pilot of the crew recommends (or the Ark escort, or a voyage under way).</summary>
         public sealed class Offer
         {
+            /// <summary>The voyage's key for the seats it sails with (<see cref="VoyageSeatRecord"/>).</summary>
+            public string Key;
             /// <summary>The job's kind in words (Bounty hunt, Piracy...).</summary>
             public string Kind;
+            /// <summary>The faction type of the pilot who brings it (the crew popup groups by it); None for the escort.</summary>
+            public FactionType House;
+            /// <summary>The card's picture when it has no pilot (the Ark for the escort).</summary>
+            public Sprite Picture;
             public string Title, Place;
             /// <summary>Who recommends it, their house and their portrait; empty for the escort.</summary>
             public string Pilot, Faction, Story;
             public Sprite Portrait;
+            /// <summary>The callsign id of the pilot who brings it (their scene on the crew screen); empty for the escort.</summary>
+            public string Callsign;
             /// <summary>Its numbers: light years and minutes (empty when the course is not charted).</summary>
             public string Ly, Minutes;
             /// <summary>The squad's role on it, already in words.</summary>
@@ -74,6 +82,9 @@ namespace CosmicShore.UI
             /// <summary>Pilots (callsign ids) and vessels the seat popup suggests for it.</summary>
             public readonly List<string> SuggestedPilots = new();
             public readonly List<VesselClassType> SuggestedVessels = new();
+
+            /// <summary>True when it is shown but cannot sail (Milestone 1's lock: no Set sail and not under way).</summary>
+            public bool Locked => SetSail == null && string.IsNullOrEmpty(SailLabel);
         }
 
         /// <summary>The squad changed (another squad picked, a seat changed): the pilots bring the voyages, so the window
@@ -103,6 +114,15 @@ namespace CosmicShore.UI
         public VoyageBriefPage Brief => _brief;
         public VoyageArkPage Ark => _ark;
 
+        /// <summary>The voyages on offer, in the board's order.</summary>
+        public IReadOnlyList<Offer> Offers => _offers;
+
+        /// <summary>The lock the window's tabs use (the crew popup marks locked voyages with it); may be null.</summary>
+        public Sprite LockSprite { get; set; }
+
+        /// <summary>True while the crew popup is open over the HyperSea page.</summary>
+        public bool CrewOpen => _crew != null && _crew.IsOpen;
+
         public const float HeaderHeight = 64f;
 
         VoyageKit _kit;
@@ -112,6 +132,7 @@ namespace CosmicShore.UI
         VoyageSeaPage _sea;
         VoyageBriefPage _brief;
         VoyageArkPage _ark;
+        VoyageCrewPopup _crew;
         Page _page;
         readonly List<Offer> _offers = new();
         int _open = -1;
@@ -147,6 +168,7 @@ namespace CosmicShore.UI
             board._sea = new VoyageSeaPage(board, board._kit, board._pages);
             board._brief = new VoyageBriefPage(board, board._kit, board._pages);
             board._ark = new VoyageArkPage(board, board._kit, board._rules, board._pages, party);
+            board._crew = new VoyageCrewPopup(board, board._kit, board._pages);
             board.ShowPage(Page.Sea);
             return board;
         }
@@ -195,7 +217,8 @@ namespace CosmicShore.UI
         /// <summary>Show <paramref name="page"/>. The voyage and Ark pages need an open voyage.</summary>
         public void ShowPage(Page page)
         {
-            if (page != Page.Sea && Open == null) page = Page.Sea;
+            // A locked voyage (no Set sail and not under way) stays on the HyperSea page: it shows but never opens.
+            if (page != Page.Sea && (Open == null || Open.Locked)) page = Page.Sea;
             bool changed = _page != page;
             _page = page;
             if (page != Page.Sea) _sea.ExitFull(instant: true);
@@ -217,6 +240,11 @@ namespace CosmicShore.UI
         /// <summary>One step back: a picker open on the Ark page closes first.</summary>
         public void StepBack()
         {
+            if (CrewOpen)
+            {
+                _crew.Close();
+                return;
+            }
             if (_ark.PickerOpen)
             {
                 _ark.ClosePicker();
@@ -224,6 +252,12 @@ namespace CosmicShore.UI
             }
             if (_page > Page.Sea) ShowPage(_page - 1);
         }
+
+        /// <summary>Open Crew recommends over the HyperSea page (Rev 113 Crew).</summary>
+        public void OpenCrew() => _crew.Open(_offers, LockSprite);
+
+        /// <summary>Open the picked voyage on the voyage page (Open voyage, or Open on the crew popup).</summary>
+        public void OpenPicked() => ShowPage(Page.Voyage);
 
         /// <summary>Take the window's map column (the map over its edge view, built by <see cref="VoyageJobsView"/>) into
         /// the HyperSea page's table.</summary>
@@ -251,9 +285,42 @@ namespace CosmicShore.UI
                 _difficulty = shown?.Recommended ?? 5;
             }
             _sea.Show(_offers, _open, map, message);
+            if (CrewOpen) _crew.Show(_offers);
             if (_page != Page.Sea && shown == null) ShowPage(Page.Sea);
             else if (_page == Page.Voyage) _brief.Show(shown, _difficulty, replay: false);
             else if (_page == Page.Ark) _ark.Show(shown, _difficulty);
+        }
+
+        /// <summary>
+        /// A friend's menu follows the host into its voyage (<see cref="CosmicShore.Gameplay.VoyageLobbyLink"/>; Shombith, 2026-11-21: "just like
+        /// arcade the client should be pulled inside that screen"): open the offer with the host's seat key, else this
+        /// board's offer of the same job template (a friend's board can send the same job somewhere else), on the host's
+        /// page at the host's difficulty. False when this board offers nothing like it.
+        /// </summary>
+        public bool Follow(string key, Page page, int difficulty)
+        {
+            int index = IndexOfKey(_offers, key);
+            if (index < 0) return false;
+            if (index != _open) Pick(index);
+            if (_open != index) return false;
+            SetDifficulty(difficulty);
+            ShowPage(page);
+            return true;
+        }
+
+        /// <summary>The offer whose seat key is <paramref name="key"/>, else the first of the same job template (the key's
+        /// part before its first '|', <see cref="VoyageSeatRecord.JobKey"/>); -1 for none.</summary>
+        public static int IndexOfKey(IReadOnlyList<Offer> offers, string key)
+        {
+            if (offers == null || string.IsNullOrEmpty(key)) return -1;
+            for (int i = 0; i < offers.Count; i++)
+                if (offers[i] != null && offers[i].Key == key) return i;
+            int bar = key.IndexOf('|');
+            if (bar <= 0) return -1;
+            string template = key.Substring(0, bar + 1);
+            for (int i = 0; i < offers.Count; i++)
+                if (offers[i]?.Key != null && offers[i].Key.StartsWith(template, StringComparison.Ordinal)) return i;
+            return -1;
         }
 
         /// <summary>Pick offer <paramref name="index"/> (a portrait, a crew card, a place on the map).</summary>
@@ -290,6 +357,7 @@ namespace CosmicShore.UI
         void Update()
         {
             float dt = Time.unscaledDeltaTime;
+            _crew.Tick(dt);
             if (_page == Page.Sea) _sea.Tick(dt);
             else if (_page == Page.Voyage) _brief.Tick(dt);
             else _ark.Tick(dt);
@@ -343,12 +411,14 @@ namespace CosmicShore.UI
             // The window closed: a full-screen map comes home at once, and a picker closes.
             if (_sea != null) _sea.ExitFull(instant: true);
             if (_ark != null && _ark.PickerOpen) _ark.ClosePicker();
+            if (CrewOpen) _crew.Close();
         }
 
         void OnDestroy()
         {
             _sea?.Dispose();
             _ark?.Dispose();
+            _crew?.Dispose();
         }
 
         internal void RaiseScreenChanged() => ScreenChanged?.Invoke();

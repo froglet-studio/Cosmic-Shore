@@ -303,7 +303,7 @@ namespace CosmicShore.Gameplay
             new() { vessel = VesselClassType.Manta, gForce = 1.1f, weight = 1f },
             new() { vessel = VesselClassType.Urchin, gForce = 1f, weight = 0.9f },
             new() { vessel = VesselClassType.Sparrow, gForce = 1f, weight = 1f },
-            new() { vessel = VesselClassType.Rhino, gForce = 0.85f, weight = 0.42f },   // a third: the plough Rhino reads as triple the mass (2026-11-09, Garrett)
+            new() { vessel = VesselClassType.Rhino, gForce = 0.85f, weight = 0f, noShake = true },   // no camera shake at all (2026-11-19, Garrett)
             new() { vessel = VesselClassType.Swordfish, gForce = 0.85f, weight = 1.25f },   // the Rhino's airframe and ramp (2026-11-07 split)
             new() { vessel = VesselClassType.Grizzly, gForce = 0.85f, weight = 1.25f },
             new() { vessel = VesselClassType.Serpent, gForce = 0.9f, weight = 1.1f },
@@ -318,6 +318,12 @@ namespace CosmicShore.Gameplay
             public VesselClassType vessel;
             [Min(0f)] public float gForce;
             [Min(0f)] public float weight;
+
+            [Tooltip("No camera shake for this hull at all: no trauma, no rumble (skims, drifts), no hit, shot or " +
+                     "pickup kicks, and the older per-ability CustomCameraController.Shake calls are ignored while " +
+                     "the camera follows it. The G-force lag and the breathing stay (they are motion, not shake). " +
+                     "The Rhino, 2026-11-19 (Garrett: \"the rhino needs all camera shake removed\").")]
+            public bool noShake;
         }
 
         public bool Enabled => feelEnabled;
@@ -403,8 +409,19 @@ namespace CosmicShore.Gameplay
             if (vessels != null)
                 for (int i = 0; i < vessels.Length; i++)
                     if (vessels[i].vessel == vessel)
-                        return (Mathf.Max(0f, vessels[i].gForce), Mathf.Max(0f, vessels[i].weight));
+                        return (Mathf.Max(0f, vessels[i].gForce), vessels[i].noShake ? 0f : Mathf.Max(0f, vessels[i].weight));
             return (1f, 1f);
+        }
+
+        /// <summary>True when <paramref name="vessel"/>'s row turns every camera shake off
+        /// (<see cref="VesselFeel.noShake"/>): no trauma, rumble or kicks, and no legacy Shake calls.</summary>
+        public bool NoShakeFor(VesselClassType vessel)
+        {
+            if (vessels != null)
+                for (int i = 0; i < vessels.Length; i++)
+                    if (vessels[i].vessel == vessel)
+                        return vessels[i].noShake;
+            return false;
         }
 
         /// <summary>

@@ -1910,6 +1910,8 @@ MonoBehaviour:
     Min: 1
     Max: 1.5
     element: 4
+    UseFloor: 1
+    Floor: 0.5
   BoostSpeedMultiplier:
     Enabled: 1
     Value: 1
@@ -1917,7 +1919,7 @@ MonoBehaviour:
     Max: 1.3
     element: 4
     UseFloor: 1
-    Floor: 0.7
+    Floor: 0.5
   PitchScaler: 50
   YawScaler: 30
   RollScaler: 100
@@ -4247,6 +4249,16 @@ PrefabInstance:
         type: 3}
       propertyPath: Scale.Min
       value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.UseFloor
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Floor
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

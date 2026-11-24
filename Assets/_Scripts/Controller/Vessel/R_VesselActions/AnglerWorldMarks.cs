@@ -9,12 +9,15 @@ namespace CosmicShore.Gameplay
     /// The Angler's marks in the scene: a dot on every painted prism, the esca, the ball, and the brush's rim. ONE mesh a
     /// frame of camera-facing quads with the colour in the vertex colour, drawn on the Stoat's dot material
     /// (<c>Resources/StoatPathDots.mat</c>, <c>CosmicShore/StoatPathDots</c>) through one identity-matrix
-    /// <c>Graphics.RenderMeshInstanced</c>, the same shape as <see cref="StoatPathfinderWorldDots"/> and for the same
+    /// <c>Graphics.RenderMeshInstanced</c>, the same shape as the Stoat's world dots had (deleted 2026-11-22) and for the same
     /// reasons (vessel rules 50 and 51: no sprite shader instancing, only engine calls Amoebius's shim has).
     /// Presentation only; nothing reads it back.
     /// </summary>
     public sealed class AnglerWorldMarks
     {
+        /// <summary><c>Resources/StoatPathDots.mat</c> (shader <c>CosmicShore/StoatPathDots</c>): the Stoat's dot material,
+        /// which only the Angler draws with since the Stoat stopped drawing (2026-11-22).</summary>
+        public const string MaterialResourcePath = "StoatPathDots";
         public const int MaxMarks = 2048;
 
         static Material s_material;
@@ -145,11 +148,11 @@ namespace CosmicShore.Gameplay
         static Material SharedMaterial()
         {
             if (s_material) return s_material;
-            s_material = Resources.Load<Material>(StoatPathfinderWorldDots.MaterialResourcePath);
+            s_material = Resources.Load<Material>(MaterialResourcePath);
             if (!s_material && !s_warned)
             {
                 s_warned = true;
-                CSDebug.LogError($"[Angler] Resources/{StoatPathfinderWorldDots.MaterialResourcePath}.mat is missing - the " +
+                CSDebug.LogError($"[Angler] Resources/{MaterialResourcePath}.mat is missing - the " +
                                  "Angler's paint marks, esca and ball cannot draw.");
             }
             return s_material;

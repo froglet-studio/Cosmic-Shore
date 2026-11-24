@@ -214,11 +214,14 @@ def _rhino_ramp_constants():
     two places a retune has to land.
     """
     import regatta_balance as _rb
-    c = _rb.read_constants()
-    v = _rb.read_vessel("Swordfish")              # the sword hull since 2026-11-07; same ramp asset as the Rhino
+    v = _rb.read_vessel("Swordfish")              # the sword hull since 2026-11-07
+    # The Swordfish's OWN ramp asset (split from the Rhino's in #2233; the Rhino's became the 2026-11-19 freight train).
+    ramp = _rb._read("Assets/_SO_Assets/VesselActions/Swordfish/SwordfishRampBoostAction.asset")
+    max_boost = _rb._key(ramp, "maxBoostMultiplier", "SwordfishRampBoost")
+    accel = _rb._key(ramp, "accelerationPerSecond", "SwordfishRampBoost")
     cruise = v["ts"] + v["ms"]                       # plain cruise, ramp disengaged
-    top = v["ts"] * c["rhino_max_boost"] + v["ms"]   # ramp held at full straightness
-    return cruise, top, c["rhino_accel"]
+    top = v["ts"] * max_boost + v["ms"]              # ramp held at full straightness
+    return cruise, top, accel
 
 
 def rhino_speed_multiplier(level):

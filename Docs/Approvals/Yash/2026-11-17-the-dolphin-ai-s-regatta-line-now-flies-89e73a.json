@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-17-the-dolphin-ai-s-regatta-line-now-flies-89e73a",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T10:41:30+00:00",
+  "area": "the Dolphin's Regatta race line",
+  "summary": "The Dolphin AI's Regatta line now flies Risk 0.25 and LaneShare 0.6 (was 0.5 and the people-learned 0.785), through a new JUDGED table in author_race_lines.py applied after race_lines_learned.json (which is unchanged). Real-game judge, 72 races a side: card 110.8 -> 98.0 s, L5 86.7 -> 88.5 s (flat), missed rings 72 -> 56.",
+  "why": "Overnight trace of the Dolphin's overlong Regatta legs (Regatta flywheel).",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "50c1d18cc",
+  "paths": [
+    "Assets/Resources/RaceLines/Dolphin_Regatta.asset",
+    "Tools/Build/author_race_lines.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

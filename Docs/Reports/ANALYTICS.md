@@ -19,8 +19,9 @@ check (section 4).
   - Claude only ever sees totals that hold no player ids.
 - **PostHog is gone from the game.** `FrogletAnalyticsConfig.asset` ships already pointed at the server, with a public
   key that can only send events. Nobody fills a field in.
-- **PostHog's history is in.** 66,746 events over 91 days, from early August 2026. Every day matched PostHog's own count.
-  The importer stores no IP address, and running it again stores nothing twice.
+- **PostHog's history is in, and PostHog is closed** (2026-11-23). The last import read 67,356 events over 99 days, from
+  early August 2026, every day matching PostHog's own count, with no IP address stored. Then the personal API key and
+  project 224840 were deleted, and the importer was removed from the repo (it is in git history).
 - **The server updates itself every night at 04:20 UTC** from `bleeding-edge`. New code runs the server's tests first:
   if they fail, it keeps the code that was running.
 
@@ -97,17 +98,30 @@ saved views (#1777), match setups (#1778). On `claude/sweet-mayer-se51r6` (the P
 3. **The first nightly self-update** (2026-11-07 04:20 UTC): it logs to
    `journalctl -u froglet-analytics-update`, and its test log is `/var/lib/froglet-analytics/last-update-tests.log`.
 
+## 4.5 Decisions, 2026-11-17 (Shombith, answering the round-up's checklist)
+
+| # | Decision | What it means |
+|---|---|---|
+| 1 | **Close PostHog on Monday 23 Nov 2026.** | Done 2026-11-23: a last import (67,356 rows, 99 days, none short), then the personal API key and project 224840 were deleted. The importer and `POSTHOG_SETUP.md` were removed from the repo. |
+| 2 | **Update the privacy policy and store labels now.** | Done: `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` §3b/§6/§9, `Docs/Legal/STORE_PRIVACY_LABELS.md` (analytics rows), and the web page (`privacy.html`, `delete-my-data.html` in cosmic-shore-landing-page). The Oracle region is still a placeholder to confirm. |
+| 3 | Read keys for Ian, Garrett and Caleb: **done** (Shombith). | |
+| 4 | **Declare the three FTUE events in the UGS Event Manager.** | The rows are in `ugs_step1_parameters.csv` (4 new parameters) and `ugs_step2_events.csv` (3 events); declaring them is a click-through on cloud.unity.com (ANALYTICS_HANDOFF.md §6.1). |
+| 5 | **Stay on sslip.io**; no `analytics.froglet.studio`. | `serverUrl` is unchanged. |
+| 6 | **Froglet Compute stays paused.** | |
+| 7 | **Build Rev 66 A: Funnels and Release compare.** | Built: `Tools/Analytics/server/analytics_compare.py` (`POST /v1/funnel`, `GET /v1/funnel/steps`, `GET /v1/releases`), `console/compare.js`; the other Rev 66 screens stay parked. |
+| 8 | The two hand checks (an editor match, a web Toybox visit against the live server): **Ian's.** | Ian's 2026-11-17 email shows editor events arriving since Nov 7; the web check is still open. |
+
+**Branch rule (Shombith, 2026-11-17):** every analytics thread works through `analytics-and-backend` (cut from
+`bleeding-edge`); analytics PRs target it.
+
 ## 5. Open tasks and the decisions they wait on
 
 - **Read keys for Ian, Garrett and Caleb**: printed on the VM with `analytics_server.py key read <name>`; sent to each
   privately (never in a shared channel).
 - **The three FTUE events in UGS**: `ftue_step_completed`, `ftue_phase_completed` and `ftue_completed` must be declared
   in the UGS Event Manager. Our server already takes them.
-- **Legal and store labels**: the privacy policy and the App Store / Play data labels must name our own server and the
-  country, instead of PostHog (`DATA_ARCHITECTURE.md` §8.11). Needed before the next store release.
-- **PostHog stays on until old builds are gone.** Builds already in players' hands still send there. When they have
-  died out, run `import-posthog` once more (it adds only what is missing) and shut the PostHog project down.
-  *Decision: when.*
+- **Legal and store labels**: done 2026-11-17 (decision 2 above); the Oracle region is still to confirm.
+- **PostHog**: closed 2026-11-23 (decision 1 above).
 - **Own domain (optional)**: `analytics.froglet.studio` takes a DNS record and one setup re-run. `serverUrl` in
   `FrogletAnalyticsConfig.asset` changes in the same commit. *Decision: whether.*
 - **Froglet Compute is paused** while analytics has the priority (Shombith, 2026-11-06). *Decision: when it comes back.*

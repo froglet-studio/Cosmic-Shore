@@ -1,6 +1,7 @@
 using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.Gameplay;
+using CosmicShore.Data;
 
 namespace CosmicShore.UI
 {
@@ -49,7 +50,10 @@ namespace CosmicShore.UI
                 chargedShotExecutor.OnChargeChanged += HandleChargeChanged;
 
             if (rushExecutor)
+            {
                 rushExecutor.OnChargesChanged += HandleRushCharges;
+                rushExecutor.OnRam += HandleRam;
+            }
 
             if (digInExecutor)
             {
@@ -64,9 +68,11 @@ namespace CosmicShore.UI
             }
 
             if (sniperExecutor)
+            {
                 sniperExecutor.OnScopeChanged += HandleScope;
                 sniperExecutor.OnRoundInFlight += HandleRoundInFlight;
                 sniperExecutor.OnRoundEnded += HandleRoundEnded;
+            }
 
             if (_vesselStatus.ResourceSystem != null)
             {
@@ -82,15 +88,20 @@ namespace CosmicShore.UI
             if (chargedShotExecutor)
                 chargedShotExecutor.OnChargeChanged -= HandleChargeChanged;
             if (rushExecutor)
+            {
                 rushExecutor.OnChargesChanged -= HandleRushCharges;
+                rushExecutor.OnRam -= HandleRam;
+            }
             if (digInExecutor)
                 digInExecutor.OnDugInChanged -= HandleDugIn;
             if (weaponModeExecutor)
                 weaponModeExecutor.OnModeChanged -= HandleWeaponMode;
             if (sniperExecutor)
+            {
                 sniperExecutor.OnScopeChanged -= HandleScope;
                 sniperExecutor.OnRoundInFlight -= HandleRoundInFlight;
                 sniperExecutor.OnRoundEnded -= HandleRoundEnded;
+            }
             if (_vesselStatus?.ResourceSystem != null)
                 _vesselStatus.ResourceSystem.OnResourceChanged -= HandleResourceChanged;
         }
@@ -135,8 +146,32 @@ namespace CosmicShore.UI
         }
 
         void HandleChargeChanged(float charge01) { if (view) view.SetCharge(charge01); }
-        void HandleRushCharges(int current, int max) { if (view) view.SetRushCharges(current, max); }
-        void HandleDugIn(bool dugIn) { if (view) view.SetDugIn(dugIn); }
+        int _rushCharges = -1;
+
+        /// <summary>The Time card's veil: with the bank empty it is the refill still to wait, so the card says when the
+        /// next ram comes back; with a charge in hand it is clear.</summary>
+        void Update()
+        {
+            if (!view || !rushExecutor || _vesselStatus == null || !_vesselStatus.IsLocalUser) return;
+            view.SetAbilityCooldown(Element.Time, _rushCharges == 0 ? rushExecutor.RefillRemaining01 : 0f);
+        }
+
+        void HandleRushCharges(int current, int max)
+        {
+            _rushCharges = current;
+            if (view) view.SetRushCharges(current, max);
+        }
+
+        void HandleRam() { if (view) view.PlayAbilityFlash(Element.Time); }
+
+        /// <summary>Dug in, the Charge card stays lit (the brace is ON) and flashes as the anchor bites.</summary>
+        void HandleDugIn(bool dugIn)
+        {
+            if (!view) return;
+            view.SetDugIn(dugIn);
+            view.SetAbilityPressed(Element.Charge, dugIn);
+            if (dugIn) view.PlayAbilityFlash(Element.Charge);
+        }
         void HandleScope(bool scoped) { if (view) view.SetScope(scoped); }
         void HandleRoundInFlight(Transform round) { if (view) view.FollowRound(round); }
         void HandleRoundEnded() { if (view) view.ReleaseRound(); }
@@ -144,6 +179,7 @@ namespace CosmicShore.UI
         void HandleWeaponMode(GrizzlyWeaponModeExecutor.WeaponMode mode)
         {
             if (!view) return;
+            view.PlayAbilityFlash(Element.Mass);
             view.SetWeaponMode(mode switch
             {
                 GrizzlyWeaponModeExecutor.WeaponMode.Sniper => "SNIPER",

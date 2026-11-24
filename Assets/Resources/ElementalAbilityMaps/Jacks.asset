@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'Every few seconds a creature of the herd lays a cluster of your mass.'
   - Element: 3
     AbilityLabel: 'Wide'
-    AbilityDescription: 'Herding, zoom out to the whole cell and back. Space widens the ring both jacks and the decoy push the herd out of; it is never smaller than a big thumb.'
+    AbilityDescription: 'Herding, Wide opens every ring to more than twice its size: the herd fans out across a wide field to graze and the view pulls out to the whole cell; press again and the rings close and the herd bunches. Space sets how big the ring is, never smaller than a big thumb.'
     Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4

@@ -238,6 +238,15 @@ def fields(body):
             continue
         if rest == "[]":
             continue  # an empty list keeps the C# default, which is what Unity does too
+        if rest.startswith("'"):
+            # A single-quoted YAML string (SpawnableRegattaRails.courseGenome): Unity may wrap a long one over
+            # indented lines; '' is a quote. The harness sets it as the C# string it is.
+            text = rest
+            while not re.search(r"(?<!')(?:'')*'$", text[1:]) and i < len(lines) and lines[i].startswith("    "):
+                text += " " + lines[i].strip()
+                i += 1
+            out[key] = text[1:-1].replace("''", "'")
+            continue
         if _SCALAR.match(rest) or re.match(r"^[0-9a-f]+$", rest):
             # Kept as the RAW TOKEN: Unity writes a bool/int/float ARRAY as one hex blob
             # (`bandDomains: 03000000...`), which int() would silently mangle (it drops the
@@ -740,7 +749,7 @@ CAMERAS = {
     "Tollway": (40, 24, 0.8, 42), "Headlong": (35, 34, 0.88, 42), "Breakwater": (20, 24, 0.75, 44),
     "Skein": (60, 22, 0.85, 42), "Bloomrush": (200, 6, 0.6, 48), "Redline": (35, 34, 0.88, 42),
     "WreckingBall": (300, 22, 1.1, 40), "Undertow": (205, -14, 0.7, 46), "AstroLeague": (30, 28, 0.9, 42),
-    "BroodRush": (25, 20, 1.0, 42), "Regatta": (150, 30, 0.85, 42), "Broadside": (250, 8, 0.58, 48),
+    "BroodRush": (25, 20, 1.0, 42), "Regatta": (60, 55, 1.1, 42), "Broadside": (250, 8, 0.58, 48),
     # The Butterfly's four element games. Dustup shares the Boneyard with Dog Fight / Salvo /
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
@@ -764,6 +773,13 @@ CAMERAS = {
     # Warpline is Slingshot's circle cut into five long legs: shot from between the two Stoat cards'
     # angles so the pentagon does not read as Slingshot's octagon.
     "Warpline": (215, 36, 0.9, 42),
+    # Burrow Run is Slingshot's eight-ring circle again (BurrowRunCourseSource: SlingshotCourse.ForIntensity through
+    # HeadlongCircuit), flown in two laps by the Meerkat: shot low and from the side neither Stoat card uses.
+    "BurrowRun": (65, 22, 0.9, 42),
+    # Spearline is Headlong's octagon flown five laps by the Swordfish: shot from Headlong's far side, higher.
+    "Spearline": (250, 40, 0.9, 42),
+    # Palisade: the Barren cell with the Swordfish's walls standing in it - shot low across the walls.
+    "Palisade": (40, 14, 0.75, 46),
     # Thresher Time is Grizzly Time's octagon cut against the Thresher's sling: shot from high up
     # (the other circuits sit at 30-36 deg), so the lap reads as a loop and the planted ball with its
     # dotted orbit (the signature act, staged in the harness at the lap's tightest corner) reads
@@ -923,7 +939,9 @@ def recipe(stem, card_path, pal, ends):
         # ball in front of it - so it is drawn as one (an opaque sphere swallowed Joust whole).
         r = r or nuc
         if r > 0:
-            layers.append({"kind": "shell", "c": [0, 0, 0], "r": r, "color": [0.22, 0.28, 0.75], "strength": strength * 0.3})
+            # Faint, near-neutral glass (Frogma Rev 129, "Inside the cell"): drawn blue at 0.3 it washed a third of
+            # Skim Race's card blue-violet; the race inside it keeps its own colours.
+            layers.append({"kind": "shell", "c": [0, 0, 0], "r": r, "color": NUCLEUS_GLASS, "strength": strength * 0.14})
 
     def crystal(pos, size, colour=(0.55, 1.2, 0.25)):
         layers.append({"kind": "sphere", "c": list(pos), "r": size, "base": [c * 0.3 for c in colour],
@@ -934,8 +952,12 @@ def recipe(stem, card_path, pal, ends):
         tier = "RUN"
         layers.append(generator_node(env))
         if s == "Regatta":
-            layers.append({"kind": "regattaGates", "intensity": INTENSITY, "seed": env_seed(env),
-                           "color": [0.5, 0.6, 1.6]})
+            gates_layer = {"kind": "regattaGates", "intensity": INTENSITY, "seed": env_seed(env),
+                           "color": [0.5, 0.6, 1.6]}
+            genome = fields(prefab_generator(env)[0]).get("courseGenome")
+            if genome:
+                gates_layer["genome"] = genome    # a shuffle course: its rings come off its own genome
+            layers.append(gates_layer)
     elif track is not None:
         tier = "RUN"
         node = generator_node(track)
@@ -992,7 +1014,8 @@ def recipe(stem, card_path, pal, ends):
                        "tube": 0.14, "color": [0.5, 1.1, 1.5]})
         nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun"):
+               "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "BurrowRun",
+               "Spearline"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -1015,11 +1038,15 @@ def recipe(stem, card_path, pal, ends):
                        "WrasseRun": "wrasseRunGateTarget",
                        "SerpentTime": "serpentTimeGateTarget",
                        "BrittleStarTime": "brittleStarTimeGateTarget",
-                       "LanternRun": "lanternRunGateTarget"}.get(s, f"{s.lower()}GateTarget")
+                       "LanternRun": "lanternRunGateTarget",
+                       "BurrowRun": "burrowRunGateTarget",
+                       "Spearline": "spearlineGateTarget"}.get(s, f"{s.lower()}GateTarget")
                 target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
-            # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse): the same generator.
-            layers.append({"kind": {"Warpline": "slingshot"}.get(s, s.lower()), "intensity": INTENSITY,
+            # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse) and Burrow Run flies it whole
+            # (BurrowRunCourseSource): the same generator.
+            # Spearline lays Headlong's circuit (SpearlineCourseSource; its seals' mouths are the controller's, not drawn).
+            layers.append({"kind": {"Warpline": "slingshot", "BurrowRun": "slingshot", "Spearline": "headlong"}.get(s, s.lower()), "intensity": INTENSITY,
                            "seed": stable_seed(s), "path": True, "settings": settings, "tube": 0.14,
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
                                      "Redline": [1.5, 0.25, 0.35],
@@ -1031,7 +1058,9 @@ def recipe(stem, card_path, pal, ends):
                                      "ScarabRally": [1.55, 0.75, 0.2],
                                      "SerpentTime": [1.3, 0.3, 1.1],
                                      "BrittleStarTime": [0.85, 0.35, 1.6],
-                                     "LanternRun": [0.35, 1.1, 1.35]}[s]})
+                                     "LanternRun": [0.35, 1.1, 1.35],
+                                     "BurrowRun": [1.45, 0.95, 0.35],
+                                     "Spearline": [0.3, 0.75, 1.6]}[s]})
             nucleus()
     elif s == "SerpentHood":
         # MODEL tier through the OFFLINE MIRROR (Tools/Build/serpent_hood_budget.py, whose --parity proves it prism for
@@ -1768,6 +1797,30 @@ def recipe(stem, card_path, pal, ends):
         layers.append({"kind": "prisms", "rows": rows})
         stage["denbuilder"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
         nucleus()
+    elif s == "Palisade":
+        # MODEL tier: the Barren cell, where the score is the prism volume each domain has STANDING at the bell
+        # (PalisadeController, VolumeRemaining). The card draws what stands: arcs of tall blade-afterimage prisms
+        # (SwordfishSwordAfterimage lays up to 16 a swing) in two colours round the nucleus, each wall cut where the
+        # other colour's blade went through it.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        up = [0.0, 1.0, 0.0]
+        for w in range(12):
+            dom = (JADE, RUBY)[w % 2]
+            ring = nuc * 1.35 + (R * 0.62 - nuc * 1.35) * rng.u()
+            a0 = 2 * math.pi * w / 12 + 0.3 * rng.u()
+            y = (rng.u() - 0.5) * R * 0.3
+            cut = int(rng.u() * 16)
+            for k in range(16):
+                if cut <= k < cut + 3:
+                    continue
+                a = a0 + 0.035 * k
+                q = [ring * math.cos(a), y, ring * math.sin(a)]
+                tangent = [-math.sin(a), 0.0, math.cos(a)]
+                rows.append(prism(q, tangent, up, [R * 0.004, R * 0.05, R * 0.016], dom, PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1795,7 +1848,7 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun", "SlipLine", "Breach"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun", "SlipLine", "Breach", "BurrowRun", "Spearline"):
         cam["percentile"] = 0.6
     elif s in ("Glasshouse", "DenBuilder"):
         aim((0.1, -0.05, -0.3), 0.66)
@@ -1834,13 +1887,25 @@ def recipe(stem, card_path, pal, ends):
     accents(s, layers, stage, cam, pal, R, card_path)
 
     if R > 0:
-        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", [0.2, 0.3, 0.8]),
+        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", WALL_COLOUR),
                        "strength": 0.1})
+        # Inside the cell (Shombith picked it, 2026-11-23, Frogma Rev 129): every card is in a cell, so it shows the
+        # cell's wall - the net of many-sided panes - and the white dust you fly through, on the deep-sea ground
+        # instead of the old purple-blue one.
+        for k, v in CELL_LOOK.items():
+            look.setdefault(k, v)
+        look.setdefault("CellRadius", R)
     return {"tier": tier, "layers": layers, "camera": cam, "look": look, "stage": stage,
             "cell": facts["name"] if facts else None, "env": env.stem if env else None,
             "track": track.stem if track else None}
 
 
+# The look of the cell (Frogma Rev 129 "Inside the cell", Docs/MENU_REDESIGN_B.md section 222.1): the deep-sea ground
+# (the style guide's Deep Sea navy, no violet nebula), the wall's panes and the dust. Linear RGB, before ACES.
+NUCLEUS_GLASS = [0.30, 0.38, 0.48]
+WALL_COLOUR = [0.42, 0.52, 0.62]
+CELL_LOOK = {"SkyTop": [0.0015, 0.003, 0.011], "SkyBottom": [0.002, 0.004, 0.013], "Nebula": [0.004, 0.008, 0.015],
+             "Stars": 0, "WallColour": WALL_COLOUR, "WallStrength": 0.42, "WallPanes": 240, "Dust": 650}
 OMNI = (0.55, 1.25, 0.22)   # the CTA lime a free crystal wears (Docs/PALETTE.md §2.2)
 
 
@@ -2792,7 +2857,8 @@ def run(spec, out_dir, names):
     spec_path = Path(out_dir) / "spec.json"
     spec_path.write_text(json.dumps(spec))
     env = dict(os.environ)
-    env.setdefault("DOTNET_ROOT", str(Path.home() / ".dotnet"))
+    if (Path.home() / ".dotnet" / "dotnet").exists():     # else run.sh finds the system dotnet
+        env.setdefault("DOTNET_ROOT", str(Path.home() / ".dotnet"))
     res = subprocess.run(["bash", str(HARNESS), str(spec_path), str(out_dir)] + names, env=env)
     if res.returncode != 0:
         sys.exit(f"card-art harness failed ({res.returncode})")

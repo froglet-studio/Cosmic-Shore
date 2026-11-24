@@ -83,13 +83,20 @@ namespace CosmicShore.Gameplay
                  "over I1-I4). A negative entry leaves that level on the fleet lag.")]
         [SerializeField] SwitchbackNoseFollow[] aiNoseFollowByIntensity =
         {
-            new(2f, 3f, 6f, 9f),   // I1
-            new(2f, 3f, 6f, 9f),   // I2
-            // I3-I4: Easy (and at I4 Medium) a step quicker (2026-11-11). With Soar lit (1104 u/s) a 2/s nose could not
-            // hold the 72 / 44 u mouths: offline it finished 5 of 6 I3 races (6 of 6 at 2.5/s) and 2-4 of 6 I4 races in
-            // 500 s (6 of 6 at 4/s) (manta_redline_sim.py).
-            new(2.5f, 3f, 6f, 9f), // I3
-            new(4f, 5f, 6f, 9f),   // I4
+            // I1-I2 Legendary 15/s, trained in the Manta's own race (time_ai_search.py, Manta run3 split confirms,
+            // 2026-11-17): 8-15% faster at I1, I2 and on wide courses. At I3-I4 (Soar lit) 15/s overshoots the mouths
+            // (+13-19% at I4 from Time 5 and 10), so I3-I4 keep 9.
+            // Easy 5 and Medium 7 at every rung since 2026-11-17 (elemental loop step 2). Raced in the real game (Amoebius
+            // headless, Tools/Build/time_ladder_judge.py, seeds 1-3) the old Easy 2-4 and Medium 3-5 could not hold the
+            // mouths at Soar speed: Easy finished 5 of 12 races (0 of 3 at I2 and I3), Medium took 152 / 298 / 226 / 214 s
+            // with a 101 s stall at one gate. Easy 5: 249 / 220 / 201 / 234 s, Medium 7: 105 / 130 / 140 / 171, every race
+            // finished. Hard goes 6 to 7 at I1-I2 (no level's nose below an easier one's) and to 9 at I3-I4 (at 6 or 7 it raced
+            // no faster than Medium there; at 9: 121 / 142 s on seeds 4-6). Medium's 0.85 throttle floor and its handicap
+            // belief keep it the slower rival. Legendary unchanged: 58 / 62 / 75 / 96.
+            new(5f, 7f, 7f, 15f),  // I1
+            new(5f, 7f, 7f, 15f),  // I2
+            new(5f, 7f, 9f, 9f),   // I3
+            new(5f, 7f, 9f, 9f),   // I4
         };
 
         [Header("AI race line (2026-11-11)")]

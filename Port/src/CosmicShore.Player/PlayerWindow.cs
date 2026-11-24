@@ -357,6 +357,7 @@ namespace CosmicShore.Player
                 _sceneRenderer.GpuPass = _gpu == null ? null : _gpuSceneSplit ??= p => _gpu.Begin(7 + p);
                 _sceneRenderer.Render(cam, sw, sh);
                 _sceneRenderer.GpuPass = null;
+                DrawWorldText(cam);
                 EndCamera(cam);
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
                 post.TanHalfFovY = tanY;
@@ -366,6 +367,32 @@ namespace CosmicShore.Player
             _gpu?.Begin(4);
             _scene3d.Resolve();
             _post.Draw(_scene3d.Color, sw, sh, w, h, _frame.Fbo, post);
+        }
+
+        /// <summary>
+        /// The 3D TextMeshPro texts (no canvas) the camera sees, after the scene so they are depth-tested against it:
+        /// Unity draws such a text through its own MeshRenderer, and no canvas walk reaches one (a voyage's Ark plate).
+        /// </summary>
+        void DrawWorldText(Camera cam)
+        {
+            var live = CosmicShore.Engine.UI.TextMeshPro.Enabled;
+            if (live.Count == 0 || _tmp == null) return;
+            var viewProj = SceneRenderer.ToNumerics(cam.projectionMatrix * cam.worldToCameraMatrix);
+            _gl.Enable(EnableCap.DepthTest);
+            _gl.DepthFunc(DepthFunction.Lequal);
+            _gl.DepthMask(false);
+            _gl.Disable(EnableCap.CullFace);
+            _gl.Disable(EnableCap.ScissorTest);
+            _gl.Disable(EnableCap.StencilTest);
+            _gl.Enable(EnableCap.Blend);
+            int mask = cam.cullingMask;
+            foreach (var text in live)
+            {
+                if (!text || !text.isActiveAndEnabled || (mask & (1 << text.gameObject.layer)) == 0) continue;
+                if (text.GetComponentInParent<Canvas>()) continue;
+                _tmp.DrawWorld(text, viewProj);
+            }
+            _gl.DepthMask(true);
         }
 
         /// <summary>URP's per-camera callbacks around a camera's draw (RenderPipelineManager); a throwing subscriber is logged, the frame goes on.</summary>

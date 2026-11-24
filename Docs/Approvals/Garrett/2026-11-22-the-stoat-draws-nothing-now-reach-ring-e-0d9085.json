@@ -1,0 +1,21 @@
+{
+  "id": "2026-11-22-the-stoat-draws-nothing-now-reach-ring-e-0d9085",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T02:59:49+00:00",
+  "area": "the Angler's world marks, the Fleet Codex's Stoat entry, FLEET_MAPS's Stoat row",
+  "summary": "The Stoat draws nothing now (reach ring, exit line, fling ring and StoatPathfinderWorldDots deleted). AnglerWorldMarks carries its own MaterialResourcePath constant (same 'StoatPathDots' material and shader, kept because the Angler draws with them; no behaviour change). Docs/FleetCodex/abilities.json's Stoat entry and FLEET_MAPS's Stoat row are rewritten for the swing; Time 5 is open (Foresight deleted).",
+  "why": "Yash 2026-11-22: 'I dont need to see the drawing line either, we are using the latest slingshot, remove all older pathfinder and others.'",
+  "branch": "Ys-bleeding-edge",
+  "commit": "4d5df053c",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/AnglerWorldMarks.cs",
+    "Docs/ElementalAbilitySystem/FLEET_MAPS.md",
+    "Docs/FleetCodex/abilities.json"
+  ],
+  "loop": {
+    "vessels": [
+      "Stoat"
+    ]
+  }
+}

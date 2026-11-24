@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
                  "owns the cone's ANGLE, Space owns how far down-range it carries.")]
         [SerializeField] private float _heightMultiplierAtFullSpace = 1f;
         [Tooltip("Floor for the Space size multiplier so a deficit can never collapse the blast.")]
-        [SerializeField] private float _minHeightMultiplier = 0.35f;
+        [SerializeField] private float _minHeightMultiplier = 0.5f;
 
         [Header("Elemental (Charge) — blast thickness")]
         [Tooltip("CHARGE → the capsule's DIAMETER: multiplier on Core Explosion Scale at the " +

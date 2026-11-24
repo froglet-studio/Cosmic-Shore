@@ -47,11 +47,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("The AI's nose lead (AIPilot.NoseLeadGain) by its seat's difficulty. With none, the stick's cubic law closes " +
                  "the last degree onto the 12 u the sling catches at 1,000 u so slowly that 14 of 20 I1 races finish " +
                  "(run.sh --ai). 2.5 / 3 / 8 / 16 race 64 / 56 / 49 / 49 s at I1, every seat finishing every rung.")]
-        [SerializeField] float[] aiNoseLeadByDifficulty = { 2.5f, 3f, 8f, 16f };
+        [SerializeField] float[] aiNoseLeadByDifficulty = { 2.5f, 3f, 8f, 9.2f };
 
         [Tooltip("The AI's nose follow rate (VesselTransformer.AINoseFollowPerSecond) by difficulty; below 0 = the fleet lag " +
                  "the nose lead is stated at. Set on every arming, so no other mode's rate carries into this race.")]
-        [SerializeField] float[] aiNoseFollowByDifficulty = { -1f, -1f, -1f, -1f };
+        [SerializeField] float[] aiNoseFollowByDifficulty = { -1f, -1f, -1f, 1.6f };
 
         [Tooltip("How far past the aim the nose lead may put the command, degrees. Tight, so the lead sharpens the last few " +
                  "degrees (at 40 the replica's Hard lost its lead over Medium at I2, run.sh --ai).")]

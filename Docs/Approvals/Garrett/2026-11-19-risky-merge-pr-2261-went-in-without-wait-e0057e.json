@@ -1,0 +1,39 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2261-went-in-without-wait-e0057e",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T07:55:19+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2261 went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Dolphin.prefab, Assets/_Prefabs/Spacevessels/Honeyguide.prefab, Assets/_Prefabs/Spacevessels/Meerkat.prefab, Assets/_Prefabs/Spacevessels/Orca.prefab and 8 more",
+  "branch": "sfix-merge",
+  "pr": 2261,
+  "commit": "c8a7bd5e1",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Dolphin.prefab",
+    "Assets/_Prefabs/Spacevessels/Honeyguide.prefab",
+    "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+    "Assets/_Prefabs/Spacevessels/Orca.prefab",
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab",
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+    "Assets/_Prefabs/Spacevessels/Squirrel.prefab",
+    "Assets/_Prefabs/Spacevessels/Stoat.prefab",
+    "Assets/_Prefabs/Spacevessels/Thresher.prefab",
+    "Assets/_Prefabs/Spacevessels/TigerMoth.prefab",
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab",
+    "Assets/_Prefabs/Spacevessels/Wrasse.prefab",
+    "Docs/Approvals/aradia1/2026-11-19-brood-rush-balance-re-tunes-trailvolume-97dd29.json",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Port/src/CosmicShore.Player/BroodJudge.cs",
+    "Port/src/CosmicShore.Player/RaceJudge.cs",
+    "Tools/Build/brood_trail_levers.py",
+    "Tools/Compute/evaluators/brood_judge.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Dolphin.prefab, Assets/_Prefabs/Spacevessels/Honeyguide.prefab, Assets/_Prefabs/Spacevessels/Meerkat.prefab, Assets/_Prefabs/Spacevessels/Orca.prefab and 8 more"
+    }
+  ]
+}

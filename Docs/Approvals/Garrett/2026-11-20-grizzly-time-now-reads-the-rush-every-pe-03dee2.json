@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-20-grizzly-time-now-reads-the-rush-every-pe-03dee2",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-20T16:14:24+00:00",
+  "area": "Grizzly Rush (read by Grizzly Time)",
+  "summary": "Grizzly Time now reads the Rush: every peer subscribes GrizzlyRushActionExecutor.OnRam and opens its own keg for a ramming hull, GrizzlyTimeKegs restates ramRadius 16 and duration 1 (a test reads them back off GrizzlyRushAction.asset), and the AI presses Rush on straights. No vessel file changed. Your lane's branches (project-thread-ge80ea, 1uj8e9) share no file with it.",
+  "why": "Fun pass on Grizzly Time (Yash): Rush is the Grizzly's Time ability and the Time game did not use it. Also found, for your decision: Energy (0.05/s against a 0.25 cost) caps a Rush to one per 5 s, so the Time level does not change how often a Grizzly can Rush in a race (GRIZZLYTIME.md section 0.1).",
+  "branch": "Ys-bleeding-edge",
+  "lane": "grizzly",
+  "commit": "f91a79f47",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/GrizzlyTime/GrizzlyTimeController.AI.cs",
+    "Assets/_Scripts/Controller/Arcade/GrizzlyTime/GrizzlyTimeController.Kegs.cs",
+    "Assets/_Scripts/Controller/Arcade/GrizzlyTime/GrizzlyTimeKegs.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Grizzly"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "1"
+  }
+}

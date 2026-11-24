@@ -24,6 +24,10 @@ namespace CosmicShore.Gameplay
 
         bool _isInitialized;
 
+        /// <summary>True once <see cref="Initialize"/> has bound the vessel. Until then <see cref="VesselStatus"/> is
+        /// null, so a hull's own <see cref="Update"/> work that reads it waits on this, as the base's does.</summary>
+        protected bool IsInitialized => _isInitialized;
+
         protected virtual void Update()
         {
             if (!_isInitialized)
