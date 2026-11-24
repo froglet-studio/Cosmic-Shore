@@ -27,16 +27,18 @@ OUT="${TMPDIR:-/tmp}/spearline_harness"
 mkdir -p "$OUT"
 
 SEALS="$A/Controller/Arcade/Spearline/SpearlineSeals.cs"
+RUINS="$A/Controller/Arcade/Spearline/SpearlineRuins.cs"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = seals source, $2 = output name
+build() {   # $1 = seals source, $2 = output name, $3 = ruins source (default: the shipped one)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
-    "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" "$1" "$A/Tests/Editor/SpearlineSealsTests.cs"; do
+    "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" "$1" "${3:-$RUINS}" "$A/Tests/Editor/SpearlineSealsTests.cs" \
+    "$A/Tests/Editor/SpearlineRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -79,4 +81,15 @@ mutate "Headlong's 25% mouth step" 's/MouthByRung = { 96f, 84f, 74f, 66f }/Mouth
 mutate "the hardest corners sealed" 's/int c = turn\[x\].CompareTo(turn\[y\]);/int c = turn[y].CompareTo(turn[x]);/' 'turn\[y\].CompareTo(turn\[x\])'
 mutate "armour everywhere at I2 (no plain face to read)" 's/ArmourByRung = { 0f, 120f, 180f, 240f }/ArmourByRung = { 0f, 330f, 180f, 240f }/' '0f, 330f'
 mutate "the read ignores armour (cuts it as plain)" 's/                        Vector3 band = s < 0 ? Vector3.zero : strokes\[s\];/                        Vector3 band = strokes.Count > 0 ? strokes[0] : Vector3.zero;/' 'strokes.Count > 0 ? strokes\[0\]'
+mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$RUINS" > "$OUT/SpearlineRuins_neg.cs"
+  grep -q "$3" "$OUT/SpearlineRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$SEALS" neg "$OUT/SpearlineRuins_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+mutate_ruins "ruins that block the lane" 's/LaneDistance(lap, p) >= clear \&\&/true \&\&/;s/float radius = clear + 16f/float radius = clear - 30f/' 'true && RingClearance'
+mutate_ruins "ruins at a ring" 's/RingClearance(lap, p) >= RingMargin;/true;/' '&& true;'
+mutate_ruins "ruins on the easy rungs" 's/PerLapByRung = { 0, 0, 0, 7 }/PerLapByRung = { 0, 7, 0, 7 }/' '0, 7, 0, 7'
 echo "spearline_harness self-test: ok"
