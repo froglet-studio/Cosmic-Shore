@@ -1,6 +1,5 @@
 // The slice of Unity the voyage rules and their suites touch outside the editor: JsonUtility (over System.Text.Json,
-// public fields included, enums as numbers, the way the generator writes voyage_content.json) and the one squad
-// constant the rules read. Nothing else: the rules are pure C# by design (Docs/Voyages/DEPTH.md).
+// public fields included, enums as numbers, the way the generator writes voyage_content.json) and bools as 0 or 1. Nothing else: the rules are pure C# by design (Docs/Voyages/DEPTH.md).
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -14,7 +13,16 @@ namespace UnityEngine
             NumberHandling = JsonNumberHandling.AllowReadingFromString,
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true,
+            Converters = { new UnityBool() },
         };
+
+        /// <summary>Unity writes a bool as 0 or 1 (and the generator's twin does too); read either shape.</summary>
+        sealed class UnityBool : JsonConverter<bool>
+        {
+            public override bool Read(ref Utf8JsonReader r, System.Type t, JsonSerializerOptions o) =>
+                r.TokenType == JsonTokenType.Number ? r.GetInt32() != 0 : r.GetBoolean();
+            public override void Write(Utf8JsonWriter w, bool v, JsonSerializerOptions o) => w.WriteBooleanValue(v);
+        }
 
         public static T FromJson<T>(string json) => JsonSerializer.Deserialize<T>(json, Options);
         public static string ToJson(object value) => JsonSerializer.Serialize(value, Options);
@@ -24,14 +32,5 @@ namespace UnityEngine
     {
         public static void Log(object message) => System.Console.WriteLine(message);
         public static void LogWarning(object message) => System.Console.WriteLine("WARNING: " + message);
-    }
-}
-
-namespace CosmicShore.Data
-{
-    /// <summary>The saved squad's one fact the voyage rules read: three seats.</summary>
-    public class SavedSquad
-    {
-        public const int SlotCount = 3;
     }
 }

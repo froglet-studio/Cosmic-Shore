@@ -357,7 +357,7 @@ namespace CosmicShore.UI
 
         public static string Kicker(VoyageLines lines, in VoyageObjective o) => o.Goal switch
         {
-            VoyageObjective.Kind.CrystalRun => lines.ObjectiveRaidKicker,
+            VoyageObjective.Kind.CrystalRun => TemplateText.Fill(lines.ObjectiveRaidKicker, "name", o.Name ?? string.Empty),
             VoyageObjective.Kind.SailingHome => lines.ObjectiveHomeKicker,
             VoyageObjective.Kind.Escort => TemplateText.Fill(lines.ObjectiveEscortKicker, "difficulty", o.Difficulty.ToString()),
             _ => string.Empty,
@@ -376,7 +376,7 @@ namespace CosmicShore.UI
         /// <summary>The strip's first line (Rev 114 O1): the goal's name.</summary>
         public static string Title(VoyageLines lines, in VoyageObjective o) => o.Goal switch
         {
-            VoyageObjective.Kind.CrystalRun => lines.ObjectiveRaidKicker,
+            VoyageObjective.Kind.CrystalRun => TemplateText.Fill(lines.ObjectiveRaidKicker, "name", o.Name ?? string.Empty),
             VoyageObjective.Kind.SailingHome => lines.ObjectiveHomeKicker,
             VoyageObjective.Kind.Escort => lines.ObjectiveStripEscort,
             _ => string.Empty,
@@ -627,7 +627,7 @@ namespace CosmicShore.UI
             };
             string stats = b.Board switch
             {
-                VoyageScoreboard.Kind.CrystalRun => TemplateText.Fill(_lines.ScoreRaidStats, "to", b.To, "cells", b.Cells.ToString(), "time", time),
+                VoyageScoreboard.Kind.CrystalRun => TemplateText.Fill(_lines.ScoreRaidStats, "name", b.Name, "to", b.To, "cells", b.Cells.ToString(), "time", time),
                 VoyageScoreboard.Kind.Escort => TemplateText.Fill(_lines.ScoreEscortStats, "difficulty", b.Difficulty.ToString(),
                     "worlds", b.Worlds.ToString(), "legs", b.Legs.ToString(), "time", time),
                 VoyageScoreboard.Kind.Docked => _lines.ScoreDockedStats,

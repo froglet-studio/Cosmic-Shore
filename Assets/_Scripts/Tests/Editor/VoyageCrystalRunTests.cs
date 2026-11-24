@@ -18,8 +18,15 @@ namespace CosmicShore.Tests
     {
         const string RaidId = "job.raid.crystals";
 
-        // The shipped asset, as the game reads it (the JSON copy writes the hostile pattern as 0 and 1).
-        static VoyageContent Shipped() => VoyageContentSO.Load().Content;
+        // The shipped asset, as the game reads it (the JSON copy writes the hostile pattern as 0 and 1), without its named
+        // voyages: these tests hold the type's own rules (the generic run the board offers when a type has no named
+        // voyage). The named voyages are VoyageSeaTests'.
+        static VoyageContent Shipped()
+        {
+            var copy = JsonUtility.FromJson<VoyageContent>(JsonUtility.ToJson(VoyageContentSO.Load().Content));
+            copy.Voyages.Clear();
+            return copy;
+        }
 
         static VoyageJob Raid(VoyageState state, VoyageContent content) =>
             VoyageRules.Board(state, content, new[] { "pilot.any" }).FirstOrDefault(j => j.TemplateId == RaidId);

@@ -219,6 +219,8 @@ namespace CosmicShore.Gameplay
             var ark = Ark;
             if (_def.RaidAnchorMinLife > 0 && ark && CellLife(CurrentCell, ark.Domain) < _def.RaidAnchorMinLife) return 0f;
             int cell = LegCell(out _);
+            // A named voyage keeps the cell clock: one window a cell, whatever the cell (VoyageRun.Sea.cs).
+            if (_state?.Current is { IsNamed: true }) return Mathf.Max(0f, _def.NamedAnchorSeconds);
             bool hostile = cell > 0 && LegHostile(cell - 1);
             float window = hostile ? _def.RaidAnchorHostileSeconds : _def.RaidAnchorCalmSeconds;
             // The job's own window for this cell, when it names one (Shombith's storyboard: 20 / 30 / 30 / 40 s).
@@ -453,6 +455,7 @@ namespace CosmicShore.Gameplay
             {
                 objective.Goal = VoyageObjective.Kind.CrystalRun;
                 objective.To = PlaceName(job.To);
+                objective.Name = job.Title;
                 objective.Done = _raid.Total;
                 objective.Target = Mathf.CeilToInt(job.Goal);
                 objective.Crystals = new int[(int)Element.Omni + 1];
@@ -522,6 +525,7 @@ namespace CosmicShore.Gameplay
                 Board = VoyageScoreboard.Kind.CrystalRun,
                 Succeeded = r.Outcome == JobOutcome.Succeeded,
                 To = PlaceName(job.To),
+                Name = job.Title ?? string.Empty,
                 Done = _raid.Total,
                 Goal = Mathf.CeilToInt(job.Goal),
                 Cells = _profile?.Count ?? job.Cells,

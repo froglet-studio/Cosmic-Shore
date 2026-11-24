@@ -363,6 +363,39 @@ namespace CosmicShore.ScriptableObjects
                                                 "home added about 6 more; at 2 it adds about 3. 1 keeps the outbound speed.")]
         float homewardArkSpeedFactor = 2f;
 
+        [Header("Voyage - the sea's danger and the cell clock (Milestone 2, Shombith 2026-11-24)")]
+        [SerializeField, Tooltip("The four rungs of the sea, I1 to I4 (the Voyage Codex's ladder): the share of a named " +
+                                 "voyage's cells held against the squad (the map's most dangerous first), each cell's life, " +
+                                 "the breach line, raiders out and home, and kaiju crossings (0 none, 1 the first, 2 every). " +
+                                 "Difficulty is how dangerous the water is, never a timer; nothing here touches a vessel.")]
+        VoyageSeaRung[] seaRungs = VoyageSeaRung.Defaults();
+
+        [SerializeField, Range(20f, 120f), Tooltip("Seconds a named voyage's cell takes, core to core with its anchor " +
+                                                   "(Shombith 2026-11-24: runs of 3-5 minutes over 1-6 cells, so about 50 s " +
+                                                   "a cell). The Ark's speed is set to cross in this less the anchor.")]
+        float cellSeconds = 50f;
+
+        [SerializeField, Range(0f, 60f), Tooltip("Seconds the Ark anchors in each cell of a named voyage (was 20-40 a cell " +
+                                                 "in the 4-cell Crystal Run, which took 8 minutes).")]
+        float namedAnchorSeconds = 15f;
+
+        [SerializeField, Range(10f, 200f), Tooltip("The fastest the Ark crawls through a cell, u/s, whatever the cell clock " +
+                                                   "asks: the escort keeps the Ark slower than the hulls guarding it.")]
+        float arkCrawlCeiling = 75f;
+
+        [Header("Voyage - Salvage's loose crystals (Shombith 2026-11-24: \"collect loose crystals\")")]
+        [SerializeField, Min(0), Tooltip("Loose elemental crystals that drift through each cell of a voyage whose type " +
+                                         "gathers (Salvage), before the rung's life: about one and a half times the goal per " +
+                                         "cell, so there is more than the squad can take.")]
+        int driftCrystalsPerCell = 18;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Share of a cell's loose crystals bunched round one point (where an Ark's " +
+                                                "hold burst); the rest drift alone through the cell.")]
+        float driftClusterShare = 0.5f;
+
+        [SerializeField, Range(0f, 40f), Tooltip("How fast a loose crystal drifts, u/s.")]
+        float driftSpeed = 6f;
+
         [Header("Voyage - AI wingmates in a Crystal Run (a light nudge, Shombith 2026-11-17; his own AI plan comes later)")]
         [SerializeField, Min(0), Tooltip("An AI wingmate carrying this many crystals flies to the Ark to bank them before it " +
                                          "goes back to its escort role. 0 turns the bank run off.")]
@@ -515,6 +548,14 @@ namespace CosmicShore.ScriptableObjects
         public int WingmateBankAt => wingmateBankAt;
         public float HomeEscortRewardScale => homeEscortRewardScale;
         public float ArkSpeedScale => arkSpeedScale;
+        /// <summary>Rung <paramref name="rung"/> (I1-I4) of the sea.</summary>
+        public VoyageSeaRung SeaRung(int rung) => VoyageSea.RungOf(seaRungs, rung);
+        public float CellSeconds => cellSeconds;
+        public float NamedAnchorSeconds => namedAnchorSeconds;
+        public float ArkCrawlCeiling => arkCrawlCeiling;
+        public int DriftCrystalsPerCell => driftCrystalsPerCell;
+        public float DriftClusterShare => driftClusterShare;
+        public float DriftSpeed => driftSpeed;
         public float HomewardArkSpeedFactor => homewardArkSpeedFactor;
         public float WingmateSeekSeconds => wingmateSeekSeconds;
         public float WingmateSeekPeriod => wingmateSeekPeriod;

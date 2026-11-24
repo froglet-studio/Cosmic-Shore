@@ -31,6 +31,8 @@ namespace CosmicShore.Gameplay
         readonly List<Fauna> _kaiju = new();
         Cell _kaijuCell;
         int _kaijuThisCrossing;
+        /// <summary>Crossings begun on this leg (reset with the leg, <see cref="BeginSea"/>).</summary>
+        int _kaijuCrossing;
         ArkRaidLeash _raidLeash;
 
         ArkRaidLeash RaidLeash => _raidLeash ??= new ArkRaidLeash();
@@ -54,7 +56,10 @@ namespace CosmicShore.Gameplay
             {
                 _kaijuCell = bound;
                 _kaijuThisCrossing = 0;
+                _kaijuCrossing++;
             }
+            // A named voyage's kaiju come from its rung: none at I1-I2, the first crossing at I3, every crossing at I4.
+            if (_state.Current.IsNamed && !VoyageSea.KaijuOn(_def.SeaRung(_state.Current.Intensity), _kaijuCrossing - 1)) return;
             if (_kaijuThisCrossing >= _def.KaijuPerCrossing || _kaiju.Count >= _def.KaijuMax) return;
             if (!CrossingOpen(ark, bound, out var behind)) return;
 

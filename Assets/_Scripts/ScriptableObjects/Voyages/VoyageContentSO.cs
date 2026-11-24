@@ -887,8 +887,8 @@ namespace CosmicShore.ScriptableObjects
 
         // ── Crystal Run: the objective box, the toasts and the scoreboard (Docs/Voyages/CRYSTAL_RUN.md) ──
 
-        [Tooltip("Objective box: the kicker over a Crystal Run's goal.")]
-        public string ObjectiveRaidKicker = "CRYSTAL RUN";
+        [Tooltip("Objective box: the kicker over a Salvage voyage's goal ({name}: the voyage's own name).")]
+        public string ObjectiveRaidKicker = "{name}";
         [Tooltip("Objective box: a Crystal Run's goal ({goal}, {to}).")]
         public string ObjectiveRaidGoal = "Steal {goal} crystals before the Ark reaches {to}";
         [Tooltip("Objective box: the counter's label.")]
@@ -935,8 +935,8 @@ namespace CosmicShore.ScriptableObjects
         public string ScoreKickerDocked = "HOME";
         [Tooltip("Scoreboard: a Crystal Run's title ({done}, {goal}).")]
         public string ScoreRaidTitle = "{done} of {goal} crystals stolen";
-        [Tooltip("Scoreboard: a Crystal Run's line ({to}, {cells}, {time}).")]
-        public string ScoreRaidStats = "Crystal Run to {to} - {cells} cells - {time}";
+        [Tooltip("Scoreboard: a Salvage voyage's line ({name}, {to}, {cells}, {time}).")]
+        public string ScoreRaidStats = "{name} - {cells} cells - {time}";
         [Tooltip("Scoreboard: an escort's title ({to}).")]
         public string ScoreEscortTitle = "The Ark reached {to}";
         [Tooltip("Scoreboard: an escort's line ({difficulty}, {worlds}, {legs}, {time}).")]

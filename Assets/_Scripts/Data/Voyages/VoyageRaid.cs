@@ -36,10 +36,89 @@ namespace CosmicShore.Data
             foreach (var t in content.Jobs)
             {
                 if (t == null || !t.Always || t.Id == VoyageRules.ReturnJobId) continue;
-                var job = Draw(state, content, t, here, person, usedTo ?? new List<string>(), 0);
+                // A type with named voyages is offered only as one of those (Milestone 2): its own title names the type,
+                // and one a port keeps the board near six options; the day picks which sails from here.
+                var job = HasNamed(content, t.Id)
+                    ? NamedOfTheDay(state, content, t.Id, here, person)
+                    : Draw(state, content, t, here, person, usedTo ?? new List<string>(), 0);
                 if (job != null) jobs.Add(job);
             }
             return jobs;
+        }
+
+        /// <summary>True when <paramref name="content"/> names at least one voyage of type <paramref name="type"/>.</summary>
+        public static bool HasNamed(VoyageContent content, string type)
+        {
+            if (content?.Voyages == null || string.IsNullOrEmpty(type)) return false;
+            foreach (var v in content.Voyages)
+                if (v != null && v.Type == type) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// The job that sails named voyage <paramref name="v"/> from <paramref name="here"/> (Docs/Voyages/MILESTONE_2.md
+        /// §2): its type's rules, the voyage's own name as the title, its rung as the intensity and its cells as the leg.
+        /// Null when the voyage starts somewhere else, ends here, is the escort card's (not a job), or its place is unknown.
+        /// </summary>
+        public static VoyageJob DrawNamed(VoyageState state, VoyageContent content, NamedVoyage v, VoyageLocation here,
+            CrewPerson person)
+        {
+            if (state == null || content == null || v == null || here == null || v.Type == NamedVoyage.EscortType) return null;
+            if (!string.IsNullOrEmpty(v.From) && v.From != here.Id) return null;
+            if (string.IsNullOrEmpty(v.To) || v.To == here.Id || content.Location(v.To) == null) return null;
+            var t = content.Job(v.Type);
+            if (t == null) return null;
+            var job = VoyageRules.Make(state, content, t, person ?? new CrewPerson { PilotId = string.Empty, Name = string.Empty },
+                here, v.To, null, null);
+            Name(job, v, t);
+            return job;
+        }
+
+        /// <summary>Give <paramref name="job"/> (made from <paramref name="t"/>) named voyage <paramref name="v"/>'s
+        /// title, rung, cells and goal.</summary>
+        static void Name(VoyageJob job, NamedVoyage v, JobTemplate t)
+        {
+            job.VoyageId = v.Id;
+            if (!string.IsNullOrEmpty(v.Name)) job.Title = v.Name;
+            if (!string.IsNullOrEmpty(v.Line)) job.Summary = v.Line;
+            job.Intensity = VoyageSea.Rung(v.Rung);
+            job.Cells = VoyageSea.RunCells(v.Cells);
+            if (t.GoalPerCell > 0f) job.Goal = t.GoalPerCell * job.Cells;
+        }
+
+        /// <summary>The one named voyage of <paramref name="type"/> a port offers today: of those that sail from
+        /// <paramref name="here"/>, the one the day picks (seeded, so every machine in a party sees the same board).</summary>
+        static VoyageJob NamedOfTheDay(VoyageState state, VoyageContent content, string type, VoyageLocation here,
+            CrewPerson person)
+        {
+            var open = new List<VoyageJob>();
+            foreach (var v in content.Voyages ?? new List<NamedVoyage>())
+            {
+                if (v == null || v.Type != type) continue;
+                var job = DrawNamed(state, content, v, here, person);
+                if (job != null) open.Add(job);
+            }
+            if (open.Count == 0) return null;
+            int pick = VoyageRules.Mod(VoyageRules.Hash(state.Day, type, here.Id), open.Count);
+            return open[pick];
+        }
+
+        /// <summary>The next named voyage of <paramref name="type"/> after <paramref name="doneId"/> that sails from
+        /// <paramref name="here"/>, in the content's order (wrapping), skipping <paramref name="not"/>. Null when none.</summary>
+        static VoyageJob NextNamed(VoyageState state, VoyageContent content, string type, string doneId, VoyageLocation here,
+            CrewPerson person, string not, bool includeDone)
+        {
+            var list = content.Voyages ?? new List<NamedVoyage>();
+            int start = list.FindIndex(x => x != null && x.Id == doneId);
+            for (int k = includeDone ? 0 : 1; k <= list.Count; k++)
+            {
+                var v = list[(Math.Max(0, start) + k) % Math.Max(1, list.Count)];
+                if (v == null || v.Type != type || v.To == not) continue;
+                if (!includeDone && v.Id == doneId) continue;
+                var job = DrawNamed(state, content, v, here, person);
+                if (job != null) return job;
+            }
+            return null;
         }
 
         /// <summary>The crew person a seated pilot is (the first the crew knows), else a stand-in carrying the first
@@ -94,6 +173,9 @@ namespace CosmicShore.Data
             if (t == null || here == null) return null;
             var person = content.Person(done.PilotId)
                          ?? new CrewPerson { PilotId = done.PilotId ?? string.Empty, Name = string.Empty, Faction = t.Faction };
+            // A named voyage ventures on to the next voyage of its type that sails from here (never back where it set out).
+            if (done.IsNamed)
+                return NextNamed(state, content, done.TemplateId, done.VoyageId, here, person, done.From, includeDone: false);
             // Never straight back to where this run set out from, while anywhere else will do.
             var usedTo = new List<string>();
             if (!string.IsNullOrEmpty(done.From)) usedTo.Add(done.From);
@@ -114,6 +196,9 @@ namespace CosmicShore.Data
             if (t == null || here == null) return null;
             var person = content.Person(missed.PilotId)
                          ?? new CrewPerson { PilotId = missed.PilotId ?? string.Empty, Name = string.Empty, Faction = t.Faction };
+            // A named voyage tries again as the same voyage when it sails from here, else the next of its type.
+            if (missed.IsNamed)
+                return NextNamed(state, content, missed.TemplateId, missed.VoyageId, here, person, null, includeDone: true);
             var usedTo = new List<string>();
             if (!string.IsNullOrEmpty(missed.From)) usedTo.Add(missed.From);
             return Draw(state, content, t, here, person, usedTo, missed.Venture)
