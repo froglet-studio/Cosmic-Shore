@@ -43,18 +43,26 @@ namespace CosmicShore.Gameplay
             }
             _ruinRoot = new GameObject("SlingshotRuins").transform;
             var trail = new Trail();
+            // The colour turns with each RUIN, not each leg: legs too short for a ruin would skip a colour
+            // (the first I4 race in the editor laid Jade and Gold and no Ruby).
+            int ruin = -1, lastLeg = -1;
             for (int i = 0; i < _ruinParts.Count; i++)
             {
                 var part = _ruinParts[i];
+                if (part.Leg != lastLeg)
+                {
+                    ruin++;
+                    lastLeg = part.Leg;
+                }
                 var rotation = Quaternion.LookRotation(part.Forward, part.Up);
                 _ruinPrisms.Add(PrismTrailBuilder.LayOne(ruinPrefab,
-                    new PrismLay(new SpawnPoint(part.Position, rotation, part.Scale), RuinDomain(part.Leg), PrismKind.Plain),
+                    new PrismLay(new SpawnPoint(part.Position, rotation, part.Scale), RuinDomain(ruin), PrismKind.Plain),
                     _ruinRoot, trail, RuinOwnerId, admitAuthoredScale: true));
             }
         }
 
-        Domains RuinDomain(int leg) =>
-            ruinDomains is { Length: > 0 } ? ruinDomains[leg % ruinDomains.Length] : Domains.Blue;
+        Domains RuinDomain(int ruin) =>
+            ruinDomains is { Length: > 0 } ? ruinDomains[ruin % ruinDomains.Length] : Domains.Blue;
 
         /// <summary>The clock the wheel turns on: the network's, so every peer poses it alike.</summary>
         float RuinClock => IsSpawned && NetworkManager != null ? (float)NetworkManager.ServerTime.Time : Time.time;
