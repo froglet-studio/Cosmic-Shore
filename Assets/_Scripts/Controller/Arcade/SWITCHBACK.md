@@ -748,7 +748,13 @@ negative controls fail as they should (no prism clearance: a ruin 38 u from a fi
   `Assembly-CSharp-Editor.dll` at 01:25 IST, after these files were written, and they hold `SwitchbackRuins`,
   `LaysRuins` and `SwitchbackRuinsTests` (Unity rewrites them only on a compile with no errors). The 7
   `SwitchbackRuinsTests` pass in that editor's EditMode runner (98 s; they sweep 41 courses, so they are slow).
-  No race was watched.
+- **Seen in the real game (2026-11-25, one all-AI I4 run, `SwitchbackSoakRunner`, fixed seed, offline):** the
+  ruins were laid: 253 prisms in 5 ruins, Jade 70, Ruby 143, Gold 40. In stills, Jade reads teal, Ruby magenta and
+  Gold amber, all clearly apart from the Blue gauntlet and its red danger shards, so Ruby is not mistaken for Danger.
+  Once the race scene was live, 104 of the 253 ruin prisms had colliders on (2,472 enabled colliders in the scene).
+  **The race itself was not watched:** the three Dolphins sat at 0 speed, the editor ran at 6-24 fps, and the log
+  flooded with NullReferenceExceptions from code outside this mode (`PosterDrift.cs:84`, `VesselAnimation.cs:22`,
+  `ChargeArcs.cs:717`), so no lap time, frame time or AI number from that run counts.
 - **The prism budget.** Nearly every ruin prism is within 200 u of the route, where `PrismColliderLodManager` gives it
   a collider, and the I4 row is already spent (Docs/perf/SWITCHBACK_PRISM_BUDGET.md: `ColliderCap(4)` 600, reached on
   the fixed seed). A ruin adds up to about 110 colliders near a pilot as it is passed. Run the I4 soak before trusting it.

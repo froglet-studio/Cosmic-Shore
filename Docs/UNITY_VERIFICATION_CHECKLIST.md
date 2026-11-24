@@ -26861,7 +26861,9 @@ assemblies at 01:25 IST with `SwitchbackRuins`, `LaysRuins` and `SwitchbackRuins
 - [x] `SwitchbackRuinsTests` pass in the Test Runner (2026-11-25, 7 of 7, EditMode in the open editor).
 - [ ] MinigameSwitchback, I4, fixed seed: 5 ruins in Jade, Ruby and Gold ahead of blocked gates 5, 10, 14, 18 and 23.
       None touches a tunnel, a key crystal, a path ray or a block field, and the way from ring to key is open.
-- [ ] Ruby ruins do not read as Danger prisms (else change `ruinDomains` on the controller).
+- [x] Ruby ruins do not read as Danger prisms (2026-11-25, stills from one I4 run: Ruby reads magenta, Danger red).
+- [ ] A whole I4 race with the ruins: the 2026-11-25 run stalled (Dolphins at 0 speed, NullReferenceException flood
+      from `PosterDrift.cs:84`), so nothing from it was timed.
 - [ ] I1, I2 and I3 have no ruins; Scarab Rally I4 has none.
 - [ ] The I4 soak (`SwitchbackSoakLauncher -sbSoak 4:4:1`): frame time and live colliders against the last gauntlet
       row in Docs/perf/SWITCHBACK_PRISM_BUDGET.md (about 260 more prisms, nearly all within 200 u of the route).
