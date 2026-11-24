@@ -26750,3 +26750,17 @@ editor: none in this session. The reference compile has 0 errors in the changed 
       1.5 s at a perch.
 - [ ] Race Perch Run and Regatta with an AI Goby: it still darts through every ring, and the Regatta Goby's times are
       about the same as before (REGATTA.md 6.6: card 78.1 s, L5 62.6 s).
+
+## Voyages app shell rebuilt to Frogma Rev 138 (2026-11-24)
+
+The HyperSea quay and full screen, Your Ark, Vessels and the new Pilots page now follow the Rev 138 boards. Checked in
+Amoebius at 1600x900 (screenshots beside the boards); not run in the Unity editor. The reference compile has 0 errors in
+the changed files.
+
+- [ ] Voyage > The HyperSea: five job cards, the chart with Full screen; Full screen shows the jobs pinned at their places,
+      rival crews, wrecks and blooms, the Work at column and Take the job; Back from full screen returns.
+- [ ] Take the job opens Your Ark: header, three seats (hull, vessel, class, element, pilot face, quote, mood), Set sail bar.
+- [ ] Press a seat's hull: Vessels opens full page; LB / RB change class; Take the vessel puts it on the seat.
+- [ ] Press a seat's pilot or Change wingmate: Pilots opens; pick a pilot, Take the seat puts them on the seat.
+- [ ] The look in the editor: the sea dim, floor and plates (Amoebius draws them grey and plum).
+
