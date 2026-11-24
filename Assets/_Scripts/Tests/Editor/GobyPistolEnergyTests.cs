@@ -28,9 +28,11 @@ namespace CosmicShore.Tests
             pLaunchCd = 9f, pGhostTime = 2.5f, pGhostCd = 8f, pVortexCd = 4f, pEdgeGrace = 1.2f,
         };
 
-        const float Gap = 6f, PerBlock = 1f, FlightBonus = 0.2f, PerDenPrism = 8f;
+        const float Gap = 4f, PerBlock = 1f, FlightBonus = 0.2f, PerDenPrism = 8f;
+        /// <summary>The shipped energy: the 6 u gap's 1 and 0.2, scaled by the shipped 4 u gap so a jump pays per u flown.</summary>
+        const float ShippedPerBlock = 0.6667f, ShippedBonus = 0.1333f;
         const int DenMax = 80;
-        static readonly PistolPlane.HillSpec Hills = new(10f, 15f, 3.6f, 7.2f, 9f, 0.08f, 1.5f);
+        static readonly PistolPlane.HillSpec Hills = new(9f, 16f, 3f, 7.8f, 9f, 0.08f, 1.5f);
 
         struct Ride { public float Energy, Seconds; public int Skipped, Blocks, Longest; public bool Twice; }
 
@@ -61,7 +63,7 @@ namespace CosmicShore.Tests
                     foreach (int slot in crossed)
                     {
                         if (!seen.Add(slot)) r.Twice = true;
-                        r.Energy += GobyDen.EnergyFor(nth++, PerBlock, FlightBonus);
+                        r.Energy += GobyDen.EnergyFor(nth++, ShippedPerBlock, ShippedBonus);
                         r.Skipped++;
                     }
                 }
@@ -75,7 +77,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Ground_NamesTheBlocksUnderAStretch_OnceEach()
         {
-            var g = new PistolGround(30f, Gap);   // blocks at 3, 9, 15, 21, 27
+            var g = new PistolGround(30f, 6f);   // blocks at 3, 9, 15, 21, 27
             var into = new List<int>();
             g.BlocksBetween(0f, 30f, into);
             Assert.AreEqual(5, into.Count);

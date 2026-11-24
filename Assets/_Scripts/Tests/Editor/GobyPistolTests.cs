@@ -19,8 +19,8 @@ namespace CosmicShore.Tests
     {
         static readonly Vector3 A = new(10f, -20f, 30f), B = new(310f, 60f, -170f);
 
-        /// <summary>The shipped hills (Tiny Wings', Docs/PISTOL_TINY_WINGS_STUDY.md): half-hills 10-15 u on, 3.6-7.2 u up or down.</summary>
-        static readonly PistolPlane.HillSpec Shipped = new(10f, 15f, 3.6f, 7.2f, 9f, 0.08f, 1.5f);
+        /// <summary>The shipped hills (Tiny Wings', Docs/PISTOL_TINY_WINGS_STUDY.md): half-hills 9-16 u on, 3-7.8 u up or down.</summary>
+        static readonly PistolPlane.HillSpec Shipped = new(9f, 16f, 3f, 7.8f, 9f, 0.08f, 1.5f);
 
         static PistolPlane.HillTrack Track(float length, float amp = 1f, uint seed = 7u, int island = 0)
             => PistolPlane.HillTrack.Build(length, seed, new PistolPlane.HillSpec(Shipped.HalfLengthMin, Shipped.HalfLengthMax, Shipped.HalfHeightMin * amp,
@@ -74,7 +74,7 @@ namespace CosmicShore.Tests
         public void Ground_IsTinyWingsKeyPointHills([Values(140f, 900f, 1800f)] float length, [Values(1u, 2u, 3u)] uint seed)
         {
             // Tiny Wings' ground (Garrett, 2026-10-24: "the right sinusoidal curve"; the study): key points, alternately a crest
-            // and a trough, each a random 10-15 u on and 3.6-7.2 u up or down, a half-cosine between; the island starts on a
+            // and a trough, each a random 9-16 u on and 3-7.8 u up or down, a half-cosine between; the island starts on a
             // crest at the perch (its first half-hill runs down) and ends on a crest at the next (its last half-hill climbs)
             var t = PistolPlane.HillTrack.Build(length, seed, Shipped);
             Assert.That(t.KeyCount, Is.GreaterThanOrEqualTo(3));
@@ -334,11 +334,10 @@ namespace CosmicShore.Tests
         [Test]
         public void Islands_AreLaidAtTheirLength_AndKeepThePairTogether()
         {
-            // Garrett, 2026-10-23: "the goby is barely cruising around at all". The Goby cruises; a dart's end is a perch only
-            // once it is an island's length from the last perch; a longer gap is several islands; and no new perch is laid
-            // while the Pistol has its islands ahead
+            // The Goby only darts (Garrett, 2026-11-24); a landing is a perch only once it is an island's length from the
+            // last one; a longer gap is several islands; and no new perch is laid while the Pistol has its islands ahead
             Vector3 a = Vector3.zero;
-            Assert.That(GobyIslands.Reaches(a, Vector3.forward * 899f, 900f), Is.False, "the control: a dart short of an island is a dash");
+            Assert.That(GobyIslands.Reaches(a, Vector3.forward * 899f, 900f), Is.False, "the control: a landing short of an island is a hop");
             Assert.That(GobyIslands.Reaches(a, new Vector3(600f, 0f, 700f), 900f), Is.True);
             Assert.That(GobyIslands.Pieces(a, Vector3.forward * 1800f, 1800f), Is.EqualTo(1));
             Assert.That(GobyIslands.Pieces(a, Vector3.forward * 1801f, 1800f), Is.EqualTo(2));
@@ -349,19 +348,21 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
-        /// The pair together (Garrett, 2026-10-23: "take a pass at tuning the two together"): the Goby AI, cruising and
-        /// wandering, makes an island faster than the Pistol AI rides one, so the Pistol never waits at the head perch; the
-        /// island queue then keeps the Goby from running away. The control: the old Goby, which only darted and waited up to
-        /// 45 s for the Pistol, kept it waiting at every perch.
+        /// The pair together (Garrett, 2026-10-23: "take a pass at tuning the two together"): the Goby AI, hopping
+        /// <c>aiDartLength</c> a dart cooldown at a time (it never flies, Garrett 2026-11-24) and wandering, makes an island
+        /// faster than the Pistol AI rides one, so the Pistol never waits at the head perch; the island queue then keeps the
+        /// Goby from running away. The control: the old Goby, which waited up to 45 s for the Pistol at every perch, kept it
+        /// waiting.
         /// </summary>
         [TestCase(true)]
         [TestCase(false)]
         public void Pair_TheGobyKeepsAheadOfThePistol(bool shipped)
         {
             var config = ShippedConfig();
-            const float wander = 0.7f;   // net progress per u flown by the wandering AI (simulated over 200 seeds: median 0.88, one in ten 0.56)
+            const float wander = 0.7f;   // net progress per u hopped by the wandering AI (simulated over 200 seeds: median 0.88, one in ten 0.56)
             float island = 0.5f * (config.IslandMinLength + config.IslandMaxLength);
-            float goby = island / (wander * config.AiCruiseSpeed) + config.PerchSeconds + config.DartSeconds;
+            float hops = Mathf.Ceil(island / (wander * config.AiDartLength));
+            float goby = hops * Mathf.Max(config.DartCooldown, config.DartSeconds) + config.PerchSeconds;
             float pistol = RideIt(config, island, 60f).Seconds + config.RestSeconds;
             if (!shipped) { goby = config.PerchSeconds + 45f; Assert.That(goby, Is.GreaterThan(pistol), "the control: the waiting Goby"); return; }
             Assert.That(goby, Is.LessThan(pistol), $"the Goby makes an island in {goby:F1} s, the Pistol rides one in {pistol:F1} s");
