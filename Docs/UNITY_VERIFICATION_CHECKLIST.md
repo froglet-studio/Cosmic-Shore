@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race: garden ruins at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT RUN IN EDITOR
+
+Skim Race lays Spearline's ruins round Relativity's ribbon on I4 (SKIMRACE.md §5b): 7 ruins, 516 prisms, Jade, Ruby and
+Gold in turn, 60 u clear of the ribbon and of each straight crystal-to-crystal line, none within 330 u of the cell's
+centre, no turning wheel (the legs are too short for one). `SkimRaceRuins.cs`, `SkimRaceController.Ruins.cs`, two new
+fields on the controller in `MinigameSkimRace.unity`. The pure code and `SkimRaceRuinsTests` were compiled with Roslyn
+against a Unity math stub and run (7 of 7, plus the shipped I4 ribbon rebuilt from the baked prefab; a zero-lane
+negative control fails 3). The controller hook and `SkimRaceRuinsShippedTrackTests` were not compiled at all.
+
+**Verify in editor**
+- [ ] The project compiles; `SkimRaceRuinsTests` and `SkimRaceRuinsShippedTrackTests` pass in the Test Runner.
+- [ ] Skim Race at I4: seven ruins stand round the ribbon in Jade, Ruby and Gold, none in the nucleus, none at a
+      crystal; the console has no "No garden ruins" warning; the connecting screen does not drop before they are laid.
+- [ ] Fly the ribbon and cut two or three crystal-to-crystal chords: nothing in the way. Fly into a ruin: its prisms
+      break as any plain prism does.
+- [ ] Skim Race at I1, I2 and I3: no ruins.
+- [ ] `prof` at I4 against a run before this change: the frame cost of 516 more prisms.
+- [ ] Two clients (MPPM): both see the same ruins in the same places.
+- [ ] AI seats at I4: do they lose time in the ruins? (The AI does not know they are there; its chords are kept clear.)
+
 ### 🔴 Skim Race flights record a finish: the crystal target and the team's crystals (`Ys-bleeding-edge`, 2026-11-23, Yash) — NOT COMPILED BY ITS AUTHOR, NOT RUN IN EDITOR
 
 **What was wrong.** `HumanFlightRecorder` took a flight's `raceTarget` only from `SwitchTargetCount`, which only a gate
