@@ -16,10 +16,13 @@ namespace CosmicShore.UI
     /// The Ark's SQUADS tab as THE HOLO TABLE (Rev 106 B, every setting drawn as Rev 110 B; Shombith 2026-11-13: "B is
     /// good"; Docs/MENU_REDESIGN_B.md sections 194, 200 and 206). The hangar is the screen: the squad's real vessels stand on
     /// its pads (<see cref="SquadVesselLayer"/>), and in front of them a dome of light carries the three seats as plates.
+    /// Rev 141 A (section 234) took the dome away: plates under the hulls of one row, the view walks up to the picked hull
+    /// (<see cref="ZoomSeat"/>, played by <see cref="ElementalConverterView"/>) and the projection docks on the right.
     ///
     /// <list type="bullet">
     /// <item><b>The plates</b> (<see cref="SquadSeatPlate"/>): each seat's pilot, who flies it, its vessel and element and
-    /// whether they are here, under its own pad. Pressing one raises it and the table projects the seat over it.</item>
+    /// whether they are here, under its own pad. Pressing one (or its hull) walks the view up to that hull, hides the other
+    /// two plates and shows the seat in the projection.</item>
     /// <item><b>The projection</b>: the seat's Vessel, Element, Pilot and Artifact (and who flies a rogue seat), each a line
     /// that opens only that list in place; a pick writes the squad at once. Under them the seat's one action: CHANGE VESSEL
     /// on yours, WHO FLIES IT on an open seat, OPEN THE SEAT on an offline friend's. A joined squad is read-only (its
@@ -77,7 +80,7 @@ namespace CosmicShore.UI
         [SerializeField] private KitButton arenaButton;
 
         [Header("The table")]
-        [Tooltip("Lit in the squad's domain colour, each keeping its own alpha: the dome, its rim and the projection's light.")]
+        [Tooltip("Lit in the squad's domain colour, each keeping its own alpha: the projection's light.")]
         [SerializeField] private Graphic[] domainLit = { };
         [Tooltip("Leader, Rogue One, Rogue Two: each under its own pad (Rogue One left, the leader in the middle, Rogue Two right).")]
         [SerializeField] private SquadSeatPlate[] plates = new SquadSeatPlate[SavedSquad.SlotCount];
@@ -88,7 +91,7 @@ namespace CosmicShore.UI
         [Header("The projection")]
         [Tooltip("What the table projects over the picked plate: the seat, one of its lists, or the friends' squads.")]
         [SerializeField] private CanvasGroup projectionGroup;
-        [Tooltip("Moved across to stand over the picked plate (the join list stands in the middle); its height follows what it shows.")]
+        [Tooltip("Docked at projectionDockX on the right; its height follows what it shows.")]
         [SerializeField] private RectTransform projectionRoot;
         [SerializeField] private TMP_Text projectionTitle;
         [Tooltip("Back from a list to the seat, or closes the join list.")]
@@ -128,6 +131,18 @@ namespace CosmicShore.UI
         [SerializeField] private float choicesHeight = 380f;
         [SerializeField] private float pilotChoicesHeight = 330f;
         [SerializeField] private float joinHeight = 330f;
+        [Tooltip("The projection's centre across the screen, reference pixels from the centre (Rev 141 A: docked right).")]
+        [SerializeField] private float projectionDockX = 710f;
+
+        [Header("The walk up to a seat (Rev 141 A)")]
+        [Tooltip("How far the hangar's picture and its vessels scale while a seat is picked.")]
+        [SerializeField, Min(1f)] private float zoomScale = 1.45f;
+        [Tooltip("Where the picked hull's feet land once walked up to, reference pixels from the screen's centre (y up).")]
+        [SerializeField] private Vector2 zoomFoot = new(-340f, -220f);
+        [Tooltip("How long the walk up (and back) takes, seconds.")]
+        [SerializeField, Min(0.01f)] private float zoomSeconds = 0.4f;
+        [Tooltip("How far under the walked-up hull's feet the picked plate's top stands, reference pixels.")]
+        [SerializeField, Min(0f)] private float zoomPlateGap = 20f;
 
         [Header("Timing")]
         [Tooltip("Seconds between two reads of the friends' squad records.")]
@@ -952,38 +967,24 @@ namespace CosmicShore.UI
 
         // ---- drawing ----
 
-        /// <summary>What stands on one of the hangar's pads: the seat's vessel, whether anyone holds the seat (an open seat's
-        /// pad stands empty) and whether its pilot is here (an offline mate's hull is powered down).</summary>
-        public readonly struct HangarSeat : System.IEquatable<HangarSeat>
-        {
-            public readonly VesselClassType Vessel;
-            public readonly bool Filled;
-            public readonly bool Live;
-
-            public HangarSeat(VesselClassType vessel, bool filled, bool live)
-            {
-                Vessel = vessel;
-                Filled = filled;
-                Live = live;
-            }
-
-            public bool Equals(HangarSeat o) => Vessel == o.Vessel && Filled == o.Filled && Live == o.Live;
-            public override bool Equals(object obj) => obj is HangarSeat o && Equals(o);
-            public override int GetHashCode() => ((int)Vessel * 4) ^ (Filled ? 1 : 0) ^ (Live ? 2 : 0);
-        }
-
         /// <summary>The shown squad's domain and line-up: the Ark's hangar backdrop plays in the domain (Docs/MENU_REDESIGN_B.md
         /// section 190) and the seats' real vessels stand on its pads (SquadVesselLayer, section 202). Raised when either
         /// changes.</summary>
         public event System.Action HangarChanged;
+
+        /// <summary>The seat whose hull the view has walked up to, or -1 (no seat picked, or the join list is open).</summary>
+        public int ZoomSeat => _shown && !_joinOpen && Selected() != null && _seat >= 0 && _seat < SavedSquad.SlotCount ? _seat : -1;
+        public float ZoomScale => zoomScale;
+        public Vector2 ZoomFoot => zoomFoot;
+        public float ZoomSeconds => zoomSeconds;
         /// <summary>False until a squad has been drawn (or while none is shown).</summary>
         public bool HasHangar { get; private set; }
         public Domains HangarDomain { get; private set; } = Domains.Jade;
 
-        readonly HangarSeat[] _hangarSeats = new HangarSeat[SavedSquad.SlotCount];
+        readonly SquadHangarSeat[] _hangarSeats = new SquadHangarSeat[SavedSquad.SlotCount];
 
         /// <summary>Seat <paramref name="seat"/> of the shown squad as its pad shows it (an empty pad out of range).</summary>
-        public HangarSeat GetHangarSeat(int seat) =>
+        public SquadHangarSeat GetHangarSeat(int seat) =>
             HasHangar && seat >= 0 && seat < _hangarSeats.Length ? _hangarSeats[seat] : default;
 
         void PublishHangar(SavedSquad squad)
@@ -993,11 +994,11 @@ namespace CosmicShore.UI
             if (squad != null) HangarDomain = squad.Domain;
             for (int i = 0; i < _hangarSeats.Length; i++)
             {
-                var seat = default(HangarSeat);
+                var seat = default(SquadHangarSeat);
                 if (squad != null)
                 {
                     var slot = squad.GetSlot(i);
-                    seat = new HangarSeat(slot.Vessel, !slot.IsOpen(), SeatLive(squad, i, slot));
+                    seat = new SquadHangarSeat(slot.Vessel, !slot.IsOpen(), SeatLive(squad, i, slot));
                 }
                 if (seat.Equals(_hangarSeats[i])) continue;
                 _hangarSeats[i] = seat;
@@ -1053,11 +1054,17 @@ namespace CosmicShore.UI
                 if (g) g.color = new Color(color.r, color.g, color.b, g.color.a);
             if (emptyGroup) KitVisibility.SetShown(emptyGroup, squad == null && !_joinOpen);
             DrawRail(squad);
+            // Walked up to a seat, only its plate shows, under its hull where the walk up leaves it (Rev 141 A).
+            int zoom = ZoomSeat;
             for (int i = 0; i < plates.Length; i++)
             {
                 if (!plates[i]) continue;
-                if (squad == null || i >= SavedSquad.SlotCount) plates[i].Hide();
-                else DrawPlate(plates[i], squad, i, color);
+                if (squad == null || i >= SavedSquad.SlotCount || (zoom >= 0 && i != zoom)) plates[i].Hide();
+                else
+                {
+                    DrawPlate(plates[i], squad, i, color);
+                    if (i == zoom) plates[i].Place(SquadVesselLayer.ZoomedPlate(zoom, zoomScale, zoomFoot, zoomPlateGap));
+                }
             }
             DrawProjection(squad);
         }
@@ -1122,7 +1129,9 @@ namespace CosmicShore.UI
             if (joinGroup) KitVisibility.SetShown(joinGroup, _joinOpen);
             if (choicesGroup) KitVisibility.SetShown(choicesGroup, lists && !pilotList);
             if (pilotChoicesGroup) KitVisibility.SetShown(pilotChoicesGroup, pilotList);
-            if (backButton) backButton.gameObject.SetActive(_joinOpen || lists);
+            // Back is on at every level: a list steps back to the seat, the seat closes (Shombith 2026-11-24: once a seat
+            // was picked there was nothing on screen to get out of it).
+            if (backButton) backButton.gameObject.SetActive(true);
             float height;
             if (_joinOpen)
             {
@@ -1132,7 +1141,7 @@ namespace CosmicShore.UI
                 SetReadOnly(null);
                 DrawJoin();
                 height = joinHeight;
-                MoveProjection(plates.Length > 0 && plates[0] ? plates[0].CentreX : 0f);
+                DockProjection();
             }
             else if (lists)
             {
@@ -1142,22 +1151,20 @@ namespace CosmicShore.UI
                 if (projectionTitle) projectionTitle.text = TemplateText.Fill(pickTitle, "list", Name(tileNames, (int)_pick - 1));
                 DrawChoices(squad, squad.GetSlot(_seat));
                 height = pilotList ? pilotChoicesHeight : choicesHeight;
-                MoveProjection(PlateX(_seat));
+                DockProjection();
             }
             else
             {
                 height = DrawSeat(squad, _seat);
-                MoveProjection(PlateX(_seat));
+                DockProjection();
             }
             if (choiceHintText) choiceHintText.gameObject.SetActive(lists);
             if (projectionRoot) projectionRoot.sizeDelta = new Vector2(projectionRoot.sizeDelta.x, height);
         }
 
-        float PlateX(int seat) => seat >= 0 && seat < plates.Length && plates[seat] ? plates[seat].CentreX : 0f;
-
-        void MoveProjection(float x)
+        void DockProjection()
         {
-            if (projectionRoot) projectionRoot.anchoredPosition = new Vector2(x, projectionRoot.anchoredPosition.y);
+            if (projectionRoot) projectionRoot.anchoredPosition = new Vector2(projectionDockX, projectionRoot.anchoredPosition.y);
         }
 
         /// <summary>The projected seat: its title, its lines (Who flies it only on a rogue seat an AI or nobody flies), its

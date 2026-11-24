@@ -5,8 +5,8 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One seat on the Squads tab's holo table (Rev 110 B, Docs/MENU_REDESIGN_B.md section 206): a plate of light on the
-    /// dome under the seat's pad, with the pilot's face, who flies it, the vessel and element, and whether they are here.
+    /// One seat on the Squads tab (Rev 110 B's plate, Docs/MENU_REDESIGN_B.md section 206; Rev 141 A's place, section 234):
+    /// a plate of light under the seat's pad, with a clear hit area over it so a press on the hull picks the seat, with the pilot's face, who flies it, the vessel and element, and whether they are here.
     /// The picked plate rises and glows; an open seat shows a plus instead of a face. <see cref="SquadsPage"/> writes it.
     /// </summary>
     public class SquadSeatPlate : MonoBehaviour
@@ -95,6 +95,14 @@ namespace CosmicShore.UI
             if (edge) edge.color = picked ? domain : WithAlpha(domain, live ? edgeAlpha : offEdgeAlpha);
             if (dot) dot.color = live && !open ? domain : WithAlpha(domain, awayAlpha * offEdgeAlpha);
             if (_rect) _rect.anchoredPosition = _rest + (picked ? new Vector2(0f, pickedRise) : Vector2.zero);
+        }
+
+        /// <summary>Stands the plate at <paramref name="anchored"/> until the next <see cref="Draw"/> puts it back under its pad
+        /// (SquadsPage: the picked plate under its hull once the view has walked up to it).</summary>
+        public void Place(Vector2 anchored)
+        {
+            Remember();
+            if (_rect) _rect.anchoredPosition = anchored;
         }
 
         static Color WithAlpha(Color c, float a) => new(c.r, c.g, c.b, a);

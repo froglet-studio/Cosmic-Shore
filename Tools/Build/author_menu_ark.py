@@ -340,22 +340,31 @@ def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=No
 
 # SQUADS as Rev 110 B draws it (the holo table; Shombith 2026-11-13: "B is good"; Docs/MENU_REDESIGN_B.md sections 194,
 # 200 and 203): the hangar is the screen, the squad's real vessels stand on its pads (SquadVesselLayer, section 202), and
-# in front of them a dome of light carries the three seats as plates. The picked plate projects its seat up (its four
+# in front of them a dome of light carried the three seats as plates (Rev 141 A, below, took the dome away). The picked seat's projection shows it (its four
 # picks and who flies it, each opening only that list in place); the brass rail along the foot carries the squad dial,
 # MAKE, JOIN, DELETE, the squad's light and Take into. Every number is the board's (R110B, 1920 x 1080), measured from
 # the screen's foot-centre.
 EDGE = 40                                      # the boards' margin, left and right
-RAIL_H = 136                                   # the brass rail: the board's 944..1080
-RAIL_Y = 40                                    # its controls' top, down from the rail's top edge
+RAIL_H = 96                                    # the brass rail (was R110B's 136: Shombith 2026-11-24, "the footer is too big")
+# Its controls' top, down from the rail's top edge. Its own name: the Artifacts section below defines a RAIL_Y of its own
+# (890), and while both were RAIL_Y every Squads rail control was written 850 px under the screen (section 232).
+SQUAD_RAIL_Y = (RAIL_H - 48) // 2
 RAIL_BTN_H = 48
-DOME = (0, 144, 1260, 520)                     # centre x, centre y up from the foot, width, height (R110B left 330 top 676)
-DOME_GLOW_ALPHA, DOME_RIM_ALPHA = 0.12, 0.45
 LAMP = (70, 90, 420, 300, 0.22)                # the bridge's two warm lamps in the foot's corners (R110B's radial glows)
-PLATE_W, PLATE_H, PLATE_TOP = 300, 82, 310     # a seat's plate; its top 310 up from the foot (board top 770)
-PLATE_X = (0, -320, 320)                       # by seat: the leader in the middle, Rogue One left, Rogue Two right
-PLATE_RISE = 26                                # the picked plate rises (board top 744)
-PROJ_W, PROJ_BOTTOM, PROJ_PAD = 420, 420, 18   # the projection: its bottom 420 up from the foot, over the beam
-BEAM_W, BEAM_H = 300, PROJ_BOTTOM - (PLATE_TOP + PLATE_RISE)   # from the picked plate's top to the projection
+# Rev 141 A, the line abreast (Shombith picked it 2026-11-24, section 234): no dome and no beam. Each seat's plate is a
+# tag under its own pad, which the clips (r67_ark_tabs_render.py ARK_ROW=1) stand in one row at x -9, 0, +9 and the
+# camera sees at screen x 439, 960, 1481, the feet 380 up from the foot (validate() projects author_ark_backdrop_assets'
+# HANGAR to hold this). Over the plate a clear hit area covers the hull, so pressing the vessel picks the seat; the
+# picked seat's view walks up to its hull (SquadsPage.zoom*, ElementalConverterView) and the projection is docked right.
+PLATE_W, PLATE_H, PLATE_TOP = 300, 82, 356     # a seat's plate; its top 356 up from the foot, under the hull's feet
+PLATE_X = (0, -521, 521)                       # by seat: the leader in the middle, Rogue One left, Rogue Two right
+PLATE_RISE = 0                                 # the picked plate no longer rises: it walks up with the view
+HULL_W, HULL_H = 300, 240                      # the clear hit area over a plate: the hull on its pad (about 200 high)
+PROJ_W, PROJ_BOTTOM, PROJ_PAD = 420, RAIL_H + 24, 18   # the projection: docked right, standing on the rail
+PROJ_DOCK_X = 960 - EDGE - PROJ_W // 2         # its centre, 40 in from the screen's right edge
+ZOOM_SCALE, ZOOM_FOOT, ZOOM_SECONDS = 1.45, (-340, -220), 0.4   # the walk up: the picked hull's feet here (from centre)
+ZOOM_PLATE_GAP = 20                            # the picked plate's top, this far under the walked-up hull's feet
+EMPTY_BOTTOM = 420
 PROJ_HEAD, TILE_STEP, TILE_H = 46, 46, 44      # the first line's top, one line's step, a line's height
 TILES = ("Who flies it", "Vessel", "Element", "Pilot", "Artifact")
 CHOICE_COLS, CHOICE_ROWS, CHOICE_W, CHOICE_H = 2, 6, 186, 40
@@ -376,15 +385,12 @@ def lit(parent, key, name, r, sprite, alpha, sliced=False):
 
 
 def squad_table(page):
-    """The bridge: the two warm lamps, the dome of light the plates stand on."""
+    """The bridge: the two warm lamps (Rev 141 A retired the dome of light)."""
     lx, ly, lw, lh, la = LAMP
     image_node(page, "Squads/LampLeft", "LampLeft", R((0, 0), None, (lx, ly), (lw, lh), (0.5, 0.5)), "Purchase",
                K.kit_sprite("kit_pool"), alpha=la)
     image_node(page, "Squads/LampRight", "LampRight", R((1, 0), None, (-lx, ly), (lw, lh), (0.5, 0.5)), "Purchase",
                K.kit_sprite("kit_pool"), alpha=la)
-    x, y, w, h = DOME
-    lit(page, "Squads/DomeGlow", "DomeGlow", foot(x, y, w, h, (0.5, 0.5)), K.kit_sprite("kit_pool"), DOME_GLOW_ALPHA)
-    lit(page, "Squads/DomeRim", "DomeRim", foot(x, y, w, h, (0.5, 0.5)), K.kit_sprite("kit_ring_line"), DOME_RIM_ALPHA)
 
 
 def squad_rail(page):
@@ -395,36 +401,39 @@ def squad_rail(page):
     image_node(rail, "Squads/Rail/Brass", "Brass", R((0, 1), (1, 1), (0, 0), (0, 3), (0.5, 1)), "Purchase", alpha=0.55)
     image_node(rail, "Squads/Rail/Sheen", "Sheen", R((0, 1), (1, 1), (0, 0), (0, 40), (0.5, 0)), "Purchase",
                K.kit_sprite("kit_fade_v"), alpha=0.12)
-    small_button(rail, "Squads/Rail/Prev", "Prev", "<", TL(EDGE, RAIL_Y, 44, RAIL_BTN_H))
-    H.ellipsize(label(rail.child(N("Squads/Rail/Name", "Name", TL(EDGE + 54, RAIL_Y - 6, 196, 30))), "", "H3", "TextLight"))
-    H.ellipsize(label(rail.child(N("Squads/Rail/Whose", "Whose", TL(EDGE + 54, RAIL_Y + 28, 196, 18))), "", "Label",
+    small_button(rail, "Squads/Rail/Prev", "Prev", "<", TL(EDGE, SQUAD_RAIL_Y, 44, RAIL_BTN_H))
+    H.ellipsize(label(rail.child(N("Squads/Rail/Name", "Name", TL(EDGE + 54, SQUAD_RAIL_Y - 6, 196, 30))), "", "H3", "TextLight"))
+    H.ellipsize(label(rail.child(N("Squads/Rail/Whose", "Whose", TL(EDGE + 54, SQUAD_RAIL_Y + 28, 196, 18))), "", "Label",
                       "NeutralLightest"))
-    small_button(rail, "Squads/Rail/Next", "Next", ">", TL(EDGE + 256, RAIL_Y, 44, RAIL_BTN_H))
-    image_node(rail, "Squads/Rail/Divider", "Divider", TL(EDGE + 312, RAIL_Y + 6, 1, 36), "Purchase", alpha=0.35)
-    small_button(rail, "Squads/Rail/Make", "Make", "Make", TL(EDGE + 326, RAIL_Y, 100, RAIL_BTN_H))
-    small_button(rail, "Squads/Rail/Join", "Join", "Join", TL(EDGE + 434, RAIL_Y, 100, RAIL_BTN_H))
+    small_button(rail, "Squads/Rail/Next", "Next", ">", TL(EDGE + 256, SQUAD_RAIL_Y, 44, RAIL_BTN_H))
+    image_node(rail, "Squads/Rail/Divider", "Divider", TL(EDGE + 312, SQUAD_RAIL_Y + 6, 1, 36), "Purchase", alpha=0.35)
+    small_button(rail, "Squads/Rail/Make", "Make", "Make", TL(EDGE + 326, SQUAD_RAIL_Y, 100, RAIL_BTN_H))
+    small_button(rail, "Squads/Rail/Join", "Join", "Join", TL(EDGE + 434, SQUAD_RAIL_Y, 100, RAIL_BTN_H))
     sq = rail.child(N("Squads/Rail/Squad", "Squad", STRETCH))
     sq.add("cg", 225, canvas_group(False))
-    small_button(sq, "Squads/Rail/Squad/Remove", "Remove", "Delete", TL(EDGE + 542, RAIL_Y, 110, RAIL_BTN_H), "Danger")
+    small_button(sq, "Squads/Rail/Squad/Remove", "Remove", "Delete", TL(EDGE + 542, SQUAD_RAIL_Y, 110, RAIL_BTN_H), "Danger")
     light_w = 3 * 118 + 2 * 8
-    lt = sq.child(N("Squads/Rail/Squad/Light", "Light", R((0.5, 1), None, (0, -RAIL_Y), (light_w, RAIL_BTN_H), (0.5, 1))))
+    lt = sq.child(N("Squads/Rail/Squad/Light", "Light", R((0.5, 1), None, (0, -SQUAD_RAIL_Y), (light_w, RAIL_BTN_H), (0.5, 1))))
     for i, (name, _) in enumerate(DOMAIN_ORDER):
         pick_chip(lt, f"Squads/Rail/Squad/Light/{name}", name, TL(i * 126, 0, 118, RAIL_BTN_H), RAIL_BTN_H, name,
                   K.chrome_sprite("chrome_diamond"), TL(14, 17, 14, 14), label_rect=TL(34, 0, 80, RAIL_BTN_H))
-    mission = small_button(sq, "Squads/Rail/Squad/Mission", "Mission", "Mission", TR(EDGE + 188, RAIL_Y, 180, RAIL_BTN_H))
+    mission = small_button(sq, "Squads/Rail/Squad/Mission", "Mission", "Mission", TR(EDGE + 188, SQUAD_RAIL_Y, 180, RAIL_BTN_H))
     # The lock in the button, before its word (R67): Mission refuses as Home's entry does.
     lock = mission.child(N("Squads/Rail/Squad/Mission/Lock", "Lock", TL(16, 14, 16, 20)))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_lock"), preserve=True))
-    small_button(sq, "Squads/Rail/Squad/Arena", "Arena", "Arena", TR(EDGE, RAIL_Y, 180, RAIL_BTN_H), "Play")
+    small_button(sq, "Squads/Rail/Squad/Arena", "Arena", "Arena", TR(EDGE, SQUAD_RAIL_Y, 180, RAIL_BTN_H), "Play")
 
 
 def seat_plate(page, seat):
-    """One seat's plate on the dome (R110B): the pilot's face (a plus on an open seat), who flies it, the vessel and
+    """One seat's plate under its pad (R110B's plate, Rev 141 A's place): the pilot's face (a plus on an open seat), who flies it, the vessel and
     element, the presence diamond; lit in the squad's domain."""
     k = f"Squads/Plate{seat}"
     plate = H.kit_row(page, k, f"Plate{seat}", foot(PLATE_X[seat], PLATE_TOP, PLATE_W, PLATE_H), PLATE_H,
                       content_keys=((f"{k}/Who", "tmp"),))
     plate.add("cg", 225, canvas_group(True))
+    # Clear, over the plate: the hull on its pad. A press on the vessel bubbles up to the plate's button.
+    image_node(plate, f"{k}/Hull", "Hull", R((0.5, 1), None, (0, 0), (HULL_W, HULL_H), (0.5, 0)), "SurfaceBlack",
+               alpha=0.0, raycast=True)
     lit(plate, f"{k}/Light", "Light", STRETCH, K.kit_sprite("kit_sliver10_fill"), 0.08, sliced=True)
     lit(plate, f"{k}/Edge", "Edge", STRETCH, K.kit_sprite("kit_sliver10_line1"), 0.45, sliced=True)
     face = plate.child(N(f"{k}/Face", "Face", TL(12, 13, 56, 56)))
@@ -449,9 +458,8 @@ def squad_projection(page):
     """What the table projects over the picked plate (R110B): the seat's lines and its action, one list, or the friends'
     squads. Grows up from its foot; SquadsPage moves it over the plate and sets its height."""
     k = "Squads/Projection"
-    pj = page.child(N(k, "Projection", foot(0, PROJ_BOTTOM, PROJ_W, 300, (0.5, 0))))
+    pj = page.child(N(k, "Projection", foot(PROJ_DOCK_X, PROJ_BOTTOM, PROJ_W, 300, (0.5, 0))))
     pj.add("cg", 225, canvas_group(False))
-    lit(pj, f"{k}/Beam", "Beam", R((0.5, 0), None, (0, 0), (BEAM_W, BEAM_H), (0.5, 1)), K.kit_sprite("kit_fade_v"), 0.35)
     image_node(pj, f"{k}/Ground", "Ground", STRETCH, "SurfaceBlack", K.kit_sprite("kit_sliver14_fill"), sliced=True,
                alpha=0.6, raycast=True)
     lit(pj, f"{k}/Glow", "Glow", R((0, 0), (1, 0), (0, 0), (0, 120), (0.5, 0)), K.kit_sprite("kit_fade_v"), 0.3)
@@ -496,8 +504,8 @@ def squad_projection(page):
 
 
 def squad_empty(page):
-    """No squad yet: the words and MAKE over the dome (the hangar's pads stand empty behind)."""
-    e = page.child(N("Squads/Empty", "Empty", foot(0, PROJ_BOTTOM, EMPTY_W, EMPTY_H, (0.5, 0))))
+    """No squad yet: the words and MAKE over the empty row of pads."""
+    e = page.child(N("Squads/Empty", "Empty", foot(0, EMPTY_BOTTOM, EMPTY_W, EMPTY_H, (0.5, 0))))
     e.add("cg", 225, canvas_group(True))
     label(e.child(N("Squads/Empty/Heading", "Heading", TL(0, 0, EMPTY_W, 40))), "No squad yet", "H2", "TextLight",
           align="center")
@@ -547,8 +555,7 @@ SQUAD_WORDS = (
     + yfield("joinedToast", "Joined. {owner} seats you when they next open the Ark.")
     + yfield("alreadyInLine", "You are already in that squad.") + yfield("seatGoneLine", "That seat was just taken."))
 
-DOMAIN_LIT = ["Squads/DomeGlow", "Squads/DomeRim", "Squads/Projection/Beam", "Squads/Projection/Glow",
-              "Squads/Projection/Edge"]
+DOMAIN_LIT = ["Squads/Projection/Glow", "Squads/Projection/Edge"]
 
 
 def refs_of(ctx, keys, comp):
@@ -609,7 +616,9 @@ def squads_page(root, veiled=VEILED):
                     + f"  joinStatusText: {ref(ctx.c(f'{P_}/Join/Status', 'kt'))}\n"
                     f"  projectionHead: {PROJ_HEAD}\n  tileStep: {TILE_STEP}\n  actionHeight: 44\n  readOnlyHeight: 44\n"
                     f"  projectionPad: {PROJ_PAD}\n  choicesHeight: {CHOICES_H}\n  pilotChoicesHeight: {PILOT_CHOICES_H}\n"
-                    f"  joinHeight: {JOIN_H}\n"
+                    f"  joinHeight: {JOIN_H}\n  projectionDockX: {PROJ_DOCK_X}\n"
+                    f"  zoomScale: {ZOOM_SCALE}\n  zoomFoot: {{x: {ZOOM_FOOT[0]}, y: {ZOOM_FOOT[1]}}}\n"
+                    f"  zoomSeconds: {ZOOM_SECONDS}\n  zoomPlateGap: {ZOOM_PLATE_GAP}\n"
                     "  refreshSeconds: 20\n  publishDelaySeconds: 2\n  confirmSeconds: 3\n  maxFriendsRead: 30\n"
                     "  newSquadDomain: 4\n"
                     + SQUAD_WORDS)
@@ -1685,7 +1694,7 @@ def validate_tabs(view, V):
         ids = listed(page, field)
         assert len(ids) == n and all(i != "0" and A.kind_of(view, i)[1] == IMG for i in ids), f"SquadsPage.{field} is not {n} wired Images"
     # The holo table (R110B): the plates sit under their pads in the board's order (Rogue One left, the leader in the
-    # middle, Rogue Two right), on the dome and clear of the rail; the projection stands over them.
+    # middle, Rogue Two right), clear of the rail.
     plates = listed(page, "plates")
     xs = []
     for seat, fid in enumerate(plates):
@@ -1696,12 +1705,56 @@ def validate_tabs(view, V):
         x, y = rect_xy(view, rt, "m_AnchoredPosition")
         xs.append(x)
         assert y - PLATE_H >= RAIL_H, f"seat {seat}'s plate runs into the rail"
+    # The rail's controls stand inside the rail (top-anchored: y 0 is its top edge, -RAIL_H its foot). A name clash once
+    # wrote them all 850 px under the screen (section 232), and nothing here said so.
+    for key in ("Prev", "Name", "Whose", "Next", "Make", "Join", "Squad/Remove", "Squad/Mission", "Squad/Arena"):
+        rt = V(f"Squads/Rail/{key}#rt")
+        _, y = rect_xy(view, rt, "m_AnchoredPosition")
+        _, h = rect_xy(view, rt, "m_SizeDelta")
+        assert -RAIL_H <= y - h and y <= 0, f"the rail's {key} stands outside the rail (y {y}, height {h}, rail {RAIL_H})"
     assert xs[1] < xs[0] < xs[2], "the plates are not Rogue One left, the leader in the middle, Rogue Two right (their pads)"
-    assert PROJ_BOTTOM > PLATE_TOP + PLATE_RISE, "the projection stands on the picked plate"
+    # Rev 141 A: each plate stands under its pad as the hangar's camera sees it, and the docked projection keeps clear of
+    # the picked hull once the view has walked up to it.
+    import author_ark_backdrop_assets as BD
+    for seat, x in enumerate(xs):
+        px, py = pad_on_screen(BD.HANGAR, seat)
+        assert abs(x - px) <= 12, f"seat {seat}'s plate stands at x {x}, its pad at {px:.0f} (author_ark_backdrop_assets HANGAR)"
+        assert PLATE_TOP <= py <= PLATE_TOP + 40, f"seat {seat}'s plate is not under its hull's feet ({py:.0f} up)"
+    assert PROJ_BOTTOM >= RAIL_H, "the projection runs into the rail"
+    for seat in range(SEATS):
+        fx, fy = zoomed_foot(BD.HANGAR, seat)
+        top = 540 + fy - ZOOM_PLATE_GAP
+        assert PROJ_DOCK_X - PROJ_W / 2 >= fx + PLATE_W / 2, f"the docked projection covers seat {seat} walked up to ({fx:.0f})"
+        assert top - PLATE_H >= RAIL_H and abs(fx) + PLATE_W / 2 <= 960 - EDGE, f"seat {seat}'s plate leaves the screen walked up"
     assert re.search(r"^  domainOrder:\n  - 1\n  - 2\n  - 4\n", page, re.M), "SquadsPage.domainOrder is not Jade, Ruby, Gold"
     for guid, what in ((VESSEL_LIST, "the vessel list"), (PILOT_CATALOG, "the pilot catalog"),
                        (COLOR_SET, "the domain colours")):
         assert f"guid: {guid}" in page, f"SquadsPage reads no {what}"
+
+
+def pad_on_screen(hangar, seat):
+    """(x from the screen's centre, y up from its foot) of a seat's pad on the 1920 x 1080 screen, through the hangar's
+    unswayed camera (Unity coordinates, y up), as SquadVesselLayer.PadViewport finds it."""
+    cam, aim, pad = hangar["cameraPosition"], hangar["cameraAim"], hangar["pads"][seat]
+    sub = lambda a, b: [a[i] - b[i] for i in range(3)]
+    dot = lambda a, b: sum(a[i] * b[i] for i in range(3))
+    unit = lambda a: [v / math.sqrt(dot(a, a)) for v in a]
+    cross = lambda a, b: [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+    f = unit(sub(aim, cam))
+    r = unit(cross([0, 1, 0], f))
+    u = cross(f, r)
+    d = sub(pad, cam)
+    t = math.tan(math.radians(hangar["verticalFov"]) / 2)
+    return dot(d, r) / dot(d, f) / t * 540, 540 + dot(d, u) / dot(d, f) / t * 540
+
+
+def zoomed_foot(hangar, seat, w=1920, h=1080):
+    """Where the walk up leaves a seat's feet (x, y from the screen's centre), as SquadVesselLayer.ZoomOffset finds it."""
+    px, py = pad_on_screen(hangar, seat)
+    pad = (px, py - h / 2)
+    room = ((ZOOM_SCALE - 1) * w / 2, (ZOOM_SCALE - 1) * h / 2)
+    off = [max(-room[i], min(room[i], ZOOM_FOOT[i] - ZOOM_SCALE * pad[i])) for i in range(2)]
+    return off[0] + ZOOM_SCALE * pad[0], off[1] + ZOOM_SCALE * pad[1]
 
 
 def fill_of(view, fid):
@@ -1880,6 +1933,9 @@ def self_test(files):
         ("the leader's plate moved to the left", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Squads/Plate0#rt"), lambda d: re.sub(r"(  m_AnchoredPosition: \{x: )0(,)", r"\g<1>-640\2", d))),
          "the plates are not"),
+        ("the rail's MAKE under the screen", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Squads/Rail/Make#rt"), lambda d: re.sub(r"(  m_AnchoredPosition: \{x: [\d.]+, y: )-?[\d.]+", r"\g<1>-890", d))),
+         "stands outside the rail"),
         ("the Rev 67 seat cards back", lambda f: f.__setitem__(view, f[view].replace(
             "  domainLit:", "  mateCards: []\n  domainLit:", 1)), "is back"),
         ("FEED unwired", lambda f: f.__setitem__(view, re.sub(

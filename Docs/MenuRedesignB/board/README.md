@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-24 from canvas version `1795522187-a454` of **Frogma**: Rev 41 to Rev 140, 440 boards on 17 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795561163-fa75` of **Frogma**: Rev 41 to Rev 145, 457 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -339,6 +339,14 @@ Copied on 2026-11-24 from canvas version `1795522187-a454` of **Frogma**: Rev 41
 - `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
 
 ### Tab: Ark  (`ark`)
+
+#### Rev 141 - The Squads tab started again: the vessels in the room and on screen, press the vessel itself, a slim foot
+
+- [`R141Compare.dc.html`](R141Compare.dc.html) - Rev 141 - one seat picked in A, B and C beside the build
+- [`R141A.dc.html`](R141A.dc.html) - Rev 141 A - Line abreast: the three hulls stand side by side across the floor; press one and the view walks up to it (recommended) - interactive
+- [`R141B.dc.html`](R141B.dc.html) - Rev 141 B - The holo table: the vessels as holograms over one table in the middle of the room - interactive
+- [`R141C.dc.html`](R141C.dc.html) - Rev 141 C - One bay: one vessel at a time, big on the centre pad, the other two seats beside it - interactive
+- [`R141Notes.dc.html`](R141Notes.dc.html) - Rev 141 - notes: what was broken, what each option changes, the recommendation
 
 #### Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways
 
@@ -712,5 +720,31 @@ Copied on 2026-11-24 from canvas version `1795522187-a454` of **Frogma**: Rev 41
 - [`R128E.dc.html`](R128E.dc.html) - Rev 128 E - Poster: the picture full bleed under a big title; the card slides open on hover - interactive
 - [`R128F.dc.html`](R128F.dc.html) - Rev 128 F - Live loop: a still at rest, the game playing in the card on hover - interactive
 - [`R128Notes.dc.html`](R128Notes.dc.html) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
+
+### Tab: Toy Box  (`toy-box`)
+
+#### Rev 144 G, picked: the variation panel and Today's activity, three ways
+
+- `R145H.dc.html` (not copied yet) - Rev 145 H - Shelf tiles in Configure; Today as a banner - interactive
+- `R145I.dc.html` (not copied yet) - Rev 145 I - Slide-open list in Configure; Today with a clock ring - interactive
+- `R145J.dc.html` (not copied yet) - Rev 145 J - Pedestal and chips in Configure; Today as a live strip - interactive
+
+#### Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs: flat, and with depth
+
+- `R144F.dc.html` (not copied yet) - Rev 144 F - the 2D toy glyphs, flat as drawn - interactive
+- `R144G.dc.html` (not copied yet) - Rev 144 G - the same 2D glyphs baked with depth: extruded, bevelled, tilting on hover - interactive
+
+#### Rev 143 - The Toy Box mix: D's lens cards with A's Configure, on the menu's gradient and sea lines
+
+- `R143E.dc.html` (not copied yet) - Rev 143 E - D's Toy Box, A's Configure inside, gradient and sea lines behind, dark glass cards - interactive
+
+#### Rev 142 - The Toy Box with motion: open, switch, spawn, and Navigate into the preview, four ways
+
+- `R142Compare.dc.html` (not copied yet) - Rev 142 - the toy card four ways, the same toy, at rest and pointed at
+- `R142A.dc.html` (not copied yet) - Rev 142 A - Portal: tall cards dealt in a row; the card grows into the preview; you fly through the toy's ring - interactive
+- `R142B.dc.html` (not copied yet) - Rev 142 B - Orbit: the toys on a ring around you; the card flips to Configure; warp, and a vessel built from prisms - interactive
+- `R142C.dc.html` (not copied yet) - Rev 142 C - Slide open: strips that slide open; the window splits into slats as you leave - interactive
+- `R142D.dc.html` (not copied yet) - Rev 142 D - Lens: the lens irises into a round preview with a dial; you dive through it and rise out of a ripple (recommended) - interactive
+- `R142Notes.dc.html` (not copied yet) - Rev 142 - notes: what was asked, the four, and what each costs in Unity
 
 <!-- frogma.py readme: end -->

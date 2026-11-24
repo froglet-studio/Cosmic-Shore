@@ -38,7 +38,7 @@ namespace CosmicShore.UI
         readonly GameObject[] _hulls = new GameObject[Seats];
         readonly float[] _lift = new float[Seats];
         readonly Light[] _padLights = new Light[Seats];
-        readonly SquadsPage.HangarSeat[] _seats = new SquadsPage.HangarSeat[Seats];
+        readonly SquadHangarSeat[] _seats = new SquadHangarSeat[Seats];
         Domains _domain;
         SO_ColorSet _set;
         bool _built;
@@ -150,6 +150,48 @@ namespace CosmicShore.UI
 
         static Vector3 Pad(ArkBackdropConfigSO.HangarView view, int seat) =>
             seat < view.pads.Length ? view.pads[seat] : Vector3.zero;
+
+        /// <summary>Where <paramref name="seat"/>'s pad stands in the picture, 0..1 across and up, through the clips' unswayed
+        /// camera (author_menu_ark.py's pad_on_screen is the same sum, and lays the plates under it).</summary>
+        public static Vector2 PadViewport(ArkBackdropConfigSO.HangarView view, int seat)
+        {
+            if (view.pads == null) return new Vector2(0.5f, 0.5f);
+            var forward = view.cameraAim - view.cameraPosition;
+            if (forward.sqrMagnitude < 1e-6f) return new Vector2(0.5f, 0.5f);
+            var look = Quaternion.LookRotation(forward, Vector3.up);
+            var d = Quaternion.Inverse(look) * (Pad(view, seat) - view.cameraPosition);
+            if (d.z <= 0.01f) return new Vector2(0.5f, 0.5f);
+            float tan = Mathf.Tan(view.verticalFov * 0.5f * Mathf.Deg2Rad);
+            const float aspect = 16f / 9f;                   // the clips' frame
+            return new Vector2(0.5f + d.x / d.z / tan / aspect * 0.5f, 0.5f + d.y / d.z / tan * 0.5f);
+        }
+
+        /// <summary>The walk up to <paramref name="seat"/>'s hull (Rev 141 A): the offset, from the picture's centre, that
+        /// puts the pad's feet at <paramref name="foot"/> (reference pixels from the centre of a 1080-high screen, y up) once
+        /// the picture of <paramref name="size"/> is scaled by <paramref name="scale"/> about its centre, held so the picture
+        /// still covers the screen. <paramref name="footShown"/> is where the feet end up, in the same reference pixels.</summary>
+        public static Vector2 ZoomOffset(ArkBackdropConfigSO.HangarView view, int seat, float scale, Vector2 foot, Vector2 size,
+            out Vector2 footShown)
+        {
+            float unit = size.y / 1080f;
+            var uv = PadViewport(view, seat);
+            var pad = new Vector2((uv.x - 0.5f) * size.x, (uv.y - 0.5f) * size.y);
+            var room = (scale - 1f) * 0.5f * size;
+            var offset = foot * unit - scale * pad;
+            offset = new Vector2(Mathf.Clamp(offset.x, -room.x, room.x), Mathf.Clamp(offset.y, -room.y, room.y));
+            footShown = unit > 0f ? (offset + scale * pad) / unit : foot;
+            return offset;
+        }
+
+        /// <summary>A picked plate's place once the view has walked up to its hull (SquadsPage): under the feet where the walk
+        /// up leaves them on a 16:9 screen; an edge seat's hull stops short of <paramref name="foot"/> (ZoomOffset).</summary>
+        public static Vector2 ZoomedPlate(int seat, float scale, Vector2 foot, float gap)
+        {
+            var config = ArkBackdropConfigSO.LoadDefault();
+            var shown = foot;
+            if (config) ZoomOffset(config.Hangar, seat, scale, foot, new Vector2(1920f, 1080f), out shown);
+            return new Vector2(shown.x, 540f + shown.y - gap);
+        }
 
         // The render's own pad order, left to right (seat two, the player, seat three): the hover phases follow it.
         static int PadIndex(int seat) => seat switch { 0 => 1, 1 => 0, _ => seat };

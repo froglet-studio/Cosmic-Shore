@@ -186,7 +186,7 @@ namespace CosmicShore.ScriptableObjects
         /// the room and run's clip in another set or domain when there is no exact one; null when the room has none.</summary>
         public VideoClip Find(ArkRoom room, ArkBackdropRun run, string colourSetName, Domains domain)
         {
-            VideoClip fallback = null, sameSet = null;
+            VideoClip fallback = null, sameSet = null, sameDomain = null;
             foreach (var c in clips)
             {
                 if (c.room != room || c.run != run || !c.clip) continue;
@@ -195,9 +195,10 @@ namespace CosmicShore.ScriptableObjects
                 bool dom = c.anyDomain || c.domain == domain;
                 if (set && dom) return c.clip;
                 if (set && !sameSet) sameSet = c.clip;
+                if (dom && !sameDomain) sameDomain = c.clip;   // another set's clip in the squad's domain (the Photic hangar)
                 if (!fallback) fallback = c.clip;
             }
-            return sameSet ? sameSet : fallback;
+            return sameSet ? sameSet : sameDomain ? sameDomain : fallback;
         }
 
         /// <summary>True when <paramref name="room"/> has any clip.</summary>
