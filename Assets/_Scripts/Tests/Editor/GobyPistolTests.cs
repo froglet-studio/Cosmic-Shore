@@ -19,8 +19,8 @@ namespace CosmicShore.Tests
     {
         static readonly Vector3 A = new(10f, -20f, 30f), B = new(310f, 60f, -170f);
 
-        /// <summary>The shipped hills (Tiny Wings', Docs/PISTOL_TINY_WINGS_STUDY.md): half-hills 10-15 u on, 3.6-7.2 u up or down.</summary>
-        static readonly PistolPlane.HillSpec Shipped = new(10f, 15f, 3.6f, 7.2f, 9f, 0.08f, 1.5f);
+        /// <summary>The shipped hills (Tiny Wings', Docs/PISTOL_TINY_WINGS_STUDY.md): half-hills 9-16 u on, 3-7.8 u up or down.</summary>
+        static readonly PistolPlane.HillSpec Shipped = new(9f, 16f, 3f, 7.8f, 9f, 0.08f, 1.5f);
 
         static PistolPlane.HillTrack Track(float length, float amp = 1f, uint seed = 7u, int island = 0)
             => PistolPlane.HillTrack.Build(length, seed, new PistolPlane.HillSpec(Shipped.HalfLengthMin, Shipped.HalfLengthMax, Shipped.HalfHeightMin * amp,
@@ -74,7 +74,7 @@ namespace CosmicShore.Tests
         public void Ground_IsTinyWingsKeyPointHills([Values(140f, 900f, 1800f)] float length, [Values(1u, 2u, 3u)] uint seed)
         {
             // Tiny Wings' ground (Garrett, 2026-10-24: "the right sinusoidal curve"; the study): key points, alternately a crest
-            // and a trough, each a random 10-15 u on and 3.6-7.2 u up or down, a half-cosine between; the island starts on a
+            // and a trough, each a random 9-16 u on and 3-7.8 u up or down, a half-cosine between; the island starts on a
             // crest at the perch (its first half-hill runs down) and ends on a crest at the next (its last half-hill climbs)
             var t = PistolPlane.HillTrack.Build(length, seed, Shipped);
             Assert.That(t.KeyCount, Is.GreaterThanOrEqualTo(3));
