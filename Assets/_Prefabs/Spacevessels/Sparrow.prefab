@@ -1248,7 +1248,7 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 0
-    Value: 0.61
+    Value: 0.4705
     Min: 0
     Max: 0
     element: 0
@@ -1606,20 +1606,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e27d4d763f7417c9d90b5b4f730e163, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  perimeterThreshold: 1
-  rollArmWindowSeconds: 0.3
+  engageThreshold: 0.6
   invertRollDirection: 0
   rollDurationSeconds: 0.6
   rootRollDegrees: 15
   nudgeSpeed: 60
-  rollTimeScale:
-    Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 0.5
-    element: 4
-    UseFloor: 1
-    Floor: 0.25
   rollVisualTarget: {fileID: 0}
 --- !u!114 &5511220033445566778
 MonoBehaviour:

@@ -72,6 +72,8 @@ namespace CosmicShore.Gameplay
             // Event_CombatHitStats must throw here rather than silently un-score every mode.
             if (gameData != null)
                 gameData.OnCombatHitLanded.OnRaised += CombatHitLanded;
+
+            PetalLedger.Credited += PetalsTaken;
         }
 
         void OnDisable()
@@ -84,6 +86,8 @@ namespace CosmicShore.Gameplay
 
             if (gameData != null)
                 gameData.OnCombatHitLanded.OnRaised -= CombatHitLanded;
+
+            PetalLedger.Credited -= PetalsTaken;
         }
 
         void OnDestroy()
@@ -229,6 +233,21 @@ namespace CosmicShore.Gameplay
             var local = gameData.LocalPlayer;
             if (local is Player netPlayer && local.IsLocalUser && local.Name == hit.ShooterName)
                 netPlayer.ReportCombatHit_ServerRpc((int)hit.HitClass, hit.SupersededRank);
+        }
+
+        /// <summary>
+        /// The per-attacker petal ledger credited <paramref name="attackerName"/> with
+        /// <paramref name="petals"/> an opponent lost (<see cref="PetalLedger"/>,
+        /// <c>Docs/ElementalAbilitySystem/SILENCE.md</c> §6). Server only, like every stat: a client's
+        /// take reaches the server's ledger through the victim hull's relay
+        /// (<c>NetworkVesselImpactor.ReportPetalsTaken</c>), so it is counted here exactly once. A
+        /// name with no round stats (a creature's prism, a pilot who left) is simply not scored.
+        /// </summary>
+        public void PetalsTaken(string attackerName, int petals)
+        {
+            if (!_allowRecord) return;
+            if (gameData.TryGetRoundStats(attackerName, out IRoundStats stats))
+                stats.PetalsTaken += petals;
         }
 
         public void CrystalCollected(CrystalStats crystalStats)

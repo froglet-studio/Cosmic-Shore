@@ -1,5 +1,9 @@
 # Analytics & Attribution — Implementation Plan
 
+> **PostHog is gone.** The PostHog sink this describes was replaced by Froglet Analytics, our own
+> server (`Tools/Analytics/server/`), on 2026-11-06, and the PostHog project was closed on 2026-11-23.
+> This page is kept as the record of the July 2026 analysis.
+
 > **Provenance.** Written on the `claude/analytics-attribution-viability-vwkunw` branch
 > (PR #592) as an analysis/design pass, and salvaged onto bleeding-edge after the sink
 > layer shipped separately. The *analysis* here stands. Where it describes implementation
@@ -51,8 +55,8 @@ interface + one moved class; unit test for envelope stamping.
 > **Status: CODE SHIPPED (2026-07-15)** — via the thin HTTP `/batch/` sink (the §3.1.5
 > fallback shape) rather than the young official SDK: zero new package dependencies, all
 > platforms, fully owned. `PostHogAnalyticsSink` + `PostHogConfigSO` +
-> `Assets/Resources/PostHogConfig.asset`. Remaining human steps (project creation, API
-> key paste, device verification, privacy-policy entry): `POSTHOG_SETUP.md`.
+> `Assets/Resources/PostHogConfig.asset` (all three removed on 2026-11-06, when
+> `FrogletAnalyticsSink` took this place).
 
 - Create the PostHog project on the **EU (Frankfurt)** instance; set **billing limit $0**
   (hard-caps us at the free 1M events/month — overage drops, never bills).

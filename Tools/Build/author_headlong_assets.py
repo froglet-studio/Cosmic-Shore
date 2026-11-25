@@ -431,13 +431,13 @@ for const, want in (("Inner", "480"), ("Outer", "1080")):
 # GUID hygiene: nothing this script mints may collide with an asset it does not own.
 all_new = set(G_SCRIPT.values()) | set(G_ASSET.values()) | {guid("doc/HEADLONG.md")} | \
           {guid("folder/Headlong"), guid("folder/Racing")}
-owned_metas = {os.path.join(ROOT, p) for p in files if p.endswith(".meta")}
+owned_metas = {os.path.normpath(os.path.join(ROOT, p)) for p in files if p.endswith(".meta")}   # normpath: Windows separators
 existing_guids = set()
 for dirpath, _dirs, fnames in os.walk(os.path.join(ROOT, "Assets")):
     for fn in fnames:
         if not fn.endswith(".meta"):
             continue
-        full = os.path.join(dirpath, fn)
+        full = os.path.normpath(os.path.join(dirpath, fn))
         if full in owned_metas:
             continue
         try:

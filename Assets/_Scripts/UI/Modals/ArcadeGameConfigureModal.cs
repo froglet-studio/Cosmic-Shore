@@ -2932,6 +2932,16 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // A host can be listening while this scene's sync manager is not on the network (it was
+            // never spawned, or a host restart despawned it). An RPC on an unspawned behaviour throws
+            // inside Netcode, after the latch below - the same stranding, so the same refusal.
+            if (arcadeConfigSyncManager && !arcadeConfigSyncManager.IsSpawned)
+            {
+                CSDebug.LogWarning("[ArcadeConfigModal] Start refused - the arcade config sync manager is not " +
+                                   "spawned on the network, so ready-up cannot reach the host. Reconnect or restart, then try again.");
+                return;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 

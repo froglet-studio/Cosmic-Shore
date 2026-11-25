@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-24-the-sparrow-s-barrel-roll-moved-off-the-0a129a",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-24T22:50:47+00:00",
+  "area": "Sparrow Time tempo dial (rollTimeScale, #2228)",
+  "summary": "The Sparrow's barrel roll moved off the boost button onto the right stick as a vessel dynamic no element changes (Shombith 2026-11-24), so the Time scaling on the roll's duration (rollTimeScale, x1 -> x0.5) is removed. Time still scales the Afterburner's boost speed. The Honeyguide, which carries the same BarrelRollController, now rolls on the right stick too.",
+  "branch": "claude/project-thread-s9immv",
+  "commit": "14e2f9def"
+}

@@ -54,13 +54,15 @@ namespace CosmicShore.Gameplay
                  "fresh mass for the fleet-wide self-trail grace (SelfTrailContactConfigSO).")]
         [SerializeField, Min(0f)] float colliderDelaySeconds = 0.1f;
 
-        /// <summary>MASS -> afterimage VOLUME: x1 at rest, x2.5 at level 10, floored at x0.5 (the fleet floor rule). Cube-rooted
+        /// <summary>MASS -> afterimage VOLUME: x1.7 at rest, x4.25 at level 10, floored at x0.5 (the fleet floor rule). The
+        /// afterimages are the Swordfish's mass (about 85% of what it lays), and x1.7 at rest is its Brood Rush lever
+        /// (Plan step: massspace-arena, 2026-11-21: index 0.73 -> 1.03 at Medium, 3 teams of 3; SWORDFISH.md). Cube-rooted
         /// into every axis, so volume - the conserved quantity - scales linearly with the level (the
         /// VesselPrismController.trailVolume rule). Read at the REPLICATED level: the mass is laid on
         /// every peer and every peer must lay the same mass.</summary>
         [Header("Elements")]
         [SerializeField] ElementalFloat massVolumeMultiplier =
-            ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.5f);
+            ElementalFloat.Multiplier(1.7f, 4.25f, Element.Mass, 0.5f);
 
         [Tooltip("Element whose level-5 upgrade lays the afterimages as DANGER prisms. Gated on the " +
                  "replicated unlock bit (IsUpgradeActive), snapshotted per afterimage.")]

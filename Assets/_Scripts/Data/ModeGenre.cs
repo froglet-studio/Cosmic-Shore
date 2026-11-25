@@ -164,6 +164,7 @@ namespace CosmicShore.Data
                 // rocket, a debuff. The one family whose subject is a pilot rather than mass.
                 case ScoringMetric.Jousts:
                 case ScoringMetric.CombatPoints:
+                case ScoringMetric.PetalsTaken:
                     element = Element.Charge;
                     return true;
 

@@ -1283,6 +1283,142 @@ ability driver.
 
 ---
 
+## The heat (2026-11-23, elemental loop step 1: the fun pass)
+
+The fun scores put Breakwater's floor on Feedback (4): the only words a pilot saw were the four shared race
+beats, and the mode's one choice (fire, saw or thread) was answered with nothing. Rivals and Fairness, the other
+low scores, have since been raced: 14 recorded flights by three people, 9 finished, a median 83.8 s against a
+Medium AI's 110-120 s (`Docs/AI_SYSTEM/VESSEL_MODE_CHART.md` §3).
+
+The heat grades each station the LOCAL pilot flies by the verb they chose, and calls it in the world first.
+It is local, unscored and not networked, and it changes nothing on the Sparrow.
+
+| pass | how it is read | what the pilot gets |
+|---|---|---|
+| **eye** | crossed the station's plane within the 18 u eye | a shock ring off the eye, +1 streak |
+| **hot eye** | the same with the afterburner lit (`IsBoosting`) | a bigger shock ring, +1 streak |
+| **door** | inside the port, outside the eye (fired or sawn open) | the streak holds; the door was its own reward |
+| **miss** | crossed the plane outside the port, within 2.5 port radii | the streak ends |
+
+- Streaks of eyes are called at 3, 7 and 14 (a whole lap), then every 14.
+- Each lap is split, the second against the first ("best lap"); a lap through every eye runs a chase of
+  shock rings round the circuit. The start gate is not part of a lap and is never graded: it has no eye.
+- One start hint, and one line the first time the pilot threads an eye and the first time they do it hot.
+- The hot eye is where the Time ability shows: the afterburner is the fast way through, and the eye is the
+  only way through that costs no rocket and no speed.
+
+**Where it lives:** `BreakwaterHeat.cs` (the pure rule, `BreakwaterHeatTests`, run headless by
+`Tools/Build/breakwater_ruins_harness/run.sh`), `BreakwaterController.Heat.cs` (the flares, toasts and sounds;
+`heatOn` switches it all off). Toasts 430-436 on `GameToastConfig_Breakwater` (437-439 are free in the band).
+Eight FMOD slots on the controller, all shipped empty.
+
+**Not compiled in Unity, not run.** The pure rule and its tests run headless; the controller's half was not compiled
+(`unity_refcompile` cannot run on the machine this was written on). See the checklist entry of the same date.
+
+---
+
+## The ruins (2026-11-24, I4 only; decoration)
+
+Yash asked for the garden ruins Spearline lays round its racing line at I4 (SPEARLINE.md section 2a) on every Time
+game. Breakwater CALLS that generator (`SpearlineRuins.Lay`, with per-mode clearances) and adds none of its own:
+`BreakwaterRuins.cs` states Breakwater's sizes and decides which of the generator's prisms this course leaves out.
+`BreakwaterController.Ruins.cs` lays them, on every peer, from the broadcast course.
+
+| | Breakwater | why |
+|---|---|---|
+| clear lane | 60 u round the flown line of every leg | wider than the I4 port (42) |
+| leg floor | 300 u | I4 legs are 300 to 380 u |
+| margin round a station | its reach past the port + 10 u (80.2 u from the rim, 122 u from the centre) | the dish reaches 112 u |
+| which legs | every OTHER leg of the circuit (7 of 13) | open water between ruins; each of the seven kinds once |
+| the way in | nothing within 80 u of a pad or of its straight run to the start gate; the start gate's leg and margin kept as a lane | the generator is handed the circuit alone |
+
+**Measured** (`bash Tools/Build/breakwater_ruins_harness/run.sh --measure`, the I4 courses of seeds 1-100): 7 ruins on
+every course, 744 prisms a course (675 to 816). With the arena's 2,385 that is about 3,130 at I4, under intensity 1's
+4,144. **No wheel stands**: it needs 150 u of sweep clear of every station and no leg this short has it, so that leg
+carries a pergola (the generator's own fallback). Nothing in Breakwater's ruins moves.
+
+**The colours, and what they cost.** Everything else in this arena is Blue so that every pilot's rounds earn the same
+ammunition on it (see *Everything is `Domains.Blue`*). The ruins are Jade, Ruby and Gold so they read apart from the
+stations, which means a pilot's rounds earn nothing on ruins of their own colour. To keep that even, each ruin in
+course order takes the colour holding the fewest ruin prisms so far (`BreakwaterRuins.ShareOut`); the worst gap
+between two colours over the 100 courses is 134 prisms, about one ruin. No station is touched by this: a station is
+still Blue and still opens for everyone. `ruinDomains` on the controller holds the colours; emptied, the ruins are Blue.
+
+**Rules kept.** Plain prisms with the game's own rules, off the flown line; nothing reads or writes a vessel; I1-I3
+are unchanged; the legs were not lengthened. The shoals on the same legs are not moved, so a ruin can stand among them.
+
+**Tests:** `BreakwaterRuinsTests` (10, also run headless by the harness, whose `--self-test` proves three of them can
+fail). **Not compiled in Unity and not watched in the game.**
+
+## The barriers (2026-11-25, I4 only)
+
+Yash, after watching a three-racer I4 race: "pass by obstacles, shoot and make passage if can't pass". The ruins keep a
+clear lane, so a pilot on the line never had to shoot anything but a door. The barriers stand ACROSS the line, on the
+legs the ruins leave bare, so the circuit now alternates ruin, barrier, ruin. `BreakwaterBarriers.cs` is the pure rule;
+`BreakwaterController.Barriers.cs` lays it on every peer from the broadcast course (`layBarriers` switches it off).
+
+| kind | what stands | the pilot's choice |
+|---|---|---|
+| curtain | one disc of plain plates (13.4 x 13.4 x 2 u at a 14 u pitch) out to 72 u from the line | shoot a hole, ram it, or fly round (past the 60 u lane) |
+| minefield | 60 danger cubes (6 u) between the thread and 60 u from the line, over 50 u of it | hold the line through the 18 u thread, or clear a path |
+| lock | three 48 u discs, 18 u apart | more rounds to open, a shorter way round |
+| turnstile | two wheels 24 u apart turning opposite ways at 36 deg/s, four blades each (14 u wide, from 20.5 to 72.5 u out) | hold the thread through the hubs, time a gap between blades, or shoot a blade off |
+| shutter | a 60 u disc whose halves slide 22 u apart: shut 2 s, opening 1 s, open 2 s, closing 1 s | time it, or shoot it open |
+| flak battery | a core of 8 plain blocks (9 u) plugging the line, and 8 guns round the lane, each firing 3 danger shells (6 u) at 45 u/s across it along a 90 u chord that passes 28 or 40 u from the line, spread over 40 u along it | shoot the core (the line opens and the guns stop), ram it, or fly round through the crossfire |
+
+They take turns in that order round the circuit. Each stands at the middle of its leg's flown line.
+
+**The flak battery** (2026-11-25, batch 3) fires a FIXED pattern: nothing aims, so this is not the aimed turret that
+waits on Garrett. Its shells never come into the 18 u thread (checked through the whole flight, since the line curves
+and a shell flies straight), so the only thing on the line is the core. Break half the core or more and the battery
+is silenced (`BreakwaterBarriers.Silenced`, read every frame from the core's own prisms on each peer): its shells go
+back to the pool, and they come back only once the core has grown back, which needs the field gone (the regrow rule
+below). A shell that hits a hull is spent like a mine and also waits for the field to pass. The shells fly ACROSS the
+lane, not down it: a leg is at least 300 u and each station keeps 112 u clear, so a battery firing down the leg had
+no room and stood on 0 of 100 courses. Across, it stands on 83.
+
+**The movers** (2026-11-25: turnstile, shutter, and the flak shells) are posed every frame from the network clock (`BreakwaterBarriers.Pose`,
+`BreakwaterController.PoseBarriers`), as the ruins' wheel is, so every peer sees the same moment. A mover is laid
+whole, clear of every station's reach and every other leg's lane through its whole cycle (16 sampled phases), or a
+curtain stands there instead: over seeds 1-100 the turnstile stands on 86 courses and the shutter on 88. A shutter's
+clock is out of step from leg to leg. A broken blade or plate grows back like any other barrier prism.
+
+**Measured** (`bash Tools/Build/breakwater_ruins_harness/run.sh --measure`, the I4 courses of seeds 1-100): 7 barriers
+on every course (a curtain, 2 minefields, a lock, a turnstile, a shutter and a flak battery, then a curtain again, with
+a curtain wherever a mover does not fit), 498 prisms a course (460 to 561); the flak battery stands on 83 of 100. With the arena's 2,385 and the ruins' 744 that is about 3,640 at I4, still under
+intensity 1's 4,144.
+
+**Rules kept.**
+- Everything is Blue, as the stations are, so every pilot's rounds open a curtain and are paid ammunition for it.
+- Prisms with the game's own rules: a hull or a round breaks them; nothing reads or writes a vessel.
+- **A broken prism grows back once the field has passed** (2026-11-25, the way Spearline's seals do): 8 s after the
+  last moment any hull was within 260 u of its barrier (`BreakwaterBarriers.FieldAt`, `Regrows`;
+  `BreakwaterController.TickBarriers`, on every peer, at most 24 prisms a frame). 260 u is past a rocket's reach
+  (229 u), so a wall never closes on a round already fired at it. The pilots close behind the one who opened a wall
+  fly through the hole; the next lap meets the wall again. Without it, one AI race broke 405 of 603 prisms by the
+  leader's 14th crossing and 474 by the end; with it the broken count stayed between 40 and 180 of 609 all race.
+- A minefield's thread is the station's eye radius (18 u), so the AI's floor holds: an AI on the line that fires
+  nothing still passes a minefield, as it passes a station.
+- No prism comes into a station's reach, another leg's lane, or the way in from the pads; a barrier that would lose
+  more than half its prisms to that is not laid.
+- I1-I3 are unchanged.
+
+**This changes one sentence above**: the shoals section says the mode's danger is all in the weave. At I4 a minefield
+is now a second place with danger prisms, on the line's surroundings, with the thread open.
+
+**Not known yet** (needs a flown race): how big a hole one rocket opens in a curtain; what ramming a curtain costs the
+Sparrow next to the detour; whether the AI's station rocket (fired between 60 and 220 u from the station, nose on it)
+is spent on a curtain that stands 150 to 190 u before the station; frame rate with about 600 more prisms.
+
+**Planned next, not built**: piers and a corked tunnel (batch 4). An AIMED turret is a decision for Garrett: nothing
+in the game aims environment fire at a pilot today, and the flak battery does not either.
+
+**Tests:** `BreakwaterBarriersTests` (13, also run headless by the harness, whose `--self-test` proves seven of them
+can fail). Compiled in Unity and passing there (2026-11-25); three AI-flown races watched, none flown by a person.
+
+**Open:** 17 and 39 barrier prisms were already broken before the start of the two watched races; the cause is not
+found (they grow back only once every hull has left, so a barrier near the pads can start with holes).
+
 ## Scoring and the end condition
 
 **A domain's progress is its LEAD RUNNER, not its sum.** Every pilot flies the same course, so

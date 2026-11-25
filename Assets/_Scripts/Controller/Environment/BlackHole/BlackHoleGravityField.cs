@@ -62,7 +62,9 @@ namespace CosmicShore.Gameplay
     /// (<see cref="PrismMotion.NextLevel"/>, <c>PrismMotionConfigSO</c>): its exact oriented BOX on the
     /// main thread at levels 1 and 2 — with a collision burst on the ultra-high-res prism at level 1 —
     /// and the sphere of its volume in a fourth Burst job (<see cref="PrismMotion.ContactJob"/>) at level
-    /// 3. The main thread annihilates each pair, scored to the hole that moved the body. Bodies already
+    /// 3. The main thread annihilates each pair, scored to the hole that moved the body, and DRAWS each as the hole
+    /// eating it: the same suction into the hole a horizon capture and a creature's meal use
+    /// (<see cref="PrismMotion.AnnihilateInto"/>, 2026-11-22; it was an explosion before). Bodies already
     /// touching when the step began (a trail's neighbours falling together) are at rest, not a
     /// collision. A collision outranks a verdict on the same frame.</para>
     ///
@@ -375,10 +377,12 @@ namespace CosmicShore.Gameplay
 
                 var hole = NearestHole(mover.transform.position);
                 bool owned = hole != null && !string.IsNullOrEmpty(hole.CaptureOwnerName);
-                PrismMotion.Annihilate(mover, struck, velocity,
-                    owned ? hole.CaptureDomain : Domains.Blue,
-                    owned ? hole.CaptureOwnerName : ConsumerName,
-                    level);
+                var domain = owned ? hole.CaptureDomain : Domains.Blue;
+                string name = owned ? hole.CaptureOwnerName : ConsumerName;
+                // Both are destroyed (prism motion's collision rule), and drawn as the hole eating them: the fauna's
+                // suction into the hole, not an explosion (Yash, 2026-11-22).
+                if (hole != null) PrismMotion.AnnihilateInto(mover, struck, hole.transform, domain, name);
+                else PrismMotion.Annihilate(mover, struck, velocity, domain, name, level);
                 CollisionsTotal++;
             }
             _contacts.Clear();

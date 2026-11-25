@@ -37,8 +37,9 @@ is on `bleeding-edge` until Yash has played it in the editor.
   Einstein ring):
   - a mouth shows the place round its other mouth, so it reads as a way through;
   - its ring flares while it forms;
-  - riding, the world outside smears into streaks running to a clear disk round the way ahead, which grows until it
-    swallows the view; leaving throws one ripple.
+  - riding, you see only the tube's inner wall (2026-11-22, §18): a grid on bent space that follows the tube's path and
+    rushes past, your hull, and a light at the way out that opens onto the world as you reach it. The outer world is not
+    drawn while you are inside. Leaving throws one ripple.
 - **Inside a tube is another dimension** (widened 2026-11-20, `R_VesselActions/MEERKAT.md` §11). No prism, crystal,
   blast, round, mine, skimmer, zap or creature outside reaches a rider, and a rider reaches none of them. What a tunnel
   carries is sealed until it is fired out. It holds on every player's machine. You are solid again when you come out.
@@ -59,8 +60,8 @@ is on `bleeding-edge` until Yash has played it in the editor.
 - **In Unity** (pull `Ys-bleeding-edge`, open the project, wait for the compile):
   1. Toybox (Lava Lamp), Vessel Changer: the Meerkat. RT a short, fat wormhole. Inside, you drop onto the wall and slide.
      Hold RT for a small push. Fly out of the far mouth a little faster than you went in.
-  2. Look at a wormhole from outside: inside the ring round its mouth you see the place at its other end. Inside, the
-     world smears into streaks round a clear way ahead that grows as you near the way out.
+  2. Look at a wormhole from outside: inside the ring round its mouth you see the place at its other end. Inside, you
+     see only the tube's wall and your hull, with a light at the way out that opens onto the world.
   3. Form a wormhole next to prisms: they are pulled in, stretched through and fired out. None catches you inside, and
      you lose no petal in the tube. Form one through a wall of prisms: you pass through and the wall stands.
   4. Fly into an omni crystal: a Soliton Network opens round you. Watch an AI Meerkat take one: its network opens too.
@@ -97,6 +98,7 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
 | 2026-11-03 | A phone profile (ThumbLifts, prototype) | MEERKAT.md §5, `author_touch_profiles.py` |
 | 2026-11-20 | A real wormhole: the far view, the throat, the forming flare, the exit ripple; the ridden tube is no longer marched | `WORMHOLE_SHADERS.md` §17, `SolitonTunnelLensPass.Throat` |
 | 2026-11-20 | Nothing inside a tube touches anything outside it, on every machine; carried prisms and crystals are sealed | MEERKAT.md §11, `SolitonIsolation`, `MeerkatSolitonExecutor.InsideTube` |
+| 2026-11-22 | Riding shows only the tube's inner wall, never the outer world | `WORMHOLE_SHADERS.md` §18, `SolitonTunnelLensPass.Throat`, `MWInside` |
 
 **Shared code touched (the trail):**
 - `OmniCrystalImpactor.CollectedByVessel`: an additive event in Garrett's area.
@@ -159,9 +161,9 @@ The design is in `Docs/Studios/MEERKAT.md` (its "Where it stands now", then the 
 
 1. **Play it in the editor** (section 2). Nothing of the Meerkat has been played there by a person yet. When it passes,
    merge `Ys-bleeding-edge` to `bleeding-edge`.
-   - For the 2026-11-20 look, judge what a still cannot show: whether the streaks and the growing way ahead feel like
-     travelling, whether the ripple on leaving is welcome or a jolt, and whether a mouth's far view reads as "the other
-     end" when the other end is off screen (it then shows the mirrored edge of the frame).
+   - For the look, judge what a still cannot show: whether the wall's rings rushing past feel like travelling (the
+     2026-11-22 ride), whether the ripple on leaving is welcome or a jolt, and whether a mouth's far view reads as "the
+     other end" when the other end is off screen (it then shows the mirrored edge of the frame).
    - For the isolation, the checklist's hand test: ride through a rival's fire and a wall of prisms, with a second
      player watching.
 2. **Done (round 27, 2026-11-03): the artifact and the game agree again.** The slip-and-slide, the plain-wormhole look

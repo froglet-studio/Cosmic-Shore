@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-23-principles-py-gained-fix-lines-re-anchor-bc453f",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-23T16:18:11+00:00",
+  "area": "tooling: Tools/Build/principles.py; ui principles",
+  "summary": "principles.py gained --fix-lines (re-anchors drifted ledger entries to where their words now begin, words and status untouched; negative control in --self-test) and seeded ids now take the next free number. Your entry P-ui-36 (phone scale, 800 x 450) is the one --check failure left: its words left UI_STYLE_GUIDE.md when you dropped the phone scale on 2026-11-06. Strike it (delete from principles.json) or point it at a new source.",
+  "branch": "claude/project-thread-62i63b",
+  "commit": "f2fb49e14"
+}

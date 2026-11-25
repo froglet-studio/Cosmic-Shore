@@ -574,9 +574,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, SwitchbackRayMesh.AppendBeam(a, b, 0f, verts, normals, tris), "a ray of no width");
         }
 
-        /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
-        /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
-        /// budgets. I1-I3 do not depend on the switch.</summary>
         /// <summary>Scarab Rally's I4 (no gauntlet, its own course): from anywhere inside the ring you leave, every point of
         /// the next ring's rim is in plain sight - no prism, door or field, laid or on its mover's cycle, crosses the line
         /// (Garrett, 2026-11-14: "respect sight lines from one ring to another so that prisms are not occluding which ring
@@ -680,6 +677,9 @@ namespace CosmicShore.Tests
             return true;
         }
 
+        /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
+        /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
+        /// budgets. I1-I3 do not depend on the switch.</summary>
         [Test]
         public void WithoutTheGauntlet_I4IsTheFortressOfBefore()
         {

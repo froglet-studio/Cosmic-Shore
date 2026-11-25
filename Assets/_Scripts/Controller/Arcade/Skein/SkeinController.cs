@@ -38,7 +38,7 @@ namespace CosmicShore.Gameplay
     /// early, on the server, before a prism is laid, is <c>Cell.ExpectedConfig</c>: the config
     /// this cell WILL choose, derived from the same intensity the server already holds.</para>
     /// </summary>
-    public class SkeinController : GateRaceController, IPlayerSpawnLine
+    public partial class SkeinController : GateRaceController, IPlayerSpawnLine
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
@@ -363,6 +363,7 @@ namespace CosmicShore.Gameplay
             _seekRailsTried = false;
             _candidatesRing = -1;
             _urchinAI?.Clear();
+            ClearRuins();
             base.OnNetworkDespawn();
         }
     }

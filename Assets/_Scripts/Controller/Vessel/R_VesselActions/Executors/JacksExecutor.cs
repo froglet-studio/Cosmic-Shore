@@ -528,7 +528,9 @@ namespace CosmicShore.Gameplay
                 _view ??= new JacksView(this);
                 _view.Frame(_herding, _wide, Time.deltaTime);
             }
-            if (IsLocalHuman && !_status.AutoPilotEnabled) UpdateNetCamera(Time.deltaTime);
+            // The local player's hull, whoever holds its sticks (CameraManager.ActiveRigFollowing's rule): the net is
+            // as wide when the AI flies the hull for the player, so the camera backs off as far.
+            if (IsLocalHuman) UpdateNetCamera(Time.deltaTime);
             else ReleaseCamera();
             DrawMarks();
         }

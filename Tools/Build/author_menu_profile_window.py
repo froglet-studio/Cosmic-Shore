@@ -78,22 +78,29 @@ def prefab_path(name):
 
 CELL = 112
 GRID_PAD = 8      # inside the avatar scroll's mask: the focus ring hangs 6 px outside a tile
-OCT = K.kit_sprite("kit_oct_fill")
+DISC = K.kit_sprite("kit_ring_fill")
+RING_LINE = K.kit_sprite("kit_ring_line")
+# Rev 127 D (Docs/MENU_REDESIGN_B.md section 217, Shombith 2026-11-23: "apply the border+glow treatment consistently"):
+# every avatar is round, ringed and glowing (AvatarRippleBorder, built round the Icon at run time). The tile is round
+# too: its Border and Fill are discs under the avatar's round cut (the border 1 px proud of it), the pad's focus ring a line circle outside the
+# halo; the pick ripples in the selection colour (ProfileIconSelectButton.SetSelected).
+ICON_INSET = 26          # the avatar's diameter, CELL - 26 = 86: its 1.3x halo (112) fills the cell
 
 
 def build_avatar_button():
     root = N("root", "ProfileAvatarButton", R(size=(CELL, CELL)))
-    ring = root.child(N("FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (12, 12))))
-    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), OCT))
-    bord = root.child(N("Border", "Border", STRETCH))
-    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), OCT, raycast=True))
-    fill = root.child(N("Fill", "Fill", R((0, 0), (1, 1), (0, 0), (-6, -6))))
-    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark"), OCT))
-    art_node(root, "Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-10, -10)), A.AVATAR_PLACEHOLDER, preserve=True)
+    ring = root.child(N("FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (8, 8))))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), RING_LINE))
+    bord = root.child(N("Border", "Border", R((0, 0), (1, 1), (0, 0), (-ICON_INSET + 2, -ICON_INSET + 2))))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), DISC, raycast=True))
+    fill = root.child(N("Fill", "Fill", R((0, 0), (1, 1), (0, 0), (-ICON_INSET, -ICON_INSET))))
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark"), DISC))
+    art_node(root, "Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-ICON_INSET, -ICON_INSET)), A.AVATAR_PLACEHOLDER,
+             preserve=True)
     body = A.tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 14)
     root.add("tile", 114, lambda ctx, go: body(ctx, go).replace(
-        K.sprite_ref(K.kit_sprite("kit_sliver14_line1")), K.sprite_ref(OCT)).replace(
-        K.sprite_ref(K.kit_sprite("kit_sliver14_line2")), K.sprite_ref(OCT)))
+        K.sprite_ref(K.kit_sprite("kit_sliver14_line1")), K.sprite_ref(DISC)).replace(
+        K.sprite_ref(K.kit_sprite("kit_sliver14_line2")), K.sprite_ref(DISC)))
     root.add("avatar", 114, lambda ctx, go: mono(go, S["avatar"],
              "  BorderImage: {fileID: 0}\n"
              f"  IconImage: {ref(ctx.c('Icon', 'img'))}\n  tile: {ref(ctx.c('root', 'tile'))}\n"))
@@ -111,12 +118,11 @@ RULES = ("3 to 25 characters", "Letters, numbers, spaces, _ - .", "Starts and en
 BUTTONS = {"Done": "KitButton", "Submit": "KitButton", "Cancel": "KitButton"}
 
 
-def avatar_oct(parent, key, r, ring_token, inset=(6, 10), ambient=False):
+def avatar_round(parent, key, r, inset):
+    """An avatar: the Icon alone, which ProfileIconSelectView wraps in the round avatar border (AvatarRippleBorder,
+    Rev 127 D, section 217); its 1.3x halo spills past the inset."""
     av = parent.child(N(key, key.split("/")[-1], r))
-    image_node(av, f"{key}/Ring", "Ring", STRETCH, ring_token, OCT)
-    image_node(av, f"{key}/Back", "Back", R((0, 0), (1, 1), (0, 0), (-inset[0], -inset[0])), "SurfaceDark", OCT)
-    icon = art_node(av, f"{key}/Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-inset[1], -inset[1])),
-                    A.AVATAR_PLACEHOLDER, preserve=True)
+    art_node(av, f"{key}/Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-inset, -inset)), A.AVATAR_PLACEHOLDER, preserve=True)
     return av
 
 
@@ -128,14 +134,14 @@ def preview(win):
     image_node(pv, "Window/Preview/Edge", "Edge", R((1, 0), (1, 1), (0, 0), (1, -2), (1, 0.5)), "SurfaceDark")
     label(pv.child(N("Window/Preview/Caption", "Caption", TL(0, 50, SIDE, 18))), "How others see you", "Label",
           "NeutralLightest", align="center")
-    avatar_oct(pv, "Window/Preview/Avatar", TL(78, 86, 184, 184), "SurfaceLight", ambient=True)
+    avatar_round(pv, "Window/Preview/Avatar", TL(78, 86, 184, 184), 24)
     A.label_e(pv.child(N("Window/Preview/Name", "Name", TL(10, 288, SIDE - 20, 44))), "Pilot", "H2", "TextLight",
               align="center")
     label(pv.child(N("Window/Preview/Online", "Online", TL(0, 340, SIDE, 18))), "Online", "Label", "Cta",
           align="center")
     chip = pv.child(N("Window/Preview/Slot", "Slot", TL(60, 582, 220, 56)))
     H.framed(chip, "Window/Preview/Slot", 10, "SurfaceVeryDark", "SurfaceDark")
-    avatar_oct(chip, "Window/Preview/Slot/Avatar", TL(8, 8, 40, 40), "ControlActive", inset=(3, 5))
+    avatar_round(chip, "Window/Preview/Slot/Avatar", TL(8, 8, 40, 40), 6)
     A.label_e(chip.child(N("Window/Preview/Slot/Name", "Name", TL(58, 9, 154, 22))), "Pilot", "Body", "TextLight")
     label(chip.child(N("Window/Preview/Slot/Role", "Role", TL(58, 32, 154, 16))), "In a party slot", "Label",
           "NeutralLightest")
@@ -528,7 +534,8 @@ def validate(files):
     assert body and S["avatar"] in body, "ProfileAvatarButton: the root carries no ProfileIconSelectButton"
     C.wired(btn, body, "IconImage", IMG, "ProfileAvatarButton")
     C.wired(btn, body, "tile", S["tile"], "ProfileAvatarButton")
-    assert K.sprite_ref(K.kit_sprite("kit_sliver14_line1")) not in btn, "ProfileAvatarButton: the octagon tile swaps to a sliver border"
+    assert K.sprite_ref(K.kit_sprite("kit_sliver14_line1")) not in btn, "ProfileAvatarButton: the round tile swaps to a sliver border"
+    assert K.sprite_ref(K.kit_sprite("kit_oct_fill")) not in btn, "ProfileAvatarButton: an octagon is back round the round avatar (Rev 127 D)"
 
     view = files[prefab_path("ProfileWindowView")]
     for key in ("Window/Tabs/Avatar#tab", "Window/Tabs/Name#tab"):

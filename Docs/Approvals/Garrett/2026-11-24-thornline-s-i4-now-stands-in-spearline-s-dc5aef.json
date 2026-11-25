@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-24-thornline-s-i4-now-stands-in-spearline-s-dc5aef",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-24T02:01:30+00:00",
+  "area": "Thornline, the Shrike's Time race",
+  "summary": "Thornline's I4 now stands in Spearline's garden ruins (decoration: 4-7 ruins, about 620 plain prisms, 60 u clear of every sling and snipe line, 120 u from every ring and thorn, none under the start). The Shrike's kit is untouched; the I4 race times and the AI were not re-measured with the ruins standing.",
+  "why": "Yash asked for the environment update Spearline got, on every Time game",
+  "branch": "Ys-bleeding-edge",
+  "commit": "7dfeeb9be",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/THORNLINE.md",
+    "Assets/_Scripts/Controller/Arcade/Thornline/ThornlineController.Ruins.cs",
+    "Assets/_Scripts/Controller/Arcade/Thornline/ThornlineController.cs",
+    "Assets/_Scripts/Controller/Arcade/Thornline/ThornlineRuins.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Shrike"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "2"
+  }
+}

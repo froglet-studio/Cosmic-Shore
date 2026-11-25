@@ -87,6 +87,40 @@ way; for a person, each cycle also costs the time to read and place the thumbs, 
 than the AI's. The first decision a level teaches (line two rings up, roll first, use the hairpin) is worth 13-20% on
 the clock.
 
+## 2a. Garden ruins at I4 (`DecoyRunRuins`, `DecoyRunController.Ruins.cs`; Yash, 2026-11-24)
+
+The same environment update Spearline got (`SPEARLINE.md` 2a): the ruins of old flora gardens standing round the
+racing line on the hardest rung. Decoration only. **Spearline's generator is called, not copied**
+(`SpearlineRuins.Lay`); Decoy Run adds only the line it hands over and the hook that lays the prisms.
+
+**The line is straight here.** Spearline's pilot flies a curve from ring to ring. A Jacks hull zips in straight lines
+and its jacks run straight on the board, so `DecoyRunRuins.RacingLine` hands the generator two gates a leg that share
+one axis, which it draws as a straight leg. A hairpin's leg starts at the first decoy (45 u past the skewer), where the
+second zip really leaves from, not at the ring.
+
+What the generator's own rules then give on this course:
+
+- **Three or four ruins a course, not seven** (400 seeds: 0-7, mean 3.5, none on 5 courses; 230 prisms on the
+  median course, 523 at most). The generator lays a ruin only on a leg of 380 u or more, and Decoy Run's I4 legs are 260-480 u,
+  so it is the links between groups (320-480 u) that mostly carry one. A hairpin leg has one only when its zip is long.
+- **Six kinds, none turning.** Pergola, flower head, vines, wall with a doorway, tunnel and maze take turns. The
+  turning wheel needs a leg of about 640 u to clear its rings, so it never fits here and a pergola stands instead
+  (`DecoyRunRuins.Lay` would leave a wheel out whole: the mode poses nothing every frame).
+- **A 60 u clear lane** down every straight leg and every zip the AI's plan flies, and **nothing within 120 u of a
+  ring's mouth**, so the take-off point (70 u behind a ring) and the decoys (45 u past one) are clear too. The tests
+  measure a prism along its whole length and allow 8 u, because the generator measures a short prism at its centre.
+- **Colours.** Each ruin is one domain colour, Jade, Ruby, Gold in turn (`ruinDomains` on the controller; empty =
+  Blue), so it reads apart from the Blue chalk.
+- **Plain mass, the game's own rules.** The ruins are laid from the chalk's prefab as plain prisms: a hull breaks
+  them, and the jacks' net drags them like any other owner-less mass (the chalk is super-shielded, the ruins are not).
+  Nothing reads or writes a vessel. Every peer lays the same ruins from the broadcast rings.
+
+Held by `DecoyRunRuinsTests` (200 seeds: none below I4, the lanes, the ring margin, only on long legs, none turning,
+the straight line, the same for the same rings), with three negative controls in `run.sh --self-test`.
+
+**Not seen in the editor:** how the ruins look from the herding view, whether a link's ruin gets in the way of reading
+the board, and what the net does to a ruin it is dragged through (§8).
+
 ## 3. The chalk
 
 Two dotted rails of super-shielded environment prisms (5 u) beside the start line and every leg, `ring radius + 30 u`
@@ -154,6 +188,9 @@ the card, the scoring rule (`GateRaceScoringRuleSO`, metric 9), the scene, the p
 6. Two AI Jacks: they herd, take off and travel cycle by cycle and finish. Note any cycle that stalls (a jack short of
    its waypoint) or a board that never settles on a flat.
 7. MPPM two clients: both see the same rings and chalk.
+8. I4, the ruins (§2a; not compiled in Unity, not watched): three or four ruins stand on the long legs in Jade, Ruby and
+   Gold, clear of the rings; a zip passes through each without touching it; the herding view still reads; note what
+   the net does to a ruin the jacks run through, and that an AI cycle does not stall beside one.
 
 ## 9. Known limitations
 

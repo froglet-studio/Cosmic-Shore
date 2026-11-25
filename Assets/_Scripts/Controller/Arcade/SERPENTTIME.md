@@ -66,6 +66,36 @@ ladder's real demand is threading a tighter mouth at pellet speed.
 All measured over 400 seeds. Every floor sits above 1.5x the cruise circle (33 u), so a Serpent that never burns a
 pellet still holds every corner.
 
+## Garden ruins at I4 (`SerpentTimeController.Ruins.cs`; Yash, 2026-11-24)
+
+The environment update Spearline got (SPEARLINE.md section 2a), on this mode's lap. Decoration only.
+
+- **What stands.** Seven ruins a lap, one on each leg between gates, each kind once: a pergola, a flower head, vines, a
+  thick wall with a doorway on the line, a tunnel, a 3D maze of bars and a turning wheel (25 deg/s, posed from the
+  network clock). The leg that closes the lap, where the field starts, has none. I1-I3 have none.
+- **Where.** Round each leg's flown line with a 60 u clear lane down it (the I4 ring is 42 u), nothing within 120 u of
+  a gate (the Iris shape reaches 88 u), only on legs of 380 u or more. Only the wheel sweeps the line: its hub (30 u)
+  and the gaps between its three spokes are open.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby and Gold in turn round the lap, so the ruins read apart from
+  the shapes at the rings and the gate debris (both Blue). `ruinDomains` on the controller; empty = Blue.
+- **Rules.** Plain prisms of the environment prism (`debrisPrefab`) with the game's own rules: a hull, a sniper round
+  or a Seed Wall breaks or takes them as it does any prism, and nothing grows back. Nothing reads or writes the vessel.
+- **Code.** The generator is Spearline's, called and not copied (`SpearlineRuins.Lay(_course, ...)`, `Pose`,
+  `ForIntensity`); this mode owns only the 90-line hook (`LayRuins` from `OnCourseRaised`, `TickRuins` every frame,
+  `ClearRuins` on despawn). A change to the ruins themselves is a change to Spearline's file and reaches both modes.
+- **Measured headless** (`SerpentineRuinsTests`, 7 tests over 13 seeds, in `serpent_time_course_harness`, with three
+  negative controls): 7 ruins and 760-881 prisms a lap (mean 840); the lane, the gate margin, none below I4 and none on
+  the closing leg all hold.
+- **Open.**
+  - Not compiled by Unity and not watched in the editor: the frame cost of about 840 more prisms at I4 and the look are
+    unmeasured (the Performance section below is from before the ruins).
+  - The wheel stands on 3 of the 13 measured courses (Spearline: more than half); on the others another leg's lane
+    passes through its sweep and a second pergola stands there.
+  - A ruin in a pilot's own domain is that pilot's colour (Spearline's open point too).
+  - The gate debris lies out to 208 u from an I4 gate, so a piece of debris can sit inside a ruin.
+  - The AI steers gate to gate and does not know the ruins: it flies the lane only as far as its line does, and breaks
+    what it clips. Not measured on race time here (Spearline's AI lost nothing one race could show).
+
 ## Reused and new
 
 - Everything is the gate-race platform, as for Thresher Time, plus four platform hooks the dirty race added
@@ -73,6 +103,7 @@ pellet still holds every corner.
   gate race keeps the defaults, which are the old behaviour).
 - New:
   - `SerpentTimeCourse`, `SerpentTimeCourseSource`, `SerpentTimeController`, `SerpentTimeCluster` and their tests.
+  - `SerpentTimeController.Ruins.cs` and `SerpentineRuinsTests` (the I4 ruins; the generator itself is Spearline's).
   - Small, opt-in hooks outside the vessel: `AIPilot.SetCycledAbilityFilter`, `RaceGateRing.SetVisualHidden`. No
     vessel file is touched.
   - The scene (a clone of `MinigameThresherTime`), the card, the rule, the preview and the toasts.

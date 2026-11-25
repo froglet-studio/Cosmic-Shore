@@ -122,3 +122,28 @@ edges:
   why: The offered next step after a round.
   handoff: done
   in: x
+- from: sys.element
+  to: round.time
+  kind: feed
+  why: 'A Time crystal is speed: the meter is what a race spends.'
+  in: x
+- from: sys.petals
+  to: sys.element
+  kind: feed
+  why: A petal lost is a level lost, and a petal won back is the level back.
+  in: x
+- from: sys.hearts
+  to: sys.element
+  kind: feed
+  why: A freed heart is one petal of its element.
+  in: x
+- from: sys.trail
+  to: sys.cellphase
+  kind: feed
+  why: Trail is the live volume the cell's phase reads.
+  in: x
+- from: sys.sight
+  to: sys.hearts
+  kind: feed
+  why: A crystal sight shows which lifeforms carry which heart.
+  in: x

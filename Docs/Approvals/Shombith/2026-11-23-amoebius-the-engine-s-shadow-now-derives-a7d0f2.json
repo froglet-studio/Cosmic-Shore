@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-23-amoebius-the-engine-s-shadow-now-derives-a7d0f2",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-23T15:12:25+00:00",
+  "area": "the Amoebius engine",
+  "summary": "Amoebius: the engine's Shadow now derives from UIBehaviour (as Unity's does), because UIThemeLive.cs matches a Shadow among UIBehaviours and the player no longer built (error CS8121)",
+  "why": "the Spearline AI's real-game judge needs the player to build",
+  "branch": "Ys-bleeding-edge",
+  "commit": "fb540a46d",
+  "paths": [
+    "Port/src/CosmicShore.Engine/UI/PackageComponents.cs"
+  ]
+}

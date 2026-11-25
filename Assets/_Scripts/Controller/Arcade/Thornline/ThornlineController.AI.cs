@@ -93,6 +93,7 @@ namespace CosmicShore.Gameplay
             if (_thorns.Count < 2 || _course.Count == 0 || pilot == null) return false;
             var tf = pilot.Vessel?.Transform;
             if (!tf) return false;
+            CoachAroundRuins(pilot);
             int threaded = pilot.RoundStats?.SwitchesThreaded ?? 0;
             if (threaded >= RaceLength) return false;
             if (!_racers.TryGetValue(pilot, out var state))

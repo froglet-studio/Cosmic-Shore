@@ -877,11 +877,11 @@
   function buzz(n) { if (!OPT.haptics) return; try { if (navigator.vibrate) navigator.vibrate(n > 1 ? [10, 30, 10 + 6 * Math.min(n, 8)] : 12); } catch (e) { /* not on iOS */ } }
 
   // ================= drawing =================
-  const PETAL = {   // the HUD's petal outlines, unit size (ElementPetalGeometry.Outline): Mass triangle, Space kite, Time diamond, Charge gem
-    [MA]: [[0, 1], [0.8, -0.6], [-0.8, -0.6]],
-    [SP]: [[0, 1], [0.45, 0.1], [0, -0.7], [-0.45, 0.1]],
-    [TI]: [[0, 1], [0.5, 0], [0, -1], [-0.5, 0]],
-    [CH]: [[0, 1], [0.6, 0.35], [0.4, -0.7], [-0.4, -0.7], [-0.6, 0.35]],
+  const PETAL = {   // the HUD's petal outlines, unit size, apex IN at -y (ElementPetalGeometry.Outline; flipped to point into the centre 2026-11-22): Mass triangle, Space kite, Time diamond, Charge gem
+    [MA]: [[0, -1], [0.8, 0.6], [-0.8, 0.6]],
+    [SP]: [[0, -1], [0.45, -0.1], [0, 0.7], [-0.45, -0.1]],
+    [TI]: [[0, -1], [0.5, 0], [0, 1], [-0.5, 0]],
+    [CH]: [[0, -1], [0.6, -0.35], [0.4, 0.7], [-0.4, 0.7], [-0.6, -0.35]],
   };
   const PETAL_R = { [CH]: [0.445, 0.367], [MA]: [0.395, 0.453], [SP]: [0.461, 0.383], [TI]: [0.461, 0.383] };   // round 4f: centre out, outline scale
   function drawMote(m, x, y, rad, t) {

@@ -4374,9 +4374,9 @@ cloud data and tell me what to do"; "in the controls tab the omni crystal abilit
   (0.50, 0.56, 0.70). It is set as `HangarVesselStage.liveryMaterial` in place of the prefab's placeholder.
 - **The Mass icon is upside down.**
   - `mass_triangle_label.png` is flipped in place.
-  - `mass_petal.png` is flipped and set at 60 %, so the five petals keep their gaps; the flower reads as a star of five
-    triangles.
-  - Every flower and the HUD pips draw it.
+  - `mass_petal.png` was flipped and set at 60 % here too, so the flower read as a star of five triangles. **Reverted
+    2026-11-22 (Garrett):** the Mass petals point into the centre again, as every element's petal does
+    (`ElementPetalGeometry`'s traced outline never changed). The flipped label icon stays.
 - **2D and 3D in one tab.** Each ABILITIES row shows the element's 2D flower and icon, and now its crystal in 3D: the
   Codex flipbook, still on its first frame. Playing a row turns the 2D flower one petal and swells it (rotate and
   scale, 0.6 s), and runs the crystal's loop once.
@@ -8943,3 +8943,232 @@ pref `WhatsNew.SeenId`) and from a WHAT'S NEW button beside CREDITS in Settings'
 (`author_menu_settings.py`). Spec `Docs/UI/specs/rev121-c-whats-new.md`, which lists where it differs from the board
 (no Ark picture yet, the door on General not Other, only Update 0.3 listed). Hand test in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 217. Rev 127 mockups: avatar borders that sit on the domain halo, six animated rings (2026-11-23; Shombith picked D, Ripple; built)
+
+**Asked** (Shombith, 2026-11-23): "The avatar backdrop have the glowing circle but the actual borders of the avatars
+do not align with it. Give me 6 variations on the design board for avatars with their animated glowing borders."
+
+**Read as**: the round domain halo drawn behind a player's avatar (`PartySlotDomainGlow` in the party panel,
+`ConnectingPlayerRoster` and `RematchVoteRoster` in matches; a radial glow 1.22x the avatar rect) sits behind SQUARE
+avatar art, whose corners reach 0.71 of its width from the centre against the halo's 0.61, so the border is a square
+that follows none of the circle.
+
+**On the canvas**: tab Menu Redesign A (`menu-redesign-c`), section `sec-rev127`; generator
+`Docs/MenuRedesignB/rounds/r127_avatar_borders.py`, copies `Docs/MenuRedesignB/board/R127*.dc.html`. Every option
+shares one geometry: the avatar masked to a circle, its ring on that circle's edge, the halo centred on it at 1.3x
+(up from 1.22) and at full colour from the ring outward; a pilot whose domain is not known yet keeps no halo and a quiet
+2 px ring. Each option board shows a 340 px avatar with domain, "show the circles" and motion switches, the party panel
+and a 3 v 2 v 1 match lobby. Colours are the style tokens' Jade `#21C0BD`, Ruby `#BD1BC8`, Gold `#FF9B11`.
+- **R127Compare**: today's square avatar over its halo, then all six side by side (Jade large, Ruby and Gold small, not known).
+- **R127A Breath (recommended)**: a 3 px ring that breathes with the halo at the game's 0.7 Hz; alpha only. It keeps
+  the motion the game already has and makes the ring part of it, the quietest answer.
+- **R127B Orbit**: a hairline ring with one bright arc circling it every 4 s; the halo holds still.
+- **R127C Dial**: a solid 2 px ring and two segmented rings turning opposite ways (18 s, 26 s).
+- **R127D Ripple**: a 3 px ring sending a wave out to the halo's rim, two waves 1.2 s apart.
+- **R127E Current**: a 4 px gradient ring (domain colour and white) turning every 3 s with its own glow.
+- **R127F Corona**: an eclipse rim, a crescent of light turning every 12 s, the halo brighter on its side.
+- **R127Notes**: the problem, the shared geometry, the motion per option, what the pick changes in Unity.
+
+**Differs from the build**: the avatar Image gets a round mask and a ring Image on its edge; the halo grows to 1.3x
+and its sprite starts at the ring's radius; the three halo call sites become one component
+(`Docs/PartySystem/TODOS.md` TODO-12) so the party panel, connecting roster and rematch vote share the border.
+
+**Picked (Shombith, 2026-11-23)**: "D build it", on every avatar with a domain glow ("All of them").
+
+**Built (2026-11-23)**: `AvatarRippleBorder` (`Assets/_Scripts/UI/Elements/`) builds the board's geometry round any avatar
+Image at run time: a holder in the avatar's place, a round mask holding the avatar, the ring on its edge (0.016 x diameter
++ 1.6 px), two waves (0.008 x diameter + 1 px) growing from 1 to 1.3x over 2.4 s on the board's ease-out and fading out at
+the rim, the halo at 1.3x and 0.45 alpha, the quiet 2 px `SurfaceLight` ring when the domain is not known. It is on the
+party seats (`FriendInfoSlot` / `KitPartySlot`, replacing the octagon ring, gap and backing, which
+`author_menu_arcade.py` no longer writes) and the scoreboard's rematch votes (`RematchVoteRoster`, replacing its own halo).
+`PartySlotDomainGlow` is retired. The connecting screen's roster draws no avatars today, so it has none. Not yet seen in
+Unity: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders, Rev 127 D Ripple".
+
+
+**Everywhere (2026-11-23).** Shombith sent screenshots of avatars still square or octagonal and asked for the border and
+glow on all of them. The same `AvatarRippleBorder` now wraps the Home pilot card, the friends orb (you and the members),
+the drawer's profile card, the profile window's preview and party-slot chip, the avatar picker and the Configure pilot
+seats. Your own avatar in a menu glows in `ControlActive` (no domain yet); the picker's pick ripples in `Selection` and
+the rest wear the quiet ring. The border cuts the largest circle that fits the avatar's rect, so a non-square region
+still gets a circle. Editor checks: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Avatar borders everywhere".
+## 222. Rev 128 mockups: the arcade game card, six ways, beside the card we ship (2026-11-23; Shombith picked E, the Poster)
+
+**Asked (Shombith, 2026-11-23):** "Start a thread to redesign the arcade/ arena game cards. Currently they are still
+images generated by idk who. They need to get way way better in terms of lets say appearance, motion, hover features etc.
+They need to lively yet not affect performance. Create 6 different variations of one game mode's card have the card so we
+can compare the before look as well with the 6 new".
+
+**On the canvas:** a new tab, **Game Cards**, round "Rev 128 - Game cards, six ways"; the copies are
+`Docs/MenuRedesignB/board/R128*.dc.html`, written by `Docs/MenuRedesignB/rounds/r128_game_cards.py`. One mode, Skim Race
+(Squirrel, Time), at the shipped size (341 x 296), with the shipped words (name, hull, element shape, favourite star). The
+images are the shipped `CardBackground` renders and the colourful hull card renders, uploaded for this round.
+- **R128Compare:** the card we ship (Rev 18 A, section 73, hover 101.1 Sheen) and A-F side by side at 1.22 x; hover each.
+- **R128A Depth:** the render full bleed in three planes (stars, render, the Squirrel and motes), the name on a glass strip;
+  hover tilts the card toward the pointer and the planes part.
+- **R128B Racing line (recommended):** a light runs the course traced through the render's own rings to a crystal every
+  4 s; hover draws the line and the Squirrel flies it once.
+- **R128C Hero hull:** the Squirrel rides above the frame; hover surges it forward with speed lines.
+- **R128D Silver foil:** a collectible card, the render in a silver foil frame that shimmers; hover tilts it and the
+  light follows the pointer.
+- **R128E Poster:** the render full bleed under a big title; hover slides the card open (its Description, pilots, the
+  intensity signal sign).
+- **R128F Live loop:** at rest one frame of the race (trails running to the cell's rim, the Squirrel on the jade trail);
+  hover plays it, a crystal bursting into +1.
+- **R128Notes:** what each moves, what each costs in Unity, the rules every option keeps, why B.
+Each option board is the Arcade row (Skim Race, Dog Fight, Headlong, Joust) and Skim Race at rest, hovered, under pad
+focus and locked. Hover is CSS (a 3 x 3 grid of hover cells sets the tilt), so nothing runs at rest but each option's one loop.
+
+**Why B:** the card teaches the mode at a glance without a word, it is lively at rest for one scrolling line per card,
+and the line is data: each mode's course comes from the generator `/cardart` already renders.
+
+**Differs from the build:** today the card is one still render that drifts 5 px over 40 s (`CardDrift`), with the Sheen
+on hover. A pick would add per option: A three masked images and a pointer tilt; B a line mesh with a scrolling material
+and a hull tween, the line written per mode by the card-art harness; C the hull outside the mask with `PortraitBob`; D one
+foil overlay material and a tilt; E a body height tween; F a 24-frame flipbook per mode played only on the hovered or
+focused card. Touch keeps the rest state; the pad's focus plays what hover plays.
+
+**Gates:** `frogma.py check --only R128` OK; `check_mockup.py` passes colours, type and contrast on every board and fails
+the noise budget on the card sheets (150-382 elements: eight cards a board with their hover cells and F's trail prisms;
+one card is about 20). Joust's authored Description is still "Joust joust joust", which E shows on hover.
+
+**Picked (Shombith, 2026-11-23):** "I like the poster style but use our font. But for the insides I think you can do
+touch ups in the skim race cards its too blue and it does not look the cell in any of the card bg. Can you do something
+about that?" Followed up in Rev 129 (section 222.1).
+
+### 222.1 Rev 129: the Poster card in our font; Skim Race's picture made to look like the cell (2026-11-23; Shombith picked Inside the cell)
+
+**On the canvas:** tab Game Cards, round "Rev 129"; copies `Docs/MenuRedesignB/board/R129*.dc.html`, written by
+`Docs/MenuRedesignB/rounds/r129_poster_cell.py`; the pictures by `r129_card_art.py` (seeded) into `r129_assets/`.
+- The Poster's title is Aldrich (the style guide's reading face), capitals, tracked .06em; labels stay Chakra Petch.
+- **Why the pictures miss the cell:** `render_card_backgrounds.py` draws the arena's prisms, rings and trails and the
+  nucleus as glass on a purple-blue ground. It never draws the cell's wall (the net of many-sided panes the game shows
+  first, `Docs/Pilots/art/refs/sea_flight_trail.jpg`) or the white dust, and Skim Race's glass nucleus fills a third of
+  the picture in blue.
+- **R129Compare:** the Poster with four pictures, at rest and hovered: as shipped; **No blue wash** (ground to the
+  deep-sea navy, the nucleus to faint glass, the race's colours kept); **Inside the cell (recommended)** (that, plus the
+  wall's panes behind the race and the dust); **The whole cell** (the race inside a wire ball of panes in dusty space,
+  `sea_cell_outside.jpg`).
+- **R129Row:** the Arcade row with Skim Race inside the cell, and Skim Race in every state.
+- **R129Notes:** the above, and what a pick changes.
+
+**Differs from the build:** a pick goes into the card renderer (wall net, dust, the nucleus's grade), so every Arcade and
+Arena card changes at once and `--check` holds it; the Poster card goes into the Arcade and Arena card prefabs through
+`/frogma-to-unity`. The touch-ups here are made on the one Skim Race PNG only.
+
+**Picked (Shombith, 2026-11-23):** "Selected Inside the cell build it".
+
+**Built (2026-11-23, branch `claude/project-thread-lslakw`):**
+- **Every card's picture is inside the cell.** The card renderer (`Tools/Build/render_card_backgrounds.py`, the harness's
+  `Renderer.cs`) draws the cell's wall as a seeded Voronoi net of panes on the membrane sphere (depth-tested, the far wall
+  from inside, both walls from outside), white dust motes through the cell, the deep-sea ground without the violet nebula
+  or stars, and the glass nucleus as faint near-neutral glass (strength 0.14, was a 0.3 blue). All 90 cards re-rendered;
+  `--check` holds them.
+- **The Arcade card is the Poster** (`author_menu_arcade.py build_card`, `ArcadeGameCard.prefab`): the picture fills the
+  card and drifts, a navy fade (`kit_fade_v`, SurfaceBlack) rises 200 from the foot, the name sits on it in Aldrich at
+  H1 (36, shrinks to fit), the lit hull at the bottom right, the element tag at the top left with the party picks beside
+  it, the star at the top right. Hover or pad focus (never touch) slides a panel up 112 from the foot in 0.2 s with the
+  mode's line and "{pilots} pilots" (`KitPosterReveal`, new; `KitGameCard.descriptionText` / `pilotsText` / `pilotsLine`),
+  the name rides up with it and the hull fades. `check_poster` and two planted defects hold it.
+- **Differs from the board:** the name keeps the mode's own case (H1 is not an upper-case role; the board drew capitals);
+  the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
+  board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
+  picture; the Poster was drawn for the Arcade grid card.
+
+## 235. Rev 142 mockups: the Toy Box with motion, open, switch, spawn and Navigate into the preview, four ways (2026-11-24, awaiting a pick)
+
+**Asked (Shombith, 2026-11-24):** "I want to redesign the toybox UI in a more innovative way, spawning or switching or
+navigating should have aniamtions and the whole cards (bg is good) orientation inside each main card and the preview
+screen with a navigate animation which takes you inside the preview screen and spawns you on a cool way. Create 4
+different UI variations for this".
+
+**On the canvas:** a new tab, **Toy Box** (`toy-box`), round "Rev 142 - The Toy Box with motion: open, switch, spawn,
+and Navigate into the preview, four ways". Copies in `Docs/MenuRedesignB/board/R142*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r142_toybox.py <root> 142`. Each option board is the whole flow and playable: the Toy Box
+window, open a toy, pick a variation (the switch animation), its verb (the spawn animation in the preview), NAVIGATE
+(the dive into the preview), and the world where your vessel arrives. "Board: start again" returns to the Toy Box.
+Kept in all four: the card background (navy, the sea lines, the codex portrait), the seven toys and their words,
+Toy configure's variations and its two actions.
+
+- **Compare**: the Spawn Matrix card four ways, at rest and pointed at, and a table of the five moments per option.
+- **A Portal**: tall cards dealt in a row; pointing lifts a card and slides its verb up; open grows the card into the
+  preview on the left; switch is a film strip with a light sweep; the verb is two rings and a pop; Navigate flies you
+  through the toy's ring and your vessel streaks in from the horizon.
+- **B Orbit**: the toys on a 3D ring around you, LT / RT turns it, only the facing card has words (the name up its
+  spine); open flips the card; switch turns the preview like a cube; the verb builds the thing from prisms; Navigate
+  is a warp and your vessel is built from prisms.
+- **C Slide open**: seven strips with their names up the spine, the pointed one slides open (Rev 117's "cards that
+  slide open"); open widens the strip into the window; a diagonal wipe; five petals bloom on the verb; the window
+  splits into slats as you leave and your vessel drops in on a trail.
+- **D Lens (recommended)**: each card is a round lens onto the cell with the toy inside; open irises the lens into a
+  big round preview with the variations on a dial; switching blinks the lens; the verb ripples; Navigate grows the
+  lens past the screen through a tunnel of rings and your vessel rises out of a point on a ripple. Recommended because
+  it is the one where "inside the preview" is literal (the same circle carries you from card to world) and its ripple
+  matches the avatar ring picked in Rev 127.
+- **Notes**: the ask, the four, and what each costs in Unity.
+
+**Differs from the build:** today the Toy Box (17.3, Rev 18 A in section 72) is a four-column grid of cards (portrait
+well over an opaque body) that pop in, and Toy configure (17.4) opens with its panels rising; switching a variation,
+the verb and NAVIGATE are cuts with a toast, and NAVIGATE closes the window and flies the vessel there. A pick changes
+`author_menu_toybox.py` (the card's layout and its hover), `author_menu_toyconfigure.py` (the preview's shape and the
+variation layout), and adds the open / switch / spawn tweens and the Navigate hand-over from `ToyPreviewCamera` to the
+gameplay camera with an arrival effect at the station. Not checked in the board: the gameplay camera blend and the
+vessel's arrival effect are faked with the in-game cell frame; only the Unity editor can judge them.
+
+### 235.1 Rev 143: the mix, D's Toy Box with A's Configure, on the gradient and sea lines (2026-11-24, awaiting board approval)
+
+**Asked (Shombith, on Rev 142):** "I think I like the main design of toy box. I mean the first UI ... when I click,
+let's say vessel changer, and then that UI comes, I don't like that. I think rather in that place you can put the A UI
+for the inside views ... it's too blue, bro. There is no gradient behind. There's no sea lines. There's nothing."
+
+Read as: keep D's Toy Box screen (the lens cards), replace D's round Configure with A's (preview on the left, the
+variations on the right, A's film-strip switch, ring spawn, and A's Navigate through the toy's ring). Rev 142 laid a
+flat 95 % navy window over the menu backdrop, hiding its gradient and sea lines; Rev 143 draws them over the window and
+makes the cards and variation tiles dark glass instead of solid navy.
+
+**On the canvas:** Toy Box tab, "Rev 143 - The Toy Box mix" (one interactive board, `R143E`). Generator
+`Docs/MenuRedesignB/rounds/r143_toybox_mix.py <root> 143` (reuses `r142_toybox.py`).
+
+### 235.2 Rev 144: the mix with the 2D toy glyphs, flat and with depth (2026-11-24, G picked)
+
+**Asked (Shombith, on Rev 143):** "I want the 2D icons they had which garrett added not these 3D icons", then "If you
+can make those 2D icons with a different variation to give them a 3D look you can try".
+
+The glyphs are the seven drawings of `Tools/Build/icon_kit/toy_portraits.py` (the white glyphs that teach what flying
+through the toy does, `Docs/CODEX.md` section 4, sheet `Docs/Icons/sheets/toybox.png`), rendered at 512 px for the
+board. Rev 142 / 143 used the older 3D ring emblems from Item 8's board.
+
+**On the canvas:** Toy Box tab, "Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs". `R144F`: the glyphs flat,
+as drawn. `R144G`: the same glyphs baked with depth (an extrusion down and right in the slate shades, a bevel lit from
+the top left on the white face, a soft contact shadow) that tilt in perspective on hover. Everything else is Rev 143.
+Generator `Docs/MenuRedesignB/rounds/r144_toybox_glyphs.py <root> 144`. If G is picked, the depth bake becomes a second
+sprite per toy written by the icon kit beside the flat one; the flat glyph stays the codex's.
+
+Note: `toy_portraits.py` does not write today: its Spawn Matrix glyph fails the `gap` gate, and no `tool_wander.png`
+exists on disk (the Wander codex page still shows the old emblem). Found while rendering this round; not fixed here.
+
+### 235.3 Rev 145: the variation panel and Today's activity, three ways (2026-11-24, H picked and built)
+
+**Asked (Shombith, on Rev 144):** G picked, then on the Configure variation tiles "for this layout for the cards I want
+you to change that. Make this cool too", and on the Toy Box header "I liked the top place where the todays card use to
+show up big, can you do some variation here as well".
+
+**On the canvas:** Toy Box tab, Rev 145. Each board is G (depth glyphs) with one variation-panel style and one Today
+style; the two halves can be mixed.
+- `R145H`: Shelf, a 3-column grid of glass tiles, each render standing on a floor glow; Today as a wide banner (world
+  behind, a light sweep, the toy's creature in a lens, the lime Try it +10).
+- `R145I`: Slide-open, a list of slim rows where the chosen row opens and its render flies in; Today with a clock ring
+  for the day left and a turning crystal for the +10.
+- `R145J`: Pedestal, the chosen variation large on a pedestal above a row of round chips; Today as a live strip the
+  creature swims across.
+The Toy Box grid is scaled to 0.84 under the taller Today card. Generator
+`Docs/MenuRedesignB/rounds/r145_toy_variations.py <root> 145`.
+
+**Picked (Shombith, 2026-11-24):** "Let's go with H. Build it. H."
+
+**Built (2026-11-25):** spec `Docs/UI/specs/toybox-rev145h.md`, through `author_menu_toybox.py` (ToyCard, ToyboxView) and
+`author_menu_toyconfigure.py` (ToyVariantTile, ToyConfigureView, Menu_Main's `dive` field). New kit pieces:
+`KitGlyphDepth` (Rev 144 G's depth drawn at run time from the slate tokens, so the codex glyph stays the one sprite),
+`KitCenteredGrid` (four over three, centred) and `KitDive` (Navigate grows the live preview to the full window before the
+hand-off). Differs: the lens and banner show the kit sea, not a world frame; Shuffle is a button beside Back with its
+line; the Today lens is the toy's glyph. Offline render beside the board: `Docs/Look/toybox-rev145h_2026-11-25.jpg`.

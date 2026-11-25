@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-24-start-now-refuses-while-the-editor-is-in-951667",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-24T04:09:41+00:00",
+  "area": "the launch mode smoke test (ModeSmokeLauncher)",
+  "summary": "Start now refuses while the editor is in Play mode, on every entry point (it was the menu's check only)",
+  "why": "Bug Ledger E-ca266cef07: a run started from the command line or Unity CLI during Play threw InvalidOperationException in RunNext (EditorSceneManager.OpenScene), after the run was planned and the offline preference overwritten",
+  "branch": "Ys-bleeding-edge",
+  "commit": "2a3e56faa",
+  "paths": [
+    "Assets/_Scripts/Editor/Launch/ModeSmokeLauncher.cs"
+  ]
+}

@@ -133,6 +133,7 @@ namespace CosmicShore.Gameplay
                     int k = (g.NextPiece + step) % g.Pieces.Length;
                     var piece = g.Pieces[k];
                     if (!PostNeedsRegrow(piece, g.Posts[k].Position)) continue;
+                    ReleaseBroken(piece, PostOwnerId, g.Trail);   // back to the pool, not left hidden under the root
                     LayPost(g, k, forReveal: false);
                     g.NextPiece = k + 1;
                     break;

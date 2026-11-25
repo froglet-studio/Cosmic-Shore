@@ -65,6 +65,12 @@ namespace CosmicShore.Gameplay
     /// so the gate holds even for a caller that never asked <c>TryAdmit</c>; and every settled take
     /// is counted for the <c>silence</c> console command (<see cref="VesselSilence.OnPetalsTaken"/>).
     /// A burn has no attacker and is never refused - a danger prism is the arena, not a weapon.</para>
+    ///
+    /// <para><b>The petal ledger (Nov 2026).</b> Every settled take is credited to the pilot who caused
+    /// it (<see cref="PetalLedger"/>, <c>SILENCE.md</c> §6): a strip or a steal to its attacker, here,
+    /// and a danger burn to the pilot whose prism it was, through <see cref="CreditTake"/> from the
+    /// burn effect. <see cref="CreditTake"/> credits once, on the victim's owner, and a client's credit
+    /// reaches the server through <see cref="IElementalLossRelay.ReportPetalsTaken"/>.</para>
     /// </summary>
     public static class ElementalTransfer
     {
@@ -99,7 +105,7 @@ namespace CosmicShore.Gameplay
         {
             if (AttackerSilenced(form, attacker)) return 0;
             int petals = ApplyCore(form, victim, attacker, element, normalizedAmount, impactVelocity, source);
-            CountTake(form, victim, petals, source);
+            CountTake(form, victim, attacker, petals, source);
             return petals;
         }
 
@@ -244,7 +250,7 @@ namespace CosmicShore.Gameplay
 
                 case ElementalTransferRoute.Relay:
                     return victimRelay.RelayTakeToOwner(form, elementMask, normalizedAmountPerElement,
-                                                        impactVelocity, source, attackerRelay);
+                                                        impactVelocity, source, attackerRelay, NameOf(attacker));
 
                 default:
                     int total = 0;
@@ -252,7 +258,7 @@ namespace CosmicShore.Gameplay
                         if (InMask(elementMask, AllElements[i]))
                             total += ApplyCore(form, victim, attacker, AllElements[i],
                                                normalizedAmountPerElement, impactVelocity, source);
-                    CountTake(form, victim, total, source);
+                    CountTake(form, victim, attacker, total, source);
                     return total;
             }
         }
@@ -265,8 +271,10 @@ namespace CosmicShore.Gameplay
         /// <see cref="EjectSettled"/> and publishes the same packed value to every other peer; for
         /// a steal it sends it to the attacker's owner, which calls <see cref="GrantSettled"/>.
         /// </summary>
+        /// <param name="attackerName">Who the take is credited to in the <see cref="PetalLedger"/>
+        /// (the attacker's player name, carried on the wire); null or empty credits nobody.</param>
         public static uint SettleTake(IVesselStatus victim, int elementMask, float normalizedAmountPerElement,
-                                      ElementalDebuffSources source)
+                                      ElementalDebuffSources source, string attackerName = null)
         {
             var resources = victim?.ResourceSystem;
             if (resources == null || normalizedAmountPerElement <= 0f) return 0u;
@@ -281,6 +289,7 @@ namespace CosmicShore.Gameplay
             // A relayed take is always a strip or a steal (a burn is never relayed): count it for
             // the `silence` console command, whatever it managed to take.
             VesselSilence.OnPetalsTaken(victim, TotalPetals(packed), source);
+            CreditTake(attackerName, victim, TotalPetals(packed));
             return packed;
         }
 
@@ -401,7 +410,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < AllElements.Length; i++)
                 total += ApplyCore(form, victim, attacker, AllElements[i], normalizedAmountPerElement,
                                    impactVelocity, source);
-            CountTake(form, victim, total, source);
+            CountTake(form, victim, attacker, total, source);
             return total;
         }
 
@@ -412,12 +421,41 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Counts a strip or a steal for the <c>silence</c> console command, including one
         /// that found nothing to take. A burn is not counted: it is not a hit.</summary>
-        static void CountTake(ElementalTransferForm form, IVesselStatus victim, int petals,
-                              ElementalDebuffSources source)
+        /// It also credits the take to its attacker in the <see cref="PetalLedger"/>; a burn is credited
+        /// by its caller, which knows whose prism it was (<see cref="CreditTake"/>).
+        static void CountTake(ElementalTransferForm form, IVesselStatus victim, IVesselStatus attacker,
+                              int petals, ElementalDebuffSources source)
         {
             if (form == ElementalTransferForm.Burn) return;
             VesselSilence.OnPetalsTaken(victim, petals, source);
+            CreditTake(NameOf(attacker), victim, petals);
         }
+
+        /// <summary>
+        /// Credits <paramref name="petals"/> that <paramref name="victim"/> lost to
+        /// <paramref name="attackerName"/> in the <see cref="PetalLedger"/>. The strips and steals
+        /// settled here call it themselves; the danger burn calls it with the name of the pilot who
+        /// laid the prism (<c>Prism.PlayerName</c>), summed over the elements it burned.
+        ///
+        /// <para>Credited ONCE: a contact is replayed on every peer, but only the victim's owner's copy
+        /// of a take is real (the same rule <see cref="VesselSilence.OnPetalsTaken"/> keeps), so any
+        /// other copy credits nothing. On a networked owner the relay records it on the server
+        /// (directly on the host, by RPC from a client); offline it is recorded here.</para>
+        /// </summary>
+        public static void CreditTake(string attackerName, IVesselStatus victim, int petals)
+        {
+            if (victim == null || !PetalLedger.Counts(attackerName, NameOf(victim), petals)) return;
+            var relay = RelayOf(victim);
+            if (relay != null && relay.IsNetworked)
+            {
+                if (relay.IsOwnedHere) relay.ReportPetalsTaken(attackerName, petals);
+                return;
+            }
+            PetalLedger.Record(attackerName, NameOf(victim), petals);
+        }
+
+        /// <summary>A pilot's player name, or null for no pilot.</summary>
+        static string NameOf(IVesselStatus status) => status?.PlayerName;
     }
 
     /// <summary>Which machine settles a transfer. See <see cref="ElementalTransfer.RouteFor"/>.</summary>
@@ -457,11 +495,19 @@ namespace CosmicShore.Gameplay
         /// (<see cref="RelayGrantToOwner"/>); with no payee it ejects instead, so the petals stay in
         /// play. Returns the petals settled HERE, which is 0 when the take went to a remote owner.
         /// </summary>
+        /// <param name="attackerName">Who the settled take is credited to in the
+        /// <see cref="PetalLedger"/>; null or empty credits nobody.</param>
         int RelayTakeToOwner(ElementalTransferForm form, int elementMask, float normalizedAmountPerElement,
-                             Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee);
+                             Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee,
+                             string attackerName);
 
         /// <summary>Grants a settled steal (<see cref="ElementalTransfer.PackPetals"/> layout) to this
         /// hull on its owner: here if this machine owns it, otherwise by RPC through the server.</summary>
         void RelayGrantToOwner(uint packedPetals);
+
+        /// <summary>Records a take this hull's OWNER settled in the server's <see cref="PetalLedger"/>:
+        /// directly on the host, by RPC from a client. Called on the owner only
+        /// (<see cref="ElementalTransfer.CreditTake"/>).</summary>
+        void ReportPetalsTaken(string attackerName, int petals);
     }
 }

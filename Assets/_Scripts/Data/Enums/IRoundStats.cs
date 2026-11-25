@@ -49,6 +49,7 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnDebuffHitsLandedChanged;
         event Action<IRoundStats> OnStrikeHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
+        event Action<IRoundStats> OnPetalsTakenChanged;
         event Action<IRoundStats> OnSwitchesThreadedChanged;
         event Action<IRoundStats> OnFusesBeatenChanged;
 
@@ -156,6 +157,16 @@ namespace CosmicShore.Data
         int CombatPoints { get; set; }
 
         /// <summary>
+        /// Petals OPPOSING pilots lost because of this pilot: what this pilot stripped, what it stole,
+        /// and what danger prisms it laid burned off opponents. The balancing plan's score
+        /// (<c>Docs/ElementalAbilitySystem/SILENCE.md</c> §6), one point per petal. Fed by the
+        /// per-attacker petal ledger (<c>PetalLedger</c>, credited in <c>ElementalTransfer</c>) through
+        /// <c>StatsManager</c> on the server. Unlike <see cref="CombatPoints"/> it counts only what
+        /// was really taken: a hit on a pilot with nothing to lose, or one a ward held, scores 0.
+        /// </summary>
+        int PetalsTaken { get; set; }
+
+        /// <summary>
         /// Gates of the Switchback course this pilot has THREADED, in order. It is
         /// simultaneously the progress COUNT and the INDEX of the gate they must thread next,
         /// which is what lets one replicated int carry a whole race: the owner's machine reports
@@ -227,6 +238,7 @@ namespace CosmicShore.Data
             DebuffHitsLanded = 0;
             StrikeHitsLanded = 0;
             CombatPoints = 0;
+            PetalsTaken = 0;
             SwitchesThreaded = 0;
             FusesBeaten = 0;
 

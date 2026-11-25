@@ -153,6 +153,89 @@ unrolled, with a nose follow capped at 8/s.
 4. **`BrittleStarTimeCourseTests` reads `speedModeMultiplier.Value`, but the runtime evaluates `Min`.** Both are 6.
    `BrittleStarTimeLineTests` now holds `Min`.
 
+## 0a. Garden ruins at I4 (`BrittleStarTimeRuins`, `BrittleStarTimeController.Ruins.cs`; Yash, 2026-11-24)
+
+The environment update Spearline got (SPEARLINE.md section 2a), asked for every Time game. The ruins are **Spearline's
+generator, called, not copied**: `SpearlineRuins.Lay` with this mode's lap. No Spearline file is changed. Decoration
+only: plain prisms with the game's own rules (a hull breaks them, nothing grows back), laid by every peer from the
+broadcast course. Nothing reads or writes a vessel, and the kit is untouched.
+
+**What stands at I4: one ruin a lap, on the return straight.** The generator lays only on a leg of 380 u or more and
+120 u clear of every ring. The corkscrew's six coil rings stand about 170 u apart and the two turns of the return are
+300 and 360 u, so the only leg long enough is the return straight (about 670 u). Seven ruins a lap, as Spearline has,
+do not fit this course under the generator's own rules; putting ruins round the coil would need a change to the
+generator (a ruin laid round a whole run of rings, not one leg), which was not made.
+
+**The lap handed over is the flown line, not the raw rings** (`BrittleStarTimeRuins.RuinLap`). The generator keeps its
+60 u lane round a curve that leaves and arrives along each ring's axis. The two return rings face ACROSS the leg into
+them and are flown at their centre (`BrittleStarTimeLine.SteerPoint`): the pilot leaves the far ring on its facing, turns
+on Speed Mode's circle (162 u at Time 5) and runs straight at the near ring. So that leg is given as the turn's end
+(`TurnExit`, a ring of no radius) and then the straight, and the lane lies where the hull flies. The lap starts at ring
+1, so the kind is drawn from a ring the seed moves and changes from race to race.
+
+**Kept off the let-go gates.** A standing prism within 30 u of a let-go post is left out, and a wheel whose sweep would
+reach one is left out whole (`PostClearance`). On the shipped courses the ruin and the posts already stand apart; the
+rule is held by a test that stands a post inside a ruin.
+
+**Colour.** Each ruin is one domain colour from `ruinDomains` on the controller (Jade, Ruby, Gold in turn; empty = Blue,
+as the posts), so it reads apart from the Blue let-go posts. With one ruin a lap it is the first of the list (Jade).
+A ruin in a pilot's own domain is that pilot's prism to the game's rules, as on Spearline; not measured.
+
+**Measured in the model** (`brittle_star_time_course_harness/run.sh --ruins 200`, 200 seeds): every course carries one
+ruin, 72 to 121 prisms (mean 92); six kinds stand (pergola, flower head, vines, wall, tunnel, maze). **The wheel never
+fits**: the coil's lanes pass inside its sweep, so the generator stands a pergola there, and nothing turns or crosses
+the line at I4. The model's pilots flying two laps come no nearer a standing ruin prism than 8 u (Medium AI), 9 u
+(Easy), 15 u (Hard), 17 u (Legendary) and 31 u (a reading human). Laying the lane round a wider turn (1.2x to 2x the
+circle) put the AIs through the ruin on 21 to 52 of 60 courses, so the turn is modelled at the circle itself.
+
+**Held by** `BrittleStarTimeRuinsTests` (12) and three negative controls in the harness's `--self-test` (the raw rings
+handed over, ruins left in the let-go gates, ruins on an easier rung), and `author_brittle_star_time_assets.py --check`
+(the three scripts, the `ruinDomains` default, the three hook calls, the lay going through `SpearlineRuins.Lay`).
+
+**In Unity (2026-11-24, Yash's editor, three I4 races, the AI on all three seats):** compiles; the mode's EditMode tests
+pass (37 then); one ruin of 85 to 89 prisms stands on the return straight, all Jade, reading apart from the Blue posts
+(a still was sent in the session). **The cell's fauna eats it**: in the third race 78 of 85 prisms were broken before the
+end, 72 of them by tadpoles, 4 by light fauna and 2 by hulls, so by the last laps little of the ruin stands. That is the
+game's own prism rule (fauna graze prisms); whether a ruin should be kept from the fauna is a decision for the ruins'
+owner, not made here.
+
+## 0b. Breakers at I4 (`BrittleStarTimeBreakers`, `BrittleStarTimeController.Breakers.cs`; Yash, 2026-11-24)
+
+Yash: "Intensity 4 environment needs to be more filled along the flight path, brittle star need to break through
+obstacles to pass rings". **A disc of plain slabs stands across the way into every ring**, 30 u before it and 70 u wide
+(the 42 u mouth and the cone a pilot comes in on), and on the return straight a disc every 180 u, the ruin standing round
+them. The slabs are **Headlong's hedges** (`HeadlongHedges.Hedge`, `HeadlongHedges.Build`: 11 x 11 x 4 slabs on a 15 u
+pitch), called, not copied; the placement is this mode's own, because Headlong's keeps 150 u off every ring and the coil's
+rings stand ~170 u apart. Laid in Ruby (`breakerDomain`), apart from the Blue posts and the Jade ruin.
+
+**Why it is a decision, with the kit as shipped.** A Brittle Star that rams a plain prism breaks it, loses its boost and is
+slowed (its `VesselChangeSpeedByPrism`: up to half its speed for a second, scaled by the prism's mass); its guns and cords
+break prisms ahead of it. So a pilot either rams every disc and pays in speed, or shoots a hole first and threads the ring
+at full Speed. No vessel file, prefab or asset is changed. A broken disc **stands back up** 2.5 s after no hull is within
+60 u of its rim (Headlong's hedge rule with a shorter reach, `breakerHullReach`; at Headlong's 150 u the coil's discs stood
+at ~70% in Unity), and a broken slab goes back to the prism pool first, so every lap meets it whole.
+
+**Kept clear:** no slab within 25 u of any other leg's line, nor within 20 u of a let-go post; the ruin keeps 20 u off
+every slab (`BrittleStarTimeRuins.BreakerClearance`, so the breakers are laid first).
+
+**Measured in the model** (`run.sh --breakers 60`): 11 discs a lap (8 rings, 3 on the straight), 749 slabs a lap, the ruin
+beside them 81 prisms (92 before). **Every pilot flies through every ring's disc on every course** (Easy, Medium, Hard,
+Legendary AI and a reading human; 0 ring discs missed over 60 courses); the straight's discs catch most lines (a human
+10.8 of 11 discs a lap, the AIs 8.7 to 9.9). The model flies through slabs without the slowdown, so its race times say
+nothing about the breakers' cost: that is for Unity.
+
+**In Unity (2026-11-24, Yash's editor, the AI on all three seats):** 11 Ruby discs a lap (749 slabs) stand before the
+rings and on the straight (purple-red in the worn colour set, apart from the Blue posts and the green ruin); every AI
+threads every ring and the race ends (leader 6 laps in ~166 s; one race without breakers on another course took ~180 s,
+so the cost to the AI is not measured yet). Two faults found and fixed in this round: a broken slab stayed hidden under
+the root and the pool cloned a new one (4,191 children after one race; 749 all race once released to the pool), and with
+Headlong's 150 u hull reach the coil's discs stood at ~70% (60 u now). The let-go posts' regrow had the same leak and
+releases a broken post too.
+
+**Held by** `BrittleStarTimeBreakersTests` (5: only I4; every ring reached through its disc, through standing slabs; no
+slab on another leg or by a post; the ruins keep off; a pure lay), three negative controls in `--self-test` (breakers on
+every rung, each disc after its ring, slabs left on other legs), and `author_brittle_star_time_assets.py --check`.
+
 ## Overview
 
 `GameModes.BrittleStarTime = 74` is the **Brittle Star's Time card**: a lapped race of eight rings, flown for two laps,

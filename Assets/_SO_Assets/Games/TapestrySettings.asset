@@ -23,10 +23,13 @@ MonoBehaviour:
   leadAnnounceMinGapSeconds: 10
   progressSampleSeconds: 1
   aiDecisionSeconds: 6
-  aiRaidDeficitFraction: 0.1
-  aiLateRaidSeconds: 25
+  aiRaidDeficitFraction: 0.5
+  aiLateRaidSeconds: 0
   aiDustHover: 30
+  aiWakeSampleSeconds: 0.5
+  aiWakeMemorySeconds: 40
+  aiWakeLeadSamples: 3
   aiPaintOrbitFraction: 0.6
   aiPaintOrbitDegreesPerSecond: 6
-  aiCrystalReach: 450
+  aiCrystalReach: 900
   aiModeRetrySeconds: 1

@@ -48,6 +48,44 @@ public static class Runner
             }
             return 0;
         }
+        if (args.Length > 0 && args[0] == "--ruins")
+        {
+            // The I4 ruins over <count> seeds: standing prisms, hidden ones, legs with a ruin, wheels, and how many
+            // standing prisms lie within 30 u of a leg's straight CHORD (the AI's race line aims at the mouth's centre).
+            int count = args.Length > 1 ? int.Parse(args[1]) : 60;
+            int total = 0, hiddenTotal = 0, legsTotal = 0, wheelsLaid = 0, wheelsHidden = 0, onChord = 0, min = int.MaxValue, max = 0;
+            var crystals = new List<Vector3>();
+            var parts = new List<SpearlineRuinPart>();
+            var wheels = new List<SpearlineRuinWheel>();
+            var hidden = new List<bool>();
+            for (int seed = 1; seed <= count; seed++)
+            {
+                var c = Circuit(4, seed);
+                RedlineTimeCrystals.Place(c, 4, crystals);
+                RedlineRuins.Lay(c, 4, crystals, parts, wheels, hidden);
+                var legs = new HashSet<int>();
+                int standing = 0;
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    if (hidden[i]) { hiddenTotal++; continue; }
+                    standing++;
+                    legs.Add(parts[i].Leg);
+                    bool turns = wheels.Any(w => i >= w.First && i < w.First + w.Count);
+                    if (turns) continue;
+                    Vector3 a = c[parts[i].Leg].Position, b = c[parts[i].Leg + 1].Position, ab = b - a;
+                    float t = Mathf.Clamp01(Vector3.Dot(parts[i].Position - a, ab) / ab.sqrMagnitude);
+                    if ((parts[i].Position - (a + ab * t)).magnitude < 30f) onChord++;
+                }
+                foreach (var w in wheels) { if (hidden[w.First]) wheelsHidden++; else wheelsLaid++; }
+                total += standing; legsTotal += legs.Count;
+                min = Math.Min(min, standing); max = Math.Max(max, standing);
+            }
+            Console.WriteLine($"I4 ruins over {count} seeds: standing mean {total / (float)count:F0} (min {min}, max {max}), " +
+                              $"hidden mean {hiddenTotal / (float)count:F1}, legs with a ruin mean {legsTotal / (float)count:F2}, " +
+                              $"wheels laid {wheelsLaid}, wheels left out {wheelsHidden}, " +
+                              $"standing prisms within 30 u of a chord mean {onChord / (float)count:F1}");
+            return 0;
+        }
         if (args.Length > 0 && args[0] == "--sweep")
         {
             float full = RedlineCourse.FullBoostRadius;
