@@ -155,7 +155,7 @@ g.emit_asset("Assets/_SO_Assets/Games/PalisadeSettings.asset", G_ASSET["Palisade
 """)
 
 # ── 4. Card ─────────────────────────────────────────────────────────────────
-# MinPlayers 2 / MinDomains 2: a wall war with one side has nobody to cut. MaxPlayers 4: every Swordfish game seats
+# MinDomains 2: a wall war with one side has nobody to cut. Min and Max players 4: every Swordfish game seats exactly
 # four for now (Yash, 2026-11-25), under the fleet's 9 (Garrett, 2026-11-17); the scene carries four AI seats.
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGamePalisade.asset", G_ASSET["ArcadeGamePalisade"],
              lib.header_for(EXISTING["SO_ArcadeGame"], "ArcadeGamePalisade") + f"""  Mode: {MODE_ID}
@@ -169,7 +169,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGamePalisade.asset", G_ASSET["Arcade
   SceneName: MinigamePalisade
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Swordfish']}, type: 2}}
-  MinPlayersAllowed: 2
+  MinPlayersAllowed: 4
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
