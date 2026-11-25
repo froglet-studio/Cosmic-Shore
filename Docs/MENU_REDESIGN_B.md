@@ -9147,7 +9147,7 @@ sprite per toy written by the icon kit beside the flat one; the flat glyph stays
 Note: `toy_portraits.py` does not write today: its Spawn Matrix glyph fails the `gap` gate, and no `tool_wander.png`
 exists on disk (the Wander codex page still shows the old emblem). Found while rendering this round; not fixed here.
 
-### 235.3 Rev 145: the variation panel and Today's activity, three ways (2026-11-24, awaiting a pick)
+### 235.3 Rev 145: the variation panel and Today's activity, three ways (2026-11-24, H picked and built)
 
 **Asked (Shombith, on Rev 144):** G picked, then on the Configure variation tiles "for this layout for the cards I want
 you to change that. Make this cool too", and on the Toy Box header "I liked the top place where the todays card use to
@@ -9163,3 +9163,12 @@ style; the two halves can be mixed.
   creature swims across.
 The Toy Box grid is scaled to 0.84 under the taller Today card. Generator
 `Docs/MenuRedesignB/rounds/r145_toy_variations.py <root> 145`.
+
+**Picked (Shombith, 2026-11-24):** "Let's go with H. Build it. H."
+
+**Built (2026-11-25):** spec `Docs/UI/specs/toybox-rev145h.md`, through `author_menu_toybox.py` (ToyCard, ToyboxView) and
+`author_menu_toyconfigure.py` (ToyVariantTile, ToyConfigureView, Menu_Main's `dive` field). New kit pieces:
+`KitGlyphDepth` (Rev 144 G's depth drawn at run time from the slate tokens, so the codex glyph stays the one sprite),
+`KitCenteredGrid` (four over three, centred) and `KitDive` (Navigate grows the live preview to the full window before the
+hand-off). Differs: the lens and banner show the kit sea, not a world frame; Shuffle is a button beside Back with its
+line; the Today lens is the toy's glyph. Offline render beside the board: `Docs/Look/toybox-rev145h_2026-11-25.jpg`.
