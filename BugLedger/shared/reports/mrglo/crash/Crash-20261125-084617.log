@@ -1,0 +1,529 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-25 08:46:17 (next editor launch after the abnormal exit)
+session:        20261123-194424320  (pid 60728, Unity 6000.3.17f1)
+started:        2026-11-23T19:44:24.320Z UTC
+last heartbeat: 2026-11-23T19:50:10.474Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~346s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\mrglo\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261123-194424320.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261123-193453725
+started: 2026-11-23T19:34:53.725Z UTC
+unity:   6000.3.17f1
+pid:     56100
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[13:36:58.375] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\mrglo\Doc[13:40:18.447] ---- leaving play mode ----
+[13:40:19.695] ---- edit mode restored ----
+[13:44:04.115] ---- domain reload begins (script compilation / play-mode [13:44:13.810] ---[13:44:28.919] ---- entering play mode ----
+[13:44:30.659] ---- play mod[13:45:09.702] -[13:47:21.626] ---- leaving play mode ----
+[13:47:22.796] ---- edit mode restored ----
+[13:50:08.917] ---- editor quitting (clean exit) ----
+20.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04af1b (Mono JIT Code) Unity.Services.CloudSave.Internal.Apis.Data.DataApiClient/<GetItemsAsync>d__19:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Apis/DataApi.cs:767)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04c4a3 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:41)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04cb3b (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:56)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04d493 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:84)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff0691d3 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:81)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b923b028f3 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b923b02873 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff072a73 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/UnityWebRequestHelpers.cs:35)
+0x000002b923af6cdb (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002baaef21198 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffc67df6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffc67d38984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffc67d38a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffc6be2fdd4 (Unity) scripting_method_invoke
+0x00007ffc6be36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffc6be32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffc6b30b129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffc6bcf2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffc6d760bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffc6d760dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffc6bc728ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffc6bcfb65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffc6c66833d (Unity) Application::TickTimer
+0x00007ffc6c449f7c (Unity) MainMessageLoop
+0x00007ffc6c451a12 (Unity) UnityMain
+0x00007ff7adc62f2a (Unity) __scrt_common_main_seh
+0x00007ffd65a9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffd65e59c5c (ntdll) RtlUserThreadStart
+
+[UGSCloudSaveProvider] Load 'PLAYER_PROFILE' failed: Unable to deserialize object.
+0x00007ffc6b5f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffc6ce2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffc6ce2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffc6b5a587f (Unity) DebugStringToFile
+0x00007ffc6b461b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002b8ebe65add (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000002b8ebe659a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002b8ebe655db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000002b9970e2835 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/mrglo/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000002b8ebe65360 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000002b8ebe65228 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002b9ff0457bb (Mono JIT Code) CosmicShore.Core.UGSCloudSaveProvider/<TryLoadAsync>d__9`1<T_REF>:MoveNext () (at C:/Users/mrglo/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/CloudData/Providers/UGSCloudSaveProvider.cs:134)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9db22774a (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x000002b9db2276d6 (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<TResult_REF>:TrySetResult (TResult_REF) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:139)
+0x000002b9ff07634b (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`2<CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__3`1<System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>, System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>:SetResult (System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:329)
+0x000002b9ff04fd9d (Mono JIT Code) CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__3`1<T_REF>:MoveNext () (at C:/Users/mrglo/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:68)
+0x000002b9ff076263 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`2<CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__3`1<System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>, System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:314)
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04649b (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<LoadAsync>d__14:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.deprecated.cs:127)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff046b8b (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<LoadAsync>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.cs:175)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff0472bb (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<LoadWithErrorHandlingAsync>d__6:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.cs:207)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff047abb (Mono JIT Code) Unity.Services.CloudSave.Internal.ApiErrorHandler/<RunWithErrorHandling>d__4`1<T_REF>:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Exceptions/ApiErrorHandler.cs:61)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04858b (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<>c__DisplayClass6_0/<<LoadWithErrorHandlingAsync>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.cs:206)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff0494db (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataApiClient/<LoadAsync>d__9:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataApiClient.cs:161)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04af1b (Mono JIT Code) Unity.Services.CloudSave.Internal.Apis.Data.DataApiClient/<GetItemsAsync>d__19:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Apis/DataApi.cs:767)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04c4a3 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:41)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04cb3b (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:56)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04d493 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:84)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff0691d3 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:81)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b923b028f3 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b923b02873 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff072a73 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/UnityWebRequestHelpers.cs:35)
+0x000002b923af6cdb (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002baaef21198 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffc67df6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffc67d38984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffc67d38a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffc6be2fdd4 (Unity) scripting_method_invoke
+0x00007ffc6be36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffc6be32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffc6b30b129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffc6bcf2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffc6d760bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffc6d760dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffc6bc728ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffc6bcfb65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffc6c66833d (Unity) Application::TickTimer
+0x00007ffc6c449f7c (Unity) MainMessageLoop
+0x00007ffc6c451a12 (Unity) UnityMain
+0x00007ff7adc62f2a (Unity) __scrt_common_main_seh
+0x00007ffd65a9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffd65e59c5c (ntdll) RtlUserThreadStart
+
+[UGSCloudSaveProvider] Load 'PLAYER_PROFILE' failed: Unable to deserialize object.
+0x00007ffc6b5f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffc6ce2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffc6ce2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffc6b5a587f (Unity) DebugStringToFile
+0x00007ffc6b461b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002b8ebe65add (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000002b8ebe659a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002b8ebe655db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000002b9970e2835 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/mrglo/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000002b8ebe65360 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000002b8ebe65228 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002b9ff0457bb (Mono JIT Code) CosmicShore.Core.UGSCloudSaveProvider/<TryLoadAsync>d__9`1<T_REF>:MoveNext () (at C:/Users/mrglo/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/CloudData/Providers/UGSCloudSaveProvider.cs:134)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9db22774a (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x000002b9db2276d6 (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<TResult_REF>:TrySetResult (TResult_REF) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:139)
+0x000002b9ff07634b (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`2<CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__3`1<System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>, System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>:SetResult (System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:329)
+0x000002b9ff04fd9d (Mono JIT Code) CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__3`1<T_REF>:MoveNext () (at C:/Users/mrglo/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:68)
+0x000002b9ff076263 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`2<CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__3`1<System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>, System.Collections.Generic.Dictionary`2<string, Unity.Services.CloudSave.Models.Item>>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:314)
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04649b (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<LoadAsync>d__14:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.deprecated.cs:127)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff046b8b (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<LoadAsync>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.cs:175)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff0472bb (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<LoadWithErrorHandlingAsync>d__6:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.cs:207)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff047abb (Mono JIT Code) Unity.Services.CloudSave.Internal.ApiErrorHandler/<RunWithErrorHandling>d__4`1<T_REF>:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Exceptions/ApiErrorHandler.cs:61)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04858b (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataService/<>c__DisplayClass6_0/<<LoadWithErrorHandlingAsync>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataService.cs:206)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff0494db (Mono JIT Code) Unity.Services.CloudSave.Internal.PlayerDataApiClient/<LoadAsync>d__9:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/PlayerDataApiClient.cs:161)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04af1b (Mono JIT Code) Unity.Services.CloudSave.Internal.Apis.Data.DataApiClient/<GetItemsAsync>d__19:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Apis/DataApi.cs:767)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04c4a3 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:41)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04cb3b (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:56)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff04d493 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:84)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b91ef47073 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff0691d3 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/HttpClient.cs:81)
+0x000002b9217a5912 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x000002b8cfe71f1e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b8cfe7178b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002b9217a577b (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002b9217cc0fa (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002b90776ac75 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002b90776a9d3 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x000002b8d851de33 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x000002b8d851daa3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002b905e77453 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b923b028f3 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002b923b02873 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:SetResult (TResult_REF)
+0x000002b9ff072a73 (Mono JIT Code) Unity.Services.CloudSave.Internal.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.cloudsave@271cfa0557ba/Runtime/com.unity.services.cloudsave.internal/Runtime/Http/UnityWebRequestHelpers.cs:35)
+0x000002b923af6cdb (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002baaef21198 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffc67df6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffc67d38984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffc67d38a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffc6be2fdd4 (Unity) scripting_method_invoke
+0x00007ffc6be36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffc6be32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffc6b30b129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffc6bcf2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffc6d760bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffc6d760dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffc6bc728ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffc6bcfb65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffc6c66833d (Unity) Application::TickTimer
+0x00007ffc6c449f7c (Unity) MainMessageLoop
+0x00007ffc6c451a12 (Unity) UnityMain
+0x00007ff7adc62f2a (Unity) __scrt_common_main_seh
+0x00007ffd65a9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffd65e59c5c (ntdll) RtlUserThreadStart
+
+[LAYOUT] About to save layout C:\Users\mrglo\Documents\GitHub\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/mrglo/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Pipeline Server stopped
+Unloading 36 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-56100-fbelnp
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 55468 (child process of PID 57468) has been terminated.
+SUCCESS: The process with PID 57468 (child process of PID 56100) has been terminated.
+Killing ADB server in 0.0457983 seconds.
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '407db73319f93f12ace92fa29ffc8563') in 0.0022979 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) (NativeFormatImporter) -> (artifact id: '0a06f472a8a92a02e09c75f594e15deb') in 0.0020012 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedVesselClass.asset using Guid(669b1e817c2158c40940e62d07c68356) (NativeFormatImporter) -> (artifact id: '1e9a63e6f97a8dedb377269ef18f3c37') in 0.0017375 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: 'd66219ff6f8aa67e2d57c9fc1e4c9fd3') in 0.0019938 seconds
+Refreshing native plugins compatible for Editor in 25.15 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.09 ms.
+Asset Pipeline Refresh (id=431126352439aff4e82581888d084763): Total: 0.126 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 139 unused Assets / (5.2 KB). Loaded Objects now: 35542.
+Memory consumption went from 1.18 GB to 1.18 GB.
+Total: 100.241400 ms (FindLiveObjects: 1.831000 ms CreateObjectMapping: 2.164800 ms MarkObjects: 96.093400 ms  DeleteObjects: 0.150800 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-mrglo-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-mrglo-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 000000000000AE70, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000000AE70, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4928
+[usbmuxd] Stop listen thread
+[usbmuxd] Listen thread exiting
+[usbmuxd] Stop listen thread
+[usbmuxd] Listen thread exiting
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1795463414400,"processId":56100,"allocatedMemory":34776852,"memoryLabels":[{"Default":29317},{"Permanent":15236},{"NewDelete":89073},{"Thread":4240008},{"Manager":3111285},{"VertexData":8},{"Geometry":816},{"Texture":568},{"Shader":91477},{"Material":24},{"GfxDevice":57952},{"GfxThread":6144},{"Audio":3040},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":198608},{"Input":14984},{"JobScheduler":33024},{"TextLib":25176},{"Mono":32},{"MonoCode":704},{"ScriptingNativeRuntime":155060},{"BaseObject":1622640},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":18582},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":11342},{"DynamicArray":694886},{"HashMap":181295},{"Utility":2660986},{"PoolAlloc":10792},{"AI":80},{"TypeTree":322017},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":6912},{"WebRequest":6830},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":1312},{"Camera":17},{"Secure":1057},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":384},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":184},{"EditorUtility":1166421},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19481485},{"EditorGi":328},{"UnityConnect":30341},{"Upm":1972},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2867},{"TLS":10335},{"Licensing":664},{"AssetReference":32},{"IPCStream":32}]}
+
