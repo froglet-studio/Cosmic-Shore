@@ -343,6 +343,14 @@
      "date": "2026-11-25",
      "evidence": "Sword hand trained 2026-11-19 on the Brood Rush volume books in Palisade and Cleave together (PALISADE.md 3.1); those books do not hold arena prisms, so Cleave's own score (prisms destroyed, time to the target) is unmeasured on every rung. 2026-11-25: the AI turns for its team's I3 Space crystals (CleaveController, CleaveLadderTests); compiled outside the editor, not run. CLEAVE.md 'Where Cleave stands'"
     }
+   },
+   "Charge": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-25",
+     "evidence": "RiposteDuelist + SwordfishAIBoostPolicy_Riposte (hand-set, no search): real-game judge in Amoebius headless 2026-11-25, four Swordfish AIs 2v2, Easy/Medium/Legendary x I1-I4 x seeds 1-2, 24 of 24 matches ended, 26-202 s, median 96 s (Jackstraw's hunter before: median 21 s, a 30 u/s knot). Not run in the Unity editor, Hard not judged. RIPOSTE.md 3-5"
+    }
    }
   },
   "TigerMoth": {

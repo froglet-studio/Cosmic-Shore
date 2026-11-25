@@ -27219,3 +27219,31 @@ took the mode (2026-11-07), and the older list in CLEAVE.md ("In-editor verifica
       950 / 950 / 1,000 / 1,000 near 90 s for an experienced pilot?
 - [ ] A person's call: Shield Breaker (Space 5) has nothing to break in any Cleave arena. Should I3 or I4 carry a
       super-shielded seam so the upgrade matters?
+
+## 2026-11-25 - Riposte (the Swordfish's Charge game): its own AI pilots, on I1-I4
+
+**What changed (Yash's Swordfish pass, `RIPOSTE.md` 3-5).** Riposte's AI seats fly `RiposteDuelist` (cut sticks for
+ramp fuel, charge through a rival and on past them, run straight out, turn back in) with a mode ramp tuning
+(`SwordfishAIBoostPolicy_Riposte`), in place of Jackstraw's hunter. `JackstrawController` gained an AI seam (its own
+behaviour unchanged). The vessel is untouched. **Verified without Unity:** the generator's `--check`,
+`riposte_harness` (the shipped `RiposteDuelTests`, 14 of 14, five negative controls), the static gates, and the
+real-game judge in Amoebius (headless, four Swordfish AIs 2v2, Easy / Medium / Legendary on I1-I4, two seeds: 24 of 24
+matches ended, 26-202 s, median 96 s). **Not verified:** nothing was compiled or run in the Unity editor, and nobody
+has flown the mode.
+
+- [ ] The project compiles in the editor and `RiposteDuelTests` pass.
+- [ ] Jackstraw (the Thresher) still plays as before: AI Threshers hunt, a match ends, Play Again works (its
+      controller's AI calls moved behind a seam).
+- [ ] Riposte I1, AI on every seat, clock 1x: the AI hulls fly long straight passes and reach a few hundred u/s (not a
+      slow knot in the middle), strikes land on both teams, and a match ends in roughly 1-3 minutes.
+- [ ] Riposte I1-I4, one AI match each: each ends with a winner and no error. The judge's times were
+      39-150 / 26-109 / 52-165 / 40-202 s; within about 10% is a match, far off is a finding.
+- [ ] A sword hit scores only while the striker is the faster hull; a struck pilot is silenced and can refuel at the
+      clearing crystals; at I2 every hull starts at Charge 5; at I3 each team has its Charge crystals; at I4 the
+      fauna hatch and an unlit blade binds on ironwood.
+- [ ] A person's judgment (the fun card), flying against AI seats: is cutting sticks for fuel and then running a
+      rival through the fun? Is 6 strikes the right length? Once struck (silenced, 0.5 s sword latch), can you get
+      away, or does one lost pass lose the match?
+- [ ] A person's judgment: are the four rungs four different rounds? Late in a match, is there still enough heap left
+      to fuel the ramp (the AIs cut 140-2,800 prisms a match)?
+- [ ] AI levels: is Easy beatable by a first-time pilot and Legendary hard for a good one?
