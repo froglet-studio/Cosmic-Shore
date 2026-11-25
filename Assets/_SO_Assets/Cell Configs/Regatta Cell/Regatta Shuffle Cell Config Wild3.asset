@@ -13,34 +13,33 @@ MonoBehaviour:
   m_Name: Regatta Shuffle Cell Config Wild3
   m_EditorClassIdentifier:
   CellName: Regatta
-  Description: 'Regatta course-pool entry 4, shuffle course Wild3
+  Description: 'Regatta course-pool entry 3, shuffle course Ref4 (Wild3)
     (CellTypeChoiceOptions.CourseVariantWise, list order = Regatta Course Pool order - the
     host deals one enabled entry per match). A searched course: its rails prefab carries the
     whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game
-    judge raced. Wide search shard_cloud4-1418: Spherene world, super-shielded 48%, rails on
-    19% of the lap, no nucleus, lifeforms Wildlife Liberation Cell/Wildlife Liberation Cell
-    Config 4, lap 6449 u. Field spread {''card'': 3.386, ''L5'': 3.958} (3 seeds, real-game
-    judge). 3046 prisms measured; PhaseThresholds ride that count at the rail prism''s
-    nominal volume plus a trail band. Flora and fauna: Wildlife Liberation Cell/Wildlife
-    Liberation Cell Config 4''s spawn profile. Regenerate with
+    judge raced. Wide search shard_cloud3-0089: Corona world, super-shielded 9%, no rails,
+    nucleus, lifeforms Orrery Cell/Orrery Cell Config, lap 4948 u. Field spread {''card'':
+    2.094, ''L5'': 2.972} (3 seeds, real-game judge). 4061 prisms measured; PhaseThresholds
+    ride that count at the rail prism''s nominal volume plus a trail band. Flora and fauna:
+    Orrery Cell/Orrery Cell Config''s spawn profile. Regenerate with
     Tools/Build/author_regatta_assets.py from Tools/Build/regatta_shuffle_pool.json, never
     by hand.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0
   MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
-  NucleusPrefab: {fileID: 0}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: 0e4505d7fe33bd9fe99319b7ebbb04d5, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
   EnvironmentPrefab: {fileID: 5260000000000303, guid: cc8192472ec6e545c188dd7fe145e52b, type: 3}
   EnvironmentIntensity: 1
   PhaseThresholds:
-    RestlessEnter: 3746
-    RestlessExit: 3546
-    FrenzyEnter: 6646
-    FrenzyExit: 6046
-    RestlessEnterVolume: 937248
-    RestlessExitVolume: 917248
-    FrenzyEnterVolume: 1277248
-    FrenzyExitVolume: 1197248
+    RestlessEnter: 4761
+    RestlessExit: 4561
+    FrenzyEnter: 7661
+    FrenzyExit: 7061
+    RestlessEnterVolume: 1229568
+    RestlessExitVolume: 1209568
+    FrenzyEnterVolume: 1569568
+    FrenzyExitVolume: 1489568

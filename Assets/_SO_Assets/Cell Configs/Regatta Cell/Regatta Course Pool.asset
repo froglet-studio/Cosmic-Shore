@@ -13,51 +13,51 @@ MonoBehaviour:
   m_Name: Regatta Course Pool
   m_EditorClassIdentifier:
   entries:
-  - Label: Ref1 (Wild1)
+  - Label: Ref1 (Wild2)
+    CellConfig: {fileID: 11400000, guid: f3734c7541f66efb9279736770eb38f2, type: 2}
+    Enabled: 1
+    Notes: 'Wide search shard_cloud1-2789: Orrery world, super-shielded 46%, rails on 26% of the
+    lap, no nucleus, lifeforms Rampage Cell/Rampage Cell Config 3, lap 6453 u. Field spread
+    {''card'': 2.044, ''L5'': 1.903} (3 seeds, real-game judge).'
+  - Label: Ref2 (Wild1)
     CellConfig: {fileID: 11400000, guid: bb2f0490e16e46fcc5aff4879f4c8f43, type: 2}
+    Enabled: 1
+    Notes: 'Wide search shard_cloud2-2222: HopfFibration world, super-shielded 48%, rails on 7% of
+    the lap, no nucleus, lifeforms Yggdra Cell/Yggdra Cell Config, lap 4289 u. Field spread
+    {''card'': 1.781, ''L5'': 2.177} (3 seeds, real-game judge).'
+  - Label: Ref3 (Wild4)
+    CellConfig: {fileID: 11400000, guid: 6d418a7e688375a2307a0da98b361d27, type: 2}
     Enabled: 1
     Notes: 'Wide search shard_gbox2-0013: Orrery world, super-shielded 0%, no rails, nucleus,
     lifeforms Serpentine Cell/Serpentine Cell Config 2, lap 5439 u. Field spread {''card'':
     2.298, ''L5'': 2.343} (3 seeds, real-game judge).'
-  - Label: Ref2 (Wild2)
-    CellConfig: {fileID: 11400000, guid: f3734c7541f66efb9279736770eb38f2, type: 2}
+  - Label: Ref4 (Wild3)
+    CellConfig: {fileID: 11400000, guid: fdbbf8a69cba1a5f40fc8c1c4f209b73, type: 2}
     Enabled: 1
     Notes: 'Wide search shard_cloud3-0089: Corona world, super-shielded 9%, no rails, nucleus,
     lifeforms Orrery Cell/Orrery Cell Config, lap 4948 u. Field spread {''card'': 2.094,
     ''L5'': 2.972} (3 seeds, real-game judge).'
-  - Label: Ref3 (Wild4)
-    CellConfig: {fileID: 11400000, guid: 6d418a7e688375a2307a0da98b361d27, type: 2}
-    Enabled: 1
-    Notes: 'Wide search shard_cloud1-0486: LinkedRings world, super-shielded 0%, rails on 28% of
-    the lap, no nucleus, lifeforms Breakwater Cell/Breakwater Cell Config 4, lap 4167 u.
-    Field spread {''card'': 3.26, ''L5'': 3.594} (3 seeds, real-game judge).'
-  - Label: Ref4 (Wild5)
+  - Label: Wild5
     CellConfig: {fileID: 11400000, guid: de0dd660f18f3aaf5c76599e344d0f30, type: 2}
     Enabled: 1
     Notes: 'Wide search shard_cloud2-1499: Ourobor world, super-shielded 39%, rails on 14% of the
     lap, no nucleus, lifeforms Boneyard Cell/Boneyard Cell Config 2, lap 5747 u. Field
     spread {''card'': 2.679, ''L5'': 3.756} (3 seeds, real-game judge).'
-  - Label: Wild3
-    CellConfig: {fileID: 11400000, guid: fdbbf8a69cba1a5f40fc8c1c4f209b73, type: 2}
-    Enabled: 1
-    Notes: 'Wide search shard_cloud4-1418: Spherene world, super-shielded 48%, rails on 19% of the
-    lap, no nucleus, lifeforms Wildlife Liberation Cell/Wildlife Liberation Cell Config 4,
-    lap 6449 u. Field spread {''card'': 3.386, ''L5'': 3.958} (3 seeds, real-game judge).'
   - Label: Wild6
     CellConfig: {fileID: 11400000, guid: a01c8f7c575bfab019d7257b4453e83e, type: 2}
+    Enabled: 1
+    Notes: 'Wide search shard_cloud1-0486: LinkedRings world, super-shielded 0%, rails on 28% of
+    the lap, no nucleus, lifeforms Breakwater Cell/Breakwater Cell Config 4, lap 4167 u.
+    Field spread {''card'': 3.26, ''L5'': 3.594} (3 seeds, real-game judge).'
+  - Label: Wild7
+    CellConfig: {fileID: 11400000, guid: f468902ef734106d0f08f3a778182560, type: 2}
+    Enabled: 1
+    Notes: 'Wide search shard_cloud1-2240: Spherene world, super-shielded 41%, rails on 26% of the
+    lap, no nucleus, lifeforms Rampage Cell/Rampage Cell Config 3, lap 6467 u. Field spread
+    {''card'': 2.586, ''L5'': 3.514} (3 seeds, real-game judge).'
+  - Label: Wild8
+    CellConfig: {fileID: 11400000, guid: 07dc764d85fd91cf46b5c7f5332f9a0e, type: 2}
     Enabled: 1
     Notes: 'Wide search shard_cloud4-0089: Boneyard world, super-shielded 17%, no rails, no
     nucleus, lifeforms Scurry Cell/Scurry Cell Config, lap 6495 u. Field spread {''card'':
     4.475, ''L5'': 4.932} (3 seeds, real-game judge).'
-  - Label: Wild7
-    CellConfig: {fileID: 11400000, guid: f468902ef734106d0f08f3a778182560, type: 2}
-    Enabled: 1
-    Notes: 'Wide search shard_cloud2-1337: Helicoid world, super-shielded 4%, rails on 12% of the
-    lap, nucleus, lifeforms Lattice Cell/Lattice Cell Config, lap 4762 u. Field spread
-    {''card'': 4.764, ''L5'': 5.267} (3 seeds, real-game judge).'
-  - Label: Wild8
-    CellConfig: {fileID: 11400000, guid: 07dc764d85fd91cf46b5c7f5332f9a0e, type: 2}
-    Enabled: 1
-    Notes: 'Wide search shard_cloud0-0329: Switchyard world, super-shielded 0%, rails on 9% of the
-    lap, no nucleus, lifeforms Switchyard Cell/Switchyard Cell Config 1, lap 5581 u. Field
-    spread {''card'': 5.057, ''L5'': 4.86} (3 seeds, real-game judge).'

@@ -17,29 +17,29 @@ MonoBehaviour:
     (CellTypeChoiceOptions.CourseVariantWise, list order = Regatta Course Pool order - the
     host deals one enabled entry per match). A searched course: its rails prefab carries the
     whole RegattaCourseGenome (circuit, braid, features, placements), the one the real-game
-    judge raced. Wide search shard_cloud2-1337: Helicoid world, super-shielded 4%, rails on
-    12% of the lap, nucleus, lifeforms Lattice Cell/Lattice Cell Config, lap 4762 u. Field
-    spread {''card'': 4.764, ''L5'': 5.267} (3 seeds, real-game judge). 4581 prisms
+    judge raced. Wide search shard_cloud1-2240: Spherene world, super-shielded 41%, rails on
+    26% of the lap, no nucleus, lifeforms Rampage Cell/Rampage Cell Config 3, lap 6467 u.
+    Field spread {''card'': 2.586, ''L5'': 3.514} (3 seeds, real-game judge). 4159 prisms
     measured; PhaseThresholds ride that count at the rail prism''s nominal volume plus a
-    trail band. Flora and fauna: Lattice Cell/Lattice Cell Config''s spawn profile.
+    trail band. Flora and fauna: Rampage Cell/Rampage Cell Config 3''s spawn profile.
     Regenerate with Tools/Build/author_regatta_assets.py from
     Tools/Build/regatta_shuffle_pool.json, never by hand.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0
   MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
-  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  NucleusPrefab: {fileID: 0}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: 924b3c5db59d2c2af688399418ff449b, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: 764e6444e039928d9dd0cc9decf7e444, type: 2}
   EnvironmentPrefab: {fileID: 5260000000000303, guid: 25d87be929af991fb4e772079cc81993, type: 3}
   EnvironmentIntensity: 1
   PhaseThresholds:
-    RestlessEnter: 5281
-    RestlessExit: 5081
-    FrenzyEnter: 8181
-    FrenzyExit: 7581
-    RestlessEnterVolume: 1379328
-    RestlessExitVolume: 1359328
-    FrenzyEnterVolume: 1719328
-    FrenzyExitVolume: 1639328
+    RestlessEnter: 4859
+    RestlessExit: 4659
+    FrenzyEnter: 7759
+    FrenzyExit: 7159
+    RestlessEnterVolume: 1257792
+    RestlessExitVolume: 1237792
+    FrenzyEnterVolume: 1597792
+    FrenzyExitVolume: 1517792
