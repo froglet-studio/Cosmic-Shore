@@ -1,0 +1,463 @@
+<title>Cosmic Shore Audience Roadmap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* Layout: one column. A constellation of niches (calm to intense, alone to together), the ordered pins under it,
+   then the bridges that tie them, the vessel matrix and the decisions. Froglet Deep Sea, Shore for light. */
+:root {
+  --ground: #00041F; --surface: #0E1236; --surface-2: #222645; --line: #434C89;
+  --text: #E6E9FF; --soft: #8E95C4; --off: #5C5F70;
+  --sel: #00D4FF; --sel-dim: rgba(0,212,255,.14); --blue: #758FFB; --blue-dim: rgba(117,143,251,.35);
+  --cta: #99FF80; --warn: #FFAE00; --danger: #FF4B3A; --on-fill: #00041F;
+  --font-read: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
+  --font-press: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  --sl: 14px; --sl-s: 10px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --ground: #F4F5FF; --surface: #FFFFFF; --surface-2: #DDE1F7; --line: #B8C0F0;
+  --text: #00041F; --soft: #434C89; --off: #8A8FAE;
+  --sel: #007D73; --sel-dim: rgba(0,125,115,.12); --blue: #404EEC; --blue-dim: rgba(64,78,236,.30);
+  --cta: #487C1F; --warn: #9a5b00; --danger: #CD373A; --on-fill: #00041F; color-scheme: light; } }
+:root[data-theme="light"] {
+  --ground: #F4F5FF; --surface: #FFFFFF; --surface-2: #DDE1F7; --line: #B8C0F0;
+  --text: #00041F; --soft: #434C89; --off: #8A8FAE;
+  --sel: #007D73; --sel-dim: rgba(0,125,115,.12); --blue: #404EEC; --blue-dim: rgba(64,78,236,.30);
+  --cta: #487C1F; --warn: #9a5b00; --danger: #CD373A; --on-fill: #00041F; color-scheme: light; }
+
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--text); font-family: var(--font-read); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.label { font-family: var(--font-press); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: var(--soft); }
+.sliver { clip-path: polygon(var(--sl) 0, 100% 0, 100% calc(100% - var(--sl)), calc(100% - var(--sl)) 100%, 0 100%, 0 var(--sl)); }
+a { color: var(--sel); }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 8px 0 12px; font-weight: 400; text-wrap: balance; }
+h2 { font-size: 24px; font-weight: 400; margin: 0 0 8px; text-wrap: balance; }
+h3 { font-size: 18px; font-weight: 400; margin: 0; }
+p { margin: 0 0 12px; max-width: 70ch; }
+.lede { color: var(--soft); font-size: 17px; }
+.em { color: var(--sel); }
+section { margin-top: 52px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* the household */
+.house { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-top: 20px; }
+.seat { background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.seat .who { font-size: 17px; }
+.seat .what { color: var(--soft); font-size: 13px; }
+.seat .dev { font-family: var(--font-press); font-weight: 600; font-size: 12px; letter-spacing: .08em; color: var(--sel); text-transform: uppercase; }
+.house-note { margin-top: 12px; color: var(--soft); font-size: 13px; }
+@media (max-width: 820px) { .house { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 460px) { .house { grid-template-columns: 1fr; } }
+
+/* constellation */
+.sky { background: var(--surface); padding: 12px; margin-top: 16px; }
+.sky svg { display: block; width: 100%; height: auto; }
+.sky text { font-family: var(--font-read); }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 12px; height: 12px; display: inline-block; border: 2px solid var(--sel); }
+.dot.ready { background: var(--sel); }
+.dot.part { background: transparent; border-color: var(--warn); }
+.dot.not { background: transparent; border-color: var(--off); }
+.node { cursor: pointer; }
+.node:focus { outline: none; }
+.node:focus-visible .ring, .node.on .ring { stroke: var(--sel); stroke-width: 3; }
+
+/* pins */
+.phase { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: 16px; margin-top: 18px; }
+.phase .when { font-family: var(--font-press); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 13px; color: var(--sel); padding-top: 18px; }
+.phase .when small { display: block; color: var(--soft); font-weight: 500; letter-spacing: .04em; text-transform: none; font-family: var(--font-read); font-size: 12px; margin-top: 4px; }
+.pins { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+@media (max-width: 700px) { .phase { grid-template-columns: 1fr; gap: 4px; } .phase .when { padding-top: 0; } }
+details.pin { background: var(--surface); border-left: 2px solid var(--line); }
+details.pin[open] { border-left-color: var(--sel); }
+details.pin.flash { box-shadow: 0 0 0 2px var(--sel); }
+details.pin summary { list-style: none; cursor: pointer; padding: 14px 18px; display: grid; grid-template-columns: 40px minmax(0,1fr) auto; gap: 12px; align-items: center; }
+details.pin summary::-webkit-details-marker { display: none; }
+details.pin summary:focus-visible { outline: 2px solid var(--sel); outline-offset: -2px; }
+.pn { font-family: var(--font-press); font-weight: 700; font-size: 22px; color: var(--sel); font-variant-numeric: tabular-nums; }
+.pt h3 { line-height: 1.25; }
+.pt .sub { color: var(--soft); font-size: 13px; margin-top: 2px; }
+.state { font-family: var(--font-press); font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 2px 8px; white-space: nowrap; border: 1px solid; }
+.state.ready { color: var(--sel); border-color: var(--sel); }
+.state.part { color: var(--warn); border-color: var(--warn); }
+.state.not { color: var(--off); border-color: var(--off); }
+.pbody { padding: 0 18px 18px 70px; }
+@media (max-width: 560px) { .pbody { padding: 0 16px 16px; } details.pin summary { grid-template-columns: 32px minmax(0,1fr); } details.pin summary .state { grid-column: 2; justify-self: start; } }
+.facts { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: 6px 14px; font-size: 14px; margin: 4px 0 14px; }
+.facts dt { color: var(--soft); font-family: var(--font-press); font-weight: 600; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding-top: 2px; }
+.facts dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { .facts { grid-template-columns: 1fr; } .facts dd { margin-bottom: 6px; } }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+.col { background: var(--ground); padding: 12px 14px; min-width: 0; }
+.col ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+.col li { margin-bottom: 4px; }
+.col.have .label { color: var(--sel); }
+.col.need .label { color: var(--warn); }
+.col.gate .label { color: var(--cta); }
+
+/* tables */
+.tbl { overflow-x: auto; margin-top: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13.5px; }
+th { font-family: var(--font-press); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; font-size: 11px; color: var(--soft); text-align: left; padding: 0 10px 8px; border-bottom: 2px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--surface-2); vertical-align: top; }
+td.c, th.c { text-align: center; }
+.pinref { font-family: var(--font-press); font-weight: 700; color: var(--sel); white-space: nowrap; }
+
+/* back-chain */
+.chain { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; margin-top: 12px; }
+.link { display: grid; grid-template-columns: minmax(0,1fr) 150px; gap: 12px; background: var(--surface); padding: 12px 16px; align-items: center; }
+.link .by { text-align: right; font-size: 13px; color: var(--soft); }
+.link .by b { font-weight: 400; color: var(--sel); font-family: var(--font-press); letter-spacing: .06em; }
+@media (max-width: 560px) { .link { grid-template-columns: 1fr; } .link .by { text-align: left; } }
+
+.panel { background: var(--surface); padding: 18px 20px; }
+code { overflow-wrap: anywhere; word-break: break-word; }
+ol.dec { margin: 8px 0 0; padding-left: 20px; }
+ol.dec li { margin-bottom: 10px; max-width: 80ch; }
+ol.src { padding-left: 20px; font-size: 13px; color: var(--soft); }
+ol.src li { margin-bottom: 6px; }
+.metric { background: var(--surface); padding: 18px 20px; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.3fr); gap: 20px; align-items: center; }
+.metric .big { font-size: clamp(22px, 3vw, 30px); line-height: 1.2; color: var(--sel); }
+@media (max-width: 700px) { .metric { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="label">Froglet Inc. · Strategy · 2026-11-05 · companion to the <a href="https://claude.ai/artifact/QgkTZY2WKM1khg4twGCind">Market Map</a></div>
+  <h1>One niche at a time, joined into one household</h1>
+  <p class="lede">Cosmic Shore already contains a racer, a party game, a hex puzzle, a sniper duel, a kite toy, a painter and a sport, and two of its hulls seat two different kinds of player in one ship. The plan: win the niche we can reach today, then use each niche to bring in the next one through the people its players already play with.</p>
+
+  <section>
+    <h2>Where it ends: one squad, four kinds of player</h2>
+    <p>Working backwards starts here. A voyage squad is three vessels; a crew vessel puts two people in one of them. These four people already exist in most families and friend groups. Today each of them plays a different game, alone.</p>
+    <div class="house">
+      <div class="seat sliver"><span class="dev">PC or Steam Deck · gamepad</span><span class="who">The racer</span><span class="what">Flies the Squirrel in Skim Race; on a voyage, the squad's fastest courier.</span></div>
+      <div class="seat sliver"><span class="dev">Old phone · portrait · one thumb</span><span class="who">The puzzler</span><span class="what">Plays the Ratel's Dynamo, a hex puzzle built from the Slipstream cards. Every pattern charges the Honeyguide's slips.</span></div>
+      <div class="seat sliver"><span class="dev">Tablet · portrait · one thumb</span><span class="who">The kid</span><span class="what">Flies the Wrasse's kite on its 2D board: loops motes, rams rivals, while a parent flies the Grouper.</span></div>
+      <div class="seat sliver"><span class="dev">PC · mouse or pad</span><span class="who">The competitor</span><span class="what">Snipes in Serpent Gulag, duels in Dog Fight; on a voyage, the escort when another squad comes for the Ark.</span></div>
+    </div>
+    <p class="house-note">The connection is mechanical, not social glue added on top: the Ratel's patterns become the Honeyguide's slip charges, and the Honeyguide's hives become the Ratel's raids (<code>Docs/Studios/ONE_THUMB_SEAT_ARCS.md</code> §4). One person's game is the other person's fuel.</p>
+  </section>
+
+  <section>
+    <h2>The niches the game already speaks to</h2>
+    <p>Each star is an audience Cosmic Shore has a vessel, seat or mode for today. Across: how calm or intense the play is. Up: how much it needs other people. The line is the order to go after them. Select a star to open its plan below.</p>
+    <div class="sky sliver">
+      <svg id="sky" viewBox="0 0 1000 560" role="img" aria-label="Eight audience niches placed by intensity and how social they are, joined in the order to capture them"></svg>
+      <div class="legend">
+        <span><i class="dot ready"></i>Playable today</span>
+        <span><i class="dot part"></i>Partly built</span>
+        <span><i class="dot not"></i>Not started</span>
+        <span><svg width="28" height="8" aria-hidden="true"><line x1="0" y1="4" x2="28" y2="4" stroke="var(--sel)" stroke-width="2"/></svg>Capture order</span>
+        <span><svg width="28" height="8" aria-hidden="true"><line x1="0" y1="4" x2="28" y2="4" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="4 4"/></svg>Bridge into voyages</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The order, and why</h2>
+    <p>The first pin has to be reachable with what is in motion: the Steam Playtest, the hulls that ship, and the one element whose AI is live (Time), so a niche with few players still finds full races. Every later pin is chosen because the players of the pin before it already know someone in it.</p>
+    <div id="phases"></div>
+  </section>
+
+  <section>
+    <h2>What the end state needs, and which pin builds it</h2>
+    <p>Read upward from the voyage. Every requirement is delivered by a pin that also earns its own players, so nothing is built only for the distant goal.</p>
+    <div class="chain" id="chain"></div>
+  </section>
+
+  <section>
+    <h2>The bridges: why they keep coming back</h2>
+    <p>A niche player stays for the genre. A household stays for each other. These are the mechanisms that carry a player from one niche to the person in the next.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Bridge</th><th>What it does</th><th>Joins pins</th><th>State</th></tr></thead>
+        <tbody>
+          <tr><td>Honeyguide and Ratel</td><td>A flyer and a portrait one-thumb puzzler share one hull; each seat's release starts the other's next beat. An AI takes the empty seat, so either can start alone.</td><td><span class="pinref">1 2 → 3</span></td><td><span class="state part">Built, local; remote Ratel untested</span></td></tr>
+          <tr><td>Wrasse and Grouper</td><td>A two-thumb flyer and a one-thumb portrait kite on the hull's plane. Has its own card, Wrasse Run.</td><td><span class="pinref">2 → 4</span></td><td><span class="state part">Built; online seats planned</span></td></tr>
+          <tr><td>Goby and Pistol</td><td>A two-thumb flyer lays the path; the Pistol rides it in a 2D side view (Tiny Wings is the reference).</td><td><span class="pinref">4</span></td><td><span class="state part">Built; no card yet</span></td></tr>
+          <tr><td>Orca</td><td>One helm and three gunners flying missiles with one thumb: four people, one ship.</td><td><span class="pinref">4 → 8</span></td><td><span class="state part">Stub; not networked</span></td></tr>
+          <tr><td>Maelstrom</td><td>Draws a random mode each round from sixteen, so a racer's friends play the shooter, the sport and the party games in one night.</td><td><span class="pinref">1 → 2 → 6</span></td><td><span class="state ready">Playable</span></td></tr>
+          <tr><td>Elements as genres</td><td>Time is a race, Mass is making, Space is destroying, Charge is working other pilots over (<code>ModeGenre.cs</code>). One language on every card, so a puzzler's "Mass" and a racer's "Time" sit on the same squad sheet.</td><td><span class="pinref">all</span></td><td><span class="state ready">In the game</span></td></tr>
+          <tr><td>Squads and voyages</td><td>Three vessels with element, pilot and artifact cards; any seat a person doesn't hold, an AI flies. Outcomes write news that seeds the next job.</td><td><span class="pinref">all → 7</span></td><td><span class="state part">Core and tests built; slice not played</span></td></tr>
+          <tr><td>One account, any device</td><td>A party that a phone, a Steam Deck and a PC can all join, with progress that follows the person.</td><td><span class="pinref">2 → 3 4</span></td><td><span class="state not">Cross-play not verified</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>The number that says it is working</h2>
+    <div class="metric sliver">
+      <div class="big">Weekly players who played with someone whose main vessel is a different genre</div>
+      <div>
+        <p>Every pin is judged on its own niche first (wishlists, retention, full lobbies). This one number says whether the niches are joining: it rises only when a racer brings a puzzler, or a puzzler brings a kid. Vessel telemetry already records who flew what; the "main genre" of a player is the element petal of the cards they play most.</p>
+        <p style="margin:0;color:var(--soft);font-size:13px">A proposal. No target is set until pin 1 gives a baseline.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Every vessel, by the niche it serves</h2>
+    <p>From the shipped docs (<code>Docs/claude/ABOUT_PROJECT.md</code>, <code>Docs/Reports/MOBILE_VESSELS.md</code>, the card assets). Phone fixes from the mobile pass have not been flown on a phone yet. Every screen is landscape-locked except the Ratel's board and the Wrasse's kite.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Vessel</th><th>Plays like</th><th>Input</th><th>Cards</th><th>State</th><th class="c">Pin</th></tr></thead>
+        <tbody id="fleet"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Decisions this needs</h2>
+    <div class="panel sliver">
+      <ol class="dec">
+        <li><b style="font-weight:400;color:var(--sel)">Steam first or mobile first.</b> <code>ABOUT_PROJECT.md</code> says "mobile-first with PC/console expansion"; everything in motion is Steam-first. This plan takes Steam for pins 1–2 because that is where the launch work, the controllers and the Time AI are, and brings mobile in at pin 3 through the Ratel. The docs should say one thing.</li>
+        <li><b style="font-weight:400;color:var(--sel)">How a phone player pays.</b> Commerce is de-scoped everywhere (R4). Puzzle players expect free-to-play; Steam players expect $15. Pin 3 cannot start until someone decides whether mobile is free with purchases, free with the PC owner's invite, or paid.</li>
+        <li><b style="font-weight:400;color:var(--sel)">A Dynamo card.</b> A puzzle player should be able to start in the Ratel seat from the Arcade, with the AI flying the Honeyguide, not by finding the Vessel Changer in the Toybox. This seats a player; it changes nothing about the vessel, so it keeps the locked rule that a mode never changes the vessel.</li>
+        <li><b style="font-weight:400;color:var(--sel)">Cross-play.</b> Whether a phone and a PC can share a party has not been checked. Pin 3 depends on it.</li>
+        <li><b style="font-weight:400;color:var(--sel)">Steam Remote Play Together.</b> It streams a local seat to a friend who does not own the game. If two humans in one hull works locally (built, untested), a PC owner could hand the Ratel or Wrasse seat to a friend before online crew seats exist. Worth one test.</li>
+        <li><b style="font-weight:400;color:var(--sel)">Children's privacy.</b> Pin 4 invites kids. Age ratings, parental settings and what is collected from a child need settling before it is marketed to families (the privacy report already lists eleven places where policy and code disagree, <code>Docs/Legal/</code>).</li>
+      </ol>
+    </div>
+    <p style="margin-top:12px;color:var(--soft);font-size:13px">Owners to ask before changing their areas: the Ratel and Wrasse seats are Garrett's; anything on UGS or the backend, and activation, go through Shombith, with Caleb heading the first-time experience; the Steam launch report is written for Shombith and Caleb. No step here is assigned to anyone.</p>
+  </section>
+
+  <section>
+    <h2>Sources</h2>
+    <ol class="src">
+      <li>Mobile puzzle over $10B IAP in 2025 (+14%), second genre after strategy; mobile IAP $81.75B: <a href="https://gamedevreports.substack.com/p/sensor-tower-state-of-gaming-2026">Sensor Tower State of Gaming 2026</a>. Puzzle players 81% women, 84% seek relaxation (Mistplay survey): <a href="https://naavik.co/digest/what-leading-match-3-and-merge-games-do-differently/">Naavik</a>.</li>
+      <li>70% of US parents play; 82% of them play with their children, 52% weekly: <a href="https://www.theesa.com/annual-esa-study-reveals-video-games-universal-appeal-across-generations/">ESA Essential Facts 2025</a>.</li>
+      <li>Co-op games ≈ $8.2B on Steam in 2025: <a href="https://www.notebookcheck.net/Games-with-co-op-modes-generated-8-2-billion-in-gross-revenue-on-Steam-in-2025.1218225.0.html">Notebookcheck (Alinea)</a>. Flight tag: 85 games ever over $1M: <a href="https://wnhub.io/news/other/item-52312">WN Hub</a>. Action is 58% of all-time Steam revenue: <a href="https://gameworldobserver.com/2025/07/01/analytics-three-quarters-of-game-revenue-on-steam-comes-from-action-and-rpgs">Game World Observer</a>.</li>
+      <li>Cozy on Steam: 650 tagged releases in 2025; 11% of cozy games reached about 1,000 reviews against 4.2% across Steam: <a href="https://www.steampageanalyzer.com/blog/cozy-games-steam-2026-niche-report">Steam Page Analyzer</a>.</li>
+      <li>Browser: Poki 100M monthly players, 625M in 2025: <a href="https://mobidictum.com/pokis-web-gaming-interview-michiel-van-amerongen">Mobidictum</a>, <a href="https://www.bloomberg.com/news/articles/2025-11-07/video-games-hottest-new-platform-is-an-old-one-websites">Bloomberg</a>.</li>
+      <li>Steam Deck ≈ 3.7–4M units through early 2025: <a href="https://wnhub.io/news/analytics/item-47202">WN Hub (IDC)</a>.</li>
+      <li>Switch over 155M units; Super Mario Party Jamboree 8.64M; Nintendo Switch Sports 17.84M: <a href="https://www.gematsu.com/2026/02/switch-2-worldwide-sales-top-17-37-million-switch-tops-155-37-million">Gematsu</a>.</li>
+      <li>Multi-genre social platforms: Roblox 2025 bookings $6.8B, Q4 DAU 144M: <a href="https://gamesbeat.com/roblox-stock-rises-20-after-earnings-daily-active-users-up-69-in-q4/">GamesBeat</a>. LEGO Fortnite launched with more players than every battle royale mode combined: <a href="https://www.gamesradar.com/lego-fortnite-launches-with-more-players-than-every-fortnite-battle-royale-mode-combined">GamesRadar</a>.</li>
+      <li>Friend count predicts retention (academic, mobile F2P): <a href="https://arxiv.org/pdf/1702.08005.pdf">Park et al.</a>, <a href="https://jyx.jyu.fi/handle/123456789/66822">University of Jyväskylä</a>.</li>
+      <li>The game: <code>Docs/HomeHub/ARCHITECTURE.md</code>, <code>Docs/Voyages/VOYAGES.md</code>, <code>Docs/Voyages/SLICE.md</code>, <code>Docs/AI_SYSTEM/AI_PLAN.md</code>, <code>Docs/Studios/ONE_THUMB_SEAT_ARCS.md</code>, <code>Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md</code>, <code>Docs/Reports/MOBILE_VESSELS.md</code>, <code>Docs/Reports/CREW_VESSELS.md</code>, <code>Docs/WEBGL_TOYBOX.md</code>, <code>Docs/Reports/STEAM_LAUNCH.md</code>, <code>Assets/_Scripts/Data/ModeGenre.cs</code>.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  const PINS = [
+    { n: 1, phase: 0, x: 74, y: 34, state: 'ready', short: 'Arcade racers',
+      title: 'Arcade flight racers on PC and Steam Deck',
+      sub: 'Skim Race and every hull’s Time card, then the Regatta arena',
+      who: 'Players of F-Zero, Redout and time-trial racers who want a fast, readable flight model, a ghost to beat and a full grid without waiting for friends.',
+      entry: 'Skim Race (Squirrel, 1–12 seats), Redline (Manta), Switchback (Dolphin), Headlong (Rhino), Skein (Urchin), Slingshot (Stoat), Warpline (Meerkat); Regatta in the Arena.',
+      scope: 'Arcade, then Arena. Solo against AI first, then a party of up to four with AI filling the grid.',
+      device: 'Windows and Steam Deck, gamepad first. Landscape.',
+      mood: 'Competitive flow; "vaporwave arcade racer" (the Squirrel’s own words).',
+      market: 'A small, thin niche: the arcade-racing and arcade-flight slices of Steam’s indie multiplayer money are about $36M each in the Market Map, and only 85 Flight-tagged games have ever passed $1M. Small is the point: few direct rivals, and a niche a small studio can lead.',
+      have: ['Shipped hulls: Squirrel, Manta, Dolphin', 'Time is the one element whose AI is live and being trained, so solo races are full', 'AI backfill to 12 seats; party invites; Steam Playtest runbook and uploader'],
+      need: ['Steamworks account and app id (the clock starts at the $100 fee)', 'A Windows IL2CPP player, never built yet', 'The Time AIs finished up the ladder (arcade I1–I4, then Regatta)'],
+      gate: ['30,000 launch wishlists (the Market Map’s base case)', 'A weekly race night that fills on its own', 'A retention baseline from the Playtest waves'],
+      bridge: 'Every race lobby has three more seats. The racer’s friends who do not care about lap times arrive for pin 2.' },
+    { n: 2, phase: 1, x: 66, y: 68, state: 'ready', short: 'Party nights',
+      title: 'Friends’ party nights on PC',
+      sub: 'The Maelstrom tournament and the no-learning party cards',
+      who: 'Groups of two to four who buy Pummel Party, Ultimate Chicken Horse and Gang Beasts for game night, and the racer’s friends from pin 1.',
+      entry: 'Maelstrom (a random mode each round from sixteen), Bloomrush ("nobody has to learn a button"), Scarab Scramble (the accessible ball game), Joust (2–12), Scurry.',
+      scope: 'Arcade cards and the Maelstrom, online party of up to four, AI filling the rest.',
+      device: 'Windows and Steam Deck. The paid Early Access launch at $15.',
+      mood: 'Chaotic, loud, short rounds.',
+      market: 'The party slice of Steam’s indie multiplayer money is about $108M a year in the Market Map; co-op games as a whole made about $8.2B on Steam in 2025 and held 11 of the top 20. Pummel Party and Ultimate Chicken Horse each earned roughly $8–20M over their lives.',
+      have: ['The Maelstrom and its sixteen-mode pool', 'Party lobby, friends and invites', '2–4 player cards with AI backfill'],
+      need: ['A first five minutes that teaches a newcomer nothing they do not need (activation and the FTUE are Shombith’s, with Caleb)', 'The paid launch: store page, pricing, the two-week Coming Soon window', 'A clean invite from outside the game (a link a friend can click)'],
+      gate: ['Most sessions include at least one friend', 'Maelstrom nights repeat week to week', 'Paid conversion from the Playtest audience'],
+      bridge: 'In every group there is someone who does not play PC games but is never without their phone. Pin 3 gives them a seat.' },
+    { n: 3, phase: 2, x: 24, y: 44, state: 'part', short: 'Puzzlers → Ratel',
+      title: 'Mobile puzzle players, straight to the Ratel',
+      sub: 'Portrait, one thumb, older phones: the Dynamo hex puzzle',
+      who: 'The largest audience in games that never touches a flight game: puzzle players on phones. Mostly women, mostly playing to relax, very often a parent or partner of a pin 1 or 2 player.',
+      entry: 'The Ratel’s Dynamo: drag prisms, inject at ports, make patterns from the 39 Slipstream cards, pick one of three abilities every fourth pattern. The AI flies the Honeyguide, so it starts as a solo puzzle.',
+      scope: 'A seat in a crew vessel. Solo with an AI flyer, then paired with a person: the racer in the family takes the Honeyguide seat.',
+      device: 'Phones, portrait, one thumb, the Very Low preset for old devices.',
+      mood: 'Calm turn-based thinking under a gentle clock; the planned raid adds a loud release.',
+      market: 'Mobile puzzle took over $10B of in-app spend in 2025, up 14%, second only to strategy. In one survey 81% of puzzle players were women and 84% played to relax. 70% of US parents play games.',
+      have: ['The Dynamo, the cards, the pick of three, an AI Ratel and an AI Honeyguide', 'A portrait board sized in millimetres for a thumb', 'iOS on TestFlight, Android on Play internal testing'],
+      need: ['A public iOS and Android release', 'A way in from the Arcade (a Dynamo card), not via the Toybox', 'The raid arc so the loop breathes (proposal, 2026-10-29)', 'Online crew seats and phone-to-PC cross-play, both unverified', 'A decision on how a phone player pays'],
+      gate: ['Puzzlers who start solo come back the next day', 'A share of them invite a flyer, or are invited by one', 'The cross-genre metric moves'],
+      bridge: 'The puzzler’s kids see the game on the family tablet. Pin 4 gives them their own one-thumb seat.' },
+    { n: 4, phase: 3, x: 36, y: 78, state: 'part', short: 'Families & kids',
+      title: 'Families and kids, one thumb and no install',
+      sub: 'The Wrasse’s kite, the Pistol’s hills, the Toybox in a browser',
+      who: 'Parents who play with their children, and children who want the parent’s game but need a seat they can master in a minute.',
+      entry: 'The Wrasse kite seat (Wrasse Run), the Goby and Pistol’s side-view hills, Bloomrush, and the Toybox: freestyle, toys, painting, the Vessel Changer. The browser Toybox at froglet.games/play is the zero-install door.',
+      scope: 'Toybox first, then crew seats beside a parent.',
+      device: 'Tablets and phones in portrait for the seats; any browser for the Toybox.',
+      mood: 'Playful, forgiving, side by side.',
+      market: '82% of gaming parents play with their children and 52% do it weekly. Browser portals are huge and cheap to reach: Poki alone has about 100M players a month.',
+      have: ['Wrasse Run and its portrait kite', 'Goby and Pistol built', 'The browser Toybox, code complete'],
+      need: ['The browser Toybox actually built and hosted', 'Online Wrasse seats (planned)', 'A card for the Goby and Pistol', 'Age rating, parental settings and children’s privacy settled'],
+      gate: ['Families who play together weekly', 'Browser visitors who install or wishlist'],
+      bridge: 'Families grow into voyages (pin 7): one squad, everyone in it.' },
+    { n: 5, phase: 3, x: 10, y: 22, state: 'part', short: 'Cozy creators',
+      title: 'Cozy creators and painters',
+      sub: 'The Tiger Moth’s meditative painting and the freestyle Toybox',
+      who: 'Players who want to make something beautiful without losing: the cozy and creative audience on Steam and Steam Deck.',
+      entry: 'The Tiger Moth (Tapestry, Waystation; the "meditative surface painter"), the Toybox painting gallery and toys.',
+      scope: 'Toybox and the gentlest arcade cards; Mass (making) is their element.',
+      device: 'Steam Deck, PC, the browser Toybox.',
+      mood: 'Meditative.',
+      market: 'Cozy is a mood, not a genre, and it is outperforming: 11% of cozy games released 2024–25 reached about 1,000 reviews against 4.2% across Steam.',
+      have: ['The Tiger Moth and its four modes', 'The Toybox and its painting gallery'],
+      need: ['A loop with no loser: make, keep, share', 'A way to show what you made to the people you play with'],
+      gate: ['Sessions that end with something kept or shared'],
+      bridge: 'On a voyage, the maker is the squad’s builder: walls, nests and trails the others fly through.' },
+    { n: 6, phase: 3, x: 90, y: 58, state: 'part', short: 'PvP & sports',
+      title: 'Competitive PvP and sports fans',
+      sub: 'Astro League, Broadside, Brood Rush, Dog Fight, the sniper duel',
+      who: 'Rocket League and arena-shooter players who want team play with a skill ceiling.',
+      entry: 'Astro League ("Hypersea soccer, played with a sword"), the Scarab ("the Rocket League vessel"), Broadside, Brood Rush, Dog Fight, Serpent Gulag.',
+      scope: 'Arena: several hull classes per side, squads of up to six.',
+      device: 'PC, Steam Deck, gamepad.',
+      mood: 'Competitive.',
+      market: 'Action is 58% of all-time Steam revenue, the most crowded money on the store, which is why this comes after the niches where Cosmic Shore has fewer rivals.',
+      have: ['Three arena cards and the arena launch window', 'PvP is petals only, and silence after a scored hit (both locked rules)'],
+      need: ['The Charge AI (next on the AI plan) and the arena balance against fixed AIs', 'Skill ranking and seasons'],
+      gate: ['Ranked lobbies that fill at peak hours'],
+      bridge: 'Competitors become a squad’s escort on voyages, and the reason an Ark is worth defending.' },
+    { n: 7, phase: 4, x: 52, y: 93, state: 'part', short: 'Voyages',
+      title: 'Voyages: the squad of people who play different games',
+      sub: 'Three vessels, crew seats, one shared HyperSea',
+      who: 'Everyone from pins 1 to 6, together. A racer, a puzzler, a kid and a competitor in one squad, with AI in every seat nobody holds.',
+      entry: 'Build a squad (vessel, element, pilot, artifact per seat), pick a job from the Voyage window, sail the Ark, resolve the job; the outcome writes the news the next job grows from.',
+      scope: 'Voyages, the fourth location after Toybox, Arcade and Arena.',
+      device: 'Every device at once.',
+      mood: 'Shared adventure; co-op against the sea, with other squads met through galactic traffic control.',
+      market: 'The model here is the multi-genre social platform: Roblox booked $6.8B in 2025, and LEGO Fortnite launched with more players than every battle royale mode combined. People come back for who they play with.',
+      have: ['The voyage rules in pure C# with tests', 'Squads drive the seats; payloads and artifacts', 'The slice’s map, pilots, jobs and events as authored data'],
+      need: ['The slice played in the editor (nothing has been opened yet)', 'Online crew seats and cross-play from pins 3 and 4', 'Galactic traffic control (server side)'],
+      gate: ['Squads that mix genres sail again within a week'],
+      bridge: 'The voyage is the reason each niche player brings the next person.' },
+    { n: 8, phase: 5, x: 58, y: 80, state: 'not', short: 'Console couch',
+      title: 'The living room on console',
+      sub: 'Four people, one ship, one screen',
+      who: 'Families and friends on the couch, the core party-game audience on Switch.',
+      entry: 'The Orca (one helm, three gunners), the crew vessels and the party cards, local.',
+      scope: 'Arcade and voyages, local seats.',
+      device: 'Switch family first.',
+      mood: 'Living room.',
+      market: 'Over 155M Switch units; Super Mario Party Jamboree sold 8.64M and Nintendo Switch Sports 17.84M. Party games are what that audience buys.',
+      have: ['Gamepad support', 'Crew vessels with several seats (two humans in one hull built, untested)'],
+      need: ['A console port, certification and a platform relationship'],
+      gate: ['A port is worth it once pins 2 and 4 prove local multi-seat play'],
+      bridge: 'Brings the household of pin 4 to the big screen.' },
+  ];
+  const PHASES = [
+    ['Now', 'Steam Playtest'], ['Next', 'Paid Early Access'], ['Then', 'Public mobile'],
+    ['Later', 'In parallel, each when its prerequisites land'], ['The goal', 'Every niche in one squad'], ['Expansion', 'After pins 2 and 4 prove it']
+  ];
+  const CHAIN = [
+    ['Mixed-genre squads sail voyages together', 7],
+    ['A seat for every kind of player: crew seats online, one-thumb seats', '3 · 4'],
+    ['One party across phone, tablet, Steam Deck and PC', 3],
+    ['A public mobile release and a way for phone players to pay', 3],
+    ['A paying PC audience with friends to invite', 2],
+    ['A first niche that plays even when few people are online', 1],
+  ];
+  const FLEET = [
+    ['Squirrel', 'Arcade racer', 'Two-stick', 'Skim Race, Joust, Scurry, Maelstrom; 4 arenas', 'Ships', '1 2'],
+    ['Manta', 'Racer and bomb party game', 'Two-stick, tilt', 'Bloomrush, Redline, Scurry', 'Ships', '1 2'],
+    ['Dolphin', 'Blast cone, drift, gate race, duel', 'Two-stick, tilt', 'Rampage, The Bends, Switchback', 'Ships', '1 2 6'],
+    ['Sparrow', 'Arcade space shooter', 'One thumb', 'Dog Fight, Salvo, Breakwater, Wildlife Liberation', 'Ships', '2 6'],
+    ['Scarab', 'Ball sport ("the Rocket League vessel")', 'One thumb, throttle', 'Scarab Scramble, Tollway, Wrecking Ball, Undertow, Rally', 'Playable', '2 6'],
+    ['Rhino', 'Sword melee, sword soccer', 'Two-stick', 'Cleave, Headlong; Astro League', 'Playable', '1 6'],
+    ['Serpent', 'Sniper', 'One thumb', 'Serpentine, Serpent Gulag', 'Playable', '6'],
+    ['Urchin', 'Rail grind, heist race', 'Two-stick', 'Hijack, Skein', 'Playable', '1'],
+    ['Grizzly', 'Bomb and assault', 'One thumb', 'Grizzly Charge, Grizzly Time', 'Playable', '2 6'],
+    ['Stoat', 'Orbit slingshot', 'Two buttons', 'Slingshot', 'Playable', '1'],
+    ['Meerkat', 'Wormhole tunnel racer', 'One thumb', 'Warpline, Burrow Run', 'Playable', '1'],
+    ['Tiger Moth', 'Meditative painter', 'Two-thumb', 'Waystation, Dustup, Tapestry, Sirocco', 'Playable', '5'],
+    ['Thresher', 'Wrecking ball on a chain', 'Two-stick, tilt', 'Thresher Time', 'Prototype', '2'],
+    ['Angler', 'Strategist that leads fauna', 'One thumb', 'Lantern Run', 'Prototype', '5 7'],
+    ['Starling', 'Swarm and deck builder', 'Pinch, spin, tap cards', 'none', 'Playable', '3 7'],
+    ['Honeyguide + Ratel', 'Flyer + portrait hex puzzle', 'Two-thumb + one thumb', 'none (Toybox)', 'Built', '3'],
+    ['Wrasse + Grouper', 'Flyer + portrait kite', 'Two-thumb + one thumb', 'Wrasse Run', 'Built', '4'],
+    ['Goby + Pistol', 'Flyer + side-view hill rider', 'Two-thumb + buttons', 'none', 'Built', '4'],
+    ['Orca', 'Helm + three gunners', 'Two-thumb + 3 × one thumb', 'none', 'Stub', '4 8'],
+  ];
+
+  const stateText = { ready: 'Playable today', part: 'Partly built', not: 'Not started' };
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+  // pins grouped by phase
+  $('phases').innerHTML = PHASES.map((ph, i) => {
+    const pins = PINS.filter(p => p.phase === i);
+    if (!pins.length) return '';
+    return `<div class="phase"><div class="when">${ph[0]}<small>${ph[1]}</small></div><div class="pins">${pins.map(p => `
+      <details class="pin" id="pin-${p.n}"${p.n === 1 ? ' open' : ''}>
+        <summary><span class="pn">${p.n}</span><span class="pt"><h3>${esc(p.title)}</h3><div class="sub">${esc(p.sub)}</div></span><span class="state ${p.state}">${stateText[p.state]}</span></summary>
+        <div class="pbody">
+          <dl class="facts">
+            <dt>Who</dt><dd>${esc(p.who)}</dd>
+            <dt>Way in</dt><dd>${esc(p.entry)}</dd>
+            <dt>Scope</dt><dd>${esc(p.scope)}</dd>
+            <dt>Device</dt><dd>${esc(p.device)}</dd>
+            <dt>Mood</dt><dd>${esc(p.mood)}</dd>
+            <dt>Market</dt><dd>${esc(p.market)}</dd>
+          </dl>
+          <div class="cols">
+            <div class="col have"><span class="label">Already built</span><ul>${p.have.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+            <div class="col need"><span class="label">Missing</span><ul>${p.need.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+            <div class="col gate"><span class="label">Done when (proposal)</span><ul>${p.gate.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+          </div>
+          <p style="margin:14px 0 0"><span class="label" style="color:var(--sel)">Bridge</span> ${esc(p.bridge)}</p>
+        </div>
+      </details>`).join('')}</div></div>`;
+  }).join('');
+
+  $('chain').innerHTML = CHAIN.map(([t, by]) => `<div class="link sliver"><span>${esc(t)}</span><span class="by">delivered by <b>pin ${by}</b></span></div>`).join('');
+
+  $('fleet').innerHTML = FLEET.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td class="c"><span class="pinref">${r[5]}</span></td></tr>`).join('');
+
+  // constellation
+  const svg = $('sky'), NS = 'http://www.w3.org/2000/svg';
+  const W = 1000, H = 560, L = 70, R = 40, T = 30, B = 60;
+  const px = x => L + x / 100 * (W - L - R), py = y => H - B - y / 100 * (H - T - B);
+  const el = (tag, attrs, parent = svg) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+  // axes
+  el('line', { x1: L, y1: H - B, x2: W - R, y2: H - B, stroke: 'var(--line)', 'stroke-width': 1 });
+  el('line', { x1: L, y1: T, x2: L, y2: H - B, stroke: 'var(--line)', 'stroke-width': 1 });
+  const lab = (x, y, t, a = 'start', extra = {}) => { const e = el('text', { x, y, fill: 'var(--soft)', 'font-size': 14, 'text-anchor': a, ...extra }); e.textContent = t; return e; };
+  lab(L, H - B + 26, 'Calm', 'start'); lab(W - R, H - B + 26, 'Intense', 'end'); lab((L + W - R) / 2, H - B + 26, 'How intense the play is →', 'middle');
+  lab(L - 14, H - B, 'Alone', 'end'); lab(L - 14, T + 10, 'Together', 'end');
+  // bridges into voyages
+  const v = PINS.find(p => p.n === 7);
+  PINS.forEach(p => { if (p.n !== 7 && p.n !== 8) el('line', { x1: px(p.x), y1: py(p.y), x2: px(v.x), y2: py(v.y), stroke: 'var(--blue)', 'stroke-width': 1.5, 'stroke-dasharray': '4 5', opacity: .55 }); });
+  // capture order
+  const order = [1, 2, 3, 4, 7, 8];
+  const pts = order.map(n => PINS.find(p => p.n === n)).map(p => `${px(p.x)},${py(p.y)}`).join(' ');
+  el('polyline', { points: pts, fill: 'none', stroke: 'var(--sel)', 'stroke-width': 2, opacity: .85 });
+  // nodes
+  PINS.forEach(p => {
+    const g = el('g', { class: 'node', tabindex: 0, role: 'button', 'aria-label': `Pin ${p.n}: ${p.title}` });
+    const cx = px(p.x), cy = py(p.y);
+    const fill = p.state === 'ready' ? 'var(--sel)' : 'var(--ground)';
+    const stroke = p.state === 'ready' ? 'var(--sel)' : p.state === 'part' ? 'var(--warn)' : 'var(--off)';
+    el('circle', { cx, cy, r: 22, fill: 'var(--surface)', stroke: 'transparent', class: 'ring', 'stroke-width': 3 }, g);
+    el('circle', { cx, cy, r: 15, fill, stroke, 'stroke-width': 2.5 }, g);
+    const t = el('text', { x: cx, y: cy + 5, 'text-anchor': 'middle', 'font-size': 14, fill: p.state === 'ready' ? 'var(--ground)' : 'var(--text)', 'font-family': 'Chakra Petch, sans-serif', 'font-weight': 700 }, g); t.textContent = p.n;
+    const right = p.x < 80;
+    const n = el('text', { x: right ? cx + 28 : cx - 28, y: cy + 5, 'text-anchor': right ? 'start' : 'end', 'font-size': 16, fill: 'var(--text)' }, g); n.textContent = p.short;
+    const go = () => {
+      const d = $('pin-' + p.n); d.open = true;
+      document.querySelectorAll('.node').forEach(x => x.classList.remove('on')); g.classList.add('on');
+      d.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      d.classList.add('flash'); setTimeout(() => d.classList.remove('flash'), 1200);
+    };
+    g.addEventListener('click', go);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+})();
+</script>

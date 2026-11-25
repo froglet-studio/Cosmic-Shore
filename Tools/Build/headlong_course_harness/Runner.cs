@@ -3,6 +3,7 @@
 //   --export <intensity> <seed>...   one JSON line per course: its gates, its hedges (with every slab's place and
 //                                    kind folded into a count) and its Time crystals - what
 //                                    Tools/Build/headlong_stampede_model.py races
+//   --ruins                          the I4 garden ruins over 400 seeds: prisms laid, ruins a lap, wheels
 //   --sweep                          the stampede ladder per intensity over 400 seeds: hedges, danger, crystals, prisms
 using System;
 using System.Collections.Generic;
@@ -59,6 +60,39 @@ public static class Runner
                 })));
                 sb.Append("],\"crystals\":[").Append(string.Join(",", crystals.Select(V))).Append("]}");
                 Console.WriteLine(sb.ToString());
+            }
+            return 0;
+        }
+        if (args.Length > 0 && args[0] == "--ruins")
+        {
+            var hedges = new List<HeadlongHedges.Hedge>();
+            var crystals = new List<Vector3>();
+            var parts = new List<SpearlineRuinPart>();
+            var wheels = new List<SpearlineRuinWheel>();
+            var laid = new List<bool>();
+            var raw = new List<SpearlineRuinPart>();
+            var rawWheels = new List<SpearlineRuinWheel>();
+            for (int i = 1; i <= 4; i++)
+            {
+                var kept = new List<int>(); var all = new List<int>(); var legs = new List<int>(); int turning = 0, rawTurning = 0;
+                for (int seed = 1; seed <= 400; seed++)
+                {
+                    var c = Circuit(i, seed);
+                    HeadlongHedges.Place(c, i, hedges);
+                    HeadlongHedges.PlaceCrystals(c, i, hedges, crystals);
+                    HeadlongRuins.Lay(c, i, hedges, crystals, parts, wheels, laid);
+                    raw.Clear(); rawWheels.Clear();
+                    SpearlineRuins.Lay(c, SpearlineRuins.ForIntensity(i), raw, rawWheels);
+                    kept.Add(laid.Count(x => x));
+                    all.Add(raw.Count);
+                    var seen = new HashSet<int>();
+                    for (int k = 0; k < parts.Count; k++) if (laid[k]) seen.Add(parts[k].Leg);
+                    legs.Add(seen.Count);
+                    turning += wheels.Count; rawTurning += rawWheels.Count;
+                }
+                kept.Sort(); all.Sort(); legs.Sort();
+                Console.WriteLine($"I{i}: ruin prisms laid min {kept[0]} median {kept[200]} max {kept[399]} (before the hedges: median {all[200]}), " +
+                                  $"ruins a lap min {legs[0]} median {legs[200]}, wheels on {turning} of 400 courses (before the hedges: {rawTurning})");
             }
             return 0;
         }

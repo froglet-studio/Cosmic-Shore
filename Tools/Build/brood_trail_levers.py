@@ -22,24 +22,31 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 PREFABS = os.path.join(ROOT, "Assets/_Prefabs/Spacevessels")
 SCRIPTS = ("VesselPrismController", "SparrowPrismController", "ShrikePrismController", "BrittleStarPrismController")
 
-# hull: trailVolume.Value (shipped value x the loop's factor), from iterations 6-7 on the #2260 engine (2026-11-19).
+# hull: trailVolume.Value. Refit 2026-11-21 at the game's real setup (Medium AI with its mistakes, 3 teams of 3, the
+# 17-hull card with #2329 Rhino, #2330 Swordfish, #2331 Manta and #2332's Mass-Space AI rows, shield shells netted),
+# capped at 0.4x-2.5x of the pre-#2261 value (1.35 for Squirrel, Stoat, Meerkat, Thresher; else 1).
+# /mnt/project-files/regatta-flywheel/broodrush-deep/REFIT.md.
 TABLE = {
-    "Orca": 0.8,          # shipped 1 x 0.8: back from the 0.4 cap when the 20 s bomb re-arm (#2263) cut its prism work (2026-11-20)
-    "Grizzly": 0.4,       # shipped 1 x 0.4 (the floor): its trail is the held mass left once #2263 shrank the bomb to 20/80 (2026-11-20)
-    "Sparrow": 0.61,      # shipped 1 x 0.61
-    "Wrasse": 0.594,      # shipped 1 x 0.594
-    "Scarab": 1.189,      # shipped 1 (default) x 1.189
-    "Honeyguide": 1.419,  # shipped 1 x 1.419
-    "Squirrel": 2.7675,   # shipped 1.35 x 2.05
-    "Stoat": 1.9373,      # shipped 1.35 x 1.435
-    "Meerkat": 2.214,     # shipped 1.35 x 1.64
-    "Dolphin": 1.871,     # shipped 1 x 1.871
-    "Urchin": 2.1,        # shipped 1 (default) x 2.1
-    "TigerMoth": 0.4,     # shipped 1 x 0.4 (the cap)
-    "Thresher": 1.1475,   # shipped 1.35 x 0.85, on top of its massTrailScale knee (#2258)
-    "Shrike": 0.0675,     # shipped 1.35 x 0.05: "shrink shrike's trail so it is almost nothing" (Garrett, 2026-11-19);
-                          # its mass is its nest (ShrikeRules.NestPieces), not a Brood Rush knee
+    "Orca": 0.8,          # HELD: the refit wants 0.9784 (+22%), but the Orca lane is occupied (claude/ms-ai-orca)
+    "Grizzly": 0.4,       # the floor; 1.04 at Medium
+    "Sparrow": 0.4705,
+    "Wrasse": 0.4869,
+    "Scarab": 0.9953,
+    "Honeyguide": 1.5417,
+    "Squirrel": 2.1557,
+    "Stoat": 1.9373,      # HELD: the refit wants 2.2858 (+18%), but the Stoat lane is occupied (Yash, Ys-bleeding-edge)
+    "Meerkat": 1.9244,
+    "Dolphin": 1.871,     # HELD: the refit wants 1.6466 (-12%), but the Dolphin lane is occupied (claude/ms-ai-dolphin)
+    "Urchin": 2.5,        # the cap, and still 0.61 at Medium: flagged, its Mass kit needs a lever of its own
+    "TigerMoth": 0.4,     # the cap, and still 1.21 at Medium on #2332's throttle row: flagged
+    "Thresher": 1.1475,   # HELD: the refit wants 0.9141 (-20%), but the Thresher lane is occupied (claude/fervent-pascal-o28ftt)
+    "Swordfish": 0.7268,  # with #2330's 1.7x afterimages
+    "Shrike": 0.0675,     # "shrink shrike's trail so it is almost nothing" (Garrett, 2026-11-19); its lever is the nest (NEST)
 }
+
+# The Shrike's mass is its nest (ShrikeRules.NestPieces): its lever is the shell's plate thickness (0.7 shipped), not the trail.
+SHRIKE_CONFIG = os.path.join(ROOT, "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset")
+NEST = {"nestShellThickness": 1.2273}
 
 BLOCK = "  trailVolume:\n    Enabled: 0\n    Value: {v}\n    Min: 1\n    Max: 2.5\n    element: 0\n    UseFloor: 0\n    Floor: 0\n"
 
@@ -88,6 +95,16 @@ def apply(write):
             raise SystemExit(f"{hull}: {hit} prism controllers in {path}; expected exactly one")
         if write:
             open(path, "w").write("\n--- !u!".join(docs))
+    text = open(SHRIKE_CONFIG).read()
+    for field, value in NEST.items():
+        m = re.search(r"\n  " + field + r": ([^\n]+)\n", text)
+        if not m:
+            raise SystemExit(f"Shrike: no {field} in {SHRIKE_CONFIG}")
+        if m.group(1).strip() != _fmt(value):
+            drift.append(f"Shrike {field}: {m.group(1).strip()} -> {_fmt(value)}")
+            text = text[:m.start(1)] + _fmt(value) + text[m.end(1):]
+    if write:
+        open(SHRIKE_CONFIG, "w").write(text)
     return drift
 
 
@@ -99,7 +116,7 @@ def main():
     if check and drift:
         sys.exit(1)
     if not drift:
-        print(f"ok: {len(TABLE)} hulls match TABLE")
+        print(f"ok: {len(TABLE)} hulls match TABLE, the Shrike's nest matches NEST")
 
 
 if __name__ == "__main__":

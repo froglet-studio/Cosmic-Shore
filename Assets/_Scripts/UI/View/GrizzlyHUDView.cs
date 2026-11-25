@@ -127,20 +127,21 @@ namespace CosmicShore.UI
         {
             _scoped = scoped;
             CaptureScopeRest();
+
+            // The view rides a round only while the scope is HELD: letting go of LT hands the
+            // view back to the ship, and the round flies on unwatched.
+            if (!scoped && _chasedRound != null)
+            {
+                ReleaseRound();
+                return;
+            }
+
             bool visible = scoped || _chasedRound != null;
             if (scopePanel) scopePanel.SetActive(visible);
 
             if (scopeCamera)
             {
-                if (visible && _scopeRT == null)
-                {
-                    _scopeRT = new RenderTexture(scopeTextureSize, scopeTextureSize, 16)
-                    {
-                        name = "GrizzlyScopeRT"
-                    };
-                    scopeCamera.targetTexture = _scopeRT;
-                    if (scopeImage) scopeImage.texture = _scopeRT;
-                }
+                if (visible) EnsureScopeTexture();
                 scopeCamera.enabled = visible;
             }
 
@@ -215,19 +216,25 @@ namespace CosmicShore.UI
             return reticleNoTargetColor;
         }
 
+        /// <summary>The scope's zoom: LT's pressure, as a field of view (GrizzlySniperShotActionExecutor).</summary>
+        public void SetScopeFov(float fieldOfView)
+        {
+            if (scopeCamera && fieldOfView > 0f) scopeCamera.fieldOfView = fieldOfView;
+        }
+
         /// <summary>The pilot domain, so the reticle can tell friend from foe.</summary>
         public void SetOwnDomain(Domains domain) => _ownDomain = domain;
 
         /// <summary>
-        /// Hand the PiP to a sniper round in flight. The scope closes on trigger RELEASE
-        /// (that is what fires), so without this the panel would blink shut at the exact
-        /// moment the shot became interesting. While a round is live the PiP rides it in
-        /// first person and the reticle is hidden - you are no longer aiming, you are
-        /// watching.
+        /// Hand the scope view to a sniper round in flight. On the triggers (2026-10-16) LT holds
+        /// the scope and RT fires, so a round fired with LT held takes the view with it, in
+        /// first person with the reticle hidden - you are no longer aiming, you are watching -
+        /// until LT is released (<see cref="SetScope"/>) or the round ends.
         /// </summary>
         public void FollowRound(Transform round)
         {
-            if (round == null) return;
+            // Only a round fired with the scope held takes the view (LT held, RT fired).
+            if (round == null || !_scoped) return;
             CaptureScopeRest();
             _chasedRound = round;
             _roundCamForwardOffset = MeasureNoseClearance(round);
@@ -235,12 +242,7 @@ namespace CosmicShore.UI
             if (scopePanel) scopePanel.SetActive(true);
             if (scopeCamera)
             {
-                if (_scopeRT == null)
-                {
-                    _scopeRT = new RenderTexture(scopeTextureSize, scopeTextureSize, 16) { name = "GrizzlyScopeRT" };
-                    scopeCamera.targetTexture = _scopeRT;
-                    if (scopeImage) scopeImage.texture = _scopeRT;
-                }
+                EnsureScopeTexture();
                 // Unparent so the hull cannot drag the view around while the round flies.
                 scopeCamera.transform.SetParent(null, true);
                 scopeCamera.enabled = true;
@@ -257,6 +259,24 @@ namespace CosmicShore.UI
             if (reticle) reticle.enabled = true;
             if (scopePanel) scopePanel.SetActive(_scoped);
             if (scopeCamera) scopeCamera.enabled = _scoped;
+        }
+
+        /// <summary>The PiP's square render target, created on first use.</summary>
+        void EnsureScopeTexture()
+        {
+            if (!scopeCamera || _scopeRT != null) return;
+            _scopeRT = new RenderTexture(scopeTextureSize, scopeTextureSize, 16) { name = "GrizzlyScopeRT" };
+            scopeCamera.targetTexture = _scopeRT;
+            if (scopeImage) scopeImage.texture = _scopeRT;
+        }
+
+        void ReleaseScopeTexture()
+        {
+            if (_scopeRT == null) return;
+            if (scopeCamera) scopeCamera.targetTexture = null;
+            _scopeRT.Release();
+            Destroy(_scopeRT);
+            _scopeRT = null;
         }
 
         /// <summary>
@@ -348,13 +368,7 @@ namespace CosmicShore.UI
             // is destroyed with the view. A camera already on the hull needs nothing.
             if (_scopeRestCaptured && scopeCamera && scopeCamera.transform.parent != _scopeRestParent)
                 Destroy(scopeCamera.gameObject);
-            if (_scopeRT != null)
-            {
-                if (scopeCamera) scopeCamera.targetTexture = null;
-                _scopeRT.Release();
-                Destroy(_scopeRT);
-                _scopeRT = null;
-            }
+            ReleaseScopeTexture();
         }
     }
 }

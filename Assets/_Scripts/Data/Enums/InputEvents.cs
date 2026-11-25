@@ -20,5 +20,6 @@ namespace CosmicShore.Data
         BothSticksAction = 13,//
         Button4Action = 14,                 // Y (pad north) / F; first bound by the Angler (dash 2026-10-16, recall since 2026-10-18)
         PayloadAction = 15,                 // RB (pad right shoulder) / E: grab and release the Ark's payload (PayloadCarrier, Docs/Pilots/ARTIFACTS.md §2)
+        LeftShoulderAction = 16,            // LB (pad left shoulder) only: no keyboard key, no touch. Bound only by the Grizzly (weapon cycle, design owner 2026-10-16); added so LB never raises IdleAction, which the Jacks binds on every device.
     }
 }

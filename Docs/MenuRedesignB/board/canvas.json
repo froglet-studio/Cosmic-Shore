@@ -3577,6 +3577,250 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 138 - notes: the final shell"
+    },
+    "R139Compare.dc.html": {
+      "x": 0,
+      "y": 41651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 - the convert moment of A, B and C side by side, frame by frame"
+    },
+    "R139A.dc.html": {
+      "x": 2100,
+      "y": 41651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 A - Light paths: the five readings in one quiet line at the foot; on CONVERT each crystal's path lights up to the pad - interactive",
+      "is_interactive": true
+    },
+    "R139B.dc.html": {
+      "x": 4200,
+      "y": 41651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 B - Glass orb: the converter as a small glass sphere at the foot, the four inside fuse into the omni - interactive",
+      "is_interactive": true
+    },
+    "R139C.dc.html": {
+      "x": 0,
+      "y": 42911,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 139 C - The pad is the button: press the pier's own ring; the counts are one line at the foot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R139Notes.dc.html": {
+      "x": 0,
+      "y": 44171,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build"
+    },
+    "R140Compare.dc.html": {
+      "x": 0,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 - Compare: what happens when you touch Hydra, in each option"
+    },
+    "R140A.dc.html": {
+      "x": 2100,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 A - Lit where it stands: touch it, its pedestal lights, the words hang beside it - interactive",
+      "is_interactive": true
+    },
+    "R140B.dc.html": {
+      "x": 4200,
+      "y": 46531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 B - Step up to it: touch it and the view walks in to its pedestal - interactive",
+      "is_interactive": true
+    },
+    "R140C.dc.html": {
+      "x": 0,
+      "y": 47791,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 C - Written on the floor: the words lie on the deck in front of it - interactive",
+      "is_interactive": true
+    },
+    "R140D.dc.html": {
+      "x": 2100,
+      "y": 47791,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 140 D - The column shows it: touch it and the light column plays what it does (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R140Notes.dc.html": {
+      "x": 0,
+      "y": 49051,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 140 - Notes: what changes, what stays, what each costs to build"
+    },
+    "R141Compare.dc.html": {
+      "x": 0,
+      "y": 51411,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 141 - one seat picked in A, B and C beside the build"
+    },
+    "R141A.dc.html": {
+      "x": 2100,
+      "y": 51411,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 141 A - Line abreast: the three hulls stand side by side across the floor; press one and the view walks up to it (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R141B.dc.html": {
+      "x": 4200,
+      "y": 51411,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 141 B - The holo table: the vessels as holograms over one table in the middle of the room - interactive",
+      "is_interactive": true
+    },
+    "R141C.dc.html": {
+      "x": 0,
+      "y": 52671,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 141 C - One bay: one vessel at a time, big on the centre pad, the other two seats beside it - interactive",
+      "is_interactive": true
+    },
+    "R141Notes.dc.html": {
+      "x": 0,
+      "y": 53931,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 141 - notes: what was broken, what each option changes, the recommendation"
+    },
+    "R142Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 142 - the toy card four ways, the same toy, at rest and pointed at"
+    },
+    "R142A.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 142 A - Portal: tall cards dealt in a row; the card grows into the preview; you fly through the toy's ring - interactive",
+      "is_interactive": true
+    },
+    "R142B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 142 B - Orbit: the toys on a ring around you; the card flips to Configure; warp, and a vessel built from prisms - interactive",
+      "is_interactive": true
+    },
+    "R142C.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 142 C - Slide open: strips that slide open; the window splits into slats as you leave - interactive",
+      "is_interactive": true
+    },
+    "R142D.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 142 D - Lens: the lens irises into a round preview with a dial; you dive through it and rise out of a ripple (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R142Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 900,
+      "page": "toy-box",
+      "title": "Rev 142 - notes: what was asked, the four, and what each costs in Unity"
+    },
+    "R143E.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 143 E - D's Toy Box, A's Configure inside, gradient and sea lines behind, dark glass cards - interactive",
+      "is_interactive": true
+    },
+    "R144F.dc.html": {
+      "x": 0,
+      "y": 7420,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 144 F - the 2D toy glyphs, flat as drawn - interactive",
+      "is_interactive": true
+    },
+    "R144G.dc.html": {
+      "x": 2100,
+      "y": 7420,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 144 G - the same 2D glyphs baked with depth: extruded, bevelled, tilting on hover - interactive",
+      "is_interactive": true
+    },
+    "R145H.dc.html": {
+      "x": 0,
+      "y": 9960,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 145 H - Shelf tiles in Configure; Today as a banner - interactive",
+      "is_interactive": true
+    },
+    "R145I.dc.html": {
+      "x": 2100,
+      "y": 9960,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 145 I - Slide-open list in Configure; Today with a clock ring - interactive",
+      "is_interactive": true
+    },
+    "R145J.dc.html": {
+      "x": 4200,
+      "y": 9960,
+      "w": 1920,
+      "h": 1080,
+      "page": "toy-box",
+      "title": "Rev 145 J - Pedestal and chips in Configure; Today as a live strip - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -3585,7 +3829,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "voyages",
+    "page": "toy-box",
     "view": "canvas"
   },
   "noteOrder": [
@@ -3678,6 +3922,13 @@
     "sec-rev136",
     "sec-rev137",
     "sec-rev138",
+    "sec-rev139",
+    "sec-rev140",
+    "sec-rev141",
+    "sec-rev142",
+    "sec-rev143",
+    "sec-rev144",
+    "sec-rev145",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -3778,7 +4029,14 @@
     "rev135",
     "rev136",
     "rev137",
-    "rev138"
+    "rev138",
+    "rev139",
+    "rev140",
+    "rev141",
+    "rev142",
+    "rev143",
+    "rev144",
+    "rev145"
   ],
   "notes": {
     "hud_end": {
@@ -6140,6 +6398,174 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev139": {
+      "kind": "title1",
+      "text": "Rev 139 - The Converter redrawn: the pier stays, the UI starts again, and CONVERT plays at once",
+      "x": 0,
+      "y": 41251,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev139": {
+      "kind": "rect",
+      "x": -160,
+      "y": 41091,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev140": {
+      "kind": "title1",
+      "text": "Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways",
+      "x": 0,
+      "y": 46131,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev140": {
+      "kind": "rect",
+      "x": -160,
+      "y": 45971,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev141": {
+      "kind": "title1",
+      "text": "Rev 141 - The Squads tab started again: the vessels in the room and on screen, press the vessel itself, a slim foot",
+      "x": 0,
+      "y": 51011,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev141": {
+      "kind": "rect",
+      "x": -160,
+      "y": 50851,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev142": {
+      "kind": "title1",
+      "text": "Rev 142 - The Toy Box with motion: open, switch, spawn, and Navigate into the preview, four ways",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "toy-box"
+    },
+    "sec-rev142": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "toy-box"
+    },
+    "rev143": {
+      "kind": "title1",
+      "text": "Rev 143 - The Toy Box mix: D's lens cards with A's Configure, on the menu's gradient and sea lines",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "toy-box"
+    },
+    "sec-rev143": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "toy-box"
+    },
+    "rev144": {
+      "kind": "title1",
+      "text": "Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs: flat, and with depth",
+      "x": 0,
+      "y": 7020,
+      "w": 240,
+      "maxW": 6120,
+      "page": "toy-box"
+    },
+    "sec-rev144": {
+      "kind": "rect",
+      "x": -160,
+      "y": 6860,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "toy-box"
+    },
+    "rev145": {
+      "kind": "title1",
+      "text": "Rev 144 G, picked: the variation panel and Today's activity, three ways",
+      "x": 0,
+      "y": 9560,
+      "w": 240,
+      "maxW": 6120,
+      "page": "toy-box"
+    },
+    "sec-rev145": {
+      "kind": "rect",
+      "x": -160,
+      "y": 9400,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "toy-box"
     }
   },
   "order": [
@@ -6571,7 +6997,35 @@
     "R138Vessels.dc.html",
     "R138Pilots.dc.html",
     "R138Party.dc.html",
-    "R138Notes.dc.html"
+    "R138Notes.dc.html",
+    "R139Compare.dc.html",
+    "R139A.dc.html",
+    "R139B.dc.html",
+    "R139C.dc.html",
+    "R139Notes.dc.html",
+    "R140Compare.dc.html",
+    "R140A.dc.html",
+    "R140B.dc.html",
+    "R140C.dc.html",
+    "R140D.dc.html",
+    "R140Notes.dc.html",
+    "R141Compare.dc.html",
+    "R141A.dc.html",
+    "R141B.dc.html",
+    "R141C.dc.html",
+    "R141Notes.dc.html",
+    "R142Compare.dc.html",
+    "R142A.dc.html",
+    "R142B.dc.html",
+    "R142C.dc.html",
+    "R142D.dc.html",
+    "R142Notes.dc.html",
+    "R143E.dc.html",
+    "R144F.dc.html",
+    "R144G.dc.html",
+    "R145H.dc.html",
+    "R145I.dc.html",
+    "R145J.dc.html"
   ],
   "pages": [
     {
@@ -6641,6 +7095,10 @@
     {
       "id": "game-cards",
       "name": "Game Cards"
+    },
+    {
+      "id": "toy-box",
+      "name": "Toy Box"
     }
   ],
   "title": "Frogma"

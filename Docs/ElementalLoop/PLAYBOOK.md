@@ -260,6 +260,8 @@ model number (standing rule).
    and I2 fail their finish-rate bar, and most rungs have too few flights for a verdict. In score games (Grizzly
    Charge, Scarab Scramble) "finished" may not mean a finish; give them a game override or let the card learn them.
 3. **Charge AIs need the per-attacker petal ledger** (`SILENCE.md` §6) before `charge-arcade` can be scored.
+   **Built 2026-11-23** (`PetalLedger`, `IRoundStats.PetalsTaken`, `ScoringMetric.PetalsTaken`; `SILENCE.md` §6). What is left: point the Charge AI's fitness and, where its owner
+   agrees, a Charge card's or Broadside's scoring at it, and see it count in the editor.
 4. **No Mass or Space AI model or learner exists for any game**, and Brood Rush has no net-control-of-space measure and
    no cultivator/destroyer readout. Both are needed before Brood Rush's step 4.
 5. **Environment creators for Broadside and Brood Rush do not exist**; Regatta's is a fixed pool searched in a model,

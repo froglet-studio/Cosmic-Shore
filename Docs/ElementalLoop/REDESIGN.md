@@ -341,7 +341,7 @@ Shipped indexes are from 80 matches on the #2260 engine (ed4ae800f5). Results an
 
 | Vessel | Shipped index | Uncapped lever: factor, index | Why the lever does not fit | What to change |
 |---|---|---|---|---|
-| Manta | 2.91 | x0.2, 1.11 | It lays 3x the field's mass; the lever works, but only as a 5x cut to its trail | Its trail is its Mass identity: shorten its wingspan trail (`wl`) or slow its lay rate in the Mass kit, then re-judge |
+| Manta | 2.91 (3.76 at Medium 3x3) | Mass-scaled trail, 0.13x at rest: 0.95 | It laid ~10x a field pilot's volume (2x the speed, 2.6x the blocks, 4x each block) | 2026-11-21: `trailVolume` now scales with Mass (0.13x at rest, 0.6x at level 10; Regatta unchanged, 84.4 s card / 28.5 s L5). 2026-11-25: the 3x3 Medium refit (`2adc902632`, brood_trail_levers.py) scaled it x0.856: 0.1113x at rest, 0.5136x at level 10, floor 0.065 kept. Alternatives judged: rails 2 wide every 18 u, 1.03. Data: /mnt/project-files/regatta-flywheel/broodrush-deep/manta/RESULT.md |
 | Serpent | 1.98 | x0.16, 1.92 | Its VD is 2.8x the field: it destroys prisms more than it lays them, so the trail does nothing | A Space lever on its destroy (its redesign happens in Garrett's other project; here it is only measured) |
 | Grizzly | 1.75 | x0.3, 1.27 | VD-heavy like the Serpent (3.1x); at 0.4x trail it is still 1.4 | A lever on how much it takes off the opposing domains (its claw or charge volume) |
 | JewelWasp | 0.36 | x8.1, 0.83 | Lays 0.10x the field's mass; past 3x the cap it is still under the bar | Its Mass ability needs a real trail (a lay rate, not a multiplier on a near-zero trail) |
@@ -349,7 +349,7 @@ Shipped indexes are from 80 matches on the #2260 engine (ed4ae800f5). Results an
 | Rhino | 0.19 | x3.2, 0.31 | Its 3x3x0.5 plough blocks are flat; the lever barely moves its score | A Mass kit that lays volume as it ploughs (the plough's own blocks) |
 | Jacks | 0.07 | x16.6, 0.68 | The hull holds while the jacks herd; it lays almost nothing (0.06x) | Kit-limited: the herd and the net rhythm change nothing (seat thread); the jacks themselves need to lay or claim |
 | Goby | 0.02 | x1 (the lever does not act) | Before #2257 it was 0.52 and its AI spent 9 s of 103 in the nucleus. Since #2257's `aiHomeRadius` 600, its leash, anchored at its spawn, pins it in the nucleus (79 s a match) laying almost nothing | Anchor the leash to its own islands instead of its spawn (the Goby/Orca thread's proposal, trained in Den Builder and Riptide), then re-judge |
-| Swordfish | 0.66 | x2.5, 0.82 | Its VC is not mostly trail, so 2.5x gives about 10% | A Mass lever on its slice (the volume each cut leaves), not the trail |
+| Swordfish | 0.66 | x2.5, 0.82 | Its VC is not mostly trail, so 2.5x gives about 10% | **Done 2026-11-21**: its mass is its afterimages; afterimage volume x1.7 at rest gives 1.03 at Medium 3x3 (`SWORDFISH.md` § "Brood Rush") |
 | BrittleStar | 0.71 | x2.5, 0.87 | A 1x1x6 trail: 2.5x the volume is still a thin line | Its arms' lay (more prisms or a wider block), then re-judge |
 
 The Shrike (above) and the Thresher (in on its `massTrailScale`) are the Shrike / Wrasse seat thread's.

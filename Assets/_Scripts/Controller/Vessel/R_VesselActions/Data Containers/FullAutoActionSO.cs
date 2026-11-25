@@ -100,6 +100,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float ResolveGrowthFactor(IVesselStatus status)
             => ElementalScaling.RoundGrowthFactor(status, growthFactorAtRestingMass, growthFactorAtFullMass);
+        /// <summary>Its rounds break prisms on every peer that runs them: an AI's press must run on every peer (<see cref="ShipActionSO.AutopilotPressTravels"/>).</summary>
+        public override bool AutopilotPressTravels => true;
+
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {

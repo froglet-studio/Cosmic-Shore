@@ -1,0 +1,44 @@
+{
+  "id": "2026-11-25-risky-merge-pr-2329-tune-rhino-bigger-pl-518ea5",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-25T01:00:28+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2329 (tune(rhino): bigger plough rails so the Rhino counts in Brood Rush; reseat it on the card) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Rhino.prefab; a swim lane someone else occupies (approvals.py check exit 2): Rhino",
+  "branch": "ship-rhino",
+  "pr": 2329,
+  "commit": "6348508a6",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Rhino.prefab",
+    "Assets/_SO_Assets/Games/ArcadeGameBroodRush.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameWindrow.asset",
+    "Tools/Build/rhino_brood/all.ov.json",
+    "Tools/Build/rhino_brood/blade30.ov.json",
+    "Tools/Build/rhino_brood/carry40.ov.json",
+    "Tools/Build/rhino_brood/carry40furrow60.ov.json",
+    "Tools/Build/rhino_brood/furrow60.ov.json",
+    "Tools/Build/rhino_brood/g0z15.ov.json",
+    "Tools/Build/rhino_brood/sweep.py",
+    "Tools/Build/rhino_brood/trail25.ov.json",
+    "Tools/Build/rhino_brood/x4z4.ov.json",
+    "Tools/Build/rhino_brood/x5z5.ov.json",
+    "Tools/Build/rhino_brood/z3.ov.json",
+    "Tools/Build/rhino_brood/z5.ov.json",
+    "Tools/Build/rhino_brood/z5t16.ov.json",
+    "Tools/Build/rhino_brood/z5t2.ov.json",
+    "Tools/Build/rhino_brood/z6.ov.json"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Rhino.prefab"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Rhino"
+    }
+  ]
+}

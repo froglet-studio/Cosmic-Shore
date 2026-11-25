@@ -55,12 +55,46 @@ namespace CosmicShore.Player
         }
 
         /// <summary>The live vessel's trail volume multiplier as its prism controller evaluates it now (proves an override reached the spawn).</summary>
+        /// <summary>Starts per vessel and action (or input), for the seat's "presses".</summary>
+        sealed class PressCounter : IVesselActionObserver
+        {
+            readonly Dictionary<IVesselStatus, Dictionary<string, int>> _n = new();
+            public readonly IVesselActionObserver Inner;   // the replay recorder, when one watches: still told everything
+            public PressCounter(IVesselActionObserver inner) => Inner = inner;
+            void Add(IVesselStatus v, string key)
+            {
+                if (v == null) return;
+                if (!_n.TryGetValue(v, out var d)) _n[v] = d = new Dictionary<string, int>();
+                d[key] = d.TryGetValue(key, out int c) ? c + 1 : 1;
+            }
+            public void OnInputAction(IVesselStatus vessel, InputEvents input, byte device, bool down) { Inner?.OnInputAction(vessel, input, device, down); if (down) Add(vessel, input.ToString()); }
+            public void OnDirectAction(IVesselStatus vessel, ShipActionSO action, bool start) { Inner?.OnDirectAction(vessel, action, start); if (start && action) Add(vessel, action.name.Replace("(Clone)", "")); }
+            public JsonObject Of(IVesselStatus v)
+            {
+                var o = new JsonObject();
+                if (v != null && _n.TryGetValue(v, out var d)) foreach (var (k, c) in d) o[k] = c;
+                return o;
+            }
+        }
+
         static double? TrailVolumeOf(IPlayer p)
         {
             var pc = p.Vessel?.VesselStatus?.VesselPrismController;
             if (pc == null) return null;
             var f = typeof(VesselPrismController).GetField("trailVolume", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             return f?.GetValue(pc) is ElementalFloat ef ? Math.Round(ef.EvaluateLive(p.Vessel.VesselStatus), 3) : null;
+        }
+
+        /// <summary>The live AI pilot's difficulty as the spawn configured it (ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode):
+        /// its autopilot skill (arena: Easy 0.25 .. Legendary 1) and its belief's mistakes (null on Legendary). Proves the spec's
+        /// "difficulty" reached every seat the way Unity's launch panel does.</summary>
+        static JsonObject PilotOf(IPlayer p)
+        {
+            if (p.Vessel?.VesselStatus is not Component c || !c || !c.TryGetComponent(out AIPilot pilot)) return null;
+            var f = typeof(AIPilot).GetField("skillLevel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var o = new JsonObject { ["skill"] = f?.GetValue(pilot) is float sk ? Math.Round(sk, 3) : null };
+            if (pilot.Belief is { } b) { o["reaction_s"] = Math.Round(b.Level.ReactionSeconds, 3); o["mistake"] = Math.Round(b.Level.MistakeChance, 3); }
+            return o;
         }
 
         static MultiplayerDomainGamesController FindBrood() => CosmicShore.Engine.Object.FindAnyObjectByType<MultiplayerDomainGamesController>();
@@ -86,7 +120,8 @@ namespace CosmicShore.Player
                     }
                     yield return 0.25f;
                 }
-                var race = new JsonObject { ["seed"] = seed, ["mode"] = "teams", ["game"] = _mode, ["intensity"] = intensity, ["host_hull"] = hostHull.ToString() };
+                var race = new JsonObject { ["seed"] = seed, ["mode"] = "teams", ["game"] = _mode, ["intensity"] = intensity, ["host_hull"] = hostHull.ToString(),
+                    ["difficulty"] = gameData.RequestedAIDifficulty.ToString(), ["domains"] = gameData.RequestedDomainCount };
                 _races.Add(race);
                 if (controller == null || (cell == null && _mode == "BroodRush") || ais == null || ais.Count < _hulls.Count)
                 {
@@ -108,6 +143,10 @@ namespace CosmicShore.Player
                     yield break;
                 }
                 CosmicShore.Engine.Random.InitState(unchecked(seed * 7919 + 17));
+                // Count every press each seat makes (inputs and the autopilot's direct actions), so a search can see
+                // whether an AI ability list is used at all. Only when nobody else (the replay recorder) watches.
+                var presses = new PressCounter(VesselActionTape.Observer is PressCounter old ? old.Inner : VesselActionTape.Observer);
+                VesselActionTape.Observer = presses;
 
                 var host = gameData.LocalPlayer;
                 // "ai_objective": "nucleus" - an experiment, in memory only: every AI steers for the nucleus while outside it and
@@ -197,6 +236,8 @@ namespace CosmicShore.Player
                         ["destroyed"] = p.RoundStats is { } rs2 ? Math.Round(rs2.HostileVolumeDestroyed, 1) : null,
                         ["crystals"] = p.RoundStats?.CrystalsCollected,
                         ["trail_volume"] = TrailVolumeOf(p),
+                        ["pilot"] = PilotOf(p),
+                        ["presses"] = presses.Of(p.Vessel?.VesselStatus),
                         ["ability_s"] = p.RoundStats is { } rs3 ? new JsonArray(Math.Round(rs3.Button1AbilityActiveTime, 1), Math.Round(rs3.Button2AbilityActiveTime, 1),
                             Math.Round(rs3.Button3AbilityActiveTime, 1), Math.Round(rs3.LeftStickAbilityActiveTime, 1), Math.Round(rs3.RightStickAbilityActiveTime, 1),
                             Math.Round(rs3.FullSpeedStraightAbilityActiveTime, 1)) : null,

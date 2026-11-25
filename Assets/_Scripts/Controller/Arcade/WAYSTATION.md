@@ -37,6 +37,49 @@ every gap but the last, and one long drop to finish. Every pilot flies the same 
 | Compile harnesses | `Tools/Build/waystation_tower_harness/` (towers; `run_tests.sh` runs the shipped `WaystationTowerTests` and `WaystationHopPlanTests` without Unity), `Tools/Build/waystation_harness/` (clusters) |
 | Generator | `Tools/Build/author_waystation_assets.py` (`--check`; it also retires the prototype's assets and registrations) |
 
+## Garden ruins (I4, 2026-11-24)
+
+Yash asked for the environment update Spearline got (`SPEARLINE.md` §2a): the ruins of old flora gardens round the
+racing line on the hardest rung. Decoration only: plain prisms with the game's own rules. Nothing reads or writes a
+vessel, and I1-I3 are unchanged.
+
+**The generator is Spearline's, called and not copied.** `WaystationRuins.Lay` (pure) calls `SpearlineRuins.Lay` with
+Spearline's own numbers: a 60 u clear lane, nothing within 120 u of a gate, only on legs of 380 u or more, the seven
+kinds (pergola, flower head, vines, wall with a doorway, tunnel, 3D maze, turning wheel at 25 deg/s). Three things are
+Waystation's own, in `Waystation/WaystationRuins.cs`:
+
+- **The racing line.** A tower ring is not flown to. The pilot cruises level to the press point and falls along the
+  ring's axis. `RacingLine` states that as gates: the press point twice (once on the arriving heading, once on the fall
+  line), then the ring. Both tower legs are then straight, so the clear lane lies where the hull goes, and every press
+  point gets the 120 u margin a ring has.
+- **The towers.** No ruin prism stands within 14 u (`WallClear`) of a wall tile or a lantern segment, and a wheel
+  turns only where its whole sweep is clear of them. On the ten test seeds the lane and the margins already keep every
+  ruin off the towers, so this filter removes nothing there; it is a guard for other seeds.
+- **Which legs.** The generator lays the first legs it meets, which on a chain is all at the start. Waystation lays
+  every leg with room and keeps at most seven, each kind once, the longest leg (the long last drop) first, then the
+  legs farthest along the chain from those already picked. A ruin cut to under 12 prisms is dropped.
+
+**How many (measured, 20 seeds at I4, 5 clusters):** one to three ruins a course, 34 to 418 prisms, not Spearline's
+seven. A Drop Tower's legs are mostly shorter than 380 u (a course has 1 to 6 legs that long), so most ruins stand on
+the long last drop and on a tower's longer cruise legs. A wheel stood on 2 of the 20 seeds, on the long drop. More
+ruins would need a shorter minimum leg and gate margin in `SpearlineRuins`' settings; those are not changed here.
+
+**In the world** (`WaystationController.Ruins.cs`): every peer lays the ruins from the broadcast course in the walls'
+prism (`wallPrefab`), under the controller like the walls, before the walls. Each ruin is one domain colour,
+`ruinDomains` in turn (Jade, Ruby, Gold; empty = Blue), which reads apart from the Blue walls and lanterns. A wheel's
+prisms are posed every frame from the network clock. Ruins do not regrow and are released with the walls. The scene
+needs no new field: `ruinDomains` takes its default.
+
+**Gates:** `WaystationRuinsTests` (8 tests: none below I4, one to seven ruins numbered along the chain, the lane, the
+straight tower legs, the ring and press-point margin, the walls and lanterns, a wheel's own prisms, purity), run without
+Unity by `Tools/Build/waystation_tower_harness/run_tests.sh`; `--self-test` adds three negative controls that fire
+(the ring-to-ring line instead of the cruise and the fall, a kind standing twice, ruins on every rung).
+
+**Not done:** not compiled by Unity and not run in the editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). The AI does
+not know the ruins are there. Its hop miss recovery flies 600 u past the press point and comes round, which can cross
+a ruin outside the lane; whether I4 times change is not measured. `author_waystation_assets.py --check` was not run
+(no Python on the machine this was written on); the generator needed no change.
+
 ## Lantern Towers (2026-11-11)
 
 **The problem it solves.** A Drop Tower hop was a timing test with one right answer per rung: hold for the window's

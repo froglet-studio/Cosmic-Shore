@@ -1340,6 +1340,37 @@ public class VesselTransformer : MonoBehaviour
                 : rest;
         }
 
+        /// <summary>The frame rate the drift-course blend was tuned at: one frame at this rate keeps exactly the analog
+        /// drift amount, as the per-frame blend always did.</summary>
+        public const float DriftCourseReferenceFps = 60f;
+
+        // The analog drift amount the drift-course blend saw last frame (0 outside a drift): the start of this frame's ramp.
+        float _lastDriftCourseAmount;
+
+        /// <summary>The share of the drifted course a frame of <paramref name="dt"/> seconds keeps while the analog drift
+        /// amount moves from <paramref name="previousAmount"/> to <paramref name="driftAmount"/> (0..1). The blend
+        /// compounds every frame, so it is run as the 60 fps frames this frame stands for: <c>k = ceil(dt × 60 - 0.05)</c>
+        /// (a frame within 5% of 1/60 s is one step) sub-steps whose amounts are interpolated along the frame's ramp, each kept to the power <c>dt × 60 / k</c>.
+        /// A 60 fps frame keeps exactly <paramref name="driftAmount"/>, as the per-frame blend always did. Pure, for the
+        /// tests.</summary>
+        public static float DriftCourseShare(float previousAmount, float driftAmount, float dt)
+        {
+            float a = Mathf.Clamp01(driftAmount);
+            if (dt <= 0f) return a;
+            float frames = dt * DriftCourseReferenceFps;
+            int k = Mathf.Max(1, Mathf.CeilToInt(frames - 0.05f));
+            float exponent = frames / k;
+            float from = Mathf.Clamp01(previousAmount);
+            float share = 1f;
+            for (int i = 1; i <= k; i++)
+            {
+                float ai = Mathf.Lerp(from, a, (float)i / k);
+                if (ai <= 0f) return 0f;
+                if (ai < 1f) share *= Mathf.Pow(ai, exponent);
+            }
+            return share;
+        }
+
         /// <summary>True when this hull flies with inertia outside a drift (<see cref="inertialGripAtCruise"/> above 0 on
         /// the vector model): the nose leads and the travel follows.</summary>
         public bool HasInertialGrip => vectorFlightModel && inertialGripAtCruise > 0f;
@@ -1564,12 +1595,17 @@ public class VesselTransformer : MonoBehaviour
                     : VesselStatus.Course;
 
                 // Blend: at driftAmount 0, Course = forward (no drift feel);
-                // at driftAmount 1, Course = fully drifted
-                VesselStatus.Course = Vector3.Slerp(transform.forward, driftedCourse, driftAmount);
+                // at driftAmount 1, Course = fully drifted. The blend compounds every frame, so it runs as the 60 fps
+                // frames it was tuned at (DriftCourseShare): a per-frame share pulled the course onto the nose
+                // twice as hard at 60 fps as at 30 during the 83 ms trigger ramp, so an AI commit drift kept its
+                // locked course 2-5x longer on a 30 fps device (the Dolphin read 2x the Brood Rush field there).
+                VesselStatus.Course = Vector3.Slerp(transform.forward, driftedCourse, DriftCourseShare(_lastDriftCourseAmount, driftAmount, Time.deltaTime));
+                _lastDriftCourseAmount = driftAmount;
             }
             else
             {
                 VesselStatus.Course = transform.forward;
+                _lastDriftCourseAmount = 0f;
             }
 
             // A REVERSING vessel publishes a POSITIVE Speed and a REVERSED Course — never a
