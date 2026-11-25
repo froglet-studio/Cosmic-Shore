@@ -1,0 +1,83 @@
+diff --git a/Assets/_Scripts/Controller/AI/AIPilot.cs b/Assets/_Scripts/Controller/AI/AIPilot.cs
+index cec1de0aaf..401050f385 100644
+--- a/Assets/_Scripts/Controller/AI/AIPilot.cs
++++ b/Assets/_Scripts/Controller/AI/AIPilot.cs
+@@ -1208,7 +1208,7 @@ namespace CosmicShore.Gameplay
+             if (_commitDriftHeld)
+             {
+                 SetCommitDriftHeld(false);
+-                vessel?.StopShipControllerActions(CommitControl);
++                PressCommitDrift(false);
+             }
+         }
+ 
+@@ -1295,7 +1295,7 @@ namespace CosmicShore.Gameplay
+                 steerTarget = dodge;
+                 if (VesselStatus.IsDrifting || _commitDriftHeld)
+                 {
+-                    vessel.StopShipControllerActions(CommitControl);
++                    PressCommitDrift(false);
+                     SetCommitDriftHeld(false);
+                 }
+                 ReleaseAimTelegraph();
+@@ -1327,7 +1327,7 @@ namespace CosmicShore.Gameplay
+                 // elsewhere; from here the vessel is travelling at the crystal no matter where it
+                 // points, which is exactly the window in which announcing the aim is honest.
+                 VesselStatus.Course = desiredDirection;
+-                vessel.PerformShipControllerActions(CommitControl);
++                PressCommitDrift(true);
+                 SetCommitDriftHeld(true);
+                 EngageAimTelegraph();
+                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
+@@ -1336,7 +1336,7 @@ namespace CosmicShore.Gameplay
+             {
+                 // Our commit drift is holding the hull (nearly) still: a drift that keeps its speed keeps 0, and
+                 // with no motion the aim never swings off course to end it. Let go; the throttle takes over.
+-                vessel.StopShipControllerActions(CommitControl);
++                PressCommitDrift(false);
+                 SetCommitDriftHeld(false);
+                 ReleaseAimTelegraph();
+             }
+@@ -1358,7 +1358,7 @@ namespace CosmicShore.Gameplay
+                 // last step is what CLOSES the loop: without it the AI keeps the target it can no
+                 // longer reach until the cell happens to raise OnCellItemsUpdated, which is a
+                 // crystal event and not a "this pilot needs a new goal" event.
+-                vessel.StopShipControllerActions(CommitControl);
++                PressCommitDrift(false);
+                 SetCommitDriftHeld(false);
+                 ReleaseAimTelegraph();
+ 
+@@ -1729,6 +1729,24 @@ namespace CosmicShore.Gameplay
+             _orbitDetector.Reset();
+         }
+ 
++        /// <summary>
++        /// Press or release the commit drift on EVERY peer, the way a human press runs. The drift reshapes trail
++        /// prisms (Dolphin, Squirrel, Scarab) that each peer simulates itself, so a host-only press left clients
++        /// drawing a trail the host had already bent. Falls back to the local call offline.
++        /// </summary>
++        void PressCommitDrift(bool down)
++        {
++            var handler = VesselStatus?.ActionHandler;
++            if (handler != null)
++            {
++                if (down) handler.PerformShipControllerActionsReplicated(CommitControl);
++                else handler.StopShipControllerActionsReplicated(CommitControl);
++                return;
++            }
++            if (down) vessel?.PerformShipControllerActions(CommitControl);
++            else vessel?.StopShipControllerActions(CommitControl);
++        }
++
+         /// <summary>
+         /// Hold this vessel's <see cref="IAimTelegraphAction"/> — the Dolphin's Echo Sight today —
+         /// for as long as the AI is committed to a drift onto its objective.
+@@ -1825,7 +1843,7 @@ namespace CosmicShore.Gameplay
+             // the same release the off-course branch performs, just earlier.
+             if (_boostDriver.TakeCommitReleaseRequest() && _commitDriftHeld)
+             {
+-                vessel.StopShipControllerActions(CommitControl);
++                PressCommitDrift(false);
+                 SetCommitDriftHeld(false);
+                 ReleaseAimTelegraph();
+             }

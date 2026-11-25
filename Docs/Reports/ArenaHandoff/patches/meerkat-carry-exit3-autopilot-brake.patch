@@ -1,0 +1,135 @@
+diff --git a/Assets/_SO_Assets/Environment/SolitonTunnel/SolitonTunnel.asset b/Assets/_SO_Assets/Environment/SolitonTunnel/SolitonTunnel.asset
+index c03cb51f67..f9de0cce28 100644
+--- a/Assets/_SO_Assets/Environment/SolitonTunnel/SolitonTunnel.asset
++++ b/Assets/_SO_Assets/Environment/SolitonTunnel/SolitonTunnel.asset
+@@ -81,5 +81,5 @@ MonoBehaviour:
+   thrust: 25
+   minSpeed: 30
+   maxSpeed: 119
+-  exitMultiplier: 1.2
++  exitMultiplier: 3
+   rideSpeedTunnelScale: 5
+diff --git a/Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset b/Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset
+index d070a8553a..f4cd39cfb5 100644
+--- a/Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset
++++ b/Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset
+@@ -69,7 +69,10 @@ MonoBehaviour:
+     element: 4
+     UseFloor: 1
+     Floor: 0.5
+-  boostOut: 1.5
++  boostOut: 1
++  rideCarrySeconds: 10
++  aiCarryBrakeDistance: 250
++  aiCarryBrakeAngle: 45
+   sentinelPool: 3
+   sentinelPoolL5: 6
+   guardShare: 1.5
+diff --git a/Assets/_Scripts/Controller/Vessel/MeerkatVesselTransformer.cs b/Assets/_Scripts/Controller/Vessel/MeerkatVesselTransformer.cs
+index d9c406453b..d3445c94b6 100644
+--- a/Assets/_Scripts/Controller/Vessel/MeerkatVesselTransformer.cs
++++ b/Assets/_Scripts/Controller/Vessel/MeerkatVesselTransformer.cs
+@@ -47,6 +47,7 @@ namespace CosmicShore.Gameplay
+         MeerkatSolitonExecutor _wormhole;
+         bool _resolved;
+         bool _rodeLastFrame;
++        float _carrySpeed, _carryUntil;
+ 
+         public override void Initialize(IVessel vessel)
+         {
+@@ -64,9 +65,19 @@ namespace CosmicShore.Gameplay
+         {
+             float target = base.ComputeThrottleTarget();
+             var wormhole = Wormhole;
++            if (Time.time < _carryUntil) target = Mathf.Max(target, AutopilotCarry(wormhole));
+             return wormhole && wormhole.IsInVoid ? target * wormhole.VoidSpeedFactor : target;
+         }
+ 
++        /// <summary>PROTOTYPE (AI only): the carried speed an AUTOPILOT holds. Within <c>aiCarryBrakeDistance</c> of the
++        /// ring it is after, the autopilot lets the carry go and flies plain cruise, so it slows into the ring (and the
++        /// next tunnel mouth) instead of orbiting it at the carried speed. A human pilot always gets the whole carry.</summary>
++        float AutopilotCarry(MeerkatSolitonExecutor wormhole)
++        {
++            if (!wormhole || VesselStatus == null || !VesselStatus.AutoPilotEnabled) return _carrySpeed;
++            return wormhole.AIBrakesCarry ? Mathf.Min(_carrySpeed, CruiseSpeed) : _carrySpeed;
++        }
++
+         MeerkatSolitonExecutor Wormhole
+         {
+             get
+@@ -123,6 +134,17 @@ namespace CosmicShore.Gameplay
+         void LeaveRide(float trackedSpeed)
+         {
+             _rodeLastFrame = false;
++            float carry = Wormhole ? Wormhole.RideCarrySeconds : 0f;
++            if (carry > 0f)
++            {
++                // never more than the exit multiplier over plain cruise, so chained rides cannot compound
++                // TrackedExitSpeed caps the exit at exit x the THROTTLE TARGET, and a carry raises that target, so a
++                // chained ride would leave at exit^2 x cruise (9x at exit 3, the Time rush filling the gap): cap the way
++                // out at exit x plain cruise as well while a carry is on.
++                trackedSpeed = Mathf.Min(trackedSpeed, CruiseSpeed * Mathf.Max(1f, Wormhole.RideExitMultiplier));
++                _carrySpeed = trackedSpeed;
++                _carryUntil = Time.time + carry;
++            }
+             AdoptCurrentMotion();   // the facing (and the vector model) from where the tunnel left the hull
+             SetInitialSpeed(trackedSpeed);
+         }
+diff --git a/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSolitonConfigSO.cs b/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSolitonConfigSO.cs
+index 6a27df1ef7..d03623a033 100644
+--- a/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSolitonConfigSO.cs	
++++ b/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSolitonConfigSO.cs	
+@@ -123,6 +123,14 @@ namespace CosmicShore.ScriptableObjects
+         [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 2f, Element.Time, 0.5f);
+         [Tooltip("Kit L5 Boost out: out of every soliton at (× the exit)")]
+         [SerializeField, Range(1f, 3f)] float boostOut = 1.5f;
++        [Tooltip("PROTOTYPE (redesign proposal, not shipped): seconds the ride's way-out speed is HELD as the cruise " +
++                 "target after a ride, before the usual ease back to cruise. 0 = shipped behaviour.")]
++        [SerializeField, Range(0f, 30f)] float rideCarrySeconds = 0f;
++        [Tooltip("PROTOTYPE (AI only): within this distance of the ring it is after, an AUTOPILOT lets a ride's carried " +
++                 "speed go and flies plain cruise, so it slows into the ring instead of orbiting it. 0 = off.")]
++        [SerializeField, Min(0f)] float aiCarryBrakeDistance = 0f;
++        [Tooltip("PROTOTYPE (AI only): the brake acts only while the ring lies more than this many degrees off the nose.")]
++        [SerializeField, Range(0f, 180f)] float aiCarryBrakeAngle = 0f;
+ 
+         [Header("Kit · Charge, Sentinel mode (the artifact's Kit > Sentinel)")]
+         [Tooltip("Sentinels at once")]
+@@ -201,6 +209,9 @@ namespace CosmicShore.ScriptableObjects
+         // Garrett's kit (MeerkatSolitonKit reads these)
+         public ElementalFloat Rush => rush;
+         public float BoostOut => boostOut;
++        public float RideCarrySeconds => rideCarrySeconds;
++        public float AiCarryBrakeDistance => aiCarryBrakeDistance;
++        public float AiCarryBrakeAngle => aiCarryBrakeAngle;
+         public int SentinelPool => sentinelPool;
+         public int SentinelPoolL5 => sentinelPoolL5;
+         public float GuardShare => guardShare;
+diff --git a/Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs b/Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs
+index aedadca7c4..292865382d 100644
+--- a/Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs
++++ b/Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs
+@@ -206,6 +206,11 @@ namespace CosmicShore.Gameplay
+         /// <summary>The way out's speed over the speed inside (the tunnel config's exitMultiplier, with the kit's Boost out, as
+         /// <see cref="StepRide"/> applies it).</summary>
+         public float RideExitMultiplier => config ? Mathf.Max(0.05f, RideExit(config.RideExitMultiplier)) : 1f;
++        /// <summary>PROTOTYPE: seconds the way-out speed is held after a ride (0 = shipped).</summary>
++        public float RideCarrySeconds => config ? config.RideCarrySeconds : 0f;
++        /// <summary>PROTOTYPE (AI only): true while the autopilot is within aiCarryBrakeDistance of its ring.</summary>
++        public bool AIBrakesCarry => _aiBrake;
++        bool _aiBrake;
+         /// <summary>The reticle's growth, 0..1 (RT forms from <see cref="SolitonTunnelShapeMath.FormableEmerge"/>); 0 riding.</summary>
+         public float Ready01 => _retLive ? _retEmerge : 0f;
+         /// <summary>True while RT would form a tunnel.</summary>
+@@ -719,7 +724,12 @@ namespace CosmicShore.Gameplay
+             var hull = _status.Transform;
+             if (_netRider.Riding) return;   // inside a network the AI holds RT (RtLive) and slides: no steering inside
+             if (_inVoid) return;            // round 28: in the void it flies its racing line (AIPilot) and presses nothing
++            _aiBrake = false;
+             if (!config.AiWormhole || !ai || !hull) return;
++            // brake only on a bad approach: near the ring AND it lies well off the nose (the orbit shape)
++            Vector3 toRing = ai.ObjectivePosition - hull.position;
++            _aiBrake = config.AiCarryBrakeDistance > 0f && toRing.magnitude < config.AiCarryBrakeDistance &&
++                       Vector3.Angle(hull.forward, toRing) > config.AiCarryBrakeAngle;
+             if (_ride != null)
+             {
+                 _aiHold = 0f;
