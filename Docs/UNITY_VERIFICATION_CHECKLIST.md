@@ -27262,3 +27262,9 @@ there is no saving, if they leave they leave. Set sail restarts the level." `Voy
 saved record at sea or away from home back home, so older saves are repaired. The galaxy (days, news, standing) is kept.
 - [ ] Sail any voyage, leave it mid-leg: back in the menu the full board shows; Set sail starts a new voyage from home.
 - [ ] Finish a job at a stop and leave: the next Set sail starts from home, not the stop.
+
+## Menu rotation follows the phone, Toy Box preview opens on a model (2026-11-25, claude/project-thread-qncdsq)
+
+Refcompile: 0 errors in the changed files (the run's 30 pre-existing errors are elsewhere). No Unity editor or phone build ran.
+- [ ] Android phone build with the system auto-rotate lock ON: in the menus, turn the phone landscape and portrait; the app shell turns with it (it used to stay where the lock held it). Gameplay still locks landscape.
+- [ ] Toy Box > Vessel Changer opens with a model in the live preview (the hull you are flying, else the first hull) before anything is picked; picking a hull replaces it; Switch stays dark until a pick.
