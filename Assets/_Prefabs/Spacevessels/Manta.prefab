@@ -1950,9 +1950,9 @@ MonoBehaviour:
   shielded: 0
   trailVolume:
     Enabled: 1
-    Value: 0.13
-    Min: 0.13
-    Max: 0.6
+    Value: 0.1113
+    Min: 0.1113
+    Max: 0.5136
     element: 2
     UseFloor: 1
     Floor: 0.065
