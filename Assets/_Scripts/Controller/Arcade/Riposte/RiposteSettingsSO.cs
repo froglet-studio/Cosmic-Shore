@@ -36,6 +36,11 @@ namespace CosmicShore.Gameplay
                  "wind-up needs. Short = it turns in slow and often arrives the slower hull.")]
         public float[] duelExtendDistance = { 120f, 220f, 320f, 420f };
 
+        [Tooltip("How often (0..1, rolled for each leg) the AI reads the arena: cuts a fuel rail end to end instead " +
+                 "of crossing the heap, runs out to a lane's mouth, and winds up down the lane before it turns onto " +
+                 "its rival. 0 = it flies as if the lanes were not there.")]
+        public float[] duelLaneUse = { 0.25f, 0.5f, 0.85f, 1f };
+
         [Header("AI duelists - shared")]
         [Tooltip("A charge is over once the rival is behind the nose and within this distance (u): the AI runs out " +
                  "instead of circling. It also breaks off inside a third of it when it is not the faster hull, since " +
@@ -50,5 +55,21 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("The AI counts a run-out or a cutting line as flown this close (u) to its end.")]
         [Min(10f)] public float duelArriveRadius = 90f;
+
+        [Header("AI duelists - the lanes (shared)")]
+        [Tooltip("The AI is on a rail once it is this close (u) to its line; until then it flies to the rail's near end.")]
+        [Min(5f)] public float duelLineUpRadius = 40f;
+
+        [Tooltip("A run-out goes to a lane's mouth only when one lies within this many degrees of the nose: a run-out " +
+                 "is a straight leg and never turns hard to find a lane.")]
+        [Range(5f, 120f)] public float duelMouthConeDegrees = 60f;
+
+        [Tooltip("From a lane's mouth the AI flies down the lane, winding up, until its rival is within this distance " +
+                 "(u) or it reaches the centre clearing; then it turns onto the rival.")]
+        [Min(50f)] public float duelLaneBreakDistance = 320f;
+
+        [Tooltip("A rail run that earned less than this share of a tank found the rail already cut: no AI flies that " +
+                 "rail again this match.")]
+        [Range(0f, 0.2f)] public float duelRailDryGain = 0.02f;
     }
 }

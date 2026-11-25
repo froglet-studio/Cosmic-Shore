@@ -27281,6 +27281,9 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
       rails of short pickets line each lane, gates stand in the lanes from I2, red tips line the lane walls from
       I3, the sticks round the centre are ironwood at I4; crystals float in every clearing; pilots spawn outside
       the heap. Jackstraw's own arena is unchanged.
+- [ ] The lane-reading AI (`RiposteLanes`, 2026-11-25; not run in Unity): `RiposteLanesTests` pass (7 tests), and
+      in an I1 match with Hard or Legendary seats an AI hull can be seen flying along a rail of pickets, running
+      out to a refuel clearing, and coming back down the lane before it turns onto a rival.
 - [ ] On Linux: `bake_prism_layouts.py` and `audit_prism_clipping.py SpawnableRiposteYard` (neither runs on
       Windows); until the bake, the game lays the yard live with a warning.
 - [ ] A person's judgment: do the lanes read as the place to wind up, can the rails be cut for fuel without

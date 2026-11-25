@@ -108,6 +108,33 @@ namespace CosmicShore.Gameplay
             for (int s = 0; s < looseSticks; s++) TryLayLooseStick(s);
         }
 
+        /// <summary>
+        /// Every lane (the centre clearing's edge to its refuel clearing's centre) and every rail (the stretch of
+        /// pickets between the two clearings), in this structure's local space. Pure: it reads only the serialized
+        /// fields, so a baked layout answers it too. Read by the mode's AI (<see cref="RiposteLanes"/>).
+        /// </summary>
+        public void CollectLines(List<RiposteLanes.Line> lanes, List<RiposteLanes.Line> rails)
+        {
+            _yardClearings.Clear();
+            CollectClearings(_yardClearings);
+            bool hasCentre = _yardClearings.Count > 0 && _yardClearings[0].Centre == Vector3.zero;
+            float centreRadius = hasCentre ? _yardClearings[0].Radius : 0f;
+            int first = hasCentre ? 1 : 0, ring = _yardClearings.Count - first;
+            int count = Mathf.Min(laneCount, ring);
+            for (int k = 0; k < count; k++)
+            {
+                var axis = RiposteYard.LaneAxis(k, ring);
+                var refuel = _yardClearings[first + k];
+                lanes.Add(new RiposteLanes.Line(axis * centreRadius, refuel.Centre));
+                float from = centreRadius + RiposteYard.RailStart, to = refuel.Centre.magnitude - refuel.Radius;
+                for (int p = 0; p < railsPerLane; p++)
+                {
+                    var offset = RiposteYard.RailOffset(axis, k, p, railsPerLane, laneRadius);
+                    rails.Add(new RiposteLanes.Line(axis * from + offset, axis * to + offset));
+                }
+            }
+        }
+
         // ── Room ──
 
         bool ClearOfYardClearings(Vector3 a, Vector3 b)

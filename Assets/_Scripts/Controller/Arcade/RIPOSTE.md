@@ -70,6 +70,17 @@ hair faster at the first touch struck, the victim was silenced, and the 0.5 s la
 | **Charge** | through the led rival (off by the rung's miss) and 150-450 u past them | the rival is behind the nose inside 240 u, or the hulls are inside 80 u and this one is not the faster, or 6 s |
 | **Extend** | straight out 120-420 u, inside the arena | it gets there or 6 s; then Reap if the tank is under the rung's share, else Charge |
 
+**It reads the Lists** (`RiposteLanes`, held by `RiposteLanesTests`; 2026-11-25). Each leg rolls the rung's
+`duelLaneUse`; on a yes:
+
+| Leg | What it does with the arena |
+|---|---|
+| **Reap** | flies the nearest fuel rail nobody has found cut: to its near end, then straight along it to its far end. A run that earns under 0.02 of a tank marks the rail cut for every AI for the rest of the match. With no rail left it crosses the heap as before. |
+| **Extend** | runs out to the mouth (the refuel clearing) of a lane that lies within 60 degrees of its nose; with none ahead it runs straight out as before. It never turns hard to find a lane. |
+| **Charge** | after a run-out that reached a lane's mouth, it flies down the lane toward the centre, winding the ramp up on the straight, until its rival is within 320 u or it reaches the centre clearing; then it turns onto the rival. |
+
+In an arena with no lanes (Jackstraw's heap) the lists are empty and it flies as before.
+
 Fuel is checked between legs only: a charge in flight is never abandoned for sticks. Silenced, it runs for a crystal
 by the rung's chance, as Jackstraw's hunter does.
 
@@ -81,7 +92,8 @@ by the rung's chance, as Jackstraw's hunter does.
   the duelist presses an input, changes a resource or reads the intensity.
 - **By AI level** (Easy / Medium / Hard / Legendary; `RiposteSettings.asset`): throttle floor 0.7 / 0.85 / 1 / 1; cuts
   for fuel under 0 / 0.03 / 0.06 / 0.1 of a tank and until 0 / 0.08 / 0.15 / 0.25 (Easy never cuts on purpose);
-  charge overshoot 150 / 250 / 350 / 450 u; run-out 120 / 220 / 320 / 420 u. Hand-set from the judge, not a search
+  charge overshoot 150 / 250 / 350 / 450 u; run-out 120 / 220 / 320 / 420 u; reads the arena on 0.25 / 0.5 /
+  0.85 / 1 of its legs. Hand-set from the judge, not a search
   (Froglet Compute is paused); they are the seed a `charge-arcade` search grows from.
 
 ## 4. The arena: the Lists (`SpawnableRiposteYard`, `RiposteYard`), by intensity
@@ -131,10 +143,22 @@ b2818ecc1d, 2026-11-25). Seconds to the sixth strike, two matches a cell:
 | Legendary | 130 / 97 | 102 / 211 | 99 / 74 | 138 / 63 |
 
 31 of 32 matches ended with a winner (one Easy I2 match stood 4-4 at the 300 s limit); 15-211 s, median 99 s; by
-rung the median is 92 / 102 / 92 / 135 s. Read it as: the AI finishes on every rung of the new arena and I4 is the
-longest. It does not show that the rungs feel different, and **the AI does not know the lanes exist**: the duelist
-still flies its three legs (section 3) and crosses the yard wherever its rival is. The arena is built for a pilot
-who reads it; teaching the duelist to charge down a lane and reap along a rail is the next AI step.
+rung the median is 92 / 102 / 92 / 135 s. That table is the duelist BEFORE it read the lanes. With the lane-reading
+duelist (section 3), same judge and seeds, working tree on 0f31da4d4c:
+
+| AI level | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Easy | 114 / 161 | 102 / 100 | 127 / 96 | 240 / 287 |
+| Medium | 43 / 20 | 46 / 67 | 175 / 102 | 88 / 38 |
+| Hard | 111 / 81 | 190 / 38 | 104 / 112 | 218 / 151 |
+| Legendary | 72 / 120 | 85 / 91 | 247 / 98 | 137 / 44 |
+
+32 of 32 ended with a winner; 20-287 s, median 102 s; by rung 96 / 88 / 108 / 144 s; Jade 16, Ruby 16; the
+loser's median score 4 of 6. Read it as: reading the lanes breaks nothing, every rung still finishes, and I4 is
+still the longest. **It does not show the AI flies better for it**: match length and the score spread are the
+same within two matches a cell, and the judge's per-seat counts (prisms hit, crystals) do not separate a rail run
+from a heap crossing. Whether a seat is visibly on a rail or in a lane has not been watched in a match; the
+rules are held by tests only. It does not show that the rungs feel different either.
 
 The earlier table, in Jackstraw's heap (same judge, working tree on c519b8bc03 and 7d9e3ed2b9 for Hard), for
 comparison:
@@ -150,8 +174,8 @@ comparison:
 
 - **Headless:** `author_riposte_assets.py --check` (50 files; watched failing on a mutated settings value; the
   arena's placement checks are run against a deliberately broken arena inside the check and must fire);
-  `bash Tools/Build/riposte_harness/run.sh --self-test` (the shipped `RiposteDuelTests` and `RiposteYardTests`, 24
-  of 24, eleven negative controls fire); the static gates; the whole of `Assets/_Scripts` compiled by the Amoebius live build with these files.
+  `bash Tools/Build/riposte_harness/run.sh --self-test` (the shipped `RiposteDuelTests`, `RiposteYardTests` and
+  `RiposteLanesTests`, 31 of 31, fourteen negative controls fire); the static gates; the whole of `Assets/_Scripts` compiled by the Amoebius live build with these files.
 - **Real game, no Unity:** the table in section 4. The judge needed two engine changes: `RaceJudge` takes
   `"mode": "Riposte"` (and `Jackstraw`) as a combat-point game, and `FixedString128Bytes.CopyFromTruncated`, without
   which the Amoebius build of this branch failed.
@@ -186,7 +210,8 @@ comparison:
   2,090 / 3,410 prisms) not yet compared with what the C# lays (the Linux-only prism clip audit and layout bake
   cannot run on this Windows machine, so the four prefabs have no baked layout and no clip-audit run: the game
   lays them live with a warning until `bake_prism_layouts.py` is run on Linux). Headless, the Amoebius live
-  build compiles the arena and the judge played 32 matches in it.
+  build compiles the arena and the judge played 64 matches in it. The lane-reading duelist is in the same state:
+  compiled and judged headless, never compiled, tested or watched in Unity.
 - **Not done:** no I1 match in the editor at clock 1x; no 2v2 match of four mode AIs in the editor; nobody has flown it; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
 - **Open questions a flight answers:** whether 6 strikes is the right length with a person in it (AI matches run
   26-202 s); whether a silenced pilot under a 0.5 s sword latch can get away (the AI now runs out after each pass, a

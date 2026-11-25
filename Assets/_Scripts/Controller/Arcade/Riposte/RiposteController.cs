@@ -25,6 +25,7 @@ namespace CosmicShore.Gameplay
     public class RiposteController : JackstrawController
     {
         readonly RiposteDuelist _duelist = new();
+        readonly System.Collections.Generic.List<RiposteLanes.Line> _lanes = new(), _rails = new();
 
         protected override GameToastSituation HintSituation => GameToastSituation.RiposteHint;
 
@@ -39,7 +40,24 @@ namespace CosmicShore.Gameplay
             }
             var heap = Heap();
             float radius = heap ? heap.HeapRadius * heap.transform.lossyScale.x : 0f;
-            _duelist.Arm(gameData, duel, ArenaCentre, radius, NearestLiveCrystal);
+            _lanes.Clear();
+            _rails.Clear();
+            float centreClearing = 0f;
+            if (heap is SpawnableRiposteYard yard)
+            {
+                // The arena answers in its own space: hand the pilots world lines.
+                yard.CollectLines(_lanes, _rails);
+                ToWorld(_lanes, yard.transform);
+                ToWorld(_rails, yard.transform);
+                if (_lanes.Count > 0) centreClearing = (_lanes[0].A - ArenaCentre).magnitude;
+            }
+            _duelist.Arm(gameData, duel, ArenaCentre, radius, NearestLiveCrystal, _lanes, _rails, centreClearing);
+        }
+
+        static void ToWorld(System.Collections.Generic.List<RiposteLanes.Line> lines, Transform arena)
+        {
+            for (int i = 0; i < lines.Count; i++)
+                lines[i] = new RiposteLanes.Line(arena.TransformPoint(lines[i].A), arena.TransformPoint(lines[i].B));
         }
 
         protected override void DisarmAI()

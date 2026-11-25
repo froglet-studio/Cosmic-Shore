@@ -47,6 +47,8 @@ SCRIPT_PATHS = {
     "RiposteYard":              f"{AR}/Riposte/RiposteYard.cs",
     "SpawnableRiposteYard":     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRiposteYard.cs",
     "RiposteYardTests":         "Assets/_Scripts/Tests/Editor/RiposteYardTests.cs",
+    "RiposteLanes":             f"{AR}/Riposte/RiposteLanes.cs",
+    "RiposteLanesTests":        "Assets/_Scripts/Tests/Editor/RiposteLanesTests.cs",
     "RiposteStrikeTurnMonitor": f"{AR}/TurnMonitors/RiposteStrikeTurnMonitor.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
@@ -135,8 +137,11 @@ DUEL_LADDERS = {
     "duelReapUntilFuel":   ([0, 0.08, 0.15, 0.25], "up"),
     "duelChargeOvershoot": ([150, 250, 350, 450], "up"),
     "duelExtendDistance":  ([120, 220, 320, 420], "up"),
+    # How often a leg reads the arena: a fuel rail flown end to end, a run-out to a lane mouth, a wind-up down the lane.
+    "duelLaneUse":         ([0.25, 0.5, 0.85, 1], "up"),
 }
-DUEL_SHARED = dict(duelPassRadius=240, duelPhaseSeconds=6, duelReapSpreadDegrees=35, duelArriveRadius=90)
+DUEL_SHARED = dict(duelPassRadius=240, duelPhaseSeconds=6, duelReapSpreadDegrees=35, duelArriveRadius=90,
+                   duelLineUpRadius=40, duelMouthConeDegrees=60, duelLaneBreakDistance=320, duelRailDryGain=0.02)
 LADDERS.update(DUEL_LADDERS)
 
 # The AI's ramp in this mode (RampBoostAIPolicySO, Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Riposte, picked by
@@ -481,7 +486,10 @@ duelist_cs = g.read(SCRIPT_PATHS["RiposteDuelist"])
 for banned in ("PerformShipControllerActions", "InputStatus", "TriggerAnalog", "SelectedIntensity", "ChangeResourceAmount"):
     if banned in duelist_cs:
         errors.append(f"RiposteDuelist uses {banned}: it steers and sets a throttle floor, and its level is the seat's AI difficulty")
-for needed in ("SetExternalTargetProvider", "SetThrottleFloor", "AIDifficultyFor"):
+if "yard.CollectLines(" not in ctl or "CollectLines(List<RiposteLanes.Line>" not in g.read(YARD_CS):
+    errors.append("RiposteController must hand its duelists the arena's lanes and rails (SpawnableRiposteYard.CollectLines)")
+for needed in ("SetExternalTargetProvider", "SetThrottleFloor", "AIDifficultyFor", "RiposteLanes.Nearest(",
+               "RiposteLanes.MouthAhead(", "RiposteLanes.RunIn("):
     if needed not in duelist_cs:
         errors.append(f"RiposteDuelist no longer calls {needed}")
 if "_duelist.Arm(" not in ctl or "protected virtual void ArmAI()" not in g.read(f"{AR}/Jackstraw/JackstrawController.cs"):

@@ -74,7 +74,16 @@ MonoBehaviour:
   - 220
   - 320
   - 420
+  duelLaneUse:
+  - 0.25
+  - 0.5
+  - 0.85
+  - 1
   duelPassRadius: 240
   duelPhaseSeconds: 6
   duelReapSpreadDegrees: 35
   duelArriveRadius: 90
+  duelLineUpRadius: 40
+  duelMouthConeDegrees: 60
+  duelLaneBreakDistance: 320
+  duelRailDryGain: 0.02
