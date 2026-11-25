@@ -65,6 +65,43 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The per-attacker petal ledger counts what each pilot takes from opponents (`claude/project-thread-6znms8`, 2026-11-23, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed.** `PetalLedger` (SILENCE.md §6): every strip and steal is credited to its attacker, and every hostile
+danger burn to the pilot who laid the prism, with the whole petals that really came loose. On the server it lands in
+`IRoundStats.PetalsTaken` (a new `RoundStats` NetworkVariable), readable as `ScoringMetric.PetalsTaken` (13). The relayed eject and steal RPCs on `NetworkVesselImpactor` now
+carry the attacker's name, and a client owner forwards each credit to the server (`PetalsTaken_ServerRpc`).
+Reference compile (player and editor configs): 0 errors in changed files. `elemental_transfer_harness` T12 passes.
+
+1. **Offline, Broadside or Dog Fight with AIs**: after a minute, each pilot's `PetalsTaken` (inspector on its
+   `RoundStats`) is about its combat points divided by ten, and lower when it hits pilots who hold nothing.
+2. **A pilot flying into an opponent's danger trail**: the trail's layer gains the petals the burn took; flying into
+   your own trail credits nobody.
+3. **Host plus one client**: a hit by the client on an AI, and a hit by an AI on the client, each credit once on the
+   host (no double count), and the client's inspector mirrors the host's value.
+4. **A new match starts at 0** for every pilot.
+
+---
+### 🔴 Skim Race: garden ruins at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT RUN IN EDITOR
+
+Skim Race lays Spearline's ruins round Relativity's ribbon on I4 (SKIMRACE.md §5b): 7 ruins, 516 prisms, Jade, Ruby and
+Gold in turn, 60 u clear of the ribbon and of each straight crystal-to-crystal line, none within 330 u of the cell's
+centre, no turning wheel (the legs are too short for one). `SkimRaceRuins.cs`, `SkimRaceController.Ruins.cs`, two new
+fields on the controller in `MinigameSkimRace.unity`. The pure code and `SkimRaceRuinsTests` were compiled with Roslyn
+against a Unity math stub and run (7 of 7, plus the shipped I4 ribbon rebuilt from the baked prefab; a zero-lane
+negative control fails 3). The controller hook and `SkimRaceRuinsShippedTrackTests` were not compiled at all.
+
+**Verify in editor**
+- [ ] The project compiles; `SkimRaceRuinsTests` and `SkimRaceRuinsShippedTrackTests` pass in the Test Runner.
+- [ ] Skim Race at I4: seven ruins stand round the ribbon in Jade, Ruby and Gold, none in the nucleus, none at a
+      crystal; the console has no "No garden ruins" warning; the connecting screen does not drop before they are laid.
+- [ ] Fly the ribbon and cut two or three crystal-to-crystal chords: nothing in the way. Fly into a ruin: its prisms
+      break as any plain prism does.
+- [ ] Skim Race at I1, I2 and I3: no ruins.
+- [ ] `prof` at I4 against a run before this change: the frame cost of 516 more prisms.
+- [ ] Two clients (MPPM): both see the same ruins in the same places.
+- [ ] AI seats at I4: do they lose time in the ruins? (The AI does not know they are there; its chords are kept clear.)
+
 ### 🔴 Skim Race flights record a finish: the crystal target and the team's crystals (`Ys-bleeding-edge`, 2026-11-23, Yash) — NOT COMPILED BY ITS AUTHOR, NOT RUN IN EDITOR
 
 **What was wrong.** `HumanFlightRecorder` took a flight's `raceTarget` only from `SwitchTargetCount`, which only a gate
@@ -250,6 +287,241 @@ and beats at its joints on the CPU.
 
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
+
+## 🔴 Leak fixes: bound arcade delays and score trackers that unsubscribe on destroy (2026-11-25, Garrett, salvaged from `cece/nice-brahmagupta-ojclij` part K, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Four fire-and-forget delays in the arcade controllers are bound to their owner's lifetime
+(`SkimRaceController.SpawnTrackEarly` 1.5 s, `NetworkScoreTracker.DelayAndSendResults` 0.5 s,
+`MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay` 0.5 s, `ResetServerRoundAfterDelay` 0.1 s), and
+`BaseScoreTracker.OnDestroy` unsubscribes every scorer, so a tracker destroyed without a turn end no longer keeps
+adding time score from the menu. Reference compile only.
+
+- [ ] Skim Race online, then Play Again: the fade, the reload and the fresh track still happen. Quit during the
+      half-second fade: back in the menu, the next launch is a normal start, not a replay reload
+      (`GameData.IsReplayReload` false).
+- [ ] A time-scored mode (Freestyle or any `ScoringModes.TimePlayed` card): quit to the menu mid-turn, then watch
+      `GameData.asset`'s RoundStatsList for ten seconds: no Score moves. A normal turn end still stops the scorers.
+
+## 🔴 2026-10-26 — ResourceSystem.Reset tolerates Unity's edit-mode Reset message (`cece/exciting-thompson-wdi3wm`, salvaged from `cece/inspiring-einstein-k6syi5` a109b25848) (unverified: no Unity CLI in the session)
+
+`ResourceSystem.Reset()` shares its name with Unity's edit-mode `Reset` message, which the editor sends the instant
+the component is added, before `Resources` exists. The method now returns when `Resources` is null.
+
+- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
+- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
+
+## 🔴 2026-10-26 — Wanderway conveyor: recycled shielded prisms re-theme after Initialize (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/prism-clock-followup-prompts-two-mhvad9` bbb47c111b) (unverified: no Unity CLI in the session)
+
+`Microscene.RearrangeIntoAsync` used to clear a prism's kind before `Prism.Initialize`, while it was still
+"created" from its last life, so every recycled shielded prism shattered and played `ShieldDeactivate` over its
+grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
+
+- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
+- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
+
+## 🔴 2026-10-26 — Time crystal: no sound through a muted SFX setting (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/sparrow-crystal-sound-bug-bnocj6`) (unverified: no Unity CLI in the session)
+
+`CrystalTime.prefab` lost its two bare `StudioEventEmitter`s ("Creature colide" on TriggerEnter and ObjectDestroy).
+
+- [ ] Open the prefab: no missing-script or broken component on its root.
+- [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
+
+## 🔴 The Serpent's wall on every peer (2026-11-21, branch `claude/project-thread-nqfbgz`) — NOT EDITOR-VERIFIED
+
+Garrett's Brood Rush playtest: "the Serpent's wall was still not syncing". `unity_refcompile` (player and editor
+configs: 0 errors in the changed files; the remaining errors are this sandbox's missing packages) and the gates ran;
+no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_VesselActions/SERPENT_SEED_WALL.md`
+"Multiplayer"; protocol 41 (both machines need this build).
+
+- [ ] EditMode `SerpentWallSyncTests` pass (the flag table: 29 cases, plus 3 tests).
+- [ ] Host + client, an AI Sparrow and an AI Squirrel: the client sees the Sparrow's shots break prisms and the Squirrel's tube rings, where the host does.
+- [ ] MPPM, host + one client, Brood Rush with an AI Serpent on the host: when the AI cloaks, the client sees its
+  hull vanish and its wall grow at the same place as the host's; the AI's walls are on both screens.
+- [ ] Host + two clients, client A flies the Serpent and stops (the stance): client B sees A's trail stop and the held
+  wall grow; when A flies on, B's copy stops growing and stands.
+- [ ] An AI Serpent at Mass 8+ (crystals): its bricks are the same size on host and client.
+- [ ] Serpent Hood / Serpent Time, an AI that scopes: it never cloaks on the client while scoped on the host.
+
+## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"): one to three
+ruins a course, in Jade, Ruby and Gold. Run headless: `Tools/Build/waystation_tower_harness/run_tests.sh --self-test`
+(30 tests pass, the three ruins negative controls fire).
+
+- [x] It compiles (2026-11-25): Yash's open editor compiled `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` at
+      03:54, after every ruins source and the latest `SpearlineRuins.cs`, and both DLLs carry the ruins types and
+      `WaystationRuinsTests`; Unity writes them only on a clean compile.
+- [x] `WaystationRuinsTests` pass in Unity (2026-11-25): 8 of 8 EditMode tests in Yash's open editor, 27 s.
+- [ ] Waystation at I4: ruins stand on the long last drop and on some tower cruise legs, none in a tower's walls or
+      lanterns, none at a ring or a press point; the cruise line and every fall line are open.
+- [ ] The ruins read apart from the Blue walls and lanterns, and their prisms are at the authored size.
+- [ ] A wheel, when a course has one (about 1 in 10): it turns, both peers see the same angle (MPPM).
+- [ ] Waystation at I1, I2 and I3: no ruins.
+- [ ] AI seats at I4 still finish, and their times against before (the hop miss recovery can cross a ruin).
+- [ ] Phone frame rate at I4 with up to ~420 more prisms.
+
+## 🔴 Skein: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Skein lays Spearline's ruins from its own rings on I4, on every third leg, less what would reach a rail or a launch's
+path (`Assets/_Scripts/Controller/Arcade/SKEIN.md` section 20). Run without Unity: `SkeinRuinsTests` 12 of 12 against
+the shipped sources (`bash Tools/Build/skein_ruins_harness/run.sh --self-test`, five negative controls), and
+`author_skein_assets.py --check`. Not run: a Unity compile of `SkeinController.Ruins.cs`, `SkeinRuins.cs` and the `RailPrism` accessor on `SpawnableSkein`, and the
+race itself.
+
+- [ ] Unity compiles, and `SkeinRuinsTests` pass in the Test Runner.
+- [ ] Skein at I4: seven Blue ruins (about 215 prisms) stand along the race, none at a ring, none on a rail.
+- [ ] I1 to I3: no ruins.
+- [ ] Ride every rail of one race: the Urchin never brushes a ruin while attached, and no launch hits one.
+- [ ] Fly an Urchin into a ruin: it does NOT latch (no grind, no marble roll); the prism breaks as any prism and the
+      Urchin flies on. This is the check that matters most: each ruin prism is a trail of one so the game reads it as
+      a lone prism. If it latches, the ruins must come out.
+- [ ] Three AI Urchins still finish I4, and their times against the 331-391 s of section 19 (not measured: the model
+      has no ruins in it).
+- [ ] Leave the race and start another: the old ruins are gone.
+- [ ] The I4 cell starts Calm, not Restless or Frenzy (the ruins' 439,125 volume is in `Skein Cell Config 4`'s
+      baseline), and reaches Restless about when it did before.
+- [ ] Frame rate at I4 with about 215 more prisms in the cell (the cable is 6165).
+
+## 🔴 Slip Line: ruins at I4 (2026-11-24, Yash, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Slip Line lays Spearline's ruins round its straight ring-to-ring line on I4, less what would stand within 40 u of a
+rail (`Assets/_Scripts/Controller/Arcade/SLIP_LINE.md` §3a). Run headless: `Tools/Build/slip_line_harness/run.sh`
+(22 tests, Roslyn, covers `SlipLineRuins` and its tests) and `author_slip_line_assets.py --check`. NOT compiled by
+anything: `SlipLineController.Ruins.cs` and the three lines added to `SlipLineController.cs`.
+
+- [ ] The project compiles (the hook adds a `LateUpdate` to `SlipLineController`).
+- [ ] Slip Line at I4: seven Blue ruins stand between the rings down the whole course, none at a ring, none on a rail;
+      the straight line ring to ring is open through each one; where a rail runs through a ruin the ruin is cut open.
+- [ ] I1 to I3: no ruins.
+- [ ] Hold a charge and fly at a ruin: no slip starts on it.
+- [ ] Two AI Honeyguides still finish at I4; note a leg where one ploughs a ruin turning out to a leaning rail.
+- [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
+- [ ] Frame time at I4 with about 660 more prisms in the cell (not measured).
+
+## 🟡 Headlong: garden ruins at I4 (2026-11-24, Yash, compiled, tested and AI-raced in the editor; the look is a person's)
+
+Headlong lays Spearline's ruins round its own circuit on I4, less what would stand in a hedge or on a Time crystal
+(`Assets/_Scripts/Controller/Arcade/HEADLONG.md` section 0a). Run without Unity: `HeadlongRuinsTests` 8 of 8 and
+`HeadlongHedgesTests` 9 of 9 against the shipped sources (`bash Tools/Build/headlong_course_harness/run.sh --self-test`,
+eight negative controls), and `author_headlong_assets.py --check`. Not run: a Unity compile of
+`HeadlongController.Ruins.cs` and the hook in `HeadlongController.Stampede.cs`, and the race itself.
+
+**Run in the open editor, 2026-11-24** (Unity 6000.3.17f1): the editor compiled it (`recompile_status` errors `[]`),
+`HeadlongRuinsTests` 8 of 8 in 205 s, and two Headlong races at I4 through the mode smoke driver (`ModeSmokeLauncher`,
+3 AI Rhinos, Legendary, offline, time scale 4). Both reached game over with no error or exception in the match
+(169 and 197 game seconds); the smoke marks them failed for one boot error, `NotFound`, logged before the menu and not
+by Headlong. The courses laid 630 and 647 ruin prisms in Jade, Ruby and Gold, no wheel on either, and the Rhinos
+ploughed about a third of them in the first 30 game seconds. No race without ruins was run for comparison, and the
+frame rate read 62 to 85 fps between captures at time scale 4, which is not a measurement.
+
+**Second pass, same day, the AI flying while Yash watched** (probes read over the editor's Pipeline; one fixed course,
+seed -652407953, for everything that compares):
+
+| Check | Result |
+|---|---|
+| I4 at time scale 1, twice | game over in 160 and 170 game seconds, no error in the match |
+| Ruins laid | 633 prisms (Jade 332, Gold 182, Ruby 119), the same 633 on both runs of the seed |
+| Nearest ruin prism centre | 22 u from a hedge prism, 64 u from a Time crystal, 184 u from a gate centre |
+| Hedges against ruins | hedge prisms fell and stood back up all race (1258 to 1546 standing); ruins only fell (633 to 478 and 499) |
+| The wheel (31 prisms) | every prism 0.000 u from `SpearlineRuins.Pose` at the network clock on 8 samples, the rim moving, never nearer than 46 u to a hedge prism; no Rhino hit it |
+| After game over | the controller held 0 ruin parts and 0 prisms |
+| I1, I2, I3 at time scale 4 | 0 ruin prisms on each (hedge prisms 788, 1176, 2005); I1 and I2 finished clean |
+| Same course, ruins removed (`ClearRuins` at the start) | time scale 1: 145 s against 160 and 170 with; time scale 4: 175 and 193 s against 178 and 195 with |
+| Frame rate at time scale 1 (editor, vsync, target 75) | 46 to 78 fps with ruins, 48 to 72 without |
+
+Read: the ruins make no difference to race time or frame rate that five races can show; race to race the AI varies by
+about 20 s on one course. This is an editor on a desktop GPU, not a build and not a phone.
+
+**The editor crashed once**, during the I3 race (no ruins on that level), in Unity's own Profiler
+(`profiling::ProfilerSymbolsDelayedDeletion::AddCloneObject` on a job thread, crash folder
+`Crash_2026-11-24_161056079`). No game code is on the stack. The editor had been profiling a Brittle Star freeze
+earlier in the session. It was reopened and the rest ran without a repeat.
+
+- [x] Unity compiles, and `HeadlongRuinsTests` pass in the Test Runner.
+- [ ] A person looks at Headlong I4: the ruins read as scenery beside the line in Jade, Ruby and Gold, the Blue hedge
+      shows whole through its ruin, and a ploughed ruin sprays like a hedge. (Positions, counts and colours are
+      measured above; how it looks is not.)
+- [x] I1 to I3: no ruins.
+- [x] The ruin stays broken while the hedges stand back up.
+- [x] On a course with a wheel: it turns on the network clock and through no hedge (host only).
+- [ ] The wheel shows the same angle on a client (no second machine was used).
+- [x] Three AI Rhinos still finish the race at I4 (seven races, 160 to 197 game seconds).
+- [x] Their times against a race without ruins: no difference these races can show (table above).
+- [x] The old ruins are gone when the race ends. A second race inside one Play session was not run (each race here
+      was a fresh Play).
+- [ ] Frame rate on a build and on the phone bench (the editor reading above is not that).
+
+## 🔴 Burrow Run: garden ruins at I4 (2026-11-24, Yash, NOT COMPILED, NOT RUN IN EDITOR)
+
+Burrow Run lays Spearline's ruins round its own racing line on I4 (`Assets/_Scripts/Controller/Arcade/BURROWRUN.md`
+section 4a). Run without Unity: `BurrowRunRuinsTests` 8 of 8 against the shipped sources, and
+`author_burrowrun_assets.py --check`. Not run: a Unity compile of `BurrowRunController.Ruins.cs`, and the race itself.
+
+- [ ] Unity compiles, and `BurrowRunRuinsTests` pass in the Test Runner.
+- [ ] Burrow Run at I4: four ruins a lap stand between the rings in Jade, Ruby and Gold, none at a ring, and the line
+      from ring to ring is open.
+- [ ] I1 to I3: no ruins.
+- [ ] A hull that strays into a ruin breaks its prisms at the usual cost; nothing grows back.
+- [ ] An AI Jewel Wasp still finishes the race at I4 (it flies the lane; it has no creature to sting).
+- [ ] Leave the race and start another: the old ruins are gone and the new course has its own.
+- [ ] Frame rate at I4 with about 450 more prisms in the cell.
+
+## 🔴 Breakwater: the heat, the fun pass for the Sparrow's Time game (`Ys-bleeding-edge`, 2026-11-23, Yash) — COMPILED, EditMode tests pass (2026-11-24); NOT FLOWN
+
+**What landed:** the local pilot's stations are graded and called (`BreakwaterHeat`, `BreakwaterController.Heat`): a
+thread through the 18 u eye throws a shock ring off it, a bigger one with the afterburner lit; a door (fired or sawn)
+holds the streak; streaks of eyes are called at 3, 7, 14; each lap is split. Toasts 430-436 on
+`GameToastConfig_Breakwater`; eight empty FMOD slots. Nothing is scored or networked, and the Sparrow is unchanged.
+
+**Verified without the editor:** `bash Tools/Build/breakwater_ruins_harness/run.sh` (the six `BreakwaterHeatTests`
+pass headless); `check_console_logging.py`; `author_breakwater_assets.py --check`. The controller's half was NOT
+compiled (`unity_refcompile` cannot run on this machine, and no Unity run was made).
+
+1. DONE 2026-11-24 in the open editor (6000.3.17f1): the project compiles with no errors and `BreakwaterHeatTests` pass (6 of 6).
+2. Breakwater I2 as the Sparrow: one hint at the start ("Thread the eye...").
+3. Thread a station through the eye: a ring grows off the eye and vanishes, and the first time a line says so. Do it
+   with the afterburner held: the ring is bigger, and the first time a line says so.
+4. Fire a door open and fly through it outside the eye: no ring, and the streak is not lost.
+5. Three eyes in a row: "3 eyes in a row". Finish lap 1: "Lap 1 - N s". Lap 2 faster: "best lap".
+6. The start gate throws no ring. A guest in a two-machine lobby sees only their own rings.
+7. Answer the fun card when Play stops.
+
+## 🔴 Breakwater: barriers across the racing line at I4 (`Ys-bleeding-edge`, 2026-11-25, Yash) — COMPILED, EditMode tests pass, one AI race watched (2026-11-25); NOT FLOWN BY A PERSON
+
+**What landed:** curtain walls, locks and minefields on the legs the ruins leave bare (`BreakwaterBarriers`,
+`BreakwaterController.Barriers`): 7 barriers and about 604 Blue prisms a course, I4 only. BREAKWATER.md "The barriers".
+
+**Verified without the editor:** `bash Tools/Build/breakwater_ruins_harness/run.sh --self-test` (the six
+`BreakwaterBarriersTests` with the ruins and heat tests, and three negative controls for the barriers).
+
+**In the editor:**
+1. DONE 2026-11-25 in the open editor: compiles with no errors, `BreakwaterBarriersTests` pass (6 of 6); one three-racer I4 race with every seat AI-flown ran to 29 of 29 at 54 to 76 FPS (one sample at 41) with no exception in the log. 603 barrier prisms were laid; 17 were already destroyed before the start (cause not found), 405 by the leader's 14th crossing and 474 by the end, so the second lap met little of them. Regrowth added the same day (a broken prism grows back 8 s after the last hull is 260 u away): compiles, 7 of 7 tests pass, and in a second AI race the broken count stayed between 40 and 180 of 609 at 51 to 77 FPS.
+2. Breakwater I4: between two ruins a Blue wall, a row of three walls or a cloud of danger cubes stands across the line; none touches a dish, a pad or the start gate.
+3. Fire a rocket at a curtain: it opens a hole a Sparrow fits through, and the rounds pay ammunition.
+4. Fly the line through a minefield without touching a mine; stray and a mine costs what a danger prism costs.
+5. Watch an AI lap: it gets through every barrier, and still has a rocket for the station after a curtain.
+6. Frame rate at I4 is still about where it was (about 70 FPS with three racers on Yash's PC, 2026-11-25).
+7. I1-I3: no barriers.
+9. Turnstile: two bladed wheels turn opposite ways about the line; the line through the hubs is open; a blade costs what a plain prism costs. Shutter: the wall parts and shuts on a 6 s cycle; fly through while it is open. (Seen in stills of one AI race, 2026-11-25: 11 of 11 tests pass in the editor, 46 to 74 FPS.) On a second machine the wheels and the shutter are at the same moment as on the host.
+8. Shoot a hole in a curtain, fly on, come back on lap 2: the wall is whole again, and it never closed while you were near it.
+10. Flak battery (batch 3, 2026-11-25, NOT compiled in Unity yet): a block of 8 cubes on the line with shells streaming across the lane round it; flying the line, no shell comes near; shoot the core and the shells stop; come back on lap 2 and it fires again. A shell that hits costs what a danger prism costs.
+
+## 🔴 Breakwater: garden ruins round the racing line at I4 (`Ys-bleeding-edge`, 2026-11-24, Yash) — COMPILED, EditMode tests pass (2026-11-24); NOT WATCHED
+
+**What landed:** Spearline's I4 ruins, laid from Breakwater's circuit (`BreakwaterRuins`, `BreakwaterController.Ruins`):
+7 ruins a lap on every other leg, about 744 plain prisms, in Jade, Ruby and Gold, clear of the flown line, the
+stations, the pads and the start gate. No wheel fits these legs. I1-I3 and the Sparrow are unchanged.
+
+**Verified without the editor:** `bash Tools/Build/breakwater_ruins_harness/run.sh --self-test` (10 tests pass, three
+negative controls fire); `author_breakwater_assets.py --check`. The controller hook was NOT compiled: only the pure
+rule and its tests were.
+
+1. DONE 2026-11-24 in the open editor: the project compiles with no errors and `BreakwaterRuinsTests` pass (10 of 10, about 200 s: nine of them walk 100 seeds).
+2. Breakwater I4: ruins stand on every other leg in three colours; none touches a dish, a pad or the start gate.
+3. Fly the line station to station without steering round anything: no ruin prism is hit.
+4. I1, I2 and I3: no ruins.
+5. The start: the connecting panel covers the lay, and the first frame is not a hitch.
+6. Two machines: host and guest see the same ruins in the same colours.
 
 ## 🔴 Burrow Run re-seated on the Jewel Wasp (2026-11-22, Yash, NOT COMPILED, NOT RUN IN EDITOR)
 
@@ -1062,6 +1334,22 @@ headless: the generator `--check` (with a negative control), the `/arcadegame` �
 **First-pass tuning (not settled):** round 90 s; plant caps 36 / 30 / 24 / 18; omni 4 / 3 / 3 / 2; grazers
 6 / 9 / 12 / 15; cactus at 1.4x leaf (~32,900 volume mature); comeback 0.00003. The open question is the
 retire condition: does the garden matter against the trail (~42,000 volume a round of cruising)?
+### 🔴 Redline: the I4 garden ruins (`Ys-bleeding-edge`, 2026-11-24, Yash) — NOT COMPILED IN UNITY, NOT FLOWN
+
+**What landed:** `Assets/_Scripts/Controller/Arcade/REDLINE.md` section 4b. Spearline's ruins (`SpearlineRuins`, called,
+not copied) laid round Redline's lap at I4: `RedlineRuins.cs`, `RedlineController.Ruins.cs`, `ruinPrefab` on the
+controller in `MinigameRedline.unity`. **Ran headless:** `redline_course_harness` (38 tests, `RedlineRuinsTests` among
+them) and `author_redline_assets.py --check`. **Not compiled:** `RedlineController.Ruins.cs` and the three lines added
+to `RedlineController.cs` (no Unity was run; the harness compiles the pure files only).
+
+- [ ] Unity compiles; `RedlineRuinsTests` pass in the Test Runner.
+- [ ] Redline I1-I3: no ruins. I4: a ruin on most legs, in Blue, Gold and Jade, none at a gate, none on a Time crystal,
+      none inside the nucleus; the wheel (when the course has one) turns.
+- [ ] Fly I4 on the line at full Soar: does the hull stay inside the ruins' clear lane, or clip them on a straight cut
+      (REDLINE.md 4b, the open point)? Watch the AI rivals for the same, and their I4 times against 96 s (Legendary).
+- [ ] Frame rate at I4 with about 800 more prisms standing.
+- [ ] Two peers: the same ruins, the wheel at the same angle.
+
 ### 🔴 Redline round 5: Soar from the gun, 8 laps, the AI race line, the heat (`Ys-bleeding-edge`, 2026-11-11, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `Assets/_Scripts/Controller/Arcade/REDLINE.md` section 0. The card starts every Manta at Time 6
@@ -23128,6 +23416,29 @@ Doc: `Assets/_Scripts/Controller/Arcade/LANTERNRUN.md`.
 8. **Two players.** Host and client. **Pass:** both see the same balls. Known gap: a CLIENT pilot cannot dash (ANGLER.md
    follow-up 7).
 
+### Lantern Run: garden ruins at I4 (`Ys-bleeding-edge`, 2026-11-24) - NOT COMPILED IN UNITY, NOT WATCHED
+
+Spearline's ruins (`SpearlineRuins`, called, not copied) laid from Lantern Run's rings: `LanternRunRuins.cs`,
+`LanternRunController.Ruins.cs`, `LanternRunRuinsTests.cs`. What ran: `bash Tools/Build/lantern_run_harness/run.sh
+--self-test` (Roslyn, no Unity): 10 of 10 tests and 4 negative controls; `author_lantern_run_assets.py --check`.
+What did not run: a Unity compile (the controller partial is compiled by nothing outside Unity), the edit-mode suite in
+the editor, Play.
+
+1. **Compile.** Open the project. **Pass:** no errors in `LanternRunController.cs`, `LanternRunController.Ruins.cs`,
+   `LanternRunRuins.cs`; `LanternRunRuinsTests` passes (10).
+2. **Inspector.** `MinigameLanternRun.unity`, the controller. **Pass:** a "Garden ruins (I4)" header with Ruin Domains =
+   Jade, Ruby, Gold.
+3. **I1-I3.** Fly one each. **Pass:** no ruins; the race is as before.
+4. **I4.** **Pass:** a ruin on each of the seven legs between rings (none on the leg back into ring 0), in Jade, Ruby
+   and Gold in turn, every stone thick; a clear lane down the line; nothing at a ring; no ruin standing in a Blue ball.
+   About 800 prisms: watch the frame rate and the load.
+5. **The wheel** (about half the courses have one). **Pass:** it turns (25 deg/s), also during the countdown, and its
+   spokes cross the line.
+6. **Paint.** Hold RT with a ruin along the nose. **Expected, to judge:** the ruin lights up and the school goes for
+   it, since a ruin prism is an enemy prism to every pilot not of its colour. Is that wanted at I4 ("Sparse")?
+7. **AI.** **Pass:** the AI Anglers still finish I4, with times near the trained 154 s; say if they now throw at ruins.
+8. **Two players.** **Pass:** both see the same ruins and the same wheel angle.
+
 ## 🟡 Switchback fauna path corridor + prism budget (2026-11-02, NOT RUN IN EDITOR)
 Refcompile (player) error set identical to base; perf_hunt gates OK; EditMode tests (`FaunaCorridorTests`) NOT run — headless project busy.
 - [ ] Switchback I1–I4: no fauna born / steering within 220 u of the gate path; fauna elsewhere unchanged.
@@ -26475,6 +26786,16 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
 
+## Swordfish: bigger afterimages, its Brood Rush Mass lever (2026-11-21, NOT PLAYED)
+
+`SwordfishSwordAfterimageConfig.asset` `massVolumeMultiplier` x1 -> x2.5 became x1.7 -> x4.25 (`SWORDFISH.md` § "Brood
+Rush"). Measured in the Amoebius Brood Rush judge only (index 0.73 -> 1.03 at Medium, 3 teams of 3). No Unity editor ran;
+the reference compile has 0 errors in the changed files.
+
+- [ ] Toybox or Palisade: energize the Swordfish and let go. The afterimages laid in the next 5 s read as the sword's
+      ghost, about 1.2x thicker on every axis than before, and the bill still cuts them after a second.
+- [ ] Brood Rush with the Swordfish seated (once the card seats it again): its score sits with the field's, not at the bottom.
+
 ## Grizzly scope camera at teardown (2026-11-22)
 
 Bug ledger E-5e0864d332: leaving a match while the Grizzly's scope camera was out on a round logged "Cannot set the
@@ -26674,6 +26995,53 @@ seeds 101-103, 24 of 24 finished): Legendary 148.5 / 142.3 / 135.2 / 143.6 s, Me
 2026-11-24, in the editor, AI only (mode smoke test, three Legendary AI, clock 4x): I1 four times, I2, I3 and I4 once each
 all finished with a winner and no error in the match (I1 135.5-150.5 s, I2 146.3 s, I3 163.4 s, I4 195.9 s). The three
 boxes above stay open: nobody watched the races or flew one, and I4's 195.9 s is not within 10% of 144 s.
+The 195.9 s came from the 4x clock: I4 again at 1x with the same three AIs took 130.9 s (one seed), within 10% of 144 s.
+Time this mode's AI at 1x.
+
+### Spearline: the I4 garden ruins (2026-11-24)
+
+Machine side done: `SpearlineRuinsTests` 8 of 8 headless, compiles in the editor, one I4 AI race at 1x with 723 ruin
+prisms finished clean in 136.4 s.
+
+- [ ] Fly I4: between rings you pass through arches, a flower head, vines, a wall's doorway, a tunnel and a maze; the
+  middle of each is open. (2026-11-24: 729 prisms, AI race clean in 146.0 s, 55-75 fps under the 75 cap.)
+- [ ] The wheel turns, at the same angle on host and guest; you can pass through its hub or between its spokes, and
+  meeting a spoke costs what hitting prisms costs.
+- [ ] Straying off the line into a ruin costs what hitting prisms costs, no more.
+- [ ] The ruins read as ruins and not as seals: each ruin is Jade, Ruby or Gold, the seals Blue (2026-11-24, seen in
+  stills). Fly through a ruin of your own colour and one of another: say if they cost you differently.
+- [ ] The frame rate at I4 is no worse than at I2.
+I2 and I3 at 1x: 133.3 s and 132.7 s (one seed each), both within 10% of the judge's 142.3 and 135.2 s.
+
+### Wrasse Run: the I4 garden ruins (2026-11-24) — NOT COMPILED IN UNITY, NOT WATCHED
+
+Spearline's generator called from `WrasseRunController.Ruins.cs` (WRASSERUN.md §3a). Machine side: `WrasseRunRuinsTests`
+6 of 6 headless (Roslyn, the shipped C#, 10 seeds: 761-880 prisms a lap), `author_wrasse_run_assets.py --check` OK. No
+Unity compile, no refcompile (it cannot run on this machine), no play.
+
+- [ ] It compiles in the editor and `WrasseRunRuinsTests` pass there.
+- [ ] Wrasse Run at I4: a ruin on each leg between rings in Jade, Ruby and Gold, the line through each open, none
+  crowding a ring. At I1-I3 there are none.
+- [ ] A slung kite that meets a ruin: say what happens to the kite and the ruin.
+- [ ] An AI crew at I4 still finishes, and its time is no worse than before the ruins (it commits from 433 u out).
+- [ ] The frame rate at I4 is no worse than at I2 (~850 more prisms).
+- [ ] The wheel fits on about 1 course in 10 here: when it stands, it turns at the same angle on host and guest.
+
+### Warpline: the I4 garden ruins (2026-11-24) — NOT COMPILED IN UNITY, NOT WATCHED
+
+Spearline's generator called from `WarplineController.Ruins.cs` (WARPLINE.md §2a). Machine side: `WarplineRuinsTests`
+8 of 8 headless (Roslyn, the shipped C#, 10 seeds: four ruins and 357-527 prisms a lap), with negative controls that
+fail them; `author_warpline_assets.py --check` OK (it wrote `ruinPrefab` into the scene). No Unity compile, no
+refcompile (it cannot run on this machine), no play.
+
+- [ ] It compiles in the editor and `WarplineRuinsTests` pass there.
+- [ ] Warpline at I4: a ruin on each of the four legs between rings in Jade, Ruby and Gold, the line through each
+  open, none crowding a ring, none on the leg into ring 0. At I1-I3 there are none.
+- [ ] A Meerkat tunnel dug across a corner, off the curved lane, through a ruin: say what happens to the ruin and
+  whether the ride reads well.
+- [ ] An AI Meerkat at I4 still finishes, and its time is no worse than before the ruins.
+- [ ] The frame rate at I4 is no worse than at I2 (~360-530 more prisms).
+- [ ] The wheel stands on about 4 courses in 10: when it does, it turns at the same angle on host and guest.
 
 ## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
 
@@ -26745,9 +27113,7 @@ editor: none in this session. The reference compile has 0 errors in the changed 
 - [ ] Charge fully, then tap: each is ready 2.2 s after its own launch.
 - [ ] Dart until the Goby perches and lays its 5-block pad, then turn hard and pitch away from it: the hull passes
       through the pad and the den without stopping, bouncing or destroying them. A rival's prisms still stop a dart.
-- [ ] A person's Goby is never held at a perch (2026-11-24): dart until a perch lays an island, then steer at once;
-      it flies on with no pause. The Pistol still gets the island, its ground and its den. The AI Goby still pauses
-      1.5 s at a perch.
+- [x] ~~A person's Goby is never held at a perch~~: superseded the same day by "The Goby never flies" below.
 - [ ] Race Perch Run and Regatta with an AI Goby: it still darts through every ring, and the Regatta Goby's times are
       about the same as before (REGATTA.md 6.6: card 78.1 s, L5 62.6 s).
 
@@ -26780,3 +27146,258 @@ changed files. None of it has run in the Unity editor.
 - [ ] Fly into the tube from the lip, through the hall and out of an exit: no invisible walls. The hull, decks and crystal are solid.
 - [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
 - [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).
+
+## The Goby never flies: it only darts perch to perch (2026-11-24)
+
+Garrett: "I want the goby's only movement to be stretches of different length between perches. it should never fly.
+only shoot itself from perch to perch. it can charge up its distance so it can still go short distances. it should
+have two thumb controls so it can orient the shrimp's plane." The Goby is pinned always (`GobyPistolDuo.Pin`, every
+landing), so the person's two thumbs only turn it, and the turn sets the Pistol's plane at the next launch. A dart
+(140-600 u by charge) is its only movement. The Pistol's islands keep their rule (a landing 900 u past the last island
+end, while fewer than 3 wait). The AI Goby, the Perch Run coach and the Regatta coach turn where they sit and hop
+aside (the shortest dart, 45/70/100 degrees off the line) when coral stops the dart at the nose; `aiCruiseSpeed`,
+`aiTurnMargin`, `InsideTurn` and `TurnRadius` are gone. Not run in the Unity editor: none in this session. The
+reference compile has 0 errors in the changed files; the Perch Run harness passes 11/11 (+ self-test), and its sweep
+gives the reader the same clocks as before (36.0 / 37.8 / 36.8 / 30.5 s); `GobyPistolTests` was not run.
+
+- [ ] Fly the Goby in freestyle: the sticks turn it in place and never move it; only Dart moves it, a tap 140 u and a
+      full 0.8 s charge 600 u. It stays put after every landing.
+- [ ] Turn the Goby, dart, then swap to the Pistol: the Pistol's plane follows the hull's turn at that launch.
+- [ ] Dart into a block at point-blank: it does not move, and the next dart turned aside gets it out.
+- [ ] Short hops only (under 900 u): no island is laid; a landing 900 u past the last island end lays one.
+- [ ] Race Perch Run I1-I4 with an AI Goby: it finishes every race, hopping aside where coral blocks its line.
+- [ ] Race Regatta with an AI Goby: it never flies, and finishes (REGATTA.md 6.6 had card 78.1 s, L5 62.6 s).
+- [ ] Will's (ownerbynight) Perch Run sign-off from #2359 was flown with the cruise: re-fly it.
+
+## The Pistol's trail: closer prisms, a little more hill variance (2026-11-24)
+
+Garrett: "the trail it leaves should look a bit more continuous with a shorter gap between prisms and a few more prisms
+per hill. the hills should have a bit more frequency and amplitude variance, not a lot". `trailBlockGap` 6 -> 4 u (about
+6 prisms a hill, 4 before; each block's length follows the gap, so shielded neighbours still meet tip to tip). Half-hills
+10-15 -> 9-16 u on and 3.6-7.2 -> 3-7.8 u up or down, the same means, so the pace and screen-fit numbers hold. A jump's
+energy is kept per u flown: `energyPerSkippedBlock` 1 -> 0.6667 and `energyFlightBonus` 0.2 -> 0.1333, so dens stay the
+size they were. An island now has 1.5x the blocks (up to 450 on an 1800 u island). Not run in the Unity editor; the
+goby_pistol harness passes 14/14 (+ self-test) and the Perch Run harness 11/11; `GobyPistolTests` (the ride's pace) was
+not run.
+
+- [ ] Ride the Pistol over a fresh island: the trail reads as a near-continuous line, about 6 prisms a hill.
+- [ ] The hills vary a little more in length and height than before, and the ride still flies off crests.
+- [ ] Big jumps still build about the same size den as before; frame rate holds with three islands queued.
+
+## The Sparrow's barrel roll is on the right stick, with its own HUD card (2026-11-24)
+
+Shombith: "Currently pressing the boost button would make the sparrow roll, move that to the right stick of the
+controller. Any direction the stick goes the sparrow barrel rolls and if you keep that button pressed it will keep doing
+that barrel roll." `BarrelRollController` now reads the right stick (past `engageThreshold` 0.6, any direction), repeats
+while held, and is owner-gated like the Scarab's juke; the boost arming, its 0.3 s window, `RollChargeState` and the Time
+`rollTimeScale` are gone. The one-thumb mouse scheme now publishes P ; L ' as the right stick (it published zero), which
+also gives the Scarab a keyboard juke there. New core card `CoreAbility.BarrelRoll` on the Sparrow HUD from
+`Sparrow_BarrelRoll.png` (icon kit, Core/). The Honeyguide carries the same component and rolls on the right stick too.
+Not run in the Unity editor: unity_refcompile and the gates only.
+
+- [ ] Pad: push the right stick right, left, up, down and diagonally - the Sparrow rolls that way each time.
+- [ ] Hold the right stick: it keeps rolling, one roll straight after another; let go and it stops after the current roll.
+- [ ] Boost (B) no longer rolls, with the left stick at any deflection.
+- [ ] Turret Stance: the right stick still rolls and strafes while stopped.
+- [ ] Desktop with the mouse flying: P ; L ' roll the Sparrow; the Scarab jukes on the same keys.
+- [ ] The Sparrow HUD shows the barrel-roll card (three rolling Sparrows) left of the four elemental cards, no flower, no chip.
+- [ ] Multiplayer: a remote Sparrow's roll plays once on other machines (no doubled displacement).
+- [ ] Honeyguide: decide whether its right-stick roll should stay.
+
+## The Toy Box and its Configure window, Rev 145 H (2026-11-25)
+
+Shombith picked Rev 145 H on Frogma ("Let's go with H. Build it. H."; Docs/MENU_REDESIGN_B.md section 235.3, spec
+`Docs/UI/specs/toybox-rev145h.md`). Built by `author_menu_toybox.py` and `author_menu_toyconfigure.py`: lens cards with
+the glyphs given depth at run time (`KitGlyphDepth`), four over three centred (`KitCenteredGrid`), Today as a banner,
+Shuffle beside Back; Configure in Rev 142 A's layout with the Shelf tiles, and Navigate diving into the preview
+(`KitDive`) before it hands the player to the world. Not run in the Unity editor: the generators' checks, unity_refcompile
+(0 errors in the changed files) and an offline render from the YAML (`Docs/Look/toybox-rev145h_2026-11-25.jpg`) only.
+
+- [ ] Open the Toy Box: the seven cards pop in one after another, four over three with the three centred.
+- [ ] Each glyph floats in its round lens with a slate extrusion down and right and a soft shadow; it bobs.
+- [ ] The Today banner spans the window, a soft light sweeps across it every few seconds, and Try it +10 is lime.
+- [ ] Shuffle beside Back shuffles; the line left of it says what the press did.
+- [ ] Gamepad: focus starts on the Today banner, then the toys in grid order, then Shuffle and Back.
+- [ ] Open Vessel Changer: the live preview is large on the left, the Shelf tiles three across on the right, the flown hull says Flying.
+- [ ] Switch to another hull: the tile lights, the preview re-renders, the state moves.
+- [ ] Navigate: the preview grows to fill the screen while the rest fades, then the player is flying at the target.
+- [ ] Open the Toy Box again after a Navigate: Configure opens at its normal layout (the dive was put back).
+- [ ] Phone (match height): the window scales whole and nothing overlaps.
+## Switchback: the I4 garden ruins (2026-11-24)
+
+Spearline's ruins laid round Switchback's I4 gauntlet (`SwitchbackRuins`, `SwitchbackController.Ruins.cs`; SWITCHBACK.md
+"The I4 ruins"). Run headless: `SwitchbackRuinsTests` (7 pass, two negative controls fail as they should), the
+generator `--check`, the console-logging gate. Compiled in Unity on 2026-11-25 (the open editor rebuilt both script
+assemblies at 01:25 IST with `SwitchbackRuins`, `LaysRuins` and `SwitchbackRuinsTests` in them), and the 7
+`SwitchbackRuinsTests` pass in its EditMode runner (98 s). NOT run: the rest of the EditMode suite, a race.
+
+- [x] Unity compiles with `SwitchbackController.Ruins.cs` (2026-11-25, the open editor's script assemblies).
+- [x] `SwitchbackRuinsTests` pass in the Test Runner (2026-11-25, 7 of 7, EditMode in the open editor).
+- [ ] MinigameSwitchback, I4, fixed seed: 5 ruins in Jade, Ruby and Gold ahead of blocked gates 5, 10, 14, 18 and 23.
+      None touches a tunnel, a key crystal, a path ray or a block field, and the way from ring to key is open.
+- [x] Ruby ruins do not read as Danger prisms (2026-11-25, stills from one I4 run: Ruby reads magenta, Danger red).
+- [ ] A whole I4 race with the ruins: the 2026-11-25 run stalled (Dolphins at 0 speed, NullReferenceException flood
+      from `PosterDrift.cs:84`), so nothing from it was timed.
+- [ ] I1, I2 and I3 have no ruins; Scarab Rally I4 has none.
+- [ ] The I4 soak (`SwitchbackSoakLauncher -sbSoak 4:4:1`): frame time and live colliders against the last gauntlet
+      row in Docs/perf/SWITCHBACK_PRISM_BUDGET.md (about 260 more prisms, nearly all within 200 u of the route).
+- [ ] Three AI at I4 finish in the times they did before (the ruins stand off their route).
+- [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race.
+
+## Thresher Time: the I4 garden ruins (2026-11-24)
+
+Compiled and tested outside Unity only (`ThresherTimeRuinsTests` 7/7 with Roslyn, the game assembly with Unity's own
+compiler arguments). Not compiled in the editor, no edit-mode run in Unity, never seen in Play. `THRESHERTIME.md` §0b.
+
+- [ ] The project compiles in the editor and `ThresherTimeRuinsTests` passes there.
+- [ ] Thresher Time I4: each leg but the last runs through a ruin in Jade, Ruby or Gold; the Belfry stays Blue.
+- [ ] The way to a ring is open wherever the ring is in its swing; no mace swings through a ruin.
+- [ ] The wheel (about half the courses have one) turns, and host and guest see it at the same angle.
+- [ ] I1, I2 and I3 have no ruins.
+- [ ] Three AI at I4 still finish (one race before: 159 s, seed 7001), and the frame rate holds with about 1,000 more prisms.
+- [ ] The ruins are gone after leaving the race and on Play Again.
+
+## Serpentine: the I4 garden ruins (2026-11-24)
+
+NOT COMPILED IN UNITY, NOT RUN IN THE EDITOR. Serpentine lays Spearline's ruins round its own lap at I4
+(SERPENTTIME.md, "Garden ruins at I4"; `SerpentTimeController.Ruins.cs`). Run headless only: `SerpentineRuinsTests`
+(7 tests, 13 seeds: 7 ruins, 760-881 prisms a lap) and three negative controls in `serpent_time_course_harness`.
+
+- [ ] The project compiles (the controller is now a partial class with a second file).
+- [ ] Serpentine at I4: seven ruins stand between the gates in Jade, Ruby and Gold, apart from the Blue shapes and
+      debris; none at a gate, none on the leg behind the start; the line through each is open.
+- [ ] Where a wheel stands (about one course in four), it turns before and during the race, alike on host and guest.
+- [ ] Serpentine at I1, I2 and I3: no ruins.
+- [ ] Frame rate at I4 with the ruins (about 840 more prisms) against without.
+- [ ] A rematch lays a fresh set and leaves none of the old one.
+
+### 🔴 Grizzly Time: ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, EDITMODE TESTS NOT RUN, NOT PLAYED)
+
+2026-11-25: the open editor (6000.3.17f1) compiles `2a3e56faac` with 0 errors and 0 warnings (`unity recompile`). The
+first push (`f2e457b577`) did not compile: the ruins file lacked `using CosmicShore.Utility;`, fixed in `2a3e56faac`.
+`GrizzlyTimeRuinsTests` in the editor (Pipeline `run_tests`) did not finish: the run was invalidated while the editor sat
+in Play mode spamming `CrystalFlipWave.cs:128` NullReferenceExceptions and stopped answering commands. Re-run it.
+
+`GRIZZLYTIME.md` §0.2. Spearline's ruins called from Grizzly Time (`GrizzlyTimeRuins.cs`, `GrizzlyTimeController.Ruins.cs`,
+three hook lines in `GrizzlyTimeController.Kegs.cs`), cut back for the throw lanes and the kegs. Ran: the headless
+`grizzly_time_course_harness/run.sh --self-test` (42 tests pass, 17 negative controls fire) and `author_grizzly_time_assets.py
+--check` (29 files match). Not run: a Unity compile, the EditMode tests in the editor, `unity_refcompile` (cannot run on
+this Windows box), any flight.
+
+- [ ] The project compiles; `GrizzlyTimeRuinsTests` (8) pass in the editor.
+- [ ] Grizzly Time at I4: a ruin on each long leg in Jade, Ruby or Gold, none at a ring, none round a keg, none on the
+      leg into the start ring. The ring-to-ring line and the keg-to-keg line are both open.
+- [ ] A bank shot from a keg's exit side throws you down the leg without meeting a standing ruin prism.
+- [ ] Where a wheel stands, it turns before and during the race, alike on host and guest. Is it fair at bank-shot speed?
+- [ ] Three AI at I4 still finish with the ruins standing (watch for one stuck in a wall, maze or wheel).
+- [ ] Grizzly Time at I1, I2 and I3: no ruins.
+- [ ] Frame rate at I4 with the ruins (about 570 more prisms) against without.
+- [ ] A rematch lays a fresh set and leaves none of the old one.
+
+## Scarab Rally: the I4 garden ruins (2026-11-24)
+
+COMPILED IN UNITY (batch mode, 2026-11-24, no `error CS`); NOT SEEN IN PLAY. The EditMode tests ran there once: 8 of
+13 passed and 5 failed on no assertion, but on another session's `/api/exec` request that timed out while the tests
+held the main thread for 7 minutes (an unhandled error log fails the running test). The tests now share their lays, and
+that version passes 13/13 in the open editor (34.6 s, 2026-11-24) and headless. Scarab Rally lays Spearline's ruins round its own rings at I4, cut clear
+of the block field and of the sight line to the next ring (SCARABRALLY.md, "The ruins"; `ScarabRallyRuins`, the hook in
+`ScarabRallyController`). Run outside Unity only: `ScarabRallyRuinsTests` 13/13 and six negative controls
+(`bash Tools/Build/scarab_rally_ruins_harness/run.sh --self-test`), and the game assembly compiled with Roslyn on
+Unity's own arguments with no error in a Scarab Rally file. `author_scarab_rally_assets.py --check` OK.
+
+- [x] The project compiles in the editor (batch mode, 2026-11-24).
+- [x] `ScarabRallyRuinsTests` passes 13/13 in the editor (2026-11-24).
+- [ ] Raising the I4 course does not hitch: MEASURED 0.33 s to lay the ruins on the live course in the editor, once,
+      before Ready (1.2 s at first; 0.84 s once the lay asked only the legs it keeps; 0.33 s once Spearline's lane
+      check sampled each leg's line once, SCARABRALLY.md "The ruins"). Judge it in the editor and in a player build.
+- [ ] `PerchRunRuinsTests.Every_dart_the_ai_plans_passes_the_standing_ruins` ran past its 180 s limit in the editor
+      (2026-11-24): its own loop asserts with a formatted message for every prism sample. Perch Run's to fix.
+- [x] `MinigameScarabRally`: the ruin prism prefab is wired (480 ruin prisms laid in Play, 2026-11-24). The scene
+      still owes its first open-and-save.
+- [ ] Scarab Rally I4: up to seven ruins stand along the course in Jade, Ruby and Gold, apart from the Blue block
+      fields and the lime ring; none at a ring; nothing in them moves.
+- [ ] From each ring the next lime ring is in plain sight, as before the ruins (Garrett's 2026-11-14 rule).
+- [ ] No ruin prism stands inside a block-field prism.
+- [ ] Scarab Rally I1, I2 and I3: no ruins. Switchback: no Scarab Rally ruins (its own are the Switchback session's).
+- [x] Three Legendary AI Scarabs at I4 finish: the race ended after 139 s at 62-78 fps in the editor (2026-11-24,
+      one race; the race model's Legendary time was 121 s). All 480 ruin prisms stood at the end. Medium was not raced.
+      Raced again with the quicker lay (2026-11-25, one race): 139 s, 59-78 fps while racing, 415 ruin prisms all
+      standing, the lay 0.27 s on that course.
+- [ ] Two players: host and guest see the same ruins, and they are gone after leaving the race and on Play Again.
+
+### 🔴 Thornline: ruins at I4 (2026-11-24, Yash, compiles and tests pass in Unity 2026-11-25, AI fixed 2026-11-25, NOT PLAYED by a person)
+
+`THORNLINE.md` §2a. Spearline's ruins called from Thornline (`ThornlineRuins.cs`, `ThornlineController.Ruins.cs`, four
+hook lines and the `ruinDomains` field in `ThornlineController.cs`, one line in `MinigameThornline.unity`). Ran: the
+headless `thornline_course_harness/run.sh` (11 `ThornlineRuinsTests` pass; one older test,
+`ThornlineCourseTests.A_snipe_is_worth_taking_and_a_crystal_is_worth_aiming_for`, already fails on the 4.4 s cooldown),
+`run.sh --ruins-self-test` (3 controls fire) and `author_thornline_assets.py --check` (30 files match). Compiled in
+Unity on 2026-11-25 (the open editor rebuilt both script assemblies at 01:58 IST with `ThornlineRuins`, `ruinDomains`
+and `ThornlineRuinsTests` in them), and the 11 `ThornlineRuinsTests` passed in the open editor (EditMode, 29 s). Not
+run: any flight.
+Affects: Garrett's Shrike / Thornline.
+
+- [x] The project compiles (2026-11-25, the open editor's script assemblies).
+- [x] `ThornlineRuinsTests` (11) pass in the editor (2026-11-25, 11 of 11, 29 s).
+- [x] Open `MinigameThornline`: the controller shows Ruin Domains Jade, Ruby, Gold (the scene line was written by hand
+      as `010000000200000004000000`), and saving the scene does not change that line. (2026-11-25, the open editor:
+      the scene opened clean with Jade, Ruby, Gold and no override, and Unity serializes the controller to that exact
+      line; the scene itself was not saved.)
+- [ ] Thornline at I4: four to seven ruins in Jade, Ruby or Gold, each between a ring and its far thorn; none at a
+      ring, a thorn or under the start; every thorn-to-thorn line and every snipe line open.
+- [ ] A sling aimed at a thorn through a ruin anchors on the thorn, not on the ruin.
+- [x] Four AI at I4 still finish with the ruins standing; note their times against THORNLINE.md §4.1 and any seconds
+      spent lancing ruins. **2026-11-25, three Legendary AI, four races in the editor: they finish, but the winner took
+      69.6 s and 69.2 s with the ruins and 42.0 s and 52.3 s with the ruins cleared at the start (§4.1: 41.6 s).** Fixed
+      the same day (THORNLINE.md §2a: the AI no longer anchors on or lances a ruin): three races with the ruins standing,
+      44.5 s, 42.7 s and 48.3 s (three Legendary AI; four AI not raced).
+- [ ] Thornline at I1, I2 and I3: no ruins.
+- [ ] The hitch when the course is laid (about 0.2 s in the harness) and the frame rate at I4 with about 620 more prisms.
+- [ ] A rematch lays a fresh set and leaves none of the old one.
+
+### 🟡 Brittle Star Time: ruins and breakers at I4 (2026-11-24, Yash; compiled and flown by AI in Unity, not by a person)
+
+`BRITTLESTARTIME.md` sections 0a (Spearline's ruins round the flown line) and 0b (breakers: a Ruby disc of Headlong's
+hedge slabs across the way into every ring and along the return straight, standing back up once no hull is near).
+Ran in Yash's editor: the compile; the mode's EditMode tests (42 pass, the 12 ruin and 5 breaker tests among them);
+six I4 races with the AI on all three seats. Headless: `brittle_star_time_course_harness/run.sh --self-test` (42 tests,
+the measured claims, 16 negative controls) and `author_brittle_star_time_assets.py --check`. The last fix (each disc's
+own trail, so a slab back from the pool is not added twice) was compiled with Unity's compiler outside the editor, not
+in it: the editor hung on "Running managed callbacks" during that reload.
+
+- [x] The project compiles; the ruin tests pass in the editor.
+- [x] I4: one ruin (72 to 89 prisms) stands on the return straight in Jade, apart from the Blue posts.
+- [ ] Fauna and the ruin: in one race tadpoles broke 72 of its 85 prisms; in the last race 68 of 72 stood at the end.
+      Should fauna be kept off the ruin? (A decision, not a bug.)
+- [x] I4: 11 Ruby discs a lap (749 slabs) stand in front of the rings and on the straight; every AI threads every ring
+      and the race finishes (leader 6 laps in ~166 s).
+- [x] A broken slab goes back to the pool: the breaker root held 749 children all race (it grew to 4,191 before the fix).
+- [ ] After the trail fix: no `[Trail] Attempted to add duplicate block` warnings in an I4 race (622 before it).
+- [ ] A person at I4: ramming a disc costs speed (boost reset, up to half speed for a second); the guns or cords open a
+      hole first; the discs read as something to break, not something to fly round.
+- [ ] Frame rate at I4 with the breakers against without (the editor ran ~90 fps mean before them).
+- [ ] Brittle Star Time at I1, I2 and I3: no ruins, no breakers.
+
+## Bug ledger fixes (2026-11-24)
+
+Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section 3). Not run in the Unity editor
+(cloud sweep); `Tools/Build/unity_refcompile` reports 0 errors in project code.
+
+- [ ] Jacks, from the Toybox's Vessel Changer and in a mode: fly with the net out, return to the menu, fly Jacks
+      again. No `MissingReferenceException` naming `MeshRenderer` from `JacksBodies`, and the net still draws
+      (`a5a7ef89c3`).
+- [ ] In Play mode, start the mode smoke test from the command line or the Unity CLI
+      (`CosmicShore.Editor.ModeSmokeLauncher.Run`): the console says "[ModeSmoke] cannot start: the editor is in Play
+      mode: leave Play mode first", with no exception, and the offline preference is unchanged (`c7f4c53311`).
+
+## Photic is the default colour set again (2026-11-25)
+
+Shombith: "the default color set in the game should be photic". `ThemeManagerDataContainer.ColorSet`, `ThemeManager`'s
+own field and the menu prefabs' fallback palettes (ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal)
+now name `PhoticColorSetSO`; the generated editor theme, UI tokens and analytics console themes were re-written.
+Not run in the Unity editor and unity_refcompile did not run (no .NET SDK in the session); the C# change is one comment
+and one generated string constant. Checked by the generators' `--check` gates only.
+
+- [ ] Clear PlayerPrefs (or a fresh install) and boot: the prisms, trails and HUD wear Photic, not Nocturne.
+- [ ] Profile > colour sets says "Wearing Photic"; picking Nocturne still works and survives a restart.
+- [ ] With Nocturne picked, the Ark, Codex and Configure screens follow Nocturne (their own Photic palette is only the fallback).

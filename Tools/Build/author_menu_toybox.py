@@ -52,11 +52,12 @@ c = A.c
 PREFABS = ("ToyCard", "ToyboxView")
 S = dict(button=K.kit_script("KitButton"), card=C.script("ToyboxCard"), daily=C.script("DailyActivityCard"), shuffle=C.script("ToyboxShuffleCard"),
          modal=C.script("ToyboxModal"), gate=A.S["gate"], tile=A.S["tile"], kt=A.S["kt"], close=A.S["close"],
-         crystal=C.script("MenuCrystalClickHandler"))
+         crystal=C.script("MenuCrystalClickHandler"), depth=K.kit_script("KitGlyphDepth"),
+         cgrid=K.kit_script("KitCenteredGrid"))
 C.STUB_KIND.update({"daily": (114, S["daily"]), "shuffle": (114, S["shuffle"])})
-TOY_W, TOY_H, TOY_GAP_X, TOY_GAP_Y, COLS = 341, 272, 10, 12, 4
-FEAT_W, FEAT_H = 682, 202
-GRID_W = COLS * TOY_W + (COLS - 1) * TOY_GAP_X
+TOY_W, TOY_H, TOY_GAP_X, TOY_GAP_Y, COLS = 252, 302, 34, 18, 4      # Rev 145 H: four lens cards over three, centred
+FEAT_H = 178                                                       # the Today banner
+GRID_W = A.CONTENT_W
 CRYSTAL_HANDLER = "1486013850"
 
 
@@ -91,13 +92,41 @@ def tile(key, primary, art=(), selected=False, sel_border="Selection"):
 # ToyCard.prefab
 # --------------------------------------------------------------------------------------------
 
-TOY_WELL_H = 150                # Rev 18 A: the portrait's well on top, the words under it
-TOY_PORTRAIT = 128
+# Rev 145 H (Docs/MENU_REDESIGN_B.md section 235.3, picked 2026-11-24): Rev 142 D's lens card - the toy's glyph
+# with depth (Rev 144 G, KitGlyphDepth) floating in a round lens of sea, the name and its section centred
+# under it. The card's own glass ground and sea stay (Shombith, Rev 142: "bg is good").
+LENS = 196                      # the lens's diameter
+LENS_TOP = 20                   # from the card's top edge
+TOY_PORTRAIT = 132              # the glyph inside the lens
+
+
+def lens(parent, key, diameter, portrait, glyph):
+    """A round lens: a disc of sea under a circular mask, the glyph floating in it, a hairline ring over it."""
+    n = parent.child(N(key, "Lens", R((0.5, 1), None, (0, -LENS_TOP - diameter / 2), (diameter, diameter), (0.5, 0.5))
+                       if key.count("/") == 0 else R((0, 0.5), None, (24 + diameter / 2, 0), (diameter, diameter), (0.5, 0.5))))
+    disc = n.child(N(f"{key}/Disc", "Disc", STRETCH))
+    disc.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceDark", 0.55), K.kit_sprite("kit_ring_fill"), raycast=False)) \
+        .add("th", 114, K.themed("SurfaceDark", 0.55)).add("mask", 114, A.mask(True))
+    sea = disc.child(N(f"{key}/Disc/Sea", "Sea", STRETCH))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_PANEL_MAT))
+    art = A.drift_art(disc, portrait, "Portrait", R(size=(glyph, glyph)), None, material=A.PORTRAIT_BOB_MAT, preserve=True)
+    art.add("depth", 114, glyph_depth())
+    ring = n.child(N(f"{key}/Ring", "Ring", STRETCH))
+    ring.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_ring_line"))).add("th", 114, K.themed("SurfaceLight"))
+    return n
+
+
+def glyph_depth(layers=12):
+    """KitGlyphDepth: Rev 144 G's baked depth, drawn from the theme's slate tokens."""
+    return lambda ctx, go: mono(go, S["depth"],
+                                f"  theme: {K.ref(11400000, K.THEME, 2)}\n  nearToken: 6\n  farToken: 5\n  shadowToken: 3\n"
+                                f"  layers: {layers}\n  depth: {{x: 0.026, y: 0.034}}\n  shadowOffset: {{x: 0.04, y: 0.055}}\n"
+                                "  shadowAlpha: 0.5\n  faceFalloff: 0.18\n")
 
 
 def build_card():
-    """Rev 18 A (Docs/MENU_REDESIGN_B.md section 72): the toy's portrait in a well of its own, bobbing slowly
-    (Card_PortraitBob.mat); the section, the name and its one line on the opaque body under it."""
     root = N("root", "ToyCard", R(size=(TOY_W, TOY_H)))
     ring_node(root, "FocusRing", 14)
     fill = root.child(N("Fill", "Fill", STRETCH))
@@ -107,26 +136,24 @@ def build_card():
     clip.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("mask", 114, A.mask(False))
-    well = image_node(clip, "Well", "Well", R((0, 1), (1, 1), (0, -TOY_WELL_H / 2), (0, TOY_WELL_H), (0.5, 0.5)), "SurfaceDark",
-                      alpha=0.45)
-    A.drift_art(well, "Portrait", "Portrait", R(size=(TOY_PORTRAIT, TOY_PORTRAIT)), None, material=A.PORTRAIT_BOB_MAT,
-                preserve=True)
-    A.body_sea(clip, "Clip/Sea", TOY_H - TOY_WELL_H)
-    image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, TOY_H - TOY_WELL_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
+    A.body_sea(clip, "Clip/Sea", TOY_H)
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
-    acc = root.child(N("Accent", "Accent", R((0, 1), (1, 1), (0, -1), (-24, 3), (0.5, 1))))
-    acc.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0)))
-    body_top = TOY_H - TOY_WELL_H
-    label(root.child(N("Section", "Section", R((0, 0), None, (16, body_top - 22), (300, 16), (0, 0.5)))), "Pilot", "Label",
-          "NeutralLightest")
-    nm = root.child(N("Name", "Name", R((0, 0), None, (16, body_top - 46), (310, 30), (0, 0.5))))
-    nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Toy", "H3", tok("TextLight")))) \
+    lens(root, "Lens", LENS, "Portrait", TOY_PORTRAIT)
+    name_y = LENS_TOP + LENS + 22
+    nm = root.child(N("Name", "Name", R((0, 1), (1, 1), (0, -name_y - 15), (-24, 30), (0.5, 0.5))))
+    nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Toy", "H3", tok("TextLight"), align="center"))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
-    tag = root.child(N("Tagline", "Tagline", R((0, 0), None, (16, 12), (310, 44), (0, 0))))
+    label(root.child(N("Section", "Section", R((0, 1), (1, 1), (0, -name_y - 46), (-24, 16), (0.5, 0.5)))), "Pilot", "Label",
+          "NeutralLightest", align="center")
+    # Wired but hidden: Rev 145 H draws neither the toy's one line nor the accent stripe; a designer can switch
+    # either back on in the prefab, and ToyboxCard keeps writing both (never a nulled reference).
+    tag = root.child(N("Tagline", "Tagline", R((0, 0), (1, 0), (0, 12), (-24, 40), (0.5, 0)), active=False))
     tag.add("cr", 222, K.canvas_renderer()) \
-        .add("tmp", 114, text("", "BodySmall", tok("NeutralLightest"), valign="top", wrap=True)) \
+        .add("tmp", 114, text("", "BodySmall", tok("NeutralLightest"), valign="top", wrap=True, align="center")) \
         .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
+    acc = root.child(N("Accent", "Accent", R((0, 1), (1, 1), (0, -1), (-24, 3), (0.5, 1)), active=False))
+    acc.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0)))
     un = root.child(N("Unavailable", "Unavailable", STRETCH, active=False))
     image_node(un, "Unavailable/Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.6)
     label(un.child(N("Unavailable/Label", "Label", R(size=(200, 18)))), "Unavailable", "Label", "TextLight", align="center")
@@ -136,6 +163,8 @@ def build_card():
              f"  nameText: {ref(ctx.c('Name', 'tmp'))}\n  taglineText: {ref(ctx.c('Tagline', 'tmp'))}\n"
              f"  sectionText: {ref(ctx.c('Section', 'tmp'))}\n  unavailableOverlay: {ref(ctx.go('Unavailable'))}\n"))
     root.add("audio", 114, A.menu_audio(2)).add("scroll", 114, A.scroll_into())
+    # Motion: the cards pop in one after another (by sibling) on spawn and on every open.
+    root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Pop", by_sibling=True, distance=10))
     return root
 
 
@@ -143,25 +172,44 @@ def build_card():
 # ToyboxView.prefab
 # --------------------------------------------------------------------------------------------
 
+TODAY_LENS = 132
+
+
 def daily_card(parent):
+    """Rev 145 H: Today's activity as a banner across the window - the sea behind it with a light sweeping
+    through, the toy's glyph in a lens, the activity big, the countdown under it, the lime Try it on the right."""
     k = "Daily"
-    n = parent.child(N(k, "DailyActivityCard", R((0, 1), None, (0, 0), (FEAT_W, FEAT_H), (0, 1))))
+    n = parent.child(N(k, "DailyActivityCard", R((0, 1), None, (0, 0), (GRID_W, FEAT_H), (0, 1))))
     ring_node(n, f"{k}/FocusRing", 14)
     frame(n, k)
-    art_node(n, f"{k}/Portrait", "Portrait", R((0, 0.5), None, (24, 0), (170, 170), (0, 0.5)), None, preserve=True)
-    t = n.child(N(f"{k}/Title", "Title", R((0, 1), None, (222, -26), (420, 18), (0, 1))))
-    label(t, "Today's activity", "Label", "NeutralLightest")
-    act = n.child(N(f"{k}/Activity", "Activity", R((0, 1), None, (222, -46), (440, 44), (0, 1))))
+    clip = n.child(N(f"{k}/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
+    clip.add("mask", 114, A.rect_mask())
+    sea = clip.child(N(f"{k}/Clip/Sea", "Sea", STRETCH))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_PANEL_MAT))
+    sweep = clip.child(N(f"{k}/Clip/Sweep", "Sweep", R((0, 0), (0, 1), (-SWEEP_W, 0), (SWEEP_W, 0), (0, 0.5))))
+    sweep.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("TextLight", 0.08), K.kit_sprite("kit_sheen"))).add("th", 114, K.themed("TextLight", 0.08)) \
+        .add("sp", 114, M.spark_body(period=6.0, pause=0.6, delay=1.2))
+    lens(n, f"{k}/Lens", TODAY_LENS + 28, f"{k}/Portrait", TODAY_LENS - 30)
+    x = 24 + TODAY_LENS + 28 + 32
+    eb = n.child(N(f"{k}/Eyebrow", "Eyebrow", R((0, 1), None, (x, -36), (900, 18), (0, 1))))
+    eb.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (0, 0), (0, 0)))
+    label(eb.child(N(f"{k}/Title", "Title", R((0, 1), None, (0, 0), (220, 18), (0, 1)))), "Today's activity", "Label",
+          "NeutralLightest").add("csf", 114, K.fitter(2, 0))
+    label(eb.child(N(f"{k}/Dot", "Dot", R((0, 1), None, (0, 0), (10, 18), (0, 1)))), "/", "Label", "NeutralLightest")
+    label(eb.child(N(f"{k}/Toy", "Toy", R((0, 1), None, (0, 0), (400, 18), (0, 1)))), "Toy", "Label",
+          "NeutralLightest").add("csf", 114, K.fitter(2, 0))
+    act = n.child(N(f"{k}/Activity", "Activity", R((0, 1), None, (x, -60), (980, 50), (0, 1))))
     act.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Activity", "H1", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
-    label(n.child(N(f"{k}/Toy", "Toy", R((0, 1), None, (222, -92), (440, 22), (0, 1)))), "Toy", "Body", "NeutralLightest")
-    label(n.child(N(f"{k}/EndsIn", "EndsIn", R((0, 0), None, (222, 30), (80, 18), (0, 0)))), "Ends in", "Label", "NeutralLightest")
-    label(n.child(N(f"{k}/Countdown", "Countdown", R((0, 0), None, (300, 26), (160, 26), (0, 0)))), "--", "Data", "TextLight")
-    chip = n.child(N(f"{k}/Reward", "Reward", R((1, 0), None, (-24, 24), (150, 38), (1, 0))))
-    H.framed(chip, f"{k}/Reward", 10, "SurfaceVeryDark", "Cta")
-    label(chip.child(N(f"{k}/Reward/Label", "Label", R((0, 0), (1, 1), (-10, 0), (-40, 0)))), "Try it", "Label", "Cta",
-          align="center")
-    image_node(chip, f"{k}/Reward/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (16, 16), (1, 0.5)), "Purchase",
+    label(n.child(N(f"{k}/EndsIn", "EndsIn", R((0, 0), None, (x, 34), (80, 18), (0, 0)))), "Ends in", "Label", "TextLight")
+    label(n.child(N(f"{k}/Countdown", "Countdown", R((0, 0), None, (x + 84, 34), (180, 18), (0, 0)))), "--", "Label",
+          "TextLight")
+    chip = n.child(N(f"{k}/Reward", "Reward", R((1, 0.5), None, (-28, 0), (240, 56), (1, 0.5))))
+    H.framed(chip, f"{k}/Reward", 10, "Cta", "Cta")
+    label(chip.child(N(f"{k}/Reward/Label", "Label", R((0, 0), (1, 1), (-12, 0), (-44, 0)))), "Try it", "ButtonSmall",
+          "SurfaceBlack", align="center")
+    image_node(chip, f"{k}/Reward/Crystal", "Crystal", R((1, 0.5), None, (-18, 0), (18, 18), (1, 0.5)), "SurfaceBlack",
                K.chrome_sprite("chrome_crystal"), preserve=True)
     n.add("tile", 114, tile(k, [c(f"{k}/Activity", "tmp")], art=[c(f"{k}/Portrait", "img")]))   # its call to action is the lime "Try it" chip, never a selection
     n.add("daily", 114, lambda ctx, go: mono(go, S["daily"],
@@ -171,32 +219,31 @@ def daily_card(parent):
           f"  countdownText: {ref(ctx.c(f'{k}/Countdown', 'tmp'))}\n  rewardText: {ref(ctx.c(f'{k}/Reward/Label', 'tmp'))}\n"
           f"  portrait: {ref(ctx.c(f'{k}/Portrait', 'img'))}\n"))
     n.add("audio", 114, A.menu_audio(2)).add("scroll", 114, A.scroll_into()).add("le", 114, le(mw=0, fw=1, ph=FEAT_H))
+    n.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Fade"))
 
 
-def shuffle_card(parent):
+SWEEP_W = 420
+
+
+def shuffle_button(header):
+    """Rev 145 H draws no shuffle card; the shuffle stays a press away as a small button beside Back
+    (Docs/UI/specs/toybox-rev145h.md, Differs from the board)."""
     k = "Shuffle"
-    n = parent.child(N(k, "ShuffleCard", R((0, 1), None, (0, 0), (FEAT_W, FEAT_H), (0, 1))))
-    ring_node(n, f"{k}/FocusRing", 14)
-    frame(n, k)
-    image_node(n, f"{k}/Glyph", "Glyph", R((0, 0.5), None, (84, 0), (44, 44), (0, 0.5)), "TextLight",
-               K.chrome_sprite("chrome_shuffle"), preserve=True)
-    label(n.child(N(f"{k}/Eyebrow", "Eyebrow", R((0, 1), None, (222, -26), (420, 18), (0, 1)))), "Shuffle", "Label",
-          "NeutralLightest")
-    t = n.child(N(f"{k}/Title", "Title", R((0, 1), None, (222, -46), (440, 44), (0, 1))))
-    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Shuffle the toy box", "H1", tok("TextLight")))) \
-        .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
-    label(n.child(N(f"{k}/Detail", "Detail", R((0, 1), None, (222, -92), (440, 22), (0, 1)))),
-          "New world, new colours, new hull", "Body", "NeutralLightest")
     w, h = K.button_size("SHUFFLE", small=True)
-    n.children.append(P.Inst("ShuffleButton", "KitButtonSmall", "ShuffleButton", R((1, 0), None, (-24, 24), (w, h), (1, 0)),
-                             K.button_mods("KitButtonSmall", "Default", False, "SHUFFLE", small=True)
-                             + [("root#button", "m_Navigation.m_Mode", 0, None)]))
-    n.add("tile", 114, tile(k, [c(f"{k}/Title", "tmp")]))
+    n = header.child(N(k, "Shuffle", R((1, 0), None, (-(A.back_width() + 14), 0), (w, h), (1, 0))))
+    n.children.append(P.Inst("ShuffleButton", "KitButtonSmall", "ShuffleButton", STRETCH,
+                             K.button_mods("KitButtonSmall", "Default", False, "SHUFFLE", small=True)))
+    # The line that says what a press will do, is doing, or just did, left of the button: the shuffle lands on
+    # a cell you may not see from the menu, so this is what makes the press legible. The heading stays wired, hidden.
+    label(n.child(N(f"{k}/Detail", "Detail", R((0, 0.5), None, (-16, 0), (520, 18), (1, 0.5)))),
+          "New world, new colours, new hull", "Label", "NeutralLightest", align="right")
+    label(n.child(N(f"{k}/Title", "Title", R((0, 0.5), None, (0, 0), (10, 10), (1, 0.5)), active=False)),
+          "Shuffle the toy box", "Label", "NeutralLightest")
     n.add("shuffle", 114, lambda ctx, go: mono(go, S["shuffle"],
           f"  titleText: {ref(ctx.c(f'{k}/Title', 'tmp'))}\n  detailText: {ref(ctx.c(f'{k}/Detail', 'tmp'))}\n"
           "  accentFill: {fileID: 0}\n"
           f"  shuffleButton: {ref(ctx.iref('ShuffleButton', 'root#button'))}\n"))
-    n.add("audio", 114, A.menu_audio(2)).add("scroll", 114, A.scroll_into()).add("le", 114, le(mw=0, fw=1, ph=FEAT_H))
+    return n
 
 
 def build_view():
@@ -219,24 +266,13 @@ def build_view():
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
     # Sibling order is focus order (ScreenSwitcher.Refocus): today's activity comes first, so the pad
-    # starts on the card the board highlights; the party panel and the header's Back follow.
-    feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (GRID_W, FEAT_H), (0, 1))))
-    feats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 0, (1, 1), (1, 1))).add("le", 114, le(ph=FEAT_H))
-    daily_card(feats)
-    shuffle_card(feats)
+    # starts on the banner; the toys, the header's Shuffle and Back follow.
+    daily_card(content)
     content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (GRID_W, 26), (0, 1)))).add("le", 114, le(ph=26))
-    allt = content.child(N("AllToys", "AllToys", R((0, 1), None, (0, 0), (GRID_W, 18), (0, 1))))
-    allt.add("le", 114, le(ph=18))
-    label(allt.child(N("AllToys/Label", "Label", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "ALL TOYS", "Label", "TextLight")
-    label(allt.child(N("AllToys/Count", "Count", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "0", "Label", "NeutralLightest",
-          align="right")
-    content.child(N("Gap2", "Gap", R((0, 1), None, (0, 0), (GRID_W, 10), (0, 1)))).add("le", 114, le(ph=10))
     grid = content.child(N("Grid", "ToyGrid", R((0, 1), None, (0, 0), (GRID_W, TOY_H), (0, 1))))
-    grid.add("grid", 114, lambda ctx, go: mono(go, AR_GRID,
-             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
-             "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
-             f"  m_CellSize: {{x: {TOY_W}, y: {TOY_H}}}\n  m_Spacing: {{x: {TOY_GAP_X}, y: {TOY_GAP_Y}}}\n"
-             f"  m_Constraint: 1\n  m_ConstraintCount: {COLS}\n"))
+    grid.add("grid", 114, lambda ctx, go: mono(go, S["cgrid"],
+             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n  m_ChildAlignment: 1\n"
+             f"  cellSize: {{x: {TOY_W}, y: {TOY_H}}}\n  spacing: {{x: {TOY_GAP_X}, y: {TOY_GAP_Y}}}\n  columns: {COLS}\n"))
     empty = content.child(N("Empty", "Empty", R((0, 1), None, (0, 0), (GRID_W, 60), (0, 1)), active=False))
     empty.add("le", 114, le(ph=60))
     label(empty.child(N("Empty/Text", "Text", STRETCH)), "No toys are standing right now.", "Body", "NeutralLightest",
@@ -245,10 +281,15 @@ def build_view():
     header = root.child(N("Header", "Header", A.WINDOW_HEADER))
     A.drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
-    label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "TOY BOX", "Label",
-          "NeutralLightest")
-    label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore toys", "H1",
-          "TextLight")
+    tw = K.label_width("Toy Box", "H1") + 8
+    label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -10), (tw, 46), (0, 1)))), "Toy Box", "H1", "TextLight")
+    cnt = header.child(N("Header/CountRow", "CountRow", R((0, 1), None, (tw + 18, -34), (200, 18), (0, 1))))
+    cnt.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (0, 0), (0, 0)))
+    label(cnt.child(N("AllToys/Count", "Count", R((0, 1), None, (0, 0), (30, 18), (0, 1)))), "0", "Label",
+          "NeutralLightest").add("csf", 114, K.fitter(2, 0))
+    label(cnt.child(N("Header/CountRow/Unit", "Unit", R((0, 1), None, (0, 0), (80, 18), (0, 1)))), "Toys", "Label",
+          "NeutralLightest").add("csf", 114, K.fitter(2, 0))
+    shuffle_button(header)
     A.back_button(header)
     return root
 
@@ -439,10 +480,18 @@ def validate(files):
     assert por and f"guid: {A.PORTRAIT_BOB_MAT}" in por, "ToyCard: the portrait does not bob (Card_PortraitBob.mat, section 72)"
     for field, want in CARD_FIELDS.items():
         C.wired(card, body, field, want, "ToyCard")
+    # Rev 144 G / Rev 145 H (section 235): the glyph has its depth, on the card and on the Today banner.
+    _, dep = A.doc_of(card, K.FileIds("ToyCard")("Portrait#depth"))
+    assert dep and S["depth"] in dep, "ToyCard: the glyph has no KitGlyphDepth (Rev 144 G was picked)"
+    assert f"guid: {M.KIT_ENTRANCE}" in card, "ToyCard: the cards do not pop in (Rev 145 H's spawn motion)"
     view = files[prefab_path("ToyboxView")]
     A.check_window_inset(view, "ToyboxView")      # clear of the friends orb (rev 6)
     V = K.FileIds("ToyboxView")
     _, daily = A.doc_of(view, V("Daily#daily"))
+    _, ddep = A.doc_of(view, V("Daily/Portrait#depth"))
+    assert ddep and S["depth"] in ddep, "the Today banner's glyph has no KitGlyphDepth"
+    _, grid = A.doc_of(view, V("Grid#grid"))
+    assert grid and S["cgrid"] in grid, "the toy grid does not centre its short row (KitCenteredGrid, Rev 145 H)"
     for field, want in DAILY_FIELDS.items():
         C.wired(view, daily, field, want, "DailyActivityCard")
     _, shuf = A.doc_of(view, V("Shuffle#shuffle"))
@@ -489,6 +538,7 @@ def self_test(files):
     card, view = prefab_path("ToyCard"), prefab_path("ToyboxView")
     ids = Ids()
     cases = [
+        ("the toy glyph flat again", lambda f: f.__setitem__(card, f[card].replace(S["depth"], A.ART_DRIFT_MAT))),
         ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
         ("the toy portrait standing still", lambda f: f.__setitem__(prefab_path("ToyCard"), f[prefab_path("ToyCard")].replace(
             A.PORTRAIT_BOB_MAT, A.ART_DRIFT_MAT))),

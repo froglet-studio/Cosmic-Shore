@@ -1,0 +1,51 @@
+{
+  "id": "2026-11-24-risky-merge-pr-2383-feat-sparrow-barrel-b3f625",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-24T23:24:09+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2383 (feat(sparrow): barrel roll on the right stick, its HUD card and codex entry) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Honeyguide.prefab, Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+  "branch": "claude/project-thread-s9immv",
+  "pr": 2383,
+  "commit": "96169f30e",
+  "paths": [
+    "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Core.meta",
+    "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Core/Sparrow_BarrelRoll.png",
+    "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Core/Sparrow_BarrelRoll.png.meta",
+    "Assets/_Prefabs/Spacevessels/Honeyguide.prefab",
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+    "Assets/_Prefabs/UI",
+    "Assets/_Scripts/Controller/IO/MouseVirtualStick.cs",
+    "Assets/_Scripts/Controller/IO/SingleStickMouseInputStrategy.cs",
+    "Assets/_Scripts/Controller/Vessel/BarrelRollController.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md",
+    "Assets/_Scripts/Data/Enums/CoreAbility.cs",
+    "Assets/_Scripts/Data/Enums/RollChargeState.cs",
+    "Assets/_Scripts/Tests/Editor/AbilityLockupStyleTests.cs",
+    "Assets/_Scripts/Tests/Editor/MouseVirtualStickTests.cs",
+    "Assets/_Scripts/Tests/Editor/SparrowBarrelRollStickTests.cs",
+    "Assets/_Scripts/Tests/Editor/SparrowBarrelRollStickTests.cs.meta",
+    "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+    "Assets/_Scripts/UI/View/VesselHUDView.cs",
+    "Docs/Approvals/Garrett/2026-11-24-the-sparrow-s-barrel-roll-moved-off-the-0a129a.json",
+    "Docs/FleetCodex/abilities.json",
+    "Docs/FleetCodex/index.html",
+    "Docs/Icons/sheets/sparrow.png",
+    "Docs/Icons/sheets/sparrow_afterburner.png",
+    "Docs/Icons/sheets/sparrow_cannons.png",
+    "Docs/Icons/sheets/sparrow_skyburst.png",
+    "Docs/Icons/sheets/sparrow_turret_stance.png",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Docs/VesselModels/colour_grade.json",
+    "Elements/VesselHUD/SparrowHUDVariant.prefab",
+    "Tools/Build/fleet_codex.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Honeyguide.prefab, Assets/_Prefabs/Spacevessels/Sparrow.prefab"
+    }
+  ]
+}

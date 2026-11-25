@@ -89,6 +89,29 @@ control that hashes on the position instead fails it).
 A rail in a colour you do not hold is a plain prism wall to the hull, as any trail is. The ring-to-ring line never
 touches one.
 
+## 3a. The ruins (I4 only; Yash, 2026-11-24)
+
+Decoration: Spearline's garden ruins (`SpearlineRuins`, called, not copied; `SPEARLINE.md` §2a) stand round the line
+flown ring to ring on the hardest rung. Plain prisms with the game's own rules: a hull breaks them, nothing grows back,
+nothing reads or writes a vessel. `SlipLineRuins` (pure, held by `SlipLineRuinsTests`) and the hook
+`SlipLineController.Ruins.cs`.
+
+- **Seven ruins a course**, spread evenly over the twelve or so legs long enough for one (380 u; a chain's second leg
+  is too short), so the first stands in the first third and the last in the last third. Seven different kinds in turn.
+  The **wheel never turns here**: the generator wants 270 u between a wheel and each ring and Slip Line's legs are
+  520 u at most, so the generator lays a second pergola in its place. (A wheel would sweep the rail of its leg anyway;
+  `SlipLineRuins` drops one that does.)
+- **The lane is the straight ring-to-ring line**, 60 u clear, the run-up to ring 0 included; nothing within 120 u of
+  a ring. Slip Line's ring axis is the leg INTO the ring, so the generator is handed each ring twice (facing in, facing
+  out): its curve between them is then the straight line the AI flies and the course test holds clear of rails.
+- **No ruin prism within 40 u of a rail** (`RailClearance`). An I4 rail leans up to 25 degrees off its leg and leaves
+  the lane, so a ruin is cut open where a rail runs through it. Measured over 60 seeds: 551 to 765 prisms a course,
+  mean 660.
+- **Blue** (`ruinDomains` on the controller; empty = Blue): the one domain no rail wears, so a ruin never reads as a
+  rail. Each ruin prism is a trail of its own, so a ruin is never a ride even if it is given a rail's colour.
+- Not covered: the AI does not steer round ruins. Its race line is inside the lane and a rail has 40 u round it, but
+  the turn out from the line to a leaning rail's start can cross a ruin, at a plain prism's cost.
+
 ## 4. The vessel change (HoneyguideCrew; the Honeyguide is Garrett's)
 
 One, for the AI only: **`HoneyguideCrew.RaceCoach`** (`IHoneyguideRaceCoach`). The Honeyguide AI's slip guard
@@ -160,6 +183,10 @@ is the drift gate. Card art: `render_card_backgrounds.py SlipLine` (an I4 course
    and never circles a ring for more than a few seconds; it finishes near a person's time (model: 106 s median).
 10. (2026-11-16) A Ratel Eyelet Jet or Thruster Swarm whose ride ends just past a ring's plane still counts the ring
     (VesselTransformer no longer counts the ride's zero-length landing pose as a teleport).
+11. (2026-11-24, NOT COMPILED IN UNITY, NOT RUN) I4: seven Blue ruins stand between the rings down the whole course,
+    none at a ring, none on a rail; the straight line ring to ring is open through each; a ruin a rail runs through is
+    cut open round it. I1 to I3: none. A second race lays its own and the old ones are gone. Two AI Honeyguides still
+    finish at I4; note any leg where one ploughs a ruin on its way out to a rail.
 
 ## 9. Known limitations
 

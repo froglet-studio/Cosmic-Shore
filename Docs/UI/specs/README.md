@@ -33,3 +33,4 @@ draft's `?`.
 | [sg5-play-ready](sg5-play-ready.md) | Style Guide 5, the Play / Ready row | built, in PR |
 | [voyages-m2-ingame](voyages-m2-ingame.md) | Rev 134 and Rev 137, the in-game voyage screens | built, in PR |
 | [rev121-c-whats-new](rev121-c-whats-new.md) | Rev 121 C, the What's new window | built, in PR |
+| [toybox-rev145h](toybox-rev145h.md) | Rev 145 H, the Toy Box and its Configure window | built, in PR |

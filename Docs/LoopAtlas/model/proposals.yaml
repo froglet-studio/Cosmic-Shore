@@ -25,7 +25,7 @@ proposals:
   title: The breath between rounds
   what: 'After every result, one offered next step: rematch, next rung, or a crossing to the place the round trained for.'
   touches: [breath, sitting, arcade]
-  stage: building
+  stage: current
   branch: claude/retain-breath
 - id: P6
   title: The Tide
@@ -49,7 +49,7 @@ proposals:
   title: One currency
   what: Voyage pay is the same crystals as arcade pay, so 'the voyage ended, buy a vessel' is a real path.
   touches: [voyages, arc.fleet]
-  stage: building
+  stage: current
   branch: claude/retain-economy
 - id: P11
   title: A party owns something
@@ -65,7 +65,7 @@ proposals:
     the dock at home banks it. A 20 to 40 minute voyage becomes two to four phone sittings, and a commuter stops losing
     hauls (100% of started voyages simulated as planned, none with chapters).
   touches: [voyages, voy.place, voy.home, sitting]
-  stage: building
+  stage: current
   branch: claude/retain-voyage-chapters
 - id: P14
   title: A puzzle-first door
@@ -85,5 +85,5 @@ proposals:
   what: A finished painting pays a little and can be shared as a replay link; a liked painting is the creative player's
     win. The Toybox feeds the long game instead of standing beside it.
   touches: [toybox, toy.paint, arc.replay, arc.fleet]
-  stage: building
+  stage: current
   branch: claude/retain-makers

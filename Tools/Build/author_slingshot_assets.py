@@ -331,6 +331,17 @@ for h in re.findall(r"GlobalObjectIdHash: (\d+)", scene):
     if int(h) != 0 and int(h) in _taken:
         errors.append(f"scene GlobalObjectIdHash {h} is also carried by another scene or prefab")
 
+# The I4 ruins (SLINGSHOT.md "The ruins"): the controller lays Spearline's generator in SpawnablePrism, wired in the
+# scene. An unwired prefab lays no ruins and says so only in a warning.
+RUIN_PREFAB = "  ruinPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}"
+if RUIN_PREFAB not in scene:
+    errors.append("scene's SlingshotController has no ruinPrefab (SpawnablePrism) - the I4 ruins are not laid")
+if not os.path.exists(os.path.join(ROOT, "Assets/_Prefabs/Trails/SpawnablePrism.prefab")):
+    errors.append("SpawnablePrism.prefab is missing - the I4 ruins have no prism")
+_ruins = read_or_empty(f"{MODE_DIR}/SlingshotRuins.cs")
+if "SpearlineRuins.Lay(" not in _ruins or "SpearlineRuins.ForIntensity(intensity)" not in _ruins:
+    errors.append("SlingshotRuins does not lay Spearline's generator on its own rung (none below I4)")
+
 # The AI must actually be able to drive this hull AND use its verb (the arcade rule: never assume
 # an AI can use a human's input). An AIPilot serialized disabled never runs Update.
 _stoat = read_or_empty("Assets/_Prefabs/Spacevessels/Stoat.prefab")

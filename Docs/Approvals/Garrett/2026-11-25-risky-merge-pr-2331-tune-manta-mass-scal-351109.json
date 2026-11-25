@@ -1,0 +1,30 @@
+{
+  "id": "2026-11-25-risky-merge-pr-2331-tune-manta-mass-scal-351109",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-25T01:04:52+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2331 (tune(manta): Mass-scaled trail brings the Manta back into Brood Rush) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Manta.prefab; a swim lane someone else occupies (approvals.py check exit 2): Manta, The elemental vessel loop (process, board, sign-offs)",
+  "branch": "ship-manta",
+  "pr": 2331,
+  "commit": "b64dd11d8",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Manta.prefab",
+    "Assets/_SO_Assets/Games/ArcadeGameBroodRush.asset",
+    "Docs/Approvals/Caleb/2026-11-25-pr-2331-the-manta-s-trailvolume-now-scal-3e4de0.json",
+    "Docs/ElementalLoop/REDESIGN.md"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Manta.prefab"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Manta, The elemental vessel loop (process, board, sign-offs)"
+    }
+  ]
+}

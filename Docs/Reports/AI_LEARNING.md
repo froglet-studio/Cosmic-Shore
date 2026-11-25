@@ -1,131 +1,12 @@
 # AI learning: what the last races taught
 
-Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-11-22 22:20 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
+Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-11-24 22:20 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
 
-**18 new flight(s)** since the last learn.
+**10 new flight(s)** since the last learn.
 
-## Bloomrush
+## Breakwater
 
-New flights: Manta 5.
-
-- `learn_drives_from_flights --write`: OK. Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Bloomrush.asset.
-- `learn_drives_from_flights --check`: OK. check: OK
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Manta | I1 | 11 | 0 | - | 1 of 1 | 2026-11-22 21:55 |
-| Manta | I3 | 2 | 0 | - | - | 2026-10-26 04:52 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-```
-
-## BurrowRun
-
-New flights: Meerkat 1.
-
-- **Meerkat: measured, not written** - its boost policy StoatAIBoostPolicy (SkimRingAIPolicySO) presses SquirrelTubeActionSO, which this hull does not bind - the drive cannot act.
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Meerkat | I1 | 2 | 0 | - | - | 2026-11-22 17:04 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-meerkat        2     10    8.4    72       0%     2%    0/2    1: 3, 0: 2
-```
-
-## DecoyRun
-
-New flights: Jacks 1.
-
-- **Jacks: measured, not written** - no measure for RampBoostAIPolicySO yet (its policy RhinoAIBoostPolicy).
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Jacks | I1 | 1 | 0 | - | 0 of 1 | 2026-11-22 17:01 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-jacks          2     12   19.0     0       0%    67%    1/2
-```
-
-## Flatline
-
-New flights: BrittleStar 1.
-
-- **BrittleStar: measured, not written** - no measure for BrittleStarSpeedModeAIPolicySO yet (its policy BrittleStarAIBoostPolicy).
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| BrittleStar | I1 | 1 | 0 | - | - | 2026-11-21 01:58 |
-| BrittleStar | I2 | 1 | 0 | - | 1 of 1 | 2026-11-10 05:23 |
-| BrittleStar | I4 | 2 | 0 | - | 1 of 2 | 2026-11-10 06:16 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-```
-
-## SkimRace
-
-New flights: Squirrel 1.
-
-- `learn_from_flights --mode SkimRace --write`: OK. wrote Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS_SkimRace.md
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Squirrel | I1 | 14 | 0 | - | 0 of 6 | 2026-11-22 07:40 |
-| Squirrel | I2 | 15 | 0 | - | 0 of 7 | 2026-11-17 02:02 |
-| Squirrel | I3 | 1 | 0 | - | 0 of 1 | 2026-10-26 06:31 |
-| Squirrel | I4 | 1 | 0 | - | - | 2026-10-31 17:16 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-squirrel      67      0    0.0   178       2%     2%    0/67   0: 65
-```
-
-## Spearline
-
-New flights: Swordfish 3.
-
-- **Swordfish: measured, not written** - no measure for RampBoostAIPolicySO yet (its policy SwordfishAIBoostPolicy).
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Swordfish | I1 | 4 | 0 | - | - | 2026-11-22 07:46 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-swordfish      9      2    6.2   123       0%     1%    0/9    0: 10, 4: 2, 2: 1, 1: 1
-```
-
-## Switchback
-
-New flights: Dolphin 1.
+New flights: Sparrow 5.
 
 - `learn_drives_from_flights --write`: OK. nothing.
 - `learn_drives_from_flights --check`: OK. check: OK
@@ -134,116 +15,92 @@ The person, every recorded race in this mode:
 
 | Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
 |---|---|---:|---:|---:|---:|---|
-| Dolphin | I1 | 28 | 8 | 58 s | 8 of 17 | 2026-11-20 19:54 |
-| Dolphin | I2 | 19 | 12 | 80 s | 7 of 9 | 2026-11-16 21:10 |
-| Dolphin | I3 | 3 | 0 | - | 0 of 2 | 2026-10-29 07:13 |
-| Dolphin | I4 | 20 | 4 | 106 s | 1 of 9 | 2026-11-04 15:41 |
+| Sparrow | I1 | 7 | 4 | 84 s | 0 of 1 | 2026-11-20 23:22 |
+| Sparrow | I2 | 1 | 0 | - | - | 2026-10-27 18:29 |
+| Sparrow | I3 | 4 | 3 | 128 s | 3 of 4 | 2026-11-20 16:00 |
+| Sparrow | I4 | 7 | 4 | 89 s | 2 of 5 | 2026-11-25 02:20 |
 
 The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-dolphin      137     14    7.1    79       4%     2%   28/137  0: 131, 3: 38, 7: 32, 6: 31
+sparrow       33     22    8.9    79       9%     7%    5/33   0: 31, 1: 21, 5: 16, 10: 14
 ```
 
-## Thornline
+## DogFight
 
-New flights: Shrike 1.
+New flights: Sparrow 1.
 
-- **Shrike: measured, not written** - its boost policy SparrowAIBoostPolicy (HoldBoostAIPolicySO) presses BoostActionSO, which this hull does not bind - the drive cannot act.
+- **Sparrow: measured, not written** - SparrowAIBoostPolicy is switched off in DogFight (disabledInModes).
 
 The person, every recorded race in this mode:
 
 | Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
 |---|---|---:|---:|---:|---:|---|
-| Shrike | I1 | 1 | 0 | - | 0 of 1 | 2026-11-22 17:02 |
+| Sparrow | I1 | 7 | 0 | - | 2 of 2 | 2026-11-23 21:20 |
 
 The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-shrike         2     12   17.4     0       2%    62%    1/2    5: 1, 6: 1
 ```
 
-## ThresherTime
+## PerchRun
 
-New flights: Thresher 2.
+New flights: Goby 4.
 
-- `learn_drives_from_flights --write`: OK. nothing.
-- `learn_drives_from_flights --check`: OK. check: OK
+- **Goby: measured, not written** - its boost policy SquirrelAIBoostPolicy (SkimRingAIPolicySO) presses SquirrelTubeActionSO, which this hull does not bind - the drive cannot act.
 
 The person, every recorded race in this mode:
 
 | Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
 |---|---|---:|---:|---:|---:|---|
-| Thresher | I1 | 13 | 5 | 65 s | 4 of 7 | 2026-11-22 07:47 |
-| Thresher | I2 | 8 | 2 | 106 s | 3 of 7 | 2026-11-19 02:36 |
-| Thresher | I4 | 3 | 1 | 120 s | 1 of 3 | 2026-10-31 23:26 |
+| Goby | I1 | 3 | 2 | 28 s | 2 of 2 | 2026-11-23 21:58 |
+| Goby | I2 | 1 | 0 | - | - | 2026-11-23 21:53 |
 
 The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-thresher      43     10    5.2   133       1%     0%    9/43   0: 41, 1: 33, 2: 30, 3: 26
-```
-
-## Trawl
-
-New flights: Jacks 2.
-
-- **Jacks: measured, not written** - no measure for RampBoostAIPolicySO yet (its policy RhinoAIBoostPolicy).
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Jacks | I1 | 2 | 0 | - | - | 2026-11-22 17:08 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
+goby           4     10   25.8   102       0%    12%    0/4
 ```
 
 ## Files the learners changed
 
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Bloomrush.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_ThresherTime.md`
-- `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS_SkimRace.md`
+- `Docs/AI_SYSTEM/LEARNED_DRIVES_Breakwater.md`
 
-## What the sweep judged (2026-11-22 22:20 UTC)
+## What the sweep judged (2026-11-24 22:20 UTC)
 
-18 new flights since the 2026-11-21 sweep, 17 Yash's on `Ys-bleeding-edge` and 1 on `bleeding-edge`. No asset under
-`Assets/Resources/AIBoostPolicies` changed; only the learners' reports did. Two races had a result, and the AI won both.
+10 new flights since the 2026-11-23 sweep: 5 Breakwater (Sparrow I4, Yash), 4 Perch Run (Goby, Will) and 1 Dog Fight
+(Sparrow, Will). **No asset under `Assets/Resources/AIBoostPolicies` changed**: the learner wrote nothing.
 
-- **Decoy Run (Jacks I1, Legendary rivals, 412355e425):** the AI (Cassian) finished in 36.6 s with Yash 4 gates short
-  and the second AI 1 short. Nothing to fix. Report only: no measure for `RampBoostAIPolicySO` yet.
-- **Thornline (Shrike I1, Legendary rivals, 412355e425):** the AI (WillOfFire) finished in 39.6 s with Yash 11 gates
-  short (5 of 16) and the second AI 9 short. The winner is fine; the learner says the Shrike's boost policy
-  (`SparrowAIBoostPolicy`) presses `BoostActionSO`, which the hull does not bind: under "Waiting on".
-- **Burrow Run (Meerkat I1, Legendary rivals, 412355e425):** Yash left at 71 s with 8 of 16, no result. The two AI
-  seats threaded 10 rings at 8.4 a minute and never circled, so they fly the course; one unfinished race says no more.
-  Same policy finding as the Shrike (`StoatAIBoostPolicy` presses `SquirrelTubeActionSO`): under "Waiting on".
-- **Switchback (Dolphin I1, 7788ad036d, 135 s):** a two-seat Jade match recorded as won at 127.3 s, the recorded seat
-  16 of 26 rings; not a finished flight, so the Dolphin variant was not rewritten ("nothing").
-- **Thresher Time (Thresher I1, e2a0bb1783), 2 flights of 46 s and 32 s:** left early, no result; the variant did not
-  move (24 flights, 9 finished).
-- **Bloomrush (Manta I1), 5 flights of 10 to 25 s:** all left in seconds, no result, and 4 of them name no build.
-  Nothing learned (13 flights, still 7 finished) and nothing new on the open "never soars" item.
-- **Skim Race (Squirrel I1, 27 s)**, **Spearline (Swordfish I1, 3 flights of 19 to 36 s)**, **Trawl (Jacks I1, 2
-  flights)** and **Flatline (Brittle Star I1, 20 s, bleeding-edge 9b57d5606f)**: left early, no result; reported only.
-- The rival table's Jacks and Shrike rows read 0 u/s and over 60% stuck although one of each finished first: their
-  recorded rival velocity is zero, so those two columns say nothing for these hulls yet.
-- `promote_trained_drives.py --check` OK; no promoted trained drive was touched.
+- **Breakwater (Sparrow I4, 5 flights on `Ys-bleeding-edge` d1839423ce, 7d11758a31, 8d94708c00 and 9c680513a8, which
+  all have the committed `SparrowAIBoostPolicy_Breakwater`):** an AI rival won 3 of the 4 races that had rivals, in
+  145 to 180 s. The person's fastest win was 182 s (one AI was 2 stations short), and the person's solo run took 272 s.
+  The AI finishes and beats the person at I4, so the numbers are enough. The learner moved only its "AI today"
+  measures (398 episodes over 624 s) and wrote nothing. Across all 33 Breakwater rival races, circling is 9% and
+  stuck is 7%. Nothing to fix.
+- **Perch Run (Goby I1/I2, 4 flights, Will):** report only. The Goby borrows `SquirrelAIBoostPolicy`, which presses
+  `SquirrelTubeActionSO`, and the Goby does not bind that action. Its rival rows still read 25.8 rings a minute, 0%
+  circling and 12% stuck, and the person won 2 of 2. The Goby joins the borrowed-policy item below.
+- **Dog Fight (Sparrow I1, 1 flight, Will):** report only, because the Sparrow policy is switched off in Dog Fight.
+- `promote_trained_drives.py --check` OK; `learn_drives_from_flights --check` OK.
 
 ## Waiting on
 
-- **Bloomrush's Manta AI never soars** (0.00 of 545 samples, 76 vs 6074 volume at I1, 2026-11-20): diagnose with
-  `/vessel-ai` in the Manta's Soar autopilot before the learned numbers mean anything; whoever owns the Manta AI.
+- **Brood Rush and Broadside are arena games the learner writes into** (2026-11-23, Yash's call on `ai_learn.py`,
+  Garrett's on the plan): add them to `HOLD` beside Regatta, or say the committed `DolphinAIBoostPolicy_BroodRush`
+  variant stays. Until then the sweep keeps no new Brood Rush or Broadside numbers.
+- **The Manta learner writes a Soar band the AI cannot fly** (`BoostStickBand` 0.025 in Bloomrush, proposed again for
+  Brood Rush, 2026-11-23): the person's band is measured on the person's stick, and the AI's stick is never that
+  still. This is most likely why **Bloomrush's Manta AI never soars** (0.00 of 545 samples, 76 vs 6074 volume at I1,
+  2026-11-20): diagnose with `/vessel-ai` in the Manta's Soar autopilot and the learner's Manta measure together;
+  whoever owns the Manta AI.
 - **Corona's Manta AI does not finish** (9 blooms left at Medium I1 when the person finished in 472 s, 2026-11-21, one
   match): look at it together with the Bloomrush item; more matches before anything is written.
-- **The Shrike and the Meerkat carry a borrowed boost policy that cannot act** (2026-11-22): the Shrike's
+- **Brood Rush's AI seats took 0 broods in both matches with a result** (2026-11-23, Medium and Legendary, I2): two
+  matches, so watch; if it holds, it is a `massspace-arena` balance finding for Garrett, not a number to learn.
+- **The Shrike, the Meerkat and the Goby carry a borrowed boost policy that cannot act** (2026-11-22; the Goby's `SquirrelAIBoostPolicy` in Perch Run added 2026-11-24): the Shrike's
   `SparrowAIBoostPolicy` presses `BoostActionSO` and the Meerkat's `StoatAIBoostPolicy` presses `SquirrelTubeActionSO`,
   and neither hull binds that action. Their AIs race on their trained controllers (the Shrike won Thornline), so this
   is a missing piece, not a broken race; whoever owns those hulls in the elemental loop gives each its own policy

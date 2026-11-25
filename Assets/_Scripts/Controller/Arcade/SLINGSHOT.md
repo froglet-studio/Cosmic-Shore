@@ -67,6 +67,49 @@ threads the last ring of the last lap wins (golf: finish time).
 | Generator | `Tools/Build/author_slingshot_assets.py` (`--check`) |
 | Course harness | `Tools/Build/slingshot_course_harness/run.sh` (the shipped solver, 400 seeds × 4 levels) |
 | Tests | `SlingshotCourseTests` (written, not run in the editor) |
+| Ruins (I4) | `SlingshotRuins` + `SlingshotController.Ruins.cs`, calling `SpearlineRuins`; `SlingshotRuinsTests`; `Tools/Build/slingshot_ruins_harness/run.sh` |
+
+## The ruins (I4, 2026-11-24) - compiled in Unity, tests pass there, one AI race played, no person has flown it
+
+Yash: "give this Time game the same environment update Spearline got". At I4 the legs between rings carry Spearline's
+garden ruins: decoration round the racing line. **The generator is Spearline's** (`SpearlineRuins`, SPEARLINE.md §2a);
+Slingshot calls it and owns nothing but the hook (`SlingshotRuins`, `SlingshotController.Ruins.cs`).
+
+- **Where.** One ruin on every leg of 380 u or more, never on the leg that closes the lap. Every ruin prism is at
+  least 8 u thick, none reaches within **150 u** of any leg's flown line (`SlingshotRuins.ClearRadius`; the I4 mouth
+  is 26 u), none stands within 120 u of a ring, so the corner moons and their belts are left alone. None below I4.
+  The lane was Spearline's 60 u at first; the AI flew into the ruins on it (the race below), so Yash had it widened
+  (2026-11-24) to the swing's widest orbit radius in the race model. **Not raced on the wider lane**: whether the
+  Stoats now miss the ruins is unchecked.
+- **How many, measured** (`slingshot_ruins_harness/run.sh --report`, 14 seeds): **4 ruins a lap** (5 on one seed),
+  631 to 870 prisms (424 to 546 on the 60 u lane; `--lanes` prints the count per lane width: a ruin stands round its
+  lane, so a wider lane is a bigger ruin with more prisms, and all 4 or 5 stay up to 160 u). Spearline has 7 because its legs are longer; the Stoat's eight-ring lap has 4 or 5 legs that reach 380 u.
+- **No wheel.** The turning wheel needs 270 u from both rings (its 150 u rim and the ring margin) and the Stoat's legs
+  are about 460 u, so the generator lays a pergola in its place. Nothing on this course sweeps the line. A wheel or
+  more ruins would take longer legs or smaller margins: a course decision, not made here.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby, Gold in turn (`ruinDomains` on the controller; empty = Blue),
+  apart from the Orrery's Blue moons, belts and tails.
+- **Rules.** Plain prisms in `SpawnablePrism` (`ruinPrefab`, wired in the scene; `author_slingshot_assets.py --check`
+  fails without it) with the game's own rules: a hull breaks them, nothing grows back. Nothing reads or writes a vessel.
+  Laid on every peer from the broadcast rings; cleared with the Orrery.
+- **Not measured.** The swing throws the Stoat well off the flown line, so a slung Stoat (a person's or the AI's) can
+  meet a ruin outside the lane (it did on the 60 u lane; the 150 u lane is not raced). The I4 times in STATUS.md (Legendary 75 s, Medium 95 s) were measured before the
+  ruins and have not been re-run. A comet tail or a shepherd can pass through a ruin: they are not kept apart.
+- **Tests.** `SlingshotRuinsTests` (10 with the lane's own; 10/10 in the editor on the 150 u lane), run headless by `Tools/Build/slingshot_ruins_harness/run.sh` (`--self-test`: two
+  negative controls). In the open Unity editor (6000.3.17f1, 2026-11-24): the project recompiles with no errors and
+  the 9 tests pass.
+- **One race in the editor** (2026-11-24, Play from Bootstrap, offline, I4, three Stoats all flown by the Legendary AI,
+  normal speed, driven by the mode smoke driver, `ModeSmokeLauncher`): the live course laid **350 ruin prisms** beside
+  7 moons; the game ended with a winner after 52 s of game time at 60 to 74 fps (one sample of 36); no error or
+  exception was logged during the match. **The AI flies into the ruins: 55 of the 350 prisms were broken by the end**
+  (295 stood), so on this course the ruins are in the Stoats' way and not only beside it. Whether that costs them time
+  was not measured (one race, no race without ruins beside it). The lay coloured the ruins Jade and Gold and no Ruby,
+  because the colour turned with the leg number and short legs skipped one; it now turns with each ruin (compiled, not
+  raced again). The smoke driver marks the run failed for two exceptions logged while booting, before the mode loaded
+  ("This cannot be used during play mode", "An unexpected error happened while running tests"): the test runner's, my
+  reading, not the mode's. I1-I3, Medium, a person flying and two players were not done. **To check by hand:** Slingshot at I4 shows coloured ruins on the long legs and none at I1-I3; a
+  Stoat on the line flies through each without touching it; the console has no "no ruin prefab" warning; a second race
+  leaves no ruins from the first.
 
 ## 1. What the mode is asking
 

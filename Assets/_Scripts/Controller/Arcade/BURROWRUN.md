@@ -66,6 +66,35 @@ The platform's `AIPilot` flies the line (the gate approach, `AICommitFromApproac
 The approach numbers are Warpline's (commit 160, lead 180, through 120): no search has flown a Jewel Wasp here. Easy
 and Medium race on `GateRaceHandicap` (`AIDifficultyRules.HasOwnHandicap`).
 
+## 4a. Garden ruins at I4 (2026-11-24, Yash)
+
+Decoration on the hardest rung only: ruins of old flora gardens round the racing line, the update Spearline got
+(`SPEARLINE.md` section 2a). Burrow Run **calls** Spearline's generator (`SpearlineRuins.Lay`) with one lap of its own
+rings; nothing is copied and no Spearline file changed. The hook is `BurrowRun/BurrowRunController.Ruins.cs`.
+
+- **Rules, all the generator's:** one ruin to a leg, never on the leg that closes the lap; every prism at least 8 u
+  thick; a 60 u clear lane down the flown line (the I4 mouth is 26 u); nothing within 120 u of a ring; only on legs
+  380 u or longer; I1 to I3 have none.
+- **What stands on this circuit (measured, ten seeds):** **4 ruins a lap** (5 on one seed), 424 to 546 prisms, mean
+  450. Slingshot's I4 circuit has four legs of 562 u or more and three of 344 to 381 u, and the short three fall under
+  the 380 u floor. Spearline's lap carries seven.
+- **No wheel turns here yet.** The turning wheel needs 150 u of sweep clear of every other leg and 270 u from a ring,
+  and no leg of this circuit has that on any of the ten seeds. The hook poses a wheel from the network clock if one is
+  ever laid.
+- **Colours:** each ruin wears one domain colour, Jade, Ruby, Gold in turn, from the controller's `ruinDomains` field
+  (empty = Blue), apart from the rings (neutral, the next one lime).
+- **Prism:** `ruinPrefab` on the controller, the environment prism (`SpawnablePrism`), wired by the generator. Unset =
+  no ruins and a warning.
+- **Plain prisms, the game's own rules:** a hull breaks them, nothing grows back, they go back to the pool on despawn.
+  Nothing reads or writes a vessel, and a prism is not a creature, so an AI wasp still has nothing to sting.
+- **Open:** seven a lap and a wheel need this mode's own clearances (a leg floor near 340 u). Spearline's generator is
+  gaining per-game settings for that in another session; Burrow Run takes them once they are committed.
+- **Tests:** `Tests/Editor/BurrowRunRuinsTests.cs` (none below I4, the counts above, the clear lane, the ring margin,
+  thickness, purity), run without Unity against the shipped sources with Roslyn: 8 of 8, and two negative controls
+  fired (ruins at I2, a blocked lane). The generator fails if the hook stops calling `SpearlineRuins.Lay`, if a copy of
+  the generator appears in this mode, or if the scene loses `ruinPrefab`.
+- **Not done:** the controller hook was **not compiled** and the ruins were **not watched** in the Editor.
+
 ## 5. What the re-seat changed (2026-11-22)
 
 - **Card:** seats `SO_Class_JewelWasp`; the words describe the ring race, not the tunnel.

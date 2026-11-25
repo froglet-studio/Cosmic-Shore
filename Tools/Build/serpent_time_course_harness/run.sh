@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED Serpentine course code (RaceCourseGeometry, HeadlongCircuit, SerpentTimeCourse) and its SHIPPED
-# edit-mode tests (SerpentTimeCourseTests, 400 seeds per intensity) against race_course_source_harness's Unity math
+# edit-mode tests (SerpentTimeCourseTests, 400 seeds per intensity; SerpentineRuinsTests, Spearline's ruins on this
+# mode's lap) against race_course_source_harness's Unity math
 # stub and an NUnit shim with Roslyn, and RUN every [Test], no Unity. The redline_course_harness pattern.
 #
 #   bash Tools/Build/serpent_time_course_harness/run.sh               # every test; exit 0 = all passed
@@ -28,16 +29,21 @@ OUT="${TMPDIR:-/tmp}/serpent_time_course_harness"
 mkdir -p "$OUT"
 
 COURSE="$A/Controller/Arcade/SerpentTime/SerpentTimeCourse.cs"
+RUINS="$A/Controller/Arcade/Spearline/SpearlineRuins.cs"   # Spearline's generator, called on this mode's lap
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = course source, $2 = output name
+build() {   # $1 = course source, $2 = output name, $3 = ruins source (default: the shipped one)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
-  for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
+  for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" \
+    "$ROOT/Tools/Build/serpent_hood_harness/Vector2Shim.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" \
-    "$1" "$A/Tests/Editor/SerpentTimeCourseTests.cs"; do
+    "$1" "$A/Tests/Editor/SerpentTimeCourseTests.cs" \
+    "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" "${3:-$RUINS}" \
+    "$A/Controller/Arcade/SerpentTime/SerpentTimeCluster.cs" "$A/Controller/Arcade/SerpentHood/SerpentineGate.cs" \
+    "$A/Tests/Editor/SerpentineRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -69,4 +75,17 @@ build "$OUT/SerpentTimeCourse_neg.cs" neg
 set +e; run neg > "$OUT/neg.txt"; nrc=$?; set -e
 if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: an I3 mouth as wide as I2's"; exit 1; fi
 echo "negative control fired: an I3 mouth as wide as I2's ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+
+# The garden ruins (SerpentineRuinsTests): each mutated copy of Spearline's generator must make this mode's tests fail.
+mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$RUINS" > "$OUT/SpearlineRuins_neg.cs"
+  grep -q "$3" "$OUT/SpearlineRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$COURSE" neg "$OUT/SpearlineRuins_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if ! grep -q '^FAIL SerpentineRuinsTests' "$OUT/neg.txt"; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL SerpentineRuinsTests' "$OUT/neg.txt") failing ruin test(s))"
+}
+mutate_ruins "ruins that block the lane" 's/PartLaneDistance(lap, part) >= s.ClearRadius \&\&/true \&\&/' 'true && PartRingClearance'
+mutate_ruins "ruins at a ring" 's/PartRingClearance(lap, part) >= s.RingMargin;/true;/' '&& true;'
+mutate_ruins "ruins on the easy rungs" 's/PerLapByRung = { 0, 0, 0, 7 }/PerLapByRung = { 0, 7, 0, 7 }/' '0, 7, 0, 7'
 echo "serpent_time_course_harness self-test: ok"

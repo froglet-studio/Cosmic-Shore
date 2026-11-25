@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
     /// "A game mode never changes the vessel"). The nests are the mode's environment, laid on every peer from the
     /// broadcast course like Serpentine's gates.</para>
     /// </summary>
-    public class ThresherTimeController : GateRaceController
+    public partial class ThresherTimeController : GateRaceController
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
@@ -147,6 +147,7 @@ namespace CosmicShore.Gameplay
         {
             ClearNests();
             ClearBelfry();
+            ClearRuins();
             if (IsServer && _keyManager) _keyManager.ClearCourseKeys();
             _keyManager = null;
             base.OnNetworkDespawn();
@@ -158,7 +159,9 @@ namespace CosmicShore.Gameplay
         {
             ClearNests();
             ClearBelfry();
+            ClearRuins();
             if (belfry) RaiseBelfry();
+            LayRuins();   // after the Belfry: the ruins keep out of its maces
             if (!nestsAtGates) return;   // the rings are the gates
             if (!nestPrefab)
             {
@@ -232,6 +235,7 @@ namespace CosmicShore.Gameplay
         {
             if (_belfry.Parts.Count > 0 || _belfry.Rings.Count > 0)
                 using (s_belfryMarker.Auto()) TickBelfry();
+            TickRuins();
             if (_nests.Count == 0) return;
             using (s_tickMarker.Auto()) TickNests();
         }

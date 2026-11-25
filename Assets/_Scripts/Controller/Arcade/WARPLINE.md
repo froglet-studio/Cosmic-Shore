@@ -48,10 +48,35 @@ lead-runner rule, the AI approach), `RaceGateTurnMonitor`, `RaceGateObjectivePro
 (`DomainRaceToasts`), and the comeback (`ComebackRatePerScoreDeficit` 0.45: a quarter-of-race deficit, 2.5 gates, buys
 1.1 element levels; Time sets the ride's rush, so it lands on the mode's axis).
 
-No new ability, no cell of its own, no scoring metric and no circuit generator. There are no Warpline cell configs: the
+No new ability, no cell of its own, no scoring metric and no circuit generator; the one thing the mode lays is the
+I4 scenery of section 2a. There are no Warpline cell configs: the
 intensity ladder is Slingshot's circuit settings (`SlingshotCourse.ForIntensity`), so a change there changes Slingshot too.
 Warpline's own laps, rings a lap and four rungs are set in the Time Race Prototyper (`TimeRaceCourseConfigSO`, entry
 `Warpline`): with that entry on they replace the shipped ones, for this mode only.
+
+## 2a. The garden ruins (I4 only, Yash 2026-11-24)
+
+On the hardest rung the legs carry **decorative ruins** round the racing line, the same environment update Spearline
+got (`SPEARLINE.md` §2a). Warpline does not copy the generator: `WarplineController.Ruins.cs` calls
+`SpearlineRuins.Lay` with Warpline's own lap, on every peer, when the course is raised.
+
+- **How many.** One ruin on each leg between rings except the leg that closes the lap (into ring 0, where the field
+  starts): four a lap on five rings, about 360-530 prisms. Which four of the seven kinds (pergola, flower head, vines,
+  a wall with a doorway on the line, a tunnel, a 3D maze of bars, a turning wheel) is drawn from the lap; a lap has at
+  most one wheel, on about 4 courses in 10.
+- **Kept clear.** A 60 u lane down the flown line of every leg, nothing within 120 u of a ring, only on legs 380 u or
+  longer (Warpline's are 590-1020 u), every prism at least 8 u thick. The wheel is the only kind that sweeps the line
+  (25 deg/s, posed from the network clock so every peer sees the same angle).
+- **Colours.** One domain colour a ruin, Jade, Ruby, Gold in turn (`ruinDomains` on the controller), so they read apart
+  from the rings, which are Blue. Empty = Blue.
+- **Rules.** Scenery only: plain prisms with the game's own rules, laid from `ruinPrefab` (the environment prism,
+  written into the scene by the generator). A hull breaks them, the Meerkat's tunnel does to them what it does to any
+  prism, nothing grows back. Nothing reads or writes a vessel, and I1-I3 have none.
+- **Tests.** `WarplineRuinsTests`: none below I4, the lane and the ring margin hold, one ruin a leg and none on the
+  closing leg, the prism count, one wheel at most, the lay is a pure function of the lap.
+
+Open: the lane follows the curve between rings. A long straight tunnel dug across a corner can leave that lane and
+pass through a ruin; whether that reads well has not been watched.
 
 ## 3. AI
 
@@ -87,7 +112,8 @@ taken with the Stoat.
 ## 5. Status
 
 Authored by the generator. **Not run in the Editor with the Meerkat** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`: seat an
-AI Meerkat in Warpline; it forms tunnels and finishes the race). The card background is the mode's own render
+AI Meerkat in Warpline; it forms tunnels and finishes the race). The I4 ruins (section 2a, 2026-11-24) were neither
+compiled in Unity nor watched: their tests ran headless against the shipped generator. The card background is the mode's own render
 (`Assets/_Graphics/ARCADE/CardBackgrounds/Warpline.png`).
 
 ## 6. History: the Stoat's races here (2026-10-09 to 2026-10-27)

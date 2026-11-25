@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-24-the-net-s-mesh-object-is-rebuilt-when-it-e73251",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-24T04:09:43+00:00",
+  "area": "the Jacks crew vessel (JacksBodies net)",
+  "summary": "The net's mesh object is rebuilt when its scene object was destroyed under it; no look or tuning change",
+  "why": "Bug Ledger E-720d217e81 on Garrett's machine: 705 MissingReferenceExceptions in 19 s from NetMesh.Draw after the scene-root JacksNet object was destroyed while the hull lived on",
+  "branch": "Ys-bleeding-edge",
+  "commit": "c7f4c5331",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/Crew/JacksBodies.cs"
+  ]
+}

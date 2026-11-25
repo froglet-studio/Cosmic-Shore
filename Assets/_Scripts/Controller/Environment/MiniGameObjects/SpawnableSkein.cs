@@ -85,6 +85,10 @@ namespace CosmicShore.Gameplay
         public int CableSeed => cableSeed != 0 ? cableSeed : (seed != 0 ? seed : DefaultSeed);
         public SkeinCourseSettings CourseSettings => BuildCourseSettings();
 
+        /// <summary>The prism every rail is laid from. The I4 ruins (<c>SkeinController.Ruins</c>) are laid from the
+        /// same one, so the mode authors no second prism.</summary>
+        public Prism RailPrism => prism;
+
         SkeinCourseSettings BuildCourseSettings()
         {
             var s = SkeinCourseSettings.ForIntensity(IntensityForStrandCount(strandCount));

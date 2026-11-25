@@ -85,6 +85,39 @@ combos:
     done: A den is built at a perch the Pistol reached without a fall.
     sight: ENSIGN
 - in: x
+  name: Length and line
+  t: [1, 4]
+  src: 'Garrett 2026-11-24 (project chat): the Goby never flies; its only movement is charged launches of different lengths
+    from perch to perch, and two thumbs orient the shrimp''s plane. Dart numbers from PERCH_RUN.md section 1; Goby Time step
+    1 signed fun by Will (loop.json).'
+  is: The Goby never flies. On a perch, two thumbs turn it to set the Pistol's plane; it charges a length and shoots itself
+    to the next perch, so every move is one choice of line and length.
+  chain:
+  - - ''
+    - 'Perched: two thumbs turn the hull, and the turn sets the Pistol''s plane'
+  - - ''
+    - Hold to charge the length, 140 u for a tap up to 600 u at a full charge
+  - - Time
+    - Let go; it lands in one second and the landing is the next perch
+  drivers: [mastery, joy]
+  feel: Reading the course one perch ahead.
+  gene:
+    genome: Time
+    cue: [gate_next, straight_ahead]
+    dials:
+    - - chargeFraction
+      - share of the full 0.8 s charge held before release
+      - 0
+      - 1
+      - fraction
+    - - lineOffset
+      - aim off the next ring's centre to clear a blocker or catch a double
+      - 0
+      - 60
+      - u
+    done: A ring is threaded with one launch from the perch before.
+    sight: NEEDLE
+- in: x
   name: Lock and snap
   t: [6, 20]
   src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'

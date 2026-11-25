@@ -4,24 +4,24 @@
  "tool": "Tools/Build/colour_trace.py",
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
-  "fixed": 3374,
-  "inert": 31399,
-  "token": 4244,
-  "traced": 2099,
-  "untraced": 13
+  "fixed": 3365,
+  "inert": 31600,
+  "token": 4248,
+  "traced": 2125,
+  "untraced": 18
  },
  "inert": {
   "ambient-mode": 291,
   "camera-no-clear": 8,
-  "code-fallback": 152,
-  "code-inert": 220,
+  "code-fallback": 147,
+  "code-inert": 219,
   "debug": 91,
   "field-reviewed": 9,
   "fog-off": 97,
   "gradient-key-unused": 78,
   "kit-legacy-field": 69,
-  "kit-selectable": 1690,
-  "material-stale": 840,
+  "kit-selectable": 1700,
+  "material-stale": 960,
   "material-unused-prop": 20,
   "material-vector": 452,
   "post-identity": 8,
@@ -31,15 +31,15 @@
   "scene-not-in-build": 448,
   "script-missing": 19,
   "selectable-no-tint": 405,
-  "shader-default": 274,
+  "shader-default": 273,
   "shader-node-dead": 31,
   "shader-not-drawn": 19,
   "stale-field": 17,
   "subtractive-off": 97,
-  "tmp-colour-twin": 1792,
-  "tmp-face-cache": 1792,
+  "tmp-colour-twin": 1805,
+  "tmp-face-cache": 1805,
   "tmp-feature-off": 52,
-  "tmp-gradient-off": 7168,
+  "tmp-gradient-off": 7220,
   "unreachable": 13561
  },
  "inert_why": {
@@ -79,23 +79,23 @@
   "tmp-feature-off": "a TextMesh Pro material colour whose feature is off (no GLOW_ON, UNDERLAY_ON or BEVEL_ON keyword, outline width 0)"
  },
  "tokens": {
-  "ControlActive": 557,
-  "Cta": 280,
+  "ControlActive": 545,
+  "Cta": 278,
   "Danger": 18,
   "ElementCharge": 4,
   "ElementMass": 4,
   "ElementSpace": 4,
   "ElementTime": 4,
-  "InactiveLight": 11,
-  "NeutralLightest": 821,
+  "InactiveLight": 12,
+  "NeutralLightest": 825,
   "Purchase": 41,
   "Sea": 7,
-  "SurfaceBlack": 213,
-  "SurfaceDark": 473,
-  "SurfaceLight": 229,
-  "SurfaceVeryDark": 327,
+  "SurfaceBlack": 215,
+  "SurfaceDark": 480,
+  "SurfaceLight": 228,
+  "SurfaceVeryDark": 326,
   "TextInactive": 1,
-  "TextLight": 1233,
+  "TextLight": 1239,
   "Tooltip": 17
  },
  "ids": {
@@ -438,7 +438,7 @@
     0.97
    ],
    "family": "blue",
-   "uses": 214,
+   "uses": 216,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
@@ -484,7 +484,7 @@
     0.55
    ],
    "family": "blue",
-   "uses": 328,
+   "uses": 327,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
@@ -558,7 +558,7 @@
     1.0
    ],
    "family": "jade",
-   "uses": 559,
+   "uses": 547,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
@@ -820,7 +820,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 474,
+   "uses": 481,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image",
@@ -1157,7 +1157,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 230,
+   "uses": 229,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
@@ -1330,12 +1330,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 12,
+   "uses": 13,
    "where": [
     "Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image",
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeGameCard.prefab TextMeshProUGUI",
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab SquadMateCard",
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab Image",
-    "Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab TextMeshProUGUI"
+    "Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab Image"
    ],
    "token": "InactiveLight"
   },
@@ -1423,7 +1423,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 822,
+   "uses": 826,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
     "Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)",
@@ -1517,11 +1517,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 3,
+   "uses": 4,
    "where": [
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/SettingsView.prefab GameSettingsPanelController",
     "Assets/_Scripts/UI/MiniGameHUD.cs code",
-    "Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs code"
+    "Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs code",
+    "Assets/_Scripts/UI/Scoreboard.cs code"
    ]
   },
   "ui:808599": {
@@ -1826,7 +1827,7 @@
     0.0
    ],
    "family": "lime",
-   "uses": 281,
+   "uses": 279,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
@@ -2241,7 +2242,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 350,
+   "uses": 346,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Button",
     "Assets/_Prefabs/Spacevessels/Serpent.prefab Button",
@@ -2482,7 +2483,7 @@
     0.16
    ],
    "family": "blue",
-   "uses": 1234,
+   "uses": 1240,
    "where": [
     "Assets/Resources/Pilots/PilotProfileView.prefab Image",
     "Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI",
@@ -3231,12 +3232,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 10,
+   "uses": 30,
    "where": [
     "Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
-    "Assets/_Graphics/Materials/GyroidSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
-    "Assets/_Graphics/Materials/QuadFishSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
-    "Assets/_Graphics/Materials/QuasicrystalSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)"
+    "Assets/_Graphics/Materials/Fauna/AmmonChargeSpindle.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/Fauna/AmmonMassSpindle.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/Fauna/AmmonSpaceSpindle.mat Material(Shader Graphs/SpindleGraph)"
    ]
   },
   "world:000811": {
@@ -4883,6 +4884,21 @@
     "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow"
    ]
   },
+  "world:400505": {
+   "role": "world",
+   "photic": [
+    0.25,
+    0.02,
+    0.02,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 2,
+   "where": [
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset GrizzlyFlamethrowerActionSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyFlamethrowerActionSO.cs code"
+   ]
+  },
   "world:408CFF": {
    "role": "world",
    "photic": [
@@ -5263,12 +5279,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 9,
+   "uses": 29,
    "where": [
     "Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
-    "Assets/_Graphics/Materials/GyroidSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
-    "Assets/_Graphics/Materials/QuadFishSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)",
-    "Assets/_Graphics/Materials/QuasicrystalSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)"
+    "Assets/_Graphics/Materials/Fauna/AmmonChargeSpindle.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/Fauna/AmmonMassSpindle.mat Material(Shader Graphs/SpindleGraph)",
+    "Assets/_Graphics/Materials/Fauna/AmmonSpaceSpindle.mat Material(Shader Graphs/SpindleGraph)"
    ]
   },
   "world:5F670C": {
@@ -5834,7 +5850,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 1,
    "where": [
     "Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController"
    ]
@@ -5986,10 +6002,12 @@
     1.0
    ],
    "family": "lime",
-   "uses": 7,
+   "uses": 6,
    "where": [
     "Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController",
-    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO"
+    "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO",
+    "Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset OrcaCrewConfigSO",
+    "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolConfigSO.cs code"
    ]
   },
   "world:9E6BF0": {
@@ -7221,9 +7239,11 @@
     1.0
    ],
    "family": "fire",
-   "uses": 2,
+   "uses": 4,
    "where": [
     "Assets/Resources/VesselSilenceConfig.asset VesselSilenceConfigSO",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset GrizzlyFlamethrowerActionSO",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyFlamethrowerActionSO.cs code",
     "Assets/_Scripts/ScriptableObjects/VesselSilenceConfigSO.cs code"
    ]
   },
@@ -7446,20 +7466,6 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs code"
-   ]
-  },
-  "world:FF731F": {
-   "role": "world",
-   "photic": [
-    1.0,
-    0.45,
-    0.12,
-    1.0
-   ],
-   "family": "fire",
-   "uses": 1,
-   "where": [
-    "Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs code"
    ]
   },
   "world:FF7359": {
@@ -8112,6 +8118,22 @@
  },
  "untraced": [
   {
+   "file": "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset",
+   "line": 0,
+   "component": "GrizzlyFlamethrowerActionSO",
+   "field": "MonoBehaviour.whipBodyColor",
+   "id": "world:400505",
+   "why": "a colour field on GrizzlyFlamethrowerActionSO: the code that paints with it reads it through ColorTrace.Retrace"
+  },
+  {
+   "file": "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset",
+   "line": 0,
+   "component": "GrizzlyFlamethrowerActionSO",
+   "field": "MonoBehaviour.whipRimColor",
+   "id": "world:FF1F14",
+   "why": "a colour field on GrizzlyFlamethrowerActionSO: the code that paints with it reads it through ColorTrace.Retrace"
+  },
+  {
    "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
    "line": 768,
    "component": "code",
@@ -8213,6 +8235,30 @@
    "component": "code",
    "field": "sink.Line(d.Key - d.FireUp * 40f, d.Key + d.FireUp * 40f, Color.cyan);",
    "id": "world:00FFFF",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyFlamethrowerActionSO.cs",
+   "line": 137,
+   "component": "code",
+   "field": "Color whipBodyColor = new Color(0.25f, 0.02f, 0.02f, 1f);",
+   "id": "world:400505",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyFlamethrowerActionSO.cs",
+   "line": 139,
+   "component": "code",
+   "field": "Color whipRimColor = new Color(1f, 0.12f, 0.08f, 1f);",
+   "id": "world:FF1F14",
+   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Scoreboard.cs",
+   "line": 1127,
+   "component": "code",
+   "field": ": Color.gray;",
+   "id": "ui:808080",
    "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
   }
  ]

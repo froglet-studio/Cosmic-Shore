@@ -33,8 +33,8 @@ MonoBehaviour:
   - 15
   - 5
   aiCrystalDetourRange:
-  - 150
-  - 220
   - 300
-  - 400
+  - 200
+  - 100
+  - 0
   aiChordOffset: 24

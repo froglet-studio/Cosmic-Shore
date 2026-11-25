@@ -37,6 +37,9 @@ namespace CosmicShore.Gameplay
         public static void Start(ShipActionSO action, ActionExecutorRegistry executors, IVesselStatus vessel)
         {
             if (!action) return;
+            // An action whose effect is prisms runs on every peer: the RPC runs it (and reports it) on each.
+            if (action.AutopilotPressTravels && vessel?.ActionHandler && vessel.ActionHandler.TrySendAutopilotAction(action, true))
+                return;
             action.StartAction(executors, vessel);
             Observer?.OnDirectAction(vessel, action, true);
         }
@@ -45,6 +48,8 @@ namespace CosmicShore.Gameplay
         public static void Stop(ShipActionSO action, ActionExecutorRegistry executors, IVesselStatus vessel)
         {
             if (!action) return;
+            if (action.AutopilotPressTravels && vessel?.ActionHandler && vessel.ActionHandler.TrySendAutopilotAction(action, false))
+                return;
             action.StopAction(executors, vessel);
             Observer?.OnDirectAction(vessel, action, false);
         }

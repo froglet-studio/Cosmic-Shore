@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     /// came with this race is <see cref="OrcaCrew.RaceCoach"/>, which lets a race tell the AI helm when to burn (the shipped
     /// AI helm never burns).</para>
     /// </summary>
-    public class BreachController : GateRaceController, IPlayerSpawnLine, IOrcaRaceCoach
+    public partial class BreachController : GateRaceController, IPlayerSpawnLine, IOrcaRaceCoach
     {
         [Header("Breach")]
         [Tooltip("The prism every wall is laid from: the environment prism (SpawnablePrism), laid as danger. Authored by " +
@@ -87,6 +87,7 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearWalls();
+            LayRuins();
             BreachCourse.WallsFor(_course, Settings(), _wall);
             if (_wall.Count == 0) return;
             if (!wallPrefab)
@@ -120,6 +121,7 @@ namespace CosmicShore.Gameplay
         /// hull is at its wall (growing it on a hull would stop that hull dead).</summary>
         void LateUpdate()
         {
+            TickRuins();
             if (_wallPrisms.Count == 0 || !wallPrefab) return;
             float now = Time.time;
             var settings = Settings();
@@ -152,6 +154,7 @@ namespace CosmicShore.Gameplay
 
         void ClearWalls()
         {
+            ClearRuins();
             for (int i = 0; i < _wallPrisms.Count; i++)
             {
                 var prism = _wallPrisms[i];

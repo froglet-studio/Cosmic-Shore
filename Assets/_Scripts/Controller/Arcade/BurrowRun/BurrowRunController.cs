@@ -11,8 +11,11 @@ namespace CosmicShore.Gameplay
     /// <para><b>What the mode does NOT add:</b> no ability, no cell, no scoring metric and no circuit generator -
     /// Warpline's shape and Slingshot's cut (<see cref="SlingshotCourse"/>). It changes nothing on the wasp and presses
     /// nothing for its AI: the gate race's own steering flies an AI hull (<see cref="GateRaceController"/>).</para>
+    ///
+    /// <para><b>What it does add:</b> garden ruins round the racing line on the hardest rung
+    /// (<c>BurrowRunController.Ruins.cs</c>), laid by Spearline's generator from this race's rings. Scenery only.</para>
     /// </summary>
-    public class BurrowRunController : GateRaceController
+    public partial class BurrowRunController : GateRaceController
     {
         [Header("Burrow Run circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
@@ -28,5 +31,21 @@ namespace CosmicShore.Gameplay
         /// <summary>Regatta's gate steering, as Warpline flies it: commit from the approach point, aim through the ring's
         /// centre, re-attack a missed mouth.</summary>
         protected override bool AICommitFromApproachPoint => true;
+
+        /// <summary>Every peer, once the rings stand: the ruins of this course.</summary>
+        protected override void OnCourseRaised()
+        {
+            ClearRuins();
+            LayRuins();
+        }
+
+        /// <summary>Every peer, every frame: the wheels turn.</summary>
+        void LateUpdate() => TickRuins();
+
+        public override void OnNetworkDespawn()
+        {
+            ClearRuins();
+            base.OnNetworkDespawn();
+        }
     }
 }
