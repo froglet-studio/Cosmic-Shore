@@ -27254,8 +27254,12 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
 - [x] Riposte I1-I4, one AI match each: each ends with a winner and no error (2026-11-25; I1 at 4x with three
       seats, I2-I4 at 1x with four). The judge's times were 39-150 / 26-109 / 52-165 / 40-202 s; the editor's
       were 25 / 35 / 67 s (Legendary) and 20 / 33 / 21 s (Hard) on I2-I4: shorter, which is a finding.
-- [ ] Why an AI match is shorter in the editor than in the judge: watch one I3 match at 1x and count the strikes
-      a silenced hull takes in a row.
+- [x] Why an AI match is shorter in the editor than in the judge (2026-11-25, three probed matches): the smoke
+      test seats three teams and its host seat flies the stock autopilot at 31-47 u/s, not the mode's AI; it is
+      the hull that gets struck. The duelists flew as in the judge. `RIPOSTE.md` section 5.
+- [ ] A 2v2 match of four mode AIs in the editor (the smoke test cannot seat one), timed against the judge.
+- [ ] Decide: should a human seat the AI holds fly Riposte's duelist (as Switchback's does) and not the stock
+      autopilot?
 - [ ] A sword hit scores only while the striker is the faster hull; a struck pilot is silenced and can refuel at the
       clearing crystals; at I2 every hull starts at Charge 5; at I3 each team has its Charge crystals; at I4 the
       fauna hatch and an unlit blade binds on ironwood.

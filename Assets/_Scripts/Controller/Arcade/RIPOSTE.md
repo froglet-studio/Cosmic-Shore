@@ -124,8 +124,20 @@ Two matches a cell cannot rank I1-I3 against each other: the spread inside a cel
   config; seconds to the sixth strike): Legendary 25 / 35 / 67, Hard 20 / 33 / 21. Every match ended with a winner,
   four seats AI and moving, no error in the match or at exit; the only error is the Cloud Code `NotFound` at boot.
   **Finding:** the editor's matches are shorter than the judge's for the same cell (judge Hard 73-152 s on I2-I4,
-  Legendary 26-179 s). One match a cell cannot say why; the judge's lengths are not yet shown to be Unity's.
-- **Not done:** no I1 match in the editor at clock 1x; nobody has flown it; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
+  Legendary 26-179 s).
+- **Why (three more Hard matches at 1x, every seat sampled every 3 s):** the smoke test's match is not the judge's.
+  The judge seats four mode AIs 2v2. The smoke test seats three teams (the host on Jade, two Ruby, one Gold), and
+  the host's seat is a human seat handed to the stock autopilot, which `RiposteDuelist` does not arm (it arms
+  `IsInitializedAsAI` seats, as Jackstraw's hunter does). That hull flew at 31-47 u/s with no ramp, alone against
+  a Ruby pair, and the duelists prefer a human seat (`aiHumanFocus` 2); it was silenced in 4 of 18 samples in one
+  match and 3 of 10 in another. The three duelists flew as in the judge: Reap, Charge and Extend in turn, fuel
+  0-1, speeds to 451 u/s. Lengths also swing match to match: Hard I3 ran 33, 94 and 32 s, Hard I2 20 and 56 s.
+  So the editor times say nothing against the judge's table; a 2v2 match of four mode AIs has not been played in
+  Unity, because the smoke test cannot seat one.
+- **Open (a person's call):** a human seat the AI holds (an idle guest, the AI-flies toggle) flies the stock
+  autopilot here, slow and unramped, and is the duelists' preferred target. Switchback arms such seats with its
+  own pilot; Riposte and Jackstraw do not.
+- **Not done:** no I1 match in the editor at clock 1x; no 2v2 match of four mode AIs in the editor; nobody has flown it; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
 - **Open questions a flight answers:** whether 6 strikes is the right length with a person in it (AI matches run
   26-202 s); whether a silenced pilot under a 0.5 s sword latch can get away (the AI now runs out after each pass, a
   person may not); whether the heap, cut 140-2,800 prisms a match, still gives fuel late on.
