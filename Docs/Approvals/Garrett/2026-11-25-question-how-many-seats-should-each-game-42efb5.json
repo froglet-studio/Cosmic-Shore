@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-25-question-how-many-seats-should-each-game-42efb5",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T15:12:48+00:00",
+  "area": "Seats per game mode (Swordfish cards)",
+  "summary": "QUESTION: how many seats should each game mode have, and should the Swordfish games go back to 9? Yash set all four Swordfish games to 4 seats for now, under your 2026-11-17 rule of up to 9 vessels, 3 a team: Spearline (2ea352c12c, was max 9), Riposte (b2818ecc1d), Palisade (8a0d1a77b6 and 754d50de8f, was 2-9) and Cleave (its session is changing it from 9, 3 a team). Yash will change them back if you say so.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "2ea352c12",
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ]
+  }
+}
