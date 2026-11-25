@@ -27242,16 +27242,20 @@ behaviour unchanged). The vessel is untouched. **Verified without Unity:** the g
 real-game judge in Amoebius (headless, four Swordfish AIs 2v2, Easy / Medium / Legendary on I1-I4, two seeds: 24 of 24
 matches ended, 26-202 s, median 96 s). **In the open editor the same day (Unity 6000.3.17f1):** it compiles,
 `RiposteDuelTests` pass 14 of 14, and the mode smoke test played one I1 match (three Legendary AI, 2v1, clock 4x): a
-winner in 30.5 game seconds, no error in the match. **Not verified:** I2-I4 in the editor, any match at clock 1x, and
-nobody has flown the mode.
+winner in 30.5 game seconds, no error in the match. Then I2-I4 at clock 1x, four AI seats 2v2, one match a cell:
+Legendary 25 / 35 / 67 s, Hard 20 / 33 / 21 s, each with a winner and no error in the match. **Not verified:** I1 at
+clock 1x, why the editor's matches are shorter than the judge's, and nobody has flown the mode.
 
 - [x] The project compiles in the editor and `RiposteDuelTests` pass (2026-11-25, 14 of 14).
 - [ ] Jackstraw (the Thresher) still plays as before: AI Threshers hunt, a match ends, Play Again works (its
       controller's AI calls moved behind a seam).
 - [ ] Riposte I1, AI on every seat, clock 1x: the AI hulls fly long straight passes and reach a few hundred u/s (not a
       slow knot in the middle), strikes land on both teams, and a match ends in roughly 1-3 minutes.
-- [ ] Riposte I1-I4, one AI match each: each ends with a winner and no error. The judge's times were
-      39-150 / 26-109 / 52-165 / 40-202 s; within about 10% is a match, far off is a finding.
+- [x] Riposte I1-I4, one AI match each: each ends with a winner and no error (2026-11-25; I1 at 4x with three
+      seats, I2-I4 at 1x with four). The judge's times were 39-150 / 26-109 / 52-165 / 40-202 s; the editor's
+      were 25 / 35 / 67 s (Legendary) and 20 / 33 / 21 s (Hard) on I2-I4: shorter, which is a finding.
+- [ ] Why an AI match is shorter in the editor than in the judge: watch one I3 match at 1x and count the strikes
+      a silenced hull takes in a row.
 - [ ] A sword hit scores only while the striker is the faster hull; a struck pilot is silenced and can refuel at the
       clearing crystals; at I2 every hull starts at Charge 5; at I3 each team has its Charge crystals; at I4 the
       fauna hatch and an unlit blade binds on ironwood.

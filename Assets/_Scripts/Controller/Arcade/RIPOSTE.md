@@ -95,9 +95,11 @@ AIs 2v2, seeds 1-2, working tree on c519b8bc03, 2026-11-25). Seconds to the sixt
 |---|---|---|---|---|
 | Easy | 113 / 150 | 68 / 95 | 165 / 85 | 202 / 198 |
 | Medium | 107 / 49 | 109 / 84 | 162 / 88 | 133 / 75 |
+| Hard | 64 / 77 | 96 / 97 | 152 / 73 | 108 / 125 |
 | Legendary | 97 / 39 | 103 / 26 | 71 / 52 | 179 / 40 |
 
-24 of 24 matches ended with a winner; median 96 s; the loser's median score 3 of 6; Jade won 11, Ruby 13. A hull's
+Easy, Medium and Legendary: 24 of 24 matches ended with a winner; median 96 s; the loser's median score 3 of 6;
+Jade won 11, Ruby 13. Hard was judged later the same day on 7d9e3ed2b9: 8 of 8 ended, the loser on 2-5, Jade won 6. A hull's
 speed in a match: median 45-117 u/s, 90th percentile 125-290, peak 165-540 (the old hunter: 30 u/s throughout).
 Read it as: the AI finishes every rung, a harder AI tends to win sooner, and I4 is the longest rung for an Easy seat.
 Two matches a cell cannot rank I1-I3 against each other: the spread inside a cell is as wide as the gap between rungs.
@@ -118,7 +120,12 @@ Two matches a cell cannot rank I1-I3 against each other: the spread inside a cel
   modes' runs show) and one at exit (`NetworkCrystalManager.RespawnCrystal_ServerRpc` called after the network
   stopped, when an omni crystal was touched during teardown; platform code, not Riposte's). One 2v1 match at 4x
   is not a time to compare with the judge's 2v2 table.
-- **Not done:** no AI match in the editor at I2-I4 or at clock 1x; nobody has flown it; Hard was not judged; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
+- **The same day, I2-I4 at clock 1x, four AI seats 2v2, one match a cell** (the mode smoke test on a copy of its
+  config; seconds to the sixth strike): Legendary 25 / 35 / 67, Hard 20 / 33 / 21. Every match ended with a winner,
+  four seats AI and moving, no error in the match or at exit; the only error is the Cloud Code `NotFound` at boot.
+  **Finding:** the editor's matches are shorter than the judge's for the same cell (judge Hard 73-152 s on I2-I4,
+  Legendary 26-179 s). One match a cell cannot say why; the judge's lengths are not yet shown to be Unity's.
+- **Not done:** no I1 match in the editor at clock 1x; nobody has flown it; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
 - **Open questions a flight answers:** whether 6 strikes is the right length with a person in it (AI matches run
   26-202 s); whether a silenced pilot under a 0.5 s sword latch can get away (the AI now runs out after each pass, a
   person may not); whether the heap, cut 140-2,800 prisms a match, still gives fuel late on.
