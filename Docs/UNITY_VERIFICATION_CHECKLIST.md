@@ -27168,6 +27168,18 @@ Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section
       (`CosmicShore.Editor.ModeSmokeLauncher.Run`): the console says "[ModeSmoke] cannot start: the editor is in Play
       mode: leave Play mode first", with no exception, and the offline preference is unchanged (`c7f4c53311`).
 
+## Bug ledger fixes (2026-11-25)
+
+Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section 3). Not run in the Unity editor
+(cloud sweep); `Tools/Build/unity_refcompile` reports 0 errors in project code.
+
+- [ ] Hangar, Upgrades page, with an element that has no ability on the vessel focused: convert crystals in the
+      elemental converter. The page redraws with the open-slot title, no upgrade block and no
+      `NullReferenceException` from `HangarUpgradesPage.DrawFocused` (`3f7ec9c5a4`).
+- [ ] Start the mode smoke test from the menu and press Play yourself before its first mode opens (or between two
+      modes): the run ends with the mode marked "the editor entered Play mode outside the smoke run before this mode
+      could start", no `InvalidOperationException`, and the offline preference is back to what it was (`0fe1070306`).
+
 ## Palisade: the Swordfish's Mass game (2026-11-25, NEVER RUN)
 
 `Assets/_Scripts/Controller/Arcade/PALISADE.md`. The mode has never been opened in the editor. The 2026-11-25 change

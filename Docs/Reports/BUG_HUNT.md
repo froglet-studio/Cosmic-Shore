@@ -1,4 +1,4 @@
-# Bug Hunt — where it stands (2026-11-24)
+# Bug Hunt — where it stands (2026-11-25)
 
 **Owner:** Yash. **Branch:** fixes land on `Ys-bleeding-edge` first and reach `bleeding-edge` with each merge.
 **Board:** [Team Bug Board](https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno). Mechanism: `Docs/DIAGNOSTICS.md` § "The Bug Ledger".
@@ -60,6 +60,32 @@
   `colour_trace` (`Scoreboard.cs:1127`, `Color.gray`), `maelstrom_tiers` (two cards), and generator drift in
   `author_harvest_assets.py`, `author_tandava_assets.py`, `author_tandava_severing_assets.py`; `author_shatterplane_assets.py`
   has an f-string that the sweep machine's Python rejects.
+- **Daily sweep, 2026-11-25 03:58 UTC (198 branches): 412 open, 16 being checked after a fix** (428 issues).
+  Thirty-seven issues were seen since the 11-24 sweep. Two were code and are fixed (section 3): the Hangar upgrades
+  page throwing on a balance change on Shombith's machine (E-111d87fec0), and the mode smoke test again
+  (E-ca266cef07): it fired at 22:06 UTC on Yash's machine with the 11-24 fix in the checkout (the stack names the
+  fixed file's line), so that fix did not hold and `RunNext` now checks too. **One event produced 21 new issues and
+  about 4.4 million sightings on Yash's machine**: the ledger's own trail says the editor reloaded its scripts
+  while in Play mode at 22:33:32 UTC ("editor load: play=True"), and for the 63 minutes that play run went on every
+  `Update` whose state lives in a non-serialized field threw a NullReferenceException each frame: `PosterDrift`
+  (E-ed4206b1f4, 2.4 million), `CrystalFlipWave` (E-f46b6735b2, E-d9571a18d3), `VesselAnimation` (E-ca61559adc),
+  `KitAmbient` (E-f127d8f532), `CapsuleMembrane` (E-0c630aed25), `CustomCameraController` (E-194a50b4a5),
+  `PosterExit` (E-5fa83423d7), `InputController` (E-99c4b7a2b9), `BootStepBar` (E-c91d0cf94f), Unity's own
+  `AnalyticsContainer` (E-36f32a651e, E-b8f21a782f), then `ChargeSeamWalker` (E-30296bfbc7), `ElementalBarsView`
+  (E-670a324288), the rigging bind "Transform 'BoneA3' is not a child of the Animator hierarchy" (E-d451263fb3)
+  and seven Netcode teardown errors when Play ended (E-8b349e9b84, E-ea423dc7e2, E-6821a96b89, E-d25fe6be93,
+  E-207c4fcf7a, E-34127459e3, E-f7eea0fbbd). None of these is a fault in the script named: package code threw
+  beside them. `PlayModeReloadGuard` holds the reload lock for the whole of Play mode and should have prevented
+  this; what got past it is not captured (the `/api/exec` 60 s timeout E-8909c619e5 fired in the same minute, so a
+  command sent to the editor by a Claude session is the first suspect). Needs that run's `Editor.log`; left open,
+  nothing silenced. Seen again, unchanged: the Relay drop group (E-0a098d80df, E-4d0d17e44b, E-e5ff2abb8c,
+  E-e6054bc064, E-fda866d511; multiplayer), the `launch-flags` 404 (E-930ca435ca, six machines; Shombith's
+  backend), Vivox and its 403s (E-ca127debd0, E-ae8d2e4fa2, E-33876f4909), the services core cancel and closed
+  socket (E-3e9077e16b, E-fdf6dcdfc7) and Claude's editor commands timing out (E-8909c619e5, E-e5bc8c31c5). No new
+  phone session; `check_gamelist_scenes.py` is clean. The `/ship` gates still fail on `Ys-bleeding-edge` in files
+  no fix here touched: `doc_summaries` (`VoyageRun.cs:1114`), `maelstrom_tiers` (two cards), `colour_grade.json`
+  stale, and generator drift in `author_harvest_assets.py`, `author_tandava_assets.py`,
+  `author_tandava_severing_assets.py`.
 - **Ledger on 2026-11-21 (03:57 UTC sweep, 182 branches): 386 open, 35 being checked after a fix** (421 issues).
   The routine's first run with the repository attached: its push to `Ys-bleeding-edge` worked. Eight issues were new
   or seen again since the 11-20 report. One was code and is fixed (`65ffb622dd`, section 3); the rest are not code or
@@ -134,6 +160,15 @@ games the daily challenge should offer is its owner's call.
    player: a machine condition, never a code fix.
 
 ## 3. Fixed
+
+### 2026-11-25 (not run in the editor; `unity_refcompile` 0 errors)
+
+Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Bug ledger fixes (2026-11-25)".
+
+| Error | Machines | Cause | Fix |
+|---|---|---|---|
+| "NullReferenceException" in `HangarUpgradesPage.DrawFocused` (E-111d87fec0) | one (Shombith) | a balance change (the elemental converter paying crystals) redrew the page for an element with no ability entry; the earlier fix covered the ability title and line, and the upgrade block below still tested `!row.open` and read `entry.UpgradeLabel` | `3f7ec9c5a4`: the upgrade block uses the same `open` (`row.open || entry == null`) |
+| "InvalidOperationException: This cannot be used during play mode" in `ModeSmokeLauncher.RunNext` (E-ca266cef07), again | one (Yash) | `c7f4c53311` checked Play mode in `Start` only; `RunNext` runs a frame later and again after every mode, so Play entered in between still reached `OpenScene` | `0fe1070306`: `RunNext` records a harness fault on the mode that could not start and completes the run (the offline preference is put back). Affects Shombith's launch tooling (queued for `/approve`) |
 
 ### 2026-11-24 (not run in the editor; `unity_refcompile` 0 errors)
 
@@ -238,6 +273,11 @@ Their owners were told through `/approve`: Shombith, Garrett, Caleb (`Docs/Appro
 Earlier fixes are in each issue's ledger note and in `git log --grep "bugledger"`.
 
 ## 4. Left, and for whom
+
+- **Left on 2026-11-25:**
+  - Yash (or whoever holds that machine's `Editor.log` for 2026-11-24 22:33 UTC): what reloaded the scripts during
+    Play mode past `PlayModeReloadGuard`. The 21 issues it produced stay open until the cause is known.
+  - Multiplayer: the Relay drop group, seen on all seven machines. Shombith, backend: the `launch-flags` deploy.
 
 - **Read again on 2026-11-22, nothing to fix here:**
   - Shombith, backend: the `launch-flags` script not deployed (E-930ca435ca), the `weekly_challenge` board (42
@@ -374,42 +414,42 @@ T-20261015-56dd, -3e0b, -3972, -1551, -7edd.
 This block is refreshed by `python3 Tools/Build/team_report.py area bug-hunt --write`.
 
 <!-- team_report:begin (generated by Tools/Build/team_report.py; do not edit) -->
-_Generated 2026-11-24 from git (last 14 days), who_works_where.py: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
+_Generated 2026-11-25 from git (last 14 days), who_works_where.py: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
 
 ### Recent changes (25+)
+- 2026-11-25 `a4238499d` bugledger: E-ca266cef07 fixed in 0fe1070306 — on another branch
+- 2026-11-25 `bbe7dd240` bugledger: E-111d87fec0 fixed in 3f7ec9c5a4 — on another branch
+- 2026-11-24 `9c0e92fb9` bugledger: 107 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `1f08c761f` bugledger: 202 open error(s) from gradi's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `5bfdc39e0` bugledger: 85 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `307656462` bugledger: 30 open error(s) from belac's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `b615780b2` bugledger: 84 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `4362143bc` bugledger: 128 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `7a8c11305` bugledger: 128 open error(s) from Shombith's play tests — on another branch
+- 2026-11-24 `925c798b4` bugledger: 39 open error(s) from Will's play tests, 2 report file(s) — on another branch
+- 2026-11-24 `1e157cc93` bugledger: 39 open error(s) from Will's play tests, 1 report file(s) — on another branch
+- 2026-11-24 `a364a0c88` bugledger: 39 open error(s) from Will's play tests, 10 report file(s) — on another branch
+- 2026-11-24 `2654fea3a` bugledger: 39 open error(s) from Will's play tests, 3 report file(s) — on another branch
+- 2026-11-24 `e9e21a6ff` bugledger: 39 open error(s) from Will's play tests, 12 report file(s) — on another branch
 - 2026-11-24 `6ea011c53` bugledger: E-720d217e81 fixed in a5a7ef89c3 — on another branch
 - 2026-11-24 `aecd77cb2` bugledger: E-ca266cef07 fixed in c7f4c53311 — on another branch
+- 2026-11-24 `af9bcb879` feat(breach): Spearline's garden ruins round the Orca's racing line at I4 — on Ys-bleeding-edge, bleeding-edge
 - 2026-11-24 `3bf426a2c` bugledger: 65 open error(s) from Owner's play tests, 12 report file(s) — on another branch
-- 2026-11-24 `8ca039c88` bugledger: 85 open error(s) from yskha's play tests, 12 report file(s) — on another branch
 - 2026-11-24 `efbdf1629` bugledger: 65 open error(s) from Owner's play tests — on another branch
-- 2026-11-23 `2d3d3acc4` bugledger: 84 open error(s) from yskha's play tests, 12 report file(s) — on another branch
 - 2026-11-23 `ce76ca858` bugledger: 22 open error(s) from mrglo's play tests, 5 report file(s) — on another branch
 - 2026-11-23 `20aad166a` bugledger: 22 open error(s) from mrglo's play tests, 2 report file(s) — on another branch
 - 2026-11-23 `bee772845` bugledger: 204 open error(s) from gradi's play tests, 12 report file(s) — on another branch
 - 2026-11-23 `f1f2aa3df` bugledger: 129 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
 - 2026-11-23 `43b75ce91` bugledger: 31 open error(s) from belac's play tests, 12 report file(s) — on another branch
-- 2026-11-23 `2c8e28687` bugledger: 128 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
 - 2026-11-23 `a479e364a` bugledger: 203 open error(s) from gradi's play tests, 12 report file(s) — on another branch
-- 2026-11-23 `852d0318d` bugledger: 31 open error(s) from belac's play tests, 3 report file(s) — on another branch
-- 2026-11-23 `d2c260abe` bugledger: 70 open error(s) from Owner's play tests, 12 report file(s) — on another branch
-- 2026-11-22 `aa57c603f` bugledger: 83 open error(s) from yskha's play tests, 12 report file(s) — on another branch
-- 2026-11-22 `56f95e07b` bugledger: 80 open error(s) from yskha's play tests, 12 report file(s) — on another branch
-- 2026-11-22 `ba2c191b3` bugledger: E-853e9f9090 fixed in 1424652888 — on another branch
-- 2026-11-22 `f7cbab687` bugledger: E-908f18b36f fixed in 1424652888 — on another branch
-- 2026-11-22 `188cfc381` bugledger: E-31b2135ed2 fixed in ecdcc06b6e — on another branch
-- 2026-11-22 `6d004fea8` bugledger: E-15034bdc73 fixed in 860bc615d2 — on another branch
-- 2026-11-21 `8cb52c585` docs(handoff): backend to Shombith - the launch-flags Cloud Code script is not deployed — on Ys-bleeding-edge, bleeding-edge
-- 2026-11-21 `61ccab7e6` bugledger: E-6bc7e07601 fixed in 97aab2a6a7 — on another branch
-- 2026-11-21 `e8f67f948` bugledger: E-71cedd035d fixed in b6c5ad826 — on another branch
-- 2026-11-21 `40dd460e0` bugledger: E-6f8a396c25 fixed in 475c34feb7 — on another branch
 
 ### Also in flight on other branches
-- `bugledger/gradi` (Garrett, Yash, 2026-11-24): bugledger: E-720d217e81 fixed in a5a7ef89c3
-- `bugledger/yskha` (Yash, 2026-11-24): bugledger: E-ca266cef07 fixed in c7f4c53311
+- `bugledger/yskha` (Yash, 2026-11-25): bugledger: E-ca266cef07 fixed in 0fe1070306
+- `bugledger/shombith` (Shombith, Yash, 2026-11-25): bugledger: E-111d87fec0 fixed in 3f7ec9c5a4
+- `bugledger/gradi` (Garrett, Yash, 2026-11-24): bugledger: 202 open error(s) from gradi's play tests, 12 report file(s)
+- `bugledger/belac` (Caleb, Yash, 2026-11-24): bugledger: 30 open error(s) from belac's play tests, 12 report file(s)
+- `bugledger/will` (Yash, ownerbynight, 2026-11-23): bugledger: 39 open error(s) from Will's play tests, 2 report file(s)
 - `bugledger/owner` (Andrew, Yash, 2026-11-23): bugledger: 65 open error(s) from Owner's play tests, 12 report file(s)
 - `bugledger/mrglo` (jtgjones, 2026-11-23): bugledger: 22 open error(s) from mrglo's play tests, 5 report file(s)
-- `bugledger/shombith` (Shombith, Yash, 2026-11-24): bugledger: 129 open error(s) from Shombith's play tests, 12 report file(s)
-- `bugledger/belac` (Caleb, Yash, 2026-11-23): bugledger: 31 open error(s) from belac's play tests, 12 report file(s)
-- `bugledger/will` (Yash, ownerbynight, 2026-11-20): bugledger: E-0de9ec6c70 fixed in 93765d6aa8
 - `claude/project-thread-jw78fe` (Garrett, 2026-11-18): test(proven-win): vessel hull off-screen skinning rejected (~3 us per hull)
 <!-- team_report:end -->
