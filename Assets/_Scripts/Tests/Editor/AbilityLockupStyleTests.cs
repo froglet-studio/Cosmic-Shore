@@ -236,8 +236,11 @@ namespace CosmicShore.Tests
             // style says how WIDE the row it lays out ends up. The widest row the fleet authors is
             // read from the view's own two display orders rather than typed, so adding a core
             // ability tightens this automatically instead of quietly invalidating it.
+            // The flight moves (the drift, the barrel roll) are one card on any hull: a hull binds at
+            // most one of them (VesselHUDView.FlightMoveAbilities).
             int cards = VesselHUDView.AbilityDisplayOrder.Length +
-                        VesselHUDView.CoreAbilityDisplayOrder.Length;
+                        VesselHUDView.CoreAbilityDisplayOrder.Length -
+                        (VesselHUDView.FlightMoveAbilities.Length - 1);
             float rowWidth = (cards - 1) * s.CardPitch + s.PlateWidth;
             float fromRightEdge = rowWidth + s.RowMarginRight;
 

@@ -288,6 +288,35 @@ slack). But with the fleet's AI nose lag a faster Manta misses more mouths: at a
 offline AI took ten levels at I4 and finished 1 of 6 races, against 6 of 6 without (§5.1). It
 waits on the AI nose rate (`Docs/AI_SYSTEM/AI_PLAN.md` decision 7).
 
+### 4b. The garden ruins (I4, 2026-11-24) - NOT compiled in Unity, NOT flown
+
+Yash, 2026-11-24: the environment update Spearline got, on every Time game. At I4 only, Redline's lap carries
+Spearline's garden ruins (`SPEARLINE.md` section 2a): a pergola, a flower head, vines, a thick wall with a doorway, a
+tunnel, a 3D maze of bars and a turning wheel (25 deg/s, posed from the network clock), one on each of the seven legs
+between gates, none on the leg that closes the lap. Decoration only: plain prisms with the game's own rules. Nothing
+reads or writes a vessel, the course and the Time crystals are unchanged, and the rivals do not steer for or round them.
+
+- **The generator is Spearline's, called and not copied** (`SpearlineRuins.Lay` / `Pose` / `ForIntensity`). Its rules
+  hold here unchanged: every prism at least 8 u thick, a 60 u clear lane down each leg's line (wider than the 44 u
+  mouth), nothing within 120 u of a gate, only legs of 380 u or more (every Redline I4 leg is 466 u or more).
+- **Redline's own part** is `RedlineRuins.Hide` (`Assets/_Scripts/Controller/Arcade/Redline/RedlineRuins.cs`): a ruin
+  prism is left out within 40 u of a Time crystal's place (I4 sets them 70 u inside the apexes, just outside the lane)
+  or within 410 u of the cell's centre (the nucleus body is 392 u), and a wheel whose sweep reaches a crystal is left
+  out whole. The hook is `RedlineController.Ruins.cs` (`LayRuins` from `OnCourseRaised`, `TickRuins` from `LateUpdate`,
+  `ClearRuins` on despawn and before each lay).
+- **Colours:** `ruinDomains` on the controller, Blue, Gold, Jade in turn, one colour a ruin; Ruby is left to the mode's
+  name and its heat. Empty = Jade. The prism is `ruinPrefab` (SpawnablePrism, written into the scene by
+  `author_redline_assets.py`); empty = no ruins.
+- **Measured headless** (`bash Tools/Build/redline_course_harness/run.sh --ruins 400`, 400 seeds): a mean of 797
+  standing prisms a lap (682 to 881), 15 left out a lap, 6.83 of 7 legs carry a ruin, a wheel stands on 137 of 400
+  courses and is left out on 67 for a crystal. `RedlineRuinsTests` (9 tests) hold the lane, the gate margin, the
+  crystals, the nucleus, the counts and none below I4; the harness self-test has two negative controls for them.
+- **Open, for the first flight:** the clear lane follows the generator's curve through the gates along their axes,
+  and the AI's race line aims straight at the next mouth's centre. A mean of 32 standing prisms a lap (4%) lie within
+  30 u of a leg's straight chord, so a Manta that cuts a leg straight may clip a ruin's edge. Whether a Soaring Manta
+  (a 252 u circle at 1104 u/s) really flies inside the 60 u lane is unmeasured; if rivals or pilots plough the ruins,
+  the fix is in what Redline hides (a chord corridor in `RedlineRuins.Hide`), not in the generator.
+
 ## 5. The AI Soars — a vessel change, not a mode one
 
 `AIPilot` writes the stick and the throttle and nothing else, so before this an AI Manta could

@@ -162,6 +162,9 @@ namespace CosmicShore.Gameplay
             return res.MaxAmount / denom;
         }
 
+        /// <summary>The seed grows a wall of prisms: an AI's press must run on every peer (<see cref="ShipActionSO.AutopilotPressTravels"/>).</summary>
+        public override bool AutopilotPressTravels => true;
+
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<SeedAssemblerActionExecutor>()?.StartSeed(this, vesselStatus);
 

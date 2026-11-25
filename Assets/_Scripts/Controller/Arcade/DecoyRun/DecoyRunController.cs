@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>Every peer lays the same chalk</b> from the broadcast rings (<see cref="DecoyRunCourse.ChalkFor"/>), so
     /// nothing new is replicated. Super-shielded mass is never dragged by the net, so the jacks cannot herd the chalk away.</para>
     /// </summary>
-    public class DecoyRunController : GateRaceController, IPlayerSpawnLine, IJacksRaceCoach
+    public partial class DecoyRunController : GateRaceController, IPlayerSpawnLine, IJacksRaceCoach
     {
         [Header("Decoy Run")]
         [Tooltip("The prism every chalk dot is laid from: the environment prism (SpawnablePrism). Authored by " +
@@ -55,6 +55,7 @@ namespace CosmicShore.Gameplay
             _jacksOf.Clear();
             _waitingSince.Clear();
             ClearChalk();
+            ClearRuins();
             base.OnNetworkDespawn();
         }
 
@@ -74,6 +75,7 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearChalk();
+            ClearRuins();
             _settings = DecoyRunCourse.ForIntensity(Intensity);
             _settings.RingCount = _course.Count;
             if (!chalkPrefab)
@@ -91,9 +93,10 @@ namespace CosmicShore.Gameplay
                     _chalkRoot, new Trail(), ChalkOwnerId, watchForReveal: true);
                 if (prism) _chalk.Add(prism);
             }
+            LayRuins();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[DecoyRun] intensity {Intensity}: {_course.Count} rings in groups of {_settings.Group}, " +
-                $"{(_settings.TiltEachGroup ? "a flat per group" : "one flat")}, {_chalk.Count} chalk dots.");
+                $"{(_settings.TiltEachGroup ? "a flat per group" : "one flat")}, {_chalk.Count} chalk dots, {_ruinPrisms.Count} ruin prisms.");
         }
 
         void ClearChalk()

@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     /// keeps a handful of collectable omni crystals in the cytoplasm, so the ammunition for that
     /// is on the course rather than authored by this mode.</para>
     /// </summary>
-    public class SwitchbackController : GateRaceController
+    public partial class SwitchbackController : GateRaceController
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
@@ -415,6 +415,7 @@ namespace CosmicShore.Gameplay
             _blastAI?.Dispose();
             _blastAI = null;
             if (planAI) BuildBlastAI(layout);
+            LayRuins(layout);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Switchback] BLAST RUN intensity {intensity}: {_course.Count} gates, {layout.Stations.Count} blocked gates, " +
@@ -504,6 +505,7 @@ namespace CosmicShore.Gameplay
             _rays = null;
             _hits?.Dispose();
             _hits = null;
+            ClearRuins();
             if (_blastLayout != null)
             {
                 BlastRunKeyCrystals.Clear();

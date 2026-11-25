@@ -76,6 +76,10 @@ htr.author(dict(
         "BreachCourse":       f"{MODE_DIR}/BreachCourse.cs",
         "BreachCourseSource": f"{MODE_DIR}/BreachCourseSource.cs",
         "BreachCourseTests":  "Assets/_Scripts/Tests/Editor/BreachCourseTests.cs",
+        # The I4 garden ruins (BREACH.md 3a): Spearline's generator, called with Breach's rings.
+        "BreachRuins":            f"{MODE_DIR}/BreachRuins.cs",
+        "BreachController.Ruins": f"{MODE_DIR}/BreachController.Ruins.cs",
+        "BreachRuinsTests":       "Assets/_Scripts/Tests/Editor/BreachRuinsTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/BREACH.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",

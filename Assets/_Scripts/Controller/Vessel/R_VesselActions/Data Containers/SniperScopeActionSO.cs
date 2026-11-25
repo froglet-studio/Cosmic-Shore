@@ -89,6 +89,10 @@ namespace CosmicShore.Gameplay
         public float AfterimageRange => afterimageRange;
         public Material AfterimageMaterial => afterimageMaterial;
 
+        /// <summary>The cloak asks the scope whether its trigger is the cloak's, on every peer, so an AI's scope must be
+        /// raised and lowered on every peer too, or a remote copy cloaks (and walls) where the host's scoped AI did not.</summary>
+        public override bool AutopilotPressTravels => true;
+
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<SniperScopeActionExecutor>()?.Engage(this, vesselStatus);
 

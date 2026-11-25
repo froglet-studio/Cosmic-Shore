@@ -7,6 +7,8 @@
 #   bash Tools/Build/thornline_course_harness/run.sh                 # every test; exit 0 = all passed
 #   bash Tools/Build/thornline_course_harness/run.sh --self-test     # ...plus negative controls that must FAIL
 #   bash Tools/Build/thornline_course_harness/run.sh --sweep         # the ladder and the race clock per intensity
+#   bash Tools/Build/thornline_course_harness/run.sh --ruins         # the I4 ruins per seed (THORNLINE.md 2a)
+#   bash Tools/Build/thornline_course_harness/run.sh --ruins-self-test   # the ruins' negative controls alone
 #   bash Tools/Build/thornline_course_harness/run.sh --ai [--pack] [--seeds N] [--check]
 #                                                                    # AI Shrikes race whole courses (RaceReplica.cs)
 #
@@ -41,7 +43,7 @@ build() {   # $1 = course source, $2 = output name
     "$HERE/Runner.cs" "$HERE/RaceReplica.cs" \
     "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
     "$A/Controller/AI/NoseLeadSteering.cs" "${PLAN:-$A/Controller/Arcade/Thornline/ThornlineAIPlan.cs}" \
-    "$1" "$A/Tests/Editor/ThornlineCourseTests.cs" "$A/Tests/Editor/ThornlineAIPlanTests.cs"; do
+    "$1" "$A/Tests/Editor/ThornlineCourseTests.cs" "$A/Tests/Editor/ThornlineAIPlanTests.cs"     "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" "$A/Controller/Arcade/Spearline/SpearlineRuins.cs"     "${RUINS:-$A/Controller/Arcade/Thornline/ThornlineRuins.cs}" "$A/Tests/Editor/ThornlineRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -57,10 +59,29 @@ run() { "$DOTNET" "$(native "$OUT/$1.dll")" "${@:2}"; }
 build "$COURSE" thornline
 case "${1:-}" in
   --sweep)  run thornline --sweep; exit 0 ;;
+  --ruins)  run thornline --ruins; exit 0 ;;
   --ai)     shift; set +e; run thornline --ai "$@"; exit $? ;;
   --read)   shift; run thornline --read "$@"; exit 0 ;;
   --export) run thornline "$@"; exit 0 ;;
 esac
+
+# 2026-11-24, the I4 ruins (THORNLINE.md 2a): the lane list's own controls. Each must fail a ThornlineRuinsTests test
+# (not just any test), so they hold whatever the course's tests say. Alone: run.sh --ruins-self-test.
+mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$A/Controller/Arcade/Thornline/ThornlineRuins.cs" > "$OUT/ThornlineRuins_neg.cs"
+  grep -q "$3" "$OUT/ThornlineRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  RUINS="$OUT/ThornlineRuins_neg.cs" build "$COURSE" neg
+  set +e; run neg > "$OUT/neg.txt"; set -e
+  local n; n=$(grep -c '^FAIL ThornlineRuinsTests' "$OUT/neg.txt" || true)
+  if [ "$n" -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($n failing ruin test(s))"
+}
+ruin_controls() {
+  mutate_ruins "bare stretches long enough to carry a ruin" 's/public const float MaxPiece = 360f;/public const float MaxPiece = 800f;/' 'MaxPiece = 800f'
+  mutate_ruins "a ruin on the first leg, under the start" 's/if (k <= 0 || k >= legs) return false;/if (k != 0) return false;/' 'if (k != 0) return false;'
+  mutate_ruins "the snipe lines left out of the lanes" 's/if (k + 2 <= legs && ThornlineCourse.IsSkipBend(k + 1, legs, course.SkipBends))/if (false)/' 'if (false)'
+}
+if [ "${1:-}" = "--ruins-self-test" ]; then ruin_controls; exit 0; fi
 
 set +e; run thornline > "$OUT/result.txt"; rc=$?; set -e
 cat "$OUT/result.txt"
@@ -110,3 +131,4 @@ ai_claims "centre aim in a pack (no lanes)" 1 --pack --centre
 grep -q "  PitchScaler: 60$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab" && grep -q "  YawScaler: 40$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab"   && grep -q "  RollScaler: 15$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab" && grep -q "  restrictedTurnMultiplier: 3$" "$ROOT/Assets/_Prefabs/Spacevessels/Shrike.prefab"   && grep -q "  undockPush: 8$" "$ROOT/Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset"   && grep -q "float _maxDistance = 50f;" "$ROOT/Assets/_Scripts/Controller/AI/AIPilot.cs" && grep -q "aggressiveness = 100f;" "$ROOT/Assets/_Scripts/Controller/AI/AIPilot.cs"   && grep -q "gain \* VesselTransformer.RotationFollowRate / noseFollowRate" "$ROOT/Assets/_Scripts/Controller/AI/AIPilot.cs"   || { echo "the replica's kit numbers no longer match Shrike.prefab / ShrikeConfig.asset / AIPilot.cs"; exit 1; }
 echo "replica kit numbers match the prefab, the config and AIPilot"
 echo "thornline_course_harness self-test: ok"
+ruin_controls

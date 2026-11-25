@@ -195,8 +195,9 @@ namespace CosmicShore.Gameplay
                     _bufCutNow = new bool[seal.Count];
                 }
             }
+            LayRuins();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
-                $"[Spearline] intensity {Intensity}: {_course.Count} rings, {_sealOf.Count} sealed, {_sealPrisms.Count} seal prisms.");
+                $"[Spearline] intensity {Intensity}: {_course.Count} rings, {_sealOf.Count} sealed, {_sealPrisms.Count} seal prisms, {_ruinPrisms.Count} ruin prisms.");
         }
 
         Prism LaySealPrism(int i, bool forReveal)
@@ -293,6 +294,7 @@ namespace CosmicShore.Gameplay
             }
 
             TickFeedback();
+            TickRuins();
 
             if (_sealPrisms.Count == 0 || !sealPrefab) return;
             float now = Time.time;
@@ -353,6 +355,7 @@ namespace CosmicShore.Gameplay
             _sealOf.Clear();
             _closedPasses.Clear();
             _regrowCursor = 0;
+            ClearRuins();
             if (_sealRoot) Destroy(_sealRoot.gameObject);
             _sealRoot = null;
         }

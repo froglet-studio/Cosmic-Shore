@@ -920,6 +920,7 @@ MonoBehaviour:
     Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
   sightReloadingScale: 0.35
   rivalThornGlow: 0.35
+  ruinDomains: 010000000200000004000000
   gateThreadedEvent:
     Guid:
       Data1: 1800078172

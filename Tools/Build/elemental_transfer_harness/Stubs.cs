@@ -164,5 +164,13 @@ namespace CosmicShore.ScriptableObjects
         public CosmicShore.Gameplay.SkimmerCrystalEffectSO[] CollectionEffects => null;
         public CosmicShore.Gameplay.Crystal GetPrefab(CosmicShore.Data.Element element) => null;
         public static ElementalCrystalSetSO Load() => null;
+        public const float CrystalWorldScale = 3.55f;   // the ejector's crystal size (type-checked only)
+    }
+
+    // Assets/_Scripts/ScriptableObjects/ColorTrace.cs (VesselSilenceConfigSO's fallback danger colour).
+    public static class ColorTrace
+    {
+        public const string Ui = "ui", World = "world";
+        public static UnityEngine.Color Retrace(string role, UnityEngine.Color authored) => authored;
     }
 }

@@ -132,6 +132,10 @@ namespace CosmicShore.Editor
         {
             error = null;
             if (_state is { active: true }) { error = "a smoke run is already in progress"; return false; }
+            // Every entry point, not the menu alone: a run started from the command line or the Unity CLI while the
+            // editor was playing reached RunNext, whose EditorSceneManager.OpenScene throws in Play mode, after the
+            // run had been planned and the offline preference overwritten.
+            if (EditorApplication.isPlayingOrWillChangePlaymode) { error = "the editor is in Play mode: leave Play mode first"; return false; }
             var config = AssetDatabase.LoadAssetAtPath<ModeSmokeConfigSO>(configPath);
             if (config == null) { error = "no ModeSmokeConfigSO at " + configPath; return false; }
 

@@ -76,7 +76,8 @@ def flower(element, size):
     petal = petal.resize((max(1, int(petal.width * ph / petal.height)), ph), Image.LANCZOS)
     for i in range(4):
         rot = petal.rotate(-90 * i, expand=True, resample=Image.BICUBIC)
-        # Each petal points outward from the centre: place its base at the centre.
+        # Each petal sits on the flower's outward axis with its apex toward the centre (the sprite draws the petal
+        # in its upper half, apex down; check_element_petals.py holds that).
         dx = (size - rot.width) // 2 + int(math.cos(math.radians(-90 + 90 * i)) * size * 0.22)
         dy = (size - rot.height) // 2 + int(math.sin(math.radians(-90 + 90 * i)) * size * 0.22)
         canvas.alpha_composite(rot, (dx, dy))

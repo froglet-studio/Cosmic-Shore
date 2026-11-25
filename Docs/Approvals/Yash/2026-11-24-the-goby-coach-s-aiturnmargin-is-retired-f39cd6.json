@@ -1,0 +1,20 @@
+{
+  "id": "2026-11-24-the-goby-coach-s-aiturnmargin-is-retired-f39cd6",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-24T18:02:54+00:00",
+  "area": "time_ai_search.py (Goby coach)",
+  "summary": "The Goby coach's aiTurnMargin is retired from the Goby search's fields and defaults (the Goby no longer cruises, so it has no turning circle).",
+  "why": "Garrett 2026-11-24: the Goby never flies",
+  "branch": "claude/goby-perch-only",
+  "lane": "compute",
+  "commit": "bd4f17bed",
+  "loop": {
+    "vessels": [
+      "Goby"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

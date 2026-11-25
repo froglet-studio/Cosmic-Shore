@@ -138,6 +138,9 @@ button{font:inherit;color:inherit}
 .ab .i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:transparent;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .3s var(--ease)}
 .ab .i img,.ab .i .ico{width:58px;height:58px;object-fit:contain}
 .ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2;min-height:2.4em}
+/* a vessel dynamic's tile carries its stick as a badge where an element card carries nothing (Shombith 2026-11-24) */
+.ab .i{position:relative}.ab .stk{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--cta);color:var(--cta);font:600 10px/22px var(--body,inherit);text-align:center}
+.abrow:has(.ab:nth-child(6)){gap:8px}.abrow:has(.ab:nth-child(6)) .ab{width:80px}.abrow:has(.ab:nth-child(6)) .ab .i{width:72px;height:72px}.abrow:has(.ab:nth-child(6)) .ab .i img{width:50px;height:50px}
 .ab:hover{transform:translateY(-4px)}
 .ab[aria-pressed="true"]{transform:translateY(-8px)}
 .ab[aria-pressed="true"] .i{box-shadow:inset 0 0 0 2px var(--sel)}
@@ -154,6 +157,9 @@ button{font:inherit;color:inherit}
 .shull svg{width:100%;height:100%;display:block}
 @keyframes fly{0%{transform:translateX(-60px)}100%{transform:translateX(720px)}}
 .shull.low{top:40%}
+/* a vessel dynamic's scene: the hull rolls about its own nose while it slides sideways off the lane and back (the barrel roll) */
+.shull .rl{display:block;width:100%;height:100%;animation:roll 3.2s var(--ease) infinite}
+@keyframes roll{0%,8%{transform:translateY(0) rotateX(0)}40%{transform:translateY(-34px) rotateX(360deg)}48%{transform:translateY(-34px) rotateX(360deg)}82%,100%{transform:translateY(0) rotateX(720deg)}}
 .crys{position:absolute;left:52%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border:2px solid var(--ink);transform:rotate(45deg);animation:crys 3.2s var(--ease) infinite}
 @keyframes crys{0%,40%{transform:translateX(0) rotate(45deg) scale(1);opacity:1}52%{transform:translateX(12px) rotate(45deg) scale(1.35);opacity:1}62%,100%{transform:translateX(14px) rotate(45deg) scale(0);opacity:0}}
 .plus{position:absolute;left:54%;top:26%;font-weight:600;font-size:14px;color:var(--sel);opacity:0;animation:plus 3.2s var(--ease) infinite}
@@ -534,12 +540,14 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
       D.elements.forEach(function(el){ var e = v.elements[el]; if(e) out.push({key:"el:" + el, el:el, e:e, name:e.open ? "Open slot" : e.ability}); });
     }
     if(v.omni) out.push({key:"omni", el:"Omni", omni:v.omni, name:(v.omni.words && v.omni.words.ability) || v.omni.label || "Omni crystal"});
+    (v.dynamics || []).forEach(function(d, i){ out.push({key:"dyn:" + i, el:"Vessel dynamic", dyn:d, name:d.ability}); });
     return out;
   }
   function rowOf(v, el){ return v.controls ? v.controls.rows.filter(function(r){ return r.element === el; })[0] : null; }
   function pressable(s){ return s && s !== "no button" && s !== "passive"; }
   /* the gesture, from the ability's own trigger words (abilities.json, each entry citing its source) */
   function gesture(p, r){
+    if(p.dyn) return "hold";
     var w = p.e && p.e.words || p.omni && p.omni.words || {};
     var t = String(w.trigger || "").toLowerCase();
     if(!r || !(pressable(r.pad) || pressable(r.pc) || pressable(r.touch))) return "passive";
@@ -553,6 +561,7 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
   /* a scene of the ability happening, by its element, on the 3.2 s clock its devices press on */
   function scene(el){
     var hull = '<span class="shull' + (el === "Space" || el === "Time" ? ' low' : '') + '" style="color:var(--ink)">' + HULL_SVG + '</span>', body = '', n;
+    if(el === "Vessel dynamic") return '<div class="stage" aria-hidden="true"><span class="lane"></span><span class="shull" style="color:var(--ink)"><span class="rl">' + HULL_SVG + '</span></span></div>';
     if(el === "Charge") body = '<span class="crys"></span><span class="plus">+ petals</span>' + hull;
     else if(el === "Mass"){ body = '<span class="ringwrap">'; for(n = 0; n < 360; n += 45) body += '<i class="blk" style="--a:' + n + 'deg"></i>'; body += '</span><span class="streak"></span>' + hull; }
     else if(el === "Space"){ body = '<span class="prow">'; for(n = 0; n < 6; n++) body += '<span class="pr" style="--d:' + (0.42 * n + 0.15).toFixed(2) + 's"><i></i><b></b></span>'; body += '</span>' + hull; }
@@ -567,6 +576,12 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
   function devices(v, p){
     var r = p.e ? rowOf(v, p.el) : null, g = gesture(p, r), cells;
     if(p.doc) cells = [["CONTROLLER", '<span class="kc">Seat</span>', "Seat control"], ["KEYBOARD", '<span class="kc">Seat</span>', "Seat control"], ["PHONE", '<span class="kc">Seat</span>', "Seat control"]];
+    else if(p.dyn){
+      var dr = (v.controls ? v.controls.rows.filter(function(x){ return x.action === p.dyn.ability && x.detail === "vessel dynamic"; })[0] : null) || {};
+      cells = [["CONTROLLER", dr.padArt ? img(dr.padArt, p.dyn.pad, "pp") : '<span class="kc pp">' + esc(p.dyn.pad || "-") + '</span>', p.dyn.pad || "No button"],
+               ["KEYBOARD", '<span class="kc kp">' + esc(p.dyn.pc || "-") + '</span>', p.dyn.pc || "No key"],
+               ["PHONE", '<span class="kc" style="opacity:.5">-</span>', p.dyn.touch || "No touch"]];
+    }
     else if(g === "passive"){
       var how = p.omni ? "Fly into an omni crystal" : "Just fly";
       cells = [["CONTROLLER", '<span class="ph dr" style="width:56px"><span class="th"></span><span class="th"></span></span>', how], ["KEYBOARD", '<span class="kc dr" style="opacity:.6">W A S D</span>', how], ["PHONE", '<span class="ph"><span class="th dr"></span><span class="th dr"></span></span>', how]];
@@ -584,12 +599,14 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
   function iconOf(p, size){
     if(lv5 && hasL5(p)){ var u = p.e.upgrade, t5 = (p.e.words && p.e.words.tint) || {}; return ico(u.icon, u.layers, p.name + " level 5", t5.rest); }
     if(p.omni) return p.omni.icon ? ico(p.omni.icon, p.omni.layers, p.name) : img(p.omni.mark, p.name);
+    if(p.dyn) return img(p.dyn.icon, p.name);
     if(p.doc) return flower(p.el, 5, "big");
     var e = p.e, tint = (e.words && e.words.tint) || {};
     return e.icon ? ico(e.icon, e.layers, p.name, tint.rest) : flower(p.el, 5, "big");
   }
   function trigOf(p){
     if(p.doc) return "Seat control";
+    if(p.dyn) return p.dyn.trigger || "Vessel dynamic";
     var w = p.e ? p.e.words || {} : p.omni.words || {};
     return w.trigger || (p.omni ? "Fly into an omni crystal" : "Passive");
   }
@@ -622,11 +639,11 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
         '</div>' + (v.cards.length ? '<a class="cta" href="#missions" data-jump="missions">Play the ' + esc(crewName(v)) + '</a>' : '') + '</div>' +
       (sel ? '<div class="hud move"><div class="mhead"><span class="mic">' + iconOf(sel) + '</span><span class="disp">' + esc(lv5 && sel.e && sel.e.upgrade.label ? sel.e.upgrade.label : sel.name) + '</span><span class="trig">' + esc(trigOf(sel)) + '</span><span class="lab">' + GWORD[dv.g] + '</span>' + (sel.e && !sel.e.open ? '<button type="button" class="l5tog" id="l5tog" aria-pressed="' + lv5 + '" aria-label="Show the level 5 upgrade"' + (hasL5(sel) ? '' : ' title="Level 5 reuses this icon (lockup bloom and plate lift)"') + '>Level 5</button>' : '') + '</div>' + scene(sel.el) + dv.html + '</div>' : '') +
       '<div class="abrow" role="group" aria-label="Abilities">' + ps.map(function(p){
-          return '<button type="button" class="ab" data-pick="' + p.key + '" aria-pressed="' + (p === sel) + '"><span class="i">' + iconOf(p) + '</span><small>' + esc(p.name) + '</small></button>'; }).join("") + '</div>' +
+          return '<button type="button" class="ab" data-pick="' + p.key + '" aria-pressed="' + (p === sel) + '"><span class="i">' + iconOf(p) + (p.dyn && /right stick/i.test(p.dyn.pad || "") ? '<span class="stk" title="Right stick">R</span>' : '') + '</span><small>' + esc(p.name) + '</small></button>'; }).join("") + '</div>' +
       '</section>';
 
     /* abilities, in full */
-    html += '<div class="sec"><span class="disp">Abilities</span><span class="lab">' + (v.omni ? "The four elements and the omni crystal" : "The four elements") + ' &middot; pick one to play its move above</span><span class="rule"></span></div>';
+    html += '<div class="sec"><span class="disp">Abilities</span><span class="lab">' + (v.omni ? "The four elements and the omni crystal" : "The four elements") + ((v.dynamics || []).length ? " and its vessel dynamics" : "") + ' &middot; pick one to play its move above</span><span class="rule"></span></div>';
     var lastSeat = -1;
     ps.forEach(function(p){
       if(v.seats && p.seat != null && p.seat !== lastSeat){
@@ -685,6 +702,10 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
       does = '<span><span class="k">What it does</span><p>' + esc(p.doc.text || "A control of this seat, in " + file(v.seats.source) + ".") + '</p></span>';
       more = '<span><span class="k">Seat control</span><p style="font-size:14px;color:var(--soft)">Read from ' + esc(file(v.seats.source)) + '.</p></span>';
       l5 = '<span class="l5"><span class="k">Level 5</span><p>The ability map carries one ability per element for the hull; this seat ability has no level 5 of its own.</p></span>';
+    } else if(p.dyn){
+      does = '<span><span class="k">What it does</span><p>' + esc(p.dyn.does) + '</p></span>';
+      more = '<span><span class="k">Elements</span><p style="font-size:15px">No element changes this: it is how the ' + esc(v.name) + ' flies.</p></span>';
+      l5 = '<span class="l5"><span class="k">Level 5</span><b>No level 5</b><p>A vessel dynamic has no level-5 upgrade.</p></span>';
     } else if(p.omni){
       var ow = p.omni.words || {};
       does = '<span><span class="k">What it does</span><p>' + esc(ow.does || (p.omni.effects.length ? "Its crystal effects: " + p.omni.effects.join(", ") + "." : "No omni crystal effect of its own.")) + '</p></span>';

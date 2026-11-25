@@ -102,5 +102,11 @@ namespace CosmicShore.Data
         // can fall, so a mode scored on it should be TIMED ("most standing at the whistle")
         // rather than a first-past-the-post race - Tapestry is.
         VolumeRemaining = 12,
+        // Petals opposing pilots lost because of this pilot - strips, steals and the burns of the
+        // danger prisms it laid (reads IRoundStats.PetalsTaken, fed by the per-attacker petal ledger,
+        // PetalLedger). The balancing plan's score (Docs/ElementalAbilitySystem/SILENCE.md §6): one
+        // point per petal, so the Charge arcade games and Broadside can score on what was really
+        // taken rather than on hits landed.
+        PetalsTaken = 13,
     }
 }

@@ -379,6 +379,17 @@ namespace CosmicShore.Data
         BrittleStarTimeRollHint = 418,      // once, at the start of I4: roll and pull to hold Speed through the coil
         BrittleStarTimeSpeedDark = 419,     // once, a dark start (no Speed Mode, no ring, 6 s in): light Speed Mode
 
+        // Breakwater, the Sparrow's Time game (_Scripts/Controller/Arcade/BREAKWATER.md, "The heat"). Its race beats are
+        // the shared 129-132 + 30. Posted to the LOCAL pilot only (BreakwaterController.Heat). 430-439 are its band
+        // (2026-11-23); 437-439 are free.
+        BreakwaterHint = 430,           // once, at the start: thread the eye, or fire and open a door
+        BreakwaterEyeThread = 431,      // once, the first thread through the eye
+        BreakwaterHotThread = 432,      // once, the first thread through the eye with the afterburner lit
+        BreakwaterStreak = 433,         // a streak of eyes is called (3, 7, 14, then every 14): {0} = the streak
+        BreakwaterLapSplit = 434,       // a lap completed: {0} = the lap, {1} = its time in seconds
+        BreakwaterBestLap = 435,        // a lap beat this race's best: {0} = the lap, {1} = its time in seconds
+        BreakwaterCleanLap = 436,       // every station of a lap threaded through the eye: {0} = the lap
+
         // The Meerkat's games (Docs/ElementalLoop/GAME_KIT_ROSTER.md rows 15-17). Their race beats are the shared 128-130
         // (DomainRaceToasts; Warren samples its own lead change, 130, because a timed mode has no target). Posted to the
         // LOCAL pilot only.

@@ -12,7 +12,7 @@ using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
-    public class SkimRaceController : MultiplayerDomainGamesController
+    public partial class SkimRaceController : MultiplayerDomainGamesController
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
@@ -110,6 +110,7 @@ namespace CosmicShore.Gameplay
         {
             CancelSeedPoll();
             ReleaseArenaBuildAnnouncement();
+            ClearRuins();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
         }
@@ -186,8 +187,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTaskVoid SpawnTrackEarly()
         {
-            // Small delay to ensure all clients have joined and intensity is synced
-            await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
+            // Small delay to ensure all clients have joined and intensity is synced. Bound to this
+            // controller: a watchdog-ended match tears the scene down inside the wait, and an
+            // unbound continuation kept the dead controller, its players and their trails
+            // reachable until the delay came due (Port/docs/AI_TRAINING.md, "Long runs").
+            if (await UniTask.Delay(1500, DelayType.UnscaledDeltaTime, cancellationToken: destroyCancellationToken)
+                             .SuppressCancellationThrow()) return;
             if (!IsServer || _trackSpawned) return;
 
             int generatedSeed = CourseSeedOverride.Pick(seed);
@@ -237,6 +242,8 @@ namespace CosmicShore.Gameplay
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
             _trackSpawned = true;
+            // The garden ruins (I4) stand round the ribbon just laid, inside the arena-build bracket.
+            LayRuins();
             // The build has executed — laid prisms are now covered by the gate's grow watch.
             ReleaseArenaBuildAnnouncement();
         }
