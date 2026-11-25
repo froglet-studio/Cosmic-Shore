@@ -91,6 +91,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Total axial length the tube spans, from the first ring to the last.</summary>
         public float Length => (Rings - 1) * RingSpacing;
+        /// <summary>It lays a ring of danger prisms, which every peer lays for itself: an AI's press must run on every peer (<see cref="ShipActionSO.AutopilotPressTravels"/>).</summary>
+        public override bool AutopilotPressTravels => true;
+
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<SquirrelTubeActionExecutor>()?.Begin(this, vesselStatus);

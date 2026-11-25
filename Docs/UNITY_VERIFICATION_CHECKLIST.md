@@ -302,6 +302,46 @@ adding time score from the menu. Reference compile only.
 - [ ] A time-scored mode (Freestyle or any `ScoringModes.TimePlayed` card): quit to the menu mid-turn, then watch
       `GameData.asset`'s RoundStatsList for ten seconds: no Score moves. A normal turn end still stops the scorers.
 
+## 🔴 2026-10-26 — ResourceSystem.Reset tolerates Unity's edit-mode Reset message (`cece/exciting-thompson-wdi3wm`, salvaged from `cece/inspiring-einstein-k6syi5` a109b25848) (unverified: no Unity CLI in the session)
+
+`ResourceSystem.Reset()` shares its name with Unity's edit-mode `Reset` message, which the editor sends the instant
+the component is added, before `Resources` exists. The method now returns when `Resources` is null.
+
+- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
+- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
+
+## 🔴 2026-10-26 — Wanderway conveyor: recycled shielded prisms re-theme after Initialize (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/prism-clock-followup-prompts-two-mhvad9` bbb47c111b) (unverified: no Unity CLI in the session)
+
+`Microscene.RearrangeIntoAsync` used to clear a prism's kind before `Prism.Initialize`, while it was still
+"created" from its last life, so every recycled shielded prism shattered and played `ShieldDeactivate` over its
+grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
+
+- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
+- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
+
+## 🔴 2026-10-26 — Time crystal: no sound through a muted SFX setting (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/sparrow-crystal-sound-bug-bnocj6`) (unverified: no Unity CLI in the session)
+
+`CrystalTime.prefab` lost its two bare `StudioEventEmitter`s ("Creature colide" on TriggerEnter and ObjectDestroy).
+
+- [ ] Open the prefab: no missing-script or broken component on its root.
+- [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
+
+## 🔴 The Serpent's wall on every peer (2026-11-21, branch `claude/project-thread-nqfbgz`) — NOT EDITOR-VERIFIED
+
+Garrett's Brood Rush playtest: "the Serpent's wall was still not syncing". `unity_refcompile` (player and editor
+configs: 0 errors in the changed files; the remaining errors are this sandbox's missing packages) and the gates ran;
+no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_VesselActions/SERPENT_SEED_WALL.md`
+"Multiplayer"; protocol 41 (both machines need this build).
+
+- [ ] EditMode `SerpentWallSyncTests` pass (the flag table: 29 cases, plus 3 tests).
+- [ ] Host + client, an AI Sparrow and an AI Squirrel: the client sees the Sparrow's shots break prisms and the Squirrel's tube rings, where the host does.
+- [ ] MPPM, host + one client, Brood Rush with an AI Serpent on the host: when the AI cloaks, the client sees its
+  hull vanish and its wall grow at the same place as the host's; the AI's walls are on both screens.
+- [ ] Host + two clients, client A flies the Serpent and stops (the stance): client B sees A's trail stop and the held
+  wall grow; when A flies on, B's copy stops growing and stands.
+- [ ] An AI Serpent at Mass 8+ (crystals): its bricks are the same size on host and client.
+- [ ] Serpent Hood / Serpent Time, an AI that scopes: it never cloaks on the client while scoped on the host.
+
 ## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, NOT RUN IN EDITOR)
 
 Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"): one to three
@@ -21480,14 +21520,6 @@ errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
       at a constant 20 blows/s).
 - [ ] Other swarms (the research plans, the ecology swarm) show no new shields.
 
-## 🔴 2026-10-26 — ResourceSystem.Reset tolerates Unity's edit-mode Reset message (`cece/exciting-thompson-wdi3wm`, salvaged from `cece/inspiring-einstein-k6syi5` a109b25848) (unverified: no Unity CLI in the session)
-
-`ResourceSystem.Reset()` shares its name with Unity's edit-mode `Reset` message, which the editor sends the instant
-the component is added, before `Resources` exists. The method now returns when `Resources` is null.
-
-- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
-- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
-
 ## Rev 20 G: the arcade configure window - pedestals, LB / RB intensity, START (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 `Docs/MENU_REDESIGN_B.md` section 74; approved board `R20ConfigureG2` on the Menu Redesign B canvas. No Unity editor in
@@ -21510,18 +21542,6 @@ the cloud session. Proven offline: refcompile (player + editor OK), Amoebius bui
 - [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
 - [ ] Arena and Maelstrom windows are unchanged.
 
-- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
-- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
-
-## 🔴 2026-10-26 — Wanderway conveyor: recycled shielded prisms re-theme after Initialize (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/prism-clock-followup-prompts-two-mhvad9` bbb47c111b) (unverified: no Unity CLI in the session)
-
-`Microscene.RearrangeIntoAsync` used to clear a prism's kind before `Prism.Initialize`, while it was still
-"created" from its last life, so every recycled shielded prism shattered and played `ShieldDeactivate` over its
-grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
-
-- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
-- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
-
 ## Scoreboard D, team versus (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
@@ -21537,16 +21557,6 @@ No Unity editor in the session. Verified offline only: reference compile (player
 3. A free-for-all (every pilot on their own domain) and a 1v1. **Pass:** the Rev 8 ladder, exactly as before; no VS, no bar.
 4. 3v1. **Pass:** versus, the lone pilot's column shows one row.
 5. PLAY AGAIN / MAIN MENU, the rematch faces and the reward strip count-up all still work and nothing overlaps the columns.
-
-- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
-- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
-
-## 🔴 2026-10-26 — Time crystal: no sound through a muted SFX setting (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/sparrow-crystal-sound-bug-bnocj6`) (unverified: no Unity CLI in the session)
-
-`CrystalTime.prefab` lost its two bare `StudioEventEmitter`s ("Creature colide" on TriggerEnter and ObjectDestroy).
-
-- [ ] Open the prefab: no missing-script or broken component on its root.
-- [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
 
 ## Rev 24 Hangar, element flowers on the arcade cards, the AI difficulty row on every card, the now-playing card gone (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
