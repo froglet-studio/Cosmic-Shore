@@ -415,7 +415,7 @@ namespace CosmicShore.Tests
             string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
             Assert.IsTrue(shader.Contains("BlackHoleLensWave(") && shader.Contains("BlackHoleLensViewStretch("),
                 "the lens no longer draws the waves (the gravitational wave, the light shells, the view stretching).");
-            Assert.IsTrue(hlsl.Contains("squeeze += 0.14 * gwGlow") && hlsl.Contains("float3(1.0, 0.96, 0.86) * shellWash"),
+            Assert.IsTrue(hlsl.Contains("squeeze += 0.14 * gwGlow") && hlsl.Contains("_BHShellColour.rgb * shellWash"),
                 "the wave's crests, troughs or a shell's wash are gone.");
             string warp = File.ReadAllText(HlslPath);
             Assert.IsTrue(warp.Contains("PrismGravityWaveStrain(") && warp.Contains("_PrismGravityWaveParams"),

@@ -158,7 +158,7 @@ Three ways a wall stood on one machine only:
    wall ate prisms every client still drew loose. `ShipActionSO.AutopilotPressTravels` (true on
    `CloakSeedWallActionSO`, `SeedWallActionSO` and `SniperScopeActionSO`, whose scope the cloak
    asks) sends such a press through `R_VesselActionHandler.TrySendAutopilotAction`, an RPC pair that
-   runs it on every peer, named by where the input maps hold it (protocol 39). The fleet audit the
+   runs it on every peer, named by where the input maps hold it (protocol 41; claimed as 39, renumbered when it shipped). The fleet audit the
    same day flagged every other action an AI presses through the tape whose effect is prisms: the
    sniper round, the Sparrow's guns (`FireGunActionSO`, `FullAutoActionSO`, `SparrowModeSwitchingFireSO`;
    also the Honeyguide's Peck), the drift's trail (`DriftTrailActionSO`) and the Squirrel's tube

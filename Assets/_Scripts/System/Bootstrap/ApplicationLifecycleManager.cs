@@ -91,6 +91,12 @@ namespace CosmicShore.Core
         /// </summary>
         internal static Action QuitNow = DesktopPlatformServices.Quit;
 
+        /// <summary>
+        /// The process exit code the drained quit ends with. 0 unless a harness asked for a failure code
+        /// (<c>MultiplayerAutoPilot</c>): the drain's own quit used to end every run with 0.
+        /// </summary>
+        public static int QuitExitCode;
+
         void OnEnable()
         {
             SceneManager.sceneLoaded += HandleSceneLoaded;
@@ -145,7 +151,8 @@ namespace CosmicShore.Core
             }
 
             _quitApproved = true;
-            QuitNow();
+            if (QuitExitCode != 0 && !Application.isEditor) Application.Quit(QuitExitCode);
+            else QuitNow();
         }
 
         void OnApplicationPause(bool pauseStatus)

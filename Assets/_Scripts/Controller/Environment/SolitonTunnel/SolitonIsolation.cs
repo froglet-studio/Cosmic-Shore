@@ -52,6 +52,9 @@ namespace CosmicShore.Gameplay
 
         public static void Unregister(IOccupant occupant) => s_occupants.Remove(occupant);
 
+        /// <summary>Every hull that may be inside a tube (the lens asks which ride the tube a camera is in).</summary>
+        public static IReadOnlyList<IOccupant> Occupants => s_occupants;
+
         /// <summary>Cargo goes into <paramref name="tube"/> (a carried prism or crystal). Pair with <see cref="Unseal"/>.</summary>
         public static void Seal(Object cargo, object tube)
         {

@@ -66,6 +66,9 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsTransitioning => _isTransitioning;
 
+        /// <summary>True while the overlay covers any of the screen (the splash is up or fading).</summary>
+        public bool IsCovering => _fadeCanvasGroup != null && _fadeCanvasGroup.alpha > 0.01f;
+
         /// <summary>
         /// Fired after a scene finishes loading and the fade-in begins.
         /// </summary>

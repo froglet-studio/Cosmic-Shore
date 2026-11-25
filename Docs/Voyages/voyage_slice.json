@@ -2593,6 +2593,8 @@
   "HoldProgress": "HOLDING {to}: {seconds}",
   "Done": "JOB DONE",
   "Failed": "JOB LEFT UNDONE",
+  "WaypointSaved": "THE VOYAGE WAITS: PICK IT UP FROM THE HARBOUR",
+  "WaypointResumed": "VOYAGE RESUMED: ON TO {to}",
   "Stowed": "STOWED ABOARD",
   "Extracted": "DOCKED AT {to}: {count} FOUND ARTIFACTS ARE YOURS",
   "ArkLost": "THE ARK IS LOST",

@@ -12,7 +12,7 @@ using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
-    public class SkimRaceController : MultiplayerDomainGamesController
+    public partial class SkimRaceController : MultiplayerDomainGamesController
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
@@ -110,6 +110,7 @@ namespace CosmicShore.Gameplay
         {
             CancelSeedPoll();
             ReleaseArenaBuildAnnouncement();
+            ClearRuins();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
         }
@@ -237,6 +238,8 @@ namespace CosmicShore.Gameplay
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
             _trackSpawned = true;
+            // The garden ruins (I4) stand round the ribbon just laid, inside the arena-build bracket.
+            LayRuins();
             // The build has executed — laid prisms are now covered by the gate's grow watch.
             ReleaseArenaBuildAnnouncement();
         }

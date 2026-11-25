@@ -144,6 +144,7 @@ namespace CosmicShore.Gameplay
         Transform _skimmer;
         bool _skimmerSeated;
         NetMesh _net;
+        int _netLayer;
         float _netGrow;
         JacksMath.NetFrame _netShown;
         JacksNet.Swing _netTrail;
@@ -201,6 +202,7 @@ namespace CosmicShore.Gameplay
             int layer = HideReplacedRig();
             ResolveJacks(layer);
             HideSkimmer();
+            _netLayer = layer;
             _net = new NetMesh(this, layer);
         }
 
@@ -555,6 +557,13 @@ namespace CosmicShore.Gameplay
         void DrawNet()
         {
             if (_net == null) return;
+            // The net is a scene-root object (its vertices are in the world), so a scene unload can take it while this
+            // hull lives on: build it again instead of drawing into a destroyed renderer every frame.
+            if (!_net.Alive)
+            {
+                _net.Dispose();
+                _net = new NetMesh(this, _netLayer);
+            }
             bool want = _flying && _crew && _crew.Config && _jacks[0] != null && _jacks[1] != null;
             if (want)
             {
@@ -678,10 +687,13 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            /// <summary>False once the net's scene object was destroyed under it (the scene it was made in unloaded).</summary>
+            internal bool Alive => _renderer;
+
             internal void Hide()
             {
                 if (!_shown) return;
-                _renderer.enabled = false;
+                if (_renderer) _renderer.enabled = false;
                 _shown = false;
             }
 

@@ -99,6 +99,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("How bright the thorn a rival sits on glows in that rival's colour (0 = off).")]
         [SerializeField, Range(0f, 1f)] float rivalThornGlow = 0.35f;
 
+        [Header("Thornline - ruins (I4)")]
+        [Tooltip("The domain colours the ruins are laid in, one ruin after another down the course, so they read apart " +
+                 "from the thorns (Blue). Decoration (Yash, 2026-11-24). Empty = Blue, as the thorns.")]
+        [SerializeField] Domains[] ruinDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
 
         const string ThornOwnerId = "Thornline";
 
@@ -178,6 +183,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning("[Thornline] no thorn prefab on the controller - the race has nothing to sling to.");
             }
             RebuildPlanLists();
+            LayRuins(_thornScratch);   // before the chain is moved back to the cell below: the ruins are laid in the world
 
             // The crystals are measured cell-relative like the walk, so the chain is moved back to the cell first.
             Vector3 centre = ResolveCellCentre();
@@ -201,7 +207,7 @@ namespace CosmicShore.Gameplay
             RebuildPlanLists();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Thornline] intensity {Intensity}: {_thorns.Count} thorns ({settings.ThornSize:F0} u), " +
-                $"{settings.SkipBends} snipes, {_crystals.Count} Time crystals.");
+                $"{settings.SkipBends} snipes, {_crystals.Count} Time crystals, {_ruinPrisms.Count} ruin prisms.");
         }
 
         static int NearestLeg(List<Vector3> thorns, Vector3 p)
@@ -236,6 +242,7 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             TickFeedback();
+            TickRuins();
 
             float now = Time.time;
             if (now < _nextCheck) return;
@@ -317,6 +324,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _crystals.Count; i++)
                 if (_crystals[i].Crystal) Destroy(_crystals[i].Crystal.gameObject);
             _crystals.Clear();
+            ClearRuins();
             RebuildPlanLists();
         }
     }

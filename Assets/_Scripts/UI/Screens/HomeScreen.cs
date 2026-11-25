@@ -30,7 +30,13 @@ namespace CosmicShore.UI
         // Subscribed on enable and dropped on disable, so a Home disabled and re-enabled (the
         // freestyle round trip, a scene reload) keeps following the profile. It used to subscribe
         // once in Start and unsubscribe in OnDisable, which left it deaf after the first disable.
-        void OnEnable() => Subscribe();
+        void OnEnable()
+        {
+            // Rev 127 D (Docs/MENU_REDESIGN_B.md section 217): the pilot card's avatar is round, ringed and glowing,
+            // the same border every avatar wears.
+            AvatarRippleBorder.EnsureFor(avatarImage)?.ShowSelf();
+            Subscribe();
+        }
 
         void Subscribe()
         {

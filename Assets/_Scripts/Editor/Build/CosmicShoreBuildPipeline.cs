@@ -157,7 +157,7 @@ namespace CosmicShore.Editor
             {
                 PlayerSettings.SetIl2CppCompilerConfiguration(
                     standalone,
-                    development ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
+                    development && !HasFlag("-il2cppRelease") ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
             }
 
             // Desktop players must never inherit the mobile "keep the screen awake" behaviour or a

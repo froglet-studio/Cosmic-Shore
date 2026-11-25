@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Froglet Analytics - our own analytics server, replacing PostHog (Shombith, 2026-11-05).
+"""Froglet Analytics - our own analytics server (Shombith, 2026-11-05).
 
     python3 analytics_server.py init                 write ~/.froglet-analytics/config.json with fresh keys (once)
     python3 analytics_server.py serve                run the server (the VM runs it under systemd)
@@ -13,14 +13,11 @@
                                                      replaces are kept in <data_dir>/before-restore-<time>/)
     python3 analytics_server.py erase <player id>    delete everything about one player
     python3 analytics_server.py key read <name>      add a dashboard read key for a person (printed once)
-    python3 analytics_server.py import-posthog --project <id> [--days 365] [--dry-run]
-                                                     copy PostHog's history in, once (import_posthog.py; needs
-                                                     POSTHOG_PERSONAL_API_KEY with the query:read scope)
     python3 analytics_server.py --self-test          the tests (test_analytics_server.py)
 
 HTTP:
-    POST /batch/                 ingest, PostHog's own batch shape ({api_key, batch:[{event, properties, timestamp}]}),
-                                 so PostHogAnalyticsSink sends here once its config's host and key point at us
+    POST /batch/                 ingest ({api_key, batch:[{event, properties, timestamp}]}), the shape
+                                 FrogletAnalyticsSink sends
     POST /v1/batch               the same
     GET  /                       the console page (Tools/Analytics/console/; public: it holds no data and asks for a key)
     GET  /healthz                {"ok": true} (public, for uptime checks)
@@ -958,7 +955,7 @@ def make_handler(app):
                 return self._send(401, {"error": "Unknown ingest key."})
             batch = body.get("batch")
             if batch is None and "event" in body:
-                batch = [body]                       # PostHog's single-event /capture shape
+                batch = [body]                       # a single event, not wrapped in a batch
             if not isinstance(batch, list) or len(batch) > MAX_BATCH:
                 return self._send(400, {"error": f"batch must be a list of at most {MAX_BATCH} events."})
             if not app.limit.allow(client, cost=max(1, len(batch) // 20)):
@@ -1096,7 +1093,7 @@ def main(argv):
         config["admin_keys"] = {"admin": "fa_admin_" + secrets.token_urlsafe(32)}
         save_config(config)
         print(f"Wrote {CONFIG_PATH}.")
-        print("Ingest key (goes in the game's analytics config; it ships in builds, like PostHog's project key):")
+        print("Ingest key (goes in the game's analytics config; it ships in builds and can only write events):")
         print("  " + config["ingest_keys"][0])
         print("Admin key (erasure; keep it private):")
         print("  " + config["admin_keys"]["admin"])
@@ -1126,18 +1123,6 @@ def main(argv):
     if command == "nightly":
         print(json.dumps(app.nightly(), indent=2, default=str))
         return 0
-    if command == "import-posthog":
-        import argparse
-        import import_posthog as P
-        parser = argparse.ArgumentParser(prog="analytics_server.py import-posthog")
-        parser.add_argument("--project", required=True, help="the PostHog project id (Project settings)")
-        parser.add_argument("--days", type=int, default=365)
-        parser.add_argument("--host", default=P.DEFAULT_HOST)
-        parser.add_argument("--dry-run", action="store_true")
-        code = P.main(app.store, config, parser.parse_args(argv[1:]))
-        if code == 0 and "--dry-run" not in argv:
-            print(f"{app.rebuild()} plays after the import")
-        return code
     if command == "erase" and len(argv) == 2:
         print(f"{app.store.erase(argv[1], 'cli')} rows deleted")
         app.rebuild()

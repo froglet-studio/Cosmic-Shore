@@ -1,4 +1,4 @@
-# Bug Hunt — where it stands (2026-11-20)
+# Bug Hunt — where it stands (2026-11-24)
 
 **Owner:** Yash. **Branch:** fixes land on `Ys-bleeding-edge` first and reach `bleeding-edge` with each merge.
 **Board:** [Team Bug Board](https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno). Mechanism: `Docs/DIAGNOSTICS.md` § "The Bug Ledger".
@@ -7,6 +7,67 @@
 
 - **Seven machines send errors from Unity**, each to its own `bugledger/<user>` branch: Garrett (`gradi`), Shombith,
   Andrew (`owner`), jtgjones (`mrglo`), Yash (`yskha`), Caleb (`belac`), Will (`will`).
+- **Ledger on 2026-11-22 (by hand; 2026-11-21 20:37 UTC): 380 open, 40 being checked after a fix** (420 issues;
+  the Team Bug Board was mirrored with it). **Later that day: 379 open, 42 being checked** (421: one new issue,
+  fixed, and the Rider folder error on Yash's machine; section 3). Yash asked for
+  the two errors new since the 11-21 sweep, then every open one on his machine (81), then the other machines' (208
+  seen since 10-21, 53 of them naming a game script outside the multiplayer folders). Five were code and are fixed
+  (section 3), one was already fixed and is now marked, one is a missing backend deploy (the `launch-flags` Cloud
+  Code script answers 404 "Script could not be found" at sign-in, E-930ca435ca; the script is in
+  `Tools/UGS/CloudCode/`, the game keeps the default flags, Shombith deploys). Two bugs in the multiplayer folders
+  went to the multiplayer session, which fixed one and found the other already fixed (section 3). The rest have no fix to make in game code: section 4 says why by group.
+- **Daily sweep, 2026-11-22 04:00 UTC (205 branches): 378 open, 43 being checked after a fix** (421 issues). Six
+  issues were seen since the last report. Two were code and are fixed (`1424652888`, section 3): the dropped vessel
+  and domain picks on Andrew's machine (E-908f18b36f, E-853e9f9090), which with E-31b2135ed2 came from one play run
+  where the return to the menu was requested twice. Three are the Unity editor's own account sign-in on Caleb's and
+  Andrew's machines, in package code with no project frame (the services gateway token E-fffbda0c5b, the Unity AI
+  assistant's token refresh E-742744315c, Vivox's editor API answering 401 E-8e979cd5be): signing in to the Unity
+  Hub again is the remedy, nothing to fix in the game. One is the Multiplayer Tools package's `Ngo1Adapter`
+  (E-46ca22c3ef, already listed in section 2). The `launch-flags` 404 and the `weekly_challenge` board fired again
+  on Andrew's machine (Shombith's backend, unchanged). No new phone session; `check_gamelist_scenes.py` is clean.
+- **Daily sweep, 2026-11-23 03:57 UTC (205 branches): 386 open, 39 being checked after a fix** (425 issues).
+  Seventeen issues were seen since the 11-22 sweep, all on Yash's machine or shared with it; eight are new to this
+  report. None is a fault in game code, so nothing was fixed. New: the client's Netcode scene-sync errors from one
+  multiplayer test at 13:09 UTC ("NetworkPrefab hash was not found! In-Scene placed NetworkObject soft
+  synchronization failure" E-00c68d60ca, with the `[Cell]` and `[Game]` NonAuthorityLocalSpawn lines E-7f1752921e
+  and E-e301146740): recorded for the multiplayer work, not edited here. Two are an edit-mode test's own expected
+  errors (`OfflineSessionTests.Case7_StartHostThrows`, "StartHost threw: port in use" E-d369a5da76 and E-e6f444fe2c),
+  logged because the test was run through the Unity CLI's eval and not the test runner. One is the Unity CLI
+  package's `quit` command calling DontDestroyOnLoad in edit mode (E-5298b5f813, package code, no project frame).
+  Two more are Claude's editor commands timing out or losing the connection (`/api/exec` E-8909c619e5, E-49e7cdae67,
+  beside the listed E-e5bc8c31c5 and E-270a8af1ef). Seen again, unchanged: the Relay drop group (E-e5ff2abb8c,
+  E-e6054bc064, E-fda866d511, DTLS E-afa8c57ab8; multiplayer), the `weekly_challenge` board and the `launch-flags`
+  404 (E-c8e2f49696, E-930ca435ca; Shombith's backend) and the Rider folder on Yash's machine (E-15034bdc73, 52
+  sightings; Preferences > External Tools). No new phone session; `check_gamelist_scenes.py` is clean.
+- **Daily sweep, 2026-11-24 03:57 UTC (206 branches): 390 open, 30 being checked after a fix** (420 issues).
+  Seventeen issues were seen since the 11-23 sweep. Two were code and are fixed (section 3): the Jacks net drawing
+  into a destroyed renderer on Garrett's machine (E-720d217e81, 705 sightings in 19 s) and the mode smoke test started
+  while the editor was playing on Yash's machine (E-ca266cef07). The sweep's compile also found that
+  `Ys-bleeding-edge` did not compile since `f2e457b577` (a missing `using` in `GrizzlyTimeController.Ruins.cs`, on
+  no ledger branch); fixed in `2a3e56faac`. Recorded for the multiplayer work, not edited here: "Received error
+  message from Relay: not connected" (E-5fa838820d, 811 sightings, four machines), the Lobby rate limit
+  (E-4559c252c9), the pre-instantiated `StatsManager` NetworkObject at the offline host's start (E-8186f3205f), the
+  session singleton (E-81100c14a5), and a remembered domain pick dropped when the config opens from a lobby change
+  before the local Player is resolved (E-9befe1d612, Garrett's and Andrew's machines; the line numbers match today's
+  file, so `1424652888` does not cover this path). Needs a capture: "Projectile already released!" (E-fc9c4c779c,
+  three sightings since September, the stack names no caller). Not code, unchanged: Vivox and the 403s
+  (E-ca127debd0, E-33876f4909, E-ae8d2e4fa2), the services core cancel (E-3e9077e16b), the `launch-flags` 404 and
+  the `weekly_challenge` board (E-930ca435ca, E-c8e2f49696; Shombith's backend), Claude's editor commands timing out
+  (E-e5bc8c31c5, E-8909c619e5) and the Rider folder on Yash's machine (E-15034bdc73, seen again at 01:09 UTC after
+  the 11-22 setting change, one regression counted). The phone report lists one session, from 2026-11-02 on an old
+  build (warnings only: the `Boost Amount` FMOD parameter, Charles's content); `check_gamelist_scenes.py` is clean.
+  The `/ship` gates fail on `Ys-bleeding-edge` in files no fix here touched: `doc_summaries` (`VoyageRun.cs:1114`),
+  `colour_trace` (`Scoreboard.cs:1127`, `Color.gray`), `maelstrom_tiers` (two cards), and generator drift in
+  `author_harvest_assets.py`, `author_tandava_assets.py`, `author_tandava_severing_assets.py`; `author_shatterplane_assets.py`
+  has an f-string that the sweep machine's Python rejects.
+- **Ledger on 2026-11-21 (03:57 UTC sweep, 182 branches): 386 open, 35 being checked after a fix** (421 issues).
+  The routine's first run with the repository attached: its push to `Ys-bleeding-edge` worked. Eight issues were new
+  or seen again since the 11-20 report. One was code and is fixed (`65ffb622dd`, section 3); the rest are not code or
+  already routed: the Unity profiler's own "Allocating too large buffer" assertion (E-ffb0263d28, no project frame),
+  four failures of Claude's editor commands (`/api/exec` E-e5bc8c31c5 and E-270a8af1ef, `capture_game_view`
+  E-d286e5f8e2, `list` E-fa89fca07b), the Rider folder on Yash's machine again (E-15034bdc73, 50 sightings) and the
+  `weekly_challenge` board serving last week's row again (E-c8e2f49696, six machines, Shombith's backend, #1585).
+  No new phone sessions were ingested; `check_gamelist_scenes.py` is clean.
 - **Ledger on 2026-11-20: 383 open, 34 being checked after a fix** (417 issues; it was 406 open and 11 this morning).
   Every one of the 417 has an outcome, listed by id in section 5.
 - **Why nothing was fixed from 2026-11-17 to -20:** the daily sweep is a cloud routine ("Bug Hunt daily sweep", 03:54
@@ -30,6 +91,29 @@
   package throws on every script reload (E-15034bdc73, 48 sightings). Pick the installed editor in
   Preferences > External Tools, or reinstall Rider.
 
+## 1a. Errors from a build's console that the ledger never had (2026-11-20)
+
+A development build showed "Scene 'MinigameElimination' couldn't be loaded" and the same for `MinigameMazeRun`. Neither
+was on any ledger branch. Why:
+
+1. **The ledger hears the editor only.** That console is a development build's. Nothing of it is in this PC's editor
+   log or Windows player log, so it came from a phone or another machine's build. A phone's sessions reach Git only
+   through a USB ingest (last one 2026-11-02) and land on `bugledger-android/<user>`, which the sweep did not read. A
+   Windows development build sends nothing at all.
+2. **The static check that exists for dead cards looked at rosters only.** `check_gamelist_scenes.py` read every
+   `SO_GameList`. The vessel class assets' `Games` lists and the training games' `Game` field are not rosters, so the
+   23 cards archived on 2026-10-13 stayed linked from there. On Windows the check also failed every card (backslash
+   paths), so here it read as noise.
+
+What was dead: 12 card entries in ten vessel class assets, the eight training entries of four of them, and **all four** entries of `TrainingGames`, the daily
+challenge's whole pool (Block Bandit, Dolphin Darts, Maze Run, Slip and Stride), each leading to a deleted scene.
+
+Fixed: the dead entries are gone and the four training games are in `Games/_Archive/`; the check now fails on any live
+asset that points at a dead archived asset, and runs on Windows; the sweep reads phone sessions and runs the check
+(`/bug-ledger` section 6). **Left for a decision:** `TrainingGames` is now empty, so the daily challenge reports itself
+unavailable and the Hangar's training modal does not open, instead of loading a scene that is not there. Which live
+games the daily challenge should offer is its owner's call.
+
 ## 2. What is blocking it
 
 1. **Testers on old checkouts.** Each tester pulls `bleeding-edge`; their editor then takes the fixes and closes them
@@ -50,6 +134,78 @@
    player: a machine condition, never a code fix.
 
 ## 3. Fixed
+
+### 2026-11-24 (not run in the editor; `unity_refcompile` 0 errors)
+
+Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Bug ledger fixes (2026-11-24)".
+
+| Error | Machines | Cause | Fix |
+|---|---|---|---|
+| "MissingReferenceException: The object of type 'UnityEngine.MeshRenderer' has been destroyed" in `JacksBodies.NetMesh.Draw` (E-720d217e81) | one (Garrett) | the Jacks net is a scene-root object made in `Awake`, so it could be destroyed while the hull lived on, and the hull drew into it every frame. Which unload did it on that run is inferred, not captured | `a5a7ef89c3`: `DrawNet` builds the net again when its renderer is gone. Affects Garrett's Jacks (queued for `/approve`) |
+| "InvalidOperationException: This cannot be used during play mode" in `ModeSmokeLauncher.RunNext` (E-ca266cef07) | one (Yash) | only the menu entry checked for Play mode; `Run()` from the command line or the Unity CLI planned the run and then could not open Bootstrap | `c7f4c53311`: the check is in `Start`, for every entry point. Affects Shombith's launch tooling (queued for `/approve`) |
+| `error CS0103` twice in `GrizzlyTimeController.Ruins.cs` (no ledger issue: the branch did not compile) | the branch | `CSDebug` used without `using CosmicShore.Utility` since `f2e457b577` | `2a3e56faac` |
+
+### 2026-11-22 (not run in the editor, which did not answer the CLI; compiled with Unity's compiler, 0 errors)
+
+Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Grizzly scope camera at teardown", "Bug ledger fixes from
+Yash's machine" and "Serpent wall after its owner is gone" (all 2026-11-22).
+
+| Error | Machines | Cause | Fix |
+|---|---|---|---|
+| "Cannot set the parent of the GameObject 'ScopeCamera' while its new parent 'Grizzly(Clone)' is being destroyed" (E-5e0864d332) | one (Andrew) | `GrizzlyHUDView.OnDestroy` put a scope camera that was out on a round back on a hull Unity was destroying | `536a720a85`: a camera still off the hull is destroyed with the view |
+| "[OfflineModeService] StartHost failed - offline session unavailable" (E-6f8a396c25) and the bind errors with it | two (Yash, Garrett) | a second copy of the game on one computer found UDP 7777 taken, so its offline host never started | `475c34feb7`: the offline host takes any free port when 7777 is in use |
+| NullReferenceException in `MultiplayerDomainGamesController.OnReadyClicked_` (E-c223e6e8e9) | one (Yash) | Ready pressed before the local player exists | `beb7a758b0`: the press is ignored and the button stays up |
+| MissingReferenceException in `PreGameCinematicController.TransitionToPlayer` (E-b872184a91) | one (Yash) | the vessel was destroyed while the camera was moving to it | `981fff05df`: the move ends |
+| MissingReferenceException, `VesselStatus` destroyed, in `SerpentWallAssembler.LockdownActive` (E-05e4645aad) | one (Shombith) | a wall outlives its Serpent, and `?.` does not stop at a destroyed owner held as an interface | `25d287a0b2`: both reads go through the wall's `IsOwnerAlive` |
+
+Marked only where the error text has that one cause. Left open though the cause is fixed: the three transport bind
+errors that come with the offline host (E-849115e303, E-f18360ba1d, E-55c19c8f2b), whose text other causes share.
+
+Already fixed, marked on 2026-11-22: the voyage stop's NullReferenceException in `VoyageRun.StandStop`
+(E-2367abc157, Garrett's machine), fixed on 11-08 by `fe32896d7b`.
+
+From the multiplayer session, the same day:
+
+- `NetworkSceneObjectGuard.NeutralizeStray` stripped a stray NetworkObject with `DestroyImmediate` inside a physics
+  callback, which Unity refuses, so the stray stayed (E-6bc7e07601, five machines). Fixed in `97aab2a6a7`: a deferred
+  form (`Destroy` at the end of the frame) that the three creature-birth callers in `FaunaNetworkSync` use. Compiled
+  in Unity; the Angler tame hit was not replayed. Marked on all five machines.
+- "Double initialization not allowed" from `ClientPlayerVesselInitializer.ReInitializePair` (E-71cedd035d, Yash's
+  machine) was already fixed on 11-02 by `b6c5ad826` (B47: a reclaimed seat uses `ChangePlayer`, not a second
+  `Initialize`). Marked against that commit.
+
+Later the same day (ledger then: 379 open, 42 being checked, 421 issues):
+
+- Start on a game card threw NullReferenceException inside Netcode from
+  `ArcadeConfigSyncManager.ConfirmReady_ServerRpc` and left the card on "Waiting for others..." (E-31b2135ed2,
+  Andrew's machine, new on 11-21, 5 sightings). A host was listening but the card's sync manager was not spawned.
+  Fixed in `ecdcc06b6e`: `ArcadeGameConfigureModal.OnStartGameClicked` refuses Start with a warning in that state.
+  Compiled in the open editor (0 errors), not played. Why the manager was unspawned is not known: it needs Andrew's
+  editor log from such a session.
+- The Rider plugin folder error on Yash's machine (E-15034bdc73, 51 sightings) was a machine setting, not code:
+  Unity's external script editor pointed at a leftover Rider folder with no `rider-unity` plugin. The setting is now
+  none and the folder is deleted; one editor start was read clean from the log. Marked against `860bc615d2` so the
+  editor counts clean sessions.
+
+Daily sweep, 2026-11-22 04:00 UTC (not run in the editor; `unity_refcompile` OK):
+
+- A game card dropped every vessel and domain pick with "no owned local Player resolved" (E-908f18b36f,
+  E-853e9f9090, Andrew's machine, the same 950 s play run as E-31b2135ed2 above). His load reports show "Return to
+  menu" requested twice within 2.6 s from the Voyage scene, the second while the first was still in its scene exit
+  drain. Each started a scene load; Netcode refuses a second one, and `SceneLoader.LoadSceneAsync` then loads the
+  menu locally over Netcode's own load, which leaves the menu with no local Player and its network objects
+  unspawned. That is very likely the state `ecdcc06b6e` could not explain. Fixed in `1424652888`:
+  `SceneLoader.ReturnToMainMenu` drops a request made while one is loading (30 s at most, a field on the
+  SceneLoader). The cause is read from the load reports, not reproduced; the hand test is in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "One return to the menu at a time". Marked on Andrew's branch only: the
+  copies on Garrett's (11-08) and Will's (09-10) machines are single older sightings with no load report to tie
+  them to this cause, and stay open.
+
+### 2026-11-21 (not run in the editor; `unity_refcompile` OK)
+
+| Error | Machines | Cause | Fix |
+|---|---|---|---|
+| "Local keyword _MW_STANDIN comes from a different shader" in `SolitonTunnelLensPass.SetStandin` (E-8ddade9b04) | one (Yash) | the keyword was cached once, and a shader edit or reimport during Play replaced the shader's keyword space | `65ffb622dd`: made from the current shader each call |
 
 ### 2026-11-20 (not run in the editor; compiled with Unity's compiler)
 
@@ -83,6 +239,16 @@ Earlier fixes are in each issue's ledger note and in `git log --grep "bugledger"
 
 ## 4. Left, and for whom
 
+- **Read again on 2026-11-22, nothing to fix here:**
+  - Shombith, backend: the `launch-flags` script not deployed (E-930ca435ca), the `weekly_challenge` board (42
+    sightings on five other machines), Vivox (about 38).
+  - Code that changed since the one or two sightings, so the reported line no longer matches and a new capture is
+    needed: the menu spotlight's `OnPath` (E-15b4eb64f0), `KitRectMask2D.PerformClipping` (E-4ae8006406),
+    `Crystal.ActivateCrystal` (E-57b430e550), the Meerkat zap (E-f19547a0fb), the wormhole frustum error (E-fcf50f15ac).
+  - One edit-mode session on Garrett's machine where the app never booted: the "not found at injection time" family
+    and the three toast `Start` errors (E-cb6faeeaa6, E-eb8720ddfc, E-b72940176d).
+  - Yash's machine: the Rider folder (51 sightings) and about 25 failures of Claude's own editor commands, compile
+    gates and Unity sign-in, none of them the game.
 - **With the multiplayer work (81 issues):** Relay, transport, lobby, session and party errors, including today's
   two-machine test (E-0a098d80df, E-e5ff2abb8c, E-e6054bc064, E-fda866d511, E-ced2f8d740, E-cd8ad9dbfe,
   E-abc13c880b, E-b2c9301f4c, E-f4fd02cb76, E-afa8c57ab8) and the "address already in use" family on Yash's and
@@ -208,44 +374,42 @@ T-20261015-56dd, -3e0b, -3972, -1551, -7edd.
 This block is refreshed by `python3 Tools/Build/team_report.py area bug-hunt --write`.
 
 <!-- team_report:begin (generated by Tools/Build/team_report.py; do not edit) -->
-_Generated 2026-11-20 from git (last 14 days), who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
+_Generated 2026-11-24 from git (last 14 days), who_works_where.py: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
 
 ### Recent changes (25+)
-- 2026-11-20 `bcd3f0f58` bugledger: E-0de9ec6c70 fixed in 93765d6aa8 — on another branch
-- 2026-11-20 `a41069da5` bugledger: E-245165ae01 fixed in 540bac6a24 — on another branch
-- 2026-11-20 `8dfdf286b` bugledger: E-111d87fec0 fixed in 79f1ff888b — on another branch
-- 2026-11-20 `8f66c0b78` bugledger: E-75a12f0559 fixed in d8a7763cd0 — on another branch
-- 2026-11-20 `dbcabd178` bugledger: E-3e99fba873 fixed in dedc985d2a — on another branch
-- 2026-11-20 `9b2037358` bugledger: E-0f0eb8a59f fixed in c0ef0c8281 — on another branch
-- 2026-11-20 `b32a4b54a` bugledger: E-d6b3d6f496 fixed in ba3ad0569a — on another branch
-- 2026-11-20 `514077b93` bugledger: E-5f2ee86d9b fixed in ba3ad0569a — on another branch
-- 2026-11-20 `239e3b0d2` bugledger: E-e061201544 fixed in e357fbad6c — on another branch
-- 2026-11-20 `ed026cec8` bugledger: E-5a15f5e924 fixed in f3b155dd30 — on another branch
-- 2026-11-20 `3edbebf4e` bugledger: E-5103c76904 fixed in f3b155dd30 — on another branch
-- 2026-11-20 `199ee36a3` bugledger: E-6020da4524 fixed in a227e1e2bb — on another branch
-- 2026-11-20 `982bfb749` bugledger: E-4065bcae2a fixed in a227e1e2bb — on another branch
-- 2026-11-20 `e6d12f1c2` bugledger: E-cb11787d50 fixed in 5846aaab12 — on another branch
-- 2026-11-20 `baf7f83fa` bugledger: E-2f25b16a12 fixed in 5846aaab12 — on another branch
-- 2026-11-20 `283ae157d` bugledger: E-8780898fab fixed in 5846aaab12 — on another branch
-- 2026-11-20 `d81969b29` bugledger: E-5713660fbd fixed in 8df5d3359c — on another branch
-- 2026-11-20 `d05cfe7ab` bugledger: E-4ad9e5ca21 fixed in 8df5d3359c — on another branch
-- 2026-11-20 `7d8dceecd` bugledger: E-376e5a6f8d fixed in be6f1058e4 — on another branch
-- 2026-11-20 `5d43546aa` bugledger: E-6b08617cca fixed in 37aac575d8 — on another branch
-- 2026-11-20 `ce0764615` bugledger: E-edc6a81429 fixed in 5787029688 — on another branch
-- 2026-11-20 `10c96a125` bugledger: E-17461650a8 fixed in 5787029688 — on another branch
-- 2026-11-20 `80da19eae` bugledger: E-1f1ff22829 fixed in 8bcdde930 — on another branch
-- 2026-11-20 `4486c1a56` bugledger: 82 open error(s) from yskha's play tests, 12 report file(s) — on another branch
-- 2026-11-20 `0f854c939` bugledger: 81 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `6ea011c53` bugledger: E-720d217e81 fixed in a5a7ef89c3 — on another branch
+- 2026-11-24 `aecd77cb2` bugledger: E-ca266cef07 fixed in c7f4c53311 — on another branch
+- 2026-11-24 `3bf426a2c` bugledger: 65 open error(s) from Owner's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `8ca039c88` bugledger: 85 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `efbdf1629` bugledger: 65 open error(s) from Owner's play tests — on another branch
+- 2026-11-23 `2d3d3acc4` bugledger: 84 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `ce76ca858` bugledger: 22 open error(s) from mrglo's play tests, 5 report file(s) — on another branch
+- 2026-11-23 `20aad166a` bugledger: 22 open error(s) from mrglo's play tests, 2 report file(s) — on another branch
+- 2026-11-23 `bee772845` bugledger: 204 open error(s) from gradi's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `f1f2aa3df` bugledger: 129 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `43b75ce91` bugledger: 31 open error(s) from belac's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `2c8e28687` bugledger: 128 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `a479e364a` bugledger: 203 open error(s) from gradi's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `852d0318d` bugledger: 31 open error(s) from belac's play tests, 3 report file(s) — on another branch
+- 2026-11-23 `d2c260abe` bugledger: 70 open error(s) from Owner's play tests, 12 report file(s) — on another branch
+- 2026-11-22 `aa57c603f` bugledger: 83 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-22 `56f95e07b` bugledger: 80 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-22 `ba2c191b3` bugledger: E-853e9f9090 fixed in 1424652888 — on another branch
+- 2026-11-22 `f7cbab687` bugledger: E-908f18b36f fixed in 1424652888 — on another branch
+- 2026-11-22 `188cfc381` bugledger: E-31b2135ed2 fixed in ecdcc06b6e — on another branch
+- 2026-11-22 `6d004fea8` bugledger: E-15034bdc73 fixed in 860bc615d2 — on another branch
+- 2026-11-21 `8cb52c585` docs(handoff): backend to Shombith - the launch-flags Cloud Code script is not deployed — on Ys-bleeding-edge, bleeding-edge
+- 2026-11-21 `61ccab7e6` bugledger: E-6bc7e07601 fixed in 97aab2a6a7 — on another branch
+- 2026-11-21 `e8f67f948` bugledger: E-71cedd035d fixed in b6c5ad826 — on another branch
+- 2026-11-21 `40dd460e0` bugledger: E-6f8a396c25 fixed in 475c34feb7 — on another branch
 
 ### Also in flight on other branches
+- `bugledger/gradi` (Garrett, Yash, 2026-11-24): bugledger: E-720d217e81 fixed in a5a7ef89c3
+- `bugledger/yskha` (Yash, 2026-11-24): bugledger: E-ca266cef07 fixed in c7f4c53311
+- `bugledger/owner` (Andrew, Yash, 2026-11-23): bugledger: 65 open error(s) from Owner's play tests, 12 report file(s)
+- `bugledger/mrglo` (jtgjones, 2026-11-23): bugledger: 22 open error(s) from mrglo's play tests, 5 report file(s)
+- `bugledger/shombith` (Shombith, Yash, 2026-11-24): bugledger: 129 open error(s) from Shombith's play tests, 12 report file(s)
+- `bugledger/belac` (Caleb, Yash, 2026-11-23): bugledger: 31 open error(s) from belac's play tests, 12 report file(s)
 - `bugledger/will` (Yash, ownerbynight, 2026-11-20): bugledger: E-0de9ec6c70 fixed in 93765d6aa8
-- `bugledger/gradi` (Garrett, Yash, 2026-11-20): bugledger: E-0de9ec6c70 fixed in 93765d6aa8
-- `bugledger/yskha` (Yash, 2026-11-20): bugledger: E-245165ae01 fixed in 540bac6a24
-- `bugledger/shombith` (Shombith, Yash, 2026-11-20): bugledger: E-245165ae01 fixed in 540bac6a24
-- `bugledger/owner` (Andrew, Yash, 2026-11-20): bugledger: E-245165ae01 fixed in 540bac6a24
-- `bugledger/belac` (Caleb, Yash, 2026-11-20): bugledger: E-245165ae01 fixed in 540bac6a24
 - `claude/project-thread-jw78fe` (Garrett, 2026-11-18): test(proven-win): vessel hull off-screen skinning rejected (~3 us per hull)
-
-### Open tickets (Froglet Tasks)
-- None.
 <!-- team_report:end -->

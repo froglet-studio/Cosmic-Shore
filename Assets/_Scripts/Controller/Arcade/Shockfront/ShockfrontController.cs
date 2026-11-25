@@ -11,8 +11,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Shockfront - the Stoat's CHARGE game: a duel in Dog Fight's Boneyard. The Stoat's Charge ability is the RIPPLE
-    /// (<see cref="StoatRippleExecutor"/>): whenever its pair annihilates - the orbit's pair closing after a slingshot -
-    /// the meeting point throws a space-time ripple whose front strips a petal of every element from each rival it
+    /// (<see cref="StoatRippleExecutor"/>): whenever its swing hole collapses after a slingshot -
+    /// the hole throws a space-time ripple whose front strips a petal of every element from each rival it
     /// sweeps over. Every rival stripped is a Debuff-class combat hit and one point. The first DOMAIN to the target
     /// wins (golf-timed). See SHOCKFRONT.md.
     ///
@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// one-to-one rule of SILENCE.md), and <see cref="ShockfrontScoringRuleSO"/> pays it.</para>
     ///
     /// <para><b>The AI only steers.</b> The Stoat's own autopilot slings whenever its target is 30 deg or more off the
-    /// nose (<c>StoatSlingExecutor.AutopilotSling</c>, the replicated press), so pointing it at a lead point on the
+    /// nose (<c>StoatSlingExecutor.AutopilotSwing</c>, the replicated press), so pointing it at a lead point on the
     /// nearest rival is enough: it slings round toward them, and the pair it slings out of closes where it was laid,
     /// beside the rival. <see cref="AIPilot.SetExternalTargetProvider"/> and nothing else - the generator fails if this
     /// controller presses an input.</para>

@@ -68,6 +68,60 @@ whole reload; miss and the press does nothing (no anchor, no cooldown), so the c
 aiming. Every OTHER pair of thorns in sling range misses at least one ring between them by 15 u, so no ring is ever
 skipped by accident.
 
+## 2a. Ruins at I4 (2026-11-24, Yash: the environment update Spearline got)
+
+Decoration. At I4 the course stands in garden ruins: Spearline's own (`SPEARLINE.md` §2a: pergola, flower head, vines,
+a wall with a doorway, a tunnel, a maze of bars, a turning wheel), laid by Spearline's generator. `ThornlineRuins` does
+not copy it; it calls `SpearlineRuins.Lay` with a gate list that says where Thornline is flown. Nothing reads or
+writes a vessel, and the ruins are plain prisms with the game's own rules: a hull or a lance breaks them, a sling
+aimed at one docks on it (the caught-short dock), and nothing grows back.
+
+- **The lanes are the sling lines.** A Shrike slings straight from thorn to thorn, so the gate list is the thorn chain:
+  a gate at every thorn and every ring, each stretch straight. The three snipe lines are in it too. Every standing
+  ruin prism keeps the generator's 60 u clear lane from all of them, 120 u from every ring's mouth and 120 u from
+  every thorn's corner.
+- **Where a ruin stands.** On the second half of a leg, between its ring and its far thorn. Up to seven legs carry
+  one, the longest first. Never the first leg, never a snipe's two legs, never a half within 260 u of a line from a
+  start seat to the start thorn (any seat count), and only a half of 380 u or more. Every other stretch is cut into
+  pieces under 380 u, which the generator leaves bare.
+- **Kinds.** No kind twice in a course's first six ruins. **The wheel almost never stands here**: it wants 270 u clear
+  on both sides and Thornline's halves are 375-575 u, so it was drawn on 0 of 60 courses measured. Where one does
+  fit, its hub (30 u) is wider than the 12 u the sling catches, so the line through it stays open.
+- **Colours.** Each ruin one domain colour, Jade, Ruby, Gold in turn down the course, apart from the Blue thorns
+  (`ruinDomains` on the controller; empty = Blue).
+- **Measured** (`run.sh --ruins`, seeds 1-60 at I4): 4 to 7 ruins a course (mean 5.9), 319 to 841 prisms (mean 619),
+  about 0.2 s to lay in the harness. None at I1-I3.
+- **Not measured:** the I4 race times and the AI with the ruins standing. The AI's replica does not know them. A
+  mis-aimed sling can now dock on a ruin, and an AI nose sweeping across one may arm its lance.
+
+Held by `ThornlineRuinsTests` (11 tests, measured against the thorns, not the gate list) and three negative controls
+(`run.sh --ruins-self-test`).
+
+**Compiled in Unity (2026-11-25):** the open editor (6000.3.17f1) rebuilt `Assembly-CSharp.dll` and
+`Assembly-CSharp-Editor.dll` at 01:58 IST, after these files were written, and they hold `ThornlineRuins`,
+`ruinDomains` and `ThornlineRuinsTests` (Unity rewrites them only on a compile with no errors). The 11 `ThornlineRuinsTests`
+passed in that editor's EditMode runner the same day (29 s).
+
+Four I4 races in the open editor (2026-11-25; the Mode Smoke Test driver, three Legendary AI Shrikes, offline,
+normal speed; the race ends on the first finisher). **With the ruins the AI is about 20 s slower:** winners 69.6 s and
+69.2 s with the ruins standing (7 ruins of 823 prisms; then 4 of 565), 42.0 s and 52.3 s with the ruins cleared before
+the start (THORNLINE.md §4.1's trained Legendary I4 time is 41.6 s). Two races each and different courses, so the size
+is rough; the direction held in every race. In the first race one Shrike stayed near one point for about 60 s; in the
+second one passed 11 u from a ruin prism. 58 and 58 ruin prisms were broken during the two races. No error in any match
+(the boot logged the Cloud Code 404); 52-77 fps while racing.
+
+**Why, and the fix (2026-11-25).** The stock autopilot (`ShrikeExecutor.Autopilot`) slings at the FIRST block on its
+nose once the target is within 20 deg, so a ruin crossing the nose as it turned became the anchor; and it switches to
+Space and holds the lance whenever blocks of another domain lie ahead, which every Jade, Ruby and Gold ruin is (the 58
+broken prisms). §4 says the course must never pull an AI out of Time mode. While ruins stand, Thornline now sets the
+autopilot's race-coach hook (`ShrikeExecutor.AiSlingAccept`, the one Regatta uses; `ThornlineController.Ruins.cs`
+`CoachAroundRuins`): the autopilot's own sling rule (300 u, 20 deg, a block on the axis), except that a ruin is never
+the anchor, and Time mode only. A human's controls, the kit and its numbers are untouched; I1-I3 (no ruins) keep the
+stock autopilot. The cost: at I4 the AI no longer fires missiles at a rival in its cone. **After the fix, three races in
+the editor with the ruins standing: 44.5 s (5 ruins, 549 prisms, none broken), 42.7 s (7 ruins, 484 prisms) and 48.3 s
+(6 ruins, 610 prisms, 25 broken by hulls; no lance fires now). Before the fix: 69.6 / 69.2 s with ruins, 42.0 / 52.3 s
+with them cleared.** So the ruins no longer cost the AI time beyond the course-to-course spread.
+
 ### What it measures (offline)
 
 The AI race replica (`run.sh --ai --seeds 100`, aim modelled; RaceReplica.cs): median race, seconds, solo / a pack
@@ -186,7 +240,8 @@ was re-cut. Raw data: `regatta-flywheel/seat-sw/shrike/thornline/`.
 All authored by `Tools/Build/author_thornline_assets.py` (on `hull_time_race.py`, Thresher Time's scene as the donor):
 the card, the scoring rule (`GateRaceScoringRuleSO`, metric 9), the scene, the preview, the toasts, the registrations.
 The card background is the `/cardart` COURSE render (`CardBackgrounds/Thornline.png`, the `thornline` layer in the
-card-art harness: rings, path and thorns at intensity 2). `--check` is the drift gate.
+card-art harness: rings, path and thorns at intensity 2). `--check` is the drift gate. It also holds the scene's
+`ruinDomains` (§2a) and that the ruins are laid through `SpearlineRuins.Lay`.
 
 ## 7. In-editor verification (owed)
 
@@ -203,6 +258,9 @@ card-art harness: rings, path and thorns at intensity 2). `--check` is the drift
    Space mode (lancing trails) and Charge mode (painting a rival), and any detach that strands an AI.
 8. A rival docked on a thorn makes it glow faintly in their colour; passing and being passed calls 425 / 426.
 9. MPPM two clients: both see the same thorns, crystals and seats; the sight and glow are local.
+10. I4 ruins (§2a): four to seven ruins in Jade, Ruby and Gold between rings and far thorns; none at a ring, a thorn
+    or the start; every sling line open; none at I1-I3; a rematch leaves none of the old set. Four AI at I4 still
+    finish, and their times against §4.1's.
 
 ## 8. Known limitations
 

@@ -18,6 +18,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Long flight for cross-cell range.")]
         float projectileTime = 12f;
 
+        [Header("Scope zoom (LT pressure)")]
+        [SerializeField, Tooltip("Scope field of view at the LIGHTEST LT pull, degrees - the widest look (design ask, 2026-10-17: LT pressure controls the zoom).")]
+        float scopeWideFov = 30f;
+        [SerializeField, Tooltip("Scope field of view with LT fully squeezed, degrees - the deepest zoom. Devices with no analog trigger get this.")]
+        float scopeNarrowFov = 5f;
+        [SerializeField, Tooltip("How fast the zoom follows the trigger, 1/s (an ease, so the view never snaps).")]
+        float scopeZoomRate = 10f;
+
         [Header("Economy")]
         [SerializeField] int energyIndex = 0;
         [SerializeField, Tooltip("Large flat energy cost per sniper shot.")]
@@ -27,7 +35,12 @@ namespace CosmicShore.Gameplay
         public float ProjectileSpeed => projectileSpeed;
         public float ProjectileScale => projectileScale;
         public float ProjectileTime => projectileTime;
+        public float ScopeZoomRate => scopeZoomRate;
         public int EnergyIndex => energyIndex;
+
+        /// <summary>Scope field of view for an LT pressure 0..1: wide at a feather, narrow at a full squeeze.</summary>
+        public float ScopeFovForPressure(float pressure01) =>
+            Mathf.Lerp(scopeWideFov, scopeNarrowFov, Mathf.Clamp01(pressure01));
         public float EnergyCost => energyCost;
         public float CooldownSeconds => cooldownSeconds;
 

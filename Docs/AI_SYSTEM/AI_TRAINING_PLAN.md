@@ -45,7 +45,7 @@ everything (section 3, the noise warning).
 
 | Piece | State | Where | The gap |
 |---|---|---|---|
-| Third Eye: Chase / Follow / Free cameras on any pilot, trails, AI aim lines, per-AI phase readout | Built; **since 2026-11-01 in the game scene** as the AI Diagnose panel (F2, editor + development builds) | `Assets/_Scripts/Controller/Camera/ThirdEye/` | Not in a release build; read-only (no time scale, no spawning, no hull picking); no graphs |
+| Third Eye: who flies each hull (You / AI), a Free fly camera, trails, AI aim lines, per-AI phase readout. A hull is watched through the game's own camera, whoever flies it; the Chase / Follow / Orbit cameras were removed 2026-11-22 | Built; **since 2026-11-01 in the game scene** as the AI Diagnose panel (F2, editor + development builds) | `Assets/_Scripts/Controller/Camera/ThirdEye/` | Not in a release build; read-only (no time scale, no spawning, no hull picking); no graphs |
 | Genetic AI trainer: genome population, novelty bonus, hall of fame, fitness recipes per mode, overnight schedule, deploys through `TrainingArchiveSO` | Built (~8,100 lines) | `Assets/_Scripts/Utility/AITraining/` (README), FrogletTools ▸ AI ▸ AI Training | One archive entry (Skim Race Squirrel, generation 0), and it is unused in play. No Regatta fitness recipe or steering genes. Deploys only in the editor. Amoebius's tournament found its best genome flies worse than a random one: selection is noise-dominated |
 | Skim Race AI Benchmark: N races through the real launch flow, a JSON record per race, CSV traces | Built | `Editor/AI/SkimRaceBenchmarkWindow.cs`, `Controller/AI/SkimRace/SkimRace*Recorder.cs` | Skim Race only |
 | Time scale above 1 | Built, ×8 cap | `TrainingAutoLauncher.cs` | Only inside the trainer |
