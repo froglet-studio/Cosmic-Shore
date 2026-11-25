@@ -374,8 +374,8 @@ emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
   SceneName: MinigameCleave
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Swordfish']}, type: 2}}
-  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 9
+  MinPlayersAllowed: 4
+  MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

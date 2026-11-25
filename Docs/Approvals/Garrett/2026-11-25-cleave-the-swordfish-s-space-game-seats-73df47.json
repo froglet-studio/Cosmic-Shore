@@ -1,0 +1,22 @@
+{
+  "id": "2026-11-25-cleave-the-swordfish-s-space-game-seats-73df47",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T15:18:39+00:00",
+  "area": "the 2026-11-17 arcade restructure's seat counts",
+  "summary": "Cleave (the Swordfish's Space game) seats exactly 4 (was 2-9, 3 a team): Yash, 2026-11-25, every Swordfish game seats 4 for now. Teams stay 2-3, so it plays 2v2 or 2/1/1. Your open question on seats per mode (a22c52f5bd) covers whether it goes back to 9.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a22c52f5b",
+  "paths": [
+    "Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
+    "Tools/Build/author_cleave_assets.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Space"
+    ]
+  }
+}
