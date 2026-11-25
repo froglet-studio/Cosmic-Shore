@@ -732,6 +732,19 @@ namespace CosmicShore.Data
 
         /// <summary>Take <paramref name="job"/> off the board: the Ark sets sail for its destination, and a day passes
         /// on the sea (the galaxy ticks, <see cref="VoyageWorld.Tick"/>).</summary>
+        /// <summary>
+        /// True when <paramref name="a"/> and <paramref name="b"/> are the same job: the same work from the same pilot between the
+        /// same places. A job is saved and read back (<see cref="VoyageStore"/>) and the voyage page sails a copy of the board's
+        /// (<see cref="VoyageJob.MemberwiseCloneJob"/>), so the job a launch names is never the same object as the record's.
+        /// </summary>
+        public static bool SameJob(VoyageJob a, VoyageJob b)
+        {
+            if (ReferenceEquals(a, b)) return true;
+            if (a == null || b == null) return false;
+            return a.Kind == b.Kind && a.IsReturn == b.IsReturn && a.TemplateId == b.TemplateId && a.PilotId == b.PilotId
+                   && a.From == b.From && a.To == b.To;
+        }
+
         public static bool Take(VoyageState state, VoyageContent content, VoyageJob job)
         {
             if (state == null || job == null || state.AtSea) return false;
