@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-25-runnext-now-ends-the-smoke-run-with-a-ha-1b356e",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-25T04:09:42+00:00",
+  "area": "the launch mode smoke test (ModeSmokeLauncher)",
+  "summary": "RunNext now ends the smoke run with a harness fault when the editor is in Play mode, instead of calling OpenScene and throwing",
+  "why": "Bug Ledger E-ca266cef07 fired again at 2026-11-24 22:06 UTC on the fixed file (stack line 262): Start's check passes a frame before RunNext runs, and RunNext runs again after every mode, so Play entered in between still threw and left the run active with the offline preference overwritten",
+  "branch": "Ys-bleeding-edge",
+  "commit": "3f7ec9c5a",
+  "paths": [
+    "Assets/_Scripts/Editor/Launch/ModeSmokeLauncher.cs"
+  ]
+}
