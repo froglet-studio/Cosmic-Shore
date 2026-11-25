@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-25-every-voyage-now-draws-the-round-ark-ark-fa3be6",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-25T21:02:02+00:00",
+  "area": "the Ark model (ArkReverse)",
+  "summary": "Every voyage now draws the round Ark (ArkRound.fbx, Shombith's pick of concept D round 13) instead of ArkReverse; ArkReverse's model, rig table and definition are kept unchanged and unused",
+  "why": "Shombith picked the round Ark redesign and asked for it to replace the Ark in the voyages, with Trail 3 engine streams",
+  "branch": "claude/project-thread-yp93u4",
+  "commit": "cd2816123",
+  "paths": [
+    "Assets/_Models/Vessel Models/ArkRound.fbx",
+    "Assets/_SO_Assets/Toys/Wander_WithArk.asset",
+    "Assets/_Scripts/Controller/Environment/ArkHullSolid.cs",
+    "Assets/_Scripts/Controller/Environment/ArkModel.cs"
+  ]
+}

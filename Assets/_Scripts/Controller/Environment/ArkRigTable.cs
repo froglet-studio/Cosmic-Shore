@@ -6,7 +6,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Ark model's RIG TABLE: what the game binds to the model, written by the model's own build
-    /// (<c>Tools/Build/vessel_model/specs/ark_reverse.py</c>) beside the FBX as <c>ArkReverse.rig.json</c>, so the
+    /// (<c>Tools/Build/vessel_model/specs/ark_reverse.py</c>, <c>ark_round.py</c>) beside the FBX as <c>ArkReverse.rig.json</c> /
+    /// <c>ArkRound.rig.json</c>, so the
     /// sockets the hull is laid into and the motion the jets and wings make come from the same numbers the model was
     /// built and clearance-proven with (<c>pose_clearance.py</c>), never from a second copy typed into C#.
     ///
@@ -23,6 +24,19 @@ namespace CosmicShore.Gameplay
         public float noseToJets;
         public Socket[] sockets = Array.Empty<Socket>();
         public Bone[] bones = Array.Empty<Bone>();
+
+        /// <summary>Parts that turn on their own, all the time (the round Ark's decks, pods and gates; empty on ArkReverse).</summary>
+        public Spin[] spins = Array.Empty<Spin>();
+
+        /// <summary>Where the engines' streams leave the model (the round Ark's Trail 3; empty on ArkReverse).</summary>
+        public Trail[] trails = Array.Empty<Trail>();
+
+        /// <summary>The axis the reactor's collar turns about, model space; empty = up (ArkReverse's well).</summary>
+        public float[] reactorAxis;
+
+        /// <summary>The omni crystal's radius in model units when the game puts its own crystal on the <c>omni</c> bone;
+        /// 0 = the model draws its own (ArkReverse).</summary>
+        public float reactorRadius;
 
         /// <summary>The bone a socket rides when it rides the hull itself (the Ark's root).</summary>
         public const string HullBone = "hull";
@@ -74,6 +88,42 @@ namespace CosmicShore.Gameplay
             public Vector3 ReleaseMove => ArkRigTable.V3(releaseMove);
         }
 
+        /// <summary>
+        /// One part that turns on its own: <c>degreesPerSecond</c> about <c>axis</c> (model space) through the bone's
+        /// pivot. The prisms riding it turn with it; they never turn by themselves.
+        /// </summary>
+        [Serializable]
+        public sealed class Spin
+        {
+            public string bone;
+            public float[] axis;
+            public float degreesPerSecond;
+
+            public Vector3 Axis => ArkRigTable.V3(axis);
+        }
+
+        /// <summary>One engine's stream: it leaves <c>position</c> (model space) riding <c>bone</c>, <c>width</c> wide
+        /// (model units).</summary>
+        [Serializable]
+        public sealed class Trail
+        {
+            public string bone;
+            public float[] position;
+            public float width;
+
+            public Vector3 Position => ArkRigTable.V3(position);
+        }
+
+        /// <summary>The reactor's collar axis, model space: <see cref="reactorAxis"/>, or up when the table names none.</summary>
+        public Vector3 ReactorAxis
+        {
+            get
+            {
+                var a = V3(reactorAxis);
+                return a.sqrMagnitude > 1e-8f ? a.normalized : Vector3.up;
+            }
+        }
+
         /// <summary>Parse a table; null (with the reason) when the text is not one.</summary>
         public static ArkRigTable Parse(string json, out string error)
         {
@@ -99,6 +149,8 @@ namespace CosmicShore.Gameplay
                 return null;
             }
             table.bones ??= Array.Empty<Bone>();
+            table.spins ??= Array.Empty<Spin>();
+            table.trails ??= Array.Empty<Trail>();
             return table;
         }
 

@@ -15,7 +15,7 @@ namespace CosmicShore.ScriptableObjects
     public sealed class ArkModelDefinitionSO : ScriptableObject
     {
         [Header("Model")]
-        [SerializeField, Tooltip("The Ark's FBX (Assets/_Models/Vessel Models/ArkReverse.fbx), instantiated under the Ark's root.")]
+        [SerializeField, Tooltip("The Ark's FBX (Assets/_Models/Vessel Models/ArkRound.fbx; ArkReverse.fbx before 2026-11-25), instantiated under the Ark's root.")]
         GameObject model;
 
         [SerializeField, Tooltip("The model's rig table (ArkReverse.rig.json, written by the model's build beside the FBX): the sockets " +
@@ -89,7 +89,41 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0f), Tooltip("Degrees per second the collar turns while the hull is regrowing.")]
         float collarSpinRegrowing = 90f;
 
+        [SerializeField, Tooltip("The game's own omni crystal mesh, put on the model's omni bone when the rig table names a " +
+                                 "reactorRadius (the round Ark): the model draws no crystal of its own. Empty = none.")]
+        Mesh reactorCrystalMesh;
+
+        [SerializeField, Tooltip("The crystal's material (the game's CrystalMaterial): its bright and dull crystal colours are " +
+                                 "written from the colour set's call-to-action pair, the neutral lime every free omni crystal wears, " +
+                                 "never a team colour.")]
+        Material reactorCrystalMaterial;
+
+        [Header("Hull - what a vessel cannot fly through")]
+        [SerializeField, Tooltip("Which solid this model is to vessels (ArkHullSolid): Reverse = ArkReverse's hangar and ring " +
+                                 "tunnel; Round = the round Ark's tube, junction hall and three stern exits.")]
+        ArkHullShape hullShape = ArkHullShape.Reverse;
+
+        [Header("Engine trails - the streams the rig table's trails leave (the round Ark's Trail 3)")]
+        [SerializeField, Tooltip("The streams' material (additive, vertex-coloured). Empty = no streams.")]
+        Material engineTrailMaterial;
+
+        [SerializeField, Min(0.1f), Tooltip("Seconds a stream lasts: at the Ark's cruise (18) a 7 s stream is ~125 long.")]
+        float engineTrailSeconds = 7f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("How opaque a stream is where it leaves its bell (it fades to nothing at its end).")]
+        float engineTrailAlpha = 0.6f;
+
+        [SerializeField, Range(0f, 2f), Tooltip("A stream's width at its end, as a share of its width at the bell.")]
+        float engineTrailEndWidth = 0.4f;
+
         public GameObject Model => model;
+        public Mesh ReactorCrystalMesh => reactorCrystalMesh;
+        public Material ReactorCrystalMaterial => reactorCrystalMaterial;
+        public ArkHullShape HullShape => hullShape;
+        public Material EngineTrailMaterial => engineTrailMaterial;
+        public float EngineTrailSeconds => engineTrailSeconds;
+        public float EngineTrailAlpha => engineTrailAlpha;
+        public float EngineTrailEndWidth => engineTrailEndWidth;
         public TextAsset RigTable => rigTable;
         public float Scale => scale;
         public CosmicShore.Gameplay.ArkHelmSettings Helm => helm;

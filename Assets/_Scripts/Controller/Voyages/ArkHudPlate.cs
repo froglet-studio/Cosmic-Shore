@@ -263,7 +263,7 @@ namespace CosmicShore.Gameplay
             var b = new Bounds(ark.Position, Vector3.zero);
             foreach (var r in renderers)
             {
-                if (!r || r.transform.IsChildOf(transform)) continue;
+                if (!r || r.transform.IsChildOf(transform) || r is TrailRenderer or ParticleSystemRenderer) continue;
                 if (!any) { b = r.bounds; any = true; }
                 else b.Encapsulate(r.bounds);
             }

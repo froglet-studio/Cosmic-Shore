@@ -26764,3 +26764,19 @@ the changed files.
 - [ ] Press a seat's pilot or Change wingmate: Pilots opens; pick a pilot, Take the seat puts them on the seat.
 - [ ] The look in the editor: the sea dim, floor and plates (Amoebius draws them grey and plum).
 
+## The round Ark replaces ArkReverse in the voyages (2026-11-25)
+
+`ArkRound.fbx` (`Docs/VesselModels/ArkRound.md`) is now the Ark every voyage draws (`Wander_WithArk` -> `ArkRoundModel`).
+Built and verified offline: the model passed codec, assimp and a Blender re-import, and its renders match the concept
+artifact. The C# solid was probed numerically, and the reference compile (player and editor) has 0 errors in the
+changed files. None of it has run in the Unity editor.
+
+- [ ] The FBX imports: four slots (Domain, Body, Window, Engine) remap to the Ark's materials, with no pink.
+- [ ] Start any voyage: the round Ark is drawn, its 581 hull prisms laid in the Ark's domain, and nothing floats off the hull.
+- [ ] The decks turn, each against its neighbour; the two ring gates turn against each other; the pods orbit. Their prisms ride along.
+- [ ] Trail 3: eight streams, one per bell, in the domain's trail colours, straight behind the Ark; they stop when the hull is lost. Check every domain (Ruby especially).
+- [ ] The omni crystal in the gap is the neutral lime crystal in every domain, never the team colour; its collar turns.
+- [ ] Turning the Ark vectors the bells (pitch, yaw, roll); the streams follow the bells.
+- [ ] Fly into the tube from the lip, through the hall and out of an exit: no invisible walls. The hull, decks and crystal are solid.
+- [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
+- [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).

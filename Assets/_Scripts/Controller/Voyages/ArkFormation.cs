@@ -25,6 +25,9 @@ namespace CosmicShore.Gameplay
         const string PadBone = "hangar.slot.";
         const string DoorTopBone = "hangar.door.T";
         const string DoorBottomBone = "hangar.door.B";
+        /// <summary>The round Ark's launch tubes: <c>hangar.exit.&lt;slot&gt;</c> is the mouth of the exit for that formation
+        /// slot (0 port, 1 starboard, 2 top) and <c>hangar.slot.&lt;slot&gt;</c> the pad inside it.</summary>
+        const string ExitBone = "hangar.exit.";
         const int PadCount = 3;
 
         /// <summary>A model-less Ark (the procedural spindle) has no hangar: its squad launches from just ahead of the nose.</summary>
@@ -96,11 +99,29 @@ namespace CosmicShore.Gameplay
         /// point ahead of the doors it flies out to. A model with no hangar waits at its nose.
         /// </summary>
         public static void Hangar(Ark ark, int launchOrder, float halfLength, ArkFormationSettings settings,
+                                  out Vector3 padLocal, out Vector3 exitLocal) =>
+            Hangar(ark, launchOrder, -1, halfLength, settings, out padLocal, out exitLocal);
+
+        /// <summary>
+        /// <inheritdoc cref="Hangar(Ark, int, float, ArkFormationSettings, out Vector3, out Vector3)"/> A model with launch
+        /// tubes (the round Ark's three stern exits) sends <paramref name="seat"/> out of the exit on its own slot's side,
+        /// straight down the tube and on past its mouth; the others keep the one hangar.
+        /// </summary>
+        public static void Hangar(Ark ark, int launchOrder, int seat, float halfLength, ArkFormationSettings settings,
                                   out Vector3 padLocal, out Vector3 exitLocal)
         {
             settings ??= new ArkFormationSettings();
             var t = ark.transform;
             var model = ark.Model;
+            int side = seat >= 0 ? (int)SlotOf(seat) : Mathf.Clamp(launchOrder, 0, PadCount - 1);
+            if (model && model.TryGetBone(ExitBone + side, out var exitBone) && model.TryGetBone(PadBone + side, out var tubePad))
+            {
+                padLocal = t.InverseTransformPoint(tubePad.position);
+                var mouthLocal = t.InverseTransformPoint(exitBone.position);
+                var along = mouthLocal - padLocal;
+                exitLocal = mouthLocal + (along.sqrMagnitude > 1e-6f ? along.normalized : Vector3.back) * settings.ExitClear;
+                return;
+            }
             int pad = PadCount - 1 - Mathf.Clamp(launchOrder, 0, PadCount - 1);
             if (model && model.TryGetBone(PadBone + pad, out var padBone) &&
                 model.TryGetBone(DoorTopBone, out var top) && model.TryGetBone(DoorBottomBone, out var bottom))

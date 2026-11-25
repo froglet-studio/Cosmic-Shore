@@ -1,0 +1,102 @@
+# The round Ark: model dossier
+
+`ArkRound.fbx` is built from `Tools/Build/vessel_model/specs/ark_round.py`. Since 2026-11-25 it is the Ark every
+voyage draws (`Wander_WithArk.asset` -> `ArkRoundModel.asset`). It replaces [ArkReverse](ArkReverse.md), whose files
+and definition stay unchanged and unused.
+
+## The brief (Shombith, 2026-11-24 / 25)
+
+The design was settled on the concept board (https://claude.ai/artifact/DhVb8uuZekpv6yj1KRcuNM), where Shombith picked
+concept D, round 13. Its features:
+
+- glass at the front;
+- a solid back wall in the mouth, with the omni crystal centred in the open gap;
+- the pods moved out onto cables;
+- no turret shapes;
+- a junction hall at the stern, with three straight hollow exits running out of it;
+- the real omni crystal, neutral (the lime call to action, never a team colour);
+- the in-game look.
+
+The engines use Trail 3, "Eight streams": every engine leaves its own straight stream in the domain colour.
+
+Standing rules:
+
+- The body is black, and the prisms carry the game's tiers.
+- Nothing glows except the trails.
+- Every piece is the game's block prism.
+- Prisms never animate on their own. They ride turning parts that alternate direction.
+
+## How it is built
+
+The geometry is the artifact's own code, not a copy of it. `specs/ark_round_geometry.js` is the concept page's
+geometry, verbatim, plus one number: `PC`, the prism cell scale. At `PC=1` it reproduces the page exactly. Run under
+node, it exports polygons, prism records, motions and the omni crystal's place as JSON, and `ark_round.py` builds the
+FBX from that.
+
+**Frame.** Artifact (x is the nose axis, y is up) maps to Unity as (az, ay, ax - CentreX) * Scale:
+
+- Scale = 1.154979, chosen so the nose-to-jets length is 196.
+- CentreX = -19.45.
+
+The rig table stores both numbers (`artifactScale`, `artifactOrigin`). `ArkRoundModelTests` holds the C# solid to them.
+
+**Prism budget.** `PRISM_CELL = 2.2` gives **581 hull prisms**:
+
+| Tier | Count |
+|---|---|
+| Plain | 297 |
+| SuperShielded | 129 |
+| Shielded | 115 |
+| Danger | 40 |
+
+The artifact draws 1,985. Changing that one number changes the count: 2.0 gives 667 and 2.4 gives 556. Danger prisms
+sit only at the mouth's front lip and the stern.
+
+**Turning parts** are in the rig table under `spins`. `ArkModel` turns them; their prisms ride the bones.
+
+| Bone | Speed | Direction |
+|---|---|---|
+| `deck.0`..`deck.4` | 5.73°/s | each turns against its neighbour |
+| `gate.0`, `gate.1` | 8.02°/s | opposed to each other |
+| `pods` | 6.88°/s | turn about the nose axis |
+
+**Engines.**
+
+- `engine.0` is the big bell. `engine.1`..`7` are the ring of seven.
+- Each bell is puppeted by the turn takes: pitch, yaw, and roll (roll as a differential).
+- Each bell carries a stream under `trails`, drawn by `ArkEngineTrails`. A stream's colours are the domain's
+  `TrailCoreColor` -> `TrailHighlightColor`, and it fades out over 7 s.
+
+**Omni crystal.** It is the game's own mesh and material (`OmniCrystalExport`, `CrystalMaterial`), on the `omni` bone
+inside the turning `omni.ring` collar. A property block gives it the colour set's environment CTA (bright and dark),
+the same neutral as every other omni crystal.
+
+**Launch tubes.** `hangar.slot.0..2` (pads) and `hangar.exit.0..2` (mouths) sit in the three stern exits:
+
+- 0 is Port.
+- 1 is Starboard.
+- 2 is Top.
+
+`ArkFormation.Hangar` launches each seat out of its own exit.
+
+**Solid.** `ArkRoundSolid` is a signed distance over the hull. It carves out the passage: the tube from the lip, the
+junction hall, and the three exits. The gap between the mouth and the hull is open water. The pods' solid turns with
+them. `ArkHullSolid` dispatches to it when the definition's `hullShape` is `Round`.
+
+## Numbers
+
+- 149,160 triangles and 79,124 vertices, FBX 3.46 MB.
+- Polygons per slot: Domain 23,504, Body 50,278, Window 186, Engine 612.
+- The slots, and the `.meta`'s slot remap, are the same as ArkReverse's.
+
+## Rebuild
+
+```
+<bpy python> Tools/Build/vessel_model/build.py Tools/Build/vessel_model/specs/ark_round.py            # writes FBX + rig.json
+<bpy python> Tools/Build/vessel_model/build.py Tools/Build/vessel_model/specs/ark_round.py --check    # drift gate
+```
+
+## Not yet seen in Unity
+
+All of it, so it is listed in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("The round Ark replaces ArkReverse in the
+voyages"). The offline renders beside the artifact are in `/mnt/project-files/ark-round/`.
