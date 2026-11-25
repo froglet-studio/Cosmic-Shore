@@ -15,6 +15,9 @@ MonoBehaviour:
   projectileSpeed: 900
   projectileScale: 4
   projectileTime: 12
+  scopeWideFov: 30
+  scopeNarrowFov: 5
+  scopeZoomRate: 10
   energyIndex: 0
   energyCost: 0.5
   cooldownSeconds: 3

@@ -1,0 +1,21 @@
+{
+  "id": "2026-11-25-grizzly-v3-lands-new-inputevents-leftsho-884d59",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-25T00:05:15+00:00",
+  "area": "input events, the Fleet Codex and the colour sets",
+  "summary": "grizzly-v3 lands: new InputEvents.LeftShoulderAction = 16 and its InputHintBindingMap row, the Grizzly's abilities.json text, and the claw whips' reds traced into every colour set (colour_trace.json and the palette assets).",
+  "branch": "cece/exciting-hawking-x4x49j",
+  "lane": "grizzly",
+  "commit": "88b959fb4",
+  "paths": [
+    "Assets/_Scripts/Data/Enums/InputEvents.cs",
+    "Docs/FleetCodex/abilities.json",
+    "Docs/VesselModels/colour_trace.json"
+  ],
+  "loop": {
+    "vessels": [
+      "Grizzly"
+    ]
+  }
+}

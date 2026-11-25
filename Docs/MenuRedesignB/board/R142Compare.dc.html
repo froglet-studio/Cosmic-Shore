@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 142 - the toy card four ways, the same toy, at rest and pointed at</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+.soft{clip-path:none;box-shadow:none;color:#E6E9FF;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.8) 20%,rgba(230,233,255,.8) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(230,233,255,.8) 20%,rgba(230,233,255,.8) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat,linear-gradient(90deg,rgba(0,4,31,0) 0,rgba(0,4,31,.86) 20%,rgba(0,4,31,.86) 80%,rgba(0,4,31,0) 100%)}
+.softcta{clip-path:none;color:#00041F;background:linear-gradient(90deg,rgba(153,255,128,0) 0,#99FF80 20%,#99FF80 80%,rgba(153,255,128,0) 100%)}
+.softwait{clip-path:none;color:#747BAD;background:linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(67,76,137,.9) 20%,rgba(67,76,137,.9) 80%,rgba(230,233,255,0) 100%) top/100% 1px no-repeat,linear-gradient(90deg,rgba(230,233,255,0) 0,rgba(67,76,137,.9) 20%,rgba(67,76,137,.9) 80%,rgba(230,233,255,0) 100%) bottom/100% 1px no-repeat}
+.dia{display:inline-block;box-sizing:border-box;transform:rotate(45deg);flex:none}
+.lit{fill:none;stroke:#E6E9FF;stroke-opacity:.75;stroke-width:2;transition:stroke-dashoffset 1.1s ease}
+
+.tb-card{position:absolute;box-sizing:border-box;overflow:hidden;cursor:pointer;color:#E6E9FF;font-family:'Aldrich',sans-serif;border:0;padding:0;text-align:left;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(117,143,251,.16),rgba(117,143,251,0) 70%),repeating-linear-gradient(172deg,rgba(116,123,173,.07) 0 1px,rgba(0,0,0,0) 1px 16px),linear-gradient(180deg,#0B1240 0%,#00041F 100%);box-shadow:inset 0 0 0 1px #222645}
+.tb-card:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.tb-bob{animation:tbBob 8s ease-in-out infinite}
+@keyframes tbBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes tbRise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes tbFade{from{opacity:0}to{opacity:1}}
+@keyframes tbOut{from{opacity:1}to{opacity:0}}
+.tb-rise{animation:tbRise .55s cubic-bezier(.2,.8,.2,1) both}
+.tb-fade{animation:tbFade .5s ease both}
+.tb-tile{box-sizing:border-box;position:relative;display:flex;align-items:center;gap:14px;border:0;cursor:pointer;color:#E6E9FF;font-family:'Aldrich',sans-serif;text-align:left;background:#00041F;box-shadow:inset 0 0 0 1px #222645;transition:box-shadow .2s,background .2s,transform .2s}
+.tb-tile:hover{background:#0B1240}
+.tb-tile.on{background:#222645;box-shadow:inset 0 0 0 2px #E6E9FF}
+.tb-tile:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.tb-sw{width:28px;height:28px;flex:none}
+.tb-world{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tb-hud{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.tb-toast{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);padding:14px 28px;font-size:17px;z-index:30;animation:tbRise .4s ease both}
+.tb-ctl{position:absolute;z-index:40;display:flex;gap:10px;align-items:center}
+
+.a-card{width:230px;height:420px;transform-origin:50% 100%;animation:aDeal .7s calc(var(--d)*1ms) cubic-bezier(.2,.8,.2,1) both;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+@keyframes aDeal{from{opacity:0;transform:translateY(80px) rotateX(35deg) scale(.9)}to{opacity:1;transform:none}}
+.a-wrap{position:absolute;perspective:1100px}
+.a-card:hover,.a-card:focus-visible{transform:translateY(-14px) rotateX(6deg);box-shadow:inset 0 0 0 1px #E6E9FF,0 30px 60px rgba(0,1,10,.7)}
+.a-obj{position:absolute;left:15px;top:44px;width:200px;height:200px;object-fit:contain;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.a-card:hover .a-obj{transform:scale(1.1) rotate(-6deg)}
+.a-sweep{position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(90deg,rgba(230,233,255,0),rgba(230,233,255,.14),rgba(230,233,255,0));transform:skewX(-14deg)}
+.a-card:hover .a-sweep{animation:aSweep .9s ease}
+@keyframes aSweep{from{left:-80px}to{left:280px}}
+.a-verb{position:absolute;left:20px;right:20px;bottom:20px;height:40px;opacity:0;transform:translateY(16px);transition:all .3s cubic-bezier(.2,.8,.2,1)}
+.a-card:hover .a-verb,.a-card:focus-visible .a-verb{opacity:1;transform:none}
+.a-words{position:absolute;left:20px;right:20px;bottom:20px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.a-card:hover .a-words,.a-card:focus-visible .a-words{transform:translateY(-54px)}
+.a-pv{position:absolute;overflow:hidden;animation:aOpen .75s cubic-bezier(.2,.8,.2,1) both;box-shadow:inset 0 0 0 1px #434C89}
+@keyframes aOpen{from{transform:translate(calc(var(--fx)*1px),calc(var(--fy)*1px)) scale(var(--fs),.62);opacity:.4}to{transform:none;opacity:1}}
+.a-in{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;animation:aStrip .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes aStrip{from{transform:translateX(160px);opacity:0;filter:blur(8px)}to{transform:none;opacity:1;filter:none}}
+.a-flash{position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,rgba(230,233,255,0) 30%,rgba(230,233,255,.22) 50%,rgba(230,233,255,0) 70%);animation:aFlash .7s ease both}
+@keyframes aFlash{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.a-ring{position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;box-shadow:0 0 0 3px #E6E9FF;animation:aRing .9s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
+.a-ring.r2{animation-delay:.12s}
+@keyframes aRing{from{transform:scale(.1);opacity:1}to{transform:scale(3.6);opacity:0}}
+.a-pop{animation:aPop .7s .1s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes aPop{from{transform:scale(0) rotate(-20deg)}to{transform:none}}
+.a-side{animation:aSide .7s .25s cubic-bezier(.2,.8,.2,1) both}
+@keyframes aSide{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:none}}
+.a-dive{position:absolute;inset:0;z-index:12;overflow:hidden;background:#00010A;animation:aGrow .9s cubic-bezier(.6,0,.2,1) both}
+@keyframes aGrow{from{clip-path:inset(236px 736px 164px 64px)}to{clip-path:inset(0 0 0 0)}}
+.a-dive .tb-world{animation:aPush 1.7s cubic-bezier(.5,0,.2,1) both}
+@keyframes aPush{from{transform:scale(1)}to{transform:scale(1.9);filter:blur(3px)}}
+.a-portal{position:absolute;left:50%;top:50%;width:420px;height:420px;margin:-210px 0 0 -210px;object-fit:contain;animation:aThrough 1.7s cubic-bezier(.6,0,.4,1) both}
+@keyframes aThrough{0%{transform:scale(.7);opacity:1}70%{opacity:1}100%{transform:scale(9);opacity:0}}
+.a-wv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:aLand 1.2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes aLand{from{transform:scale(1.25)}to{transform:none}}
+.a-ship{position:absolute;left:50%;top:58%;width:960px;height:320px;margin:-160px 0 0 -480px;animation:aStreak 1.3s .25s cubic-bezier(.15,.9,.25,1) both}
+@keyframes aStreak{0%{transform:translateY(-140px) scale(.05);opacity:0}15%{opacity:1}100%{transform:none;opacity:1}}
+.a-trail{position:absolute;left:50%;top:0;width:6px;height:58%;margin-left:-3px;background:linear-gradient(180deg,rgba(230,233,255,0),rgba(230,233,255,.8));transform-origin:50% 100%;animation:aTrail 1.1s .25s ease-out both}
+@keyframes aTrail{0%{transform:scaleY(0);opacity:1}60%{transform:scaleY(1);opacity:.9}100%{transform:scaleY(1);opacity:0}}
+.a-shock{position:absolute;left:50%;top:58%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;box-shadow:0 0 0 2px #E6E9FF;animation:aRing 1s 1.35s cubic-bezier(.2,.8,.2,1) both}
+
+.b-stage{position:absolute;left:0;right:0;top:250px;height:470px;perspective:2000px;perspective-origin:50% 30%}
+.b-ring{position:absolute;left:50%;top:40px;width:0;height:0;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.3,.9,.3,1)}
+.b-card{width:380px;height:300px;left:-190px;top:0;transform-style:preserve-3d;backface-visibility:hidden;opacity:.55;transition:opacity .6s,box-shadow .3s}
+.b-card.front{opacity:1;box-shadow:inset 0 0 0 1px #E6E9FF}
+.b-card:hover{opacity:.9}
+.b-spine{position:absolute;left:0;top:0;bottom:0;width:64px;display:flex;align-items:center;justify-content:center;box-shadow:inset -1px 0 0 #222645}
+.b-spine span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:24px;white-space:nowrap}
+.b-obj{position:absolute;left:96px;top:30px;width:240px;height:240px;object-fit:contain}
+.b-card.front .b-obj{animation:bSpin 14s linear infinite}
+@keyframes bSpin{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+.b-info{animation:tbRise .5s .15s cubic-bezier(.2,.8,.2,1) both}
+.b-flip{position:absolute;left:64px;right:64px;top:236px;height:760px;transform-style:preserve-3d;animation:bFlip .8s cubic-bezier(.3,.9,.3,1) both;transform-origin:50% 40%}
+@keyframes bFlip{from{transform:perspective(2000px) rotateY(-100deg) scale(.4);opacity:0}45%{opacity:1}to{transform:none;opacity:1}}
+.b-pv{position:absolute;left:280px;top:0;width:1232px;height:520px;overflow:hidden;box-shadow:inset 0 0 0 1px #434C89;perspective:1400px}
+.b-cube{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform-origin:50% 50% -300px;animation:bCube .7s cubic-bezier(.3,.9,.3,1) both}
+@keyframes bCube{from{transform:rotateY(80deg);opacity:0}to{transform:none;opacity:1}}
+.b-px{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px;background:#E6E9FF;animation:bFly .8s cubic-bezier(.5,0,.2,1) both}
+@keyframes bFly{from{transform:translate(calc(var(--x)*1px),calc(var(--y)*1px)) rotate(180deg);opacity:0}30%{opacity:1}85%{transform:translate(0,0) scale(.6);opacity:1}to{transform:scale(0);opacity:0}}
+.b-built{animation:bBuilt .5s .7s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes bBuilt{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.b-warp{position:absolute;inset:0;z-index:12;overflow:hidden;background:#00010A}
+.b-warp .tb-world{animation:bZoom 1.7s cubic-bezier(.6,0,.2,1) both}
+@keyframes bZoom{from{transform:scale(.62) translateY(-60px);opacity:.6}to{transform:scale(1.6);opacity:1;filter:blur(2px)}}
+.b-streak{position:absolute;left:50%;top:50%;height:2px;width:520px;transform-origin:0 50%;background:linear-gradient(90deg,rgba(230,233,255,0),#E6E9FF);animation:bStreak 1.1s calc(var(--d)*1ms) cubic-bezier(.6,0,.4,1) both}
+@keyframes bStreak{from{transform:rotate(calc(var(--a)*1deg)) translateX(40px) scaleX(.1);opacity:0}40%{opacity:1}to{transform:rotate(calc(var(--a)*1deg)) translateX(1300px) scaleX(1.4);opacity:0}}
+.b-wv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:aLand 1.2s cubic-bezier(.2,.8,.2,1) both}
+.b-ship{position:absolute;left:50%;top:56%;width:960px;height:320px;margin:-160px 0 0 -480px;animation:bBuilt .6s 1s cubic-bezier(.3,1.4,.5,1) both}
+.b-wpx{position:absolute;left:50%;top:56%;width:26px;height:26px;margin:-13px;background:#E6E9FF;animation:bFly 1.1s calc(var(--d)*1ms) cubic-bezier(.5,0,.2,1) both}
+
+.c-row{position:absolute;left:64px;right:64px;top:236px;height:640px;display:flex;gap:12px}
+.c-strip{position:relative;flex:0 0 150px;height:640px;transition:flex .6s cubic-bezier(.3,.9,.3,1),box-shadow .3s;animation:cIn .6s calc(var(--d)*1ms) cubic-bezier(.2,.8,.2,1) both}
+@keyframes cIn{from{opacity:0;transform:translateY(-40px) scaleY(.8)}to{opacity:1;transform:none}}
+.c-row:not(:hover) .c-strip:first-child,.c-strip:hover,.c-strip:focus-visible{flex:1 1 640px;box-shadow:inset 0 0 0 1px #E6E9FF}
+.c-name{position:absolute;left:0;bottom:28px;width:150px;display:flex;justify-content:center}
+.c-name span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:26px;white-space:nowrap}
+.c-thumb{position:absolute;left:25px;top:28px;width:100px;height:100px;object-fit:contain;transition:all .6s cubic-bezier(.3,.9,.3,1)}
+.c-open{position:absolute;left:170px;top:28px;right:32px;bottom:28px;opacity:0;transform:translateX(30px);transition:opacity .35s,transform .5s;display:flex;flex-direction:column;gap:14px;pointer-events:none}
+.c-row:not(:hover) .c-strip:first-child .c-open,.c-strip:hover .c-open,.c-strip:focus-visible .c-open{opacity:1;transform:none;transition-delay:.2s}
+.c-row:not(:hover) .c-strip:first-child .c-thumb,.c-strip:hover .c-thumb,.c-strip:focus-visible .c-thumb{left:170px;top:150px;width:300px;height:300px}
+.c-panel{position:absolute;left:64px;right:64px;top:236px;height:760px;animation:cWide .7s cubic-bezier(.3,.9,.3,1) both}
+@keyframes cWide{from{clip-path:inset(0 calc(var(--fx)*1px) 120px calc(var(--fy)*1px))}to{clip-path:inset(0 0 0 0)}}
+.c-pv{position:absolute;left:0;top:0;width:1180px;height:760px;overflow:hidden;box-shadow:inset 0 0 0 1px #434C89}
+.c-wipe{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;animation:cWipe .65s cubic-bezier(.6,0,.2,1) both}
+@keyframes cWipe{from{clip-path:polygon(0 0,0 0,-30% 100%,-30% 100%)}to{clip-path:polygon(0 0,130% 0,100% 100%,-30% 100%)}}
+.c-petal{position:absolute;left:50%;top:50%;width:70px;height:190px;margin:-190px 0 0 -35px;transform-origin:50% 100%;background:linear-gradient(180deg,rgba(230,233,255,0),rgba(230,233,255,.55));clip-path:polygon(50% 0,100% 45%,50% 100%,0 45%);animation:cBloom 1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes cBloom{0%{transform:rotate(calc(var(--a)*1deg)) scaleY(0);opacity:0}40%{transform:rotate(calc(var(--a)*1deg + 20deg)) scaleY(1);opacity:1}100%{transform:rotate(calc(var(--a)*1deg + 50deg)) scaleY(1.3);opacity:0}}
+.c-drop{animation:cDrop .7s .35s cubic-bezier(.3,1.3,.5,1) both}
+@keyframes cDrop{from{transform:translateY(-260px) scale(.7);opacity:0}to{transform:none;opacity:1}}
+.c-shut{position:absolute;inset:0;z-index:12;overflow:hidden;background:#00010A}
+.c-shut .tb-world{animation:cSettle 1.7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes cSettle{from{transform:scale(1.35)}to{transform:scale(1.05)}}
+.c-slat{position:absolute;left:0;width:1920px;height:136px;background:rgba(0,4,31,.97);box-shadow:inset 0 -1px 0 #222645;animation:cSlat .9s calc(var(--d)*1ms) cubic-bezier(.6,0,.2,1) both}
+@keyframes cSlat{from{transform:none}to{transform:translateX(calc(var(--s)*2000px))}}
+.c-wv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.05)}
+.c-ship{position:absolute;left:50%;top:56%;width:960px;height:320px;margin:-160px 0 0 -480px;animation:cDrop 1s .2s cubic-bezier(.3,1.25,.5,1) both}
+.c-wtrail{position:absolute;left:50%;top:0;width:4px;height:56%;margin-left:-2px;background:linear-gradient(180deg,rgba(230,233,255,0),#E6E9FF);transform-origin:50% 0;animation:aTrail 1.1s .1s ease-out both}
+
+.d-card{width:300px;height:360px;animation:dIn .6s calc(var(--d)*1ms) cubic-bezier(.2,.8,.2,1) both;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+@keyframes dIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.d-card:hover,.d-card:focus-visible{transform:translateY(-8px);box-shadow:inset 0 0 0 1px #E6E9FF}
+.d-lens{position:absolute;left:50px;top:30px;width:200px;height:200px;border-radius:50%;overflow:hidden;box-shadow:inset 0 0 0 1px #434C89;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.d-lens .tb-world{opacity:.22;transition:transform 1.2s ease}
+.d-card:hover .d-lens{transform:scale(1.08)}
+.d-card:hover .d-lens .tb-world{transform:scale(1.4)}
+.d-lens .d-obj{position:absolute;left:20px;top:20px;width:160px;height:160px;object-fit:contain;transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+.d-card:hover .d-obj{transform:rotate(25deg) scale(1.1)}
+.d-rip{position:absolute;left:50px;top:30px;width:200px;height:200px;border-radius:50%;box-shadow:0 0 0 1px #E6E9FF;opacity:0;pointer-events:none}
+.d-card:hover .d-rip{animation:dRip 1.4s ease-out infinite}
+@keyframes dRip{from{transform:scale(1);opacity:.8}to{transform:scale(1.35);opacity:0}}
+.d-iris{position:absolute;left:0;top:0;width:1920px;height:1080px;animation:dIris .8s cubic-bezier(.3,.9,.3,1) both}
+@keyframes dIris{from{clip-path:circle(calc(var(--fs)*1px) at calc(var(--fx)*1px) calc(var(--fy)*1px))}to{clip-path:circle(1400px at 520px 610px)}}
+.d-big{position:absolute;border-radius:50%;overflow:hidden;box-shadow:inset 0 0 0 1px #434C89}
+.d-blink{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;animation:dBlink .6s cubic-bezier(.6,0,.2,1) both}
+@keyframes dBlink{from{clip-path:circle(0 at 50% 50%)}to{clip-path:circle(75% at 50% 50%)}}
+.d-wave{position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px;border-radius:50%;box-shadow:0 0 0 2px #E6E9FF;animation:dWave 1.2s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
+@keyframes dWave{from{transform:scale(.2);opacity:1}to{transform:scale(3.2);opacity:0}}
+.d-dial{position:absolute;width:210px;margin:-36px 0 0 0;animation:tbRise .45s cubic-bezier(.2,.8,.2,1) both}
+.d-dive{position:absolute;inset:0;z-index:12;overflow:hidden;background:#00010A;animation:dGrow 1.1s cubic-bezier(.6,0,.2,1) both}
+@keyframes dGrow{from{clip-path:circle(300px at 520px 610px)}to{clip-path:circle(1300px at 960px 540px)}}
+.d-dive .tb-world{animation:dIn2 1.7s cubic-bezier(.5,0,.2,1) both}
+@keyframes dIn2{from{transform:scale(1.7) translate(-120px,40px)}to{transform:scale(1.05)}}
+.d-tun{position:absolute;left:50%;top:50%;width:160px;height:160px;margin:-80px;border-radius:50%;box-shadow:0 0 0 2px rgba(230,233,255,.7);animation:dTun 1.3s calc(var(--d)*1ms) cubic-bezier(.6,0,.6,1) both}
+@keyframes dTun{from{transform:scale(.1);opacity:0}30%{opacity:1}to{transform:scale(14);opacity:0}}
+.d-wv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.05)}
+.d-ship{position:absolute;left:50%;top:54%;width:960px;height:320px;margin:-160px 0 0 -480px;animation:dRise 1.1s .5s cubic-bezier(.2,1.2,.4,1) both}
+@keyframes dRise{from{transform:scale(0);opacity:0;filter:brightness(3)}60%{opacity:1}to{transform:none;opacity:1;filter:none}}
+.d-dot{position:absolute;left:50%;top:54%;width:14px;height:14px;margin:-7px;border-radius:50%;background:#E6E9FF;animation:dDot .6s both}
+@keyframes dDot{0%{transform:scale(0)}60%{transform:scale(1.4)}100%{transform:scale(0)}}
+.d-ww{position:absolute;left:50%;top:54%;width:240px;height:240px;margin:-120px;border-radius:50%;box-shadow:0 0 0 2px #E6E9FF;animation:dWave 1.4s calc(var(--d)*1ms) cubic-bezier(.2,.8,.2,1) both}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img src="/_blob/391619dde523174b4a9ead64e169b67a" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="abs" style="left:0;top:84px;width:1920px;height:996px;background:radial-gradient(ellipse 70% 55% at 50% 28%,rgba(117,143,251,.14),rgba(117,143,251,0) 70%),linear-gradient(180deg,rgba(34,38,69,.9) 0%,rgba(0,4,31,.92) 48%,rgba(0,1,10,.95) 100%)"></div><svg aria-hidden="true" width="1920" height="996" style="position:absolute;left:0;top:84px"><polyline points="0,338.0 32,342.5 64,346.7 96,350.3 128,353.2 160,355.1 192,356.0 224,355.7 256,354.3 288,351.9 320,348.6 352,344.6 384,340.3 416,335.7 448,331.4 480,327.4 512,324.1 544,321.7 576,320.3 608,320.0 640,320.9 672,322.8 704,325.7 736,329.3 768,333.5 800,338.0 832,342.5 864,346.7 896,350.3 928,353.2 960,355.1 992,356.0 1024,355.7 1056,354.3 1088,351.9 1120,348.6 1152,344.6 1184,340.3 1216,335.7 1248,331.4 1280,327.4 1312,324.1 1344,321.7 1376,320.3 1408,320.0 1440,320.9 1472,322.8 1504,325.7 1536,329.3 1568,333.5 1600,338.0 1632,342.5 1664,346.7 1696,350.3 1728,353.2 1760,355.1 1792,356.0 1824,355.7 1856,354.3 1888,351.9 1920,348.6" fill="none" stroke="#758FFB" stroke-opacity="0.22" stroke-width="1.5"></polyline><polyline points="0,595.8 32,594.7 64,592.5 96,589.4 128,585.6 160,581.3 192,576.8 224,572.4 256,568.3 288,564.8 320,562.2 352,560.6 384,560.0 416,560.6 448,562.3 480,564.9 512,568.4 544,572.5 576,576.9 608,581.4 640,585.7 672,589.5 704,592.6 736,594.8 768,595.9 800,595.9 832,594.7 864,592.5 896,589.4 928,585.6 960,581.3 992,576.8 1024,572.4 1056,568.3 1088,564.8 1120,562.2 1152,560.6 1184,560.0 1216,560.6 1248,562.3 1280,564.9 1312,568.4 1344,572.5 1376,576.9 1408,581.4 1440,585.7 1472,589.5 1504,592.6 1536,594.8 1568,595.9 1600,595.9 1632,594.7 1664,592.5 1696,589.4 1728,585.6 1760,581.3 1792,576.8 1824,572.4 1856,568.3 1888,564.8 1920,562.2" fill="none" stroke="#96ACFC" stroke-opacity="0.22" stroke-width="1.5"></polyline><polyline points="0,796.7 32,792.3 64,788.0 96,784.2 128,781.2 160,779.1 192,778.1 224,778.2 256,779.4 288,781.7 320,784.8 352,788.7 384,793.0 416,797.5 448,801.9 480,806.0 512,809.4 544,812.0 576,813.5 608,814.0 640,813.3 672,811.6 704,808.9 736,805.3 768,801.2 800,796.8 832,792.3 864,788.0 896,784.2 928,781.2 960,779.1 992,778.1 1024,778.2 1056,779.4 1088,781.7 1120,784.8 1152,788.7 1184,793.0 1216,797.5 1248,801.9 1280,806.0 1312,809.4 1344,812.0 1376,813.5 1408,814.0 1440,813.3 1472,811.6 1504,808.9 1536,805.3 1568,801.2 1600,796.8 1632,792.3 1664,788.0 1696,784.2 1728,781.2 1760,779.1 1792,778.1 1824,778.2 1856,779.4 1888,781.7 1920,784.8" fill="none" stroke="#B9C9FA" stroke-opacity="0.22" stroke-width="1.5"></polyline></svg><nav aria-label="Menu screens" class="abs" style="left:0;right:0;top:0;height:84px;background:rgba(0,1,10,.82);display:flex;align-items:center;justify-content:center;gap:48px;z-index:5"><span class="kc">LT</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/ec690d6b90d6fcdbc430b9bbaacf28a9" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">CODEX</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HANGAR</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#E6E9FF"><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:1">HOME<span class="abs" style="left:0;right:0;bottom:-12px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">ARK</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:18px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">PORT</span><span class="kc">RT</span></nav><div class="abs" aria-hidden="true" style="left:0;top:84px;width:1920px;height:996px;background:rgba(0,4,31,.95)"></div><div class="abs" style="left:0;right:0;top:96px;height:40px;display:flex;align-items:center;justify-content:center;gap:34px;z-index:5"><span class="kc">LT</span><span class="cap" style="font-size:16px;position:relative;color:#E6E9FF">TOY BOX<span class="abs" style="left:0;right:0;bottom:-8px;height:2px;background:#E6E9FF"></span></span><span class="cap" style="font-size:16px;position:relative;color:#747BAD">ARCADE</span><span class="cap" style="font-size:16px;position:relative;color:#747BAD">ARENA</span><span class="cap" style="font-size:16px;position:relative;color:#747BAD">MISSION</span><span class="kc">RT</span></div><div class="abs" style="left:64px;top:156px;display:flex;align-items:baseline;gap:22px"><span style="font-size:28px">The toy card, four ways</span><span class="lab">Spawn Matrix at rest and pointed at; each option board plays the whole flow</span></div><div class="abs" style="left:64px;top:210px;width:424px;height:640px"><div style="display:flex;gap:12px;align-items:baseline"><span class="lab" style="color:#E6E9FF">A</span><span style="font-size:20px">Portal</span></div><div class="abs" style="left:0;top:40px;transform:scale(.78);transform-origin:0 0"><div class="a-wrap" style="left:0;top:0;width:230px;height:420px"><div class="tb-card a-card " style="--d:0;"><span class="lab abs" style="left:20px;top:18px">Creation</span><img class="a-obj" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt=""><span class="a-words" style=""><span style="display:block;font-size:24px">Spawn Matrix</span><span style="display:block;margin-top:8px;font-size:14px;line-height:1.45;color:#B8C0F0">The release bench.</span></span></div></div></div><div class="abs" style="left:198px;top:40px;transform:scale(.78);transform-origin:0 0"><div class="a-wrap" style="left:0;top:0;width:230px;height:420px"><div class="tb-card a-card " style="--d:0;transform:translateY(-14px) rotateX(6deg);box-shadow:inset 0 0 0 1px #E6E9FF"><span class="lab abs" style="left:20px;top:18px">Creation</span><img class="a-obj" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt=""><span class="a-words" style="transform:translateY(-54px)"><span style="display:block;font-size:24px">Spawn Matrix</span><span style="display:block;margin-top:8px;font-size:14px;line-height:1.45;color:#B8C0F0">The release bench.</span></span><span class="btn sm cta abs" style="left:20px;right:20px;bottom:20px;height:40px"><span class="kc">A</span>Open</span></div></div></div></div><div class="abs" style="left:520px;top:210px;width:424px;height:640px"><div style="display:flex;gap:12px;align-items:baseline"><span class="lab" style="color:#E6E9FF">B</span><span style="font-size:20px">Orbit</span></div><div class="abs" style="left:0;top:40px;transform:perspective(1200px) rotateY(28deg) scale(.6);transform-origin:0 0;opacity:.55"><div class="tb-card" style="position:relative;width:380px;height:300px;"><span class="b-spine"><span>Spawn Matrix</span></span><img class="b-obj" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt=""><span class="lab abs" style="right:18px;top:16px">Creation</span></div></div><div class="abs" style="left:110px;top:150px;transform:scale(.78);transform-origin:0 0"><div class="tb-card" style="position:relative;width:380px;height:300px;box-shadow:inset 0 0 0 1px #E6E9FF"><span class="b-spine"><span>Spawn Matrix</span></span><img class="b-obj" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt=""><span class="lab abs" style="right:18px;top:16px">Creation</span></div></div></div><div class="abs" style="left:976px;top:210px;width:424px;height:640px"><div style="display:flex;gap:12px;align-items:baseline"><span class="lab" style="color:#E6E9FF">C</span><span style="font-size:20px">Slide open</span></div><div class="abs" style="left:0;top:40px;transform:scale(.6);transform-origin:0 0;display:flex;gap:10px"><div class="tb-card" style="position:relative;width:150px;height:520px"><img class="c-thumb" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt=""><span class="c-name"><span>Spawn Matrix</span></span></div><div class="tb-card" style="position:relative;width:520px;height:520px;box-shadow:inset 0 0 0 1px #E6E9FF"><img class="c-thumb" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt="" style="left:170px;top:150px;width:260px;height:260px"><span class="c-name"><span>Spawn Matrix</span></span><span class="abs" style="left:170px;top:28px;right:24px;display:flex;flex-direction:column;gap:12px"><span class="lab">Creation &#160;&#183;&#160; 6 ways</span><span style="font-size:30px">Spawn Matrix</span><span style="font-size:15px;color:#B8C0F0;line-height:1.5">The release bench.</span></span></div></div></div><div class="abs" style="left:1432px;top:210px;width:424px;height:640px"><div style="display:flex;gap:12px;align-items:baseline"><span class="lab" style="color:#E6E9FF">D</span><span style="font-size:20px">Lens</span></div><div class="abs" style="left:0;top:40px;transform:scale(.72);transform-origin:0 0"><div class="tb-card" style="position:relative;width:300px;height:360px;"><span class="d-lens" style=""><img class="tb-world" src="/_blob/391619dde523174b4a9ead64e169b67a" alt=""><img class="d-obj" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt=""></span><span class="abs" style="left:0;right:0;top:254px;text-align:center;font-size:24px">Spawn Matrix</span><span class="lab abs" style="left:0;right:0;top:292px;text-align:center">Creation &#160;&#183;&#160; 6 ways</span></div></div><div class="abs" style="left:0;top:330px;transform:scale(.72);transform-origin:0 0"><div class="tb-card" style="position:relative;width:300px;height:360px;box-shadow:inset 0 0 0 1px #E6E9FF"><span class="d-lens" style="transform:scale(1.08)"><img class="tb-world" src="/_blob/391619dde523174b4a9ead64e169b67a" alt=""><img class="d-obj" src="/_blob/fcc11a46f5aa7d95ca55a153db5aef22" alt=""></span><span class="abs" style="left:38px;top:18px;width:224px;height:224px;border-radius:50%;box-shadow:0 0 0 1px rgba(230,233,255,.5)"></span><span class="abs" style="left:0;right:0;top:254px;text-align:center;font-size:24px">Spawn Matrix</span><span class="lab abs" style="left:0;right:0;top:292px;text-align:center">Creation &#160;&#183;&#160; 6 ways</span></div></div></div><div class="abs" style="left:64px;top:870px;right:64px;display:grid;grid-template-columns:140px repeat(4,1fr);row-gap:10px;column-gap:24px"><span class="lab" style="color:#E6E9FF">Open</span><span style="font-size:15px;color:#B8C0F0">the card grows into the preview</span><span style="font-size:15px;color:#B8C0F0">the card flips; its back is Configure</span><span style="font-size:15px;color:#B8C0F0">the strip widens into the window</span><span style="font-size:15px;color:#B8C0F0">the lens irises open</span><span class="lab" style="color:#E6E9FF">Switch</span><span style="font-size:15px;color:#B8C0F0">film strip with a light sweep</span><span style="font-size:15px;color:#B8C0F0">the preview turns like a cube</span><span style="font-size:15px;color:#B8C0F0">a diagonal wipe</span><span style="font-size:15px;color:#B8C0F0">the lens blinks shut and open</span><span class="lab" style="color:#E6E9FF">Spawn</span><span style="font-size:15px;color:#B8C0F0">two rings and a pop</span><span style="font-size:15px;color:#B8C0F0">prisms fly in and build it</span><span style="font-size:15px;color:#B8C0F0">five petals bloom, it drops in</span><span style="font-size:15px;color:#B8C0F0">three ripples</span><span class="lab" style="color:#E6E9FF">Navigate</span><span style="font-size:15px;color:#B8C0F0">through the toy&#8217;s ring</span><span style="font-size:15px;color:#B8C0F0">warp streaks</span><span style="font-size:15px;color:#B8C0F0">the window splits into slats</span><span style="font-size:15px;color:#B8C0F0">the lens grows past you, a tunnel of rings</span><span class="lab" style="color:#E6E9FF">Arrive</span><span style="font-size:15px;color:#B8C0F0">streaks in from the horizon</span><span style="font-size:15px;color:#B8C0F0">built from prisms</span><span style="font-size:15px;color:#B8C0F0">drops in on a trail</span><span style="font-size:15px;color:#B8C0F0">rises out of a point on a ripple</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
