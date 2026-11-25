@@ -293,7 +293,7 @@ lab and port by one command each (`unity_port.py <name> --dry` passes); they wai
 Garrett's Brood Rush playtest: "the Serpent's wall was still not syncing". `unity_refcompile` (player and editor
 configs: 0 errors in the changed files; the remaining errors are this sandbox's missing packages) and the gates ran;
 no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_VesselActions/SERPENT_SEED_WALL.md`
-"Multiplayer"; protocol 39 (both machines need this build).
+"Multiplayer"; protocol 41 (both machines need this build).
 
 - [ ] EditMode `SerpentWallSyncTests` pass (the flag table: 29 cases, plus 3 tests).
 - [ ] Host + client, an AI Sparrow and an AI Squirrel: the client sees the Sparrow's shots break prisms and the Squirrel's tube rings, where the host does.
