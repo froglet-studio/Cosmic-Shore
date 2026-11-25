@@ -288,6 +288,31 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
+## 🟡 The editor's picture sticks every few seconds in Play: a session polling it with `eval` (2026-11-26, Yash, CAUSE MEASURED IN THE EDITOR; NO CODE CHANGE; "AFTER" NOT MEASURED)
+
+**What was seen** (Yash): "a sudden screen stuck, every second of the game playing even in just lavalamp".
+
+**Cause, measured** (open editor, Play in `Menu_Main`, a per-frame sampler of `ProfilerRecorder`s, 1,490 frames,
+39.6 s, 2026-11-26 00:40): 11 frames of 1,197 to 1,599 ms, one every 3.6 s, each allocating 114.4 MB, all of it
+outside `PlayerLoop` (32 to 78 ms in those frames). A Spearline test script of another session was running an
+`eval` probe against the editor every 2 s; every `eval` compiles on the editor's main thread. It is not game code and
+a built player cannot have it (`win_pc1122c`, 2026-11-22: menu worst frame 45 ms, no frame over 50 ms).
+
+**Fix**: a rule, not code: `Docs/unity-cli-setup.md` § "`eval` freezes the editor" and `CLAUDE.md` § Unity CLI
+verification (never `eval` in a loop; install a probe once and read its file).
+
+**Hand test** (with no session driving the editor):
+- [ ] Play, stay in the menu for a minute, then fly the lava lamp: the picture never sticks for a second.
+- [ ] Start any arcade game: the same.
+
+**Not verified / still open**:
+- No "after" measurement: the measuring session ended the editor by switching its Profiler on from an `eval`
+  (Unity died in `profiling::Profiler::EmitUIEvents`), so the same sampler has not been run without the polling.
+- A second, smaller hitch was in the same capture and is NOT explained: every 0.5 s one frame of 41 to 82 ms
+  (median frame 16 ms) with 6 to 37 ms in `CoroutinesDelayedCalls`, in `Menu_Main`, about 10 minutes into Play. The
+  2026-11-22 player shows nothing like it in a 15 s menu capture (`CoroutinesDelayedCalls` worst 1.6 ms). Which
+  coroutine it is needs the sampler run again with every coroutine marker recorded.
+
 ## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, THREE I4 AI RACES IN THE EDITOR)
 
 Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"), in Jade,
