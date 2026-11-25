@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile the SHIPPED Riposte AI plan (RiposteDuel) and its SHIPPED edit-mode tests (RiposteDuelTests) against
+# Compile the SHIPPED Riposte AI plan (RiposteDuel), arena rules (RiposteYard) and their SHIPPED edit-mode tests against
 # race_course_source_harness's Unity math stub and spearline_harness.s NUnit shim with Roslyn, and RUN every
 # [Test] - no Unity.
 #
@@ -34,7 +34,7 @@ build() {   # $1 = duel source, $2 = output name
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$SHIM/NUnitShim.cs" "$HERE/Runner.cs" \
-    "$1" "$A/Tests/Editor/RiposteDuelTests.cs"; do
+    "$1" "$A/Tests/Editor/RiposteDuelTests.cs" "$HERE/YardStub.cs" "${YARD:-$A/Controller/Arcade/Riposte/RiposteYard.cs}"     "$A/Tests/Editor/RiposteYardTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -62,6 +62,20 @@ mutate() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must
   if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
   echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
 }
+mutate_yard() {   # the same, on RiposteYard.cs
+  sed "$2" "$A/Controller/Arcade/Riposte/RiposteYard.cs" > "$OUT/RiposteYard_neg.cs"
+  grep -q "$3" "$OUT/RiposteYard_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  YARD="$OUT/RiposteYard_neg.cs" build "$DUEL" neg
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+mutate_yard "a rail laid inside its lane" 's/\* (laneRadius + RailStandoff);/* (laneRadius - RailStandoff);/' 'laneRadius - RailStandoff'
+mutate_yard "pickets laid end to end (no way off the lane)" 's/index \* (PicketLength + PicketGap);/index * PicketLength;/' 'index \* PicketLength;'
+mutate_yard "a gate laid inside the refuel clearing" 's/(gate + 1) \/ (gates + 1);/(gate + 1) \/ gates;/' '(gate + 1) \/ gates;'
+mutate_yard "every lane gated at I1" 's/everyNth > 0 \&\& lane % everyNth == 0;/everyNth >= 0;/' 'everyNth >= 0;'
+mutate_yard "thorns through the whole scatter" 's/thornBand > 0f \&\& distanceToLaneAxis < laneRadius + thornBand;/thornBand > 0f;/' 'thornBand > 0f;'
+mutate_yard "ironwood outside the core" 's/ironwoodCoreRadius > 0f \&\& stickCentre/ironwoodCoreRadius > 0f || stickCentre/' '0f || stickCentre'
 mutate "a charge that never runs out (the slow knot)" 's/if (passed || timedOut) return Phase.Extend;/if (false) return Phase.Extend;/' 'if (false) return Phase.Extend;'
 mutate "an easy pilot sent cutting" 's/bool wantsFuel = reapBelow > 0f \&\& fuel01 < reapBelow;/bool wantsFuel = fuel01 <= reapBelow;/' 'fuel01 <= reapBelow;'
 mutate "a knot the slower hull stays in" 's/return sqr <= knot \* knot \&\& speed <= rivalSpeed;/return false;/' 'return false;'

@@ -401,6 +401,12 @@ namespace CosmicShore.Engine
         /// <summary>Oriented overload: the probe box is rotated by <paramref name="orientation"/>.</summary>
         public static bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation)
             => GameLoop.Current?.Triggers.CheckBox(center, halfExtents, orientation) ?? false;
+
+        /// <summary>Unity's full signature. Every registered collider is a trigger volume here and the registry has
+        /// no layers, so the mask and the trigger policy are accepted and not consulted.</summary>
+        public static bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask,
+            QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+            => GameLoop.Current?.Triggers.CheckBox(center, halfExtents, orientation) ?? false;
     }
 
     /// <summary>Original-engine force application modes (UnityEngine.ForceMode). Values frozen.</summary>

@@ -27274,6 +27274,17 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
       test seats three teams and its host seat flies the stock autopilot at 31-47 u/s, not the mode's AI; it is
       the hull that gets struck. The duelists flew as in the judge. `RIPOSTE.md` section 5.
 - [ ] A 2v2 match of four mode AIs in the editor (the smoke test cannot seat one), timed against the judge.
+- [ ] **The Lists, Riposte's own arena (2026-11-25, `RIPOSTE.md` section 4; nothing below was run in Unity).** The
+      project compiles with `SpawnableRiposteYard` and `RiposteYard`, and `RiposteYardTests` pass (10 tests).
+- [ ] Each of the four `SpawnableRiposteYard` prefabs lays the census's prism count: 480 / 1,110 / 2,090 / 3,410.
+- [ ] Riposte I1-I4 load their own cells: straight empty lanes run from the centre clearing to a refuel clearing,
+      rails of short pickets line each lane, gates stand in the lanes from I2, red tips line the lane walls from
+      I3, the sticks round the centre are ironwood at I4; crystals float in every clearing; pilots spawn outside
+      the heap. Jackstraw's own arena is unchanged.
+- [ ] On Linux: `bake_prism_layouts.py` and `audit_prism_clipping.py SpawnableRiposteYard` (neither runs on
+      Windows); until the bake, the game lays the yard live with a warning.
+- [ ] A person's judgment: do the lanes read as the place to wind up, can the rails be cut for fuel without
+      leaving the line, is a gate a fair obstacle at ramp speed, and does it look good (not flat, not noise)?
 - [ ] Decide: should a human seat the AI holds fly Riposte's duelist (as Switchback's does) and not the stock
       autopilot?
 - [ ] A sword hit scores only while the striker is the faster hull; a struck pilot is silenced and can refuel at the

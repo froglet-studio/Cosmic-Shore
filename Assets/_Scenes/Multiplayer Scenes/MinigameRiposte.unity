@@ -842,12 +842,12 @@ MonoBehaviour:
   - {fileID: 1564881929}
   arrangeSpawnPointsAroundCell: 1
   spawnDistanceOutsideNucleus: 40
-  spawnRingRadiusFloor: 450
+  spawnRingRadiusFloor: 510
   spawnRingRadiusFloorByIntensity:
-  - 450
-  - 560
-  - 660
-  - 770
+  - 510
+  - 590
+  - 690
+  - 790
   spawnFormation: 0
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   preSpawnDelayMs: 200
@@ -967,10 +967,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ID: 0
   CellConfigs:
-  - {fileID: 11400000, guid: 7abd842e8115e8dc15821598513030d5, type: 2}
-  - {fileID: 11400000, guid: 0cfcfdad3b660ddde75fa198af1f6031, type: 2}
-  - {fileID: 11400000, guid: 6976e1020638a6f34c27fbccb200001a, type: 2}
-  - {fileID: 11400000, guid: ae2d4f7f1f8090103ca6bbe41da0254b, type: 2}
+  - {fileID: 11400000, guid: aac24ff5f0a0b84de1e0a36c0157db65, type: 2}
+  - {fileID: 11400000, guid: 92bfa40aceca4bc29cfb57cf92a7c13f, type: 2}
+  - {fileID: 11400000, guid: 1495368b70708e1b3cde94a537a3b1b8, type: 2}
+  - {fileID: 11400000, guid: 22f20fd7d7f3deae68829caf149f5a28, type: 2}
   cellTypeChoiceOptions: 1
   retireSuctionSeconds: 0
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}

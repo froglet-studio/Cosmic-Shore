@@ -4,7 +4,8 @@
 > elemental game, on the ids `Docs/ElementalLoop/GAME_KIT_ROSTER.md` reserved for it (row 7: `GameModes` 97, hint toast
 > 172). **2026-11-25 (Yash's Swordfish pass):** its own AI pilots and ramp tuning, measured in the real-game judge
 > (Amoebius, headless) on I1-I4, then compiled, tested and smoke-played once in the Unity editor; see sections 3-5.
-> **Nobody has flown it.**
+> The same day it got its own arena, the Lists (section 4), judged headless on I1-I4 and **not yet opened in the
+> Unity editor**. **Nobody has flown it.**
 
 `GameModes.Riposte = 97` is the **Swordfish's Charge card**: working other pilots over (`CombatPoints`).
 
@@ -20,8 +21,8 @@ only the bill's slices earn** (0.004 a prism, 0.1 a second at full ramp; an empt
 `RHINO_RAMP_BOOST.md` "Fuel"). So the duel is about lines and about the sticks: cut for fuel, wind up somewhere straight,
 then run the bill through a rival who is slower than you.
 
-Riposte puts that duel in **Jackstraw's heap of pick-up sticks** (the Thresher's Charge arena, `JACKSTRAW.md`, its four
-cells referenced read-only). The sticks are the fuel and they break straight lines, and every one of them is something
+Riposte puts that duel in a heap of **Jackstraw's pick-up sticks** (the Thresher's Charge arena, `JACKSTRAW.md`), laid
+out as a jousting yard of its own (section 4). The sticks are the fuel and they break straight lines, and every one of them is something
 the Swordfish answers differently:
 
 | In the heap | What the Swordfish does |
@@ -49,8 +50,9 @@ The vessel is untouched (the LOCKED mode rule). The mode's levers are the heap, 
 - **`RiposteSettings.asset` is a `RiposteSettingsSO : JackstrawSettingsSO`**: Jackstraw's fields (the crystals, the
   rival choice, the lead; miss radius 24 / 14 / 6 / 0 u by AI level because a bill leads the hull) plus the duelists'.
 - **`RiposteStrikeTurnMonitor`**: the shared combat-point monitor on `EndConditionOverridesSO.riposteStrikeTarget` (6).
-- The scene is Jackstraw's, cloned with the identity, the settings and rule, the monitor, fresh Netcode ids and four
-  Swordfish AI seats.
+- The scene is Jackstraw's, cloned with the identity, the settings and rule, the monitor, fresh Netcode ids, four
+  Swordfish AI seats, and Riposte's own four cells and spawn rings.
+- **`SpawnableRiposteYard : SpawnableJackstraw`**: the base's clearings and heap radius, its own pieces (section 4).
 
 ## 3. The AI (`RiposteDuelist`, `RiposteDuel`; Plan step: charge-arcade)
 
@@ -82,14 +84,60 @@ by the rung's chance, as Jackstraw's hunter does.
   charge overshoot 150 / 250 / 350 / 450 u; run-out 120 / 220 / 320 / 420 u. Hand-set from the judge, not a search
   (Froglet Compute is paused); they are the seed a `charge-arcade` search grows from.
 
-## 4. Ladder
+## 4. The arena: the Lists (`SpawnableRiposteYard`, `RiposteYard`), by intensity
 
-The heap's own (`JACKSTRAW.md` §2): loose sticks, then jacks, then red tips, then ironwood, 408 / 1,122 / 2,114 /
-3,566 prisms, with the platform's standard element ladder on top (I2: every hull starts at Charge 5, so Sword Steal is
-on; I3: team Charge crystals; I4: Charge fauna). The target is the same 6 strikes at every rung.
+Yash, 2026-11-25: every piece is placed so it gives the Swordfish an advantage or a disadvantage, and the rungs differ
+in how much help against how much cost. Riposte no longer plays in Jackstraw's cells. It has its own four
+(`Cell Configs/Riposte Cell`), each a `SpawnableRiposteYard` prefab: a `SpawnableJackstraw` subclass (so the
+controller floats the crystals in its clearings and the AI reads its radius as before) that lays its own pieces.
+Jackstraw's files are read, never edited.
 
-Real-game judge (`Tools/Compute/evaluators/regatta_judge.py`, mode `Riposte`, Amoebius headless, four shipped Swordfish
-AIs 2v2, seeds 1-2, working tree on c519b8bc03, 2026-11-25). Seconds to the sixth strike, two matches a cell:
+| Piece | Where it stands (the rule, `RiposteYard`) | What it is for |
+|---|---|---|
+| **Lane** | a straight tube no stick enters, from the centre clearing out through a refuel clearing | the ramp winds up only on a straight line, and a sword hit lands only on a slower hull |
+| **Rail** | pickets (half sticks, 15 u apart) parallel to a lane, 6 u outside its wall, evenly round it | the bill cuts them lengthwise: ramp fuel without leaving the line |
+| **Refuel clearing** | at the end of every lane, 10 u inside the heap's edge | a struck (silenced) pilot runs straight down a lane to the crystals |
+| **Gate** | a jack on a lane's axis, between the two clearings, its four cross arms shielded | breaks the line: thread a quadrant, strike it twice, or go round and lose the wind-up |
+| **Thorns** | red tips on every loose stick within the thorn band of a lane wall | drifting off the line rams a tip: every element debuffed for 4 s |
+| **Ironwood core** | an ironwood heart in every loose stick centred inside the core radius | where the lanes meet, a blade that is not energized binds; Shield Breaker (Space 5) cuts it |
+| **Scatter** | Jackstraw's loose sticks and jacks, between the lanes | fuel for a pilot who leaves the lanes, and what breaks a line taken across them |
+
+| | Name | Heap | Lanes / refuels | Lane radius | Rails a lane | Gates | Loose sticks / jacks | Thorn band | Ironwood core | Prisms | Rail | Shielded | Danger |
+|---|---|---:|---|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
+| I1 | The Lists | r 420 | 4 / 4 | 45 | 4 | none | 24 / 0 | none | none | 480 | 192 | 0 | 0 |
+| I2 | Barriers | r 500 | 4 / 4 | 40 | 3 | 1 in every other lane | 60 / 4 | none | none | 1,110 | 204 | 46 | 0 |
+| I3 | Thorn Lists | r 600 | 4 / 6 | 34 | 2 | 1 in every lane | 120 / 10 | 70 u | none | 2,090 | 216 | 94 | 28 |
+| I4 | Ironwood | r 700 | 3 / 8 | 28 | 1 | 2 in every lane | 210 / 20 | 100 u | r 300 | 3,410 | 84 | 222 | 48 |
+
+I1 mostly helps and teaches the Charge hit: four wide straights, 40% of its prisms are fuel rails, nothing shielded
+or red. I4 mostly demands the read: three narrow lanes for eight refuels, 2% rails, 8% shielded or red. The
+generator fails unless the lanes narrow, each lane loses a rail, the rail share falls and the shielded-and-danger
+share rises on every step. Spawn ring: heap radius + 90 (510 / 590 / 690 / 790). The platform's standard element
+ladder still sits on top (I2: every hull starts at Charge 5; I3: team Charge crystals; I4: Charge fauna), and the
+target is the same 6 strikes at every rung.
+
+Every draw is `Hash01` of an integer key and every rejection is geometry, so the arena is the same on every peer.
+Every prism is neutral (`Domains.Blue`), drawn by the worn colour set. `Tools/Build/riposte_yard_budget.py` mirrors
+the C# for the census and the placement checks; `RiposteYardTests` holds each rule.
+
+**Real-game judge on the Lists** (Amoebius headless, four shipped Swordfish AIs 2v2, seeds 1-2, working tree on
+b2818ecc1d, 2026-11-25). Seconds to the sixth strike, two matches a cell:
+
+| AI level | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Easy | 58 / 140 | 47 / none in 300 | 122 / 86 | 150 / 133 |
+| Medium | 83 / 15 | 67 / 124 | 54 / 41 | 67 / 187 |
+| Hard | 116 / 87 | 35 / 158 | 156 / 151 | 136 / 71 |
+| Legendary | 130 / 97 | 102 / 211 | 99 / 74 | 138 / 63 |
+
+31 of 32 matches ended with a winner (one Easy I2 match stood 4-4 at the 300 s limit); 15-211 s, median 99 s; by
+rung the median is 92 / 102 / 92 / 135 s. Read it as: the AI finishes on every rung of the new arena and I4 is the
+longest. It does not show that the rungs feel different, and **the AI does not know the lanes exist**: the duelist
+still flies its three legs (section 3) and crosses the yard wherever its rival is. The arena is built for a pilot
+who reads it; teaching the duelist to charge down a lane and reap along a rail is the next AI step.
+
+The earlier table, in Jackstraw's heap (same judge, working tree on c519b8bc03 and 7d9e3ed2b9 for Hard), for
+comparison:
 
 | AI level | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
@@ -98,17 +146,12 @@ AIs 2v2, seeds 1-2, working tree on c519b8bc03, 2026-11-25). Seconds to the sixt
 | Hard | 64 / 77 | 96 / 97 | 152 / 73 | 108 / 125 |
 | Legendary | 97 / 39 | 103 / 26 | 71 / 52 | 179 / 40 |
 
-Easy, Medium and Legendary: 24 of 24 matches ended with a winner; median 96 s; the loser's median score 3 of 6;
-Jade won 11, Ruby 13. Hard was judged later the same day on 7d9e3ed2b9: 8 of 8 ended, the loser on 2-5, Jade won 6. A hull's
-speed in a match: median 45-117 u/s, 90th percentile 125-290, peak 165-540 (the old hunter: 30 u/s throughout).
-Read it as: the AI finishes every rung, a harder AI tends to win sooner, and I4 is the longest rung for an Easy seat.
-Two matches a cell cannot rank I1-I3 against each other: the spread inside a cell is as wide as the gap between rungs.
-
 ## 5. Verification status
 
-- **Headless:** `author_riposte_assets.py --check` (30 files; watched failing on a mutated settings value);
-  `bash Tools/Build/riposte_harness/run.sh --self-test` (the shipped `RiposteDuelTests`, 14 of 14, five negative
-  controls fire); the static gates; the whole of `Assets/_Scripts` compiled by the Amoebius live build with these files.
+- **Headless:** `author_riposte_assets.py --check` (50 files; watched failing on a mutated settings value; the
+  arena's placement checks are run against a deliberately broken arena inside the check and must fire);
+  `bash Tools/Build/riposte_harness/run.sh --self-test` (the shipped `RiposteDuelTests` and `RiposteYardTests`, 24
+  of 24, eleven negative controls fire); the static gates; the whole of `Assets/_Scripts` compiled by the Amoebius live build with these files.
 - **Real game, no Unity:** the table in section 4. The judge needed two engine changes: `RaceJudge` takes
   `"mode": "Riposte"` (and `Jackstraw`) as a combat-point game, and `FixedString128Bytes.CopyFromTruncated`, without
   which the Amoebius build of this branch failed.
@@ -137,6 +180,13 @@ Two matches a cell cannot rank I1-I3 against each other: the spread inside a cel
 - **Open (a person's call):** a human seat the AI holds (an idle guest, the AI-flies toggle) flies the stock
   autopilot here, slow and unramped, and is the duelists' preferred target. Switchback arms such seats with its
   own pilot; Riposte and Jackstraw do not.
+- **The Lists (the arena of section 4) are NOT verified in Unity.** Everything dated above was measured in
+  Jackstraw's heap. The editor was in another session's Play run when the arena landed, so: not compiled by Unity,
+  `RiposteYardTests` not run by Unity's test runner, no match played in it, and the Python census (480 / 1,110 /
+  2,090 / 3,410 prisms) not yet compared with what the C# lays (the Linux-only prism clip audit and layout bake
+  cannot run on this Windows machine, so the four prefabs have no baked layout and no clip-audit run: the game
+  lays them live with a warning until `bake_prism_layouts.py` is run on Linux). Headless, the Amoebius live
+  build compiles the arena and the judge played 32 matches in it.
 - **Not done:** no I1 match in the editor at clock 1x; no 2v2 match of four mode AIs in the editor; nobody has flown it; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
 - **Open questions a flight answers:** whether 6 strikes is the right length with a person in it (AI matches run
   26-202 s); whether a silenced pilot under a 0.5 s sword latch can get away (the AI now runs out after each pass, a
