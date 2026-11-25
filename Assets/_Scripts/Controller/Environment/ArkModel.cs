@@ -73,6 +73,19 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<string, Transform> _bones = new();
         readonly List<Puppet> _puppets = new();
         readonly List<Prism> _riders = new();
+        readonly List<SpinPart> _spins = new();
+        ArkEngineTrails _trails;
+
+        /// <summary>A part that turns on its own (<see cref="ArkRigTable.Spin"/>): the round Ark's decks, pods and gates.</summary>
+        sealed class SpinPart
+        {
+            public string Name;
+            public Transform Bone;
+            public Quaternion RestLocal, RestInArk;
+            public Vector3 Axis;
+            public float DegreesPerSecond, Angle;
+            public Quaternion Delta = Quaternion.identity;
+        }
 
         Quaternion _lastRotation;
         float _lastSpeed;
@@ -89,6 +102,8 @@ namespace CosmicShore.Gameplay
 
         // Reactor: the omni crystal (always one size) sits in its collar, and the collar turns.
         Transform _reactor, _collar;
+        Vector3 _reactorAxis = Vector3.up;               // model space: the well's axis (ArkReverse), the nose (the round Ark)
+        MeshRenderer _crystal;                           // the game's own omni crystal, when the model draws none
         Quaternion _collarRestLocal, _collarRestInArk;
         float _collarAngle;
         bool _regrowing, _reactorDriven;              // an Ark without a reactor leaves the collar as built
@@ -160,6 +175,9 @@ namespace CosmicShore.Gameplay
             MakeDoubleSided();
             BindPuppets();
             BindReactor();
+            BindSpins();
+            AttachCrystal();
+            _trails = ArkEngineTrails.Attach(ark, def, table, _bones, _scale);
             AttachSolid();
 
             _hold = ark.Hold;
@@ -177,6 +195,7 @@ namespace CosmicShore.Gameplay
 
         void BindReactor()
         {
+            _reactorAxis = _table.ReactorAxis;
             _bones.TryGetValue(ReactorBone, out _reactor);
             if (_bones.TryGetValue(ReactorCollarBone, out _collar))
             {
@@ -190,6 +209,99 @@ namespace CosmicShore.Gameplay
         {
             _regrowing = regrowing;
             _reactorDriven = true;
+        }
+
+        void BindSpins()
+        {
+            var arkRotationInverse = Quaternion.Inverse(_ark.transform.rotation);
+            foreach (var spin in _table.spins)
+            {
+                if (spin == null || string.IsNullOrEmpty(spin.bone)) continue;
+                if (!_bones.TryGetValue(spin.bone, out var bone))
+                {
+                    CSDebug.LogWarning($"[Ark] The Ark model has no bone '{spin.bone}' that its rig table turns - " +
+                                       "rebuild the model and its table together.", _def);
+                    continue;
+                }
+                var axis = spin.Axis;
+                if (axis.sqrMagnitude < 1e-8f) continue;
+                _spins.Add(new SpinPart
+                {
+                    Name = spin.bone, Bone = bone, RestLocal = bone.localRotation, RestInArk = arkRotationInverse * bone.rotation,
+                    Axis = axis.normalized, DegreesPerSecond = spin.degreesPerSecond,
+                });
+            }
+        }
+
+        /// <summary>How far a turning part (<see cref="ArkRigTable.Spin"/>) has turned from its rest, as a rotation in the
+        /// model's frame about its pivot; false when the model has no such turning part.</summary>
+        public bool TryGetSpinDelta(string boneName, out Quaternion delta)
+        {
+            for (int i = 0; i < _spins.Count; i++)
+            {
+                if (_spins[i].Name != boneName) continue;
+                delta = _spins[i].Delta;
+                return true;
+            }
+            delta = Quaternion.identity;
+            return false;
+        }
+
+        void PoseSpins(float dt)
+        {
+            for (int i = 0; i < _spins.Count; i++)
+            {
+                var s = _spins[i];
+                if (!s.Bone) continue;
+                s.Angle = Mathf.Repeat(s.Angle + s.DegreesPerSecond * dt, 360f);
+                s.Delta = Quaternion.AngleAxis(s.Angle, s.Axis);
+                s.Bone.localRotation = ArkRigTable.PoseLocal(s.RestLocal, s.RestInArk, s.Delta);
+            }
+        }
+
+        /// <summary>
+        /// The game's own omni crystal on the reactor bone, when the model draws none (its rig table names the crystal's
+        /// radius): the same mesh and material as every omni crystal in the HyperSea, sized to the model's well, tinted
+        /// in <see cref="ApplyDomain"/> with the colour set's neutral lime.
+        /// </summary>
+        void AttachCrystal()
+        {
+            if (_table.reactorRadius <= 0f || !_reactor || !_def.ReactorCrystalMesh || !_def.ReactorCrystalMaterial) return;
+            var mesh = _def.ReactorCrystalMesh;
+            var ext = mesh.bounds.extents;
+            float meshRadius = Mathf.Max(1e-4f, Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z)));
+            float worldRadius = _table.reactorRadius * _scale * Mathf.Max(1e-4f, _ark.transform.lossyScale.x);
+            float s = worldRadius / meshRadius / Mathf.Max(1e-4f, _reactor.lossyScale.x);
+            var go = new GameObject("OmniCrystal");
+            go.transform.SetParent(_reactor, false);
+            go.transform.localScale = Vector3.one * s;
+            go.transform.localPosition = -mesh.bounds.center * s;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            _crystal = go.AddComponent<MeshRenderer>();
+            _crystal.sharedMaterial = _def.ReactorCrystalMaterial;
+            _crystal.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        static readonly int BrightCrystalColorId = Shader.PropertyToID("_BrightCrystalColor");
+        static readonly int DullCrystalColorId = Shader.PropertyToID("_DullCrystalColor");
+        static MaterialPropertyBlock s_crystalBlock;
+
+        /// <summary>The crystal and the engines' streams take their colours from the worn colour set: the crystal the
+        /// call-to-action pair (a free omni crystal is neutral, never a team colour), the streams the domain's trail pair.</summary>
+        void ApplyColourSet(Domains domain, ThemeManagerDataContainerSO theme)
+        {
+            var colours = theme ? theme.ColorSet : null;
+            if (colours == null) return;
+            if (_crystal && colours.EnvironmentColors != null)
+            {
+                s_crystalBlock ??= new MaterialPropertyBlock();
+                _crystal.GetPropertyBlock(s_crystalBlock);
+                s_crystalBlock.SetColor(BrightCrystalColorId, colours.EnvironmentColors.BrightCTA);
+                s_crystalBlock.SetColor(DullCrystalColorId, colours.EnvironmentColors.DarkCTA);
+                _crystal.SetPropertyBlock(s_crystalBlock);
+            }
+            if (_trails && colours.TryGetColorSetByDomain(domain, out var set) && set != null)
+                _trails.ApplyColours(set.TrailCoreColor, set.TrailHighlightColor);
         }
 
         void IndexBones(Transform t)
@@ -260,6 +372,14 @@ namespace CosmicShore.Gameplay
             var batches = new List<LayBatch>();
             var byParent = new Dictionary<Transform, List<PrismLay>>();
             var arkT = _ark.transform;
+            // the sockets were cut at rest: a turning part is read at its rest pose (and left where it was turning)
+            var turned = new Quaternion[_spins.Count];
+            for (int i = 0; i < _spins.Count; i++)
+            {
+                if (!_spins[i].Bone) continue;
+                turned[i] = _spins[i].Bone.localRotation;
+                _spins[i].Bone.localRotation = _spins[i].RestLocal;
+            }
             foreach (var socket in _table.sockets)
             {
                 if (socket == null) continue;
@@ -285,6 +405,8 @@ namespace CosmicShore.Gameplay
                 }
                 lays.Add(lay);
             }
+            for (int i = 0; i < _spins.Count; i++)
+                if (_spins[i].Bone) _spins[i].Bone.localRotation = turned[i];
             return batches;
         }
 
@@ -327,6 +449,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void ApplyDomain(Domains domain, ThemeManagerDataContainerSO theme)
         {
+            ApplyColourSet(domain, theme);
             if (!_root || _def.DomainReplacesMaterials.Count == 0) return;
             Material ship = theme?.TeamMaterialSets != null && theme.TeamMaterialSets.TryGetValue(domain, out var set) && set
                 ? set.ShipMaterial
@@ -334,6 +457,7 @@ namespace CosmicShore.Gameplay
             if (!ship) return;
             foreach (var renderer in _root.GetComponentsInChildren<Renderer>(true))
             {
+                if (renderer is TrailRenderer || renderer == _crystal) continue;
                 var materials = renderer.sharedMaterials;
                 bool changed = false;
                 for (int i = 0; i < materials.Length; i++)
@@ -368,7 +492,7 @@ namespace CosmicShore.Gameplay
                 if (slot == SlotBody && !body) body = kv.Value;
                 if (slot == SlotWindow && !window) window = kv.Value;
             }
-            Solid = ArkHullSolid.Attach(_ark, _root, _scale, body, window);
+            Solid = ArkHullSolid.Attach(_ark, _root, _scale, body, window, _def.HullShape, this);
         }
 
         /// <summary>The hull's solid body (vessels slide along it; the tunnel is the one way through).</summary>
@@ -409,6 +533,8 @@ namespace CosmicShore.Gameplay
             if (!_root) return;
             foreach (var renderer in _root.GetComponentsInChildren<Renderer>(true))
             {
+                // the crystal and the streams keep their own materials (a crystal's, an additive trail's)
+                if (renderer is TrailRenderer || renderer == _crystal) continue;
                 var materials = renderer.sharedMaterials;
                 bool changed = false;
                 for (int i = 0; i < materials.Length; i++)
@@ -469,9 +595,15 @@ namespace CosmicShore.Gameplay
 
         void LateUpdate()
         {
-            if (!_ark || _puppets.Count == 0) return;
+            if (!_ark) return;
             float dt = Time.deltaTime;
             if (dt <= 1e-5f) return;
+            PoseSpins(dt);
+            if (_puppets.Count == 0)
+            {
+                PoseReactor(dt);
+                return;
+            }
 
             var rotation = _ark.transform.rotation;
             float speed = _ark.Speed;
@@ -587,7 +719,7 @@ namespace CosmicShore.Gameplay
                 float spin = _regrowing ? _def.CollarSpinRegrowing : _def.CollarSpinIdle;
                 _collarAngle = Mathf.Repeat(_collarAngle + spin * dt, 360f);
                 _collar.localRotation = ArkRigTable.PoseLocal(_collarRestLocal, _collarRestInArk,
-                    Quaternion.AngleAxis(_collarAngle, Vector3.up));
+                    Quaternion.AngleAxis(_collarAngle, _reactorAxis));
             }
         }
     }

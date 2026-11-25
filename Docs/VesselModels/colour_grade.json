@@ -1,7 +1,7 @@
 {
  "counts": {
   "exempt": 7,
-  "grey": 550,
+  "grey": 551,
   "ui": 1239,
   "world": 1
  },
@@ -4233,6 +4233,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "50844b67629c27aa"
+  },
+  "Assets/_Graphics/Design Assests/FX/Fx Sprites/ribbon_rectangle.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3232679b5423e76f"
   },
   "Assets/_Graphics/Design Assests/FX/Fx Sprites/tg_laser_texture.png": {
    "coloured": 0.0026,

@@ -137,21 +137,17 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void EveryArkwayVoyage_IsGivenTheArkModel()
+        public void ArkReverseDefinition_DrawsArkReverse()
         {
+            // The voyages draw the round Ark since 2026-11-25 (ArkRoundModelTests.EveryArkwayVoyage_IsGivenTheRoundArk);
+            // ArkReverse's definition stays whole for anything that still picks it.
             var definition = AssetDatabase.LoadAssetAtPath<ArkModelDefinitionSO>(DefinitionPath);
             Assert.IsNotNull(definition, DefinitionPath);
             Assert.AreEqual(AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath), definition.Model, "the definition draws ArkReverse.fbx");
             Assert.AreEqual(AssetDatabase.LoadAssetAtPath<TextAsset>(RigTablePath), definition.RigTable, "the definition binds the model's own rig table");
             Assert.Contains(AssetDatabase.LoadAssetAtPath<Material>(DomainPlaceholderPath), definition.DomainReplacesMaterials.ToList(),
                 "the domain must replace the Domain slot's placeholder, or the Ark's trim is green in every domain");
-
-            foreach (var guid in AssetDatabase.FindAssets("t:ArkwaySettingsSO"))
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                var settings = AssetDatabase.LoadAssetAtPath<ArkwaySettingsSO>(path);
-                Assert.AreEqual(definition, settings.BuildConfig("test").ArkModel, $"{path} does not draw its Ark as the model");
-            }
+            Assert.AreEqual(ArkHullShape.Reverse, definition.HullShape, "ArkReverse's solid is the clam's");
             Assert.IsNotNull(AssetDatabase.LoadAssetAtPath<ArkwaySettingsSO>(ArkwaySettingsPath), ArkwaySettingsPath);
         }
 

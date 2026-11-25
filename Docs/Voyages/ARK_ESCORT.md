@@ -29,6 +29,8 @@ that colour and graze the Ark's hull (`Cell.SetReplicatedStartingController`); t
 of your own mass in it than they have. Every AI seat escorts (`ArkEscortPilot`): seat 0 hunts the hostile creature
 nearest the Ark, seat 1 the next, seat 2 the next, each holds a station off the bow when there is nothing in reach.
 
+**The Ark is the round Ark** (since 2026-11-25, Shombith's pick of concept D round 13): `ArkRound.fbx`, drawn by `ArkRoundModel.asset` through `Wander_WithArk`. It has 581 hull prisms on turning decks, gates and pods, an engine stream from each bell in the domain's trail colours, the neutral omni crystal in the gap, and the squad launching out of the three stern exits ([dossier](../VesselModels/ArkRound.md)). ArkReverse's model is kept and is no longer used.
+
 ## 2. Difficulty
 
 `Assets/_SO_Assets/Toys/ArkEscort.asset` (`ArkEscortSO`) holds the five worlds and nine tiers. A tier is only numbers

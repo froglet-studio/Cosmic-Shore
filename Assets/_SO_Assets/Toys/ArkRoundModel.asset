@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1114e0a7daf842d0b6a92a83eadfb353, type: 3}
+  m_Name: ArkRoundModel
+  m_EditorClassIdentifier: 
+  model: {fileID: 919132149155446097, guid: f1276727fc424e7d9720218899130bd7, type: 3}
+  rigTable: {fileID: 4900000, guid: dfac986a927b4453abf83fc75c7081d2, type: 3}
+  scale: 1
+  domainReplacesMaterials:
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
+  yawRateFull: 40
+  pitchRateFull: 40
+  bankFromYaw: 0.8
+  accelFull: 20
+  response: 0.35
+  amplitude: 1
+  helm:
+    Acceleration: 5
+    Braking: 8
+    SpeedResponse: 1.4
+    Jerk: 6
+    MaxTurnRate: 22
+    TurnGain: 1.2
+    TurnAcceleration: 18
+    CaptureRange: 40
+    WeaveYaw: 9
+    WeavePitch: 3.5
+    WeaveWavelength: 1100
+    WeaveFadeRange: 450
+    BankPerTurnRate: 2.2
+    MaxBank: 18
+    PitchPerAcceleration: 0.8
+    MaxPitch: 5
+    AttitudeResponse: 0.6
+    SwellHeave: 0.9
+    SwellRoll: 1.6
+    SwellPitch: 0.8
+    SwellPeriod: 9
+    FlinchRoll: 6
+    FlinchJink: 8
+    FlinchCooldown: 0.9
+    FlinchFrequency: 1.1
+    FlinchDamping: 0.3
+  releaseSeconds: 1.2
+  hangarReach: 0
+  actionResponse: 0.3
+  collarSpinIdle: 12
+  collarSpinRegrowing: 90
+  reactorCrystalMesh: {fileID: 4178986218149870590, guid: 6762f621cbdcb3b4591336aa864419d3, type: 3}
+  reactorCrystalMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  hullShape: 1
+  engineTrailMaterial: {fileID: 2100000, guid: a31aea53d72743d3afa7cba41a3530f5, type: 2}
+  engineTrailSeconds: 7
+  engineTrailAlpha: 0.6
+  engineTrailEndWidth: 0.4

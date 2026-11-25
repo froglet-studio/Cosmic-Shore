@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Unity.Netcode;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -61,19 +62,40 @@ namespace CosmicShore.Gameplay
         static float[] s_mids;
 
         Ark _ark;
+        ArkModel _model;
+        ArkHullShape _shape = ArkHullShape.Reverse;
+        Quaternion _podTurn = Quaternion.identity;
         float _scale = 1f;
+
+        const string PodsBone = "pods";   // the round Ark's orbiting pods (ArkRoundSolid turns their solid with them)
 
         /// <summary>Vessels set back on the hull since the Ark was built (a test, the HUD, a sim note).</summary>
         public int Contacts { get; private set; }
 
-        public static ArkHullSolid Attach(Ark ark, Transform modelRoot, float modelScale, Material body, Material window)
+        public static ArkHullSolid Attach(Ark ark, Transform modelRoot, float modelScale, Material body, Material window) =>
+            Attach(ark, modelRoot, modelScale, body, window, ArkHullShape.Reverse, null);
+
+        /// <summary>The solid of <paramref name="shape"/>'s model: ArkReverse's (with its stern bulkhead) or the round Ark's
+        /// (<see cref="ArkRoundSolid"/>, whose pods turn: read from <paramref name="model"/>).</summary>
+        public static ArkHullSolid Attach(Ark ark, Transform modelRoot, float modelScale, Material body, Material window,
+                                          ArkHullShape shape, ArkModel model)
         {
             var solid = ark.gameObject.AddComponent<ArkHullSolid>();
             solid._ark = ark;
+            solid._model = model;
+            solid._shape = shape;
             solid._scale = Mathf.Max(0.05f, modelScale);
-            if (modelRoot && body) solid.BuildBulkhead(ark.transform, body, window);
+            if (shape == ArkHullShape.Reverse && modelRoot && body) solid.BuildBulkhead(ark.transform, body, window);
             return solid;
         }
+
+        /// <summary>Which model's solid this is.</summary>
+        public ArkHullShape Shape => _shape;
+
+        /// <summary>This Ark's signed distance now (Ark local, scale 1): its model's shape, the round Ark's pods where
+        /// they have turned to.</summary>
+        public float DistanceNow(Vector3 arkLocal) =>
+            _shape == ArkHullShape.Round ? ArkRoundSolid.Distance(arkLocal, _podTurn) : Distance(arkLocal);
 
         // ── The volume ───────────────────────────────────────────────────────
 
@@ -342,7 +364,8 @@ namespace CosmicShore.Gameplay
             if (!_ark || _ark.IsHullLost) return;
             var arkT = _ark.transform;
             float unit = _scale * Mathf.Max(1e-4f, arkT.lossyScale.x);   // model units -> world
-            float reach = (Mathf.Max(R, -NOSE_Y) + ENG_RHO1 - R + ReachPadding) * unit;
+            float reach = ((_shape == ArkHullShape.Round ? ArkRoundSolid.Reach : Mathf.Max(R, -NOSE_Y) + ENG_RHO1 - R) + ReachPadding) * unit;
+            _podTurn = _shape == ArkHullShape.Round && _model && _model.TryGetSpinDelta(PodsBone, out var turned) ? turned : Quaternion.identity;
             float reachSqr = reach * reach;
             var centre = arkT.position;
             var live = VesselStatus.Live;
@@ -368,7 +391,7 @@ namespace CosmicShore.Gameplay
         {
             var local = arkT.InverseTransformPoint(t.position) / _scale;
             float margin = VesselMargin / unit;   // the world margin, in model units
-            float d = Distance(local);
+            float d = DistanceNow(local);
             if (d >= margin) return;
 
             var n = Gradient(local);
@@ -389,13 +412,13 @@ namespace CosmicShore.Gameplay
             transformer.GentleSpinShip(along.normalized, t.up, 0.35f);
         }
 
-        static Vector3 Gradient(Vector3 p)
+        Vector3 Gradient(Vector3 p)
         {
             float e = GradientStep;
             return new Vector3(
-                Distance(p + new Vector3(e, 0f, 0f)) - Distance(p - new Vector3(e, 0f, 0f)),
-                Distance(p + new Vector3(0f, e, 0f)) - Distance(p - new Vector3(0f, e, 0f)),
-                Distance(p + new Vector3(0f, 0f, e)) - Distance(p - new Vector3(0f, 0f, e))).normalized;
+                DistanceNow(p + new Vector3(e, 0f, 0f)) - DistanceNow(p - new Vector3(e, 0f, 0f)),
+                DistanceNow(p + new Vector3(0f, e, 0f)) - DistanceNow(p - new Vector3(0f, e, 0f)),
+                DistanceNow(p + new Vector3(0f, 0f, e)) - DistanceNow(p - new Vector3(0f, 0f, e))).normalized;
         }
 
         // ── The bulkhead ─────────────────────────────────────────────────────

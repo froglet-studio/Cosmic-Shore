@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
                 // Launch order is the squad's order (the run lists the pilot's own vessel last): the first to go waits
                 // on the pad nearest the doors, so nobody launches through a vessel still waiting.
                 var m = new Member { Status = status, Hull = status.Transform, Seat = seat, Order = sortie._members.Count };
-                ArkFormation.Hangar(ark, m.Order, halfLength, sortie._settings, out m.Pad, out m.Exit);
+                ArkFormation.Hangar(ark, m.Order, m.Seat, halfLength, sortie._settings, out m.Pad, out m.Exit);
                 m.Slot = ArkFormation.SlotLocal(seat, bounds, sortie._settings);
                 sortie._members.Add(m);
             }
@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
             foreach (var held in _members)
                 if (held.Hull == status.Transform) return false;
             var m = new Member { Status = status, Hull = status.Transform, Seat = seat, Order = _members.Count };
-            ArkFormation.Hangar(_ark, m.Order, halfLength, _settings, out m.Pad, out m.Exit);
+            ArkFormation.Hangar(_ark, m.Order, m.Seat, halfLength, _settings, out m.Pad, out m.Exit);
             m.Slot = ArkFormation.SlotLocal(seat, bounds, _settings);
             _members.Add(m);
             Hold(m);
