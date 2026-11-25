@@ -1,0 +1,69 @@
+{
+    "scene": "MinigamePerchRun",
+    "timestamp": "2026-11-26 01:13:25",
+    "label": "",
+    "secondsSinceSceneLoad": 12.622023582458496,
+    "floraObjectsInScene": 8,
+    "faunaObjectsInScene": 5,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Thresher Time Cell Config 1",
+            "spawnProfile": "Thresher Time Spawn Profile 1",
+            "configChoice": "IntensityWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Calm",
+            "liveVolume": 1128.813232421875,
+            "liveEnvironmentVolume": 1116.5751953125,
+            "livePrismCount": 138,
+            "floraPlantingEnabled": true,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 128000.0,
+            "frenzyEnterVolume": 240000.0,
+            "frenzyExitVolume": 224000.0,
+            "frenzyEnterCount": 2000,
+            "frenzyExitCount": 1600,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Ruby",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 8,
+            "faunaLiveTotal": 5,
+            "flora": [
+                {
+                    "config": "Thresher Time I1 Spire Flora",
+                    "prefab": "SpireFlora",
+                    "live": 8,
+                    "initialBatch": 8,
+                    "seedFloor": 8,
+                    "cap": 8,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                }
+            ],
+            "fauna": [
+                {
+                    "config": "Thresher Time I1 Tadpole Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 5,
+                    "initialBatch": 6,
+                    "cap": 10,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": []
+}
