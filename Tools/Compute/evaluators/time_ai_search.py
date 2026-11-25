@@ -257,17 +257,17 @@ GAMES = {
     },
     "Goby": {
         "mode": "PerchRun",
-        # The Goby's seat AI races on a coach's darts (IGobyRaceCoach), not the gate race's steering: it turns at its own
-        # aiTurnRate, cruises, and darts once the nose is on the coach's line. Perch Run's coach (PerchRunController)
-        # carries the two numbers a dart plan is made of that travel to any race: how far past the last ring it charges
-        # (aiOvershoot) and how wide the turning circle counts before it flies on instead of orbiting (aiTurnMargin).
-        # Regatta's coach (RegattaGobyDart, RegattaController.aiGobyDart) carries the same two, so a winner is copied
-        # there. No drive asset, no nose knob (the coach steers the hull itself), nothing on the vessel.
+        # The Goby's seat AI races on a coach's darts (IGobyRaceCoach), not the gate race's steering: it never flies
+        # (Garrett, 2026-11-24), turns where it sits at its own aiTurnRate, and darts once the nose is on the coach's line.
+        # Perch Run's coach (PerchRunController) carries the number a dart plan is made of that travels to any race: how
+        # far past the last ring it charges (aiOvershoot). Regatta's coach (RegattaGobyDart, RegattaController.aiGobyDart)
+        # carries the same one, so a winner is copied there. (aiTurnMargin, the turning circle a cruising Goby orbited
+        # in, went with the cruise.) No drive asset, no nose knob (the coach steers the hull itself), nothing on the vessel.
         "assets": {},
         "fields": {},
-        "ctrl_fields": {"aiOvershoot": (0.0, 300.0), "aiTurnMargin": (1.0, 3.0)},
-        "ctrl_defaults": {"aiOvershoot": 40.0, "aiTurnMargin": 1.25},
-        "ctrl": lambda p: {"aiOvershoot": float(p["aiOvershoot"]), "aiTurnMargin": float(p["aiTurnMargin"])},
+        "ctrl_fields": {"aiOvershoot": (0.0, 300.0)},
+        "ctrl_defaults": {"aiOvershoot": 40.0},
+        "ctrl": lambda p: {"aiOvershoot": float(p["aiOvershoot"])},
         "lead": None, "rows": [],
     },
     # The Meerkat's portable Time AI (loop step 3, 2026-11-19): its OWN wormhole autopilot

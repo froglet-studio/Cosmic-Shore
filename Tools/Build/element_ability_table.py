@@ -8,6 +8,13 @@ read from the SHIPPED ASSETS AND CODE rather than from any document.
     python3 Tools/Build/element_ability_table.py --element Space  # one column, fleet-wide
     python3 Tools/Build/element_ability_table.py --gaps           # only the rows that disagree
     python3 Tools/Build/element_ability_table.py --json           # machine-readable
+    python3 Tools/Build/element_ability_table.py --brief Squirrel # no prose, no action names
+
+Each element row now carries the ability's authored description and its control on every
+platform (pad, keyboard, mouse, phone), and each vessel ends with its CORE controls (bindings
+no element ability owns - the Squirrel's drift) and its OMNI crystal pickup effects, read off
+R_VesselActionHandler's three action lists, Resources/TouchControlProfiles.asset and the
+vessel's impact container (vesselCrystalEffects + omniCrystalRetirement).
 
 WHY IT READS THREE SOURCES AND NOT ONE
 --------------------------------------
@@ -90,6 +97,22 @@ INPUT_EVENTS = {
     13: ("BothSticksAction", "LT+RT", "Both shifts"),
     14: ("Button4Action", "Y", "F"),
 }
+
+
+TOUCH_PROFILES = os.path.join(ASSETS, "Resources", "TouchControlProfiles.asset")
+VESSEL_CLASS = {"Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
+                "Serpent": 7, "Shrike": 10, "Sparrow": 11, "Scarab": 12, "Butterfly": 13,
+                "Thresher": 14, "Stoat": 15, "BrittleStar": 16, "Angler": 17, "Goby": 18,
+                "Wrasse": 19, "Orca": 20, "Honeyguide": 23}   # VesselClassType
+CORE_ABILITIES = {1: "Drift"}                                 # CoreAbility (OmniCrystal has no input)
+# TouchGlyph, as TouchControlsHud draws it. On a ThumbLifts phone the RIGHT thumb lifting is the
+# pad's LT and the LEFT is RT (Tools/Build/author_touch_profiles.py).
+TOUCH_GLYPH = {1: "lift left thumb", 2: "lift right thumb", 3: "lift either thumb",
+               4: "lift both thumbs", 5: "thumbs apart"}
+THUMB_LIFT_EVENTS = {1: "lift left thumb", 11: "lift left thumb", 2: "lift right thumb",
+                     12: "lift right thumb", 13: "lift both thumbs", 4: "both thumbs off"}
+# One-thumb mouse scheme (SingleStickMouseInputStrategy): LMB / RMB raise the trigger events.
+MOUSE_EVENTS = {2: "LMB", 12: "LMB", 1: "RMB", 11: "RMB", 13: "LMB+RMB"}
 
 GUID_RE = re.compile(r"guid:\s*([0-9a-f]{32})")
 DOC_SPLIT_RE = re.compile(r"^--- !u!\d+ &\d+.*$", re.M)
@@ -635,6 +658,142 @@ def fnum(entry, key, default):
         return default
 
 
+# ───────────────────────── the rest of the kit ─────────────────────────
+# The map asset names only the four ELEMENT abilities. A pilot also flies the hull's core
+# controls (the Squirrel's drift, the Manta's yaw-steer) and an omni crystal does something
+# per hull. Both are read from the prefab and its impact container, by reference.
+
+def touch_profile(vessel):
+    """The hull's row in Resources/TouchControlProfiles.asset, or None (default thumb lifts)."""
+    vid = VESSEL_CLASS.get(vessel)
+    if vid is None or not os.path.isfile(TOUCH_PROFILES):
+        return None
+    text = open(TOUCH_PROFILES, encoding="utf-8", errors="replace").read()
+    for block in re.split(r"^  - vessel:", text, flags=re.M)[1:]:
+        if int(block.split()[0]) != vid:
+            continue
+        def pairs(name, key):
+            m = re.search(rf"^    {name}:\n((?:    -.*\n|      .*\n)*)", block, re.M)
+            if not m:
+                return {}
+            return {int(a): int(b) for a, b in
+                    re.findall(rf"-\s*{key}:\s*(\d+)\s*\n\s*glyph:\s*(\d+)", m.group(1))}
+        def ints(name):
+            m = re.search(rf"^    {name}:\s*\[([^\]]*)\]", block, re.M)
+            if m:
+                return [int(x) for x in re.findall(r"\d+", m.group(1))]
+            m = re.search(rf"^    {name}:\n((?:    - .*\n)*)", block, re.M)
+            return [int(x) for x in re.findall(r"-\s*(\d+)", m.group(1))] if m else []
+        flag = lambda f: (yaml_value(block, f) or 0) == 1
+        return {"scheme": "TotemButtons" if flag("scheme") else "ThumbLifts",
+                "glyphs": pairs("glyphs", "element"), "core": pairs("coreGlyphs", "core"),
+                "toggles": ints("toggleElements"), "display_only": ints("displayOnlyElements"),
+                "tilt_steer": flag("tiltSteersWhileIdle"), "idle_full": flag("idleFullThrottle")}
+    return None
+
+
+def asset_name(guid, guid_to_path):
+    path = guid_to_path.get(guid)
+    # A guid no .meta carries is a dangling reference in the shipped asset - say so.
+    return os.path.splitext(os.path.basename(path))[0] if path else f"MISSING ASSET (guid {guid})"
+
+
+def action_lists(prefab_text, guid_to_path):
+    """{list name: {input id: [action asset names]}} off the vessel's R_VesselActionHandler."""
+    out = {}
+    for name in ("_inputEventShipActions", "_gamepadActionOverrides", "_touchActionOverrides"):
+        m = re.search(rf"^  {name}:(.*?)(?=^  \w)", prefab_text, re.M | re.S)
+        lists = {}
+        if m:
+            for ev, body in re.findall(r"- InputEvent:\s*(\d+)\s*\n\s*ShipActions:\s*\n((?:\s*- \{.*\}\s*\n)*)",
+                                       m.group(1)):
+                lists[int(ev)] = [asset_name(g, guid_to_path) for g in GUID_RE.findall(body)]
+        out[name] = lists
+    return out
+
+
+def phone_control(profile, element_id=None, input_id=None, core_id=None):
+    if profile is None:
+        profile = {"scheme": "ThumbLifts", "glyphs": {}, "core": {}, "toggles": [],
+                   "display_only": []}
+    if element_id is not None and element_id in profile["glyphs"]:
+        return TOUCH_GLYPH.get(profile["glyphs"][element_id], "?")
+    if core_id is not None and core_id in profile["core"]:
+        return TOUCH_GLYPH.get(profile["core"][core_id], "?")
+    if element_id is not None and element_id in profile["display_only"]:
+        return "card is display only"
+    if profile["scheme"] == "TotemButtons":
+        tog = " (toggle)" if element_id in profile["toggles"] else ""
+        return f"card button{tog}"
+    return THUMB_LIFT_EVENTS.get(input_id, "card button")
+
+
+def vessel_kit(vessel, entries, guid_to_path):
+    """The hull's controls on every platform, its core (non-element) controls, and its omni
+    crystal effect. Element abilities are matched to bindings by the map's own Input."""
+    prefab = os.path.join(VESSEL_PREFABS, f"{vessel}.prefab")
+    text = open(prefab, encoding="utf-8", errors="replace").read() if os.path.isfile(prefab) else ""
+    lists = action_lists(text, guid_to_path)
+    shared = lists["_inputEventShipActions"]
+    pc = {**shared, **lists["_gamepadActionOverrides"]}   # Keyboard / mouse resolve here too
+    touch = {**shared, **lists["_touchActionOverrides"]}
+    profile = touch_profile(vessel)
+
+    # The pad raises RightStick (1) where a phone raises OnlyRightStick (11) for the same
+    # trigger, so bindings are grouped by SLOT, not by event id.
+    def slot(ev):
+        return {11: 1, 12: 2}.get(ev, ev)
+    claimed = {slot(int(fnum(e, "Input", 0))) for e in entries} - {0}
+    # An action an element ability already runs is that ability (the Manta's Yastri turns on
+    # either trigger; its Soar is the phone's both-thumbs-off), never a core control.
+    owned = set()
+    for ev in list(pc) + list(touch):
+        if slot(ev) in claimed:
+            owned.update(pc.get(ev, []) + touch.get(ev, []))
+    core = []
+    for sl in sorted({slot(ev) for ev in set(pc) | set(touch)}):
+        if sl in claimed:
+            continue
+        pc_names = [n for ev in pc if slot(ev) == sl for n in pc[ev]]
+        touch_names = [n for ev in touch if slot(ev) == sl for n in touch[ev]]
+        if set(pc_names + touch_names) <= owned:
+            continue
+        # A pad binding the ability already runs, on a thumb its phone card says it uses
+        # ("lift either thumb"), is that ability's other side however the phone wires it.
+        if pc_names and set(pc_names) <= owned and sl in (1, 2) and profile and \
+                any(g == 3 for g in profile["glyphs"].values()):
+            continue
+        names = pc_names or touch_names
+        is_drift = any("drift" in n.lower() for n in names)
+        pad, key = INPUT_EVENTS.get(sl, ("", "", ""))[1:]
+        core.append({
+            "name": "Drift" if is_drift else ", ".join(names),
+            "pad": pad if pc_names else "", "key": key if pc_names else "",
+            "mouse": MOUSE_EVENTS.get(sl, "") if pc_names else "",
+            "phone": (phone_control(profile, input_id=sl, core_id=1 if is_drift else None)
+                      if touch_names else "not on phone"),
+            "pc_actions": pc_names, "touch_actions": touch_names,
+        })
+    # Touch-only rows the pad lacks (the Manta soars on both thumbs off) show above via `touch`.
+
+    omni = {"effects": [], "retirement": ""}
+    for g in dict.fromkeys(GUID_RE.findall(text)):
+        path = guid_to_path.get(g, "")
+        if not path.endswith(".asset"):
+            continue
+        body = open(path, encoding="utf-8", errors="replace").read()
+        if "vesselCrystalEffects:" not in body or "vesselPrismEffects" not in body:
+            continue
+        m = re.search(r"^  vesselCrystalEffects:\s*\n((?:  - .*\n)*)", body, re.M)
+        if m:
+            omni["effects"] = [asset_name(x, guid_to_path) for x in GUID_RE.findall(m.group(1))]
+        m = re.search(r"^  omniCrystalRetirement:.*guid:\s*([0-9a-f]{32})", body, re.M)
+        if m:
+            omni["retirement"] = asset_name(m.group(1), guid_to_path)
+        break
+    return {"profile": profile, "core": core, "omni": omni, "pc": pc, "touch": touch}
+
+
 # ───────────────────────── the join ─────────────────────────
 
 def rows_for_vessel(vessel, map_path, guid_to_path, script_index, symbols, max_depth):
@@ -833,6 +992,7 @@ def build_row(vessel, entry, hits):
         "element": element,
         "ability": label,
         "description": entry.get("AbilityDescription", "").strip(),
+        "input_id": input_id,
         "input": INPUT_EVENTS.get(input_id, (f"?{input_id}", "", ""))[0],
         "pad": INPUT_EVENTS.get(input_id, ("", "", ""))[1],
         "key": INPUT_EVENTS.get(input_id, ("", "", ""))[2],
@@ -927,11 +1087,64 @@ def endpoint_phrase(site):
     return ", ".join(f"{e['field']}={e['value']:g}" for e in eps)
 
 
-def print_row(row, verbose):
+def controls_phrase(pad, key, mouse, phone):
+    if not pad and not phone:
+        return "passive - no button on any platform"
+    parts = []
+    if pad:
+        parts.append(f"pad {pad}")
+    if key:
+        parts.append(f"keyboard {key}")
+    if mouse:
+        parts.append(f"mouse {mouse}")
+    parts.append(f"phone {phone or 'passive'}")
+    return "  |  ".join(parts)
+
+
+def print_prose(tag, text):
+    lines = wrap(text, " " * 18)
+    print(f"          {tag:<8}" + lines[0].strip())
+    for line in lines[1:]:
+        print(line)
+
+
+def print_kit(kit, brief):
+    print("  CORE    controls with no element (never upgraded, never scaled)")
+    if not kit["core"]:
+        print("          (none bound)")
+    for c in kit["core"]:
+        print(f"          {c['name']:<26} "
+              f"{controls_phrase(c['pad'], c['key'], c['mouse'], c['phone'])}")
+        if not brief and c["touch_actions"] != c["pc_actions"]:
+            print(f"                  pad/keys run {', '.join(c['pc_actions']) or '-'}; "
+                  f"phone runs {', '.join(c['touch_actions']) or '-'}")
+        elif not brief:
+            print(f"                  runs {', '.join(c['pc_actions'])}")
+    p = kit["profile"]
+    if p and not brief:
+        extra = [x for x, on in (("tilt steers with both thumbs off", p["tilt_steer"]),
+                                 ("full throttle with no thumb down", p["idle_full"])) if on]
+        print(f"          phone scheme: {p['scheme']}" + (f"; {'; '.join(extra)}" if extra else ""))
+    omni = kit["omni"]
+    print("  OMNI    crystal pickup (every hull; no button)")
+    if omni["effects"] or omni["retirement"]:
+        if omni["effects"]:
+            print(f"          effects     {', '.join(omni['effects'])}")
+        if omni["retirement"]:
+            print(f"          retirement  {omni['retirement']}")
+    else:
+        print("          (no vessel-specific effect - the shared collect only)")
+
+
+def print_row(row, verbose, brief=False):
     pad, key = row["pad"], row["key"]
     control = f"{pad} / {key}" if pad and key else (pad or "passive")
     head = f"  {row['element'].upper():<7} {row['ability'] or '(open design slot)':<34} {control}"
     print(head)
+    if pad or row.get("phone"):
+        print(f"          input   {controls_phrase(pad, key, row.get('mouse', ''), row.get('phone', ''))}")
+    if row["description"] and not brief:
+        print_prose("what", row["description"])
 
     if not row["ability"] or "(open design slot)" in row["ability"]:
         for n in row["notes"]:
@@ -978,14 +1191,8 @@ def print_row(row, verbose):
               f"{os.path.basename(g['asset'])}{off}")
     if not row["upgrade_gates"] and row["upgrade"]:
         print("                  gated at (nothing)")
-    if verbose and row["upgrade_description"]:
+    if row["upgrade_description"] and not brief:
         for line in wrap(row["upgrade_description"], " " * 18):
-            print(line)
-    if verbose and row["description"]:
-        print("          what    ", end="")
-        lines = wrap(row["description"], " " * 18)
-        print(lines[0].strip())
-        for line in lines[1:]:
             print(line)
 
     for n in row["notes"]:
@@ -1003,7 +1210,9 @@ def main():
     ap.add_argument("--gaps", action="store_true",
                     help="only rows whose declaration and wiring disagree")
     ap.add_argument("--verbose", "-v", action="store_true",
-                    help="include the authored ability and upgrade prose")
+                    help="also list ElementalFloats that are authored off")
+    ap.add_argument("--brief", "-b", action="store_true",
+                    help="drop the ability prose and action names (the old one-line rows)")
     ap.add_argument("--json", action="store_true", help="machine-readable")
     ap.add_argument("--depth", type=int, default=3,
                     help="reference-walk depth from the vessel prefab (default 3)")
@@ -1027,10 +1236,17 @@ def main():
     symbols = scan_symbols(endpoint_sources)
     guid_to_path = build_guid_index()
 
-    all_rows, by_vessel_all = [], {}
+    all_rows, by_vessel_all, kits = [], {}, {}
     for vessel in wanted:
-        rows = rows_for_vessel(vessel, os.path.join(MAP_DIR, f"{vessel}.asset"),
-                               guid_to_path, script_index, symbols, args.depth)
+        map_path = os.path.join(MAP_DIR, f"{vessel}.asset")
+        rows = rows_for_vessel(vessel, map_path, guid_to_path, script_index, symbols, args.depth)
+        kit = vessel_kit(vessel, parse_map(map_path)[1], guid_to_path)
+        kits[vessel] = kit
+        for r in rows:
+            ev = r["input_id"]
+            r["mouse"] = MOUSE_EVENTS.get(ev, "")
+            r["phone"] = (phone_control(kit["profile"], element_id=ELEMENT_BY_NAME.get(r["element"]),
+                                        input_id=ev) if ev else "")
         order = {e: i for i, e in enumerate(ELEMENT_ORDER)}
         rows.sort(key=lambda r: order.get(r["element"], 9))
         by_vessel_all[vessel] = rows          # the counts describe the VESSEL, never the filter
@@ -1043,7 +1259,8 @@ def main():
         all_rows = [r for r in all_rows if r["notes"]]
 
     if args.json:
-        json.dump(all_rows, sys.stdout, indent=2)
+        kit_out = {v: {k: kits[v][k] for k in ("core", "omni", "profile")} for v in wanted}
+        json.dump({"rows": all_rows, "kits": kit_out}, sys.stdout, indent=2)
         print()
         return
 
@@ -1078,7 +1295,9 @@ def main():
               f"L5 gates wired {gated}/4")
         print("-" * W)
         for r in rows:
-            print_row(r, args.verbose)
+            print_row(r, args.verbose, args.brief)
+        if not args.element and not args.gaps:
+            print_kit(kits[vessel], args.brief)
 
     print("\n" + "-" * W)
     flagged = [r for r in all_rows if r["notes"]]

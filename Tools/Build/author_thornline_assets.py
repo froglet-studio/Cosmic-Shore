@@ -73,6 +73,8 @@ SOUNDS = ("snipeEvent", "crystalResetEvent", "crystalTakenEvent", "cleanDockEven
           "sightReadyEvent", "passedEvent", "overtakenEvent", "thornRegrowEvent")
 FEEDBACK_SCALARS = (("caughtShortToastsPerRace", 2), ("passToastSeconds", 1.5))
 SIGHT_SCALARS = (("sightReloadingScale", 0.35), ("rivalThornGlow", 0.35))
+# The I4 ruins' colours (THORNLINE.md 2a), ruin after ruin down the course: Domains ids, apart from the Blue thorns.
+RUIN_DOMAINS = (("Jade", 1), ("Ruby", 2), ("Gold", 4))
 
 
 def _yaml_num(v):
@@ -90,7 +92,9 @@ NEW_FIELD_LINES = (
     + "".join(f"  {field}: {value}\n" for field, _, value, _ in TOASTS)
     + "".join(f"  {k}: {_yaml_num(v)}\n" for k, v in FEEDBACK_SCALARS)
     + "".join(f"  {k}:\n" + lib.event_yaml(f"{lib.SCENES_DIR}/MinigameThornline.unity", k) for k in SOUNDS)
-    + "".join(f"  {k}: {_yaml_num(v)}\n" for k, v in SIGHT_SCALARS))
+    + "".join(f"  {k}: {_yaml_num(v)}\n" for k, v in SIGHT_SCALARS)
+    # An enum array is written as its ints' bytes, little-endian.
+    + "  ruinDomains: " + "".join(v.to_bytes(4, "little").hex() for _, v in RUIN_DOMAINS) + "\n")
 
 
 def _errors():
@@ -138,6 +142,16 @@ def _errors():
             errs.append(f"GameToastSituation value {value} is used {ids.count(value)} times")
         if not re.search(rf"GameToastSituation {field} = GameToastSituation\.{member};", ctrl):
             errs.append(f"ThornlineController.{field} does not default to GameToastSituation.{member}")
+    want = "Domains[] ruinDomains = { " + ", ".join(f"Domains.{n}" for n, _ in RUIN_DOMAINS) + " };"
+    if want not in ctrl:
+        errs.append(f"ThornlineController.ruinDomains does not default to {[n for n, _ in RUIN_DOMAINS]}")
+    domains = open(os.path.join(lib.ROOT, "Assets/_Scripts/Data/Enums/Domains.cs"), encoding="utf-8").read()
+    for n, v in RUIN_DOMAINS:
+        if not re.search(rf"^\s*{n}\s*=\s*{v},", domains, re.M):
+            errs.append(f"Domains.{n} is not {v}")
+    ruins = os.path.join(lib.ROOT, f"{MODE_DIR}/ThornlineRuins.cs")
+    if not os.path.exists(ruins) or "SpearlineRuins.Lay(" not in open(ruins, encoding="utf-8").read():
+        errs.append("ThornlineRuins no longer lays its ruins through SpearlineRuins.Lay (no fork of the generator)")
     for k in SOUNDS:
         if not re.search(rf"FMODUnity\.EventReference {k};", ctrl):
             errs.append(f"ThornlineController.{k} is not an exposed EventReference")
@@ -165,6 +179,9 @@ htr.author(dict(
         "ThornlineCourse":       f"{MODE_DIR}/ThornlineCourse.cs",
         "ThornlineCourseSource": f"{MODE_DIR}/ThornlineCourseSource.cs",
         "ThornlineCourseTests":  "Assets/_Scripts/Tests/Editor/ThornlineCourseTests.cs",
+        "ThornlineRuins":        f"{MODE_DIR}/ThornlineRuins.cs",
+        "ThornlineController.Ruins": f"{MODE_DIR}/ThornlineController.Ruins.cs",
+        "ThornlineRuinsTests":   "Assets/_Scripts/Tests/Editor/ThornlineRuinsTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/THORNLINE.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",

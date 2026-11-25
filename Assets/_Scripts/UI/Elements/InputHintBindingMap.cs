@@ -47,6 +47,7 @@ namespace CosmicShore.UI
             [HintBinding.PadButtonWest]    = new[] { InputEvents.Button3Action },
             [HintBinding.PadRightShoulder] = new[] { InputEvents.PayloadAction },
             [HintBinding.PadButtonNorth]   = new[] { InputEvents.Button4Action },
+            [HintBinding.PadLeftShoulder]  = new[] { InputEvents.LeftShoulderAction },
 
             // The keyboard's three action keys. Both desktop schemes raise these
             // (KeyboardInputStrategy and SingleStickMouseInputStrategy share their button half),

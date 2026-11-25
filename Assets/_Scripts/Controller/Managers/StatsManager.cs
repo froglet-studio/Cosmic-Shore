@@ -72,6 +72,8 @@ namespace CosmicShore.Gameplay
             // Event_CombatHitStats must throw here rather than silently un-score every mode.
             if (gameData != null)
                 gameData.OnCombatHitLanded.OnRaised += CombatHitLanded;
+
+            PetalLedger.Credited += PetalsTaken;
         }
 
         void OnDisable()
@@ -84,6 +86,8 @@ namespace CosmicShore.Gameplay
 
             if (gameData != null)
                 gameData.OnCombatHitLanded.OnRaised -= CombatHitLanded;
+
+            PetalLedger.Credited -= PetalsTaken;
         }
 
         void OnDestroy()
@@ -229,6 +233,21 @@ namespace CosmicShore.Gameplay
             var local = gameData.LocalPlayer;
             if (local is Player netPlayer && local.IsLocalUser && local.Name == hit.ShooterName)
                 netPlayer.ReportCombatHit_ServerRpc((int)hit.HitClass, hit.SupersededRank);
+        }
+
+        /// <summary>
+        /// The per-attacker petal ledger credited <paramref name="attackerName"/> with
+        /// <paramref name="petals"/> an opponent lost (<see cref="PetalLedger"/>,
+        /// <c>Docs/ElementalAbilitySystem/SILENCE.md</c> §6). Server only, like every stat: a client's
+        /// take reaches the server's ledger through the victim hull's relay
+        /// (<c>NetworkVesselImpactor.ReportPetalsTaken</c>), so it is counted here exactly once. A
+        /// name with no round stats (a creature's prism, a pilot who left) is simply not scored.
+        /// </summary>
+        public void PetalsTaken(string attackerName, int petals)
+        {
+            if (!_allowRecord) return;
+            if (gameData.TryGetRoundStats(attackerName, out IRoundStats stats))
+                stats.PetalsTaken += petals;
         }
 
         public void CrystalCollected(CrystalStats crystalStats)
@@ -500,9 +519,11 @@ namespace CosmicShore.Gameplay
             roundStats.VolumeCreated += prismStats.Volume;
             roundStats.VolumeRemaining += prismStats.Volume;
 
-            // The books split the change by sign (Garrett, 2026-11-18): growing is created, shrinking destroyed, and a
-            // shield's shell going up or coming off rides ShieldVolume. VolumeCreated keeps its legacy signed sum.
-            gameData.VolumeLedger.AddDelta(roundStats.Name, prismStats.Volume + prismStats.ShieldVolume);
+            // The books split the change by sign (Garrett, 2026-11-18): growing is created, shrinking lost. A shield's
+            // shell rides ShieldVolume and nets out: up is created, off takes that credit back (VolumeLedger.AddShieldDelta).
+            // VolumeCreated keeps its legacy signed sum.
+            gameData.VolumeLedger.AddDelta(roundStats.Name, prismStats.Volume);
+            gameData.VolumeLedger.AddShieldDelta(roundStats.Name, prismStats.ShieldVolume);
         }
 
         /// <summary>

@@ -11,7 +11,7 @@ Its Space card is Cleave, its Time card Spearline (96) and its Charge card Ripos
 
 The Swordfish's **Mass** ability is **Afterimage** (`SwordfishSwordAfterimage`, `RHINO_SWORD_AFTERIMAGE.md`): for 5 s
 after the blade LEAVES the energized state it leaves prism copies of itself where it swings (up to 16 a window), Mass
-scales their volume x1 -> x2.5, and at Mass 5 (**Danger Afterimages**) they are laid as danger prisms. The same blade
+scales their volume x1.7 -> x4.25 (x1 -> x2.5 until 2026-11-21), and at Mass 5 (**Danger Afterimages**) they are laid as danger prisms. The same blade
 cuts any rival prism it reaches (a shielded one in two strokes).
 
 So Palisade is a **timed wall war**: the score is the prism volume a domain has STANDING when the clock runs out (the

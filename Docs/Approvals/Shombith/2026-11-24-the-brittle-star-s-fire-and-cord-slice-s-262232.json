@@ -1,0 +1,21 @@
+{
+  "id": "2026-11-24-the-brittle-star-s-fire-and-cord-slice-s-262232",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-24T21:35:39+00:00",
+  "area": "the Brittle Star's sounds",
+  "summary": "The Brittle Star's fire and cord-slice sounds are now rate-limited per hull (new BrittleStarConfigSO fields fireSoundMinSeconds 0.08 s, cordSliceSoundMinSeconds 0.05 s); gameplay unchanged.",
+  "why": "Unthrottled, three AI Brittle Stars left ~7,500 FMOD instances alive and FMOD's command queue stalled Brittle Star Time I4 for 14-180 s at a time. Compiled in Unity, not race-tested yet.",
+  "branch": "Ys-bleeding-edge",
+  "lane": "brittlestar",
+  "commit": "19de40716",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/BrittleStarExecutor.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "BrittleStar"
+    ]
+  }
+}

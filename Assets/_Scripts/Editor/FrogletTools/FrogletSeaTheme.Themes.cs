@@ -5,7 +5,7 @@ namespace CosmicShore.Editor.Froglet
     public static partial class FrogletSeaTheme
     {
         /// <summary>The colour set the game runs on (ThemeManagerDataContainer.ColorSet).</summary>
-        public const string LiveSet = "nocturne";
+        public const string LiveSet = "photic";
 
         /// <summary>The menu's SeaLines (Sea_Window.mat): lines 46 apart on a 480-unit loop, three layers.</summary>
         const float SeaSpacing = 46f, SeaLoop = 480f, SeaAmplitude = 9f;

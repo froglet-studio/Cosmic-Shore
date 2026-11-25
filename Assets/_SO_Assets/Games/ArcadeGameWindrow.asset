@@ -37,4 +37,4 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.002963
+  ComebackRatePerScoreDeficit: 0.000278

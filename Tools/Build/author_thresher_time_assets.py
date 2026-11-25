@@ -65,6 +65,11 @@ SCRIPT_PATHS = {
     # check_ai_no_state_writes.py walks it.
     "ThresherBelfryAI":        f"{MODE_DIR}/AI/ThresherBelfryAI.cs",
     "ThresherBelfryAITests":   "Assets/_Scripts/Tests/Editor/ThresherBelfryAITests.cs",
+    # The garden ruins at I4 (2026-11-24, Yash): Spearline's generator called with this course's gates and the
+    # Belfry's clearances. ruinDomains is a field of the partial, outside this generator's block of the scene.
+    "ThresherTimeRuins":       f"{MODE_DIR}/ThresherTimeRuins.cs",
+    "ThresherTimeControllerRuins": f"{MODE_DIR}/ThresherTimeController.Ruins.cs",
+    "ThresherTimeRuinsTests":  "Assets/_Scripts/Tests/Editor/ThresherTimeRuinsTests.cs",
 }
 DOC = "Assets/_Scripts/Controller/Arcade/THRESHERTIME.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameThresherTime.asset"

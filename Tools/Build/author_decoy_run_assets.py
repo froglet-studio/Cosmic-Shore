@@ -10,7 +10,7 @@ fly at the Rhino rig's plain 50 u/s, so the race is their herd-and-travel cycle:
 until one has laid the decoy past the ring and their midpoint sits behind it, take off (the jump is a teleport and threads
 nothing) and fly to the decoy (that flight threads the ring). I1 doors, I2 skewers (two rings on one zip), I3 skewers on
 rolled flats, I4 a skewer and a hairpin with Time 5 from the start (the second decoy). The course and its tests:
-DecoyRunCourse, DecoyRunCourseTests (Tools/Build/decoy_run_harness/run.sh). Doc: DECOY_RUN.md.
+DecoyRunCourse, DecoyRunCourseTests, DecoyRunRuins, DecoyRunRuinsTests (Tools/Build/decoy_run_harness/run.sh). Doc: DECOY_RUN.md.
 
 THE DONOR IS THRESHER TIME'S SCENE (barren race cell, a plain GateRaceController block). The clone swaps the controller
 script, the scoring rule asset, the AI numbers, the detection clamp (a travel flies at up to 900 u/s) and the Netcode ids,
@@ -75,6 +75,10 @@ htr.author(dict(
         "DecoyRunCourse":       f"{MODE_DIR}/DecoyRunCourse.cs",
         "DecoyRunCourseSource": f"{MODE_DIR}/DecoyRunCourseSource.cs",
         "DecoyRunCourseTests":  "Assets/_Scripts/Tests/Editor/DecoyRunCourseTests.cs",
+        # The I4 garden ruins (DECOY_RUN.md 2a): Spearline's generator called on the Jacks' straight racing line.
+        "DecoyRunRuins":        f"{MODE_DIR}/DecoyRunRuins.cs",
+        "DecoyRunController.Ruins": f"{MODE_DIR}/DecoyRunController.Ruins.cs",
+        "DecoyRunRuinsTests":   "Assets/_Scripts/Tests/Editor/DecoyRunRuinsTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/DECOY_RUN.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",

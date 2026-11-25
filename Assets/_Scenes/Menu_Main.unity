@@ -56429,6 +56429,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &565526624353591572 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 161231271349929356, guid: c919d398ba8825d2511f4108cc3e11c0, type: 3}
+  m_PrefabInstance: {fileID: 425002524624315544}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c00b633c507e42e9a8b85cdb42d672c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &5331360675377444119
 GameObject:
   m_ObjectHideFlags: 0
@@ -90241,6 +90252,7 @@ MonoBehaviour:
   crystalClickHandler: {fileID: 1486013850}
   arrivalDistanceFactor: 7.2
   freestyleHandoffTimeout: 8
+  dive: {fileID: 565526624353591572}
 --- !u!224 &8760397952932569419
 RectTransform:
   m_ObjectHideFlags: 0

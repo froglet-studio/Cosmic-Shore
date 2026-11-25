@@ -3,7 +3,8 @@
 source line, so a session can check a design BEFORE building it (Docs/claude/PRINCIPLES.md, DESIGN_BRIEF.md;
 Docs/SKILL_TRAINING_PLAN.md 3.3).
 
-A READER tool, except --md (rewrites one generated block in PRINCIPLES.md) and --import (writes principles.json
+A READER tool, except --md (rewrites one generated block in PRINCIPLES.md), --fix-lines and --seed-locked
+(rewrite only source lines / append drafted entries in principles.json) and --import (writes principles.json
 from a mined file, the seed step). Stdlib only.
 
     python3 Tools/Build/principles.py                        # the ledger as a table
@@ -13,6 +14,7 @@ from a mined file, the seed step). Stdlib only.
     python3 Tools/Build/principles.py --md                   # regenerate the table in Docs/claude/PRINCIPLES.md
     python3 Tools/Build/principles.py --json
     python3 Tools/Build/principles.py --self-test
+    python3 Tools/Build/principles.py --fix-lines            # re-anchor drifted entries (words, status untouched)
     python3 Tools/Build/principles.py --import mined.json    # seed principles.json from mined entries (ids assigned)
 
 --check fails when:
@@ -75,6 +77,43 @@ def check_words(entry: dict, root: str, cache: dict) -> str | None:
     if key not in window:
         return f"{rel}:{line}: words not within 5 lines ('{entry['words'][:40]}...')"
     return None
+
+
+def find_words(lines: list[str], words: str, near: int) -> int | None:
+    """The 1-based line where an entry's words now BEGIN (the start nearest `near`), or None when they are gone."""
+    key = norm(words)[:40]
+    if not key:
+        return None
+    starts = []
+    for i in range(len(lines)):
+        if key in norm(" ".join(lines[i:i + 6])) and key not in norm(" ".join(lines[i + 1:i + 6])):
+            starts.append(i + 1)
+    return min(starts, key=lambda ln: (abs(ln - near), ln)) if starts else None
+
+
+def fix_lines(ledger: dict, root: str = ROOT) -> tuple[list[str], list[str]]:
+    """Re-anchor every entry whose words drifted to the line where they now begin in the same file. Never touches
+    words, rule or status. Returns (moved, gone): an entry whose words left its file is reported, not guessed."""
+    moved, gone = [], []
+    cache: dict = {}
+    for e in ledger.get("entries", []):
+        if not check_words(e, root, cache):
+            continue
+        rel, old = e["source"]["file"], int(e["source"]["line"])
+        lines = cache.get(rel)
+        new = find_words(lines, e["words"], old) if lines is not None else None
+        if new is None:
+            gone.append(f"{rel}:{old}: words gone from the file ('{e['words'][:40]}...')  [{e['id']}, {e.get('owner', '')}]")
+            continue
+        e["source"]["line"] = new
+        moved.append(f"{rel}:{old} -> {new}  [{e['id']}]")
+    return moved, gone
+
+
+def save(ledger: dict, root: str = ROOT, path: str = LEDGER) -> None:
+    with open(os.path.join(root, path), "w", encoding="utf-8") as fh:
+        json.dump(ledger, fh, indent=1, ensure_ascii=False)
+        fh.write("\n")
 
 
 def locked_lines(root: str) -> list[tuple[str, int, str]]:
@@ -189,6 +228,12 @@ def import_mined(mined_path: str, root: str = ROOT, out: str = LEDGER, measured:
     return 0
 
 
+def next_id_number(ledger: dict, area: str) -> int:
+    """One past the highest P-<area>-NN already taken, so a struck or merged entry's number is never reused."""
+    taken = [int(m.group(1)) for e in ledger["entries"] if (m := re.fullmatch(rf"P-{re.escape(area)}-(\d+)", e["id"]))]
+    return max(taken, default=0) + 1
+
+
 def seed_locked(ledger: dict, root: str = ROOT) -> int:
     """Add an entry for every LOCKED heading no entry covers (kind LOCKED, the heading's words), so --check is complete."""
     by_file: dict[str, list[int]] = {}
@@ -203,8 +248,9 @@ def seed_locked(ledger: dict, root: str = ROOT) -> int:
         m = re.search(r"\b(Garrett|Shombith|Yash|Caleb)\b", heading)
         if m:
             owner = m.group(1)
-        area = "process" if re.search(r"verify|commit|branch|tool|ship|menu root|convention|text has a human", heading, re.I) else "other"
-        n = sum(1 for e in ledger["entries"] if e["area"] == area) + 1
+        area = ("process" if re.search(r"verify|commit|branch|tool|ship|menu root|convention|text has a human", heading, re.I)
+                else "ai" if re.search(r"\bAI\b", heading) else "world-look" if re.search(r"colou?r", heading, re.I) else "other")
+        n = next_id_number(ledger, area)
         ledger["entries"].append({
             "id": f"P-{area}-{n:02d}", "owner": owner or "unattributed",
             "date": (re.search(r"20\d\d-\d\d-\d\d", heading) or [""])[0] if re.search(r"20\d\d-\d\d-\d\d", heading) else "",
@@ -235,6 +281,21 @@ def self_test() -> int:
         assert any(f.startswith("locked") for f in check(bad, tmp)), check(bad, tmp)
         bad = json.loads(json.dumps(good)); bad["entries"][1]["id"] = "P-modes-01"
         assert any(f.startswith("ids") for f in check(bad, tmp)), check(bad, tmp)
+        # fix_lines: a drifted entry is re-anchored (the gate fails first, passes after), words and status kept;
+        # an entry whose words left the file is reported and left alone
+        with open(os.path.join(tmp, "Docs", "claude", "Y.md"), "w", encoding="utf-8") as fh:
+            fh.write("filler\n" * 15 + "\"The vessel kit as designed\n always stays the same\"\n")
+        drift = json.loads(json.dumps(good)); drift["entries"][0]["source"] = {"file": "Docs/claude/Y.md", "line": 1}
+        drift["entries"][0]["kind"] = "quote"
+        assert any(f.startswith("words") for f in check(drift, tmp)), "negative control: drift must fail the gate"
+        moved, gone = fix_lines(drift, tmp)
+        assert len(moved) == 1 and not gone and drift["entries"][0]["source"]["line"] == 16, (moved, gone, drift)
+        assert drift["entries"][0]["words"] == good["entries"][0]["words"] and drift["entries"][0]["status"] == "drafted"
+        assert not [f for f in check(drift, tmp) if f.startswith("words")], check(drift, tmp)
+        lost = json.loads(json.dumps(good)); lost["entries"][0]["words"] = "words that are nowhere in the file"
+        moved, gone = fix_lines(lost, tmp)
+        assert not moved and len(gone) == 1 and lost["entries"][0]["source"]["line"] == 3, (moved, gone)
+        os.remove(os.path.join(tmp, "Docs", "claude", "Y.md"))
         # --md round trip and seed_locked
         with open(os.path.join(tmp, "Docs", "claude", "PRINCIPLES.md"), "w", encoding="utf-8") as fh:
             fh.write(f"# P\n\n{BEGIN}\nold\n{END}\n\ntail\n")
@@ -243,6 +304,10 @@ def self_test() -> int:
         assert "P-modes-01" in text and "old" not in text and text.endswith("tail\n"), text
         partial = json.loads(json.dumps(good)); partial["entries"].pop(1)
         assert seed_locked(partial, tmp) == 1 and check(partial, tmp) == [], check(partial, tmp)
+        # a seeded id never reuses a number: with P-other-02 taken and P-other-01 free (struck), the seed takes 03
+        gap = json.loads(json.dumps(good)); gap["entries"][1].update(id="P-other-02", area="other"); gap["entries"][1]["source"]["line"] = 99
+        seed_locked(gap, tmp)
+        assert gap["entries"][-1]["id"] == "P-other-03", gap["entries"][-1]
         # import: a mined entry whose quote is not at its line is dropped
         mined = os.path.join(tmp, "mined.json")
         with open(mined, "w", encoding="utf-8") as fh:
@@ -265,6 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--import", dest="import_path", help="seed principles.json from a mined JSON list")
     ap.add_argument("--measured", default="", help="the measured date to record with --import")
+    ap.add_argument("--fix-lines", action="store_true", help="re-anchor drifted entries to where their words now begin, then save")
     ap.add_argument("--seed-locked", action="store_true", help="add an entry for every uncovered LOCKED heading, then save")
     args = ap.parse_args(argv)
     if args.self_test:
@@ -276,6 +342,15 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, json.JSONDecodeError) as exc:
         print(f"principles: {exc}", file=sys.stderr)
         return 2
+    if args.fix_lines:
+        moved, gone = fix_lines(ledger)
+        for m in moved:
+            print("MOVED " + m)
+        for g in gone:
+            print("GONE  " + g)
+        save(ledger)
+        print(f"principles: re-anchored {len(moved)}, {len(gone)} whose words left their file (for the owner)")
+        return 1 if gone else 0
     if args.seed_locked:
         added = seed_locked(ledger)
         with open(os.path.join(ROOT, LEDGER), "w", encoding="utf-8") as fh:

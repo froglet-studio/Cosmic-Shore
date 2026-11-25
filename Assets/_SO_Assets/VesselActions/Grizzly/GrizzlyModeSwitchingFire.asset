@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 867f007d2b6559e4495b2460eca8949f, type: 3}
   m_Name: GrizzlyModeSwitchingFire
   m_EditorClassIdentifier: 
-  explosivesFire: {fileID: 11400000, guid: f411c4e273334723b40bdbfb8f68a57b, type: 2}
+  explosivesFire: {fileID: 0}
   sniperFire: {fileID: 11400000, guid: 52f08890cabc4e48891138d622f0ba57, type: 2}
   flamethrowerFire: {fileID: 11400000, guid: a6a49ba11f7b4b04a075230bda3d3306, type: 2}

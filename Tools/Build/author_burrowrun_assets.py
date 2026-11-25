@@ -50,7 +50,9 @@ MODE_DIR = "Assets/_Scripts/Controller/Arcade/BurrowRun"
 SCRIPT_PATHS = {
     "BurrowRunController": f"{MODE_DIR}/BurrowRunController.cs",
     "BurrowRunCourseSource": f"{MODE_DIR}/BurrowRunCourseSource.cs",
+    "BurrowRunController.Ruins": f"{MODE_DIR}/BurrowRunController.Ruins.cs",
 }
+RUINS_TESTS = "Assets/_Scripts/Tests/Editor/BurrowRunRuinsTests.cs"
 DOC = "Assets/_Scripts/Controller/Arcade/BURROWRUN.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameBurrowRun.asset"
 RULE = "Assets/_SO_Assets/Scoring Rules/BurrowRunScoringRule.asset"
@@ -105,6 +107,10 @@ STING_SPEED_FIELD = "stingSpeed"       # JewelWaspConfig: how fast a sting flies
 # The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.3 a quarter-of-race
 # deficit (4 gates) buys 1.2 element levels.
 COMEBACK_RATE = 0.3
+
+# The I4 garden ruins (BURROWRUN.md section 4a): laid from the environment prism, as Spearline's seals and ruins are.
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+RUIN_FIELD = f"  ruinPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
 
 HASH_SALT = "MinigameBurrowRun"
 
@@ -171,7 +177,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_RULE}, type: 2}}
   courseInnerRadiusFallback: 480
   innerRadiusNucleusFactor: 1.22
   laps: {LAPS}
-  gateBloomSeconds: 0.9
+{RUIN_FIELD}  gateBloomSeconds: 0.9
   courseSeed: 0
   aiCommitDistance: {AI_COMMIT_DISTANCE}
   aiApproachLead: {AI_APPROACH_LEAD}
@@ -252,6 +258,10 @@ _MEERKAT_FIELDS = (NEW_FIELDS
                    .replace(f"aiThroughDistance: {AI_THROUGH_DISTANCE}\n", f"aiThroughDistance: {MEERKAT_AI[2]}\n"))
 if NEW_FIELDS not in scene and scene.count(_MEERKAT_FIELDS) == 1:
     scene = scene.replace(_MEERKAT_FIELDS, NEW_FIELDS)
+# One-shot (2026-11-24, the I4 ruins): the committed scene's controller had no ruin prefab. Stands down once it has.
+_NO_RUIN_FIELDS = NEW_FIELDS.replace(RUIN_FIELD, "")
+if NEW_FIELDS not in scene and scene.count(_NO_RUIN_FIELDS) == 1:
+    scene = scene.replace(_NO_RUIN_FIELDS, NEW_FIELDS)
 if NEW_FIELDS not in scene:
     scene_errors.append(f"{SCENE_NAME}.unity: authored block no longer in the committed scene:\n{NEW_FIELDS}")
 # The race spawns NO crystal (2026-11-23). The donor's crystal manager spawns players + 1 omni crystals in the nucleus,
@@ -372,6 +382,23 @@ for _word in ("Meerkat", "Omnicrystal", "PerformShipControllerActions", "InputSt
         errors.append(f"BurrowRunController names '{_word}' - the mode seats the Jewel Wasp and presses nothing")
 if lib.VESSELS["Meerkat"] in g.files.get(CARD, ""):
     errors.append("the card still seats the Meerkat - its only Time game is Warpline")
+
+# The I4 ruins are Spearline's generator, CALLED from this mode's own hook: never a copy, and tested on this lap.
+_ruins = read_or_empty(SCRIPT_PATHS["BurrowRunController.Ruins"])
+if "SpearlineRuins.Lay(_course, SpearlineRuins.ForIntensity(Intensity)" not in _ruins:
+    errors.append("BurrowRunController.Ruins no longer lays Spearline's ruins from this race's rings")
+for _own in ("static void LayPergola", "static void LayWheel", "PerLapByRung"):
+    if any(_own in read_or_empty(_p) for _p in SCRIPT_PATHS.values()):
+        errors.append(f"Burrow Run carries '{_own}' - the ruin generator is Spearline's, called, not copied")
+if "LayRuins();" not in _controller or "TickRuins();" not in _controller or _controller.count("ClearRuins();") < 2:
+    errors.append("BurrowRunController no longer lays, turns and clears its ruins (OnCourseRaised, LateUpdate, OnNetworkDespawn)")
+if RUIN_FIELD not in scene:
+    errors.append(f"{SCENE_NAME}.unity: the controller has no ruin prefab - the I4 ruins would not be laid")
+for _word in ("Vessel", "InputStatus", "ElementalFloat"):
+    if _word in _ruins:
+        errors.append(f"BurrowRunController.Ruins names '{_word}' - the ruins are scenery and read or write no vessel")
+if "SpearlineRuins.Lay(lap, SpearlineRuins.ForIntensity(intensity)" not in read_or_empty(RUINS_TESTS):
+    errors.append(f"{RUINS_TESTS} is missing or no longer lays the ruins on this mode's lap")
 
 minted = list(G_SCRIPT.values()) + [G_CARD, G_RULE, G_PREVIEW, G_SCENE,
                                     guid(f"folder/{MODE_DIR}"), guid(f"text/{DOC}")]

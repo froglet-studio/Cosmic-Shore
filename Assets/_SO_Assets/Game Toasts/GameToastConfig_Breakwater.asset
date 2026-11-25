@@ -64,3 +64,73 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
+  - situation: 430
+    messageTemplate: 'Thread the eye, or fire a door open'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 431
+    messageTemplate: 'Through the eye - nothing spent'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 432
+    messageTemplate: 'Through the eye on the afterburner'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 433
+    messageTemplate: '{0} eyes in a row'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 434
+    messageTemplate: 'Lap {0} - {1} s'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 435
+    messageTemplate: 'Lap {0} - {1} s - best lap'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 436
+    messageTemplate: 'Lap {0} - every station through the eye'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

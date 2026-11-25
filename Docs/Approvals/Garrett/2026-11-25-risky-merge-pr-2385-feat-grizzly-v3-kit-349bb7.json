@@ -1,0 +1,56 @@
+{
+  "id": "2026-11-25-risky-merge-pr-2385-feat-grizzly-v3-kit-349bb7",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-25T00:12:04+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2385 (feat: grizzly-v3 kit (#2358) with the bomb launch kept away from the bomb) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/Resources/ElementalAbilityMaps/Grizzly.asset, Assets/_Prefabs/Spacevessels/Grizzly.prefab, Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombLeftAction.asset, Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombRightAction.asset and 4 more; a swim lane someone else occupies (approvals.py check exit 2): Grizzly",
+  "branch": "cece/exciting-hawking-x4x49j",
+  "pr": 2385,
+  "commit": "f0f75a5d8",
+  "paths": [
+    "Assets/Resources/ElementalAbilityMaps/Grizzly.asset",
+    "Assets/Resources/TouchControlProfiles.asset",
+    "Assets/_Graphics/Materials/GreenSpikeMaterial.mat",
+    "Assets/_Prefabs/Spacevessels/Grizzly.prefab",
+    "Assets/_SO_Assets/Color",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombLeftAction.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombRightAction.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyModeSwitchingFire.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlySniperShotAction.asset",
+    "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset",
+    "Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs",
+    "Assets/_Scripts/Controller/FX/GrizzlyClawWhips.cs",
+    "Assets/_Scripts/Controller/FX/GrizzlyClawWhips.cs.meta",
+    "Assets/_Scripts/Controller/IO/GamepadInputStrategy.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlyFlamethrowerActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlySniperShotActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/GrizzlyTriggerBombExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md",
+    "Assets/_Scripts/Data/Enums/InputEvents.cs",
+    "Assets/_Scripts/Tests/Editor/GrizzlyTriggerWeaponsTests.cs",
+    "Assets/_Scripts/Tests/Editor/GrizzlyTriggerWeaponsTests.cs.meta",
+    "Assets/_Scripts/UI/Controller/GrizzlyHUDController.cs",
+    "Assets/_Scripts/UI/Elements/InputHintBindingMap.cs",
+    "Assets/_Scripts/UI/View/GrizzlyHUDView.cs",
+    "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+    "Containers/GrizzlyBombActionSO.cs",
+    "Containers/GrizzlyFlamethrowerActionSO.cs",
+    "Containers/GrizzlyModeSwitchingFireSO.cs"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/Resources/ElementalAbilityMaps/Grizzly.asset, Assets/_Prefabs/Spacevessels/Grizzly.prefab, Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombLeftAction.asset, Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombRightAction.asset and 4 more"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Grizzly"
+    }
+  ]
+}
