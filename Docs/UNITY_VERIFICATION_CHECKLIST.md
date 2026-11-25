@@ -288,6 +288,44 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
+## 🔴 Leak fixes: bound arcade delays and score trackers that unsubscribe on destroy (2026-11-25, Garrett, salvaged from `cece/nice-brahmagupta-ojclij` part K, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Four fire-and-forget delays in the arcade controllers are bound to their owner's lifetime
+(`SkimRaceController.SpawnTrackEarly` 1.5 s, `NetworkScoreTracker.DelayAndSendResults` 0.5 s,
+`MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay` 0.5 s, `ResetServerRoundAfterDelay` 0.1 s), and
+`BaseScoreTracker.OnDestroy` unsubscribes every scorer, so a tracker destroyed without a turn end no longer keeps
+adding time score from the menu. Reference compile only.
+
+- [ ] Skim Race online, then Play Again: the fade, the reload and the fresh track still happen. Quit during the
+      half-second fade: back in the menu, the next launch is a normal start, not a replay reload
+      (`GameData.IsReplayReload` false).
+- [ ] A time-scored mode (Freestyle or any `ScoringModes.TimePlayed` card): quit to the menu mid-turn, then watch
+      `GameData.asset`'s RoundStatsList for ten seconds: no Score moves. A normal turn end still stops the scorers.
+
+## 🔴 2026-10-26 — ResourceSystem.Reset tolerates Unity's edit-mode Reset message (`cece/exciting-thompson-wdi3wm`, salvaged from `cece/inspiring-einstein-k6syi5` a109b25848) (unverified: no Unity CLI in the session)
+
+`ResourceSystem.Reset()` shares its name with Unity's edit-mode `Reset` message, which the editor sends the instant
+the component is added, before `Resources` exists. The method now returns when `Resources` is null.
+
+- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
+- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
+
+## 🔴 2026-10-26 — Wanderway conveyor: recycled shielded prisms re-theme after Initialize (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/prism-clock-followup-prompts-two-mhvad9` bbb47c111b) (unverified: no Unity CLI in the session)
+
+`Microscene.RearrangeIntoAsync` used to clear a prism's kind before `Prism.Initialize`, while it was still
+"created" from its last life, so every recycled shielded prism shattered and played `ShieldDeactivate` over its
+grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
+
+- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
+- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
+
+## 🔴 2026-10-26 — Time crystal: no sound through a muted SFX setting (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/sparrow-crystal-sound-bug-bnocj6`) (unverified: no Unity CLI in the session)
+
+`CrystalTime.prefab` lost its two bare `StudioEventEmitter`s ("Creature colide" on TriggerEnter and ObjectDestroy).
+
+- [ ] Open the prefab: no missing-script or broken component on its root.
+- [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
+
 ## 🔴 The Serpent's wall on every peer (2026-11-21, branch `claude/project-thread-nqfbgz`) — NOT EDITOR-VERIFIED
 
 Garrett's Brood Rush playtest: "the Serpent's wall was still not syncing". `unity_refcompile` (player and editor
