@@ -74,6 +74,11 @@ no faster (table below), so it ships at 0 and the AI flies as it did.
 | Lances, floor 0, danger at both ends | 456 s | 580 s | not run | 273 s |
 | Lances, floor 0, outer tips only (shipped) | 456 s | 417 s | 333 s | 340 s |
 
+**At real speed (x1) the AI is about twice as fast** (same build, lances shipped, 2026-11-26): I1 280 s, I2 208 s,
+I3 161 s, I4 152 s, every match to a winner with no match errors. The x4 clock the smoke test runs by default makes
+the AI steer and cut worse, so every x4 number in this section overstates the pace problem by about 2x; judge pace
+at x1. Even so, I1 and I2 are still two to three times the ~90 s aim.
+
 The lances do not fix the AI's pace. They are the environment a pilot reads, and whether they help a PERSON is a
 playtest.
 
