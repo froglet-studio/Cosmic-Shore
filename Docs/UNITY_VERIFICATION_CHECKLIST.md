@@ -27240,10 +27240,12 @@ ramp fuel, charge through a rival and on past them, run straight out, turn back 
 behaviour unchanged). The vessel is untouched. **Verified without Unity:** the generator's `--check`,
 `riposte_harness` (the shipped `RiposteDuelTests`, 14 of 14, five negative controls), the static gates, and the
 real-game judge in Amoebius (headless, four Swordfish AIs 2v2, Easy / Medium / Legendary on I1-I4, two seeds: 24 of 24
-matches ended, 26-202 s, median 96 s). **Not verified:** nothing was compiled or run in the Unity editor, and nobody
-has flown the mode.
+matches ended, 26-202 s, median 96 s). **In the open editor the same day (Unity 6000.3.17f1):** it compiles,
+`RiposteDuelTests` pass 14 of 14, and the mode smoke test played one I1 match (three Legendary AI, 2v1, clock 4x): a
+winner in 30.5 game seconds, no error in the match. **Not verified:** I2-I4 in the editor, any match at clock 1x, and
+nobody has flown the mode.
 
-- [ ] The project compiles in the editor and `RiposteDuelTests` pass.
+- [x] The project compiles in the editor and `RiposteDuelTests` pass (2026-11-25, 14 of 14).
 - [ ] Jackstraw (the Thresher) still plays as before: AI Threshers hunt, a match ends, Play Again works (its
       controller's AI calls moved behind a seam).
 - [ ] Riposte I1, AI on every seat, clock 1x: the AI hulls fly long straight passes and reach a few hundred u/s (not a

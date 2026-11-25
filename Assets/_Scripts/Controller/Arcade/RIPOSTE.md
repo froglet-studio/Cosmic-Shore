@@ -3,7 +3,8 @@
 > **Status.** Authored headless on 2026-11-15 (`claude/swordfish-game-kit`), for Garrett's ask to build every missing
 > elemental game, on the ids `Docs/ElementalLoop/GAME_KIT_ROSTER.md` reserved for it (row 7: `GameModes` 97, hint toast
 > 172). **2026-11-25 (Yash's Swordfish pass):** its own AI pilots and ramp tuning, measured in the real-game judge
-> (Amoebius, headless) on I1-I4; see sections 3-5. **Still not run in the Unity editor, and nobody has flown it.**
+> (Amoebius, headless) on I1-I4, then compiled, tested and smoke-played once in the Unity editor; see sections 3-5.
+> **Nobody has flown it.**
 
 `GameModes.Riposte = 97` is the **Swordfish's Charge card**: working other pilots over (`CombatPoints`).
 
@@ -109,8 +110,15 @@ Two matches a cell cannot rank I1-I3 against each other: the spread inside a cel
 - **Real game, no Unity:** the table in section 4. The judge needed two engine changes: `RaceJudge` takes
   `"mode": "Riposte"` (and `Jackstraw`) as a combat-point game, and `FixedString128Bytes.CopyFromTruncated`, without
   which the Amoebius build of this branch failed.
-- **Not done:** not compiled or run in the Unity editor; `RiposteDuelTests` not run by Unity's test runner; nobody has
-  flown it; Hard was not judged; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
+- **2026-11-25, Unity 6000.3.17f1 (the open editor):** the project compiles with these files, `RiposteDuelTests`
+  pass 14 of 14 in the editor's test runner, and the settings asset and the ramp variant load as their types. The mode
+  smoke test played Riposte once (I1, three Legendary AI seats 2v1, clock 4x): scene loaded, all three seats AI and
+  moving, a winner in 30.5 game seconds, no error or exception in the match. The run is still marked failed for
+  three errors outside the match: two at boot (a command of mine that timed out, and the Cloud Code `NotFound` other
+  modes' runs show) and one at exit (`NetworkCrystalManager.RespawnCrystal_ServerRpc` called after the network
+  stopped, when an omni crystal was touched during teardown; platform code, not Riposte's). One 2v1 match at 4x
+  is not a time to compare with the judge's 2v2 table.
+- **Not done:** no AI match in the editor at I2-I4 or at clock 1x; nobody has flown it; Hard was not judged; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
 - **Open questions a flight answers:** whether 6 strikes is the right length with a person in it (AI matches run
   26-202 s); whether a silenced pilot under a 0.5 s sword latch can get away (the AI now runs out after each pass, a
   person may not); whether the heap, cut 140-2,800 prisms a match, still gives fuel late on.
