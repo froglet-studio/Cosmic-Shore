@@ -21473,6 +21473,7 @@ the component is added, before `Resources` exists. The method now returns when `
 
 - [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
 - [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
+
 ## Rev 20 G: the arcade configure window - pedestals, LB / RB intensity, START (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 `Docs/MENU_REDESIGN_B.md` section 74; approved board `R20ConfigureG2` on the Menu Redesign B canvas. No Unity editor in
@@ -21506,6 +21507,7 @@ grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
 
 - [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
 - [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
+
 ## Scoreboard D, team versus (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
@@ -21531,6 +21533,7 @@ No Unity editor in the session. Verified offline only: reference compile (player
 
 - [ ] Open the prefab: no missing-script or broken component on its root.
 - [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
+
 ## Rev 24 Hangar, element flowers on the arcade cards, the AI difficulty row on every card, the now-playing card gone (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
