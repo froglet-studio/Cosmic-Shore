@@ -554,13 +554,7 @@ namespace CosmicShore.Gameplay
             var transformer = status != null ? status.VesselTransformer : null;
             if (!transformer) return;
             var keg = _kegs[_bankShotKeg].Keg;
-            // The bomb launch rides the throttle along the nose (grizzly-v3, 2026-10-16), so it is not in
-            // VelocityShift: read the bomb executor's last launch, landed inside this watch window.
-            Vector3 push = transformer.VelocityShift;
-            var bombs = BombsOf(hull);
-            if (bombs && bombs.LastLaunchTime >= _bankShotUntil - bankShotWindowSeconds)
-                push = bombs.LastLaunchPush;
-            if (!GrizzlyTimeKegs.IsBankShot(keg.Centre, hull.position, push, keg.ExitDir,
+            if (!GrizzlyTimeKegs.IsBankShot(keg.Centre, hull.position, transformer.VelocityShift, keg.ExitDir,
                                             bankShotMaxDegrees))
                 return;
             _bankShotKeg = -1;
@@ -568,21 +562,6 @@ namespace CosmicShore.Gameplay
             if (!bankShotEvent.IsNull) CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(bankShotEvent);
             if (_bankShots == 1 || _bankShots % bankShotEveryN == 0)
                 GameToastAPI.Post(bankShotToast, player.Domain, _bankShots.ToString());
-        }
-
-        GrizzlyTriggerBombExecutor _bombs;
-        Transform _bombsHull;
-
-        /// <summary>The local hull's bomb executor (cached per hull).</summary>
-        GrizzlyTriggerBombExecutor BombsOf(Transform hull)
-        {
-            if (_bombsHull != hull)
-            {
-                _bombsHull = hull;
-                _bombs = hull ? hull.GetComponentInParent<GrizzlyTriggerBombExecutor>() : null;
-                if (!_bombs && hull) _bombs = hull.GetComponentInChildren<GrizzlyTriggerBombExecutor>();
-            }
-            return _bombs;
         }
 
         /// <summary>The local pilot cleared <paramref name="previousRing"/>: a crown of debris bursts off its rim. Laid and

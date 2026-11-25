@@ -3,8 +3,7 @@
 Each trigger owns **one bomb**. Pull and release to fire it; pull again to **freeze** it where it
 is; let go to **detonate** it. How hard you squeeze is the bomb: the peak pressure of the firing
 pull sets the **ammo spent** and the **size** of both the bomb and its blast. A Grizzly inside its
-own blast is **thrown forward, along its heading**, and keeps that momentum long enough to chain
-the next bomb. **Only the trigger detonates a bomb** — never a clock,
+own blast is **thrown away from the bomb**. **Only the trigger detonates a bomb** — never a clock,
 never a contact. A bomb **cruises** — constant velocity, no drag, no range limit — until the
 trigger freezes it **or it touches another vessel**, which freezes it too.
 
@@ -37,6 +36,10 @@ History, all at the design owner's request after playtests:
   of a flow state."* Muzzle speed 250 → **180**; the launch is **forward momentum** along the nose
   (`ModifyThrottle`, 2 s ease) instead of a 1 s shove away from the bomb; X no longer fires the
   charged cannon in Explosives mode; **LB** cycles weapons (RB still does too).
+- **2026-11-25 — the forward launch declined (Garrett, shipping `grizzly-v3`):** *"we don't want
+  bombs to make grizzly go forward. we want grizzly to blow up away from bombs."* The launch is back
+  to the 1 s shove **away from the bomb** (below); the 180 u/s muzzle speed and the rest of the
+  fifth pass stay.
 
 ## The triggers follow the weapon (2026-10-16)
 
@@ -117,7 +120,7 @@ momentum."*
   main view (design owner, 2026-10-16: "the scope is supposed to be a PiP"). Releasing LT closes
   it, and the round flies on unwatched.
 - **Bombs off elsewhere:** leaving Explosives retires every live bomb silently, and the autopilot
-  bombs only in Explosives. Speed you carry is the launch's momentum (2 s) or Rush (B).
+  bombs only in Explosives. Speed you carry is the last launch (1 s) or Rush (B).
 - **X / Q / middle mouse:** unbound on `Grizzly.prefab`.
 
 ## The gesture (per trigger)
@@ -155,25 +158,27 @@ A bomb is retired without a blast only on **turn end**, the executor being **dis
 **re-`Initialize`** — a bomb that can fly forever is exactly the one that could leak, so those
 three are the whole of its retirement. An unfrozen bomb flies on until one of them, however far.
 
-## The launch — forward, as momentum
+## The launch — away from the bomb, three times harder
 
 `GrizzlyTriggerBombExecutor.LaunchSelf`, applied at detonation:
 
-- **Direction: your heading.** Wherever the bomb sits, a Grizzly inside its blast is thrown
-  **forward along its own nose** (2026-10-16). The bomb's position only decides whether you are
-  inside the blast and how hard it throws. The launch rides the throttle, so it **follows the nose
-  through a turn** instead of sliding the way it was thrown.
+- **Direction: from the bomb to you.** Leave a frozen bomb **behind** you and blow it — you are
+  thrown forward. Beside you — you are thrown sideways. Ahead of you — it stops you dead and throws
+  you back. (Sitting exactly on it, the nose stands in for "away".) The charged cannon still
+  launches you along the nose (`VesselImpulseByExplosionEffectSO`); only the trigger bombs push
+  away from themselves.
 - **Strength:** the blast's own impulse, `blast scale / ExplosionDuration (1.2 s)`, ×
-  `selfLaunchMultiplier` (**4.5**) — **full at the bomb, easing to half at the blast's edge**
-  (`selfLaunchEdgeStrength` 0.5), nothing outside it — capped at `selfLaunchCeiling` **300 u/s over
-  cruise**. A full squeeze anywhere inside its blast hits the cap: ~6× cruise.
-- **Momentum, not a shove.** It is a throttle multiplier (`VesselTransformer.ModifyThrottle`,
-  `1 + added / CruiseSpeed`) that eases **linearly back to cruise over `selfLaunchSeconds` (2 s)**.
-  The first version was a 1 s `ModifyVelocity` that was gone before the next bomb was charged, which
-  read as "charging a bomb slows me down". Launches **stack**, up to the transformer's own
-  speed-modifier cap (6× cruise, ~360 u/s), so chaining blasts holds the Grizzly at top speed — the
-  flow state the bombs exist for. A full launch carries ~480 u past cruise
-  (`GrizzlyTimeCourse.CarryAfterLaunch`).
+  `selfLaunchMultiplier` (**4.5** — three times the 1.5 it first shipped at) — **full at the bomb,
+  easing to half at the blast's edge** (`selfLaunchEdgeStrength` 0.5), nothing outside it — over
+  `selfLaunchSeconds` (1 s, cosine ease-out).
+- **Its own ceiling.** Every shove a vessel takes shares `VesselTransformer`'s **100 u/s**
+  velocity ceiling, and a full launch used to sit on it — so tripling the multiplier alone would
+  have changed nothing a pilot could feel. The launch now carries its own ceiling,
+  `selfLaunchCeiling` **300 u/s** (`ShipVelocityModifier.ceiling`): a live modifier may RAISE the
+  shared cap for its own lifetime, never lower it, so every knock-back, Rush and cannon kick the
+  Grizzly takes keeps the 100. A full squeeze ridden close hands over 750 u/s at the bomb, sits
+  **on the 300 ceiling for its whole second** — 350 u/s with cruise, seven times cruise — and
+  carries the hull **~300 u** (`GrizzlyTimeCourse.CarryAfterLaunch`).
 - **Reach:** blast radius is half its scale (the AOE sphere's collider radius is 0.5): **100 u**
   for a full squeeze, **25 u** for a tap.
 - **Your own trail is SPARED.** The blast is spawned with `AffectSelfOverride = false`: your own
@@ -261,8 +266,8 @@ no longer applies to this round), no lifetime, no range limit. It pulls away fro
 Grizzly at ~180 u/s for as long as nobody stops it.
 
 **Why 180 (2026-10-16, two playtests):** 250 was "a little too fast" to track, so it came down to
-180 — and the launch is now along the nose (above), so a bomb blown while still ahead of you no
-longer throws you backwards. The first playtest's reasoning, from when it went 90 → 250: at 90 u/s the bomb could never get clear of its own
+180. A full blast's reach is 40 u since 2026-11-20, so a bomb frozen a quarter second out is
+already clear of it. The first playtest's reasoning, from when it went 90 → 250: at 90 u/s the bomb could never get clear of its own
 blast. A full bomb's blast has radius 100, and a bomb fired then frozen within a second sat 30-90
 u ahead, so every detonation swallowed the Grizzly. The launch is AWAY from the bomb, so a bomb
 still AHEAD of you throws you backwards. On screen that read as "the triggers explode at the
@@ -364,7 +369,7 @@ Gated on the PILOT, so the menu's lava-lamp Grizzly and released companions bomb
 | `minProjectileScale` / `maxProjectileScale` | 2.5 / 5 | Bomb diameter — small on purpose |
 | `sideYawDegrees` | 3 | LT left / RT right |
 | `minBlastScale` / `maxBlastScale` | 50 / 200 | Blast diameter → reach (½) and launch strength |
-| `selfLaunchMultiplier` / `selfLaunchCeiling` / `selfLaunchSeconds` / `selfLaunchEdgeStrength` | 4.5 / 300 / 2 / 0.5 | The forward launch: strength, cap over cruise, seconds to ease back, edge weight |
+| `selfLaunchMultiplier` / `selfLaunchCeiling` / `selfLaunchSeconds` / `selfLaunchEdgeStrength` | 4.5 / 300 / 1 / 0.5 | The launch away from the bomb |
 | `fallbackDangerColor` / `sideHueShift` | (1, 0.072, 0.105) / 0.045 | Danger shade per trigger |
 | `aiFireStickBand` / `aiFreezeDistance` / `aiDetonateBehindDistance` / `aiFireIntervalSeconds` | 0.35 / 18 / 10 / 0.6 | Autopilot |
 | `fireEvent` / `detonateEvent` | empty | FMOD — ship silent until audio authors them (LOCKED convention) |
@@ -405,11 +410,9 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
    (where it touched, not past it), in the same armed look — and does **not** go off. Pull and
    release RT: it detonates there. Your own hull never stops it (fire it from a standstill, then
    fly through it).
-6. **Launch forward.** Blow a bomb with your hull inside its blast — behind, beside or ahead of
-   you: a **huge** blast, and **you are thrown forward along your nose**, ~6× cruise, easing back
-   over 2 s. Turn during it: the speed follows the nose.
-6b. **Flow.** Chain bombs, LT then RT: while you charge and fire the next one the ship **does not
-   slow**, and each blast stacks onto the speed you still carry.
+6. **Launch away, 3×.** Fly past a frozen bomb and release when it is just behind you: a **huge**
+   blast, and **you are thrown forward, hard** — ~7× cruise for a second, ~300 u. Beside you —
+   thrown sideways; ahead of you — thrown back.
 7. **Other shoves unchanged.** Get knocked back by an enemy blast, or Rush: no harder than before.
 8. **Your trail survives** your own blast; an enemy trail inside it breaks; an enemy pilot inside
    it is knocked away.

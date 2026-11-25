@@ -143,11 +143,10 @@ namespace CosmicShore.Tests
                 "the launch keeps the 4.5 x (50-200 blast) throw now the blast is 20-80");
             Assert.AreEqual(200f * 4.5f, _cfg.MaxBlastScale * _cfg.SelfLaunchMultiplier, 1e-3f,
                 "a full squeeze's launch must stay what it was when the blast shrank");
-            // 1.2 s = AOEGrizzlyExplosion's ExplosionDuration; 0.5 = the blast edge's weight
-            // (selfLaunchEdgeStrength). Since 2026-10-16 the launch is forward momentum capped at
-            // the ceiling over cruise, so a full squeeze must hit that cap even at the blast's edge.
-            Assert.GreaterOrEqual(_cfg.MaxBlastScale / 1.2f * _cfg.SelfLaunchMultiplier * _cfg.SelfLaunchEdgeStrength, _cfg.SelfLaunchCeiling,
-                "a full squeeze must reach the launch ceiling anywhere inside its blast");
+            // 1.2 s = AOEGrizzlyExplosion's ExplosionDuration; 0.5 = the launch's weakest weight
+            // (cos ease 1.5 -> 0.5), so this is its LAST frame.
+            Assert.GreaterOrEqual(_cfg.MaxBlastScale / 1.2f * _cfg.SelfLaunchMultiplier * 0.5f, _cfg.SelfLaunchCeiling,
+                "a full squeeze ridden at the bomb must hold the raised ceiling for its whole second");
         }
 
         [Test]

@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     ///   pull    -> arm (the peak analog pressure of this pull is the bomb's size)
     ///   release -> fire: spend ammo for that size, launch a visible bomb
     ///   pull    -> freeze the bomb where it is
-    ///   release -> detonate it - and a Grizzly inside its own blast is LAUNCHED FORWARD along its heading
+    ///   release -> detonate it - and a Grizzly inside its own blast is LAUNCHED AWAY FROM IT
     ///
     /// <b>Only the trigger detonates a bomb.</b> It never goes off on a clock or on contact. It
     /// CRUISES - constant velocity, no drag, no range limit (<see cref="Projectile.Cruises"/>) -
@@ -67,13 +67,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Blast scale of a maximum bomb. Reach is half the scale: 40 u. One radius for the self-launch, rival harm and prisms (Garrett, 2026-11-20: smaller radius, launch kept).")]
         float maxBlastScale = 80f;
 
-        [Header("Self launch (forward, along the heading)")]
-        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown FORWARD along its own heading (2026-10-16) - the bomb's position only sets whether and how hard - at blast scale / ExplosionDuration x this over cruise, capped by Self Launch Ceiling. 11.25 keeps the launch of the old 50-200 blast at x4.5 now the blast is 20-80 (Garrett, 2026-11-20).")]
+        [Header("Self launch (away from the bomb)")]
+        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by Self Launch Ceiling. 11.25 keeps the launch of the 50-200 blast at x4.5 now the blast is 20-80 (Garrett, 2026-11-20).")]
         float selfLaunchMultiplier = 11.25f;
-        [SerializeField, Tooltip("The most speed one bomb launch may ADD over cruise, u/s. The launch is a throttle multiplier (VesselTransformer.ModifyThrottle), so stacked launches are further capped by the transformer's speed-modifier cap (6x cruise).")]
+        [SerializeField, Tooltip("The velocity ceiling a bomb launch may reach, u/s. Every other shove a vessel takes shares VesselTransformer's 100 u/s cap; a live bomb launch raises it to this for its own lifetime only (ShipVelocityModifier.ceiling). 300 = three times the shared cap, which a full squeeze used to sit on.")]
         float selfLaunchCeiling = 300f;
-        [SerializeField, Tooltip("Seconds the launch's momentum takes to ease back to cruise (linear, VesselTransformer.ModifyThrottle). Long enough to charge, fire and blow the next bomb before the speed is gone, so chained blasts keep the Grizzly at speed (design ask, 2026-10-16).")]
-        float selfLaunchSeconds = 2f;
+        [SerializeField, Tooltip("Seconds the launch lasts (cosine ease-out, VesselTransformer.ModifyVelocity).")]
+        float selfLaunchSeconds = 1f;
         [SerializeField, Tooltip("Launch strength at the blast's EDGE as a fraction of the strength at the bomb. 1 = flat; lower rewards blowing it close.")]
         [Range(0f, 1f)] float selfLaunchEdgeStrength = 0.5f;
 
@@ -89,7 +89,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("How far ahead of the hull an autopilot freezes its bomb, world units. Must sit well inside the blast radius (maxBlastScale / 2) or the launch misses the hull.")]
         float aiFreezeDistance = 4.6f;
         [FormerlySerializedAs("aiDetonateDistance")]
-        [SerializeField, Tooltip("An autopilot flies PAST its frozen bomb and detonates it once it is this far behind the hull, world units - the hull is then inside its blast and is thrown forward along its heading.")]
+        [SerializeField, Tooltip("An autopilot flies PAST its frozen bomb and detonates it once it is this far behind the hull, world units - the launch is away from the bomb, so behind you is forward.")]
         float aiDetonateBehindDistance = 14f;
         [SerializeField, Tooltip("Seconds between autopilot bombs, so the two triggers alternate rather than fire together.")]
         float aiFireIntervalSeconds = 0.6f;

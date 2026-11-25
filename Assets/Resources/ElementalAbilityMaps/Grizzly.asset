@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 3
     AbilityLabel: Trigger Bombs
-    AbilityDescription: 'LT and RT each own a bomb in Explosives: pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to blow it. A blast you sit in throws you forward along your nose and the speed lasts two seconds, so bombs chain into a flow. Space and the level-5 upgrade still belong to the charged cannon, which has no button since the bombs moved to the triggers.'
+    AbilityDescription: 'LT and RT each own a bomb in Explosives: pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to blow it. A blast you sit in throws you away from the bomb, so leave it behind you and blow it to be thrown forward. Space and the level-5 upgrade still belong to the charged cannon, which has no button since the bombs moved to the triggers.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4

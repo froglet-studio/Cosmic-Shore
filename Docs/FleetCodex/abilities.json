@@ -161,7 +161,7 @@
   },
   "Space": {
    "ability": "Trigger Bombs",
-   "does": "In Explosives, LT and RT each own a bomb. Pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to set it off. Sit in your own blast and it throws you forward along your nose, and the speed lasts long enough to chain the next bomb.",
+   "does": "In Explosives, LT and RT each own a bomb. Pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to set it off. Sit in your own blast and it throws you away from the bomb, so leave it behind you and blow it to be thrown forward.",
    "trigger": "Hold, release to fire",
    "scales": "Space does not change the trigger bombs yet: its scaling and level-5 still sit on the charged cannon, which no longer has a button.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md"

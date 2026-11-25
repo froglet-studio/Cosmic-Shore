@@ -28,7 +28,7 @@ MonoBehaviour:
   maxBlastScale: 80
   selfLaunchMultiplier: 11.25
   selfLaunchCeiling: 300
-  selfLaunchSeconds: 2
+  selfLaunchSeconds: 1
   selfLaunchEdgeStrength: 0.5
   fallbackDangerColor: {r: 1, g: 0.072, b: 0.105, a: 1}
   sideHueShift: 0.045
