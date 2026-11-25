@@ -329,6 +329,18 @@ frame 45 ms, no frame over 50 ms).
   minute 6, 3.5 to 9.8 ms after; `LightFauna.Feed` worst 2.6 ms in minute 1, 27.3 ms in minute 6. The cell fills:
   entities 9,733 to 24,188, memory 775 to 974 MB. Data: `A:/CosmicShoreBuild/bench_2026-11-20/phonebench_lf26a_*.jsonl`,
   `PerfRuns/diag_lf26a`.
+- **A small exact saving in the scan is in** (`LightFauna.UpdateBehavior`, 2026-11-26; compiled in the editor, 0
+  errors; not played by a person): the creature's own position is read once per tick and each prism's once per visit
+  (it was read up to three times a prism). Same behaviour by construction. Paired in one Play session, Menu_Main,
+  9 to 12 min in, 11 light fauna, old and new alternating every 10 s, editor on Debug: 1.936 ms a scan (1,499 scans,
+  522 prisms each) against 1.646 ms (1,555 scans, 488 prisms each); per prism 3,704 ns against 3,373 ns (-9%).
+  It does NOT remove the spikes: the cost is still one visit per prism in range per creature, at about 19 scans a
+  second for 11 creatures in the menu cell. Not measured in a player.
+  - [ ] Menu and one fauna-heavy game: light fauna still graze, avoid each other and hunt as before.
+- **Tried and dropped**: taking each prism's position from `PrismSpatialIndex` instead (-34% per prism in the same
+  kind of pairing). Of 91,112 prisms sensed in 30 s, 8,031 (9%) had an index position more than 1 cm off the
+  transform, the worst 33.9 m, so it would have moved meals and separation pushes. That gap is itself a finding for
+  the index's owner: `QuerySphere` selects by those positions.
 - The measuring session ended the editor once (00:42) by switching its Profiler on from an `eval`
   (`profiling::Profiler::EmitUIEvents`); the rule above forbids it.
 

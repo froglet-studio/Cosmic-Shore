@@ -712,9 +712,15 @@ namespace CosmicShore.Gameplay
             // re-checked - the same contract collider snapshots had.
             using (s_TickPrismScanMarker.Auto())
             {
+                // A full cell puts hundreds to thousands of prisms inside the detection radius and this loop visits
+                // every one of them for every creature, so each position is read ONCE: this creature's before the
+                // loop (it does not move during its own tick) and each prism's once per visit. Not the spatial
+                // index's copy: for about 9% of the prisms sensed in the menu cell it is more than 1 cm off the
+                // transform (up to 34 m, measured 2026-11-26), which would move the meal and the separation push.
+                Vector3 myPosition = transform.position;
                 var spatialIndex = PrismSpatialIndex.EnsureInstance();
                 int prismCount = spatialIndex != null && spatialIndex.IsAvailable
-                    ? spatialIndex.QuerySphere(transform.position, detectionRadius, PrismScratch)
+                    ? spatialIndex.QuerySphere(myPosition, detectionRadius, PrismScratch)
                     : 0;
 
                 for (int pi = 0; pi < prismCount; pi++)
@@ -722,7 +728,8 @@ namespace CosmicShore.Gameplay
                     var prism = PrismScratch[pi];
                     if (!prism || prism.destroyed) continue;
 
-                    Vector3 diff = transform.position - prism.transform.position;
+                    Vector3 prismPosition = prism.transform.position;
+                    Vector3 diff = myPosition - prismPosition;
                     float sqr = diff.sqrMagnitude;
                     if (sqr <= 0f) continue;
 
@@ -776,7 +783,7 @@ namespace CosmicShore.Gameplay
                         // see IsEdibleForHerbivore. Intentional feeding: don't vacuum;
                         // remember the NEAREST edible prism, UpdateFeeding approaches it,
                         // turns to face it, and only then starts the suction.)
-                        if (diet == FaunaDiet.Herbivore && IsEdibleForHerbivore(prism))
+                        if (diet == FaunaDiet.Herbivore && IsEdibleForHerbivore(prism, prismPosition))
                         {
                             // A painted prism ranks closer (PaintedPrey: an Angler's paint is preferred, never forced).
                             float rank = PaintedPrey.Rank(prism, sqr);
@@ -802,7 +809,7 @@ namespace CosmicShore.Gameplay
                     if (diet == FaunaDiet.Herbivore)
                     {
                         float rank = PaintedPrey.Rank(prism, sqr);
-                        if (rank < bestFeedSqr && IsEdibleForHerbivore(prism))
+                        if (rank < bestFeedSqr && IsEdibleForHerbivore(prism, prismPosition))
                         {
                             bestFeedSqr = rank;
                             feedCandidate = prism;
@@ -900,19 +907,25 @@ namespace CosmicShore.Gameplay
         /// targeting an inedible one is a feed-hold the creature can never finish, which is what
         /// stuck brittlestars on Skim Race's track prisms.
         /// </summary>
-        bool IsEdibleForHerbivore(Prism prism)
+        bool IsEdibleForHerbivore(Prism prism) =>
+            prism && !prism.destroyed && IsEdibleForHerbivore(prism, prism.transform.position);
+
+        /// <summary>The same rule for a caller that already holds the prism's position (the behaviour tick's scan
+        /// reads it once per prism).</summary>
+        bool IsEdibleForHerbivore(Prism prism, Vector3 prismPosition)
         {
             if (!prism || prism.destroyed) return false;
             if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism hp)
             {
-                if (!hp.LifeForm) return false;
+                var lifeForm = hp.LifeForm;
+                if (!lifeForm) return false;
                 return cell != null
-                    ? IsPreyForMe(prism.transform.position, hp.LifeForm.domain)
-                    : hp.LifeForm.domain != domain;
+                    ? IsPreyForMe(prismPosition, lifeForm.domain)
+                    : lifeForm.domain != domain;
             }
             return cell != null
-                ? IsPreyForMe(prism.transform.position, prism.Domain)
+                ? IsPreyForMe(prismPosition, prism.Domain)
                 : prism.Domain != domain;
         }
 
