@@ -27253,3 +27253,12 @@ to the menu at once when nothing set sail. Test: `VoyageRulesTests.TheWaitingVoy
 - [ ] With the bad record from before the fix still saved, launch any voyage: it sails (a `[Voyage] ... given up`
       warning or a resume), never a stuck loading screen.
 - [ ] Leave a voyage before the first world: the next launch sails a fresh job.
+
+## No voyage is kept for later: leaving ends it, Set sail starts fresh from home (2026-11-25)
+
+🔴 unverified. Shombith, after the waypoint fix: "when I set sail it just continues and every button is bugged ... For now
+there is no saving, if they leave they leave. Set sail restarts the level." `VoyageRun.EndAtStop` now gives the voyage up
+(home, nothing aboard) instead of keeping a waypoint or anchoring at the stop, and `VoyageRun.LoadOrBegin` brings any
+saved record at sea or away from home back home, so older saves are repaired. The galaxy (days, news, standing) is kept.
+- [ ] Sail any voyage, leave it mid-leg: back in the menu the full board shows; Set sail starts a new voyage from home.
+- [ ] Finish a job at a stop and leave: the next Set sail starts from home, not the stop.
