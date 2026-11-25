@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-24-brittlestarexecutor-update-now-wraps-eac-993f52",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-24T15:03:43+00:00",
+  "area": "the Brittle Star's kit",
+  "summary": "BrittleStarExecutor.Update now wraps each step in a ProfilerMarker (BrittleStar.Ring, Modes, Creation, Cords, Guns, Flights, Waves, Sabers, Autopilot); behaviour unchanged",
+  "why": "Yash's Brittle Star Time capture showed a 7-12 s frame held inside BrittleStarExecutor.Update with no marker to say which step; the markers let the next slow capture name it",
+  "branch": "Ys-bleeding-edge",
+  "commit": "1460fb349",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/BrittleStarExecutor.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "BrittleStar"
+    ]
+  }
+}

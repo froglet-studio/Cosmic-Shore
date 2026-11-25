@@ -403,29 +403,51 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the frame
 
+        // One marker per step of the frame (Docs/claude/SHADERS_AND_PERFORMANCE.md: every per-frame cost is named), so
+        // `prof` and a spike frame say which step held it.
+        static readonly Unity.Profiling.ProfilerMarker s_markRing = new("BrittleStar.Ring");
+        static readonly Unity.Profiling.ProfilerMarker s_markModes = new("BrittleStar.Modes");
+        static readonly Unity.Profiling.ProfilerMarker s_markCreation = new("BrittleStar.Creation");
+        static readonly Unity.Profiling.ProfilerMarker s_markCords = new("BrittleStar.Cords");
+        static readonly Unity.Profiling.ProfilerMarker s_markGuns = new("BrittleStar.Guns");
+        static readonly Unity.Profiling.ProfilerMarker s_markFlights = new("BrittleStar.Flights");
+        static readonly Unity.Profiling.ProfilerMarker s_markWaves = new("BrittleStar.Waves");
+        static readonly Unity.Profiling.ProfilerMarker s_markSabers = new("BrittleStar.Sabers");
+        static readonly Unity.Profiling.ProfilerMarker s_markAutopilot = new("BrittleStar.Autopilot");
+
         void Update()
         {
             if (!config || _status == null || !_status.Transform) return;
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
 
-            _ring.Tick(dt);
-            EaseModes(dt);
-            ApplySpeedMode();
-            ApplySpeedRoll();
-            ApplyBlockGirth();
-            AimRing(dt);
-            UpdateCreation();
+            using (s_markRing.Auto()) _ring.Tick(dt);
+            using (s_markModes.Auto())
+            {
+                EaseModes(dt);
+                ApplySpeedMode();
+                ApplySpeedRoll();
+                ApplyBlockGirth();
+                AimRing(dt);
+            }
+            using (s_markCreation.Auto()) UpdateCreation();
             float depth = TriggerDepth();
-            UpdateCords(depth, dt);
-            UpdateGuns(depth, dt);
-            UpdateHeat(dt);
-            UpdateFlights(dt);
-            UpdateWaves();
-            UpdateRoundBursts();
-            UpdateSabers(dt);
+            using (s_markCords.Auto()) UpdateCords(depth, dt);
+            using (s_markGuns.Auto())
+            {
+                UpdateGuns(depth, dt);
+                UpdateHeat(dt);
+            }
+            using (s_markFlights.Auto()) UpdateFlights(dt);
+            using (s_markWaves.Auto())
+            {
+                UpdateWaves();
+                UpdateRoundBursts();
+            }
+            using (s_markSabers.Auto()) UpdateSabers(dt);
 
-            if (_status.AutoPilotEnabled && IsSimAuthority()) Autopilot();
+            if (_status.AutoPilotEnabled && IsSimAuthority())
+                using (s_markAutopilot.Auto()) Autopilot();
         }
 
         void EaseModes(float dt)
@@ -769,7 +791,11 @@ namespace CosmicShore.Gameplay
                 if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
                 prism.Slice(v * config.CordDebrisRestitution, _status.Domain, _status.PlayerName,
                             onCord, cutNormal.normalized, debrisSpeedLimit: config.CordDebrisSpeedLimit);
-                PlayAt(config.CordSliceEvent, onCord);
+                if (Time.time >= _nextCordSliceSoundAt)
+                {
+                    _nextCordSliceSoundAt = Time.time + config.CordSliceSoundMinSeconds;
+                    PlayAt(config.CordSliceEvent, onCord);
+                }
             }
         }
 
@@ -997,8 +1023,16 @@ namespace CosmicShore.Gameplay
                 }
                 if (_heat.AddRounds(guns, config.HeatPerRound, HeatCapacity())) PlayAt(config.OverheatEvent, HullPosition);
             }
-            PlayAt(config.FireEvent, HullPosition);
+            if (Time.time >= _nextFireSoundAt)
+            {
+                _nextFireSoundAt = Time.time + config.FireSoundMinSeconds;
+                PlayAt(config.FireEvent, HullPosition);
+            }
         }
+
+        // The fire and cord-slice sounds are rate-limited per hull (config): unthrottled, three AI hulls started ~270
+        // fire sounds a second and FMOD's command queue stalled the game for minutes.
+        float _nextFireSoundAt, _nextCordSliceSoundAt;
 
         void FireAlong(Transform muzzle, Vector3 direction, float scale, float time, Vector3 inherit)
         {

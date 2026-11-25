@@ -22,9 +22,10 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>What the mode does NOT add:</b> no ability, no cell, no metric and no circuit generator - Thresher Time's
     /// shape on the shared <see cref="HeadlongCircuit"/>, with <see cref="WrasseRunCourse"/> supplying the Wrasse's cut.
+    /// At I4 it lays Spearline's garden ruins round the lap as scenery (<c>WrasseRunController.Ruins.cs</c>).
     /// See <c>Assets/_Scripts/Controller/Arcade/WRASSERUN.md</c>.</para>
     /// </summary>
-    public class WrasseRunController : GateRaceController
+    public partial class WrasseRunController : GateRaceController
     {
         [Header("Wrasse Run circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +

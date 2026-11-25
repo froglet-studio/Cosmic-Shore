@@ -78,6 +78,27 @@ Measured over 200 seeds per level with the shipped solver compiled out of editor
 Every floor is ≥ 1.6× the cruise circle, so a crew that never boosts (every AI crew) holds every corner
 at full throttle. Two laps of ~4.6 k u are ~150 s at cruise; every boost buys ~300 u.
 
+### 3a. The garden ruins (I4 only; Yash, 2026-11-24)
+
+Scenery round the racing line on the hardest rung, the same update Spearline got (SPEARLINE.md §2a). The
+generator is Spearline's `SpearlineRuins`, **called, not copied**: `WrasseRunController.Ruins.cs` is only the
+hook (lay in `OnCourseRaised`, pose the wheel in `LateUpdate`, return the prisms in `OnNetworkDespawn`).
+
+- One ruin on each of the seven legs between the lap's eight rings (the closing leg carries none), the kinds
+  taking turns: pergola, flower head, vines, a thick wall with a doorway on the line, a tunnel, a 3D maze of
+  bars, and a turning wheel (25 °/s, posed from the network clock).
+- A 60 u clear lane down the flown line (the I4 mouth is 36 u), nothing within 120 u of a ring, only on legs
+  of 380 u or more, every prism at least 8 u thick.
+- Each ruin is one domain colour, Jade, Ruby, Gold in turn (`ruinDomains` on the controller; empty = Blue), so
+  the ruins read apart from the lit ring (Lime).
+- Plain environment prisms (`ruinPrefab` = `SpawnablePrism`, wired in the scene) with the game's own rules: a
+  hull breaks them, nothing grows back. Nothing reads or writes a vessel, a kite or a ring.
+
+Measured headless over 10 seeds at I4 with the shipped C# (`WrasseRunRuinsTests`): 761-880 prisms a lap, all
+seven legs carry a ruin, the lane and ring margins hold, none at I1-I3. **The wheel fits on only 1 of those 10
+courses** (the generator lays a wheel only where its 150 u rim sweeps no other leg, and the Wrasse's lifted
+rings rarely leave that room); the other six kinds stand on every course.
+
 ## 4. AI
 
 - **An AI crew is two AIs** (Garrett, 2026-10-20: "AI vessels should be controlled by two AI, one for the
@@ -113,7 +134,8 @@ at full throttle. Two laps of ~4.6 k u are ~150 s at cruise; every boost buys ~3
 | laps | `MinigameWrasseRun.unity` → `WrasseRunController.laps` | **2** |
 | rings per lap / base circle | `WrasseRunCourse.GatesPerLap` / `.BaseRadius` | **8** / **640** |
 | corner profile, spread, floor, mouth, lift, presentation | `WrasseRunCourse.ForIntensity` | §3 |
-| AI commit / lead / through | scene → `GateRaceController` | 72 / 80 / 55 |
+| AI commit / lead / through | scene → `GateRaceController` | 433 / 423 / 68 (trained 2026-11-17; 72 / 80 / 55 before) |
+| garden ruins (I4) | `SpearlineRuins` constants; scene → `ruinPrefab`; controller → `ruinDomains` | 7 a lap, lane 60, ring margin 120; Jade, Ruby, Gold |
 | detection clamp (hull and kite) | scene → `maxPlausibleSpeed` | **5200** (2× the kite's ~2570 u/s worst world speed: 260 + 364 + the board turning under a kite at its far corner, ~890 u out: a 2.4:1 screen plus the 240 u it may fly past any edge) |
 | Time mote bonus / AI Time preference | `KiteNavigatorConfig.asset` → `raceTimeMoteBonus`, `raceTimeLoopPreference` | 2 / 3 |
 | the sling | `KiteNavigatorConfig.asset` → `sling*` | rope 42, stiffness 260, damping 5, drag 0.35 / 0.9, top 364 (round 7: 70% of 520); tail 4.8 board radii |
@@ -160,6 +182,11 @@ intensity-2 circuit from the shipped `HeadlongCircuit`).
    a mouse.
 7. **Two clients.** A client's ring reports are credited once.
 8. **Regressions.** Thresher Time's ball still threads; Headlong, Redline, Grizzly Time unchanged.
+9. **The garden ruins (I4; not compiled in Unity, not watched).** Launch at intensity 4: a ruin stands on each
+   leg between rings in Jade, Ruby and Gold, the line through each is open, and no ruin crowds a ring. At
+   intensity 1-3 there are none. Watch three things nobody has seen: whether a slung kite strikes the ruins
+   and what that does to it; whether the AI Grouper, which commits to a ring from 433 u out, clips them; and
+   the frame rate with ~850 more prisms. On a second client the ruins stand in the same places.
 
 ## 8. Known limitations / follow-ups
 

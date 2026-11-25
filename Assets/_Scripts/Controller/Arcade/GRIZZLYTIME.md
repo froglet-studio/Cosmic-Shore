@@ -137,6 +137,32 @@ runtime and tests, and `GrizzlyTimeKegsTests` (19) and `GrizzlyTimeCourseTests` 
 - **Match length.** The models above put two laps at 73-106 s; the recorded hand-flown races (5 flown, 2 finished,
   `Docs/AI_SYSTEM/VESSEL_MODE_CHART.md`) have a best of 106 s and a median of 192 s for 16 gates. Laps were left at two.
 
+### 0.2 Ruins at I4 (2026-11-24, Yash): `GrizzlyTimeRuins`, `GrizzlyTimeController.Ruins.cs`
+
+The environment update Spearline got (`SPEARLINE.md` §2a), on this circuit. **Not compiled in Unity, not played.**
+
+- **What stands.** `SpearlineRuins.Lay` is CALLED with this course's rings (not copied, no Spearline file changed): one
+  ruin on each leg of 380 u or more except the leg into ring 0, the seven kinds in turn (pergola, flower head, vines,
+  wall with a doorway, tunnel, maze, turning wheel), every prism at least 8 u thick, a 60 u lane down the ring-to-ring
+  line, nothing within 120 u of a ring's mouth. I4 only; I1-I3 lay none.
+- **Cut back for the Grizzly.** A Grizzly is mostly not on the ring-to-ring line: it flies keg to keg and a bank shot
+  throws it from a keg at the next ring. `GrizzlyTimeRuins.Lay` therefore also drops every standing prism within 60 u
+  of the throw lane (keg to next ring), of the keg line (keg to next keg) and of the approach (ring to next keg), and
+  within 110 u (`HullClear`) of a keg, so the chalk's start and the keg's regrow space stay open. A wheel is kept whole
+  unless its 150 u sweep would reach a keg's space.
+- **Measured** (`grizzly_time_course_harness/run.sh --sweep`, 400 seeds at I4): Spearline lays a median 762 prisms a
+  lap here; 572 are kept (min 432, max 707); 7.0 ruins a lap (never fewer than 6); 190 of 192 wheels kept.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby, Gold in turn, so the ruins read apart from the kegs and chalk
+  (Blue). `ruinDomains` on the controller; empty = Blue.
+- **Decoration only.** Plain prisms laid with the kegs' prefab under their own owner id, with the game's own prism
+  rules: a hull, a bomb or a Rush breaks them and nothing grows back. Nothing reads or writes a vessel. The wheel is
+  posed every frame from the network clock, so every peer sees the same angle.
+- **Held by** `GrizzlyTimeRuinsTests` (8, in the same harness) and four negative controls.
+- **Open, for play to settle.** (1) The wheel sweeps the lanes, as in Spearline, and a bank shot arrives at up to
+  350 u/s: it may read as unfair here. (2) The AI does not know the ruins are there; it has not been watched at I4
+  with them, and a stall there would hurt step 3. (3) A ruin in a pilot's own domain colour is that pilot's own prism
+  to the game. (4) About 570 more prisms on screen at I4: frame rate not measured.
+
 ## 1. What the mode is asking
 
 The Grizzly is the fleet's slowest, tightest hull: it cruises at **50 u/s** and turns at

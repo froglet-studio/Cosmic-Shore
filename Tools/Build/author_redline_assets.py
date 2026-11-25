@@ -70,6 +70,9 @@ G_SCRIPT = {
     "RedlineHeat":              guid("script/RedlineHeat"),
     "RedlineHeatTests":         guid("script/RedlineHeatTests"),
     "RedlineControllerHeat":    guid("script/RedlineController.Heat"),
+    "RedlineRuins":             guid("script/RedlineRuins"),
+    "RedlineRuinsTests":        guid("script/RedlineRuinsTests"),
+    "RedlineControllerRuins":   guid("script/RedlineController.Ruins"),
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
@@ -194,6 +197,9 @@ SCRIPT_PATHS = {
     "RedlineHeat":              "Assets/_Scripts/Controller/Arcade/Redline/RedlineHeat.cs",
     "RedlineHeatTests":         "Assets/_Scripts/Tests/Editor/RedlineHeatTests.cs",
     "RedlineControllerHeat":    "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.Heat.cs",
+    "RedlineRuins":             "Assets/_Scripts/Controller/Arcade/Redline/RedlineRuins.cs",
+    "RedlineRuinsTests":        "Assets/_Scripts/Tests/Editor/RedlineRuinsTests.cs",
+    "RedlineControllerRuins":   "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.Ruins.cs",
 }
 for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
@@ -299,6 +305,11 @@ OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['HeadlongScoringRul
   maxPlausibleSpeed: 400
   reportResyncSeconds: 3
 """
+# The prism the I4 garden ruins are built from (RedlineController.Ruins, REDLINE.md section 4b): the same SpawnablePrism
+# Spearline's seals and ruins use. The ruins' colours (ruinDomains) are left to the controller's defaults.
+SPAWNABLE_PRISM_PATH = "Assets/_Prefabs/Trails/SpawnablePrism.prefab"
+RUIN_PREFAB_LINE = (f"  ruinPrefab: {{fileID: 4563009547826722997, guid: {aml.existing_guid(SPAWNABLE_PRISM_PATH)}, "
+                    "type: 3}\n")
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RedlineScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}}
   courseOuterRadius: 1080
@@ -314,7 +325,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RedlineScoringRule'
   aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: {MAX_PLAUSIBLE_SPEED}
   reportResyncSeconds: 3
-"""
+{RUIN_PREFAB_LINE}"""
 CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['RedlineController']}, type: 3}}\n"
 
 # 4c. Everything ELSE the donor authored is already what this mode wants, stated rather than
@@ -354,6 +365,12 @@ scene, _n_laps = re.subn(r"(  innerRadiusNucleusFactor: 1\.22\n)  laps: \d+\n(  
                          rf"\g<1>  laps: {LAPS}\n\g<2>", scene)
 if _n_laps != 1:
     _scene_errors.append(f"the controller's laps field was found {_n_laps} times, not once")
+# The ruin prefab is ADDED in place (2026-11-24) after the shell's last authored field, once.
+if RUIN_PREFAB_LINE not in scene:
+    scene, _n_ruin = re.subn(r"(  maxPlausibleSpeed: \d+\n  reportResyncSeconds: 3\n)(?!  ruinPrefab: )",
+                             lambda m: m.group(1) + RUIN_PREFAB_LINE, scene)
+    if _n_ruin != 1:
+        _scene_errors.append(f"the controller's reportResyncSeconds field was found {_n_ruin} times, not once")
 if scene.count(NEW_FIELDS) != 1:
     _scene_errors.append("MinigameRedline.unity: the controller field block is not the authored one:\n" + NEW_FIELDS)
 # What the mode INHERITED from the donor is still what it needs - checked on the scene it ships.

@@ -49,7 +49,9 @@ guid = lib.guid
 MODE_DIR = "Assets/_Scripts/Controller/Arcade/Warpline"
 SCRIPT_PATHS = {
     "WarplineController": f"{MODE_DIR}/WarplineController.cs",
+    "WarplineController.Ruins": f"{MODE_DIR}/WarplineController.Ruins.cs",
 }
+RUINS_TEST = "Assets/_Scripts/Tests/Editor/WarplineRuinsTests.cs"
 DOC = "Assets/_Scripts/Controller/Arcade/WARPLINE.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameWarpline.asset"
 RULE = "Assets/_SO_Assets/Scoring Rules/WarplineScoringRule.asset"
@@ -106,6 +108,11 @@ COMEBACK_RATE = 0.45
 
 HASH_SALT = "MinigameWarpline"
 
+# The garden ruins (WARPLINE.md section 2a, I4 only): the prism they are laid from, on the controller. The colours
+# (ruinDomains) are the script's own default, Jade / Ruby / Gold, which the Editor writes on its next save.
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+RUIN_FIELDS = f"  ruinPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
+
 
 def header(script_guid: str, name: str) -> str:
     return lib.header_for(script_guid, name)
@@ -114,6 +121,7 @@ def header(script_guid: str, name: str) -> str:
 # ── 1. Metas for the scripts, the mode folder and the doc ────────────────────
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
+g.emit(RUINS_TEST + ".meta", lib.script_meta_text(guid("script/WarplineRuinsTests")))
 g.folder_meta(MODE_DIR)
 g.text_meta(DOC)
 
@@ -222,6 +230,10 @@ def clone_scene() -> str:
 scene, scene_errors = lib.committed_scene(
     SCENE, clone_scene,
     authored_blocks=(NEW_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
+# The ruin prefab joined the controller after the scene was committed (2026-11-24): written once, after the block
+# this generator owns, and never again once it is there.
+if RUIN_FIELDS not in scene and NEW_FIELDS in scene:
+    scene = scene.replace(NEW_FIELDS, NEW_FIELDS + RUIN_FIELDS, 1)
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
@@ -291,6 +303,13 @@ if "TimeRaceCourseConfigSO.Circuit(Mode, request.Intensity)" not in _course or \
         "var settings = SlingshotCourse.ForIntensity(intensity);" not in _cut:
     errors.append("WarplineCourseSource no longer cuts Slingshot's circuit (TimeRaceCourseConfigSO.Circuit over SlingshotCourse.ForIntensity)")
 
+if RUIN_FIELDS not in scene:
+    errors.append("the scene's WarplineController carries no ruinPrefab (SpawnablePrism) - no ruins at I4")
+_ruins = read_or_empty(SCRIPT_PATHS["WarplineController.Ruins"])
+if "SpearlineRuins.Lay(_course, SpearlineRuins.ForIntensity(Intensity)" not in _ruins:
+    errors.append("WarplineController.Ruins no longer lays Spearline's ruins from Warpline's own lap")
+if "partial class WarplineController" not in _ctrl:
+    errors.append("WarplineController is not partial - its ruins hook cannot compile")
 if G_SCRIPT["WarplineController"] not in scene or EXISTING["SlingshotController"] in scene:
     errors.append("scene does not carry exactly the WarplineController script")
 _taken = project_network_hashes()
@@ -318,5 +337,6 @@ if not os.path.exists(os.path.join(ROOT, "Assets/_SO_Assets/Classes/SO_Class_Mee
     errors.append("SO_Class_Meerkat.asset is missing - run author_meerkat_assets.py")
 
 minted = list(G_SCRIPT.values()) + [G_CARD, G_RULE, G_PREVIEW, G_SCENE,
-                                    guid(f"folder/{MODE_DIR}"), guid(f"text/{DOC}")]
+                                    guid(f"folder/{MODE_DIR}"), guid(f"text/{DOC}"),
+                                    guid("script/WarplineRuinsTests")]
 g.finish(errors, referenced=EXISTING, minted=minted)

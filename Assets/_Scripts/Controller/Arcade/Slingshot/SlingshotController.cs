@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// replicated press path (<c>StoatSlingExecutor.AutopilotSwing</c>): to turn, and for the warp alone on a
     /// long leg, since the swing is the Stoat's whole kit (2026-11-11; every other slingshot deleted 2026-11-21).</para>
     /// </summary>
-    public class SlingshotController : GateRaceController
+    public partial class SlingshotController : GateRaceController
     {
         [Header("AI nose lead")]
         [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
@@ -104,8 +104,9 @@ namespace CosmicShore.Gameplay
                 _orreryClock.transform.SetParent(transform, false);
                 _orreryClock.Init(gameData, intensity, 0, _course.Count, () => RaceLength, layout, container, runTag: "Slingshot");
             }
+            LayRuins();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
-                $"[Slingshot] Orrery I{intensity}: {_moons.Count} moons, {layout.Prisms.Count} prisms, {layout.Movers.Count} shepherds.");
+                $"[Slingshot] Orrery I{intensity}: {_moons.Count} moons, {layout.Prisms.Count} prisms, {layout.Movers.Count} shepherds, {_ruinPrisms.Count} ruin prisms.");
         }
 
         void ClearOrrery()
@@ -117,6 +118,7 @@ namespace CosmicShore.Gameplay
             _orreryClock = null;
             _orreryPrisms = null;
             _orreryFeatures = null;
+            ClearRuins();
         }
 
         public override void OnNetworkDespawn()

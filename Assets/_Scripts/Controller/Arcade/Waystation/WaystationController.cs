@@ -472,6 +472,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            LayRuins();   // WaystationController.Ruins.cs (garden ruins, I4)
             WaystationTower.Walls(_course, Intensity, s_tiles);
             if (s_tiles.Count == 0) return;
             _wallRoot = new GameObject($"{ModeName}Walls").transform;
@@ -555,11 +556,13 @@ namespace CosmicShore.Gameplay
             if (_wallRoot && _wallRoot.childCount == 0) Destroy(_wallRoot.gameObject);
             _wallRoot = null;
             ClearLanternsAndGems();
+            ClearRuins();
         }
 
         // GateRaceController.Update runs the race and a subclass must not declare Update; LateUpdate is free.
         void LateUpdate()
         {
+            TickRuins();   // the wheels turn from the course's reveal on, not only while the turn runs
             if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
             TickWallRegrow();
             TickLanternTowers();

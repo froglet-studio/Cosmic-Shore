@@ -74,6 +74,10 @@ htr.author(dict(
         "PerchRunCourse":       f"{MODE_DIR}/PerchRunCourse.cs",
         "PerchRunCourseSource": f"{MODE_DIR}/PerchRunCourseSource.cs",
         "PerchRunCourseTests":  "Assets/_Scripts/Tests/Editor/PerchRunCourseTests.cs",
+        # the I4 garden ruins (PERCH_RUN.md 3a): Spearline's generator, called round the dart's straight legs
+        "PerchRunRuins":        f"{MODE_DIR}/PerchRunRuins.cs",
+        "PerchRunController.Ruins": f"{MODE_DIR}/PerchRunController.Ruins.cs",
+        "PerchRunRuinsTests":   "Assets/_Scripts/Tests/Editor/PerchRunRuinsTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/PERCH_RUN.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",

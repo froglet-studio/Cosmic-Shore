@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED Decoy Run course (RaceCourseGeometry, DecoyRunCourse, JacksRacePlan) and its SHIPPED edit-mode tests
-# (DecoyRunCourseTests) against race_course_source_harness's Unity math stub and an NUnit shim with Roslyn, and RUN
+# (DecoyRunCourseTests, DecoyRunRuinsTests; the ruins call Spearline's generator) against race_course_source_harness's Unity math stub and an NUnit shim with Roslyn, and RUN
 # every [Test] - the 400-seed ladder in seconds, no Unity. Run from anywhere; the tests read JacksConfig.asset from
 # the repo root.
 #
@@ -27,17 +27,20 @@ OUT="${TMPDIR:-/tmp}/decoy_run_harness"
 mkdir -p "$OUT"
 
 COURSE="$A/Controller/Arcade/DecoyRun/DecoyRunCourse.cs"
+RUINS="$A/Controller/Arcade/DecoyRun/DecoyRunRuins.cs"
 cd "$ROOT"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = course source, $2 = output name
+build() {   # $1 = course source, $2 = output name, $3 = ruins source (default: the shipped one)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" "$HERE/Stubs.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Controller/Vessel/JacksRacePlan.cs" \
-    "$1" "$A/Tests/Editor/DecoyRunCourseTests.cs"; do
+    "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" \
+    "$A/Controller/Arcade/Spearline/SpearlineRuins.cs" "${3:-$RUINS}" \
+    "$1" "$A/Tests/Editor/DecoyRunCourseTests.cs" "$A/Tests/Editor/DecoyRunRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -81,4 +84,15 @@ mutate "the chalk rails sit on the legs" 's/float lane = rings\[i\].Radius + Cha
 mutate "the chalk ignores the flight lines" 's/if (ClearOfFlight(rings, start, at)) dots.Add(at);/dots.Add(at);/' '                        dots.Add(at);'
 mutate "a skewer's first ring faces where it was entered from" 's/if (skewer) a\[k - 1\] = d;/if (false) a[k - 1] = d;/' 'if (false) a'
 mutate "I4 starts without the second decoy" 's/StartTimeLevel = new\[\] { 0, 0, 0, 5 }/StartTimeLevel = new[] { 0, 0, 0, 0 }/' 'StartTimeLevel = new\[\] { 0, 0, 0, 0 }'
+mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$RUINS" > "$OUT/DecoyRunRuins_neg.cs"
+  grep -q "$3" "$OUT/DecoyRunRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$COURSE" neg "$OUT/DecoyRunRuins_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+mutate_ruins "every rung has ruins" 's/SpearlineRuins.ForIntensity(intensity);/SpearlineRuins.ForIntensity(4);/' 'SpearlineRuins.ForIntensity(4);'
+mutate_ruins "a hairpin's lane is drawn from the ring, not the decoy" 's/s.Group >= 3 \&\& !DecoyRunCourse/false \&\& !DecoyRunCourse/' 'false && !DecoyRunCourse'
+mutate_ruins "the racing line is handed over as the rings (a curve, not the zips)" 's/Vector3 dir = RaceCourseGeometry.SafeNormalize(to - from, rings\[leg + 1\].Axis);/Vector3 dir = rings[leg].Axis;/' 'Vector3 dir = rings\[leg\].Axis;'
 echo "decoy_run_harness self-test: ok"

@@ -1,0 +1,1406 @@
+<!doctype html>
+<!--
+  PUMP RIDER LAB — a /labmaker browser lab (round 1).
+  The question: a new vessel latches onto prismscapes the way the Urchin does, but it makes its speed
+  the way a longboarder does on a pump track — leaning into the bends and bending / extending the knees.
+  Which way of doing that is worth building?
+
+  Contract (.claude/skills/labmaker/SKILL.md §2): SHIPPED names every number's source (Urchin numbers it
+  would inherit; pp* = lab-only proposals), SPEC drives every slider, simStep never draws or reads a device,
+  every run is seeded, the AI writes only the input object, window.__lab is the test surface, and the
+  decision log goes to the artifact db (collection "decisions") with a browser fallback.
+  Verify: node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/PumpRiderLab.html
+  Write-up: Docs/Studios/PUMP_RIDER_LAB.md
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pump Rider Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* Layout: the studio editor — header / stage + right settings dock / bottom records dock. Dark-first, the Vessel Studio's tokens. */
+  :root {
+    --bg: #0b1026; --panel: #121a3a; --panel-2: #0e1531; --line: #27336a; --fg: #e8ecff; --dim: #9aa6d6;
+    --accent: #ffb347; --accent-2: #7fd7ff; --good: #6fe39a; --warn: #ffcf5c; --bad: #ff7a8a;
+    --stage: #05081a; --jade: #13fff2; --ruby: #ff00f9;
+    --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef1fb; --panel: #ffffff; --panel-2: #f5f7ff; --line: #c9d0ee; --fg: #141a3a; --dim: #4b567f;
+      --accent: #a65f00; --accent-2: #0a6fa8; --good: #1f8a4c; --warn: #8a6100; --bad: #b3243a; color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1fb; --panel: #ffffff; --panel-2: #f5f7ff; --line: #c9d0ee; --fg: #141a3a; --dim: #4b567f;
+    --accent: #a65f00; --accent-2: #0a6fa8; --good: #1f8a4c; --warn: #8a6100; --bad: #b3243a; color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 350px; grid-template-rows: auto minmax(0, 1fr) 236px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 12px; align-items: center; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font: 700 1.05rem var(--display); letter-spacing: 0.02em; margin: 0; }
+  .chip { font: 700 0.75rem var(--display); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+  .chip.way { color: var(--accent); border-color: var(--accent); }
+  #diff { color: var(--accent-2); font-size: 0.85rem; }
+  .spacer { flex: 1; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; }
+  #stage, #hudc { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #startCard { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); width: min(460px, calc(100% - 32px)); background: rgba(8,12,32,0.86); color: #e8ecff; border: 1px solid #27336a; border-radius: 10px; padding: 14px 16px; font-size: 0.9rem; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+  #startCard h2 { margin: 0 0 6px; font: 700 1.05rem var(--display); color: #ffb347; letter-spacing: 0.02em; }
+  #startCard p { margin: 4px 0; }
+  #startCard .keys { color: #9aa6d6; font-size: 0.82rem; }
+  #startCard .btns { display: flex; gap: 8px; margin-top: 10px; }
+  #no3d { position: absolute; left: 12px; bottom: 12px; color: #ff7a8a; font: 600 0.8rem var(--display); }
+  #hud { position: absolute; left: 14px; top: 8px; color: #e8ecff; font: 600 0.85rem/1.5 var(--display); pointer-events: none; text-shadow: 0 1px 2px #000; }
+  #hud .big { font-size: 1.6rem; color: #ffb347; }
+  #takeover { position: absolute; right: 12px; top: 10px; display: flex; gap: 6px; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 14px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); border-radius: 6px; padding: 5px 9px; cursor: pointer; font: 700 0.8rem var(--display); letter-spacing: 0.02em; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btn:focus-visible, .tabs button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+  .sec { font: 700 0.8rem var(--display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); margin: 12px 0 4px; }
+  .row { display: grid; grid-template-columns: 1fr 70px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; font-size: 0.9rem; }
+  .row label .key { color: var(--dim); font: 0.7rem var(--display); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font: 600 0.85rem var(--display); font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--accent-2); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--dim); font-size: 0.8rem; }
+  .pick { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; align-items: center; margin: 8px 0; font-size: 0.9rem; }
+  .pick .tip { grid-column: 1 / -1; color: var(--dim); font-size: 0.8rem; margin-top: -4px; }
+  select, textarea, input[type=text] { width: 100%; font: inherit; font-size: 0.9rem; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font: 700 0.75rem var(--display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); }
+  td.num { text-align: right; } th.num { text-align: right; }
+  .best { font-weight: 700; color: var(--good); }
+  .bad { color: var(--bad); }
+  .hint { color: var(--dim); font-size: 0.85rem; margin: 4px 0; }
+  .status-ok { color: var(--good); } .status-warn { color: var(--warn); }
+  .ways { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+  .way { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--panel-2); min-width: 0; }
+  .way h3 { margin: 0 0 2px; font: 700 0.9rem var(--display); color: var(--accent); }
+  .way p { margin: 2px 0; font-size: 0.85rem; }
+  .law { font: 600 0.9rem var(--display); color: var(--accent-2); }
+  .tablewrap { overflow-x: auto; }
+  .pushbtn { position: absolute; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: 76px; height: 76px; border-radius: 50%; border: 2px solid #13fff2; background: rgba(19,255,242,0.16); color: #e8ecff; font: 700 0.8rem var(--display); touch-action: none; z-index: 2; }
+  .pushbtn:active { background: rgba(19,255,242,0.4); }
+  #touchUI { position: absolute; inset: auto 0 0 0; height: 38%; display: flex; pointer-events: none; }
+  #touchUI div { flex: 1; margin: 8px; border: 1px dashed rgba(232,236,255,0.22); border-radius: 12px; color: rgba(232,236,255,0.5); font: 700 0.65rem var(--display); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 3 / 4; max-height: 82vh; max-width: 100%; }
+    #takeover { top: auto; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); right: 12px; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="chip" id="meta"></span>
+    <span class="chip way" id="wayChip"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="chip" id="platform"></span>
+    <button class="btn" id="sound" aria-pressed="false">Sound off</button>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage" aria-label="3D view of the vessel riding a prism rail"></canvas>
+    <canvas id="hudc" aria-label="Instruments: speed, lap, bend dial and pump lane"></canvas>
+    <div id="hud"><span class="big">0</span> u/s<br><span></span></div>
+    <div id="no3d" hidden>3D view unavailable (three.js did not load); the instruments still run.</div>
+    <div id="startCard">
+      <h2>Ride the pump track</h2>
+      <p>Your knees make your speed. <b>Knees</b> (the default): pull the right trigger to bend, let go to extend. <b>Dual stick</b>: sticks apart = bent, together = straight. Speed comes from moving your mass toward the curve: on each bar in the pump lane, move IN. That means extending when you are on the inside of the curve and contracting when you are on the outside; the arrow on your rider shows which. From a stop, tap <b>A</b> to push off with a foot; once you are pumping you will not need it. Every stroke is rated.</p>
+      <p class="keys" id="startKeys">Pad (Knees): right trigger = knees, left stick = roll round the rail, A = push. Keys: hold Space (or the mouse) = knees bent, A / D = roll, F = push. Phone: a thumbstick on each half of the view, and a PUSH button.</p>
+      <div class="btns"><button class="btn primary" id="ride">Ride it</button><button class="btn" id="watch">Watch the AI first</button></div>
+    </div>
+    <div id="takeover"><button class="btn" id="letAi">Let the AI fly</button></div>
+    <div id="touchUI" hidden><div id="touchL">LEFT STICK</div><div id="touchR">RIGHT STICK</div></div>
+    <button id="pushBtn" class="pushbtn" hidden aria-label="Push (A)">A · PUSH</button>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the numbers =================
+  // A READER of the shipped numbers. The vessel does not exist yet, so SHIPPED holds the Urchin numbers it
+  // would inherit (each names its source) plus lab-only proposals, prefixed pp* / ai*, that no game field has.
+  const LAB = { name: 'Pump Rider Lab', branch: 'cece/charming-rubin-ro74tj', round: 1, doc: 'Docs/Studios/PUMP_RIDER_LAB.md' };
+  const SHIPPED = {
+    FriendlyTerrainSpeed: 300, // Urchin.prefab TrailFollower.FriendlyTerrainSpeed (u/s, own ribbon)
+    HostileTerrainSpeed: 20,   // Urchin.prefab TrailFollower.HostileTerrainSpeed (u/s, enemy ribbon)
+    speedTrackingRate: 5,      // TrailFollower.speedTrackingRate C# default (1/s chase of the ride speed)
+    DefaultThrottleScaler: 65, // Urchin.prefab: free-flight cruise (u/s) — the speed a rider ARRIVES with
+    PitchScaler: 90,           // Urchin.prefab VesselTransformer.PitchScaler (°/s at full YSum; RotationThrottleScaler 0)
+    YawScaler: 90,             // Urchin.prefab VesselTransformer.YawScaler   (°/s at full XSum)
+    RollScaler: 90,            // Urchin.prefab VesselTransformer.RollScaler  (°/s at full YDiff): rolls you round the rail
+    rideSurfaceClearance: 1.5, // GunVesselTransformer.rideSurfaceClearance C# default (u)
+    prismSpacing: 8,           // UrchinTrackAction.asset prismSpacing (u) — rail drawn with it
+    // ---- lab-only proposals (no game field yet) ----
+    ppStartSpeed: 0,    // lab: speed at the moment of latching on; 0 = from a stop (push to get going)
+    ppPull: 1200,       // lab: the prismscape's pull on a latched rider (u/s²); sets crest fly-off and grip
+    ppLegTravel: 4,     // lab: knee travel, crouched to extended (u)
+    ppLegRate: 8,       // lab: fastest knee extension (u/s)
+    ppLegStiff: 30,     // lab: how hard the knees chase the stick (1/s)
+    ppPushKick: 30,     // lab: the A-button push: speed one push adds from a stop (u/s)
+    ppPushTop: 160,     // lab: a push adds nothing at or above this speed (a foot cannot push faster than the ground goes by)
+    ppPushCooldown: 0.45, // lab: shortest time between two pushes (s): one foot stroke
+    ppThumbOff: 0.25,   // lab: how long the right thumb is off its stick to press A (s); the stick springs to centre meanwhile
+    ppLookReturn: 0,    // lab: how fast your look drifts back to the rail ahead (1/s); 0 = it stays where you put it
+    ppLeanMax: 180,     // lab: lean limit either side of the landing side (°); 180 = roll freely like the Urchin
+    ppDrag0: 1,         // lab: rolling drag (u/s²)
+    ppDrag2: 10,        // lab: speed drag (×10⁻⁵ /u)
+    ppGrip: 600,        // lab: sideways load the rider holds without scrubbing (u/s²)
+    ppScrub: 0.15,      // lab: fraction of the excess sideways load that bleeds speed
+    ppBead: 3,          // lab: "falls outward" lean model — how fast the bend throws you to the outside (rad/s)
+    ppAutoBank: 4,      // lab: "auto-bank" lean model — how fast the hull rolls into the bend (1/s)
+    ppAutoEff: 0.8,     // lab: Lean way — efficiency of the hull's automatic knees
+    ppTapLegs: 1.5,     // lab: Tap way — knee speed multiplier for the digital button
+    ppBeatKick: 12,     // lab: Beat way — kick for a release at the tightest point of a dip (u/s)
+    ppHostileDrag: 4,   // lab: drag multiplier on an enemy ribbon (the Urchin's 15× speed cliff, re-priced)
+    ppRollerR: 70,      // lab: course — tightest roller radius (u)
+    ppRollerLen: 360,   // lab: course — roller wavelength (u)
+    aiNoise: 0.6,       // lab: how sloppy the rookie AI is (0 = skilled)
+  };
+  const RAIL_R = 1.5;   // UrchinTrackAction.asset prismScale {3,3,6}: half-thickness of a rail prism (u)
+  const LEG_MIN = 1;    // lab: hip height with the knees fully bent (u)
+
+  // ================= (2) SPEC: one row per slider =================
+  // [tab, key, min, max, step, label, tooltip]
+  const SPEC = [
+    ['Scene Config', 'ppRollerR', 50, 300, 5, 'Roller radius (u)', 'Tightest bend radius of a roller or berm. Tighter bends load harder and pay more per pump, and throw you off sooner.'],
+    ['Scene Config', 'ppRollerLen', 200, 1200, 20, 'Roller length (u)', 'Distance from one dip to the next. Short rollers come faster than slow knees can follow.'],
+    ['Scene Config', 'ppStartSpeed', 0, 400, 5, 'Latch-on speed (u/s)', 'How fast the rider is going when it latches on. 0 = from a stop: push with A to get going. The Urchin cruises at 65 u/s (DefaultThrottleScaler).'],
+    ['AI Config', 'aiNoise', 0, 1, 0.05, 'Rookie sloppiness', 'Late reactions, mistimed pumps and a wandering lean. 0 flies like the skilled AI.'],
+    ['Play Style Config', 'ppPushKick', 0, 80, 1, 'Push: kick (u/s)', 'What one A-press adds from a stop. It fades to nothing at the push top speed.'],
+    ['Play Style Config', 'ppPushTop', 40, 400, 5, 'Push: top speed (u/s)', 'A push adds nothing at or above this speed: past it, only pumping gets you faster.'],
+    ['Play Style Config', 'ppPushCooldown', 0.1, 1.5, 0.05, 'Push: cooldown (s)', 'Shortest time between two pushes: one foot stroke.'],
+    ['Play Style Config', 'ppThumbOff', 0, 0.6, 0.05, 'Push: thumb off the stick (s)', 'Pressing A takes the right thumb off its stick, which springs to centre: the knees half-straighten and the roll changes for this long. The AI pays it too.'],
+    ['Play Style Config', 'ppAutoEff', 0.2, 1, 0.05, 'Lean: auto-knee efficiency', 'The Lean way pumps for you; this is how much of a perfect pump the hull gets.'],
+    ['Play Style Config', 'ppTapLegs', 1, 4, 0.25, 'Tap: knee speed ×', 'The Tap way snaps the knees; this multiplies the knee rate.'],
+    ['Play Style Config', 'ppBeatKick', 0, 40, 0.5, 'Beat: kick (u/s)', 'The Beat way kicks you forward when you let go in a dip; this is the kick for a release at the tightest point of the tightest dip. Letting go on a hump costs the same.'],
+    ['Input', 'RollScaler', 30, 540, 10, 'Roll rate (°/s)', 'Urchin.prefab RollScaler. Full YDiff (one stick up, the other down) rolls you round the rail this fast.'],
+    ['Input', 'YawScaler', 30, 360, 10, 'Look yaw rate (°/s)', 'Urchin.prefab YawScaler. While attached, XSum (both sticks sideways) only turns your look.'],
+    ['Input', 'PitchScaler', 30, 360, 10, 'Look pitch rate (°/s)', 'Urchin.prefab PitchScaler. While attached, YSum (both sticks up or down) only tilts your look.'],
+    ['Input', 'ppLookReturn', 0, 5, 0.1, 'Look return (1/s)', 'How fast your look drifts back to the rail ahead. 0 = it stays where you put it, as the Urchin hull does.'],
+    ['Input', 'ppLeanMax', 30, 180, 5, 'Lean limit (°)', 'How far either side of where you landed you can lean. 180 rolls all the way round like the Urchin; ~45 is a longboard deck.'],
+    ['Input', 'ppLegRate', 2, 30, 0.5, 'Knee rate (u/s)', 'Fastest knee extension. Slow knees cannot follow short rollers at speed, which is what caps pumping.'],
+    ['Input', 'ppLegStiff', 5, 60, 1, 'Knee follow (1/s)', 'How hard the knees chase the trigger.'],
+    ['Input', 'ppBead', 0, 8, 0.25, 'Falls-outward strength', 'Only with the "falls outward" lean model: how fast a bend rolls you to its outside.'],
+    ['Input', 'ppAutoBank', 0, 10, 0.25, 'Auto-bank strength', 'Only with the "auto-bank" lean model: how fast the hull rolls onto the nearer side of each bend for you (under it, when crests can throw you).'],
+    ['Vessel Config', 'ppPull', 300, 3000, 50, 'Prismscape pull (u/s²)', 'How hard a latched rider is held. Over a crest faster than √(pull × radius) the rider flies off (when crests can throw you).'],
+    ['Vessel Config', 'ppLegTravel', 0.5, 6, 0.25, 'Knee travel (u)', 'Crouched to extended. Every pump is worth about speed × 2 × travel / radius.'],
+    ['Vessel Config', 'ppDrag0', 0, 6, 0.1, 'Rolling drag (u/s²)', 'Constant drag. Sets the speed below which pumping cannot keep up.'],
+    ['Vessel Config', 'ppDrag2', 0, 30, 0.5, 'Speed drag (×10⁻⁵/u)', 'Drag that grows with speed².'],
+    ['Vessel Config', 'ppGrip', 100, 3000, 25, 'Sideways grip (u/s²)', 'Sideways load held without scrubbing. Not leaning into a bend past this bleeds speed.'],
+    ['Vessel Config', 'ppScrub', 0, 1, 0.05, 'Scrub', 'How much of the excess sideways load becomes braking.'],
+    ['Vessel Config', 'ppHostileDrag', 1, 15, 0.5, 'Enemy ribbon drag ×', 'The Urchin crawls on an enemy ribbon (300 → 20 u/s). A pump rider pays drag instead.'],
+    ['Vessel Config', 'FriendlyTerrainSpeed', 50, 600, 10, 'Grind speed, own (u/s)', 'Urchin.prefab TrailFollower. Used by the Urchin grind and Grind + knees ways.'],
+    ['Vessel Config', 'HostileTerrainSpeed', 0, 300, 5, 'Grind speed, enemy (u/s)', 'Urchin.prefab TrailFollower.'],
+    ['Vessel Config', 'speedTrackingRate', 0.5, 20, 0.5, 'Grind speed chase (1/s)', 'TrailFollower C# default: how fast the grind motor reaches its speed.'],
+    ['Vessel Config', 'DefaultThrottleScaler', 20, 200, 5, 'Free-flight cruise (u/s)', 'Urchin.prefab. The "from cruise" scorecard column latches on at this speed.'],
+    ['Vessel Config', 'rideSurfaceClearance', 0, 5, 0.25, 'Ride clearance (u)', 'GunVesselTransformer: gap between the rail prism face and the board.'],
+    ['Vessel Config', 'prismSpacing', 4, 20, 1, 'Rail prism spacing (u)', 'UrchinTrackAction.asset. Drawing only.'],
+  ];
+
+  // Choices that are not numbers (dropdowns). Not part of SHIPPED; saved per viewer.
+  const WAYS = [
+    { v: 'knees', label: 'Knees', short: 'Trigger knees + stick lean (designer\u2019s pick)', pump: 'work', input: 'Trigger = knees (pull to crouch, let go to stand). Stick = lean.' },
+    { v: 'dual', label: 'Dual stick', short: 'Urchin sticks: apart = knees bent, A = push', pump: 'work', input: 'XDiff = knees: sticks fully apart = fully bent, together = straight. YDiff (one up, one down) = roll round the rail. XSum / YSum only turn your look. A = push: a thumb comes off a stick to press it.' },
+    { v: 'tap',   label: 'Tap', short: 'One button + lean', pump: 'work', input: 'Hold the button to crouch, let go to stand. Stick = lean.' },
+    { v: 'beat',  label: 'Beat', short: 'Timed release kick', pump: 'beat', input: 'Hold through the humps, let go at the bottom of each dip. Stick = lean.' },
+    { v: 'lean',  label: 'Lean', short: 'Lean only, hull pumps', pump: 'auto', input: 'Stick = lean. The hull bends its own knees.' },
+    { v: 'grind', label: 'Grind + knees', short: 'Urchin motor + pump past it', pump: 'work', input: 'The Urchin grind holds its speed; the trigger pumps you past it. Stick = lean.' },
+    { v: 'coast', label: 'Coast', short: 'Ability off (control)', pump: 'none', push: false, input: 'Stick = lean. No pumping at all.' },
+    { v: 'urchin', label: 'Urchin grind', short: 'Shipped Urchin (reference)', pump: 'none', push: false, input: 'Throttle sets the speed, as the Urchin rides today.' },
+  ];
+  const COURSES = [
+    { v: 'pumptrack', label: 'Pump track oval', note: 'Four rollers, a 180° berm, four rollers, a berm. A real pump-track loop.' },
+    { v: 'rollers', label: 'Rollers', note: 'Endless humps in one plane. Pure knee pumping.' },
+    { v: 'slalom', label: 'Slalom', note: 'Endless left-right bends, no humps. Only leaning into them pumps.' },
+    { v: 'twister', label: 'Twister', note: 'Rollers whose bend turns around the rail. Lean to keep the dip under you.' },
+    { v: 'wake', label: 'Vessel wake', note: 'A smooth random 3D ribbon, like a wake you would find in a cell.' },
+    { v: 'flat', label: 'Flat (control)', note: 'A straight rail. Pumping must earn nothing here.' },
+  ];
+  const OPT_DEFAULT = { way: 'knees', course: 'pumptrack', lean: 'free', crest: 'latched', owner: 'own', pilot: 'skilled', cam: 'roll', simSpeed: 1, runLen: 20, lookFrame: 'rail' };
+
+  const LS_KEY = 'lab:' + LAB.name + ':P', LS_OPT = 'lab:' + LAB.name + ':opt3';      // opt3: round 2c — Knees and the follow-you camera are the defaults
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+  const OPT = Object.assign({}, OPT_DEFAULT, lsGet(LS_OPT, {}));
+  for (const k of Object.keys(OPT)) if (!(k in OPT_DEFAULT)) delete OPT[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+  const wrapPi = (a) => { a = (a + Math.PI) % (2 * Math.PI); if (a < 0) a += 2 * Math.PI; return a - Math.PI; };
+  const D2R = Math.PI / 180;
+
+  // ================= (3) THE COURSE: a rail defined by its bend =================
+  // The rail is a curve given by its bend in a rotation-minimising frame: k1 bends toward N1 ("up" at the
+  // start), k2 toward N2. A rider sits at a roll angle phi around the rail; the bend's direction alpha and
+  // size kap decide whether the rail dips under the rider (a trough) or humps away (a crest).
+  // The wake course's shape is a FIXED seed so every run and every viewer rides the same ribbon.
+  const WAKE = (() => { const r = mulberry32(90210), w = []; for (let i = 0; i < 4; i++) w.push({ a1: (0.4 + r()) / 260, a2: (0.4 + r()) / 260, l1: 300 + r() * 1100, l2: 300 + r() * 1100, p1: r() * 6.283, p2: r() * 6.283 }); return w; })();
+  function bend(s, out) {
+    const A = 1 / P.ppRollerR, L = P.ppRollerLen, TAU = 2 * Math.PI;
+    let k1 = 0, k2 = 0;
+    switch (OPT.course) {
+      case 'rollers': k1 = A * Math.sin(TAU * s / L); break;
+      case 'slalom': k2 = A * Math.sin(TAU * s / L); break;
+      case 'twister': { const k = A * Math.sin(TAU * s / L), a = TAU * s / (4 * L); k1 = k * Math.cos(a); k2 = k * Math.sin(a); break; }
+      case 'wake': for (const w of WAKE) { k1 += w.a1 * Math.sin(TAU * s / w.l1 + w.p1); k2 += w.a2 * Math.sin(TAU * s / w.l2 + w.p2); } break;
+      case 'pumptrack': {
+        const roll = 4 * L, berm = Math.max(300, 6 * P.ppRollerR), per = 2 * (roll + berm);
+        let u = s % per; if (u < 0) u += per;
+        const half = u >= roll + berm ? u - roll - berm : u;
+        if (half < roll) k1 = A * Math.sin(TAU * half / L);
+        else { const x = (half - roll) / berm; k2 = (Math.PI * Math.PI / (2 * berm)) * Math.sin(Math.PI * x); }   // integrates to exactly 180°
+        break;
+      }
+      default: break;   // flat
+    }
+    out.k1 = k1; out.k2 = k2; out.kap = Math.hypot(k1, k2); out.alpha = Math.atan2(k2, k1);
+    return out;
+  }
+  const _b = { k1: 0, k2: 0, kap: 0, alpha: 0 }, _b2 = { k1: 0, k2: 0, kap: 0, alpha: 0 };
+
+  // A frame on the rail: p (point), T (tangent), N1, N2. Advanced by midpoint integration of the bend.
+  const v3 = { add: (a, b, s) => [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s], dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], len: (a) => Math.hypot(a[0], a[1], a[2]), norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }, scale: (a, s) => [a[0] * s, a[1] * s, a[2] * s] };
+  function newFrame() { return { s: 0, p: [0, 0, 0], T: [1, 0, 0], N1: [0, 1, 0], N2: [0, 0, 1] }; }
+  function advance(f, ds) {
+    bend(f.s + ds / 2, _b2);
+    const T0 = f.T, T1 = v3.norm([T0[0] + (_b2.k1 * f.N1[0] + _b2.k2 * f.N2[0]) * ds, T0[1] + (_b2.k1 * f.N1[1] + _b2.k2 * f.N2[1]) * ds, T0[2] + (_b2.k1 * f.N1[2] + _b2.k2 * f.N2[2]) * ds]);
+    f.p = v3.add(f.p, v3.norm([T0[0] + T1[0], T0[1] + T1[1], T0[2] + T1[2]]), ds);
+    let N1 = v3.add(f.N1, T0, -_b2.k1 * ds); N1 = v3.norm(v3.add(N1, T1, -v3.dot(N1, T1)));
+    f.T = T1; f.N1 = N1; f.N2 = v3.cross(T1, N1); f.s += ds;
+  }
+  const upOf = (f, phi) => v3.norm(v3.add(v3.scale(f.N1, Math.cos(phi)), f.N2, Math.sin(phi)));
+
+  // The rail is integrated ONCE per course shape, from s = 0, and cached every 2 u. So the world is fixed:
+  // the physics, the AI, the prisms, the scenery and the camera all read the same points, and a lap of the
+  // oval comes back to the same place. Deterministic: the cache is a pure function of the course key.
+  const TRACK_DS = 2, TRACKS = new Map();
+  function trackKey() { return OPT.course + '|' + P.ppRollerR + '|' + P.ppRollerLen; }
+  function getTrack() {
+    const k = trackKey(); let t = TRACKS.get(k);
+    if (!t) {
+      if (TRACKS.size > 16) TRACKS.clear();
+      t = { key: k, n: 0, cap: 0, d: new Float64Array(0), f: newFrame() };
+      pushSample(t); TRACKS.set(k, t);
+    }
+    return t;
+  }
+  function pushSample(t) {
+    if (t.n >= t.cap) { const cap = Math.max(4096, t.cap * 2), nd = new Float64Array(cap * 12); nd.set(t.d); t.d = nd; t.cap = cap; }
+    const o = t.n * 12, d = t.d, f = t.f;
+    for (let k = 0; k < 3; k++) { d[o + k] = f.p[k]; d[o + 3 + k] = f.T[k]; d[o + 6 + k] = f.N1[k]; d[o + 9 + k] = f.N2[k]; }
+    t.n++;
+  }
+  function ensureTrack(t, s) { const need = Math.ceil(Math.max(0, s) / TRACK_DS) + 2; while (t.n < need) { advance(t.f, TRACK_DS); pushSample(t); } }
+  function frameAt(s, out) {
+    const t = getTrack(); ensureTrack(t, s + 4);
+    out = out || newFrame();
+    const x = Math.max(0, s) / TRACK_DS, i = Math.min(Math.floor(x), t.n - 2), u = x - i, d = t.d, a = i * 12, b = a + 12;
+    const p = [0, 0, 0], T = [0, 0, 0], N1 = [0, 0, 0];
+    for (let k = 0; k < 3; k++) { p[k] = d[a + k] + (d[b + k] - d[a + k]) * u; T[k] = d[a + 3 + k] + (d[b + 3 + k] - d[a + 3 + k]) * u; N1[k] = d[a + 6 + k] + (d[b + 6 + k] - d[a + 6 + k]) * u; }
+    out.p = p; out.T = v3.norm(T); out.N1 = v3.norm(v3.add(N1, out.T, -v3.dot(N1, out.T))); out.N2 = v3.cross(out.T, out.N1); out.s = s;
+    return out;
+  }
+  // One lap of the oval; on the open courses a "lap" is a 1000 u split.
+  function lapLength() { return OPT.course === 'pumptrack' ? 2 * (4 * P.ppRollerLen + Math.max(300, 6 * P.ppRollerR)) : 1000; }
+
+  // ================= (4) THE MODEL =================
+  // The pumping law (every way that pumps uses it): moving your hips along your own "up" by dh while the rail
+  // bends under you by kf (kap·cos(alpha − phi), + = dipping toward you) changes speed by
+  //     d(v²/2) = v² · kf · dh         (angular momentum about the bend: pull toward its centre, speed up)
+  // The pull's own share (pull · dh) goes into height, not speed — so on a straight rail pumping earns 0.
+  // The Flat course is the control that proves it.
+  let world = null, seed = 7;
+  const legH = () => P.ppLegTravel;
+  function rideRadius(h) { return RAIL_R + P.rideSurfaceClearance + LEG_MIN + h; }
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    const rnd = mulberry32(seed);
+    const s0 = (1 + Math.floor(rnd() * 4) * 0.25) * P.ppRollerLen;  // start phase: one of four points on a roller
+    world = {
+      t: 0, s: s0, v: OPT._startSpeed != null ? OPT._startSpeed : P.ppStartSpeed, phi: 0, phiHome: 0, h: legH() * 0.5, hv: 0,
+      frame: frameAt(s0), air: null, btn: false, rnd,
+      ai: { phiT: 0, jit: 0, extend: false, ph: rnd() * 6.283, held: true, pushDown: false, thumbUntil: -1 },
+      stats: { sumV: 0, n: 0, pump: 0, scrub: 0, flyoffs: 0, lost: 0, landLoss: 0, busy: 0, minV: 1e9, strokes: 0, perfect: 0, pushes: 0, push: 0, t150: 0 },
+      look: { yaw: 0, pitch: 0, dir: null }, pushPrev: false, pushCd: 0, pushLeft: 0, pushRate: 0,
+      last: { N: P.ppPull, kf: 0, lat: 0, roll: 0, crouch: 0, gain: 0, dhRate: 0 },
+      stroke: { dir: 0, dh: 0, gain: 0, s0: s0, vs: 0 },
+      events: [], eventId: 0,
+      lap: { idx: Math.floor(s0 / lapLength()), t0: 0, started: false, last: 0, best: 0, n: 0 },
+      trace: [],
+    };
+    world.look.dir = world.frame.T.slice();
+  }
+  function wayOf() { return WAYS.find((w) => w.v === OPT.way) || WAYS[0]; }
+  function loadAt(w, s, phi) { bend(s, _b); return { kf: _b.kap * Math.cos(_b.alpha - phi), lat: _b.kap * Math.sin(_b.alpha - phi), kap: _b.kap, alpha: _b.alpha }; }
+
+  // Every knee stroke is rated against the best the same stroke could have earned: the same travel, at the
+  // deepest bend of this dip (standing up) or hump (crouching) within half a roller. It is an observer only:
+  // it never changes the ride, so the scorecard and the feel are the same with or without it.
+  function pushEvent(w, ev) { ev.id = ++w.eventId; ev.t = w.t; w.events.push(ev); if (w.events.length > 8) w.events.shift(); }
+  function rateLabel(q, early) { return q >= 0.85 ? 'PERFECT' : q >= 0.55 ? 'GOOD' : q > 0 ? (early ? 'EARLY' : 'LATE') : 'WRONG WAY'; }
+  // The yardstick is the best PLACEMENT of a stroke of the same length (the same knee speed at the same ride
+  // speed), so the rating judges timing, not knee speed: a stroke that slow knees spread over a whole dip can
+  // still be PERFECT if it is centred on the dip.
+  function finishStroke(w, st) {
+    const L = P.ppRollerLen, mid = 0.5 * (st.s0 + w.s), M = 64, ds = L / M, len = Math.max(ds, w.s - st.s0), win = Math.max(1, Math.round(len / ds));
+    const ks = []; for (let k = 0; k <= M + win; k++) ks.push(st.dir * loadAt(w, mid - L / 2 - len / 2 + k * ds, w.phi).kf);
+    let best = 0, sBest = mid, acc = 0;
+    for (let k = 0; k < ks.length; k++) { acc += ks[k]; if (k >= win) acc -= ks[k - win]; if (k >= win - 1 && acc / win > best) { best = acc / win; sBest = mid - L / 2 - len / 2 + (k - (win - 1) / 2) * ds; } }
+    if (best * P.ppRollerR < 0.1 || st.vs < 40) return;               // a reset stroke on a straight bit, or a crawl: not rated
+    const ideal = Math.max(1e-6, st.vs * best * Math.abs(st.dh)), q = clamp(st.gain / ideal, -1.5, 1.2);
+    w.stats.strokes++; if (q >= 0.85) w.stats.perfect++;
+    pushEvent(w, { kind: st.dir > 0 ? 'stand' : 'crouch', q, dv: st.gain, label: rateLabel(q, mid < sBest) });
+  }
+  function trackStroke(w, dh, gain, H) {
+    const st = w.stroke, dir = dh > 1e-5 ? 1 : dh < -1e-5 ? -1 : 0;
+    if (dir !== st.dir) {
+      if (st.dir !== 0 && Math.abs(st.dh) >= 0.3 * H) finishStroke(w, st);
+      st.dir = dir; st.dh = 0; st.gain = 0; st.s0 = w.s; st.vs = w.v;
+    }
+    if (dir !== 0) { st.dh += dh; st.gain += gain; }
+  }
+  function tickLap(w) {
+    const L = lapLength(), idx = Math.floor(w.s / L), lp = w.lap;
+    if (idx > lp.idx) {
+      if (lp.started) { lp.last = w.t - lp.t0; lp.best = lp.best ? Math.min(lp.best, lp.last) : lp.last; lp.n++; }
+      lp.started = true; lp.t0 = w.t; lp.idx = idx;
+    }
+  }
+
+  // The game's dual-stick mix, line for line (DualStickMix.Mix / GamepadInputStrategy): the sums turn, the diffs roll
+  // and throttle. On this vessel XDiff is the knees instead of the throttle: sticks fully apart = fully bent.
+  const PI_OVER_FOUR = 0.785;                                         // DualStickMix.PiOverFour
+  const ease = (x) => x < 0 ? (Math.cos(x * PI_OVER_FOUR) - 1) : -(Math.cos(x * PI_OVER_FOUR) - 1);
+  const unease = (y) => { const a = Math.acos(clamp(1 - Math.abs(y), -1, 1)) / PI_OVER_FOUR; return y < 0 ? -a : a; };
+  function mix(k) { return { xSum: ease(k.rx + k.lx), ySum: -ease(k.ry + k.ly), xDiff: (k.rx - k.lx + 2) / 4, yDiff: ease(k.ry - k.ly) }; }
+  // The inverse: the sticks that give a wanted roll, knee bend and look. The AI and the keyboard write sticks this way.
+  function sticksFor(roll, bend, xs, ys) {
+    const dx = 2 * clamp(bend, 0, 1), sx = unease(clamp(xs, -1, 1)), dy = unease(clamp(roll, -1, 1)), sy = unease(clamp(-ys, -1, 1));
+    return { lx: clamp((sx - dx) / 2, -1, 1), rx: clamp((sx + dx) / 2, -1, 1), ly: clamp((sy - dy) / 2, -1, 1), ry: clamp((sy + dy) / 2, -1, 1) };
+  }
+  // Look: while attached, pitch and yaw only turn where you look (rail-relative angles, or a world direction).
+  function lookStep(w, inp, dt) {
+    const xs = inp.xSum || 0, ys = inp.ySum || 0, L = w.look;
+    const yawRate = xs * P.YawScaler * D2R, upRate = -ys * P.PitchScaler * D2R;     // Unity: +YSum about transform.right = nose down
+    if (OPT.lookFrame === 'world') {
+      const U = upOf(w.frame, w.phi), right = v3.norm(v3.cross(L.dir, U)), upP = v3.norm(v3.cross(right, L.dir));
+      let d = v3.add(L.dir, right, yawRate * dt); d = v3.add(d, upP, upRate * dt); L.dir = v3.norm(d);
+      if (P.ppLookReturn > 0) L.dir = v3.norm(v3.add(L.dir, v3.sub(w.frame.T, L.dir), 1 - Math.exp(-P.ppLookReturn * dt)));
+    } else {
+      L.yaw = wrapPi(L.yaw + yawRate * dt); L.pitch = clamp(L.pitch + upRate * dt, -1.4, 1.4);
+      const k = Math.exp(-P.ppLookReturn * dt); L.yaw *= k; L.pitch *= k;
+    }
+  }
+
+  // input = { roll: −1..1 (lean), crouch: 0..1 (knees), btn, throttle: 0..1, push (A), xSum, ySum } — or, for the
+  // Dual stick way, raw sticks { lx, ly, rx, ry } that are mixed here exactly as the game mixes them.
+  function simStep(dt, input) {
+    const w = world, st = w.stats, way = wayOf(), H = legH(), pull = P.ppPull;
+    let inp = input || NO_INPUT;
+    if (way.v === 'dual' && inp.sticks) { const m = mix(inp.sticks); inp = { roll: m.yDiff, crouch: clamp((m.xDiff - 0.5) * 2, 0, 1), btn: false, throttle: 0, push: inp.push, xSum: m.xSum, ySum: m.ySum }; }
+    lookStep(w, inp, dt);
+    st.busy += (Math.abs(inp.roll - w.last.roll) * 0.5 + Math.abs(inp.crouch - w.last.crouch));
+    w.last.roll = inp.roll; w.last.crouch = inp.crouch;
+    if (w.air) { airStep(dt, inp); w.t += dt; tickLap(w); return; }
+
+    // ---- the bend under the rider ----
+    bend(w.s, _b);
+    const d = _b.alpha - w.phi, kf = _b.kap * Math.cos(d), latK = _b.kap * Math.sin(d), v0 = w.v;
+    const N = pull + w.v * w.v * kf, lat = w.v * w.v * latK;
+    w.last.N = N; w.last.kf = kf; w.last.lat = lat;
+
+    // ---- lean: roll around the rail ----
+    let phiDot = P.RollScaler * D2R * clamp(inp.roll, -1, 1);
+    if (OPT.lean === 'bead') phiDot += -P.ppBead * clamp(lat / P.ppGrip, -3, 3);            // a bend throws you to its outside
+    if (OPT.lean === 'auto' && w.v * w.v * _b.kap > 0.1 * pull) {                    // the hull rolls onto the nearer side of the bend
+      const e1 = wrapPi(_b.alpha - w.phi), e2 = wrapPi(_b.alpha + Math.PI - w.phi);
+      phiDot += P.ppAutoBank * (OPT.crest === 'fly' || Math.abs(e1) <= Math.abs(e2) ? e1 : e2);
+    }
+    const lim = P.ppLeanMax * D2R;
+    w.phi += phiDot * dt;
+    if (lim < Math.PI - 1e-6) w.phi = w.phiHome + clamp(wrapPi(w.phi - w.phiHome), -lim, lim);
+
+    // ---- knees ----
+    let hT = H * 0.5, rate = P.ppLegRate;
+    if (way.v === 'knees' || way.v === 'grind' || way.v === 'dual') hT = H * (1 - clamp(inp.crouch, 0, 1));
+    else if (way.v === 'tap' || way.v === 'beat') { hT = inp.btn ? 0 : H; rate *= way.v === 'tap' ? P.ppTapLegs : 4; }
+    else if (way.v === 'lean') hT = loadAt(w, w.s + Math.max(1, w.v) * 0.02, w.phi).kf < kf ? H : 0;   // the hull stands up as the load passes its peak
+    w.hv = clamp((hT - w.h) * P.ppLegStiff, -rate, rate);
+    const hNew = clamp(w.h + w.hv * dt, 0, H), dh = hNew - w.h; w.h = hNew;
+
+    // ---- speed ----
+    const terrainMul = OPT.owner === 'own' ? 1 : P.ppHostileDrag;
+    if (way.pump === 'work') {                                        // the pumping law
+      w.v = Math.sqrt(Math.max(0, w.v * w.v * (1 + 2 * kf * dh)));
+    } else if (way.pump === 'auto') {
+      w.v = Math.sqrt(Math.max(0, w.v * w.v * (1 + 2 * kf * dh * P.ppAutoEff)));
+    } else if (way.pump === 'beat' && w.btn && !inp.btn) {          // the release edge
+      const q = clamp(kf * P.ppRollerR, -1, 1);
+      w.v = Math.max(0, w.v + P.ppBeatKick * q);
+      if (Math.abs(q) > 0.05) { st.strokes++; if (q >= 0.85) st.perfect++; pushEvent(w, { kind: 'stand', q, dv: P.ppBeatKick * q, label: rateLabel(q, false).replace('LATE', 'EARLY / LATE') }); }
+    }
+    w.btn = !!inp.btn;
+    w.last.gain = (w.v - v0) / dt; w.last.dhRate = dh / dt;             // what the knees are doing to speed right now (u/s²)
+    st.pump += w.v - v0;                                             // pumping only; the motor and drag come after
+    if (way.pump === 'work' || way.pump === 'auto') trackStroke(w, dh, w.v - v0, H);
+    // ---- the push (A): a foot off the board, down the line. Strong from a stop, nothing at ppPushTop ----
+    if (inp.push && !w.pushPrev && w.pushCd <= 0 && way.push !== false) {
+      const kick = P.ppPushKick * Math.max(0, 1 - w.v / P.ppPushTop);
+      w.pushCd = P.ppPushCooldown; w.pushLeft = 0.18; w.pushRate = kick / 0.18; st.pushes++;
+      pushEvent(w, { kind: 'push', q: 0, dv: kick, label: kick > 0.5 ? 'PUSH' : 'PUSH · too fast to help' });
+    }
+    w.pushPrev = !!inp.push; w.pushCd = Math.max(0, w.pushCd - dt);
+    if (w.pushLeft > 0) { const d = w.pushRate * Math.min(dt, w.pushLeft); w.v += d; st.push += d; w.pushLeft -= dt; }
+    if (way.v === 'urchin') {                                        // shipped: the grind motor IS the speed
+      const target = clamp(inp.throttle, 0, 1) * (OPT.owner === 'own' ? P.FriendlyTerrainSpeed : P.HostileTerrainSpeed);
+      w.v += (target - w.v) * (1 - Math.exp(-P.speedTrackingRate * dt));
+    } else {
+      const motor = way.v === 'grind' ? clamp(inp.throttle, 0, 1) * (OPT.owner === 'own' ? P.FriendlyTerrainSpeed : P.HostileTerrainSpeed) : 0;
+      if (w.v < motor) w.v += (motor - w.v) * (1 - Math.exp(-P.speedTrackingRate * dt));
+      else w.v = Math.max(motor, w.v - (P.ppDrag0 + P.ppDrag2 * 1e-5 * w.v * w.v) * terrainMul * dt);
+      const ex = Math.max(0, Math.abs(lat) - P.ppGrip), sc = Math.min(w.v, P.ppScrub * ex * dt);
+      w.v -= sc; st.scrub += sc;
+    }
+
+    // ---- crest: thrown off when the pull cannot hold the hump ----
+    if (OPT.crest === 'fly' && way.v !== 'urchin' && N < 0) launch(upOf(w.frame, w.phi));
+    else { w.s += w.v * dt; frameAt(w.s, w.frame); }
+    st.sumV += w.v; st.n++; st.minV = Math.min(st.minV, w.v);
+    if (!st.t150 && w.v >= 150) st.t150 = w.t + dt;
+    w.t += dt;
+    tickLap(w);
+  }
+
+  // Flying: the prismscape still pulls toward the nearest rail point within reach; land when you touch it.
+  function launch(up) {
+    const w = world, f = w.frame;
+    const pos = v3.add(f.p, up, rideRadius(w.h));
+    w.air = { pos, vel: v3.add(v3.scale(f.T, w.v), up, Math.max(0, w.hv)), idx: Math.round(w.s / TRACK_DS), t: 0, up };
+    w.stats.flyoffs++;
+    pushEvent(w, { kind: 'air', q: 0, dv: 0, label: 'THROWN OFF' });
+  }
+  function airStep(dt) {
+    const w = world, a = w.air, t = getTrack(), reach = 120;
+    ensureTrack(t, (a.idx + 120) * TRACK_DS);
+    let best = a.idx, bd = Infinity; const dd = t.d;
+    for (let i = Math.max(0, a.idx - 10); i < Math.min(t.n, a.idx + 60); i++) { const o = i * 12, x = a.pos[0] - dd[o], y = a.pos[1] - dd[o + 1], z = a.pos[2] - dd[o + 2], q = x * x + y * y + z * z; if (q < bd) { bd = q; best = i; } }
+    a.idx = best;
+    const rp = frameAt(best * TRACK_DS), dv = v3.sub(a.pos, rp.p), dist = v3.len(dv), dn = v3.scale(dv, 1 / (dist || 1));
+    if (dist < reach) a.vel = v3.add(a.vel, dn, -P.ppPull * dt);
+    const sp = v3.len(a.vel), drag = (P.ppDrag2 * 1e-5 * sp * sp) * dt;
+    if (sp > 0) a.vel = v3.scale(a.vel, Math.max(0, sp - drag) / sp);
+    const radial = v3.dot(a.vel, dn), rr = rideRadius(w.h);
+    a.pos = v3.add(a.pos, a.vel, dt); a.t += dt;
+    w.v = v3.len(a.vel); w.stats.sumV += w.v; w.stats.n++;
+    if (dist <= rr + Math.max(0, -radial) * dt && radial <= 0) {      // touch down
+      const vt = Math.max(0, v3.dot(a.vel, rp.T));
+      w.stats.landLoss += w.v - vt;
+      pushEvent(w, { kind: 'land', q: vt / Math.max(1, w.v), dv: vt - w.v, label: 'LANDED' });
+      w.frame = rp; w.s = rp.s; w.v = vt;
+      w.phi = Math.atan2(v3.dot(dv, rp.N2), v3.dot(dv, rp.N1)); w.phiHome = w.phi; w.air = null;
+    } else if (a.t > 4 || dist > 600) {                               // lost the ribbon: put back, half speed
+      w.stats.lost++; w.frame = rp; w.s = rp.s; w.v *= 0.5; w.phi = w.phiHome; w.air = null;
+    }
+  }
+
+  // ================= (5) THE AI: input only =================
+  // Reads the rail ahead (what a pilot sees) and writes the same input object a gamepad writes. Never touches
+  // the rider's state. The rookie is the skilled pilot plus late reactions, timing jitter and a wandering lean.
+  const NO_INPUT = { roll: 0, crouch: 0, btn: false, throttle: 0, push: false, xSum: 0, ySum: 0 };
+  function aiInput(noise) {
+    const w = world, a = w.ai, way = wayOf(), v = Math.max(w.v, 1), pull = P.ppPull;
+    const out = { roll: 0, crouch: 0.5, btn: false, throttle: 1 };
+    if (w.air) return out;
+    const late = noise * 0.16 + a.jit;
+    // lean: put the coming bend under you (aim at it ~0.3 s early), stay within the lean limit
+    const kA = loadAt(w, w.s + v * Math.max(0.05, 0.3 - late), w.phi);
+    if (v * v * kA.kap > 0.12 * pull) {
+      // a dip pumps by standing up and a hump by crouching, so either side of the rail pays the same: take the
+      // nearer one, unless crests throw you and this hump would — then get the bend under you
+      const a1 = kA.alpha, a2 = wrapPi(kA.alpha + Math.PI), throwOff = OPT.crest === 'fly' && v * v * kA.kap > 0.75 * pull;
+      a.phiT = throwOff || Math.abs(wrapPi(a1 - w.phi)) <= Math.abs(wrapPi(a2 - w.phi)) ? a1 : a2;
+    }
+    let target = a.phiT + noise * 0.9 * Math.sin(0.8 * w.t + a.ph);
+    const lim = P.ppLeanMax * D2R;
+    if (lim < Math.PI - 1e-6) target = w.phiHome + clamp(wrapPi(target - w.phiHome), -lim, lim);
+    let err = wrapPi(target - w.phi);
+    if (OPT.lean === 'bead') err += 0.35 * clamp(world.last.lat / P.ppGrip, -3, 3) * (1 - noise);    // lean against the throw
+    out.roll = clamp(err * (3.5 - 2 * noise), -1, 1);
+    // knees: a stroke pays bend × travel, so stand up across the bottom of each dip (the load's peak) and crouch
+    // across the top of each hump (its trough) — i.e. be extended while the load is falling — led by half a stroke
+    const lead = 0.5 * legH() / Math.max(0.5, P.ppLegRate * (way.v === 'tap' ? P.ppTapLegs : 1));
+    const sA = w.s + v * Math.max(0, lead - late), kP = loadAt(w, sA, w.phi).kf, kQ = loadAt(w, sA + Math.max(1, v * 0.02), w.phi).kf;
+    const extend = kQ < kP;
+    if (extend !== a.extend) { a.extend = extend; a.jit = (w.rnd() - 0.5) * noise * 0.25; }
+    out.crouch = extend ? 0 : 1;
+    out.btn = !extend;
+    if (way.v === 'beat') {                                            // hold through the hump, let go at the deepest load
+      const now = loadAt(w, w.s, w.phi).kf, soon = loadAt(w, w.s + v * Math.max(0.02, 0.06 - late), w.phi).kf;
+      if (a.held && now > 0.15 / P.ppRollerR && soon <= now) a.held = false;
+      else if (!a.held && now <= 0) a.held = true;
+      out.btn = a.held;
+    }
+    // push (A): one press per foot stroke while slow enough for a push to help (the rookie gives up on it sooner)
+    out.push = false;
+    if (way.push !== false) {
+      if (!a.pushDown && w.pushCd <= 0 && w.v < P.ppPushTop * (0.75 - 0.25 * noise)) { out.push = true; a.pushDown = true; a.thumbUntil = w.t + P.ppThumbOff; }
+      else a.pushDown = false;
+    }
+    if (way.v === 'dual') {
+      // write STICKS, as a pad would: XDiff for the knees, YDiff for the roll, and (world look only) XSum / YSum to keep
+      // looking down the rail. While the right thumb is on A, the right stick springs back to centre.
+      let xs = 0, ys = 0;
+      if (OPT.lookFrame === 'world' && w.look.dir) {
+        const U = upOf(w.frame, w.phi), right = v3.cross(w.frame.T, U), d = w.look.dir;
+        xs = v3.dot(d, w.frame.T) < 0 ? 1 : clamp(-3 * v3.dot(right, d), -1, 1);       // +XSum swings the look toward `right`
+        ys = clamp(3 * v3.dot(U, d), -1, 1);
+      }
+      const k = sticksFor(out.roll, out.crouch, xs, ys);
+      if (w.t < a.thumbUntil) { k.rx = 0; k.ry = 0; }
+      out.sticks = k;
+    }
+    return out;
+  }
+
+  // ================= (6) SCORE + BATCH =================
+  function score() {
+    const s = world.stats, T = Math.max(world.t, 1e-6);
+    return { avgSpeed: +(s.sumV / Math.max(1, s.n)).toFixed(1), endSpeed: +world.v.toFixed(1), pumpPerSec: +(s.pump / T).toFixed(2), scrubPerSec: +(s.scrub / T).toFixed(2), flyoffsPerMin: +(60 * s.flyoffs / T).toFixed(1), lost: s.lost, busy: +(s.busy / T).toFixed(2), perfectPct: s.strokes ? +(100 * s.perfect / s.strokes).toFixed(1) : 0, pushesPerMin: +(60 * s.pushes / T).toFixed(1), t150: s.t150 ? +s.t150.toFixed(2) : null, t: +world.t.toFixed(2) };
+  }
+  function runOne(way, course, noise, sd, seconds, startSpeed) {
+    const oWay = OPT.way, oCourse = OPT.course;
+    OPT.way = way; OPT.course = course; OPT._startSpeed = startSpeed;
+    reset(sd);
+    const dt = 1 / 60, n = Math.round(seconds / dt);
+    for (let i = 0; i < n; i++) simStep(dt, aiInput(noise));
+    const r = score();
+    OPT.way = oWay; OPT.course = oCourse; delete OPT._startSpeed;
+    return r;
+  }
+  const avg = (rows, k) => rows.some((r) => r[k] == null) ? null : +(rows.reduce((a, r) => a + r[k], 0) / rows.length).toFixed(2);
+  // Default batch: every way on the current course, skilled + rookie, two seeds; plus the controls:
+  // pumping on the Flat course (must be ~0) and the skilled run latching on at the free-flight cruise.
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2], seconds = opts.seconds || OPT.runLen, course = opts.course || OPT.course;
+    const keep = { world, seed }, rows = [];
+    for (const wy of WAYS) {
+      const sk = seeds.map((sd) => runOne(wy.v, course, 0, sd, seconds));
+      const rk = seeds.map((sd) => runOne(wy.v, course, P.aiNoise, sd, seconds));
+      const flat = runOne(wy.v, 'flat', 0, seeds[0], seconds);
+      const cruise = runOne(wy.v, course, 0, seeds[0], seconds, P.DefaultThrottleScaler);
+      rows.push({ way: wy.label, course, skilled: avg(sk, 'avgSpeed'), rookie: avg(rk, 'avgSpeed'), skilledEnd: avg(sk, 'endSpeed'), pump: avg(sk, 'pumpPerSec'), scrub: avg(sk, 'scrubPerSec'), flyoffs: avg(sk, 'flyoffsPerMin'), lost: avg(sk, 'lost'), busy: avg(sk, 'busy'), perfect: avg(sk, 'perfectPct'), perfectRookie: avg(rk, 'perfectPct'), t150: avg(sk, 't150'), t150Rookie: avg(rk, 't150'), pushes: avg(sk, 'pushesPerMin'), flatPump: flat.pumpPerSec, fromCruise: cruise.avgSpeed });
+    }
+    world = keep.world; seed = keep.seed;
+    return rows;
+  }
+  function runCourseGrid(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2], seconds = opts.seconds || OPT.runLen, keep = { world, seed }, grid = [];
+    for (const wy of WAYS) {
+      const row = { way: wy.label };
+      for (const c of COURSES) { row[c.v] = avg(seeds.map((sd) => runOne(wy.v, c.v, 0, sd, seconds)), 'avgSpeed'); row[c.v + ':rookie'] = avg(seeds.map((sd) => runOne(wy.v, c.v, P.aiNoise, sd, seconds)), 'avgSpeed'); }
+      grid.push(row);
+    }
+    world = keep.world; seed = keep.seed;
+    return grid;
+  }
+
+  // ================= (7) PLATFORM =================
+  function detectPlatform() {
+    const host = window.__labHost || {};
+    const ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+  if (PLATFORM.device === 'phone') $('touchUI').hidden = false;
+
+  // ================= (8) HUMAN INPUT: keys, gamepad, touch → the same input object =================
+  const keys = new Set();
+  const isField = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '');
+  const CONTROL_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS', 'Space', 'KeyF', 'KeyE', 'Enter'];
+  addEventListener('keydown', (e) => { if (isField(e) || !CONTROL_KEYS.includes(e.code)) return; keys.add(e.code); takeOver(); hideStart(); e.preventDefault(); });
+  addEventListener('keyup', (e) => { keys.delete(e.code); });
+  addEventListener('blur', () => keys.clear());
+  // Touch: on the Dual stick way the two halves of the view are two thumbsticks (drag from where the thumb lands);
+  // on the other ways the left half leans and the right half crouches. The PUSH button is A.
+  const touch = { L: null, R: null, push: false }, mouse = { down: false };
+  const canvas = $('hudc');                                           // the instruments canvas sits on top and takes the pointer
+  const STICK_PX = 56;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') { if (e.button === 0) { mouse.down = true; takeOver(); hideStart(); } return; }
+    const r = canvas.getBoundingClientRect(), side = e.clientX - r.left < r.width / 2 ? 'L' : 'R';
+    touch[side] = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
+    takeOver(); hideStart();
+    if (PLATFORM.device === 'phone' && document.fullscreenElement == null && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+  });
+  canvas.addEventListener('pointermove', (e) => { for (const k of ['L', 'R']) if (touch[k] && touch[k].id === e.pointerId) { touch[k].x = e.clientX; touch[k].y = e.clientY; } });
+  const endTouch = (e) => { for (const k of ['L', 'R']) if (touch[k] && touch[k].id === e.pointerId) touch[k] = null; };
+  canvas.addEventListener('pointerup', endTouch); canvas.addEventListener('pointercancel', endTouch);
+  addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') mouse.down = false; });
+  const pushBtn = $('pushBtn');
+  pushBtn.addEventListener('pointerdown', (e) => { touch.push = true; takeOver(); hideStart(); e.preventDefault(); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pushBtn.addEventListener(ev, () => { touch.push = false; });
+  function touchStick(t) {
+    if (!t) return { x: 0, y: 0 };
+    let x = (t.x - t.x0) / STICK_PX, y = -(t.y - t.y0) / STICK_PX; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+    return { x, y };
+  }
+  const dz = (v) => Math.abs(v) < 0.08 ? 0 : v;
+  function readHuman() {
+    const dual = OPT.way === 'dual';
+    const kRoll = (keys.has('KeyD') || (!dual && keys.has('ArrowRight')) ? 1 : 0) - (keys.has('KeyA') || (!dual && keys.has('ArrowLeft')) ? 1 : 0);
+    const kKnees = keys.has('Space') || keys.has('KeyS') || (!dual && keys.has('ArrowDown')) || mouse.down ? 1 : 0;
+    const kYaw = dual ? (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0) : 0;
+    const kPitch = dual ? (keys.has('ArrowDown') ? 1 : 0) - (keys.has('ArrowUp') ? 1 : 0) : 0;   // YSum convention: + = nose down
+    let push = keys.has('KeyF') || keys.has('KeyE') || keys.has('Enter') || touch.push;
+    let roll = kRoll, crouch = kKnees, btn = kKnees > 0.5, sticks = null;
+    const throttle = OPT.way === 'urchin' ? (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0.6) : 1;
+    try {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const gp of pads) {
+        if (!gp) continue;
+        // browser pads report +y DOWN; Unity's stick +y is UP, so negate (labmaker L-STU-8)
+        const lx = dz(gp.axes[0] || 0), ly = -dz(gp.axes[1] || 0), rx = dz(gp.axes[2] || 0), ry = -dz(gp.axes[3] || 0);
+        const rt = gp.buttons[7] ? gp.buttons[7].value : 0, rb = gp.buttons[5] && gp.buttons[5].pressed, a = gp.buttons[0] && gp.buttons[0].pressed;
+        if (lx || ly || rx || ry || rt > 0.05 || a || rb) takeOver();
+        if (a) push = true;
+        if (dual) { if (lx || ly || rx || ry) sticks = { lx, ly, rx, ry }; }
+        else { if (lx) roll = lx; if (rt > 0.02) crouch = Math.max(crouch, rt); if (rt > 0.5 || rb) btn = true; }
+        break;
+      }
+    } catch (e) { /* the claude.ai viewer may block the Gamepad API — open the repo file in Chrome */ }
+    if (dual && (touch.L || touch.R)) { const l = touchStick(touch.L), r = touchStick(touch.R); sticks = { lx: l.x, ly: l.y, rx: r.x, ry: r.y }; }
+    if (!dual) { if (touch.L) roll = clamp((touch.L.x - touch.L.x0) / 60, -1, 1); if (touch.R) { crouch = 1; btn = true; } }
+    if (dual && !sticks) sticks = sticksFor(kRoll, kKnees, kYaw, kPitch);
+    return { roll, crouch, btn, throttle, push, xSum: 0, ySum: 0, sticks };
+  }
+  function takeOver() { if (OPT.pilot !== 'you') { OPT.pilot = 'you'; saveOpt(); refreshPilotUI(); } }
+
+  // ================= (9) RENDER: a world to ride through, and the instruments =================
+  // Everything here only READS the model. The world is fixed (the cached rail, seeded scenery, a ground grid
+  // under the oval, dust that stays where it is), so speed, height and lean read against things that do not
+  // move with you. Randomness here comes from its own seeded stream and never reaches the batch.
+  const glCanvas = $('stage'), hudCanvas = $('hudc'), hud = hudCanvas.getContext('2d');
+  const DOMAIN = { own: 0x13fff2, enemy: 0xff00f9 };
+  const R3 = (() => { if (typeof THREE === 'undefined') return null; try { return build3D(); } catch (e) { return null; } })();
+  if (!R3) $('no3d').hidden = false;
+  const hashStr = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+
+  function build3D() {
+    const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x080c22, 0.00038);
+    const camera = new THREE.PerspectiveCamera(64, 1, 0.5, 14000);
+    scene.add(new THREE.HemisphereLight(0x8090d0, 0x180c2a, 0.5));
+    const sun = new THREE.DirectionalLight(0xfff2e0, 0.55); sun.position.set(0.5, 1, 0.25); scene.add(sun);
+    const glow = new THREE.PointLight(0x13fff2, 2.4, 110, 2); scene.add(glow);
+    // sky: a seeded nebula + stars painted once onto a sphere that rides with the camera (it is at infinity)
+    const sky = (() => {
+      const c = document.createElement('canvas'); c.width = 2048; c.height = 1024; const g = c.getContext('2d'), r = mulberry32(777);
+      g.fillStyle = '#050819'; g.fillRect(0, 0, c.width, c.height);
+      const tints = ['70,90,220', '140,70,210', '30,170,180', '220,120,60'];
+      for (let i = 0; i < 70; i++) { const x = r() * c.width, y = c.height * (0.2 + 0.6 * r()), rad = 80 + r() * 380, gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(' + tints[i % 4] + ',' + (0.04 + r() * 0.12).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, 2 * rad, 2 * rad); }
+      for (let i = 0; i < 2600; i++) { const b = r(); g.fillStyle = 'rgba(220,230,255,' + (0.25 + 0.75 * b * b).toFixed(2) + ')'; const s = b > 0.97 ? 2.2 : 1.1; g.fillRect(r() * c.width, r() * c.height, s, s); }
+      const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+      return new THREE.Mesh(new THREE.SphereGeometry(11000, 48, 24), new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
+    })();
+    scene.add(sky);
+    // ground: two grids (coarse + fine) that follow the camera in whole cells, so they read as one endless floor
+    const grid = new THREE.GridHelper(16000, 80, 0x4656b8, 0x26306e); grid.material.transparent = true; grid.material.opacity = 0.6; scene.add(grid);
+    const gridFine = new THREE.GridHelper(1600, 80, 0x2c3888, 0x2c3888); gridFine.material.transparent = true; gridFine.material.opacity = 0.28; scene.add(gridFine);
+    // dust: fixed in the world, wrapped into a box round the camera — the speedometer you feel
+    const DUST = 3200, dustBase = new Float32Array(DUST * 3), dr = mulberry32(31337);
+    for (let i = 0; i < DUST * 3; i++) dustBase[i] = dr() * 900;
+    const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(DUST * 3), 3));
+    const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xb8c4ff, size: 1.3, sizeAttenuation: true, transparent: true, opacity: 0.75, depthWrite: false }));
+    dust.frustumCulled = false; scene.add(dust);
+    // r128 sizes the colour buffer from the CURRENT count, so colour every slot before zeroing the count
+    const inst = (geo, mat, cap) => { const m = new THREE.InstancedMesh(geo, mat, cap); m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); for (let i = 0; i < cap; i++) m.setColorAt(i, new THREE.Color(1, 1, 1)); m.count = 0; scene.add(m); return m; };
+    // the rail: real 3 × 3 × 6 prisms (UrchinTrackAction.asset prismScale) every prismSpacing
+    const rail = inst(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff }), 1200);   // prisms glow: unlit, coloured per prism
+    const lineGeo = new THREE.BufferGeometry(); lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(1600 * 3), 3));
+    const trackLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x13fff2, transparent: true, opacity: 0.45, depthWrite: false })); trackLine.frustumCulled = false; scene.add(trackLine);
+    // scenery pools (seeded per course, placed once, never moved)
+    const pillars = inst(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x0a0e26 }), 3000);
+    const rocks = inst(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x0c0f24 }), 9000);
+    const crystals = inst(new THREE.OctahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x1d4a66 }), 1500);
+    const gates = inst(new THREE.TorusGeometry(1, 0.06, 8, 48), new THREE.MeshBasicMaterial({ color: 0xffffff }), 500);
+    // the rider: a board, two legs with knees, hips and an urchin body
+    const rider = (() => {
+      const grp = new THREE.Group(); grp.scale.setScalar(1.25); const mat = (c, e) => new THREE.MeshStandardMaterial({ color: c, emissive: e, roughness: 0.45, metalness: 0.2 });
+      const board = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.35, 7.4), mat(0xffb347, 0x6a3a00)); grp.add(board);
+      for (const z of [-2.4, 2.4]) for (const x of [-0.75, 0.75]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.4, 12), mat(0x222838, 0x000000)); wh.rotation.z = Math.PI / 2; wh.position.set(x, -0.45, z); grp.add(wh); }
+      const legMat = mat(0xe8ecff, 0x30364a), segGeo = new THREE.CylinderGeometry(0.32, 0.32, 1, 10), legs = [];
+      for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(segGeo, legMat); grp.add(m); legs.push(m); }
+      const kneeGeo = new THREE.SphereGeometry(0.42, 12, 8), knees = [new THREE.Mesh(kneeGeo, legMat), new THREE.Mesh(kneeGeo, legMat)]; knees.forEach((k) => grp.add(k));
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0b1026, emissive: 0x13fff2, emissiveIntensity: 0.55, roughness: 0.3, metalness: 0.4 });
+      const body = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 1), bodyMat); grp.add(body);
+      const spikes = new THREE.Group(), spikeMat = new THREE.MeshStandardMaterial({ color: 0x13fff2, emissive: 0x13fff2, emissiveIntensity: 0.9 });
+      const N = 22, Y = new THREE.Vector3(0, 1, 0);
+      for (let i = 0; i < N; i++) { const yy = 1 - 2 * (i + 0.5) / N, rr = Math.sqrt(1 - yy * yy), th = i * 2.39996, dir = new THREE.Vector3(Math.cos(th) * rr, yy, Math.sin(th) * rr); const sp = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.5, 6), spikeMat); sp.position.copy(dir).multiplyScalar(1.9); sp.quaternion.setFromUnitVectors(Y, dir); spikes.add(sp); }
+      body.add(spikes);
+      scene.add(grp);
+      return { grp, board, legs, knees, body, spikes, bodyMat, spikeMat };
+    })();
+    // the line you just rode
+    const TRAIL = 120, trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL * 3), 3));
+    const tc = new Float32Array(TRAIL * 3); for (let i = 0; i < TRAIL; i++) { const a = 1 - i / TRAIL; tc[i * 3] = 1.0 * a; tc[i * 3 + 1] = 0.7 * a; tc[i * 3 + 2] = 0.28 * a; }
+    trailGeo.setAttribute('color', new THREE.BufferAttribute(tc, 3));
+    const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false })); trail.frustumCulled = false; scene.add(trail);
+    // the curvature compass: a ring round the rail at the rider, amber on the side the rail bends TOWARD (ride
+    // there and it is a dip: extend to gain), blue on the side it bends AWAY from (a hump: contract to gain)
+    const compass = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.035, 6, 48), new THREE.MeshBasicMaterial({ color: 0x9aa6d6, transparent: true, opacity: 0.55, depthWrite: false }));
+    const dipDot = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffb347 }));
+    const humpDot = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0x6680ff }));
+    compass.add(ring); scene.add(compass, dipDot, humpDot); humpDot.visible = false;
+    const inArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 6, 0xffb347, 2.2, 1.6); scene.add(inArrow);
+    const aimGeo = new THREE.BufferGeometry(); aimGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+    const aim = new THREE.Line(aimGeo, new THREE.LineBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.55, depthWrite: false })); aim.frustumCulled = false; scene.add(aim);
+    return { inArrow, compass, ring, dipDot, humpDot, aim, renderer, scene, camera, glow, sky, grid, gridFine, dust, dustBase, DUST, rail, trackLine, pillars, rocks, crystals, gates, rider, trail, trailPts: [], TRAIL,
+      scen: { key: '', slot: 0, groundY: -180 }, camPos: null, camLook: null, camUp: new THREE.Vector3(0, 1, 0), shake: 0, fov: 64, rnd: mulberry32(99) };
+  }
+
+  // ---- scenery: placed once per course from the cached rail, seeded by the course and the slot ----
+  const _m = R3 ? new THREE.Matrix4() : null, _q = R3 ? new THREE.Quaternion() : null, _v = R3 ? new THREE.Vector3() : null, _s = R3 ? new THREE.Vector3() : null, _c = R3 ? new THREE.Color() : null, _e = R3 ? new THREE.Euler() : null;
+  const ZAX = R3 ? new THREE.Vector3(0, 0, 1) : null;
+  const ROCK_TINTS = [[0.03, 0.16, 0.16], [0.17, 0.04, 0.16], [0.18, 0.11, 0.02], [0.06, 0.08, 0.22], [0.10, 0.11, 0.16]];
+  function addInst(mesh, pos, quat, scale, rgb) {
+    if (mesh.count >= mesh.instanceMatrix.count) return;
+    _m.compose(_v.set(pos[0], pos[1], pos[2]), quat, _s.set(scale[0], scale[1], scale[2]));
+    mesh.setMatrixAt(mesh.count, _m); mesh.setColorAt(mesh.count, _c.setRGB(rgb[0], rgb[1], rgb[2])); mesh.count++;
+    mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true;
+  }
+  function resetScenery(R) {
+    for (const m of [R.pillars, R.rocks, R.crystals, R.gates]) m.count = 0;
+    const key = trackKey(); R.scen = { key, slot: 0, groundY: -180 };
+    if (OPT.course === 'pumptrack') { let lo = 1e9; for (let s = 0; s < lapLength(); s += 20) lo = Math.min(lo, frameAt(s).p[1]); R.scen.groundY = lo - 14; }
+    else { let lo = 1e9; for (let s = 0; s < 3000; s += 25) lo = Math.min(lo, frameAt(s).p[1]); R.scen.groundY = Math.min(-120, lo - 60); }
+  }
+  function placeSlot(R, i) {
+    const SLOT = 40, s = i * SLOT, f = frameAt(s), r = mulberry32((hashStr(R.scen.key) ^ Math.imul(i + 1, 2654435761)) >>> 0);
+    const gy = R.scen.groundY, oval = OPT.course === 'pumptrack';
+    if (i > 0 && i % 15 === 0 || (oval && i === 0)) {                // a gate round the rail every 600 u (the oval's start gate is white)
+      _q.setFromUnitVectors(ZAX, _v.set(f.T[0], f.T[1], f.T[2]));
+      const big = oval && i === 0, rad = big ? 26 : 17;
+      addInst(R.gates, f.p, _q, [rad, rad, rad], big ? [1, 1, 1] : [1, 0.62, 0.2]);
+    }
+    const n = 1 + Math.floor(r() * 2.4);
+    for (let j = 0; j < n; j++) {
+      const a = r() * Math.PI * 2, dir = v3.add(v3.scale(f.N1, Math.cos(a)), f.N2, Math.sin(a)), kind = r();
+      const dist = (kind < 0.42 ? 90 : 40) + Math.pow(r(), 0.7) * (kind < 0.42 ? 420 : 280), base = v3.add(f.p, dir, dist);
+      if (kind < 0.42) {                                              // a pillar: from the floor under the oval, floating elsewhere
+        if (frameNearRail(base, 70)) continue;                        // keep a clear corridor round the whole course
+        const wdt = 3 + r() * 6, top = base[1] + r() * 70, bot = oval ? gy : base[1] - 40 - r() * 160, hgt = Math.max(10, top - bot);
+        _e.set(0, r() * Math.PI, 0); _q.setFromEuler(_e);
+        const t = 0.035 + r() * 0.03; addInst(R.pillars, [base[0], bot + hgt / 2, base[2]], _q, [wdt, hgt, wdt], [t * 0.9, t, t * 2.2]);
+      } else if (kind < 0.86) {                                       // a cluster of loose prisms
+        const tint = ROCK_TINTS[Math.floor(r() * ROCK_TINTS.length)], k = 3 + Math.floor(r() * 4);
+        for (let m = 0; m < k; m++) {
+          const sz = 2 + r() * 8; _e.set(r() * 6.28, r() * 6.28, r() * 6.28); _q.setFromEuler(_e);
+          addInst(R.rocks, [base[0] + (r() - 0.5) * 26, base[1] + (r() - 0.5) * 26, base[2] + (r() - 0.5) * 26], _q, [sz, sz * (0.6 + r()), sz * (1 + r() * 1.5)], tint);
+        }
+      } else {                                                        // a glowing crystal
+        const sz = 5 + r() * 14; _e.set(r() * 0.5, r() * 6.28, r() * 0.5); _q.setFromEuler(_e);
+        addInst(R.crystals, base, _q, [sz * 0.7, sz * 1.4, sz * 0.7], [0.25, 0.55, 0.8]);
+      }
+    }
+  }
+  // Is a point within `clear` of the rail anywhere on the course built so far? (coarse, every 40 u)
+  function frameNearRail(pt, clear) {
+    const t = getTrack(), d = t.d, step = 20, c2 = clear * clear;
+    for (let i = 0; i < t.n; i += step) { const o = i * 12, x = pt[0] - d[o], z = pt[2] - d[o + 2]; if (x * x + z * z < c2) return true; }
+    return false;
+  }
+  function updateScenery(R, w) {
+    if (R.scen.key !== trackKey()) resetScenery(R);
+    const cap = OPT.course === 'pumptrack' ? lapLength() : Infinity, target = Math.min(w.s + 3600, cap);
+    let budget = 60;
+    while (R.scen.slot * 40 < target && budget-- > 0) placeSlot(R, R.scen.slot++);
+  }
+
+  function riderPose() {
+    const w = world;
+    if (w.air) { const up = w.air.up, body = w.air.pos; return { body, up, T: v3.norm(w.air.vel), board: v3.add(body, up, -(LEG_MIN + w.h + 1.2)), air: true }; }
+    const f = w.frame, up = upOf(f, w.phi), board = v3.add(f.p, up, RAIL_R + P.rideSurfaceClearance);
+    return { up, T: f.T, board, body: v3.add(board, up, LEG_MIN + w.h + 1.2), air: false };
+  }
+  const _fr = newFrame();
+  function setSeg(mesh, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, L = Math.hypot(dx, dy, dz) || 1e-3;
+    mesh.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx / L, dy / L, dz / L)); mesh.scale.set(1, L, 1);
+  }
+  function draw3D(R, w, pose, dtReal) {
+    const dt = Math.min(0.1, dtReal || 1 / 60), W = new THREE.Vector3(0, 1, 0);
+    updateScenery(R, w);
+    const own = OPT.owner === 'own', dom = own ? DOMAIN.own : DOMAIN.enemy;
+    // rail prisms near the rider, tinted by how each bend loads YOU at your lean and speed
+    const sp = P.prismSpacing, k0 = Math.max(0, Math.ceil((w.s - 220) / sp)), k1 = Math.floor((w.s + 2600) / sp), vv = Math.max(w.v, 1) ** 2, pull = P.ppPull;
+    const base = new THREE.Color(dom), amber = new THREE.Color(0xffb347), blue = new THREE.Color(0x6680ff), col = new THREE.Color();
+    let n = 0; const cap = R.rail.instanceMatrix.count, sc = new THREE.Vector3(RAIL_R * 2, RAIL_R * 2, 6);
+    for (let k = k0; k <= k1 && n < cap; k++) {
+      const s = k * sp, f = frameAt(s, _fr);
+      bend(s, _b); const felt = vv * _b.kap * Math.cos(_b.alpha - w.phi) / pull;
+      col.copy(base).multiplyScalar(0.32);
+      if (Math.abs(felt) > 0.04) col.lerp(amber, Math.min(1, Math.abs(felt) / 0.35));   // how hard the curve loads you: inside or outside, both pump
+      if (OPT.crest === 'fly' && 1 + felt < 0) col.setRGB(1, 1, 1);
+      if (Math.abs(s - w.s) < sp * 0.75 && !w.air) col.multiplyScalar(1.8);
+      _m.makeBasis(_v.set(f.N2[0], f.N2[1], f.N2[2]), new THREE.Vector3(f.N1[0], f.N1[1], f.N1[2]), new THREE.Vector3(f.T[0], f.T[1], f.T[2])).scale(sc).setPosition(f.p[0], f.p[1], f.p[2]);
+      R.rail.setMatrixAt(n, _m); R.rail.setColorAt(n, col); n++;
+    }
+    R.rail.count = n; R.rail.instanceMatrix.needsUpdate = true; R.rail.instanceColor.needsUpdate = true;
+    // the rest of the course as a thin line: you can see where it goes
+    const lp = R.trackLine.geometry.attributes.position, step = 6; let m = 0;
+    for (let s = Math.max(0, w.s - 2400); m < 1600; s += step, m++) { const f = frameAt(s, _fr); lp.array[m * 3] = f.p[0]; lp.array[m * 3 + 1] = f.p[1]; lp.array[m * 3 + 2] = f.p[2]; }
+    lp.needsUpdate = true; R.trackLine.material.color.set(dom);
+    // the rider
+    const T = new THREE.Vector3(pose.T[0], pose.T[1], pose.T[2]), U = new THREE.Vector3(pose.up[0], pose.up[1], pose.up[2]);
+    const X = new THREE.Vector3().crossVectors(U, T).normalize(), U2 = new THREE.Vector3().crossVectors(T, X).normalize();
+    _m.makeBasis(X, U2, T); R.rider.grp.quaternion.setFromRotationMatrix(_m); R.rider.grp.position.set(pose.board[0], pose.board[1], pose.board[2]);
+    const H = legH(), hipY = LEG_MIN + w.h + 0.6, Ls = 0.5 * Math.hypot(1.3, LEG_MIN + H + 0.4) + 0.08, hip = new THREE.Vector3(0, hipY, 0);
+    const kicking = w.pushLeft > 0 || (w.pushCd > P.ppPushCooldown - 0.3 && w.stats.pushes > 0);   // the back foot is down on the rail
+    [1.3, -1.3].forEach((zf, i) => {
+      const foot = i === 1 && kicking ? new THREE.Vector3(0, -(P.rideSurfaceClearance + 0.4), -3.4) : new THREE.Vector3(0, 0.2, zf), D = hip.clone().sub(foot), dist = D.length(), mid = foot.clone().addScaledVector(D, 0.5);
+      const perp = new THREE.Vector3(0, -D.z * Math.sign(zf), D.y * Math.sign(zf)).normalize();
+      const knee = mid.addScaledVector(perp, Math.sqrt(Math.max(0, Ls * Ls - dist * dist / 4)));
+      knee.x = i ? -0.35 : 0.35; foot.x = knee.x;
+      setSeg(R.rider.legs[i * 2], foot, knee); setSeg(R.rider.legs[i * 2 + 1], knee, hip); R.rider.knees[i].position.copy(knee);
+    });
+    R.rider.body.position.set(0, hipY + 1.5, 0);
+    R.rider.spikes.rotation.y += dt * (0.6 + w.v / 200); R.rider.bodyMat.emissive.set(dom); R.rider.spikeMat.emissive.set(dom); R.rider.spikeMat.color.set(dom);
+    const bodyW = new THREE.Vector3(pose.body[0], pose.body[1], pose.body[2]);
+    R.glow.position.copy(bodyW); R.glow.color.set(dom);
+    // trail
+    R.trailPts.unshift(bodyW.clone()); if (R.trailPts.length > R.TRAIL) R.trailPts.pop();
+    const ta = R.trail.geometry.attributes.position;
+    for (let i = 0; i < R.TRAIL; i++) { const p = R.trailPts[Math.min(i, R.trailPts.length - 1)]; ta.array[i * 3] = p.x; ta.array[i * 3 + 1] = p.y; ta.array[i * 3 + 2] = p.z; }
+    ta.needsUpdate = true;
+    // curvature compass at the rider
+    {
+      const show = !w.air && wayOf().pump !== 'none';
+      R.compass.visible = R.dipDot.visible = R.inArrow.visible = show; R.humpDot.visible = false;
+      if (show) {
+        const f = w.frame, rr = rideRadius(w.h) + 2.5; bend(w.s, _b);
+        const strength = clamp(Math.max(w.v, 30) ** 2 * _b.kap / P.ppPull, 0, 1.5);
+        R.compass.position.set(f.p[0], f.p[1], f.p[2]); R.compass.quaternion.setFromUnitVectors(ZAX, T.set(f.T[0], f.T[1], f.T[2])); R.compass.scale.setScalar(rr);
+        const dir = v3.add(v3.scale(f.N1, Math.cos(_b.alpha)), f.N2, Math.sin(_b.alpha)), ds = 0.35 + 1.1 * strength;
+        R.dipDot.position.set(f.p[0] + dir[0] * rr, f.p[1] + dir[1] * rr, f.p[2] + dir[2] * rr); R.dipDot.scale.setScalar(_b.kap > 1e-5 ? ds : 0.001);
+        // the arrow on the rider: the knee direction that moves your mass toward the curve's centre (along your own up
+        // when you are on the inside, toward the rail when you are on the outside), as long as the curve is strong
+        const c = Math.cos(_b.alpha - w.phi), up = upOf(f, w.phi), sgn = c >= 0 ? 1 : -1, len = 2 + 9 * clamp(strength * Math.abs(c), 0, 1);
+        R.inArrow.visible = strength * Math.abs(c) > 0.05;
+        R.inArrow.position.set(pose.body[0] + up[0] * sgn * 2.2, pose.body[1] + up[1] * sgn * 2.2, pose.body[2] + up[2] * sgn * 2.2);
+        R.inArrow.setDirection(new THREE.Vector3(up[0] * sgn, up[1] * sgn, up[2] * sgn)); R.inArrow.setLength(len, Math.min(2.2, len * 0.45), 1.6);
+        T.set(pose.T[0], pose.T[1], pose.T[2]);
+      }
+    }
+    // look: where pitch and yaw point you while attached (the camera follows it; the body turns to it)
+    const Rr = new THREE.Vector3().crossVectors(T, U).normalize();
+    let Ld;
+    if (OPT.lookFrame === 'world' && w.look.dir) Ld = new THREE.Vector3(w.look.dir[0], w.look.dir[1], w.look.dir[2]);
+    else Ld = T.clone().multiplyScalar(Math.cos(w.look.yaw)).addScaledVector(Rr, Math.sin(w.look.yaw)).multiplyScalar(Math.cos(w.look.pitch)).addScaledVector(U, Math.sin(w.look.pitch)).normalize();
+    R.rider.body.rotation.y = -Math.atan2(Ld.dot(Rr), Ld.dot(T));
+    const ap = R.aim.geometry.attributes.position.array, aimEnd = bodyW.clone().addScaledVector(Ld, 70);
+    ap[0] = bodyW.x; ap[1] = bodyW.y; ap[2] = bodyW.z; ap[3] = aimEnd.x; ap[4] = aimEnd.y; ap[5] = aimEnd.z; R.aim.geometry.attributes.position.needsUpdate = true;
+    // camera
+    let eye, look, up = W;
+    const hz = new THREE.Vector3().crossVectors(T, W); if (hz.lengthSq() < 1e-4) hz.copy(X); hz.normalize();
+    const Tf = new THREE.Vector3(T.x, 0, T.z); if (Tf.lengthSq() < 1e-4) Tf.copy(T); Tf.normalize();
+    switch (OPT.cam) {
+      case 'roll': {
+        // follows you round the rail: the camera's roll chases yours as an ANGLE (a lerped up-vector would pass
+        // through zero on a fast half-spin), so it turns with you smoothly and keeps you on top of the rail
+        if (R.camPhi == null || R.snapCam) R.camPhi = w.phi;
+        if (!w.air) R.camPhi += wrapPi(w.phi - R.camPhi) * (1 - Math.exp(-7 * dt));
+        const cu = w.air ? U : (() => { const q = upOf(w.frame, R.camPhi); return new THREE.Vector3(q[0], q[1], q[2]); })();
+        R.camUp.copy(cu); up = R.camUp;
+        eye = bodyW.clone().addScaledVector(Ld, -32).addScaledVector(up, 10); look = bodyW.clone().addScaledVector(Ld, 60).addScaledVector(up, 2); break;
+      }
+      case 'side': eye = bodyW.clone().addScaledVector(hz, 95).addScaledVector(W, 24).addScaledVector(Tf, 30); look = bodyW.clone().addScaledVector(T, 20); break;
+      case 'high': eye = bodyW.clone().addScaledVector(Tf, -280).addScaledVector(W, 420); look = bodyW.clone().addScaledVector(Tf, 160); break;
+      default: eye = bodyW.clone().addScaledVector(Ld, -30).addScaledVector(U, 9).addScaledVector(W, 7).addScaledVector(hz, 14); look = bodyW.clone().addScaledVector(Ld, 55).addScaledVector(U, 3);
+    }
+    if (OPT.cam !== 'roll') R.camUp.set(0, 1, 0);
+    // smooth the camera's OFFSET from the rider, never its absolute position: an absolute lerp trails the rider by
+    // about speed / rate (40+ u at 300 u/s), so the faster you go the further the camera falls behind
+    const offEye = eye.clone().sub(bodyW), offLook = look.clone().sub(bodyW);
+    if (!R.camOff || R.snapCam) { R.camOff = offEye.clone(); R.lookOff = offLook.clone(); R.snapCam = false; }
+    const kPos = 1 - Math.exp(-(OPT.cam === 'side' ? 4 : 8) * dt), kLook = 1 - Math.exp(-10 * dt);
+    R.camOff.lerp(offEye, kPos); R.lookOff.lerp(offLook, kLook);
+    R.camPos = bodyW.clone().add(R.camOff); R.camLook = bodyW.clone().add(R.lookOff);
+    const shake = R.shake; R.shake *= Math.exp(-6 * dt);
+    R.camera.position.copy(R.camPos).add(new THREE.Vector3((R.rnd() - 0.5) * shake, (R.rnd() - 0.5) * shake, (R.rnd() - 0.5) * shake));
+    R.camera.up.copy(up); R.camera.lookAt(R.camLook);
+    const fov = 62 + clamp((w.v - 120) / 14, 0, 24); if (Math.abs(fov - R.fov) > 0.05) { R.fov += (fov - R.fov) * (1 - Math.exp(-3 * dt)); R.camera.fov = R.fov; R.camera.updateProjectionMatrix(); }
+    // world references that follow the camera: sky, grids, dust
+    const cp = R.camera.position;
+    R.sky.position.copy(cp);
+    R.grid.position.set(Math.round(cp.x / 200) * 200, R.scen.groundY, Math.round(cp.z / 200) * 200);
+    R.gridFine.position.set(Math.round(cp.x / 20) * 20, R.scen.groundY + 0.05, Math.round(cp.z / 20) * 20);
+    const da = R.dust.geometry.attributes.position.array, B = R.dustBase, BOX = 900;
+    for (let i = 0; i < R.DUST; i++) { for (let k = 0; k < 3; k++) { const c = k === 0 ? cp.x : k === 1 ? cp.y : cp.z; let x = (B[i * 3 + k] - c) % BOX; if (x < 0) x += BOX; da[i * 3 + k] = c + x - BOX / 2; } }
+    R.dust.geometry.attributes.position.needsUpdate = true;
+    R.renderer.render(R.scene, R.camera);
+  }
+
+  // ---- the instruments (2D, over the 3D view) ----
+  const pops = [];
+  let lastEventSeen = 0;
+  function fontD(px, wgt) { return (wgt || 700) + ' ' + Math.round(px) + 'px "Chakra Petch", system-ui, sans-serif'; }
+  function fontB(px) { return Math.round(px) + 'px "Atkinson Hyperlegible", system-ui, sans-serif'; }
+  function panel(g, x, y, w, h, title, dpr) {
+    g.fillStyle = 'rgba(8,12,32,0.72)'; g.strokeStyle = 'rgba(154,166,214,0.35)'; g.lineWidth = 1;
+    g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, 8 * dpr) : g.rect(x, y, w, h); g.fill(); g.stroke();
+    if (title) { g.fillStyle = '#9aa6d6'; g.font = fontD(10 * dpr); g.fillText(title, x + 8 * dpr, y + 14 * dpr); }
+  }
+  function drawHUD(pose, dtReal) {
+    const g = hud, W = hudCanvas.width, Hh = hudCanvas.height, dpr = W / Math.max(1, hudCanvas.clientWidth || W), w = world, way = wayOf();
+    g.clearRect(0, 0, W, Hh);
+    if (!R3) { g.fillStyle = '#05081a'; g.fillRect(0, 0, W, Hh); }
+    const small = W < 760 * dpr, pad = 10 * dpr;
+    // new events → pops, sound, shake
+    for (const ev of w.events) if (ev.id > lastEventSeen) {
+      lastEventSeen = ev.id; if (w.t - ev.t > 0.5) continue;           // only fresh events pop (a fast-forward skips the rest)
+      pops.push({ ev, age: 0 }); while (pops.length > 3) pops.shift();
+      if (R3) { if (ev.kind === 'land') R3.shake = 3; else if (ev.label === 'WRONG WAY') R3.shake = 1.2; }
+      sound.blip(ev);
+    }
+    // a backing panel under the top-left readouts so they stay legible over bright prisms
+    panel(g, 4 * dpr, 4 * dpr, (small ? 168 : 330) * dpr, (small ? 118 : 108) * dpr, '', dpr);
+    // speed bar (under the DOM speed readout)
+    {
+      const x = pad + 2 * dpr, y = (small ? 70 : 62) * dpr, bw = (small ? 150 : 240) * dpr, bh = 6 * dpr, vmax = 600;
+      g.fillStyle = 'rgba(232,236,255,0.15)'; g.fillRect(x, y, bw, bh);
+      g.fillStyle = '#ffb347'; g.fillRect(x, y, bw * clamp(w.v / vmax, 0, 1), bh);
+      const ux = x + bw * P.FriendlyTerrainSpeed / vmax; g.fillStyle = '#13fff2'; g.fillRect(ux - dpr, y - 3 * dpr, 2 * dpr, bh + 6 * dpr);
+      g.fillStyle = '#9aa6d6'; g.font = fontB(9.5 * dpr); g.fillText('Urchin grind ' + P.FriendlyTerrainSpeed, Math.min(ux + 4 * dpr, x + bw - 80 * dpr), y + bh + 12 * dpr);
+    }
+    // KNEES → SPEED: the speed your extension or contraction is making against the curvature you feel, right now
+    if (wayOf().pump === 'work' || wayOf().pump === 'auto') {
+      const x = pad + 2 * dpr, y = (small ? 92 : 84) * dpr, bw = (small ? 150 : 240) * dpr, bh = 8 * dpr, gmax = 40;
+      const gain = w.air ? 0 : w.last.gain, frac = clamp(gain / gmax, -1, 1), mid = x + bw / 2;
+      g.fillStyle = 'rgba(232,236,255,0.15)'; g.fillRect(x, y, bw, bh);
+      g.fillStyle = gain >= 0 ? '#6fe39a' : '#ff7a8a'; g.fillRect(frac >= 0 ? mid : mid + frac * bw / 2, y, Math.abs(frac) * bw / 2, bh);
+      g.fillStyle = '#e8ecff'; g.fillRect(mid - dpr / 2, y - 2 * dpr, dpr, bh + 4 * dpr);
+      const kfHere = w.last.kf, dhr = w.last.dhRate, side = Math.abs(kfHere * P.ppRollerR) < 0.08 ? 'no curve under you' : kfHere > 0 ? 'on the inside' : 'on the outside';
+      const knee = Math.abs(dhr) < 0.3 || Math.abs(kfHere * P.ppRollerR) < 0.08 ? (dhr > 0.3 ? 'extending' : dhr < -0.3 ? 'contracting' : 'holding') : (dhr * kfHere > 0 ? 'moving IN toward the curve' : 'moving OUT from the curve');
+      const felt = side;
+      g.fillStyle = '#9aa6d6'; g.font = fontB(9.5 * dpr);
+      g.fillText('knees → speed ' + (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' u/s² · ' + knee + ', ' + felt, x, y + bh + 12 * dpr);
+    }
+    // lap / split panel
+    {
+      const lp = w.lap, oval = OPT.course === 'pumptrack', bw = (small ? 150 : 210) * dpr, bh = (small ? 44 : 50) * dpr, x = small ? W - bw - pad : (W - bw) / 2, y = pad;
+      panel(g, x, y, bw, bh, oval ? 'LAP ' + (lp.n + 1) : 'SPLIT ' + (lp.n + 1) + ' · PER 1000 u', dpr);
+      const cur = lp.started ? w.t - lp.t0 : 0;
+      g.fillStyle = '#e8ecff'; g.font = fontD((small ? 15 : 18) * dpr); g.fillText(lp.started ? cur.toFixed(2) + ' s' : (oval ? 'to the start gate' : 'to the first split'), x + 8 * dpr, y + (small ? 34 : 38) * dpr);
+      g.font = fontB(9.5 * dpr); g.fillStyle = '#9aa6d6';
+      if (lp.best) g.fillText('best ' + lp.best.toFixed(2) + '  last ' + lp.last.toFixed(2), x + bw * (small ? 0.45 : 0.5), y + (small ? 34 : 38) * dpr);
+    }
+    // speed trace (PC)
+    if (!small) {
+      const gw = 260 * dpr, gh = 60 * dpr, x = W - gw - pad, y = pad;
+      panel(g, x, y, gw, gh, 'SPEED · LAST 10 s', dpr);
+      const tr = w.trace, gx = x + 8 * dpr, gy = y + 18 * dpr, ww = gw - 16 * dpr, hh = gh - 24 * dpr, vmax = Math.max(400, ...tr.map((p) => p[1]));
+      const ref = gy + hh * (1 - P.FriendlyTerrainSpeed / vmax);
+      g.setLineDash([4 * dpr, 4 * dpr]); g.strokeStyle = 'rgba(19,255,242,0.55)'; g.beginPath(); g.moveTo(gx, ref); g.lineTo(gx + ww, ref); g.stroke(); g.setLineDash([]);
+      if (tr.length > 1) { const t0 = w.t - 10; g.beginPath(); tr.forEach((p, i) => { const X = gx + ww * (p[0] - t0) / 10, Yv = gy + hh * (1 - p[1] / vmax); i ? g.lineTo(X, Yv) : g.moveTo(X, Yv); }); g.strokeStyle = '#ffb347'; g.lineWidth = 2 * dpr; g.stroke(); }
+    }
+    // BEND dial: the rail's cross-section with you on top; the arrow is where the rail bends
+    const dsz = (small ? 74 : 112) * dpr, dx = small ? W - dsz - pad : pad, dy = small ? 62 * dpr : Hh - dsz - pad;
+    {
+      panel(g, dx, dy, dsz, dsz, 'CURVE', dpr);
+      const cx = dx + dsz / 2, cy = dy + dsz * 0.58, r = dsz * 0.2;
+      g.strokeStyle = '#9aa6d6'; g.lineWidth = 1.5 * dpr; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.stroke();
+      if (!w.air) {
+        bend(w.s + Math.max(w.v, 30) * 0.25, _b);
+        const rel = _b.alpha - w.phi, mag = clamp(w.v * w.v * _b.kap / P.ppPull, 0, 2), L = r + mag * dsz * 0.14, dip = Math.cos(rel) > 0;
+        g.strokeStyle = '#ffb347';                                           // the arrow points at the curve's centre g.lineWidth = 3 * dpr; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(rel) * L, cy - Math.cos(rel) * L); g.stroke();
+      }
+      g.fillStyle = '#13fff2'; g.beginPath(); g.arc(cx, cy - r - 5 * dpr, 4.5 * dpr, 0, 7); g.fill();
+    }
+    // THE PUMP LANE: the next 2.4 s of the rail, read at your lean and speed. STAND bars sit on each dip's deepest
+    // point, CROUCH bars on each hump's top; each bar is as wide as one knee stroke. Be moving your knees as a bar
+    // crosses the line.
+    {
+      const lw = small ? W - 2 * pad : Math.min(620 * dpr, W - 2 * dsz - 6 * pad), lh = (small ? 62 : 78) * dpr;
+      const lx = small ? pad : (W - lw) / 2, ly = small ? 146 * dpr : Hh - lh - pad;      // phone: under the readouts, clear of the rider and the thumbs
+      panel(g, lx, ly, lw, lh, way.pump === 'none' ? 'PUMP LANE · this way does not pump' : way.v === 'beat' ? 'PUMP LANE · let go on each STAND' : way.v === 'lean' ? 'PUMP LANE · the hull pumps; you lean' : 'PUMP LANE · move your mass IN toward the curve on each bar (extend on the inside of a curve, contract on the outside)', dpr);
+      const T = 2.4, hitX = lx + 46 * dpr, x1 = lx + lw - 8 * dpr, mid = ly + lh * 0.6, amp = lh * 0.26, v = Math.max(w.v, 30), R = P.ppRollerR;
+      const X = (t) => hitX + (x1 - hitX) * t / T;
+      const strokeT = legH() / Math.max(0.5, P.ppLegRate * (way.v === 'tap' ? P.ppTapLegs : way.v === 'beat' ? 4 : 1));
+      if (!w.air) {
+        const N = 120, ks = [];
+        for (let i = 0; i <= N; i++) ks.push(loadAt(w, w.s + v * T * i / N, w.phi).kf * R);
+        // load curve
+        g.beginPath(); ks.forEach((k, i) => { const xx = X(T * i / N), yy = mid - clamp(k, -1.2, 1.2) * amp; i ? g.lineTo(xx, yy) : g.moveTo(xx, yy); });
+        g.strokeStyle = 'rgba(232,236,255,0.35)'; g.lineWidth = 1.5 * dpr; g.stroke();
+        // bars on the extremes
+        for (let i = 1; i < N; i++) {
+          const k = ks[i], isPeak = k > ks[i - 1] && k >= ks[i + 1] && k > 0.15, isVal = k < ks[i - 1] && k <= ks[i + 1] && k < -0.15;
+          if (!isPeak && !isVal) continue;
+          if (isVal && way.v === 'beat') continue;
+          const t = T * i / N, bx0 = X(Math.max(0, t - strokeT / 2)), bx1 = X(Math.min(T, t + strokeT / 2)), a = clamp(Math.abs(k), 0.3, 1);
+          g.fillStyle = 'rgba(255,179,71,' + (0.35 + 0.5 * a).toFixed(2) + ')';     // every bar is one stroke IN toward the curve
+          g.fillRect(bx0, ly + 18 * dpr, Math.max(3 * dpr, bx1 - bx0), lh - 24 * dpr);
+          g.fillStyle = '#05081a'; g.font = fontD(9.5 * dpr); g.fillText(way.v === 'beat' ? 'LET GO' : 'IN · ' + (way.v === 'dual' ? (isPeak ? 'together' : 'apart') : (isPeak ? 'extend' : 'contract')), bx0 + 3 * dpr, ly + lh - 9 * dpr);
+        }
+      } else { g.fillStyle = '#e8ecff'; g.font = fontD(14 * dpr); g.fillText('AIRBORNE · the pull brings you back', hitX + 10 * dpr, mid + 5 * dpr); }
+      // the hit line and your knees
+      g.strokeStyle = '#e8ecff'; g.lineWidth = 2 * dpr; g.beginPath(); g.moveTo(hitX, ly + 16 * dpr); g.lineTo(hitX, ly + lh - 4 * dpr); g.stroke();
+      const kh = (lh - 26 * dpr) * w.h / legH(), rising = w.hv > 0.2, falling = w.hv < -0.2;
+      g.fillStyle = 'rgba(232,236,255,0.15)'; g.fillRect(lx + 12 * dpr, ly + 20 * dpr, 12 * dpr, lh - 26 * dpr);
+      g.fillStyle = rising ? '#ffb347' : falling ? '#6680ff' : '#e8ecff'; g.fillRect(lx + 12 * dpr, ly + lh - 6 * dpr - kh, 12 * dpr, kh);
+      g.fillStyle = '#9aa6d6'; g.font = fontB(8.5 * dpr); g.fillText('knees', lx + 6 * dpr, ly + lh - 0.5 * dpr);
+    }
+    // STICKS: the two thumbsticks as the game reads them, and what each mix does on this vessel (Dual stick way)
+    if (way.v === 'dual' && lastInput && lastInput.sticks) {
+      const k = lastInput.sticks, m = mix(k), bend = clamp((m.xDiff - 0.5) * 2, 0, 1);
+      if (!small) {
+        const bw = 190 * dpr, bh = 112 * dpr, x = dx + dsz + pad, y = Hh - bh - pad, rad = 26 * dpr, cy = y + 48 * dpr;
+        panel(g, x, y, bw, bh, 'STICKS', dpr);
+        [[k.lx, k.ly, x + 44 * dpr], [k.rx, k.ry, x + bw - 44 * dpr]].forEach(([sx, sy, cx]) => {
+          g.strokeStyle = 'rgba(154,166,214,0.6)'; g.lineWidth = 1.5 * dpr; g.beginPath(); g.arc(cx, cy, rad, 0, 7); g.stroke();
+          g.fillStyle = '#e8ecff'; g.beginPath(); g.arc(cx + sx * rad, cy - sy * rad, 6 * dpr, 0, 7); g.fill();
+        });
+        g.fillStyle = bend > 0.5 ? '#6680ff' : '#ffb347'; g.fillRect(x + 76 * dpr, cy - 3 * dpr, (bw - 152 * dpr) * Math.max(0.04, bend), 6 * dpr);
+        g.fillStyle = '#9aa6d6'; g.font = fontB(9.5 * dpr);
+        g.fillText('knees ' + Math.round(100 * bend) + '% bent · roll ' + (m.yDiff >= 0 ? '+' : '') + m.yDiff.toFixed(2), x + 8 * dpr, y + bh - 22 * dpr);
+        g.fillText('look ' + (m.xSum >= 0 ? '+' : '') + m.xSum.toFixed(2) + ' / ' + (m.ySum >= 0 ? '+' : '') + m.ySum.toFixed(2) + (w.pushCd > 0 ? ' · push ' + w.pushCd.toFixed(2) + ' s' : ' · A = push'), x + 8 * dpr, y + bh - 8 * dpr);
+      }
+      // phone: draw each live thumbstick where the thumb landed
+      for (const t of [touch.L, touch.R]) if (t) {
+        const r = hudCanvas.getBoundingClientRect(), cx = (t.x0 - r.left) * dpr, cy = (t.y0 - r.top) * dpr, rad = STICK_PX * dpr, st = touchStick(t);
+        g.strokeStyle = 'rgba(232,236,255,0.45)'; g.lineWidth = 2 * dpr; g.beginPath(); g.arc(cx, cy, rad, 0, 7); g.stroke();
+        g.fillStyle = 'rgba(232,236,255,0.8)'; g.beginPath(); g.arc(cx + st.x * rad, cy - st.y * rad, 14 * dpr, 0, 7); g.fill();
+      }
+    }
+    // rating pops
+    for (let i = pops.length - 1; i >= 0; i--) {
+      const p = pops[i]; p.age += Math.min(0.1, dtReal || 1 / 60); if (p.age > 1.1) { pops.splice(i, 1); continue; }
+      const e = p.ev, a = 1 - p.age / 1.1, scl = 1 + 0.25 * Math.max(0, 0.15 - p.age) / 0.15;
+      const col = e.kind === 'push' ? '19,255,242' : e.label === 'PERFECT' ? '255,179,71' : e.label === 'GOOD' ? '111,227,154' : e.label === 'WRONG WAY' ? '255,122,138' : e.kind === 'air' || e.kind === 'land' ? '127,215,255' : '232,236,255';
+      g.fillStyle = 'rgba(' + col + ',' + a.toFixed(2) + ')'; g.font = fontD((small ? 18 : 26) * dpr * scl); g.textAlign = 'center';
+      const txt = e.label + (e.kind === 'stand' || e.kind === 'crouch' || (e.kind === 'push' && e.dv > 0.5) ? '  ' + (e.dv >= 0 ? '+' : '') + e.dv.toFixed(1) + ' u/s' : '');
+      g.fillText(txt, W / 2, Hh * (small ? 0.36 : 0.42) - p.age * 40 * dpr - (pops.length - 1 - i) * 30 * dpr);
+      g.textAlign = 'left';
+    }
+    // DOM readout
+    const s = w.stats, el = $('hud');
+    el.children[0].textContent = w.v.toFixed(0);
+    el.children[2].textContent = (small ? '' : 'load ' + (w.last.N / P.ppPull).toFixed(2) + '× pull · ') + way.label + ' · ' + pilotLabel() + (s.strokes ? ' · perfect ' + Math.round(100 * s.perfect / s.strokes) + '%' : '') + (paused ? ' · paused' : '');
+    sound.update(w);
+  }
+
+  // ---- sound (optional; starts from the Sound button, as browsers require) ----
+  const sound = (() => {
+    let ac = null, on = false, master, wind, windGain, roll, rollGain;
+    function start() {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+      ac = new AC(); master = ac.createGain(); master.gain.value = 0; master.connect(ac.destination);
+      const buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), ch = buf.getChannelData(0), r = mulberry32(5); for (let i = 0; i < ch.length; i++) ch[i] = r() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+      wind = ac.createBiquadFilter(); wind.type = 'bandpass'; wind.Q.value = 0.7; windGain = ac.createGain(); windGain.gain.value = 0;
+      src.connect(wind); wind.connect(windGain); windGain.connect(master); src.start();
+      roll = ac.createOscillator(); roll.type = 'sawtooth'; const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 180;
+      rollGain = ac.createGain(); rollGain.gain.value = 0; roll.connect(lp); lp.connect(rollGain); rollGain.connect(master); roll.start();
+      return true;
+    }
+    return {
+      toggle() { try { if (!ac && !start()) return false; on = !on; master.gain.setTargetAtTime(on ? 0.9 : 0, ac.currentTime, 0.05); if (ac.state === 'suspended') ac.resume(); } catch (e) { on = false; } return on; },
+      get on() { return on; },
+      update(w) { if (!on || !ac) return; const t = ac.currentTime, v = w.v; wind.frequency.setTargetAtTime(220 + v * 2.4, t, 0.05); windGain.gain.setTargetAtTime(Math.min(0.28, v / 900), t, 0.08); roll.frequency.setTargetAtTime(32 + v * 0.1, t, 0.05); rollGain.gain.setTargetAtTime(w.air ? 0 : 0.035 + Math.min(0.09, Math.abs(w.last.N / P.ppPull - 1) * 0.06), t, 0.05); },
+      blip(ev) {
+        if (!on || !ac) return;
+        const o = ac.createOscillator(), gg = ac.createGain(), t = ac.currentTime, good = ev.label === 'PERFECT' ? 1 : ev.label === 'GOOD' ? 0.6 : ev.label === 'WRONG WAY' ? -1 : 0.2;
+        o.type = good > 0 ? 'triangle' : 'square'; o.frequency.value = good < 0 ? 140 : 420 + 480 * good + (ev.kind === 'crouch' ? -120 : 0);
+        gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(good < 0 ? 0.08 : 0.14, t + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        o.connect(gg); gg.connect(master); o.start(t); o.stop(t + 0.2);
+      },
+    };
+  })();
+
+  // ================= (10) UI: tabs, dropdowns, sliders, shipped-vs-yours =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, (String(step).split('.')[1] || '').length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const changed = Object.keys(diffOnly());
+    $('diff').textContent = changed.length ? changed.length + ' setting' + (changed.length > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; }
+    $('wayChip').textContent = wayOf().label;
+    const dualWay = OPT.way === 'dual'; $('touchL').textContent = dualWay ? 'LEFT STICK' : 'LEAN — drag'; $('touchR').textContent = dualWay ? 'RIGHT STICK' : 'KNEES — hold';
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); refreshDiff(); }
+  function saveOpt() { const o = Object.assign({}, OPT); delete o._startSpeed; lsSet(LS_OPT, o); }
+  function setOpt(k, v) { OPT[k] = v; saveOpt(); if (k === 'way' || k === 'course' || k === 'crest' || k === 'owner') { reset(); if (R3) R3.snapCam = true; } refreshDiff(); refreshPilotUI(); if (showDock) rebuildDock(); }
+  function pilotLabel() { return OPT.pilot === 'you' ? 'You fly' : OPT.pilot === 'rookie' ? 'AI rookie' : 'AI skilled'; }
+  function refreshPilotUI() { $('letAi').hidden = OPT.pilot !== 'you'; const sel = document.getElementById('opt-pilot'); if (sel) sel.value = OPT.pilot; }
+
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) {
+      for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name));
+      body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name);
+    }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+    return show;
+  }
+  function pick(box, key, label, options, tip) {
+    const row = document.createElement('div'); row.className = 'pick';
+    const lab = document.createElement('label'); lab.textContent = label; lab.htmlFor = 'opt-' + key;
+    const sel = document.createElement('select'); sel.id = 'opt-' + key;
+    for (const o of options) { const op = document.createElement('option'); op.value = String(o.v); op.textContent = o.label; sel.appendChild(op); }
+    sel.value = String(OPT[key]);
+    sel.onchange = () => { const v = typeof OPT_DEFAULT[key] === 'number' ? parseFloat(sel.value) : sel.value; setOpt(key, v); };
+    row.append(lab, sel);
+    if (tip) { const t = document.createElement('div'); t.className = 'tip'; t.textContent = typeof tip === 'function' ? tip() : tip; row.appendChild(t); }
+    box.appendChild(row);
+  }
+  function sec(box, text) { const h = document.createElement('div'); h.className = 'sec'; h.textContent = text; box.appendChild(h); }
+  function sliders(box, group) {
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key], id: 'p-' + key }); inp.setAttribute('aria-label', label);
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+  }
+  const DOCK = [
+    { name: 'Scene Config', build: () => { const b = document.createElement('div');
+      pick(b, 'course', 'Course', COURSES, () => (COURSES.find((c) => c.v === OPT.course) || {}).note);
+      pick(b, 'cam', 'Camera', [{ v: 'roll', label: 'Chase (follows you round the rail)' }, { v: 'chase', label: 'Chase (world up)' }, { v: 'side', label: 'Trackside (see the humps)' }, { v: 'high', label: 'Overhead (see the course)' }], 'Follows you: the camera turns with you as you spin round the rail, so you stay on top of it and the floor, scenery and sky swing round instead. World up: the floor stays level and you watch yourself go round the rail.');
+      pick(b, 'simSpeed', 'Speed', [{ v: 1, label: '1× (game time)' }, { v: 0.5, label: '0.5× slow motion' }, { v: 0.25, label: '0.25× read the pump' }]);
+      sec(b, 'Course shape'); sliders(b, 'Scene Config'); return b; } },
+    { name: 'Game Config', build: () => { const b = document.createElement('div');
+      pick(b, 'owner', 'Ribbon', [{ v: 'own', label: 'Your own (friendly)' }, { v: 'enemy', label: 'An enemy’s (hostile)' }], 'The Urchin grinds 300 u/s on its own ribbon and 20 on an enemy’s.');
+      pick(b, 'crest', 'Crests', [{ v: 'latched', label: 'Latched (like the Urchin)' }, { v: 'fly', label: 'Throw you off past the pull' }], 'Latched: the rider never leaves the rail over a hump. Throw off: faster than √(pull × radius) over a hump and you fly, then land where the pull brings you back.');
+      pick(b, 'runLen', 'Score runs', [{ v: 20, label: '20 s' }, { v: 30, label: '30 s' }, { v: 60, label: '60 s' }]);
+      return b; } },
+    { name: 'AI Config', build: () => { const b = document.createElement('div');
+      pick(b, 'pilot', 'Who flies', [{ v: 'skilled', label: 'AI skilled' }, { v: 'rookie', label: 'AI rookie' }, { v: 'you', label: 'You' }], 'Touch any control to take over. The AI writes the same inputs a pad does.');
+      sliders(b, 'AI Config');
+      const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Skilled: leans onto the nearer side of each coming bend ~0.3 s early (under it, if crests can throw you) and centres each knee stroke on the load\u2019s peak and valley. Rookie: the same pilot, late by up to 0.16 s, with jittered pumps and a lean that wanders up to 50°. Both lab-only; the game has no pump AI.'; b.appendChild(p);
+      return b; } },
+    { name: 'Play Style Config', build: () => { const b = document.createElement('div');
+      pick(b, 'way', 'Way', WAYS.map((w) => ({ v: w.v, label: w.label + ' — ' + w.short })), () => wayOf().input);
+      sec(b, 'Per-way dials'); sliders(b, 'Play Style Config'); return b; } },
+    { name: 'Input', build: () => { const b = document.createElement('div');
+      pick(b, 'lean', 'Lean model', [{ v: 'free', label: 'Free roll (Urchin: attitude is yours)' }, { v: 'bead', label: 'Falls outward (balance it)' }, { v: 'auto', label: 'Auto-bank (hull leans in)' }], 'Free: the bend never moves you. Falls outward: a bend rolls you to its outside, as it would a bead on a wire; leaning in is a balance. Auto-bank: the hull rolls into each bend for you.');
+      pick(b, 'lookFrame', 'Look', [{ v: 'rail', label: 'Turns with the rail' }, { v: 'world', label: 'Fixed in the world (Urchin hull)' }], 'While attached, pitch and yaw only turn your look. Turns with the rail: your look is an offset from the rail ahead. Fixed in the world: like the Urchin hull, it stays pointed where you left it, so you turn it through each berm.');
+      const p = document.createElement('div'); p.className = 'hint';
+      p.innerHTML = '<b>Dual stick</b> (the game\u2019s mix): XDiff = knees (apart = bent), YDiff = roll round the rail, XSum / YSum = look, A = push. <b>Keys</b>: Space or mouse = knees bent · A / D roll · arrows look · F push.<br><b>Other ways</b> — A / D or ← → lean · Space / S / ↓ crouch (hold) · W / ↑ throttle (Urchin grind).<br><b>Pad</b>: left stick lean · right trigger knees (analog) · RT or RB = the Tap / Beat button · A = push.<br><b>Phone</b>: drag on the left half to lean, hold the right half to crouch, PUSH button.<br>The claude.ai viewer may block gamepads; open the repo file in Chrome for a pad.';
+      b.appendChild(p); sec(b, 'Feel'); sliders(b, 'Input'); return b; } },
+    { name: 'Vessel Config', build: () => { const b = document.createElement('div'); sliders(b, 'Vessel Config'); return b; } },
+  ];
+  let showDock = null;
+  function rebuildDock() { const cur = lsGet('lab:' + LAB.name + ':dock', DOCK[0].name); showDock(cur); }
+  showDock = makeTabs('dockTabs', 'dockBody', DOCK, 'lab:' + LAB.name + ':dock');
+
+  // ================= (11) THE DECISION LOG =================
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { const o = Object.assign({}, OPT); delete o._startSpeed; return { round: LAB.round, seed, options: o, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  const TOPICS = ['Dual stick: knees on XDiff', 'Push (A): how strong, how long', 'Look while attached', 'Which way', 'Lean: free roll or a deck limit', 'Crests: latched or thrown off', 'Motor or pure pump', 'Lean model', 'Enemy ribbons', 'General'];
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="pick"><label for="logTopic">Topic</label><select id="logTopic"></select></div><textarea id="logChoice" rows="2" placeholder="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus'), sel = box.querySelector('#logTopic');
+    for (const t of TOPICS) { const o = document.createElement('option'); o.textContent = t; sel.appendChild(o); }
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude at the start of the next round.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logChoice').value = wayOf().label + ' on ' + (COURSES.find((c) => c.v === OPT.course) || {}).label + '; lean ' + OPT.lean + ', crests ' + OPT.crest + (Object.keys(diffOnly()).length ? '; ' + JSON.stringify(diffOnly()) : '');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(sel.value, box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* no clipboard */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    if (!rows.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 3; td.className = 'hint'; td.textContent = 'No decisions yet. Fly a way, compare the scorecard, then record what you picked here.'; tr.appendChild(td); t.appendChild(tr); }
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  // ================= (12) RECORDS DOCK: ways, scorecard, decisions, about =================
+  function waysPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="law">Your speed changes with your extension or contraction against the curvature you feel: d(v²/2) = v² · bend-toward-you · d(knees). It is all about moving your mass toward the curve. Spun to the inside of a curve, extending moves you toward its centre; spun to the outside, contracting does, because the centre is across the rail. The two are the same stroke, and both gain. 90° round, your knees do nothing. Move IN while the curve is strongest and OUT where it is weakest. On a straight rail pumping earns nothing. The ring round the rail at your rider marks the curve\u2019s centre side, and the arrow on your rider points the way to move.</p><div class="ways"></div>';
+    const g = box.querySelector('.ways');
+    const CARDS = [
+      ['Knees (the designer\u2019s pick, 2026-10-16)', 'Ridden by the designer against Dual stick and preferred. The trigger is your knees and the stick is your lean, so the pilot has two jobs, as on a real pump track. Most skill, most expression. Shares the Urchin’s free roll: lean all the way round the rail and every bend can be a dip.'],
+      ['Dual stick', 'The Urchin\u2019s sticks with the throttle swapped for legs. XDiff is the knees: pull the sticks apart to bend, bring them together to stand. YDiff rolls you round the rail, the sums only turn your look. A pushes you off from a stop, and pressing it takes a thumb off a stick, so your knees half-straighten while you push, as on a real board.'],
+      ['Tap', 'One button: hold to crouch, let go to stand. The same physics as Knees, digital. Easier on a phone; loses the half-pump.'],
+      ['Beat', 'Hold through the humps, let go at the bottom of each dip for a kick sized by the load. Arcade and readable; the rhythm is the skill, the legs are not simulated.'],
+      ['Lean', 'The longboard carve: you only lean, and the hull bends its own knees. One stick. The skill is finding the dip and getting under it.'],
+      ['Grind + knees', 'Keeps the Urchin’s grind motor (300 u/s on your own ribbon) and lets pumping take you past it. The safest port: the Urchin stays the Urchin, pumping is the expert layer.'],
+      ['Coast · Urchin grind', 'The two baselines: the ability off, and the Urchin as it rides today.'],
+    ];
+    for (const [h, p] of CARDS) { const d = document.createElement('div'); d.className = 'way'; d.innerHTML = '<h3></h3><p></p>'; d.children[0].textContent = h; d.children[1].textContent = p; g.appendChild(d); }
+    return box;
+  }
+  function table(rows, cols, bestCols) {
+    const t = document.createElement('table');
+    t.innerHTML = '<tr>' + cols.map((c) => '<th class="' + (c.num ? 'num' : '') + '"></th>').join('') + '</tr>';
+    cols.forEach((c, i) => { t.rows[0].cells[i].textContent = c.label; t.rows[0].cells[i].title = c.tip || ''; });
+    const best = {};
+    for (const k of bestCols || []) best[k] = Math.max(...rows.filter((r) => !/Urchin|Coast/.test(r.way)).map((r) => r[k]));
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      for (const c of cols) { const td = document.createElement('td'); const v = r[c.key]; td.textContent = v == null ? '—' : typeof v === 'number' ? (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(c.dec == null ? 1 : c.dec)) : v; if (c.num) td.className = 'num'; if (best[c.key] != null && v === best[c.key]) td.classList.add('best'); if (c.warn && c.warn(v)) td.classList.add('bad'); tr.appendChild(td); }
+      t.appendChild(tr);
+    }
+    const wrap = document.createElement('div'); wrap.className = 'tablewrap'; wrap.appendChild(t); return wrap;
+  }
+  let lastRows = null, lastGrid = null;
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every way on this course</button> <button class="btn" id="runGrid">Score every course</button> <span class="hint" id="scoreNote">Headless, AI pilots, seeds 1–2, at 60 Hz.</span></p><div id="scoreOut"></div>';
+    const out = box.querySelector('#scoreOut'), note = box.querySelector('#scoreNote');
+    const COLS = [
+      { key: 'way', label: 'Way' },
+      { key: 'skilled', label: 'Skilled avg', num: true, tip: 'Average speed, skilled AI (u/s)' },
+      { key: 'rookie', label: 'Rookie avg', num: true, tip: 'Average speed, rookie AI (u/s)' },
+      { key: 'skilledEnd', label: 'End', num: true, tip: 'Skilled speed at the end of the run (u/s)' },
+      { key: 'fromCruise', label: 'From cruise', num: true, tip: 'Skilled average when latching on at the free-flight cruise (DefaultThrottleScaler)' },
+      { key: 'pump', label: 'Pump /s', num: true, dec: 2, tip: 'Speed the pumping itself added, per second (u/s²)' },
+      { key: 'perfect', label: 'Perfect %', num: true, tip: 'Skilled AI: share of knee strokes rated PERFECT (85% or more of what the best-placed stroke of the same length would earn)' },
+      { key: 't150', label: 'To 150 (s)', num: true, dec: 1, tip: 'Skilled AI: seconds from the latch-on speed (0 = a stop) to 150 u/s. — = never in the run' },
+      { key: 'pushes', label: 'Pushes /min', num: true, tip: 'Skilled AI: A-presses per minute. Once pumping carries you past the push top speed this falls to 0' },
+      { key: 'flatPump', label: 'Flat pump', num: true, dec: 2, tip: 'CONTROL: pumping on a straight rail. Must be ~0.', warn: (v) => Math.abs(v) > 0.05 },
+      { key: 'scrub', label: 'Scrub /s', num: true, dec: 2, tip: 'Speed lost to sideways load (not leaning in), per second' },
+      { key: 'flyoffs', label: 'Fly-offs /min', num: true, tip: 'Times thrown off a crest per minute (only when crests throw you)' },
+      { key: 'busy', label: 'Busy', num: true, dec: 2, tip: 'Input changes per second: how hard the pilot works' },
+    ];
+    const show = () => {
+      out.replaceChildren();
+      if (lastRows) out.appendChild(table(lastRows, COLS, ['skilled', 'rookie', 'fromCruise']));
+      if (lastGrid) {
+        const cols = [{ key: 'way', label: 'Way (skilled / rookie avg u/s)' }].concat(COURSES.map((c) => ({ key: c.v, label: c.label, num: true })));
+        const rows = lastGrid.map((r) => { const o = { way: r.way }; for (const c of COURSES) o[c.v] = r[c.v].toFixed(0) + ' / ' + r[c.v + ':rookie'].toFixed(0); return o; });
+        const h = document.createElement('div'); h.className = 'sec'; h.textContent = 'Every course'; out.appendChild(h); out.appendChild(table(rows, cols));
+      }
+    };
+    box.querySelector('#runBatch').onclick = () => { const t0 = performance.now(); lastRows = runBatch(); note.textContent = 'Done in ' + Math.round(performance.now() - t0) + ' ms. ' + (COURSES.find((c) => c.v === OPT.course) || {}).label + ', ' + OPT.runLen + ' s runs.'; show(); };
+    box.querySelector('#runGrid').onclick = () => { const t0 = performance.now(); lastGrid = runCourseGrid(); note.textContent = 'Every course in ' + Math.round(performance.now() - t0) + ' ms.'; show(); };
+    show();
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p></p><p class="hint"><b>What this lab does not model.</b> Only 1D prismscapes (trails); riding a 2D surface (the Urchin’s marble roll), where carving S-turns is the real longboard case, is the next round. The ribbons are stand-in bend functions, not laid trails. No free flight, no approach or latching, no Slip, no prism payoff (grow / steal / restore) and no spikes. No other vessels. The legs, hull, scenery and cameras are lab drawings; the scenery (pillars, prism clusters, crystals, gates, the floor grid) is there only to give you something to read speed and height against. Drag, pull, grip and every pp* number are lab proposals with no game field; only the numbers that name an Urchin asset are shipped. The CoM radius change is folded into the pumping law to first order. Frame time is not measured on a real GPU.</p><p class="hint"><b>Ideas not built yet</b>: an ollie (stand up hard on a crest to jump to another ribbon); pressing into the prismscape to dig your own dip (the Urchin’s cradle drape); a 2D sheet pump track.</p>';
+    box.firstChild.textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Ways', build: waysPanel }, { name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round;
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('restart').onclick = () => { reset(seed + 1); if (R3) R3.snapCam = true; };
+  $('letAi').onclick = () => { OPT.pilot = 'skilled'; saveOpt(); refreshPilotUI(); };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+
+  // ================= (13) LOOP + the test surface =================
+  function resize() {
+    const r = hudCanvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (hudCanvas.width !== w || hudCanvas.height !== h) { hudCanvas.width = w; hudCanvas.height = h; }
+    if (R3) { const sz = R3.renderer.getSize(new THREE.Vector2()); if (sz.x !== Math.round(r.width) || sz.y !== Math.round(r.height)) { R3.renderer.setSize(Math.max(1, Math.round(r.width)), Math.max(1, Math.round(r.height)), false); R3.camera.aspect = Math.max(1, r.width) / Math.max(1, r.height); R3.camera.updateProjectionMatrix(); } }
+  }
+  function render(dtReal) { const pose = riderPose(); if (R3) draw3D(R3, world, pose, dtReal); drawHUD(pose, dtReal); }
+  addEventListener('resize', resize);
+  function liveInput() { return OPT.pilot === 'you' ? readHuman() : aiInput(OPT.pilot === 'rookie' ? P.aiNoise : 0); }
+  let lastInput = null;
+  function stepLive(dt) {
+    lastInput = liveInput();
+    simStep(dt, lastInput);
+    world.trace.push([world.t, world.v]); while (world.trace.length && world.trace[0][0] < world.t - 10) world.trace.shift();
+  }
+  let manualClock = false, last = performance.now(), acc = 0;
+  function frame(now) {
+    const real = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize();
+      if (!paused) { acc += real * OPT.simSpeed; let n = 0; while (acc >= 1 / 60 && n < 8) { stepLive(1 / 60); acc -= 1 / 60; n++; } if (n === 8) acc = 0; }
+      render(real);
+    }
+    requestAnimationFrame(frame);
+  }
+  function hideStart() { $('startCard').hidden = true; lsSet('lab:' + LAB.name + ':started2', true); }
+  $('startCard').hidden = !!lsGet('lab:' + LAB.name + ':started2', false);
+  if (PLATFORM.device === 'phone') $('startKeys').textContent = 'Each half of the view is a thumbstick: drag them apart to bend your knees, together to stand; one up and one down rolls you round the rail. Tap PUSH (A) to push off from a stop.';
+  if (PLATFORM.device === 'phone' || matchMedia('(pointer: coarse)').matches) $('pushBtn').hidden = false;
+  $('ride').onclick = () => { takeOver(); hideStart(); };
+  $('watch').onclick = () => hideStart();
+  $('sound').onclick = () => { const on = sound.toggle(); $('sound').textContent = on ? 'Sound on' : 'Sound off'; $('sound').setAttribute('aria-pressed', String(on)); };
+  reset(); resize(); refreshDiff(); refreshPilotUI(); render(1 / 60); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, OPT, PLATFORM, WAYS, COURSES, _r3: R3,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || 1 / 60; n = n || 1; for (let i = 0; i < n; i++) stepLive(dt); resize(); render(dt); },
+    mix, sticksFor, reset: (sd) => { reset(sd); if (R3) R3.snapCam = true; }, score, runBatch, runCourseGrid, runOne, setParam, setOpt, record,
+    state: () => ({ t: world.t, seed, s: world.s, v: world.v, phi: world.phi, h: world.h, air: !!world.air, N: world.last.N, way: OPT.way, course: OPT.course }),
+  };
+  window.__pumpRiderLab = window.__lab;
+})();
+</script>
+</body>
+</html>

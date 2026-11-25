@@ -219,11 +219,12 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The wall's shape, fixed at placement from THIS vessel's elemental state (MASS is the
         /// Serpent's wall element: R_VesselActions/SERPENT_SEED_WALL.md). Read here, on the
-        /// per-vessel executor, because the SO is shared by every Serpent.
+        /// per-vessel executor, because the SO is shared by every Serpent. The REPLICATED Mass level, because
+        /// every peer builds its own copy of the wall and only the owner knows its local level.
         /// </summary>
         static SerpentWallAssembler.Snapshot SnapshotWallShape(SeedWallActionSO so, IVesselStatus status)
         {
-            float mass = ElementalScaling.Multiplier(
+            float mass = ElementalScaling.ReplicatedMultiplier(
                 status, Element.Mass,
                 atFull: so.MassSizeMultiplierAtFull,
                 minMul: so.MinMassSizeMultiplier);

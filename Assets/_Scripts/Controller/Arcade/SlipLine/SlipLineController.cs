@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>Every peer lays the same rails</b> from the broadcast rings (<see cref="SlipLineCourse.RailsFor"/> hashes
     /// each ring's exact axis, which the broadcast carries bit for bit), so nothing new is replicated.</para>
     /// </summary>
-    public class SlipLineController : GateRaceController, IPlayerSpawnLine, IHoneyguideRaceCoach
+    public partial class SlipLineController : GateRaceController, IPlayerSpawnLine, IHoneyguideRaceCoach
     {
         [Header("Slip Line")]
         [Tooltip("The prism every rail is laid from: the environment prism (SpawnablePrism). Authored by " +
@@ -100,6 +100,7 @@ namespace CosmicShore.Gameplay
             _crews.Clear();
             _plans.Clear();
             ClearRails();
+            ClearRuins();
             base.OnNetworkDespawn();
         }
 
@@ -119,6 +120,7 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearRails();
+            ClearRuins();
             _plans.Clear();
             var settings = SlipLineCourse.ForIntensity(Intensity);
             settings.RingCount = _course.Count;
@@ -147,8 +149,9 @@ namespace CosmicShore.Gameplay
                     if (prism) _railPrisms.Add(prism);
                 }
             }
+            LayRuins();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
-                $"[SlipLine] intensity {Intensity}: {_course.Count} rings, {_rails.Count} rails, {_railPrisms.Count} prisms.");
+                $"[SlipLine] intensity {Intensity}: {_course.Count} rings, {_rails.Count} rails, {_railPrisms.Count} prisms, {_ruinPrisms.Count} ruin prisms.");
         }
 
         void ClearRails()

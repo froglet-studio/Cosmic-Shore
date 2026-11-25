@@ -40,6 +40,10 @@ FIELDS = """  rule: {{fileID: 11400000, guid: {rule}, type: 2}}
   maxPlausibleSpeed: {speed}
   reportResyncSeconds: 3
 """ + FEATURES
+# The I4 garden ruins (SCARABRALLY.md "The ruins"): the prism they are laid in, the same SpawnablePrism Spearline's
+# seals and ruins use. scarabRuinDomains is left to the controller's initializer (Jade, Ruby, Gold).
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+RUIN_FIELDS = f"  scarabRuinPrismPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
 
 htr.author(dict(
     member="ScarabRally", display="Scarab Rally", hull="Scarab", class_id=lib.VESSEL_CLASS_ID["Scarab"],
@@ -47,6 +51,8 @@ htr.author(dict(
         "ScarabRallyController":   f"{MODE_DIR}/ScarabRallyController.cs",
         "ScarabRallyCourse":       f"{MODE_DIR}/ScarabRallyCourse.cs",
         "ScarabRallyCourseSource": f"{MODE_DIR}/ScarabRallyCourseSource.cs",
+        "ScarabRallyRuins":        f"{MODE_DIR}/ScarabRallyRuins.cs",
+        "ScarabRallyRuinsTests":   "Assets/_Scripts/Tests/Editor/ScarabRallyRuinsTests.cs",
         "ScarabRallyCourseTests":  "Assets/_Scripts/Tests/Editor/ScarabRallyCourseTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/SCARABRALLY.md",
@@ -57,6 +63,7 @@ htr.author(dict(
     # The detection clamp: the Scarab tops out at 324 u/s (Time 10) and its snap dash is a burst on top;
     # 1400 covers twice anything it flies, a ~47 u step at 60 fps - still under a respawn's jump.
     new_fields=FIELDS.format(rule="__RULE__", speed=1400),
+    new_field_lines=RUIN_FIELDS,
     max_speed=600,
     # 24 rings, an OPEN chain flown once (laps 1).
     target=24, laps=1, target_key="scarabRallyGateTarget", target_after="wrasseRunGateTarget",

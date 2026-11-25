@@ -154,6 +154,9 @@ namespace CosmicShore.Gameplay
         public float ImpactFlareRadius => impactFlareRadius;
         public float ShakeIntensity => shakeIntensity;
         public float ShakeDuration => shakeDuration;
+        /// <summary>The round breaks prisms in its cone, which every peer simulates: an AI's press must run on every peer (<see cref="ShipActionSO.AutopilotPressTravels"/>).</summary>
+        public override bool AutopilotPressTravels => true;
+
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<SniperShotActionExecutor>()?.Fire(this, vesselStatus);

@@ -68,6 +68,10 @@ SCRIPT_PATHS = {
     "GrizzlyTimeController.Kegs": f"{MODE_DIR}/GrizzlyTimeController.Kegs.cs",
     "GrizzlyTimeController.AI": f"{MODE_DIR}/GrizzlyTimeController.AI.cs",
     "GrizzlyTimeKegsTests":   "Assets/_Scripts/Tests/Editor/GrizzlyTimeKegsTests.cs",
+    # The I4 ruins (2026-11-24, GRIZZLYTIME.md section 0.2): Spearline's generator, cut back for the keg lanes.
+    "GrizzlyTimeRuins":       f"{MODE_DIR}/GrizzlyTimeRuins.cs",
+    "GrizzlyTimeController.Ruins": f"{MODE_DIR}/GrizzlyTimeController.Ruins.cs",
+    "GrizzlyTimeRuinsTests":  "Assets/_Scripts/Tests/Editor/GrizzlyTimeRuinsTests.cs",
 }
 HARNESS_DIR = "Tools/Build/grizzly_time_course_harness"
 
