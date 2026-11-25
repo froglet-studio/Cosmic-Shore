@@ -386,7 +386,7 @@ namespace CosmicShore.Tests
             var offered = VoyageRules.Board(saved, c, new[] { Hunter })[0];
             Assert.AreNotSame(s.Current, offered, "a record read back holds its own job");
             Assert.IsTrue(VoyageRules.SameJob(s.Current, offered), "the same job by what it is");
-            var copy = offered.MemberwiseCloneJob();
+            var copy = UnityEngine.JsonUtility.FromJson<VoyageJob>(UnityEngine.JsonUtility.ToJson(offered));
             copy.Difficulty = 7;
             Assert.IsTrue(VoyageRules.SameJob(offered, copy), "the voyage page's copy at another difficulty");
             Assert.IsFalse(VoyageRules.Take(s, c, offered), "the record at sea takes no job");
