@@ -390,6 +390,9 @@ namespace CosmicShore.Gameplay
             var state = VoyageStore.Load();
             if (state == null) return VoyageRules.NewGalaxy(content, home);
             VoyageRules.Resume(state, content, home, UniqueId.NowMs());
+            // Every voyage sets out from home (Shombith, 2026-11-25: no saving for now, Set sail restarts the level): a record
+            // left at sea (a waypoint, P13) or anchored at a far stop by an earlier build is brought home here.
+            if (state.AtSea || !state.IsHome()) VoyageRules.Abandon(state, content);
             return state;
         }
 
@@ -457,18 +460,9 @@ namespace CosmicShore.Gameplay
             var local = LocalVessel();
             if (local == null) return false;
 
-            // A voyage left at sea waits at its waypoint: its job, sailed again, picks up at the last world reached (P13).
-            // The job the launch names is a copy (read back from the save, or the voyage page's own), so it is matched by
-            // what it is, never by reference: a reference test never matched, and the waiting voyage blocked every launch.
-            if (_state.HasWaypoint() && VoyageRules.SameJob(job, _state.Current))
-            {
-                if (ResumeWaypoint(local, _state.Current)) return true;
-                CSDebug.LogWarning("[Voyage] The voyage waiting at its waypoint has no worlds left to sail - it is given up.");
-            }
-
-            // Still at sea from an earlier sitting (a voyage that waits at its waypoint while another job was picked, or a
-            // record left mid-leg): that voyage is given up so this one can sail. VoyageRules.Take refuses any job while the
-            // record is at sea, so keeping it would strand every launch, on every restart, behind the loading screen.
+            // Still at sea from an earlier sitting: that voyage is given up so this one can sail (no voyage is resumed for
+            // now, Shombith 2026-11-25). VoyageRules.Take refuses any job while the record is at sea, so keeping it would
+            // strand every launch, on every restart, behind the loading screen.
             if (_state.AtSea)
             {
                 CSDebug.LogWarning($"[Voyage] '{_state.Current?.Title}' was still out at sea from an earlier sitting - " +
@@ -1128,11 +1122,12 @@ namespace CosmicShore.Gameplay
         void EndAtStop()
         {
             bool atSea = _state.AtSea;
-            bool waits = atSea && !_following && _state.HasWaypoint();
-            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()), keepWaypoint: !_following);
+            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()), keepWaypoint: false);
+            // No voyage is kept for later (Shombith, 2026-11-25: "for now there is no saving, if they leave they leave. Set
+            // sail restarts the level"): the squad is back at home, and the next Set sail starts a fresh voyage.
+            if (!_following) VoyageRules.Abandon(_state, Content);
             SaveState();
-            if (waits) { if (!string.IsNullOrEmpty(Lines.WaypointSaved)) Banner(Lines.WaypointSaved); }
-            else if (atSea) Banner(Lines.Failed);
+            if (atSea) Banner(Lines.Failed);
         }
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, a relic with its authored name and
