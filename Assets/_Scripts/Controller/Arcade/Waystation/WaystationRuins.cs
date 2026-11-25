@@ -50,9 +50,18 @@ namespace CosmicShore.Gameplay
         /// <summary>A leg whose ruin was cut down to fewer prisms than this carries none: it would not read as a ruin.</summary>
         public const int MinParts = 12;
 
+        /// <summary>A gap between two rings this long (u) or longer is crossed by the Drop (the controller's
+        /// aiFoldMinDistance, and where a person drops too): its clear lane is the straight chord.</summary>
+        public const float DropGap = 700f;
+
+        /// <summary>How finely the autopilot reads a leg's flown line when it steers back to it.</summary>
+        const int LaneSamples = 32;
+
         /// <summary>
         /// The line a pilot flies, as gates: every course ring, and before each tower ring its press point twice (radius
         /// 0), first on the heading the pilot arrives on and then on the fall line. Both tower legs are then straight.
+        /// A gap of <see cref="DropGap"/> or more between two rings is crossed by the Drop, a straight fall, so each of its
+        /// ends is given twice too (radius 0, on the chord) and the lane the ruins keep is the chord, not a curve.
         /// </summary>
         public static void RacingLine(IReadOnlyList<RaceGate> course, int intensity, List<RaceGate> into)
         {
@@ -65,6 +74,14 @@ namespace CosmicShore.Gameplay
                     Vector3 press = WaystationTower.PressOf(course, i, s);
                     into.Add(new RaceGate(press, course[i - 1].Axis, 0f));
                     into.Add(new RaceGate(press, course[i].Axis, 0f));
+                }
+                bool longGap = i >= 1 && !WaystationTower.IsTowerRing(course[i], s)
+                               && (course[i].Position - course[i - 1].Position).magnitude >= DropGap;
+                if (longGap)
+                {
+                    Vector3 chord = (course[i].Position - course[i - 1].Position).normalized;
+                    into.Add(new RaceGate(course[i - 1].Position, chord, 0f));
+                    into.Add(new RaceGate(course[i].Position, chord, 0f));
                 }
                 into.Add(course[i]);
             }
@@ -215,6 +232,111 @@ namespace CosmicShore.Gameplay
             var lanterns = new List<WaystationLantern>(512);
             WaystationTower.Lanterns(course, intensity, lanterns);
             foreach (var lantern in lanterns) into.Add(Ball(lantern.Position, Reach(lantern.Scale)));
+        }
+
+        // ── The autopilot and the ruins (2026-11-25) ─────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The first ruin prism the straight path <paramref name="from"/> to <paramref name="to"/> passes within
+        /// <paramref name="clearance"/> of its centre, or -1. Prisms behind the start or past the end do not count.
+        /// </summary>
+        public static int FirstOnPath(IReadOnlyList<Vector3> prisms, Vector3 from, Vector3 to, float clearance)
+        {
+            Vector3 path = to - from;
+            float length = path.magnitude;
+            if (prisms == null || length < 1e-3f) return -1;
+            Vector3 dir = path / length;
+            int first = -1;
+            float firstAlong = float.MaxValue;
+            float clear2 = clearance * clearance;
+            for (int i = 0; i < prisms.Count; i++)
+            {
+                Vector3 d = prisms[i] - from;
+                float along = Vector3.Dot(d, dir);
+                if (along < 0f || along > length || along >= firstAlong) continue;
+                if ((d - dir * along).sqrMagnitude >= clear2) continue;
+                first = i;
+                firstAlong = along;
+            }
+            return first;
+        }
+
+        /// <summary>
+        /// The leg of <paramref name="line"/> (<see cref="RacingLine"/>) a pilot flies first on its way to course ring
+        /// <paramref name="ring"/>: the cruise to the press point on a tower, the chord on a long gap, else ring to ring.
+        /// False for the first ring (no leg leads to it) and past the course's end.
+        /// </summary>
+        public static bool LaneLegTo(IReadOnlyList<RaceGate> line, int ring, out RaceGate legStart, out RaceGate legEnd)
+        {
+            legStart = legEnd = default;
+            if (line == null || ring < 1) return false;
+            int rings = 0;
+            for (int j = 0; j < line.Count; j++)
+            {
+                if (line[j].Radius <= 0f) continue;
+                if (rings++ != ring - 1) continue;
+                for (int k = j; k + 1 < line.Count; k++)
+                {
+                    if ((line[k + 1].Position - line[k].Position).sqrMagnitude < 1e-4f)
+                    {
+                        if (line[k + 1].Radius > 0f) return false;
+                        continue;
+                    }
+                    legStart = line[k];
+                    legEnd = line[k + 1];
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Where an autopilot at <paramref name="hull"/> steers when a ruin stands between it and its
+        /// <paramref name="goal"/>: back into the lane the ruins keep clear, the flown line of the leg it is on
+        /// (<paramref name="legStart"/> to <paramref name="legEnd"/>, two gates of <see cref="RacingLine"/>; clear by
+        /// <see cref="SpearlineRuins.LaneRadius"/>). It tries points on that line from <paramref name="lookahead"/> ahead
+        /// of the hull back to abreast of it and takes the first it can reach in a straight line; with none, it steps
+        /// round the blocking prism on the side away from it. False when the next <paramref name="lookahead"/> of the
+        /// way to the goal is clear, and the caller's own steering stands. Everything in one frame.
+        /// </summary>
+        public static bool TrySteerRound(IReadOnlyList<Vector3> prisms, Vector3 hull, Vector3 goal, in RaceGate legStart,
+                                         in RaceGate legEnd, float clearance, float lookahead, out Vector3 target)
+        {
+            target = goal;
+            Vector3 toGoal = goal - hull;
+            float distance = toGoal.magnitude;
+            if (distance < 1e-3f) return false;
+            Vector3 dir = toGoal / distance;
+            int blocking = FirstOnPath(prisms, hull, hull + dir * Mathf.Min(distance, lookahead), clearance);
+            if (blocking < 0) return false;
+
+            float legLength = (legEnd.Position - legStart.Position).magnitude;
+            if (legLength > 1e-3f)
+            {
+                int abreast = 0;
+                float best = float.MaxValue;
+                for (int k = 0; k <= LaneSamples; k++)
+                {
+                    float d = (SpearlineRuins.LinePoint(legStart, legEnd, k / (float)LaneSamples) - hull).sqrMagnitude;
+                    if (d < best) { best = d; abreast = k; }
+                }
+                int ahead = Mathf.Max(1, Mathf.CeilToInt(lookahead * LaneSamples / legLength));
+                for (int step = 2; step >= 0; step--)
+                {
+                    int k = Mathf.Min(LaneSamples, abreast + (ahead * step + 1) / 2);
+                    Vector3 onLane = SpearlineRuins.LinePoint(legStart, legEnd, k / (float)LaneSamples);
+                    if ((onLane - hull).sqrMagnitude < 1f) continue;
+                    if (FirstOnPath(prisms, hull, onLane, clearance) >= 0) continue;
+                    target = onLane;
+                    return true;
+                }
+            }
+            Vector3 toPrism = prisms[blocking] - hull;
+            Vector3 aside = toPrism - dir * Vector3.Dot(toPrism, dir);
+            Vector3 away = aside.sqrMagnitude > 1e-4f ? -aside.normalized : RaceCourseGeometry.Perpendicular(dir);
+            target = prisms[blocking] + away * (clearance * 2f);
+            return true;
         }
 
         static WaystationRuinObstacle Ball(Vector3 p, float reach) => new(p, reach);

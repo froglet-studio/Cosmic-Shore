@@ -288,12 +288,17 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
-## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, NOT RUN IN EDITOR)
+## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, THREE I4 AI RACES IN THE EDITOR)
 
-Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"): one to three
-ruins a course, in Jade, Ruby and Gold. Run headless: `Tools/Build/waystation_tower_harness/run_tests.sh --self-test`
-(30 tests pass, the three ruins negative controls fire).
+Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"), in Jade,
+Ruby and Gold. Run headless: `Tools/Build/waystation_tower_harness/run_tests.sh --self-test` (33 tests pass, the four
+ruins negative controls fire).
 
+- [x] The AI fix (2026-11-25, drop gaps laid straight, no Drop through a ruin, steer back to the clear lane): it
+      compiled in Yash's open editor (`recompile`, no errors), `WaystationRuinsTests` 11 of 11 pass there, and one I4
+      race of three Legendary bots finished in 226 s with no hull within 12 u of a ruin prism and none broken. Before
+      the fix, two races: 214 s and 245 s, two ruin strikes in the one that was sampled. Each race is another course.
+- [ ] More I4 races: one race after the fix is not a measure of the AI's times or of how often it still touches a ruin.
 - [x] It compiles (2026-11-25): Yash's open editor compiled `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` at
       03:54, after every ruins source and the latest `SpearlineRuins.cs`, and both DLLs carry the ruins types and
       `WaystationRuinsTests`; Unity writes them only on a clean compile.
