@@ -27216,3 +27216,15 @@ Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section
 - [ ] In Play mode, start the mode smoke test from the command line or the Unity CLI
       (`CosmicShore.Editor.ModeSmokeLauncher.Run`): the console says "[ModeSmoke] cannot start: the editor is in Play
       mode: leave Play mode first", with no exception, and the offline preference is unchanged (`c7f4c53311`).
+
+## Photic is the default colour set again (2026-11-25)
+
+Shombith: "the default color set in the game should be photic". `ThemeManagerDataContainer.ColorSet`, `ThemeManager`'s
+own field and the menu prefabs' fallback palettes (ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal)
+now name `PhoticColorSetSO`; the generated editor theme, UI tokens and analytics console themes were re-written.
+Not run in the Unity editor and unity_refcompile did not run (no .NET SDK in the session); the C# change is one comment
+and one generated string constant. Checked by the generators' `--check` gates only.
+
+- [ ] Clear PlayerPrefs (or a fresh install) and boot: the prisms, trails and HUD wear Photic, not Nocturne.
+- [ ] Profile > colour sets says "Wearing Photic"; picking Nocturne still works and survives a restart.
+- [ ] With Nocturne picked, the Ark, Codex and Configure screens follow Nocturne (their own Photic palette is only the fallback).

@@ -12,19 +12,22 @@ actual defect. Read §3 before touching any `*BlockColor` field.
 
 | | |
 |---|---|
-| Active asset | `Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset` (guid `116ff08ebc0c4e6db955bab003a86ce4`), the default since 2026-11-03 |
+| Active asset | `Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset` (guid `8d1c1bdcb636a424d9c54fbd1afc952f`), the default again since 2026-11-25 (Shombith: "the default color set in the game should be photic") |
 | Wired at | `ThemeManagerDataContainer.asset` → `ColorSet`, and directly in `ThemeManager`, `ArkView`, `CodexView`, `ConfigureDomainColumn` and `ConfigureSeatPedestal` |
-| Written by | `Tools/Build/author_colour_set_assets.py`, from `Docs/VesselModels/colour_sets.json` and the tuning in Photic. Never hand-edit it; `--check` is the drift gate. |
+| Written by | Photic is the tuning source the other sets are derived from (`Tools/Build/author_colour_set_assets.py`, from `Docs/VesselModels/colour_sets.json`). |
 | Consumer | `ThemeManager.GenerateDomainMaterialSet` (per-domain material set) + `GameToastAPI.ColorSet` (domain name tinting) |
 
-**`PhoticColorSetSO`** (guid `8d1c1bdcb636a424d9c54fbd1afc952f`; named `OriginalColorSetSO` until 2026-11-03) was the
-default until then. It is no longer wired to the game, but it is still load-bearing: every number this doc quotes as
-"shipped" or "authored" is Photic's, Nocturne's fields take their brightness, alpha and tier whiteness from it, and
-`colour_domains.py`, `kite_mote_colors.py`, `vessel_colors.py`, the vessel studio's `domain_colors.py` and
-`render_card_backgrounds.py` still read it. So a tuning edit goes into Photic, then re-run the writer to carry it into
-the sets. A hue belongs in `colour_sets.json`.
+A player who never picked a set, or whose saved pick is gone or locked, wears Photic (`ThemeManager.Awake` falls back to
+the container's `ColorSet`). A player who picked Nocturne in the Profile keeps it.
 
-Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
+**`NocturneColorSetSO`** (guid `116ff08ebc0c4e6db955bab003a86ce4`) was the default from 2026-11-03 to 2026-11-25. It is
+still in the catalog and pickable. **`PhoticColorSetSO`** (named `OriginalColorSetSO` until 2026-11-03) is load-bearing
+beyond being worn: every number this doc quotes as "shipped" or "authored" is Photic's, Nocturne's fields take their
+brightness, alpha and tier whiteness from it, and `colour_domains.py`, `kite_mote_colors.py`, `vessel_colors.py`, the
+vessel studio's `domain_colors.py` and `render_card_backgrounds.py` read it. So a tuning edit goes into Photic, then
+re-run the writer to carry it into the sets. A hue belongs in `colour_sets.json`.
+
+Effects of the 2026-11-03 switch to Nocturne, measured then (the 2026-11-25 return to Photic undoes the first two for players who did not pick Nocturne):
 
 - **HUD shielded signal.** `GetShieldedSignalColor` reads the shielded FACE, so it now paints Jade `#552345`, Ruby
   `#385060` and Gold `#53416C` (HSV value 0.33-0.42, against Photic's 0.60-0.73). The Squirrel, Angler and Butterfly HUDs
