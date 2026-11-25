@@ -26709,3 +26709,15 @@ Shuffle beside Back; Configure in Rev 142 A's layout with the Shelf tiles, and N
 - [ ] Navigate: the preview grows to fill the screen while the rest fades, then the player is flying at the target.
 - [ ] Open the Toy Box again after a Navigate: Configure opens at its normal layout (the dive was put back).
 - [ ] Phone (match height): the window scales whole and nothing overlaps.
+
+## Photic is the default colour set again (2026-11-25)
+
+Shombith: "the default color set in the game should be photic". `ThemeManagerDataContainer.ColorSet`, `ThemeManager`'s
+own field and the menu prefabs' fallback palettes (ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal)
+now name `PhoticColorSetSO`; the generated editor theme, UI tokens and analytics console themes were re-written.
+Not run in the Unity editor and unity_refcompile did not run (no .NET SDK in the session); the C# change is one comment
+and one generated string constant. Checked by the generators' `--check` gates only.
+
+- [ ] Clear PlayerPrefs (or a fresh install) and boot: the prisms, trails and HUD wear Photic, not Nocturne.
+- [ ] Profile > colour sets says "Wearing Photic"; picking Nocturne still works and survives a restart.
+- [ ] With Nocturne picked, the Ark, Codex and Configure screens follow Nocturne (their own Photic palette is only the fallback).
