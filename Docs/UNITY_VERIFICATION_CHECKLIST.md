@@ -327,8 +327,8 @@ frame 45 ms, no frame over 50 ms).
   (under the 100 fps target from minute 3). Frames over 50 ms: 4 in 15 minutes (worst 215 ms at minute 13, not
   caught by a capture; 77 ms at minute 6). `LightFauna.Tick.PrismScan` worst call 1.2 ms in minute 1, 26.8 ms in
   minute 6, 3.5 to 9.8 ms after; `LightFauna.Feed` worst 2.6 ms in minute 1, 27.3 ms in minute 6. The cell fills:
-  entities 9,733 to 24,188, memory 775 to 974 MB. Data: `A:\CosmicShoreBuildench_2026-11-20\phonebench_lf26a_*.jsonl`,
-  `PerfRuns\diag_lf26a`.
+  entities 9,733 to 24,188, memory 775 to 974 MB. Data: `A:/CosmicShoreBuild/bench_2026-11-20/phonebench_lf26a_*.jsonl`,
+  `PerfRuns/diag_lf26a`.
 - The measuring session ended the editor once (00:42) by switching its Profiler on from an `eval`
   (`profiling::Profiler::EmitUIEvents`); the rule above forbids it.
 
