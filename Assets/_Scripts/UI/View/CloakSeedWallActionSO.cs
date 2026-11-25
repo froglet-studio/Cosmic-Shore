@@ -52,6 +52,9 @@ namespace CosmicShore.UI
 
         public float CooldownSeconds => cooldownSeconds;
 
+        /// <summary>The cloak lays a wall of prisms: an AI's press must run on every peer (<see cref="ShipActionSO.AutopilotPressTravels"/>).</summary>
+        public override bool AutopilotPressTravels => true;
+
         /// <summary>
         /// Cloak — UNLESS the pilot is looking down the scope, in which case this trigger belongs
         /// to the sniper shot instead (R_VesselActions/SERPENT_SNIPER_SCOPE.md).
