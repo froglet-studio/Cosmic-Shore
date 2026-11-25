@@ -341,7 +341,7 @@
      "state": "built",
      "by": "Claude",
      "date": "2026-11-25",
-     "evidence": "Sword hand trained 2026-11-19 on the Brood Rush volume books in Palisade and Cleave together (PALISADE.md 3.1); those books do not hold arena prisms, so Cleave's own score (prisms destroyed, time to the target) is unmeasured on every rung. 2026-11-25: the AI turns for its team's I3 Space crystals (CleaveController, CleaveLadderTests); compiled outside the editor, not run. CLEAVE.md 'Where Cleave stands'"
+     "evidence": "Flown in the Unity editor 2026-11-25 (ModeSmokeLauncher, Legendary on all 4 seats, time x4, one seed): every seat moved and every rung ended with a winner, I1-I4 465/408/323/307 game s, about 4x the ~90 s aim. The 2026-11-19 sword-hand training scored volume books that hold no arena prisms. Holding stations to arrival was tried and failed (>600 s). CLEAVE.md 'Where Cleave stands'"
     }
    },
    "Charge": {

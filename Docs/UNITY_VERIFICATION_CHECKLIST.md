@@ -27204,16 +27204,18 @@ not compiled: no Unity, Amoebius or reference compile ran. `author_palisade_asse
       On the model the afterimages are about 22% of the score at I1 and a third at I2 (PALISADE.md section 5).
 - [ ] A person's judgment: are I1-I4 four different rounds, and is I4's grazing fair to the team that is behind?
 
-## Cleave: the Swordfish's Space game (2026-11-25, Yash, COMPILED OUTSIDE THE EDITOR, NEVER RUN)
+## Cleave: the Swordfish's Space game (2026-11-25, Yash, COMPILED AND TESTED IN THE EDITOR, AI RAN EVERY RUNG, NOT FLOWN BY A PERSON)
 
-`Assets/_Scripts/Controller/Arcade/CLEAVE.md` ("Where Cleave stands"). The 2026-11-25 change: the I3 and I4 team Space
+`Assets/_Scripts/Controller/Arcade/CLEAVE.md` ("Where Cleave stands"). The 2026-11-25 changes: the I3 and I4 team Space
 crystals are laid inside the arena (`CleaveController.CollectLadderCrystalPoints`; I3 in the cage's heart), the AI
-turns for its team's crystal on one strike in three, and `CleaveLadderTests` (10 tests). The runtime and editor
-assemblies compile with Unity's Roslyn and references outside the editor; no test ran and nothing was played.
-`author_cleave_assets.py --check` and `cleave_budget.py` pass. No person or AI has flown any rung since the Swordfish
-took the mode (2026-11-07), and the older list in CLEAVE.md ("In-editor verification") is still open too.
+turns for its team's crystal on one strike in three, `CleaveLadderTests` (10 tests), the card seats exactly 4, and a
+fauna fix (`Boid.Initialize` seeds the turn target; I4 logged 8 `Quaternion.Lerp` assertions without it).
+`author_cleave_assets.py --check` and `cleave_budget.py` pass. The mode smoke test flew every rung with the Legendary
+AI on all 4 seats (time x4, one seed): every seat moved and every match ended with a winner, in 465 / 408 / 323 /
+307 game seconds (I1-I4), about four times the ~90 s target. The older list in CLEAVE.md ("In-editor verification")
+is still open too.
 
-- [ ] The project compiles in the editor and `CleaveLadderTests` pass.
+- [x] The project compiles in the editor and `CleaveLadderTests` pass (10/10, 2026-11-25).
 - [ ] I1 (Panes), 2 teams: every seat is a Swordfish, the bill is at rest, the goal row says 950, a mullion run is
       the best cut. Cutting a prism in your own team's colour does not score; any other colour does.
 - [ ] I2 (Swell): every hull starts at Space 5. The bill is visibly longer than at I1 and the HUD's Space card shows it.
@@ -27223,10 +27225,13 @@ took the mode (2026-11-07), and the older list in CLEAVE.md ("In-editor verifica
 - [ ] I4 (Twistbands): the team crystals sit among the bands, and Space fauna hatch in the cell's colour. Do they
       eat enough of the bands to starve a team of its 1,000? Do they crowd the frame rate (16,423 prisms plus 23
       creatures)?
-- [ ] AI seats at I1-I4, one match each with the AI on every seat: does a team reach its target, and in how long? On
-      I1 and I2 does an AI cross the 2,160 arena or meander (a new station every 2 s)? On I3 does an AI turn into
-      the cage for its team's crystal and come back out, with none left circling one?
-- [ ] 9 vessels, 3 teams: the frame rate at I4, and the spawn ring seats nine without overlap.
+- [x] AI seats at I1-I4, one match each with the AI on every seat: a team reaches its target on every rung (times
+      above). Holding each station until arrival made every rung run past 600 s, so it was reverted.
+- [ ] Watch an AI at I1 and I2: does it cross the 2,160 arena or meander at the edge (a new station every 2 s)? At
+      I3, does it turn into the cage for its team's crystal and come back out, with none left circling one?
+- [ ] A person's call on pace: the AI takes 307-465 s against a ~90 s aim, and the dense rungs (I3, I4) finish
+      faster than the open ones. Should the AI cut faster (step 3), or the targets come down?
+- [ ] 4 seats, 2v2 and 2/1/1: the frame rate at I4, and the spawn ring seats four without overlap.
 - [ ] A person's judgment (the fun card): is cutting with the bill the fun, and does a longer bill (I2, a crystal at
       I3) feel like the reason you win? Are the four rungs four different rounds, each harder than the last? Are
       950 / 950 / 1,000 / 1,000 near 90 s for an experienced pilot?

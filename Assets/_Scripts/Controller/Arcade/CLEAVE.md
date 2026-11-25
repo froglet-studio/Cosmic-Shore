@@ -19,7 +19,8 @@ Where this section and the older text below disagree, this section is right.
 | I4 | The Twistbands (roll the blade), radius 720 | 1,000 | Space fauna in the cell's colour (`Resources/ElementLadderFauna`: shark, piranha, brittle star, tadpole, 23 live at most), and the team crystals through the bands (216-612) |
 
 - **Targets are 950 / 950 / 1,000 / 1,000** since 2026-10-26 (`cleave_budget.TARGET_BY_INTENSITY`; a solo human took
-  152.7 s to clear 1,500 on rung 4). The 1,200 / 1,500 figures below are history. The card seats up to 9, 3 a team.
+  152.7 s to clear 1,500 on rung 4). The 1,200 / 1,500 figures below are history. The card seats exactly 4 (Yash, 2026-11-25: every Swordfish game, for now; it was up to 9, 3 a team), in 2 or 3
+  teams by the launch panel's pick: 2v2 or 2/1/1.
 - **A prism in your own team's colour does not score** (`StatsManager.IsFriendlyEnvironmentPrism`). The arenas are
   painted in the domain colours, so about a quarter to a third of the mass is worth nothing to each team. The text
   below that says arena mass is hostile "whatever colour it wears" is stale.
@@ -36,13 +37,31 @@ Where this section and the older text below disagree, this section is right.
   super-shielded seam on I3 or I4 would make Space 5's upgrade part of the game; it is an arena change nobody has
   flown, so it waits for a person's yes.
 
-**The AI, honestly.** The 2026-11-19 sword-hand training ("The sword hand, trained" below) scored the Brood Rush volume
-books, and those books do not hold arena prisms (`StatsManager.PrismDestroyed` returns before the books when the prism
-has no rostered owner). So the numbers there are trail and afterimage volume, not Cleave's score. **Nobody has measured
-an AI seat's prisms destroyed or its time to the target on any rung.** The steering has one more open question: a new
-station is picked every 2 s whether or not the hull arrived, and a crossing of the 2,160 arenas takes longer than
-that, so on I1 and I2 the AI may meander rather than cross. Watch it before tuning it (Plan step: `space-arcade`,
-`Docs/AI_SYSTEM/AI_PLAN.md`).
+**The AI, measured (2026-11-25, in the Unity editor).** The 2026-11-19 sword-hand training ("The sword hand, trained"
+below) scored the Brood Rush volume books, and those books do not hold arena prisms (`StatsManager.PrismDestroyed`
+returns before the books when the prism has no rostered owner), so its numbers are trail and afterimage volume, not
+Cleave's score. The mode smoke test (`ModeSmokeLauncher`, Legendary AI on every seat, time x4, one seed, offline) then
+flew every rung:
+
+| Seats | I1 | I2 | I3 | I4 |
+|---|---:|---:|---:|---:|
+| 3 (3 teams of 1) | 372 s | - | - | - |
+| 4 (3 teams: 2/1/1) | 465 s | 408 s | 323 s | 307 s |
+
+Every seat moved and every match ended with a winner, so **the AI plays all four rungs and finishes**. But it is about
+four times slower than the ~90 s the targets aim at, and slower than a person (152.7 s for 1,500 on I4, solo, on the
+old target). The rungs DO get faster as the arena gets denser (I1 slowest), which is the reverse of what a
+difficulty ladder wants from match length.
+
+**One steering fix was tried and failed.** Holding each station until the AI arrived (instead of picking a new one
+every 2 s) made all four rungs run past 600 game seconds without a winner, so it was reverted: the 2 s beat is
+better than it looks. The pace is open, and it is a step-3 question (Plan step: `space-arcade`,
+`Docs/AI_SYSTEM/AI_PLAN.md`): whether the AI should cut faster or the targets should come down is for a person who has
+flown a rung to decide, since the targets were set from a person's run.
+
+**I4 logged 8 errors from the fauna** (`Boid.Update`: `Quaternion.Lerp` toward an unset, all-zero rotation before a
+new creature's first steering tick). Fixed in `Boid.Initialize` (seed the turn target with the spawn rotation); the
+re-run of I4 logged no match errors.
 
 **The Mass-Space merge** (`Docs/ArcadeRestructure/PLAN.md`, Garrett 2026-11-17): Cleave and Palisade are to become ONE
 Swordfish Mass-Space game on Brood Rush's rule (fauna born under your nucleus claim score your team; VC + VD on the
@@ -53,8 +72,10 @@ the AI keeps its value, work on the scoring and end-game does not.
 
 **Verified 2026-11-25:** `author_cleave_assets.py --check` (37 files) and `cleave_budget.py` pass (on Windows only with
 CRLF normalised: the source hashes are of LF files); the runtime and editor assemblies compile with Unity's Roslyn and
-references outside the editor. **Not verified:** nothing was run in the editor, `CleaveLadderTests` has not been run,
-and no AI or person has flown any rung since the Swordfish took the mode. The list is in
+references outside the editor; the project compiles in the open editor and `CleaveLadderTests` (10) pass there; an
+all-AI match ran on every rung (the table above). **Not verified:** no person has flown any rung since the Swordfish
+took the mode; nobody has watched the AI (only its times are measured); one seed per rung; the team crystals and the
+4-seat card were not looked at on screen. The list is in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Cleave: the Swordfish's Space game").
 
 > **Naming.** `GameModes.Cleave = 39` is the code/data/enum identity. The mode has been renamed
