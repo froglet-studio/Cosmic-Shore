@@ -35,6 +35,9 @@ namespace CosmicShore.Gameplay
     public class BuilderColonyFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation,
         ISpeciesDataOverride
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Builder Colony")]
         [Tooltip("Species, numbers and look (Docs/BUILDERS_AND_THIEVES.md). Authored by Tools/Build/author_builders.py.")]
         [SerializeField] BuilderColonyConfigSO config;

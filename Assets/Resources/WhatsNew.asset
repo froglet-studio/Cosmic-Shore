@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18b1eaea365347bea902e779d17ff988, type: 3}
+  m_Name: WhatsNew
+  m_EditorClassIdentifier: 
+  eyebrow: Cosmic Shore
+  title: What's new
+  newTag: New
+  featuresHeading: In this update
+  alsoHeading: Also in this update
+  versionLine: '{version}  -  {date}'
+  closeLabel: Close
+  closeKey: B
+  buttonKey: A
+  updates:
+  - Id: '0.3'
+    Version: Update 0.3
+    Name: Voyages
+    Date: November 2026
+    Line: Take your crew aboard the Ark and sail the HyperSea.
+    Art: {fileID: 0}
+    Features:
+    - Title: Take a job
+      Line: 'Your pilots bring you work: bounty hunts, couriers, raids and the Leviathan.'
+    - Title: Rival crews
+      Line: Black Tide and other crews take the same jobs. Get there first.
+    - Title: Sagas and relics
+      Line: Follow a saga to its end and bring home a relic, like the Lantern of Oriel.
+    Also:
+    - A new voyage HUD, the same on PC, phone and controller.
+    - The Ark no longer waits at a stop forever.
+    - Escort wingmates keep their target after a pilot swap.
+    Button: 1
+    ButtonLabel: Set sail

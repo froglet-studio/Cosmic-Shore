@@ -12,7 +12,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbd60402e57555b42b6deb16a8ff7759, type: 3}
   m_Name: GrizzlyFlamethrowerAction
   m_EditorClassIdentifier: 
-  range: 60
-  coneHalfAngle: 25
+  range: 55
+  minRange: 22
+  minSpreadFraction: 0.6
+  clawBurnRadius: 2
   igniteTicksPerSecond: 4
   ignitesPerTick: 3
+  sliceEnabled: 1
+  slicesPerFrame: 6
+  sliceIgniteRadius: 12
+  sliceDebrisRestitution: 0.5
+  sliceDebrisSpeedLimit: 200
+  sliceEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sideOffset: 6
+  noseOffset: 4
+  splayDegrees: 6
+  tiltUpDegrees: 5
+  cellSeconds: 3
+  largeFlameDrainMultiplier: 1.5
+  cellRechargeSeconds: 2
+  cellRechargeDelay: 0.25
+  whipsPerSide: 4
+  whipSpreadDegrees: 7
+  whipHook: 0.12
+  whipRigidity: 0.8
+  whipLinks: 10
+  whipLooseWave: 180
+  whipRigidWave: 2500
+  whipLooseDamping: 0.4
+  whipRigidDamping: 14
+  whipPose: 1600
+  whipRenderSubdivisions: 4
+  whipWidth: 2
+  whipMaterial: {fileID: 2100000, guid: 02033cc2904f4f25bf3b6888ce3c98f9, type: 2}
+  whipBodyColor: {r: 0.25, g: 0.02, b: 0.02, a: 1}
+  whipRimColor: {r: 1, g: 0.12, b: 0.08, a: 1}
+  whipEmptyBrightness: 0.25
+  energyIndex: 0
+  energyPerIgnite:
+    Enabled: 1
+    Value: 0.01
+    Min: 0.01
+    Max: 0.025
+    element: 2
+    UseFloor: 1
+    Floor: 0.005

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.body{font-size:18px;line-height:1.5;color:#B8C0F0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.edge{box-shadow:inset 0 0 0 1px #434C89}
+.seg{box-sizing:border-box;height:44px;padding:0 18px;border:0;cursor:pointer;background:rgba(0,4,31,.78);color:#747BAD;box-shadow:inset 0 0 0 1px #434C89;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;display:inline-flex;align-items:center;gap:10px}
+.seg[aria-pressed=true]{color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD,inset 0 -2px 0 #E6E9FF}
+.seg:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* one geometry for every option: a round avatar, its ring on the edge, the halo centred at 1.3x */
+.av{position:relative;width:var(--d);height:var(--d);flex:none}
+.av>*{position:absolute;box-sizing:border-box;border-radius:50%;pointer-events:none}
+.face{inset:0;width:100%;height:100%;object-fit:cover}
+.halo{width:calc(var(--d) * 1.3);height:calc(var(--d) * 1.3);left:calc(var(--d) * -0.15);top:calc(var(--d) * -0.15);background:radial-gradient(closest-side,var(--c) 0,var(--c) 76.9%,color-mix(in srgb,var(--c) 38%,transparent) 87.3%,transparent 100%);opacity:.8}
+.base{inset:0}
+.guide{display:none}
+.guides .guide{display:block;border:1px dashed rgba(230,233,255,.7)}
+.g1{inset:0}
+.g2{width:calc(var(--d) * 1.3);height:calc(var(--d) * 1.3);left:calc(var(--d) * -0.15);top:calc(var(--d) * -0.15)}
+.unk .halo,.unk .fx{display:none}
+.unk .base{box-shadow:inset 0 0 0 2px #434C89!important;animation:none!important;filter:none!important;background:none!important;opacity:1!important;-webkit-mask:none!important;mask:none!important}
+.still *{animation-play-state:paused!important}
+.band{-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--w)),#000 calc(100% - var(--w) + 1px));mask:radial-gradient(farthest-side,transparent calc(100% - var(--w)),#000 calc(100% - var(--w) + 1px))}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spinr{to{transform:rotate(-360deg)}}
+@keyframes breath0{0%,100%{opacity:.45}50%{opacity:.9}}
+.optB .base{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 65%,transparent)}
+.optB .arc{inset:calc(var(--d) * -.02);--w:calc(var(--d) * .03 + 2px);background:conic-gradient(from 0deg,transparent 0 62%,color-mix(in srgb,var(--c) 40%,transparent) 78%,var(--c) 94%,#FFFFFF 100%);animation:spin 4s linear infinite;filter:drop-shadow(0 0 calc(var(--d) * .03) var(--c))}
+</style>
+</helmet>
+<div class="{{root}}" style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img src="/_blob/423125b7f05629e899e1ec1f3e076f05" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(0,4,31,.82),rgba(0,4,31,.66) 40%,rgba(0,1,10,.9))"></div>
+<div class="abs" style="left:96px;top:72px;width:1728px">
+<div class="lab">Rev 127 B &middot; Avatar border</div>
+<div style="display:flex;align-items:baseline;margin-top:10px"><span class="cap" style="font-size:48px;font-weight:700;letter-spacing:.08em">Orbit</span></div>
+<p class="body" style="margin:10px 0 0;max-width:1180px">A hairline ring in the domain colour; one bright arc runs round it every 4 s. The halo holds still.</p>
+</div>
+<div class="abs" style="left:96px;top:300px;width:760px;height:700px">
+<div class="abs" style="left:210px;top:40px"><div class="av optB {{hero.cls}}" style="--c:{{hero.c}};--d:340px"><div class="halo"></div><img class="face" src="{{hero.img}}" alt="Anvil, your avatar"><div class="base"></div><div class="fx arc band"></div><div class="guide g1"></div><div class="guide g2"></div></div></div>
+<div class="abs" style="left:0;top:470px;width:760px;display:flex;flex-direction:column;align-items:center;gap:18px">
+<div class="lab">Domain</div>
+<div style="display:flex;gap:10px"><sc-for list="{{doms}}" as="d" hint-placeholder-count="4"><button class="seg" type="button" aria-pressed="{{d.pressed}}" onClick="{{d.go}}"><span class="dot" style="background:{{d.dot}}"></span>{{d.label}}</button></sc-for></div>
+<div style="display:flex;gap:10px"><button class="seg" type="button" aria-pressed="{{guidesPressed}}" onClick="{{toggleGuides}}">Show the circles</button><button class="seg" type="button" aria-pressed="{{motionPressed}}" onClick="{{toggleMotion}}">{{motionLabel}}</button></div>
+<div class="lab" style="text-transform:none;letter-spacing:.04em;font-family:Aldrich,sans-serif;font-size:15px">One arc, one turn every 4 s, linear.</div>
+</div>
+</div>
+<div class="abs glass sl edge" style="left:984px;top:300px;width:840px;height:330px">
+<div class="lab abs" style="left:32px;top:24px">Party</div>
+<div class="abs" style="left:32px;top:72px;width:776px;display:grid;grid-template-columns:1fr 1fr;row-gap:36px;column-gap:24px">
+<sc-for list="{{party}}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:26px;padding-left:12px"><div class="av optB {{s.cls}}" style="--c:{{s.c}};--d:72px"><div class="halo"></div><img class="face" src="{{s.img}}" alt="{{s.name}}"><div class="base"></div><div class="fx arc band"></div><div class="guide g1"></div><div class="guide g2"></div></div><div style="min-width:0"><div class="cap ell" style="font-size:20px;color:#E6E9FF">{{s.name}}</div><div class="ell" style="font-size:15px;color:#747BAD;margin-top:4px">{{s.role}}</div></div></div></sc-for>
+</div>
+</div>
+<div class="abs glass sl edge" style="left:984px;top:660px;width:840px;height:340px">
+<div class="lab abs" style="left:32px;top:24px">Match lobby &middot; 3 v 2 v 1</div>
+<div class="abs" style="left:32px;top:84px;width:776px;display:flex;justify-content:space-between">
+<sc-for list="{{lobby}}" as="s" hint-placeholder-count="6"><div style="width:120px;display:flex;flex-direction:column;align-items:center;gap:22px;padding-top:14px"><div class="av optB {{s.cls}}" style="--c:{{s.c}};--d:96px"><div class="halo"></div><img class="face" src="{{s.img}}" alt="{{s.name}}"><div class="base"></div><div class="fx arc band"></div><div class="guide g1"></div><div class="guide g2"></div></div><div style="text-align:center"><div class="cap" style="font-size:16px">{{s.name}}</div><div style="font-size:14px;color:#747BAD;margin-top:2px">{{s.role}}</div></div></div></sc-for>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+const DOM = { jade: '#21C0BD', ruby: '#BD1BC8', gold: '#FF9B11' };
+const AV = {"Anvil": "/_blob/2bec37a53b5e64db656e2599e2f69167", "Bandit": "/_blob/353a02a7cb4c3379cf34db8f76715690", "Arilia": "/_blob/7377e4bf0f92a484e20bc497154a8baf", "Athara": "/_blob/7204fc34071ac04460d1d4dfc256266a", "Belko": "/_blob/f23c96a9033304537db93810f99406ef", "Aane": "/_blob/941eaa0748101230a083b807e5512af7"};
+const PARTY = [
+  { n: 'Anvil', role: 'You \u00b7 Host', d: 'jade' },
+  { n: 'Bandit', role: 'Pilot', d: 'jade' },
+  { n: 'Arilia', role: 'Pilot', d: 'ruby' },
+  { n: 'Athara', role: 'Joining', d: '' },
+];
+const LOBBY = [
+  { n: 'Anvil', d: 'jade' }, { n: 'Bandit', d: 'jade' }, { n: 'Belko', d: 'jade' },
+  { n: 'Arilia', d: 'ruby' }, { n: 'Aane', d: 'ruby' }, { n: 'Athara', d: 'gold' },
+];
+const NAMES = { jade: 'Jade', ruby: 'Ruby', gold: 'Gold', '': 'Not known yet' };
+function seat(s) { return { img: AV[s.n], name: s.n, role: s.role || NAMES[s.d], c: DOM[s.d] || '#434C89', cls: s.d ? '' : 'unk' }; }
+class Component extends DCLogic {
+constructor(p) { super(p); this.state = { dom: 'jade', guides: false, motion: true }; }
+renderVals() {
+  const st = this.state;
+  const pick = (d) => ({ label: NAMES[d], dot: DOM[d] || '#434C89', pressed: st.dom === d ? 'true' : 'false', go: () => this.setState({ dom: d }) });
+  return {
+    root: (st.guides ? 'guides ' : '') + (st.motion ? '' : 'still'),
+    hero: { c: DOM[st.dom] || '#434C89', cls: st.dom ? '' : 'unk', img: AV.Anvil, name: NAMES[st.dom] },
+    doms: [pick('jade'), pick('ruby'), pick('gold'), pick('')],
+    guidesPressed: st.guides ? 'true' : 'false',
+    motionPressed: st.motion ? 'true' : 'false',
+    motionLabel: st.motion ? 'Motion on' : 'Motion off',
+    toggleGuides: () => this.setState({ guides: !st.guides }),
+    toggleMotion: () => this.setState({ motion: !st.motion }),
+    party: PARTY.map(seat),
+    lobby: LOBBY.map(seat),
+  };
+}
+}
+</script>
+</body>
+</html>

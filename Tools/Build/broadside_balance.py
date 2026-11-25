@@ -50,9 +50,11 @@ POINTS = {
 # hulls sharing the Strike class can still be separated by how OFTEN the class admits, and the
 # separation is grounded in the mechanism rather than invented.
 NEW_WINDOWS = {
-    # A swung blade is in contact CONTINUOUSLY while the Rhino is alongside, so without the
-    # longer window it would score every second of a pass it never had to re-earn.
-    "strike_sword": 1.4,
+    # The Swordfish's sword. It was 1.4 s ("a swung blade is in contact continuously"), but the sword also
+    # requires being FASTER than its victim, so a parked blade never scores, and the real-game judge
+    # (broadside_judge.py, 2026-11-23: 9 runs, 45 matches a hull) put the Swordfish at 0.58-0.71 of a fair
+    # share at 1.4 s and 0.93 at 0.5 s. The window is the Swordfish's own Charge lever (its asset is its alone).
+    "strike_sword": 0.5,
     # A joust is DISCRETE - it requires a fresh overtake, at a closing speed the Squirrel has to
     # win each time - so it re-earns its window and is allowed a shorter one.
     "strike_joust": 1.0,
@@ -214,11 +216,14 @@ def _rhino_ramp_constants():
     two places a retune has to land.
     """
     import regatta_balance as _rb
-    c = _rb.read_constants()
-    v = _rb.read_vessel("Swordfish")              # the sword hull since 2026-11-07; same ramp asset as the Rhino
+    v = _rb.read_vessel("Swordfish")              # the sword hull since 2026-11-07
+    # The Swordfish's OWN ramp asset (split from the Rhino's in #2233; the Rhino's became the 2026-11-19 freight train).
+    ramp = _rb._read("Assets/_SO_Assets/VesselActions/Swordfish/SwordfishRampBoostAction.asset")
+    max_boost = _rb._key(ramp, "maxBoostMultiplier", "SwordfishRampBoost")
+    accel = _rb._key(ramp, "accelerationPerSecond", "SwordfishRampBoost")
     cruise = v["ts"] + v["ms"]                       # plain cruise, ramp disengaged
-    top = v["ts"] * c["rhino_max_boost"] + v["ms"]   # ramp held at full straightness
-    return cruise, top, c["rhino_accel"]
+    top = v["ts"] * max_boost + v["ms"]              # ramp held at full straightness
+    return cruise, top, accel
 
 
 def rhino_speed_multiplier(level):

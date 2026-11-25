@@ -56,9 +56,11 @@ guid = lib.guid
 MODE_DIR = "Assets/_Scripts/Controller/Arcade/WrasseRun"
 SCRIPT_PATHS = {
     "WrasseRunController":   f"{MODE_DIR}/WrasseRunController.cs",
+    "WrasseRunController.Ruins": f"{MODE_DIR}/WrasseRunController.Ruins.cs",
     "WrasseRunCourse":       f"{MODE_DIR}/WrasseRunCourse.cs",
     "WrasseRunCourseSource": f"{MODE_DIR}/WrasseRunCourseSource.cs",
     "WrasseRunCourseTests":  "Assets/_Scripts/Tests/Editor/WrasseRunCourseTests.cs",
+    "WrasseRunRuinsTests":   "Assets/_Scripts/Tests/Editor/WrasseRunRuinsTests.cs",
     "KiteNavigatorSlingTests": "Assets/_Scripts/Tests/Editor/KiteNavigatorSlingTests.cs",
 }
 DOC = "Assets/_Scripts/Controller/Arcade/WRASSERUN.md"
@@ -117,9 +119,11 @@ CRUISE_RADIUS = CRUISE_SPEED / ((CRUISE_SPEED * 0.1 + 100.0) * 3.141592653589793
 # circle: the AI Grouper flies its hull through each ring - which puts the ring in the kite's plane, on
 # its board - and the AI navigator slings the kite through the mouth (KiteNavigatorConfig
 # aiCrewNavigates). The Grouper spends the boosts the Wrasse saves while the next ring is far ahead.
-AI_COMMIT_DISTANCE = 72
-AI_APPROACH_LEAD = 80
-AI_THROUGH_DISTANCE = 55
+# Trained 2026-11-17 (Wrasse run1, time_ai_search.py in the real game; the ratios above were 72 / 80 / 55): the AI commits
+# to a ring far out and turns in late, and the run is about 9% faster over I1-I4.
+AI_COMMIT_DISTANCE = 433
+AI_APPROACH_LEAD = 423
+AI_THROUGH_DISTANCE = 68
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn - for the hull AND
 # for the probe (the kite). The kite's world step is the hull's boosted 260 u/s + the slung kite's
@@ -179,7 +183,7 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameWrasseRu
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Wrasse']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -222,6 +226,10 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_RULE}, type: 2}}
   maxPlausibleSpeed: {MAX_PLAUSIBLE_SPEED}
   reportResyncSeconds: 3
 """
+# The garden ruins (I4, WRASSERUN.md 3a): the pooled environment prism they are laid from. Added to the committed
+# scene by hand on 2026-11-24 (the clone is spent); the colours are the controller's serialized default.
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+RUIN_FIELDS = f"  ruinPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
 
 
 def project_network_hashes() -> "set[int]":
@@ -263,7 +271,7 @@ def clone_scene() -> str:
 
 scene, scene_errors = lib.committed_scene(
     SCENE, clone_scene,
-    authored_blocks=(NEW_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
+    authored_blocks=(NEW_FIELDS, RUIN_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
@@ -347,6 +355,12 @@ if not m or int(m.group(1)) != LAPS:
 _ctrl = read_or_empty(SCRIPT_PATHS["WrasseRunController"])
 if "protected override bool HullThreadsWhileProbeLive => false;" not in _ctrl:
     errors.append("WrasseRunController does not make the kite the ring collector (HullThreadsWhileProbeLive)")
+# The ruins are Spearline's generator, CALLED: a copy here would drift from the one its tests hold.
+_ruins = read_or_empty(SCRIPT_PATHS["WrasseRunController.Ruins"])
+if "SpearlineRuins.Lay(_course, SpearlineRuins.ForIntensity(Intensity)" not in _ruins:
+    errors.append("WrasseRunController.Ruins.cs does not lay SpearlineRuins round the lap")
+if "public partial class WrasseRunController" not in _ctrl:
+    errors.append("WrasseRunController is not partial - its ruins hook cannot compile")
 
 if "case GameModes.WrasseRun:" not in read_or_empty("Assets/_Scripts/UI/MiniGameHUD.cs"):
     errors.append("MiniGameHUD.CreateObjectiveProviderForGameMode has no WrasseRun case")
@@ -363,8 +377,10 @@ for h in re.findall(r"GlobalObjectIdHash: (\d+)", scene):
 if MAX_PLAUSIBLE_SPEED < 2 * KITE_WORST_SPEED:
     errors.append(f"maxPlausibleSpeed {MAX_PLAUSIBLE_SPEED} is under twice the kite's worst world speed "
                   f"({KITE_WORST_SPEED:.0f} u/s)")
+# (The approach lead used to have to exceed the commit distance, Slingshot's ratio; the real-game search put it just
+# under, 423 vs 433, and raced faster, so only "outside the cruise circle" is a rule.)
 if not (AI_THROUGH_DISTANCE > CRUISE_RADIUS and AI_COMMIT_DISTANCE > 2 * CRUISE_RADIUS
-        and AI_APPROACH_LEAD > AI_COMMIT_DISTANCE):
+        and AI_APPROACH_LEAD > 2 * CRUISE_RADIUS):
     errors.append("AI approach geometry is not sized outside the Grouper's cruise circle "
                   f"(commit {AI_COMMIT_DISTANCE} / lead {AI_APPROACH_LEAD} / through "
                   f"{AI_THROUGH_DISTANCE} against {CRUISE_RADIUS:.0f} u)")

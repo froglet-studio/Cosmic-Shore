@@ -1,0 +1,164 @@
+# Loop Atlas model: vessel Meerkat. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Meerkat
+verbs:
+  Time:
+    ability: Faster Ride
+    does: You rush through every tunnel faster, your own or another Meerkat's.
+    trigger: Passive - ride a tunnel
+    scales: More Time makes the rush through every tunnel stronger.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: passive
+    t: [2, 15]
+  Charge:
+    ability: Sentinel Mode
+    does: While on, each new tunnel leaves a sentinel at its entrance that zaps rivals nearby, knocking out petals and silencing
+      them, and shields your own prisms there. Its tunnel stands while it does.
+    trigger: Toggle
+    scales: More Charge makes each sentinel zap knock out more of a rival's petals.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: mode
+    t: [5, 30]
+  Mass:
+    ability: Exit Portal
+    does: Each tunnel you form sets six small prisms of your colour in a hexagon round its way out.
+    trigger: Passive - form a tunnel
+    scales: More Mass makes the exit portal's prisms bigger.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Soliton
+    does: Form the tunnel your reticle shows and dive through it. It stays standing for Meerkats to ride, sucks in nearby
+      prisms and fires them out the far end to smash other prisms for you.
+    trigger: Tap
+    scales: More Space gives every tunnel more surface, so a tunnel of any length comes out fatter.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: tap
+    t: [2, 20]
+  Omni:
+    ability: Soliton Network
+    does: Grows a network of branching wormhole tunnels from where you took the crystal that you can slide through; with
+      full Mass it covers the whole cell.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b b .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Burrow Run, Warpline]
+  Charge: [Sentry]
+  Mass: [Warren]
+  Space: [Cave-in]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The burrow
+  t: [8, 30]
+  is: A tunnel is a road, a cannon and a fort.
+  chain:
+  - - Space
+    - 'Form a tunnel and dive: it fires prisms out the far end'
+  - [Time, Ride it faster]
+  - - Mass
+    - A hexagon of your prisms at the exit
+  - - Charge
+    - A sentinel on the entrance
+  drivers: [joy, make, break]
+  feel: Disappearing here and arriving there.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, verb_ready]
+    dials:
+    - - exitAim
+      - how far the tunnel's exit is aimed into rival mass
+      - 20
+      - 300
+      - u
+    - - suckDensity
+      - prisms near the entrance before a tunnel is formed
+      - 5
+      - 150
+      - count
+    done: Prisms fired out of a tunnel smash rival prisms.
+- in: x
+  name: Ride the network
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Tunnels aimed at the next gate, ridden faster, one from the exit of the last.
+  chain:
+  - - Space
+    - Form a tunnel toward the next gate
+  - [Time, Ride it faster]
+  - - Space
+    - The next tunnel from the exit
+  drivers: [joy, mastery]
+  feel: Folding the course.
+  gene:
+    genome: Time
+    cue: [gate_next, straight_ahead]
+    dials:
+    - - tunnelAim
+      - distance ahead the tunnel is aimed
+      - 50
+      - 500
+      - u
+    done: A gate is threaded within two seconds of a tunnel exit.
+    sight: FLUME
+- in: x
+  name: Sentry line
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Sentinel Mode on, tunnels across a rival's path, every entrance zaps them.
+  chain:
+  - [Charge, Sentinel Mode on]
+  - - Space
+    - Tunnels across a rival's path
+  - ['', Each entrance zaps them]
+  drivers: [rival, make]
+  feel: A minefield with your name on it.
+  gene:
+    genome: Charge
+    cue: [rival_on_line, verb_ready]
+    dials:
+    - - sentryLead
+      - seconds ahead of the rival the tunnel is formed
+      - 0.5
+      - 4
+      - s
+    done: A sentinel knocks a petal out of a rival.
+    sight: BANDIT
+- in: x
+  name: The warren
+  t: [15, 45]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Tunnel out from the nucleus; every exit leaves a hexagon of your prisms.
+  chain:
+  - - Space
+    - Tunnel out from the nucleus
+  - [Mass, A hexagon at every exit]
+  - - ''
+    - A ring of exits round the claim
+  drivers: [make, crew]
+  feel: A home with many doors.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap]
+    dials:
+    - [exitSpacing, distance between exits, 10, 150, u]
+    - - warrenRadius
+      - distance from the nucleus the exits are laid
+      - 20
+      - 300
+      - u
+    done: Exit hexagons stand inside the claim.
+    sight: ENSIGN
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md

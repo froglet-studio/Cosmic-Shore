@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-switchmppmprofileifneeded-now-reads-csmp-1d65b4",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-21T18:29:48+00:00",
+  "area": "UGS sign-in (AuthenticationServiceFacade)",
+  "summary": "SwitchMppmProfileIfNeeded now reads -csMpProfile from the command line, in development builds and the editor only, so the automatic host/join test (mp_auto.py) can run two players on one PC as two UGS players. Release builds are unchanged. Commit b1cf8d2afb.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "53650f66c"
+}

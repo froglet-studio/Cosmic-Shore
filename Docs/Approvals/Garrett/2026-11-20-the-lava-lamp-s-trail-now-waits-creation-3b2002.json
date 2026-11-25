@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-20-the-lava-lamp-s-trail-now-waits-creation-3b2002",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-20T20:24:24+00:00",
+  "area": "menu lava lamp trail / platform tiers",
+  "summary": "The lava lamp's trail now waits (creation-side SetTierHold, nothing removed) when the cell holds more than freestyleCellPrismBudget live prisms, and Desktop / MobileHigh now set that budget (20,000 / 15,000, resume 300 below). Before, the menu trail grew ~2,500 prisms a minute with no ceiling and every load out of the menu froze longer the longer the player idled (13.4 s after 17 min, guest dropped; B45).",
+  "why": "B45 lever 1. It is the same wait MobileLow and Web already use for freestyle, not a cap or TTL (MENU_AND_LAVA_LAMP.md rule kept). The number is a judgement; say if you want a different budget or no wait on PC.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a66a05194",
+  "paths": [
+    "Assets/_SO_Assets/Platform/PlatformProfile_Desktop.asset",
+    "Assets/_SO_Assets/Platform/PlatformProfile_MobileHigh.asset",
+    "Assets/_Scripts/Controller/Multiplayer/MenuCrystalClickHandler.cs"
+  ]
+}

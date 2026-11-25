@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-15-added-a-short-spend-few-tokens-section-t-a32993",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-15T01:51:46+00:00",
+  "area": "CLAUDE.md, the rules every session reads",
+  "summary": "Added a short 'Spend few tokens' section to CLAUDE.md: new session per task, hand-over notes, no fan-outs unless asked, grep before read, prefer a launch the person runs",
+  "why": "Yash asked for a standing recommendation so sessions use fewer tokens",
+  "branch": "Ys-bleeding-edge",
+  "commit": "2eecccd2d",
+  "paths": [
+    "CLAUDE.md"
+  ]
+}

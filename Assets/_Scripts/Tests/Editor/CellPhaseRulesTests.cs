@@ -225,6 +225,39 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Raised_LiftsEveryBoundaryByTheExtraMass()
+        {
+            // A Regatta course genome's placements: the ladder rides the measured rails PLUS what the course added.
+            var measured = new CellPhaseThresholds
+            {
+                RestlessEnter = 2512, RestlessExit = 2312, FrenzyEnter = 5412, FrenzyExit = 4812,
+                RestlessEnterVolume = 577194f, RestlessExitVolume = 557194f,
+                FrenzyEnterVolume = 917194f, FrenzyExitVolume = 837194f,
+            };
+            var raised = measured.Raised(120000f, 3000);
+
+            Assert.AreEqual(697194f, raised.RestlessEnterVolume);
+            Assert.AreEqual(677194f, raised.RestlessExitVolume);
+            Assert.AreEqual(1037194f, raised.FrenzyEnterVolume);
+            Assert.AreEqual(957194f, raised.FrenzyExitVolume);
+            Assert.AreEqual(5512, raised.RestlessEnter);
+            Assert.AreEqual(7812, raised.FrenzyExit);
+            // The measured course plus its own placements opens Calm, as the measured course does.
+            Assert.AreEqual(CellPhase.Calm, CellPhaseRules.Compute(517194f + 120000f, 1812 + 3000, CellPhase.Calm, in raised));
+        }
+
+        [Test]
+        public void Raised_NothingExtraIsTheDerivedTable()
+        {
+            var legacy = new CellPhaseThresholds { RestlessEnter = 700, RestlessExit = 500, FrenzyEnter = 1200, FrenzyExit = 950 };
+            var raised = legacy.Raised(0f, 0);
+            Assert.AreEqual(legacy.WithDerivedVolumeScale().FrenzyEnterVolume, raised.FrenzyEnterVolume);
+            Assert.AreEqual(1200, raised.FrenzyEnter);
+            // A negative extra never lowers the ladder.
+            Assert.AreEqual(1200, legacy.Raised(-5f, -5).FrenzyEnter);
+        }
+
+        [Test]
         public void GetEnterVolume_CalmIsZero()
         {
             Assert.AreEqual(0f, T.GetEnterVolume(CellPhase.Calm));

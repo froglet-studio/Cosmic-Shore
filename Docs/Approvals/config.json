@@ -3,7 +3,6 @@
   "shared_paths": [
     "Docs/Approvals",
     "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "Docs/TEAM_TASKS.md",
     "Docs/claude/DOCUMENTATION_INDEX.md",
     "Docs/QA/.applied.json",
     "BugLedger"

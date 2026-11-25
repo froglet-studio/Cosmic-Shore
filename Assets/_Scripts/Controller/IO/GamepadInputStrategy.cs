@@ -8,23 +8,18 @@ namespace CosmicShore.Gameplay
 {
     public class GamepadInputStrategy : BaseInputStrategy
     {
-        private const float TriggerDeadzone = 0.05f;
-
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
         private Vector2 leftStickRaw;
         private Vector2 rightStickRaw;
 
-        private bool prevLeftTriggerActive;
-        private bool prevRightTriggerActive;
-
         // Face-button held state, edge-detected from isPressed rather than the frame flags
         // (SingleStickMouseInputStrategy's shape). wasReleasedThisFrame is only seen while this
         // strategy runs: a button held as the player switched devices, or released while the
         // window was unfocused (InputController skips unfocused frames), never sent its release,
         // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
-        private bool prevButton1, prevButton2, prevButton3, prevButton4, prevPayload;
+        private bool prevButton1, prevButton2, prevButton3, prevButton4, prevPayload, prevLeftShoulder;
 
         private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
         {
@@ -40,6 +35,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
             EdgeFire(false, ref prevPayload, InputEvents.PayloadAction);
+            EdgeFire(false, ref prevLeftShoulder, InputEvents.LeftShoulderAction);
         }
 
         public override void Initialize(IInputStatus inputStatus)
@@ -135,6 +131,8 @@ namespace CosmicShore.Gameplay
             EdgeFire(Gamepad.current.buttonWest.isPressed, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(Gamepad.current.buttonNorth.isPressed, ref prevButton4, InputEvents.Button4Action);
             EdgeFire(Gamepad.current.rightShoulder.isPressed, ref prevPayload, InputEvents.PayloadAction);
+            // LB raises its own event, bound only where a hull claims it (the Grizzly cycles weapons on it).
+            EdgeFire(Gamepad.current.leftShoulder.isPressed, ref prevLeftShoulder, InputEvents.LeftShoulderAction);
 
             // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping
@@ -142,70 +140,6 @@ namespace CosmicShore.Gameplay
             float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
             float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
             DispatchTriggers(leftTriggerValue, rightTriggerValue);
-        }
-
-        private void DispatchTriggers(float leftTriggerValue, float rightTriggerValue)
-        {
-            inputStatus.LeftTriggerAnalog = leftTriggerValue;
-            inputStatus.RightTriggerAnalog = rightTriggerValue;
-
-            bool leftActive = leftTriggerValue > TriggerDeadzone;
-            bool rightActive = rightTriggerValue > TriggerDeadzone;
-
-            bool leftJustPressed = leftActive && !prevLeftTriggerActive;
-            bool leftJustReleased = !leftActive && prevLeftTriggerActive;
-            bool leftHeld = leftActive;
-
-            bool rightJustPressed = rightActive && !prevRightTriggerActive;
-            bool rightJustReleased = !rightActive && prevRightTriggerActive;
-            bool rightHeld = rightActive;
-
-            prevLeftTriggerActive = leftActive;
-            prevRightTriggerActive = rightActive;
-
-            // Individual trigger events
-            if (leftJustPressed)
-                inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
-            if (leftJustReleased)
-                inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
-            if (rightJustPressed)
-            {
-                inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
-            }
-            if (rightJustReleased)
-                inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
-
-            // BothSticksAction Released
-            if ((leftJustReleased && rightJustReleased)
-                || (leftJustReleased && rightHeld)
-                || (rightJustReleased && leftHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
-
-            // OnlyLeftStickAction Released
-            if ((leftJustReleased && !rightHeld)
-                || (rightJustPressed && leftHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
-
-            // OnlyRightStickAction Released
-            if ((rightJustReleased && !leftHeld)
-                || (leftJustPressed && rightHeld))
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
-
-            // OnlyLeftStickAction Pressed
-            if ((leftJustPressed && !rightHeld)
-                || (rightJustReleased && leftHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
-
-            // OnlyRightStickAction Pressed
-            if ((rightJustPressed && !leftHeld)
-                || (leftJustReleased && rightHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
-
-            // BothSticksAction Pressed
-            if ((leftJustPressed && rightJustPressed)
-                || (leftJustPressed && rightHeld)
-                || (rightJustPressed && leftHeld))
-                inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
         }
 
         private void Reparameterize()

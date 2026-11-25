@@ -28,7 +28,7 @@ The consequences were gameplay, not cosmetics:
   `VesselChangeBoostByPrismEffectSO` each keep only `retainedFraction` (0.5) of the meter, so a
   self-ram cost **half the banked skim energy and half the charged boost** — plus
   `VesselDamagePrismEffect` shredding the pilot's own mass and an impact SFX to sell it.
-The **Rhino** is deliberately NOT in that list. `RhinoSkimmerDamagePrismEffect` carries no domain,
+The **Rhino** is deliberately NOT in that list. `SwordfishSkimmerDamagePrismEffect` carries no domain,
 owner or age guard either, so the grace does technically apply to its sword — but the Rhino cannot
 come about onto the ribbon it just laid inside a one-second window, so the gate never fires for it
 in practice. This matters because cutting your own trail to bank sword energy is a **signed-off

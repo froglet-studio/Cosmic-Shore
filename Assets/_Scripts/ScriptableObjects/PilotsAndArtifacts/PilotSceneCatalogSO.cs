@@ -14,18 +14,18 @@ namespace CosmicShore.ScriptableObjects
     }
 
     /// <summary>
-    /// The pilot SCENES the game ships (Docs/Pilots/PORTRAITS.md §8, "The scenes in the game"): per callsign, the
-    /// widescreen picture of that callsign's painted pilot, the close-up cut from it (the avatar) and where that
-    /// close-up sits in the picture.
+    /// The pilot SCENES the game ships (Docs/Pilots/PORTRAITS.md §8, "The scenes in the game"): per painted pilot (all
+    /// fifty, Garrett 2026-11-16), the widescreen picture, the close-up cut from it (the avatar) and where that close-up
+    /// sits in the picture.
     ///
     /// <para><b>A scene is named, never referenced.</b> <see cref="Entry.resource"/> is a path under a Resources
     /// folder, so loading this asset loads no scene: a page loads the one it shows and lets it go again
     /// (<c>PilotSceneImage</c>). The close-ups are referenced, because the crew list shows all of them at once and
     /// they are the avatars the profile already holds.</para>
     ///
-    /// <para><b>Whose face it is.</b> A crew pilot is a person on a callsign (<see cref="PilotRecord"/>), and a
-    /// callsign's art is its first painted pilot (PORTRAITS.md §6, decision 1), so the scene is found by callsign and
-    /// <see cref="Entry.painted"/> names who is pictured.</para>
+    /// <para><b>Whose face it is.</b> A painted pilot's record names its scene (<see cref="PilotRecord.PaintedKey"/>,
+    /// <see cref="TryGetFor"/>). A rolled person has no picture of their own and shows their callsign's own painted pilot
+    /// (the one whose key is the callsign's word), and <see cref="Entry.painted"/> names who is pictured.</para>
     ///
     /// <para>Written by <c>Tools/Build/author_pilot_scene_assets.py</c> from <c>Docs/Pilots/art/scenes/scenes.json</c>;
     /// its <c>--check</c> fails on a hand edit. <see cref="TryGet"/> is a quiet probe: a callsign with no scene is an
@@ -36,7 +36,10 @@ namespace CosmicShore.ScriptableObjects
         [Serializable]
         public class Entry
         {
-            [Tooltip("The callsign whose painted pilot this scene shows.")]
+            [Tooltip("The painted pilot's word: the scene's name (VOLT, Astrofoil), as PilotRecord.PaintedKey holds it.")]
+            public string key;
+
+            [Tooltip("The callsign the painted pilot carries. More than one painted pilot may carry a callsign.")]
             public PilotVision callsign;
 
             [Tooltip("The painted pilot's name, for a page's caption. Empty leaves the caption without a name.")]
@@ -55,23 +58,35 @@ namespace CosmicShore.ScriptableObjects
             public PilotSceneSide side;
         }
 
-        [Tooltip("One row per callsign that has a painted scene, in callsign order.")]
+        [Tooltip("One row per painted pilot, in the order a crew is granted them.")]
         [SerializeField] List<Entry> scenes = new();
 
         public IReadOnlyList<Entry> Scenes => scenes;
 
-        /// <summary>The scene of <paramref name="callsign"/>'s painted pilot. False when it has none.</summary>
-        public bool TryGet(PilotVision callsign, out Entry entry)
+        /// <summary>The scene of the painted pilot <paramref name="key"/>. False when there is none.</summary>
+        public bool TryGet(string key, out Entry entry)
         {
             entry = null;
-            if (scenes == null) return false;
+            if (scenes == null || string.IsNullOrEmpty(key)) return false;
             foreach (var candidate in scenes)
             {
-                if (candidate == null || candidate.callsign != callsign) continue;
+                if (candidate == null || candidate.key != key) continue;
                 entry = candidate;
                 return true;
             }
             return false;
+        }
+
+        /// <summary>The scene of <paramref name="callsign"/>'s own painted pilot (the one whose key is its word).</summary>
+        public bool TryGet(PilotVision callsign, out Entry entry) => TryGet(Callsigns.WordOf(callsign), out entry);
+
+        /// <summary>The scene a crew person shows: their own when they are a painted pilot, else their callsign's own
+        /// painted pilot. A quiet probe: false when neither has one.</summary>
+        public bool TryGetFor(PilotRecord person, out Entry entry)
+        {
+            entry = null;
+            if (person == null) return false;
+            return TryGet(person.PaintedKey, out entry) || TryGet(person.Vision(), out entry);
         }
     }
 }

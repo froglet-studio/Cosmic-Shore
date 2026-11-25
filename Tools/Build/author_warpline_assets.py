@@ -16,13 +16,13 @@ shortens it, RT forms the tunnel and dives through it at up to 2.5x the entry sp
 so every leg (~750 u) is longer than one straight tunnel and asks how to dig it. See
 Assets/_Scripts/Controller/Arcade/WARPLINE.md.
 
-THE DONOR IS SLINGSHOT (the Stoat's other circuit race, itself Redline's shape). The clone swaps:
+THE DONOR IS SLINGSHOT (the Stoat's Time race, itself Redline's shape). The clone swaps:
 
   1. the controller script (WarplineController), keeping Slingshot's `laps` field (2 here).
   2. its scoring rule ASSET (another asset on the shared GateRaceScoringRuleSO script).
-  3. maxPlausibleSpeed, raised for the warp (kept from the Stoat days; the clamp only reads a respawn).
+  3. maxPlausibleSpeed, raised above Slingshot's (see MAX_PLAUSIBLE_SPEED below).
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh.
-  5. the arcade card's Vessels list: the Meerkat (the Stoat until 2026-10-27; its Time race is Slingshot).
+  5. the arcade card's Vessels list: the Meerkat only.
 
 THE CIRCUIT GENERATOR IS SHARED, NOT CLONED: WarplineController hands SlingshotCourse.ForIntensity's
 settings to HeadlongCircuit.Generate with target/laps rings - the same base circle cut into fewer,
@@ -49,7 +49,9 @@ guid = lib.guid
 MODE_DIR = "Assets/_Scripts/Controller/Arcade/Warpline"
 SCRIPT_PATHS = {
     "WarplineController": f"{MODE_DIR}/WarplineController.cs",
+    "WarplineController.Ruins": f"{MODE_DIR}/WarplineController.Ruins.cs",
 }
+RUINS_TEST = "Assets/_Scripts/Tests/Editor/WarplineRuinsTests.cs"
 DOC = "Assets/_Scripts/Controller/Arcade/WARPLINE.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameWarpline.asset"
 RULE = "Assets/_SO_Assets/Scoring Rules/WarplineScoringRule.asset"
@@ -88,14 +90,15 @@ LAPS = 2
 RINGS_PER_LAP = 5                 # Slingshot's 600 u circle cut into five ~750 u legs
 GATE_TARGET = LAPS * RINGS_PER_LAP
 
-# AI approach geometry: Slingshot's, sized to the Stoat's turn (Burrow Run keeps the same for the Meerkat).
+# AI approach geometry: Slingshot's numbers, unchanged by the clone. WarplineController commits from the approach
+# point (Regatta's gate steering), which is what lets a hull finish on them (WARPLINE.md sections 3 and 6.1).
 AI_COMMIT_DISTANCE = 160
 AI_APPROACH_LEAD = 180
 AI_THROUGH_DISTANCE = 120
 
-# Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. A Stoat at
-# the full 4x warp boost with the field's gravity speed at its ceiling flies (60 + 240) x 4 = 1200
-# u/s; a pass through the wormhole is a teleport (SetPose), which the gate watcher reads as such.
+# Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. The value was
+# sized for the hull that first raced here (the Stoat, up to 1200 u/s warped) and is kept so the scene
+# does not change: the Meerkat's ride is slower, and a clamp that is too high only reads a respawn late.
 MAX_PLAUSIBLE_SPEED = 1400
 
 # The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.45 a
@@ -105,6 +108,11 @@ COMEBACK_RATE = 0.45
 
 HASH_SALT = "MinigameWarpline"
 
+# The garden ruins (WARPLINE.md section 2a, I4 only): the prism they are laid from, on the controller. The colours
+# (ruinDomains) are the script's own default, Jade / Ruby / Gold, which the Editor writes on its next save.
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+RUIN_FIELDS = f"  ruinPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
+
 
 def header(script_guid: str, name: str) -> str:
     return lib.header_for(script_guid, name)
@@ -113,6 +121,7 @@ def header(script_guid: str, name: str) -> str:
 # ── 1. Metas for the scripts, the mode folder and the doc ────────────────────
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
+g.emit(RUINS_TEST + ".meta", lib.script_meta_text(guid("script/WarplineRuinsTests")))
 g.folder_meta(MODE_DIR)
 g.text_meta(DOC)
 
@@ -137,7 +146,7 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameWarpline
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Meerkat']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -221,6 +230,10 @@ def clone_scene() -> str:
 scene, scene_errors = lib.committed_scene(
     SCENE, clone_scene,
     authored_blocks=(NEW_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
+# The ruin prefab joined the controller after the scene was committed (2026-11-24): written once, after the block
+# this generator owns, and never again once it is there.
+if RUIN_FIELDS not in scene and NEW_FIELDS in scene:
+    scene = scene.replace(NEW_FIELDS, NEW_FIELDS + RUIN_FIELDS, 1)
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
@@ -290,6 +303,13 @@ if "TimeRaceCourseConfigSO.Circuit(Mode, request.Intensity)" not in _course or \
         "var settings = SlingshotCourse.ForIntensity(intensity);" not in _cut:
     errors.append("WarplineCourseSource no longer cuts Slingshot's circuit (TimeRaceCourseConfigSO.Circuit over SlingshotCourse.ForIntensity)")
 
+if RUIN_FIELDS not in scene:
+    errors.append("the scene's WarplineController carries no ruinPrefab (SpawnablePrism) - no ruins at I4")
+_ruins = read_or_empty(SCRIPT_PATHS["WarplineController.Ruins"])
+if "SpearlineRuins.Lay(_course, SpearlineRuins.ForIntensity(Intensity)" not in _ruins:
+    errors.append("WarplineController.Ruins no longer lays Spearline's ruins from Warpline's own lap")
+if "partial class WarplineController" not in _ctrl:
+    errors.append("WarplineController is not partial - its ruins hook cannot compile")
 if G_SCRIPT["WarplineController"] not in scene or EXISTING["SlingshotController"] in scene:
     errors.append("scene does not carry exactly the WarplineController script")
 _taken = project_network_hashes()
@@ -317,5 +337,6 @@ if not os.path.exists(os.path.join(ROOT, "Assets/_SO_Assets/Classes/SO_Class_Mee
     errors.append("SO_Class_Meerkat.asset is missing - run author_meerkat_assets.py")
 
 minted = list(G_SCRIPT.values()) + [G_CARD, G_RULE, G_PREVIEW, G_SCENE,
-                                    guid(f"folder/{MODE_DIR}"), guid(f"text/{DOC}")]
+                                    guid(f"folder/{MODE_DIR}"), guid(f"text/{DOC}"),
+                                    guid("script/WarplineRuinsTests")]
 g.finish(errors, referenced=EXISTING, minted=minted)

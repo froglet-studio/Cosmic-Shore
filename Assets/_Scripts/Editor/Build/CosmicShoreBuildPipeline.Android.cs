@@ -23,7 +23,8 @@ namespace CosmicShore.Editor
     ///
     /// <para><b>Version code.</b> Minutes since 2026-01-01 UTC
     /// (<see cref="AndroidBundleCheck.VersionCodeAt"/>), so every build is higher than the last
-    /// without anyone editing Player Settings. <c>-buildVersionCode N</c> overrides it.</para>
+    /// without anyone editing Player Settings. <c>-buildVersionCode N</c> overrides it, then <c>-buildNumber</c> / <c>CS_BUILD_NUMBER</c>; the
+    /// build stamp records it as the build number (<see cref="BuildStampProcessor"/>).</para>
     ///
     /// <para><b>Debug symbols.</b> The native symbol table goes into the bundle, so Play's
     /// "you've not uploaded debug symbols" warning does not appear and crash reports are readable
@@ -110,7 +111,7 @@ namespace CosmicShore.Editor
                         "(it reimports assets once), then build again. Batchmode: pass -buildTarget Android.");
 
                 string outputFolder = GetArg("-buildOutput") ?? AndroidOutputFolder;
-                string version = GetArg("-buildVersion");
+                string version = BuildStampInputs.Version; // -buildVersion or CS_BUILD_VERSION
                 string[] scenes = RequireScenes();
 
                 RequireAndroidPlayerSettings();
@@ -119,7 +120,7 @@ namespace CosmicShore.Editor
                 if (!string.IsNullOrWhiteSpace(version))
                     PlayerSettings.bundleVersion = version;
 
-                int versionCode = ResolveVersionCode(GetArg("-buildVersionCode"));
+                int versionCode = ResolveVersionCode(GetArg("-buildVersionCode") ?? BuildStampInputs.BuildNumber);
                 PlayerSettings.Android.bundleVersionCode = versionCode;
                 SetAppCategoryGame();
                 EmbedDebugSymbols();
@@ -175,6 +176,7 @@ namespace CosmicShore.Editor
             }
             finally
             {
+                BuildStampProcessor.Cleanup();
                 saved.Restore();
             }
 
@@ -206,7 +208,7 @@ namespace CosmicShore.Editor
                         "(it reimports assets once), then build again. Batchmode: pass -buildTarget Android.");
 
                 string outputFolder = GetArg("-buildOutput") ?? AndroidOutputFolder;
-                string version = GetArg("-buildVersion");
+                string version = BuildStampInputs.Version; // -buildVersion or CS_BUILD_VERSION
                 bool diagnosticsOff = HasArg("-diagnosticsOff");
                 string[] scenes = RequireScenes();
 
@@ -218,7 +220,7 @@ namespace CosmicShore.Editor
                 if (!string.IsNullOrWhiteSpace(version))
                     PlayerSettings.bundleVersion = version;
 
-                int versionCode = ResolveVersionCode(GetArg("-buildVersionCode"));
+                int versionCode = ResolveVersionCode(GetArg("-buildVersionCode") ?? BuildStampInputs.BuildNumber);
                 PlayerSettings.Android.bundleVersionCode = versionCode;
                 SetAppCategoryGame();
 
@@ -262,6 +264,7 @@ namespace CosmicShore.Editor
             }
             finally
             {
+                BuildStampProcessor.Cleanup();
                 saved.Restore();
             }
 

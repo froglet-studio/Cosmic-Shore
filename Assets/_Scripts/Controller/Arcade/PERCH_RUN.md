@@ -9,17 +9,19 @@
 
 ## 1. Why this race, for this hull
 
-The Goby (`Crew/GobyPistol`, `.claude/skills/duo-vessel`) is a crew vessel. The Goby half cruises on the two-thumb
-flight and **darts**:
+The Goby (`Crew/GobyPistol`, `.claude/skills/duo-vessel`) is a crew vessel. The Goby half never flies (Garrett,
+2026-11-24): it sits on a perch, turns there on the two thumbs (which also sets the Pistol's plane) and **darts**:
 
 - **Hold** the dart button to charge a length: 140 u untouched, 600 u at a full charge after 0.8 s (`dartMinRange`,
   `dartRange`, `dartChargeSeconds`).
-- **Let go** and it flies there in **one second** (`dartSeconds`), whatever the length. Then a **1.2 s** reload
-  (`dartCooldown`).
+- **Let go** and it flies there in **one second** (`dartSeconds`), whatever the length. The next dart is ready **2.2 s
+  after launch** (`dartCooldown`; counted from launch since 2026-11-24, so a long charge costs no extra wait - the
+  same cycle as the old 1.2 s reload from landing).
 - It **stops on the first block on its line** (`FirstOnLine`, padded by `hullRadius` 3 u). With the Time upgrade
   (Time 5) it phases through.
-- A dart that ends 900 u or more from the last perch, with fewer than three islands queued, is a **perch**: the Goby is
-  pinned for 1.5 s while the Pistol's island is laid.
+- A dart that ends 900 u or more from the last perch, with fewer than three islands queued, is a **perch**: the Pistol's island is
+  laid at once. The AI Goby stays pinned there for 1.5 s (`perchSeconds`); a person's Goby flies straight on
+  (2026-11-24).
 
 A dart costs the same second whatever its length. So the clock of a Goby race is **how many darts it takes**, and each
 dart has exactly two numbers a person chooses: its **length** (how long they hold) and its **line** (where the nose
@@ -63,18 +65,21 @@ and a course that asks both at every ring is noise; I3 and I4 mix all of them at
 
 ### What it measures (offline, 400 seeds, `run.sh --sweep`)
 
-Three pilots on the seat AI's numbers (turn 90°/s, cruise 100 u/s, the shipped dart):
+Two pilots on the seat AI's numbers (turn 90°/s where it sits, the shipped dart; 2026-11-24, after the Goby stopped
+flying, so both hop aside from coral at the nose instead of cruising past it):
 
-| | cruiser (never darts) | full-charger (every dart at the centre, full charge) | reader (the AI's `PlanDart`) | the reader saves |
-|---|---|---|---|---|
-| I1 | 67.7 s | 38.8 s | 36.0 s, 16 darts | 7% |
-| I2 | 84.0 s | 48.2 s | 37.8 s, 16 darts | **22%** |
-| I3 | 78.2 s | 49.1 s | 36.8 s, 16 darts | **25%** |
-| I4 | 68.2 s | 48.5 s | 30.5 s, 13 darts | **37%** |
+| | full-charger (every dart at the centre, full charge) | reader (the AI's `PlanDart`) | the reader saves |
+|---|---|---|---|
+| I1 | 39.6 s | 36.0 s, 16 darts | 9% |
+| I2 | 50.1 s | 37.8 s, 16 darts | **24%** |
+| I3 | 47.6 s | 36.8 s, 16 darts | **23%** |
+| I4 | 48.5 s | 30.5 s, 13 darts | **37%** |
+
+The reader's clocks are the same as with cruising (it never cruised); the full-charger moved by 1-2 s.
 
 The lazy pilot gets slower as the levels go up and the reading pilot does not, so each level is worth learning: the
-gap between "holds the button" and "reads the dart" grows from 7% to 37%. A cruiser is never competitive: the dart is
-the race.
+gap between "holds the button" and "reads the dart" grows from 9% to 37%. The dart is the race: there is no other
+way to move.
 
 **What was tried and dropped.** The first cut put a coral **backstop** just past each hairpin's ring, so a full dart
 braked in the mouth. Measured, it helped a careless pilot as much as a careful one (the full-charger gained 6.5 s at
@@ -88,6 +93,33 @@ shows the length (§4).
 (`PerchRunCourse.CoralFor`): nothing new is replicated. The Goby's dart stops on any prism not its own
 (`Perchable`), so a coral head is just a block; a dart that stops on one is a dash or a perch like any other.
 
+## 3a. Garden ruins at I4 (`PerchRunRuins`, `PerchRunController.Ruins.cs`; Yash, 2026-11-24)
+
+The same environment update Spearline got (`SPEARLINE.md` 2a): at I4 the long legs stand in the ruins of old flora
+gardens. Decoration only. The generator is Spearline's (`SpearlineRuins.Lay`), called, not copied; Perch Run adds
+only the lap it is given and the hook that lays the prisms.
+
+- **Round the dart's line, not a curve.** Spearline keeps its lane clear round a curve through the rings' axes. The
+  Goby darts straight from ring to ring and a dart stops on the first block on its line, so `PerchRunRuins.DartLap`
+  hands the generator every leg as a straight line (each ring twice, on its leg in and its leg out), with the run from
+  the start line to ring 0 ahead of them. The 60 u clear lane is then the lane of every dart; it is wider than the I4
+  mouth (54), so a centre dart and a rim shot both pass.
+- **Where.** Only on legs of 380 u or more: the three hairpins' legs out always, the first leg and the two blocked
+  legs when they are long enough. Never on a double or on a hairpin's short leg in. So **3 to 6 ruins a course, 5.3 on
+  average, about 520 prisms** (196 to 719; 400 seeds), not Spearline's seven. Nothing within 120 u of a ring's mouth.
+- **Kinds.** Pergola, flower head, vines, wall with a doorway, tunnel and 3D maze take turns. **The turning wheel
+  never stands here:** it needs 270 u from its hub to every ring, a leg of about 650 u, and the longest leg is 560, so
+  the generator lays a pergola on its turn. Nothing sweeps a dart's line and nothing is posed per frame.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby and Gold in turn along the course, apart from the Blue rings
+  and coral (`ruinDomains` on the controller; empty = Blue).
+- **Rules.** Plain prisms from the coral's prefab (owner "PerchRunRuins"), laid by every peer from the broadcast
+  rings, returned to the pool with the coral. They follow the game's own rules: a Goby that strays off its line can
+  stop a dart on one or perch on one, like any prism. Nothing reads or writes a vessel, and the AI's coach does not
+  know them: every dart it plans from a ring's centre passes them (a test), a dart from somewhere else may not.
+
+Held by `PerchRunRuinsTests` (9) and three negative controls in `perch_run_harness`. Not compiled or flown in Unity
+yet (§8).
+
 ## 4. The vessel changes (GobyPistolDuo; the Goby is Garrett's)
 
 Two, both kept to what a person already has:
@@ -99,8 +131,18 @@ Two, both kept to what a person already has:
    water by eye.
 2. **A race coach for the AI** (`IGobyRaceCoach`, `GobyPistolDuo.RaceCoach`). With a coach set, the seat's Goby AI
    races on the coach's darts instead of laying islands for the Pistol, through the same calls: it turns the hull at
-   `aiTurnRate`, cruises at `aiCruiseSpeed`, and fires `FireDart` (the call the button makes) at the coach's length once
+   `aiTurnRate` where it sits (it never flies) and fires `FireDart` (the call the button makes) at the coach's length once
    the nose is within 0.5° of the coach's aim. Without a coach the shipped AI is unchanged. A person's Goby ignores it.
+
+3. **Its Time pace reshaped for Regatta** (2026-11-19, elemental loop step 5). `dartPace` (Time; divides the dart's
+   flight time and cooldown) went from x1.0 at rest / x2.2 at level 10 to x1.25 / x1.95. The level-5 value is
+   unchanged (x1.6), so the L5 start and the Time 5 phase-through dart fly exactly as before; only the rest of the
+   curve moved, and Time still raises the pace. Why: Regatta's 15-seed judge put the Goby at 83.3 s on the card start
+   (1.13x the polished five, outside the 1.10x bar) and 62.6 s on the L5 start (0.97x). With the new curve: card
+   78.1 s (1.06x), L5 unchanged. Knee (shuffle, 3 seeds, card): rest x1.0 82.3 s, x1.15 81.2 s, x1.3 79.3 s.
+   In Perch Run (fresh seeds 101-103, shipped coach) only I1 moves, 41.8 -> 39.9 s; I2-I4 start at Time 5 and race
+   exactly as before (48.0 / 46.1 / 38.7 s). Raw: `/mnt/project-files/regatta-flywheel/train/Goby/pace/` and
+   `pace125-ladder/`.
 
 ## 5. AI
 
@@ -111,11 +153,44 @@ Two, both kept to what a person already has:
    that line, charged to 40 u (`Overshoot`) past the second ring.
 2. Else **this ring**: its centre if that line is clear, else the nearest clear rim point (24 directions x 6 radii
    inside the mouth, `TryRimShot`), charged to 40 u past the ring, clamped to 140-600.
-3. Length 0 only when no line clears: it cruises (never seen in the 6,400 test courses).
+3. When no line clears, a **hop aside** (`PerchRunCourse.TrySidestep`): the shortest dart (140 u) 45, 70 or 100 degrees
+   off the line, eight ways round, the first whose line is clear, to see the ring from somewhere new. Length 0 (it sits)
+   only when every one is blocked (`A_walled_in_ring_is_reached_by_a_hop_aside`).
 
 The AI never fires a dart that stops on coral (`The_AI_dart_threads_every_ring`, all 400 seeds x 4 levels x 16 rings).
 Not verified in the editor: that the turn settles within 0.5° at low frame rates, and how the Pistol's island laying
 looks when the Goby perches mid-race.
+
+### 5.0 The coach is trained (2026-11-19, elemental loop step 3)
+
+The coach's two numbers became `PerchRunController` fields, `aiOvershoot` (40) and `aiTurnMargin` (1.25; retired
+2026-11-24 with the orbit fix below, since the Goby no longer cruises), and
+`time_ai_search.py --hull Goby` searched them (sep-CMA-ES then Pareto, I1-I4 plus I1 at Time 5 and one wide course,
+seeds 11-12, 4 + 3 generations). Its best (overshoot 28.6, margin 1.14) confirmed on fresh seeds 101-103 at loss
+2.272 against the shipped 2.282, 0.4%, inside seed noise: the shipped coach already sits at the search's plateau, so
+the shipped values stay. Raw: `/mnt/project-files/regatta-flywheel/train/Goby/coach1/`.
+
+### 5.1 The orbit, found in the real game (2026-11-17, elemental loop step 2)
+
+The race judge (`Tools/Build/time_ladder_judge.py --mode PerchRun --hull Goby`, Amoebius headless) showed the AI Goby
+failing to finish most races past I1: 0 of 2 finished at I4, and 1 of 2 at I2 and I3. The trace showed it circling one
+ring for 400 s. The ring sat inside the Goby's turning circle (it cruises at about 144 u/s and turns at 90 deg/s, so the
+circle's radius is about 92 u). Turning at full rate toward a point inside that circle settles into an orbit round it,
+so the nose never comes within the dart's 0.5 deg. Now, when the aim is inside the circle on its side of the nose (with
+a 1.25x margin; 1.6x measured slower), the coach flies straight on (`PerchRunCourse.InsideTurn`, `TurnRadius`) until the
+ring is outside the circle, then turns for it. The vessel is untouched: this is the mode's coach.
+
+**Retired 2026-11-24.** The Goby no longer cruises (Garrett: "it should never fly"), so it turns where it sits and
+has no turning circle; `InsideTurn`, `TurnRadius` and `aiTurnMargin` went with the cruise. The table below is history.
+
+| Legendary, seeds 1-2 before, fresh seeds 4-6 after | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| before: finished, median s | 2/2, 33.5 | 1/2, 40.9 | 0/2 | 0/2 |
+| after | 3/3, 44.4 | 3/3, 46.5 | 3/3, 46.3 | 3/3, 72.4 |
+
+Medium after: 3/3, 3/3, 3/3, 2/3 (one I4 timeout). Two things are still open:
+- **Difficulty does nothing.** Medium and Legendary race identically because the coach has no seat error.
+- **I4 still loses up to 40 s at some reef rings.** The Goby wanders near the ring, darting without threading it.
 
 ## 6. Numbers, and where they are authored
 
@@ -143,8 +218,11 @@ is the drift gate. Card art: `render_card_backgrounds.py PerchRun` (an I4 course
 4. I3: the coral heads stand on their legs; a dart at the centre stops on the head (the reach ring sits on the head
    while charging); a rim shot threads.
 5. I4: a double, darted from the ring before on the right line, counts both rings.
-6. Two AI Gobys: they dart ring to ring and finish; note any ring where one turns in place or cruises.
+6. Two AI Gobys: they dart ring to ring and finish; note any ring where one sits still for long or hops aside more than twice.
 7. MPPM two clients: both see the same rings and coral.
+8. The I4 ruins (§3a) have not been compiled or seen in Unity: at I4, 3 to 6 ruins stand on the long legs in Jade,
+   Ruby and Gold; a dart down a leg's line passes through each; none at I1-I3; two clients see the same ruins; note
+   the frame cost of about 520 more prisms, and any ruin an AI Goby stops on.
 
 ## 9. Known limitations
 

@@ -135,6 +135,29 @@ namespace CosmicShore.Tests
         /// <summary>A long rail is worth a charge from the ring before; a short one is worth clearly less, so where a charge
         /// goes is a choice.</summary>
         [Test]
+        public void The_AI_race_line_stays_on_the_line_flown_ring_to_ring_and_gives_up_past_the_ring()
+        {
+            for (int i = 1; i <= 4; i++)
+                for (int seed = 1; seed <= 50; seed++)
+                {
+                    var rings = Course(i, seed);
+                    for (int k = 0; k < rings.Count; k++)
+                    {
+                        Vector3 from = SlipLineCourse.LegStart(rings, k), to = rings[k].Position;
+                        Vector3 dir = (to - from).normalized;
+                        Vector3 side = Vector3.Cross(dir, Vector3.up).normalized * 30f;
+                        // a hull off the line part way down the leg: the aim is ON the line, ahead of the hull's foot
+                        Vector3 hull = Vector3.Lerp(from, to, 0.4f) + side;
+                        Assert.IsTrue(SlipLineCourse.RaceLineAim(rings, k, hull, 60f, out var aim), $"I{i} seed {seed} ring {k}");
+                        Assert.Less(SlipLineCourse.DistanceToSegment(aim, from, to + dir * 60f), 0.01f, $"I{i} seed {seed} ring {k}: off the line");
+                        Assert.Greater(Vector3.Dot(aim - hull, dir), 59f, $"I{i} seed {seed} ring {k}: not ahead");
+                        // past the ring along its leg without threading it: no race line (the gate way re-attacks)
+                        Assert.IsFalse(SlipLineCourse.RaceLineAim(rings, k, to + dir * 20f, 60f, out _), $"I{i} seed {seed} ring {k}: past");
+                    }
+                }
+        }
+
+        [Test]
         public void A_long_rail_is_worth_a_charge_and_a_short_one_less()
         {
             for (int i = 2; i <= 4; i++)

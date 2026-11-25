@@ -405,16 +405,20 @@ Garrett, 2026-11-12 13:51 UTC: "as you have pointed out there are many little ch
 polish these and fix oddities. But we will do that on the next pass. for now these are an excellent start. Lets get
 them into the game. update the avatars, and use the full size art for each pilot's profile page in the ark."
 
-**What is in the build.** The eighteen callsign scenes, copied by `Tools/Build/author_pilot_scene_assets.py`
-(`--check` is a ship gate; `--self-test` plants its faults) from `Docs/Pilots/art/scenes/<WORD>.jpg` to
-`Assets/Resources/Pilots/Scenes/<WORD>.jpg`, and one catalog, `Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset`
-(`PilotSceneCatalogSO`): for each callsign the painted pilot's name, the scene's resource name, the close-up sprite
+**What is in the build.** All fifty scenes (Garrett, 2026-11-16: "lets get all 50 into the game. it is ok if we
+duplicate callsign everything else will be the different"; until then only the eighteen callsign scenes), copied by `Tools/Build/author_pilot_scene_assets.py`
+(`--check` is a ship gate; `--self-test` plants its faults) from `Docs/Pilots/art/scenes/<KEY>.jpg` to
+`Assets/Resources/Pilots/Scenes/<KEY>.jpg`, and one catalog, `Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset`
+(`PilotSceneCatalogSO`): for each painted pilot its key, its callsign, its name, the scene's resource name, the close-up sprite
 (the avatar, `Assets/_Graphics/Profile/Pilots/Avatar_<WORD>.png`), the close-up's box in the scene and the side the
-pilot stands on, all read from `scenes.json`. The other thirty-two scenes stay under `Docs/`: those pilots are in
-no crew, so nothing in the game can show them yet. The fifty avatars were already the scenes' close-ups.
+pilot stands on, all read from `scenes.json` and `people.json`. Eighteen pilots carry their own word as callsign; the other thirty-two
+share one (`people.json` names it). The fifty avatars were already the scenes' close-ups. A scene costs a
+phone build about 0.56 MB (1536x864 at the platform default, ASTC 6x6; no mip maps), so the 32 more add about 18 MB
+and all fifty about 28 MB. ASTC 8x8 would halve that at some loss in smooth gradients; not changed until someone has
+looked at it.
 
-**Where a player sees them.** The Ark's PILOTS tab (`ArkPilotsPage`, `author_menu_ark.py`) lists the crew, one cell
-a pilot with the close-up; pressing one opens the pilot's PROFILE PAGE (`PilotProfileModal`,
+**Where a player sees them.** The Ark's PILOTS tab (`ArkPilotsPage`, `author_menu_ark.py`) lists the crew, eighteen cells
+a page with PREVIOUS and NEXT, one cell a pilot with their own close-up; pressing one opens the pilot's PROFILE PAGE (`PilotProfileModal`,
 `Resources/Pilots/PilotProfileView.prefab`, `author_menu_pilot_profile.py`, `ScreenSwitcher.OpenPilotProfile`):
 the scene across the whole screen and the words in a panel on the side the pilot does not stand on.
 `Docs/MENU_REDESIGN_B.md` section 92.1 is the page's record.

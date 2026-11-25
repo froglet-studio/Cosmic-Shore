@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: YawsteryAction-Left
   m_EditorClassIdentifier: 
   turnRateMultiplier:
-    Enabled: 0
+    Enabled: 1
     Value: 1
     Min: 1
-    Max: 1
-    element: 0
-    UseFloor: 0
-    Floor: 0
+    Max: 1.5
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
   steerDirection: -1
   maxYawDegPerSec: 80
   rampInSeconds: 0.35

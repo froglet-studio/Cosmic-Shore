@@ -11,9 +11,10 @@ namespace CosmicShore.Gameplay
     /// <para>The pan is the sword's MIDPOINT moved off its rest, in the hull's frame: at rest the bill lies along the
     /// nose, so the pan is zero; swung out to the side its midpoint is half a blade to that side (an x pan); raised
     /// straight up it is half a blade overhead (a y pan). Only the across-the-view part (x, y) is used - the camera
-    /// already pulls back with the blade's length (<see cref="RhinoSwordCamera"/>). Written to
+    /// already pulls back with the blade's length (<see cref="SwordfishSwordLengthCamera"/>). Written to
     /// <see cref="CustomCameraController.FramingPan"/>, which pans the camera and its look point together, for the
-    /// local human pilot only; an AI or a remote copy never moves anyone's camera.</para>
+    /// local player's hull only, whoever holds its sticks (<see cref="CameraManager.ActiveRigFollowing"/>); an AI
+    /// seat or a remote copy never moves anyone's camera.</para>
     ///
     /// <para>Owned by <see cref="ShieldSwipeActionExecutor"/> and ticked after every pose it writes. Plain C#,
     /// allocation-free per frame.</para>
@@ -34,10 +35,11 @@ namespace CosmicShore.Gameplay
             return new Vector3(midpointOffsetInHull.x * c, midpointOffsetInHull.y * c, 0f);
         }
 
-        public void Tick(IVesselStatus status, Vector3 midpointOffsetInHull, RhinoShieldSwipeConfigSO config, float dt)
+        public void Tick(IVesselStatus status, Vector3 midpointOffsetInHull, SwordfishShieldSwipeConfigSO config, float dt)
         {
-            bool pilot = status?.Player != null && status.IsLocalUser && !status.IsInitializedAsAI
-                         && (status.AIPilot == null || !status.AIPilot.AutoPilotEnabled);
+            // The local player's hull, whoever holds the sticks (CameraManager.ActiveRigFollowing's rule): the pan
+            // that centres a swung sword is the same view whether the player or the AI swings it.
+            bool pilot = status?.Player != null && status.IsLocalUser && !status.IsInitializedAsAI;
             if (!pilot || !config)
             {
                 Release();
@@ -50,8 +52,8 @@ namespace CosmicShore.Gameplay
             if ((_pan - target).sqrMagnitude < 1e-6f) _pan = target;
             if (_pan == Vector3.zero && !_written) return;
 
-            var cam = Resolve();
-            if (!cam) return;
+            var cam = Resolve(status);
+            if (!cam) { Release(); return; }
             cam.FramingPan = _pan;
             _written = _pan != Vector3.zero;
         }
@@ -61,15 +63,19 @@ namespace CosmicShore.Gameplay
             _pan = Vector3.zero;
             if (!_written) return;
             _written = false;
-            var cam = _camera ? _camera : Resolve();
+            var cam = _camera;
+            _camera = null;
             if (cam) cam.FramingPan = Vector3.zero;
         }
 
-        CustomCameraController Resolve()
+        // The camera on screen while it follows this hull; a camera pointed elsewhere (a cinematic, another hull) is
+        // not this sword's to move.
+        CustomCameraController Resolve(IVesselStatus status)
         {
-            if (_camera && _camera.isActiveAndEnabled) return _camera;
-            _camera = CameraManager.Instance != null ? CameraManager.Instance.GetActiveController() as CustomCameraController : null;
-            return _camera;
+            var cam = CameraManager.ActiveRigFollowing(status.Transform);
+            if (cam != _camera && _written) Release();
+            _camera = cam;
+            return cam;
         }
     }
 }

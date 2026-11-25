@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -29,6 +32,39 @@ namespace CosmicShore.Gameplay
 
         protected override RaceCourseSource CreateCourseSource() => new ScarabRallyCourseSource();
 
+        /// <summary>Switchback became Blast Run two days after this race was cut (2026-10-29), and this class inherited it:
+        /// block fields across every blocked leg, doors of danger rakes and Dolphin key crystals (which a Scarab's skimmer
+        /// forges into a ball sitting on the line). Those ask for the Dolphin's blast and punish the Scarab's own verbs, a
+        /// drift's wide line and a held throttle. So I1-I3 fly the bare ring course they were designed as
+        /// (<see cref="ScarabRallyCourse.LaysBlastRun"/>); I4 keeps the field it had (the elemental loop's ladder step).</summary>
+        protected override bool LaysBlastRun(int intensity) => ScarabRallyCourse.LaysBlastRun(intensity);
+
+        /// <summary>A racing AI flies the rings and nothing else (Yash, 2026-10-26). Switchback's AI detours for Blast Run's
+        /// keys; a Scarab has no key blast, and a crystal it touches becomes a ball in its own path.</summary>
+        protected override bool AIDetoursForCrystals => false;
+
+        [Header("AI nose")]
+        [Tooltip("The Scarab AI's nose follow rate per second, one row per intensity (I1..I4), by difficulty: Scarab Rally's own " +
+                 "table, read instead of Switchback's (which is tuned for the Dolphin). 1.5 = the fleet lag, higher = faster. " +
+                 "Legendary trained in the Scarab's own race (time_ai_search.py, Scarab run3, 2026-11-17): 15/s at I1-I2 and " +
+                 "18/s at I3-I4; on 32 fresh flights I4 went 164 to 120 s and I1 from Time 10 103 to 87 s, no DNF. Easy 3.5, " +
+                 "Medium 5 and Hard 8 (2026-11-17, real game, alone, 3 courses a rung): at the old 1.8-3.5/s Medium took 4x " +
+                 "Legendary's time and Easy never finished I4; now Easy 85/102/108/189 s, Medium 74/73/72/161, Hard " +
+                 "66/64/64/144 against Legendary's 63/57/57/121 at I1-I4, every race finished.")]
+        [SerializeField] SwitchbackNoseFollow[] aiScarabNoseFollowByIntensity =
+        {
+            new(3.5f, 5f, 8f, 15f),      // I1
+            new(3.5f, 5f, 8f, 15f),      // I2
+            new(3.5f, 5f, 8f, 18f),      // I3
+            new(3.5f, 5f, 8f, 18f),      // I4 (no gauntlet in Scarab Rally)
+        };
+        [Tooltip("u from the ring inside which the Scarab AI stops dodging (Switchback's aiNoDodgeNearRing, Scarab Rally's own " +
+                 "value). Trained with the nose table above: 224.")]
+        [SerializeField, Min(0f)] float aiScarabNoDodgeNearRing = 224f;
+
+        protected override SwitchbackNoseFollow[] AINoseFollowTable => aiScarabNoseFollowByIntensity;
+        protected override float AINoDodgeNearRing => aiScarabNoDodgeNearRing;
+
         [Header("AI juke")]
         [Tooltip("The AI jukes when, flying on as it is, it would cross the next mouth's plane outside the mouth by no " +
                  "more than one juke (~40 u), and that crossing is at least this many seconds away (the dash takes 0.5 s).")]
@@ -37,6 +73,97 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aiJukeMaxSeconds = 1.4f;
         [Tooltip("How far inside the rim (u) the AI wants to cross: a line that grazes the rim counts as a miss.")]
         [SerializeField, Min(0f)] float aiJukeMargin = 6f;
+
+        // ── The garden ruins (SCARABRALLY.md "The ruins") ──────────────────────
+
+        [Header("Garden ruins (I4)")]
+        [Tooltip("The prism the I4 ruins are laid in (SpawnablePrism). Decoration (Yash, 2026-11-24): Spearline's ruins " +
+                 "round this course's rings, cut clear of the block fields. Empty = no ruins.")]
+        [SerializeField] Prism scarabRuinPrismPrefab;
+        [Tooltip("The domain colours the ruins are laid in, one ruin after another along the course, so they read apart " +
+                 "from the block fields (Blue) and the lime ring. Empty = Blue, as the fields.")]
+        [SerializeField] Domains[] scarabRuinDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        const string ScarabRuinOwnerId = "ScarabRallyRuins";
+
+        readonly List<SpearlineRuinPart> _scarabRuinParts = new();
+        readonly List<SpearlineRuinWheel> _scarabRuinWheels = new();
+        readonly List<bool> _scarabRuinLaid = new();
+        readonly List<Prism> _scarabRuinPrisms = new();
+        Transform _scarabRuinRoot;
+
+        /// <summary>Every peer, after Switchback's own course furniture: the I4 ruins, from the same rings.</summary>
+        protected override void OnCourseRaised()
+        {
+            base.OnCourseRaised();
+            LayScarabRuins();
+        }
+
+        /// <summary>Scenery with the game's own prism rules: a hull breaks a ruin prism and nothing grows back. Nothing
+        /// here reads or writes a vessel, and nothing turns (ScarabRallyRuins lays no wheel), so there is no tick.</summary>
+        void LayScarabRuins()
+        {
+            ClearScarabRuins();
+            int intensity = Intensity;
+            if (SpearlineRuins.ForIntensity(intensity).PerLap <= 0) return;
+            if (!scarabRuinPrismPrefab)
+            {
+                CSDebug.LogWarning("[Scarab Rally] no ruin prism prefab on the controller - the I4 ruins are not laid.");
+                return;
+            }
+            // The field Switchback just laid, computed again from the same inputs (its layout is private to it).
+            ResolveShell(out float inner, out _);
+            var field = LaysBlastRun(intensity)
+                ? SwitchbackBlastRun.Layout(_course, intensity, ResolveCellCentre(),
+                                            inner / innerRadiusNucleusFactor + ScarabRallyRuins.FieldNucleusMargin, BlastRunGauntlet).Prisms
+                : null;
+            ScarabRallyRuins.Lay(_course, intensity, field, _scarabRuinParts, _scarabRuinWheels, _scarabRuinLaid);
+
+            // The ordinal of each ruin along the chain picks its colour, so neighbours differ whichever legs stand.
+            var trail = new Trail();
+            int ruin = -1, lastLeg = -1;
+            for (int i = 0; i < _scarabRuinParts.Count; i++)
+            {
+                if (!_scarabRuinLaid[i]) continue;
+                var part = _scarabRuinParts[i];
+                if (part.Leg != lastLeg) { lastLeg = part.Leg; ruin++; }
+                if (!_scarabRuinRoot)
+                {
+                    _scarabRuinRoot = new GameObject(ScarabRuinOwnerId).transform;
+                    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(_scarabRuinRoot.gameObject, gameObject.scene);
+                }
+                _scarabRuinPrisms.Add(PrismTrailBuilder.LayOne(scarabRuinPrismPrefab,
+                    new PrismLay(new SpawnPoint(part.Position, Quaternion.LookRotation(part.Forward, part.Up), part.Scale),
+                                 ScarabRuinDomain(ruin), PrismKind.Plain),
+                    _scarabRuinRoot, trail, ScarabRuinOwnerId, admitAuthoredScale: true));
+            }
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Scarab Rally] ruins at intensity {intensity}: {_scarabRuinPrisms.Count} prisms in {ruin + 1} ruins.");
+        }
+
+        Domains ScarabRuinDomain(int ruin) =>
+            scarabRuinDomains is { Length: > 0 } ? scarabRuinDomains[ruin % scarabRuinDomains.Length] : Domains.Blue;
+
+        void ClearScarabRuins()
+        {
+            for (int i = 0; i < _scarabRuinPrisms.Count; i++)
+            {
+                var prism = _scarabRuinPrisms[i];
+                if (prism && prism.ownerID == ScarabRuinOwnerId && !EnvironmentPrismPool.TryRelease(prism)) Destroy(prism.gameObject);
+            }
+            _scarabRuinPrisms.Clear();
+            _scarabRuinParts.Clear();
+            _scarabRuinWheels.Clear();
+            _scarabRuinLaid.Clear();
+            if (_scarabRuinRoot) Destroy(_scarabRuinRoot.gameObject);
+            _scarabRuinRoot = null;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            ClearScarabRuins();
+            base.OnNetworkDespawn();
+        }
 
         /// <summary>The Scarab AI holds full throttle and steers, so a mouth twisted off its line at I3 was a lift or a
         /// miss (TIME_GAME_FUN_SCORES.md round 3). The juke is the Scarab's own fix for that, and the autopilot can press

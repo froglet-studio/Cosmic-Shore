@@ -6,8 +6,8 @@ namespace CosmicShore.UI
     /// <summary>
     /// A still picture as the Sea table's top (<see cref="VoyageSlab"/>, Rev 90, Docs/MENU_REDESIGN_B.md section 172): it
     /// fills its rect (cropped to the rect's shape, about its middle, <see cref="Zoom"/> times closer), lies back in
-    /// perspective and fades at its far edge. The Voyages tab's table is the live map (<see cref="VoyageMapGraphic.Tilt"/>);
-    /// the Saga, Quests and Episodes tables are one of these.
+    /// perspective and fades at its far edge. The Saga, Quests and Episodes tables are one of these (the Voyages tab's
+    /// map is flat since Rev 98, Docs/MENU_REDESIGN_B.md section 184).
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public class VoyageSlabPicture : MaskableGraphic

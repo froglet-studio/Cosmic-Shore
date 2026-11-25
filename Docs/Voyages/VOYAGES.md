@@ -231,8 +231,9 @@ Every squad out on a voyage files a **flight plan** with GTC whenever it chooses
 A voyage does not start from a menu of mission types. It starts from **your crew**:
 
 - **A pilot is a person and a callsign.** The person is unique to your crew: their name, story, race and look. The
-  callsign is their ability (`Docs/Pilots/CALLSIGNS.md`), and other crews have pilots with the same callsign. **A crew
-  holds at most one pilot of each callsign.**
+  callsign is their ability (`Docs/Pilots/CALLSIGNS.md`), and other crews have pilots with the same callsign. Until
+  2026-11-16 a crew held at most one pilot of each callsign; now several may share one, and each person is still
+  unique (Garrett, 2026-11-16: "it is ok if we duplicate callsign everything else will be the different").
 - **Every pilot belongs to one faction.** A faction is one of many of its **faction type**, and each faction type
   belongs to a domain. For example, a made-up "Black Tide" would be one of dozens of pirate factions, and pirates are a Ruby faction
   type. The faction types come from the Notion design docs (*Mission Overview*, *Initial Onboarding*):
@@ -546,8 +547,8 @@ and the in-flight branches (`CLAUDE.md` § Team).
    wreck (an `ArkFall` spill placed on arrival).
 5. **The voyage record and extraction.** Legs flown, what is aboard, the hull count, on the device. Docking at home
    moves what is aboard into the collection. A delivered dispatch writes the destination port's ledger.
-6. **Hand tests and a ticket.** One Froglet Tasks ticket for the branch (suggested, approved by a person), with the
-   editor hand tests as its checklist (`/verify-unity` gates every C# commit).
+6. **Hand tests.** The editor hand tests go in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, and, with a person's yes, the
+   lane goes for test (`/handoff-for-test`; `/verify-unity` gates every C# commit).
 
 ## 10. Who works where (ask before changing)
 

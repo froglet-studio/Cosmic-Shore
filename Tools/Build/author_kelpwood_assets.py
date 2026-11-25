@@ -193,7 +193,7 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameKelpwood"],
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Angler']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -446,7 +446,9 @@ if 0.25 * BITE_TARGET * COMEBACK_RATE < 1.0:
 # still reports a bite as a Strike through TryAdmit on the scoring channel.
 executor = g.read(ANGLER_EXECUTOR)
 for needle in ("input.LeftTriggerAnalog", "void UpdateBeamLock(bool erasing", "SpendOn(inBeam)",
-               "CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.LockBiteCooldown",
+               # the bite cooldown is element-scaled since #1934 (claude/angler-kit); Kelpwood reads no cooldown,
+               # only that a bite is still admitted as a Strike
+               "CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.BiteCooldownFor(_status)",
                "HitClass = CombatHitClass.Strike", "public int TamedCount", "public int HunterCount"):
     if needle not in executor:
         errors.append(f"AnglerCommandExecutor no longer has '{needle}' - Kelpwood's rule pays a lock's bites and its "

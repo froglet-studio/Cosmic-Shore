@@ -22,6 +22,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SubstrateAgentFauna : Fauna
     {
+        /// <summary>A rider cannot steer this body (the Jewel Wasp, <see cref="IFaunaPossession"/>): no possession yet.</summary>
+        protected override bool CanBePossessed => false;
+
         [Header("Substrate Agent")]
         [Tooltip("Optional explicit body prism; resolved from children when empty.")]
         [SerializeField] HealthPrism bodyPrism;

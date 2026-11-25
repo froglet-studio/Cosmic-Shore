@@ -467,6 +467,29 @@ namespace CosmicShore.Gameplay
             return rail.Start + d * Mathf.Min(rail.Length, along + lead);
         }
 
+        /// <summary>
+        /// The AI's RACE LINE between rides: a point <paramref name="lead"/> on down the straight line into ring
+        /// <paramref name="k"/> (from the ring before, or the start line) past the hull's foot on it, carried on along that
+        /// line past the ring. That line is the one <c>The_line_flown_ring_to_ring_never_touches_a_rail</c> holds clear of
+        /// every rail, so a pilot closing onto it never flies into a rail it does not mean to ride; the gate way's
+        /// approach point on the ring's axis has no such guarantee. False once the hull's foot is past the ring (a mouth
+        /// missed, or a crossing the race did not count): the gate way re-attacks the ring from where the hull is.
+        /// </summary>
+        public static bool RaceLineAim(IReadOnlyList<RaceGate> rings, int k, Vector3 hull, float lead, out Vector3 aim)
+        {
+            aim = default;
+            if (rings == null || k < 0 || k >= rings.Count) return false;
+            Vector3 from = LegStart(rings, k), to = rings[k].Position;
+            Vector3 leg = to - from;
+            float length = leg.magnitude;
+            if (length < 1e-3f) return false;
+            Vector3 dir = leg / length;
+            float foot = Vector3.Dot(hull - from, dir);
+            if (foot > length) return false;
+            aim = from + dir * (Mathf.Max(0f, foot) + Mathf.Max(0f, lead));
+            return true;
+        }
+
         // ── Geometry ─────────────────────────────────────────────────────
 
         public static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)

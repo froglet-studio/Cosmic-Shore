@@ -20,7 +20,7 @@ namespace CosmicShore.Tests
     ///
     /// The reference implementation below rebuilds the sword's real rig from Rhino.prefab
     /// (mount at (0, 9.38, 20.7) on the Fusilage, 20 deg raised rest pose, 90/90/65 sweep from
-    /// RhinoShieldSwipeConfig) and differentiates a material point's true world position
+    /// SwordfishShieldSwipeConfig) and differentiates a material point's true world position
     /// analytically. RelativeVelocity must reproduce it.
     /// </summary>
     [TestFixture]

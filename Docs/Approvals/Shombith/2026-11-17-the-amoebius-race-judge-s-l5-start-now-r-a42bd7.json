@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-17-the-amoebius-race-judge-s-l5-start-now-r-a42bd7",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T05:17:26+00:00",
+  "area": "Amoebius (RaceJudge)",
+  "summary": "The Amoebius race judge's L5 start now raises each hull's Time to level 5 from its card row instead of setting it (#2104), and the judge races Skim Race, timing the Squirrel to the mode's crystal count (#2105).",
+  "why": "Garrett's Regatta flywheel: L5 had downgraded the four hulls Regatta starts at level 10; the Squirrel had no home-game AI trainer.",
+  "branch": "port-work",
+  "pr": 2105,
+  "commit": "f4b46264d",
+  "paths": [
+    "Port/src/CosmicShore.Player/RaceJudge.cs"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-13-the-i4-seals-are-nine-plain-cubes-the-mi-7e9875",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-13T15:31:20+00:00",
+  "area": "Switchback's I4 gauntlet and its AI bands",
+  "summary": "The I4 seals are nine plain cubes (the middle Danger heart is gone), and aiNoseFollowGauntlet went from 1.9/2.8/3.5/5 to 1.5/2.2/3.5/6 so Easy is slower than Medium again (offline 176/167/155/141 s).",
+  "why": "Elemental loop step 2: the seal hearts were ~90% of I4's dead stops (Easy 40 a race), making I4 a cliff over I3 that no person had finished. Everything else in the gauntlet is unchanged. Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md",
+  "branch": "claude/project-thread-j3xxyz",
+  "lane": "switchback",
+  "commit": "1ba6face9",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastRun.cs",
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "2"
+  }
+}

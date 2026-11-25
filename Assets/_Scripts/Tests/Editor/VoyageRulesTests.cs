@@ -15,6 +15,24 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class VoyageRulesTests
     {
+        [Test]
+        public void FriendAt_SeatsTheLobbyAfterThePlayer_AndAiInTheRest()
+        {
+            // You lead with two friends: they fly seats 1 and 2, no AI.
+            Assert.AreEqual(-1, VoyageRules.FriendAt(0, 0, 2));
+            Assert.AreEqual(0, VoyageRules.FriendAt(1, 0, 2));
+            Assert.AreEqual(1, VoyageRules.FriendAt(2, 0, 2));
+            // One friend: seat 2 is the AI's.
+            Assert.AreEqual(0, VoyageRules.FriendAt(1, 0, 1));
+            Assert.AreEqual(-1, VoyageRules.FriendAt(2, 0, 1));
+            // You in seat 1 of a joined squad: the friend takes seat 0, the AI seat 2.
+            Assert.AreEqual(0, VoyageRules.FriendAt(0, 1, 1));
+            Assert.AreEqual(-1, VoyageRules.FriendAt(1, 1, 1));
+            Assert.AreEqual(-1, VoyageRules.FriendAt(2, 1, 1));
+            // Nobody in the lobby: every other seat is an AI's.
+            Assert.AreEqual(-1, VoyageRules.FriendAt(1, 0, 0));
+        }
+
         const string Hunter = "pilot.callsign.citadel";
         const string Merchant = "pilot.callsign.volt";
         const string Pirate = "pilot.callsign.galleon";
@@ -323,6 +341,45 @@ namespace CosmicShore.Tests
             Assert.IsTrue(s.IsHome());
             CollectionAssert.IsEmpty(s.Aboard);
             Assert.IsNull(s.Current);
+        }
+
+        [Test]
+        public void ALegClosedAfterAWorldWasReachedWaitsThere_AndPicksUpThere()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            var job = Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt");
+            VoyageRules.Take(s, c, job);
+            VoyageWaypoint.Begin(s, new[] { 4, 7, 9 });
+            Assert.IsFalse(s.HasWaypoint(), "no world reached yet");
+            Assert.IsTrue(VoyageWaypoint.Mark(s, 1));
+            Assert.IsFalse(VoyageWaypoint.Mark(s, 0), "only forward");
+            s.Aboard.Add("artifact.a");
+
+            Assert.IsNull(VoyageRules.Anchor(s, c, workDone: false, keepWaypoint: true), "kept, not given up");
+            VoyageRules.Resume(s, c, Domains.Jade);
+            Assert.IsTrue(s.HasWaypoint(), "the voyage waits");
+            CollectionAssert.Contains(s.Aboard, "artifact.a", "what was found is still aboard");
+            CollectionAssert.AreEqual(new[] { 7, 9 }, VoyageWaypoint.Remaining(s), "from the world reached");
+            var board = VoyageRules.Board(s, c, new[] { Hunter });
+            Assert.AreEqual(1, board.Count, "the waiting voyage is the one card");
+            Assert.AreSame(s.Current, board[0]);
+
+            VoyageRules.Arrive(s, c);
+            Assert.IsFalse(s.HasWaypoint(), "arriving ends the chapter");
+        }
+
+        [Test]
+        public void AbandoningClearsTheWaypoint()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            VoyageRules.Take(s, c, Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt"));
+            VoyageWaypoint.Begin(s, new[] { 4, 7 });
+            VoyageWaypoint.Mark(s, 0);
+            VoyageRules.Abandon(s, c);
+            Assert.IsFalse(s.HasWaypoint());
+            CollectionAssert.IsEmpty(s.WaypointRoute);
         }
 
         [Test]

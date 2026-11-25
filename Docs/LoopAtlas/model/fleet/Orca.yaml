@@ -1,0 +1,203 @@
+# Loop Atlas model: vessel Orca. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Orca
+verbs:
+  Time:
+    ability: Boost Tank
+    does: The helm boosts while the tank lasts, and the tank refills on its own.
+    trigger: Helm seat - hold
+    scales: More Time refills the tank faster and makes the boost faster.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: seat
+    t: [4, 20]
+  Charge:
+    ability: Flown Missiles
+    does: Each gunner launches missiles from its own magazine and steers them by hand; a missile collects crystals it flies
+      through. An omni crystal gives every gunner one more missile.
+    trigger: Gunner seats - tap to launch, then steer
+    scales: More Charge makes the missiles fly faster and turn sharper.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: seat
+    t: [4, 20]
+  Mass:
+    ability: Danger Shield
+    does: The helm rings the hull in super-shielded prisms, open ahead, that ride with it for a few seconds, then drop where
+      they stand as danger prisms that linger.
+    trigger: Helm seat - tap
+    scales: More Mass carries the shield ring with the hull for longer before it drops.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: seat
+    t: [4, 20]
+  Space:
+    ability: Burst
+    does: A missile bursts on contact, after five seconds, or when its gunner taps again, wrecking rival prisms nearby and
+      taking petals from rival hulls; the bomb gunner's bomb bursts the same way.
+    trigger: On contact, on its fuse, or tap again
+    scales: More Space widens the missile and bomb blasts and the hull's skim reach.
+    source: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+    arch: passive
+    t: [2, 15]
+  Omni:
+    ability: Omni
+    does: Every gunner seat gets one more missile in its magazine, whether the hull or a gunner's missile took the crystal.
+    trigger: Pick up an omni crystal
+    scales: ''
+    source: Assets/_Scripts/Controller/Vessel/Crew/OrcaCrew.cs
+    arch: omni
+    t: [10, 60]
+board:
+  Time: b ~ .
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: []
+games:
+  Time: [Breach]
+  Charge: [Pod Hunt]
+  Mass: [Ice Shelf]
+  Space: [Depth Charge]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The broadside
+  t: [10, 40]
+  is: The helm puts the guns where they can work.
+  chain:
+  - - Time
+    - 'Helm: boost into position'
+  - - Mass
+    - 'Helm: ring the hull in shield'
+  - - Charge
+    - 'Gunners: launch and fly the missiles'
+  - [Space, Burst on contact]
+  drivers: [crew, break, rival]
+  feel: Four people, one hit.
+  gene:
+    genome: Charge
+    cue: [rival_near, ally_near, verb_ready]
+    dials:
+    - - closeTo
+      - distance the helm closes to before the gunners launch
+      - 50
+      - 400
+      - u
+    - [salvo, missiles flown at once, 1, 4, count]
+    - - burstLead
+      - seconds before contact a gunner taps to burst
+      - 0
+      - 2
+      - s
+    done: A burst takes petals from a rival hull.
+    sight: BANDIT
+- in: x
+  name: Tank and missile
+  t: [8, 25]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The helm boosts the straight while a gunner flies a missile through the crystal ahead.
+  chain:
+  - - Time
+    - Helm boosts on the straight
+  - - Charge
+    - A gunner flies a missile through a crystal ahead
+  - [Time, Boost on into the gate]
+  drivers: [crew, joy]
+  feel: The crew clears the road.
+  gene:
+    genome: Time
+    cue: [straight_ahead, crystal_near]
+    dials:
+    - - tankReserve
+      - share of the tank kept for the gate
+      - 0
+      - 0.6
+      - fraction
+    - - missileDetour
+      - distance a missile flies off the line for a crystal
+      - 0
+      - 300
+      - u
+    done: A gate is threaded under boost.
+    sight: SUNDIAL
+- in: x
+  name: The ice shelf
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Ring the hull in shield along the claim, and let it fall as lingering danger.
+  chain:
+  - - Mass
+    - Helm rings the hull in shield
+  - [Time, Boost along the claim]
+  - - ''
+    - The ring drops as danger prisms that linger
+  drivers: [make, crew]
+  feel: A wall that bites.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap, rival_near]
+    dials:
+    - - shelfRadius
+      - distance from the nucleus the shield is dropped
+      - 20
+      - 300
+      - u
+    done: Dropped danger prisms stand inside the claim.
+    sight: HORNET
+- in: x
+  name: Depth charge
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Fly a missile deep into rival mass and burst it in the middle.
+  chain:
+  - - Charge
+    - A gunner flies a missile into rival mass
+  - - Space
+    - 'Tap again: it bursts in the middle'
+  drivers: [break, crew]
+  feel: From the inside.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, dense_mass]
+    dials:
+    - - burstDepth
+      - how deep into the mass before the tap
+      - 0
+      - 60
+      - u
+    done: A burst wrecks rival prisms on every side of it.
+    sight: MANGER
+- in: x
+  name: Boost Tank into Danger Shield into Flown Missiles
+  t: [12, 60]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 73% of the behaviour in an archive
+    cell at 98% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Boost Tank (Time), then Danger Shield (Mass), then Flown Missiles
+    (Charge).'
+  chain:
+  - [Time, Boost Tank]
+  - [Mass, Danger Shield]
+  - [Charge, Flown Missiles]
+  drivers: [joy, mastery, make]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Charge
+    cue: [crystal_near]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Flown Missiles lands within the handoff of the Boost Tank before it.
+doc: Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md

@@ -40,8 +40,8 @@ never look alike (`python3 Tools/Build/colour_domains.py classify '#hex'` answer
 **Jade or Ruby? (Shombith, 2026-11-05.)** Ask whether the player can change their mind. A hull they claim in an arena
 lineup, a friend they add, a tab or tile they select: they can take it back, so it is **Jade**, and so are the
 selection and the focus ring. Play and Ready: once pressed there is no way back (Play launches the game), so they are
-**Ruby** (a Frogma comment, 2026-11-05). Lime stays the call to action the player can still change: join, accept, claim. (In the game the selection is still the old sky blue `#3DB2FF`
-until the Unity change in section 13 lands; new work uses Jade.)
+**Ruby** (a Frogma comment, 2026-11-05). Lime stays the call to action the player can still change: join, accept, claim. (Built in the game
+2026-11-17: the selection and focus ring are Jade, Play and Ready are Ruby; section 13.)
 
 **Choosing a colour.** Pick from the chart's shades (the colour chart board, `--fs-<family>-<lightness>` in
 `froglet.css`, `palettes` in `froglet-tokens.json`): every one sits clear inside its family. Never pick a colour in the
@@ -269,10 +269,17 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
 | D8 | The codex and studios | Move them onto Deep Sea and Shore in a separate change; the prompt for it is below. |
 
 **Still to do in Unity** (one change each, Shombith's area; the guide already holds the rules):
-1. **Selection and focus to Jade, Ready to Ruby.** `UITheme.asset` `selection` -> the Jade control colour, a `commit`
+1. **Selection and focus to Jade, Ready to Ruby. BUILT** (2026-11-17, Shombith: "update those in the game"; the record
+   below). `UITheme.asset` `selection` -> the Jade control colour, a `commit`
    token on `UIThemeSO` for Ready; the fallback in `UITheme.Resolve` and `SelectionStyleTests`; the generators that
    assert the sky blue (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`) and the SelectionRim materials they write;
    `colour_domains.json` `ui_tokens.selection` -> jade (Garrett's file: say so in the PR).
+   **The Ready / Play half is built** (2026-11-12, PR #1919, `/frogma-to-unity`, `Docs/UI/specs/sg5-play-ready.md`):
+   `KitButtonVariant.Commit`, the `commit` Ruby (Unity's `Tooltip` token) under the `on-commit` white label, on
+   Maelstrom's READY and PLAY AGAIN. **Then the rest** (2026-11-17, the same PR): GameCanvas's READY, the scoreboard's
+   PLAY AGAIN and the three Configure STARTs are Commit too (Q2); `UITheme.asset`, `UITheme.Selection`, `UIThemeSO`,
+   `SelectionStyleTests`, the kit and lattice generators and every generated screen now draw the selection Jade
+   `#00D4FF`, and `colour_domains.json` `ui_tokens.selection` is jade with its band exception gone (Q4).
 2. **Portrait menus** (D6): the menus rotate with the phone (matches stay landscape), showing the same PC UI in the way
    picked on Frogma's Portrait tab.
 

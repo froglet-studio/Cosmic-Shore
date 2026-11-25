@@ -18,6 +18,13 @@ The premise: on a branch this size, "I read it and it looked right" has a known 
 rate, and every check below exists because a specific class of defect survived exactly
 that reading. Each pass produces EVIDENCE — a command and its output — not an impression.
 
+## D0. Read every trap, not the triage's pick
+
+`/ship` §0.0's triage picks the traps that match a branch's file kinds; deep mode does not trust the pick. Read all of
+`.claude/skills/ship/references/REVIEW_TRAPS.md`, all of `MERGE_TRAPS.md` when anything merged, and
+`REFACTOR_PASS.md` for D8. Still run the triage first: its trial merge, merge-base count and LAB / COMPUTE / CODEX lines
+are measurements, not a reading plan.
+
 ## D1. Adversarial re-read
 
 Walk the diff hunk by hunk and, for each, answer out loud: *what input makes this

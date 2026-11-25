@@ -1,127 +1,72 @@
-> **2026-11-02 - TIME MODE ONLY (Yash).** The Stoat flies the orbit alone (§1b): Mass mode (§1, the field dipole and its predicted path) and Gate mode (§1f) are removed from the kit, and nothing is on B; what they were and how to make them again: `Docs/Studios/STOAT_FIELD_TRAJECTORY_PARKED.md`. The abilities are named Catch Orbit (Space), Timed Slingshot (Time), Ripple (Charge) and Heavy Launch (Mass, the launch's power). After the play test the orbit spins by side (right clockwise, left anti-clockwise), draws you in to an inner orbit a little faster, and launches where you flick or steer (§1b, "The orbit after the 2026-11-02 play test").
->
-> **2026-10-14 — TIME MODE IS THE CATCH, NOT THIS ORBIT.** Played, the orbit below put the attractor square beside the
-> hull (off the chase camera) and started circling on the press, so the pilot "couldn't see the poles at all and was just
-> pulled right or left". Time mode is now the studio's round-6 dipole sling: a LIGHT pair laid ahead, two rings
-> (detection and orbit radius) in place of the path, a catch as you pass, the 90° timed release
-> (`STOAT_DIPOLE.md` §1b). §1–§2 below are the round-4 orbit's own record; what they say about where the pair is laid,
-> `orbitHorizons` and the circular-orbit GM no longer ships.
->
-> **2026-10-21 — ON A PHONE TOO.** "The stoat should join the mobile fleet" (Garrett). The touch overrides now carry the
-> gamepad's four bindings, so a phone pilot (and an AI Stoat on a phone) lays pairs, flies the orbit, holds and
-> switches modes. "Steam is the target" (§4, §7 until today) is superseded. See §4a.
->
-> **2026-10-13 — ITS OWN VESSEL.** B switches Mass and Time (`STOAT_DIPOLE.md` §1a); since 2026-10-26 a third press gives Gate, the warp gate (§1f). Mass mode flies the round-15
-> **field dipole** (`STOAT_DIPOLE.md`). The Squirrel prefab this was cloned from is gone from it: §4's "kept as
-> prototype debt" paragraph is resolved (stage 6 of the generator), and §6's open slots are designed and shipped
-> (`STOAT_DIPOLE.md` §5). Read STOAT_DIPOLE.md first; this file is the orbit's own record.
+> **2026-11-21 - THE SWING IS THE ONLY SLINGSHOT, FOR EVERY PILOT (Yash: "make sure all AI uses our latest slingshot
+> mechanics, and delete all other old pathfinding and other mechanics").** A press lays ONE small black hole ahead and to
+> the pressed side (RT right, LT left); passing beside it turns your heading toward it; the stick picks the exit angle
+> live; the swing's own speed-up is the one slingshot, kept as momentum (`swingKickShare` 0). Every AI Stoat flies the same
+> swing in every mode. **Nothing is drawn for any pilot (2026-11-22, Yash: "I dont need to see the drawing line either"):**
+> no reach ring, no exit line, no path. The field dipole and its predicted path, Time 5's
+> Foresight, the catch orbit and its aimed exit, the skim sling, the trampoline and the crystal style are DELETED from the
+> code, the assets, the tests and the tools; their record is in git (`STOAT_DIPOLE.md` §6). The omni crystal's ability is
+> Fulmen. The mechanics are `STOAT_DIPOLE.md` §1b-§1e; this file is the hull, the prefab and the phone.
 
-> **Naming.** Player-facing, the Stoat lays **WORMHOLES**: an **attractor** (pulls) and a
-> **repulsor** (pushes), an attractor–repulsor pair. In code they are still the black-hole system's
-> types (`BlackHole`, `HolePolarity.Sink` = attractor, `.Source` = repulsor — the names `cece/charming-cerf-alf1j1`
-> chose, adopted when that branch was merged here). The real wormhole mechanics are built there on those
-> types; both pair styles now live side by side here, switched by `BlackHoleConfig.crystalPairs` (Docs/BLACK_HOLE.md §13 —
-> the Black Hole tool's Pair style button, or `blackhole style drift|crystal`).
-> What the Stoat flies with today is the PLACEHOLDER: the pull, the lens, the pass-through.
+> **Naming.** Player-facing, the Stoat lays a small **black hole**. In code it is the black-hole system's own type
+> (`BlackHole`, `HolePolarity.Sink`), spawned through `BlackHoleRegistry.Spawn` and owned by the Stoat that laid it.
 
-`VesselClassType.Stoat = 15`. A two-thumb hull whose ONE ability lays an **attractor–repulsor wormhole pair**
-across itself and lets gravity do the rest: the hull falls toward the attractor and is shoved off
-the repulsor, and that asymmetric push is the **slingshot**. Its second input is the Sparrow's
-**stop**, verbatim — because the Stoat slings from a standstill.
+`VesselClassType.Stoat = 15`. A two-thumb hull whose ONE ability lays a small black hole beside its line and swings round
+it: that turn, kept as speed, is the **slingshot**. Its second input is the Sparrow's **stop**, verbatim.
 
 **Size (2026-10-13):** the root Transform is scaled **0.8** (`author_stoat_assets.py` stage 5, `HULL_SCALE`):
 the drawn hull, its colliders and skimmers shrink together; `WarpFieldVesselScaler` keeps it as the rest scale.
 
-Status: **PROTOTYPE.** The prefab is a text clone of the Squirrel's (same flight model, colliders,
-HUD and camera) with the Squirrel's bindings replaced and its model HIDDEN: the drawn hull is the
-Stoat's own **plated body** with the user's **bounding lope** (§2.1, §2.2), both picked in
-the Stoat Flight Studio viewer (round 2, Option 2); since 2026-10-18 the body is the model `Stoat.fbx` (§2.1). Its game is **Slingshot** (`GameModes.Slingshot = 64`, `Arcade/SLINGSHOT.md`): a two-lap circuit
-race where the sling is the only speed past cruise. **Nothing here has been
-run in the editor** — every proof below is offline (§5), the same standing as `Docs/BLACK_HOLE.md`
-§0.1. The black hole itself — the pull, the lens, the tides, the pair, the pass-through — is
-documented there and not repeated here.
+Its game is **Slingshot** (`GameModes.Slingshot = 64`, `Arcade/SLINGSHOT.md`): a two-lap circuit race where the swing is
+the only speed past cruise. The black hole itself — the pull on prisms, the lens, the tides — is documented in
+`Docs/BLACK_HOLE.md` and not repeated here.
 
-## 1. The loop — orbit and slingshot (the playtest's design, 2026-10-09)
+## 1. The loop — the swing (2026-11-11; one slingshot 2026-11-19)
 
 | Input | What happens |
 |---|---|
-| **LT press** (`InputEvents.LeftStickAction`, 2) | the pair is LAID: the **attractor to the LEFT**, perpendicular to the nose at the orbit radius the squeeze asks for; the **repulsor** mirrored to the right, same distance, same size; this hull's previous pair ends first; if the hull was holding still (X) the stance ENDS — a sling is a launch |
-| **LT held** | the hull **ORBITS** the attractor. The squeeze (its hold time on keyboard, over `holdRampSeconds`) sets the radius LIVE: a touch circles wide (`orbitRadiusWide`, 150 u), buried circles tight (`orbitRadiusTight`, 40 u). Keep squeezing and you keep circling, up to `lifetime` (12 s) |
-| **LT release** | the **SLINGSHOT**: out along the tangent with a boost (`slingBoostMin`→`Max` × orbit speed by the deepest squeeze, 0.25 → 0.9); the pair is let go — the two holes fall together (accelerating to `driftSpeed`, 40 u/s) and annihilate where their horizons touch |
-| **RT** (`RightStickAction`, 1) | the mirror: attractor on the right; pressing the other trigger mid-orbit slings out of the first and into the second — chained turns |
+| **LT press** (`InputEvents.LeftStickAction`, 2) | a small black hole is laid `swingAhead` 150 u ahead and `swingSide` 35 u to the LEFT; this hull's previous hole collapses first; if the hull was holding still (X) the stance ENDS — a swing is a launch |
+| fly past it | within `swingReach` (55 u × Space) and with the hole ≥ 40° off the nose, it swings your heading toward itself (ω = v / d, ≤ 150°/s) until you have turned the angle the stick asks (15° away .. 52.5° at rest .. 90° toward), then lets you go on that heading, keeping the swing's warp as momentum |
+| **LT release** | while it swings you: let go at once; before it: nothing (the hole stays up until passed or 4 s) |
+| **RT** (`RightStickAction`, 1) | the mirror: the hole on the right |
 | **X** (`Button1Action`, 6) | `StoatHoldAction` — `ToggleTranslationModeActionSO` in **Sparrow** mode: stop translating and stop laying prisms; press again to move |
 
-**The physics is real, held to a circle.** The attractor's horizon is `1/orbitHorizons` (1/6) of the
-radius — never inside 3, the Paczyński–Wiita last stable orbit — and its strength is CHOSEN, not
-authored: the one that makes the radius a circular orbit at the hull's speed,
-`GM = v²(r − r_s)²/r` (`StoatSlingMath.CircularOrbitGM`). So the turn is exactly what that hole's
-gravity would do to a hull at that speed, and prisms feel the same mass. Because r/r_s is fixed, the
-hole looks the same size from the hull whatever the squeeze: a tighter turn is a smaller hole,
-nearer. The repulsor is retuned with it ("same size and distance").
+**Nobody else is moved.** An owned hole is skipped by `BlackHoleVesselPull` for every vessel: a vessel may not move an
+opposing vessel (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). Its owner's turn is flown by `StoatSlingExecutor.StepSwing` on
+the simulating machine; prisms feel the hole.
 
-**How it flies** (`StoatSlingExecutor.StepOrbit`, simulating machine only): each frame the heading
-turns along the orbit at ω = v/r (`VesselTransformer.ApplyRotation`, momentum re-aimed with
-`SetCourseVelocity`), the hull is eased onto the radius (`TranslateShip`, `radialCorrectionRate`), and
-both holes follow the radius (`radiusFollowRate`). An offline simulation of exactly that step held the
-radius to within 0.2 u at 60 fps and released on the tangent; in the editor the transformer's own
-easing toward its commanded heading is the thing to watch.
+**Nothing is drawn** (2026-11-22): the reach ring, the dotted exit line and the fling ring are deleted for every pilot.
+The black hole's own look and the Charge ripple are the only things on screen; the HUD's Time card fills through the swing.
 
-**Nobody else is moved.** An owned drift pair is skipped by `BlackHoleVesselPull` for every vessel:
-its owner's pull IS the orbit, and a vessel may not move an opposing vessel
-(`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). Prisms feel every hole. **Anything that flies in comes
-out:** a vessel — this one after its slingshot, an opponent or an AI by its own flying — whose centre
-crosses a paired black hole's horizon is carried to the point reflection just outside the white
-horizon, heading kept (outward there), through `VesselTransformer.SetPose` (trail and camera
-carried, a gate watcher sees a teleport) — `BlackHoleVesselPull.TryCarryThrough` — and, once the pair
-is let go, keeps the closing white hole's velocity until the pair meets, so the mouth cannot run it back
-down. Prisms the same
-way (`BlackHoleGravityField`). The Stoat's drawn hull **spaghettifies** near a horizon — stretched
-along its length falling in, and the same stretch relaxing as it leaves the white hole (tides are
-even under time reversal): `BlackHoleWarp.VesselLogStretch` × `BlackHoleConfig.vesselTideScale`
-(0.08), applied by `StoatAnimation` on top of the lope. Other hulls are carried but not yet drawn
-stretched (their hull transform is no single component's to scale).
+**The autopilot swings** (`StoatSlingExecutor.AutopilotSwing`, the only autopilot): it presses toward a turn it wants (or
+for the warp on a long leg) and lets go of the trigger at once; it is let go once it faces its target. Both edges go
+through the replicated press path. Never assume an AI can use a human's input.
 
-**The autopilot slings** (`AutopilotSling`, simulating machine only): when the AI's target is at least
-`aiSlingMinTurnDegrees` (30°) off the nose and `aiSlingMinDistance` (120 u) away, at most every
-`aiSlingIntervalSeconds` (3 s), it presses the trigger on the target's side and HOLDS for the arc
-the turn needs at its fixed squeeze (`StoatSlingMath.AutopilotHoldSeconds`: angle × r / v), then
-releases — both edges through the replicated path. Never assume an AI can use a human's input.
-
-**The orbit runs at the speed being flown** (ω = v/r from `VesselStatus.Speed`, and the hole's
-strength from the same v), so the circle drawn is the circle flown; throttle up mid-orbit and the
-hole strengthens to keep it. From a standstill (X), a press ends the stance and the orbit starts as
-the throttle brings the hull up to speed.
-
-**Networking.** Press and release replicate, so every peer lays its own copy of the pair at the
-replicated pose; the squeeze does not, so a remote copy keeps its press-time size. The holes are the
-placeholder system's local objects (`Docs/BLACK_HOLE.md` §11 "Not yet").
-
-**The crystal style** (`BlackHoleConfig.crystalPairs`, §13) keeps its first design: the pair is laid
-on RELEASE, sized by the deepest squeeze (`StoatSlingMath.Peak` — a let-go trigger sweeps back down
-before the release edge), `aheadHorizons` (4) ahead, `halfGapHorizons` (Space, 6 → 9) apart.
+**Networking.** Press and release replicate, so every peer lays its own copy of the hole at the replicated pose; the
+squeeze and the stick do not.
 
 ## 2. The numbers (`StoatSlingConfigSO`, asset `_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset`)
 
 | Field | Ships as | What it is |
 |---|---|---|
-| `holdExponent` | 1.5 | `radius = lerp(wide, tight, squeeze^exponent)` (crystal: the strength curve) |
-| `holdRampSeconds` | **3** | seconds of hold that count as a full squeeze on a device with no analog trigger (playtest) |
-| `autopilotHold01` | 0.5 | the AI's squeeze |
-| `orbitRadiusWide` / `orbitRadiusTight` | 150 / 40 u | the orbit at a touch / buried |
-| `orbitReach` | **ElementalFloat, Space, ×1 → ×1.4, floor 1** | multiplies both radii — Space is reach; read live, never cached |
-| `orbitHorizons` | **6** | orbit radius ÷ horizon radius (the playtest's 6), floored at 3 |
-| `radiusFollowRate` / `radialCorrectionRate` | 3 / 5 per s | how fast the radius follows the squeeze / how hard the hull is held on it |
-| `slingBoostMin` / `Max` / `Seconds` | 0.25 / 0.9 × speed, 1.5 s | the slingshot |
-| `driftSpeed` | **40 u/s** | how fast the let-go pair closes (playtest); `BlackHoleConfig.pairCloseRampSeconds` (0.6 s) is its run-up |
-| `lifetime` | **12 s** | the longest hold (playtest); past it the pair lets go on its own and the hull slings |
-| `minStrength` / `maxStrength`, `aheadHorizons`, `halfGapHorizons` | 2 / 12, **4**, **Space 6 → 9** | the crystal style only |
-| `holdStartEvent` / `slingEvent` | **empty** | FMOD slots (press / slingshot); wire them in the inspector |
+| `holdRampSeconds` | **1** | seconds of hold that count as a full squeeze on a device with no analog trigger |
+| `autopilotHold01` | 1 (Slingshot's copy 0.012) | the AI's squeeze (only the optional second push reads it) |
+| `swingAhead` / `swingSide` | 150 / 35 u | where the hole is laid |
+| `swingHorizon` / `poleGM` | 0.8 u / 20 000 | its size and its pull on prisms |
+| `swingReach` × `orbitReach` | 55 u × (Space ×1 → ×1.4) | where the swing starts — Space is reach |
+| `swingCatchDegrees` | 40° | the hole must be this far off the nose (passing beside it) |
+| `swingMinDegrees` / `swingMaxDegrees` | 15° / 90° | the stick's range: away from the hole .. toward it |
+| `swingDegreesPerSecond` | 150°/s | the fastest the swing turns you |
+| `swingSeconds` | 4 s | how long a hole nobody swings round stays up |
+| `swingKickShare` | **0** | the share of the second push (squeeze × Mass's `launchPower`, under `speedCapShare` / `warpKickCapCruise`) |
+| `catchWarpShare` / `pressWarpShare` / `orbitSpeedBonus` / `momentumSeconds` | 1.15 / 0.5 / 0.15 / 6 s | the warp: its share of the boost, before the swing, the bonus while swinging, the momentum's fade |
+| `rippleSeparation` | 90 u | what the Charge ripple a collapsing hole throws reads |
+| `aiSlingMinTurnDegrees` / `aiSlingIntervalSeconds` / `aiSlingMinDistance` / `aiWarpMinDistance` / `aiSwingFaceDegrees` | 20° / 0.941 s / 123 u / 0 / 8° | the autopilot (Slingshot flies its trained copy, `Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset`) |
+| `holdStartEvent`, `swingStartEvent`, `swingFlingEvent` | listed placeholders | FMOD slots |
 
-Pure arithmetic in `StoatSlingMath` (`Hold01`, `Peak`, `OrbitRadius`, `OrbitHorizon`,
-`CircularOrbitGM`, `OrbitHeading`, `RadialCorrection`, `SlingBoost`, `AutopilotHoldSeconds`,
-`Strength`, `PairAxis`, `Midpoint`), held by `StoatSlingTests`. The axis runs attractor → repulsor,
-so the LEFT trigger's axis is the hull's **+right** (`BlackHolePairMath.Positions` puts the attractor
-at −axis).
+Pure arithmetic in `StoatSlingMath` (`Hold01`, `Peak`, `AutopilotPress`, `SlingBoost`, `CappedKick`, `WarpCappedKick`,
+`MomentumWarp`, `AccretionBonus`, `SwingHole`, `SwingStarts`, `SwingAxis`, `SwingTurnDegrees`, `SwingRate`,
+`SwingAiLetsGo`, `OnSwingSide`), held by `StoatSlingTests`.
 
 ## 2.1 The hull — `Stoat.fbx`, a model (2026-10-18; the procedural placeholder is kept until it is accepted)
 
@@ -189,37 +134,34 @@ and the element morphs write vertices only (the model's blend shapes; the builde
 turn (12°), turns the head (18°) and swings the tail out (28°). Poses are written directly, not
 through the base class's lerp (the Butterfly lesson: it eats a slow periodic motion).
 
+
 ## 3. The parts
 
 | File | Role |
 |---|---|
 | `Data Containers/StoatSlingConfigSO.cs` | the numbers above |
 | `Data Containers/StoatSlingActionSO.cs` | one asset per trigger (`side`), shared and stateless: press → `BeginHold`, release → `Release` |
-| `Executors/StoatSlingExecutor.cs` | the per-vessel state: the two squeezes (live + deepest), the orbit, the last pair; lays the pair on press, flies the orbit, slings on release (`SpawnPair(held)`, `LetGo`) |
+| `Executors/StoatSlingExecutor.cs` | the per-vessel state: the two squeezes, the hole, the swing; lays the hole on press, flies the swing, lets go, collapses it; the swing's autopilot |
 | `StoatSlingMath.cs` | the pure maths |
-| `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow) |
-| `Resources/ElementalAbilityMaps/Stoat.asset` | all four authored since 2026-10-13 — Space = Field Dipole, Time = Pathfinder / Time Mode, Charge = Ripple, Mass = Mass / Time Mode (`STOAT_DIPOLE.md` §5) |
+| `Executors/StoatPathfinderExecutor.cs` | the flight clock's warp (the swing's speed-up); it draws nothing |
+| `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow), `StoatDipoleConfig` (the warp), `StoatRippleConfig`, `StoatModeAction` |
+| `Resources/ElementalAbilityMaps/Stoat.asset` | Space = Catch Orbit (the swing), Time = Timed Slingshot (the warp; Time 5 open), Charge = Ripple, Mass = Heavy Launch (`STOAT_DIPOLE.md` §5) |
 | `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py`: cloned once from `Squirrel.prefab` (§4), its own vessel since stage 6 |
 | `Assets/_Models/Vessel Models/Stoat.fbx`, `Tools/Build/vessel_model/specs/stoat.py` | the hull model and the spec that builds it (§2.1); `build.py stoat --check` is its drift gate |
 | `StoatHullForm.cs`, `StoatHullBuilder.cs` (Vessel/) | the procedural placeholder (pure geometry + morphs, and the emitter), off the prefab since 2026-10-18 and kept until the model is accepted |
 | `StoatLopeMath.cs`, `StoatAnimation.cs` (Animation/) | the lope (pure) and the puppetry + morph plumbing (§2.2) |
 | `Tools/Build/stoat_hull_harness/` | compiles and RUNS the placeholder hull form offline; `--obj` exports it |
-| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (22 negative controls); stage 2 authors the hull and the animation swap, stage 6 the own-vessel pass |
-| `Docs/Studios/StoatFlightStudio.html` | the web studio: fly the Stoat on a gamepad, sling either wormhole style, compare them, log decisions (`Docs/Studios/README.md`; live copy with the shared log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) |
+| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test`; stage 2 authors the hull and the animation swap, stage 6 the own-vessel pass |
+| `Tools/Build/stoat_orbit_sim.py` | the offline model of every Stoat kit; `--swing` is the one that ships |
+| `Docs/Studios/StoatFlightStudio.html` | the web studio (`Docs/Studios/README.md`; live copy: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc). It still flies the old field trajectory and catch sling; its 34 deleted keys are marked `lab` |
 
-**Why the hold is sampled per frame, not read at release — and why the PEAK slings.** The release
-edge is raised when the trigger drops back below the deadzone (0.05), so it reads ~0 by the time
-`Release` runs; sampling it there would sling every pair at minimum size (the Gibbon's lesson). Keeping
-the LATEST per-frame sample is no better: a let-go trigger sweeps back down through several frames
-before it crosses the deadzone, so the last sample is ~0.05 too. The first cut shipped exactly that,
-and every gamepad sling would have been a minimum-size nudge; it was caught building the web studio,
-whose scripted pad releases the way a thumb does. `StoatSlingMath.Peak` keeps the deepest sample
-(`StoatSlingTests.Peak_KeepsTheDeepestSqueezeThroughTheLetGo`).
+**Why the hold is sampled per frame — and why the PEAK counts.** The release edge is raised when the trigger drops back
+below the deadzone (0.05), so it reads ~0 by the time `Release` runs, and a let-go trigger sweeps back down through
+several frames before it. `StoatSlingMath.Peak` keeps the deepest sample (`StoatSlingTests.Peak_KeepsTheDeepestSqueezeThroughTheLetGo`).
 
-**One pair per Stoat.** A new sling annihilates THIS hull's previous pair first (never the tool's or
-another hull's), so a pilot can chain nudges without exhausting `BlackHoleConfig.maxBlackHoles` (16 —
-eight pairs fleet-wide since 2026-10-12; it was 4, and two AIs holding pairs refused the player's). A refused sling
-(no room) is a verbose log on the `BlackHole` channel, not an error, and keeps asking while the trigger is held.
+**One hole per Stoat.** A new press collapses THIS hull's previous hole first (never another hull's), so a pilot can chain
+swings without exhausting `BlackHoleConfig.maxBlackHoles` (16). A refused press (no room) is a verbose log on the
+`BlackHole` channel, not an error.
 
 ## 4. The prefab — what the generator changed and what it kept
 
@@ -235,7 +177,7 @@ eight pairs fleet-wide since 2026-10-12; it was 4, and two AIs holding pairs ref
   `GlobalObjectId_V1-1-<guid>-<fileID>-0` — and proves it by reproducing the Squirrel's own
   `2256742461` from its guid; the editor regenerates the same number, so opening the prefab changes
   nothing. `InScenePlacedSourceGlobalObjectIdHash` is 0.
-- Gamepad bindings: 2 → `StoatSlingLeftAction`, 1 → `StoatSlingRightAction`, 6 → `StoatHoldAction`.
+- Gamepad bindings: 2 → `StoatSlingLeftAction`, 1 → `StoatSlingRightAction`, 6 → `StoatHoldAction` (nothing on B).
   Keyboard, dual-mouse and mouse-keyboard share the gamepad map (`R_VesselActionHandler`: Left/Right
   Shift are the triggers). ~~**Touch overrides are cleared** — there is no touch design yet, so a touch
   Stoat has no abilities (the Gibbon's call, same reason).~~ Superseded 2026-10-21: the touch overrides carry the
@@ -265,105 +207,50 @@ validates the shipped file, so Squirrel drift can never silently re-author the S
 
 ## 4a. On a phone (2026-10-21)
 
-**The decision.** Garrett, 2026-10-21: "The stoat should join the mobile fleet." Until then the Stoat's shared map and
-touch overrides were both EMPTY and only `_gamepadActionOverrides` was filled ("Steam is the target"), so on a phone
-every press resolved to nothing.
+**The decision.** Garrett, 2026-10-21: "The stoat should join the mobile fleet."
 
 **The bindings.** `Stoat.prefab` `_touchActionOverrides` = the gamepad overrides, entry for entry, the same assets:
 
 | Input (`InputEvents`) | Actions (same guids as the pad's) |
 |---|---|
-| `LeftStickAction` (2) | `StoatDipoleLeftAction` (`9eacf723…`) + `StoatSlingLeftAction` (`5c382e0d…`) |
-| `RightStickAction` (1) | `StoatDipoleRightAction` (`62ce60a3…`) + `StoatSlingRightAction` (`012d65ba…`) |
+| `LeftStickAction` (2) | `StoatSlingLeftAction` (`5c382e0d…`) |
+| `RightStickAction` (1) | `StoatSlingRightAction` (`012d65ba…`) |
 | `Button1Action` (6) | `StoatHoldAction` (`9b50ea11…`) |
-| `Button2Action` (7) | `StoatModeAction` (`f05e7ded…`) |
 
-The shared map stays empty, so nothing changes for any other device. Owned by `Tools/Build/author_stoat_assets.py`
-(`bindings()`, `--check`); `StoatSlingTests.Prefab_BindsEachTriggerToBothModesXToTheHoldAndBToTheSwitch` asserts the
-touch block equals the pad block.
+Owned by `Tools/Build/author_stoat_assets.py` (`bindings()`, `--check`);
+`StoatSlingTests.Prefab_BindsEachTriggerToItsOrbit_XToTheHold_AndNothingToB` asserts the touch block equals the pad block.
 
-**The controls** (`TotemButtons`: lifting a thumb raises nothing; profile `Tools/Build/author_touch_profiles.py`):
+**The squeeze on glass.** There is no trigger depth on a phone, so `StoatSlingMath.Hold01` ramps by HOLD TIME over
+`holdRampSeconds` (1 s), as on keys. The squeeze only sizes the optional second push, which ships off.
 
-| On the glass | Presses | Mass mode | Time mode |
-|---|---|---|---|
-| the **Space card** (Field Dipole), held | `LeftStickAction` | the left dipole: a pair laid ahead, black hole on the left | the left sling: the light pair, the catch, release to slingshot |
-| the extra button **Dipole Right**, held | `RightStickAction` | the right dipole (with the Space card held too: the pair the two squeezes make) | the right sling |
-| the extra button **Hold** | `Button1Action` | the Sparrow's stop: a tap stops, the next tap moves (`ToggleTranslationModeActionSO`, no release semantics) | same |
-| the **Mass card** (Mode) | `Button2Action` | switch to Time | switch to Mass |
+**A held button is the pad's trigger.** The card (`AbilityCardPress`) and the extra button (`TouchButtonView`) raise the
+same events on finger down / up, through the same handler and the same replicated path. A hidden HUD or a vessel swap
+releases a held card (`AbilityCardPress.OnDisable`).
 
-The Charge (Ripple) and Time (Pathfinder) cards are passive, so they press nothing.
+**The autopilot.** On a handheld every `InputController` reports `Touch`, the AI's included, so an AI Stoat on a phone
+resolves its presses against the touch overrides: the same assets, the same swing. `ResolveBoundInput` reads every map.
 
-**The squeeze on glass.** There is no trigger depth on a phone: `InputStatus.Left/RightTriggerAnalog` stay 0 and the
-device is not `Gamepad`, so both executors take their no-analog path, the one the keyboard already uses:
-- **Mass (dipole):** `StoatDipoleExecutor.Track` squeezes to `keySqueeze` (0.5, the studio's `dpKeySqueeze`) the
-  moment the button is pressed and holds it there (`STOAT_DIPOLE.md` §3b). A one-button pair is 70 u apart sideways
-  at once, exactly as on keys.
-- **Time (sling):** `StoatSlingMath.Hold01` ramps by HOLD TIME over `StoatSlingConfig.holdRampSeconds` (3 s): a
-  fresh press circles wide, holding tightens the orbit, and the deepest squeeze (`Peak`) sets the kick.
+**Prototype, 2026-11-02 (Yash; NEEDS GARRETT'S SIGN-OFF): ThumbLifts.** Lifting the RIGHT thumb raises `LeftStickAction`
+while the left thumb flies; lifting the LEFT thumb raises `RightStickAction`. Hold is the one extra disc, and the Mass
+card is display-only.
 
-**A held button is the pad's trigger.** The pad raises `LeftStickAction` / `RightStickAction` when the trigger crosses
-its deadzone (0.05) and releases them below it. The card (`AbilityCardPress`) and the extra button (`TouchButtonView`)
-raise the SAME events on finger down / up, on the pilot's `InputStatus` (vessel rule 56), so the press goes through the
-same handler, the same `BeginHold` / `Release`, and the same replicated path. Letting go closes the dipole or slings
-the orbit, exactly as letting go of a trigger does. A hidden HUD or a vessel swap releases a held card
-(`AbilityCardPress.OnDisable`), so nothing stays pressed.
+## 5. Proof
 
-**The autopilot.** On a handheld every `InputController` reports `Touch`, the AI's and the menu's included
-(`VesselTransformer.IsLocalHumanPilot`'s note). So until this change an AI Stoat on a phone (the lava lamp, the
-Slingshot AIs) also resolved every press against the empty touch map and never laid a pair or switched mode. It now
-does. The hand-back (vessel skill §4.ad item 3, `StoatDipoleExecutor.HandBackAiHold`) is unchanged: `ResolveBoundInput`
-reads every map (`CollectBoundActions`), and the release carries the device its press was resolved with
-(`R_VesselActionHandler.PressedDevice`), so a press made against the touch map is released against it.
+2026-11-21: Assembly-CSharp and Assembly-CSharp-Editor compile with Unity's Roslyn (0 errors);
+`author_stoat_assets.py --check` and `--self-test` (with a negative control for the deleted dipole executor coming back
+and for Time 5's Foresight coming back); `studio_to_unity.py --check` (Stoat: 25 mapped, 0 drift);
+`StoatSlingTests.EveryStoatAI_FliesTheSwing_NoOtherSlingshotPathIsLeft` and
+`NoStoatDrawsAPathOrARing_ForAnyPilot` (2026-11-22). The EditMode run and the hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-**Multiplayer.** A press carries its device byte, so a PC peer resolves a phone pilot's press against the touch
-overrides: the same entries, the same actions on every peer.
+## 6. Design status
 
-**What only a phone can test:** a pair from the Space card, a pair from both buttons together,
-the Time-mode orbit tightening over 3 s and slinging on release, the Hold tap, the mode switch from the Mass card,
-and the lava lamp's AI Stoat using its pairs on a phone and letting go when you take the hull.
-
-**Prototype, 2026-11-02 (Yash; NEEDS GARRETT'S SIGN-OFF; branch `touch/stoat-squirrel-proto`): keep a thumb down to orbit.**
-The profile is now ThumbLifts (lift defer 0.12 s). Lifting the RIGHT thumb raises `LeftStickAction`, the left pair, while the left
-thumb flies the orbit; lifting the LEFT thumb raises `RightStickAction`. Holding tightens the orbit over `holdRampSeconds`, and putting the thumb back
-slings. Hold is the one extra disc, and the Mass (Mode) card is display-only (orbit-only kit). The bindings above are unchanged, so touch still
-equals the pad. TODO: a haptic "now" at the 90 degree window. No allowed `HapticController` feel fits; it needs the "adding a feel" clause.
-
-## 5. Proof (all offline — no `/verify-unity` in the session that built this)
-
-- `Tools/Build/author_stoat_assets.py --check` OK; `--self-test`: XXHash32 against the reference
-  vectors and the Squirrel's own hash, then seven negative controls (wrong class, donor hash kept,
-  executor dropped, trigger unbound, container / network entry missing, map lost the hold), each firing.
-- `StoatSlingTests` (edit mode, written, not run): the squeeze on a gamepad / without analog
-  triggers / on autopilot, strength along the exponent, black on the pressed side, midpoint ahead,
-  the enum and roster, and the prefab / map / spawn lists read as text.
-- Gates: `check_vessel_prefab_container` (11 hulls distinct), `check_vessel_shared_channels`,
-  `check_vessel_camera_farclip`, `check_network_prefab_hashes` (0 collisions),
-  `check_elemental_floats --check` (the half-gap is read through `EvaluateLive`),
-  `check_console_logging`, `check_conditional_compilation`, `check_abstract_member_implementations`,
-  `peer_press_harness --self-test`, and the offline refcompile for player, player-dev and editor.
-- `check_generated_assets.py` reports **152 findings on `Stoat.prefab` — every one inherited verbatim
-  from `Squirrel.prefab`, 0 new, 0 gone** (the audit was run on both files with the names normalised
-  and the finding sets are identical): stale nested-skimmer overrides Unity never prunes
-  (`notifyNearbyBlockCount`, `shipImpactEffects`, `skimmerPrismStayEffectsSO`…), HUD-variant
-  modification targets that no longer exist, and `R_VesselElementStatsHandler.cs` declaring
-  `R_ShipElementStatsHandler` (the fleet-wide file/class rename, vessel skill §2.5). None is the
-  Stoat's; cleaning them is a Squirrel pass, and the Stoat would inherit the fix by re-authoring.
-
-## 6. Design status — what is approved and what is not
-
-**Today's kit (the orbit alone, 2026-11-02):** Space = Catch Orbit (orbit radius AND the pair's gap ×1 → ×1.4;
-L5 Accretion — stolen prisms +4% ripple reach each, to +40%), Time = Timed Slingshot (warp; L5 Foresight; the warped
-kick capped at 3× cruise), Charge = Ripple (L5 Siphon), Mass = Heavy Launch (kick ×1 → ×2.5; L5 Armoured Wake), omni =
-Fulmen. Awaiting Garrett's sign-off: the orbit-only cut, Heavy Launch, Accretion on the orbit, Fulmen.
-The original 2026-10-13 kit: Space = Field Dipole (L5
-Accretion), Time = Pathfinder / Time Mode (L5 Foresight), Charge = Ripple (L5 Siphon), Mass = Mass / Time Mode (L5
-Armoured Wake). The decisions and their wording are in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` ▸ Stoat; the
-mechanics in `STOAT_DIPOLE.md` §1a–§1e and §5.
+**Today's kit (the swing, 2026-11-11; one slingshot 2026-11-19; the only slingshot 2026-11-21):** Space = the swing (map
+label Catch Orbit; reach ×1 → ×1.4; L5 Accretion — stolen prisms +4% ripple reach each, to +40%), Time = the warp (map
+label Timed Slingshot; L5 open since Foresight was deleted), Charge = Ripple (L5 Siphon), Mass = Heavy Launch (the second
+push ×1 → ×2.5, shipped off; L5 Armoured Wake), omni = Fulmen. Open for Yash: Time 5, and whether Mass should scale
+something on the swing. The decisions' wording is in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` ▸ Stoat.
 
 ## 7. Not yet
 
-The pair's network replication (the press/release edges round-trip, so a peer lays its OWN copy of an orbit pair at
-the replicated pose, but the two copies are not one object); ~~a touch binding (Steam is the target; the executors answer
-the autopilot's squeeze, nothing presses for a touch pilot)~~ done 2026-10-21 (§4a), an analog squeeze on a phone (a
-held button is a key: the dipole at `keySqueeze`, the orbit by hold time); the mode as replicated STATE rather than replicated presses
-(`STOAT_DIPOLE.md` §8 D6); ~~final art for the four ability icons (placeholders)~~ drawn 2026-11-07 for the orbit-only kit (`Tools/Build/icon_kit/specs/stoat.py`, parts painted by `StoatHUDView.RefreshParts`), and FMOD events (every slot ships empty).
+The hole's network replication (a peer lays its OWN copy of the hole at the replicated pose; the two copies are not one
+object); an analog squeeze on a phone; FMOD events beyond the listed placeholders.

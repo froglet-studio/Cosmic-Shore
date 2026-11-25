@@ -199,6 +199,13 @@ def d_hunter():
     return quadfish(64.0, 34.0, 9.5)
 
 
+# Charge 5 SWALLOW (2026-11-12, the fundamentals pass, ANGLER.md 1n): a bite's petals land on the Angler instead of coming
+# loose. Drawn as a Charge petal flying back from the hunt to the school, its point at the school's upper creature.
+def b_petal():
+    import toy_portraits
+    return _clear_of(toy_portraits.petal("Charge", (34.0, 30.0), 0.0, 28.0), b_school(), b_hunter(), px=2.5)
+
+
 GAUGE = {"rest": (0.0, None), "LT erasing": (0.0, (150, 235, 41, 255)),
          "1 hunter out": (1 / 3, None), "3 hunters out": (1.0, None)}
 
@@ -246,7 +253,8 @@ LOCKON_PARTS = [("LockSchool", "Angler_LockSchool", "lockSchoolIcon", b_school, 
                 ("LockWake", "Angler_LockWake", "lockWakeIcon", b_wake, "the spent creature's wake (white, 60%; hunters out)"),
                 ("LockHunter", "Angler_LockHunter", "lockHunterIcon", b_hunter, "the third creature (domain; white once spent)"),
                 ("LockRival", "Angler_LockRival", "lockRivalIcon", rival, "the rival (danger; 60% until it is hunted)"),
-                ("LockRing", "Angler_LockRing", "lockRingIcon", ring_at_rival, "the lock ring a hunted hull wears (white; hunters out)")]
+                ("LockRing", "Angler_LockRing", "lockRingIcon", ring_at_rival, "the lock ring a hunted hull wears (white; hunters out)"),
+                ("LockPetal", "Angler_LockPetal", "lockPetalIcon", b_petal, "Charge 5 Swallow: a bitten petal flying home (white; hunters out)")]
 PART_EXEMPT = {"at40": "a part: the HUD draws the card whole", "components": "a part", "gap": "a part",
                "coverage": "a part", "box_fill": "a part", "in_box": "a part", "thin": "a part", "specks": "a part"}
 ICONS += [dict(name=i, element="Charge", act="Erase / Lock-on: " + act, draw=draw, subdir="Parts", family=False,
@@ -254,6 +262,11 @@ ICONS += [dict(name=i, element="Charge", act="Erase / Lock-on: " + act, draw=dra
 for c in CARDS:
     if c["name"] == "lockon_b":
         CARDS.append(dict(c, name="lockon", group=None,
+                          parts=dict(c["parts"], petal=b_petal),
+                          states=c["states"] + [("Charge 5: swallow", [("school", "domain"), ("wake", "white", 0.6),
+                                                                      ("hunter", "white"), ("rival", "danger"),
+                                                                      ("ring", "white"), ("petal", "white")])],
+                          gauge=dict(GAUGE, **{"Charge 5: swallow": (1 / 3, None)}),
                           title="Erase / Lock-on (Charge, picked B): your school (domain), the third creature spent "
                                 "(white) toward the locked rival (danger)"))
         break
@@ -772,7 +785,11 @@ for c in CARDS:
     if c["name"] == "dash_h":
         CARDS.append(dict(c, name="dash", group=None,
                           states=c["states"] + [("no school", [("g0", "domain", 0.3), ("g1", "domain", 0.3),
-                                                               ("ga", "domain", 0.2), ("ha", "domain", 0.3)])],
+                                                               ("ga", "domain", 0.2), ("ha", "domain", 0.3)]),
+                                                # Time 5 RIPTIDE (2026-11-12): a press mid-dash chains on to the other
+                                                # group, so the other group's hull waits too, dim.
+                                                ("Time 5: riptide", _tstate(0, [("ga", "domain", 0.6), ("ha", "domain"),
+                                                                                ("hb", "domain", 0.45)]))],
                           title="Dash to the School (Time, picked H): where the hull was (ghost) and where the dash puts "
                                 "it, 75% of the way to the next group (white); the other group waits; all dim with no school"))
         break

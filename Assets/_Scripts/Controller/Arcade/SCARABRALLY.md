@@ -30,20 +30,115 @@ first DOMAIN whose lead runner threads the last ring wins (golf: finish time).
 | Hairpins | none | every 2nd corner (90-150°) | every 3rd (90-130°) | every 2nd (110-150°) |
 | Mouth twist (jitter / cap) | 15° / 40° | 25° / 50° | 40° / 60° | 40° / 60° |
 | Legs | 420-620 | 400-620 | 420-620 | 360-520 |
-| Course features | - | - | Switchback's prism walls along legs | Switchback's danger prisms beside the line |
+| Blast Run (fields, doors, keys) | none | none | none | Switchback's pre-gauntlet I4 field (unchanged) |
+| Garden ruins | none | none | none | up to 7 along the course, 400-560 prisms |
+
+**Blast Run only at I4 (2026-11-13, elemental loop step 1).** Switchback became Blast Run on 2026-10-29, two days
+after this race was cut, and Scarab Rally inherited it at every intensity: every second or third leg (every leg from I3)
+carried a block field across the line (a 26-30 u bore, sliders from I2), a door of danger rakes and a Dolphin key
+crystal on the line, which a Scarab's skimmer forges into a ball sitting in its own path; its AI also detoured for
+crystals. That is the Dolphin's question (blast your way through), and it punished the Scarab's: a drift's line runs
+wide of the bore, and the held throttle meets the field. The I3 walls and I4 danger prisms this table used to list had
+been retired with the Classic ladder. Now I1-I3 lay no Blast Run (`ScarabRallyCourse.LaysBlastRun`,
+`SwitchbackController.LaysBlastRun`), so the passive crystals stay and the rings are the whole race, and the AI flies
+the rings and nothing else (`AIDetoursForCrystals` false, Yash's rule). I4 keeps the field it had; whether the I4
+rung should keep it is the ladder's question (loop step 2).
+
+**I4 keeps the sight line (2026-11-14, Garrett's I4 playtest).** "It is too hard to find the rings ... the lime green is
+not visible when it is occluded by so many prisms ... respect sight lines from one ring to another." Two things hid the
+next ring: each blocked gate's DOOR (a plug across the port with an 18 u eye, in front of a 22 u ring) and the field's
+18 u bore. Now I4 without the gauntlet hangs no doors (`SwitchbackBlastRun.LaysDoors`; the door's keepout stays, so the
+field still leaves the mouth clear) and each field keeps a sight bore of the bigger mouth + 12 u (34 u at I4,
+`SwitchbackBlastRun.SightBore`). Measured headless (`SwitchbackBlastRunTests.WithoutTheGauntlet_TheNextRingIsInSightFromTheRingYouLeave`,
+40 Rally I4 courses, rays from five points of the ring you leave to eight points of the next rim, movers at four times):
+85,404 of 147,200 sight lines were blocked before, 0 after. The field stays: 3,112 prisms a course on average, against 3,374.
 
 Measured over 400 seeds per level: the walk never fails. Hairpin share is 0 / 50 / 32 / 50%, and the shortest leg
 is 420 / 400 / 420 / 360 u.
 
+## The ruins (I4, 2026-11-24, Yash)
+
+Decoration: the garden ruins Spearline lays round its racing line at I4 (SPEARLINE.md section 2a), round this course's
+rings. `ScarabRallyRuins` CALLS `SpearlineRuins.Lay` with the course's gates and adds no ruin of its own; it only
+chooses which of Spearline's prisms this course lays. Plain prisms with the game's own rules: a hull breaks one, nothing
+grows back, nothing reads or writes a vessel.
+
+What Spearline's generator already holds here (tested on this course): a 60 u clear lane down each leg's flown line (the
+I4 mouth is 22 u), nothing within 120 u of a ring, only on legs of 380 u or more, every prism at least 8 u thick, none
+below I4.
+
+What this course changes, and why:
+
+- **Up to seven ruins, spread along the 24 rings.** Spearline's lap has seven legs; this chain has 23. Seven places
+  are spread evenly along the legs long enough for a ruin, and each place takes the nearest leg whose ruin stands, so
+  the prism count stays Spearline's and the ruins do not all stand in the first third of the race. A ruin is asked
+  for only on those legs (Spearline is called with the course counted from that leg, the same rings and lanes),
+  because Spearline's lane check on every raw prism is the cost. A ruin's kind follows its leg, so the
+  seven are a mix of the kinds and a kind can repeat.
+- **Cut clear of the block field.** Every I4 leg from the second ring on carries Switchback's block field. A ruin
+  prism within 6 u of a field prism's bounding ball is left out, and a ruin with fewer than 24 prisms left is not laid.
+  That takes about a fifth of each course's ruin prisms.
+- **The next ring stays in sight** (Garrett's rule above). Spearline's lane follows the curved line a pilot flies; a
+  wall across it could still stand in the straight line from one ring to the next. No ruin prism reaches into the
+  sight bore the field itself keeps (34 u round the straight line at I4).
+- **No turning wheel.** It never fits (a wheel needs 270 u clear of both rings, and the legs are 360-520 u), it would
+  sweep the sight line, and its rim would pass through the block field. Where Spearline would lay a wheel this course
+  gets a pergola. So nothing in the ruins moves and the race has no ruin tick.
+
+Colours: one domain a ruin, Jade, Ruby, Gold in turn along the course (`scarabRuinDomains` on the controller; empty =
+Blue). The block field is Blue and the next ring is lime, so the ruins read apart from both.
+
+Measured headless on ten I4 courses (`bash Tools/Build/scarab_rally_ruins_harness/run.sh`, the shipped code and
+`ScarabRallyRuinsTests`): 7 ruins on every course, 397-559 prisms (mean 467), 30-117 a ruin, beside a field of
+2,600-3,400; choosing them takes about 150 ms a course, once, while the course is raised. The race lays the field out a
+second time to cut the ruins round it (Switchback's layout is private to it). Compiled in Unity 6000.3.17f1 (batch mode,
+2026-11-24, no `error CS`); not seen in Play (the hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`). `ScarabRallyRuinsTests` passes 13/13
+in the open editor (34.6 s). Under the editor's Mono a lay is slower than on .NET 8: ten I4 courses with their ruins
+and no field took 9.6 s in the tests, so choosing the ruins is about a second a course there, once, while the course
+is raised (150 ms on .NET 8; a player build was not measured).
+
+One race in the editor (2026-11-24, Play from Bootstrap, offline, I4, three Scarabs all flown by the Legendary AI,
+normal speed, driven through the Pipeline): the course raised 480 ruin prisms from 1,835 candidates (Jade 245, Ruby
+131, Gold 104) beside about 3,400 field prisms; the race ended after 139 s of game time at 62-78 fps; all 480 ruin
+prisms still stood at the end (no pilot flew into one); the only console error in the run was a Cloud Code 404 the
+offline boot logs. **Laying the ruins took 1.2 s on the live course** (0.9 s of it choosing them, before the field is
+cut out), once, before Ready: a hitch a person may notice as the scene comes up. The stills showed ruins only far off,
+so how they read up close is still a person's look.
+
+The lay was then made to ask only the legs it keeps (it asked all 23 before). On the live I4 course in the editor it
+went from 1.2 s to 0.84 s (one course each; 0.57 s of it choosing, before the field is cut). On the ten test courses
+in the editor: 7 ruins on every course, 408-574 prisms (mean 479), 0.8 s a course to choose with the field, 0.17 s to
+lay the field out again. `ScarabRallyRuinsTests` 13/13 in the editor after the change. What was left was Spearline's
+own check of each prism against every leg's lane, three times dearer here than on its lap (24 legs, not 8).
+
+That check was then made cheaper inside `SpearlineRuins` itself (Yash's go-ahead, 2026-11-24): the lay samples each
+leg's flown line once (`LaneCache`) and passes over a leg whose whole line is out of reach, where it worked every
+leg's curve out again for every prism. It lays the same prisms: old and new compared on 1,080 laps (Scarab Rally
+courses cut to 24, 12 and 8 rings, three clear radii, two leg floors), 1,394,903 prisms, identical to the bit, in
+2.3 s where the old code took 38 s. Every mode that calls the generator is the quicker for it. On this course in the
+editor: choosing the ruins with the field 0.8 s to 0.09 s a course (the same ten courses, the same 7 ruins and
+408-574 prisms), and laying them on the live I4 course 0.84 s to 0.33 s, of which about 0.17 s is laying the field
+out again and the rest is making the prisms. All 24 ruins test classes were run in the editor after the change: 23
+pass; Perch Run's `Every_dart_the_ai_plans_passes_the_standing_ruins` ran past its 180 s limit in its own loop (an
+assert with a formatted message for every prism sample), which is that test's cost and not the generator's.
+
+The I4 race was then run again with the new lay (2026-11-25, in the editor, three Legendary AI, offline, normal
+speed, one race): 7 ruins of 415 prisms (Jade 162, Ruby 111, Gold 142), laid again on the live course in 0.27 s; the
+race ended after 139 s of game time, the same as before the change; 59-78 fps while racing (one 15 fps sample as the
+end screen came up); all 415 ruin prisms stood at the end; the only error in the console was the Cloud Code 404 the
+first race also had. The AI's I4 times in the table below were measured
+before the ruins; the ruins stand outside the lane the AI flies, but that was not raced again.
+
 ## What is reused, and what is new
 
-- **Reused whole:** `SwitchbackController` (`ScarabRallyController` subclasses it and overrides only the name and
-  the course source), `SwitchbackCourse.Generate`, `SwitchbackFeatures` (I3/I4), the Regatta AI steering
+- **Reused whole:** `SwitchbackController` (`ScarabRallyController` subclasses it and overrides the name, the course
+  source, Blast Run below I4 and the crystal detour), `SwitchbackCourse.Generate`, Blast Run at I4, the Regatta AI steering
   (`AICommitFromApproachPoint`), `RaceGateTurnMonitor`, `GateRaceScoringRuleSO`, `RaceGateObjectiveProvider` and the
   race-beat toasts.
 - **New:**
   - `ScarabRallyCourse`: the Scarab's constants and the ladder.
   - `ScarabRallyCourseSource`: the walk, with Switchback's back-off.
+  - `ScarabRallyRuins`: which of Spearline's I4 ruins this course lays (above); the hook is in `ScarabRallyController`.
   - Their tests, the scene (a clone of `MinigameSwitchback`), the card, the rule, the preview and the toasts.
   - All the assets come from `Tools/Build/author_scarab_rally_assets.py` (on `hull_time_race.py`).
 
@@ -59,6 +154,24 @@ is 420 / 400 / 420 / 360 u.
   `AIPilot`, which Garrett's open #1786 (the nose lead) is changing, so a Scarab drift waits for it.
 - Its approach uses Switchback's numbers (commit 260, lead 300, through 220), all outside twice that circle.
 - Nobody has raced it yet. The learning sweep picks up recorded races automatically (`AUTO_LEARNING.md`).
+
+### AI: pace by difficulty (2026-11-17, elemental loop step 2)
+
+Claude, on Garrett's "do your best on fun", pending his playtest. Raced in the real game (Amoebius headless, the
+shipped AI alone, course seeds 1-3), the lower levels flew the nose rows that came before the Scarab's Legendary was
+trained (1.8-3.5/s against Legendary's trained 15-18/s). So Medium, the rival a person meets by default, took 4x
+Legendary's time (I3 199-254 s against 57) and never finished I4 in 420 s, and Easy never finished I4 either.
+`aiScarabNoseFollowByIntensity` now gives Easy 3.5, Medium 5 and Hard 8 on every rung; Legendary keeps its trained row.
+
+| Level | nose /s | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|---|
+| Easy | 3.5 (was 1.8-2.1) | 85 | 102 | 108 | 189 (was DNF) |
+| Medium | 5 (was 2.2-2.4) | 74 | 73 | 72 | 161 (was DNF) |
+| Hard | 8 (was 2.8-3.5) | 66 | 64 | 64 | 144 |
+| Legendary | 15 / 18 (unchanged) | 63 | 57 | 57 | 121 |
+
+Confirmed through the shipped code on fresh course seeds 4-6: Easy 74-85 s at I1 and 178-213 s at I4, Medium 69-75
+s at I2 and 162-172 s at I4, every race finished. This changes the mode's AI, never the vessel (the LOCKED mode rule).
 
 ## Known limitations
 

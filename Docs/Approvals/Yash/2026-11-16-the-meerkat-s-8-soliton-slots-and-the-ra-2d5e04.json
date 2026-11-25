@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-16-the-meerkat-s-8-soliton-slots-and-the-ra-2d5e04",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-16T22:35:21+00:00",
+  "area": "the Meerkat's sounds; Redline, Thornline and the other Time-game scenes",
+  "summary": "The Meerkat's 8 soliton slots and the race scenes' gate, lap and beat slots (Thornline's 9 included) now hold listed recycled placeholders instead of being silent",
+  "why": "Garrett 2026-11-16: fill every hole with an obvious recycled sound until Charles makes the real one. Each is in Docs/AudioSystem/PLACEHOLDERS.md; to hear one-by-one choices instead, change the ledger line and run sound_placeholders.py --apply.",
+  "branch": "cece/zealous-davinci-wnqfli",
+  "commit": "b0cb93ba0",
+  "paths": [
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity"
+  ]
+}

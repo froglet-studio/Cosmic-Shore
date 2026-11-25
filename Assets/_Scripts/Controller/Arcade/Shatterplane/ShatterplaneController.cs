@@ -292,6 +292,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Shatterplane lays its own team crystals (the platform's ElementLadderCrystals stands down).</summary>
+        public override bool LaysOwnLadderCrystals => true;
+
         void Mint(FieldSlot slot)
         {
             var set = ElementalCrystalSetSO.Load();

@@ -1,0 +1,84 @@
+{
+  "id": "H-20261113-voyages-399835",
+  "kind": "to",
+  "lane": "voyages",
+  "laneName": "Voyages map",
+  "laneKind": "shell",
+  "by": "Garrett",
+  "to": "Shombith",
+  "on": "2026-11-13T16:18:18+00:00",
+  "note": "Garrett's notes on Voyages, from his hand-off doc (Docs/Voyages/HANDOFF.md, written 12 Nov).",
+  "signals": {
+    "laneKind": "shell",
+    "handTests": false,
+    "merged": false
+  },
+  "source": "Docs/Voyages/HANDOFF.md",
+  "brief": {
+    "doc": "Docs/Voyages/HANDOFF.md",
+    "summary": "All the Voyages work so far is merged into bleeding-edge, but nobody has played it in the Unity editor yet. From here on, the calls are yours. When you make one, write it down in the doc it belongs to.",
+    "decisions": [
+      "Get the squad working first, both solo (three AI teammates that each play their role) and co-op (the networked Ark).",
+      "A squad is always three vessels. The number of pilots is however many seats those vessels have.",
+      "An AI's role comes from its cards: vessel, pilot, element and artifact. Try three first: Guardian, Cultivator and Destroyer.",
+      "The cells look cheap right now: they need a proper nucleus and shards.",
+      "Keep the branch list tidy: finish or delete old branches instead of keeping them around."
+    ],
+    "open": [
+      [
+        "VOYAGES.md, section 11",
+        "8 questions, like one galaxy or many, and what happens when a voyage is abandoned"
+      ],
+      [
+        "DEPTH.md, section 14",
+        "11 choices that already have a default"
+      ],
+      [
+        "VOYAGE_BOARD.md, section 5",
+        "11 choices about the galaxy map"
+      ],
+      [
+        "SOURCES.md, Open",
+        "which old design sources are still right (items 2-7)"
+      ]
+    ],
+    "steps": [
+      "Play the Voyages tests that are still unchecked in the editor test checklist, then close ticket #1688.",
+      "Pick each AI's role from its cards, not just its hull (ArkEscortRoles.Create).",
+      "Bring the co-op work over from claude/voyage-coop onto a fresh branch by hand. It's too far behind to merge.",
+      "Put a voyage cell next to an arcade cell at the same intensity and see why it looks cheaper.",
+      "Clean up the 17 old Voyages branches. This needs a local checkout.",
+      "Answer the Voyages changes waiting in your approvals."
+    ],
+    "reading": [
+      [
+        "HANDOFF.md",
+        "start here"
+      ],
+      [
+        "VOYAGES.md",
+        "the main design"
+      ],
+      [
+        "DEPTH.md, sections 12-15",
+        "read"
+      ],
+      [
+        "SLICE.md",
+        "skim"
+      ],
+      [
+        "ARK_ESCORT.md",
+        "skim"
+      ],
+      [
+        "VOYAGE_BOARD.md",
+        "look up when needed"
+      ],
+      [
+        "SOURCES.md",
+        "look up when needed"
+      ]
+    ]
+  }
+}

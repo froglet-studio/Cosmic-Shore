@@ -96,6 +96,7 @@ namespace UnityEngine
         public static float Acos(float v) => (float)Math.Acos(v); public static float Sqrt(float v) => (float)Math.Sqrt(v); public static float Abs(float v) => Math.Abs(v);
         public static float Max(float a, float b) => Math.Max(a,b); public static int Max(int a, int b) => Math.Max(a,b);
         public static float Min(float a, float b) => Math.Min(a,b); public static int Min(int a, int b) => Math.Min(a,b);
+        public static float Min(params float[] v) { float m = v[0]; for (int i = 1; i < v.Length; i++) m = Math.Min(m, v[i]); return m; }
         public static float Clamp(float v, float a, float b) => v < a ? a : (v > b ? b : v); public static int Clamp(int v, int a, int b) => v < a ? a : (v > b ? b : v);
         public static float Clamp01(float v) => Clamp(v, 0f, 1f); public static float Lerp(float a, float b, float t) => a + (b-a)*Clamp01(t);
         public static float LerpUnclamped(float a, float b, float t) => a + (b-a)*t;

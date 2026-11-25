@@ -1,0 +1,13 @@
+{
+  "id": "2026-11-16-standard-element-ladder-i1-nothing-i2-ev-12e762",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-16T22:14:45+00:00",
+  "area": "arcade intensity ladders (Harvest, Shatterplane I3/I4 pattern)",
+  "summary": "Standard element ladder: I1 nothing, I2 every hull at level 5 in the game's element (platform default for every non-arena card with no StartingElements table, incl. Harvest/Shatterplane), I3 team crystals of the element (your Harvest pattern, to be generalised), I4 element fauna in the cell's colour.",
+  "branch": "claude/project-thread-31ri4q",
+  "commit": "1f79fe4a4",
+  "loop": {
+    "step": "2"
+  }
+}

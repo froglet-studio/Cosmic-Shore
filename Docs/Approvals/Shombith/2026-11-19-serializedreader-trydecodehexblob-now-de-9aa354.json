@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-19-serializedreader-trydecodehexblob-now-de-9aa354",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-19T06:53:38+00:00",
+  "area": "the Amoebius engine (Content serialization)",
+  "summary": "SerializedReader.TryDecodeHexBlob now decodes enum arrays (Unity's hex-blob form); before, every enum[]/List<enum> field loaded empty in Amoebius.",
+  "why": "The Tiger Moth's dust element list loaded empty, so it scored 0 in every headless judge; Regatta, Brood Rush and Broadside judges all read assets through this path.",
+  "branch": "claude/project-thread-kszcm7",
+  "commit": "92a3c4a14",
+  "paths": [
+    "Port/src/CosmicShore.Content/Serialization/SerializedReader.cs",
+    "Port/tests/CosmicShore.Tests/PhysicsStepContractTests.cs"
+  ]
+}

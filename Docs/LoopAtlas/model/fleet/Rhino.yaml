@@ -1,0 +1,138 @@
+# Loop Atlas model: vessel Rhino. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+label: Rhino
+verbs:
+  Time:
+    ability: Ramp Spool
+    does: Fly at full throttle in a straight line and the Rhino winds up steadily toward a very high top speed. Turning
+      bleeds it off. Prisms you ram are shoved aside and cost you no speed.
+    trigger: Passive - fly flat out and straight
+    scales: More Time winds you up to top speed faster; the top speed itself stays the same.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md
+    arch: passive
+    t: [2, 15]
+  Charge:
+    ability: Carry
+    does: A prism your plough throws keeps flying past where it would land and smashes the next prism in its way - both
+      break.
+    trigger: Passive - plough
+    scales: More Charge lets a thrown prism fly further on to hit another.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md
+    arch: passive
+    t: [2, 15]
+  Mass:
+    ability: Blade
+    does: A plough blade across your nose catches the prisms you fly into and throws them clear of the whole blade.
+    trigger: Passive - plough
+    scales: More Mass makes the plough blade wider.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md
+    arch: passive
+    t: [2, 15]
+  Space:
+    ability: Furrow
+    does: Every prism your hull hits is shoved aside, never destroyed. Pull a trigger for a little shove that way; hold
+      it and everything you plough is thrown to that side.
+    trigger: Hold LT or RT to steer
+    scales: More Space throws ploughed prisms further aside.
+    source: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md
+    arch: hold
+    t: [2, 12]
+board:
+  Time: b b b
+  Charge: b b .
+  Mass: b b .
+  Space: b b .
+missing: ''
+arenas: [Regatta, Brood Rush]
+games:
+  Time: [Headlong]
+  Charge: [Bullrush]
+  Mass: [Windrow]
+  Space: [Landslide]
+excused: []
+lean: null
+leanWhy: null
+combos:
+- name: The windrow
+  t: [10, 40]
+  is: Speed turns the field into a thrown wall.
+  chain:
+  - [Time, Spool up on a straight]
+  - - Mass
+    - Hit the field with the blade
+  - - Space
+    - 'Hold a trigger: throw it all to one side'
+  - - Charge
+    - Thrown prisms carry into the next and break both
+  drivers: [break, make, joy]
+  feel: Momentum that nothing stops.
+  gene:
+    genome: Mass
+    cue: [mass_ahead, straight_ahead]
+    dials:
+    - - spoolBeforeField
+      - share of top speed reached before the field
+      - 0.3
+      - 1.0
+      - fraction
+    - - throwHold
+      - seconds a trigger is held to throw the field to one side
+      - 0.3
+      - 4
+      - s
+    done: The thrown prisms settle in a line inside the claim.
+- in: x
+  name: Straight spool
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Hold the straight; the furrow shoves the mass aside so nothing costs speed.
+  chain:
+  - - Time
+    - 'Hold the straight: spool up'
+  - - Space
+    - The furrow shoves prisms aside
+  - - Time
+    - The spool carries into the gate
+  drivers: [joy, mastery]
+  feel: Nothing in the way matters.
+  gene:
+    genome: Time
+    cue: [straight_ahead, mass_ahead]
+    dials:
+    - - turnBudget
+      - heading error accepted before turning
+      - 1
+      - 30
+      - deg
+    done: A gate is threaded at better than three quarters of top speed.
+    sight: NEEDLE
+- in: x
+  name: The landslide
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Spool, plough a field, and aim the carry into rival mass.
+  chain:
+  - [Time, Spool up]
+  - - Charge
+    - 'Plough the field: throws carry into the next and break both'
+  - - Space
+    - 'Hold a trigger: aim the carry at rival mass'
+  drivers: [break, joy]
+  feel: Pushing a mountain over.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, straight_ahead]
+    dials:
+    - - fieldDensity
+      - prisms in a field worth ploughing
+      - 5
+      - 200
+      - count
+    - - aimHold
+      - seconds the trigger is held to aim the carry
+      - 0.3
+      - 4
+      - s
+    done: Carried prisms break rival prisms.
+    sight: MANGER
+doc: Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md

@@ -140,6 +140,12 @@ namespace CosmicShore.UI
                  "finish before giving up on a variant that only means something in flight.")]
         float freestyleHandoffTimeout = 8f;
 
+        [Header("Motion")]
+        [SerializeField, Tooltip("Navigate's dive: the live preview grows to fill the window before the " +
+                 "player is handed to the world (Docs/MENU_REDESIGN_B.md section 235). Optional - " +
+                 "unwired, Navigate goes straight through.")]
+        KitDive dive;
+
         // The DI-registered shared asset, not a reach into MenuCrystalClickHandler's private
         // serialized copy - one reader, one registration, per the project's DI pattern.
         [Inject] GameDataSO gameData;
@@ -269,6 +275,9 @@ namespace CosmicShore.UI
             // left armed would fire a previous card's callback on whatever the player pressed next.
             _watchedOption = null;
             _onWatchedApplied = null;
+
+            // The window hides by alpha, so a dive that played on the last Navigate is put back here.
+            if (dive) dive.Restore();
 
             Redraw();
             if (restoreRemembered) RestoreRememberedVariant();
@@ -1076,6 +1085,18 @@ namespace CosmicShore.UI
                 return;
             }
 
+            if (dive && dive.isActiveAndEnabled)
+            {
+                if (dive.IsDiving) return;
+                dive.Play(() => EnterAt(destination));
+                return;
+            }
+            EnterAt(destination);
+        }
+
+        /// <summary>Navigate's second half, after the dive: close the window and fly the player there.</summary>
+        void EnterAt(NavigateDestination destination)
+        {
             // Already flying (the player opened the Toy Box mid-freestyle): there is no blend to
             // ride and no coast to allow for, so this is a straight teleport to the stand-off.
             if (crystalClickHandler.IsInFreestyle)

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-20-voyage-phone-pass-shombith-2026-11-20-ce-1e787c",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-20T18:35:14+00:00",
+  "area": "voyage code, Cell and Fauna (ecology), Arkway CellConveyor",
+  "summary": "Voyage phone pass (Shombith 2026-11-20): Cell.CullOffscreenAnimation (voyage cells on phones: creature Animators cull completely off screen, set in Fauna.Initialize), Cell.bootBareCanvas (Voyage.unity boots the bare canvas, not Garland, since the Arkway reverts to it anyway), CellConveyor.RetireMargin (phones retire the cell behind 150 u past its membrane, not 600), phone plant scale 0.5, way home 2x Ark speed, docking outro before the bank, pilot lines and a named kaiju toast. Production gating only; nothing living is culled.",
+  "branch": "claude/project-thread-chvxox",
+  "commit": "cf3ef5a85"
+}

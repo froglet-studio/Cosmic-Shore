@@ -190,6 +190,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Reactor_RegrowsOnlyInsideANucleusTheArksDomainHolds()
+        {
+            Assert.IsTrue(ArkReactor.MayRegrowIn(Domains.Jade, true, true, true, Domains.Jade), "its own nucleus heals it");
+            Assert.IsFalse(ArkReactor.MayRegrowIn(Domains.Jade, true, false, true, Domains.Jade), "outside the nucleus");
+            Assert.IsFalse(ArkReactor.MayRegrowIn(Domains.Jade, true, true, true, Domains.Ruby), "a nucleus another domain holds");
+            Assert.IsFalse(ArkReactor.MayRegrowIn(Domains.Jade, true, true, false, Domains.Blue), "an unclaimed nucleus");
+            Assert.IsFalse(ArkReactor.MayRegrowIn(Domains.Jade, false, false, false, Domains.Blue), "a cell with no nucleus");
+        }
+
+        [Test]
         public void Reactor_RegrowsTheEmptySlotNearestTheReactor()
         {
             var positions = new List<Vector3> { new(0, 0, 50), new(0, 0, 5), new(0, 0, -5), new(0, 0, -60) };

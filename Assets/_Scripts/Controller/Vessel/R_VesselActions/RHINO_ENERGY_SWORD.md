@@ -7,10 +7,10 @@
 > upgrade." So: **Space L5 = Shield Breaker** — the sword can pop super-shielded prisms at all
 > (`ShieldSkimmerScaleConfigSO.superShieldUpgradeElement`), still with an energized blade;
 > without it the blade binds, energized or not. **Charge L5 = Sword Steal** — a sword hit on a
-> rival vessel pockets the petals (`RhinoSwordStealBySkimmerEffect.stealUpgradeElement`); below it
+> rival vessel pockets the petals (`SwordfishSwordStealBySkimmerEffect.stealUpgradeElement`); below it
 > the same petals are EJECTED as crystals at the strike, so the hit still scores and conserves.
 > The old L5s are deleted: **Breaker** (shielded prism in one slice) and **Live Wire** (a return to
-> the stance re-lights the tail). The upgrade bit is on the sword (`IRhinoSwordState.SuperShieldUpgradeActive`), so the
+> the stance re-lights the tail). The upgrade bit is on the sword (`ISwordfishSwordState.SuperShieldUpgradeActive`), so the
 > damage effect, the bind drag and the AI read one gate. The Charge ability is renamed **Energize** (the energize, plus
 > Charge's scaling of how many petals a hit takes).
 
@@ -19,9 +19,9 @@
 > on the rhino. Charge should control the amount of crystals stolen from vessels with the sword.
 > Space alone can grow the sword, but move the camera accordingly." So: the energy meter, the energy
 > banked per cut and the energize cost are gone (the Rhino's `Shield` resource is deleted from its
-> `ResourceSystem`; `RhinoSwordNetworkRelay` lost `n_energy`, protocol version 15); the energize
+> `ResourceSystem`; `SwordfishSwordNetworkRelay` lost `n_energy`, protocol version 15); the energize
 > costs nothing and its cooldown is its only limit; **Charge** scales the sword's petal STEAL
-> (`RhinoSwordStealBySkimmerEffect.stealScale`, ×1 → ×2.5, the Squirrel joust's numbers on the same
+> (`SwordfishSwordStealBySkimmerEffect.stealScale`, ×1 → ×2.5, the Squirrel joust's numbers on the same
 > verb); **Space alone** sets the blade's length (24 → 40), eased, with the local pilot's camera
 > pulled back in proportion (§ "Length: Space alone"); and the omni-crystal **Surge** lends no
 > elements and fills nothing — it is the 8 s energized sword ring with the camera pulled back
@@ -33,7 +33,7 @@
 > controlled by the triggers. this can an 8 second state".
 
 > **2026-10-16:** energy, energize phase and surge are now OWNER-authoritative and replicated by
-> `RhinoSwordNetworkRelay`; every peer poses the blade from the replicated trigger mirrors. Energy
+> `SwordfishSwordNetworkRelay`; every peer poses the blade from the replicated trigger mirrors. Energy
 > per cut is Charge-scaled (×1 → ×2, floor ×0.5); a let-go tail now always runs out unless Charge
 > L5 **Live Wire** is active. The per-petal crystal burst is DELETED — the burst look now belongs
 > to the omni-crystal **Surge**. Ignition re-dispatch replays super-shielded contacts only.
@@ -59,8 +59,8 @@ only** — the rejection covers NORMAL damage gating, not the hardened-target ri
 | Shielded prism | any | Shield pops, prism survives (standard `Prism.Damage` semantics) |
 | **Super-shielded prism** | **ENERGIZED**, **Space L5** active | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Slice(devastate: true)` (the armour shatters, the core is CUT; unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
 | **Super-shielded prism** | not energized, or no Space L5 | **BINDS** — no recoil, no spin. The blade sticks in the armour: a dim **denied spark**, the prism **jiggles**, a **punish thud**, and while the blade stays inside the vessel's **rotation rate is dragged down** and the pilot feels a **grind** (§ "Binding"). The prism survives. |
-| One of this sword's own **afterimages** | any | **SLICED like any prism** once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett, 2026-10-17: *"not immune to our destruction"*; it was never cut before). `IRhinoSwordState.IsOwnAfterimage` survives only for the AI's aim. Watch item: one energize plus self-cuts can refill the meter — the lever is energy-per-own-afterimage, not immunity (`RHINO_SWORD_AFTERIMAGE.md` §3) |
-| Another **vessel** | any | The sword takes **petals**: `RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`) sits in the sword's container and runs only for a hit `VesselCombatHitBySword` admits (PvP is petals only). With the **Charge L5** upgrade it STEALS them (they land on the Rhino); below it they are EJECTED as crystals at the strike (`stealUpgradeElement`, 2026-10-26) |
+| One of this sword's own **afterimages** | any | **SLICED like any prism** once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett, 2026-10-17: *"not immune to our destruction"*; it was never cut before). `ISwordfishSwordState.IsOwnAfterimage` survives only for the AI's aim. Watch item: one energize plus self-cuts can refill the meter — the lever is energy-per-own-afterimage, not immunity (`RHINO_SWORD_AFTERIMAGE.md` §3) |
+| Another **vessel** | any | The sword takes **petals**: `SwordfishSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`) sits in the sword's container and runs only for a hit `VesselCombatHitBySword` admits (PvP is petals only). With the **Charge L5** upgrade it STEALS them (they land on the Rhino); below it they are EJECTED as crystals at the strike (`stealUpgradeElement`, 2026-10-26) |
 
 `popRequiresEnergizedBlade` (default **on** — the ritual IS the design) replaces v2's
 `destroySuperShielded`: flip it off on the asset to restore the v2 ungated pop as a designer
@@ -78,7 +78,7 @@ half: the blade is IN something, so it drags.
 
 | Beat | Who | What |
 |---|---|---|
-| Entry | `RhinoSkimmerDamagePrismEffectSO` (fires once per contact entry) | denied spark · `Prism.AbsorbSuperShieldHit(contactSpeed)` (the deflection jiggle, sized by the speed the blade struck at) · `HapticController.PlayPunish()` |
+| Entry | `SwordfishSkimmerDamagePrismEffectSO` (fires once per contact entry) | denied spark · `Prism.AbsorbSuperShieldHit(contactSpeed)` (the deflection jiggle, sized by the speed the blade struck at) · `HapticController.PlayPunish()` |
 | While inside | `ShieldSkimmerScaleDriver.UpdateBind` (per frame) | rotation rate eases to `bindTurnRateMultiplier` (0.3) · every bound prism re-jiggles each `bindJiggleIntervalSeconds` (0.2 s) · `HapticController.PlayBind` grind each `bindHapticIntervalSeconds` (0.1 s) |
 | Exit | the same driver | rotation rate eases back to 1 at `bindReleaseRate` — the armour letting go, not a snap |
 
@@ -137,7 +137,7 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
   counts down whatever the fingers do. (Charge L5 **Live Wire** restored the refresh until
   2026-10-26, when Charge's L5 became the sword's steal and Live Wire was deleted.)
 - **Who decides (2026-10-16).** The machine that OWNS the vessel (the pilot's, or the server
-  for an AI) runs this state machine; `RhinoSwordNetworkRelay` (a `NetworkBehaviour` on the
+  for an AI) runs this state machine; `SwordfishSwordNetworkRelay` (a `NetworkBehaviour` on the
   Rhino root, owner-write `n_state` — the phase nibble plus a surge bit; `n_energy` went with the
   energy, 2026-10-26) publishes
   it, and every other peer mirrors it through `SetEnergizePhase`, so the ignition re-dispatch,
@@ -154,7 +154,7 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
   remote both-held synthesis: sum 2) — one machine pops a prism the other keeps. The mirrors
   make every peer run the identical thresholds on the identical values (deadzone-renormalized
   the same way). The gesture is still the chop pose the player already knows; thresholds live
-  on `RhinoShieldSwipeConfig.asset`.
+  on `SwordfishShieldSwipeConfig.asset`.
 - **Binary inputs energize too:** DualMouse and keyboard write 0/1 mirrors, so both held =
   sum 2. **Touch energizes by lifting both thumbs (2026-10-21, § On a phone below)**: with no
   thumb on the glass `TouchInputStrategy` writes both mirrors 1 (`idlePullsBothTriggers`), the
@@ -162,7 +162,7 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
   energize.)* The event path's both-held synthesis (`diff 0, sum 2`) remains for the
   POSE only, and since 2026-10-16 only for touch — every other device, on every peer, poses from
   the mirrors (`RHINO_SHIELD_SWIPE.md` § "Input paths"). *Until 2026-10-16:* AI never pulled
-  triggers, so AI Rhinos never energized. Now `RhinoSwordAutopilot` (Rhino root) writes the
+  triggers, so AI Rhinos never energized. Now `SwordfishSwordAutopilot` (Rhino root) writes the
   mirrors on the owning machine and holds the chop stance near super-shielded mass or on a
   ≥ 75% meter (`energizeWhenFull` 0.75).
 - **A turn end / despawn / autopilot takeover mid-hold** drops the stance (`ResetImmediate` →
@@ -191,7 +191,7 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
 ### Swipe recovery (and why it is NOT the rejected slash cooldown)
 
 Each swipe direction owes a short recovery — `swipeCooldownSeconds` (0.35) on
-`RhinoShieldSwipeConfig.asset` — after it releases, so the sword swings with a rhythm instead of
+`SwordfishShieldSwipeConfig.asset` — after it releases, so the sword swings with a rhythm instead of
 flapping as fast as the triggers can be worked. A direction counts as having swung once its pull
 passes `swipeEngageThreshold` (0.4); the timer starts on RELEASE, so a swing always plays out in
 full and then pays for itself. **While the blade is ENERGIZED the recovery is ZERO** — the frenzy
@@ -232,7 +232,7 @@ Two consequences the geometry forces, both handled:
   place. **This changes tip debris speed** (the correct lever arm is ~2× the modelled one, and
   hilt-anchoring puts the tip further from the pivot again) — more tip strikes will saturate
   `debrisSpeedLimit` (200). If they read too hot, `swingVelocityScale` on
-  `RhinoSkimmerDamagePrismEffect.asset` is the dial; do not "fix" it by putting `lengthScale`
+  `SwordfishSkimmerDamagePrismEffect.asset` is the dial; do not "fix" it by putting `lengthScale`
   back, which would re-break the geometry.
 - **Growth must not read as a swing.** A hilt-anchored blade's CENTRE — the point the velocity
   sampler differentiates — slides along the axis as the blade lengthens, at up to the surge
@@ -256,7 +256,7 @@ devastate — keep the two branches in sync if the helper ever gains a devastate
 
 **Elongation interaction:** Space changes the blade's length (eased at `spaceLengthEaseSpeed`,
 30 u/s, only when the Space level moves), and `SkimmerSwingKinematics` can optionally count that
-elongation as tip velocity (`includeElongation`, **off** in `RhinoSwordSwingKinematicsConfig.asset`).
+elongation as tip velocity (`includeElongation`, **off** in `SwordfishSwordSwingKinematicsConfig.asset`).
 Leave it off: a pilot gaining a Space level must not strike harder for the half-second the blade
 grows.
 
@@ -288,7 +288,7 @@ that read as a blast was the one place its identity broke. The full record is
   exactly what they were. A super-shield pop shatters the stellation as before and slices the core.
 - **It cannot cost a kill its visual.** Budget full (`maxLiveSlices`, 48), config off, a
   degenerate cut or the render service down → the ordinary explosion plays.
-- **A/B:** `sliceDestroyedPrisms` on `RhinoSkimmerDamagePrismEffect.asset` (default on). Look:
+- **A/B:** `sliceDestroyedPrisms` on `SwordfishSkimmerDamagePrismEffect.asset` (default on). Look:
   `PrismSliceMaterial` (colours, seam, ember, dissolve noise). Timing and motion:
   `Resources/PrismSliceConfig`.
 
@@ -298,13 +298,13 @@ that read as a blast was the one place its identity broke. The full record is
 that used to be "energy") is deleted from `Rhino.prefab`; nothing else on the Rhino addressed it
 (its only other indexed effect, the omni blast, reads index 0). Gone with it: the energy banked per
 cut (`energyPerPrism` 0.04 / `energyPerSuperShieldedPrism` 0.12 and the Charge
-`chargeEnergyGainMultiplier` on `RhinoSkimmerDamagePrismEffect`), the energize cost
+`chargeEnergyGainMultiplier` on `SwordfishSkimmerDamagePrismEffect`), the energize cost
 (`energizeCostFraction` 0.1), the surge's `energyFill`, the heat ramp (`fullEnergyColor` /
-`fullEnergyBrightness`: the blade now rests at `restingBladeColor`), `IRhinoSwordState.Energy01` /
+`fullEnergyBrightness`: the blade now rests at `restingBladeColor`), `ISwordfishSwordState.Energy01` /
 `AddEnergy`, and the relay's `n_energy`. The energize is gated by its stance and its cooldown alone.
 
 **Charge is the sword's STEAL.** A sword hit on a rival vessel steals petals through
-`RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`, `requireOvertake` off), and
+`SwordfishSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`, `requireOvertake` off), and
 its `stealScale` now scales with **Charge**: ×1 at rest (the price Broadside puts on a Strike), ×2.5
 at level 10, floored ×1 - the same ElementalFloat the Squirrel's joust authors on the same verb, read
 at the thief's replicated level. The base magnitude stays derived by
@@ -321,7 +321,7 @@ only so the authored X/Z silhouette holds; the first write snaps so a fresh blad
 It is the one writer (`HasExternalScaleDriver` keeps the Skimmer's own un-eased write down). The
 hilt anchor re-applies with the length, so the sword always grows out of its tip.
 
-**The camera follows the length** (the local human pilot only, `RhinoSwordCamera`): the camera's
+**The camera follows the length** (the local human pilot only, `SwordfishSwordLengthCamera`): the camera's
 distance and look point scale by `1 + cameraFollowsBladeLength × (length / rest − 1)` through
 `CustomCameraController.VesselDistanceScale` (a point-of-use multiplier, like the surround framing,
 so adaptive zoom keeps working underneath; reset with the follow target). At `cameraFollowsBladeLength`
@@ -330,12 +330,12 @@ so adaptive zoom keeps working underneath; reset with the follow target). At `ca
 
 ## The omni-crystal Surge — the sword ring (reworked 2026-10-26)
 
-An **omni** crystal collected by the hull runs `RhinoVesselSurgeByCrystalEffectSO`
-(`RhinoVesselSurgeByCrystalEffect.asset`, in `RhinoImpactorDataContainer`'s crystal list beside
+An **omni** crystal collected by the hull runs `SwordfishVesselSurgeByCrystalEffectSO`
+(`SwordfishVesselSurgeByCrystalEffect.asset`, in `RhinoImpactorDataContainer`'s crystal list beside
 the unchanged `RhinoVesselExplosionByCrystalEffect` blast), which calls
-`IRhinoSwordState.Surge(surgeSeconds)`. For **`surgeSeconds` (8 s)**:
+`ISwordfishSwordState.Surge(surgeSeconds)`. For **`surgeSeconds` (8 s)**:
 
-- **A ring of swords surrounds the hull** (`RhinoSurgeSwordRing`, owned and ticked by the driver).
+- **A ring of swords surrounds the hull** (`SwordfishSurgeSwordRing`, owned and ticked by the driver).
   `surgeRingSwordCount` (8) swords in all: the pilot's blade plus 7 copies, each the blade's LIVE
   pose turned about the nose axis of the blade's parent (the frame the swipe pivots in) by
   k × 45°. The triggers drive every one of them, because every copy is the blade's pose: the
@@ -345,20 +345,20 @@ the unchanged `RhinoVesselExplosionByCrystalEffect` blast), which calls
 - **Every copy cuts.** A copy is a clone of the blade root (mesh, the sphere + capsule triggers,
   the kinematic body, `SkimmerImpactor`, `ImpactCollider`, its own `SkimmerSwingKinematics`),
   cloned under an INACTIVE holder so the one-sword parts are removed before it ever wakes
-  (`RhinoSwordFXController`, which would re-seat the pilot's tracers). Its `Skimmer` is initialised
+  (`SwordfishSwordFXController`, which would re-seat the pilot's tracers). Its `Skimmer` is initialised
   with the vessel, its own scale write stands down, and its `SwordState` is the real sword — so
-  it runs the same prism chain (`RhinoSkimmerDamagePrismEffect`), banks into the same meter, and
+  it runs the same prism chain (`SwordfishSkimmerDamagePrismEffect`), banks into the same meter, and
   pops super-shields while the blade is energized (which the surge holds it). Its own swing model
   gives its cuts the velocity of the part of THAT sword that struck. Every copy wears the blade's
   live colour (its property block is copied each frame).
-- **The camera pulls back and re-centres** (the local human pilot only). `RhinoSwordCamera` eases
+- **The camera pulls back and re-centres** (the local human pilot only). `SwordfishSwordLengthCamera` eases
   `CustomCameraController.SurroundFraming01` in over `surgeCameraBlendSeconds` (0.6 s): the
   camera moves straight behind the hull at `surgeCameraDistanceScale` (×2: the Rhino's 70 → 140)
   and looks at the hull itself (the 18-unit look lift fades out), so the hull is the centre of the
   frame and the whole ring is on screen. Applied at the point of use, like the rear view, so
   adaptive zoom keeps working underneath; cleared with the follow target. No FOV is touched.
 - the blade is held **ENERGIZED** with no stance, overriding a cooldown; the opening beat is a full
-  flash, whole-blade crackle and a camera shake (`RhinoSwordFXController.NotifySurge`);
+  flash, whole-blade crackle and a camera shake (`SwordfishSwordFXController.NotifySurge`);
 - **no element buff and no fill** (removed 2026-10-26: "Omnicrystal doesn't need the element
   buff"; the `elementBoost` and `energyFill` keys are gone);
 - the Mass **afterimages** lay throughout the surge (they otherwise wait for an energize to end;
@@ -395,7 +395,7 @@ that window can lose its shield to one sword and its core to another (a brief fr
 > crystals were never collectable by a skimmer (`SkimmerImpactor`'s `IsEmbedded`/`IsExploding`
 > gate) and still are not.
 
-## Blade FX (`RhinoSwordFXController` — prefab-authored, editor-tunable)
+## Blade FX (`SwordfishSwordFXController` — prefab-authored, editor-tunable)
 
 All look lives on a **prefab-authored component on the blade root** (added to the
 ForceFieldSkimmer instance in `Rhino.prefab`), with every knob on
@@ -438,14 +438,14 @@ v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
    opens with a whole-blade crackle.
 4. **Blade tracers — a comb of hairlines, authored on the components.** FIVE **authored**
    `TrailRenderer` children of the fuselage (`RhinoSwordBladeTracer0..4` in `Rhino.prefab`, all
-   wearing `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback),
+   wearing `SwordfishSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback),
    fuselage-parented so the blade's scale can never distort their shape. They are spread evenly
    down the blade, **element 0 on the tip, the last on the hilt**, so a swing draws a comb of
    fine streaks that reads the sword's sweep instead of one slab.
 
    **Their look is yours on the components** — `widthMultiplier`, `time`, the width curve, the
    colour gradient, material. Nothing in code writes any of them, and the COUNT is data too:
-   `RhinoSwordFXController.bladeTracers` is an array and the spread is derived from its length,
+   `SwordfishSwordFXController.bladeTracers` is an array and the spread is derived from its length,
    so add or remove entries freely. `SeatTracers` owns placement only, and the spacing is EVEN
    by construction: ONE span serves the whole set, inset at each end by half the head width of
    the streak sitting there (head width = `widthMultiplier` × the width curve at t=0) so
@@ -510,16 +510,16 @@ no impacts). The LOOK still needs the in-editor pass below.
 
 Effect SOs are singletons and can't hold per-vessel state. The per-Rhino state lives on
 `ShieldSkimmerScaleDriver` (the sword's brain, one per Rhino, on `ScaleSkimmerObject` in
-`Rhino.prefab`), which implements the slim `IRhinoSwordState` (`IsEnergized`,
+`Rhino.prefab`), which implements the slim `ISwordfishSwordState` (`IsEnergized`,
 `IsSurging`, `NotifyPrismDestroyed`, `NotifyPopDenied`, `Surge`,
 `IsOwnAfterimage`, `SetInStance` — `TriggerCrystalBurst` went with the per-petal burst on
 2026-10-16) and registers itself on `Skimmer.SwordState`. Effects read it via
 `impactor.Skimmer.SwordState`, null-safe so any non-Rhino skimmer reusing the assets just runs
 the damage behavior (and the bind entry beat, since it can never be energized) without the
 FX bookkeeping. The driver owns STATE (energize machine, Space length, surge) —
-deciding it on the owning machine and mirroring it from `RhinoSwordNetworkRelay` everywhere
+deciding it on the owning machine and mirroring it from `SwordfishSwordNetworkRelay` everywhere
 else — and delegates all LOOK to the
-prefab-authored `RhinoSwordFXController` on the blade root; the gesture arrives from
+prefab-authored `SwordfishSwordFXController` on the blade root; the gesture arrives from
 `ShieldSwipeActionExecutor` (the trigger reparameterization's owner). The FX controller resolves
 same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body renderer) via
 `TryGetComponent` and warns once, naming the missing wire, if an authored reference is absent.
@@ -528,40 +528,40 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 
 | Role | File |
 |---|---|
-| Per-vessel state contract + energize phases | `Executors/IRhinoSwordState.cs` (`RhinoSwordEnergizePhase`) |
+| Per-vessel state contract + energize phases | `Executors/ISwordfishSwordState.cs` (`SwordfishSwordEnergizePhase`) |
 | Sword brain (energize state machine, Space length, surge, contact re-dispatch; no energy since 2026-10-26) | `Executors/ShieldSkimmerScaleDriver.cs` |
-| The camera's two holds (Space-length distance, surge framing) | `Executors/RhinoSwordCamera.cs` · `CustomCameraController` (`VesselDistanceScale`) |
-| Charge = the sword's petal steal | `_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset` (`stealScale`, Charge ×1 → ×2.5) |
-| The surge's sword ring + camera framing | `Executors/RhinoSurgeSwordRing.cs` · `Controller/Camera/CustomCameraController.cs` (`SurroundFraming01`, `SurroundDistanceScale`, `SurroundOffset`) · tests `Tests/Editor/RhinoSurgeSwordRingTests.cs` |
-| Blade look (heat ramp, energize blend, ignition/spark crackle, flashes, tracers, shake) | `Executors/RhinoSwordFXController.cs` (prefab-authored on the blade root) |
+| The camera's two holds (Space-length distance, surge framing) | `Executors/SwordfishSwordLengthCamera.cs` · `CustomCameraController` (`VesselDistanceScale`) |
+| Charge = the sword's petal steal | `_SO_Assets/Effects/Vessel Skimmer Effects/SwordfishSwordStealBySkimmerEffect.asset` (`stealScale`, Charge ×1 → ×2.5) |
+| The surge's sword ring + camera framing | `Executors/SwordfishSurgeSwordRing.cs` · `Controller/Camera/CustomCameraController.cs` (`SurroundFraming01`, `SurroundDistanceScale`, `SurroundOffset`) · tests `Tests/Editor/SwordfishSurgeSwordRingTests.cs` |
+| Blade look (heat ramp, energize blend, ignition/spark crackle, flashes, tracers, shake) | `Executors/SwordfishSwordFXController.cs` (prefab-authored on the blade root) |
 | Gesture source (stance feed from the reparameterized triggers) | `Executors/ShieldSwipeActionExecutor.cs` (`FeedSwordStance`) |
-| Gesture thresholds | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
-| Tuning (energize, surge ring + camera, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset` |
-| Prism effect (damage, energize-gated super-shield pop, the cut plane) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset` |
+| Gesture thresholds | `Data Containers/SwordfishShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeConfig.asset` |
+| Tuning (energize, surge ring + camera, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset` |
+| Prism effect (damage, energize-gated super-shield pop, the cut plane) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/SwordfishSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/SwordfishSkimmerDamagePrismEffect.asset` |
 | The slice (death visual) | `Utility/Effects/PrismSlice.cs` (batch/budget/retire) · `Utility/Foundation/PrismSliceGeometry.cs` (the stamps) · `_Graphics/Materials/Graphs/PrismSlice.hlsl` + `PrismSlice.shader` · `_Graphics/Materials/PrismSliceMaterial.mat` · `Resources/PrismSliceConfig.asset` · `Vessel/Prism.cs` (`Slice`) · `Prisms/PrismFactory.cs` (`SpawnExplosion` routes it) |
-| Owner-authoritative replication (energize phase, surge bit; protocol 15) | `Controller/Vessel/RhinoSwordNetworkRelay.cs` (on the Rhino root) |
-| Omni-crystal Surge (8 s energized, the sword ring + camera) | `ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs` → `_SO_Assets/Effects/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffect.asset` (in `RhinoImpactorDataContainer`). *The sword-side `RhinoSwordCrystalBurstEffectSO` + asset were deleted 2026-10-16.* |
-| AI sword hand (writes the trigger mirrors) | `Controller/AI/Rhino/RhinoSwordAutopilot.cs` (on the Rhino root; moved 2026-10-25) |
+| Owner-authoritative replication (energize phase, surge bit; protocol 15) | `Controller/Vessel/SwordfishSwordNetworkRelay.cs` (on the Rhino root) |
+| Omni-crystal Surge (8 s energized, the sword ring + camera) | `ImpactEffects/EffectsSO/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffectSO.cs` → `_SO_Assets/Effects/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffect.asset` (in `RhinoImpactorDataContainer`). *The sword-side `RhinoSwordCrystalBurstEffectSO` + asset were deleted 2026-10-16.* |
+| AI sword hand (writes the trigger mirrors) | `Controller/AI/Rhino/SwordfishSwordAutopilot.cs` (on the Rhino root; moved 2026-10-25) |
 | Box-overlap re-apply (energize rising edge) | `ImpactEffects/Impactors/SkimmerImpactor.cs` (`ReapplyPrismEffectsToOverlapping`) |
 | Shell-pair re-dispatch (energize rising edge) | `Controller/Managers/PrismShellContactManager.cs` (`RedispatchPairsForOwner`) |
 | Capsule crackle surface mode | `Controller/Vessel/ForcefieldCrackleController.cs` (`CrackleSurface`) |
 | Capsule crackle math | `_Graphics/Materials/Graphs/ForcefieldCrackle.hlsl` (`ForcefieldCrackleCapsule_float`) |
 | Capsule crackle shader / material | `_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader` / `_Graphics/Materials/RhinoBladeCrackleMaterial.mat` |
-| Authored tracer material | `_Graphics/Materials/RhinoSwordTracerMaterial.mat` (TrailViewer family) |
+| Authored tracer material | `_Graphics/Materials/SwordfishSwordTracerMaterial.mat` (TrailViewer family) |
 | Hilt anchoring (sword, not staff) | `Executors/ShieldSwipeActionExecutor.cs` (`AnchorOffsetLocal`, `ApplyShieldPose`) |
 | Growth-translation compensation | `Vessel/SkimmerSwingKinematics.cs` (`RemoveGrowthTranslation`) + `SkimmerSwingKinematicsConfigSO.compensateGrowthTranslation` |
 | Skimmer hook | `Vessel/Skimmer.cs` (`SwordState`) |
 | Embedded-heart guard on skimmer crystal effects | `ImpactEffects/Impactors/SkimmerImpactor.cs` (ElementalCrystalImpactor case) |
 | Blade shader fix (`_Color` now rendered) | `Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph` |
-| Effect wiring | `_SO_Assets/Effects/Effect Containers/SkimmerContainers/RhinoForceFieldSkimmerImpactorDataContainer.asset` (prism → `RhinoSkimmerDamagePrismEffect` + `SkimmerHapticsByPrismEffect`; vessel → `VesselHapticsBySkimmerEffect`, `VesselCombatHitBySword`, `RhinoSwordStealBySkimmerEffect`; crystal list **empty** since 2026-10-16) |
-| Prefab wiring | `Rhino.prefab` (FX controller on the blade root + `RhinoSwordBladeTracer0..4` under the fuselage; `RhinoSwordNetworkRelay` + `RhinoSwordAutopilot` on the root; sword mount at local y **−1**; the sword's `CapsuleCollider` is a **trigger**, restored 2026-10-16 after the PR #928 merge left it solid) · `ForceFieldSkimmer Variant.prefab` (overlay material → blade crackle, `surface: Capsule`, `lengthScale: 2`) |
+| Effect wiring | `_SO_Assets/Effects/Effect Containers/SkimmerContainers/SwordfishForceFieldSkimmerImpactorDataContainer.asset` (prism → `SwordfishSkimmerDamagePrismEffect` + `SkimmerHapticsByPrismEffect`; vessel → `VesselHapticsBySkimmerEffect`, `VesselCombatHitBySword`, `SwordfishSwordStealBySkimmerEffect`; crystal list **empty** since 2026-10-16) |
+| Prefab wiring | `Rhino.prefab` (FX controller on the blade root + `RhinoSwordBladeTracer0..4` under the fuselage; `SwordfishSwordNetworkRelay` + `SwordfishSwordAutopilot` on the root; sword mount at local y **−1**; the sword's `CapsuleCollider` is a **trigger**, restored 2026-10-16 after the PR #928 merge left it solid) · `ForceFieldSkimmer Variant.prefab` (overlay material → blade crackle, `surface: Capsule`, `lengthScale: 2`) |
 
 ## Tuning knobs
 
-On `RhinoShieldSwipeConfig.asset`: `stanceSumThreshold` 1.5 · `stanceCenterEpsilon` 0.4 ·
+On `SwordfishShieldSwipeConfig.asset`: `stanceSumThreshold` 1.5 · `stanceCenterEpsilon` 0.4 ·
 `swipeCooldownSeconds` 0.35 · `swipeEngageThreshold` 0.4.
 
-On `RhinoSkimmerDamagePrismEffect.asset`: `inertia` 70 · `popRequiresEnergizedBlade` 1 ·
+On `SwordfishSkimmerDamagePrismEffect.asset`: `inertia` 70 · `popRequiresEnergizedBlade` 1 ·
 (the energy keys `energyPerPrism` / `energyPerSuperShieldedPrism` / `chargeEnergyGainMultiplier`
 are DELETED, 2026-10-26) · bounce params
 `recoilWhenDenied` 0 (the bind is shipped; on = the legacy recoil below) · legacy recoil params
@@ -606,11 +606,11 @@ On `RhinoBladeCrackleMaterial.mat`: arc density/sharpness, ring thickness (fract
 ripple speed, core/glow/rim colors — live-tunable in the inspector, edit or play mode
 (`ForcefieldCrackleController` is `[ExecuteAlways]`).
 
-On `RhinoVesselSurgeByCrystalEffect.asset`: `surgeSeconds` 8 (6 until 2026-10-26); `energyFill`
+On `SwordfishVesselSurgeByCrystalEffect.asset`: `surgeSeconds` 8 (6 until 2026-10-26); `energyFill`
 and `elementBoost` are DELETED (2026-10-26). The ring and camera knobs are the `surge*` keys on
 `ShieldSkimmerScaleConfig.asset` above.
 
-On `RhinoSwordStealBySkimmerEffect.asset`: `stealScale` Charge ×1 → ×2.5, floor ×1 (2026-10-26);
+On `SwordfishSwordStealBySkimmerEffect.asset`: `stealScale` Charge ×1 → ×2.5, floor ×1 (2026-10-26);
 `stealUpgradeElement` Charge (the steal is the Charge L5; below it the petals are ejected);
 `debuffMagnitude` / `buffMagnitude` are derived by `author_combat_debuff_magnitudes.py`.
 
@@ -645,7 +645,7 @@ which had no knobs, is deleted.)
    and eases back when the blade comes out. The prism survives. Tune on
    `ShieldSkimmerScaleConfig` (`bindTurnRateMultiplier` first). A bare desktop editor has no
    motors — judge the haptics with a pad.
-5b. **A/B:** tick `recoilWhenDenied` on `RhinoSkimmerDamagePrismEffect.asset` — the old recoil
+5b. **A/B:** tick `recoilWhenDenied` on `SwordfishSkimmerDamagePrismEffect.asset` — the old recoil
    returns exactly; untick to restore the bind.
 6. **Super-shield, energized:** same prism with the blade lit — below Space 5 it still BINDS
    (step 5). At Space 5 (Shield Breaker) it pops on contact (24-face shatter + explode-out), big
@@ -664,7 +664,7 @@ which had no knobs, is deleted.)
    mass: every sword cuts and pops. ~8 s later the ring folds back into the blade, the camera eases
    in, the blade goes out and the ordinary 5 s afterimage window follows. The elements read two
    levels higher and fade back; afterimages lay throughout. Tune on `ShieldSkimmerScaleConfig`
-   (`surge*`) and `RhinoVesselSurgeByCrystalEffect` (`surgeSeconds`).
+   (`surge*`) and `SwordfishVesselSurgeByCrystalEffect` (`surgeSeconds`).
 9. **Tracers:** five streaks comb the blade from tip to hilt through swipes, tinted with the
    live blade colour (white → danger red when energized).
 9a. **Multiplayer (MPPM two clients):** a half-pull sweep on A poses A's blade identically on B
@@ -699,8 +699,8 @@ for lack of control by having it go quicker."*
 | RT = swing right | lift the **left** thumb = swing right |
 | both triggers held (the chop stance) = energize | lift **both** thumbs = the chop stance = energize, **twice as fast** |
 
-- **The swing.** `Rhino.prefab` `_touchActionOverrides`: `LeftStickAction (2)` → `RhinoShieldSwipeLeftAction`
-  (`4ff8e060…`), `RightStickAction (1)` → `RhinoShieldSwipeRightAction` (`b92a3e13…`) - the pad override's own
+- **The swing.** `Rhino.prefab` `_touchActionOverrides`: `LeftStickAction (2)` → `SwordfishShieldSwipeLeftAction`
+  (`4ff8e060…`), `RightStickAction (1)` → `SwordfishShieldSwipeRightAction` (`b92a3e13…`) - the pad override's own
   pair. On touch `ShieldSwipeActionExecutor.TryReadTriggers` returns false, so these press/release events drive the
   swing (full stance, rate-limited by `swipeOutSeconds` / `returnSeconds`), on every peer (the press replicates with
   its device byte).
@@ -716,14 +716,14 @@ for lack of control by having it go quicker."*
   with no steering before the blade lights. Tail, cooldown and cost are unchanged (once lit the pilot puts the thumbs
   back and flies; the tail runs while they steer).
 - **Deterministic across peers.** The ignition is decided on the vessel's OWNER and replicated through
-  `RhinoSwordNetworkRelay` (phase), as for every device; replicas mirror the phase. The charge ramp a replica draws
+  `SwordfishSwordNetworkRelay` (phase), as for every device; replicas mirror the phase. The charge ramp a replica draws
   (`Charge01`, FX only) uses the same shortened hold because it reads the replicated device.
 - **A swing in progress when the second thumb lifts**: `TouchInputStrategy` releases the lift's stick event first
   (`StopStickEffects`), so `EndSwipe` drops the stance, then writes the mirrors - the blade travels from the swing to
   the centred chop at the binary rate. The swing's recovery timer starts on that release as usual; the chop axis is
   never gated by it. Both mirrors rise on the same frame, which the combo detector reads as a chord, never a combo.
 - **Not on a phone**: combos (they need trigger taps; a touch swing is an event, not a mirror) and analog part-pulls.
-  An AI Rhino is unaffected (its `RhinoSwordAutopilot` writes the mirrors; pad timing).
+  An AI Rhino is unaffected (its `SwordfishSwordAutopilot` writes the mirrors; pad timing).
 
 ## Follow-ups
 
@@ -732,7 +732,7 @@ for lack of control by having it go quicker."*
 - ~~**Charge's level-5 is still Live Wire** while Charge scales the STEAL.~~ **Resolved
   2026-10-26:** the steal itself is Charge's L5 (below it the petals are ejected).
 - The AI energizes for nearby super-shielded mass only once its blade can pop it
-  (`RhinoSwordAutopilot` reads `IRhinoSwordState.SuperShieldUpgradeActive`, 2026-10-26); below
+  (`SwordfishSwordAutopilot` reads `ISwordfishSwordState.SuperShieldUpgradeActive`, 2026-10-26); below
   Space 5 only a crowd of ordinary prisms makes it energize.
 - **Surge ring edges** (§ "The omni-crystal Surge"): a copy's kill sparks on the pilot's blade
   (one FX controller — give each copy a light spark if it reads wrong); the copies have no swept
@@ -741,7 +741,7 @@ for lack of control by having it go quicker."*
 
 - ~~**Replication:** energy, energize state, and the blade's heat/flash look are
   local-authoritative.~~ **DONE 2026-10-16.** Energy, energize phase and surge are
-  owner-authoritative through `RhinoSwordNetworkRelay` (owner-write NetworkVariables on the
+  owner-authoritative through `SwordfishSwordNetworkRelay` (owner-write NetworkVariables on the
   Rhino root); non-owners mirror them, so ignition, the FX edges and the afterimage window agree,
   and the lava-lamp frozen-mirror edge no longer decides anything on a replica. The blade POSE
   replicates through the analog trigger mirrors (`RHINO_SHIELD_SWIPE.md`). Still per peer: the

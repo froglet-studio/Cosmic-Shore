@@ -54,12 +54,13 @@ namespace CosmicShore.Gameplay
     /// Fuel Pellets (each press burns one for 6 s, burns stack; the tank refills only while its wall eats its trail). See <see cref="SerpentTimeCourse"/> and
     /// SERPENTTIME.md.</para>
     /// </summary>
-    public class SerpentTimeController : GateRaceController, IPlayerSpawnLine
+    public partial class SerpentTimeController : GateRaceController, IPlayerSpawnLine
     {
         [Header("AI nose lead")]
-        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
-                 "the lead off. Serpent 1: the fleet 2.5 corkscrews the single-stick Serpent, 1.0 was best in the model.")]
-        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Serpent, 1.0f) };
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain) and nose follow rate (0 = the fleet lag), set as it is " +
+                 "armed. A hull with no row flies with the lead off. Serpent: lead 2.09 with its nose at 10.4/s, trained in this " +
+                 "race (time_ai_search.py, Serpent run4, 2026-11-17); the fleet lag of 1.5/s was its biggest handicap.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Serpent, 2.09f, noseFollow: 10.42f) };
 
         protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
@@ -254,6 +255,7 @@ namespace CosmicShore.Gameplay
         {
             ReleasePilots();
             ClearShapes();
+            ClearRuins();
             ClearCurrent();
             ClearDebris();
             base.OnNetworkDespawn();
@@ -287,6 +289,7 @@ namespace CosmicShore.Gameplay
             int rings = Mathf.Min(MaxRings, SerpentTimeCluster.RingsFor(Intensity, ringsPerGateByIntensity));
             LayGateDebris(rings);
             LayShapes(rings);
+            LayRuins();
             // The next match draws its own seed (the start line latched this one).
             _startSeedLatched = false;
             _currentPending = _course.Count >= 2;
@@ -784,7 +787,10 @@ namespace CosmicShore.Gameplay
         // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
         void LateUpdate()
         {
-            if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
+            if (!IsSpawned) return;
+            // The wheel turns from the moment it is laid, not from the start of the race.
+            TickRuins();
+            if (gameData == null || !gameData.IsTurnRunning) return;
 
             using var _ = s_tickMarker.Auto();
             TickLayCurrentIfPending();

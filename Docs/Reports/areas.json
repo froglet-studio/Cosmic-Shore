@@ -43,11 +43,6 @@
         }
       ],
       "report": "Docs/Reports/REGATTA_AI.md",
-      "taskAreas": [
-        "Regatta AI",
-        "Regatta",
-        "AI training"
-      ],
       "test": [
         "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
         "Arcade > Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin. Launch.",
@@ -87,10 +82,6 @@
       ],
       "artifacts": [],
       "report": "Docs/Reports/REGATTA_AI.md",
-      "taskAreas": [
-        "AI training",
-        "Regatta AI"
-      ],
       "test": [
         "Open the artifact's Training tab, pick a hull, Train, then Race trained vs untrained."
       ]
@@ -110,27 +101,20 @@
         "everyone"
       ],
       "branch": "Ys-bleeding-edge",
-      "summary": "What every Claude session on this repo gets: the team notices and activity feed (hooks), the task board, who_works_where.py, this report system and the session deck (buttons, status line).",
+      "summary": "What every Claude session on this repo gets: the team notices and activity feed (hooks), who_works_where.py, this report system and the session deck (buttons, status line).",
       "paths": [
         ".claude/hooks",
         ".claude/skills/cosmic-shore-deck",
         "Tools/Build/team_report.py",
-        "Tools/Build/team_tasks.py",
-        ".claude/skills/team-tasks",
-        ".github/workflows/team-tasks.yml",
         "Tools/Build/who_works_where.py",
         "Docs/TEAM.md",
         "Docs/Reports"
       ],
       "docs": [
         "Docs/TEAM.md",
-        "Docs/claude/SESSION_DECK.md",
-        "Docs/TEAM_TASKS.md"
+        "Docs/claude/SESSION_DECK.md"
       ],
       "report": "",
-      "taskAreas": [
-        "Team tools"
-      ],
       "artifacts": []
     },
     "performance": {
@@ -179,9 +163,6 @@
       ],
       "artifacts": [],
       "report": "Docs/Reports/PERFORMANCE.md",
-      "taskAreas": [
-        "Performance"
-      ],
       "test": [
         "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, leave the AI Diagnose camera and overlays off.",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
@@ -256,9 +237,6 @@
         }
       ],
       "report": "Docs/Reports/CREW_VESSELS.md",
-      "taskAreas": [
-        "Crew vessels"
-      ],
       "test": [
         "Check out cece/compassionate-babbage-gc13io, open Unity, wait for the compile and the shader import.",
         "Open the Toybox, fly into the Vessel Changer and fly the Wrasse and Grouper station (a Sparrow body): the kite view is a small square in the lower left and the AI flies the kite.",
@@ -309,9 +287,6 @@
       ],
       "artifacts": [],
       "report": "Docs/Reports/MOBILE_VESSELS.md",
-      "taskAreas": [
-        "vessels"
-      ],
       "test": [
         "Check out cece/admiring-hamilton-gyzzh8 and build an Android development APK (Docs/ANDROID_BUILD.md).",
         "Run Docs/UNITY_VERIFICATION_CHECKLIST.md \"Phone controls for the whole fleet\" steps 4-15 in the Toybox Vessel Changer and an arena match.",
@@ -364,11 +339,6 @@
         }
       ],
       "report": "Docs/Reports/BUG_HUNT.md",
-      "taskAreas": [
-        "diagnostics",
-        "Performance",
-        "audio"
-      ],
       "test": [
         "Pull bleeding-edge, open Unity, play anything until a red error appears, stop Play: the console says it was sent to Claude.",
         "git fetch origin; python3 Tools/Build/bug_ledger.py collect shows it on bugledger/<you>."
@@ -412,9 +382,6 @@
       ],
       "artifacts": [],
       "report": "Docs/Reports/MULTIPLAYER.md",
-      "taskAreas": [
-        "Multiplayer"
-      ],
       "test": [
         "Two machines on bleeding-edge party up, play a match, one leaves mid-match, both stop Play normally.",
         "python3 Tools/Build/net_logs.py collect, then show 1."
@@ -501,17 +468,6 @@
         }
       ],
       "report": "Docs/Reports/CONCEPT_FLEET.md",
-      "taskAreas": [
-        "Vessel Studio",
-        "Vessel Studio / concept fleet",
-        "Vessel Studio / Gibbon",
-        "Vessel Studio / Flea",
-        "Vessel Studio / Albatross",
-        "Vessel Studio / Dragonfly",
-        "Vessel Studio / Marlin",
-        "Vessel / Tether",
-        "Vessel Studio / Siphonophore"
-      ],
       "test": [
         "Open the Vessel Studio artifact: the Siphonophore bay (fly a zooid, hold LT with the others near to fuse, swap seats with left / right; the Scorecard's two controls must both DNF) or the concept fleet row; record Keep / Drop on the Decisions tab.",
         "Unity, claude/flea-vessel: the Flea from the Toybox's Vessel Changer (FLEA.md section 6)."
@@ -560,9 +516,6 @@
       ],
       "artifacts": [],
       "report": "Docs/Reports/ANDROID_BUILD.md",
-      "taskAreas": [
-        "Android build"
-      ],
       "test": [
         "Pull bleeding-edge; switch the editor to Android.",
         "Select the upload key in Publishing Settings, then FrogletTools > Build > Android App Bundle (Release); the .check.txt lists arm64-v8a and armeabi-v7a.",
@@ -627,9 +580,6 @@
         }
       ],
       "report": "Docs/Reports/STEAM_LAUNCH.md",
-      "taskAreas": [
-        "Steam launch"
-      ],
       "test": [
         "Nothing here is testable in the editor: the gate is off-machine (a Steamworks account).",
         "The one thing a person can do today: ./Tools/Build/build_windows.sh --version <x.y.z>, launch the player, sign in, reach Menu_Main, open and close the pause menu, read Player.log (QA-BUILD-WINDOWS-PLAYER).",
@@ -676,11 +626,6 @@
       ],
       "artifacts": [],
       "report": "Docs/Reports/COMPUTE.md",
-      "taskAreas": [
-        "Compute",
-        "Regatta AI",
-        "AI training"
-      ],
       "test": [
         "python3 Tools/Compute/compute.py self-test",
         "python3 Tools/Compute/compute.py doctor, then top --why",
@@ -723,7 +668,6 @@
         }
       ],
       "report": "Docs/Reports/ATTRIBUTION_AUDIT.md",
-      "taskAreas": [],
       "test": [
         "git fetch --unshallow origin (once), git fetch origin, then python3 Tools/Build/attribution_audit.py --person <name>."
       ]
@@ -787,9 +731,6 @@
         }
       ],
       "report": "Docs/Reports/MEERKAT.md",
-      "taskAreas": [
-        "Meerkat"
-      ],
       "test": [
         "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
         "Toybox (Lava Lamp), Vessel Changer: the Meerkat. RT a short, fat wormhole: inside you drop onto the wall and slide (no left stick); hold RT for a small push; fly out of the far mouth a little faster than you went in.",
@@ -813,7 +754,10 @@
         "parity ci",
         "perf-daily",
         "why is ci red",
-        "ci failing"
+        "ci failing",
+        "trunk health",
+        "is bleeding-edge red",
+        "trunk doctor"
       ],
       "owner": "Shombith",
       "people": [
@@ -833,13 +777,12 @@
       ],
       "docs": [
         "CLAUDE.md",
-        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+        "Docs/Reports/TRUNK_HEALTH.md",
+        ".claude/skills/trunk-doctor/SKILL.md"
       ],
       "artifacts": [],
       "report": "Docs/Reports/CI.md",
-      "taskAreas": [
-        "CI"
-      ],
       "test": [
         "git fetch origin && git checkout --detach origin/bleeding-edge",
         "Run every Tools/Build/author_*_assets.py --check (Docs/Reports/CI.md section 5); each RED line is a failing gate.",
@@ -847,7 +790,7 @@
       ]
     },
     "analytics": {
-      "title": "Froglet Analytics (own server and console, replaced PostHog)",
+      "title": "Froglet Analytics (own server and console)",
       "aliases": [
         "analytics",
         "froglet analytics",
@@ -890,9 +833,6 @@
         }
       ],
       "report": "Docs/Reports/ANALYTICS.md",
-      "taskAreas": [
-        "Analytics"
-      ],
       "test": [
         "python3 Tools/Analytics/server/analytics_server.py --self-test",
         "In the editor: grant consent, play one match, see the player on the console's Players page within 30 s"
@@ -951,11 +891,6 @@
         }
       ],
       "report": "Docs/Reports/VOYAGES.md",
-      "taskAreas": [
-        "Voyages",
-        "Voyage window",
-        "HyperSea"
-      ],
       "test": [
         "Pull the branch, open Unity, wait for the compile; run VoyageRulesTests and VoyageDepthTests (green).",
         "Menu_Main > Voyage window: about six cards, 25 places in six colours, the three uncharted places not drawn; open a card for SUITS, PAYS and the warnings.",

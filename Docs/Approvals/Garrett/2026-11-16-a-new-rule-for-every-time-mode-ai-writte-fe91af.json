@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-16-a-new-rule-for-every-time-mode-ai-writte-fe91af",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-16T23:34:09+00:00",
+  "area": "the AI plan's Time step (time-arcade) and the racing AIs' crystal rule",
+  "summary": "A new rule for every Time-mode AI, written in MINIGAME_TRAINING_PLAN.md section 6.2 (AI_PLAN.md is not edited): speed over breaking. An AI breaks only what it cannot pass and never leaves a passable ring for a pickup that breaks. It sits beside your learned crystal-detour gene (rule 9, 2026-11-16): that gene is for a crystal that buys speed; this bounds a pickup that breaks. Switchback's Dolphin AI now holds it (planner Passable / KeyOnTheWay, the sense's blast), switch aiSpeedOverBreaking.",
+  "why": "Yash's rule of 2026-11-17 for AI training in Time game modes; Plan step: time-arcade. Offline it removes every turn-away (about one a race at the I4 gauntlet, 41 per 24 races at I3 Hard) with race times unchanged to within 2 s at I1-I3 and 1-3 s faster at I4.",
+  "branch": "Ys-bleeding-edge",
+  "lane": "switchback",
+  "commit": "5a02bf38f",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+    "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastPlanner.cs",
+    "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md"
+  ],
+  "loop": {
+    "vessels": [
+      "Dolphin"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

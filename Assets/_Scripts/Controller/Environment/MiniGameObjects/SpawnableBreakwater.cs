@@ -87,6 +87,10 @@ namespace CosmicShore.Gameplay
         /// the class remarks) - kept because the base contract requires it.</summary>
         protected override int DefaultSeed => 48;
 
+        /// <summary>The prism this arena is laid in, for the controller's own scenery round the course
+        /// (<c>BreakwaterController.Ruins</c>).</summary>
+        public Prism PrismPrefab => prism;
+
         /// <summary>Never baked (PrismLayoutBake): its lay is split into trails by build state the
         /// bake does not carry, and its fit is closed-form and cheap.</summary>
         protected override bool BakesLayout => false;

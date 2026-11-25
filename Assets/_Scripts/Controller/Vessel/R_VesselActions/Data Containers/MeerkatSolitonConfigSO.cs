@@ -62,7 +62,7 @@ namespace CosmicShore.ScriptableObjects
                  "Min the page's networkReachAtZero (0.5, at Mass 0), Max its networkReachAtFull (1, the whole cell, at Mass 10). " +
                  "Read when the omnicrystal is taken (EvaluateLive). An ElementalFloat block, so studio_to_unity.py cannot write it: " +
                  "keep it equal to the page's two keys by hand.")]
-        [SerializeField] ElementalFloat networkReach = ElementalFloat.Multiplier(0.5f, 1f, Element.Mass, 0.05f);
+        [SerializeField] ElementalFloat networkReach = ElementalFloat.Multiplier(0.5f, 1f, Element.Mass, 0.25f);
         [Tooltip("Omnicrystals on the course (a new course or reset places them)")]
         [SerializeField, Range(0, 12)] int omniCount = 3;
 
@@ -88,10 +88,11 @@ namespace CosmicShore.ScriptableObjects
         // radius"): Garrett's soliton. Space sets its surface area, so a longer tunnel is thinner; it pulls the prisms and
         // crystals round its way in, carries them through stretched and twisted, and fires them out of its way out.
         [Header("Kit · Space · the soliton (the artifact's Play Style Config > Kit · Space · the soliton, round 23)")]
-        [Tooltip("Surface area, Space L0 (u²)")]
-        [SerializeField, Range(1000f, 60000f)] float areaL0 = 6000f;
-        [Tooltip("...at Space L10 (u²)")]
-        [SerializeField, Range(1000f, 60000f)] float areaL10 = 18000f;
+        // 2026-11-13 (the roster audit): the area was a raw areaL0 / areaL10 pair lerped on GetLevel(Space) by the executor,
+        // the one Meerkat number that scaled outside an ElementalFloat. It is the fleet's channel now, the same endpoints.
+        [Tooltip("Surface area (u²) on the hull's Space level: Min at Space 0 (the page's areaL0), Max at Space 10 (areaL10). " +
+                 "A longer tunnel is thinner. Floored so a debuffed Space never collapses the tube.")]
+        [SerializeField] ElementalFloat surfaceArea = ElementalFloat.Multiplier(6000f, 18000f, Element.Space, 3000f);
         [Tooltip("Pulls prisms and crystals in from (u round the way in)")]
         [SerializeField, Range(0f, 400f)] float suckRadius = 90f;
         [Tooltip("...at (u/s at that reach; faster as they near)")]
@@ -115,10 +116,11 @@ namespace CosmicShore.ScriptableObjects
         // studio_to_unity.py (Tools/Build/studio_to_unity/meerkat.json); each ElementalFloat is the page's L0 -> L10 pair
         // (rushL0/rushL10, zapPetalsL0/zapPetalsL10, portalSizeL0/portalSizeL10), authored once by author_meerkat_assets.py.
         // Read through MeerkatSolitonKit. Space (the surface area, the swallow and fire) is round 23's section above
-        // (areaL0 / areaL10, suck*, swallowShare, fireSpeed, fireGlideSeconds; MeerkatSwallow; carrySpeed is retired, round 25).
+        // (surfaceArea, suck*, swallowShare, fireSpeed, fireGlideSeconds; MeerkatSwallow; carrySpeed is retired, round 25).
         [Header("Kit · Time, the ride (the artifact's Kit > Time)")]
-        [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's)")]
-        [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.05f);
+        [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's, and " +
+                 "the Rift's void run). x1 -> x2 since 2026-11-16 (the weakest-abilities pass: x1.4 was not felt).")]
+        [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 2f, Element.Time, 0.5f);
         [Tooltip("Kit L5 Boost out: out of every soliton at (× the exit)")]
         [SerializeField, Range(1f, 3f)] float boostOut = 1.5f;
 
@@ -132,7 +134,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("An empty sentinel's AI zaps (a second)")]
         [SerializeField, Range(0f, 12f)] float aiZapRate = 5f;
         [Tooltip("A zap knocks out, Charge L0 (petal) -> ...at Charge L10 (petal), on each element, a sub-petal tick through the economy's accrual")]
-        [SerializeField] ElementalFloat zapPetals = ElementalFloat.Multiplier(0.1f, 0.25f, Element.Charge, 0f);
+        [SerializeField] ElementalFloat zapPetals = ElementalFloat.Multiplier(0.1f, 0.25f, Element.Charge, 0.05f);
         [Tooltip("Unity only: the seconds before a sentinel's zap can score on the same rival again (VesselCombatHitLatch; 0 = every zap is a scored hit)")]
         [SerializeField, Min(0f)] float zapCooldownSeconds;
         [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager scores combat hits on. Fail-loud.")]
@@ -142,7 +144,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Exit portal: the hexagon out at (× the exit radius)")]
         [SerializeField, Range(1f, 4f)] float portalShare = 1.5f;
         [Tooltip("Its prisms' size, Mass L0 (× a prism) -> ...at Mass L10 (× the hull's trail prism)")]
-        [SerializeField] ElementalFloat portalSize = ElementalFloat.Multiplier(0.4f, 0.9f, Element.Mass, 0.05f);
+        [SerializeField] ElementalFloat portalSize = ElementalFloat.Multiplier(0.4f, 0.9f, Element.Mass, 0.2f);
 
         [Header("Kit · Audio (FMOD; shipped empty until sound design wires them)")]
         [Tooltip("A sentinel zaps a rival (at the rival).")]
@@ -223,8 +225,10 @@ namespace CosmicShore.ScriptableObjects
         public float FormSeconds => tunnelConfig ? tunnelConfig.FormSeconds : 0.4f;
         public float StaySeconds => tunnelConfig ? tunnelConfig.StaySeconds : 10f;
         public float CollapseSeconds => tunnelConfig ? tunnelConfig.CollapseSeconds : 0.8f;
-        public float AreaL0 => areaL0;
-        public float AreaL10 => areaL10;
+        /// <summary>The soliton's surface area on this hull's live Space (u²; round 23). 0, the authored throat and mouth,
+        /// when the hull has no element levels.</summary>
+        public float SurfaceArea(IVesselStatus status) => status?.ResourceSystem ? surfaceArea.EvaluateLive(status) : 0f;
+        public ElementalFloat SurfaceAreaScaling => surfaceArea;
         public float SuckRadius => suckRadius;
         public float SuckSpeed => suckSpeed;
         public float SwallowShare => swallowShare;
@@ -257,11 +261,10 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The slide's top speed in a tunnel (u/s; the AI's plan reads it).</summary>
         public float SlideMaxSpeed => tunnelConfig ? tunnelConfig.MaxSpeed : 119f;
 
-        /// <summary>The shape rows. <paramref name="spaceLevel"/> (0-10, the hull's Space level) sets the soliton's surface
-        /// area (round 23); without it the size is the authored throat and mouth.</summary>
-        public SolitonTunnelShapeMath.ShapeSettings Shape(float spaceLevel = -1f)
+        /// <summary>The shape rows. <paramref name="area"/> (<see cref="SurfaceArea"/>, u²) sets the soliton's surface area
+        /// (round 23); 0 keeps the authored throat and mouth.</summary>
+        public SolitonTunnelShapeMath.ShapeSettings Shape(float area = 0f)
         {
-            float area = spaceLevel < 0f ? 0f : SolitonTunnelShapeMath.ByLevel(areaL0, areaL10, spaceLevel);   // round 23: Garrett's area
             if (tunnelConfig) return tunnelConfig.Shape(shaftMin, shaftMax, bendMaxDegrees, area);
             return new SolitonTunnelShapeMath.ShapeSettings
             {
@@ -272,9 +275,9 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>The AI's plan rows; <paramref name="turnRateDegrees"/> is the hull's own turn (its transformer's YawScaler,
         /// the studio's pitchYaw).</summary>
-        public SolitonTunnelShapeMath.PlanSettings Plan(float turnRateDegrees, float spaceLevel = -1f) => new()
+        public SolitonTunnelShapeMath.PlanSettings Plan(float turnRateDegrees, float area = 0f) => new()
         {
-            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(spaceLevel),
+            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(area),
             SlideSpeed = SlideMaxSpeed,   // the AI slides with RT held
             TurnRateRadians = turnRateDegrees * Mathf.Deg2Rad,
         };

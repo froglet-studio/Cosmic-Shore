@@ -75,6 +75,49 @@ plain hedge sprays aside with no speed lost; at I3 a thorn burns a petal (the Ti
 lets a Rhino through clean; at I4 the race starts at Time 5, a fast exit bulldozes a stampede hedge with no burn, a
 slow one burns; ploughed hedges are whole again on the next lap; an AI Rhino swerves through windows before its last lap.
 
+## 0a. Garden ruins at I4 (`HeadlongRuins`, `HeadlongController.Ruins.cs`; Yash, 2026-11-24) - compiled and AI-raced in the editor, not looked at by a person
+
+The environment update Spearline got (`SPEARLINE.md` §2a), on Headlong's circuit. `HeadlongRuins.Lay` CALLS
+`SpearlineRuins.Lay` with the lap's gates (the generator is not copied and no Spearline file is changed): one ruin on
+each leg between gates except the leg into gate 0, the seven kinds taking turns (pergola, flower head, vines, a wall
+with a doorway, a tunnel, a 3D maze, a turning wheel), every prism at least 8 u thick, a 60 u clear lane down the
+flown line (the I4 gate is 46 u), nothing within 120 u of a gate, only on legs of 380 u or more, I4 only.
+
+**What Headlong adds: the ruins keep off the stampede.** At I4 a hedge already stands across nearly every leg, about
+where a ruin stands. So a ruin prism that would reach within 14 u of a hedge's disc (`HedgeGap`), or within 50 u of a
+Time crystal (`CrystalGap`), is left out and the Blue hedge shows whole through its ruin. The wheel is laid whole or
+not at all: it is left out where its sweep would turn through a hedge or a crystal.
+
+Measured on 400 I4 courses (`bash Tools/Build/headlong_course_harness/run.sh --ruins`): 563 to 806
+ruin prisms a lap, median 680 (803 before the hedges take their share), on top of the hedges' ~1530; 6 or 7 ruins a
+lap; a wheel on 67 of the 400 courses (186 before the hedges: most I4 legs carry a hedge where the wheel would turn).
+
+Each ruin is one domain colour, Jade, Ruby and Gold in turn round the lap, so they read apart from the Blue hedges
+(`ruinDomains` on the controller; empty = Blue). They are laid in the hedges' prism by every peer from the broadcast
+course and returned to the pool with the stampede. Decoration, with the game's own prism rules and nothing else: the
+mode reads and writes no vessel.
+
+**In the editor, 2026-11-24:** it compiles, `HeadlongRuinsTests` pass 8 of 8, and three AI Rhinos finished two I4
+races (169 and 197 game seconds, 630 and 647 ruin prisms laid, no wheel on either course) with no error in the match.
+A second pass on one fixed course (seed -652407953, 633 ruin prisms, one wheel): I1 to I3 lay none; no ruin prism
+centre is nearer than 22 u to a hedge prism, 64 u to a Time crystal or 184 u to a gate; the wheel's prisms sit exactly
+where `SpearlineRuins.Pose` puts them on the network clock; the hedges stand back up and the ruins do not; the ruins
+are gone at game over. With the ruins removed the same course took 145, 175 and 193 game seconds against 160, 170, 178
+and 195 with them, and the editor ran 48 to 72 fps against 46 to 78: no difference those races can show.
+Details and what a person still has to look at: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Open, not measured:**
+- A Rhino ploughs a ruin as it ploughs any prism, and since #2233 ploughed prisms feed the ramp's fuel. So on Headlong
+  the ruins are not neutral scenery the way they are for a hull that avoids prisms: a line through a ruin is fuel and a
+  spray of prisms. That is the Rhino's shipped kit meeting more prisms, not a mode rule, but the I4 times and the AI's
+  drive (`RhinoAIBoostPolicy_Headlong`) were measured without them.
+- The hedges stand back up each lap; the ruins do not (nothing re-lays them), so lap 1 meets them whole and later laps
+  meet what is left.
+- A ruin in a pilot's own domain is that pilot's colour (as on Spearline).
+- Frame rate with the ruins' prisms on top of the hedges' ~1530.
+
+Held by `HeadlongRuinsTests` (8, offline in the harness with four negative controls of their own).
+
 ## 1. What the mode is asking
 
 The Rhino's ramp boost pays **full** power only while the pilot holds full throttle and
@@ -406,7 +449,7 @@ leaving them as an absence.
   ramps**: `RampBoostAIPolicySO` (`RhinoAIBoostPolicy.asset`) ramps on a straight that pays the
   wind-up back, brakes on the ramp to a corner speed and lets go at sharp corners
   (`AI/AI_BOOST.md`, Ramp), so AI lap times change completely and the approach/commit distances above are
-  now load-bearing rather than theoretical. The AI also swings the sword (`RhinoSwordAutopilot`),
+  now load-bearing rather than theoretical. The AI also swings the sword (`SwordfishSwordAutopilot`),
   so it now interferes with a rival's line. (2) **Momentum** (Time L5) — above 588 u/s (70% of
   840) danger prisms cannot drain the Rhino. The card authors no Time row, so only the comeback
   levels or an omni Surge (+2 levels) can reach L5 here; it matters only where a danger prism sits

@@ -59,10 +59,17 @@ void BlackHoleLensWell(float2 p, float4 c, float4 w, float4 m, float4 look, floa
                        inout float3 glow, inout float3 shadowColour, inout float3 coreColour)
 {
     float2 d = p - c.xy;
-    float th = max(length(d), 1e-6);
-    float2 dir = d / th;
     float type = w.x;
     float rc = max(w.y, 1e-6);
+#ifndef BLACK_HOLE_LENS_NO_EARLY_OUT
+    // STAND-IN (lens worker, 2026-11-10): a pixel outside the hole's influence disc does no work. A horizon hole's bend
+    // is exactly zero from its reach m.x and its photon ring is e^-(thousands) there; a smooth well's u e^(-u^2/2) is
+    // below 2e-5 of its peak past u = 5 (under 0.01 px at 1280x720 for any rc < 1). Squared distance: no sqrt.
+    float infl = type < 2.5 ? max(m.x, 1.2 * look.x * rc) : 5.0 * rc;
+    if (dot(d, d) >= infl * infl) return;
+#endif
+    float th = max(length(d), 1e-6);
+    float2 dir = d / th;
     if (type < 2.5)
     {
         float fade = 1.0 - smoothstep(look2.x * m.x, m.x, th);

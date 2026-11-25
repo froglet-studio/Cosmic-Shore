@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-22-applicationlifecyclemanager-gained-quite-2bd9a9",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-22T13:39:40+00:00",
+  "area": "boot code (ApplicationLifecycleManager)",
+  "summary": "ApplicationLifecycleManager gained QuitExitCode: the drained quit ends the process with it when a development harness set a failure code; 0 (unchanged) otherwise",
+  "why": "A failed MultiplayerAutoPilot run exited 0 because the deferred quit re-quit without the code",
+  "branch": "Ys-bleeding-edge",
+  "commit": "eb7b68e47",
+  "paths": [
+    "Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs"
+  ]
+}

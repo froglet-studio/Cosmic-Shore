@@ -141,6 +141,8 @@ LEGACY_FACE = {
     "Fox": "a red fox's face, russet fur, a white muzzle and throat, black-backed ears",
     "Hare": "a brown hare's face, a rounded muzzle with a cleft upper lip and long whiskers, tawny grizzled fur, and two very long black-tipped ears standing taller than the head",
     "Kangaroo": "a red kangaroo's long gentle face, soft russet fur, a broad dark nose, tall upright ears",
+    # Painted only, for players' own pilots (Garrett, 2026-11-20).
+    "Venus flytrap": "a Venus flytrap's head: the face is one great hinged trap, two broad lobes meeting at the mouth, bright green outside and blush red inside, fringed along the edge with long stiff green bristles like teeth, the trap's waxy skin smooth over the brow and cheeks",
 }
 FACE.update(LEGACY_FACE)
 
@@ -243,7 +245,9 @@ CROWN = {
     "Armadillo": ("bands", "other", True, "an armadillo's grey head shield, a smooth cap of small flat bony plates fitted edge to edge like a mosaic over the top of the head, like the cap of a helmet"),
     "Koi": ("fins", "other", False, "long flowing translucent koi fins, white splashed with orange, sweeping back from the temples and from behind the jaw, and two koi barbels at the corners of the mouth"),
     "Hyena": ("mane", "ears", True, "a coarse upright hyena mane running from the crown down the nape, and two large rounded hyena ears"),
-    "Platypus": ("bill shield", "other", True, "a broad flat platypus bill shield lying over the brow like the peak of a cap, soft dark blue-grey leathery skin rounded at the front with two nostril dots, and sleek dense brown platypus fur over the rest of the head"),
+    # Platypus: the bill is the lips grown long, never a plate on the brow (Garrett 2026-11-18: "a platypus bill is
+    # homologous to other mammals' lips. we want to try and respect homology").
+    "Platypus": ("bill", "other", True, "a platypus bill that grows where the lips are and is the mouth: the upper and lower lips lengthen forward into a broad flat soft bill in two halves, dark blue-grey leathery skin rounded at the front with two nostril dots on top, and sleek dense brown platypus fur over the rest of the head"),
     "Crane": ("crown", "other", True, "a crane's bare red crown patch on top of a white-feathered head, with a black stripe running back from each eye"),
     "Beetle": ("carapace", "other", True, "a glossy black-brown beetle carapace over the top and back of the head like a helm, split down the middle by the wing-case seam, with a pair of short clubbed antennae at the brow"),
     "Bison": ("wool", "horns", True, "a bison's huge shaggy forelock, a mound of dark curly wool covering the crown and brow, with two short curved black horns just showing through it at the sides and a long dark beard under the chin"),
@@ -264,6 +268,8 @@ CROWN = {
     "Eel": ("fin", "other", True, "a moray eel's long ribbon fin standing along the midline from the brow over the crown and down the nape, its edge golden"),
 }
 LEGACY_CROWN = {   # the legacy painted pilots' second animals that are not AnimalSpecies
+    "Cordyceps": ("stalks", "other", True, "slender orange cordyceps fruiting stalks, each club-tipped and finely pitted, rising in a branching crown from the top and back of the head, the scalp under them a mat of pale fungal threads"),
+    "Ratel": ("mantle", "other", True, "the honey badger's thick silver-white mantle of coarse fur over the whole crown, sharply edged along the sides of the head against black fur below, running back over the nape like a cape"),
     "Scorpion": ("tail", "other", False, "a segmented scorpion tail, glossy dark red, rising from behind the shoulders and arching forward over the head with its curved stinger poised above the brow"),
     "Orca": ("fin", "other", True, "a tall glossy black orca dorsal fin rising from the crown like a blade, and a crisp white orca eye patch swept back from behind each eye"),
     "Eagle": ("mane", "other", False, "a mane of snow-white bald eagle feathers sweeping back from behind the face, over the nape and down the neck to the shoulders, leaving the top of the head bare of feathers"),
@@ -434,6 +440,8 @@ BLEND = {
 
 # MARK: the second animal's coat, which covers everything behind the face (the composer says where).
 MARK = {
+    "Cordyceps": "a skin of pale cream fungal threads, felted and fine, with small orange cordyceps buds breaking through along the neck",
+    "Ratel": "coarse jet-black honey badger fur under a broad silver-white mantle, loose thick skin",
     "Axolotl": "smooth pale-pink axolotl skin with tiny gold flecks",
     "Heron": "sleek blue-grey heron feathers on a long slender heron neck, with a narrow white stripe down the front of the throat marked by a row of black dashes, and a fringe of long thin grey plumes hanging from the base of the neck over the chest",
     "Otter": "dense chocolate-brown otter fur, silver-grizzled at the throat",
@@ -1048,7 +1056,7 @@ def world_name_in(text):
 
 
 def self_test():
-    species = [a for a in brief.enum_members(brief.ANIMAL_SPECIES_CS, "AnimalSpecies") if a != "None"]
+    species = brief.rollable_animals()
     errors = []
     for s in species:
         for table, n in ((FACE, "FACE"), (CROWN, "CROWN"), (MARK, "MARK")):

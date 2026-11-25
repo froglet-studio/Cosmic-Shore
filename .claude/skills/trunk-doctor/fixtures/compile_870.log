@@ -1,0 +1,25 @@
+2026-09-11T21:00:19.6387198Z ##[group]Run # `set +e` is REQUIRED and must be explicit. GitHub invokes `shell: bash`
+2026-09-11T21:00:19.6387954Z [36;1m# `set +e` is REQUIRED and must be explicit. GitHub invokes `shell: bash`[0m
+2026-09-11T21:00:19.6388553Z [36;1m# as `bash --noprofile --norc -e -o pipefail {0}`, passing -e as a shell[0m
+2026-09-11T21:00:19.6389129Z [36;1m# FLAG. `set -uo pipefail` sets u and pipefail but does NOT clear an[0m
+2026-09-11T21:00:19.6389689Z [36;1m# inherited -e, so the step aborted the instant Unity exited non-zero:[0m
+2026-09-11T21:01:13.5957355Z ##### Output
+2026-09-11T21:01:13.5959046Z Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(245,14): warning CS0114: 'ArcadeConfigSyncManager.OnDestroy()' hides inherited member 'NetworkBehaviour.OnDestroy()'. To make the current member override that implementation, add the override keyword. Otherwise add the new keyword.
+2026-09-11T21:01:13.5959059Z 
+2026-09-11T21:01:13.5961451Z Assets\_Scripts\System\CloudData\Providers\UGSCloudSaveProvider.cs(135,23): warning CS0618: 'IPlayerDataService.DeleteAsync(string, DeleteOptions)' is obsolete: 'The interface provided by CloudSaveService.Instance.Data.Player.DeleteAsync(string key, Unity.Services.CloudSave.DeleteOptions deleteOptions) has been replaced by CloudSaveService.Instance.Data.Player.DeleteAsync(string key, Unity.Services.CloudSave.Models.Data.Player.DeleteOptions options), and should be accessed from there instead. This API will be removed in an upcoming release.'
+2026-09-11T21:01:13.5961460Z 
+2026-09-11T21:01:13.5962524Z Assets\_Scripts\UI\Elements\ArcadeLobbyList.cs(591,51): error CS0176: Member 'NetworkManager.ServerClientId' cannot be accessed with an instance reference; qualify it with a type name instead
+2026-09-11T21:01:13.5962536Z 
+2026-09-11T21:01:13.5964314Z Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Skimmer Effects\VesselAssembledArchBurstBySkimmerEffectSO.cs(51,39): warning CS0414: The field 'VesselAssembledArchBurstBySkimmerEffectSO.verbose' is assigned but its value is never used
+2026-09-11T21:01:13.5964653Z *** Tundra build failed (39.05 seconds), 1541 items updated, 3465 evaluated
+2026-09-11T21:01:13.5965382Z ## Script Compilation Error for: Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+2026-09-11T21:01:13.5967641Z ## CmdLine: "C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\NetCoreRuntime\dotnet.exe" exec "C:/Program Files/Unity/Hub/Editor/6000.3.17f1/Editor/Data/DotNetSdkRoslyn/csc.dll" /nostdlib /noconfig /shared "@Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.rsp" "@Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.rsp2"
+2026-09-11T21:01:13.5985746Z Scripts have compiler errors.
+2026-09-11T21:01:13.5985750Z 
+2026-09-11T21:01:13.5986053Z Exiting without the bug reporter. Application will terminate with return code 1Shut down.
+2026-09-11T21:01:13.7390826Z ##[error]The project did not compile. This is what breaks the Windows build.
+2026-09-11T21:01:13.8226882Z Assets\_Scripts\UI\Elements\ArcadeLobbyList.cs(591,51): error CS0176: Member 'NetworkManager.ServerClientId' cannot be accessed with an instance reference; qualify it with a type name instead
+2026-09-11T21:01:13.8228068Z Assets\_Scripts\UI\Elements\ArcadeLobbyList.cs(591,51): error CS0176: Member 'NetworkManager.ServerClientId' cannot be accessed with an instance reference; qualify it with a type name instead
+2026-09-11T21:01:13.8230282Z Assets\_Scripts\UI\Elements\ArcadeLobbyList.cs(591,51): error CS0176: Member 'NetworkManager.ServerClientId' cannot be accessed with an instance reference; qualify it with a type name instead
+2026-09-11T21:01:13.8323678Z ##[error]Process completed with exit code 1.
+2026-09-11T21:01:13.8618717Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -4,7 +4,8 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Sea table's tilt (Rev 89 A, Docs/MENU_REDESIGN_B.md sections 170-172): a flat picture lying back about its near
+    /// The Sea table's tilt (Rev 89 A and Rev 90, Docs/MENU_REDESIGN_B.md sections 170-172; since Rev 98 the Saga, Quests
+    /// and Episodes tables only): a flat picture lying back about its near
     /// (bottom) edge and seen in perspective, with a front face standing under that edge.
     ///
     /// <para>The menu's canvas is an overlay: it has no perspective camera, so a rotated rect would only be squashed. The tilt

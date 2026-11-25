@@ -124,6 +124,15 @@ namespace CosmicShore.Tests
             }
         }
     
+        [Test]
+        public void Only_intensity_four_lays_Blast_Run()
+        {
+            // I1-I3 are the bare ring course: Switchback's Blast Run fields, doors and Dolphin keys ask for a blast the
+            // Scarab does not have. I4 keeps the field it had.
+            for (int i = 1; i <= 3; i++) Assert.IsFalse(ScarabRallyCourse.LaysBlastRun(i), $"I{i} is the bare ring course");
+            Assert.IsTrue(ScarabRallyCourse.LaysBlastRun(4), "I4 keeps its field");
+        }
+
         // ── The AI's juke (ScarabRallyCourse.JukeShove) ──
 
         static readonly RaceGate Mouth = new(new Vector3(0f, 0f, 200f), Vector3.forward, 30f);

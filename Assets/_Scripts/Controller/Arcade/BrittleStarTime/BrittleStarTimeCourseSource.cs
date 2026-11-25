@@ -18,14 +18,19 @@ namespace CosmicShore.Gameplay
 
         public override GameModes Mode => GameModes.BrittleStarTime;
 
-        public override int LapsPerRace(int intensity) => Mathf.Max(1, Laps);
+        /// <summary>The scene's laps are I1's; a higher rung flies more of its shorter laps, in the ratio
+        /// <see cref="BrittleStarTimeCourse.LapsByIntensity"/> states (2 / 3 / 3 / 4 for the shipped 2).</summary>
+        public override int LapsPerRace(int intensity) => BrittleStarTimeCourse.ScaleForRung(Mathf.Max(1, Laps), intensity);
 
+        /// <summary>The authored race (End Game Conditions, <c>brittleStarTimeGateTarget</c>) is I1's; a higher rung's is
+        /// scaled by its laps, so the rings per lap never change (two laps of eight at I1 is three of eight at I2).</summary>
         public override int AuthoredGateTarget(int intensity)
         {
             var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
+            int authored = overrides != null
                 ? overrides.GetBrittleStarTimeGateTarget()
                 : EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget;
+            return BrittleStarTimeCourse.ScaleForRung(authored, intensity);
         }
 
         /// <summary>

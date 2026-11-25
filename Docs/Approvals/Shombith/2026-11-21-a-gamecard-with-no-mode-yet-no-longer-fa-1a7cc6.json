@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-21-a-gamecard-with-no-mode-yet-no-longer-fa-1a7cc6",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-21T09:07:19+00:00",
+  "area": "Arcade game cards (GameCard)",
+  "summary": "A GameCard with no mode yet no longer falls back to BlockBandit (no card exists for it): it draws when its GameMode is set. The fallback logged 70 warnings, about 0.5 s, on every menu load (Profiler capture of a return, 2026-11-21).",
+  "branch": "Ys-bleeding-edge",
+  "commit": "68bfc1cad"
+}

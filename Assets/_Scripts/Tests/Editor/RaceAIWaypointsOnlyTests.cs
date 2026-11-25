@@ -67,6 +67,22 @@ namespace CosmicShore.Tests
             Assert.AreEqual(220f, SlackOf<CrystalRaceForTests>(220f));
         }
 
+        [Test]
+        public void TheLearnedGene_IsZeroForAnUnlistedHull_AndTheRowForAListedOne()
+        {
+            // Garrett, 2026-11-16: the waypoints-only rule became a gene of each hull's Time genome, 0 until training
+            // finds that taking crystals on the way wins. No row (and no asset) keeps the old rule.
+            var genes = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.RaceAICrystalGenesSO>();
+            try
+            {
+                genes.Rows.Add(new CosmicShore.ScriptableObjects.RaceAICrystalGenesSO.Row
+                    { Hull = CosmicShore.Data.VesselClassType.Dolphin, DetourSlack = 80f });
+                Assert.AreEqual(80f, genes.DetourSlackFor(CosmicShore.Data.VesselClassType.Dolphin));
+                Assert.AreEqual(0f, genes.DetourSlackFor(CosmicShore.Data.VesselClassType.Manta));
+            }
+            finally { Object.DestroyImmediate(genes); }
+        }
+
         sealed class CrystalRaceForTests : HeadlongController
         {
             protected override bool AIDetoursForCrystals => true;

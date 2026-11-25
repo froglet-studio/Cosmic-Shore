@@ -1,5 +1,11 @@
 # Waystation (`GameModes.Waystation = 58`)
 
+> **Since 2026-11-11 the Drop Towers are LANTERN TOWERS** (Yash: "make the Tiger Moth's Time game super fun"). Every hop
+> stands between two dotted lantern posts that reach as deep as that hop can land; from I2 some hops are tight and their
+> lanterns visibly short; a deep landing lights its lanterns in your colour and a run of them lights the tower; at I4 a
+> Time crystal hangs on every plunge. The AI reads the same lanterns. Section "Lantern Towers" below; the design round,
+> the judge panel and the numbers are `Docs/Studios/TIGER_MOTH_TIME.md` §6. **Not run in the editor yet.**
+>
 > **Since 2026-11-01 Waystation is the Drop Tower race** (Shombith: "make Waystation Prototype as Waystation"). It
 > was built beside this mode as Waystation Prototype (GameModes 76, PR #1661) and then folded in: the towers, their
 > walls and the hop autopilot now live in `WaystationTower` and `WaystationController`, and 76 is retired and reserved.
@@ -18,8 +24,8 @@ every gap but the last, and one long drop to finish. Every pilot flies the same 
 | | |
 |---|---|
 | Scene | `Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity` |
-| Controller | `WaystationController : GateRaceController` (clusters' belly-aim autopilot, tower walls, hop autopilot) |
-| Course | `WaystationCourse` (clusters) + `WaystationTower` (towers, walls), assembled by `WaystationCourseSource` |
+| Controller | `WaystationController : GateRaceController` (clusters' belly-aim autopilot, tower walls, hop autopilot); `WaystationController.Feedback.cs` (lanterns, crown gems, the local pilot's grade, its lights and sound slots) |
+| Course | `WaystationCourse` (clusters) + `WaystationTower` (towers, walls, shelves, lanterns, crown gems), assembled by `WaystationCourseSource`; `WaystationHopPlan` (grades, streak, the AI's target depth) |
 | Metric | `ScoringMetric.SwitchesThreaded` (9) — **reused**, not added |
 | Domain fold | `ScoringMetrics.BestByDomain` (the lead runner, via `GateRaceScoringRuleSO`) |
 | Rule asset | `WaystationScoringRule.asset` — a **second asset** on `GateRaceScoringRuleSO` |
@@ -27,9 +33,186 @@ every gap but the last, and one long drop to finish. Every pilot flies the same 
 | Target | `EndConditionOverridesSO.waystationClusterTarget` (5 CLUSTERS; the finish line is every ring laid, 18-41) |
 | Comeback | rate **0.4** (sized on the shortest race, 15 cluster rings) |
 | Cell | `Skim Race Cell Config` — the same cell Switchback runs in |
-| Offline authority | `Tools/Build/waystation_tower_course.py` (`--check`, `--self-test`, `--compile`) over `Tools/Build/waystation_course.py` (the clusters) |
-| Compile harnesses | `Tools/Build/waystation_tower_harness/` (towers), `Tools/Build/waystation_harness/` (clusters) |
+| Offline authority | `Tools/Build/waystation_tower_course.py` (`--check`, `--self-test`, `--compile`, `--sweep`) over `Tools/Build/waystation_course.py` (the clusters) |
+| Compile harnesses | `Tools/Build/waystation_tower_harness/` (towers; `run_tests.sh` runs the shipped `WaystationTowerTests` and `WaystationHopPlanTests` without Unity), `Tools/Build/waystation_harness/` (clusters) |
 | Generator | `Tools/Build/author_waystation_assets.py` (`--check`; it also retires the prototype's assets and registrations) |
+
+## Garden ruins (I4, 2026-11-24)
+
+Yash asked for the environment update Spearline got (`SPEARLINE.md` §2a): the ruins of old flora gardens round the
+racing line on the hardest rung. Decoration only: plain prisms with the game's own rules. Nothing reads or writes a
+vessel, and I1-I3 are unchanged.
+
+**The generator is Spearline's, called and not copied.** `WaystationRuins.Lay` (pure) calls `SpearlineRuins.Lay` with
+Spearline's own numbers: a 60 u clear lane, nothing within 120 u of a gate, only on legs of 380 u or more, the seven
+kinds (pergola, flower head, vines, wall with a doorway, tunnel, 3D maze, turning wheel at 25 deg/s). Three things are
+Waystation's own, in `Waystation/WaystationRuins.cs`:
+
+- **The racing line.** A tower ring is not flown to. The pilot cruises level to the press point and falls along the
+  ring's axis. `RacingLine` states that as gates: the press point twice (once on the arriving heading, once on the fall
+  line), then the ring. Both tower legs are then straight, so the clear lane lies where the hull goes, and every press
+  point gets the 120 u margin a ring has.
+- **The towers.** No ruin prism stands within 14 u (`WallClear`) of a wall tile or a lantern segment, and a wheel
+  turns only where its whole sweep is clear of them. On the ten test seeds the lane and the margins already keep every
+  ruin off the towers, so this filter removes nothing there; it is a guard for other seeds.
+- **Which legs.** The generator lays the first legs it meets, which on a chain is all at the start. Waystation lays
+  every leg with room and keeps at most seven, each kind once, the longest leg (the long last drop) first, then the
+  legs farthest along the chain from those already picked. A ruin cut to under 12 prisms is dropped.
+
+**How many (measured, 20 seeds at I4, 5 clusters):** one to three ruins a course, 34 to 418 prisms, not Spearline's
+seven. A Drop Tower's legs are mostly shorter than 380 u (a course has 1 to 6 legs that long), so most ruins stand on
+the long last drop and on a tower's longer cruise legs. A wheel stood on 2 of the 20 seeds, on the long drop. More
+ruins would need a shorter minimum leg and gate margin in `SpearlineRuins`' settings; those are not changed here.
+
+**In the world** (`WaystationController.Ruins.cs`): every peer lays the ruins from the broadcast course in the walls'
+prism (`wallPrefab`), under the controller like the walls, before the walls. Each ruin is one domain colour,
+`ruinDomains` in turn (Jade, Ruby, Gold; empty = Blue), which reads apart from the Blue walls and lanterns. A wheel's
+prisms are posed every frame from the network clock. Ruins do not regrow and are released with the walls. The scene
+needs no new field: `ruinDomains` takes its default.
+
+**Gates:** `WaystationRuinsTests` (8 tests: none below I4, one to seven ruins numbered along the chain, the lane, the
+straight tower legs, the ring and press-point margin, the walls and lanterns, a wheel's own prisms, purity), run without
+Unity by `Tools/Build/waystation_tower_harness/run_tests.sh`; `--self-test` adds three negative controls that fire
+(the ring-to-ring line instead of the cruise and the fall, a kind standing twice, ruins on every rung).
+
+**Not done:** not compiled by Unity and not run in the editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). The AI does
+not know the ruins are there. Its hop miss recovery flies 600 u past the press point and comes round, which can cross
+a ruin outside the lane; whether I4 times change is not measured. `author_waystation_assets.py --check` was not run
+(no Python on the machine this was written on); the generator needed no change.
+
+## Lantern Towers (2026-11-11)
+
+**The problem it solves.** A Drop Tower hop was a timing test with one right answer per rung: hold for the window's
+middle. Nothing told you how deep you could land, every hop of a rung was the same, and the race gave nothing back for
+a good hold. Lantern Towers make the HOLD a decision you read off the world, hop by hop.
+
+### What the player sees
+
+1. **Lanterns.** Every hop that has a hop after it stands between two dotted Blue posts, either side of the drop line,
+   from the window's near edge down to a little short of the hop's **shelf**: the deepest landing after which the Drop
+   is recharged and the roll done exactly as you reach the next press point (`WaystationTower.ShelfDepth`). The posts
+   get denser over their last 30-45 u, the **deep band**. One rule at every rung: *land as deep as the lanterns reach.*
+2. **Tight hops (I2 and up).** A share of the down-hops is laid with a short runway after it (`ShelfShare`,
+   `ShelfCutMin..Max`), so its shelf - and its lanterns - stop well short of the window's far edge. Land past them and
+   you reach the next ring before the Drop is back: you press late, and past the hop's **far edge**
+   (`WaystationTower.FarEdge`) the ring is out of reach and you loop round for it (or meet the pipe). Loose hops let you
+   land deep; tight ones punish it. You can only tell them apart by looking.
+3. **The grade, in the world.** Each landing on a tower ring is graded against its lanterns (`WaystationHopPlan`):
+   Deep (the deep band, or past it but still inside the far edge), Clean (inside the lanterns), Short (on the plate),
+   Past (beyond the far edge, or a missed ring). A Deep landing lights that hop's lanterns in YOUR domain's colour for a
+   second (a `PrismLit` light; the prisms stay Blue), a Clean one half as bright. Three, six and ten Deep landings in a
+   row light the whole tower. Nothing is posted as text: the light is on the posts.
+4. **The crown gem (I4).** A Time crystal hangs on each tower's plunge line, 40 u short of the plunge's deepest landing:
+   land a little short of max and you fly through it (+1 Time, the ordinary crystal rule); land at max and you skip it.
+5. **The AI reads the same lanterns.** It aims for the middle of each hop's deep band plus its own seat's error, at its
+   live speed, released on the nearest frame; it turns round and re-flies a press point it overshot instead of flying
+   on for ever; at I4 it lands short of the gem. The four seats differ, so they are beatable and not identical.
+
+### Ladder (one added demand per rung)
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Added demand | hold into the lanterns; every hop loose | **read the lanterns' length**: tight hops | roll gates (existing) | **the crown gem**: depth against +1 Time |
+| Window (travel), unchanged | 50..250 u | 66..234 u | 85..225 u | 102..218 u |
+| Tight share / cut | 0 | 0.40 / 50-100 u | 0.50 / 45-80 u | 0.75 / 40-90 u |
+| Deep band | 45 u | 45 u | 40 u | 30 u |
+| Roll gates / danger share, unchanged | 0 / 0.10 | 0 / 0.20 | 0.5 / 0.35 | 1 / 0.50 |
+| AI seat error | ±6 u | ±10 u | ±12 u | ±12 u |
+| Crown gems | - | - | - | one a tower (≤ 3) |
+
+At I1 most towers are a single plunge (1.27 down-hops a tower on average), so a race shows only a few lantern hops
+there: I1 is the introduction, the lanterns' work starts at I2.
+
+### What the mode owns, and what it does not touch
+
+| Piece | Where |
+|---|---|
+| Shelf, laid depth, far edge, tight hops, lanterns, crown gems | `WaystationTower` (pure; a tight hop's runway is sized in `Lay`, the rest is read back from the broadcast course on every peer) |
+| Grade, streak, AI target depth, seat error | `WaystationHopPlan` (pure) |
+| Lanterns laid and regrown, gems minted (Headlong's stampede recipe), the local grade, its light and sounds | `WaystationController.Feedback.cs` |
+| AI hop: live-speed hold, nearest-frame release, miss recovery (`aiHopMissMargin`) | `WaystationController.TickHops` / `TryHopAim` |
+| Wall regrowth: a tile the dust STOLE stays standing (it is still the wall); before, a Blue tile was laid on top of it | `WaystationTower.TileNeedsRegrow` |
+| Seven FMOD slots, all shipped EMPTY, local pilot only | `hopDeepEvent`, `hopCleanEvent`, `hopShortEvent`, `hopPastEvent`, `streakTierEvents[3]`, `streakBrokenEvent`, `crownGemEvent` |
+| Toasts | no new ids: 117 and 118 re-worded for the lanterns ("land between the lanterns", "short lanterns mean a tight hop") |
+
+**The vessel is not changed** (LOCKED, Shombith 2026-10-31): no Tiger Moth code, asset or number moved. The lanterns
+are environment prisms (shielded, Blue, off every flight line by 18 u or more), the gem is an ordinary Time crystal,
+and the grade reads the Drop executor's public `IsDropping`.
+
+### Gates
+
+```
+py -3 Tools/Build/waystation_tower_course.py --check          # 200 seeds x 4: 16 checks
+py -3 Tools/Build/waystation_tower_course.py --self-test      # 12 negative controls + the hull radius
+py -3 Tools/Build/waystation_tower_course.py --compile        # the shipped C# against the model
+py -3 Tools/Build/waystation_tower_course.py --sweep          # what reading the lanterns saves
+bash Tools/Build/waystation_tower_harness/run_tests.sh --self-test   # the shipped EditMode tests, no Unity, + 8 mutations
+py -3 Tools/Build/author_waystation_assets.py --check
+```
+
+New checks: `shelf` (the course says what `Lay` laid; the shelf presses exactly on time; the hash draws the authored
+tight share), `past` (a landing 5 u past the far edge cannot reach the next ring), `lantern` (every post segment clear
+of every flight line by the hull + 4 u + its own reach, of every ring's mouth and every plate, inside the cell),
+`gem` (I4 only, one a tower, reachable by a short plunge and skipped by the deepest, clear of every tile and mouth),
+`aibudget` (the AI's target, with a 30 fps frame and the live-speed carry, stays 2 u inside the plate and the far
+edge on every hop and seat), and the hull radius against `TigerMoth.prefab`'s Hull collider.
+
+### Measured (2026-11-11)
+
+`waystation_tower_course.py --sweep --seeds 200` (release on the nearest 60 fps frame, +-8 u carry; a miss costs one
+8 s turning circle). "Strict" is against the BEST fixed plan per rung (the best constant depth, or deep sideways and
+a constant down), not against today's AI:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Reading the lanterns saves (tower time, strict) | -0.5 % | **3.4 %** | **3.8 %** | **3.2 %** |
+| ... of the whole race (strict) | -0.2 % | 1.2 % | 1.1 % | 0.9 % |
+| ... of tower time against today's AI (the window's centre) | 18.1 % | 14.5 % | 12.8 % | 10.5 % |
+| An expert at the hard edge saves (strict, tower time) | 0.3 % | 4.8 % | 5.1 % | 5.3 % |
+| Best fixed depth on a down-hop | 250 u | 171 u | 180 u | 167 u |
+| A lantern reader's race (median, modelled) | 59.5 s | 85.5 s | 105.2 s | 126.5 s |
+| Today's AI on the OLD towers (median, modelled) | 61.9 s | 85.0 s | 110.4 s | 128.7 s |
+| The new AI: misses a race, deep landings | 0, 35 % | 0, 55 % | 0, 59 % | 0, 72 % |
+| Crown gems a race, new AI / reader | - | - | - | 2.8 / 0.0 |
+| Drop every (centre hops) | 5.1 s | 3.8 s | 3.7 s | 3.2 s |
+| Lantern segments / wall tiles a course (max) | 96 / 960 | 80 / 960 | 112 / 1,472 | 130 / 1,984 |
+
+I1 is every hop loose, so there is nothing to read (a fixed deep pilot is as good), as the ladder intends. A pilot who
+IGNORES the lanterns gets 1-2 more rings and up to 2.7 s more tower time at I2-I4 from the tight hops; one who reads
+them finishes as fast as or faster than today's pilot did on the old towers. The race clock is a model: cluster legs
+at cruise with a turn allowance, towers flown hop by hop; whole-race medians over the ~90 s target at I3/I4 were
+already there before this round.
+
+### What was tried and dropped
+
+- **Lanterns at the depth the course was laid for** (the shelf with the 0.35 s reaction kept). Reading them saved
+  1.2 / 1.0 / -0.7 % of tower time at I2-I4 against the best fixed depth: a fixed pilot simply spent the reaction
+  margin. At the shelf proper they save what the table above says. The reaction stays built into the course (`Lay`
+  sizes each tight runway with it); it is just not hidden inside the lanterns.
+- **Wider cuts** (I2 40-130 u, I3 40-110 u): no better than the shipped cuts (2.6-3.2 %), and more misses for fixed
+  pilots. The I4 cut was widened (40-90 u at 0.75) because the narrowest window needed more spread to stay worth reading.
+- **Lanterns on the plunge.** Not laid: the plunge's posts would reach into the next cluster's approach, and the plunge
+  has no next press to set a shelf. Its deep landing is graded, and at I4 the gem marks it.
+- **Rim/core danger, a bare-gap pick, ClustersByIntensity, a Time-dependent shelf, re-laying prisms in the pilot's
+  domain**: out of scope (each either changes Garrett's cluster pick, a shared file, or a prism's team).
+
+### Found and fixed on the way
+
+- **A post through a ring's mouth.** `Lay`'s first post test only looked at the rim and the centre; I4 seeds 77 and 190
+  stood a post in a cluster ring's mouth. The test now finds where the post crosses the ring's plane.
+- **`SegmentDistance` for a point.** The closed form treats a zero-length segment as parallel and answered from the
+  wrong end (88 u for a true 35 u), so every ring and plate bound passed what it should have caught.
+- **A later tower's plate on a plunge's landing stretch** (I4 seed 11: 2.5 u from the crown gem). The plunge's landing
+  stretch is now an obstacle for the towers laid after it.
+
+### In-editor verification (owed; `Docs/UNITY_VERIFICATION_CHECKLIST.md`)
+
+None of this has been compiled by Unity or flown. The pure classes (`WaystationTower`, `WaystationHopPlan`) and both test
+classes compile and pass under Roslyn against the harness's Unity math stub; the controller partials reach Netcode and
+the gameplay monolith and have had a read, no type check. Only the editor can show: whether the lanterns read from the
+chase camera and through the drop camera; how the domain-coloured light looks on Blue posts and whether it fits
+PrismLit's slot bank; the gem pickup at drop speed; the AI finishing at I1-I4 with real steering; phone frame rate with
+up to ~130 post segments and ~2,000 tiles at I4; and the feel of the hold.
 
 ## The Drop Tower (2026-11-01)
 
@@ -303,11 +486,47 @@ server-only, so a local press would teleport the vessel on one machine and play 
 bloom for nobody. The hold IS the distance (`distance / ReachSpeed`), because the executor reaches
 `hold × ReachSpeed` along the heading.
 
-**It fails safe.** Three gates — far enough to be worth folding (`aiFoldMinDistance` 420), inside
+**It fails safe.** Three gates — far enough to be worth folding (`aiFoldMinDistance` 420; 700 since the Drop Towers, 2026-11-01), inside
 the fold's resolved reach, and lined up within `aiFoldAimDegrees` (12°) — each refuse by simply not
 pressing, and a bot that never presses flies the course exactly as it did before the drive existed.
 That is deliberate: pitch and yaw are dead for the fold's duration, so a bot that presses off-line
 lands off-line with no way to correct, and no amount of folding is worth one wrong jump.
+
+### The tower hop finishes (2026-11-17)
+
+The race judge (the real game code, headless) had the TigerMoth's AI finishing 0 of the 16 rungs (Easy to
+Legendary, I1-I4). The first tower hop never pressed. The trace showed two causes, both in this controller:
+
+- **The press was judged in two windows that never met.** It needed the belly within `aiHopBellyDegrees` (8) of
+  the drop line AND the hull over the ring within `aiHopLineShare` (0.45) of its radius. The bot's belly swung
+  through the line while the hull was 30-200 u off it, and the two were never true together. The press is now
+  judged where the FALL will cross the ring's plane: the line the belly points along, from where the hull is
+  (the drop follows the belly, `TigerMothDropMath.DropDirection`). It fires when that crossing is within 0.7 of
+  the radius, with the belly at most 20 degrees off as a cap. The hold is sized along the belly.
+- **The miss recovery turned back inside the turning circle.** `aiHopMissMargin` was 60 u past the press, which
+  is less than the hull's turn at 67 u/s. The bot reversed before it was round, so it looped over the ring
+  without ever flying the line level (I2 timed out at 16 of 27 rings). At 400 u it flies out, comes round and
+  returns on the line.
+
+After the change, all 16 rungs finish (seed 1). Legendary runs 160 / 188 / 414 / 345 s, Hard 177 / 259 / 289 /
+365 s, Medium 151 / 275 / 368 / 407 s and Easy 211 / 287 / 447 / 385 s. These are long against the other Time
+games (90-180 s), and that is the next problem for this game.
+
+### The trained AI (2026-11-17)
+
+`time_ai_search.py --hull TigerMoth` (run1, 2 generations of 6, seeds 1-2, I1-I4 plus I1 and I4 at a Time-10
+start) searched the hop and drop gates and the AI nose rate. The winner, now the defaults: `aiHopLineShare`
+0.85, `aiHopMissMargin` 600, `aiHopLookahead` 155, `aiDropAimDegrees` 6.6, and the TigerMoth's nose at 6.41/s
+(`aiNoseLead`, no lead). Confirmed on fresh seeds 3-4, the shipped AI against the trained one:
+
+| Rung | Before (s) | Trained (s) |
+|---|---|---|
+| I1 | 189 / 123 | 151 / 130 |
+| I2 | 232 / 213 | 191 / 159 |
+| I3 | 334 / 302 | 190 / 210 |
+| I4 | 389 / 493 | 259 / 323 |
+
+29% less time in all. I4 still runs past 200 s; that rung is the course's (the plates), not the drive's.
 
 ### `OnServerTick` — a seam added so the drive could not break the platform
 

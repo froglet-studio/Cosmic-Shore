@@ -434,7 +434,7 @@ can recover that with the phone's gyro."*
 | LT (held) = drift + charge boost + drift trail | lift **either** thumb = drift + charge boost + drift trail **+ Echo Sight**, together |
 | RT (held) = Echo Sight | (same lift) |
 | release LT = discharge (the boost) | put the thumb back = discharge (the boost), Echo off |
-| right stick = roll | while one thumb flies, **turn the phone like a wheel** = roll (`TouchControlProfile.tiltRollOnOneThumb`) |
+| right stick = roll | while one thumb flies, **turn the phone like a wheel** = roll (`TouchControlProfile.gyroRollOnOneThumb`) |
 
 - **Binding.** `Dolphin.prefab` `_touchActionOverrides`: `LeftStickAction (2)` and `RightStickAction (1)` both run
   `[DolphinDriftAction, ChargeBoostAction, DriftTrailAction, EchoSightAction]` (guids `51198b11…`, `ab7bab2c…`,

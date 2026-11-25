@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>Why this is allowed to break a super-shield.</b> Super-shielded mass is invulnerable
     /// to <c>Prism.Damage</c> outright; the ONE sanctioned teardown is to drop the shields first
     /// and then devastate, which is what the Rhino's energised blade does
-    /// (<c>RhinoSkimmerDamagePrismEffectSO.PopSuperShield</c>). This is the fleet's second such
+    /// (<c>SwordfishSkimmerDamagePrismEffectSO.PopSuperShield</c>). This is the fleet's second such
     /// force and it uses that exact sequence, so the stellation sheds as ordinary explosion debris
     /// and the prism dies the canonical animated death — mass is conserved and nothing pops out of
     /// existence. It is an ACTIVE force with a long cooldown and a scope you have to hold, which
@@ -154,6 +154,9 @@ namespace CosmicShore.Gameplay
         public float ImpactFlareRadius => impactFlareRadius;
         public float ShakeIntensity => shakeIntensity;
         public float ShakeDuration => shakeDuration;
+        /// <summary>The round breaks prisms in its cone, which every peer simulates: an AI's press must run on every peer (<see cref="ShipActionSO.AutopilotPressTravels"/>).</summary>
+        public override bool AutopilotPressTravels => true;
+
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<SniperShotActionExecutor>()?.Fire(this, vesselStatus);

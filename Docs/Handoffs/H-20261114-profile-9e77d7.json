@@ -1,0 +1,16 @@
+{
+  "id": "H-20261114-profile-9e77d7",
+  "kind": "keep",
+  "lane": "profile",
+  "laneName": "Profile and pilots",
+  "laneKind": "shell",
+  "by": "Shombith",
+  "on": "2026-11-14T19:05:53+00:00",
+  "branch": "claude/clever-clarke-7uxwca",
+  "signals": {
+    "laneKind": "shell",
+    "handTests": false,
+    "merged": true
+  },
+  "source": "cli"
+}

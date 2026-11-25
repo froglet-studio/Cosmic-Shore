@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -57,6 +58,8 @@ namespace CosmicShore.UI
         static readonly List<TMP_InputField> Inputs = new(8);
         static float _nextTick;
         static bool _sceneHooked;
+        static int _prefabPaintFrame;            // 0: none pending; else the frame the prefab assets are painted on
+        const int PrefabPaintDelayFrames = 2;    // out of the scene load's own frame and the first one after it
 
         static readonly int LineColorId = Shader.PropertyToID("_LineColor");
         static readonly int LineColorMidId = Shader.PropertyToID("_LineColorMid");
@@ -90,6 +93,7 @@ namespace CosmicShore.UI
             CanvasDirty.Clear();
             RootCanvases.Clear();
             _nextTick = 0f;
+            _prefabPaintFrame = 0;
             Changed = null;
         }
 
@@ -134,10 +138,32 @@ namespace CosmicShore.UI
             _sceneHooked = false;
         }
 
+        // A scene load repaints only that scene's canvases, and the prefab assets two frames later (B45,
+        // Docs/PartySystem/BUGS.md). It used to repaint everything loaded inside the load's own frame: eleven
+        // FindObjects passes, each walking every MonoBehaviour alive, so with a match's 50,000-70,000 prisms it cost
+        // 0.85-2.3 s of a frame that Relay drops a host for at 10 s. What was loaded before this scene is already in
+        // the theme; the scene's own UI is painted here, before it draws.
         static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (_live == null || !Application.isPlaying) return;
-            RepaintAll(_live);
+            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (canvas.gameObject.scene != scene || !IsTopCanvas(canvas)) continue;
+                SweepCanvas(canvas.gameObject, _live);
+                RepaintKit(canvas.gameObject);
+                CanvasCounts[canvas.GetInstanceID()] = canvas.transform.hierarchyCount;
+            }
+            // The UI prefab assets this scene brought into memory: painted out of the load's frame, so rows built from
+            // them are born in the theme. A row built before then is caught by the canvas sweep (Tick).
+            _prefabPaintFrame = Time.frameCount + PrefabPaintDelayFrames;
+            _nextTick = 0f;   // the root canvas list is read again on the next Tick
+        }
+
+        // A canvas with no canvas above it (inactive ones included, which isRootCanvas does not answer for).
+        static bool IsTopCanvas(Canvas canvas)
+        {
+            var parent = canvas.transform.parent;
+            return !parent || !parent.GetComponentInParent<Canvas>(true);
         }
 
         /// <summary>
@@ -150,6 +176,11 @@ namespace CosmicShore.UI
         public static void Tick(float unscaledTime)
         {
             if (_live == null || !Application.isPlaying) return;
+            if (_prefabPaintFrame > 0 && Time.frameCount >= _prefabPaintFrame)
+            {
+                _prefabPaintFrame = 0;
+                PaintPrefabAssets(_live);
+            }
             if (unscaledTime >= _nextTick)
             {
                 _nextTick = unscaledTime + 1f;
@@ -226,71 +257,87 @@ namespace CosmicShore.UI
         // field's. Never the sea lines' material: a prefab asset never takes a run-time copy. In the editor every change
         // is recorded and put back when play ends (WorldColorTrace.RecordAssetChange).
 
+        // ONE pass over everything in memory (every kind painted here is a UIBehaviour): each FindObjectsOfTypeAll walks
+        // every MonoBehaviour loaded, prisms included, so four passes cost four times one.
         static void PaintPrefabAssets(ColorSetUITheme.Palette from)
         {
             if (WorldColorTrace.IsStopped) return;   // play is ending: the editor has put the assets back
-            foreach (var g in Resources.FindObjectsOfTypeAll<Graphic>())
+            foreach (var b in Resources.FindObjectsOfTypeAll<UIBehaviour>())
             {
-                if (!IsPrefabAsset(g)) continue;
-                var was = g.color;
-                var to = Retraced(was, from);
-                if (!Same(was, to))
+                switch (b)
                 {
-                    bool records = WorldColorTrace.RecordsAsset(g);
-                    g.color = to;
-                    if (records) RecordGraphic(g, was, to);
-                }
-                if (g is TMP_Text text && text.enableVertexGradient)
-                {
-                    var v = text.colorGradient;
-                    var w = new VertexGradient(Retraced(v.topLeft, from), Retraced(v.topRight, from),
-                                               Retraced(v.bottomLeft, from), Retraced(v.bottomRight, from));
-                    if (!SameGradient(v, w))
-                    {
-                        bool records = WorldColorTrace.RecordsAsset(text);
-                        text.colorGradient = w;
-                        if (records) RecordGradient(text, v, w);
-                    }
+                    case Graphic g: PaintPrefabGraphic(g, from); break;
+                    case TMP_InputField f: PaintPrefabTint(f, from); PaintPrefabInput(f, from); break;
+                    case Selectable sel: PaintPrefabTint(sel, from); break;
+                    case Shadow sh: PaintPrefabShadow(sh, from); break;
                 }
             }
-            foreach (var sel in Resources.FindObjectsOfTypeAll<Selectable>())
+        }
+
+        static void PaintPrefabGraphic(Graphic g, ColorSetUITheme.Palette from)
+        {
+            if (!IsPrefabAsset(g)) return;
+            var was = g.color;
+            var to = Retraced(was, from);
+            if (!Same(was, to))
             {
-                if (sel is KitSelectableBase || sel.transition != Selectable.Transition.ColorTint || !IsPrefabAsset(sel)) continue;
-                var b = sel.colors;
-                var to = b;
-                to.normalColor = Retraced(b.normalColor, from);
-                to.highlightedColor = Retraced(b.highlightedColor, from);
-                to.pressedColor = Retraced(b.pressedColor, from);
-                to.selectedColor = Retraced(b.selectedColor, from);
-                to.disabledColor = Retraced(b.disabledColor, from);
-                if (to == b) continue;
-                bool records = WorldColorTrace.RecordsAsset(sel);
-                sel.colors = to;
-                if (records) RecordTint(sel, b, to);
+                bool records = WorldColorTrace.RecordsAsset(g);
+                g.color = to;
+                if (records) RecordGraphic(g, was, to);
             }
-            foreach (var sh in Resources.FindObjectsOfTypeAll<Shadow>())
+            if (g is TMP_Text text && text.enableVertexGradient)
             {
-                if (!IsPrefabAsset(sh)) continue;
-                var was = sh.effectColor;
-                var to = Retraced(was, from);
-                if (Same(was, to)) continue;
-                bool records = WorldColorTrace.RecordsAsset(sh);
-                sh.effectColor = to;
-                if (records) RecordShadow(sh, was, to);
+                var v = text.colorGradient;
+                var w = new VertexGradient(Retraced(v.topLeft, from), Retraced(v.topRight, from),
+                                           Retraced(v.bottomLeft, from), Retraced(v.bottomRight, from));
+                if (!SameGradient(v, w))
+                {
+                    bool records = WorldColorTrace.RecordsAsset(text);
+                    text.colorGradient = w;
+                    if (records) RecordGradient(text, v, w);
+                }
             }
-            foreach (var f in Resources.FindObjectsOfTypeAll<TMP_InputField>())
-            {
-                if (!IsPrefabAsset(f)) continue;
-                var caret = f.caretColor;
-                var caretTo = Retraced(caret, from);
-                var sel = f.selectionColor;
-                var selTo = Retraced(sel, from);
-                if (Same(caret, caretTo) && Same(sel, selTo)) continue;
-                bool records = WorldColorTrace.RecordsAsset(f);
-                f.caretColor = caretTo;
-                f.selectionColor = selTo;
-                if (records) RecordInput(f, caret, caretTo, sel, selTo);
-            }
+        }
+
+        static void PaintPrefabTint(Selectable sel, ColorSetUITheme.Palette from)
+        {
+            if (sel is KitSelectableBase || sel.transition != Selectable.Transition.ColorTint || !IsPrefabAsset(sel)) return;
+            var b = sel.colors;
+            var to = b;
+            to.normalColor = Retraced(b.normalColor, from);
+            to.highlightedColor = Retraced(b.highlightedColor, from);
+            to.pressedColor = Retraced(b.pressedColor, from);
+            to.selectedColor = Retraced(b.selectedColor, from);
+            to.disabledColor = Retraced(b.disabledColor, from);
+            if (to == b) return;
+            bool records = WorldColorTrace.RecordsAsset(sel);
+            sel.colors = to;
+            if (records) RecordTint(sel, b, to);
+        }
+
+        static void PaintPrefabShadow(Shadow sh, ColorSetUITheme.Palette from)
+        {
+            if (!IsPrefabAsset(sh)) return;
+            var was = sh.effectColor;
+            var to = Retraced(was, from);
+            if (Same(was, to)) return;
+            bool records = WorldColorTrace.RecordsAsset(sh);
+            sh.effectColor = to;
+            if (records) RecordShadow(sh, was, to);
+        }
+
+        static void PaintPrefabInput(TMP_InputField f, ColorSetUITheme.Palette from)
+        {
+            if (!IsPrefabAsset(f)) return;
+            var caret = f.caretColor;
+            var caretTo = Retraced(caret, from);
+            var sel = f.selectionColor;
+            var selTo = Retraced(sel, from);
+            if (Same(caret, caretTo) && Same(sel, selTo)) return;
+            bool records = WorldColorTrace.RecordsAsset(f);
+            f.caretColor = caretTo;
+            f.selectionColor = selTo;
+            if (records) RecordInput(f, caret, caretTo, sel, selTo);
         }
 
         // A component of a prefab asset (not in any scene): in the editor, what lives in an asset file.
@@ -428,7 +475,10 @@ namespace CosmicShore.UI
 
         static void SwapSea(Graphic g)
         {
-            var m = g.material;
+            // A TMP sub-mesh's `material` getter is not a read: it clones the sub-mesh's shared material on the
+            // spot (one more material instance per sweep), and throws when that shared material was destroyed
+            // with the font fallback it came from. Its shared material answers the same question.
+            var m = g is TMP_SubMeshUI subMesh ? subMesh.sharedMaterial : g.material;
             if (!m || !m.HasProperty(LineColorId) || !m.HasProperty(LineColorMidId) || !m.HasProperty(LineColorEndId)) return;
             bool isCopy = SeaCopySet.Contains(m);
             if (_live == null)

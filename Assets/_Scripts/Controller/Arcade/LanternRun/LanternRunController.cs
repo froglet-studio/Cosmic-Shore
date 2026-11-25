@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// Angler (its AI, <see cref="AnglerLeapfrogAIPolicySO"/>, is the hull's). Everything else is the gate-race platform.
     /// See LANTERNRUN.md.</para>
     /// </summary>
-    public class LanternRunController : GateRaceController
+    public partial class LanternRunController : GateRaceController
     {
         [Header("LanternRun circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE length, so the circuit " +
@@ -36,6 +36,14 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("u a cluster keeps outside the nucleus.")]
         [SerializeField, Min(0f)] float nucleusMargin = 30f;
+
+        [Header("AI nose")]
+        [Tooltip("The AI nose lead and follow rate per hull in this mode (GateRaceController.AINoseLeadRow). Empty: the " +
+                 "fleet nose lag. Filled by the Angler's trained pair (time_ai_search.py --hull Angler, run1 2026-11-19: no " +
+                 "lead, nose 8.25/s).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Angler, 0f, noseFollow: 8.25f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
 
         protected override string ModeName => "Lantern Run";
 
@@ -69,6 +77,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             ClearClusters();
+            ClearRuins();
             _hintPosted = false;
             base.OnNetworkDespawn();
         }
@@ -77,6 +86,7 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearClusters();
+            ClearRuins();
             if (!clusterPrefab)
             {
                 CSDebug.LogError("[Lantern Run] No cluster prefab on the controller - the race has nothing to paint. " +
@@ -106,6 +116,9 @@ namespace CosmicShore.Gameplay
                 // The first cohort is laid behind the connecting panel, so the arena-ready gate waits for it.
                 for (int k = 0; k < laid.Slots.Length; k++) LaySlot(laid, k, forReveal: true);
             }
+
+            // The garden ruins (I4 only), laid round the clusters just placed: LanternRunController.Ruins.cs.
+            LayRuins(clusters);
         }
 
         void LaySlot(LaidCluster cluster, int slot, bool forReveal)
@@ -131,7 +144,10 @@ namespace CosmicShore.Gameplay
         // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
         void LateUpdate()
         {
-            if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
+            if (!IsSpawned) return;
+            // The wheels turn from the moment the course stands, the countdown included.
+            TickRuins();
+            if (gameData == null || !gameData.IsTurnRunning) return;
             using var _ = s_tickMarker.Auto();
 
             if (!_hintPosted)

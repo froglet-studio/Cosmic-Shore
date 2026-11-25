@@ -80,12 +80,39 @@ above the 48 u cruise circle: the Angler's corners cost nothing, because its spe
 **About 0.3% of clusters are lost to the nucleus** (a near cluster whose ring is presented steeply inward: 10 of 6,400 at
 I1, 31 of 6,400 at I2, 21 of 4,800 at I4). Such a leg has one cluster.
 
+## The ruins: garden ruins at I4 (`LanternRunRuins`, `LanternRunController.Ruins.cs`; Yash, 2026-11-24)
+
+The environment update Spearline got (SPEARLINE.md §2a), on this course. The generator is Spearline's
+(`SpearlineRuins.Lay`, called with Lantern Run's rings, not copied): one ruin on each of the seven legs between rings
+(none on the leg back into ring 0, where the field starts), the seven kinds taking turns: pergola, flower head, vines, a
+wall with a doorway, a tunnel, a 3D maze of bars, and a wheel that turns at 25 deg/s from the network clock. Every stone
+is at least 8 u thick, a 60 u lane down the flown line stays clear (the I4 mouth is 38 u), nothing stands within 120 u
+of a ring, only legs of 380 u or more carry one, and only I4 has them. The wheel is the one kind that sweeps the line;
+where it does not fit, a pergola stands instead (about half the courses have a wheel).
+
+**What Lantern Run adds** (`LanternRunRuins`, pure): a ruin never stands in a prism mass cluster. A standing stone
+that would come within `ClusterKeep` (12 u) of a cluster's ball is left out, and a wheel whose sweep would pass through
+a cluster is left out whole. The clusters themselves are untouched. Measured over seeds 1-60 at I4
+(`lantern_run_harness --measure`): 7 legs on every lap, 734-873 prisms a lap (mean 796), 35 of 47,812 stones left out
+for a cluster, no wheel lost.
+
+**Colours:** each ruin is one domain colour, Jade, Ruby and Gold in turn, from `ruinDomains` on the controller (empty =
+Blue, as the clusters), so they read apart from the Blue clusters.
+
+**They are plain prisms with the game's own rules**, laid from the cluster prefab on every peer and returned to the
+pool with the clusters: a hull breaks them and nothing grows back. Nothing reads or writes a vessel. **One consequence
+is the Angler's own:** its brush paints any enemy prism and its creatures eat what they reach, so a ruin is paint and
+food for every pilot not of its colour. Flying the line, the 3 degree brush stays inside the lane; aimed off it, or at
+the wheel's spokes, the throw goes to the ruin. Whether that helps or blurs I4 ("Sparse") is unjudged: nobody has flown
+it. If it is not wanted, the fix is here (the colour or the kind of prism the ruins are laid in), never the Angler.
+
 ## What the mode adds, and what it reuses
 
 - **New:** `LanternRunCourse` (the cut and the clusters, pure), `LanternRunCourseSource`, `LanternRunController` (lays
   the clusters on every peer from the broadcast course in `OnCourseRaised`, regrows them in `LateUpdate`, posts the start
   hint), `LanternRunCourseTests`; `GameToastSituation.LanternRunPaintHint = 158`; the
-  `lanternRunGateTarget` end condition (16); the `MiniGameHUD` case; the card's art recipe.
+  `lanternRunGateTarget` end condition (16); the `MiniGameHUD` case; the card's art recipe; the I4 ruins' hook
+  (`LanternRunRuins`, `LanternRunController.Ruins.cs`, `LanternRunRuinsTests`; the ruins themselves are Spearline's).
 - **Reused:** `GateRaceController`, `HeadlongCircuit`, `RaceGateTurnMonitor`, `GateRaceScoringRuleSO` (metric 9, golf),
   `RaceGateObjectiveProvider`, the race-beat toasts, the barren race cell, and Serpentine's way of laying and regrowing
   mode prisms (`PrismTrailBuilder.LayOne`, the first cohort behind the connecting panel, regrown ones as live ribbons).
@@ -97,6 +124,9 @@ I1, 31 of 6,400 at I2, 21 of 4,800 at I4). Such a leg has one cluster.
 - `LanternRunCourseTests`: 8 of 8 pass outside the editor (UnityShim + a small NUnit stand-in, 400 seeds x 4 intensities).
   A first cut that hung the clusters on the chord from the last ring FAILED the dash-through-the-mouth test (I2 seed 1 missed
   by 6 u), which is why they sit on the ring's axis.
+- `LanternRunRuinsTests`: 10 of 10 pass outside the editor (`bash Tools/Build/lantern_run_harness/run.sh --self-test`,
+  60 seeds; four negative controls fire: ruins in the clusters, wheels through the clusters, a wheel laid in part, ruins
+  on an easy rung). The ruins' controller hook is compiled by nothing outside Unity and has not been compiled or watched.
 - `author_lantern_run_assets.py --check` passes; changing one field of the card makes it fail and name the file.
 - The C# gates pass (switch labels, enum members, console logging, conditional compilation, using directives,
   self-referential locals, game-list scenes, preview spawns, prism bakes).

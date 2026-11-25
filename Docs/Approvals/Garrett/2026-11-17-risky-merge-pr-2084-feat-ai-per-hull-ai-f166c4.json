@@ -1,0 +1,30 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2084-feat-ai-per-hull-ai-f166c4",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T00:54:37+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2084 (feat(ai): per-hull AI nose follow rate in the Time games and Regatta (neutral at 0)) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; shared AI code every AI hull runs: Assets/_Scripts/Controller/AI/Racing/RaceLineStyleSO.cs, Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+  "branch": "claude/project-thread-sl73tv",
+  "pr": 2084,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_Scripts/Controller/AI/Racing/RaceLineStyleSO.cs",
+    "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaController.cs",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "shared-ai",
+      "name": "shared AI code every AI hull runs",
+      "detail": "Assets/_Scripts/Controller/AI/Racing/RaceLineStyleSO.cs, Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs"
+    }
+  ]
+}

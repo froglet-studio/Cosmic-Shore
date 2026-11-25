@@ -29,6 +29,99 @@ History, all at the design owner's request after playtests:
   bombs" — the trigger bombs are the Grizzly's; no other hull carries them.) The "friction" was the
   projectile's `cos(πt / 2T)` ease-out, which every round in the fleet flies; the bomb now opts out
   of it (`Projectile.Cruises`).
+- **2026-10-16 — the fifth pass:** *"the bombs are going a little too fast and I want the explosions
+  to push the ship in whatever direction its heading, also the X/square controller button is still
+  firing the old bombs. Also the left bumper is supposed to change weapons… charging a new bomb to
+  fire shouldn't slow the ship down, it's supposed to maintain momentum so the player can enter kind
+  of a flow state."* Muzzle speed 250 → **180**; the launch is **forward momentum** along the nose
+  (`ModifyThrottle`, 2 s ease) instead of a 1 s shove away from the bomb; X no longer fires the
+  charged cannon in Explosives mode; **LB** cycles weapons (RB still does too).
+- **2026-11-25 — the forward launch declined (Garrett, shipping `grizzly-v3`):** *"we don't want
+  bombs to make grizzly go forward. we want grizzly to blow up away from bombs."* The launch is back
+  to the 1 s shove **away from the bomb** (below); the 180 u/s muzzle speed and the rest of the
+  fifth pass stay.
+
+## The triggers follow the weapon (2026-10-16)
+
+*"for the plasma claw, LT fires a cone forward from the left front of the ship and RT fires a cone
+forward from the right front of the ship. Pressure determines the size of the cone, but should
+always be its most close range weapon. for the sniper rifle, the left trigger activates the scope,
+which changes to a camera on top of the bullet that travels with it as long as it is held. the
+right trigger fires the weapon. the cool down keeps it from being too rapid fire. pressure is
+irrelevant for this weapon. the bombs will be deactivated while other weapons are active and
+players will have to rely on either the B boost or switching back quickly while still holding
+momentum."*
+
+`GrizzlyBombActionSO` (one asset per trigger) routes by the active weapon
+(`GrizzlyWeaponModeExecutor`, cycled on **LB** / RB / E), captured at the press:
+
+| Weapon | LT | RT |
+|---|---|---|
+| **Explosives** | left bomb (below) | right bomb (below) |
+| **Plasma claw** | claw forward from the **left front** while held | claw forward from the **right front** while held |
+| **Sniper** | hold = **scope**; a round fired while held takes the view with it until LT is let go | **fire** (sniper cooldown 3 s, energy 0.5) |
+
+- **Claw:** `GrizzlyFlamethrowerActionSO` — **the fingers ARE the weapon; there is no cone** (2026-10-17: *"get rid
+  of the cone completely, allows the claws to do the work"*). Every enemy prism a finger touches catches fire
+  (`IgniteAlongClaws`: each finger's links swept with `PrismSpatialIndex.QuerySegment` at `clawBurnRadius` 2, plus
+  half the prism's size — the Brittle Star cords' cut, made a burn). Live pressure sets the finger length from
+  `minRange` 22 u to `range` 55 u and the spread from `minSpreadFraction` 0.6 of `whipSpreadDegrees` to all of it;
+  no analog = full. Claws root `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
+  outward and `tiltUpDegrees` 5° up (2026-10-17: *"tilt them up just a touch please, the overlap from the chase
+  camera makes them look a little awkward"*). 55 u is still the Grizzly's shortest reach on purpose.
+- **The claw slices, then the fire spreads** (2026-10-17: *"make the plasma claw slice prisms as well as start
+  the burn"*): every frame, each enemy prism a finger touches is **sliced** (`Prism.Slice`, the Brittle Star cord's
+  cut: along the plane the finger sweeps, debris at `sliceDebrisRestitution` 0.5 of the finger's speed, capped at
+  `sliceDebrisSpeedLimit` 200; super-shields refuse, a shield pops first; `slicesPerFrame` 6 per claw), and the
+  prisms within `sliceIgniteRadius` 12 of the cut are **set burning** (budget `ignitesPerTick` per claw per tick), so
+  the burn still spreads and, with Mass 5, still steals. A sliced prism is gone, so its neighbours carry the fire.
+  `sliceEnabled` off restores burn-only. `sliceEvent` (FMOD) ships empty.
+- **Claw look: four rigid red whips per side** (2026-10-16: *"the brittlestar has a whip mode that I would
+  like to mimic, but have be more rigid and red with four on each side as the plasma claw… we are trying to
+  enhance the visuals of it. the cones look a little plain."*). The flat cone is gone
+  (`GrizzlyClawConeVisual` deleted); `GrizzlyClawWhips` draws four `BrittleStarCord`s per trigger, the Brittle
+  Star's own wave-equation whip (copied verbatim from Garrett's `cece/beautiful-knuth-j3atgk`, same path and
+  GUID, so the two branches merge clean), held at `whipRigidity` 0.8 so they lag a turn and shiver but stay
+  nearly straight. **A claw** (2026-10-16 / -17: *"the whips come out as an X shape… I want one convergence point and they spread
+  out slightly like claws"*): all four fingers root at the one muzzle point and fan FLAT across the hull's width,
+  the outer ones only `whipSpreadDegrees` 7° to each side, and every tip hooks down (`whipHook` 0.12 of the
+  length, drawn only) like a talon. Two earlier layouts read as an X from the chase camera: roots in a row
+  alternating up and down, then fingers spread evenly round the full cone (four rays round a point always read
+  as an X or a +). They taper from `whipWidth` 2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
+  rim that dims as the cell empties. Since 2026-10-17 the fingers are also what burns (above); the cone that used to sit under them is gone.
+- **Claw energy cells** (2026-10-16: *"give each of them a small energy cell that recharges when
+  its not being fired and empties 1.5 times faster for larger flames"*): one cell per claw. A full
+  cell lasts `cellSeconds` 3 s at the lightest pull and empties `largeFlameDrainMultiplier` 1.5×
+  faster at full pressure. It refills in `cellRechargeSeconds` 2 s from empty, starting
+  `cellRechargeDelay` 0.25 s after that claw stops. An empty cell cuts its claw out until you
+  pull again with charge in it. The claw's glow **dims as its cell empties**, which is the read for now.
+  `GrizzlyFlamethrowerActionExecutor.CellFill(side)` is there for a HUD bar.
+- **Release swipes** (2026-11-23: *"make the plasma claw activate with trigger pressure, also deciding the size,
+  and make it swipe across on release, so both claws can swipe down and across diagonally"*): the claw still comes
+  out the moment the trigger passes its 5% deadzone and live pressure still sizes it. Letting go no longer just
+  hides it: `ReleaseSpray` **slashes** it. Same day, second ask: *"I want each claw to be one side of an X when it
+  swipes, starting up and going down and across."* So each claw draws **one stroke of an X** along its diagonal
+  (`swipeDiagonalDegrees` 45: 0 = straight down, 90 = straight across): for the first `swipeWindupFraction` 0.25 of
+  `swipeSeconds` 0.3 s it **rises up and out** to half of `swipeArcDegrees` 90° above where it was held, then
+  **slashes down and across** the full 90°, past the centre line. LT runs upper-left to lower-right, RT upper-right
+  to lower-left, so releasing both draws the X. Both legs ease out, so the slash is fastest leaving the top. The
+  fingers slice and burn the whole way. The swipe is as big as the **hardest pull in the last**
+  `swipeSizeMemorySeconds` 0.25 s, because a trigger passes through every lighter pressure on its way out; ease off
+  and hold a lighter pull for longer than that and the swipe shrinks to match. Each swipe costs `swipeCellCost` 0.1 of
+  the claw's cell, and an empty cell does not swipe. A new pull or a weapon change cancels a swipe; `swipeEnabled` off
+  restores release-ends. Pads with no analog trigger, keyboard and mouse swipe at full size; the centred legacy
+  spray does not swipe.
+- **Sniper zoom on LT** (2026-10-17: *"make the pressure of LT control the zoom distance of the scope"*): while
+  the scope is up, LT's pull sets its field of view from `scopeWideFov` 30° (a feather) to `scopeNarrowFov` 5°
+  (a full squeeze), eased at `scopeZoomRate` 10/s (`GrizzlySniperShotActionSO`; the executor raises
+  `OnScopeFovChanged`, the HUD view sets the PiP camera). No analog trigger = the deepest zoom. RT's pressure
+  still means nothing.
+- **Sniper:** RT pressure is ignored. The scope is the HUD's **PiP** (picture-in-picture), not the
+  main view (design owner, 2026-10-16: "the scope is supposed to be a PiP"). Releasing LT closes
+  it, and the round flies on unwatched.
+- **Bombs off elsewhere:** leaving Explosives retires every live bomb silently, and the autopilot
+  bombs only in Explosives. Speed you carry is the last launch (1 s) or Rush (B).
+- **X / Q / middle mouse:** unbound on `Grizzly.prefab`.
 
 ## The gesture (per trigger)
 
@@ -167,12 +260,21 @@ under 0.08 it fizzles. The HUD shows it as an orange **Ammo** bar above the Ener
 
 ## The projectile's flight
 
-Muzzle speed **90 u/s** on top of the hull's own velocity (~140 u/s from a cruising Grizzly — well
-ahead of you, easy to track), each trigger yawed **3°** off the muzzle (LT left, RT right) — and it
+Muzzle speed **180 u/s** on top of the hull's own velocity (~240 u/s from a cruising Grizzly), each trigger yawed **3°** off the muzzle (LT left, RT right) — and it
 **holds that velocity** (`Projectile.Cruises`): no `cos(πt / 2T)` ease-out (vessel contract rule 34
 no longer applies to this round), no lifetime, no range limit. It pulls away from a cruising
-Grizzly at ~90 u/s for as long as nobody stops it; a boosting or bomb-launched Grizzly can still
-catch it. The natural moves: fire and pull to freeze it where you want it, or fire it at a rival —
+Grizzly at ~180 u/s for as long as nobody stops it.
+
+**Why 180 (2026-10-16, two playtests):** 250 was "a little too fast" to track, so it came down to
+180. A full blast's reach is 40 u since 2026-11-20, so a bomb frozen a quarter second out is
+already clear of it. The first playtest's reasoning, from when it went 90 → 250: at 90 u/s the bomb could never get clear of its own
+blast. A full bomb's blast has radius 100, and a bomb fired then frozen within a second sat 30-90
+u ahead, so every detonation swallowed the Grizzly. The launch is AWAY from the bomb, so a bomb
+still AHEAD of you throws you backwards. On screen that read as "the triggers explode at the
+ship". At 250 a bomb frozen half a second out is ~125 u ahead, outside even a full blast, so the
+loop the mode is built on works: fire ahead, freeze, fly past it, and release once it is behind
+you to be thrown forward. Speed is the dial here and the blast size is left alone, because a small
+bomb with a big blast is the design ask. The natural moves: fire and pull to freeze it where you want it, or fire it at a rival —
 it stops on their hull — and blow it when you choose.
 
 The gun still asks for a lifetime (`Gun.FireGun`'s `projectileTime`); the executor hands it a
@@ -183,10 +285,10 @@ config's old `projectileTime` (the 3 s "throw") is retired.
 
 | Control | Does |
 |---|---|
-| LT / right mouse / L-Shift | left bomb |
-| RT / left mouse / R-Shift | right bomb |
-| X / Q / middle mouse | charged cannon / sniper / claw (`GRIZZLY_CHARGED_CANNON.md`) |
-| Y / F | cycle weapon (RB / E until 2026-10-27) |
+| LT / right mouse / L-Shift | left bomb / left claw / sniper scope |
+| RT / left mouse / R-Shift | right bomb / right claw / sniper fire |
+| X / Q / middle mouse | nothing (every weapon is on the triggers) |
+| Y / F, and LB | cycle weapon (LB raises its own `LeftShoulderAction`, bound only by `Grizzly.prefab`'s gamepad override; RB / E is the Ark payload since 2026-10-27) |
 | A / Space, B / R | Dig In, Rush |
 
 Mouse buttons and the shift keys report no analog value, so every desktop bomb is full size.
@@ -202,8 +304,8 @@ button reaches the shared bindings in the table above.
 |---|---|---|
 | Dig In card / Rush card | `Button1Action` (A) / `Button2Action` (B) | Dig In, Rush |
 | Weapon Systems card | `Button4Action` (Y) | cycle weapon |
-| Charged Cannon card (held) | `Button3Action` (X) | charged cannon / sniper / claw |
-| **Bomb** buttons, two (held, primary) | `LeftStickAction` (LT) / `RightStickAction` (RT) | the left and right bomb |
+| Charged Cannon card (held) | `Button3Action` (X) | nothing: X is unbound (every weapon is on the triggers), so the touch profile drops this card |
+| **Bomb** buttons, two (held, primary) | `LeftStickAction` (LT) / `RightStickAction` (RT) | the left and right bomb; they follow the weapon like the triggers (claws, scope / fire) |
 
 A bomb button's press and release are the trigger's, so the whole cycle runs from it: press arms,
 release fires, the next press freezes the flying bomb, its release detonates. A phone writes no
@@ -263,7 +365,7 @@ Gated on the PILOT, so the menu's lava-lamp Grizzly and released companions bomb
 |---|---|---|
 | `pressureForMinBomb` / `pressureForMaxBomb` / `pressureExponent` | 0.1 / 0.95 / 1 | Pressure window → size 0..1 |
 | `ammoIndex` / `minAmmoCost` / `maxAmmoCost` | 1 / 0.08 / 0.35 | Ammo per tap / full squeeze |
-| `projectileSpeed` | 90 | Muzzle speed over the hull's; the bomb then cruises at that velocity, unlimited range |
+| `projectileSpeed` | 180 | Muzzle speed over the hull's; the bomb then cruises at that velocity, unlimited range |
 | `minProjectileScale` / `maxProjectileScale` | 2.5 / 5 | Bomb diameter — small on purpose |
 | `sideYawDegrees` | 3 | LT left / RT right |
 | `minBlastScale` / `maxBlastScale` | 50 / 200 | Blast diameter → reach (½) and launch strength |
@@ -316,8 +418,14 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
    it is knocked away.
 9. **Pressure.** Feather LT: a tiny bomb, small dip, a 25 u blast. Full squeeze: a 100 u blast.
 10. **Turn end** with a bomb cruising or frozen: it disappears with no blast.
-11. **The cannon is unchanged**: X fires the cannon's own shell, which still eases to rest, still
-    blows on impact and still launches along the nose.
+11. **X does nothing** in any mode (2026-10-16).
+11b. **Claw:** LB to PLASMA CLAW. Feather LT: a short, narrow claw from the left front; squeeze: the full
+    55 u claw of four red talons. RT the same on the right; the two splay apart. Enemy prisms the fingers touch burn; nothing between or beyond them does. Hold
+    one: its whips dim and it cuts out after ~2-3 s; let go and it refills in ~2 s.
+11c. **Sniper:** LB to SNIPER. Hold LT: the scope PiP opens. RT: a round; the PiP rides it
+    while LT is held; let go and the PiP closes. RT again within 3 s does nothing.
+11d. **Bombs off:** fire a bomb, switch to the claw: the bomb vanishes without a blast; the
+    triggers spray, they do not bomb.
 12. **AI** — an AI Grizzly fires, freezes, flies past and blows its bombs, lunging forward each
     time, and leaves none flying.
 13. **MPPM two clients** — each peer sees the other's bombs in their two shades, cruise, freeze

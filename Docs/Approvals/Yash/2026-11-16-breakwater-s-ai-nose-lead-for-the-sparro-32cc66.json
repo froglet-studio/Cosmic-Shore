@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-16-breakwater-s-ai-nose-lead-for-the-sparro-32cc66",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-16T22:16:55+00:00",
+  "area": "the Sparrow's Breakwater AI",
+  "summary": "Breakwater's AI nose lead for the Sparrow 2.0 -> 1.0: at 2.0 it stalled in 6 of 24 headless races (spinning at base speed); at 1.0 it finished 24 of 24 and was faster at every intensity",
+  "why": "Regatta flywheel loop step 3: train the slow AIs in their own Time games (Garrett); measured in the real game in Amoebius",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "b0cb93ba0",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Sparrow"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

@@ -28,9 +28,11 @@ changed, and what is still an estimate. The targets themselves live where they a
 | Switchback | gates (1 lap; more gates = longer course) | 20 | **26** | I1 58-75 s -> ~85 s | measured, 15 finishes |
 | Thresher Time | laps x 8 gates | 3 laps = 24 | **2 laps = 16** | 127-180 s -> ~75-125 s | measured, 2 finishes |
 | Waystation | rings (dealt in clusters; more = longer) | 24 | **15** | 205 s -> ~90-130 s | measured, 1 pilot |
+| Waystation since 2026-11-01 (Drop Towers; Lantern Towers 2026-11-11) | 5 CLUSTERS (`waystationClusterTarget`); the finish line is every ring laid, 18-41 | 15 rings | **5 clusters** | a lantern reader 59 / 86 / 105 / 127 s at I1-I4 (offline sweep; I3 and I4 over target, as before) | modelled (`waystation_tower_course.py --sweep`), comeback 0.4 |
 | Grizzly Time | laps x 8 gates | 3 laps = 24 | **2 laps = 16** | unfinishable today (4 gates in 268 s) | see §4 |
+| Brittle Star Time (2026-11-16, the Shift Line) | laps x 8 gates, laps per rung (`BrittleStarTimeCourse.LapsByIntensity`); the authored 16 is I1's and I2-I4 scale from it | 2 laps = 16 on every rung | **2 / 3 / 3 / 4 laps = 16 / 24 / 24 / 32** | recorded 175 s (I1) and 135 s (I4) on the pre-recut course; a reading pilot in the model 49 / 54 / 41 / 48 s, ~79 / 86 / 66 / 76 s for a person (x1.6) | offline model (`brittle_star_time_course_harness --race`), not flown |
 | Headlong | laps x 8 gates | 3 laps = 24 | **5 laps = 40** | ~40-55 s -> ~70-90 s | estimate (Regatta transfer) |
-| Redline | laps x 8 gates | 3 laps = 24 | **5 laps = 40** | ~40-75 s -> ~70-120 s | estimate (Regatta transfer) |
+| Redline | laps x 8 gates | 3 laps = 24 | **8 laps = 64** (5 = 40 from 2026-10-26; 8 since 2026-11-11, when the card lit Soar from the gun) | ~38-89 s for the model's ideal pilot, ~50-115 s for a person (`manta_redline_sim.py --reading`, REDLINE.md §0.1) | offline model, not flown |
 | SkimRace | crystals = laps x crystals a lap (`lapsPerIntensity`) | [3,3,2,2] -> 24/30/56/52 | **[3,3,1,1] -> 24/30/28/26** | I3 ~200 s, I4 ~145 s -> ~75-100 s | AI benchmark + one I3 race (AI won at 199 s) |
 | Scurry (Crystal Capture) | crystals | 20 | **14** | ~100-140 s -> ~90 s | estimate; 9 runs left unfinished at 28-97 s |
 | Joust | jousts | 3 | **2** | not reached by 144 s | estimate |

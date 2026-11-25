@@ -57,3 +57,59 @@ MonoBehaviour:
   markerCalmPulseHz: 0.9
   markerCriticalPulseHz: 5
   markerFadeSeconds: 0.22
+  skimChargeEvent:
+    Guid:
+      Data1: 1800078172
+      Data2: 1135187538
+      Data3: 470108834
+      Data4: 2131099498
+    Path: event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+  bombPlantedEvent:
+    Guid:
+      Data1: 310883003
+      Data2: 1266496358
+      Data3: -193662310
+      Data4: -709421328
+    Path: event:/SFX/Oneshots/Gameplay sfx/Track collide
+  kabloomEvent:
+    Guid:
+      Data1: -159591309
+      Data2: 1318821736
+      Data3: -1568531009
+      Data4: 870809827
+    Path: event:/SFX/Oneshots/Gameplay sfx/Mine Explode
+  cascadeBloomEvent:
+    Guid:
+      Data1: 1232779908
+      Data2: 1241063617
+      Data3: 1702576795
+      Data4: -1248198021
+    Path: event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
+  bombArmedEvent:
+    Guid:
+      Data1: 724249746
+      Data2: 1213064519
+      Data3: 1634220168
+      Data4: -897979471
+    Path: event:/SFX/Oneshots/Menu/Option Click
+  fuseExpiredEvent:
+    Guid:
+      Data1: -1103610945
+      Data2: 1108376032
+      Data3: -1187393100
+      Data4: -416318210
+    Path: event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+  prismImpactDetonationEvent:
+    Guid:
+      Data1: -1058858236
+      Data2: 1166390557
+      Data3: -939827049
+      Data4: 1519737688
+    Path: event:/SFX/Oneshots/Gameplay sfx/Vessel impact
+  decoySprungEvent:
+    Guid:
+      Data1: -2144686006
+      Data2: 1203677490
+      Data3: 1188687745
+      Data4: -1802949205
+    Path: event:/SFX/Oneshots/Gameplay sfx/Massshark spawn

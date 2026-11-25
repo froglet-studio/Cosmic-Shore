@@ -64,7 +64,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the balance change rest on plateaued AIs scored on petals taken, in mirror matches first and Broadside second? If it is tuned by feel, it is off the plan.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-05",
@@ -74,7 +74,7 @@
    "rule": "The AIs learn from recorded human play on their own: every editor race is recorded and sent automatically and the learning sweep relearns the AIs from it; no person is ever asked to run a learner, report or test command.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 201
+    "line": 260
    },
    "kind": "LOCKED",
    "area": "ai",
@@ -154,7 +154,7 @@
    "rule": "An AI is trained in its own vessel's minigames (Time first), never in Regatta or any arena; arena play is rebuilt later from those skills.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 207
+    "line": 266
    },
    "kind": "quote",
    "area": "ai",
@@ -202,7 +202,7 @@
    "rule": "Every recorded flight names its pilot (human, mixed, AI or trainer) and only a person's flights reach a learner; the AI never learns from a flight the AI or the trainer flew.",
    "source": {
     "file": "Docs/AI_SYSTEM/AUTO_LEARNING.md",
-    "line": 147
+    "line": 160
    },
    "kind": "decision",
    "area": "ai",
@@ -215,32 +215,16 @@
    "owner": "Garrett",
    "date": "2026-11-02",
    "words": "AI training serves one plan (LOCKED rule, Garrett, 2026-11-02) ... one universal AI per vessel per element, trained on that element's arcade game and scored on I1-I4 together ... No AI is trained inside an arena game.",
-   "rule": "Every AI effort serves the one AI plan: one universal AI per vessel per element, trained on that element's arcade game and scored on I1-I4 together, with the pilot only biasing its choices; the ladder is arcade intensities, then the arena balanced against those fixed AIs, then voyages; no AI is trained inside an arena game.",
+   "rule": "Every AI effort serves one plan: one universal AI per vessel per element, trained in that element's arcade game over I1-I4 with the pilot only biasing its choices; then the element's arena balanced against those fixed AIs; then voyages, where the squad seat's cards (vessel, element, pilot) choose the AI. No AI is trained inside an arena game.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 211
+    "line": 275
    },
    "kind": "LOCKED",
    "area": "ai",
    "retired": "",
    "test": "Name the ai_plan.json step the work serves and check the AI is per vessel per element, trained in that element's arcade game; a per-mode or arena-trained AI fails.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-ai-15",
-   "owner": "Garrett",
-   "date": "2026-11-02",
-   "words": "We need our planning and learning to be working towards an AI training system that produces all the AI capabilities we need. The culminating experience is voyages. The AI you are playing against or with will be determined by the choices during squad configuration: vessel, element, pilot, artifact.",
-   "rule": "Every AI effort serves one plan: one universal AI per vessel per element, trained in that element's arcade game over I1-I4, then the element's arena balanced against those fixed AIs, then voyages, where the squad seat's cards (vessel, element, pilot) choose the AI.",
-   "source": {
-    "file": "Docs/AI_SYSTEM/AI_PLAN.md",
-    "line": 14
-   },
-   "kind": "LOCKED",
-   "area": "ai",
-   "retired": "the three drive searches trained inside Regatta and the two one-intensity Squirrel searches (ai_plan.json retired_jobs)",
-   "test": "Does the AI work name the plan step it serves (ai_plan.json), train in the element's arcade game and not in an arena, and produce one genome scored over all four intensities?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-16",
@@ -256,7 +240,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the pilot or mode design alter a vessel's abilities, numbers or kit? If yes it is a vessel change for the vessel's owner, not a pilot or mode feature.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-17",
@@ -272,7 +256,7 @@
    "area": "ai",
    "retired": "the two one-intensity Squirrel searches",
    "test": "Does the AI work produce or promote a per-intensity or per-mode file as the answer? If yes it is a seed, not the deliverable.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-18",
@@ -288,7 +272,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does the design train, tune or learn an AI inside an arena game, or balance an arena against a still-moving AI? Either is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-19",
@@ -304,7 +288,7 @@
    "area": "ai",
    "retired": "",
    "test": "Does a balance change touch a vessel's elemental baseline before the arena's course and features were searched? If yes it is out of order.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-ai-20",
@@ -314,7 +298,7 @@
    "rule": "A vessel joins an arena card (Regatta) only after its AI is good in its own Time game at I1-I4; the arena is designed from those AI skills, never the other way round.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 524
+    "line": 619
    },
    "kind": "quote",
    "area": "ai",
@@ -378,7 +362,7 @@
    "rule": "A seat's special view (the Pistol's side view) is the real game drawn by the real renderer with real meshes and materials, never a stylised stand-in.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 5146
+    "line": 6964
    },
    "kind": "quote",
    "area": "camera",
@@ -410,7 +394,7 @@
    "rule": "A scope is a picture-in-picture, never a zoom of the whole gameplay camera.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3815
+    "line": 5633
    },
    "kind": "decision",
    "area": "camera",
@@ -554,7 +538,7 @@
    "rule": "A dying limb condenses into a cytoplasm shard on its own fade clock (one limb in five; the rest evaporate), so nothing pops and no shard is ever removed to make room.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12164
+    "line": 12249
    },
    "kind": "quote",
    "area": "ecology",
@@ -618,7 +602,7 @@
    "rule": "A withering spindle may condense into a cytoplasm shard on its own fade clock (every fifth limb, after Garrett toned it down 5x the same day); shards carry no mass and no collider, and a shard is never culled to make room.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 266
+    "line": 277
    },
    "kind": "quote",
    "area": "ecology",
@@ -634,7 +618,7 @@
    "rule": "A creature changes domain only through the Jacks' net steal, and is born in a player's colour only through the Jacks' omni crystal; its offspring inherit that colour and nothing else about it changes (it eats, breeds, starves and dies by its own rules).",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 71
+    "line": 77
    },
    "kind": "quote",
    "area": "ecology",
@@ -650,7 +634,7 @@
    "rule": "Every creature is scaled to the one crystal size keeping its designed heart:body proportion; body-measured lengths (spacing, reach, bite) scale with it, speeds stay in world units.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12296
+    "line": 12381
    },
    "kind": "quote",
    "area": "ecology",
@@ -666,7 +650,7 @@
    "rule": "A Mass creature has size: its body holds the Mass heart's full segment swing clear of every shield, so the crystal's columns never clip the body.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12420
+    "line": 12505
    },
    "kind": "quote",
    "area": "ecology",
@@ -682,7 +666,7 @@
    "rule": "A Space creature is scaled whole beyond its Mass sibling (by the lattice's own Space:Mass reach) and eroded thinner where it is thickest, so Space takes room: more spread, more reach, a spindlier body.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12472
+    "line": 12557
    },
    "kind": "quote",
    "area": "ecology",
@@ -698,7 +682,7 @@
    "rule": "An elemental form reshapes only a creature's own body skins; the heart crystal is never stretched, eroded or scaled with the body.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12493
+    "line": 12578
    },
    "kind": "quote",
    "area": "ecology",
@@ -714,7 +698,7 @@
    "rule": "Mass is the armoured element (its shield carries its volume, hearts seated clear), Charge makes every prism of its lifeform a danger prism, and no element has chunky prisms.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12540
+    "line": 12634
    },
    "kind": "quote",
    "area": "ecology",
@@ -730,7 +714,7 @@
    "rule": "Space always out-spans Mass with significantly less volume (spindlier, thinner at its thickest), and Mass's shielding is what adds volume; a Mass form never out-spans its Space sibling.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12547
+    "line": 12641
    },
    "kind": "quote",
    "area": "ecology",
@@ -746,7 +730,7 @@
    "rule": "A vessel's own construction (the Serpent's wall) is never also a plant: the Wall flora is retired so the wall reads as the vessel's, not as ecology.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12593
+    "line": 12687
    },
    "kind": "quote",
    "area": "ecology",
@@ -762,7 +746,7 @@
    "rule": "Every lifeform, the data-driven ones (swarms, builder colonies, substrates) included, expresses all four elements by the one fleet law (heart, armour, danger, span), complete and consistent.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12732
+    "line": 12840
    },
    "kind": "quote",
    "area": "ecology",
@@ -775,10 +759,10 @@
    "owner": "the designer (unnamed in the source)",
    "date": "2026-10-28",
    "words": "\"the omnicrystal on board the ark powers the prism creation. arks are the only vessel that can contain and harvest the power of an omnicrystal instead of morphing it into something else\", \"regeneration should just be fixed rate\", and \"the omnicrystal is always just one size\"",
-   "rule": "Mass may be made in one place only: an Ark's reactor regrows the Ark's own empty hull slots, one prism a beat at a fixed rate, never past its full hull; every other vessel morphs an omni crystal into its own effect; the omni crystal is always one size; a fallen Ark never regrows.",
+   "rule": "Mass may be made in one place only: an Ark's reactor regrowing its own hull (the Ark rule, P-vessel-23); every other vessel morphs an omni crystal into its own effect.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 142
+    "line": 154
    },
    "kind": "quote",
    "area": "ecology",
@@ -794,7 +778,7 @@
    "rule": "On plants and creatures alike Mass is armoured (its prisms shielded and re-armoured for life, the shield 3x the prism), Charge makes every prism danger and never shields, every element keeps its authored danger, and Space always out-spans Mass (greater span, less volume, more spindly).",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 919
+    "line": 930
    },
    "kind": "quote",
    "area": "ecology",
@@ -810,7 +794,7 @@
    "rule": "A pollinator is a third fauna role beside herbivore and predator: it produces (hastens plants, builds comb), takes a productive flora's slot and budget, and is prey like every non-predator.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12796
+    "line": 12904
    },
    "kind": "quote",
    "area": "ecology",
@@ -842,7 +826,7 @@
    "rule": "Pollination is mutualism across all three domains: a bee hastens plants of any domain and builds its comb from all three; it is not a team fight.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12849
+    "line": 12957
    },
    "kind": "quote",
    "area": "ecology",
@@ -858,7 +842,7 @@
    "rule": "A creature is a celestial Etherion lifeform, never an Earth animal: a wireframe spindle body Space can thin, health prisms round it, a long skinny danger prism as its stinger, an Etherion heart that leads, and no sense of up.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12863
+    "line": 12971
    },
    "kind": "quote",
    "area": "ecology",
@@ -874,7 +858,7 @@
    "rule": "A creature's danger prism (stinger, tooth, spine) is an ordinary prism: it thins on Space with the rest and stays in the skeleton like every other body prism; no special case.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12894
+    "line": 13002
    },
    "kind": "quote",
    "area": "ecology",
@@ -922,7 +906,7 @@
    "rule": "Every creature in a cell wears the cell's one fauna colour; taming or leashing never recolours it, because a squad is a leash, not a team.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 11737
+    "line": 11822
    },
    "kind": "LOCKED",
    "area": "ecology",
@@ -1066,7 +1050,7 @@
    "rule": "Only a sort-model swarm with MultiDomain on may grow a second colour, by lineage drift in tissue nobody owns, never by what it eats; no other species gets lineages.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 93
+    "line": 104
    },
    "kind": "decision",
    "area": "ecology",
@@ -1082,7 +1066,7 @@
    "rule": "A creature dies when its last body prism is destroyed, through the one sealed death path (crystal drop and wither included); no override may let a creature survive losing its whole body.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 106
+    "line": 117
    },
    "kind": "decision",
    "area": "ecology",
@@ -1098,7 +1082,7 @@
    "rule": "A starving creature withers from its extremities inward with the heart last and collectable only at the end; a jousted lifeform unravels from the freed heart outward and the jouster auto-collects it; both leave the body prisms standing as grazeable skeleton; a devoured body suctions into the mouth.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 114
+    "line": 125
    },
    "kind": "decision",
    "area": "ecology",
@@ -1114,7 +1098,7 @@
    "rule": "In growth, under grazing and through every death, every standing part of a lifeform connects to its crystal through standing spindles; the crystal joust is the one sanctioned exception.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 122
+    "line": 133
    },
    "kind": "decision",
    "area": "ecology",
@@ -1130,7 +1114,7 @@
    "rule": "Everything about a cell (phase, dominant domain, prey, HUD) keys off per-domain laid volume, never prism count (count is only a frenzy/perf backstop); a change that moves laid volume re-measures the cell's phase ladder.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 273
+    "line": 284
    },
    "kind": "decision",
    "area": "ecology",
@@ -1146,7 +1130,7 @@
    "rule": "In a nucleus cell, control is the volume laid inside the nucleus and the outside is contested feeding ground that never sways control; a mode that borrows the nucleus as play geometry declares it is not a control zone rather than bending the rule.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 275
+    "line": 286
    },
    "kind": "decision",
    "area": "ecology",
@@ -1162,7 +1146,7 @@
    "rule": "Every lifeform carries one elemental heart and drops it on death; in a colony every member is a lifeform with its own heart and only the root is heartless.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 296
+    "line": 307
    },
    "kind": "decision",
    "area": "ecology",
@@ -1178,7 +1162,7 @@
    "rule": "Plants are a population: a seed floor, a per-cell cap resolved on the Cell, and reproduction funded by the prisms a plant grew; spawners only seed, and a lowered cap stops producing and never culls.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 387
+    "line": 398
    },
    "kind": "decision",
    "area": "ecology",
@@ -1194,7 +1178,7 @@
    "rule": "A lattice plant grows on the exact tiling its surface carries, never on a fitted Euclidean grid; a function-shaped surface with no tiling addresses on the sphere instead.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 594
+    "line": 605
    },
    "kind": "decision",
    "area": "ecology",
@@ -1210,7 +1194,7 @@
    "rule": "A claimed nucleus is never consumed by fauna, so a cell taken stays taken when you leave; only the exterior is contested churn.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 949
+    "line": 960
    },
    "kind": "decision",
    "area": "ecology",
@@ -1226,7 +1210,7 @@
    "rule": "Tempo is Time's identity: a Time plant reproduces fastest (1.25x against 0.8x), and the rate is resolved from the element at spawn, never authored per config.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 954
+    "line": 965
    },
    "kind": "decision",
    "area": "ecology",
@@ -1242,7 +1226,7 @@
    "rule": "A species authors one leaf and the four elements spend it four ways (Charge danger, Mass armoured at x0.64 under Space, Space the longest aspect, Time the fastest clock); the four are a redistribution averaging exactly 1, never an inflation, so no cell's volume ladder moves.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1159
+    "line": 1170
    },
    "kind": "decision",
    "area": "ecology",
@@ -1258,7 +1242,7 @@
    "rule": "Fitness is survival itself (starvation, predation, reproduction cost), never a designer-scored function; this is the line between artificial life and an optimizer.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1197
+    "line": 1208
    },
    "kind": "decision",
    "area": "ecology",
@@ -1274,7 +1258,7 @@
    "rule": "No per-individual acquired growth of any kind: feeding pays out as population (a reset starvation clock, a birth, a growth quota), never as a bigger individual, and offspring inherit only the element.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1200
+    "line": 1211
    },
    "kind": "decision",
    "area": "ecology",
@@ -1290,7 +1274,7 @@
    "rule": "A world swap suctions the old cell out and blooms the new one in only because a player flew into a station and asked; nothing swaps or resets a world on its own.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1278
+    "line": 1289
    },
    "kind": "decision",
    "area": "ecology",
@@ -1303,7 +1287,7 @@
    "owner": "Garrett",
    "date": "2026-10-17",
    "words": "direct abilities should only steal or strip (for recollection), but if a player produces danger prisms that is a way for them to remove crystals from the environment.",
-   "rule": "A direct ability only steals or strips petals, which stay recollectable in the world; only a danger prism burns crystals out of the match, and control theft is never an economy form.",
+   "rule": "A direct ability only steals or strips petals, which stay recollectable in the world; only a danger prism burns crystals out of the match.",
    "source": {
     "file": "Docs/ELEMENTAL_ECONOMY.md",
     "line": 555
@@ -1312,7 +1296,7 @@
    "area": "economy",
    "retired": "the danger-prism control mute on the Sparrow and Grizzly (EventOnVesselSlowedByRhinoDangerPrism, deleted 2026-10-17)",
    "test": "Does the ability's hit do anything to a rival other than steal or strip petals, or burn them through a danger prism? If yes it is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-02",
@@ -1322,13 +1306,13 @@
    "rule": "Every elemental crystal is one size (the Ark converter's) and grants exactly one petal; the omni crystal is one size too.",
    "source": {
     "file": "Docs/ECOSYSTEM.md",
-    "line": 12227
+    "line": 12312
    },
    "kind": "quote",
    "area": "economy",
    "retired": "variable crystal sizes and multi-petal crystals",
    "test": "Does the design spawn a crystal of another size or worth? If yes it breaks one size, one petal.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-03",
@@ -1344,7 +1328,7 @@
    "area": "economy",
    "retired": "",
    "test": "Is every buff/debuff in the design an element level change (petals)? A stat modifier outside the elementals fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-04",
@@ -1360,7 +1344,7 @@
    "area": "economy",
    "retired": "",
    "test": "For every petal the design moves, say where it came from and where it goes; a permanent buff or a petal from nowhere fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-economy-05",
@@ -1370,7 +1354,7 @@
    "rule": "A crystal pickup is one shared 0.44 s beat from the one config, never a per-prefab duration; the reward and the scoring event land at contact, and no objective waits on a flourish.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 359
+    "line": 370
    },
    "kind": "decision",
    "area": "economy",
@@ -1434,7 +1418,7 @@
    "rule": "First-time guidance is given by a captain or pilot character who enters from the side and speaks to the player, with a leader line to the one lit control; not a bare caption strip.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 4716
+    "line": 4795
    },
    "kind": "quote",
    "area": "ftue",
@@ -1552,7 +1536,7 @@
    "area": "modes",
    "retired": "",
    "test": "Does a Regatta balance change come from the course search against trained AIs before any elemental tuning, and is the tuning the smallest that closes the gap?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-02",
@@ -1568,7 +1552,7 @@
    "area": "modes",
    "retired": "",
    "test": "Does the mode's target (score, laps, gates) put an experienced run near 90 s at intensity 1?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-03",
@@ -1584,23 +1568,7 @@
    "area": "modes",
    "retired": "",
    "test": "Score the Time game on the six dimensions: is its floor the thing the design raises, and is the hull's own speed verb the way to win?",
-   "status": "drafted"
-  },
-  {
-   "id": "P-modes-04",
-   "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "go ahead and fix tandava etc.",
-   "rule": "A mode's world is scaled round the fleet-law creature body (Tandava inherits the Swarm's scaled body; its reef, cell and meals grow to fit), never the creature pinned back to fit the mode.",
-   "source": {
-    "file": "Docs/ECOSYSTEM.md",
-    "line": 12339
-   },
-   "kind": "quote",
-   "area": "modes",
-   "retired": "Tandava's pinned research body",
-   "test": "Does the mode override a lifeform's body, heart gap or element scale to fit its arena? If yes, scale the arena instead.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-modes-05",
@@ -1626,7 +1594,7 @@
    "rule": "Every hull has its own Time race, authored to be very fun around what that hull alone does well.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 964
+    "line": 1087
    },
    "kind": "quote",
    "area": "modes",
@@ -1642,7 +1610,7 @@
    "rule": "Serpentine's gates are single rings closed by mode-laid shapes with a gold core, ringed by regrowing debris that feeds Seed Walls; the mode is dirty through its track and AI while the vessel is never changed.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 978
+    "line": 1101
    },
    "kind": "quote",
    "area": "modes",
@@ -1658,7 +1626,7 @@
    "rule": "A mode makes itself interesting with its track, environment and AI only; it never rations, vetoes, rescales, adds contact effects to, or edits what a vessel's abilities do; a kit change is a vessel change for the vessel's owner.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 241
+    "line": 300
    },
    "kind": "LOCKED",
    "area": "modes",
@@ -1674,7 +1642,7 @@
    "rule": "The Angler's Time race is about painting prism clusters and dashing to them: two neutral clusters per leg on the ring's own axis, the second dash through the ring, the ladder being where the paint is.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 988
+    "line": 1111
    },
    "kind": "quote",
    "area": "modes",
@@ -1690,7 +1658,7 @@
    "rule": "A vessel's Time game teaches its Time ability alone: introduced gently at I1 and intense at I4, with no corner or gate that needs another element.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 630
+    "line": 724
    },
    "kind": "quote",
    "area": "modes",
@@ -1706,7 +1674,7 @@
    "rule": "Brittle Star Time asks one movement question per intensity (I1 Gearbox, I2 Feather slalom, I3 Coast-in hairpins, I4 Corkscrew), 8 rings x 2 laps on every rung.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 972
+    "line": 1095
    },
    "kind": "quote",
    "area": "modes",
@@ -1770,7 +1738,7 @@
    "rule": "A mode anchors its points of interest on what the platform already grows (living flora hearts in FloraHeartRegistry) before authoring sockets of its own, so the set is alive, grazeable and joustable.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 383
+    "line": 394
    },
    "kind": "decision",
    "area": "modes",
@@ -1786,7 +1754,7 @@
    "rule": "A mode that needs ecology wires and configures the standard Cell (membrane, cytoplasm, nucleus, spawn profile, phase thresholds in volume) and owns only its gameplay-bearing structure; no mode-local spawner, culler, edge cage or plankton, and never a hand-placed membrane, nucleus or cytoplasm.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1229
+    "line": 1240
    },
    "kind": "decision",
    "area": "modes",
@@ -1802,7 +1770,7 @@
    "rule": "A card's Vessels list alone decides which hulls a mode offers; the hangar's purchase lock gates only the hangar.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1120
+    "line": 1243
    },
    "kind": "decision",
    "area": "modes",
@@ -1818,7 +1786,7 @@
    "rule": "Combat points price the verb (a round 1, a contact strike 8, an area debuff 12, a rocket 10/20/30), never the hull, so a card can gain a hull without the scoring rule learning anything.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1157
+    "line": 1280
    },
    "kind": "decision",
    "area": "modes",
@@ -1834,7 +1802,7 @@
    "rule": "A mode balances through what it owns (hit windows, prices, cooldowns), never through vessel speed, which a card cannot touch.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1186
+    "line": 1309
    },
    "kind": "decision",
    "area": "modes",
@@ -1850,7 +1818,7 @@
    "rule": "A teleport never threads a ring or gate; a step containing one counts no gate, in every mode.",
    "source": {
     "file": "Docs/claude/GAME_MODES_AND_CONTROLLERS.md",
-    "line": 1281
+    "line": 1404
    },
    "kind": "decision",
    "area": "modes",
@@ -1882,7 +1850,7 @@
    "rule": "The party lobby draws the connected molecule with the host at its centre and grows with the party beyond four; the blue background stays toned down.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5124
+    "line": 5203
    },
    "kind": "quote",
    "area": "multiplayer",
@@ -1946,7 +1914,7 @@
    "rule": "Solo play is the multiplayer pipeline with AI backfill; a mode never ships separate single-player and multiplayer scenes.",
    "source": {
     "file": "Docs/claude/MULTIPLAYER_AND_SOCIAL.md",
-    "line": 847
+    "line": 897
    },
    "kind": "decision",
    "area": "multiplayer",
@@ -1994,7 +1962,7 @@
    "rule": "Controls for a 2D seat are designed for touch first, then gamepad, then mouse and keyboard.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3340
+    "line": 5157
    },
    "kind": "decision",
    "area": "other",
@@ -2048,22 +2016,6 @@
    "area": "other",
    "retired": "",
    "test": "Does the replay draw the real scene with every object, or a stand-in?",
-   "status": "drafted"
-  },
-  {
-   "id": "P-other-07",
-   "owner": "Yash",
-   "date": "2026-10-29",
-   "words": "the Meerkat's wormhole is now a Soliton Tunnel, an environmental fundamental any vessel or scene can use",
-   "rule": "The soliton tunnel is an environmental fundamental any vessel or scene can use, not a Meerkat-only ability effect.",
-   "source": {
-    "file": "Docs/Shaders/WORMHOLE_SHADERS.md",
-    "line": 926
-   },
-   "kind": "decision",
-   "area": "other",
-   "retired": "",
-   "test": "Does a new tunnel, portal or ride reuse the Soliton Tunnel rather than a bespoke one?",
    "status": "drafted"
   },
   {
@@ -2314,7 +2266,7 @@
    "rule": "No generated prism interpenetrates another; it is held at authoring time inside each generator by sizing prisms flush with their neighbours (never by removing prisms and never by a runtime pass).",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1291
+    "line": 1302
    },
    "kind": "quote",
    "area": "prisms",
@@ -2506,7 +2458,7 @@
    "rule": "A mover that touches a prism it cannot affect still acknowledges the hit: own armoured mass lights, super-shielded mass jiggles.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 1302
+    "line": 1313
    },
    "kind": "decision",
    "area": "prisms",
@@ -2618,7 +2570,7 @@
    "rule": "A gunner seat is two buttons under the right thumb with aim on the left, and no vessel gets a UI-breaking text row unique to itself.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3749
+    "line": 5567
    },
    "kind": "quote",
    "area": "ui",
@@ -2666,7 +2618,7 @@
    "rule": "Ability icons are angular, line-weight and monochrome, and may use the hull's own silhouette where it reads (the Dolphin's jaw on its Space icon).",
    "source": {
     "file": "Docs/Icons/ABILITY_ICON_SKILL_PLAN.md",
-    "line": 445
+    "line": 530
    },
    "kind": "decision",
    "area": "ui",
@@ -2682,7 +2634,7 @@
    "rule": "The element flower above the ability row owns the element; an ability icon never repeats its element's mark.",
    "source": {
     "file": "Docs/Icons/ABILITY_ICON_SKILL_PLAN.md",
-    "line": 446
+    "line": 531
    },
    "kind": "decision",
    "area": "ui",
@@ -2794,7 +2746,7 @@
    "rule": "The friends drawer never overlaps a gameplay card: it cannot open over an open game window, on the arcade screen it pushes the cards aside, and on every other screen it slides over without moving content.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3104
+    "line": 3113
    },
    "kind": "quote",
    "area": "ui",
@@ -2858,7 +2810,7 @@
    "rule": "The configure screen is quiet: preview left with its description below, controls top right, intensity, team and AI below them, one START (no hold-to-launch, no invite button) and no filler text.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3278
+    "line": 3287
    },
    "kind": "quote",
    "area": "ui",
@@ -2874,7 +2826,7 @@
    "rule": "One configure card (vessel, domain, AI, intensity) serves Arcade, Arena and Voyage; a mode never gets its own configuration layout.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3437
+    "line": 3446
    },
    "kind": "quote",
    "area": "ui",
@@ -2890,7 +2842,7 @@
    "rule": "An element glyph means an element (an ability, a petal, an element bar) and nothing else: never people, a social feature or decoration.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3486
+    "line": 3495
    },
    "kind": "quote",
    "area": "ui",
@@ -2906,7 +2858,7 @@
    "rule": "In the Hangar the vessel demonstrates an ability only when its card is clicked and the components stay small; the top strip runs Codex (locked), Hangar, Home, Ark, Port (locked) in that order.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 3630
+    "line": 3639
    },
    "kind": "quote",
    "area": "ui",
@@ -2938,7 +2890,7 @@
    "rule": "A mode preview's full screen is a tray that extends the play area and hides the right-side UI, never a true full-screen takeover.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5102
+    "line": 5181
    },
    "kind": "quote",
    "area": "ui",
@@ -2986,7 +2938,7 @@
    "rule": "The Voyage window has four tabs with Voyage first; the episode saga and the quest tracker are separate tabs, episodes shown coming soon or locked, with the sea lines behind it.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5405
+    "line": 5488
    },
    "kind": "quote",
    "area": "ui",
@@ -3002,7 +2954,7 @@
    "rule": "Element marks everywhere in the menus (control panels, cards) use the Codex's element shapes, never the HUD petal sprite.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 251
+    "line": 1838
    },
    "kind": "quote",
    "area": "ui",
@@ -3018,7 +2970,7 @@
    "rule": "Every surface Froglet makes (game UI, Frogma boards, artifacts and diagrams, decks, the website, the Fleet Codex, every studio) wears the one Froglet style guide and loads its tokens instead of typing colours.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 55
+    "line": 84
    },
    "kind": "quote",
    "area": "ui",
@@ -3034,7 +2986,7 @@
    "rule": "Each of the six colour families carries exactly one meaning: Lime is the call to action, Jade is a claimable choice / selection / focus, Ruby is no way back (Ready); a domain is one accent.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 57
+    "line": 86
    },
    "kind": "quote",
    "area": "ui",
@@ -3050,7 +3002,7 @@
    "rule": "Colour sets (themes) are changed from the Profile and are quest unlocks (all unlocked for now); applying one plays the cell-change loading screen.",
    "source": {
     "file": "Docs/MENU_REDESIGN_B.md",
-    "line": 5760
+    "line": 5843
    },
    "kind": "quote",
    "area": "ui",
@@ -3098,7 +3050,7 @@
    "rule": "Lime is only the one call to action on a screen; focus and selection are never lime; Play is Ruby like Ready.",
    "source": {
     "file": "Docs/UI_STYLE_GUIDE.md",
-    "line": 246
+    "line": 266
    },
    "kind": "decision",
    "area": "ui",
@@ -3130,7 +3082,7 @@
    "rule": "Every word a player can read is an authored field a human can add, edit, blank or delete without code; computed facts fill tokens in an authored template; an empty field shows nothing, never a hardcoded default.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 409
+    "line": 492
    },
    "kind": "LOCKED",
    "area": "ui",
@@ -3162,7 +3114,7 @@
    "rule": "Every word a player can read is an authored field (a serialized string or a template with tokens) a person can edit, blank or delete without code; an empty field shows nothing and never falls back to a hardcoded default.",
    "source": {
     "file": "Docs/UI_STYLE_GUIDE.md",
-    "line": 186
+    "line": 206
    },
    "kind": "LOCKED",
    "area": "ui",
@@ -3248,23 +3200,7 @@
    "area": "vessel",
    "retired": "knockback on other vessels (VesselImpulseByExplosionEffectSO), VesselShrinkSkimmerEffectSO, the Rhino's VesselDangerBlockFormationBySkimmerEffectSO and its sword's danger dome, the Butterfly dust's decaying debuff",
    "test": "List every effect the design has on an opposing vessel; each must be a petal move that scores through CombatHitDrain.TryAdmit, and nothing else.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-03",
-   "owner": "Garrett",
-   "date": "2026-10-16",
-   "words": "make the shrimp launch have a significant cooldown; make the goby zip around crazy fast so it is almost impossible to catch up with.",
-   "rule": "The Goby is crazy fast, almost impossible to catch; the Pistol's launch is a rare commitment with a long cooldown.",
-   "source": {
-    "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 5178
-   },
-   "kind": "quote",
-   "area": "vessel",
-   "retired": "",
-   "test": "Does the tuning keep the Goby nearly uncatchable and the launch rare (one charge, about 9 s)?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-04",
@@ -3290,13 +3226,13 @@
    "rule": "A vessel's hull is a built FBX model (made by /vessel-model with its bones, element morphs and slots), never a C# procedural HullForm surface, not even as a placeholder.",
    "source": {
     "file": "CLAUDE.md",
-    "line": 78
+    "line": 107
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "C# `*HullForm` procedural surfaces as vessel models (and the seven from-scratch hulls of 2026-10-17)",
    "test": "Does the brief ship a modelled FBX hull with the shipped names and four element morphs? A generated or placeholder mesh fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-06",
@@ -3328,7 +3264,7 @@
    "area": "vessel",
    "retired": "SparrowDebuffByRhinoDangerPrismEffectSO's 5 s Button2 mute and its event asset (deleted 2026-10-17)",
    "test": "Does any effect in the design mute, lock or steal an input? It fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-08",
@@ -3338,13 +3274,13 @@
    "rule": "Every crew vessel shares one notion: a seat on the hull (ICrewSeat), one card naming both, the shared seat rules, the shared two-view layout and seat camera, and the Vessel Changer as the way in.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 5111
+    "line": 6929
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
    "test": "Does the new crew vessel reuse CrewSeat, CrewPictureInPicture and CrewViewRender, or roll its own seats and views?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-09",
@@ -3360,7 +3296,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hull's colour scheme add a family beyond domain, Blue and Fire, or put Lime (the call to action) on the vessel?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-10",
@@ -3376,7 +3312,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hull read as a creature with a face and limbs, or as a ship whose silhouette says its animal?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-11",
@@ -3392,7 +3328,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the design add a way to take petals without silencing by worth, or silence anything beyond harm (movement, Mass, Time)? Either breaks the fleet-wide silence rule.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-12",
@@ -3408,7 +3344,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the silenced state block an input, stop an ability from playing, or leave any of its harm live? Any of those is wrong.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-13",
@@ -3424,7 +3360,7 @@
    "area": "vessel",
    "retired": "silencing for settled petals only (the first cut)",
    "test": "Would a scored hit on a pilot holding no petals silence them for the hit's worth? If not, the design has gone back to petals settled.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-14",
@@ -3440,7 +3376,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hit's consequence ride the scored hit itself and take only harmlessness, never motion or control?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-15",
@@ -3456,7 +3392,7 @@
    "area": "vessel",
    "retired": "the seven from-scratch hulls of 2026-10-17 (retired 2026-10-18)",
    "test": "Does every part of the model float clear of the hull (assembly_report.py)? A welded part is out.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-16",
@@ -3466,7 +3402,7 @@
    "rule": "Inversion is applied once by the player's settings at the end of every input mix; no strategy or hull carries a pitch sign of its own (a hull's touch tilt flip is hull data under the same rule).",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 421
+    "line": 431
    },
    "kind": "decision",
    "area": "vessel",
@@ -3482,7 +3418,7 @@
    "rule": "The local human pilot's nose follows the commanded rotation each frame on every device; AI, autopilot and remote hulls keep the fleet's 1.5/s lag, which only a mode may set per AI.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 425
+    "line": 435
    },
    "kind": "decision",
    "area": "vessel",
@@ -3493,18 +3429,18 @@
   {
    "id": "P-vessel-18",
    "owner": "Garrett",
-   "date": "2026-10-22",
-   "words": "a hull's tilt may be turned over per axis, flipTiltSteerPitch / flipTiltSteerYaw: the Manta flips pitch only, Garrett 2026-10-22 / 2026-10-25; it is hull data under the one Invert Y rule, not a strategy's sign",
-   "rule": "On a phone each hull has its own touch profile (thumb lifts or totem buttons, tilt, both-thumbs-off controls, extra buttons); a tilt flip is hull data under the one Invert Y rule, and both thumbs off reads as a released pad.",
+   "date": "2026-11-14",
+   "words": "both thumbs off should read as both triggers pulled and switch to gyro controls",
+   "rule": "On a phone each hull has its own touch profile (thumb lifts or totem buttons, tilt, extra buttons); a tilt flip is hull data under the one Invert Y rule, and both thumbs off reads as both triggers pulled and switches to gyro (tilt) controls.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 441
+    "line": 454
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the new hull ship a touch profile, and is any axis flip authored as hull data rather than in a strategy?",
-   "status": "drafted"
+   "test": "With no thumb on the glass, do both triggers read fully pulled and does tilt steer? Is any axis flip authored as hull data rather than in a strategy?",
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-19",
@@ -3514,13 +3450,13 @@
    "rule": "A human pilot's nose lag is one dial per device (gamepad 1.5/s, touch 9/s, keyboard and mouse none), never per hull; no response curve and no multi-stage smoothing on the stick.",
    "source": {
     "file": "Docs/claude/ARCHITECTURE_CORE.md",
-    "line": 431
+    "line": 441
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "a response curve on stick position and a 4-6 stage smoothing chain (flown and rejected on the pad)",
    "test": "Does any hull author its own nose lag or stick curve? It fails; only the device's dial applies.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-20",
@@ -3530,7 +3466,7 @@
    "rule": "A new vessel is designed as one package: the hull, its own mini-game and its four elemental abilities with their level-5 upgrades; all three reach the game together (hull to the Vessel Changer, mini-game as a real mode, abilities as the element map).",
    "source": {
     "file": "CLAUDE.md",
-    "line": 192
+    "line": 251
    },
    "kind": "quote",
    "area": "vessel",
@@ -3552,14 +3488,14 @@
    "area": "vessel",
    "retired": "the pilot as a kit side-grade (PILOTS_AND_ARTIFACTS.md sections 0, 2, 4 and 6)",
    "test": "Does the pilot design change an ability, a number or a control on the vessel? If yes it is a kit change, not a pilot.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-22",
    "owner": "Garrett",
    "date": "2026-10-27",
-   "words": "an artifact transforms the payload, a parcel of the Ark's hull that any vessel grabs and fires to crack super-shielded mass. An artifact no longer turns a \"fifth knob\"",
-   "rule": "An artifact transforms the Ark payload any vessel grabs and fires to crack super-shielded mass; it never turns a fifth knob on the vessel itself.",
+   "words": "an artifact transforms the payload**, a parcel of the Ark's hull that any vessel of the Ark's own domain grabs and fires",
+   "rule": "An artifact transforms the Ark payload a vessel of the Ark's own domain grabs and fires to crack super-shielded mass; it never turns a fifth knob on the vessel itself.",
    "source": {
     "file": "Docs/PILOTS_AND_ARTIFACTS.md",
     "line": 32
@@ -3568,23 +3504,23 @@
    "area": "vessel",
    "retired": "the artifact as a fifth knob (PILOTS_AND_ARTIFACTS.md section 3)",
    "test": "Does the artifact design tune the vessel rather than transform the payload? If yes it is a kit change.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-23",
    "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "it should feel big ... like its own level ... a kaiju protected by three vessels and its own regeneration",
-   "rule": "The Ark feels big, like its own level: a kaiju protected by three escorts and its own regeneration, with engines that animate, octahedral shielded prisms placed to protect the rest, danger prisms where it wants to be dangerous, and a hangar the escorts launch from.",
+   "date": "2026-11-16",
+   "words": "the ark should only regenerate inside a cell nucleus under control of the ark's domain",
+   "rule": "The Ark is its own level: a kaiju guarded by three escorts that launch from its hangar, with engines that animate, octahedral shielded prisms placed to protect the rest, super-shielded prisms, danger prisms where it wants to be dangerous, and a payload (a parcel of its hull that only a vessel of its own domain grabs and fires to crack super-shielded mass: an Ark never arms the ones who would kill it). Its omni-crystal reactor regrows its own empty hull slots at a fixed rate, one prism a beat, never past full, and only while it sits inside a cell nucleus its domain controls; a fallen Ark never regrows.",
    "source": {
     "file": "Docs/VesselModels/ArkReverse.md",
-    "line": 7
+    "line": 139
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the Ark design read as a level-sized kaiju with escorts, regeneration and a hangar, not merely a big vessel?",
-   "status": "drafted"
+   "test": "Does the Ark read as a level-sized kaiju with escorts, a hangar, super-shielded prisms and a payload, and does its hull regrow only inside a nucleus its domain controls?",
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-24",
@@ -3600,7 +3536,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Count the levels of form on the model: are there five, each carrying two to five heterarchies, down to micro detail?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-25",
@@ -3616,70 +3552,70 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the model carry a dome, spike or plinth that serves no form? Remove it.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-26",
    "owner": "Garrett",
-   "date": "2026-10-27",
-   "words": "\"the meerkat should be producing a new fundamental (solitons)\"",
-   "rule": "A soliton is a standing tunnel through space that keeps its shape, carries whatever enters one mouth out of the other, and is seen only by the way it bends the world (no grid, no surface); anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
+   "date": "2026-11-16",
+   "words": "solitons should be enterable from outside, but in a one-way fashion. so the exit is the only source and the entrance is the only sink, but the tube wall can be entered and not exited",
+   "rule": "A tubular soliton is a standing, one-way tunnel through space that keeps its shape and is seen only by the way it bends the world (no grid, no surface): anything may enter through its entrance mouth or its wall, nothing leaves except through its exit mouth, so the entrance is its only sink and the exit its only source. Any vessel or scene may make use of one (it is a fundamental, not a Meerkat-only effect), anyone may ride one, what it fires is a moving prism scored to its maker, and it never deletes mass.",
    "source": {
     "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 353
+    "line": 358
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "",
-   "test": "Does the tunnel design keep its shape, carry riders and prisms through, conserve mass and show itself only as bent space?",
-   "status": "drafted"
+   "test": "Can things enter the tunnel through its wall and entrance but leave only by its exit, with mass conserved and nothing drawn but bent space?",
+   "status": "confirmed"
+  },
+  {
+   "id": "P-vessel-39",
+   "owner": "Garrett",
+   "date": "2026-11-16",
+   "words": "also solitons should feel like a waterslide where there is a sense of \"down\" and sliding up and down the walls like a skater in a halfpipe. down should be defined by their entering orientation and controlling the vessel should feel like a fun sense of control over riding up and down the walls of the water slide. some mix of going with the flow and deciding how to roll with it.",
+   "rule": "Riding a tubular soliton feels like a waterslide: the rider's orientation as it enters sets the tunnel's \"down\", the flow carries it along, and steering rolls it up and down the walls like a skater in a halfpipe; the fun is a mix of going with the flow and choosing how to ride it.",
+   "source": {
+    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
+    "line": 359
+   },
+   "kind": "quote",
+   "area": "vessel",
+   "retired": "",
+   "test": "Does a rider feel a down set by how it entered, get carried by the flow, and choose how high up the walls to carve?",
+   "status": "confirmed"
+  },
+  {
+   "id": "P-vessel-40",
+   "owner": "Garrett",
+   "date": "2026-11-16",
+   "words": "we can generalize solitons to structured vector fields. Thus what we just detailed are tubular solitons, but the pistol's vortex ring should be a moving ring soliton. the stoats source and sink should be point solitons.",
+   "rule": "A soliton is a structured vector field that keeps its shape, in three shapes so far: tubular (the Meerkat's tunnel), a moving ring (the Pistol's vortex ring) and a point (the Stoat's source and sink); every shape is one fundamental and follows the soliton's rules, and a new shape of field joins this family rather than becoming a new system.",
+   "source": {
+    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
+    "line": 357
+   },
+   "kind": "quote",
+   "area": "vessel",
+   "retired": "",
+   "test": "Is this field one of the soliton shapes (tube, moving ring, point), built on the soliton fundamental rather than as its own system?",
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-27",
    "owner": "Garrett",
    "date": "2026-10-28",
    "words": "lock in the elemental definition so yash builds upon them.",
-   "rule": "The Meerkat's element definition is locked: Space the Soliton (surface area by level, L5 Steal), Time faster through every soliton (L5 Boost Out), Charge Sentinel mode (L5 Six Sentinels), Mass the Exit Portal (L5 Danger Portal); how each is built stays Yash's.",
+   "rule": "The Meerkat's element definition is locked: Space the Soliton (surface area by level, L5 Steal), Time faster through every soliton (L5 Boost Out), Charge Sentinel mode (L5 Six Sentinels), Mass the Exit Portal (L5 Danger Portal). A design may extend these but never redefine them; how each is built stays Yash's.",
    "source": {
     "file": "Docs/ElementalAbilitySystem/FLEET_MAPS.md",
-    "line": 658
+    "line": 689
    },
    "kind": "LOCKED",
    "area": "vessel",
    "retired": "Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) and the round-18 Mix's L5 swaps",
    "test": "Does a Meerkat change move an ability to another element or alter a row's meaning? If yes it reopens a locked definition.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-28",
-   "owner": "Garrett",
-   "date": "2026-10-28",
-   "words": "The omni crystal is always one size (Garrett, 2026-10-28). Nothing resizes it: not the reactor, and not the Charge shape",
-   "rule": "The omni crystal is always one size; no reactor, element shape or effect resizes it.",
-   "source": {
-    "file": "Docs/VesselModels/ArkReverse.md",
-    "line": 139
-   },
-   "kind": "decision",
-   "area": "vessel",
-   "retired": "",
-   "test": "Does anything scale the omni crystal? If yes it is wrong.",
-   "status": "drafted"
-  },
-  {
-   "id": "P-vessel-29",
-   "owner": "Garrett",
-   "date": "2026-10-28",
-   "words": "the rest is design, Docs/Studios/MEERKAT.md § Garrett's direction, whose element definition is LOCKED (Garrett, 2026-10-28)",
-   "rule": "The Meerkat soliton's element definition (what each of its elements does, per Garrett's direction in MEERKAT.md) is fixed; a design may extend the soliton but not redefine its elements.",
-   "source": {
-    "file": "Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md",
-    "line": 356
-   },
-   "kind": "LOCKED",
-   "area": "vessel",
-   "retired": "",
-   "test": "Check each element's role in the brief against MEERKAT.md § Garrett's direction; any change needs Garrett.",
    "status": "drafted"
   },
   {
@@ -3706,13 +3642,13 @@
    "rule": "A destroyed stretch of the Goby's trail is a real gap the Pistol must clear; a fall never hits phantom prisms and never leaves the best path uncrossable: it restores the gap it touched and sets the Pistol down beyond it.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 1350
+    "line": 3129
    },
    "kind": "quote",
    "area": "vessel",
    "retired": "the vortex-ring ride back to the den after a fall (the 2026-10-28 design)",
    "test": "Can the Pistol ever be stuck with no crossable path, or land on prisms that are not there?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-32",
@@ -3722,7 +3658,7 @@
    "rule": "No new vessels: the work is each existing vessel's Time minigame first, then the arena games; every vessel prototype is parked and catalogued, and one is brought back only when an owner asks.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 470
+    "line": 564
    },
    "kind": "quote",
    "area": "vessel",
@@ -3738,7 +3674,7 @@
    "rule": "The Stoat's kit is the orbit alone; the pathfinding field trajectory is parked.",
    "source": {
     "file": "Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md",
-    "line": 495
+    "line": 589
    },
    "kind": "quote",
    "area": "vessel",
@@ -3962,7 +3898,7 @@
    "rule": "A blast's reach is shown by lighting what it will destroy in the world, never by a ring; projectiles carry enough fidelity not to feel cheap.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 3770
+    "line": 5588
    },
    "kind": "quote",
    "area": "world-look",
@@ -4010,7 +3946,7 @@
    "rule": "Each free elemental crystal wears its own element's lime shade (the Wrasse's four), so Mass and omni never look alike.",
    "source": {
     "file": "Docs/PALETTE.md",
-    "line": 796
+    "line": 816
    },
    "kind": "quote",
    "area": "world-look",
@@ -4026,7 +3962,7 @@
    "rule": "An element's shapes wear that element's shade wherever they are: combining crystals keep their colours, and the omni crystal wears all four shades, each on its element's shapes, in every instance.",
    "source": {
     "file": "Docs/PALETTE.md",
-    "line": 862
+    "line": 882
    },
    "kind": "quote",
    "area": "world-look",
@@ -4106,7 +4042,7 @@
    "rule": "Shield feedback is Lime, grow and restore are a lit domain colour (never cyan, which is Jade), and the juice plays on landing, not while it happens.",
    "source": {
     "file": "Docs/UNITY_VERIFICATION_CHECKLIST.md",
-    "line": 1285
+    "line": 3064
    },
    "kind": "quote",
    "area": "world-look",
@@ -4234,7 +4170,7 @@
    "rule": "Living mass moves with its limb's sway; trails, authored environment and a dead lifeform's skeleton stay still, so alive and dead read without a label.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 184
+    "line": 193
    },
    "kind": "decision",
    "area": "world-look",
@@ -4250,7 +4186,7 @@
    "rule": "A world seen from a distant camera (the home screen) spends its prisms on length and silhouette with depth replacing detail, never on surface; a world flown inside is budgeted for the pilot.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 506
+    "line": 517
    },
    "kind": "decision",
    "area": "world-look",
@@ -4266,7 +4202,7 @@
    "rule": "A plant whose shape is a function traces it as an open cage of curves the player sees through, never as a solid skin.",
    "source": {
     "file": "Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md",
-    "line": 840
+    "line": 851
    },
    "kind": "decision",
    "area": "world-look",
@@ -4314,7 +4250,7 @@
    "rule": "Unity CLI verification — the verify rule gates every C# commit (LOCKED rule)",
    "source": {
     "file": "CLAUDE.md",
-    "line": 278
+    "line": 346
    },
    "kind": "LOCKED",
    "area": "process",
@@ -4330,10 +4266,58 @@
    "rule": "Editor Tooling (LOCKED convention — read `Docs/TOOLING.md` before adding any `[MenuItem]`)",
    "source": {
     "file": "CLAUDE.md",
-    "line": 302
+    "line": 370
    },
    "kind": "LOCKED",
    "area": "process",
+   "retired": "",
+   "test": "",
+   "status": "drafted"
+  },
+  {
+   "id": "P-process-03",
+   "owner": "Yash",
+   "date": "2026-11-10",
+   "words": "all I want you is to use the best code practices that can benefit both you and us, but you as priority, as we dont read codes much, we want you to design architectures that benefits you 100percent",
+   "rule": "Code is designed for the session that writes it: the codebase explains itself to a cold-start session and a wrong change fails a machine check (seven rules, three of them gated by check_agent_first.py).",
+   "source": {
+    "file": "Docs/claude/AGENT_FIRST_ARCHITECTURE.md",
+    "line": 3
+   },
+   "kind": "quote",
+   "area": "process",
+   "retired": "",
+   "test": "python3 Tools/Build/check_agent_first.py",
+   "status": "confirmed"
+  },
+  {
+   "id": "P-ai-23",
+   "owner": "Garrett",
+   "date": "2026-11-02",
+   "words": "AI training serves one plan (LOCKED rule, Garrett, 2026-11-02)",
+   "rule": "AI training serves one plan (LOCKED rule, Garrett, 2026-11-02)",
+   "source": {
+    "file": "CLAUDE.md",
+    "line": 270
+   },
+   "kind": "LOCKED",
+   "area": "ai",
+   "retired": "",
+   "test": "",
+   "status": "drafted"
+  },
+  {
+   "id": "P-world-look-31",
+   "owner": "Garrett",
+   "date": "2026-11-10",
+   "words": "Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)",
+   "rule": "Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)",
+   "source": {
+    "file": "CLAUDE.md",
+    "line": 309
+   },
+   "kind": "LOCKED",
+   "area": "world-look",
    "retired": "",
    "test": "",
    "status": "drafted"

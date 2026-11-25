@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Perch Run - the Goby-only race, and the Goby's TIME card (PERCH_RUN.md). The Goby cruises slowly and DARTS: a charged
+    /// Perch Run - the Goby-only race, and the Goby's TIME card (PERCH_RUN.md). The Goby never flies; it only DARTS: a charged
     /// length along the nose, flown in one second, stopping on the first block on its line. A dart costs the same second
     /// however far it goes, so the race is how few darts a course takes, and the course makes the dart's two numbers -
     /// its LENGTH and its LINE - the decisions: open rings at I1, hairpins at I2 (a full charge overshoots out of reach of
@@ -20,14 +20,21 @@ namespace CosmicShore.Gameplay
     /// (GobyPistolDuo.TryDartReach), which serves every mode the Goby flies.</para>
     ///
     /// <para><b>Every peer lays the same coral</b> from the broadcast rings (<see cref="PerchRunCourse.CoralFor"/>), so
-    /// nothing new is replicated.</para>
+    /// nothing new is replicated. At I4 the legs also carry garden ruins, decoration laid the same way
+    /// (PerchRunController.Ruins.cs, <see cref="PerchRunRuins"/>).</para>
     /// </summary>
-    public class PerchRunController : GateRaceController, IPlayerSpawnLine, IGobyRaceCoach
+    public partial class PerchRunController : GateRaceController, IPlayerSpawnLine, IGobyRaceCoach
     {
         [Header("Perch Run")]
         [Tooltip("The prism every coral head is laid from: the environment prism (SpawnablePrism). Authored by " +
                  "Tools/Build/author_perch_run_assets.py. Unset = no coral, and a warning.")]
         [SerializeField] Prism coralPrefab;
+
+        [Header("AI coach")]
+        [Tooltip("How far past the last ring it threads the AI charges its dart (u). Short enough that a hairpin after it " +
+                 "is still one dart away. Learned by the Time-game AI search (time_ai_search.py --hull Goby); Regatta's " +
+                 "Goby coach (RegattaGobyDart) carries the same number.")]
+        [SerializeField, Range(0f, 300f)] float aiOvershoot = PerchRunCourse.Overshoot;
 
         const string CoralOwnerId = "PerchRun";
 
@@ -46,6 +53,7 @@ namespace CosmicShore.Gameplay
                 if (goby && ReferenceEquals(goby.RaceCoach, this)) goby.RaceCoach = null;
             _coached.Clear();
             ClearCoral();
+            ClearRuins();
             base.OnNetworkDespawn();
         }
 
@@ -65,6 +73,8 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearCoral();
+            ClearRuins();
+            LayRuins();
             var settings = PerchRunCourse.ForIntensity(Intensity);
             settings.RingCount = _course.Count;
             PerchRunCourse.CoralFor(_course, settings, _coral);
@@ -113,7 +123,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The AI Goby's next dart: <see cref="PerchRunCourse.PlanDart"/> from its hull at its next ring (a double when
-        /// one line threads two, a rim shot round a blocker, charged to just past the last ring it threads).
+        /// one line threads two, a rim shot round a blocker, charged to just past the last ring it threads, or a short hop
+        /// aside when no line clears). It turns where it sits, so no ring is ever out of its reach.
         /// </summary>
         public bool TryRaceAim(GobyPistolDuo goby, out Vector3 aim, out float dartLength)
         {
@@ -126,7 +137,7 @@ namespace CosmicShore.Gameplay
             if (threaded >= RaceLength) return false;
             int next = RingIndexFor(threaded);
             if (next < 0 || next >= _course.Count) return false;
-            aim = PerchRunCourse.PlanDart(hull.position, _course, next, _coral, out dartLength);
+            aim = PerchRunCourse.PlanDart(hull.position, _course, next, _coral, aiOvershoot, out dartLength);
             return true;
         }
     }

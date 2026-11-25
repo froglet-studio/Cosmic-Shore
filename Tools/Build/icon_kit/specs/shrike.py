@@ -81,6 +81,11 @@ def a_missiles():
     return (dart(50, 30, 0, 22, 11) | dart(92, 100, -90, 22, 11)) & ~grown(a_reticle(), 2.5)
 
 
+def a_salvo():
+    """Charge 5 Salvo: a second pair of missiles behind the first (every flora launches twice as often)."""
+    return (dart(28, 30, 0, 18, 9) | dart(112, 104, -90, 18, 9)) & ~grown(a_reticle() | a_missiles(), 3.0)
+
+
 # ---- Mass: Nest -------------------------------------------------------------------------------------------------------------
 N_C, N_R = (58, 78), 38
 
@@ -100,6 +105,12 @@ def n_cup():
 def n_flora():
     x = N_C[0] - 14
     return stroke([(x, N_C[1] - N_R - 4), (x, 22)], w=4.5) | dart(x, 15, -90, 20, 11)
+
+
+def n_armed():
+    """Mass 5 Armed Nests: the left-behind flora's second missile, beside the first."""
+    x = N_C[0] - 14
+    return dart(x + 16, 22, -90, 20, 11) & ~grown(n_flora(), 2.5)
 
 
 # ---- Space: Void Lance ------------------------------------------------------------------------------------------------------
@@ -160,6 +171,19 @@ def s_blocks():
     return out
 
 
+def s_whip():
+    """Time 5 Whipcrack: two speed marks either side of the tether (the sling lands in 0.6 s)."""
+    (x0, y0), (x1, y1) = (72, 54), (ANCHOR[0] - 14, ANCHOR[1] + 14)
+    dx, dy = x1 - x0, y1 - y0
+    m = math.hypot(dx, dy)
+    ux, uy, nx, ny = dx / m, dy / m, -dy / m, dx / m
+    out = empty()
+    for side in (-1, 1):
+        cx, cy = x0 + ux * m * 0.45 + nx * 11 * side, y0 + uy * m * 0.45 + ny * 11 * side
+        out |= stroke([(cx - ux * 9, cy - uy * 9), (cx + ux * 9, cy + uy * 9)], w=5)
+    return out & ~grown(s_tether() | s_anchor() | s_shrike(), 2.5)
+
+
 # ---- Omni -------------------------------------------------------------------------------------------------------------------
 _scarab = importlib.import_module("specs.scarab")
 
@@ -176,10 +200,14 @@ ARRAY_PARTS = [("ArrayShrike", "Shrike_ArrayShrike", "arrayShrikeIcon", a_shrike
                 "the reticle on the target (white; faint until painted)"),
                ("ArrayTarget", "Shrike_ArrayTarget", "arrayTargetIcon", a_target, "the rival prism painted (danger)"),
                ("ArrayMissiles", "Shrike_ArrayMissiles", "arrayMissilesIcon", a_missiles,
-                "the flora's missiles coming in (white; painted with a missile ready)")]
+                "the flora's missiles coming in (white; painted with a missile ready)"),
+               ("ArraySalvo", "Shrike_ArraySalvo", "arraySalvoIcon", a_salvo,
+                "Salvo: a second pair of missiles (white; Charge 5, painted)")]
 NEST_PARTS = [("NestShrike", "Shrike_NestShrike", "nestShrikeIcon", n_shrike, "the Shrike docked (domain)"),
               ("NestCup", "Shrike_NestCup", "nestCupIcon", n_cup, "the nest's super-shielded cup (white; faint undocked)"),
-              ("NestFlora", "Shrike_NestFlora", "nestFloraIcon", n_flora, "a nest flora with its missile (white)")]
+              ("NestFlora", "Shrike_NestFlora", "nestFloraIcon", n_flora, "a nest flora with its missile (white)"),
+              ("NestArmed", "Shrike_NestArmed", "nestArmedIcon", n_armed,
+               "Armed Nests: the flora's second missile (white; Mass 5, a nest built)")]
 LANCE_PARTS = [("LanceShrike", "Shrike_LanceShrike", "lanceShrikeIcon", l_shrike, "the Shrike (domain)"),
                ("LanceBeam", "Shrike_LanceBeam", "lanceBeamIcon", l_beam, "the Void Lance (white; firing)"),
                ("LancePrisms", "Shrike_LancePrisms", "lancePrismsIcon", l_prisms, "the prisms in its line (danger)"),
@@ -191,7 +219,9 @@ LANCE_PARTS = [("LanceShrike", "Shrike_LanceShrike", "lanceShrikeIcon", l_shrike
 SLING_PARTS = [("SlingShrike", "Shrike_SlingShrike", "slingShrikeIcon", s_shrike, "the Shrike (domain)"),
                ("SlingAnchor", "Shrike_SlingAnchor", "slingAnchorIcon", s_anchor, "the anchor block (white)"),
                ("SlingTether", "Shrike_SlingTether", "slingTetherIcon", s_tether, "the tether (white; faint until shot)"),
-               ("SlingBlocks", "Shrike_SlingBlocks", "slingBlocksIcon", s_blocks, "the blocks it lays slinging (domain)")]
+               ("SlingBlocks", "Shrike_SlingBlocks", "slingBlocksIcon", s_blocks, "the blocks it lays slinging (domain)"),
+               ("SlingWhip", "Shrike_SlingWhip", "slingWhipIcon", s_whip,
+                "Whipcrack: speed marks along the tether (white; Time 5)")]
 
 ICONS = []
 for element, parts in (("Charge", ARRAY_PARTS), ("Mass", NEST_PARTS), ("Space", LANCE_PARTS), ("Time", SLING_PARTS)):
@@ -215,7 +245,8 @@ CARDS = [
                "and the flora's missiles come in; the count stays under the card",
          parts=_parts(ARRAY_PARTS),
          states=[("idle", [("ArrayShrike", "domain"), ("ArrayReticle", "white", 0.35), ("ArrayTarget", "danger")]),
-                 ("painting, missiles ready", PAINTED)],
+                 ("painting, missiles ready", PAINTED),
+                 ("Charge 5: Salvo", PAINTED + [("ArraySalvo", "white")])],
          lockup_state=1),
     dict(name="nest", element="Mass", before=ICON_DIR + "Shrike_Nest.png", before_gauge=True,
          gauge={"flying": (1.0, None), "docked": (1.0, None), "a nest built": (0.2, None)},
@@ -224,7 +255,8 @@ CARDS = [
          parts=_parts(NEST_PARTS),
          states=[("flying", [("NestShrike", "domain"), ("NestCup", "white", 0.35)]),
                  ("docked", DOCKED),
-                 ("a nest built", DOCKED + [("NestFlora", "white")])],
+                 ("a nest built", DOCKED + [("NestFlora", "white")]),
+                 ("Mass 5: Armed Nests", DOCKED + [("NestFlora", "white"), ("NestArmed", "white")])],
          lockup_state=1),
     dict(name="lance", element="Space", before=ICON_DIR + "Shrike_VoidLance.png", before_gauge=True,
          gauge={"ready": (1.0, None), "firing": (0.3, None), "Space 5: Void Pierce": (0.3, None)},
@@ -241,7 +273,8 @@ CARDS = [
                "(domain) behind it; the plate is the cooldown",
          parts=_parts(SLING_PARTS),
          states=[("ready", [("SlingShrike", "domain"), ("SlingAnchor", "white"), ("SlingTether", "white", 0.35)]),
-                 ("slinging", SLINGING)],
+                 ("slinging", SLINGING),
+                 ("Time 5: Whipcrack", SLINGING + [("SlingWhip", "white")])],
          lockup_state=1),
     dict(name="omni", element="Omni", title="The OMNI crystal card: the omni crystal",
          parts=dict(i=omni_crystal_card), states=[("an omni crystal collected", [("i", "white")])]),

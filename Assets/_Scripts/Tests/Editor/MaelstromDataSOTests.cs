@@ -48,6 +48,8 @@ namespace CosmicShore.Tests
         {
             foreach (var e in _events) if (e) Object.DestroyImmediate(e);
             _events.Clear();
+            foreach (var g in _games) if (g) Object.DestroyImmediate(g);
+            _games.Clear();
             Object.DestroyImmediate(_data);
         }
 
@@ -448,6 +450,81 @@ namespace CosmicShore.Tests
             _data.MarkDrawn(null);
             Assert.AreEqual(0, _data.DrawnGames.Count, "A null card is not a dealt mode.");
             Assert.IsFalse(_data.HasBeenDrawn(null), "Null is never 'already drawn'.");
+        }
+
+        // ── Intensity tiers: four EXCLUSIVE buckets (Garrett, 2026-11-16) ────────────────────
+        // 1 Beginner, 2 Great, 3 Good, 4 Floor. A run at intensity N deals only tier N - the old
+        // cumulative ladder dealt tiers 1..N, which would put every Beginner game into a Floor run.
+
+        CosmicShore.ScriptableObjects.SO_ArcadeGame MakeGame(string name)
+        {
+            var g = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
+            g.name = name;
+            _games.Add(g);
+            return g;
+        }
+
+        readonly List<CosmicShore.ScriptableObjects.SO_ArcadeGame> _games = new();
+
+        static MaelstromIntensityTier Tier(int intensity, params CosmicShore.ScriptableObjects.SO_ArcadeGame[] games) =>
+            new MaelstromIntensityTier { Intensity = intensity, Games = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame>(games) };
+
+        [Test]
+        public void GamesForIntensity_DealsOnlyThatTier_NotTheLowerOnes()
+        {
+            var beginner = MakeGame("Beginner");
+            var great = MakeGame("Great");
+            var floor = MakeGame("Floor");
+            _data.GameQueue = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame> { beginner, great, floor };
+            _data.IntensityTiers = new List<MaelstromIntensityTier> { Tier(1, beginner), Tier(2, great), Tier(4, floor) };
+
+            CollectionAssert.AreEqual(new[] { beginner }, _data.GamesForIntensity(1));
+            CollectionAssert.AreEqual(new[] { great }, _data.GamesForIntensity(2),
+                "Intensity 2 deals the Great bucket only - not Beginner's games as well.");
+            CollectionAssert.AreEqual(new[] { floor }, _data.GamesForIntensity(4),
+                "The Floor run deals the floor, never the polished tiers below it.");
+        }
+
+        [Test]
+        public void GamesForIntensity_EmptyOrMissingBucket_FallsBackToTheWholeQueue()
+        {
+            var a = MakeGame("A");
+            var b = MakeGame("B");
+            _data.GameQueue = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame> { a, b };
+            _data.IntensityTiers = new List<MaelstromIntensityTier> { Tier(1, a), Tier(3) };
+
+            CollectionAssert.AreEqual(new[] { a, b }, _data.GamesForIntensity(3),
+                "An empty bucket must not leave the mode unable to draw.");
+            CollectionAssert.AreEqual(new[] { a, b }, _data.GamesForIntensity(2),
+                "An intensity no tier names falls back the same way.");
+        }
+
+        [Test]
+        public void GamesForIntensity_DropsTierEntriesNotOnTheQueue_AndKeepsQueueOrder()
+        {
+            var a = MakeGame("A");
+            var b = MakeGame("B");
+            var stray = MakeGame("Stray");
+            _data.GameQueue = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame> { a, b };
+            _data.IntensityTiers = new List<MaelstromIntensityTier> { Tier(4, b, stray, a) };
+
+            CollectionAssert.AreEqual(new[] { a, b }, _data.GamesForIntensity(4));
+        }
+
+        [Test]
+        public void UnlockIntensityOf_IsTheLowestBucketListingIt_OrZero()
+        {
+            var a = MakeGame("A");
+            var b = MakeGame("B");
+            var none = MakeGame("None");
+            _data.GameQueue = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame> { a, b, none };
+            _data.IntensityTiers = new List<MaelstromIntensityTier> { Tier(4, a), Tier(3, b), Tier(1, b) };
+
+            Assert.AreEqual(4, _data.UnlockIntensityOf(a));
+            Assert.AreEqual(1, _data.UnlockIntensityOf(b), "A game in two buckets reports the lower one.");
+            Assert.AreEqual(0, _data.UnlockIntensityOf(none));
+            Assert.IsTrue(_data.IsInTier(b, 3));
+            Assert.IsFalse(_data.IsInTier(a, 1));
         }
     }
 }

@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-20-meerkat-wormhole-revisit-yash-2026-11-20-4ebb05",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-20T15:08:27+00:00",
+  "area": "Soliton lens stand-in, the impactors, Prism and the Meerkat kit's sentinels",
+  "summary": "Meerkat wormhole revisit (Yash, 2026-11-20): (1) the march-free lens stand-in (#1877) now stays on while riding, because the tube the eye is inside draws no wall in either variant (a new throat effect draws it); (2) Prism gains SetSealed/IsSealed (collider off, Damage/Consume/Gnaw/Vanish/Steal ignored) used only for prisms a Soliton Tunnel carries; (3) ExplosionImpactor, ProjectileImpactor, MineImpactor, SkimmerImpactor, VesselImpactor and the two crystal impactors each ask SolitonIsolation one question, so a hull or cargo inside a tube and anything outside it do not interact; (4) a sentinel no longer picks a rival that is riding a tube. All are no-ops in a match with no Meerkat.",
+  "branch": "meerkat/wormhole",
+  "commit": "990133b16"
+}

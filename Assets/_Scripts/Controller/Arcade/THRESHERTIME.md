@@ -3,9 +3,118 @@
 > `GameModes.ThresherTime = 66`. A closed loop of gates is cut through the cell and every pilot flies
 > **two laps** of it in order; the first **domain** whose **lead runner** clears the last gate of the last lap
 > wins, on finish **time** (golf). Grizzly Time's shape (itself Redline's on Headlong's solver), cut against the
-> Thresher's sling. The hull: `R_VesselActions/THRESHER.md`. **Since 2026-11-04 every gate is a NEST to break,
-> not a ring to thread** (§0). Before that a gate was threaded by the hull or the ball (Garrett, 2026-10-19;
-> `IRingThreadProbe`, THRESHER.md §5b); that rule stands only when the mode has no nests.
+> Thresher's sling. The hull: `R_VesselActions/THRESHER.md`. **Since 2026-11-07 the rings are the gates again**: fly
+> through each in order (your next one lime), threaded by the hull or the ball (Garrett, 2026-10-19;
+> `IRingThreadProbe`, THRESHER.md §5b). Yash, after flying the nests: "I dont wanna break anything in here, just pass
+> through waypoints, and win the track". The nests of §0 (2026-11-04 to 11-07) stay in the code behind
+> `nestsAtGates`, authored OFF; the places (§0's plants and creatures) stay on.
+
+## 0a. The Belfry: a clockwork course (Yash, 2026-11-07)
+
+> "can't we make the time game of thresher different, it should be about the time element"
+
+The fleet's Time is rate and mobility (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`), and the Thresher's Time makes its
+spin wind up to launch speed sooner (the Plant). So the course runs on a clock, and winding up sooner is catching a window
+a slower pilot misses. Nothing about the vessel changes: the clock is the track's (`ThresherBelfry`).
+
+- **Every ring swings.** A ring hangs on a chain from a pivot further out from the cell's centre and swings across the
+  flight line, in its own mouth plane. At the middle of its swing it is exactly on its gate. It is still the gate:
+  thread its live mouth to clear it, your next one lime, and the objective arrow follows it. The AI flies at the ring
+  where it is (`ChooseAIGate`).
+- **Maces** (a chain and a morning-star head: a core and six spikes) swing across the straights. Each head crosses the
+  line at the middle of its swing and clears it, head and hull, at either end. That gap is the window.
+- **Shutters** (I4): two danger bars slide across every mouth on their own beat. They never meet: at their closest
+  each stays 15% of the mouth's radius out from the middle.
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Ring chain / swing / period | 200 u / 12° / 9 s | 190 u / 20° / 7.5 s | 175 u / 28° / 6 s | 160 u / 34° / 5 s |
+| Ring sweep across the line, top speed | ±42 u, 29 u/s | ±65 u, 55 u/s | ±82 u, 90 u/s | ±89 u, 119 u/s |
+| Maces | none | 1 on every other straight, plain | 1 a straight, danger head | 2 a straight, swinging against each other, danger heads |
+| Shutters | - | - | - | danger bars, 3.5 s beat |
+| Moving prisms | ~40 | ~100 | ~160 | ~450 |
+
+A ring's top speed stays under the Thresher's 125 u/s cruise at every rung, so a ring can always be chased down.
+Everything is a closed-form function of the course and the SERVER clock (Switchback's movers' pattern), so every peer
+lays and poses the same prisms and nothing is replicated. A broken chain link, mace or shutter bar grows back 6 s later
+where its part now is (`belfryRegrowSeconds`). Authored by the generator (`belfry`, `belfryPrismPrefab`); tests:
+`ThresherBelfryTests` (the rest pose is the gate, the swing stays in the mouth plane, the ladder only climbs, a ring can be
+chased, maces cross the line and clear it with a negative control, shutters stay in the mouth and never shut, closed
+form, the budget).
+
+**The AI reads the clock** (`AI/ThresherBelfryAI.cs`, plan step `time-arcade`, 2026-11-07):
+- **It leads the ring.** It solves for the time it reaches a swinging ring (`|Bob(now + tau) - p| + turn cost = v tau`,
+  one root because the ring is slower than the pilot, found by bisection on a bracket that provably holds it) and aims
+  where the ring will be then (read one frame back, as the race scores it). Far out the aim fades to the gate; inside
+  135 u the solved arrival is latched so the aim holds still. `ChooseAIGate` hands the race the led gate, so the
+  sling's aim follows it too. The turn cost is measured to where the pilot is already heading (last frame's aim), not
+  to the gate. **With an aimed launch coming (planted, launch view up) it leads for the launch**: the next move is a
+  straight shot at the config's boost times its exit buff (4.8 x 2) over the orbit's speed, so the solve takes that
+  speed and no turn (the spinning nose is not a turn). A plain let-go (no launch view) leaves on the tangent at the
+  orbit's speed, and is led as flying. Speeds are converted to the Belfry clock's
+  seconds by `Time.timeScale` (the clock is the server's real time; hulls move in game time).
+- **It ducks danger maces.** A mace swings in the plane square to its straight and never comes more than its head's
+  reach below its hang point, so a pilot whose path meets a head on its way through steers for the point 30.5 u below
+  the hang point AT the mace's plane (`AIEmergencySteerFor`), clear of the head and chain at every angle; the straight
+  path there crosses the plane the full 30.5 u down however late the threat is seen. Past the plane the point runs 20 u
+  ahead of the hull (`belfryAIDuckCarrot`), so it is never behind it. Plain (I2) maces are not ducked
+  (`belfryAIDodgePlain`). A level's timing error on a mace's beat is 0.60 / 0.35 / 0.15 / 0.03 s, Easy to Legendary;
+  the rings' error is the race's own handicap.
+- **Why lead at all:** a ring slower than the pilot can be chased, and with a perfect nose chasing hits it. But the
+  AI's nose lags (turn rate grows with the angle off) and an aimed launch is flown straight, and then the chase misses.
+  Offline (32 phases a rung):
+  - lagging nose, led: 32/32 at every intensity, median miss 0.2 / 0.6 / 1.7 / 4.9 u (I1-I4); chased: 12/32 at I4;
+  - aimed launch led for the launch, flown on the hull's real profile (boost x exit buff, easing back to cruise at
+    1.5/s): 32/32, median 0.4-1.4 u; led for the orbit's speed with the spinning nose (the first build, caught in
+    review): 8/32 at I4.
+  `ThresherBelfryAITests` holds each, with its negative control.
+- **Known limits** (from the review, not fixed): the launch is led from where the hull is, not from the point on the
+  circle it will leave from; during the Thresher's hit-stop (time scale 0.05) the clock-scaled speed falls under the
+  ring's and the solve may pick a far root for those few frames; a mace threat first seen inside the last 20 u before
+  its plane cannot be dived under (the hull cannot drop 30 u in 20 u).
+- **Raced in Unity, 2026-11-07** (the A/B soak, `-ttSoakBelfryAI 0|1`, same courses, seeds 7001-7003, 3 races a rung,
+  time scale 1; every race finished in both arms; `Logs/tt_belfry_ab.jsonl`):
+
+  | | median s, off -> on | mean s, off -> on | off-ring deg | Belfry broken | ducks |
+  |---|---|---|---|---|---|
+  | I1 | 96.5 -> 88.8 | 101.8 -> 85.6 | 5.1 -> 5.5 | 0 -> 0 | 0 |
+  | I2 | 126.5 -> 119.8 | 128.8 -> 119.7 | 4.6 -> 5.6 | 112 -> 87 | 0 |
+  | I3 | 146.3 -> 148.0 | 138.7 -> 141.8 | 6.8 -> 5.0 | 215 -> 149 | 5 |
+  | I4 | 215.7 -> 217.8 | 245.6 -> 202.8 | 6.3 -> 4.8 | 980 -> 886 | 23 |
+
+  Faster at I1-I2 in every measure; even at I3; at I4 the median is even but the mean and the worst race (330 -> 241 s)
+  are better. Three races a rung is a small sample. **What it leaves:** I4 still breaks ~890 Belfry prisms a race - the
+  AI flies through the ring's centre while the I4 shutters sweep across it, and it does not time them yet. That is the
+  next lever (wait or arrive on the shutters' open beat), and I4 is still about twice the pre-Belfry 111 s.
+- The AI numbers are authored by the generator (`BELFRY_AI_FIELDS`, checked equal to the C# defaults).
+
+## 0b. Garden ruins round the line at I4 (Yash, 2026-11-24)
+
+The update Spearline got (SPEARLINE.md §2a), here: at intensity 4 the legs between the rings run through the ruins of
+old flora gardens. Decoration only: plain prisms with the game's own rules (a hull, the ball or a blast breaks them,
+nothing grows back), and nothing reads or writes a vessel. No ruins at I1-I3.
+
+- **Spearline's generator is called, not copied.** `ThresherTimeRuins.Lay` hands `SpearlineRuins.Lay` this course's
+  eight gates. One ruin to a leg, the seven kinds taking turns (pergola, flower head, vines, a wall with a doorway, a
+  tunnel, a 3D maze, a turning wheel); the leg that closes the lap carries none; only legs of 380 u or more.
+- **The Belfry's clearances.** The rings swing here, so the numbers are this mode's (`ThresherTimeRuins.ForIntensity`):
+  - the clear lane is **140 u** (Spearline's is 60): the I4 ring swings 94 u from rest, plus its 46 u mouth, so the
+    line between any two poses of a leg's rings stays open by a mouth's width;
+  - no ruin prism within **140 u** of a ring's mouth at rest (Spearline's 120 + 20), which leaves at least 40 u to a
+    ring at any point of its swing.
+- **Out of the maces' way.** A ruin prism that would stand where a mace swings is not laid, and a wheel that would
+  turn through one is left out whole, so a danger mace is never hidden inside a ruin.
+- **Colours.** One domain colour a ruin, Jade, Ruby, Gold in turn (`ruinDomains` on the controller; empty = Blue), so
+  they read apart from the Belfry's Blue rings, chains, maces and shutters.
+- **The wheel** turns at 25 deg/s, posed every frame off the Belfry's shared clock, so every peer sees the same angle.
+  It is the only ruin that sweeps the line (its hub and the gaps between its spokes are open).
+- **How much.** Measured headless on 12 seeds: 830 to 1,190 standing prisms a lap on all seven legs (the Belfry itself
+  is 448 at I4); about 20 to 80 a lap are left out for the maces. A wheel was laid on 6 of the 12 courses.
+- **Code.** `ThresherTime/ThresherTimeRuins.cs` (pure), `ThresherTimeController.Ruins.cs` (the hook: `LayRuins` after
+  the Belfry is raised, `TickRuins`, `ClearRuins`). Tests: `ThresherTimeRuinsTests`.
+- **Not done.** Compiled and tested outside Unity only (§7); nobody has seen it. The AI does not know the ruins are
+  there: it flies its line, which the lane keeps clear, but a planted orbit swings wide of it. The frame cost of the
+  extra prisms at I4 is not measured.
 
 ## 0. Targets: a nest to break at every gate (Yash, 2026-11-04)
 
@@ -20,6 +129,14 @@ steal all do - and the whole nest bursts. A gate is cleared by the pilot whose n
 (`ThresherTimeNest.PassesNear`, `ThresherTimeController.ThreadsGate`). It grows back after the **regrow** time,
 once no hull is inside it. The metric is still `SwitchesThreaded` and the scoring rule, turn monitor, toasts and
 comeback are unchanged, so the card stays a Time game (`ModeGenre`).
+
+**Your target is ringed in lime** (Yash, 2026-11-07: "very hard for me to find out the target"). Eight blue nests
+look alike, so the one that is YOUR next gate shows its ring again, round the nest, in the lime every gate race uses
+for "yours next". It blooms in when it becomes yours and withers out when you clear it; every other ring stays hidden
+(`ThresherTimeController.OnLocalNextGateChanged`, `RaceGateRing.SetVisualShown`). It is drawn on your machine only,
+like every gate race's lime ring. The ring's mouth (96 / 72 / 58 / 46 u at I1-I4) is wider than the nest at every
+intensity and well inside the credit radius, so the mark tells the truth: fly through it and you ram the core, or,
+once it is open, you clear the gate. The objective arrow still points the way to it.
 
 **The Thresher's way through a nest** (THRESHER.md §2-2a): plant beside it and orbit, so the chain sweeps the cage,
 slicing plates and banking energy in the ball; then let go and hit the core with the charged ball, whose blast
@@ -130,7 +247,7 @@ lap (`ThresherTimeCourseTests`; percentages are of the 479 u/s top speed via
 | 3 | **2** of 8 | 136 u · **59%** | 149 u · 65% | 306 u · 100% | 58 | ~5.1 k u |
 | 4 | **3** of 8 | 101 u · **44%** | 118 u · 52% | 201 u · 88% | 46 | ~5.2 k u |
 
-A three-lap race is ~15 k u: two minutes at cruise. How much under that a good slinger gets is the
+A two-lap race is ~10 k u: about 80 s at cruise (three laps, ~15 k u, until 2026-10-26). How much under that a good slinger gets is the
 open play-test question (§8).
 
 ## 2. What the mode does NOT add
@@ -155,7 +272,7 @@ A corner's radius on this metric is `(shorter leg / 2) / tan(turn / 2)`. The Thr
 circle (**229 u**) is within 8% of the Grizzly's full-launch circle (211 u), so the cut is Grizzly
 Time's, re-measured against the Thresher's curve with the shipped solver compiled out of editor:
 
-- **Eight gates a lap** on Headlong's **800 u** base circle, three laps a race (24 gate threadings).
+- **Eight gates a lap** on Headlong's **800 u** base circle, two laps a race (16 gate threadings; three laps and 24 until 2026-10-26).
 - **Grizzly Time's corner profiles and `AngularSpread`s** (REDLINE.md §4: spread is the reach dial).
   Measured against 229 u they give the same 0 / 1 / 2 / 3 ladder; each level's hardest corner costs
   ≥ 8 points of top speed more than the last (100 / 71 / 59 / 44%).
@@ -318,6 +435,12 @@ circuits' recipe in `render_card_backgrounds.py`.
   Thresher chain harness's stubs and flying `ThresherAnalogTriggerTests`'s stand-in pilot (the same
   `Flight` model) at full-throttle cruise.
 
+- **The I4 ruins (§0b, 2026-11-24)**: `ThresherTimeRuinsTests` compiled with Roslyn against the Spearline harness's
+  shims and run, **7/7** on 12 seeds, and watched failing under two mutations (mace filter off: the mace test and its
+  control; Spearline's own lane and a narrower ring margin: the lane and ring tests). The game assembly was compiled
+  with Unity's own compiler arguments outside the editor (no error in this mode's files). Not compiled in the editor,
+  no edit-mode run in Unity, never seen in Play.
+
 ### In-editor verification
 
 1. **Arcade card.** Menu → Arcade: **Thresher Time** appears, clickable on a fresh account; its launch
@@ -338,6 +461,9 @@ circuits' recipe in `render_card_backgrounds.py`.
 8. **Regressions.** Grizzly Time, Redline and Headlong unchanged.
 9. **The ball threads (2026-10-19).** Fly past the lit ring just outside its mouth and swing the ball
    through it: the ring counts once and the next one lights. A respawn beside a ring threads nothing.
+10. **Ruins (2026-11-24).** Intensity 4: each leg but the last runs through a ruin in Jade, Ruby or Gold, the lane to
+    the swinging ring is open, no mace swings through a ruin, the wheel (not on every course) turns. Intensities 1-3:
+    no ruins. Frame rate at I4 against before.
 
 ## 8. Known limitations / follow-ups
 

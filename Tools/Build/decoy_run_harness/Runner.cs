@@ -87,6 +87,7 @@ public static class Runner
             var flyer = new List<float>(); var jumper = new List<float>(); var coach = new List<float>();
             var save = new List<float>(); var runs = new List<float>();
             int fails = 0, cyclesJ = 0, cyclesC = 0;
+            var ruins = new List<float>(); var ruinPrisms = new List<float>();
             for (int seed = 1; seed <= 400; seed++)
             {
                 var rings = DecoyRunCourse.Generate(seed, s);
@@ -103,10 +104,17 @@ public static class Runner
                 float c = Clock(rings, s, zips, 3, out int cc, out float longest);
                 jumper.Add(j); coach.Add(c); save.Add(1f - c / j); runs.Add(longest);
                 cyclesJ += cj; cyclesC += cc;
+                var parts = new List<SpearlineRuinPart>();
+                DecoyRunRuins.Lay(rings, s, i, new List<RaceGate>(), parts);
+                ruins.Add(parts.Select(p => DecoyRunRuins.CourseLeg(p)).Distinct().Count());
+                ruinPrisms.Add(parts.Count);
             }
             float Med(List<float> xs) { if (xs.Count == 0) return 0f; var o = xs.OrderBy(x => x).ToList(); return o[o.Count / 2]; }
             float P(List<float> xs, float q) { var o = xs.OrderBy(x => x).ToList(); return o[(int)Math.Min(o.Count - 1, q * o.Count)]; }
             int n = 400 - fails;
+            if (ruinPrisms.Count > 0 && ruinPrisms.Max() > 0)
+                Console.WriteLine($"     ruins a course: {ruins.Min():F0}-{ruins.Max():F0} (mean {ruins.Average():F1}, none on {ruins.Count(r => r == 0)}/{n})  " +
+                                  $"prisms {ruinPrisms.Min():F0}-{ruinPrisms.Max():F0} (med {Med(ruinPrisms):F0})");
             Console.WriteLine($"I{i}: fails {fails}/400  rings {s.RingCount} in groups of {s.Group}  radius {s.RingRadius}  " +
                               $"legs {legs.Min():F0}-{legs.Max():F0} (med {Med(legs):F0})  " +
                               (inner.Count > 0 ? $"turns between groups med {Med(inner):F0}  " : "") +

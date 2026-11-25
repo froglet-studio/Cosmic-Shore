@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-17-the-serpent-s-serpentine-ai-takes-run4-n-0dcf29",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T04:21:31+00:00",
+  "area": "Time AIs and AI learning",
+  "summary": "The Serpent's Serpentine AI takes run4 (nose 10.42/s, lead 2.09, a trained drive that lays a wall to refuel at 4 pellets or under), and the Serpent's own policy (Regatta) and Regatta race line take the same refuel genes and nose pair.",
+  "why": "Garrett's Regatta flywheel: confirm on 40 fresh flights a side, no DNF, every SerpentTime condition faster (loss 2.40 -> 2.25).",
+  "branch": "claude/project-thread-sl73tv",
+  "commit": "eaf855d68",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset",
+    "Assets/Resources/RaceLines/Serpent_Regatta.asset",
+    "Assets/_SO_Assets/AI Boost Policies/SerpentAIBoostPolicy.asset",
+    "Assets/_Scripts/Controller/Arcade/SerpentTime/SerpentTimeController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Serpent"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

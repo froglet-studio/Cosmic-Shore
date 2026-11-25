@@ -15,13 +15,9 @@ MonoBehaviour:
   vesselClass: 5
   entries:
   - Element: 3
-    AbilityLabel: Charged Cannon
-    AbilityDescription: Hold to charge, release to fire - bigger charge, bigger boom.
-      Space grows the explosion radius. At level 5 your blasts spare allies, so you
-      can bombard freely near teammates (you still ride your own shockwaves).
-    Input: 8
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.5
+    AbilityLabel: Trigger Bombs
+    AbilityDescription: 'LT and RT each own a bomb in Explosives: pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to blow it. A blast you sit in throws you away from the bomb, so leave it behind you and blow it to be thrown forward. Space and the level-5 upgrade still belong to the charged cannon, which has no button since the bombs moved to the triggers.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -30,12 +26,8 @@ MonoBehaviour:
       vessels or your own domain's prisms. Self-propulsion is unaffected.
   - Element: 2
     AbilityLabel: Weapon Systems
-    AbilityDescription: Cycle your three weapons - explosives, sniper, and the
-      plasma-claw flamethrower. Mass grows your trail prisms. At level 5 the
-      claw stops destroying what it burns and STEALS it for your team instead.
+    AbilityDescription: 'Y (or LB) cycles three weapons and the triggers follow: Explosives (a bomb on each trigger), the plasma claw (LT the left claw, RT the right; pressure sizes it, letting go slashes it down and across) and the sniper (LT scope with pressure zoom, RT fire). Every enemy prism the claw lights refills your energy, and Mass sets how much (2.5x at level 10). At level 5 the claw stops destroying what it burns and STEALS it for your team.'
     Input: 14
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -45,28 +37,24 @@ MonoBehaviour:
       your own. The claw itself is available from the start.
   - Element: 1
     AbilityLabel: Dig In
-    AbilityDescription: Stop to dig in and reload - energy regenerates faster while
-      parked. Charge raises the parked regeneration rate. Level 5 grants battlefield
-      sight while dug in.
+    AbilityDescription: 'Stop to dig in and BRACE - while planted, energy regenerates faster, x2 at rest and x5 at level 10. Dig in, refill, rush out. Level 5 grants battlefield sight while dug in.'
     Input: 6
-    MultiplierAtFullLevel: 3
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Battle Sight
-    UpgradeDescription: While dug in, key targets are highlighted (design in
-      progress - vision/highlight ability per the class doc).
+    UpgradeDescription: While dug in, every rival vessel within range is marked
+      in its own domain colour, through mass.
   - Element: 4
     AbilityLabel: Rush
-    AbilityDescription: Spend energy to charge forward with a burst of momentum.
-      Time reduces the energy cost of each rush. At level 5 you can steer mid-rush.
+    AbilityDescription: Spend energy to RAM forward - for the length of the burst
+      the hull smashes every rival prism it ploughs into (plain and shielded;
+      super-shielded mass holds). Time refills a spent rush faster, 6 s at rest
+      and 2.5 s at level 10. At level 5 the ram follows your nose.
     Input: 7
-    MultiplierAtFullLevel: 0.4
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Vector Control
-    UpgradeDescription: Improved directional control - change direction while
-      charging instead of committing to a straight line.
+    UpgradeDescription: The ram follows your nose - turn mid-rush and the charge
+      turns with you, carving a curved swathe instead of a straight one.

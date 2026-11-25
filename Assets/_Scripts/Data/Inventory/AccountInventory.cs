@@ -13,7 +13,8 @@ namespace CosmicShore.Data
     /// <see cref="Normalize"/> repairs anything a hand-edited, partial or older record can carry. The invariants:</para>
     /// <list type="bullet">
     /// <item>every id is unique and well formed (<see cref="UniqueId"/>);</item>
-    /// <item>the crew holds at most one pilot per callsign (VOYAGES.md §6.2.1);</item>
+    /// <item>a painted pilot is in the crew at most once (<see cref="PilotRecord.PaintedKey"/>); a callsign may be carried
+    /// by more than one person (Garrett, 2026-11-16);</item>
     /// <item>every artifact accepts exactly one track element and its crystals fed are never negative;</item>
     /// <item>the captain, and every Hangar seat and slot, names something the account holds.</item>
     /// </list>
@@ -33,6 +34,15 @@ namespace CosmicShore.Data
         public List<HangarLoadout> Hangar = new();
         /// <summary>True once the starter crew and hoard were granted (<c>AccountInventoryStore</c>).</summary>
         public bool StarterGranted;
+        /// <summary>The painted pilots ever granted to this crew (<see cref="PilotRecord.PaintedKey"/>), so one the player
+        /// discontinued is not granted again.</summary>
+        public List<string> PaintedGranted = new();
+        /// <summary>This account's crew: the painted pilots it is dealt, one a callsign, in callsign order
+        /// (<c>PaintedCrewSO.Grant</c>; Garrett, 2026-11-18: "each player of our game has a unique crew of pilots"). Set
+        /// once, from a dealt crew or a random set of the pool, and kept, so a pool that grows never reshuffles it.</summary>
+        public List<string> Crew = new();
+        /// <summary>Which dealt crew this account claimed, counted from 1 (0: none; the crew is a random set).</summary>
+        public int ClaimedCrew;
         /// <summary>True once this device's pre-inventory PlayerPrefs (Hangar seats, slots, track levels) were folded in.</summary>
         public bool DeviceImportDone;
 
@@ -47,7 +57,7 @@ namespace CosmicShore.Data
             return null;
         }
 
-        /// <summary>The crew's pilot carrying <paramref name="callsignId"/> (<c>pilot.callsign.volt</c>), or null.</summary>
+        /// <summary>The crew's first pilot carrying <paramref name="callsignId"/> (<c>pilot.callsign.volt</c>), or null.</summary>
         public PilotRecord PilotWithCallsign(string callsignId)
         {
             if (string.IsNullOrEmpty(callsignId) || Pilots == null) return null;
@@ -58,10 +68,24 @@ namespace CosmicShore.Data
 
         public bool HasCallsign(PilotVision vision) => PilotWithCallsign(Callsigns.IdOf(vision)) != null;
 
+        /// <summary>True when the painted pilot <paramref name="key"/> is one of this account's crew (always true while
+        /// no crew has been dealt).</summary>
+        public bool InCrew(string key) => Crew == null || Crew.Count == 0 || Crew.Contains(key);
+
+        /// <summary>The crew's pilot who is the painted pilot <paramref name="key"/>, or null.</summary>
+        public PilotRecord PaintedPilot(string key)
+        {
+            if (string.IsNullOrEmpty(key) || Pilots == null) return null;
+            foreach (var p in Pilots)
+                if (p != null && p.PaintedKey == key) return p;
+            return null;
+        }
+
+        /// <summary>CallsignTaken: the painted pilot is already in the crew (a callsign itself may be carried twice).</summary>
         public enum AddResult { Added = 0, Invalid = 1, DuplicateId = 2, CallsignTaken = 3, Full = 4 }
 
-        /// <summary>Adds <paramref name="pilot"/> to the crew. Refused when its id is malformed or held, or the crew
-        /// already has a pilot with its callsign.</summary>
+        /// <summary>Adds <paramref name="pilot"/> to the crew. Refused when its id is malformed or held, or the painted
+        /// pilot it is is already in the crew.</summary>
         public AddResult TryAddPilot(PilotRecord pilot)
         {
             Pilots ??= new List<PilotRecord>();
@@ -70,14 +94,15 @@ namespace CosmicShore.Data
             if (string.IsNullOrEmpty(pilot.CallsignId)) pilot.CallsignId = template;
             if (pilot.CallsignId != template) return AddResult.Invalid;
             if (Pilot(pilot.Id) != null) return AddResult.DuplicateId;
-            if (PilotWithCallsign(template) != null) return AddResult.CallsignTaken;
+            if (PaintedPilot(pilot.PaintedKey) != null) return AddResult.CallsignTaken;
             Pilots.Add(pilot);
             return AddResult.Added;
         }
 
         /// <summary>
         /// Rolls and adds a new pilot on <paramref name="callsign"/>, re-rolling (up to 8 seeds) until the person's name is
-        /// new to this crew. Null when the crew already has the callsign. <paramref name="seeds"/> feeds the seeds (tests);
+        /// new to this crew. Null when the crew already has the callsign (a rolled recruit is still one a callsign; the
+        /// painted crew is not, <c>PaintedCrewSO.Grant</c>). <paramref name="seeds"/> feeds the seeds (tests);
         /// null draws fresh ones.
         /// </summary>
         public PilotRecord MintPilot(PilotVision callsign, FactionType factionType, string origin, long nowMs, Func<ulong> seeds = null)
@@ -356,8 +381,8 @@ namespace CosmicShore.Data
         // ── Repair ──────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Repairs the inventory after a load: missing lists, null and malformed entries, repeated ids, a second pilot on
-        /// one callsign (the first is kept), an artifact attuned to no track element, negative or broken curve numbers,
+        /// Repairs the inventory after a load: missing lists, null and malformed entries, repeated ids, a painted pilot
+        /// held twice (the first is kept), an artifact attuned to no track element, negative or broken curve numbers,
         /// text the UI font cannot draw, a captain or Hangar pick that names nothing held. Idempotent.
         /// </summary>
         public void Normalize()
@@ -367,11 +392,12 @@ namespace CosmicShore.Data
             Hangar ??= new List<HangarLoadout>();
 
             var ids = new HashSet<string>();
-            var callsigns = new HashSet<string>();
+            var painted = new HashSet<string>();
             Pilots.RemoveAll(p =>
             {
                 if (p == null || !UniqueId.TrySplit(p.Id, out string template, out _) || !Callsigns.TryParse(template, out _)) return true;
-                if (!ids.Add(p.Id) || !callsigns.Add(template)) return true;
+                p.PaintedKey = PilotGenerator.Printable(p.PaintedKey);
+                if (!ids.Add(p.Id) || (p.PaintedKey.Length > 0 && !painted.Add(p.PaintedKey))) return true;
                 p.CallsignId = template;
                 p.GivenName = PilotGenerator.Printable(p.GivenName);
                 p.FamilyName = PilotGenerator.Printable(p.FamilyName);
@@ -381,6 +407,16 @@ namespace CosmicShore.Data
                 if (p.Chronicle.Count > PilotRecord.MaxChronicle) p.Chronicle.RemoveRange(0, p.Chronicle.Count - PilotRecord.MaxChronicle);
                 return false;
             });
+
+            Crew ??= new List<string>();
+            Crew.RemoveAll(string.IsNullOrEmpty);
+            if (ClaimedCrew < 0) ClaimedCrew = 0;
+
+            PaintedGranted ??= new List<string>();
+            var granted = new HashSet<string>();
+            PaintedGranted.RemoveAll(k => string.IsNullOrEmpty(k) || !granted.Add(k));
+            foreach (var key in painted)
+                if (granted.Add(key)) PaintedGranted.Add(key);
 
             ids.Clear();
             Artifacts.RemoveAll(a =>

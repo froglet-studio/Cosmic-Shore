@@ -108,23 +108,25 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
-    /// One rung of the Maelstrom's intensity ladder: the modes this intensity ADDS to the draw
-    /// pool.
+    /// One Maelstrom intensity's game BUCKET: exactly the modes a run at this intensity deals.
     ///
-    /// <para>Tiers are CUMULATIVE — a run at intensity N draws from every tier up to and including
-    /// N — so "more intensity, more games" is the whole model and a mode is authored once, at the
-    /// rung it first appears on. That is also why a tier lists what it adds rather than the full
-    /// pool: authoring the full pool per rung means every new mode has to be pasted into three
-    /// lists, and the day one of them is missed the pool silently shrinks at that intensity.</para>
+    /// <para>Tiers are EXCLUSIVE, not a cumulative ladder (Garrett, 2026-11-16): 1 Beginner (games a
+    /// new player can pick up and play), 2 Great (so polished we are afraid to change them), 3 Good
+    /// (already very fun, we want feedback), 4 Floor (everything else, played to find the games to
+    /// raise). A run at intensity N draws only tier N. A mode may be listed in several tiers ("once
+    /// we empty 4 we can refill it with everything"); today every arcade card is in exactly one.
+    /// The tiers are written by <c>Tools/Build/maelstrom_tiers.py --write</c> from measured
+    /// evidence and people's verdicts (Docs/MaelstromSystem/INTENSITY_TIERS.md) - not by hand.</para>
     /// </summary>
     [System.Serializable]
     public class MaelstromIntensityTier
     {
-        [Tooltip("The intensity at which these modes enter the pool.")]
+        [Tooltip("The Maelstrom intensity that deals these modes.")]
         [Range(1, 4)] public int Intensity = 1;
 
-        [Tooltip("Modes ADDED at this intensity. Every mode listed here must also be in GameQueue " +
-                 "- that list stays the full roster the hub and the loading splash read.")]
+        [Tooltip("Every mode a run at this intensity can draw (this tier only - tiers do not " +
+                 "accumulate). Every mode listed here must also be in GameQueue - that list stays " +
+                 "the full roster the hub and the loading splash read.")]
         public List<SO_ArcadeGame> Games = new();
     }
 
@@ -153,9 +155,9 @@ namespace CosmicShore.Utility
         [Header("Lineup")]
         [Tooltip("The POOL a round is drawn from - the host picks a random entry per round (no " +
                  "immediate repeat), so serialized order is display order only (the hub's pool " +
-                 "string), never play order. Currently SIXTEEN - every domain-scored arcade mode " +
-                 "that fits the Maelstrom card's player/domain range. Which of them a given run " +
-                 "can draw is IntensityTiers, not this list.\n\n" +
+                 "string), never play order. EVERY arcade card (ArcadeGames.asset minus Maelstrom " +
+                 "itself), written by Tools/Build/maelstrom_tiers.py --write. Which of them a given " +
+                 "run can draw is IntensityTiers, not this list.\n\n" +
                  "Adding a mode: it must be a domain-scored multiplayer mode whose ScoringRuleSO " +
                  "can ResolvePlacementOrder, its scene must be in Build Settings, and its card's " +
                  "player/domain range must contain the Maelstrom card's (2-4 players, 2+ domains). " +
@@ -164,13 +166,16 @@ namespace CosmicShore.Utility
                  "so the round forces its own hull.")]
         public List<SO_ArcadeGame> GameQueue = new();
 
-        [Tooltip("The intensity LADDER over that pool: which modes a given intensity unlocks, " +
-                 "cumulatively. A run at intensity N draws only from tiers 1..N, so raising the " +
-                 "lobby's intensity widens the draw as well as raising each game's own intensity " +
-                 "ceiling.\n\n" +
+        [Tooltip("The four game BUCKETS over that pool, one per Maelstrom intensity: 1 Beginner, " +
+                 "2 Great, 3 Good, 4 Floor (everything else). A run at intensity N draws ONLY " +
+                 "tier N's modes - tiers do not accumulate. The lobby intensity still caps each " +
+                 "game's own intensity roll at [1..N].\n\n" +
+                 "Written by Tools/Build/maelstrom_tiers.py --write (Docs/MaelstromSystem/" +
+                 "INTENSITY_TIERS.md); `--check` fails when this list drifts from it.\n\n" +
                  "LEAVE EMPTY for the legacy behaviour - every mode in GameQueue is drawable at " +
-                 "every intensity. That fallback is what keeps an un-authored asset playable " +
-                 "rather than pool-less, which would be a mode that cannot start.")]
+                 "every intensity. A tier with no modes falls back the same way. That fallback is " +
+                 "what keeps an un-authored asset playable rather than pool-less, which would be a " +
+                 "mode that cannot start.")]
         public List<MaelstromIntensityTier> IntensityTiers = new();
 
         [Tooltip("Scene loaded as the tournament lobby/intro (the SO_ArcadeGame card for " +
@@ -418,37 +423,44 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The modes drawable at <paramref name="intensity"/> — every <see cref="IntensityTiers"/>
-        /// rung up to and including it, in pool order, with anything not in <see cref="GameQueue"/>
-        /// dropped (the queue is the roster; a tier naming a card that is not on it is an authoring
-        /// slip, not a way to smuggle one in).
+        /// The modes drawable at <paramref name="intensity"/> — exactly the <see cref="IntensityTiers"/>
+        /// bucket for that intensity (tiers are EXCLUSIVE: 1 Beginner, 2 Great, 3 Good, 4 Floor), in
+        /// pool order, with anything not in <see cref="GameQueue"/> dropped (the queue is the roster;
+        /// a tier naming a card that is not on it is an authoring slip, not a way to smuggle one in).
         ///
-        /// <para>With no tiers authored this returns the whole queue — the legacy pool — so the
-        /// mode is never left unable to draw.</para>
+        /// <para>With no tiers authored, or an EMPTY bucket for this intensity, this returns the whole
+        /// queue — the legacy pool — so the mode is never left unable to draw.</para>
         /// </summary>
         public List<SO_ArcadeGame> GamesForIntensity(int intensity)
         {
             var result = new List<SO_ArcadeGame>();
             if (GameQueue == null) return result;
 
-            if (IntensityTiers == null || IntensityTiers.Count == 0)
+            if (IntensityTiers != null && IntensityTiers.Count > 0)
             {
+                int level = Mathf.Clamp(intensity <= 0 ? 1 : intensity, 1, 4);
+
+                // Walk the QUEUE, not the tiers: pool order is the queue's order, so the hub's pool
+                // string and the launch panel's list read the same way at every intensity.
                 foreach (var game in GameQueue)
-                    if (game != null) result.Add(game);
-                return result;
+                    if (game != null && IsInTier(game, level)) result.Add(game);
+
+                if (result.Count > 0) return result;
             }
 
-            int ceiling = Mathf.Clamp(intensity <= 0 ? 1 : intensity, 1, 4);
-
-            // Walk the QUEUE, not the tiers: pool order is the queue's order, so the hub's pool
-            // string and the launch panel's list read the same way at every intensity.
             foreach (var game in GameQueue)
-            {
-                if (game == null) continue;
-                int unlock = UnlockIntensityOf(game);
-                if (unlock > 0 && unlock <= ceiling) result.Add(game);
-            }
+                if (game != null) result.Add(game);
             return result;
+        }
+
+        /// <summary>True when the <paramref name="intensity"/> bucket lists <paramref name="game"/>.</summary>
+        public bool IsInTier(SO_ArcadeGame game, int intensity)
+        {
+            if (game == null || IntensityTiers == null) return false;
+            foreach (var tier in IntensityTiers)
+                if (tier?.Games != null && Mathf.Clamp(tier.Intensity, 1, 4) == intensity && tier.Games.Contains(game))
+                    return true;
+            return false;
         }
 
         /// <summary>True when <paramref name="game"/> has already been dealt out of this shuffle's bag.</summary>
@@ -464,9 +476,9 @@ namespace CosmicShore.Utility
         public void RefillDrawBag() => DrawnGames.Clear();
 
         /// <summary>
-        /// The lowest intensity at which <paramref name="game"/> is drawable, or 0 when no tier
-        /// lists it (it never enters the pool — the honest answer, and what lets the launch panel
-        /// grey it out rather than promise it).
+        /// The lowest intensity whose bucket deals <paramref name="game"/> (its tier, while every card
+        /// is in exactly one), or 0 when no tier lists it (it is never drawn — the honest answer, and
+        /// what lets the launch panel grey it out rather than promise it).
         ///
         /// <para>With no tiers authored every queued mode answers 1, matching the legacy pool.</para>
         /// </summary>
@@ -482,7 +494,7 @@ namespace CosmicShore.Utility
                 if (!tier.Games.Contains(game)) continue;
 
                 int level = Mathf.Clamp(tier.Intensity, 1, 4);
-                if (best == 0 || level < best) best = level;   // first rung it appears on wins
+                if (best == 0 || level < best) best = level;   // the lowest bucket that lists it
             }
             return best;
         }

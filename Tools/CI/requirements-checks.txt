@@ -1,0 +1,11 @@
+# Python packages the static checks import that the GitHub-hosted Ubuntu image does not ship.
+# Installed by the "Install the Python packages the checks import" step in
+# .github/workflows/bleeding-edge-guard.yml and unity-ci.yml (and by the guard's autofix prompt).
+#
+# numpy: author_flatline_assets.py, author_corona_assets.py and author_shatterplane_assets.py
+#   --check rebuild their prism layouts through *_budget.py, which mirror the C# in float32 with
+#   numpy. The runner had none, so all three crashed with ModuleNotFoundError and held
+#   bleeding-edge red from 2026-11-09 (Docs/Reports/TRUNK_HEALTH.md). numpy 2 (NEP 50 promotion):
+#   numpy 1 promotes a float32 scalar times a Python float to float64, which changes the bytes
+#   these mirrors write. The committed layouts verify on numpy 2.x.
+numpy>=2,<3

@@ -1,5 +1,5 @@
 {
- "_about": "What each ability DOES in play, for the Fleet Codex's cards. The ability maps record what each element scales and the level-5 upgrade, but not what the ability itself does, so this is the codex's second hand table (seats.json is the first). Per vessel (the map's file name) and element: ability (must equal the map's AbilityLabel, or the entry is dropped with a warning), does (what the player does and what happens), trigger (how it fires; the page draws the button), scales (what more of the element does, in player words) and source (the doc or code it was read from: assets and code win over docs). Omni is what an omni crystal does for the hull. An optional tint ({rest, l5}: domain or omni) records an icon the HUD paints other than the pilot's domain, with its source. Written 2026-11-02 from each source; re-read the source and update the entry whenever the generator warns or the ability changes.",
+ "_about": "What each ability DOES in play, for the Fleet Codex's cards. The ability maps record what each element scales and the level-5 upgrade, but not what the ability itself does, so this is the codex's second hand table (seats.json is the first). Per vessel (the map's file name) and element: ability (must equal the map's AbilityLabel, or the entry is dropped with a warning), does (what the player does and what happens), trigger (how it fires; the page draws the button), scales (what more of the element does, in player words) and source (the doc or code it was read from: assets and code win over docs). Omni is what an omni crystal does for the hull. An optional tint ({rest, l5}: domain or omni) records an icon the HUD paints other than the pilot's domain, with its source. Written 2026-11-02 from each source; re-read the source and update the entry whenever the generator warns or the ability changes. Dynamics (optional, a list) are a vessel's core flight moves no element changes (the Sparrow's barrel roll, 2026-11-24): ability, does, trigger, pad, pc, touch, icon (the repo PNG its HUD core card shows) and source.",
  "Angler": {
   "Charge": {
    "ability": "Erase / Lock-on",
@@ -154,17 +154,17 @@
   },
   "Mass": {
    "ability": "Weapon Systems",
-   "does": "Cycles your fire between three weapons: explosive shells, a sniper shot, and a plasma claw that sets enemy prisms on fire with a burn that spreads and destroys them.",
-   "trigger": "Tap to cycle",
+   "does": "Cycles three weapons, and the triggers follow: bombs on each trigger, the plasma claw (one claw per trigger, sized by pressure, slashing down and across on release) or the sniper (LT scope with pressure zoom, RT fire). Every enemy prism the claw lights refills your energy.",
+   "trigger": "Tap to cycle (Y or LB)",
    "scales": "Mass does not change this ability right now.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_PLASMA_CLAW.md"
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md"
   },
   "Space": {
-   "ability": "Charged Cannon",
-   "does": "Hold to charge a shell from your energy and release to fire it. Press again to freeze it where it is, then let go to set it off. Bigger charge, bigger blast, and the blast can launch you.",
+   "ability": "Trigger Bombs",
+   "does": "In Explosives, LT and RT each own a bomb. Pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to set it off. Sit in your own blast and it throws you away from the bomb, so leave it behind you and blow it to be thrown forward.",
    "trigger": "Hold, release to fire",
-   "scales": "More Space makes the cannon's explosions bigger.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_CHARGED_CANNON.md"
+   "scales": "Space does not change the trigger bombs yet: its scaling and level-5 still sit on the charged cannon, which no longer has a button.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md"
   },
   "Time": {
    "ability": "Rush",
@@ -389,7 +389,7 @@
    "ability": "Shove",
    "does": "Every hard dash throws a broad flat plate along your path that shreds prisms, kills creatures and debuffs any rival pilot it engulfs, flinging everything the way you dashed. It recovers in a few seconds.",
    "trigger": "Passive - rides your dash",
-   "scales": "More Charge recharges the shove faster: 2.5 s at rest, 1.25 s at Charge 10.",
+   "scales": "More Charge recharges the shove faster: 4.25 s at rest, 2.125 s at Charge 10.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
   },
   "Mass": {
@@ -516,7 +516,7 @@
   },
   "Time": {
    "ability": "Afterburner",
-   "does": "Boost for as long as you hold - no heat, no meter. Push the stick fully to one side as you start boosting and the Sparrow does a quick strafing roll, even while stopped.",
+   "does": "Boost for as long as you hold - no heat, no meter.",
    "trigger": "Hold",
    "scales": "More Time raises your boost speed.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md"
@@ -526,7 +526,19 @@
    "does": "For 8 seconds danger prisms, blasts and overtakes cannot lower your elements; buffs still land. Missiles now reload by shooting prisms, not from crystals.",
    "trigger": "Pick up an omni crystal",
    "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/VesselWardByCrystalEffectSO.cs"
-  }
+  },
+  "Dynamics": [
+   {
+    "ability": "Barrel Roll",
+    "does": "Push the right stick any way and the Sparrow rolls that way, sliding sideways as it spins. Hold the stick and it keeps rolling, one roll after another. Works stopped in Turret Stance too. No element changes it: it is how the Sparrow flies.",
+    "trigger": "Push the right stick, hold to keep rolling",
+    "pad": "Right stick",
+    "pc": "P ; L '",
+    "touch": "Not on the phone yet",
+    "icon": "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Core/Sparrow_BarrelRoll.png",
+    "source": "Assets/_Scripts/Controller/Vessel/BarrelRollController.cs"
+   }
+  ]
  },
  "Squirrel": {
   "Charge": {
@@ -597,30 +609,30 @@
  "Stoat": {
   "Charge": {
    "ability": "Ripple",
-   "does": "Whenever one of your hole pairs collapses, it throws a space-time ripple that strips a petal of every element from each rival it sweeps over and kills creatures. It never touches prisms, you or teammates.",
-   "trigger": "Passive - when your pair collapses",
+   "does": "Whenever one of your swing holes collapses, it throws a space-time ripple that strips a petal of every element from each rival it sweeps over and kills creatures. It never touches prisms, you or teammates.",
+   "trigger": "Passive - when your hole collapses",
    "scales": "More Charge makes the ripple reach further.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
   },
   "Mass": {
    "ability": "Heavy Launch",
-   "does": "Your launch out of an orbit hits harder. Let go or flick your steering thumb to fly out of the orbit, aimed where you flick or steer, and the kick carries more momentum.",
-   "trigger": "Passive - on every launch",
-   "scales": "More Mass makes the launch kick harder.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md"
+   "does": "A second push as the swing lets you go. It is switched off for now (one slingshot: the swing's own speed), so Mass changes nothing on the swing until it is turned back on.",
+   "trigger": "Passive - as a swing lets you go (off)",
+   "scales": "More Mass would make the second push harder.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
   },
   "Space": {
    "ability": "Catch Orbit",
-   "does": "Lay a black hole and its white hole ahead, the black hole on the side you pressed. Fly past it on that side and it catches you into an orbit: squeeze for a tighter circle, let go or flick to launch where you aim.",
-   "trigger": "Press, hold to orbit, release or flick to launch",
-   "scales": "More Space widens the orbit your hole pair catches you into.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md"
+   "does": "Press and a small black hole is laid ahead on the side you pressed. Fly past beside it and it swings your heading round toward itself, as far as your stick asks: toward the hole the most, away the least. Then it lets you go on that heading with the swing's speed. Nothing is drawn for it.",
+   "trigger": "Press, fly past the hole; release mid-swing to leave at once",
+   "scales": "More Space starts the swing from further out.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
   },
   "Time": {
    "ability": "Timed Slingshot",
-   "does": "While you orbit, your clock warps and you fly faster. Let go about a quarter-turn after the catch, when the dotted circle turns lime, for the full slingshot kick; any other moment gives only a fraction.",
-   "trigger": "Passive - release timing while orbiting",
-   "scales": "More Time speeds up the orbit's warp and strengthens the slingshot kick.",
+   "does": "While your black hole is up your clock warps and you fly faster: a little from the press, fully while it swings you, and the swing's speed stays with you for a few seconds afterwards.",
+   "trigger": "Passive - while a swing hole is up",
+   "scales": "More Time makes the warp stronger.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md"
   },
   "Omni": {
@@ -663,7 +675,7 @@
    "ability": "Surge",
    "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
    "trigger": "Pick up an omni crystal",
-   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffectSO.cs"
   }
  },
  "Thresher": {

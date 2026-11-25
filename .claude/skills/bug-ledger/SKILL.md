@@ -82,7 +82,7 @@ Worst first (open, then regressions, then times seen). One issue on several bran
    work, or a `Debug.Log` are not fixes (CLAUDE.md § What Claude Code Should Never Do).
 5. **Load the area's skill / topic file first**; shared prefabs and SOs are fixed once at the source.
 6. A DESIGN or CONTENT call (an FMOD event's loop region, what a skimmer should do) is not yours:
-   restore established behaviour if you can, and file it as a `decision` ticket (`/team-tasks add`, naming nobody).
+   restore established behaviour if you can, and tell your person it is a decision for the area's owner (`/handoff-open` with a note, naming nobody, on their yes).
 7. Team rules (CLAUDE.md § Team): a fix in another collaborator's area beyond a wiring/data repair
    is a task for its owner, not a commit; commits there say `Affects: <person>'s <area>`.
 
@@ -136,6 +136,14 @@ is not in their checkout; no play-run lines at all means the ledger's play-mode 
 - The gates you touched, and `python3 Tools/Build/bug_ledger.py --self-test` if you touched the script.
 
 ## 6. The daily sweep (scheduled task, once a day)
+
+**A development build does not send to the ledger.** Only the editor does. A phone's sessions reach Git when it is
+plugged in and ingested (`Docs/perf/DEVICE_LOGS.md`), on `bugledger-android/<user>`, which `collect` does not read; a
+Windows development build sends nothing. So the sweep also runs `python3 Tools/Perf/android_logs_report.py report --new`
+and triages its "Top exceptions / errors" like ledger issues (they have no id: record them in `BUG_HUNT.md`), and runs
+`python3 Tools/Build/check_gamelist_scenes.py`, which finds a card or training game that leads to a deleted scene with
+no play test at all (2026-11-20: "Scene 'MinigameElimination' couldn't be loaded" showed in a build's console and was
+on no ledger branch).
 
 `collect` → fix what you can on `Ys-bleeding-edge` (§2-§3) → import bugs filed on the Team Bug Board
 (`ArtifactData list` of `filed`, rows with `status == "new"`: `bug_ledger.py file --title … --notes …

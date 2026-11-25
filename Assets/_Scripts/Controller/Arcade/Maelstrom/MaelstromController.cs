@@ -410,8 +410,10 @@ namespace CosmicShore.Gameplay
                     ? profiles[drawn].Name
                     : $"AI {seats.Count + 1}";
 
-                var domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
-                totalCounts[domain]++;
+                // The seat's ordinal is its index in the roster, which is the order the launch panel placed its AI
+                // in: a domain the host placed there wins, as it does in every other mode.
+                var domain = ServerPlayerVesselInitializerWithAI.PlacedOrBalancedDomain(
+                    seats.Count, _gameData.RequestedAIDomains, totalCounts, humanCounts);
 
                 seats.Add(new MaelstromAISeat { Name = name, Domain = domain });
             }
@@ -489,8 +491,9 @@ namespace CosmicShore.Gameplay
             int ceiling = Mathf.Clamp(_tournament.IntensityCeiling <= 0 ? 1 : _tournament.IntensityCeiling, 1, 4);
 
             // The lobby's intensity does TWO things: it caps each game's own intensity, and it
-            // decides how wide the pool is (MaelstromDataSO.IntensityTiers). An un-authored
-            // ladder returns the whole queue, so this is the legacy draw until tiers are written.
+            // picks WHICH bucket of games is dealt (MaelstromDataSO.IntensityTiers: 1 Beginner,
+            // 2 Great, 3 Good, 4 Floor - exclusive, not a ladder). An un-authored or empty bucket
+            // returns the whole queue, so the mode can always draw.
             var drawable = _tournament.GamesForIntensity(ceiling);
             if (drawable.Count == 0) return false;
 

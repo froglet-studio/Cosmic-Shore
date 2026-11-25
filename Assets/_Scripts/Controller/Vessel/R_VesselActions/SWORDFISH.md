@@ -22,6 +22,42 @@ energize, the two keys), `RHINO_SHIELD_SWIPE.md` (the pose rig), `RHINO_SWORD_AF
 `RHINO_RAMP_BOOST.md`. Read "the Rhino" there as "the Swordfish" for anything about the sword. The code keeps its
 `RhinoSword*` names: the classes are the sword's, and renaming them is a separate change.
 
+## Brood Rush: the afterimages are its mass (2026-11-21, Plan step: massspace-arena)
+
+Brood Rush scores net control of space (VC + VD, the VolumeLedger). The Swordfish's trail is the Rhino's flat 3x3x0.5
+block with gap 2, so almost all the mass it lays is its **afterimages**: capping them at one per window dropped its
+Brood Rush index from 0.73 to 0.24. Its Mass lever is therefore the afterimage volume at rest, not the trail
+(`SwordfishSwordAfterimageConfigSO.massVolumeMultiplier`: x1 -> x2.5 became **x1.7 -> x4.25**, floor x0.5 unchanged).
+The count, window, lay rate and the trail stay as they were, so the bill cuts the same number of afterimages and the
+slice fuel (the Regatta pace) is unchanged.
+
+Measured with `Tools/Compute/evaluators/brood_judge.py`'s engine at Unity's real setup (AI at Medium, 3 teams of 3),
+20 matches a row, every match the Swordfish plus 8 of the 14 balanced card hulls, the same rosters and seeds in every
+row (index = its VC + VD over the match mean; bar 0.90-1.10):
+
+| Lever (its own kit) | Index | VC share | VD share |
+|---|---|---|---|
+| Shipped | 0.73 ± 0.04 | 0.68 | 1.15 |
+| Afterimages capped at 1 a window (how much of its mass they are) | 0.24 ± 0.03 | 0.11 | 1.34 |
+| Trail volume x2.5 | 0.79 ± 0.05 | 0.72 | 1.37 |
+| Trail plates 3x thicker (the Rhino thread's fix) | 0.82 ± 0.03 | 0.78 | 1.13 |
+| Afterimage volume x1.5 | 0.86 ± 0.06 | 0.84 | 1.00 |
+| **Afterimage volume x1.7 (shipped)** | **1.03 ± 0.06** | 1.03 | 1.07 |
+| Afterimages x3 a window, 15 s window | 1.14 ± 0.08 | 1.17 | 0.76 |
+| Afterimage volume x3 | 1.52 ± 0.07 | 1.65 | 0.81 |
+
+Data: `/mnt/project-files/regatta-flywheel/broodrush-deep/swordfish/`. Regatta (`regatta_judge.py --course shuffle`, seeds 1-3, geometric mean of the 8 courses): card 71.2 -> 71.1 s, L5 66.3
+-> 65.7 s, both inside the field.
+
+## The ramp runs on slices (2026-11-18)
+
+Garrett, 2026-11-18: "the rhino and sword fish have natural levers for their design changes. they like to slice and
+plow. make their boosting resource tied to their slicing and plowing." The ramp burns a fuel tank and every prism the
+bill slices refills it; an empty tank keeps a 2.5x ramp instead of the 16.8x top (`RHINO_RAMP_BOOST.md` § "Fuel").
+**Quickdraw also refuels faster**: Time multiplies the fuel a slice pays, x1 at rest to x4.5 at level 10, because Time
+is the sword's rate and nothing else in the kit gave Time any pace (Regatta at L5 was slower than at rest). The hull
+ram earns nothing: slicing is the bill's job.
+
 ## Fundamentals pass (2026-11-12)
 
 Garrett, 2026-11-12: "lets also get the sword fish polished out as well", the way the Rhino was reworked (#1927): each
@@ -31,18 +67,18 @@ Charge has PvP, each vessel morphs the omni crystal into its own effect, and not
 | Element | Before | Now | Fundamental |
 |---|---|---|---|
 | Charge | Energize / Sword Steal | unchanged | PvP: a sword hit takes x1 -> x2.5 petals; L5 pockets them |
-| Mass | Afterimage / Danger Afterimages | unchanged | size: the afterimages' volume x1 -> x2.5 |
+| Mass | Afterimage / Danger Afterimages | unchanged | size: the afterimages' volume x1 -> x2.5 (x1.7 -> x4.25 since 2026-11-21, its Brood Rush lever) |
 | Space | Blade Reach / Shield Breaker | unchanged | reach: the blade 24 -> 40 |
 | Time | Ramp Spool / Momentum, **shared with the Rhino** | **Quickdraw / Flurry** | rate: the sword's rate x1 -> x2.5 |
 | Omni | Surge **plus the Rhino's old crystal blast** (200-500 AOE) and the sphere-blast morph | **Surge** alone, the crystal **absorbed** into the hull | its own effect |
 
 - **Quickdraw** divides the energize hold (1 -> 0.4 s), the energize cooldown (5 -> 2 s) and the swipe recovery
   (0.35 -> 0.14 s) by Time's rate, x1 at rest to x2.5 at level 10, floored x0.5
-  (`ShieldSkimmerScaleConfigSO.timeSwordRateMultiplier`, `RhinoShieldSwipeConfigSO.timeSwipeRateMultiplier`, read
+  (`ShieldSkimmerScaleConfigSO.timeSwordRateMultiplier`, `SwordfishShieldSwipeConfigSO.timeSwipeRateMultiplier`, read
   live; the energize is decided on the owner and replicated, so only the owner's read matters for it). The let-go tail
   is a duration and stays 5 s. The cooldown's length is taken when it starts, so the HUD veil sweeps what the pilot got.
 - **Flurry** (Time L5) takes the swipe recovery away for good: the sword swings as freely as an energized blade, lit or
-  not (`RhinoShieldSwipeConfigSO.flurryUpgradeElement`, `IsUpgradeActive(Time)` in
+  not (`SwordfishShieldSwipeConfigSO.flurryUpgradeElement`, `IsUpgradeActive(Time)` in
   `ShieldSwipeActionExecutor.ApplySwipeRecovery`).
 - **The ramp stays** (it is how the Swordfish flies, 840 u/s top speed), on its own asset
   `SwordfishRampBoostAction.asset` with the Time scaling switched off; `RhinoRampBoostAction.asset` is the Rhino's
@@ -78,7 +114,7 @@ sword."*
 | Camera | looks 18 units above the hull (`lookAheadLift`) | no offset at rest (`SwordfishCameraSettingsSO`, lift 0); pans by the sword's midpoint, x for the side and y for up (`SwordfishSwordCamera` -> `CustomCameraController.FramingPan`) |
 | Phone, both thumbs off | the sword energizes | it also stands up, and tilt steers as on the Manta (`tiltSteersWhileIdle`, `flipTiltSteerPitch`) |
 
-The mapping is `RhinoShieldSwipeConfigSO.poseMapping = Bill` (`SwordPoseMapping`, with `billSideYawDegrees`,
+The mapping is `SwordfishShieldSwipeConfigSO.poseMapping = Bill` (`SwordPoseMapping`, with `billSideYawDegrees`,
 `billSideRollDegrees`, `billRaiseDegrees`, `billCameraCentring`, `billCameraPanSeconds`); `Chop` is the old swordsman,
 kept for any hull that wants it. `ShieldSwipeActionExecutor.BillChannels` is the pure mapping, tested by
 `SwordfishBillPoseTests` with the camera pan.

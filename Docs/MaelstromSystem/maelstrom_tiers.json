@@ -1,0 +1,2284 @@
+{
+ "verdicts": {
+  "scarabrally": {
+   "tier": 1,
+   "by": "Garrett",
+   "on": "2026-11-16",
+   "note": "his beginner example: the Scarab Time game, just a throttle"
+  },
+  "skimrace": {
+   "tier": 2,
+   "by": "Garrett",
+   "on": "2026-11-16",
+   "note": "his great example"
+  },
+  "joust": {
+   "tier": 3,
+   "by": "Garrett",
+   "on": "2026-11-16",
+   "note": "his good example"
+  }
+ },
+ "blockers": {
+  "cleave": {
+   "what": "the host froze 72 s laying Cleave's 15,380-prism arena and Relay dropped the party, on 2 of 2 Maelstrom draws",
+   "by": "Yash's driven runs, 2026-11-16",
+   "evidence": "Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md finding 1 (Ys-bleeding-edge); B45 in Docs/PartySystem/BUGS.md"
+  }
+ },
+ "schema": "froglet.maelstrom-tiers/1",
+ "doc": "Docs/MaelstromSystem/INTENSITY_TIERS.md",
+ "measured": "2026-11-16",
+ "summary": {
+  "flights": 588,
+  "launches": 312,
+  "funCards": 1,
+  "people": 7,
+  "commits": 12248
+ },
+ "games": [
+  {
+   "key": "skimrace",
+   "name": "Skim Race",
+   "guid": "6314c903ddaceab4cbbd4c5a930101a2",
+   "mode": 33,
+   "modeName": "SkimRace",
+   "scene": "MinigameSkimRace",
+   "hulls": [
+    "Squirrel"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSkimRace.asset",
+   "features": {
+    "commits": 193,
+    "commits14": 9,
+    "authors": 7,
+    "cardAgeDays": 161,
+    "people": 6,
+    "flights": 26,
+    "launches": 20,
+    "finished": 0,
+    "humanMinutes": 33.8,
+    "inputMinutes": 29.6,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.958
+   }
+  },
+  {
+   "key": "joust",
+   "name": "Joust",
+   "guid": "b9646a70b11d4ae438e888620b51e903",
+   "mode": 34,
+   "modeName": "Joust",
+   "scene": "MinigameJoust_Gameplay",
+   "hulls": [
+    "Squirrel"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameJoust.asset",
+   "features": {
+    "commits": 206,
+    "commits14": 3,
+    "authors": 8,
+    "cardAgeDays": 286,
+    "people": 1,
+    "flights": 1,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 2.4,
+    "inputMinutes": 2.4,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.694
+   }
+  },
+  {
+   "key": "scurry",
+   "name": "Scurry",
+   "guid": "f575ea6d5ac47f94788b26826f5e7c16",
+   "mode": 35,
+   "modeName": "Scurry",
+   "scene": "MinigameScurryMultiplayer_Gameplay",
+   "hulls": [
+    "Sparrow",
+    "Manta",
+    "Squirrel"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameScurry.asset",
+   "features": {
+    "commits": 28,
+    "commits14": 2,
+    "authors": 3,
+    "cardAgeDays": 117,
+    "people": 3,
+    "flights": 11,
+    "launches": 6,
+    "finished": 0,
+    "humanMinutes": 10.5,
+    "inputMinutes": 6.6,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.647
+   }
+  },
+  {
+   "key": "rampage",
+   "name": "Rampage",
+   "guid": "3537310ecbdad2e449bbca31d2aa8599",
+   "mode": 2,
+   "modeName": "Rampage",
+   "scene": "MinigameRampage",
+   "hulls": [
+    "Dolphin"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameRampage.asset",
+   "features": {
+    "commits": 161,
+    "commits14": 0,
+    "authors": 14,
+    "cardAgeDays": 1345,
+    "people": 2,
+    "flights": 2,
+    "launches": 2,
+    "finished": 0,
+    "humanMinutes": 10.3,
+    "inputMinutes": 10.3,
+    "abilityRate": 0.97,
+    "funSignoff": "",
+    "maturity": 0.765
+   }
+  },
+  {
+   "key": "cleave",
+   "name": "Cleave",
+   "guid": "a82eebbc56ac62d440583ba3ca36719a",
+   "mode": 39,
+   "modeName": "Cleave",
+   "scene": "MinigameCleave",
+   "hulls": [
+    "Swordfish"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
+   "features": {
+    "commits": 34,
+    "commits14": 3,
+    "authors": 2,
+    "cardAgeDays": 62,
+    "people": 1,
+    "flights": 4,
+    "launches": 4,
+    "finished": 0,
+    "humanMinutes": 5.8,
+    "inputMinutes": 5.8,
+    "abilityRate": 0.17,
+    "funSignoff": "",
+    "maturity": 0.411
+   }
+  },
+  {
+   "key": "wildlifeliberation",
+   "name": "Wildlife Liberation",
+   "guid": "92d40d87acb0b3dc240ae572f013e23c",
+   "mode": 40,
+   "modeName": "WildlifeLiberation",
+   "scene": "MinigameWildlifeLiberation",
+   "hulls": [
+    "Sparrow"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
+   "features": {
+    "commits": 31,
+    "commits14": 0,
+    "authors": 5,
+    "cardAgeDays": 102,
+    "people": 1,
+    "flights": 3,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 2.2,
+    "inputMinutes": 1.6,
+    "abilityRate": 5.0,
+    "funSignoff": "",
+    "maturity": 0.497
+   }
+  },
+  {
+   "key": "dogfight",
+   "name": "Dog Fight",
+   "guid": "82dcda95774e9315039af853ff7e5f6c",
+   "mode": 41,
+   "modeName": "DogFight",
+   "scene": "MinigameDogFight",
+   "hulls": [
+    "Sparrow"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameDogFight.asset",
+   "features": {
+    "commits": 79,
+    "commits14": 1,
+    "authors": 6,
+    "cardAgeDays": 243,
+    "people": 3,
+    "flights": 5,
+    "launches": 2,
+    "finished": 0,
+    "humanMinutes": 7.3,
+    "inputMinutes": 6.7,
+    "abilityRate": 9.86,
+    "funSignoff": "",
+    "maturity": 0.789
+   }
+  },
+  {
+   "key": "bends",
+   "name": "The Bends",
+   "guid": "db4aa46147a6777fb0ad04089b66e41e",
+   "mode": 42,
+   "modeName": "Bends",
+   "scene": "MinigameBends",
+   "hulls": [
+    "Dolphin"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBends.asset",
+   "features": {
+    "commits": 31,
+    "commits14": 0,
+    "authors": 6,
+    "cardAgeDays": 91,
+    "people": 2,
+    "flights": 1,
+    "launches": 2,
+    "finished": 0,
+    "humanMinutes": 0.3,
+    "inputMinutes": 0.3,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.534
+   }
+  },
+  {
+   "key": "scarabscramble",
+   "name": "Scarab Scramble",
+   "guid": "e540e3809a5d1feb5790ed98ad2c139e",
+   "mode": 43,
+   "modeName": "ScarabScramble",
+   "scene": "MinigameScarabScramble",
+   "hulls": [
+    "Scarab"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameScarabScramble.asset",
+   "features": {
+    "commits": 46,
+    "commits14": 1,
+    "authors": 8,
+    "cardAgeDays": 91,
+    "people": 4,
+    "flights": 6,
+    "launches": 6,
+    "finished": 0,
+    "humanMinutes": 17.4,
+    "inputMinutes": 17.4,
+    "abilityRate": 0.29,
+    "funSignoff": "",
+    "maturity": 0.772
+   }
+  },
+  {
+   "key": "salvo",
+   "name": "Salvo",
+   "guid": "f65348fe81a4157c13ef592676bf0436",
+   "mode": 44,
+   "modeName": "Salvo",
+   "scene": "MinigameSalvo",
+   "hulls": [
+    "Sparrow"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSalvo.asset",
+   "features": {
+    "commits": 27,
+    "commits14": 1,
+    "authors": 4,
+    "cardAgeDays": 91,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.333
+   }
+  },
+  {
+   "key": "switchback",
+   "name": "Switchback",
+   "guid": "463f531bfea766723f64654261e07e1a",
+   "mode": 45,
+   "modeName": "Switchback",
+   "scene": "MinigameSwitchback",
+   "hulls": [
+    "Dolphin"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSwitchback.asset",
+   "features": {
+    "commits": 120,
+    "commits14": 22,
+    "authors": 5,
+    "cardAgeDays": 72,
+    "people": 5,
+    "flights": 68,
+    "launches": 37,
+    "finished": 23,
+    "humanMinutes": 147.7,
+    "inputMinutes": 108.6,
+    "abilityRate": 0.15,
+    "funSignoff": "loop step 1 done by Garrett 2026-11-13",
+    "maturity": 0.8
+   }
+  },
+  {
+   "key": "hijack",
+   "name": "Hijack",
+   "guid": "ea87490484976e4db971612d73a90505",
+   "mode": 46,
+   "modeName": "Hijack",
+   "scene": "MinigameHijack",
+   "hulls": [
+    "Urchin"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameHijack.asset",
+   "features": {
+    "commits": 36,
+    "commits14": 2,
+    "authors": 2,
+    "cardAgeDays": 72,
+    "people": 1,
+    "flights": 2,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 5.1,
+    "inputMinutes": 5.1,
+    "abilityRate": 7.59,
+    "funSignoff": "",
+    "maturity": 0.401
+   }
+  },
+  {
+   "key": "tollway",
+   "name": "Tollway",
+   "guid": "4925c6a7e55e2d2735862c426e825119",
+   "mode": 48,
+   "modeName": "Tollway",
+   "scene": "MinigameTollway",
+   "hulls": [
+    "Scarab"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameTollway.asset",
+   "features": {
+    "commits": 30,
+    "commits14": 0,
+    "authors": 3,
+    "cardAgeDays": 72,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.298
+   }
+  },
+  {
+   "key": "headlong",
+   "name": "Headlong",
+   "guid": "4e781b3160ef2400151f0e3c343fbc69",
+   "mode": 49,
+   "modeName": "Headlong",
+   "scene": "MinigameHeadlong",
+   "hulls": [
+    "Rhino"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset",
+   "features": {
+    "commits": 41,
+    "commits14": 10,
+    "authors": 1,
+    "cardAgeDays": 69,
+    "people": 1,
+    "flights": 2,
+    "launches": 2,
+    "finished": 2,
+    "humanMinutes": 3.8,
+    "inputMinutes": 3.8,
+    "abilityRate": 1.04,
+    "funSignoff": "",
+    "maturity": 0.385
+   }
+  },
+  {
+   "key": "breakwater",
+   "name": "Breakwater",
+   "guid": "c24a1cbf15d7aefd73d065972b6d6f43",
+   "mode": 50,
+   "modeName": "Breakwater",
+   "scene": "MinigameBreakwater",
+   "hulls": [
+    "Sparrow"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBreakwater.asset",
+   "features": {
+    "commits": 55,
+    "commits14": 7,
+    "authors": 3,
+    "cardAgeDays": 69,
+    "people": 3,
+    "flights": 12,
+    "launches": 6,
+    "finished": 9,
+    "humanMinutes": 24.1,
+    "inputMinutes": 24.1,
+    "abilityRate": 11.18,
+    "funSignoff": "",
+    "maturity": 0.628
+   }
+  },
+  {
+   "key": "skein",
+   "name": "Skein",
+   "guid": "ec356a45184dd6419a963e6cac412149",
+   "mode": 51,
+   "modeName": "Skein",
+   "scene": "MinigameSkein",
+   "hulls": [
+    "Urchin"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSkein.asset",
+   "features": {
+    "commits": 50,
+    "commits14": 10,
+    "authors": 1,
+    "cardAgeDays": 69,
+    "people": 2,
+    "flights": 3,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 5.1,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.47
+   }
+  },
+  {
+   "key": "bloomrush",
+   "name": "Bloomrush",
+   "guid": "c861a098f037b42e690242e6030fbe5b",
+   "mode": 52,
+   "modeName": "Bloomrush",
+   "scene": "MinigameBloomrush",
+   "hulls": [
+    "Manta"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset",
+   "features": {
+    "commits": 29,
+    "commits14": 4,
+    "authors": 4,
+    "cardAgeDays": 83,
+    "people": 3,
+    "flights": 7,
+    "launches": 2,
+    "finished": 0,
+    "humanMinutes": 13.0,
+    "inputMinutes": 13.0,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.611
+   }
+  },
+  {
+   "key": "redline",
+   "name": "Redline",
+   "guid": "02c43c10ae3229a5111170310826b96e",
+   "mode": 53,
+   "modeName": "Redline",
+   "scene": "MinigameRedline",
+   "hulls": [
+    "Manta"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameRedline.asset",
+   "features": {
+    "commits": 39,
+    "commits14": 16,
+    "authors": 3,
+    "cardAgeDays": 68,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.306
+   }
+  },
+  {
+   "key": "wreckingball",
+   "name": "Wrecking Ball",
+   "guid": "0d2b88a963c0b8aa4ce187e189b80f14",
+   "mode": 54,
+   "modeName": "WreckingBall",
+   "scene": "MinigameWreckingBall",
+   "hulls": [
+    "Scarab"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWreckingBall.asset",
+   "features": {
+    "commits": 18,
+    "commits14": 1,
+    "authors": 2,
+    "cardAgeDays": 63,
+    "people": 1,
+    "flights": 1,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 3.0,
+    "inputMinutes": 3.0,
+    "abilityRate": 12.17,
+    "funSignoff": "",
+    "maturity": 0.341
+   }
+  },
+  {
+   "key": "undertow",
+   "name": "Undertow",
+   "guid": "9424e01b0adcab480d3e77e941ea9c1c",
+   "mode": 55,
+   "modeName": "Undertow",
+   "scene": "MinigameUndertow",
+   "hulls": [
+    "Scarab"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameUndertow.asset",
+   "features": {
+    "commits": 17,
+    "commits14": 2,
+    "authors": 2,
+    "cardAgeDays": 63,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.244
+   }
+  },
+  {
+   "key": "waystation",
+   "name": "Waystation",
+   "guid": "3fb6ebbe9fa8770a2605b42d6b34572a",
+   "mode": 58,
+   "modeName": "Waystation",
+   "scene": "MinigameWaystation",
+   "hulls": [
+    "TigerMoth"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWaystation.asset",
+   "features": {
+    "commits": 29,
+    "commits14": 1,
+    "authors": 2,
+    "cardAgeDays": 53,
+    "people": 5,
+    "flights": 10,
+    "launches": 9,
+    "finished": 4,
+    "humanMinutes": 38.3,
+    "inputMinutes": 25.6,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.617
+   }
+  },
+  {
+   "key": "dustup",
+   "name": "Dustup",
+   "guid": "955223ded035b55bf794b4e227b68ee3",
+   "mode": 59,
+   "modeName": "Dustup",
+   "scene": "MinigameDustup",
+   "hulls": [
+    "TigerMoth"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameDustup.asset",
+   "features": {
+    "commits": 11,
+    "commits14": 0,
+    "authors": 1,
+    "cardAgeDays": 49,
+    "people": 5,
+    "flights": 7,
+    "launches": 6,
+    "finished": 0,
+    "humanMinutes": 33.3,
+    "inputMinutes": 29.0,
+    "abilityRate": 0.83,
+    "funSignoff": "",
+    "maturity": 0.536
+   }
+  },
+  {
+   "key": "tapestry",
+   "name": "Tapestry",
+   "guid": "c3317b6efaa64dcaf2a105158e2ede14",
+   "mode": 60,
+   "modeName": "Tapestry",
+   "scene": "MinigameTapestry",
+   "hulls": [
+    "TigerMoth"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameTapestry.asset",
+   "features": {
+    "commits": 10,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 49,
+    "people": 1,
+    "flights": 4,
+    "launches": 2,
+    "finished": 0,
+    "humanMinutes": 4.2,
+    "inputMinutes": 4.2,
+    "abilityRate": 0.47,
+    "funSignoff": "",
+    "maturity": 0.323
+   }
+  },
+  {
+   "key": "sirocco",
+   "name": "Sirocco",
+   "guid": "2c154134739569beb65452401485f75c",
+   "mode": 61,
+   "modeName": "Sirocco",
+   "scene": "MinigameSirocco",
+   "hulls": [
+    "TigerMoth"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSirocco.asset",
+   "features": {
+    "commits": 9,
+    "commits14": 0,
+    "authors": 1,
+    "cardAgeDays": 49,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.182
+   }
+  },
+  {
+   "key": "grizzlycharge",
+   "name": "Grizzly Charge",
+   "guid": "6072652421f34815898f916dd2d1eb22",
+   "mode": 62,
+   "modeName": "GrizzlyCharge",
+   "scene": "MinigameGrizzlyCharge",
+   "hulls": [
+    "Grizzly"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameGrizzlyCharge.asset",
+   "features": {
+    "commits": 4,
+    "commits14": 0,
+    "authors": 2,
+    "cardAgeDays": 88,
+    "people": 1,
+    "flights": 9,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 14.1,
+    "inputMinutes": 0.2,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.38
+   }
+  },
+  {
+   "key": "grizzlytime",
+   "name": "Grizzly Time",
+   "guid": "b5035790968ac765b9cc0b149d4a8fa9",
+   "mode": 63,
+   "modeName": "GrizzlyTime",
+   "scene": "MinigameGrizzlyTime",
+   "hulls": [
+    "Grizzly"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameGrizzlyTime.asset",
+   "features": {
+    "commits": 7,
+    "commits14": 0,
+    "authors": 1,
+    "cardAgeDays": 41,
+    "people": 3,
+    "flights": 13,
+    "launches": 7,
+    "finished": 5,
+    "humanMinutes": 35.5,
+    "inputMinutes": 32.6,
+    "abilityRate": 4.14,
+    "funSignoff": "",
+    "maturity": 0.471
+   }
+  },
+  {
+   "key": "slingshot",
+   "name": "Slingshot",
+   "guid": "6f4021de68728e35915e17bf449cd2ac",
+   "mode": 64,
+   "modeName": "Slingshot",
+   "scene": "MinigameSlingshot",
+   "hulls": [
+    "Stoat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSlingshot.asset",
+   "features": {
+    "commits": 50,
+    "commits14": 23,
+    "authors": 7,
+    "cardAgeDays": 1172,
+    "people": 3,
+    "flights": 35,
+    "launches": 6,
+    "finished": 2,
+    "humanMinutes": 56.9,
+    "inputMinutes": 56.9,
+    "abilityRate": 0.23,
+    "funSignoff": "",
+    "maturity": 0.854
+   }
+  },
+  {
+   "key": "warpline",
+   "name": "Warpline",
+   "guid": "2956589c7be841936a061a16148ecf27",
+   "mode": 65,
+   "modeName": "Warpline",
+   "scene": "MinigameWarpline",
+   "hulls": [
+    "Meerkat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWarpline.asset",
+   "features": {
+    "commits": 23,
+    "commits14": 1,
+    "authors": 3,
+    "cardAgeDays": 38,
+    "people": 1,
+    "flights": 20,
+    "launches": 6,
+    "finished": 17,
+    "humanMinutes": 31.3,
+    "inputMinutes": 31.3,
+    "abilityRate": 0.86,
+    "funSignoff": "",
+    "maturity": 0.451
+   }
+  },
+  {
+   "key": "threshertime",
+   "name": "Thresher Time",
+   "guid": "eaf95f6023c1dcd10465c1cba46b4a8b",
+   "mode": 66,
+   "modeName": "ThresherTime",
+   "scene": "MinigameThresherTime",
+   "hulls": [
+    "Thresher"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameThresherTime.asset",
+   "features": {
+    "commits": 28,
+    "commits14": 11,
+    "authors": 4,
+    "cardAgeDays": 34,
+    "people": 5,
+    "flights": 20,
+    "launches": 22,
+    "finished": 7,
+    "humanMinutes": 46.0,
+    "inputMinutes": 46.0,
+    "abilityRate": 0.54,
+    "funSignoff": "",
+    "maturity": 0.662
+   }
+  },
+  {
+   "key": "wrasserun",
+   "name": "Wrasse Run",
+   "guid": "8016af8ba97d8113a384fcc49ac38637",
+   "mode": 68,
+   "modeName": "WrasseRun",
+   "scene": "MinigameWrasseRun",
+   "hulls": [
+    "Wrasse"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWrasseRun.asset",
+   "features": {
+    "commits": 9,
+    "commits14": 0,
+    "authors": 1,
+    "cardAgeDays": 27,
+    "people": 2,
+    "flights": 9,
+    "launches": 2,
+    "finished": 1,
+    "humanMinutes": 14.1,
+    "inputMinutes": 13.3,
+    "abilityRate": 5.34,
+    "funSignoff": "",
+    "maturity": 0.388
+   }
+  },
+  {
+   "key": "burrowrun",
+   "name": "Burrow Run",
+   "guid": "356aa3357380d53b3faa7c48917345d8",
+   "mode": 71,
+   "modeName": "BurrowRun",
+   "scene": "MinigameBurrowRun",
+   "hulls": [
+    "Meerkat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBurrowRun.asset",
+   "features": {
+    "commits": 7,
+    "commits14": 0,
+    "authors": 2,
+    "cardAgeDays": 20,
+    "people": 1,
+    "flights": 1,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 5.1,
+    "inputMinutes": 5.1,
+    "abilityRate": 12.35,
+    "funSignoff": "",
+    "maturity": 0.252
+   }
+  },
+  {
+   "key": "scarabrally",
+   "name": "Scarab Rally",
+   "guid": "01942cf0b7bfa22ecc91f8d9430ad98d",
+   "mode": 72,
+   "modeName": "ScarabRally",
+   "scene": "MinigameScarabRally",
+   "hulls": [
+    "Scarab"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameScarabRally.asset",
+   "features": {
+    "commits": 8,
+    "commits14": 5,
+    "authors": 2,
+    "cardAgeDays": 20,
+    "people": 1,
+    "flights": 8,
+    "launches": 4,
+    "finished": 2,
+    "humanMinutes": 14.7,
+    "inputMinutes": 8.2,
+    "abilityRate": 0.0,
+    "funSignoff": "",
+    "maturity": 0.327
+   }
+  },
+  {
+   "key": "serpenttime",
+   "name": "Serpentine",
+   "guid": "60e32904f5a3279ea575fdc1347677f8",
+   "mode": 73,
+   "modeName": "SerpentTime",
+   "scene": "MinigameSerpentTime",
+   "hulls": [
+    "Serpent"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSerpentTime.asset",
+   "features": {
+    "commits": 30,
+    "commits14": 7,
+    "authors": 1,
+    "cardAgeDays": 20,
+    "people": 4,
+    "flights": 28,
+    "launches": 29,
+    "finished": 12,
+    "humanMinutes": 41.1,
+    "inputMinutes": 41.1,
+    "abilityRate": 23.61,
+    "funSignoff": "",
+    "maturity": 0.603
+   }
+  },
+  {
+   "key": "brittlestartime",
+   "name": "Brittle Star Time",
+   "guid": "82da4d2a09f22384221df0059803b980",
+   "mode": 74,
+   "modeName": "BrittleStarTime",
+   "scene": "MinigameBrittleStarTime",
+   "hulls": [
+    "BrittleStar"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBrittleStarTime.asset",
+   "features": {
+    "commits": 5,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 20,
+    "people": 1,
+    "flights": 2,
+    "launches": 2,
+    "finished": 2,
+    "humanMinutes": 5.2,
+    "inputMinutes": 5.2,
+    "abilityRate": 9.11,
+    "funSignoff": "",
+    "maturity": 0.239
+   }
+  },
+  {
+   "key": "serpenthood",
+   "name": "Hood",
+   "guid": "bf7083df1a2593221f194921097ea16d",
+   "mode": 77,
+   "modeName": "SerpentHood",
+   "scene": "MinigameSerpentHood",
+   "hulls": [
+    "Serpent"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSerpentHood.asset",
+   "features": {
+    "commits": 3,
+    "commits14": 3,
+    "authors": 1,
+    "cardAgeDays": 7,
+    "people": 1,
+    "flights": 1,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 6.7,
+    "inputMinutes": 6.7,
+    "abilityRate": 8.77,
+    "funSignoff": "",
+    "maturity": 0.186
+   }
+  },
+  {
+   "key": "lanternrun",
+   "name": "Lantern Run",
+   "guid": "13650b0687b6596ab5d4413966728cf8",
+   "mode": 75,
+   "modeName": "LanternRun",
+   "scene": "MinigameLanternRun",
+   "hulls": [
+    "Angler"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameLanternRun.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 0,
+    "authors": 1,
+    "cardAgeDays": 15,
+    "people": 2,
+    "flights": 2,
+    "launches": 2,
+    "finished": 1,
+    "humanMinutes": 5.2,
+    "inputMinutes": 5.2,
+    "abilityRate": 7.28,
+    "funSignoff": "",
+    "maturity": 0.244
+   }
+  },
+  {
+   "key": "thornline",
+   "name": "Thornline",
+   "guid": "2044aead6ba715d70e54c7cba26d4160",
+   "mode": 79,
+   "modeName": "Thornline",
+   "scene": "MinigameThornline",
+   "hulls": [
+    "Shrike"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameThornline.asset",
+   "features": {
+    "commits": 4,
+    "commits14": 4,
+    "authors": 1,
+    "cardAgeDays": 10,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.106
+   }
+  },
+  {
+   "key": "decoyrun",
+   "name": "Decoy Run",
+   "guid": "ecb77c956d9349c8cd7b78a225fc8bad",
+   "mode": 80,
+   "modeName": "DecoyRun",
+   "scene": "MinigameDecoyRun",
+   "hulls": [
+    "Jacks"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameDecoyRun.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 10,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.082
+   }
+  },
+  {
+   "key": "perchrun",
+   "name": "Perch Run",
+   "guid": "562331ab1df841a180367032d2ea3c74",
+   "mode": 81,
+   "modeName": "PerchRun",
+   "scene": "MinigamePerchRun",
+   "hulls": [
+    "Goby"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGamePerchRun.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 10,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.082
+   }
+  },
+  {
+   "key": "slipline",
+   "name": "Slip Line",
+   "guid": "6e9837637b3448a1d0018ea7f68cb75f",
+   "mode": 82,
+   "modeName": "SlipLine",
+   "scene": "MinigameSlipLine",
+   "hulls": [
+    "Honeyguide"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSlipLine.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 10,
+    "people": 1,
+    "flights": 3,
+    "launches": 1,
+    "finished": 1,
+    "humanMinutes": 3.3,
+    "inputMinutes": 2.6,
+    "abilityRate": 0.77,
+    "funSignoff": "",
+    "maturity": 0.208
+   }
+  },
+  {
+   "key": "breach",
+   "name": "Breach",
+   "guid": "cd1b65e97398389f1d3ff63bb1b0421a",
+   "mode": 83,
+   "modeName": "Breach",
+   "scene": "MinigameBreach",
+   "hulls": [
+    "Orca"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBreach.asset",
+   "features": {
+    "commits": 4,
+    "commits14": 4,
+    "authors": 1,
+    "cardAgeDays": 10,
+    "people": 1,
+    "flights": 0,
+    "launches": 2,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.168
+   }
+  },
+  {
+   "key": "jackstraw",
+   "name": "Jackstraw",
+   "guid": "13afecfb0783fe7c75177fb4d739552a",
+   "mode": 85,
+   "modeName": "Jackstraw",
+   "scene": "MinigameJackstraw",
+   "hulls": [
+    "Thresher"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameJackstraw.asset",
+   "features": {
+    "commits": 6,
+    "commits14": 6,
+    "authors": 1,
+    "cardAgeDays": 7,
+    "people": 3,
+    "flights": 12,
+    "launches": 3,
+    "finished": 0,
+    "humanMinutes": 22.4,
+    "inputMinutes": 10.5,
+    "abilityRate": 1.72,
+    "funSignoff": "",
+    "maturity": 0.424
+   }
+  },
+  {
+   "key": "flatline",
+   "name": "Flatline",
+   "guid": "7ca75431cb4b9ca020e7b9dabb46efea",
+   "mode": 84,
+   "modeName": "Flatline",
+   "scene": "MinigameFlatline",
+   "hulls": [
+    "BrittleStar"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameFlatline.asset",
+   "features": {
+    "commits": 3,
+    "commits14": 3,
+    "authors": 1,
+    "cardAgeDays": 7,
+    "people": 2,
+    "flights": 3,
+    "launches": 3,
+    "finished": 0,
+    "humanMinutes": 7.2,
+    "inputMinutes": 7.2,
+    "abilityRate": 5.0,
+    "funSignoff": "",
+    "maturity": 0.281
+   }
+  },
+  {
+   "key": "kelpwood",
+   "name": "Kelpwood",
+   "guid": "ce9c642fd3d03bdd2767bbb5e76450b8",
+   "mode": 86,
+   "modeName": "Kelpwood",
+   "scene": "MinigameKelpwood",
+   "hulls": [
+    "Angler"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameKelpwood.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 7,
+    "people": 1,
+    "flights": 3,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 1.5,
+    "inputMinutes": 0.6,
+    "abilityRate": 4.91,
+    "funSignoff": "",
+    "maturity": 0.205
+   }
+  },
+  {
+   "key": "corona",
+   "name": "Corona",
+   "guid": "bb06bd61969d006d6210be9d091bb920",
+   "mode": 87,
+   "modeName": "Corona",
+   "scene": "MinigameCorona",
+   "hulls": [
+    "Manta"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameCorona.asset",
+   "features": {
+    "commits": 3,
+    "commits14": 3,
+    "authors": 1,
+    "cardAgeDays": 6,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.091
+   }
+  },
+  {
+   "key": "harvest",
+   "name": "Harvest",
+   "guid": "5986c4bbcffc720a86bfe0483fa8aaed",
+   "mode": 88,
+   "modeName": "Harvest",
+   "scene": "MinigameHarvest",
+   "hulls": [
+    "Thresher"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameHarvest.asset",
+   "features": {
+    "commits": 15,
+    "commits14": 6,
+    "authors": 5,
+    "cardAgeDays": 748,
+    "people": 1,
+    "flights": 1,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 3.3,
+    "inputMinutes": 3.3,
+    "abilityRate": 2.7,
+    "funSignoff": "",
+    "maturity": 0.519
+   }
+  },
+  {
+   "key": "shatterplane",
+   "name": "Shatterplane",
+   "guid": "cb1d226b0b24160dd69fc09c0b162dd3",
+   "mode": 90,
+   "modeName": "Shatterplane",
+   "scene": "MinigameShatterplane",
+   "hulls": [
+    "BrittleStar"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameShatterplane.asset",
+   "features": {
+    "commits": 3,
+    "commits14": 3,
+    "authors": 1,
+    "cardAgeDays": 6,
+    "people": 1,
+    "flights": 1,
+    "launches": 1,
+    "finished": 0,
+    "humanMinutes": 2.2,
+    "inputMinutes": 2.2,
+    "abilityRate": 4.93,
+    "funSignoff": "",
+    "maturity": 0.185
+   }
+  },
+  {
+   "key": "glasshouse",
+   "name": "Glasshouse",
+   "guid": "31342e627be24c0c65a98dbda1e2577a",
+   "mode": 89,
+   "modeName": "Glasshouse",
+   "scene": "MinigameGlasshouse",
+   "hulls": [
+    "Angler"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameGlasshouse.asset",
+   "features": {
+    "commits": 3,
+    "commits14": 3,
+    "authors": 1,
+    "cardAgeDays": 6,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.091
+   }
+  },
+  {
+   "key": "chum",
+   "name": "Chum",
+   "guid": "0e769e79f79f09e8455a688fe373dbcf",
+   "mode": 91,
+   "modeName": "Chum",
+   "scene": "MinigameChum",
+   "hulls": [
+    "Angler"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameChum.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "starweave",
+   "name": "Starweave",
+   "guid": "c92acb3110bbd23399f63b2a207be794",
+   "mode": 92,
+   "modeName": "Starweave",
+   "scene": "MinigameStarweave",
+   "hulls": [
+    "BrittleStar"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameStarweave.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "haul",
+   "name": "Haul",
+   "guid": "68976d56e8ee854eb650407b87a023ce",
+   "mode": 93,
+   "modeName": "Haul",
+   "scene": "MinigameHaul",
+   "hulls": [
+    "Thresher"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameHaul.asset",
+   "features": {
+    "commits": 4,
+    "commits14": 3,
+    "authors": 1,
+    "cardAgeDays": 19,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.116
+   }
+  },
+  {
+   "key": "hedgerow",
+   "name": "Hedgerow",
+   "guid": "235446cf75c2c3ae40f3d631c7d9e4a5",
+   "mode": 94,
+   "modeName": "Hedgerow",
+   "scene": "MinigameHedgerow",
+   "hulls": [
+    "Serpent"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameHedgerow.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 1,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.072
+   }
+  },
+  {
+   "key": "longshot",
+   "name": "Longshot",
+   "guid": "2de3c209bdc926ed2bcb66717a66541b",
+   "mode": 95,
+   "modeName": "Longshot",
+   "scene": "MinigameLongshot",
+   "hulls": [
+    "Serpent"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameLongshot.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 1,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.072
+   }
+  },
+  {
+   "key": "spearline",
+   "name": "Spearline",
+   "guid": "4e36248f11161b5eaa800ee4ebf9a73a",
+   "mode": 96,
+   "modeName": "Spearline",
+   "scene": "MinigameSpearline",
+   "hulls": [
+    "Swordfish"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSpearline.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "riposte",
+   "name": "Riposte",
+   "guid": "967380a02c1bf43eb5a9a708029724eb",
+   "mode": 97,
+   "modeName": "Riposte",
+   "scene": "MinigameRiposte",
+   "hulls": [
+    "Swordfish"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameRiposte.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "palisade",
+   "name": "Palisade",
+   "guid": "266f031344792a4637f5e92622708226",
+   "mode": 98,
+   "modeName": "Palisade",
+   "scene": "MinigamePalisade",
+   "hulls": [
+    "Swordfish"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGamePalisade.asset",
+   "features": {
+    "commits": 3,
+    "commits14": 3,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.086
+   }
+  },
+  {
+   "key": "larder",
+   "name": "Larder",
+   "guid": "d4310aa6e0221fc64511a844379871ef",
+   "mode": 102,
+   "modeName": "Larder",
+   "scene": "MinigameLarder",
+   "hulls": [
+    "Shrike"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameLarder.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "thornbush",
+   "name": "Thornbush",
+   "guid": "f9f4730e784384bd66e6f0ddd1bd9dcd",
+   "mode": 103,
+   "modeName": "Thornbush",
+   "scene": "MinigameThornbush",
+   "hulls": [
+    "Shrike"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameThornbush.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "lancefall",
+   "name": "Lancefall",
+   "guid": "ae8dd5d8f813e1096921f9f4a123397b",
+   "mode": 104,
+   "modeName": "Lancefall",
+   "scene": "MinigameLancefall",
+   "hulls": [
+    "Shrike"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameLancefall.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "shockfront",
+   "name": "Shockfront",
+   "guid": "562f0df9adeb03fcf92f0bfe04a8bddb",
+   "mode": 119,
+   "modeName": "Shockfront",
+   "scene": "MinigameShockfront",
+   "hulls": [
+    "Stoat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameShockfront.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "fulmen",
+   "name": "Fulmen",
+   "guid": "b6032f6baccadcbf61887e1ad5ecaaea",
+   "mode": 120,
+   "modeName": "Fulmen",
+   "scene": "MinigameFulmen",
+   "hulls": [
+    "Stoat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameFulmen.asset",
+   "features": {
+    "commits": 22,
+    "commits14": 3,
+    "authors": 2,
+    "cardAgeDays": 18,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.205
+   }
+  },
+  {
+   "key": "flitstrike",
+   "name": "Flitstrike",
+   "guid": "0d31f3a3a6a5846c2f46bf490676c478",
+   "mode": 108,
+   "modeName": "Flitstrike",
+   "scene": "MinigameFlitstrike",
+   "hulls": [
+    "Honeyguide"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameFlitstrike.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "honeycomb",
+   "name": "Honeycomb",
+   "guid": "8b44df6011562f8ca8ca92c656c2ecec",
+   "mode": 109,
+   "modeName": "Honeycomb",
+   "scene": "MinigameHoneycomb",
+   "hulls": [
+    "Honeyguide"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameHoneycomb.asset",
+   "features": {
+    "commits": 9,
+    "commits14": 2,
+    "authors": 2,
+    "cardAgeDays": 268,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.346
+   }
+  },
+  {
+   "key": "woodpecker",
+   "name": "Woodpecker",
+   "guid": "d2787e2597ff4cced031bd75ffffef53",
+   "mode": 110,
+   "modeName": "Woodpecker",
+   "scene": "MinigameWoodpecker",
+   "hulls": [
+    "Honeyguide"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWoodpecker.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "stingherd",
+   "name": "Stingherd",
+   "guid": "afe0c5ef7b5a0e444b1269d4d11043c9",
+   "mode": 117,
+   "modeName": "Stingherd",
+   "scene": "MinigameStingherd",
+   "hulls": [
+    "Jacks"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameStingherd.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "trawl",
+   "name": "Trawl",
+   "guid": "88669b933966482be0894cca44c06fc8",
+   "mode": 118,
+   "modeName": "Trawl",
+   "scene": "MinigameTrawl",
+   "hulls": [
+    "Jacks"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameTrawl.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "depthcharge",
+   "name": "Depth Charge",
+   "guid": "914df1fde205418f08d1e29809bce18b",
+   "mode": 101,
+   "modeName": "DepthCharge",
+   "scene": "MinigameDepthCharge",
+   "hulls": [
+    "Orca"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameDepthCharge.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "iceshelf",
+   "name": "Ice Shelf",
+   "guid": "5f86425e47454aca1a95384c5369df2b",
+   "mode": 100,
+   "modeName": "IceShelf",
+   "scene": "MinigameIceShelf",
+   "hulls": [
+    "Orca"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameIceShelf.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "podhunt",
+   "name": "Pod Hunt",
+   "guid": "0d3dc1b86903fc5cf186792b2d18e723",
+   "mode": 99,
+   "modeName": "PodHunt",
+   "scene": "MinigamePodHunt",
+   "hulls": [
+    "Orca"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGamePodHunt.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "railrush",
+   "name": "Railrush",
+   "guid": "d89bfae7e6396452856496fdd545f674",
+   "mode": 124,
+   "modeName": "Railrush",
+   "scene": "MinigameRailrush",
+   "hulls": [
+    "Urchin"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameRailrush.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "bullrush",
+   "name": "Bullrush",
+   "guid": "de541011e6164b7c94015803b4cceaf9",
+   "mode": 121,
+   "modeName": "Bullrush",
+   "scene": "MinigameBullrush",
+   "hulls": [
+    "Rhino"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBullrush.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "windrow",
+   "name": "Windrow",
+   "guid": "9906c8f611541198ab7e3ec8e9a61405",
+   "mode": 122,
+   "modeName": "Windrow",
+   "scene": "MinigameWindrow",
+   "hulls": [
+    "Rhino"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWindrow.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "landslide",
+   "name": "Landslide",
+   "guid": "ad3a7c523e1e852f6186f2db7bc43dee",
+   "mode": 123,
+   "modeName": "Landslide",
+   "scene": "MinigameLandslide",
+   "hulls": [
+    "Rhino"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameLandslide.asset",
+   "features": {
+    "commits": 2,
+    "commits14": 2,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.073
+   }
+  },
+  {
+   "key": "sentry",
+   "name": "Sentry",
+   "guid": "33dd84b72e43cbab1c86d0a09b80305e",
+   "mode": 105,
+   "modeName": "Sentry",
+   "scene": "MinigameSentry",
+   "hulls": [
+    "Meerkat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSentry.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "warren",
+   "name": "Warren",
+   "guid": "c7f85ab694d27a737f609e3550d30102",
+   "mode": 106,
+   "modeName": "Warren",
+   "scene": "MinigameWarren",
+   "hulls": [
+    "Meerkat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameWarren.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "cavein",
+   "name": "Cave-in",
+   "guid": "1104480ff9fccaec3ddb9cf7690f159e",
+   "mode": 107,
+   "modeName": "CaveIn",
+   "scene": "MinigameCaveIn",
+   "hulls": [
+    "Meerkat"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameCaveIn.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "standoff",
+   "name": "Standoff",
+   "guid": "b585c6fba39868af3bee5bf5b1615725",
+   "mode": 125,
+   "modeName": "Standoff",
+   "scene": "MinigameStandoff",
+   "hulls": [
+    "Grizzly"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameStandoff.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "cleanerram",
+   "name": "Cleaner Ram",
+   "guid": "442c909b6d5b22adfad7c9d52a294d6a",
+   "mode": 111,
+   "modeName": "CleanerRam",
+   "scene": "MinigameCleanerRam",
+   "hulls": [
+    "Wrasse"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameCleanerRam.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "reefbuild",
+   "name": "Reefbuild",
+   "guid": "b036f602bab9f0f66a5ccdd72f37d5cf",
+   "mode": 112,
+   "modeName": "Reefbuild",
+   "scene": "MinigameReefbuild",
+   "hulls": [
+    "Wrasse"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameReefbuild.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "blastline",
+   "name": "Blastline",
+   "guid": "968c1cbf391ff60eb9bbbe06b689fe4a",
+   "mode": 113,
+   "modeName": "Blastline",
+   "scene": "MinigameBlastline",
+   "hulls": [
+    "Wrasse"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameBlastline.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "snap",
+   "name": "Snap",
+   "guid": "d6f0166a69c9d1192e4a2c2103253b75",
+   "mode": 114,
+   "modeName": "Snap",
+   "scene": "MinigameSnap",
+   "hulls": [
+    "Goby"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameSnap.asset",
+   "features": {
+    "commits": 18,
+    "commits14": 2,
+    "authors": 2,
+    "cardAgeDays": 43,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.224
+   }
+  },
+  {
+   "key": "denbuilder",
+   "name": "Den Builder",
+   "guid": "1fb90f37d3087de590ad7cc901d17725",
+   "mode": 115,
+   "modeName": "DenBuilder",
+   "scene": "MinigameDenBuilder",
+   "hulls": [
+    "Goby"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameDenBuilder.asset",
+   "features": {
+    "commits": 1,
+    "commits14": 1,
+    "authors": 1,
+    "cardAgeDays": 2,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.054
+   }
+  },
+  {
+   "key": "riptide",
+   "name": "Riptide",
+   "guid": "3473cb75ad0393c5b418df00f828ee30",
+   "mode": 116,
+   "modeName": "Riptide",
+   "scene": "MinigameRiptide",
+   "hulls": [
+    "Goby"
+   ],
+   "card": "Assets/_SO_Assets/Games/ArcadeGameRiptide.asset",
+   "features": {
+    "commits": 86,
+    "commits14": 6,
+    "authors": 8,
+    "cardAgeDays": 1345,
+    "people": 0,
+    "flights": 0,
+    "launches": 0,
+    "finished": 0,
+    "humanMinutes": 0.0,
+    "inputMinutes": 0.0,
+    "abilityRate": null,
+    "funSignoff": "",
+    "maturity": 0.561
+   }
+  }
+ ]
+}

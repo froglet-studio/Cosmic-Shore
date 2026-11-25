@@ -102,10 +102,14 @@ class Patch(HM.Patch):
 
 
 def seat_nodes(parent, key, size, pos=(0, 0)):
-    """An avatar in an octagon: the ring KitPresenceOrb paints the pilot's domain colour, a dark gap, the icon."""
+    """An avatar seat: the icon, which KitPresenceOrb / FriendProfilePopup wrap in the round avatar border
+    (AvatarRippleBorder, Rev 127 D, section 217) in the pilot's domain colour. The octagon Ring and Gap it used to sit
+    in stay as disabled Images, so the scripts' legacy ring fields keep their references."""
     for part, inset, colour in (("Ring", 0, tok("NeutralLightest")), ("Gap", 3, tok("SurfaceVeryDark"))):
         n = parent.child(N(f"{key}/{part}", part, R(pos=pos, size=(size - inset, size - inset))))
-        n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(colour, K.kit_sprite("kit_oct_fill")))
+        img = K.image(colour, K.kit_sprite("kit_oct_fill"))
+        n.add("cr", 222, K.canvas_renderer()).add(
+            "img", 114, lambda ctx, go, img=img: img(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
     icon = parent.child(N(f"{key}/Avatar", "Avatar", R(pos=pos, size=(size - 5, size - 5))))
     icon.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AR.AVATAR_PLACEHOLDER, preserve=True))
 

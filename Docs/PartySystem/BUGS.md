@@ -57,6 +57,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B45 | The host's machine freezes long enough for Relay to drop it: one 82.6 s frame in a Maelstrom cell swap to Skein, one 39.6 s freeze on the menu after Regatta and a 14.6 s one during the re-host (all Garrett's machine; the other three did the same swap in 1.2-2.4 s) | Investigated 2026-10-31 (section below): not the prism lay's own work and not its clone watchdog; the frames are spent outside anything the game measures. Each stall now records focus, memory against RAM and async clones in flight (`stallContext`), so the next one names its cause. Open | 🔴 |
 | B46 | `ArgumentNullException` (Dictionary key) every time a match HUD rebuilds its domain panels while a seat has no name yet: 1,636 times on Garrett's client after Yash rejoined a Serpent match (2026-10-31, `gradi+shombith+yskha-20261031_173835`; Bug Ledger `E-376e5a6f8d`) | Fixed 2026-11-01: `MiniGameHUD.ResolveAIAvatarSprite` answers null for an empty name. Why the reclaimed seat had no name on another client is open (B47) | 🟡 |
 | B47 | A rejoin reclaims the seat (`clientApproved 4 rejoin`, `seatReclaimed ys1`) but the rejoining client logs `Double initialization not allowed!` from `VesselController.Initialize`, and another client sees that seat with no name (B46); the rejoiner left again 35 s later (same test) | Double init root-caused and fixed 2026-11-01 (`claude/mp-rejoin-b47`, section below): the seat claim re-ran `Initialize` on a vessel the roster had already initialised, so the rejoiner got no input, camera or HUD; the claim now hands the live hull over with `ChangePlayer`, as the pilot swap does. Not editor-verified. The missing name is NOT explained: it is `Player.Name` null on Garrett's machine, which pilot is unknown; a one-line warning now names it next time | 🟡 |
+| B48 | After the party lobby drops a host (`Party session gone server-side ... auto-recovering to solo session`), the menu's spawner logs `FindUnprocessedPlayerByOwnerClientId(0) returned NULL` and the pilot is never paired again; the next match seated a pilot who picked Jade on Gold, with no Jade column on the scoreboard (Yash, Thresher Time, 2026-11-07) | Fixed 2026-11-07 (section below): the session-gone recovery restarted the host IN PLACE on the live menu; it now takes the same teardown + Menu_Main reload + solo session as every other route back to a solo menu. Not editor-verified | 🟡 |
+| B50 | A pilot who rejoins a running match lands on READY: the HUD plays the intro and shows the button, the press shows "Waiting for others" for good, because the racing pilots never press Ready again (Yash, 2026-11-10) | Fixed 2026-11-10 (section below): nothing told the rejoiner the turn was running; the seat hand-back now carries the turn state and the client joins the turn where the others are. Not editor-verified | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2517,6 +2519,14 @@ joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery faile
 Play stops.
 Ticket: T-20261025-6541 (#1527).
 
+**Again, 2026-11-06 (belac, `E-0de9ec6c70`, past the guard).** Caleb, a client in a six-pilot Regatta on
+`claude/regatta-overnight-balance` (which carries the fix), stopped Play during the recovery; the error came from
+line 908 (the catch's `LogError`) on UniTask's `ForceEditorPlayerLoopUpdate`. That loop only runs once
+`EditorApplication.isPlayingOrWillChangePlaymode` is false - i.e. once Stop has been requested - but
+`Application.isPlaying` stays true until Play has torn down, so `PlayEnded` read "still playing" and the
+Menu_Main load returned null. `IsPlaying` now defaults to `UnityIsPlaying()`: in the editor a requested Stop
+counts as ended. Held by `PartyRecoveryAfterPlayTests.UnityFlag_IsOff_InEditMode` (4 tests). Hand test unchanged.
+
 ## B46-B47 and B36 again - the tests of 2026-10-31 and 2026-11-01 (multiplayer sweep, 2026-11-01)
 
 Read: `gradi+shombith+yskha-20261031_173835` (three machines, Skim Race, Thresher and Serpent time trials),
@@ -2634,3 +2644,292 @@ clones are waiting and neither of those, a Profiler capture of that swap on that
 off) is what decides it. Changing the prism pool or the lay budgets before that is guessing (CLAUDE.md, Debugging
 Methodology); that work is Yash's (`EnvironmentPrismPool`) and the perf branch's.
 
+### B45 measured (2026-11-15): the frozen frame is a Single scene load, and it grows with the prisms alive
+
+Editor and MPPM Player 2 in one party on `Ys-bleeding-edge` `3ae828d03b`, one Play of 70 minutes, driven by scripts
+(`mp-drive/`: `run_match.sh`, `run_prof.sh`, `run_idle.sh`). Frame times are from `FrameStallWatch` and Load Time
+Insights; the split is the editor Profiler's hierarchy of that frame on the host, `ProfilerRecorder`s on Player 2,
+and a stopwatch around every `sceneLoaded` / `activeSceneChanged` subscriber.
+
+| Load | Prisms alive when it began (host / guest) | Longest frame, host | Longest frame, guest |
+|---|---|---|---|
+| Menu to Bloomrush, fresh Play | about 1,500 | 2.1 s | 2.2 s |
+| Menu to Bloomrush, right after a return | 9,600 / 8,900 | 2.6 s (3.8 s with the Profiler) | 2.2 s |
+| Menu to Switchback, menu idle 16 min | 30,600 / 19,400 | 5.3 s | 4.4 s |
+| Menu to Switchback, menu idle 17 min | 64,400 / 48,300 | **13.4 s** (stall 11.8 s) | not recorded; **the guest was dropped** ("Host disconnected", host `clientLeft`, `leaverToAI`) |
+| Menu to Switchback, menu idle 21 min | 50,900 / 57,100 | 8.3 s | **11.6 s** (stall 11.3 s, no drop) |
+| Bloomrush (90 s) to menu, twice | 71,100 / 65,700 and 68,100 / 67,900 | 9.4 s, **10.4 s** | 9.0 s, **11.1 s** |
+| Switchback to menu | 6,700 / 5,500 | 5.0 s | 4.8 s |
+
+**What the frame is.** Every one is the frame in which Unity activates a Single-mode load
+(`EarlyUpdate.UpdatePreloading` > `Application.LoadLevelAsync Integrate`): destroy the old scene, collect, wake the
+new one, run the `sceneLoaded` handlers. No one step owns it. It is a sum, and each part grows with the number of
+prism GameObjects alive at that moment:
+
+- Bloomrush to menu, 10.4 s on the host: destroying the old scene 4.4 s (68,000 prisms: 2.1 s native destroy, 1.9 s
+  their `OnDisable`), `GC.Collect` 1.1 s, the rest of the integrate 1.9 s, `sceneLoaded` handlers 0.6 s, the menu's
+  first `Start`s 1.1 s and its first UI layout 0.7 s. The menu's own load is about 5 s of it (the Switchback return,
+  with 6,700 prisms, is 5.0 s).
+- Menu to Switchback after 21 idle minutes, 8.3 s on the host: `sceneLoaded` handlers 2.5 s
+  (`UIThemeLive.OnSceneLoaded` 1.96 s, `WorldColorTrace.OnSceneLoaded` 0.35 s, `TouchDragThreshold` 0.19 s; the same
+  handlers total 0.27 s on a fresh menu), integrate self time 1.5 s, `GC.Collect` 1.15 s, destroy 0.7 s, the load's
+  completion callback 0.6 s, the HUD's first `Start`s 0.8 s. On the guest also
+  `InteractivePrismPoolManager.HandleActiveSceneChanged` 1.15 s (a client releases the whole trail in one go; the
+  host releases it 100 a frame) and `UIThemeLive` 2.28 s.
+
+**Where the menu's prisms come from.** The menu vessel's trail. `SquirrelPrismPool` (DontDestroyOnLoad) held 2,300
+active prisms a few minutes after a return and 24,200 nine minutes later, about 2,500 a minute, with no ceiling;
+flora adds 1,000-2,300. So the launch freeze grows by roughly half a second for every minute a player sits on the
+menu, and reaches Relay's 10 s after about 20 minutes on this machine. The 17.9 s guest freeze of 2026-11-15 was a
+Player 2 that had been in Play for over an hour.
+
+**What it is not.**
+- Not focus: the same Bloomrush return froze the guest 9.0 s focused and 11.2 s unfocused, the host 10.0 s focused.
+- Not memory and not a leak per match: Unity reserved 3.0-4.4 GB of 32 GB throughout, and a launch right after the
+  third match took 2.6 s. It follows the time spent on the menu, not the matches played.
+- Not only the freezing player's problem: in the 13.4 s case the HOST froze and the GUEST lost the connection.
+
+**Real or editor-only.** Real: the work is the game's and Unity's, and it scales with a count a build has too. The
+editor adds to it (its heap makes the collect about 1.1 s; `UIThemeLive` also repaints prefab assets in memory and
+runs only when a colour set other than Photic is worn), so a build should be shorter. No build has been measured.
+
+**Nothing was changed.** No step is both the owner of the frame and small. The levers, by what they would take off:
+1. Bound the menu vessel's trail, or drain it behind the launch veil before the load (the cell swap's 12 ms slices,
+   `Cell.ReleaseRetiredWorld`). This removes the long-menu launch freeze on both players. A menu / vessel decision.
+2. Bloomrush's teardown: drain the prisms in slices behind the return veil before the Single load (lever L14 (b) in
+   `Docs/PERFORMANCE_OPTIMIZATION.md` §3.3; its go/no-go, a return frame over 5 s, is now met: 9.4-11.1 s).
+3. `UIThemeLive.RepaintAll` on every scene load: eleven `FindObjects` passes, 2.0-2.3 s with 50,000 prisms alive.
+4. The menu's own 5 s load frame is left after 1-3; under Relay's limit, but half of it.
+
+**A measuring trap.** The editor Profiler with a 2,000-frame buffer on both players took 30 GB of commit and crashed
+both editors. `prof_on.cs` now keeps the default 300 frames, on one player, switched on just before the load and off
+after it; `rec_on.cs` / `rec_get.cs` (ProfilerRecorders, the worst frame's markers) cost nothing and run on both.
+
+**Still to confirm:** the same loads in a development build (two machines or two builds on one), and the same on a
+second machine, to learn how much of each frame the editor adds.
+
+### B45 in a Maelstrom (2026-11-17): the round no longer lays the arena a second time
+
+A Maelstrom is where B45 costs most: every round is two full arena lays on the host with Relay live (the hub's
+preview, then the round, "Prisms reused from the environment pool 0" both times) plus two Single loads, and a host
+drop ends the tournament for everyone. Seen: the 82.6 s frame of 2026-10-30, Garrett bounced "Host disconnected"
+about 20 s after round one of a Maelstrom on 2026-11-13 (`gradi-20261113_200642`; the host's log was never sent, so
+the cause is inferred from timing), and a 72 s host freeze on two Cleave draws in the driven runs of 2026-11-16
+(`Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md`).
+
+**Change** (`claude/maelstrom-preview-reuse`): lever 2 above, applied to the hub. At the countdown's zero every
+machine hands the hub's arena to `EnvironmentPrismPool` in 24 ms slices, after a 0.5 s suction and after waiting for a
+preview still being laid (`Cell.RetireWorldIntoPoolForSceneExit`, called through
+`MaelstromPreviewHost.ParkArenaForRound`), the host holds the load until its own hand-over finishes (5 s at most,
+`MaelstromLobby.ShouldLaunchNow`), and the round re-issues those prisms. One lay a round instead of two, and the hub's 13-15 thousand prisms are no longer destroyed inside the
+load's activation frame. Details: `Docs/MaelstromSystem/ARCHITECTURE.md` §1.5.1.
+
+**What it does not do.** It does not find the 72 s frame's cause: no Profiler capture of that frame exists. The hub's
+own preview lay is unchanged and is still a full lay with Relay live. The round's world is still destroyed on the way
+back to the hub. Reviewed by three independent readers before any run (Cell, launch flow, pool); their findings are
+in the code: the world eases away because nothing opaque covers the hub at launch, a preview still building is waited
+for, life retires with the world, the drain runs newest first. Held by `MaelstromArenaHandOverTests` (11: the
+launch-hold rule and the wires). **Not compiled or run
+in Unity**; the checklist entry has the two-player steps and the marks to read.
+
+### B45 on the return to the menu (2026-11-20): the match's world is taken down before the load
+
+Solo online host in the editor (unfocused), Bloomrush for 90 s, return to the menu. `Ys-bleeding-edge`, measured with
+ProfilerRecorders on the worst frame and a per-frame log; six returns before and after.
+
+**Before** (two returns): the load's frame was **10.5 s and 9.5 s**. 73,500 prisms were alive at the end: 60,700 are
+plant prisms under 493 plants in the match scene, 5,700 the Manta's trail (in its pool, which outlives the scene).
+In the 10.5 s frame: destroying the match scene 3.4 s (1.6 s of it `GameObject.Deactivate`), waking the menu about
+2.7 s, `GC.Collect` 1.1 s, scene-load handlers 1.1 s (`UIThemeLive.OnSceneLoaded` 0.85 s).
+
+**Change.** On a scene load out of a match, every machine retires each cell's world behind the splash and the host
+holds the load for it, 8 s at most (`SceneLoader.DrainSceneForExitAsync`; a guest starts its own at the veil RPC,
+`MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc`). It is the Maelstrom hub's
+`Cell.RetireWorldIntoPoolForSceneExit`, with two additions: a world that is plants only is retired too
+(`requireEnvironment: false`), and plants are destroyed a whole root at a time (`ReleaseRetiredWorldByRoot`).
+Leaving the menu is not drained. A `sceneExitDrain` mark goes in the test log.
+
+**After** (three returns with the by-root drain): the load's frame was **6.4 s, 5.7 s and 6.5 s**, and the scene
+destroy is out of it (`Destroy` no longer among the frame's markers). The drain's own frames are 0.5-3 s.
+
+**What it costs.** A destroy during play is dearer than the same destroy inside the unload: about 150 microseconds a
+prism against 57. So the 60,700 plant prisms take about 10 s to drain where the unload spent 3.4 s on them, and the
+drain is cut short at its 8 s limit (the mark reads `cut short at 8.0s`; what is left dies in the load's frame at the
+cheap rate). From the button to the menu is about 17 s where it was about 10.5 s. A lighter match pays in proportion.
+
+**What was tried and dropped.**
+- Destroying prism by prism (the hub's way): 13 s for the plants, ending in one 4.1 s frame when the emptied plants
+  went, and the load's frame got worse (12.3 s, 11.4 s) because the 6 s limit cut it off half done.
+- Small slices: 2,000 prisms' worth a frame left a 7.8 s load frame; 15,000 a 6.4 s one; 30,000 a 5.7 s one.
+- Draining the menu on a launch: it held every launch about 5 s for nothing (a launch's frame is 2.1-2.6 s).
+
+**Not found:** why a destroy during play costs nearly three times the unload's. The editor Profiler was switched on
+to look at one such frame and the editor crashed (native fault, 21:35); do not profile these frames on this PC.
+
+**Two players (editor + MPPM Player 2, the same evening):** the load's frame was 5.7 s on the host and 4.5 s on the
+guest, with 74,000 prisms on each at the end; the drain's frames were 1.4-3.5 s and 0.5-1.8 s. Both reached the menu
+still in the party. In a gate race (Breakwater, inside a Maelstrom) the drain found nothing to take and cost 2.1 s:
+a course's own prisms are not the cell's plants or environment, so they still die in the load's frame.
+
+**Not measured:** two machines, a build, the hold on a focused editor, and any heavy mode other than Bloomrush.
+The second freeze on the menu a minute after a return (6.9-21.9 s, B45 of 2026-11-20) is untouched.
+
+### B45 on the return to the menu, built players (2026-11-22): reproduced with four on one PC
+
+Four development players on one PC (`mp_auto.py --players 4 --extra "-csMpLaunch Bloomrush"`, build of 17:42 from
+`de57912782`): party, launch and a running turn were fine. On the host's return to the menu every player froze while
+leaving Bloomrush (host 9.0 s, joiners 10.2, 11.0 and 11.4 s; `[Net] The game froze for ... in MinigameBloomrush`),
+Relay dropped the three joiners and each bounced to its own solo menu. With two players the host froze 9.3 s and the
+party survived. One joiner's load report (return to menu, 46.3 s, worst frame 13.4 s): scene exit drain 9.0 s, streamed
+prism lay of the menu's garland (4,259 prisms) 11.7 s, scene load to activation 6.6 s.
+
+**Read with care.** Four development players share one PC, so the times are inflated; the build carries the never-played
+flora limb pool (`e2a0bb1783`) and the trail release of this morning, and no older build is left to compare. Not yet
+known: which of the drain, the garland lay and the scene activation is the frozen frame. Logs: the run's folder is in
+the session scratchpad (`mpauto/m_run4`), not in the repo.
+
+### B45 on a launch from the menu (2026-11-22): the trail goes back to its pools before the load
+
+**Cause.** At a scene exit the host's trail pools handed their prisms back 100 a frame
+(`InteractivePrismPoolManager.HandleSceneTransition`), and the load began 0.1 s later, so the load's frame carried
+nearly every trail prism still active and the rest trickled back during the next scene. A guest never gets that
+event: its pools released the whole trail in one go inside the load's frame (`HandleActiveSceneChanged`, 1.15 s for
+57,000 prisms in the measurement of 2026-11-15).
+
+**Change.** The pools hand the trail back on a time budget, 12 ms a frame per pool
+(`GenericPoolManager.ReleaseAllActiveBudgetedAsync`), and the host holds the load until they are done, 4 s at most
+(`SceneLoader.WaitForTrailReleaseAsync`, `trailReleaseMaxSeconds`; a `trailRelease` mark when it had to wait). A
+guest starts the same release when the host's scene load arrives (`MultiplayerSetup.OnSceneEventTrace`). This is not
+a trail cap: nothing is removed during play, only the scene exit's own work is moved out of the load's frame.
+
+**Measured** (solo online host in the editor, unfocused, Photic colour set, Bloomrush launch, the menu's time scale
+raised to grow the trail; one launch each):
+
+| | Trail prisms / active in all | Load's frame | Menu frames before it | Trail still out 14 s into the match |
+|---|---|---|---|---|
+| Old rate (about 32 a frame, no wait) | 19,700 / 30,900 | 3.2 s | 1.5 s, 2.0 s | 10,300 |
+| New (12 ms a frame, wait up to 4 s) | 19,500 / 25,600 | 1.7 s | 1.2 s, 0.8 s | 0 |
+
+**What this does not show.** One launch each, and the two differ by 5,300 active prisms. The 8-13 s launch frames of
+2026-11-15 were NOT reproduced: the trail in these pools stopped near 19,700 prisms here, against 50,000-64,000 then,
+and that run wore a colour set other than Photic (`UIThemeLive.RepaintAll`, about 2 s a scene load). A first try with
+the new release and no wait, at 50,800 active prisms in all, had a 3.4 s load frame. Not measured: a guest, two
+machines, a build, a real 20-minute idle. The 21.9 s freeze on the menu after a return and the 72 s Cleave freeze are
+untouched; their cause is still unknown.
+
+### B45 on the menu after a return (2026-11-21): not reproduced on one PC; the next freeze names its work
+
+**Seen** in the two-machine test of 2026-11-20 (`gradi+yskha-20261120_004226`, Garrett hosting, Yash a guest, both on
+`bleeding-edge` `99f24a9bb8`, from before the return drain): a second freeze on the menu after a return, on top of the
+return's own load frame.
+- Garrett (host) 6.9 s, about 10 s after a Regatta return. Yash (guest) 8.2 s, about 11 s after a Brood Rush return.
+  Both with an async prism-clone batch waiting, and right after each, `[EnvironmentPrismPool] Async clone batch (163
+  prisms) not integrated after 4s - forcing WaitForCompletion`.
+- Garrett (host) **21.9 s**, about 62 s after the Brood Rush return, with nothing waiting. Relay dropped him and the
+  party ended. Nothing in either log says what that frame did.
+
+**Not reproduced** (2026-11-21, `Ys-bleeding-edge` `923711842b`, editor + MPPM Player 2 on one PC, every slow frame
+logged for 100 s after the return, no probe running in that window):
+- solo, Bloomrush (73,000 prisms) and back: nothing over 0.4 s once the load frame and the menu's first seconds were
+  past;
+- two players, Brood Rush and back: the menu's arena (the Garland, about 4,300 prisms) was laid within 5 s of arriving
+  in frames of 0.4-1.0 s, then nothing over 0.4 s for 80 s on either player; no clone-batch warning;
+- the same with the return drain switched off on both players (the code path of 2026-11-20): the same.
+
+**What the evidence says, and what it does not.**
+- The clone-batch warning is logged AFTER each of the two shorter freezes, not before (the stall mark comes first), so
+  the forced `WaitForCompletion` was not the frozen frame: the frame froze with a batch waiting, and the watchdog,
+  past its 4 s, fired as soon as the frame ended.
+- The batch is the menu's Garland being laid. `Cell.DeferredEnvironmentBuild` waits for the local player (up to 12 s)
+  before it builds on the menu. On one PC that is under a second; on two machines over the internet it can be the
+  10-11 s the freezes came at. A lead, not a finding: what made those frames seconds long is not known.
+- The 21.9 s frame had no clone waiting: its cause is not known.
+
+**Added** so the next freeze names itself: a `stallFrame` mark one frame after every `stall`, with the engine work
+the frozen frame was made of (`StallFrameMarkers`: about 120 profiler-marker recorders, started the first time the
+game is online, read only around a stall; never the editor Profiler window). Measured on a return's load frame:
+`PlayerLoop 5076 ms; EarlyUpdate.UpdatePreloading 2959 ms; Loading.UpdatePreloading 2959 ms; Application.Integrate
+Assets in Background 2959 ms; Application.LoadLevelAsync Integrate 2737 ms; EarlyUpdate.ScriptRunDelayedStartupFrame
+1291 ms; Loading.AwakeFromLoad 932 ms; GC.Collect 806 ms`. A release player has no recorders and says so.
+
+**Also fixed:** `FrameStallWatchTests` left the stall record switched off ("offline") for the next Play in the same
+editor (the tests restored a provider that always answered false). It now restores the real check.
+
+**Next:** the next two-machine test. A freeze on the menu then carries its `stallFrame` line in `net_logs.py show`.
+
+## B48 - a reaped party session rebuilt in place leaves the pilot unpaired, and the next match seats them on the wrong domain (2026-11-07)
+
+**Seen.** Yash, solo in the editor, opened Thresher Time and placed himself on Jade with AIs on Ruby and Gold
+(`launch_preferences.data` recorded exactly that: Domain 1, AIDomains [2, 4], DomainCount 3). In the match the
+scoreboard showed two columns: Gold with him and an AI, and Ruby with the other AI. No Jade column. Seconds before
+the launch the editor log reads, in order:
+
+1. `[HostConnectionService] The presence lobby removed us or was deleted - rejoining at once`
+2. `[HostConnectionService] Party session gone server-side (SessionException): Player is not part of an active lobby. - auto-recovering to solo session.`
+3. `[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId(0) returned NULL`
+4. `[AppState] Invalid transition: None → LoadingGame`, then the Thresher Time load.
+
+**Root cause.** `HostConnectionService.HandleDefiniteSessionGoneAsync` cleared the dead session and called
+`EnsurePartySessionAsync`, which shuts the NetworkManager down and starts a new host IN PLACE, on the live Menu_Main
+with the old `gameData`. The leave path and the failed-join bounce were rewritten long ago (B3.b, the "architectural
+fix" above) to tear down first and reload Menu_Main BEFORE the solo session, precisely so the scene's
+`ServerPlayerVesselInitializer` catches the new host Player exactly once. The session-gone recovery never got that
+rewrite. So the spawner found no unprocessed Player for owner 0 (line 3), nothing paired the pilot, and the menu
+launched a match from a lobby whose local player and roster were the dead session's. The match spawner itself is
+right (a Jade human is always in the active set, and the placed AIs keep their domains). What the scoreboard drew is
+what that unpaired state hands it: `MultiplayerHUD` draws `gameData.LocalPlayer`'s domain first and groups by
+`Player.Domain`. Which of the two was wrong on that machine (the human's `Player.Domain`, or `LocalPlayer` pointing at
+the Gold AI that shares the host's client id) the log cannot say, because the launch channels are off by default.
+The fix removes the unpaired state both come from.
+
+**Fix.** `HandleDefiniteSessionGoneAsync` now calls `PartyInviteController.RecoverFromSessionGoneAsync`, which runs
+`RecoverFromFailedTransitionAsync`: destroy the player and vessel, reset the runtime data, leave, shut down, reload
+Menu_Main, then create the solo session. It is silent for a solo player, lands on Home (`MenuReturnCard.Clear`), and
+stands down when a join or leave is already running (that transition makes its own session). The
+host-connection-lost notice for a real party is raised AFTER the recovery, so the reloaded menu's listeners get it.
+In place is kept only for a scene with no `PartyInviteController`.
+
+**Not verified.** No editor compile result and no repro run: a session can only be reaped by UGS itself. Repro for
+the owner (live UGS): `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "B48".
+
+## B50 - a rejoiner lands on READY in a running match and waits for good (2026-11-10)
+
+**Seen.** Yash dropped out of a party match and rejoined it (MatchRejoin, Docs/MENU_REDESIGN_B.md section 103). They
+came back to their old seat, but with the READY button up. Pressing it showed "Waiting for others..." and nothing else
+happened: the others were already racing and had no Ready button to press. (B50, not B49: `claude/mp-plan-p0` uses
+B48-B49 for the invite fixes, and this branch's B48 is a different bug.)
+
+**Root cause.** The rejoining client loads the game scene from scratch, after the countdown's
+`OnCountdownTimerEnded_ClientRpc` (SetPlayersActive + `GameDataSO.StartTurn`) has gone out to everybody else, so on
+that machine `IsTurnRunning` stays false. `ServerPlayerVesselInitializer.TryReclaimSeat` handed the seat back with
+`SeatReclaimed_ClientRpc(playerNetId)` and nothing about the match. The claim's "a match already under way: unpause
+input" branch read `gameData.IsTurnRunning`, which could never be true there. `MiniGameHUD.HandleClientReady` then did
+what it does for a new match: intro cinematic, then `ToggleReadyButton(true)`. The press went to
+`OnReadyClicked_ServerRpc`; the ready set had been cleared when the countdown started, so `EvaluateReadyGate` read
+1/N for the rest of the match (and, had it ever filled, would have started a second countdown for pilots mid-race).
+
+**Fix.**
+- `TryReclaimSeat` sends the turn state with the seat: running or not, seconds since the turn started, and
+  `RoundsPlayed` / `TurnsTakenThisRound`.
+- `ClientPlayerVesselInitializer`: after the claim, raise ClientReady (the HUD clears its score and cards first thing)
+  and then, if the turn is running, join it: the counters, `SetPlayersActive`, the new `GameDataSO.JoinRunningTurn`
+  (IsTurnRunning, `TurnStartTime` set back by the elapsed seconds, the flight clock from now, the turn-started event;
+  no stat zeroing, the scores carried on through the drop), and input unpaused. Net log mark `rejoinedRunningTurn`.
+- `MiniGameHUD`: when the turn is already running after the connecting panel, no intro (not even prepared) and no
+  READY; the vessel HUD and the score show.
+- `MultiplayerDomainGamesController.OnReadyClicked_ServerRpc` ignores a press while the turn runs (warning, no toast),
+  and `EvaluateReadyGate` returns while it runs, so a stale button can never start a second countdown.
+
+**Not covered.** A mode's own per-pilot state that is not replicated (a race's gate progress, a local timer started on
+turn start) starts from the rejoin on that machine; each mode's rejoin is worth a look. A rejoin during the countdown
+itself still shows READY, as before; the countdown's end reaches the rejoiner and starts the turn there.
+
+**Verified.** Assembly-CSharp and Assembly-CSharp-Editor compiled with the editor's Roslyn and today's response files
+(0 errors); `check_console_logging.py` and `check_conditional_compilation.py` pass. Not run: the EditMode tests
+(`GameDataSOTests.JoinRunningTurn_*`, 3 new) and a two-player rejoin: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "B50".
+
+**Run 2026-11-15** (editor + MPPM Player 2, Switchback, `4b414df525`). `GameDataSOTests` 41/41 in the real editor. The
+rejoin held: host `clientLeft` -> `leaverToAI` -> `clientApproved 2 rejoin` -> `seatReclaimed`; Player 2
+`rejoinedRunningTurn 344.8s in`, flying with no intro and no READY, stats intact, one `readyGate` press on the host for
+the whole match. Stays 🟡: input by hand, the match's end and a multi-turn mode (does the rejoiner get READY for the
+next turn?) are not checked; the checklist entry has the detail.

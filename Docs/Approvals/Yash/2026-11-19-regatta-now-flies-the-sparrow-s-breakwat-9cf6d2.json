@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-19-regatta-now-flies-the-sparrow-s-breakwat-9cf6d2",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-19T06:05:14+00:00",
+  "area": "the Sparrow's racing AI and Breakwater",
+  "summary": "Regatta now flies the Sparrow's Breakwater-trained drive (new SparrowAIBoostPolicy_Regatta, a copy of the trained values), and the Sparrow's afterburner is re-fit to x1.75 -> x2.15 to keep it in the Regatta field",
+  "why": "Regatta flew the untrained base policy; the trained drive is ~15% faster. Breakwater rungs at the new afterburner (4 seeds): I1 86-95, I2 83-100, I3 100-141, I4 90-121 s",
+  "branch": "claude/project-thread-frbecj",
+  "commit": "1a3c6c9b5",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SparrowAIBoostPolicy_Regatta.asset",
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab"
+  ],
+  "loop": {
+    "vessels": [
+      "Sparrow"
+    ],
+    "elements": [
+      "Time"
+    ]
+  }
+}

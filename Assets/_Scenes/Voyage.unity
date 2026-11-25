@@ -141,6 +141,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: bootBareCanvas
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: CellConfigs.Array.size
       value: 14
       objectReference: {fileID: 0}
@@ -1043,6 +1048,7 @@ MonoBehaviour:
   handOverSeconds: 1.5
   returnDelaySeconds: 6
   sailTimeoutSeconds: 90
+  pauseButton: {fileID: 1960000012}
 --- !u!1 &1564324324
 GameObject:
   m_ObjectHideFlags: 0
@@ -1270,7 +1276,7 @@ MonoBehaviour:
   crystalClickHandler: {fileID: 0}
   onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}
-  pauseMenuPrefab: {fileID: 8035663729132098927, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
+  pauseMenuPrefab: {fileID: 2010564259793320838, guid: d8d137b56f805134bb33d1f70ec70005,
     type: 3}
 --- !u!1 &1960000005
 GameObject:
