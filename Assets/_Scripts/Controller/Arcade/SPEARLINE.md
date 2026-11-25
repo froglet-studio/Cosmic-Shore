@@ -122,6 +122,43 @@ vessel changes.
 
 About 730-810 prisms a lap. Held by `SpearlineRuinsTests` (12) and six negative controls in `spearline_harness`.
 
+## 2b. The race garden by intensity (`SpearlineGarden`, `SpearlineController.Garden.cs`; Yash, 2026-11-25)
+
+"Shape the environment by intensity, easier at I1 to harder at I4, so the Swordfish can take advantage of it." Every
+piece has a reason in the Swordfish's own kit, and the rungs trade help for cost. Blue (no pilot's domain), so every
+pilot meets them alike; laid by every peer from the broadcast rings; a cut prism grows back 4 s later once no hull is
+within 80 u. `SpearlineRuins` (the other Time games' generator) is untouched.
+
+| Rung | Stands | Helps the Swordfish | Costs it |
+|---|---|---|---|
+| I1 | Fuel hedges both sides, 200 u, on every leg into an unsealed ring. No pillars. | Every slice of the bill refills the ramp tank (Spearline lays no other mass on the line). | Nothing. |
+| I2 | Hedges one side (alternating), 160 u. 1 plain pillar. | Less fuel. | One forced dodge before a seal; the plain pillar can be cut through. |
+| I3 | Hedges one side, 140 u, the line-facing row shielded. 2 shielded pillars. | Fuel, slower to earn (a stroke cracks first). | Two dodges. |
+| I4 | Hedges one side, 100 u, shielded, danger columns capping both ends. 3 pillars with danger bands. The ruins (2a). | A little fuel. | Three dodges, a hard danger slow if clipped. |
+
+- **Fuel hedge:** plain prisms in three tiers, centres 22-34 u from the flown line: outside the hull (reach about 10 u,
+  plus an Easy AI's 10 u lane error), inside a stroke. Only on legs into UNSEALED rings: the coach owns the AI's hand
+  within 500 u of a sealed ring, so there the AI's own hand swings at them (it strikes the nearest hostile prism).
+- **Pillar:** a column of rings (radius 16 u, 100 u long) standing across the line at 40% of a leg into a SEALED ring,
+  leaning by a seeded angle. A sidestep of about 25 u clears it; prisms are not walls, so it costs time, never traps.
+- No garden prism within 120 u of a ring's mouth, in another leg's lane (60 u), or on a ruin.
+
+Held by `SpearlineGardenTests` (8, one per placement rule) and five negative controls in `spearline_harness`.
+
+**Measured** (`time_ladder_judge.py --mode Spearline --hull Swordfish`, Amoebius headless, seeds 101-103, at fd5145d403;
+before = the same judge at fb540a46df, 2026-11-23). 24 of 24 finished, worst gate 21.6 s (Legendary I2), no stall.
+
+| Median (s) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Legendary, before | 148.5 | 142.3 | 135.2 | 143.6 |
+| Legendary, garden | 141.4 | 143.2 | 138.8 | 153.6 |
+| Medium, before | 194.7 | 159.5 | 161.0 | 165.4 |
+| Medium, garden | 184.8 | 164.3 | 166.1 | 170.9 |
+
+The garden opened the ends: I1 got faster (fuel) and I4 slower (pillars, danger), so Legendary I4 is now 1.11x I3.
+**Still flat:** I1-I3 sit within 4% for Legendary, and Medium I1 is still its slowest rung (a pre-existing oddity, not
+explained). Three seeds a rung; the spread inside a rung (up to 30 s) is as large as most steps.
+
 ## 3. The AI (`SpearlineController.Coach.cs`)
 
 - **The read.** For its next sealed ring, the AI takes `SpearlineSeals.Read`: of 37 crossings on a polar grid inside the

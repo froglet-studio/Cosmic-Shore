@@ -26806,6 +26806,16 @@ boxes above stay open: nobody watched the races or flew one, and I4's 195.9 s is
 The 195.9 s came from the 4x clock: I4 again at 1x with the same three AIs took 130.9 s (one seed), within 10% of 144 s.
 Time this mode's AI at 1x.
 
+### Spearline: the race garden by intensity (2026-11-25)
+
+Machine side done: `SpearlineGardenTests` 8 of 8 headless, compiles in the editor, the headless ladder judge finished
+24 of 24 (Legendary 141 / 143 / 139 / 154 s, `SPEARLINE.md` 2b). Not flown in the editor.
+
+- [ ] I1: a stroke into a fuel hedge refills the ramp and you feel the speed; the hull alone passes the hedges clean.
+- [ ] I2-I4: a pillar before a seal makes you choose a dodge or a cut, and costs time either way, never a trap.
+- [ ] I4: clipping a hedge's danger cap or a pillar's danger band slows you hard.
+- [ ] Hedges and pillars read as part of the course, not clutter; they grow back behind the leader.
+
 ### Spearline: the I4 garden ruins (2026-11-24)
 
 Machine side done: `SpearlineRuinsTests` 8 of 8 headless, compiles in the editor, one I4 AI race at 1x with 723 ruin
