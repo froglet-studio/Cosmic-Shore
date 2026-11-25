@@ -38,6 +38,10 @@ AR = "Assets/_Scripts/Controller/Arcade"
 SCRIPT_PATHS = {
     "RiposteController":        f"{AR}/Riposte/RiposteController.cs",
     "RiposteScoringRuleSO":     f"{AR}/Riposte/RiposteScoringRuleSO.cs",
+    "RiposteSettingsSO":        f"{AR}/Riposte/RiposteSettingsSO.cs",
+    "RiposteDuel":              f"{AR}/Riposte/RiposteDuel.cs",
+    "RiposteDuelist":           f"{AR}/Riposte/RiposteDuelist.cs",
+    "RiposteDuelTests":         "Assets/_Scripts/Tests/Editor/RiposteDuelTests.cs",
     "RiposteStrikeTurnMonitor": f"{AR}/TurnMonitors/RiposteStrikeTurnMonitor.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
@@ -47,6 +51,7 @@ G_ASSET = {
     "RiposteSettings":        guid("asset/RiposteSettings"),
     "GameToastConfigRiposte": guid("asset/GameToastConfigRiposte"),
     "ModePreviewRiposte":     guid("asset/ModePreviewRiposte"),
+    "SwordfishAIBoostPolicy_Riposte": guid("asset/SwordfishAIBoostPolicy_Riposte"),
     "MinigameRiposte.unity":  guid("asset/MinigameRiposte.unity"),
 }
 EXISTING = dict(lib.SCRIPT_GUIDS)
@@ -89,6 +94,32 @@ LADDERS = {
 SHARED = dict(progressSampleSeconds=0.5, crystalsPerClearing=3, clearingFill=0.5, crystalRegrowSeconds=8,
               crystalSeed=97, aiOvershoot=120, aiHumanFocus=2)
 
+# The duelists (RiposteSettingsSO, RiposteDuelist; RIPOSTE.md section 3). Jackstraw's hunter, flown by a Swordfish,
+# made a slow knot (30 u/s, nobody winding up). A duelist flies long straight legs: cut sticks for ramp fuel, charge
+# through a rival and on past them, run straight out, turn back in. Index = AI difficulty - 1.
+DUEL_LADDERS = {
+    "duelThrottleFloor":   ([0.7, 0.85, 1, 1], "up"),
+    "duelReapBelowFuel":   ([0, 0.03, 0.06, 0.1], "up"),
+    "duelReapUntilFuel":   ([0, 0.08, 0.15, 0.25], "up"),
+    "duelChargeOvershoot": ([150, 250, 350, 450], "up"),
+    "duelExtendDistance":  ([120, 220, 320, 420], "up"),
+}
+DUEL_SHARED = dict(duelPassRadius=240, duelPhaseSeconds=6, duelReapSpreadDegrees=35, duelArriveRadius=90)
+LADDERS.update(DUEL_LADDERS)
+
+# The AI's ramp in this mode (RampBoostAIPolicySO, Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Riposte, picked by
+# AIBoostPolicySO.ForMode). The hull's own policy is a racer's: it presses the ramp inside 12 degrees and brakes to a
+# corner speed at its objective. A duelist's objective is a point PAST its rival, so it must arrive at full ramp: a
+# wide straight test, a short runway, and a corner speed above the ramp's top so it never brakes for the pass.
+# Plan step: charge-arcade (Docs/AI_SYSTEM/AI_PLAN.md). Hand-set from the real-game judge, not a search.
+RAMP_POLICY = dict(alignDegrees=30, releaseAlignDegrees=55, stickBand=0.6, releaseStickBand=0.9,
+                   engageRunwaySeconds=0.6, releaseRunwaySeconds=0.1, steeringShareOfPlateau=0.9, minHoldSeconds=0.5,
+                   minRestSeconds=0.3, minRearmSeconds=0.5, minSpeedGain=20, cornerSpeed=2000, minCornerSpeed=900,
+                   brakeMarginUnits=0, brakeLeadSeconds=0, graceShare=0.9, brakeSteerFloor=0.3,
+                   throttleSlewPerSecond=4, cornerReleaseDegrees=60)
+RAMP_POLICY_REL = "Assets/Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Riposte.asset"
+RAMP_POLICY_CS = "Assets/_Scripts/Controller/AI/Boost/RampBoostAIPolicySO.cs"
+
 
 def ladder_yaml(name):
     return f"  {name}:\n" + "".join(f"  - {lib.num(float(v))}\n" for v in LADDERS[name][0])
@@ -122,16 +153,25 @@ g.emit_asset("Assets/_SO_Assets/Scoring Rules/RiposteScoringRule.asset", G_ASSET
   defeatLabel: STRIKES LEFT
 """)
 
-# ── 3. Settings (a JackstrawSettingsSO: the hunters' sword-length numbers) ──
+# ── 3. Settings (a RiposteSettingsSO: Jackstraw's fields, then the duelists') ──
 g.emit_asset("Assets/_SO_Assets/Games/RiposteSettings.asset", G_ASSET["RiposteSettings"],
-             lib.header_for(EXISTING["JackstrawSettingsSO"], "RiposteSettings") +
+             lib.header_for(G_SCRIPT["RiposteSettingsSO"], "RiposteSettings") +
              f"  progressSampleSeconds: {lib.num(SHARED['progressSampleSeconds'])}\n"
              f"  crystalsPerClearing: {SHARED['crystalsPerClearing']}\n"
              f"  clearingFill: {lib.num(SHARED['clearingFill'])}\n"
              f"  crystalRegrowSeconds: {SHARED['crystalRegrowSeconds']}\n"
              f"  crystalSeed: {SHARED['crystalSeed']}\n" +
-             "".join(ladder_yaml(n) for n in LADDERS) +
-             f"  aiOvershoot: {SHARED['aiOvershoot']}\n  aiHumanFocus: {SHARED['aiHumanFocus']}\n")
+             "".join(ladder_yaml(n) for n in LADDERS if n not in DUEL_LADDERS) +
+             f"  aiOvershoot: {SHARED['aiOvershoot']}\n  aiHumanFocus: {SHARED['aiHumanFocus']}\n" +
+             "".join(ladder_yaml(n) for n in DUEL_LADDERS) +
+             "".join(f"  {k}: {lib.num(float(v))}\n" for k, v in DUEL_SHARED.items()))
+
+# ── 3a. The AI's ramp in this mode ──────────────────────────────────────────
+g.emit_asset(RAMP_POLICY_REL, G_ASSET["SwordfishAIBoostPolicy_Riposte"],
+             lib.header_for(lib.existing_guid(RAMP_POLICY_CS), "SwordfishAIBoostPolicy_Riposte") +
+             "".join(f"  {k}: {lib.num(float(v))}\n" for k, v in list(RAMP_POLICY.items())[:6]) +
+             "  disabledInModes: []\n  requireAIPlayer: 0\n" +
+             "".join(f"  {k}: {lib.num(float(v))}\n" for k, v in list(RAMP_POLICY.items())[6:]))
 
 # ── 4. Card ─────────────────────────────────────────────────────────────────
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRiposte.asset", G_ASSET["ArcadeGameRiposte"],
@@ -258,20 +298,48 @@ if "protected virtual GameToastSituation HintSituation" not in g.read(f"{AR}/Jac
     errors.append("JackstrawController lost its HintSituation seam")
 if EXISTING["JackstrawSettingsSO"] != guid("script/JackstrawSettingsSO"):
     errors.append("JackstrawSettingsSO's script guid is not the one author_jackstraw_assets.py mints")
-settings_cs = g.read(f"{AR}/Jackstraw/JackstrawSettingsSO.cs")
+settings_cs = g.read(f"{AR}/Jackstraw/JackstrawSettingsSO.cs") + g.read(SCRIPT_PATHS["RiposteSettingsSO"])
 for name, (values, harder) in LADDERS.items():
     if f"public float[] {name} =" not in settings_cs:
         errors.append(f"JackstrawSettingsSO has no {name} ladder")
     pairs = list(zip(values, values[1:]))
     if harder == "up" and any(b < a for a, b in pairs) or harder == "down" and any(b > a for a, b in pairs):
         errors.append(f"{name}: not monotone toward harder ({values})")
-for field in SHARED:
+for field in list(SHARED) + list(DUEL_SHARED):
     if f" {field} = " not in settings_cs:
-        errors.append(f"JackstrawSettingsSO has no field {field}")
+        errors.append(f"the settings classes have no field {field}")
+if "class RiposteSettingsSO : JackstrawSettingsSO" not in settings_cs:
+    errors.append("RiposteSettingsSO must extend JackstrawSettingsSO (the scene's settings field is typed as the base)")
+for lo, hi in zip(DUEL_LADDERS["duelReapBelowFuel"][0], DUEL_LADDERS["duelReapUntilFuel"][0]):
+    if hi < lo:
+        errors.append("duelReapUntilFuel must be at least duelReapBelowFuel on every rung, or a pilot cuts forever")
+
+# The AI is input-only and the vessel is untouched (the LOCKED mode rule): the duelist may steer and ask for
+# throttle, nothing else. The ramp's mode variant must be the hull's own policy class under the name ForMode loads.
+duelist_cs = g.read(SCRIPT_PATHS["RiposteDuelist"])
+for banned in ("PerformShipControllerActions", "InputStatus", "TriggerAnalog", "SelectedIntensity", "ChangeResourceAmount"):
+    if banned in duelist_cs:
+        errors.append(f"RiposteDuelist uses {banned}: it steers and sets a throttle floor, and its level is the seat's AI difficulty")
+for needed in ("SetExternalTargetProvider", "SetThrottleFloor", "AIDifficultyFor"):
+    if needed not in duelist_cs:
+        errors.append(f"RiposteDuelist no longer calls {needed}")
+if "_duelist.Arm(" not in ctl or "protected virtual void ArmAI()" not in g.read(f"{AR}/Jackstraw/JackstrawController.cs"):
+    errors.append("RiposteController must arm its duelists through JackstrawController's ArmAI seam")
+policy_cs = g.read(RAMP_POLICY_CS) + g.read("Assets/_Scripts/Controller/AI/Boost/AIBoostPolicySO.cs")
+for field in RAMP_POLICY:
+    if not re.search(r"\b" + field + r"\b", policy_cs):
+        errors.append(f"RampBoostAIPolicySO has no field {field}")
+hull_policy = "Assets/_SO_Assets/AI Boost Policies/SwordfishAIBoostPolicy.asset"
+if lib.existing_guid(RAMP_POLICY_CS) not in g.read(hull_policy):
+    errors.append("the Swordfish's own boost policy is no longer a RampBoostAIPolicySO: ForMode would ignore the Riposte variant")
+if lib.existing_guid(hull_policy) not in g.read("Assets/_Prefabs/Spacevessels/Swordfish.prefab"):
+    errors.append("Swordfish.prefab no longer wires SwordfishAIBoostPolicy: the Riposte variant's name would not be looked up")
+if RAMP_POLICY["cornerSpeed"] < 840 * 1.1:
+    errors.append("the Riposte ramp's cornerSpeed must stay above the ramp's top (840 u/s) or the AI brakes before its rival")
 
 if scene is not None:
     for name, gd in G_SCRIPT.items():
-        if name != "RiposteScoringRuleSO" and gd not in scene:
+        if name in ("RiposteController", "RiposteStrikeTurnMonitor") and gd not in scene:
             errors.append(f"scene missing {name}")
     for name in ("RiposteSettings", "RiposteScoringRule"):
         if G_ASSET[name] not in scene:

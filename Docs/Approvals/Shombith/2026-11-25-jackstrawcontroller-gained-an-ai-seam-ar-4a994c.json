@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-25-jackstrawcontroller-gained-an-ai-seam-ar-4a994c",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-25T01:19:09+00:00",
+  "area": "Jackstraw (the Thresher's Charge game) and the Amoebius race judge",
+  "summary": "JackstrawController gained an AI seam (ArmAI, DisarmAI, TickAI, AIArmed, Settings, Heap; behaviour unchanged) and JackstrawHunter.ChooseRival is now a shared static, so Riposte flies its own Swordfish pilots on the same heap; SpawnableJackstraw publishes HeapRadius. In Port: RaceJudge accepts mode Jackstraw and Riposte as combat-point games, and the engine's FixedString128Bytes gained CopyFromTruncated, whose absence broke the Amoebius build on Ys-bleeding-edge (the petal ledger calls it).",
+  "why": "Riposte's AI seats flew a slow knot at 30 u/s under Jackstraw's hunter; measuring and fixing it needed the judge to run the mode",
+  "branch": "Ys-bleeding-edge",
+  "commit": "c519b8bc0",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Jackstraw",
+    "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableJackstraw.cs",
+    "Port/src/CosmicShore.Engine/Collections/FixedString128Bytes.cs",
+    "Port/src/CosmicShore.Player/RaceJudge.cs"
+  ]
+}
