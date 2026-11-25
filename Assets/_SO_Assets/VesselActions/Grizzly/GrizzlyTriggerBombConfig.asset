@@ -18,7 +18,7 @@ MonoBehaviour:
   ammoIndex: 1
   minAmmoCost: 0.08
   maxAmmoCost: 0.35
-  projectileSpeed: 90
+  projectileSpeed: 180
   minProjectileScale: 2
   maxProjectileScale: 4
   sideYawDegrees: 3

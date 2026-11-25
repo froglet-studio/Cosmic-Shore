@@ -26976,6 +26976,26 @@ Not run in the Unity editor: unity_refcompile and the gates only.
 - [ ] The Sparrow HUD shows the barrel-roll card (three rolling Sparrows) left of the four elemental cards, no flower, no chip.
 - [ ] Multiplayer: a remote Sparrow's roll plays once on other machines (no doubled displacement).
 - [ ] Honeyguide: decide whether its right-stick roll should stay.
+
+## The Toy Box and its Configure window, Rev 145 H (2026-11-25)
+
+Shombith picked Rev 145 H on Frogma ("Let's go with H. Build it. H."; Docs/MENU_REDESIGN_B.md section 235.3, spec
+`Docs/UI/specs/toybox-rev145h.md`). Built by `author_menu_toybox.py` and `author_menu_toyconfigure.py`: lens cards with
+the glyphs given depth at run time (`KitGlyphDepth`), four over three centred (`KitCenteredGrid`), Today as a banner,
+Shuffle beside Back; Configure in Rev 142 A's layout with the Shelf tiles, and Navigate diving into the preview
+(`KitDive`) before it hands the player to the world. Not run in the Unity editor: the generators' checks, unity_refcompile
+(0 errors in the changed files) and an offline render from the YAML (`Docs/Look/toybox-rev145h_2026-11-25.jpg`) only.
+
+- [ ] Open the Toy Box: the seven cards pop in one after another, four over three with the three centred.
+- [ ] Each glyph floats in its round lens with a slate extrusion down and right and a soft shadow; it bobs.
+- [ ] The Today banner spans the window, a soft light sweeps across it every few seconds, and Try it +10 is lime.
+- [ ] Shuffle beside Back shuffles; the line left of it says what the press did.
+- [ ] Gamepad: focus starts on the Today banner, then the toys in grid order, then Shuffle and Back.
+- [ ] Open Vessel Changer: the live preview is large on the left, the Shelf tiles three across on the right, the flown hull says Flying.
+- [ ] Switch to another hull: the tile lights, the preview re-renders, the state moves.
+- [ ] Navigate: the preview grows to fill the screen while the rest fades, then the player is flying at the target.
+- [ ] Open the Toy Box again after a Navigate: Configure opens at its normal layout (the dive was put back).
+- [ ] Phone (match height): the window scales whole and nothing overlaps.
 ## Switchback: the I4 garden ruins (2026-11-24)
 
 Spearline's ruins laid round Switchback's I4 gauntlet (`SwitchbackRuins`, `SwitchbackController.Ruins.cs`; SWITCHBACK.md

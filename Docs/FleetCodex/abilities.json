@@ -154,17 +154,17 @@
   },
   "Mass": {
    "ability": "Weapon Systems",
-   "does": "Cycles your fire between three weapons: explosive shells, a sniper shot, and a plasma claw that sets enemy prisms on fire with a burn that spreads and destroys them.",
-   "trigger": "Tap to cycle",
+   "does": "Cycles three weapons, and the triggers follow: bombs on each trigger, the plasma claw (one claw per trigger, sized by pressure, slashing down and across on release) or the sniper (LT scope with pressure zoom, RT fire). Every enemy prism the claw lights refills your energy.",
+   "trigger": "Tap to cycle (Y or LB)",
    "scales": "Mass does not change this ability right now.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_PLASMA_CLAW.md"
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md"
   },
   "Space": {
-   "ability": "Charged Cannon",
-   "does": "Hold to charge a shell from your energy and release to fire it. Press again to freeze it where it is, then let go to set it off. Bigger charge, bigger blast, and the blast can launch you.",
+   "ability": "Trigger Bombs",
+   "does": "In Explosives, LT and RT each own a bomb. Pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to set it off. Sit in your own blast and it throws you away from the bomb, so leave it behind you and blow it to be thrown forward.",
    "trigger": "Hold, release to fire",
-   "scales": "More Space makes the cannon's explosions bigger.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_CHARGED_CANNON.md"
+   "scales": "Space does not change the trigger bombs yet: its scaling and level-5 still sit on the charged cannon, which no longer has a button.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md"
   },
   "Time": {
    "ability": "Rush",
