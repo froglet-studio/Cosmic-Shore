@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-22-burrow-run-71-moved-from-the-meerkat-to-4347ab",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T17:59:10+00:00",
+  "area": "Burrow Run, the Meerkat's Time AI and the Jewel Wasp",
+  "summary": "Burrow Run (71) moved from the Meerkat to the Jewel Wasp (Yash, 2026-11-22: the Meerkat keeps one Time game, Warpline). The card and preview seat the wasp; the scene's AI approach went from the Meerkat's searched genes (42/702/74) back to Warpline's (160/180/120); the controller no longer lays the Meerkat's omnicrystals or carries its nose row. No vessel file changed.",
+  "why": "The Meerkat Time step 3 sign-off in loop.json cites the Burrow Run AI and was left as it is; the wasp's Time burst has nothing to ride in the barren race cell, and an AI wasp cannot ride for a ring without a change on the wasp (BURROWRUN.md section 2).",
+  "branch": "Ys-bleeding-edge",
+  "lane": "burrowrun",
+  "commit": "4cc6f120c",
+  "paths": [
+    "Assets/_SO_Assets/Games/ArcadeGameBurrowRun.asset",
+    "Assets/_Scripts/Controller/Arcade/BURROWRUN.md",
+    "Assets/_Scripts/Controller/Arcade/BurrowRun/BurrowRunController.cs",
+    "Tools/Build/author_burrowrun_assets.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Meerkat",
+      "JewelWasp"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "3"
+  }
+}

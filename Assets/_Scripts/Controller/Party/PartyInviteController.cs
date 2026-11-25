@@ -726,7 +726,11 @@ namespace CosmicShore.Gameplay
 
                 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-                await tcs.Task.AttachExternalCancellation(timeoutCts.Token);
+                // CancelAfter fires on a timer thread, so a timeout would resume the caller there and its bounce
+                // (NetSessionRecorder, the toast, the scene) would throw off the main thread. Found by the
+                // automatic host/join run of 2026-11-22: "get_realtimeSinceStartupAsDouble can only be called
+                // from the main thread", and the joiner never got back to its own menu.
+                await tcs.Task.AttachExternalCancellation(timeoutCts.Token).AsMainThread();
                 return true;
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)

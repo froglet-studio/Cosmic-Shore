@@ -19,7 +19,6 @@ sys.path.insert(0, HERE)
 
 import analytics_claude as C  # noqa: E402
 import analytics_geo as G  # noqa: E402
-import import_posthog as P  # noqa: E402
 import analytics_server as A  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
@@ -33,7 +32,7 @@ def iso(ms):
 
 
 def ev(event, player, ms, **props):
-    """One event exactly as PostHogAnalyticsSink sends it."""
+    """One event exactly as FrogletAnalyticsSink sends it."""
     base = {"distinct_id": player, "install_id": "dev-" + player, "player_id": player,
             "app_version": "0.2.1", "platform": "WindowsPlayer", "schema_version": 1}
     base.update(props)
@@ -64,7 +63,7 @@ class StoreCase(unittest.TestCase):
 
 
 class Ingest(StoreCase):
-    def test_posthog_batch_is_stored_and_bad_events_are_counted_not_stored(self):
+    def test_a_batch_is_stored_and_bad_events_are_counted_not_stored(self):
         result = self.store.ingest([
             started("p1", "m1", T0),
             {"event": "not_in_the_schema", "properties": {"distinct_id": "p1"}, "timestamp": iso(T0)},
@@ -374,105 +373,7 @@ class SchemaCoversTheGame(unittest.TestCase):
         self.assertEqual(missing, set(), "add these to Docs/Analytics/EVENT_SCHEMA.json")
 
 
-class PostHogHistory(StoreCase):
-    def fake_posthog(self, rows_by_day):
-        calls = []
-
-        def when(text):
-            from datetime import datetime
-            return datetime.fromisoformat(text.replace("Z", "+00:00"))
-
-        def post(url, body, key):
-            calls.append((url, body["query"]["query"], key))
-            q = body["query"]["query"]
-            # Like PostHog: OFFSET is refused on queries made with a personal API key (HTTP 400 there).
-            self.assertNotIn("OFFSET", q)
-            wanted = {n.strip(" '") for n in q.split("event IN (", 1)[1].split(")", 1)[0].split(",")}
-            if "count()" in q:
-                first = q.split("toDate(timestamp) >= '")[1][:10]
-                counts = {d: sum(r[0] in wanted for r in rs) for d, rs in rows_by_day.items() if d >= first}
-                return {"columns": ["day", "count()"], "results": [[d, n] for d, n in sorted(counts.items()) if n]}
-            day = q.split("toDate(timestamp) = '")[1][:10]
-            limit = int(q.rsplit("LIMIT ", 1)[1].split()[0])
-            rows = [r for r in rows_by_day.get(day, []) if r[0] in wanted]
-            for op in (">", "="):
-                marker = f"timestamp {op} toDateTime('"
-                if marker in q:
-                    at = when(q.split(marker, 1)[1].split("'", 1)[0])
-                    rows = [r for r in rows if (when(r[2]) > at if op == ">" else when(r[2]) == at)]
-            rows.sort(key=lambda r: when(r[2]))
-            return {"columns": ["event", "distinct_id", "timestamp", "properties"], "results": rows[:limit]}
-        return post, calls
-
-    def test_paging_by_timestamp_loses_and_repeats_nothing_across_a_page_edge(self):
-        base = S.now_ms() - 10 * 86400 * 1000
-        base -= base % 86400000 - 3600 * 1000                   # 01:00 UTC, so every row is on one day
-        stamps = [base, base + 1, base + 1, base + 1, base + 2, base + 3, base + 3]   # ties straddle each page edge
-        rows = {S.day_of(base): [["game_started", f"p{i}", iso(ms), json.dumps({"match_id": f"m{i}"})]
-                                 for i, ms in enumerate(stamps)]}
-        post, calls = self.fake_posthog(rows)
-        page, P.PAGE = P.PAGE, 2
-        try:
-            totals = P.run(self.store, "123", "phx_test", A.schema_events(A.REPO_SCHEMA), days=12, post=post,
-                           log=lambda *_: None)
-        finally:
-            P.PAGE = page
-        self.assertEqual(totals["rows"], len(stamps))
-        self.assertEqual((totals["days"], totals["days_short"]), (1, 0))
-        self.assertEqual(sorted(r[0] for r in self.rows("SELECT match_id FROM events")),
-                         sorted(f"m{i}" for i in range(len(stamps))))
-
-    def test_history_comes_in_once_without_ips_and_keeps_its_own_time(self):
-        old = S.now_ms() - 40 * 86400 * 1000
-        older = S.now_ms() - 200 * 86400 * 1000                # older than live ingest accepts (90 days)
-        day = lambda ms: S.day_of(ms)
-        props = lambda **k: json.dumps(dict({"$ip": "81.2.3.4", "$geoip_country_code": "se", "$lib": "web",
-                                             "platform": "WindowsPlayer", "app_version": "0.2.1"}, **k))
-        rows = {day(old): [["game_started", "p1", iso(old), props(match_id="m1", player_count_human=1)],
-                           ["$identify", "p1", iso(old + 5), json.dumps({"$set": {"display_name": "Kes"}})]],
-                day(older): [["game_completed", "p1", iso(older), props(match_id="m0")],
-                             ["$pageview", "p1", iso(older), props()]]}
-        post, calls = self.fake_posthog(rows)
-        totals = P.run(self.store, "123", "phx_test", A.schema_events(A.REPO_SCHEMA), days=365, post=post,
-                       log=lambda *_: None)
-        self.assertEqual(totals["rows"], 3)                     # $pageview is never asked for
-        self.assertEqual(totals["accepted"], 3)
-        self.assertNotIn("$pageview", calls[0][1])
-        dump = "\n".join(self.store.db.iterdump())
-        self.assertNotIn("81.2.3.4", dump)
-        self.assertNotIn("$lib", dump)
-        self.assertEqual(self.rows("SELECT country, received_ms = ts_ms FROM events WHERE match_id='m1'")[0], ("SE", 1))
-        self.assertEqual(self.rows("SELECT json_extract(props, '$.display_name') FROM people")[0][0], "Kes")
-        again = P.run(self.store, "123", "phx_test", A.schema_events(A.REPO_SCHEMA), days=365, post=post,
-                      log=lambda *_: None)
-        self.assertEqual(again["resent"], 2)                   # stored once; $identify updates the person again
-
-    def test_a_rate_limited_query_waits_and_asks_again(self):
-        answers = [urllib.error.HTTPError("u", 429, "slow", {"Retry-After": "7"}, None),
-                   urllib.error.HTTPError("u", 429, "slow", {}, None)]
-        waits = []
-
-        class Reply:
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_):
-                return False
-
-            def read(self):
-                return b'{"results": [[1]]}'
-
-        def urlopen(request, timeout):
-            if answers:
-                raise answers.pop(0)
-            return Reply()
-        real, P.urllib.request.urlopen = P.urllib.request.urlopen, urlopen
-        try:
-            self.assertEqual(P._post("https://x/q", {}, "k", sleep=waits.append), {"results": [[1]]})
-        finally:
-            P.urllib.request.urlopen = real
-        self.assertEqual(waits, [7, 60])
-
+class LiveIngestLimits(StoreCase):
     def test_live_http_ingest_cannot_claim_a_country_or_old_time(self):
         older = S.now_ms() - 200 * 86400 * 1000
         item = started("p9", "m9", older)
@@ -688,7 +589,7 @@ class Http(unittest.TestCase):
         except urllib.error.HTTPError as err:
             return err.code, json.loads(err.read()), err.headers
 
-    def test_the_posthog_sink_can_post_here_unchanged(self):
+    def test_the_game_sink_posts_its_batch_here(self):
         status, out, _ = self.call("POST", "/batch/", {"api_key": "in-key", "batch": [started("p1", "m1", T0)]})
         self.assertEqual((status, out["accepted"]), (200, 1))
         status, _, _ = self.call("POST", "/batch/", {"api_key": "wrong", "batch": []})
@@ -1225,7 +1126,7 @@ class Freestyle(StoreCase):
     def test_snapshots_are_kept_once_and_erased_with_the_player(self):
         row = identify("h9", T0, selected_vessel="Manta", preferred_vessel="Squirrel", total_flight_time_seconds=61.5)
         self.store.ingest([row], trusted=True, max_age_days=365)
-        self.store.ingest([row], trusted=True, max_age_days=365)        # import-posthog run again: stored once
+        self.store.ingest([row], trusted=True, max_age_days=365)        # the same history imported again: stored once
         self.store.ingest([identify("h9", T0 + 5, selected_vessel="Rhino")])   # a live one adds a row
         rows = self.rows("SELECT ts_ms, imported, selected_vessel, preferred_vessel, total_flight_time_seconds "
                          "FROM person_snapshots WHERE distinct_id='h9' ORDER BY ts_ms")

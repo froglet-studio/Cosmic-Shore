@@ -52,10 +52,15 @@ c = A.c
 PREFABS = ("ToyVariantTile", "ToyConfigureView")
 GRID = TB.AR_GRID
 S = dict(card=C.script("KitToyVariantCard"), modal=C.script("ToyConfigureModal"), preview=C.script("ToyPreviewCamera"),
-         tile=A.S["tile"], kt=A.S["kt"], button=A.S["button"], close=A.S["close"], crystal=TB.S["crystal"])
-C.STUB_KIND.update({"preview": (114, S["preview"])})
-TILE_W, TILE_H, GAP_X, GAP_Y = 270, 74, 17, 12
-PANEL_W = 900
+         tile=A.S["tile"], kt=A.S["kt"], button=A.S["button"], close=A.S["close"], crystal=TB.S["crystal"],
+         dive=K.kit_script("KitDive"))
+C.STUB_KIND.update({"preview": (114, S["preview"]), "dive": (114, S["dive"])})
+# Rev 145 H (section 235.3): the preview left, a 640 wide column right, the Shelf's tiles three across.
+COL_TOP, COL_W, COL_H = 196, 640, 720      # the column ends level with the preview
+PREVIEW_W, PREVIEW_H = 1120, 720
+TILE_W, TILE_H, GAP_X, GAP_Y = 205, 150, 12, 12
+SHELF_ART_TOP, SHELF_ART_H = 12, 92
+SHELF_TOP, SHELF_H = 112, 480
 
 
 def asset_guid(name):
@@ -81,20 +86,29 @@ def panel(root, key, name, r, stagger, grid=True):
 # --------------------------------------------------------------------------------------------
 
 def build_tile():
+    """Rev 145 H (Docs/MENU_REDESIGN_B.md section 235.3): the Shelf - the variation's picture standing on a
+    floor glow at the top of a glass tile, its name under it and its state on the right."""
     root = N("root", "ToyVariantTile", R(size=(TILE_W, TILE_H)))
     ring_node(root, "FocusRing", 10)
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    clip = root.child(N("Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
+    clip.add("mask", 114, A.rect_mask())
+    sea = clip.child(N("Clip/Sea", "Sea", STRETCH))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_PANEL_MAT))
+    image_node(root, "Floor", "Floor", R((0.5, 1), None, (0, -SHELF_ART_TOP - SHELF_ART_H + 4), (TILE_W - 40, 26), (0.5, 0.5)),
+               "SurfaceLight", K.kit_sprite("kit_pool"), alpha=0.55)
+    art_node(root, "Icon", "Icon", R((0.5, 1), None, (0, -SHELF_ART_TOP - SHELF_ART_H / 2), (TILE_W - 28, SHELF_ART_H),
+                                     (0.5, 0.5)), None, preserve=True)
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    art_node(root, "Icon", "Icon", R((0, 0.5), None, (14, 0), (44, 44), (0, 0.5)), None, preserve=True)
-    nm = root.child(N("Name", "Name", R((0, 1), None, (70, -14), (186, 24), (0, 1))))
+    nm = root.child(N("Name", "Name", R((0, 0), None, (16, 14), (TILE_W - 100, 24), (0, 0))))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Variant", "Body", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("Body", "TextLight", driven=True))
-    dt = root.child(N("Detail", "Detail", R((0, 1), None, (70, -40), (186, 20), (0, 1))))
-    dt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "BodySmall", tok("NeutralLightest")))) \
-        .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
+    dt = root.child(N("Detail", "Detail", R((1, 0), None, (-14, 17), (84, 18), (1, 0))))
+    dt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "Label", tok("NeutralLightest"), align="right"))) \
+        .add("kt", 114, K.kit_text("Label", "NeutralLightest"))
     body = A.tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 10,
                        primary=[c("Name", "tmp")], art=[c("Icon", "img")],
                        on_click=[lambda ctx: (ctx.c("root", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])
@@ -128,71 +142,89 @@ def header_back(parent):
 
 
 def build_view():
+    """Rev 145 H on Rev 142 A's layout: the live preview large on the left, the toy's line, the Shelf of variations
+    and SWITCH / NAVIGATE in a column on the right, the breadcrumb and the toy's name over both."""
     root = N("root", "ToyConfigureView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
-    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", raycast=True)
+    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack",
+               alpha=A.WINDOW_BACKDROP_ALPHA, raycast=True)
+    # Rev 143 (section 235.1, "too blue ... no sea lines"): the window's sea over the glass, as the Toy Box has it.
+    root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
-    # Sibling order is focus order (ScreenSwitcher.Refocus): the variant panel first, so the pad lands
+    # Sibling order is focus order (ScreenSwitcher.Refocus): the variant column first, so the pad lands
     # on the first variant; the header's Back last.
-    vp = panel(root, "Variants", "Variants", TR(40, 196, PANEL_W, 844), 2)
-    row = vp.child(N("Variants/Head", "Head", TL(28, 24, 844, 40)))
+    vp = root.child(N("Variants", "Variants", TR(40, COL_TOP, COL_W, COL_H)))
+    vp.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
+    d = vp.child(N("About/Text", "Text", TL(0, 0, COL_W, 56)))
+    d.add("cr", 222, K.canvas_renderer()) \
+        .add("tmp", 114, text("", "Body", tok("TextLight"), valign="top", wrap=True)) \
+        .add("kt", 114, K.kit_text("Body", "TextLight")) \
+        .add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Fade", stagger=3))
+    ab = vp.child(N("About/Heading", "Heading", TL(0, 0, 10, 10), active=False))
+    label(ab, "About", "Label", "TextLight")
+    row = vp.child(N("Variants/Head", "Head", TL(0, 66, COL_W - 130, 40)))
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (0, 0), (0, 0)))
     w, h = K.button_size("BACK", small=True)
     lb = row.child(N("Variants/Head/LayerBack", "LayerBack", R((0, 0.5), None, (0, 0), (w, h), (0, 0.5))))
     lb.add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=w, ph=h))
     lb.children.append(P.Inst("LayerBackButton", "KitButtonSmall", "LayerBackButton", STRETCH,
                               K.button_mods("KitButtonSmall", "Default", False, "BACK", small=True)))
-    path = row.child(N("Variants/Head/Path", "Path", R((0, 0.5), None, (0, 0), (600, 18), (0, 0.5))))
-    label(path, "Toy", "Label", "TextLight").add("le", 114, le(pw=600, ph=18))
-    label(vp.child(N("Variants/Count", "Count", TR(28, 35, 120, 18))), "0", "Label", "NeutralLightest", align="right")
-    sc = vp.child(N("Variants/Scroll", "Scroll", TL(28, 82, 844, 640)))
+    path = row.child(N("Variants/Head/Path", "Path", R((0, 0.5), None, (0, 0), (COL_W - 260, 18), (0, 0.5))))
+    label(path, "Variations", "Label", "NeutralLightest").add("le", 114, le(pw=COL_W - 260, ph=18))
+    label(vp.child(N("Variants/Count", "Count", TR(0, 77, 120, 18))), "0", "Label", "NeutralLightest", align="right")
+    sc = vp.child(N("Variants/Scroll", "Scroll", TL(0, SHELF_TOP, COL_W, SHELF_H)))
     sc.add("scroll", 114, A.scroll_rect("Variants/Scroll/Viewport/Content", "Variants/Scroll/Viewport", 20))
     view = sc.child(N("Variants/Scroll/Viewport", "Viewport", STRETCH))
     view.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("mask", 114, A.rect_mask())
     content = view.child(N("Variants/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("grid", 114, lambda ctx, go: mono(go, GRID,
-                "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 4\n    m_Bottom: 4\n"
+                "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 6\n    m_Bottom: 6\n"
                 "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
                 f"  m_CellSize: {{x: {TILE_W}, y: {TILE_H}}}\n  m_Spacing: {{x: {GAP_X}, y: {GAP_Y}}}\n"
                 "  m_Constraint: 1\n  m_ConstraintCount: 3\n")).add("csf", 114, K.fitter(0, 2))
-    image_node(vp, "Variants/Rule", "Rule", TL(28, 736, 844, 1), "SurfaceDark")
-    label(vp.child(N("Variants/Status", "Status", TL(28, 770, 460, 26))), "Pick a variation.", "Body", "NeutralLightest")
-    x = 28
-    for key, variant, cap in (("Navigate", "Default", "NAVIGATE"), ("Switch", "Play", "SWITCH")):
-        bw, bh = K.button_size(cap)
-        bw = max(bw, 148)
+    image_node(vp, "Variants/Rule", "Rule", TL(0, SHELF_TOP + SHELF_H + 14, COL_W, 1), "SurfaceDark")
+    label(vp.child(N("Variants/Status", "Status", TL(0, SHELF_TOP + SHELF_H + 30, COL_W, 26))), "Pick a variation.", "Body",
+          "NeutralLightest")
+    bw = (COL_W - 16) // 2
+    for i, (key, variant, opaque, cap) in enumerate((("Navigate", "Default", False, "NAVIGATE"), ("Switch", "Play", True, "SWITCH"))):
+        _, bh = K.button_size(cap)
         vp.children.append(P.Inst(f"{key}Button", "KitButton", f"{key}Button",
-                                  R((1, 0), None, (-x, 30), (bw, bh), (1, 0)), K.button_mods("KitButton", variant, True, cap)))
-        x += bw + 14
+                                  R((1, 0), None, (-i * (bw + 16), 0), (bw, bh), (1, 0)),
+                                  K.button_mods("KitButton", variant, opaque, cap)))
 
-    pv = panel(root, "Preview", "Preview", TL(40, 196, PANEL_W, 506), 1)
+    pv = panel(root, "Preview", "Preview", TL(40, COL_TOP, PREVIEW_W, PREVIEW_H), 1)
     surf = pv.child(N("Preview/Surface", "Surface", R((0, 0), (1, 1), (0, 0), (-4, -4))))
     surf.add("cr", 222, K.canvas_renderer()).add("raw", 114, C.raw_image()) \
         .add("cam", 114, lambda ctx, go: mono(go, S["preview"],
              "  distanceFactor: 3.2\n  fieldOfView: 42\n  liftFactor: 0.35\n  orbitDegreesPerSecond: 12\n"
              "  renderRate: 20\n  resolution: 512\n  farReachFactor: 5\n"))
-    image_node(pv, "Preview/CaptionBand", "CaptionBand", R((0, 0), (1, 0), (0, 0), (-4, 52), (0.5, 0)), "SurfaceBlack",
+    image_node(pv, "Preview/CaptionBand", "CaptionBand", R((0, 0), (1, 0), (0, 0), (-4, 90), (0.5, 0)), "SurfaceBlack",
                K.kit_sprite("kit_fade_v"))
-    label(pv.child(N("Preview/Live", "Live", R((0, 0), None, (22, 20), (300, 18), (0, 0)))), "Live preview", "Label", "TextLight")
-    label(pv.child(N("Preview/Caption", "Caption", R((1, 0), None, (-22, 20), (300, 18), (1, 0)))), "", "Label",
-          "NeutralLightest", align="right")
-
-    ab = panel(root, "About", "About", TL(40, 722, PANEL_W, 318), 3, grid=False)
-    label(ab.child(N("About/Heading", "Heading", TL(24, 28, 600, 18))), "About", "Label", "TextLight")
-    d = ab.child(N("About/Text", "Text", TL(24, 54, 852, 240)))
-    d.add("cr", 222, K.canvas_renderer()) \
-        .add("tmp", 114, text("", "Body", tok("TextLight"), valign="top", wrap=True)) \
-        .add("kt", 114, K.kit_text("Body", "TextLight"))
+    label(pv.child(N("Preview/Live", "Live", R((0, 1), None, (24, -24), (300, 18), (0, 1)))), "Live preview", "Label", "TextLight")
+    cap = pv.child(N("Preview/Caption", "Caption", R((0, 0), None, (24, 24), (700, 30), (0, 0))))
+    cap.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "H3", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("H3", "TextLight"))
 
     hd = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
     hd.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
-    label(hd.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (500, 18), (0, 1)))), "Toy", "Label",
-          "NeutralLightest")
-    t = hd.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (1100, 46), (0, 1))))
+    crumb = hd.child(N("Header/Crumb", "Crumb", R((0, 1), None, (0, -6), (1300, 46), (0, 1))))
+    crumb.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 16, 3, (0, 0), (0, 0)))
+    label(crumb.child(N("Header/Crumb/Home", "Home", R((0, 1), None, (0, 0), (140, 18), (0, 1)))), "Toy Box  /", "Label",
+          "NeutralLightest").add("csf", 114, K.fitter(2, 0))
+    label(crumb.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (140, 18), (0, 1)))), "Toy", "Label",
+          "NeutralLightest").add("csf", 114, K.fitter(2, 0))
+    t = crumb.child(N("Header/Title", "Title", R((0, 1), None, (0, 0), (900, 46), (0, 1))))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Toy", "H1", tok("TextLight")))) \
-        .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
+        .add("kt", 114, K.kit_text("H1", "TextLight", driven=True)).add("le", 114, le(pw=900, ph=46))
     header_back(hd)
+
+    # Navigate's dive (section 235): the preview grows to fill the window while the column and the header fade.
+    root.add("cg", 225, canvas_group(True))
+    root.add("dive", 114, lambda ctx, go: mono(go, S["dive"],
+             f"  target: {ref(ctx.c('Preview', 'rt'))}\n"
+             f"  fadeOut:\n  - {ref(ctx.c('Variants', 'cg'))}\n  - {ref(ctx.c('Header', 'cg'))}\n"
+             f"  window: {ref(ctx.c('root', 'cg'))}\n  duration: 0.4\n  ease: 4\n"))
     return root
 
 
@@ -215,7 +247,7 @@ CRYSTAL_HANDLER = TB.CRYSTAL_HANDLER
 MODAL_ORDER = ("titleText", "descriptionText", "categoryText", "preview", "variantsRoot", "variantContent",
                "variantCardPrefab", "navigateButton", "switchButton", "backButton", "pathText", "countText",
                "layerBackButton", "layerBackGroup", "statusText", "previewCaption", "aboutHeading",
-               "crystalClickHandler", "arrivalDistanceFactor", "freestyleHandoffTimeout")
+               "crystalClickHandler", "arrivalDistanceFactor", "freestyleHandoffTimeout", "dive")
 BUTTONS = {"NavigateButton": "KitButton", "SwitchButton": "KitButton", "LayerBackButton": "KitButtonSmall"}
 MODAL_REFS = {
     "titleText": ("Header/Title#tmp", "tmp"), "descriptionText": ("About/Text#tmp", "tmp"),
@@ -226,6 +258,7 @@ MODAL_REFS = {
     "countText": ("Variants/Count#tmp", "tmp"), "layerBackButton": ("LayerBackButton|root#button", "button"),
     "layerBackGroup": ("Variants/Head/LayerBack#cg", "cg"), "statusText": ("Variants/Status#tmp", "tmp"),
     "previewCaption": ("Preview/Caption#tmp", "tmp"), "aboutHeading": ("About/Heading#tmp", "tmp"),
+    "dive": ("root#dive", "dive"),
 }
 
 
@@ -362,6 +395,9 @@ def validate(files):
     assert cam and S["preview"] in cam, "ToyConfigureView: the preview surface carries no ToyPreviewCamera"
     _, raw = A.doc_of(view, K.FileIds("ToyConfigureView")("Preview/Surface#raw"))
     assert raw and C.RAW_IMAGE in raw, "ToyConfigureView: ToyPreviewCamera needs its RawImage"
+    _, dive = A.doc_of(view, K.FileIds("ToyConfigureView")("root#dive"))
+    assert dive and S["dive"] in dive and "  target: {fileID: 0}" not in dive, \
+        "ToyConfigureView: Navigate has no dive into the preview (KitDive, Rev 145 H)"
 
     sc = T.Scene(files[SCENE])
     anchors = set(sc.order) | {"0"}
@@ -403,6 +439,7 @@ def self_test(files):
     mount = ViewMount()
     close = A.mono("0", S["close"], "")
     cases = [
+        ("Navigate's dive unwired", lambda f: f.__setitem__(view, re.sub(r"(  target: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ToyConfigureView"), M.strip_entrances(f[prefab_path("ToyConfigureView")]))),
         ("a variant tile with no glyph", lambda f: f.__setitem__(tile, re.sub(r"(  icon: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[tile]))),
         ("a close-the-window button on the branch-aware Back", lambda f: f.__setitem__(view, f[view] + "--- !u!114 &1\n" + close)),

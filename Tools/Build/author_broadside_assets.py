@@ -420,9 +420,10 @@ for key, shipped in (("bullet", SHIPPED_W["bullet"]), ("debuff", SHIPPED_W["debu
     if shipped <= 0:
         errors.append(f"shipped {key} latch window is {shipped} - the latch is disabled, so one "
                       f"weapon would score every frame it touched a victim")
-if W["strike_sword"] <= W["strike_joust"]:
-    errors.append("the sword's window must be LONGER than the joust's - a swept blade is in "
-                  "contact continuously where a joust must re-earn a fresh overtake")
+if W["strike_sword"] <= 0:
+    errors.append("the sword's window is disabled - a blade alongside would score every frame")
+# A short sword window is safe only while the sword still requires being faster than its victim (a parked blade
+# never scores); the 0.5 s window was knee'd by the real-game judge on that rule (2026-11-23).
 
 # The three container edits actually landed, and kept what was already there.
 urchin = g.files[CONTAINERS["urchin"]]

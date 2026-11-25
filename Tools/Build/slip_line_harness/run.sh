@@ -37,7 +37,9 @@ build() {   # $1 = course source, $2 = output name
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" "$HERE/Stubs.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
-    "$1" "$A/Tests/Editor/SlipLineCourseTests.cs" "$A/Controller/Vessel/Crew/DynamoCore.cs"; do
+    "$1" "$A/Tests/Editor/SlipLineCourseTests.cs" "$A/Controller/Vessel/Crew/DynamoCore.cs" \
+    "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" "$A/Controller/Arcade/Spearline/SpearlineRuins.cs" \
+    "$A/Controller/Arcade/SlipLine/SlipLineRuins.cs" "$A/Tests/Editor/SlipLineRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \

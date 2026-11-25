@@ -52,7 +52,8 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class SlingshotOrrery
     {
-        // ── The Stoat's press (StoatSlingConfig.asset catchAhead / catchSide; SlingshotOrreryTests reads them back) ──
+        // ── The Stoat's press: PressAhead is StoatSlingConfig.asset's swingAhead (SlingshotOrreryTests reads it back). PressSide
+        //    is the retired catch pair's side (catchSide 45, deleted 2026-11-21); the swing lays its hole swingSide (35) aside. ──
         public const float PressAhead = 150f;
         public const float PressSide = 45f;
 

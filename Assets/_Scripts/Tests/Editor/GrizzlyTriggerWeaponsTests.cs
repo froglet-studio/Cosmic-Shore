@@ -1,0 +1,224 @@
+using System.IO;
+using CosmicShore.Gameplay;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace CosmicShore.Tests
+{
+    /// <summary>
+    /// The Grizzly's triggers follow the active weapon (design ask, 2026-10-16): bombs in
+    /// Explosives, a left-front and right-front plasma claw sized by pressure, and the sniper's
+    /// scope on LT and fire on RT. These hold the shipped wiring and the claw's pressure curve.
+    /// </summary>
+    [TestFixture]
+    public class GrizzlyTriggerWeaponsTests
+    {
+        const string Prefab = "Assets/_Prefabs/Spacevessels/Grizzly.prefab";
+        const string Assets = "Assets/_SO_Assets/VesselActions/Grizzly/";
+        const string ClawGuid = "a6a49ba11f7b4b04a075230bda3d3306";
+        const string SniperGuid = "52f08890cabc4e48891138d622f0ba57";
+        const string CycleWeaponGuid = "33158a486e2e4b37b7b85ccf5c6dea72";
+
+        GrizzlyFlamethrowerActionSO _claw;
+        GrizzlySniperShotActionSO _sniper;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _claw = ScriptableObject.CreateInstance<GrizzlyFlamethrowerActionSO>();
+            _sniper = ScriptableObject.CreateInstance<GrizzlySniperShotActionSO>();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_claw);
+            Object.DestroyImmediate(_sniper);
+        }
+
+        [Test]
+        public void ClawGrowsWithPressureAndFullIsTheAuthoredClaw()
+        {
+            Assert.AreEqual(_claw.Range, _claw.RangeForPressure(1f), 1e-4f);
+            Assert.AreEqual(_claw.WhipSpreadDegrees, _claw.SpreadForPressure(1f), 1e-4f);
+            Assert.Less(_claw.RangeForPressure(0f), _claw.RangeForPressure(1f), "a feathered pull must be a smaller claw");
+            Assert.Less(_claw.SpreadForPressure(0f), _claw.SpreadForPressure(1f));
+            Assert.Greater(_claw.ClawBurnRadius, 0f, "a finger with no reach burns nothing - the fingers ARE the weapon");
+            float prev = -1f;
+            for (float p = 0f; p <= 1.0001f; p += 0.05f)
+            {
+                float r = _claw.RangeForPressure(p);
+                Assert.GreaterOrEqual(r, prev);
+                prev = r;
+            }
+        }
+
+        [Test]
+        public void ClawCellEmptiesHalfAgainFasterForTheLargestFlame()
+        {
+            // Design ask 2026-10-16: each claw's energy cell empties 1.5x faster for larger flames.
+            Assert.AreEqual(1.5f, _claw.CellDrainPerSecond(1f) / _claw.CellDrainPerSecond(0f), 1e-4f);
+            Assert.Greater(_claw.CellDrainPerSecond(0.5f), _claw.CellDrainPerSecond(0f));
+            Assert.Less(_claw.CellDrainPerSecond(0.5f), _claw.CellDrainPerSecond(1f));
+            Assert.Greater(_claw.CellRechargePerSecond, 0f, "an idle cell must refill");
+        }
+
+        [Test]
+        public void ClawsSpreadApart()
+        {
+            Assert.Greater(_claw.SplayDegrees, 0f, "the two claws turn outward, LT left and RT right");
+            Assert.Less(_claw.SplayDegrees, 30f, "splayed that far a claw no longer reads as forward");
+        }
+
+        [Test]
+        public void ClawIsFourRigidRedWhipsPerSide()
+        {
+            // Design ask 2026-10-16: the Brittle Star's whips, "more rigid and red with four on each side".
+            Assert.AreEqual(4, _claw.WhipsPerSide);
+            Assert.Greater(_claw.WhipRigidity, 0.5f, "the claw's whips are stiffer than the Brittle Star's loose whip");
+            var rim = _claw.WhipRimColor;
+            Assert.Greater(rim.r, 2f * Mathf.Max(rim.g, rim.b), "the whips glow RED");
+            // 2026-10-17: "one convergence point and they spread out slightly like claws" - a slight fan, never the
+            // wide starburst that read as an X.
+            Assert.Greater(_claw.WhipSpreadDegrees, 0f, "the fingers must open, or the four draw as one");
+            Assert.LessOrEqual(_claw.WhipSpreadDegrees, 15f, "a wide spread reads as an X, not a claw");
+
+            // At that rigidity a whip held on a still line stays on it: a claw finger, not a rope.
+            var cord = new BrittleStarCord(_claw.WhipLinks);
+            var settings = new BrittleStarCord.Settings
+            {
+                LooseWave = _claw.WhipLooseWave, RigidWave = _claw.WhipRigidWave,
+                LooseDamping = _claw.WhipLooseDamping, RigidDamping = _claw.WhipRigidDamping, Pose = _claw.WhipPose,
+            };
+            cord.Step(Vector3.zero, Vector3.right, _claw.Range, _claw.WhipRigidity, settings, 1f / 60f);   // seeds straight
+            for (int f = 0; f < 60; f++)
+                cord.Step(Vector3.zero, Vector3.forward, _claw.Range, _claw.WhipRigidity, settings, 1f / 60f);
+            Assert.Less((cord.Tip - Vector3.forward * _claw.Range).magnitude, _claw.Range * 0.1f,
+                "a rigid claw whip must settle onto its aim within a second of a 90 degree turn");
+        }
+
+        [Test]
+        public void LtPressureZoomsTheScope()
+        {
+            // Design ask 2026-10-17: "make the pressure of LT control the zoom distance of the scope".
+            Assert.Greater(_sniper.ScopeFovForPressure(0f), _sniper.ScopeFovForPressure(1f),
+                "a full squeeze must zoom further (a narrower field of view) than a feather");
+            float prev = float.MaxValue;
+            for (float p = 0f; p <= 1.0001f; p += 0.05f)
+            {
+                float fov = _sniper.ScopeFovForPressure(p);
+                Assert.LessOrEqual(fov, prev, "the zoom must deepen steadily with the pull");
+                Assert.Greater(fov, 0f);
+                prev = fov;
+            }
+            Assert.Greater(_sniper.ScopeZoomRate, 0f, "a zoom that never eases never moves");
+        }
+
+        [Test]
+        public void ClawsTiltUpATouch()
+        {
+            // Design ask 2026-10-17: "tilt them up just a touch" so the two claws do not overlap from the chase camera.
+            Assert.Greater(_claw.TiltUpDegrees, 0f);
+            Assert.LessOrEqual(_claw.TiltUpDegrees, 15f, "a touch, not a climb");
+        }
+
+        [Test]
+        public void ClawSlicesAndStartsTheBurnAroundTheCut()
+        {
+            // Design ask 2026-10-17: "make the plasma claw slice prisms as well as start the burn".
+            Assert.IsTrue(_claw.SliceEnabled, "the claw slices by default");
+            Assert.Greater(_claw.SlicesPerFrame, 0);
+            Assert.Greater(_claw.SliceIgniteRadius, _claw.ClawBurnRadius,
+                "a cut prism is gone, so the burn must reach past the finger to its neighbours");
+            Assert.Greater(_claw.IgnitesPerTick, 0, "slicing must still start a burn");
+            Assert.IsTrue(_claw.SliceEvent.IsNull, "the slice sound ships EMPTY until audio authors it (LOCKED FMOD rule)");
+        }
+
+        [Test]
+        public void ReleaseSwipesBothClawsDownAndAcrossDiagonally()
+        {
+            // Design ask 2026-11-23: "make it swipe across on release, so both claws can swipe down and across
+            // diagonally". LT's claw sits on the left, so across is +x; RT's on the right, so across is -x.
+            Assert.IsTrue(_claw.SwipeEnabled, "release swipes by default");
+            Assert.Greater(_claw.SwipeSeconds, 0f);
+            Assert.Less(_claw.SwipeSeconds, 0.6f, "a slash, not a slow sweep");
+
+            Vector3 start = _claw.SwipeRotation(true, 0f) * Vector3.forward;
+            Assert.Less((start - Vector3.forward).magnitude, 1e-4f, "the swipe starts where the claw was held");
+
+            // Same day: "I want each claw to be one side of an X when it swipes, starting up and going down and
+            // across". The TOP of each stroke is up and OUT; the bottom is down and ACROSS.
+            float w = _claw.SwipeWindupFraction;
+            Vector3 ltTop = _claw.SwipeRotation(true, w) * Vector3.forward;
+            Vector3 rtTop = _claw.SwipeRotation(false, w) * Vector3.forward;
+            Assert.Greater(ltTop.y, 0.3f, "LT's stroke starts UP");
+            Assert.Less(ltTop.x, -0.3f, "...and out to the left");
+            Assert.Greater(rtTop.y, 0.3f, "RT's stroke starts UP");
+            Assert.Greater(rtTop.x, 0.3f, "...and out to the right");
+
+            Vector3 lt = _claw.SwipeRotation(true, 1f) * Vector3.forward;
+            Vector3 rt = _claw.SwipeRotation(false, 1f) * Vector3.forward;
+            Assert.Less(lt.y, -0.3f, "LT's claw swipes DOWN");
+            Assert.Greater(lt.x, 0.3f, "LT's claw swipes ACROSS, toward the right");
+            Assert.Less(rt.y, -0.3f, "RT's claw swipes DOWN");
+            Assert.Less(rt.x, -0.3f, "RT's claw swipes ACROSS, toward the left");
+            Assert.AreEqual(lt.y, rt.y, 1e-4f, "the two swipes mirror each other");
+            Assert.AreEqual(lt.x, -rt.x, 1e-4f);
+
+            // One straight stroke: the top and the bottom sit on the same diagonal line through the held aim.
+            Assert.AreEqual(_claw.SwipeArcDegrees, Vector3.Angle(ltTop, lt), 0.1f, "the slash covers the whole arc");
+            Assert.AreEqual(-ltTop.x / ltTop.y, -lt.x / lt.y, 1e-3f, "top and bottom are on ONE diagonal - a stroke, not a hook");
+
+            // The slash eases out: past halfway in angle by half its time.
+            float slashMid = w + 0.5f * (1f - w);
+            float covered = Vector3.Angle(ltTop, _claw.SwipeRotation(true, slashMid) * Vector3.forward);
+            Assert.Greater(covered, 0.5f * _claw.SwipeArcDegrees, "the slash is fastest leaving the top");
+        }
+
+        [Test]
+        public void SwipeKeepsTheSizeOfTheHardestRecentPull()
+        {
+            // Letting go of a trigger passes through every lighter pressure; the swipe must not shrink with it.
+            float peak = 0f, age = 0f, dt = 1f / 60f;
+            for (int f = 0; f < 30; f++) _claw.TrackSwipePressure(ref peak, ref age, 1f, dt);
+            for (int f = 0; f < 6; f++) _claw.TrackSwipePressure(ref peak, ref age, 1f - f / 6f, dt);   // 0.1 s let-go
+            Assert.AreEqual(1f, peak, 1e-4f, "a quick release keeps the full-pull swipe");
+
+            // Easing off on purpose and holding a lighter pull sizes the swipe to that pull.
+            for (int f = 0; f < 60; f++) _claw.TrackSwipePressure(ref peak, ref age, 0.3f, dt);
+            Assert.AreEqual(0.3f, peak, 1e-4f, "a pull held lighter for a while is the swipe's size");
+        }
+
+        [Test]
+        public void ClawIsAlwaysTheShortestReach()
+        {
+            float sniperReach = _sniper.ProjectileSpeed * _sniper.ProjectileTime;
+            Assert.Less(_claw.Range, sniperReach, "the claw must out-range nothing: it is the close-range weapon");
+            Assert.Greater(_claw.SideOffset, 0f, "LT and RT must spray from their own sides of the front");
+        }
+
+        [Test]
+        public void BothTriggersCarryTheClawAndTheSniper()
+        {
+            foreach (var side in new[] { "Left", "Right" })
+            {
+                var yaml = File.ReadAllText(Assets + "GrizzlyBomb" + side + "Action.asset");
+                StringAssert.Contains("claw: {fileID: 11400000, guid: " + ClawGuid, yaml, side + " trigger has no claw");
+                StringAssert.Contains("sniper: {fileID: 11400000, guid: " + SniperGuid, yaml, side + " trigger has no sniper");
+            }
+        }
+
+        [Test]
+        public void XFiresNothingAndYAndLeftBumperCycleWeapons()
+        {
+            var yaml = File.ReadAllText(Prefab);
+            StringAssert.DoesNotContain("- InputEvent: 8\n", yaml.Replace("\r\n", "\n"),
+                "X / Q must not fire on the Grizzly: its weapons are on the triggers");
+            StringAssert.Contains("_gamepadActionOverrides:\n  - InputEvent: 16\n    ShipActions:\n    - {fileID: 11400000, guid: " + CycleWeaponGuid,
+                yaml.Replace("\r\n", "\n"), "LB (LeftShoulderAction) must cycle the Grizzly's weapon");
+            StringAssert.Contains("  - InputEvent: 14\n    ShipActions:\n    - {fileID: 11400000, guid: " + CycleWeaponGuid,
+                yaml.Replace("\r\n", "\n"), "Y / F (Button4Action) must cycle the Grizzly's weapon, the fleet's weapon-cycle button since 2026-10-27");
+            StringAssert.DoesNotContain("- InputEvent: 3\n", yaml.Replace("\r\n", "\n"), "RB / E is the Ark payload: nothing on the Grizzly may bind FlipAction");
+        }
+    }
+}

@@ -1,0 +1,106 @@
+{
+ "arena": "Regatta",
+ "element": "Time",
+ "evaluator": "surrogate",
+ "date": "2026-11-21",
+ "vessels": [
+  {
+   "vessel": "Urchin",
+   "element": "Time",
+   "changes": [
+    {
+     "vessel": "Urchin",
+     "knob": "Time baseline level",
+     "from": 1.0,
+     "to": 0.9
+    }
+   ],
+   "before": {
+    "eff": 0.7222,
+    "distinct": 2
+   },
+   "after": {
+    "eff": 0.65,
+    "distinct": 2,
+    "lead_share": 0.674,
+    "plateaued": true
+   },
+   "moved": -0.0999,
+   "style": "kept",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Rail to the gate",
+      "weight": 0.729,
+      "dials": {
+       "slipLead": null
+      }
+     },
+     {
+      "id": "chain:Charge>Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.2112,
+       "commit": 0.8438,
+       "reach": 251.4615
+      }
+     }
+    ]
+   }
+  },
+  {
+   "vessel": "Manta",
+   "element": "Time",
+   "changes": [
+    {
+     "vessel": "Manta",
+     "knob": "Time baseline level",
+     "from": 1.0,
+     "to": 1.15
+    }
+   ],
+   "before": {
+    "eff": 0.7558,
+    "distinct": 3
+   },
+   "after": {
+    "eff": 0.8759,
+    "distinct": 3,
+    "lead_share": 0.524,
+    "plateaued": true
+   },
+   "moved": 0.1589,
+   "style": "kept",
+   "genome": {
+    "behaviours": [
+     {
+      "id": "atlas:Soar the line",
+      "weight": 1.0,
+      "dials": {
+       "yawCommit": null,
+       "skimDetour": 25.967
+      }
+     },
+     {
+      "id": "chain:Space>Time",
+      "weight": 1.0,
+      "dials": {
+       "handoff": 3.5774,
+       "commit": null,
+       "reach": 105.1527
+      }
+     },
+     {
+      "id": "chain:Mass>Charge>Time",
+      "weight": 1.124,
+      "dials": {
+       "handoff": null,
+       "commit": 0.8605,
+       "reach": null
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

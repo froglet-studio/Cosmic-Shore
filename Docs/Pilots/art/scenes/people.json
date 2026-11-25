@@ -4680,6 +4680,1806 @@
     "The Treaty Table brings rivals to terms. With Hanux aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
     "They have never once arrived early."
    ]
+  },
+  "Penoola": {
+   "given": "Penoola",
+   "family": "Wakesworth",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Koi",
+    "Orangutan"
+   ],
+   "faction": [
+    "FirstResponder",
+    "The Bright Buoys"
+   ],
+   "home": "the Lantern Reach",
+   "story": [
+    "Penoola Wakesworth grew up sorting crystals in a market stall on the Lantern Reach.",
+    "The Bright Buoys answers the distress calls nobody else will. With Penoola aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Belwen": {
+   "given": "Belwen",
+   "family": "Dawnwatch",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Bison",
+    "Hedgehog"
+   ],
+   "faction": [
+    "Researcher",
+    "Lumen College"
+   ],
+   "home": "Hollowfen",
+   "story": [
+    "Belwen Dawnwatch spent a childhood racing skiffs on Hollowfen.",
+    "Lumen College wants every living thing in the sea written down. With Belwen aboard, your crew will be asked to study creatures and blooms up close, for as long as they will let you.",
+    "They have never once arrived early."
+   ]
+  },
+  "Kadiwen": {
+   "given": "Kadiwen",
+   "family": "Stormthorn",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "Eel",
+    "Axolotl"
+   ],
+   "faction": [
+    "FirstResponder",
+    "The Bright Buoys"
+   ],
+   "home": "Wrackline",
+   "story": [
+    "Kadiwen Stormthorn grew up the youngest of eleven on Wrackline.",
+    "The Bright Buoys answers the distress calls nobody else will. With Kadiwen aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Nenuve": {
+   "given": "Nenuve",
+   "family": "Amberfin",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Ibis",
+    "Gecko"
+   ],
+   "faction": [
+    "Merchant",
+    "Quayside Mutual"
+   ],
+   "home": "the Copper Reef",
+   "story": [
+    "Nenuve Amberfin grew up in the shadow of a dead Ark on the Copper Reef.",
+    "The Quayside Mutual insures cargo across the HyperSea, so it needs crews to carry its dispatches and see its convoys safe to ports where trouble is brewing. With Nenuve aboard, that work comes to you.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Milawen": {
+   "given": "Milawen",
+   "family": "Gullmore",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Armadillo",
+    "Eel"
+   ],
+   "faction": [
+    "Priest",
+    "Order of the Slow Tide"
+   ],
+   "home": "the Coral Court",
+   "story": [
+    "Milawen Gullmore spent a childhood stowing away on freighters on the Coral Court.",
+    "The Order of the Slow Tide keeps vigil at shrines across the HyperSea. With Milawen aboard, your crew will be asked to hold a shrine through its vigil, and the Choir has older rites it shares only with crews it trusts.",
+    "They tie a ribbon on the hull for every friend lost."
+   ]
+  },
+  "Joro": {
+   "given": "Joro",
+   "family": "Brightridge",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Jackal",
+    "Raven"
+   ],
+   "faction": [
+    "Diplomat",
+    "The Treaty Table"
+   ],
+   "home": "the Amber Shoal",
+   "story": [
+    "Joro Brightridge was apprenticed to a cartographer on the Amber Shoal.",
+    "The Treaty Table brings rivals to terms. With Joro aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They refuse to fly on an empty stomach."
+   ]
+  },
+  "Nenux": {
+   "given": "Nenux",
+   "family": "Anchorgate",
+   "callsign": "OPAL",
+   "starter": true,
+   "species": [
+    "Bison",
+    "Hyena"
+   ],
+   "faction": [
+    "FirstResponder",
+    "Lifeline Corps"
+   ],
+   "home": "Wrackline",
+   "story": [
+    "Nenux Anchorgate spent a childhood stowing away on freighters on Wrackline.",
+    "The Lifeline Corps answers every distress call in the HyperSea. With Nenux aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.",
+    "They keep score of everything, including naps."
+   ]
+  },
+  "Kamash": {
+   "given": "Kamash",
+   "family": "Duskhollow",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Chameleon",
+    "Heron"
+   ],
+   "faction": [
+    "Activist",
+    "The Unbound Choir"
+   ],
+   "home": "Shellmouth",
+   "story": [
+    "Kamash Duskhollow learned to fly before they could read on Shellmouth.",
+    "The Unbound Choir tears down the pens other domains build around the HyperSea's creatures. With Kamash aboard, your crew will be told where those pens are, and asked to break them open.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Perensa": {
+   "given": "Perensa",
+   "family": "Farhart",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Fennec",
+    "Sloth"
+   ],
+   "faction": [
+    "FirstResponder",
+    "Harbour Watch"
+   ],
+   "home": "Stillwater",
+   "story": [
+    "Perensa Farhart grew up sorting crystals in a market stall on Stillwater.",
+    "Harbour Watch answers the distress calls nobody else will. With Perensa aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.",
+    "They refuse to fly on an empty stomach."
+   ]
+  },
+  "Idio": {
+   "given": "Idio",
+   "family": "Pearlsworth",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Octopus",
+    "Ibis"
+   ],
+   "faction": [
+    "Activist",
+    "Free Shoals League"
+   ],
+   "home": "the Copper Reef",
+   "story": [
+    "Idio Pearlsworth learned to fly before they could read on the Copper Reef.",
+    "The Free Shoals League tears down the pens other domains build around the HyperSea's creatures. With Idio aboard, your crew will be told where those pens are, and asked to break them open.",
+    "They keep score of everything, including naps."
+   ]
+  },
+  "Miloly": {
+   "given": "Miloly",
+   "family": "Emberspark",
+   "callsign": "IVY",
+   "starter": true,
+   "species": [
+    "Pelican",
+    "Cuttlefish"
+   ],
+   "faction": [
+    "Researcher",
+    "Lumen College"
+   ],
+   "home": "Tangleweed",
+   "story": [
+    "Miloly Emberspark was apprenticed to a cartographer on Tangleweed.",
+    "Lumen College wants every living thing in the sea written down. With Miloly aboard, your crew will be asked to study creatures and blooms up close, for as long as they will let you.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Kariix": {
+   "given": "Kariix",
+   "family": "Wakerunner",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Tapir",
+    "Orangutan"
+   ],
+   "faction": [
+    "Gatherer",
+    "Kelpline Gleaners"
+   ],
+   "home": "Stillwater",
+   "story": [
+    "Kariix Wakerunner spent a childhood stowing away on freighters on Stillwater.",
+    "Kelpline Gleaners knows when the blooms of the HyperSea will open. With Kariix aboard, your crew will be sent to harvest them while they last.",
+    "They have never once arrived early."
+   ]
+  },
+  "Belberin": {
+   "given": "Belberin",
+   "family": "Spindlebloom",
+   "callsign": "DOE",
+   "starter": true,
+   "species": [
+    "Cuttlefish",
+    "Jackal"
+   ],
+   "faction": [
+    "Activist",
+    "Open Current"
+   ],
+   "home": "Farshore",
+   "story": [
+    "Belberin Spindlebloom grew up the youngest of eleven on Farshore.",
+    "Open Current believes no creature should be kept behind another domain's walls. With Belberin aboard, your crew will hear where those pens are, and be asked to break them open.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Ilorin": {
+   "given": "Ilorin",
+   "family": "Sandwater",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Newt",
+    "Sloth"
+   ],
+   "faction": [
+    "Merchant",
+    "Brass Lantern Company"
+   ],
+   "home": "the Old Harbour",
+   "story": [
+    "Ilorin Sandwater was apprenticed to a cartographer on the Old Harbour.",
+    "The Brass Lantern Company lights half the ports of the HyperSea. With Ilorin aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Corbeek": {
+   "given": "Corbeek",
+   "family": "Emberwater",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Koi",
+    "Armadillo"
+   ],
+   "faction": [
+    "Aristocrat",
+    "Court of Still Water"
+   ],
+   "home": "the Grey Reach",
+   "story": [
+    "Corbeek Emberwater grew up sorting crystals in a market stall on the Grey Reach.",
+    "The Court of Still Water holds cores across the cold reaches. With Corbeek aboard, the Court will ask your crew to patrol them, answer its calls for aid, and retake what another domain has taken.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Galsoly": {
+   "given": "Galsoly",
+   "family": "Stormdrift",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Yak",
+    "Walrus"
+   ],
+   "faction": [
+    "Sport",
+    "The Glittering Heats"
+   ],
+   "home": "the Glass Shoals",
+   "story": [
+    "Galsoly Stormdrift grew up sorting crystals in a market stall on the Glass Shoals.",
+    "The Glittering Heats put on exhibition runs in the brightest cells of the HyperSea. With Galsoly aboard, your crew will be invited to fly them, skimming the course for every crystal on it.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Cariel": {
+   "given": "Cariel",
+   "family": "Moonbrook",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "Capybara",
+    "Crane"
+   ],
+   "faction": [
+    "Explorer",
+    "Far Shoal Society"
+   ],
+   "home": "Coldharbour",
+   "story": [
+    "Cariel Moonbrook was raised in a lighthouse on Coldharbour.",
+    "The Far Shoal Society sends crews where no one has been. With Cariel aboard, your crew will be asked to survey uncharted places, and to follow chart fragments wherever they lead.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Fenkora": {
+   "given": "Fenkora",
+   "family": "Mirewell",
+   "callsign": "FLUME",
+   "starter": true,
+   "species": [
+    "Tardigrade",
+    "Wolf"
+   ],
+   "faction": [
+    "BountyHunter",
+    "Writ and Hook"
+   ],
+   "home": "the Kelp Throne",
+   "story": [
+    "Fenkora Mirewell spent a childhood stowing away on freighters on the Kelp Throne.",
+    "Writ and Hook carries the warrants on the most notorious crews in the HyperSea. With Fenkora aboard, your crew will be handed bounties, and told where the crew was last seen standing.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Wyne": {
+   "given": "Wyne",
+   "family": "Crestthorn",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Toucan",
+    "Tortoise"
+   ],
+   "faction": [
+    "Priest",
+    "The Ninefold Shell"
+   ],
+   "home": "Stillwater",
+   "story": [
+    "Wyne Crestthorn was apprenticed to a cartographer on Stillwater.",
+    "The Ninefold Shell keeps shrines across the HyperSea and the rite of nine that links them. With Wyne aboard, your crew will be asked to hold a shrine through its vigil, and in time to join the ninefold rite.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Habear": {
+   "given": "Habear",
+   "family": "Rustsail",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Orangutan",
+    "Toucan"
+   ],
+   "faction": [
+    "Merchant",
+    "House of Seven Scales"
+   ],
+   "home": "Shellmouth",
+   "story": [
+    "Habear Rustsail was raised among reef gardeners on Shellmouth.",
+    "The House of Seven Scales moves goods to every port on the Lane. Fly with Habear and your crew will carry its dispatches from port to port, and run its convoys to ports short of what they need.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Misish": {
+   "given": "Misish",
+   "family": "Frostwell",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "Hummingbird",
+    "Eel"
+   ],
+   "faction": [
+    "Activist",
+    "Open Current"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Misish Frostwell was apprenticed to a cartographer on Mirrorfen.",
+    "Open Current believes no creature should be kept behind another domain's walls. With Misish aboard, your crew will hear where those pens are, and be asked to break them open.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Uloth": {
+   "given": "Uloth",
+   "family": "Whistlewright",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Hyena",
+    "Octopus"
+   ],
+   "faction": [
+    "Thief",
+    "Whisperkelp"
+   ],
+   "home": "Lowlight",
+   "story": [
+    "Uloth Whistlewright grew up in the shadow of a dead Ark on Lowlight.",
+    "Whisperkelp hears every secret that moves between ports. With Uloth aboard, your crew will be sent to lift dispatches from rival ports, and carry the freshest news home first.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Belmidek": {
+   "given": "Belmidek",
+   "family": "Wavefield",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Sloth",
+    "Seahorse"
+   ],
+   "faction": [
+    "Diplomat",
+    "Envoys of the Accord"
+   ],
+   "home": "Tangleweed",
+   "story": [
+    "Belmidek Wavefield was raised in a lighthouse on Tangleweed.",
+    "Envoys of the Accord brings rivals to terms. With Belmidek aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Arara": {
+   "given": "Arara",
+   "family": "Miresong",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Jellyfish",
+    "Newt"
+   ],
+   "faction": [
+    "Aristocrat",
+    "Wardens of the Calm"
+   ],
+   "home": "Lowlight",
+   "story": [
+    "Arara Miresong grew up mending nets on Lowlight.",
+    "The Wardens of the Calm keep watch over the cores the quiet domains rely on. With Arara aboard, the Wardens will ask your crew to patrol those cores, to answer when one calls for aid, and to hold it until the danger has passed.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Isolo": {
+   "given": "Isolo",
+   "family": "Gullhollow",
+   "callsign": "OPAL",
+   "starter": true,
+   "species": [
+    "Jellyfish",
+    "Wolf"
+   ],
+   "faction": [
+    "Pirate",
+    "Saltjaw Brethren"
+   ],
+   "home": "the Amber Shoal",
+   "story": [
+    "Isolo Gullhollow grew up on a salvage barge on the Amber Shoal.",
+    "The Saltjaw Brethren live off what the sea gives up. Sign Isolo on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Pemiix": {
+   "given": "Pemiix",
+   "family": "Glasswater",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Axolotl",
+    "Lynx"
+   ],
+   "faction": [
+    "Contractor",
+    "Keel and Rivet"
+   ],
+   "home": "the Grey Reach",
+   "story": [
+    "Pemiix Glasswater was apprenticed to a cartographer on the Grey Reach.",
+    "Keel and Rivet builds and mends for anyone who pays. With Pemiix aboard, your crew will be sent to cores under pressure, to lay prisms in the breach until the pressure drops.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Arilia": {
+   "given": "Arilia",
+   "family": "Anchorwatch",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Crane",
+    "Jellyfish"
+   ],
+   "faction": [
+    "Thief",
+    "The Pickled Hand"
+   ],
+   "home": "the Amber Shoal",
+   "story": [
+    "Arilia Anchorwatch was raised among reef gardeners on the Amber Shoal.",
+    "The Pickled Hand trades in what other ports would rather keep. With Arilia aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Nekoane": {
+   "given": "Nekoane",
+   "family": "Anchorwatch",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Orangutan",
+    "Puffin"
+   ],
+   "faction": [
+    "Merchant",
+    "House of Seven Scales"
+   ],
+   "home": "Coldharbour",
+   "story": [
+    "Nekoane Anchorwatch was raised among reef gardeners on Coldharbour.",
+    "The House of Seven Scales moves goods to every port on the Lane. Fly with Nekoane and your crew will carry its dispatches from port to port, and run its convoys to ports short of what they need.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Darsoane": {
+   "given": "Darsoane",
+   "family": "Coralhollow",
+   "callsign": "IVY",
+   "starter": true,
+   "species": [
+    "Narwhal",
+    "Ocelot"
+   ],
+   "faction": [
+    "Diplomat",
+    "The Open Hand"
+   ],
+   "home": "Farshore",
+   "story": [
+    "Darsoane Coralhollow was raised among reef gardeners on Farshore.",
+    "The Open Hand brings rivals to terms. With Darsoane aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Galbemo": {
+   "given": "Galbemo",
+   "family": "Farwright",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Yak",
+    "Lynx"
+   ],
+   "faction": [
+    "Merchant",
+    "Brass Lantern Company"
+   ],
+   "home": "Wrackline",
+   "story": [
+    "Galbemo Farwright was raised in a lighthouse on Wrackline.",
+    "The Brass Lantern Company lights half the ports of the HyperSea. With Galbemo aboard, the Company will give your crew its dispatches to carry, and its convoys to run when a port goes dark.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Calosh": {
+   "given": "Calosh",
+   "family": "Ashwatch",
+   "callsign": "DOE",
+   "starter": true,
+   "species": [
+    "Moose",
+    "Newt"
+   ],
+   "faction": [
+    "Hunter",
+    "Hollowfen Trackers"
+   ],
+   "home": "Driftmoor",
+   "story": [
+    "Calosh Ashwatch was apprenticed to a cartographer on Driftmoor.",
+    "The Hollowfen Trackers follow sightings across the HyperSea. Fly with Calosh and you will hear of vault fields before other crews do, and of lairs where something has grown too large to leave alone.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Corane": {
+   "given": "Corane",
+   "family": "Stillmoor",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Jellyfish",
+    "Otter"
+   ],
+   "faction": [
+    "Diplomat",
+    "Envoys of the Accord"
+   ],
+   "home": "the Silver Lane",
+   "story": [
+    "Corane Stillmoor grew up the youngest of eleven on the Silver Lane.",
+    "Envoys of the Accord brings rivals to terms. With Corane aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Rosirin": {
+   "given": "Rosirin",
+   "family": "Ashmoor",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Owl",
+    "Eel"
+   ],
+   "faction": [
+    "Explorer",
+    "The Unmapped"
+   ],
+   "home": "Lanternfall",
+   "story": [
+    "Rosirin Ashmoor was raised among reef gardeners on Lanternfall.",
+    "The Unmapped pay for places nobody has charted yet. With Rosirin aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Yon": {
+   "given": "Yon",
+   "family": "Greywing",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Capybara",
+    "Mole"
+   ],
+   "faction": [
+    "Pirate",
+    "Black Tide"
+   ],
+   "home": "Brightwater",
+   "story": [
+    "Yon Greywing was raised by a choir of dockworkers on Brightwater.",
+    "The Black Tide knows where the other crews hide their hoards. With Yon aboard, you will hear where those hoards sit, and where a fresh wreck is waiting to be stripped.",
+    "They have never once arrived early."
+   ]
+  },
+  "Corbemo": {
+   "given": "Corbemo",
+   "family": "Ashbell",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "Lobster",
+    "Hyena"
+   ],
+   "faction": [
+    "Activist",
+    "The Unbound Choir"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Corbemo Ashbell spent a childhood racing skiffs on Mirrorfen.",
+    "The Unbound Choir tears down the pens other domains build around the HyperSea's creatures. With Corbemo aboard, your crew will be told where those pens are, and asked to break them open.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Anoth": {
+   "given": "Anoth",
+   "family": "Foammore",
+   "callsign": "FLUME",
+   "starter": true,
+   "species": [
+    "Orangutan",
+    "Mole"
+   ],
+   "faction": [
+    "FirstResponder",
+    "Harbour Watch"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Anoth Foammore learned to fly before they could read on Mirrorfen.",
+    "Harbour Watch answers the distress calls nobody else will. With Anoth aboard, your crew will be sent to derelicts where crews are stranded, to hold on until everyone is aboard.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Yomilia": {
+   "given": "Yomilia",
+   "family": "Moonshore",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Axolotl",
+    "Walrus"
+   ],
+   "faction": [
+    "Pirate",
+    "Saltjaw Brethren"
+   ],
+   "home": "the Silver Lane",
+   "story": [
+    "Yomilia Moonshore was raised by a choir of dockworkers on the Silver Lane.",
+    "The Saltjaw Brethren live off what the sea gives up. Sign Yomilia on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Calaola": {
+   "given": "Calaola",
+   "family": "Mirecove",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Tardigrade",
+    "Axolotl"
+   ],
+   "faction": [
+    "Aristocrat",
+    "The Jade Accord"
+   ],
+   "home": "Farshore",
+   "story": [
+    "Calaola Mirecove spent a childhood racing skiffs on Farshore.",
+    "The Jade Accord binds a dozen harbours to keep each other's cores. With Calaola in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Nemamo": {
+   "given": "Nemamo",
+   "family": "Silverridge",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "Seahorse",
+    "Crane"
+   ],
+   "faction": [
+    "Activist",
+    "The Unbound Choir"
+   ],
+   "home": "Ember Deep",
+   "story": [
+    "Nemamo Silverridge grew up on a salvage barge on Ember Deep.",
+    "The Unbound Choir tears down the pens other domains build around the HyperSea's creatures. With Nemamo aboard, your crew will be told where those pens are, and asked to break them open.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Delko": {
+   "given": "Delko",
+   "family": "Saltlight",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Pelican",
+    "Heron"
+   ],
+   "faction": [
+    "Sport",
+    "Spray and Spin"
+   ],
+   "home": "Lowlight",
+   "story": [
+    "Delko Saltlight grew up mending nets on Lowlight.",
+    "Spray and Spin puts on exhibition runs wherever there is a crowd. With Delko aboard, your crew will be invited to fly them, skimming the course for every crystal along it.",
+    "They cannot resist a dare."
+   ]
+  },
+  "Brish": {
+   "given": "Brish",
+   "family": "Crestwhistle",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Lemur",
+    "Beetle"
+   ],
+   "faction": [
+    "Priest",
+    "The Ninefold Shell"
+   ],
+   "home": "the Glass Shoals",
+   "story": [
+    "Brish Crestwhistle was raised among reef gardeners on the Glass Shoals.",
+    "The Ninefold Shell keeps shrines across the HyperSea and the rite of nine that links them. With Brish aboard, your crew will be asked to hold a shrine through its vigil, and in time to join the ninefold rite.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Delnuri": {
+   "given": "Delnuri",
+   "family": "Farbell",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Platypus",
+    "Tardigrade"
+   ],
+   "faction": [
+    "Activist",
+    "The Unbound Choir"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Delnuri Farbell was raised in a lighthouse on Gloamwater.",
+    "The Unbound Choir tears down the pens other domains build around the HyperSea's creatures. With Delnuri aboard, your crew will be told where those pens are, and asked to break them open.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Cabeane": {
+   "given": "Cabeane",
+   "family": "Lowwick",
+   "callsign": "OPAL",
+   "starter": true,
+   "species": [
+    "Orangutan",
+    "Mantis"
+   ],
+   "faction": [
+    "Priest",
+    "The Ninefold Shell"
+   ],
+   "home": "Farshore",
+   "story": [
+    "Cabeane Lowwick grew up on a salvage barge on Farshore.",
+    "The Ninefold Shell keeps shrines across the HyperSea and the rite of nine that links them. With Cabeane aboard, your crew will be asked to hold a shrine through its vigil, and in time to join the ninefold rite.",
+    "They cannot resist a dare."
+   ]
+  },
+  "Omako": {
+   "given": "Omako",
+   "family": "Driftbloom",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Capybara",
+    "Gecko"
+   ],
+   "faction": [
+    "Diplomat",
+    "The Open Hand"
+   ],
+   "home": "Brackenmouth",
+   "story": [
+    "Omako Driftbloom spent a childhood stowing away on freighters on Brackenmouth.",
+    "The Open Hand brings rivals to terms. With Omako aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They keep score of everything, including naps."
+   ]
+  },
+  "Takous": {
+   "given": "Takous",
+   "family": "Coralfin",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Walrus",
+    "Ocelot"
+   ],
+   "faction": [
+    "Aristocrat",
+    "Wardens of the Calm"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Takous Coralfin grew up mending nets on Gloamwater.",
+    "The Wardens of the Calm keep watch over the cores the quiet domains rely on. With Takous aboard, the Wardens will ask your crew to patrol those cores, to answer when one calls for aid, and to hold it until the danger has passed.",
+    "They keep score of everything, including naps."
+   ]
+  },
+  "Xathalo": {
+   "given": "Xathalo",
+   "family": "Amberkeel",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Newt",
+    "Otter"
+   ],
+   "faction": [
+    "Pirate",
+    "The Unmoored"
+   ],
+   "home": "the Kelp Throne",
+   "story": [
+    "Xathalo Amberkeel grew up on a salvage barge on the Kelp Throne.",
+    "The Unmoored answer to no port. Fly with Xathalo and you will hear of hoards to raid and wrecks to strip from one end of the Grey Reach to the other.",
+    "They tie a ribbon on the hull for every friend lost."
+   ]
+  },
+  "Delloane": {
+   "given": "Delloane",
+   "family": "Stormrunner",
+   "callsign": "IVY",
+   "starter": true,
+   "species": [
+    "Fennec",
+    "Tortoise"
+   ],
+   "faction": [
+    "Pirate",
+    "Saltjaw Brethren"
+   ],
+   "home": "the Old Harbour",
+   "story": [
+    "Delloane Stormrunner grew up in the shadow of a dead Ark on the Old Harbour.",
+    "The Saltjaw Brethren live off what the sea gives up. Sign Delloane on and the Brethren will point your crew at the stashes they know of, and at wrecks still fresh enough to strip.",
+    "They refuse to fly on an empty stomach."
+   ]
+  },
+  "Malimo": {
+   "given": "Malimo",
+   "family": "Lowgate",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Gecko",
+    "Chameleon"
+   ],
+   "faction": [
+    "FirstResponder",
+    "Lifeline Corps"
+   ],
+   "home": "Brightwater",
+   "story": [
+    "Malimo Lowgate was raised by a choir of dockworkers on Brightwater.",
+    "The Lifeline Corps answers every distress call in the HyperSea. With Malimo aboard, your crew will be sent to derelicts with crews stranded aboard, and stay until everyone is safe.",
+    "They keep score of everything, including naps."
+   ]
+  },
+  "Samaia": {
+   "given": "Samaia",
+   "family": "Tidethorn",
+   "callsign": "DOE",
+   "starter": true,
+   "species": [
+    "Koi",
+    "Hyena"
+   ],
+   "faction": [
+    "Priest",
+    "Choir of the Deep"
+   ],
+   "home": "Wrackline",
+   "story": [
+    "Samaia Tidethorn was raised among reef gardeners on Wrackline.",
+    "The Choir of the Deep keeps vigil at shrines across the HyperSea. With Samaia aboard, your crew will be asked to hold a shrine through its vigil, and the Choir has older rites it shares only with crews it trusts.",
+    "They refuse to fly on an empty stomach."
+   ]
+  },
+  "Gallith": {
+   "given": "Gallith",
+   "family": "Pearlmark",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Jackal",
+    "Seahorse"
+   ],
+   "faction": [
+    "Diplomat",
+    "The Open Hand"
+   ],
+   "home": "Lanternfall",
+   "story": [
+    "Gallith Pearlmark spent a childhood racing skiffs on Lanternfall.",
+    "The Open Hand brings rivals to terms. With Gallith aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They laugh at exactly the wrong moments."
+   ]
+  },
+  "Han": {
+   "given": "Han",
+   "family": "Amberfall",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Beetle",
+    "Tapir"
+   ],
+   "faction": [
+    "Explorer",
+    "The Unmapped"
+   ],
+   "home": "the Coral Court",
+   "story": [
+    "Han Amberfall was raised by a choir of dockworkers on the Coral Court.",
+    "The Unmapped pay for places nobody has charted yet. With Han aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.",
+    "They keep score of everything, including naps."
+   ]
+  },
+  "Kalara": {
+   "given": "Kalara",
+   "family": "Lowfield",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Ocelot",
+    "Lynx"
+   ],
+   "faction": [
+    "Diplomat",
+    "The Treaty Table"
+   ],
+   "home": "the Copper Reef",
+   "story": [
+    "Kalara Lowfield spent a childhood stowing away on freighters on the Copper Reef.",
+    "The Treaty Table brings rivals to terms. With Kalara aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Olia": {
+   "given": "Olia",
+   "family": "Ashmark",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "Chameleon",
+    "Armadillo"
+   ],
+   "faction": [
+    "Gatherer",
+    "Driftnet Cooperative"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Olia Ashmark was raised by a choir of dockworkers on Gloamwater.",
+    "Driftnet Cooperative knows when the blooms of the HyperSea will open. With Olia aboard, your crew will be sent to harvest them while they last.",
+    "They cannot resist a dare."
+   ]
+  },
+  "Corndo": {
+   "given": "Corndo",
+   "family": "Kelpweaver",
+   "callsign": "FLUME",
+   "starter": true,
+   "species": [
+    "Capybara",
+    "Otter"
+   ],
+   "faction": [
+    "Sport",
+    "Spray and Spin"
+   ],
+   "home": "the Copper Reef",
+   "story": [
+    "Corndo Kelpweaver was apprenticed to a cartographer on the Copper Reef.",
+    "Spray and Spin puts on exhibition runs wherever there is a crowd. With Corndo aboard, your crew will be invited to fly them, skimming the course for every crystal along it.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Sanuia": {
+   "given": "Sanuia",
+   "family": "Tidewright",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Sloth",
+    "Owl"
+   ],
+   "faction": [
+    "Hunter",
+    "Order of the Last Lure"
+   ],
+   "home": "the Lantern Reach",
+   "story": [
+    "Sanuia Tidewright grew up in the shadow of a dead Ark on the Lantern Reach.",
+    "The Order of the Last Lure keeps a ledger of every vault field and every sighting its members have ever heard of. With Sanuia aboard, that ledger is open to your crew: vaults to open, and lairs to hunt.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Pendo": {
+   "given": "Pendo",
+   "family": "Rustmark",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Wolf",
+    "Pelican"
+   ],
+   "faction": [
+    "Merchant",
+    "Quayside Mutual"
+   ],
+   "home": "the Kelp Throne",
+   "story": [
+    "Pendo Rustmark grew up in the shadow of a dead Ark on the Kelp Throne.",
+    "The Quayside Mutual insures cargo across the HyperSea, so it needs crews to carry its dispatches and see its convoys safe to ports where trouble is brewing. With Pendo aboard, that work comes to you.",
+    "They write letters to a sibling who never writes back."
+   ]
+  },
+  "Wysoola": {
+   "given": "Wysoola",
+   "family": "Hollowtail",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "Hummingbird",
+    "Pelican"
+   ],
+   "faction": [
+    "Explorer",
+    "Lantern Reach Cartographers"
+   ],
+   "home": "Shellmouth",
+   "story": [
+    "Wysoola Hollowtail grew up sorting crystals in a market stall on Shellmouth.",
+    "Lantern Reach Cartographers pay for places nobody has charted yet. With Wysoola aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Kash": {
+   "given": "Kash",
+   "family": "Lanternfin",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Jackal",
+    "Lemur"
+   ],
+   "faction": [
+    "Gatherer",
+    "Kelpline Gleaners"
+   ],
+   "home": "the Glass Shoals",
+   "story": [
+    "Kash Lanternfin was raised by a choir of dockworkers on the Glass Shoals.",
+    "Kelpline Gleaners knows when the blooms of the HyperSea will open. With Kash aboard, your crew will be sent to harvest them while they last.",
+    "They refuse to fly on an empty stomach."
+   ]
+  },
+  "Belko": {
+   "given": "Belko",
+   "family": "Sandcove",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Yak",
+    "Bison"
+   ],
+   "faction": [
+    "Hunter",
+    "Deepreed Stalkers"
+   ],
+   "home": "Wrackline",
+   "story": [
+    "Belko Sandcove was apprenticed to a cartographer on Wrackline.",
+    "The Deepreed Stalkers hunt where the water is dangerous. With Belko in your crew, they will send you after vaults rumoured in the shallows, and into lairs where the fauna have grown into predators.",
+    "They cannot resist a dare."
+   ]
+  },
+  "Uix": {
+   "given": "Uix",
+   "family": "Whistlemore",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Bison",
+    "Narwhal"
+   ],
+   "faction": [
+    "Hunter",
+    "Hollowfen Trackers"
+   ],
+   "home": "Brackenmouth",
+   "story": [
+    "Uix Whistlemore grew up mending nets on Brackenmouth.",
+    "The Hollowfen Trackers follow sightings across the HyperSea. Fly with Uix and you will hear of vault fields before other crews do, and of lairs where something has grown too large to leave alone.",
+    "They tie a ribbon on the hull for every friend lost."
+   ]
+  },
+  "Galmao": {
+   "given": "Galmao",
+   "family": "Whistlehollow",
+   "callsign": "OPAL",
+   "starter": true,
+   "species": [
+    "Ocelot",
+    "Otter"
+   ],
+   "faction": [
+    "Activist",
+    "The Unbound Choir"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Galmao Whistlehollow grew up on a salvage barge on Mirrorfen.",
+    "The Unbound Choir tears down the pens other domains build around the HyperSea's creatures. With Galmao aboard, your crew will be told where those pens are, and asked to break them open.",
+    "They tie a ribbon on the hull for every friend lost."
+   ]
+  },
+  "Yove": {
+   "given": "Yove",
+   "family": "Sandwhistle",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Wolf",
+    "Cuttlefish"
+   ],
+   "faction": [
+    "Hunter",
+    "Deepreed Stalkers"
+   ],
+   "home": "the Coral Court",
+   "story": [
+    "Yove Sandwhistle spent a childhood racing skiffs on the Coral Court.",
+    "The Deepreed Stalkers hunt where the water is dangerous. With Yove in your crew, they will send you after vaults rumoured in the shallows, and into lairs where the fauna have grown into predators.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Darek": {
+   "given": "Darek",
+   "family": "Brightbell",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Raven",
+    "Pangolin"
+   ],
+   "faction": [
+    "Contractor",
+    "Bright Hull Works"
+   ],
+   "home": "the Copper Reef",
+   "story": [
+    "Darek Brightbell grew up sorting crystals in a market stall on the Copper Reef.",
+    "Bright Hull Works mends what the HyperSea breaks. With Darek aboard, your crew will be called to cores under pressure, to lay prisms in the breach until it holds.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Ulia": {
+   "given": "Ulia",
+   "family": "Stormrunner",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Lynx",
+    "Sloth"
+   ],
+   "faction": [
+    "Gatherer",
+    "Kelpline Gleaners"
+   ],
+   "home": "the Glass Shoals",
+   "story": [
+    "Ulia Stormrunner grew up the youngest of eleven on the Glass Shoals.",
+    "Kelpline Gleaners knows when the blooms of the HyperSea will open. With Ulia aboard, your crew will be sent to harvest them while they last.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Oloel": {
+   "given": "Oloel",
+   "family": "Gullmoor",
+   "callsign": "IVY",
+   "starter": true,
+   "species": [
+    "Beetle",
+    "Mole"
+   ],
+   "faction": [
+    "Diplomat",
+    "Envoys of the Accord"
+   ],
+   "home": "Hollowfen",
+   "story": [
+    "Oloel Gullmoor learned to fly before they could read on Hollowfen.",
+    "Envoys of the Accord brings rivals to terms. With Oloel aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They tie a ribbon on the hull for every friend lost."
+   ]
+  },
+  "Mirave": {
+   "given": "Mirave",
+   "family": "Hollowwatch",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Hummingbird",
+    "Fennec"
+   ],
+   "faction": [
+    "Aristocrat",
+    "The Jade Accord"
+   ],
+   "home": "Lanternfall",
+   "story": [
+    "Mirave Hollowwatch grew up in the shadow of a dead Ark on Lanternfall.",
+    "The Jade Accord binds a dozen harbours to keep each other's cores. With Mirave in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.",
+    "They cannot resist a dare."
+   ]
+  },
+  "Pelowen": {
+   "given": "Pelowen",
+   "family": "Anchorshore",
+   "callsign": "DOE",
+   "starter": true,
+   "species": [
+    "Narwhal",
+    "Tapir"
+   ],
+   "faction": [
+    "Hunter",
+    "Longwake Lodge"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Pelowen Anchorshore learned to fly before they could read on Gloamwater.",
+    "The Longwake Lodge trades in rumours: a vault field glimpsed through the mist, a lair where the predators have grown too bold. Fly with Pelowen and those rumours become your crew's work.",
+    "They laugh at exactly the wrong moments."
+   ]
+  },
+  "Sathaane": {
+   "given": "Sathaane",
+   "family": "Shellsong",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Sloth",
+    "Mole"
+   ],
+   "faction": [
+    "Thief",
+    "The Pickled Hand"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Sathaane Shellsong grew up on a salvage barge on Gloamwater.",
+    "The Pickled Hand trades in what other ports would rather keep. With Sathaane aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Sarax": {
+   "given": "Sarax",
+   "family": "Anchorthorn",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Eel",
+    "Jackal"
+   ],
+   "faction": [
+    "Diplomat",
+    "Envoys of the Accord"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Sarax Anchorthorn was raised by a choir of dockworkers on Mirrorfen.",
+    "Envoys of the Accord brings rivals to terms. With Sarax aboard, your crew will be asked to carry accords to ports and crews in a feud, and arrive while both sides are still listening.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Corn": {
+   "given": "Corn",
+   "family": "Wakewick",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Tardigrade",
+    "Otter"
+   ],
+   "faction": [
+    "Thief",
+    "The Pickled Hand"
+   ],
+   "home": "the Glass Shoals",
+   "story": [
+    "Corn Wakewick grew up mending nets on the Glass Shoals.",
+    "The Pickled Hand trades in what other ports would rather keep. With Corn aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Delmadek": {
+   "given": "Delmadek",
+   "family": "Tidedrift",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "Toucan",
+    "Puffin"
+   ],
+   "faction": [
+    "Activist",
+    "Open Current"
+   ],
+   "home": "Ember Deep",
+   "story": [
+    "Delmadek Tidedrift grew up mending nets on Ember Deep.",
+    "Open Current believes no creature should be kept behind another domain's walls. With Delmadek aboard, your crew will hear where those pens are, and be asked to break them open.",
+    "They name every vessel they fly, and apologise to it after a hard landing."
+   ]
+  },
+  "Kaben": {
+   "given": "Kaben",
+   "family": "Greyweaver",
+   "callsign": "FLUME",
+   "starter": true,
+   "species": [
+    "Tardigrade",
+    "Tortoise"
+   ],
+   "faction": [
+    "Aristocrat",
+    "Court of Still Water"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Kaben Greyweaver grew up mending nets on Mirrorfen.",
+    "The Court of Still Water holds cores across the cold reaches. With Kaben aboard, the Court will ask your crew to patrol them, answer its calls for aid, and retake what another domain has taken.",
+    "They cannot resist a dare."
+   ]
+  },
+  "Aloix": {
+   "given": "Aloix",
+   "family": "Sandmark",
+   "callsign": "ENSIGN",
+   "starter": true,
+   "species": [
+    "Seahorse",
+    "Lobster"
+   ],
+   "faction": [
+    "Aristocrat",
+    "The Jade Accord"
+   ],
+   "home": "Shellmouth",
+   "story": [
+    "Aloix Sandmark grew up on a salvage barge on Shellmouth.",
+    "The Jade Accord binds a dozen harbours to keep each other's cores. With Aloix in your crew, the Accord will send you to patrol them, to answer a harbour's call for aid, and to take a core back when another domain holds it.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Aane": {
+   "given": "Aane",
+   "family": "Saltbloom",
+   "callsign": "MANGER",
+   "starter": true,
+   "species": [
+    "Owl",
+    "Crane"
+   ],
+   "faction": [
+    "Contractor",
+    "Keel and Rivet"
+   ],
+   "home": "Brightwater",
+   "story": [
+    "Aane Saltbloom was raised among reef gardeners on Brightwater.",
+    "Keel and Rivet builds and mends for anyone who pays. With Aane aboard, your crew will be sent to cores under pressure, to lay prisms in the breach until the pressure drops.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Miriola": {
+   "given": "Miriola",
+   "family": "Drifthollow",
+   "callsign": "ANVIL",
+   "starter": true,
+   "species": [
+    "Armadillo",
+    "Cuttlefish"
+   ],
+   "faction": [
+    "Pirate",
+    "The Rusted Grin"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Miriola Drifthollow grew up mending nets on Mirrorfen.",
+    "The Rusted Grin raid the hoards richer crews leave behind, and strip the wrecks before the salvagers arrive. With Miriola aboard, your crew will hear where both are waiting.",
+    "They have never once arrived early."
+   ]
+  },
+  "Jous": {
+   "given": "Jous",
+   "family": "Stormhook",
+   "callsign": "VOLT",
+   "starter": true,
+   "species": [
+    "Tardigrade",
+    "Yak"
+   ],
+   "faction": [
+    "Thief",
+    "Velvet Gill"
+   ],
+   "home": "Starwake",
+   "story": [
+    "Jous Stormhook was raised by a choir of dockworkers on Starwake.",
+    "The Velvet Gill moves news between ports before anyone knows it has moved. With Jous aboard, your crew will be sent to lift dispatches from rival ports, and to be gone before morning.",
+    "They laugh at exactly the wrong moments."
+   ]
+  },
+  "Beldiri": {
+   "given": "Beldiri",
+   "family": "Wakelight",
+   "callsign": "ZODIAC",
+   "starter": true,
+   "species": [
+    "Narwhal",
+    "Crane"
+   ],
+   "faction": [
+    "Researcher",
+    "Lumen College"
+   ],
+   "home": "Wrackline",
+   "story": [
+    "Beldiri Wakelight grew up sorting crystals in a market stall on Wrackline.",
+    "Lumen College wants every living thing in the sea written down. With Beldiri aboard, your crew will be asked to study creatures and blooms up close, for as long as they will let you.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Rodiix": {
+   "given": "Rodiix",
+   "family": "Mirewell",
+   "callsign": "SUNDIAL",
+   "starter": true,
+   "species": [
+    "Chameleon",
+    "Mantis"
+   ],
+   "faction": [
+    "Hunter",
+    "Hollowfen Trackers"
+   ],
+   "home": "Mirrorfen",
+   "story": [
+    "Rodiix Mirewell grew up on a salvage barge on Mirrorfen.",
+    "The Hollowfen Trackers follow sightings across the HyperSea. Fly with Rodiix and you will hear of vault fields before other crews do, and of lairs where something has grown too large to leave alone.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Luliia": {
+   "given": "Luliia",
+   "family": "Coralwright",
+   "callsign": "OPAL",
+   "starter": true,
+   "species": [
+    "Lynx",
+    "Platypus"
+   ],
+   "faction": [
+    "Pirate",
+    "The Rusted Grin"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Luliia Coralwright was apprenticed to a cartographer on Gloamwater.",
+    "The Rusted Grin raid the hoards richer crews leave behind, and strip the wrecks before the salvagers arrive. With Luliia aboard, your crew will hear where both are waiting.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Fenlalia": {
+   "given": "Fenlalia",
+   "family": "Wavewatch",
+   "callsign": "RAMPART",
+   "starter": true,
+   "species": [
+    "Sloth",
+    "Lemur"
+   ],
+   "faction": [
+    "Thief",
+    "The Pickled Hand"
+   ],
+   "home": "the Grey Reach",
+   "story": [
+    "Fenlalia Wavewatch grew up sorting crystals in a market stall on the Grey Reach.",
+    "The Pickled Hand trades in what other ports would rather keep. With Fenlalia aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Omix": {
+   "given": "Omix",
+   "family": "Mooncove",
+   "callsign": "CITADEL",
+   "starter": true,
+   "species": [
+    "Tapir",
+    "Raven"
+   ],
+   "faction": [
+    "Contractor",
+    "Keel and Rivet"
+   ],
+   "home": "Lanternfall",
+   "story": [
+    "Omix Mooncove was raised in a lighthouse on Lanternfall.",
+    "Keel and Rivet builds and mends for anyone who pays. With Omix aboard, your crew will be sent to cores under pressure, to lay prisms in the breach until the pressure drops.",
+    "They hum off-key during every jump."
+   ]
+  },
+  "Tamo": {
+   "given": "Tamo",
+   "family": "Copperstone",
+   "callsign": "HORNET",
+   "starter": true,
+   "species": [
+    "Crane",
+    "Tortoise"
+   ],
+   "faction": [
+    "Sport",
+    "The Glittering Heats"
+   ],
+   "home": "Farshore",
+   "story": [
+    "Tamo Copperstone was apprenticed to a cartographer on Farshore.",
+    "The Glittering Heats put on exhibition runs in the brightest cells of the HyperSea. With Tamo aboard, your crew will be invited to fly them, skimming the course for every crystal on it.",
+    "They laugh at exactly the wrong moments."
+   ]
+  },
+  "Darx": {
+   "given": "Darx",
+   "family": "Lanternspark",
+   "callsign": "IVY",
+   "starter": true,
+   "species": [
+    "Pangolin",
+    "Crane"
+   ],
+   "faction": [
+    "Thief",
+    "Whisperkelp"
+   ],
+   "home": "Stillwater",
+   "story": [
+    "Darx Lanternspark was raised in a lighthouse on Stillwater.",
+    "Whisperkelp hears every secret that moves between ports. With Darx aboard, your crew will be sent to lift dispatches from rival ports, and carry the freshest news home first.",
+    "They keep a jar of every crystal they have ever missed."
+   ]
+  },
+  "Josora": {
+   "given": "Josora",
+   "family": "Deepspark",
+   "callsign": "TALON",
+   "starter": true,
+   "species": [
+    "Hedgehog",
+    "Ibis"
+   ],
+   "faction": [
+    "Activist",
+    "Free Shoals League"
+   ],
+   "home": "Brackenmouth",
+   "story": [
+    "Josora Deepspark grew up mending nets on Brackenmouth.",
+    "The Free Shoals League tears down the pens other domains build around the HyperSea's creatures. With Josora aboard, your crew will be told where those pens are, and asked to break them open.",
+    "They tie a ribbon on the hull for every friend lost."
+   ]
+  },
+  "Yonoek": {
+   "given": "Yonoek",
+   "family": "Rustkeel",
+   "callsign": "DOE",
+   "starter": true,
+   "species": [
+    "Seahorse",
+    "Eel"
+   ],
+   "faction": [
+    "Explorer",
+    "Lantern Reach Cartographers"
+   ],
+   "home": "the Copper Reef",
+   "story": [
+    "Yonoek Rustkeel grew up the youngest of eleven on the Copper Reef.",
+    "Lantern Reach Cartographers pay for places nobody has charted yet. With Yonoek aboard, your crew will be sent to survey them, and to follow the scraps of old charts that point past the edge.",
+    "They refuse to fly on an empty stomach."
+   ]
+  },
+  "Caladek": {
+   "given": "Caladek",
+   "family": "Anchorspark",
+   "callsign": "WINGMAN",
+   "starter": true,
+   "species": [
+    "Eel",
+    "Badger"
+   ],
+   "faction": [
+    "Preservationist",
+    "Reefward Trust"
+   ],
+   "home": "Lowlight",
+   "story": [
+    "Caladek Anchorspark was apprenticed to a cartographer on Lowlight.",
+    "The Reefward Trust keeps the nurseries of the HyperSea alive. With Caladek aboard, your crew will be asked to tend a nursery and hold it, with no killing while you are there.",
+    "They talk to the Ark at night and insist it answers."
+   ]
+  },
+  "Jothaar": {
+   "given": "Jothaar",
+   "family": "Glasswick",
+   "callsign": "BANDIT",
+   "starter": true,
+   "species": [
+    "Cuttlefish",
+    "Yak"
+   ],
+   "faction": [
+    "Thief",
+    "The Pickled Hand"
+   ],
+   "home": "Ember Deep",
+   "story": [
+    "Jothaar Glasswick grew up in the shadow of a dead Ark on Ember Deep.",
+    "The Pickled Hand trades in what other ports would rather keep. With Jothaar aboard, your crew will be sent to lift dispatches from rival ports, and the freshest news there will be yours to carry.",
+    "They keep score of everything, including naps."
+   ]
+  },
+  "Nelasa": {
+   "given": "Nelasa",
+   "family": "Whistlewatch",
+   "callsign": "NEEDLE",
+   "starter": true,
+   "species": [
+    "Ocelot",
+    "Badger"
+   ],
+   "faction": [
+    "Sport",
+    "Slipstream Racing Club"
+   ],
+   "home": "Brightwater",
+   "story": [
+    "Nelasa Whistlewatch was raised in a lighthouse on Brightwater.",
+    "The Slipstream Racing Club runs exhibition courses all over the HyperSea. With Nelasa aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.",
+    "They refuse to fly on an empty stomach."
+   ]
+  },
+  "Yone": {
+   "given": "Yone",
+   "family": "Glasswatch",
+   "callsign": "GALLEON",
+   "starter": true,
+   "species": [
+    "Beetle",
+    "Firefly"
+   ],
+   "faction": [
+    "Aristocrat",
+    "Court of Still Water"
+   ],
+   "home": "Gloamwater",
+   "story": [
+    "Yone Glasswatch was raised by a choir of dockworkers on Gloamwater.",
+    "The Court of Still Water holds cores across the cold reaches. With Yone aboard, the Court will ask your crew to patrol them, answer its calls for aid, and retake what another domain has taken.",
+    "They collect shells from every port and give them away to strangers."
+   ]
+  },
+  "Rolodek": {
+   "given": "Rolodek",
+   "family": "Spindlebell",
+   "callsign": "FLUME",
+   "starter": true,
+   "species": [
+    "Moose",
+    "Yak"
+   ],
+   "faction": [
+    "Sport",
+    "Slipstream Racing Club"
+   ],
+   "home": "the Kelp Throne",
+   "story": [
+    "Rolodek Spindlebell was raised in a lighthouse on the Kelp Throne.",
+    "The Slipstream Racing Club runs exhibition courses all over the HyperSea. With Rolodek aboard, your crew will be invited to fly them: skim the course, gather the crystals, and make the crowd stand up.",
+    "They have never once arrived early."
+   ]
   }
  }
 }

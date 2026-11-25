@@ -697,6 +697,40 @@ objective is a crystal — and it duplicated, per-mode, the drift/mass behaviour
 could carry for everyone. If a future mode genuinely needs bespoke AI objectives, the hook
 is still there (Astro League uses it for ball striking).
 
+### The AI trained on the volume books (2026-11-21, elemental loop step 3)
+
+Raced on the Brood Rush volume books (each pilot's VC + VD, `brood_judge.py --mode Rampage`, Amoebius headless,
+Dolphin against Dolphin, 200 s), the Dolphin's score here is almost all **trail it lays (VC)**: about 22.6 volume a
+block, so VC tracks distance flown. VD stays in the hundreds, because the blast aims at the hostile-mass cluster, which
+the grid keeps outside the nucleus, while the rival's trail is inside it (both AIs spend ~90% of the match there), and
+environment flora is not on the books. What the shipped AI failed to do was **go fast**: the drift-charge boost driver
+was switched off in this mode (`DolphinAIBoostPolicy.disabledInModes`, so the commit drift could aim the blast) and the
+throttle sat at 0.8, so it cruised at ~68 u/s.
+
+Searched (seeds 1-2, I2) and found to do nothing measurable (within the ~3% run-to-run noise): the blind ability cycle
+(its three entries are all bound to the commit drift, so the cycler never presses them; an empty list scores the same),
+mass-cluster retarget 1.5 -> 0.5 s, aggressiveness x5, avoidance 0, a commit at any speed, and two AI code
+experiments that were reverted: holding the drift nose across the course (the drift trail's Z scale does not reach the
+books) and aiming the drift at the rival in this mode (VD 300 -> 550, still noise on the total). A lower throttle
+(0.5 / 0.25) cost 22%. The boost driver alone was +0-2% and throttle 1.0 alone +2-4%; together +8-10%, because the
+boost spends at full throttle.
+
+The winner: **Rampage removed from `DolphinAIBoostPolicy.disabledInModes`** (shipped in the asset; only the mode
+being played is ever looked up, so no other mode reads the change) and **throttle x1.25** (0.8 / 0.4 -> 1.0 / 0.5),
+which goes through the per-hull Mass-Space AI row (`AIMassSpacePlanSO`), not the prefab, because the AIPilot's
+throttle also flies Switchback and Regatta.
+
+| Mean seat VC + VD (seeds 11-12, 4 seats) | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Rampage shipped -> trained | 47.7k -> 55.1k (+15%) | 49.3k -> 56.3k (+14%) | 48.4k -> 52.2k (+8%) | 47.3k -> 50.0k (+6%) |
+| cruise speed (u/s) | 67 -> 78 | 70 -> 78 | 69 -> 75 | 68 -> 72 |
+
+The game's own score here, hostile volume destroyed, is very noisy run to run and mixed (11.3k -> 14.6k at I1,
+10.4k -> 10.2k at I2, 4.3k -> 2.4k at I3, 0.9k -> 1.7k at I4); crystals taken fall about 15% at I1-I3. Time is not
+reached: Switchback (45) and Regatta (56) were never in the boost list, and the throttle goes through the Mass-Space row
+only. The Dolphin has no Mass game, so Rampage is its only Mass-Space training game. Raw:
+`/mnt/project-files/regatta-flywheel/mass7/dolphin/`.
+
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**

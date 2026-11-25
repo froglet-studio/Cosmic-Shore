@@ -33,6 +33,14 @@
   prop:
     s: change
     note: The result screen says what the round trained, and lights a petal on the vessel's flower.
+  measure:
+    in: x
+    event: game_completed
+    params: [mode, genre, intensity, placing, seconds, first_time]
+    target: A round lasts about 90 seconds for an experienced pilot, and a run is 3 to 5 rounds.
+    first: 1
+    expect: 'A new pilot reaches and finishes the card the spotlight leads to, unaided: the first meaningful match Docs/ACTIVATION.md
+      defines activation by.'
   holes:
   - 'on': np
     q: Rounds per run are not measured, and nothing but the player's own wish moves them from a card to the next card.
@@ -72,6 +80,15 @@
       for a person to fly all four.
   plan:
     note: One human plays the four rungs and signs them off as fun; only then is that vessel and element sent to AI training.
+  holes:
+  - 'on': n
+    q: 'Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time''s AI (fb750ac38, GRIZZLYTIME.md, 24 courses)
+      finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2''s level-5 start and I4''s fauna add almost
+      nothing for it. 2026-11-24: two more cards show it. Spearline''s Legendary Swordfish AI (eda5d81aa, SPEARLINE.md)
+      runs I1 148.5 s, I2 142.3, I3 135.2, I4 143.6, so I3 is the quickest rung, and Perch Run''s reader runs 36.0, 37.8,
+      36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder.'
+    fill: 'Judge each card''s ladder by the fixed AI''s time per rung (regatta_judge) and flag two neighbouring rungs closer
+      than about 5% as a ladder to retune before step 3 signs off.'
   src:
   - Docs/ElementalLoop/PLAYBOOK.md step 2
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2b

@@ -92,6 +92,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.LifeformsKilled,   Element.Space)]  // Wildlife Liberation
         [TestCase(ScoringMetric.Jousts,            Element.Charge)] // Joust
         [TestCase(ScoringMetric.CombatPoints,      Element.Charge)] // Dog Fight, The Bends, Undertow, Broadside
+        [TestCase(ScoringMetric.PetalsTaken,       Element.Charge)] // the petal ledger (SILENCE.md §6)
         public void Metric_ResolvesToItsShippedGenre(ScoringMetric metric, Element expected)
         {
             Assert.IsTrue(ModeGenre.TryElementForMetric(metric, out var element),
@@ -106,7 +107,7 @@ namespace CosmicShore.Tests
         {
             // The TestCase list above must not silently fall behind the enum: if it does, a new
             // metric could be classified in ModeGenre and still never have its genre pinned.
-            Assert.AreEqual(13, Enum.GetValues(typeof(ScoringMetric)).Length,
+            Assert.AreEqual(14, Enum.GetValues(typeof(ScoringMetric)).Length,
                 "ScoringMetric member count changed - add the new metric to ModeGenre and to " +
                 "Metric_ResolvesToItsShippedGenre's TestCase list.");
         }

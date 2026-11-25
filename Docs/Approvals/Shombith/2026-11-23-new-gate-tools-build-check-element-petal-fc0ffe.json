@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-23-new-gate-tools-build-check-element-petal-fc0ffe",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-23T14:32:01+00:00",
+  "area": "Tooling: /ship gates and the bleeding-edge guard",
+  "summary": "New gate Tools/Build/check_element_petals.py (stdlib only, <1 s) added to ship_gates.py STATIC and as a bleeding-edge-guard step: every element petal sprite must keep its apex at the flower centre, full size, matching ElementPetalGeometry's outline. Its self-test replays the 2026-10-27 mistake (mass_petal.png flipped and at 60 %) as a negative control. icon_kit/card.py: one wrong comment corrected (the petals point INTO the centre); no behaviour change.",
+  "branch": "cece/intelligent-mayer-7qnyfc",
+  "commit": "7b21cc634"
+}

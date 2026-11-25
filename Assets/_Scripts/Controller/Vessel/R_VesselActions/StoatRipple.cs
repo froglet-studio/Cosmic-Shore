@@ -1,168 +1,142 @@
 using System.Collections.Generic;
-using CosmicShore.Utility;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The DRAWN half of the Stoat's annihilation ripple (<c>R_VesselActions/STOAT_DIPOLE.md</c> §1c): a spherical
-    /// space-time wave that bends the scene behind its front as it passes — the ring a shell projects to, pushed
-    /// outward ahead of the front and pulled in behind it, with a red/blue fringe and a rim in the owner's domain
-    /// colour. Presentation only; what the front DOES is <see cref="StoatRippleExecutor"/>'s.
+    /// The DRAWN half of the Stoat's annihilation ripple (<c>R_VesselActions/STOAT_DIPOLE.md</c> §1c "The drawn wave"):
+    /// a space-time ripple with no colour of its own. From the point where the hole went back to nothing a spherical
+    /// wave runs out; its front and the few crests trailing it BEND the scene behind them (and brighten and darken it a
+    /// little, crest and trough), weaker as it spreads (1/r) and fading as it settles. Presentation only; what the front
+    /// DOES is <see cref="StoatRippleExecutor"/>'s, on the same clock (<see cref="StoatRippleMath.Front"/>).
     ///
-    /// <para><b>How it draws.</b> One back-faced sphere (the black-hole lens's own mesh,
-    /// <see cref="BlackHoleLens.LensSphere"/>) circumscribing the front, with <c>CosmicShore/StoatRipple</c>, whose
-    /// pass is <c>LightMode = BlackHoleLens</c>: so it is drawn by <see cref="BlackHoleLensPass"/> AFTER the
-    /// transparents, from the pass's copy of the camera colour, exactly as the lens is — a ripple bends what the camera
-    /// already drew, shards and trails included. While a ripple lives it holds the pass open
-    /// (<see cref="BlackHoleLensPass.Acquire"/> / <c>Release</c>), so it draws whether or not a hole is still live.
-    /// Per-ripple values go through a <see cref="MaterialPropertyBlock"/> on the shared material.</para>
-    ///
-    /// <para><b>The Mobile look</b> (<see cref="ScriptableObjects.HoleLook.Mobile"/>, the default, Docs/BLACK_HOLE.md §5.4):
-    /// nothing is bent. The sphere and its lens-pass material are not used at all; each frame the ripple draws its front as
-    /// one thin soft light ring in the owner's domain colour (<see cref="BlackHoleGlow.DrawRing"/>, a small forward mesh —
-    /// no screen copy). This is also the look that actually REACHES the screen: the <c>LightMode = BlackHoleLens</c> pass
-    /// above is drawn by no renderer list (the lens pass draws procedurally), so the bending ripple has never shown.</para>
-    ///
-    /// <para>Pooled (a small static stack): a ripple is born per annihilation, never per frame.</para>
+    /// <para><b>How it draws.</b> Each live ripple is a record here (no GameObject); <see cref="StoatRipplePass"/> copies
+    /// the camera colour after the transparents and redraws the pixels the waves cross from that copy, bent, in one
+    /// full-screen triangle (<c>CosmicShore/StoatRipple</c>). Both black-hole looks draw it the same way; while no ripple
+    /// lives the pass is not enqueued and costs nothing. Yash, 2026-11-21: "a near-realistic space-time ripple wave, no
+    /// domain color" - it replaced the Mobile look's domain-colour ring and the lens sphere no renderer ever drew.</para>
     /// </summary>
-    public sealed class StoatRipple : MonoBehaviour
+    public static class StoatRipple
     {
         /// <summary><c>Resources/StoatRipple.mat</c> (shader <c>CosmicShore/StoatRipple</c>).</summary>
         public const string MaterialResourcePath = "StoatRipple";
 
-        static readonly int RadiusId = Shader.PropertyToID("_RippleRadius");
-        static readonly int BandId = Shader.PropertyToID("_RippleBand");
-        static readonly int BendId = Shader.PropertyToID("_RippleBend");
-        static readonly int SplitId = Shader.PropertyToID("_RippleSplit");
-        static readonly int TintId = Shader.PropertyToID("_RippleTint");
+        /// <summary>The shader draws this many ripples at most, the nearest first. Mirrors <c>STOAT_RIPPLE_MAX</c>.</summary>
+        public const int MaxDrawn = 4;
 
-        static readonly Stack<StoatRipple> s_pool = new();
-        static Material s_material;
-        static bool s_warned;
+        public struct Ripple
+        {
+            public Vector3 Centre;
+            public float T0;
+            public float Radius;
+            public float ExpandSeconds;
+            public float FadeSeconds;
+            public float Wavelength;
+            public float Bend;
+            public float NearRadius;
+            public float Shimmer;
+            public float PassShare;
+        }
 
-        MeshRenderer _renderer;
-        MaterialPropertyBlock _block;
-        float _age, _radius, _expand, _fade, _band, _bend, _split, _glow;
-        Color _tint;
-        bool _acquired;
-        bool _mobile;
-        int _drawnFrame = -1;
+        static readonly List<Ripple> s_live = new();
+        static readonly int[] s_order = new int[16];
+        static readonly float[] s_depth = new float[16];
+
+        /// <summary>The ripples' clock: game time, so a slowed or paused game slows them with the front that strips.</summary>
+        public static float Now => Time.time;
+
+        /// <summary>Ripples still drawing (pruned on every spawn and every frame the pass asks).</summary>
+        public static int Count
+        {
+            get { Prune(Now); return s_live.Count; }
+        }
+
+        /// <summary>A ripple at <paramref name="at"/> whose front runs out to <paramref name="radius"/>.</summary>
+        public static void Spawn(Vector3 at, float radius, StoatRippleConfigSO config)
+        {
+            if (config == null) return;
+            float now = Now;
+            Prune(now);
+            if (s_live.Count >= s_order.Length) s_live.RemoveAt(0);   // a burst: the oldest goes first
+            s_live.Add(new Ripple
+            {
+                Centre = at, T0 = now, Radius = Mathf.Max(0.1f, radius),
+                ExpandSeconds = config.ExpandSeconds, FadeSeconds = config.FadeSeconds, Wavelength = config.Wavelength,
+                Bend = config.Bend, NearRadius = config.NearRadius, Shimmer = config.Shimmer, PassShare = config.PassShare,
+            });
+        }
+
+        static void Prune(float now)
+        {
+            for (int i = s_live.Count - 1; i >= 0; i--)
+            {
+                var r = s_live[i];
+                if (StoatRippleMath.Done(now - r.T0, r.ExpandSeconds, r.FadeSeconds)) s_live.RemoveAt(i);
+            }
+        }
 
         /// <summary>
-        /// A ripple at <paramref name="at"/> growing to <paramref name="radius"/>. Null (and one warning) when the
-        /// material cannot be drawn — the ripple's gameplay still happens, only unseen.
+        /// This camera's ripples as the shader takes them, nearest first, in the lens's screen units (screen heights from
+        /// the centre, y up; <see cref="BlackHoleLens.ScreenWell"/>): <paramref name="c"/> = (centre x, centre y, the
+        /// front's screen radius, the wavelength on screen), <paramref name="a"/> = (the bend on screen, the shimmer, 1, 0).
+        /// <paramref name="pass"/> is the wave going THROUGH the camera: the whole view swells and settles by that much.
+        /// Returns how many were written.
         /// </summary>
-        public static StoatRipple Spawn(Vector3 at, float radius, float expandSeconds, float fadeSeconds, float band,
-            float bend, float split, Color tint, float glow)
+        public static int ScreenRipples(Matrix4x4 worldToCamera, Vector3 eye, float fieldOfViewY, float nearClip, float now,
+            Vector4[] c, Vector4[] a, out float pass)
         {
-            // The Mobile look draws through BlackHoleGlow; the Studio lens look through the lens pass's material.
-            bool mobile = BlackHoleGlow.Active(BlackHoleRegistry.Config);
-            var material = mobile ? null : SharedMaterial();
-            if (!mobile && !material) return null;
-            StoatRipple ripple = null;
-            while (s_pool.Count > 0 && !ripple) ripple = s_pool.Pop();
-            if (!ripple)
+            pass = 0f;
+            Prune(now);
+            int candidates = 0;
+            for (int i = 0; i < s_live.Count && candidates < s_order.Length; i++)
             {
-                var go = new GameObject("StoatRipple");
-                go.AddComponent<MeshFilter>().sharedMesh = BlackHoleLens.LensSphere();
-                var renderer = go.AddComponent<MeshRenderer>();
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-                ripple = go.AddComponent<StoatRipple>();
-                ripple._renderer = renderer;
-                ripple._block = new MaterialPropertyBlock();
+                s_order[candidates] = i;
+                s_depth[candidates] = (s_live[i].Centre - eye).sqrMagnitude;
+                candidates++;
             }
-            ripple._mobile = mobile;
-            ripple._renderer.enabled = !mobile;
-            if (!mobile) ripple._renderer.sharedMaterial = material;
-            ripple.transform.SetPositionAndRotation(at, Quaternion.identity);
-            ripple._age = 0f;
-            ripple._radius = Mathf.Max(0.1f, radius);
-            ripple._expand = Mathf.Max(0.1f, expandSeconds);
-            ripple._fade = Mathf.Max(0f, fadeSeconds);
-            ripple._band = band;
-            ripple._bend = bend;
-            ripple._split = split;
-            ripple._tint = tint;
-            ripple._glow = glow;
-            ripple.Apply();
-            ripple.gameObject.SetActive(true);
-            return ripple;
-        }
-
-        static Material SharedMaterial()
-        {
-            if (s_material) return s_material;
-            s_material = Resources.Load<Material>(MaterialResourcePath);
-            if (!s_material && !s_warned)
+            for (int i = 1; i < candidates; i++)
             {
-                s_warned = true;
-                CSDebug.LogWarning($"[StoatRipple] Resources/{MaterialResourcePath}.mat is missing — the Stoat's annihilation " +
-                                   "ripple still strips and kills, but nothing draws it.");
+                int k = s_order[i];
+                float dk = s_depth[k];
+                int j = i - 1;
+                while (j >= 0 && s_depth[s_order[j]] > dk) { s_order[j + 1] = s_order[j]; j--; }
+                s_order[j + 1] = k;
             }
-            return s_material;
-        }
 
-        void OnEnable()
-        {
-            if (_acquired || _mobile) return;
-            BlackHoleLensPass.Acquire();
-            _acquired = true;
-        }
-
-        void OnDisable()
-        {
-            if (!_acquired) return;
-            BlackHoleLensPass.Release();
-            _acquired = false;
-        }
-
-        void Update()
-        {
-            _age += Time.deltaTime;
-            if (StoatRippleMath.Done(_age, _expand, _fade))
+            float f = 0.5f / Mathf.Tan(fieldOfViewY * Mathf.Deg2Rad * 0.5f);
+            int count = 0;
+            for (int n = 0; n < candidates; n++)
             {
-                gameObject.SetActive(false);
-                s_pool.Push(this);
-                return;
+                var r = s_live[s_order[n]];
+                float age = now - r.T0;
+                float front = StoatRippleMath.Front(age, r.ExpandSeconds, r.Radius);
+                float bend = StoatRippleMath.Amplitude(r.Bend, front, r.NearRadius, StoatRippleMath.Strength(age, r.ExpandSeconds, r.FadeSeconds));
+                if (bend <= 0f || front <= 0f) continue;
+                float distance = Vector3.Distance(eye, r.Centre);
+                float wavelength = Mathf.Max(0.1f, r.Wavelength);
+
+                // The wave reaching and crossing the camera: the view swells and settles (u > 0 once the front is past).
+                pass += r.PassShare * f * bend * StoatRippleMath.Profile((front - distance) / wavelength);
+
+                if (count >= MaxDrawn || count >= c.Length) continue;
+                if (front >= distance) continue;                       // the camera is inside: no ring left to see
+                var view = worldToCamera.MultiplyPoint3x4(r.Centre);
+                float depth = -view.z;
+                if (depth <= nearClip) continue;                       // behind the camera
+                float rho = BlackHoleLens.Angular(f, front, distance);
+                float lambda = Mathf.Max(f * wavelength / Mathf.Max(1f, distance),
+                    BlackHoleLens.Angular(f, Mathf.Min(front + wavelength, distance * 0.999f), distance) - rho);
+                c[count] = new Vector4(f * view.x / depth, f * view.y / depth, rho, Mathf.Max(1e-3f, lambda));
+                a[count] = new Vector4(f * bend, r.Shimmer * bend / Mathf.Max(1e-4f, r.Bend), 1f, 0f);
+                count++;
             }
-            Apply();
+            for (int i = count; i < c.Length; i++) c[i] = a[i] = Vector4.zero;
+            return count;
         }
 
-        void Apply()
-        {
-            float front = StoatRippleMath.Front(_age, _expand, _radius);
-            float strength = StoatRippleMath.Strength(_age, _expand, _fade);
-            if (_mobile)
-            {
-                if (_drawnFrame == Time.frameCount) return;   // spawned and updated in one frame: draw it once
-                _drawnFrame = Time.frameCount;
-                // one thin soft light ring at the front, the owner's colour, fading with the ripple (RenderMesh draws
-                // for this frame only, so Apply runs every frame while the ripple lives)
-                BlackHoleGlow.DrawRing(transform.position, front, Mathf.Max(0.5f, 0.5f * front * _band), _tint, _glow, strength);
-                return;
-            }
-            // The sphere circumscribes the front and its outer band (the mesh is unit-DIAMETER).
-            float extent = Mathf.Max(0.1f, front * (1f + _band) + 0.5f);
-            transform.localScale = Vector3.one * (2f * extent);
-            _block.SetFloat(RadiusId, front);
-            _block.SetFloat(BandId, Mathf.Max(0.05f, front * _band));
-            _block.SetFloat(BendId, _bend * strength);
-            _block.SetFloat(SplitId, _split);
-            var tint = _tint * (_glow * strength);
-            tint.a = strength;
-            _block.SetColor(TintId, tint);
-            _renderer.SetPropertyBlock(_block);
-        }
-
-        /// <summary>Play-mode (re)entry: the pool and the material cache describe a scene that is gone.</summary>
+        /// <summary>Play-mode (re)entry: the ripples describe a scene that is gone.</summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics()
-        {
-            s_pool.Clear();
-            s_material = null;
-            s_warned = false;
-        }
+        static void ResetStatics() => s_live.Clear();
     }
 }

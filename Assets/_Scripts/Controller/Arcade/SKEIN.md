@@ -1197,3 +1197,52 @@ less and flies more. Real game, the AI alone, course seeds 4-6 (Easy also feels 
 
 The spread is modest (Medium about 1.2x Legendary at I2, 1.08x at I4) and the order is right. This changes the mode's
 AI, never the vessel (the LOCKED mode rule).
+
+---
+
+## 20. Garden ruins at intensity 4 (2026-11-24)
+
+Yash, 2026-11-24: give every Time game the environment update Spearline got. Skein lays **Spearline's own ruins**
+(`SpearlineRuins`, `SPEARLINE.md` section 2a: pergola, flower head, vines, wall, tunnel, maze, wheel) from Skein's 24
+rings. `SkeinRuins.cs` adds no ruin of its own; it decides which of those prisms Skein lays. I4 only. Decoration: plain
+prisms with the game's own rules, laid by every peer from the broadcast rings; nothing reads or writes a vessel.
+
+What Spearline's generator already holds here: a 60 u clear lane down the straight flight between two rings (wider than
+the 40 u pinned mouth), nothing within 120 u of a ring.
+
+What Skein adds, and why:
+
+- **Off the cable.** Skein is ridden, so the rails and the launches are the racing line and Spearline's lane does not
+  cover them. A ruin prism whose surface would come within **30 u** (`CableKeep`, over the 24 u ride envelope of
+  section 4) of a rail prism or of a launch's straight path (900 u off a launching rail's last prism, `EndAimMax`) is
+  left out. A wheel is laid whole or not at all, and not if its sweep reaches the cable.
+- **Every third leg.** The 24 rings are flown once, so seven ruins on the first seven legs would all stand in the first
+  third of the race. Skein keeps the ruin of legs 0, 3, 6 ... 18: seven ruins along the race, every kind once.
+- **Not rideable.** Each ruin prism is laid into a trail of its own, so `PrismscapeTopology.DimensionOf` reads it as a
+  Singleton, which no hull rides (the game's existing rule): an Urchin that touches one flies on. In one shared trail
+  the ruin would be a rail that jumps about; as a Volume it would be the pond section 9 keeps out.
+- **Blue** (`ruinDomains` on the controller; empty = Blue). The rails are Jade, Ruby and Gold and a pilot's own colour
+  is the fast one, so a ruin in one of those would read as a rail and would cost one team less to break than another.
+  Section 9's "no Blue in the mass" is about rideable mass; the ruins are not. They share Blue with the rings, which
+  they never stand within 120 u of.
+
+Measured (`bash Tools/Build/skein_ruins_harness/run.sh --measure`): the shipped I4 cable keeps **215 ruin prisms of
+298** on 7 legs (14 to 54 a ruin) beside its 6,165 rail prisms; the six cables after it keep 198 to 279. **No cable
+leaves room for the wheel** (a 150 u wheel never clears the rings and the other legs inside the knot), so Spearline's
+own fallback, a pergola, stands in its place: nothing turns in Skein today. The collider budget of section 8 is
+unchanged in kind: every ruin prism is `PrismKind.Plain`.
+
+**The ruins are in the I4 phase baseline.** Every laid prism counts in `Cell.LiveVolume`, and the ruins' stones are
+big (439,125 volume, against 288 a rail prism), so unaccounted they would sit the I4 cell in Frenzy from the first
+frame (its headroom is 57,600). `author_skein_assets.py` adds the two measured numbers (`RUINS`: 215 prisms, 439,125
+volume) to that rung's baseline, so the headroom for player trail is what it was; `Skein Cell Config 4` is
+re-authored. `SkeinRuinsTests` holds the same two numbers and fails if the ruins change.
+
+Code: `Skein/SkeinRuins.cs` (pure), `Skein/SkeinController.Ruins.cs` (the hook: `OnCourseRaised`, the wheel pose,
+`ClearRuins`), `SpawnableSkein.RailPrism` (the ruins are laid from the rail's prism, so nothing new is authored and
+`author_skein_assets.py` writes nothing for them). Tests: `SkeinRuinsTests`, 12, run headless by
+`Tools/Build/skein_ruins_harness/run.sh` (`--self-test`: five negative controls).
+
+Not verified: nothing here was compiled or run in Unity. The AI model (`skein_urchin_sim.py`) has no ruins in it, so
+the I4 times of section 19 are not re-measured with them, and whether an AI Urchin steers round a ruin or ploughs it
+is unknown. The hand checks are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Skein: garden ruins at I4").

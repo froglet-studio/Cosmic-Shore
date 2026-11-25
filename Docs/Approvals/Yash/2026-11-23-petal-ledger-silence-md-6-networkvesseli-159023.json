@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-23-petal-ledger-silence-md-6-networkvesseli-159023",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-23T16:32:12+00:00",
+  "area": "Multiplayer netcode",
+  "summary": "Petal ledger (SILENCE.md 6): NetworkVesselImpactor's CombatEject/CombatSteal RPCs now carry the attacker's name, a new owner-only PetalsTaken_ServerRpc forwards a client's settled take to the server, RoundStats gains n_PetalsTaken; ProtocolVersion 38 -> 40 (39 is claimed by the brood branches). Additive, no behaviour of an existing take changes.",
+  "branch": "claude/project-thread-6znms8",
+  "commit": "f2fb49e14"
+}

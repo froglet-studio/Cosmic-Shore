@@ -75,6 +75,11 @@ STATIC = [
     ('colour_trace_self_test', 'Tools/Build/colour_trace.py', ['--self-test']),
     ('colour_grade', 'Tools/Build/colour_grade.py', ['--check']),
     ('colour_grade_self_test', 'Tools/Build/colour_grade.py', ['--self-test']),
+    # Every element flower is one petal sprite turned five times about its centre, so the sprite carries the layout:
+    # the apex points INTO the centre, full size, matching ElementPetalGeometry's outline (Garrett, 2026-11-22, after
+    # mass_petal.png sat flipped and shrunk for four weeks).
+    ('element_petals', 'Tools/Build/check_element_petals.py', []),
+    ('element_petals_self_test', 'Tools/Build/check_element_petals.py', ['--self-test']),
 ]
 # Every asset generator's drift gate, plus the two generators whose names do not end in _assets.
 GENERATOR_GLOB = 'Tools/Build/author_*_assets.py'

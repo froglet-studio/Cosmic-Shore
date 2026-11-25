@@ -1,0 +1,21 @@
+{
+  "id": "2026-11-22-each-of-these-camera-effects-now-runs-fo-5c1b7e",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T01:09:51+00:00",
+  "area": "the vessel cameras: Swordfish sword reach and pan, Thresher ball framing, Jacks net, Jewel Wasp ride, Shrike docked pull-back",
+  "summary": "Each of these camera effects now runs for the local player's hull whoever holds its sticks, instead of stopping when the AI flies it (the AI Diagnose panel's You / AI toggle). The gate was '!AutoPilotEnabled'; it is now the hull the camera follows (CameraManager.ActiveRigFollowing). What the pilot's own hand drives is unchanged and still pilot-only: the Thresher's launch view and aim, the Shrike's scope and zoom, shake, haptics and hit-stop. No tuning value changed.",
+  "why": "Yash: with the AI flying his vessel the camera sat nearer than when he flies it; he wants the player's camera whoever pilots. An AI seat, a remote hull and the menu's lava lamp still move nobody's camera.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "7189104a1",
+  "paths": [
+    "Assets/_Scripts/Controller/Managers/CameraManager.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JewelWaspExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShrikeExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SwordfishSwordCamera.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SwordfishSwordLengthCamera.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/VesselActions/ZoomOutAction.cs"
+  ]
+}

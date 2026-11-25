@@ -59,7 +59,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | **Dolphin** | **Switchback** (Blast Run since 2026-10-29) | gate race, blocked gates cleared by the key crystal's blast | **First, Yash's own.** The Blast Run AI rebuilt in four steps on 2026-11-02 and its difficulty levels set to Yash's time bands (§9.1): offline I4 medians 140 / 129 / 120 / 112 s, Easy to Legendary. Learned charge drive per intensity (§3.6-3.7). Not yet run in Unity since the steps (the soak is handed to a PC session) |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
 | **Stoat** | **Slingshot** (since 2026-10-27; Warpline before) | gate race, the catch orbit alone since 2026-11-02 (§11) | **Yash's own (2026-10-27).** Its 15 Warpline races taught the pair and sling numbers; they start its Slingshot variants (`StoatDipoleConfig_Slingshot`, `StoatSlingConfig_Slingshot`) with the Regatta steering on (§8). No Slingshot race recorded yet |
-| **Meerkat** | **Warpline** (since 2026-10-27; Burrow Run is its 8-ring twin) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
+| **Meerkat** | **Warpline** (since 2026-10-27; its 8-ring twin Burrow Run moved to the Jewel Wasp on 2026-11-22) | gate race, the wormhole | **Yash's own (2026-10-27).** The AI forms its tunnels through the replicated press path (`MeerkatSolitonExecutor.Autopilot`); no learner reads the Meerkat yet (§8) |
 | Rhino | Headlong | lapped gate race | none yet |
 | **Manta** | **Redline** | gate race, laps of a circuit cut for Soar | **Started 2026-11-03 (Yash, §13).** No race recorded yet. The AI flies the Regatta steering; its Soar bands are searched on a Redline model of the shipped AI (`redline-manta-time`) |
 | Urchin | Skein | gate race on rails | none yet |
@@ -71,7 +71,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
 | **Thresher** | **Thresher Time** | gate race, the sling | **Next after the Stoat (Yash, 2026-11-02, §12).** 15 editor flights, 8 finished (I1 9 / 5, I2 3 / 1, I4 3 / 2, none at I3), learned into `ThresherAIBoostPolicy_ThresherTime` (2026-11-01; two of its three races are Garrett's). The AI plants on almost every corner and, since 2026-11-02, launches aimed like Garrett |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
-| Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
+| Jewel Wasp | **Burrow Run** | gate race, flying free | the Meerkat's until 2026-11-22 (Yash); the wasp's AI here is the gate race's own steering, untrained, and no learner reads its flights. The Meerkat's searched genes were for that hull and do not carry over |
 | Serpent | **Serpent Time** (new 2026-10-27) | circuit race on the fuel pellets | none yet |
 | Brittle Star | **Brittle Star Time** (new 2026-10-27) | circuit race on Speed Mode | none yet |
 
@@ -263,7 +263,7 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races). **Boost, 2026-10-26:** on the legs, let go 1.25 s before each station (`BREAKWATER.md` "The boost"; offline 79-82 s a lap against 110-131 s, no station clipped) |
 | Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned per intensity (§3.6-3.7); no crystals: a racing AI flies the gates only (§6.1) |
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
-| Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26) |
+| Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26; both deleted since, Warpline seats the Meerkat) |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
 | Manta / Redline | Soar | the Soar executor's bands (0.35 / 0.75); searched by `redline-manta-time` (§13) |
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
@@ -466,7 +466,7 @@ the Stoat's other race, keeps its scene steering until its own races show the sa
   start as copies of the Warpline ones learned from Yash (the same hull, the same warp, the let-go at 250 u); the sweep
   relearns them from Slingshot races (`learn_drives_from_flights.py` reads any mode, and copies an existing variant first,
   so the hand-set let-go is kept).
-- **The Meerkat's AI in Warpline.** Its autopilot is the one Burrow Run flies; no learner covers the Meerkat yet, so its
+- **The Meerkat's AI in Warpline.** Its autopilot is the one it flew in Burrow Run (the Jewel Wasp's race since 2026-11-22); no learner covers the Meerkat yet, so its
   races are recorded and wait (`ai_learning_seen.json` "waiting", hull with no learner). A Meerkat learner (the tunnel's
   bend, length and when to press RT, measured from Yash's flights) is the next learner to join `ai_learn.py`.
 - **The courses.** Both races cut Slingshot's circuit. `FrogletTools > Game Modes > Time Race Prototyper`

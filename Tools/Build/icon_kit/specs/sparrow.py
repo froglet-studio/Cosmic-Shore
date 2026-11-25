@@ -24,6 +24,14 @@
                              armed because its cooldown is so low"). (before: round 2's chevron with a plume; before
                              that the fleet's borrowed boost icon)
 
+  core    Barrel Roll        a VESSEL DYNAMIC, no element (Shombith 2026-11-24: the roll moved off the boost button onto
+                             the right stick, any direction, held = keeps rolling). AFTERIMAGE, picked from three
+                             (Docs/FleetCodex design round): the Sparrow three times as the chase camera sees it -
+                             from behind and a little above, the real mesh rolled 0 / 75 / 150 degrees about its own
+                             forward axis - sliding right along a bowed arrow, the first two as ghosts. Shown by the
+                             Fleet Codex as the sixth tile; the HUD binds none yet. Lives in Core/ so the family gate
+                             compares the elemental icons only (the Squirrel's drift pattern).
+
 Ladder and weapon-mode sprites live in Ladder/ and Modes/; the ladder is family=False (rungs are variants).
 """
 import mesh_silhouette
@@ -286,6 +294,46 @@ SKY_STATES = [("empty: charging the first", 0, 0.6),
               ("bay full: 4 held", 4, 0.0)]
 
 
+# The barrel roll (core, no element). The chase view: the mesh rolled about its own forward axis (file +Y) by `roll`
+# degrees, then seen from behind and ROLL_ELEV degrees above - so a rolled copy shows its wings turning edge-on, which
+# the plan view (mesh_silhouette.silhouette) cannot. Fitted on the UNROLLED hull so every copy shares one scale.
+ROLL_ELEV = 32.0
+ROLL_SPOTS = [(34, 58, 0.0, 0.3), (64, 54, 75.0, 0.55), (94, 58, 150.0, 1.0)]   # (cx, cy, roll deg, alpha)
+
+
+def chase(box, cx, cy, roll=0.0, dilate_px=1.6):
+    import math
+    from PIL import Image, ImageDraw, ImageFilter
+    from canvas import N, SS
+    polys = mesh_silhouette._polys(FBX)
+    e, ra = math.radians(ROLL_ELEV), math.radians(roll)
+
+    def proj(v, r):
+        x, y, z = v
+        xr = x * math.cos(r) - z * math.sin(r)
+        zr = x * math.sin(r) + z * math.cos(r)
+        return xr, -(zr * math.cos(e) + y * math.sin(e))
+
+    ref = np.array([proj(v, 0.0) for p in polys for v in np.asarray(p, dtype=float)])
+    lo, hi = ref.min(0), ref.max(0)
+    k = box * SS / max(hi - lo)
+    mx, my = (lo + hi) / 2
+    im = Image.new("L", (N, N), 0)
+    d = ImageDraw.Draw(im)
+    for p in polys:
+        d.polygon([((x - mx) * k + cx * SS, (y - my) * k + cy * SS) for x, y in (proj(v, ra) for v in np.asarray(p, dtype=float))], fill=255)
+    im = im.filter(ImageFilter.MaxFilter(int(dilate_px * SS) | 1))
+    return np.asarray(im) > 127
+
+
+def barrel_roll():
+    """Afterimage: the path (a bowed arrow, 0.75) under three rolling Sparrows, the first two ghosts."""
+    from canvas import band
+    from motifs import arrowhead
+    path = band(64, 8, 90, 60, 120, w=5.0) | arrowhead((114, 86), (1, -0.45), 12, spread=0.75)
+    return [(path, 0.75)] + [(chase(46, x, y, roll=r), a) for x, y, r, a in ROLL_SPOTS]
+
+
 BAY_EXEMPT = {"components": "four real rockets, each a body and its tail fin", "gap": "the real mesh"}
 
 ICONS = [
@@ -324,6 +372,9 @@ ICONS = [
     dict(name="Sparrow_Rockets_2", element="Charge", act="the bay: 2 of 4 held (the fallback)", draw=lambda: rockets(2), subdir="Ladder", family=False, exempt=BAY_EXEMPT, before=ART + "Missiles/missileGauge_1.png"),
     dict(name="Sparrow_Rockets_1", element="Charge", act="the bay: 1 of 4 held (the fallback)", draw=lambda: rockets(1), subdir="Ladder", family=False, exempt=BAY_EXEMPT),
     dict(name="Sparrow_Rockets_0", element="Charge", act="the bay: 0 of 4 held (the fallback)", draw=lambda: rockets(0), subdir="Ladder", family=False, exempt=BAY_EXEMPT, before=ART + "Missiles/missileGauge_0.png"),
+    dict(name="Sparrow_BarrelRoll", element="Core", act="Barrel Roll (vessel dynamic, right stick): three rolling Sparrows sliding sideways, two ghosts", draw=barrel_roll, subdir="Core",
+         exempt={"components": "three hulls and the path", "gap": "the real mesh", "specks": "the real mesh's fan tips", "thin": "the fan blades",
+                 "coverage": "Shombith 2026-11-24 picked the afterimage: two of the three hulls are ghosts by design"}),
     dict(name="Sparrow_PrismRounds", element="Space", act="stance: the cold spray in prism rounds", draw=prism_rounds, subdir="Modes", family=False,
          exempt={"coverage": "a line of rounds", "components": "five rounds", "specks": "seam slivers", "thin": "seams", "gap": "seams", "at40": "seams"}),
 ]

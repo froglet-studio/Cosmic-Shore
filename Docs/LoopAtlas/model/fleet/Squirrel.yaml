@@ -74,6 +74,22 @@ combos:
     - Overtake a rival at joust speed
   drivers: [joy, rival]
   feel: Threading the needle at full speed.
+  gene:
+    genome: Time
+    cue: [mass_ahead, gate_next, verb_ready]
+    dials:
+    - - ringLead
+      - distance ahead the Boost Ring is dropped
+      - 20
+      - 150
+      - u
+    - - skimLine
+      - how close to the mass the line is flown
+      - 1
+      - 10
+      - u
+    done: A gate is threaded within two seconds of a ring graze.
+    sight: SUNDIAL
 - name: The thief's lap
   t: [15, 45]
   is: Every pass along a rival's trail makes it yours and makes you faster.
@@ -86,4 +102,128 @@ combos:
     - Loop back along what is now your mass
   drivers: [make, joy]
   feel: Their wall becoming your road.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead]
+    dials:
+    - - stealLine
+      - how close to a rival trail the steal is flown
+      - 1
+      - 10
+      - u
+    - - loopBack
+      - seconds before looping back over the stolen mass
+      - 2
+      - 20
+      - s
+    done: Prisms stolen on the way out are skimmed again on the way back.
+    sight: ENSIGN
+- in: x
+  name: The joust
+  t: [5, 15]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Skim behind a rival for speed, then overtake above joust speed.
+  chain:
+  - - Time
+    - Skim behind a rival to build speed
+  - - Charge
+    - Overtake above joust speed
+  - ['', Their petals are yours]
+  drivers: [rival, joy]
+  feel: Passing them is taking from them.
+  gene:
+    genome: Charge
+    cue: [rival_ahead, bank_full]
+    dials:
+    - - joustMargin
+      - speed kept above the joust minimum before passing
+      - 0
+      - 30
+      - '%'
+    done: An overtake steals petals.
+    sight: BANDIT
+- in: x
+  name: Crystal denial
+  t: [6, 20]
+  src: 'Garrett, Docs/AI_SYSTEM/AI_PLAN.md 2026-11-02: a Time Squirrel with an omni-spotting pilot denies crystals'
+  is: Race a rival to the omni crystal, take it first, drop a ring on their line.
+  chain:
+  - - Time
+    - Skim toward the omni crystal a rival is going for
+  - [Time, Take it first]
+  - - Mass
+    - Drop a Boost Ring on their line
+  drivers: [rival, find]
+  feel: Getting there first.
+  gene:
+    genome: Time
+    cue: [omni_near, rival_near]
+    dials:
+    - - denyMargin
+      - seconds ahead of the rival needed to go for it
+      - 0
+      - 3
+      - s
+    - - omniDetour
+      - distance flown off the line for the crystal
+      - 0
+      - 250
+      - u
+    done: The omni crystal is taken before the rival reaches it.
+    sight: OPAL
+- in: x
+  name: Ring fence
+  t: [15, 45]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Boost Rings dropped across rival lines near the nucleus stand as danger mass for your side.
+  chain:
+  - [Time, Skim to the nucleus]
+  - - Mass
+    - Drop a Boost Ring across a rival's line
+  - [Space, Steal the trail round it]
+  drivers: [make, rival]
+  feel: A fence they have to fly round.
+  gene:
+    genome: Mass
+    cue: [own_mass_gap, rival_on_line]
+    dials:
+    - - fenceRadius
+      - distance from the nucleus the rings are dropped
+      - 20
+      - 300
+      - u
+    done: A rival hits a dropped ring, or flies round it, inside the claim.
+    sight: HORNET
+- in: x
+  name: Skimming into Crystal Joust into Steal
+  t: [8, 45]
+  src: 'Discovered 2026-11-21 by Tools/Build/gene_search.py (gene search (surrogate): 77% of the behaviour in an archive
+    cell at 93% of the best genome). Not flown by a person yet.'
+  is: 'A chain the AI search kept that no combo named: Skimming (Time), then Crystal Joust (Charge), then Steal (Space).'
+  chain:
+  - [Time, Skimming]
+  - [Charge, Crystal Joust]
+  - [Space, Steal]
+  drivers: [joy, mastery, rival]
+  feel: 'Not felt yet: fly it and name the moment, or drop it.'
+  gene:
+    genome: Time
+    cue: [gate_next]
+    dials:
+    - - handoff
+      - seconds from one verb's payoff to the next press
+      - 0.2
+      - 4.0
+      - s
+    - - commit
+      - share of the first verb spent before chaining
+      - 0.2
+      - 1.0
+      - fraction
+    - - reach
+      - distance to the cue at which the chain starts
+      - 20
+      - 400
+      - u
+    done: Steal lands within the handoff of the Skimming before it.
 doc: Docs/ElementalAbilitySystem/FLEET_MAPS.md

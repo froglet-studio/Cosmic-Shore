@@ -1,7 +1,8 @@
 # The Meerkat's arcade games (Sentry, Warren, Cave-in)
 
 Built 2026-11-15 from `Docs/ElementalLoop/GAME_KIT_ROSTER.md` rows 15-17 (Garrett: "make all the missing games you
-can"). The Meerkat already had its Time game (Burrow Run). These three give it one game per remaining element:
+can"). The Meerkat already had its Time game (Burrow Run then; Warpline alone since 2026-11-22, when Burrow Run moved to
+the Jewel Wasp). These three give it one game per remaining element:
 
 | Row | Element | Card | `GameModes` | Hint toast | Built on | Arena (read-only) | Doc |
 |---|---|---|---|---|---|---|---|

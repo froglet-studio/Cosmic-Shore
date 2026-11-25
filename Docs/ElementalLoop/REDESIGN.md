@@ -349,7 +349,7 @@ Shipped indexes are from 80 matches on the #2260 engine (ed4ae800f5). Results an
 | Rhino | 0.19 | x3.2, 0.31 | Its 3x3x0.5 plough blocks are flat; the lever barely moves its score | A Mass kit that lays volume as it ploughs (the plough's own blocks) |
 | Jacks | 0.07 | x16.6, 0.68 | The hull holds while the jacks herd; it lays almost nothing (0.06x) | Kit-limited: the herd and the net rhythm change nothing (seat thread); the jacks themselves need to lay or claim |
 | Goby | 0.02 | x1 (the lever does not act) | Before #2257 it was 0.52 and its AI spent 9 s of 103 in the nucleus. Since #2257's `aiHomeRadius` 600, its leash, anchored at its spawn, pins it in the nucleus (79 s a match) laying almost nothing | Anchor the leash to its own islands instead of its spawn (the Goby/Orca thread's proposal, trained in Den Builder and Riptide), then re-judge |
-| Swordfish | 0.66 | x2.5, 0.82 | Its VC is not mostly trail, so 2.5x gives about 10% | A Mass lever on its slice (the volume each cut leaves), not the trail |
+| Swordfish | 0.66 | x2.5, 0.82 | Its VC is not mostly trail, so 2.5x gives about 10% | **Done 2026-11-21**: its mass is its afterimages; afterimage volume x1.7 at rest gives 1.03 at Medium 3x3 (`SWORDFISH.md` § "Brood Rush") |
 | BrittleStar | 0.71 | x2.5, 0.87 | A 1x1x6 trail: 2.5x the volume is still a thin line | Its arms' lay (more prisms or a wider block), then re-judge |
 
 The Shrike (above) and the Thresher (in on its `massTrailScale`) are the Shrike / Wrasse seat thread's.

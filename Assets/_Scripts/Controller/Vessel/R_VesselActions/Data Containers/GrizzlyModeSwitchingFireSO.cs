@@ -6,7 +6,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Grizzly Fire (X / Q; the triggers are the trigger bombs) — composite dispatcher over the active weapon:
-    /// Explosives (charged cannon), Sniper, or Plasma Claw (Mass 5).
+    /// Explosives, Sniper, or Plasma Claw (Mass 5). Explosives' slot is EMPTY on the shipped asset
+    /// (2026-10-16): the bombs are the triggers, so X in Explosives mode fires nothing.
     ///
     /// Follows SparrowModeSwitchingFireSO's shared-asset discipline: SO assets are
     /// shared across every Grizzly, so the pressed-state is keyed per vessel. The
@@ -18,7 +19,7 @@ namespace CosmicShore.Gameplay
     public class GrizzlyModeSwitchingFireSO : ShipActionSO
     {
         [Header("Weapons")]
-        [SerializeField] ShipActionSO explosivesFire;   // GrizzlyChargedShotAction
+        [SerializeField] ShipActionSO explosivesFire;   // empty: Explosives is the trigger bombs (was GrizzlyChargedShotAction)
         [SerializeField] ShipActionSO sniperFire;       // GrizzlySniperShotAction
         [SerializeField] ShipActionSO flamethrowerFire; // GrizzlyFlamethrowerAction (Mass 5)
 

@@ -76,4 +76,95 @@ combos:
   - ['', On to the next cluster]
   drivers: [crew, mastery]
   feel: Closing the loop just in time.
+  gene:
+    genome: Mass
+    cue: [crew_ready, own_mass_gap]
+    dials:
+    - - motesPerLoop
+      - Mass motes gathered before the loop closes
+      - 1
+      - 10
+      - count
+    - - pureness
+      - share of a loop that must be one element before it closes
+      - 0.5
+      - 1.0
+      - fraction
+    done: A loop closes on one element and lays its cluster, with no fizzle.
+    sight: ANVIL
+- in: x
+  name: Saved boosts
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The kite lassos Time motes; the Grouper chains the saved boosts into the gate.
+  chain:
+  - - ''
+    - The kite lassos Time motes
+  - - Time
+    - The Grouper chains the saved boosts into the gate
+  drivers: [crew, joy]
+  feel: The kite fuels the run.
+  gene:
+    genome: Time
+    cue: [crew_ready, gate_next]
+    dials:
+    - - boostsBeforeSpend
+      - boosts saved before the Grouper spends them
+      - 1
+      - 5
+      - count
+    done: A gate is threaded on chained boosts.
+    sight: SUNDIAL
+- in: x
+  name: The ram
+  t: [8, 25]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The kite loops Charge motes, the hull rams a rival, and the crew grabs the loose petals.
+  chain:
+  - - ''
+    - The kite loops Charge motes
+  - - Charge
+    - 'Ram a rival: petals come loose'
+  - ['', Grab them]
+  drivers: [crew, rival]
+  feel: One loads, one hits.
+  gene:
+    genome: Charge
+    cue: [crew_ready, rival_near]
+    dials:
+    - - motesPerLoop
+      - Charge motes in the loop before the ram
+      - 1
+      - 8
+      - count
+    done: A charged ram knocks petals loose.
+    sight: BANDIT
+- in: x
+  name: Blastline
+  t: [8, 25]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: The kite loops Space motes over rival mass; the blast goes off where the loop closes.
+  chain:
+  - - ''
+    - The kite loops Space motes over rival mass
+  - - Space
+    - The blast where the loop closes
+  drivers: [crew, break]
+  feel: A lasso that explodes.
+  gene:
+    genome: Space
+    cue: [crew_ready, rival_mass_ahead]
+    dials:
+    - - loopSize
+      - how wide the loop is drawn
+      - 10
+      - 150
+      - u
+    - - motesPerLoop
+      - Space motes in the loop before it closes
+      - 1
+      - 10
+      - count
+    done: A blast destroys rival prisms and spares yours.
+    sight: MANGER
 doc: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md

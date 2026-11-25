@@ -40,6 +40,27 @@ namespace CosmicShore.Gameplay
             return Mathf.Clamp01(1f - (age - expandSeconds) / fadeSeconds);
         }
 
+        /// <summary>
+        /// The drawn wave's shape across its front: <paramref name="u"/> is how many wavelengths a point is BEHIND the
+        /// front (0 on it, negative ahead of it). A sine that rises sharply at the front and rings down over about three
+        /// trailing crests; nothing ahead of the front, nothing past four wavelengths. Mirrors <c>StoatRippleProfile</c> in
+        /// <c>StoatRipple.shader</c> - change both together.
+        /// </summary>
+        public static float Profile(float u)
+        {
+            if (u < -1.5f || u > 4f) return 0f;
+            float envelope = u < 0f ? Mathf.Exp(-6f * u * u) : Mathf.Exp(-0.45f * u * u);
+            return Mathf.Sin(2f * Mathf.PI * u) * envelope;
+        }
+
+        /// <summary>
+        /// How far the wave bends light at its front, radians: <paramref name="bend"/> while the front is inside
+        /// <paramref name="nearRadius"/>, then falling as nearRadius / front (a spreading wave thins as 1/r), × the
+        /// wave's <paramref name="strength"/> (<see cref="Strength"/>).
+        /// </summary>
+        public static float Amplitude(float bend, float front, float nearRadius, float strength) =>
+            Mathf.Max(0f, bend) * Mathf.Clamp01(strength) * Mathf.Min(1f, Mathf.Max(1e-3f, nearRadius) / Mathf.Max(1e-3f, front));
+
         /// <summary>True once the wave has nothing left to draw or do.</summary>
         public static bool Done(float age, float expandSeconds, float fadeSeconds) => age >= expandSeconds + Mathf.Max(0f, fadeSeconds);
 

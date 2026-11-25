@@ -167,6 +167,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             ClearKegs();
+            ClearRuins();
             _aiState.Clear();
             base.OnNetworkDespawn();
         }
@@ -176,6 +177,8 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearKegs();
+            ClearRuins();
+            LayRuins();
             _hintPosted = false;
             _bankShots = 0;
             _ramKeys = 0;
@@ -265,6 +268,7 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (_crown.Count > 0) BurstCrown();
+            TickRuins();
             if (_kegs.Count == 0) return;
             using var _ = s_kegMarker.Auto();
             SyncRamWatches(Time.time);

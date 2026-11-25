@@ -69,6 +69,19 @@ namespace CosmicShore.Gameplay
                  "into the hull. Half the resting 60-unit capsule.")]
         [Min(0f)] public float aiDustHover = 30f;
 
+        [Tooltip("Seconds between the server's samples of every pilot's position - the WAKE a raiding AI " +
+                 "follows. A painter's wake is the line it just flew, so a raider that flies along those samples " +
+                 "flies down the rival's paint with the dust hanging on the keys; the cell's densest opposing " +
+                 "voxel, which a 60-unit capsule mostly misses, is the fallback. 0 switches the wake off.")]
+        [Min(0f)] public float aiWakeSampleSeconds = 0f;
+
+        [Tooltip("Seconds of each pilot's wake the server keeps.")]
+        [Min(1f)] public float aiWakeMemorySeconds = 40f;
+
+        [Tooltip("A raider finds the wake sample nearest it and aims this many samples further along the " +
+                 "wake (toward the rival), so it flies down the line rather than circling one point.")]
+        [Min(1)] public int aiWakeLeadSamples = 3;
+
         [Tooltip("A painting AI flies a slow orbit of the cell at this radius (a fraction of the " +
                  "scatter shell), detouring for an elemental crystal within aiCrystalReach.")]
         [Range(0.1f, 1f)] public float aiPaintOrbitFraction = 0.6f;

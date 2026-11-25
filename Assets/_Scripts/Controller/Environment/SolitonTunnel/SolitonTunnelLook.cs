@@ -11,9 +11,12 @@ namespace CosmicShore.Gameplay
     /// into it inverts and magnifies (from outside); riding it, the walls stretch and stream toward the way out (inside). No
     /// bark, no trunk/root look, no spindles. Since 2026-11-20 (Yash: "the visual will be like a wormhole ... the enjoyment
     /// of creating a real wormhole and travelling through it"): a mouth shows the place round its other mouth
-    /// (<see cref="FarView"/>), flares as it forms (<see cref="FormFlare"/>); riding, the world outside smears into streaks
-    /// running to a clear, growing way ahead (<see cref="InsideStreak"/>, <see cref="InsideDim"/>), and leaving throws one
-    /// ripple (<see cref="ExitPop"/>). One copy per <see cref="SolitonTunnelConfigSO"/>. Drawn by
+    /// (<see cref="FarView"/>), flares as it forms (<see cref="FormFlare"/>); leaving throws one ripple
+    /// (<see cref="ExitPop"/>). Riding (Yash, 2026-11-22: "the view camera should give view of inside the worm hole path,
+    /// players should not be able to see outer world that time, it's like gliding through the inner surface of the
+    /// space-time hole, and exiting to the universe again"): the camera sees only the tube's own inner wall, a grid on bent
+    /// space that follows the tube's path (<see cref="InsideGrid"/> and the fields after it), the riders in it, and light
+    /// at the way out, which opens onto the universe as it nears. One copy per <see cref="SolitonTunnelConfigSO"/>. Drawn by
     /// <see cref="SolitonTunnelLensPass"/> with <c>SolitonTunnel.shader</c> in one full-screen pass.
     /// Every field: <c>Docs/Shaders/WORMHOLE_SHADERS.md</c> §16 and §17.
     /// </summary>
@@ -55,12 +58,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("How dark the throat's core reads (0 = clear; a hint makes the mouth read as a hole).")]
         [Range(0f, 1f)] public float MouthShadow;
 
-        [Header("Throat: space-time stretch (from inside)")]
-        [Tooltip("Riding it: the walls stretch out from where you are heading (0 = off). Keep low for comfort.")]
+        [Header("Throat: the inner wall's motion (from inside)")]
+        [Tooltip("Riding it: how strongly light ripples run along the inner wall (0 = a still wall). Scaled by Comfort.")]
         [Range(0f, 0.5f)] public float InsideStretch;
-        [Tooltip("...the warp streams toward the way out at this speed (per second; capped by Comfort's Max flow speed).")]
+        [Tooltip("...ripples per second (capped by Comfort's Max flow speed).")]
         [Range(0f, 2f)] public float InsideFlow;
-        [Tooltip("...and twists round the throat by this much (0 = straight).")]
+        [Tooltip("...and the wall's grid twists round the tube by this much as it runs ahead (0 = straight). Scaled by Comfort.")]
         [Range(0f, 0.5f)] public float InsideSwirl;
 
         [Header("A real wormhole (2026-11-20)")]
@@ -70,18 +73,29 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float FarView;
         [Tooltip("While the tube forms its mouths' rings flare by this much (0 = none), settling as it opens.")]
         [Range(0f, 3f)] public float FormFlare;
-        [Tooltip("Riding: the world outside the tube smears into streaks running to the way ahead (0 = off; the share of " +
-                 "the way to it each streak reaches). The way ahead itself stays clear. Scaled by Comfort.")]
-        [Range(0f, 0.9f)] public float InsideStreak;
-        [Tooltip("Riding: the world outside the tube dims by this much, in moving streaks (0 = as bright as outside).")]
-        [Range(0f, 0.8f)] public float InsideDim;
+        [Tooltip("Riding: how bright the grid on the tube's inner wall is (rings round it and lines along it; 0 = a bare " +
+                 "wall). The outer world is never drawn while riding, whatever this is.")]
+        [Range(0f, 1f)] public float InsideGrid;
+        [Tooltip("...the distance between the grid's rings along the tube (u). They stand still in the tube, so they rush " +
+                 "past as you ride: smaller reads as faster.")]
+        [Range(2f, 40f)] public float InsideGridSpacing;
+        [Tooltip("...how many lines run along the tube, round its wall.")]
+        [Range(4f, 48f)] public float InsideGridSpokes;
+        [Tooltip("Riding: the light of the way out, as a bright disk at the tube's end and on the wall near it (0 = none). " +
+                 "The disk clears onto the world as the way out nears.")]
+        [Range(0f, 1f)] public float InsideGlow;
+        [Tooltip("Riding: the wall fades into the dark over this distance ahead (u). Shorter is a deeper, darker tube.")]
+        [Range(20f, 600f)] public float InsideFog;
+        [Tooltip("Riding: a rider in the tube stays in sight inside a sphere of this radius round its hull (u). Too small " +
+                 "clips the hull's tail; too large lets the outer world show round it.")]
+        [Range(2f, 20f)] public float InsideHullRadius;
         [Tooltip("Leaving a tube throws one ripple out from the middle of the screen (0 = none). Scaled by Comfort.")]
         [Range(0f, 0.3f)] public float ExitPop;
 
         /// <summary>Anything to draw at <paramref name="intensity"/> (the comfort master): bending, or any light on the wall.</summary>
         public bool Visible(float intensity) =>
-            intensity > 0f && (Bend > 0f || Lens > 0f || MouthLens > 0f || InsideStretch > 0f || InsideStreak > 0f) ||
-            Rim > 0f || Glint > 0f || Glow > 0f || EinsteinRing > 0f || FarView > 0f || InsideDim > 0f;
+            intensity > 0f && (Bend > 0f || Lens > 0f || MouthLens > 0f) ||
+            Rim > 0f || Glint > 0f || Glow > 0f || EinsteinRing > 0f || FarView > 0f || InsideGrid > 0f || InsideGlow > 0f;
 
         /// <summary>A formed tunnel's look: the plain wormhole - the clear contour lens on its wall (bend 3°, glass 0.139),
         /// a strong gravitational lens at its flared mouths, and a gentle stretch streaming along the throat inside.</summary>
@@ -92,7 +106,9 @@ namespace CosmicShore.Gameplay
             Rim = 0.04f, RimTightness = 4f, Glint = 0.2f, Glow = 0.01f,
             MouthLens = 0.6f, MouthFlare = 2f, EinsteinRing = 0.25f, MouthShadow = 0.35f,
             InsideStretch = 0.12f, InsideFlow = 0.6f, InsideSwirl = 0.08f,
-            FarView = 0.9f, FormFlare = 1.5f, InsideStreak = 0.55f, InsideDim = 0.35f, ExitPop = 0.08f,
+            FarView = 0.9f, FormFlare = 1.5f, ExitPop = 0.08f,
+            InsideGrid = 0.6f, InsideGridSpacing = 10f, InsideGridSpokes = 16f, InsideGlow = 0.6f, InsideFog = 160f,
+            InsideHullRadius = 8f,
         };
 
         /// <summary>A Soliton Network channel's look: the same wormhole, its many mouths a little softer.</summary>
@@ -103,7 +119,9 @@ namespace CosmicShore.Gameplay
             Rim = 0.04f, RimTightness = 4f, Glint = 0.2f, Glow = 0.01f,
             MouthLens = 0.45f, MouthFlare = 1.8f, EinsteinRing = 0.2f, MouthShadow = 0.3f,
             InsideStretch = 0.1f, InsideFlow = 0.6f, InsideSwirl = 0.06f,
-            FarView = 0.75f, FormFlare = 1f, InsideStreak = 0.5f, InsideDim = 0.3f, ExitPop = 0.06f,
+            FarView = 0.75f, FormFlare = 1f, ExitPop = 0.06f,
+            InsideGrid = 0.6f, InsideGridSpacing = 8f, InsideGridSpokes = 12f, InsideGlow = 0.6f, InsideFog = 120f,
+            InsideHullRadius = 8f,
         };
     }
 

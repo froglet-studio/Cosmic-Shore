@@ -319,7 +319,7 @@ namespace CosmicShore.Gameplay
             float space = ElementalScaling.ReplicatedMultiplier(_shape.Owner, Element.Space,
                 atFull: cfg.SpaceStealRadiusMultiplierAtFull, minMul: cfg.MinSpaceStealRadiusMultiplier);
             float radius = cfg.StealRadius * _shape.MassMultiplier * space;
-            var abilities = _shape.Owner?.ElementalAbilityHandler;
+            var abilities = IsOwnerAlive ? _shape.Owner.ElementalAbilityHandler : null;   // a destroyed owner is not null to ?.
             bool takeShielded = abilities && abilities.IsUpgradeActive(Element.Space);
 
             // Every edge site lies within one diagonal pitch of the outermost ring.
@@ -540,7 +540,7 @@ namespace CosmicShore.Gameplay
         /// comes on.</summary>
         bool LockdownActive()
         {
-            var abilities = _shape.Owner?.ElementalAbilityHandler;
+            var abilities = IsOwnerAlive ? _shape.Owner.ElementalAbilityHandler : null;   // a destroyed owner is not null to ?.
             return abilities && abilities.IsUpgradeActive(Element.Mass);
         }
 

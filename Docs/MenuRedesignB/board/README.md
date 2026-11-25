@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41 to Rev 121, 306 boards on 15 tabs. The canvas opens on the tab `what-s-new`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-24 from canvas version `1795561163-fa75` of **Frogma**: Rev 41 to Rev 145, 457 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -199,6 +199,17 @@ Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
+#### Rev 127 - Avatar borders that sit on the domain halo: six animated rings
+
+- [`R127Compare.dc.html`](R127Compare.dc.html) - Rev 127 - today's square avatar over its round halo, then all six rings side by side in Jade, Ruby and Gold
+- [`R127A.dc.html`](R127A.dc.html) - Rev 127 A - Breath: one ring on the avatar's edge that breathes with the halo (recommended) - interactive
+- [`R127B.dc.html`](R127B.dc.html) - Rev 127 B - Orbit: a hairline ring with one bright arc circling it - interactive
+- [`R127C.dc.html`](R127C.dc.html) - Rev 127 C - Dial: two counter-turning segmented rings - interactive
+- [`R127D.dc.html`](R127D.dc.html) - Rev 127 D - Ripple: a ring that sends a wave out to the halo's edge - interactive
+- [`R127E.dc.html`](R127E.dc.html) - Rev 127 E - Current: a turning gradient ring with its own glow - interactive
+- [`R127F.dc.html`](R127F.dc.html) - Rev 127 F - Corona: an eclipse rim, a crescent of light that slowly turns - interactive
+- [`R127Notes.dc.html`](R127Notes.dc.html) - Rev 127 - notes: the shared geometry, what each option changes in Unity, the pick
+
 #### Rev 112 - Colour sets for a growing catalog: a world preview, one scrolling list, Free and Premium apart, no empty middle
 
 - [`R112Compare.dc.html`](R112Compare.dc.html) - Rev 112 - the four layouts side by side, and how a Free and a Premium row read in each
@@ -329,6 +340,31 @@ Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41
 
 ### Tab: Ark  (`ark`)
 
+#### Rev 141 - The Squads tab started again: the vessels in the room and on screen, press the vessel itself, a slim foot
+
+- `R141Compare.dc.html` (not copied yet) - Rev 141 - one seat picked in A, B and C beside the build
+- `R141A.dc.html` (not copied yet) - Rev 141 A - Line abreast: the three hulls stand side by side across the floor; press one and the view walks up to it (recommended) - interactive
+- `R141B.dc.html` (not copied yet) - Rev 141 B - The holo table: the vessels as holograms over one table in the middle of the room - interactive
+- `R141C.dc.html` (not copied yet) - Rev 141 C - One bay: one vessel at a time, big on the centre pad, the other two seats beside it - interactive
+- `R141Notes.dc.html` (not copied yet) - Rev 141 - notes: what was broken, what each option changes, the recommendation
+
+#### Rev 140 - The Artifacts tab: touch the artifacts in the room, four ways
+
+- `R140Compare.dc.html` (not copied yet) - Rev 140 - Compare: what happens when you touch Hydra, in each option
+- `R140A.dc.html` (not copied yet) - Rev 140 A - Lit where it stands: touch it, its pedestal lights, the words hang beside it - interactive
+- `R140B.dc.html` (not copied yet) - Rev 140 B - Step up to it: touch it and the view walks in to its pedestal - interactive
+- `R140C.dc.html` (not copied yet) - Rev 140 C - Written on the floor: the words lie on the deck in front of it - interactive
+- `R140D.dc.html` (not copied yet) - Rev 140 D - The column shows it: touch it and the light column plays what it does (recommended) - interactive
+- `R140Notes.dc.html` (not copied yet) - Rev 140 - Notes: what changes, what stays, what each costs to build
+
+#### Rev 139 - The Converter redrawn: the pier stays, the UI starts again, and CONVERT plays at once
+
+- `R139Compare.dc.html` (not copied yet) - Rev 139 - the convert moment of A, B and C side by side, frame by frame
+- `R139A.dc.html` (not copied yet) - Rev 139 A - Light paths: the five readings in one quiet line at the foot; on CONVERT each crystal's path lights up to the pad - interactive
+- `R139B.dc.html` (not copied yet) - Rev 139 B - Glass orb: the converter as a small glass sphere at the foot, the four inside fuse into the omni - interactive
+- `R139C.dc.html` (not copied yet) - Rev 139 C - The pad is the button: press the pier's own ring; the counts are one line at the foot (recommended) - interactive
+- `R139Notes.dc.html` (not copied yet) - Rev 139 - notes: why nothing seemed to happen on CONVERT, what each option changes in the build
+
 #### Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models
 
 - `R110B.dc.html` (not copied yet) - Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive
@@ -405,7 +441,89 @@ Copied on 2026-11-21 from canvas version `1795251681-3892` of **Frogma**: Rev 41
 
 ### Tab: Voyages  (`voyages`)
 
-No boards yet.
+#### Rev 138 - Voyages: the final app shell, every screen and what you press
+
+- `R138Flow.dc.html` (not copied yet) - Rev 138 Flow - Flow: every screen, every press
+- `R138Board.dc.html` (not copied yet) - Rev 138 Board - The quay, five jobs
+- `R138Full.dc.html` (not copied yet) - Rev 138 Full - HyperSea full screen
+- `R138Seats.dc.html` (not copied yet) - Rev 138 Seats - Your Ark
+- `R138Vessels.dc.html` (not copied yet) - Rev 138 Vessels - Vessels E with hangar previews
+- `R138Pilots.dc.html` (not copied yet) - Rev 138 Pilots - Pilots
+- `R138Party.dc.html` (not copied yet) - Rev 138 Party - Party
+- `R138Notes.dc.html` (not copied yet) - Rev 138 - notes: the final shell
+
+#### Rev 137 - Voyages: rival Arks and runaway crews, and how you beat them
+
+- `R137Chart.dc.html` (not copied yet) - Rev 137 Chart - Pause: a rival Ark and a runaway crew
+- `R137ArkMeet.dc.html` (not copied yet) - Rev 137 ArkMeet - A rival Ark arrives
+- `R137ArkOpen.dc.html` (not copied yet) - Rev 137 ArkOpen - Escorts silenced, her hull open
+- `R137ArkBreak.dc.html` (not copied yet) - Rev 137 ArkBreak - Her hold bursts
+- `R137Runaway.dc.html` (not copied yet) - Rev 137 Runaway - A runaway crew raids
+- `R137Rout.dc.html` (not copied yet) - Rev 137 Rout - They break and run
+- `R137Fall.dc.html` (not copied yet) - Rev 137 Fall - The end board: who you beat
+- `R137Notes.dc.html` (not copied yet) - Rev 137 - notes: rivals
+
+#### Rev 136 - Voyages: Vessels, a section of Your Ark in Rev 134's look (two ways)
+
+- `R136EVessels.dc.html` (not copied yet) - Rev 136 EVessels - E One class on the floor
+- `R136ESeat.dc.html` (not copied yet) - Rev 136 ESeat - E opened from Seat 3
+- `R136FVessels.dc.html` (not copied yet) - Rev 136 FVessels - F The wanted three on the floor
+- `R136FSeat.dc.html` (not copied yet) - Rev 136 FSeat - F opened from Seat 3
+- `R136Notes.dc.html` (not copied yet) - Rev 136 - notes: Vessels in Rev 134's look
+
+#### Rev 135 - Voyages: the full-screen HyperSea stays, and the vessel classes screen
+
+- `R135BoardFull.dc.html` (not copied yet) - Rev 135 BoardFull - The quay board with its Full screen control kept
+- `R135FullScreen.dc.html` (not copied yet) - Rev 135 FullScreen - The HyperSea full screen: zoom inside the map, back from full screen, the givers on the right, the voyage along the foot
+- `R135ClassesA.dc.html` (not copied yet) - Rev 135 ClassesA - Classes A: the fleet by class, how each class fares in every voyage
+- `R135ClassesB.dc.html` (not copied yet) - Rev 135 ClassesB - Classes B: this voyage's shelf, every vessel by how well it fits (recommended)
+- `R135ClassesPick.dc.html` (not copied yet) - Rev 135 ClassesPick - Classes B in the seat picker: swapping a hull, fit and pay change live
+- `R135Notes.dc.html` (not copied yet) - Rev 135 - notes: the classes screen, effectiveness and where it opens
+
+#### Rev 134 - The picked Milestone 2 Voyages UI on every screen and state (Board B, Seats A+B, Pause A, Vote B, Awards A), and how the world reads
+
+- `R134Board.dc.html` (not copied yet) - Rev 134 Board - The quay: the givers ask, your crew answers
+- `R134BoardRefuse.dc.html` (not copied yet) - Rev 134 BoardRefuse - A pilot refuses the job
+- `R134Seats.dc.html` (not copied yet) - Rev 134 Seats - Your Ark: A's line-up, B's pilots speaking
+- `R134SeatsRefuse.dc.html` (not copied yet) - Rev 134 SeatsRefuse - A refusing pilot holds Set sail
+- `R134Pilots.dc.html` (not copied yet) - Rev 134 Pilots - The pilot picker: mood for this job, rank
+- `R134Party.dc.html` (not copied yet) - Rev 134 Party - A friend still choosing
+- `R134Intro.dc.html` (not copied yet) - Rev 134 Intro - The intro card: the voyage's name
+- `R134Crossing.dc.html` (not copied yet) - Rev 134 Crossing - Through a membrane: the cell named
+- `R134Event.dc.html` (not copied yet) - Rev 134 Event - An event lights next door
+- `R134Vote.dc.html` (not copied yet) - Rev 134 Vote - The vote: the pilot who saw it asks
+- `R134VoteTie.dc.html` (not copied yet) - Rev 134 VoteTie - A tie: the host's vote wins
+- `R134VoteSolo.dc.html` (not copied yet) - Rev 134 VoteSolo - Solo: your call
+- `R134Detour.dc.html` (not copied yet) - Rev 134 Detour - The detour: one cell over
+- `R134Rival.dc.html` (not copied yet) - Rev 134 Rival - A rival crew arrives, racing
+- `R134Hostile.dc.html` (not copied yet) - Rev 134 Hostile - A rival attacks the Ark
+- `R134Joins.dc.html` (not copied yet) - Rev 134 Joins - A friend joins at the next cell
+- `R134Pause.dc.html` (not copied yet) - Rev 134 Pause - Pause: the chart on your lane
+- `R134Dock.dc.html` (not copied yet) - Rev 134 Dock - Docking: the hold banks
+- `R134Awards.dc.html` (not copied yet) - Rev 134 Awards - The end board: one award per seat
+- `R134Lost.dc.html` (not copied yet) - Rev 134 Lost - The Ark lost
+- `R134WorldEvents.dc.html` (not copied yet) - Rev 134 WorldEvents - The world: the five events next door
+- `R134WorldSea.dc.html` (not copied yet) - Rev 134 WorldSea - The world: zones, cells, danger
+- `R134Notes.dc.html` (not copied yet) - Rev 134 - notes: the picked mix on every screen
+
+#### Rev 133 - Milestone 2 Voyages UI, three ways: A The Chart (recommended), B The Quay, C The Ledger - the job board, seats, pause map, detour vote, role awards
+
+- `R133ABoard.dc.html` (not copied yet) - Rev 133 ABoard - The Chart: jobs as giver pins on the HyperSea (recommended)
+- `R133ASeats.dc.html` (not copied yet) - Rev 133 ASeats - The Chart: seats with class, mood and rank
+- `R133APause.dc.html` (not copied yet) - Rev 133 APause - The Chart: pause is the chart on your lane
+- `R133AVote.dc.html` (not copied yet) - Rev 133 AVote - The Chart: the detour vote
+- `R133AAwards.dc.html` (not copied yet) - Rev 133 AAwards - The Chart: role awards
+- `R133BBoard.dc.html` (not copied yet) - Rev 133 BBoard - The Quay: the givers on the quay
+- `R133BSeats.dc.html` (not copied yet) - Rev 133 BSeats - The Quay: pilot cards
+- `R133BPause.dc.html` (not copied yet) - Rev 133 BPause - The Quay: the lane as a column
+- `R133BVote.dc.html` (not copied yet) - Rev 133 BVote - The Quay: the pilot asks
+- `R133BAwards.dc.html` (not copied yet) - Rev 133 BAwards - The Quay: role awards
+- `R133CBoard.dc.html` (not copied yet) - Rev 133 CBoard - The Ledger: the job list
+- `R133CSeats.dc.html` (not copied yet) - Rev 133 CSeats - The Ledger: seats as rows
+- `R133CPause.dc.html` (not copied yet) - Rev 133 CPause - The Ledger: the course strip
+- `R133CVote.dc.html` (not copied yet) - Rev 133 CVote - The Ledger: the vote in the chip
+- `R133CAwards.dc.html` (not copied yet) - Rev 133 CAwards - The Ledger: role awards
+- `R133Notes.dc.html` (not copied yet) - Rev 133 - notes: what each direction answers
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
@@ -525,5 +643,108 @@ No boards yet.
 - [`R121D.dc.html`](R121D.dc.html) - Rev 121 D - Card: a small card slides in over Home and opens into the window - interactive
 - [`R121Settings.dc.html`](R121Settings.dc.html) - Rev 121 Settings - Settings: the What's new row under Other opens the same window - interactive
 - [`R121Notes.dc.html`](R121Notes.dc.html) - Rev 121 - notes: what each option does, where it opens from, what the build needs
+
+### Tab: Frogma Website  (`frogma-website`)
+
+#### Rev 126: calmer, made of the HyperSea - sky, cells, galaxy, flora and fauna; the galaxy map on Voyages; Tumult's storm hero
+
+- `R126A.dc.html` (not copied yet) - Rev 126 A - Home - interactive
+- `R126B.dc.html` (not copied yet) - Rev 126 B - Vessels - interactive
+- `R126C.dc.html` (not copied yet) - Rev 126 C - Arcade - interactive
+- `R126D.dc.html` (not copied yet) - Rev 126 D - Arena - interactive
+- `R126E.dc.html` (not copied yet) - Rev 126 E - Voyages - interactive
+- `R126F.dc.html` (not copied yet) - Rev 126 F - Pilots - interactive
+- `R126G.dc.html` (not copied yet) - Rev 126 G - Studio - interactive
+- `R126Notes.dc.html` (not copied yet) - Rev 126 notes
+
+#### Rev 125: E as a site of pages, with the Fleet Codex, the Pilot Codex and a moving background
+
+- `R125A.dc.html` (not copied yet) - Rev 125 A - Home: hero, story, four ways to play, fleet teaser, Press Start, get the game, latest news - interactive
+- `R125B.dc.html` (not copied yet) - Rev 125 B - Vessels: the racing lane; every card and the button open the Fleet Codex full screen - interactive
+- `R125C.dc.html` (not copied yet) - Rev 125 C - Arcade: all 49 arcade games in the Fleet Codex look, filtered and sorted by element - interactive
+- `R125D.dc.html` (not copied yet) - Rev 125 D - Arena: its own page, the four arena games and how a match works - interactive
+- `R125E.dc.html` (not copied yet) - Rev 125 E - Voyages: the story of the HyperSea, the squad and one Ark (in development) - interactive
+- `R125F.dc.html` (not copied yet) - Rev 125 F - Pilots: the Pilot Codex, all 18 callsigns filtered by what they see - interactive
+- `R125G.dc.html` (not copied yet) - Rev 125 G - Studio: blog, the team and contact - interactive
+- `R125Notes.dc.html` (not copied yet) - Rev 125 - notes: the seven pages, Tumult, the moving background and how the codex stays current
+
+#### Frogma Website
+
+- `R123H.dc.html` (not copied yet) - Rev 123 H - Arcade Poster: the one Shombith picked to grow from (2026-11-22) - interactive
+
+### Tab: Game Cards  (`game-cards`)
+
+#### Rev 132 - Real frames with the vessel acting
+
+- `R132Compare.dc.html` (not copied yet) - Rev 132 - Compare
+- `R132M1.dc.html` (not copied yet) - Rev 132 M1 - M1 Frame + Light trail - interactive
+- `R132M2.dc.html` (not copied yet) - Rev 132 M2 - M2 Frame + Hero shot - interactive
+- `R132M3.dc.html` (not copied yet) - Rev 132 M3 - M3 Frame + Diorama - interactive
+- `R132M4.dc.html` (not copied yet) - Rev 132 M4 - M4 Frame + Chase cam - interactive
+- `R132Notes.dc.html` (not copied yet) - Rev 132 - notes: what each option changes, what is shared, what differs from the build
+
+#### Rev 131 - Symbolic, three new ways
+
+- `R131Compare.dc.html` (not copied yet) - Rev 131 - Compare
+- `R131Y5.dc.html` (not copied yet) - Rev 131 Y5 - Y5 Light trail - interactive
+- `R131Y6.dc.html` (not copied yet) - Rev 131 Y6 - Y6 Chase cam - interactive
+- `R131Y7.dc.html` (not copied yet) - Rev 131 Y7 - Y7 Hero shot - interactive
+- `R131Notes.dc.html` (not copied yet) - Rev 131 - notes: what each option changes, what is shared, what differs from the build
+
+#### Rev 130 - The card's picture, eight more ways: real frames and signs of the play; the short line
+
+- `R130Compare.dc.html` (not copied yet) - Rev 130 - Compare
+- `R130S1.dc.html` (not copied yet) - Rev 130 S1 - S1 Frame - interactive
+- `R130S2.dc.html` (not copied yet) - Rev 130 S2 - S2 Night grade - interactive
+- `R130S3.dc.html` (not copied yet) - Rev 130 S3 - S3 Reel - interactive
+- `R130S4.dc.html` (not copied yet) - Rev 130 S4 - S4 Window - interactive
+- `R130Y1.dc.html` (not copied yet) - Rev 130 Y1 - Y1 Pictogram - interactive
+- `R130Y2.dc.html` (not copied yet) - Rev 130 Y2 - Y2 Playbook - interactive
+- `R130Y3.dc.html` (not copied yet) - Rev 130 Y3 - Y3 Diorama - interactive
+- `R130Y4.dc.html` (not copied yet) - Rev 130 Y4 - Y4 Crest - interactive
+- `R130Notes.dc.html` (not copied yet) - Rev 130 - Notes
+
+#### Rev 129 - The Poster card in our font; Skim Race's picture made to look like the cell
+
+- [`R129Compare.dc.html`](R129Compare.dc.html) - Rev 129 - Compare: the Poster card in our font, Skim Race in four pictures, at rest and hovered
+- [`R129Row.dc.html`](R129Row.dc.html) - Rev 129 Row - Row: the Arcade with Skim Race inside the cell, and every state - interactive
+- [`R129Notes.dc.html`](R129Notes.dc.html) - Rev 129 - notes: why the pictures miss the cell, the touch-ups, what a pick changes
+
+#### Rev 128 - Game cards, six ways: Skim Race's arcade card beside the card we ship - look, motion and hover, light on performance
+
+- [`R128Compare.dc.html`](R128Compare.dc.html) - Rev 128 - Compare: the shipped card and the six new ones side by side, hover each
+- [`R128A.dc.html`](R128A.dc.html) - Rev 128 A - Depth: the picture in three planes that tilt with the pointer - interactive
+- [`R128B.dc.html`](R128B.dc.html) - Rev 128 B - Racing line: a light runs the course through the rings; on hover the Squirrel flies it (recommended) - interactive
+- [`R128C.dc.html`](R128C.dc.html) - Rev 128 C - Hero hull: the Squirrel breaks out of the frame and surges on hover - interactive
+- [`R128D.dc.html`](R128D.dc.html) - Rev 128 D - Silver foil: a collectible card, foil that catches the light as it tilts - interactive
+- [`R128E.dc.html`](R128E.dc.html) - Rev 128 E - Poster: the picture full bleed under a big title; the card slides open on hover - interactive
+- [`R128F.dc.html`](R128F.dc.html) - Rev 128 F - Live loop: a still at rest, the game playing in the card on hover - interactive
+- [`R128Notes.dc.html`](R128Notes.dc.html) - Rev 128 - notes: what each one moves, what it costs in Unity, the recommendation
+
+### Tab: Toy Box  (`toy-box`)
+
+#### Rev 144 G, picked: the variation panel and Today's activity, three ways
+
+- [`R145H.dc.html`](R145H.dc.html) - Rev 145 H - Shelf tiles in Configure; Today as a banner - interactive
+- [`R145I.dc.html`](R145I.dc.html) - Rev 145 I - Slide-open list in Configure; Today with a clock ring - interactive
+- [`R145J.dc.html`](R145J.dc.html) - Rev 145 J - Pedestal and chips in Configure; Today as a live strip - interactive
+
+#### Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs: flat, and with depth
+
+- [`R144F.dc.html`](R144F.dc.html) - Rev 144 F - the 2D toy glyphs, flat as drawn - interactive
+- [`R144G.dc.html`](R144G.dc.html) - Rev 144 G - the same 2D glyphs baked with depth: extruded, bevelled, tilting on hover - interactive
+
+#### Rev 143 - The Toy Box mix: D's lens cards with A's Configure, on the menu's gradient and sea lines
+
+- [`R143E.dc.html`](R143E.dc.html) - Rev 143 E - D's Toy Box, A's Configure inside, gradient and sea lines behind, dark glass cards - interactive
+
+#### Rev 142 - The Toy Box with motion: open, switch, spawn, and Navigate into the preview, four ways
+
+- [`R142Compare.dc.html`](R142Compare.dc.html) - Rev 142 - the toy card four ways, the same toy, at rest and pointed at
+- [`R142A.dc.html`](R142A.dc.html) - Rev 142 A - Portal: tall cards dealt in a row; the card grows into the preview; you fly through the toy's ring - interactive
+- [`R142B.dc.html`](R142B.dc.html) - Rev 142 B - Orbit: the toys on a ring around you; the card flips to Configure; warp, and a vessel built from prisms - interactive
+- [`R142C.dc.html`](R142C.dc.html) - Rev 142 C - Slide open: strips that slide open; the window splits into slats as you leave - interactive
+- [`R142D.dc.html`](R142D.dc.html) - Rev 142 D - Lens: the lens irises into a round preview with a dial; you dive through it and rise out of a ripple (recommended) - interactive
+- [`R142Notes.dc.html`](R142Notes.dc.html) - Rev 142 - notes: what was asked, the four, and what each costs in Unity
 
 <!-- frogma.py readme: end -->

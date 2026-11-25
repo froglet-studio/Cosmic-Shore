@@ -1,0 +1,35 @@
+{
+  "id": "2026-11-24-risky-merge-pr-2330-tune-swordfish-after-231d2d",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-24T23:27:32+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2330 (tune(swordfish): afterimage volume x1.7 at rest, its Brood Rush Mass lever) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordAfterimageConfig.asset; a swim lane someone else occupies (approvals.py check exit 2): Palisade, Swordfish",
+  "branch": "ship-afterimage",
+  "pr": 2330,
+  "commit": "90c7f5450",
+  "paths": [
+    "Assets/_SO_Assets/Games/ArcadeGamePalisade.asset",
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordAfterimageConfig.asset",
+    "Assets/_Scripts/Controller/Arcade/PALISADE.md",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SwordfishSwordAfterimageConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Tools/Build/author_palisade_assets.py"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordAfterimageConfig.asset"
+    },
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Palisade, Swordfish"
+    }
+  ]
+}

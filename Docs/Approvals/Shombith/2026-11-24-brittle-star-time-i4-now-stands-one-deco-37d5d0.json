@@ -1,0 +1,25 @@
+{
+  "id": "2026-11-24-brittle-star-time-i4-now-stands-one-deco-37d5d0",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-24T02:11:24+00:00",
+  "area": "Brittle Star Time",
+  "summary": "Brittle Star Time I4 now stands one decorative garden ruin on the return straight (Spearline's ruins generator, called with this mode's flown line); the kit, course, coach and let-go gates are unchanged",
+  "why": "Yash asked every Time game for the environment update Spearline got (ruins at I4)",
+  "branch": "Ys-bleeding-edge",
+  "commit": "f2e457b57",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeController.Ruins.cs",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeController.cs",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeRuins.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "BrittleStar"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "2"
+  }
+}
