@@ -9074,3 +9074,101 @@ Arena card changes at once and `--check` holds it; the Poster card goes into the
   the board's intensity bars are not built (what they count is undecided); the hull is the square lit icon, not the
   board's side view. **The Arena card** (560 tall, eyebrow, tagline, domains, hull row) keeps its layout and gets the new
   picture; the Poster was drawn for the Arcade grid card.
+
+## 235. Rev 142 mockups: the Toy Box with motion, open, switch, spawn and Navigate into the preview, four ways (2026-11-24, awaiting a pick)
+
+**Asked (Shombith, 2026-11-24):** "I want to redesign the toybox UI in a more innovative way, spawning or switching or
+navigating should have aniamtions and the whole cards (bg is good) orientation inside each main card and the preview
+screen with a navigate animation which takes you inside the preview screen and spawns you on a cool way. Create 4
+different UI variations for this".
+
+**On the canvas:** a new tab, **Toy Box** (`toy-box`), round "Rev 142 - The Toy Box with motion: open, switch, spawn,
+and Navigate into the preview, four ways". Copies in `Docs/MenuRedesignB/board/R142*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r142_toybox.py <root> 142`. Each option board is the whole flow and playable: the Toy Box
+window, open a toy, pick a variation (the switch animation), its verb (the spawn animation in the preview), NAVIGATE
+(the dive into the preview), and the world where your vessel arrives. "Board: start again" returns to the Toy Box.
+Kept in all four: the card background (navy, the sea lines, the codex portrait), the seven toys and their words,
+Toy configure's variations and its two actions.
+
+- **Compare**: the Spawn Matrix card four ways, at rest and pointed at, and a table of the five moments per option.
+- **A Portal**: tall cards dealt in a row; pointing lifts a card and slides its verb up; open grows the card into the
+  preview on the left; switch is a film strip with a light sweep; the verb is two rings and a pop; Navigate flies you
+  through the toy's ring and your vessel streaks in from the horizon.
+- **B Orbit**: the toys on a 3D ring around you, LT / RT turns it, only the facing card has words (the name up its
+  spine); open flips the card; switch turns the preview like a cube; the verb builds the thing from prisms; Navigate
+  is a warp and your vessel is built from prisms.
+- **C Slide open**: seven strips with their names up the spine, the pointed one slides open (Rev 117's "cards that
+  slide open"); open widens the strip into the window; a diagonal wipe; five petals bloom on the verb; the window
+  splits into slats as you leave and your vessel drops in on a trail.
+- **D Lens (recommended)**: each card is a round lens onto the cell with the toy inside; open irises the lens into a
+  big round preview with the variations on a dial; switching blinks the lens; the verb ripples; Navigate grows the
+  lens past the screen through a tunnel of rings and your vessel rises out of a point on a ripple. Recommended because
+  it is the one where "inside the preview" is literal (the same circle carries you from card to world) and its ripple
+  matches the avatar ring picked in Rev 127.
+- **Notes**: the ask, the four, and what each costs in Unity.
+
+**Differs from the build:** today the Toy Box (17.3, Rev 18 A in section 72) is a four-column grid of cards (portrait
+well over an opaque body) that pop in, and Toy configure (17.4) opens with its panels rising; switching a variation,
+the verb and NAVIGATE are cuts with a toast, and NAVIGATE closes the window and flies the vessel there. A pick changes
+`author_menu_toybox.py` (the card's layout and its hover), `author_menu_toyconfigure.py` (the preview's shape and the
+variation layout), and adds the open / switch / spawn tweens and the Navigate hand-over from `ToyPreviewCamera` to the
+gameplay camera with an arrival effect at the station. Not checked in the board: the gameplay camera blend and the
+vessel's arrival effect are faked with the in-game cell frame; only the Unity editor can judge them.
+
+### 235.1 Rev 143: the mix, D's Toy Box with A's Configure, on the gradient and sea lines (2026-11-24, awaiting board approval)
+
+**Asked (Shombith, on Rev 142):** "I think I like the main design of toy box. I mean the first UI ... when I click,
+let's say vessel changer, and then that UI comes, I don't like that. I think rather in that place you can put the A UI
+for the inside views ... it's too blue, bro. There is no gradient behind. There's no sea lines. There's nothing."
+
+Read as: keep D's Toy Box screen (the lens cards), replace D's round Configure with A's (preview on the left, the
+variations on the right, A's film-strip switch, ring spawn, and A's Navigate through the toy's ring). Rev 142 laid a
+flat 95 % navy window over the menu backdrop, hiding its gradient and sea lines; Rev 143 draws them over the window and
+makes the cards and variation tiles dark glass instead of solid navy.
+
+**On the canvas:** Toy Box tab, "Rev 143 - The Toy Box mix" (one interactive board, `R143E`). Generator
+`Docs/MenuRedesignB/rounds/r143_toybox_mix.py <root> 143` (reuses `r142_toybox.py`).
+
+### 235.2 Rev 144: the mix with the 2D toy glyphs, flat and with depth (2026-11-24, G picked)
+
+**Asked (Shombith, on Rev 143):** "I want the 2D icons they had which garrett added not these 3D icons", then "If you
+can make those 2D icons with a different variation to give them a 3D look you can try".
+
+The glyphs are the seven drawings of `Tools/Build/icon_kit/toy_portraits.py` (the white glyphs that teach what flying
+through the toy does, `Docs/CODEX.md` section 4, sheet `Docs/Icons/sheets/toybox.png`), rendered at 512 px for the
+board. Rev 142 / 143 used the older 3D ring emblems from Item 8's board.
+
+**On the canvas:** Toy Box tab, "Rev 144 - The Toy Box mix with Garrett's 2D toy glyphs". `R144F`: the glyphs flat,
+as drawn. `R144G`: the same glyphs baked with depth (an extrusion down and right in the slate shades, a bevel lit from
+the top left on the white face, a soft contact shadow) that tilt in perspective on hover. Everything else is Rev 143.
+Generator `Docs/MenuRedesignB/rounds/r144_toybox_glyphs.py <root> 144`. If G is picked, the depth bake becomes a second
+sprite per toy written by the icon kit beside the flat one; the flat glyph stays the codex's.
+
+Note: `toy_portraits.py` does not write today: its Spawn Matrix glyph fails the `gap` gate, and no `tool_wander.png`
+exists on disk (the Wander codex page still shows the old emblem). Found while rendering this round; not fixed here.
+
+### 235.3 Rev 145: the variation panel and Today's activity, three ways (2026-11-24, H picked and built)
+
+**Asked (Shombith, on Rev 144):** G picked, then on the Configure variation tiles "for this layout for the cards I want
+you to change that. Make this cool too", and on the Toy Box header "I liked the top place where the todays card use to
+show up big, can you do some variation here as well".
+
+**On the canvas:** Toy Box tab, Rev 145. Each board is G (depth glyphs) with one variation-panel style and one Today
+style; the two halves can be mixed.
+- `R145H`: Shelf, a 3-column grid of glass tiles, each render standing on a floor glow; Today as a wide banner (world
+  behind, a light sweep, the toy's creature in a lens, the lime Try it +10).
+- `R145I`: Slide-open, a list of slim rows where the chosen row opens and its render flies in; Today with a clock ring
+  for the day left and a turning crystal for the +10.
+- `R145J`: Pedestal, the chosen variation large on a pedestal above a row of round chips; Today as a live strip the
+  creature swims across.
+The Toy Box grid is scaled to 0.84 under the taller Today card. Generator
+`Docs/MenuRedesignB/rounds/r145_toy_variations.py <root> 145`.
+
+**Picked (Shombith, 2026-11-24):** "Let's go with H. Build it. H."
+
+**Built (2026-11-25):** spec `Docs/UI/specs/toybox-rev145h.md`, through `author_menu_toybox.py` (ToyCard, ToyboxView) and
+`author_menu_toyconfigure.py` (ToyVariantTile, ToyConfigureView, Menu_Main's `dive` field). New kit pieces:
+`KitGlyphDepth` (Rev 144 G's depth drawn at run time from the slate tokens, so the codex glyph stays the one sprite),
+`KitCenteredGrid` (four over three, centred) and `KitDive` (Navigate grows the live preview to the full window before the
+hand-off). Differs: the lens and banner show the kit sea, not a world frame; Shuffle is a button beside Back with its
+line; the Today lens is the toy's glyph. Offline render beside the board: `Docs/Look/toybox-rev145h_2026-11-25.jpg`.
