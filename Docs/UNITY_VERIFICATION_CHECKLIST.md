@@ -27274,8 +27274,12 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
       test seats three teams and its host seat flies the stock autopilot at 31-47 u/s, not the mode's AI; it is
       the hull that gets struck. The duelists flew as in the judge. `RIPOSTE.md` section 5.
 - [ ] A 2v2 match of four mode AIs in the editor (the smoke test cannot seat one), timed against the judge.
-- [ ] **The Lists, Riposte's own arena (2026-11-25, `RIPOSTE.md` section 4; nothing below was run in Unity).** The
-      project compiles with `SpawnableRiposteYard` and `RiposteYard`, and `RiposteYardTests` pass (10 tests).
+- [x] **The Lists, Riposte's own arena (2026-11-25, `RIPOSTE.md` section 4).** The open editor (6000.3.17f1) compiled
+      the project with `SpawnableRiposteYard`, `RiposteYard` and `RiposteLanes` (recompile up to date, no errors, the
+      types loaded).
+- [ ] `RiposteYardTests` (10) and `RiposteLanesTests` (7) pass in the editor's test runner. Tried 2026-11-25: the
+      run aborted because the editor was in Play mode when the runner restored its scene, and the editor stopped
+      answering commands afterwards. They pass headless (`riposte_harness --self-test`).
 - [ ] Each of the four `SpawnableRiposteYard` prefabs lays the census's prism count: 480 / 1,110 / 2,090 / 3,410.
 - [ ] Riposte I1-I4 load their own cells: straight empty lanes run from the centre clearing to a refuel clearing,
       rails of short pickets line each lane, gates stand in the lanes from I2, red tips line the lane walls from
