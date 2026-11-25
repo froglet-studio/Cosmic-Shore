@@ -1268,11 +1268,6 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The MASTER DEVELOPER UNLOCK block. Shown on both the Quest and Vessels tabs because
-        /// the one switch opens both, and drawn ABOVE each tab's play-mode gate because it is a
-        /// PlayerPrefs value that does not need a running game.
-        /// </summary>
-        /// <summary>
         /// Lets a developer out of the first-login guide. That guide is the one quest phase that
         /// runs even under the master unlock (<c>runsUnderDeveloperUnlock</c>), and it funnels the
         /// arcade down to the Game of the Week until the first Lesson is finished - so a developer
@@ -1317,6 +1312,11 @@ namespace CosmicShore.Utility
             GUILayout.Space(Pad);
         }
 
+        /// <summary>
+        /// The MASTER DEVELOPER UNLOCK block. Shown on both the Quest and Vessels tabs because
+        /// the one switch opens both, and drawn ABOVE each tab's play-mode gate because it is a
+        /// PlayerPrefs value that does not need a running game.
+        /// </summary>
         void DrawMasterUnlockGate()
         {
             GUILayout.Space(Pad);
