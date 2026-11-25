@@ -27198,7 +27198,8 @@ not compiled: no Unity, Amoebius or reference compile ran. `author_palisade_asse
       inside? Do the AIs' walls (orbit at 540 u) survive, or does every AI team end near zero?
 - [ ] AI seats at I1-I4: every AI flies the whole 90 s, builds, raids when 10% behind and in the last 25 s, and the
       sword lights on a raid. No AI circles the centre or sits still.
-- [ ] 9 vessels, 3 teams, 3 a team: the frame rate holds with three teams' walls standing.
+- [ ] The launch panel offers at most 4 vessels (Yash, 2026-11-25: every Swordfish game seats 4 for now), and with 4
+      seated the frame rate holds with every team's walls standing.
 - [ ] A person's judgment (the fun card): does the round feel like swinging walls into place, or like laying trail?
       On the model the afterimages are about 22% of the score at I1 and a third at I2 (PALISADE.md section 5).
 - [ ] A person's judgment: are I1-I4 four different rounds, and is I4's grazing fair to the team that is behind?
