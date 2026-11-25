@@ -187,6 +187,7 @@ namespace CosmicShore.Data
                 if (j.Verb != WorkVerb.Arrive && j.Verb != WorkVerb.Meet && j.Verb != WorkVerb.Hold && j.Goal <= 0f)
                     errors.Add($"job '{j.Id}' asks {j.Verb} with no goal");
                 if (j.HullFloor < 0f || j.HullFloor > 1f) errors.Add($"job '{j.Id}' has a hull floor of {j.HullFloor}; 0 to 1");
+                if (j.BreachHull < 0f || j.BreachHull > 0.95f) errors.Add($"job '{j.Id}' has a breach line of {j.BreachHull}; 0 to 0.95");
                 if (j.Tier < 0 || j.Tier > 2) errors.Add($"job '{j.Id}' asks tier {j.Tier}; 0 to 2");
             }
             foreach (var s in Seeds ?? new List<SeedNews>())
@@ -354,6 +355,13 @@ namespace CosmicShore.Data
         public float Goal = 1f;
         /// <summary>A convoy must arrive with the hull above this share (0 = any).</summary>
         public float HullFloor;
+        /// <summary>Which cells of the leg start hostile, in order (Milestone 1, Crystal Run): a hostile cell is held by a
+        /// domain opposing the squad's, so its fauna attack the Ark in assaults. Cells past the end take the last entry.
+        /// Empty keeps the old rule: only the destination, when its place is hostile (<see cref="VoyageRules.HostileWorld"/>).</summary>
+        public List<bool> HostileCells = new();
+        /// <summary>The breach line: the Ark falls when its hull drops below this share during the job (0 = only the last
+        /// plate).</summary>
+        public float BreachHull;
         /// <summary>A kill undoes the work (a preservationist's tend).</summary>
         public bool NoKill;
         /// <summary>The squad role the job suits.</summary>
@@ -372,6 +380,32 @@ namespace CosmicShore.Data
         public bool RivalsMayTake = true;
         /// <summary>The line written into the pilot's chronicle on success ({to}, {about}).</summary>
         public string ChronicleLine;
+
+        // ── Crystal Run (Docs/Voyages/CRYSTAL_RUN.md, Shombith 2026-11-16) ──────────────────────────────────────
+
+        /// <summary>Offered on every board, whoever is seated, credited to the first seated pilot (any pilot can bring
+        /// it). Such a job may name no faction.</summary>
+        public bool Always;
+        /// <summary>The work counts from the moment the Ark sets sail, through every cell of the leg, not only at the
+        /// stop; the job resolves on arrival.</summary>
+        public bool CountsUnderway;
+        /// <summary>The leg is exactly this many cells, the destination's own world last (0: the lanes decide).</summary>
+        public int Cells;
+        /// <summary>Venture further: what each further run adds to the goal and to the leg's cells.</summary>
+        public float VentureGoal;
+        public int VentureCells;
+
+        // ── The leg cell by cell (Shombith's storyboard, 2026-11-17) ──────────────────────────────────────────────
+
+        /// <summary>The world each cell of the leg stands, by the cell config's name, in order (cell 1 first). A name the
+        /// corridor's pool does not have, and every cell past the end, keeps the world the day drew. Empty: all drawn.</summary>
+        public List<string> CellWorlds = new();
+        /// <summary>How long the Ark anchors in each cell, in order; cells past the end take the last entry. Empty: the
+        /// voyage's calm and hostile windows (VoyageToyDefinitionSO).</summary>
+        public List<float> CellAnchorSeconds = new();
+        /// <summary>Each cell's life (its fauna and flora populations before the voyage's own life scale), in order; cells
+        /// past the end take the lane's pacing. Empty: the lanes decide.</summary>
+        public List<float> CellLife = new();
     }
 
     /// <summary>What an outcome writes into the galaxy's news and state (VOYAGES.md §6.3, DEPTH.md §2): the chain.</summary>

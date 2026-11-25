@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-20-phone-slow-captures-shombith-2026-11-20-a405d4",
+  "to": "Yash",
+  "by": "Shombith",
+  "date": "2026-11-20T18:35:14+00:00",
+  "area": "DeviceLogCapture (phone play-test logs)",
+  "summary": "Phone slow captures (Shombith 2026-11-20): a dev Android build now runs the same <scene>-slow / -slower capture the editor's PerfAutoCapture does, when a scene holds under 20 fps for two 5 s samples (at most 2 per scene, HUD on). The 90 s capture alone missed every slow stretch of a voyage.",
+  "branch": "claude/project-thread-chvxox",
+  "commit": "cf3ef5a85"
+}

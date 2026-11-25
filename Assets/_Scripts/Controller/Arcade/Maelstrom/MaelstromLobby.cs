@@ -56,12 +56,22 @@ namespace CosmicShore.Gameplay
                  "identically.")]
         [SerializeField, Min(1f)] float countdownVisibleSeconds = 3f;
 
+        [Header("Hand-over to the round")]
+        [Tooltip("Longest the host holds the round's scene load, after the countdown reaches zero, " +
+                 "while the hub's arena is handed to the prism pool for the round to reuse (that " +
+                 "includes waiting for a preview still being laid). The arena eases away meanwhile. " +
+                 "The load starts as soon as the hand-over finishes; at this limit it starts anyway " +
+                 "and the round clones what was not parked. 0 does not wait.")]
+        [SerializeField, Min(0f)] float parkArenaMaxSeconds = 5f;
+
         // The host's authoritative copy. Mirrored onto every Player so peers can read it; held
         // here as well so a player object spawning late can be caught up (see PublishTicket).
         MaelstromRoundTicket _authoritative = MaelstromRoundTicket.None;
 
         bool _armed;      // server: deadline set for this hub visit
-        bool _started;    // server: BeginNextRound already fired (one-shot)
+        bool _started;    // server: the countdown reached zero and the launch began (one-shot)
+        bool _launchHeld; // server: zero reached, BeginNextRound waits on the arena hand-over
+        float _launchHoldDeadline;   // unscaled time at which a held launch goes anyway
 
         readonly List<IPlayer> _humans = new();
 
@@ -217,8 +227,50 @@ namespace CosmicShore.Gameplay
                 // BeginNextRound, which loads the scene.
                 ResolveHubInitializer()?.DespawnHubBots();
 
-                tc.BeginNextRound();
+                // Hand the previewed arena to the prism pool BEFORE the load: the round lays the
+                // same world, and prisms parked now are re-issued there instead of cloned again
+                // (two full lays a round, each a long frame with Relay live, is where a host
+                // dropped the party: Docs/Reports/MAELSTROM_MULTIPLAYER_RUNS.md finding 1). Every
+                // peer starts its own hand-over at zero (MaelstromSceneView); only the host can
+                // hold the load for it, and only for parkArenaMaxSeconds.
+                var preview = ResolvePreviewHost();
+                if (preview) preview.ParkArenaForRound();
+                _launchHeld = true;
+                _launchHoldDeadline = Time.unscaledTime + parkArenaMaxSeconds;
             }
+
+            if (_launchHeld)
+            {
+                var preview = ResolvePreviewHost();
+                bool handOverRunning = preview && preview.IsParkingArena;
+                if (ShouldLaunchNow(handOverRunning, Time.unscaledTime, _launchHoldDeadline))
+                {
+                    _launchHeld = false;
+                    // Still running at the limit: the round clones what was not parked. Say so in the
+                    // test log, or a run with "Prisms reused 0" has nothing that explains it.
+                    if (handOverRunning)
+                        NetSessionRecorder.Mark("arenaParkCutShort", $"{parkArenaMaxSeconds:0.0}s");
+                    tc.BeginNextRound();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Does a launch held for the arena hand-over go now? When the hand-over is no longer
+        /// running (finished, or there was nothing to hand over), or at the deadline whatever it is
+        /// doing - a hand-over that stalls must never hold the party on the launch sheet.
+        /// </summary>
+        internal static bool ShouldLaunchNow(bool handOverRunning, float now, float deadline) =>
+            !handOverRunning || now >= deadline;
+
+        MaelstromPreviewHost _previewHost;
+
+        /// <summary>The hub's preview panel, found once. Null in a hub with none: nothing to hand over.</summary>
+        MaelstromPreviewHost ResolvePreviewHost()
+        {
+            if (_previewHost) return _previewHost;
+            _previewHost = FindFirstObjectByType<MaelstromPreviewHost>(FindObjectsInactive.Include);
+            return _previewHost;
         }
 
         MaelstromHubVesselInitializer _hubInitializer;
@@ -462,6 +514,7 @@ namespace CosmicShore.Gameplay
 
             _armed = false;
             _started = false;
+            _launchHeld = false;
             _authoritative = MaelstromRoundTicket.None;
             Ticket = MaelstromRoundTicket.None;
 

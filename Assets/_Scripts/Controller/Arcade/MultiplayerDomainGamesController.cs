@@ -111,6 +111,9 @@ namespace CosmicShore.Gameplay
 
         protected override void OnReadyClicked_()
         {
+            // Ready pressed before the local player exists (the press can arrive in the frame the scene opens):
+            // leave the button up so the next press counts.
+            if (gameData.LocalPlayer == null) return;
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }
@@ -118,6 +121,14 @@ namespace CosmicShore.Gameplay
         [ServerRpc(RequireOwnership = false)]
         void OnReadyClicked_ServerRpc(string playerName, ServerRpcParams rpcParams = default)
         {
+            // Ready only means something before a turn. A press during one (a stale button, a client that
+            // missed the start) must not toast, nor count toward a second countdown for pilots already racing.
+            if (gameData.IsTurnRunning)
+            {
+                CSDebug.LogWarning($"[DomainGamesCtrl] Ready from {playerName} ignored - the turn is already running.");
+                return;
+            }
+
             MarkClientReady(rpcParams.Receive.SenderClientId);
 
             // Broadcast which player is ready to all clients

@@ -241,6 +241,43 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Bring a hidden drawing back, blooming from zero, or wither it to zero and hide it again, over
+        /// <paramref name="seconds"/> (the continuity law: a marker never pops). For a mode that hides its rings and shows
+        /// only the local pilot's NEXT one (Thresher Time rings the nest to break next in lime). The latest call wins, so
+        /// a gate shown and hidden in quick succession never has two animations fighting over its scale.
+        /// </summary>
+        public void SetVisualShown(bool shown, float seconds)
+        {
+            if (_visualOwner != null) { _visualOwner.SetVisualShown(shown, seconds); return; }
+            if (!_visual || _retired) return;
+            int version = ++_shownVersion;
+            if (shown) _visual.gameObject.SetActive(true);
+            else if (!_visual.gameObject.activeSelf) return;
+            ScaleVisual(shown ? 1f : 0f, Mathf.Max(0.01f, seconds), version).Forget();
+        }
+
+        int _shownVersion;
+
+        async UniTaskVoid ScaleVisual(float to, float seconds, int version)
+        {
+            var visual = _visual;
+            var ct = this.GetCancellationTokenOnDestroy();
+            float from = visual.localScale.x;
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                if (!visual || version != _shownVersion) return;
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / seconds);
+                visual.localScale = Vector3.one * Mathf.Lerp(from, to, t * t * (3f - 2f * t));   // smoothstep
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            if (!visual || version != _shownVersion) return;
+            visual.localScale = Vector3.one * to;
+            if (to <= 0f) visual.gameObject.SetActive(false);
+        }
+
+        /// <summary>
         /// Take the gate down without popping it out of existence (the continuity law applies to
         /// a marker exactly as it applies to a prism). The ring withers over
         /// <paramref name="seconds"/> and the gate goes with it.

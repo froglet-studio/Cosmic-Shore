@@ -74,7 +74,7 @@ Worked numbers at the shipped values:
 | a Sparrow bullet | 1 | 0.4 s (ten bullets: 4 s) |
 | a Strike (Squirrel joust, Rhino sword, Thresher ball, Angler, Wrasse kite) | 8 | 3.2 s |
 | a missile shockwave | 10 | 4 s |
-| a Debuff (Dolphin cone, Scarab plate, Manta bloom, Serpent rifle) | 12 | 4.8 s |
+| a Debuff (Dolphin cone, Scarab plate, Manta bloom, Serpent rifle, Stoat ripple) | 12 | 4.8 s |
 | a missile blast | 20 | 8 s |
 | a missile direct hit | 30 | 8 s (capped) |
 
@@ -268,10 +268,22 @@ AI's skill, not the hull's strength, and a balance pass would buff a hull for ha
   stage 2. Broadside's board scores combat-hit POINTS, which the drain table prices at ten points to
   the petal (`CombatHitDrain.PointsFor`), so it already tracks the plan's score closely; the ledger
   below makes it exact (a hit on a pilot with nothing to lose scores points and takes no petals).
-- **The score has no counter yet.** Every take already settles in one place (`ElementalTransfer`, with
-  the attacker named), and the danger burn knows the prism and therefore its layer, so a per-attacker
-  ledger is a small addition there. It is the first dev task of the plan, because nothing in stages 1
-  to 3 can be measured without it.
+- **The score has a counter (2026-11-23): the per-attacker petal ledger.** `PetalLedger`
+  (`Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/PetalLedger.cs`) holds score(i) per
+  pilot. `ElementalTransfer` credits every strip and steal to its attacker with the whole petals that
+  really came loose (a ward, an empty victim or a fraction still accruing credits nothing, and a silenced
+  attacker takes nothing), and the danger effect credits a hostile burn to the pilot who laid the prism
+  (`Prism.PlayerName`). A credit is made once, on the victim's owner; a client owner forwards it to the
+  server (`NetworkVesselImpactor.ReportPetalsTaken`, owner-only RPC), and a relayed take carries the
+  attacker's name on the wire so that owner knows whose it was. On the server `StatsManager` adds it to
+  **`IRoundStats.PetalsTaken`**, so a match reads it off the stat (the scoreboard, the AI trainer) and a mode
+  can score on **`ScoringMetric.PetalsTaken`** (13, a Charge genre). A fitness component for the trainer is
+  the AI lane's to add (`Assets/_Scripts/Utility/AITraining`, Yash). Totals reset with the round stats
+  at the start of a match. Tests: `PetalLedgerTests` (EditMode) and T12 of
+  `Tools/Build/elemental_transfer_harness/run.sh`, which drives the shipped transfer (with a negative
+  control: credit on a replay and it fails). Not yet done: no Charge card or Broadside is switched to the
+  metric (each is its owner's call), and the ledger has not run in the editor
+  (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 - **AI work happens on `Ys-bleeding-edge`** (`Docs/AI_SYSTEM/README.md`: run
   `python3 Tools/Build/ai_branch_sync.py` first). The AI has to learn silence both ways: to press the
   attack while an opponent is silenced, and to fly off and collect crystals while it is.

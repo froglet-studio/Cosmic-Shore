@@ -3,6 +3,239 @@
 > **Status.** Authored headless on 2026-10-27. The course and its tests were compiled and RUN outside the editor
 > (400 seeds per intensity). **Not run in the Unity editor; nobody has flown it.**
 
+## 0. The Shift Line (2026-11-16, round 5)
+
+Yash asked for every vessel's Time minigame to be made super fun. This section is the Brittle Star Time pass. It is
+upgraded in place, and the Brittle Star kit is untouched: no vessel file, prefab, action SO or config was edited. The
+full design record is `Docs/BrittleStarTime/SHIFT_LINE_SPEC.md`: three designs and a three-judge panel.
+
+**Not run in the Unity editor.** Every number below comes from the offline model in
+`Tools/Build/brittle_star_time_course_harness`. It flies the shipped course code with the hull's own laws:
+- speed eases at 1.5/s after a 0.35 s mode blend;
+- turn rate is 0.1 x speed + 80 deg/s;
+- Speed Roll adds +90 deg/s at Time 5;
+- the AI's nose lags at its follow rate.
+
+Run it with `run.sh --race`. `--check-race` turns the claims below into a gate, and `--self-test` runs that gate with
+10 negative controls.
+
+### What the evidence said first
+
+**Recorded play.** Shombith flew two races (2026-11-02), both on the pre-recut course:
+- **I1, 175 s.** The first ring took 41 s: he flew 22 u/s in Creation from the spawn pad, 885 u from ring 0, and first
+  lit Speed Mode at 114 s.
+- **I4, 135 s.** Overshoot loops at 270 u/s cost 10-16 s each.
+- The Medium AI finished neither race.
+
+**The AI today, in the model:** 244 / 95 / 124 / 368 s at I1-I4. The hull's Speed law (`BrittleStarAIBoostPolicy`):
+- engages only with 1.5 s of runway;
+- lets go 0.5 s before every ring, whatever the corner;
+- off Speed, the autopilot picks **Creation (x0.5, 22.5 u/s), not Cruise**.
+
+**The question is narrow.** "When do I let go of Speed Mode?" is mostly answered by "when the nose is far off the line",
+because a ring counts anywhere in its mouth.
+- At I1, I2 and the I4 coil, a person who simply holds Speed beats any per-ring plan.
+- Corners tighter than the Speed the hull carries exist only at the I3 hairpin apexes and the I4 return.
+- This is Redline's lesson: lift posts were measured and dropped there.
+
+### What was built
+
+**1. Let-go gates** (`BrittleStarTimeLine`; laid by `BrittleStarTimeController.Line`):
+- Two columns of three SuperShielded Blue posts, one either side of the line. They are a pair of columns, not a hoop, so
+  they never read as a ring.
+- Each gate stands where letting go of Speed Mode coasts the hull to the corner's own speed. A corner's speed comes from
+  its flyable circle: the inscribed circle of its legs, plus the mouth.
+- Gates stand only where a corner needs one: the two I3 apexes and the three rings of the I4 return. None stand on I1,
+  I2 or the coil.
+- They are laid on every peer from the broadcast course, and regrow one post a tick.
+- On a clean shift, the gate lights in the local pilot's colour (`PrismLit`).
+- **Measured:** reading them saves 4.4% at I3 and 8.3% at I4, against the best line flown without them. The bar is 3%.
+
+**2. The race coach** (`BrittleStarTimeCoach`; server, `BrittleStarTimeController.Coach`):
+- **Speed wish.** Each AI's wish is set through `BrittleStarExecutor.SetAutopilotSpeedWish`, the hull's own autopilot
+  control (input only). It is re-asserted every tick.
+- **Rule.** Hold Speed while the nose is on the line; let go at the gate; light it again as the nose comes round.
+- **One writer.** The hull policy's mode variant `Resources/AIBoostPolicies/BrittleStarAIBoostPolicy_BrittleStarTime`
+  sets align 0 deg and runway 999 s, so the coach is the only writer of the wish.
+- **Line.** `TryRaceLine` flies the line: down a ring's facing, or at the centre of a ring that faces across its leg.
+  The platform's difficulty mistakes and the missed-mouth break-off still apply.
+- **Per difficulty and rung:** a nose follow rate (set on every arming, as Redline and Switchback do) and the share of a
+  corner's speed it trusts. Both were searched offline (`--tune`).
+- **Pace target**, against the model's reading human:
+
+  | Skill | Easy | Medium | Hard | Legendary |
+  |---|---|---|---|---|
+  | Target pace | 2.0x | 1.5x | 1.25x | 1.05x |
+
+  A person at the controls flies about 1.6x the model (the recorded I1 race at Speed took 5.5 s a ring, against the
+  model's 3.4 s).
+
+**3. The heat** (`BrittleStarTimeHeat`; `BrittleStarTimeController.Heat`, local pilot, unscored). A thread is graded by
+the speed it carried, not by where it crossed the mouth:
+- **Flat out:** a flat-out ring taken through the heart (60% of the mouth) at 80%+ of full Speed.
+- **Clean shift:** a let-go ring taken at 80%+ of its corner's speed.
+- **What it shows:**
+  - a shock ring off the ring;
+  - streaks called at 3, 8 and 16;
+  - lap splits and a best-lap call;
+  - a clean lap runs a chase of flares round the circuit.
+- **Toasts 410-419.**
+
+  | Id | When |
+  |---|---|
+  | 410 | Start hint, I1 and I2 |
+  | 411 | A streak is called |
+  | 412 | Lap split |
+  | 413 | Best lap |
+  | 414 | Clean lap |
+  | 415 | The first flat-out thread |
+  | 416 | The first clean shift |
+  | 417 | Start hint, I3: let go at the posts |
+  | 418 | Start hint, I4: roll and pull through the coil |
+  | 419 | A dark start: no Speed Mode, no ring, 6 s in |
+
+- **Eight FMOD slots**, all shipped EMPTY.
+
+**4. Laps per rung, 2 / 3 / 6 / 6** (`BrittleStarTimeCourse.LapsByIntensity`; 2 / 3 / 3 / 4 until 2026-11-17):
+- **The climbing ladder (2026-11-17, "do your best on fun").** At 2 / 3 / 3 / 4 the Legendary AI raced I1 49, I2 54,
+  I3 36, I4 57 s in the real-game judge: I3's team crystals made it the fastest rung. The mode may not touch the kit, so
+  the course carries it: I3 and I4 fly 6 laps. Now 49 / 54 / 65 / 90 s (seeds 1-3, every rung finishing), each rung
+  1.10 / 1.21 / 1.38x the one before. 2 / 3 / 5 / 5 gave 49 / 54 / 55 / 71 (I3 no harder than I2). The offline human
+  model below laps faster at I4 than at I3, so a person may find I4 the easier of the two; Garrett's playtest decides.
+- The I2-I4 shapes are short. At two laps, a reading pilot finished in 25-37 s.
+- The authored race (`brittleStarTimeGateTarget`, 16) stays I1's, and the others scale from it, so it is still eight
+  rings a lap.
+
+### The numbers (model, 16-24 seeds a rung)
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Laps (rings), before 2026-11-17 | 2 (16) | 3 (24) | 3 (24) | 4 (32) |
+| Reading human, model | 49 s | 54 s | 41 s | 48 s |
+| ... x1.6, a person (estimate) | ~79 s | ~86 s | ~66 s | ~76 s |
+| Let-go gates worth | none stand | none stand | 4.4% | 8.3% |
+| AI today | 244 s | 95 s | 124 s | 368 s |
+| Coached Easy / Medium / Hard / Legendary | 98 / 74 / 61 / 52 s | 107 / 80 / 67 / 57 s | 82 / 64 / 51 / 42 s | 96 / 74 / 60 / 59 s |
+
+Every coached seat, at every skill, finishes every rung offline. I4 Legendary tops out at about 1.23x: the coil
+unrolled, with a nose follow capped at 8/s.
+
+**Measured and cut:**
+- **Funnel rails** down each ring's facing. Against a pilot who approaches each ring along its own facing (the ring shows
+  it), they saved -2.3 / -4.3 / -0.7% at I1 / I2 / I4.
+- **Let-go gates on flat-out rings.** None are laid.
+- **A hoop-shaped gate.** The player judge found it read as a ring to thread.
+
+### What only Unity can show (checklist entry, `Docs/UNITY_VERIFICATION_CHECKLIST.md`)
+
+- Not compiled by Unity.
+- The posts' look and light.
+- That the coach's presses do not chatter.
+- The coached AI in a six-seat grid.
+- The hints showing.
+- The real finish times, which decide the laps.
+- That rival autopilots do not shoot the posts. They sit about 55 u off the line, outside the 8-12 u scan, and are
+  SuperShielded.
+- In the model a pilot threads ring centres, so it cannot say how often a real person earns "flat out" at I1.
+- The platform's AI missed-mouth break-off (`GateRaceController`, the steering provider) tests a ring's whole plane. On an
+  I3 apex ring, whose plane runs along the leg into it, drift there may read as a miss and drop the coach's line for that
+  ring. The heat ignores crossings past 2.5 mouth radii for this reason (`BrittleStarTimeHeat.IsAnAttempt`). Watch the
+  coached AI at the I3 apexes.
+
+### Proposals for Shombith (the kit and its AI; not changed here)
+
+1. **Off Speed, the autopilot should release to Cruise, not Creation.** Today it coasts at half cruise and lays five
+   trails at every corner.
+2. **Move the coach's corner rule into `BrittleStarSpeedModeAIPolicySO`**, so every mode gains it. This is the road to
+   the universal Brittle Star Time genome (Plan step: time-arcade). The coach is a scaffold until then.
+3. **`BrittleStarExecutor.SetAutopilotSpeedWish`'s doc says "Only the policy writes it".** In this mode the coach writes
+   it.
+4. **`BrittleStarTimeCourseTests` reads `speedModeMultiplier.Value`, but the runtime evaluates `Min`.** Both are 6.
+   `BrittleStarTimeLineTests` now holds `Min`.
+
+## 0a. Garden ruins at I4 (`BrittleStarTimeRuins`, `BrittleStarTimeController.Ruins.cs`; Yash, 2026-11-24)
+
+The environment update Spearline got (SPEARLINE.md section 2a), asked for every Time game. The ruins are **Spearline's
+generator, called, not copied**: `SpearlineRuins.Lay` with this mode's lap. No Spearline file is changed. Decoration
+only: plain prisms with the game's own rules (a hull breaks them, nothing grows back), laid by every peer from the
+broadcast course. Nothing reads or writes a vessel, and the kit is untouched.
+
+**What stands at I4: one ruin a lap, on the return straight.** The generator lays only on a leg of 380 u or more and
+120 u clear of every ring. The corkscrew's six coil rings stand about 170 u apart and the two turns of the return are
+300 and 360 u, so the only leg long enough is the return straight (about 670 u). Seven ruins a lap, as Spearline has,
+do not fit this course under the generator's own rules; putting ruins round the coil would need a change to the
+generator (a ruin laid round a whole run of rings, not one leg), which was not made.
+
+**The lap handed over is the flown line, not the raw rings** (`BrittleStarTimeRuins.RuinLap`). The generator keeps its
+60 u lane round a curve that leaves and arrives along each ring's axis. The two return rings face ACROSS the leg into
+them and are flown at their centre (`BrittleStarTimeLine.SteerPoint`): the pilot leaves the far ring on its facing, turns
+on Speed Mode's circle (162 u at Time 5) and runs straight at the near ring. So that leg is given as the turn's end
+(`TurnExit`, a ring of no radius) and then the straight, and the lane lies where the hull flies. The lap starts at ring
+1, so the kind is drawn from a ring the seed moves and changes from race to race.
+
+**Kept off the let-go gates.** A standing prism within 30 u of a let-go post is left out, and a wheel whose sweep would
+reach one is left out whole (`PostClearance`). On the shipped courses the ruin and the posts already stand apart; the
+rule is held by a test that stands a post inside a ruin.
+
+**Colour.** Each ruin is one domain colour from `ruinDomains` on the controller (Jade, Ruby, Gold in turn; empty = Blue,
+as the posts), so it reads apart from the Blue let-go posts. With one ruin a lap it is the first of the list (Jade).
+A ruin in a pilot's own domain is that pilot's prism to the game's rules, as on Spearline; not measured.
+
+**Measured in the model** (`brittle_star_time_course_harness/run.sh --ruins 200`, 200 seeds): every course carries one
+ruin, 72 to 121 prisms (mean 92); six kinds stand (pergola, flower head, vines, wall, tunnel, maze). **The wheel never
+fits**: the coil's lanes pass inside its sweep, so the generator stands a pergola there, and nothing turns or crosses
+the line at I4. The model's pilots flying two laps come no nearer a standing ruin prism than 8 u (Medium AI), 9 u
+(Easy), 15 u (Hard), 17 u (Legendary) and 31 u (a reading human). Laying the lane round a wider turn (1.2x to 2x the
+circle) put the AIs through the ruin on 21 to 52 of 60 courses, so the turn is modelled at the circle itself.
+
+**Held by** `BrittleStarTimeRuinsTests` (12) and three negative controls in the harness's `--self-test` (the raw rings
+handed over, ruins left in the let-go gates, ruins on an easier rung), and `author_brittle_star_time_assets.py --check`
+(the three scripts, the `ruinDomains` default, the three hook calls, the lay going through `SpearlineRuins.Lay`).
+
+**In Unity (2026-11-24, Yash's editor, three I4 races, the AI on all three seats):** compiles; the mode's EditMode tests
+pass (37 then); one ruin of 85 to 89 prisms stands on the return straight, all Jade, reading apart from the Blue posts
+(a still was sent in the session). **The cell's fauna eats it**: in the third race 78 of 85 prisms were broken before the
+end, 72 of them by tadpoles, 4 by light fauna and 2 by hulls, so by the last laps little of the ruin stands. That is the
+game's own prism rule (fauna graze prisms); whether a ruin should be kept from the fauna is a decision for the ruins'
+owner, not made here.
+
+## 0b. Breakers at I4 (`BrittleStarTimeBreakers`, `BrittleStarTimeController.Breakers.cs`; Yash, 2026-11-24)
+
+Yash: "Intensity 4 environment needs to be more filled along the flight path, brittle star need to break through
+obstacles to pass rings". **A disc of plain slabs stands across the way into every ring**, 30 u before it and 70 u wide
+(the 42 u mouth and the cone a pilot comes in on), and on the return straight a disc every 180 u, the ruin standing round
+them. The slabs are **Headlong's hedges** (`HeadlongHedges.Hedge`, `HeadlongHedges.Build`: 11 x 11 x 4 slabs on a 15 u
+pitch), called, not copied; the placement is this mode's own, because Headlong's keeps 150 u off every ring and the coil's
+rings stand ~170 u apart. Laid in Ruby (`breakerDomain`), apart from the Blue posts and the Jade ruin.
+
+**Why it is a decision, with the kit as shipped.** A Brittle Star that rams a plain prism breaks it, loses its boost and is
+slowed (its `VesselChangeSpeedByPrism`: up to half its speed for a second, scaled by the prism's mass); its guns and cords
+break prisms ahead of it. So a pilot either rams every disc and pays in speed, or shoots a hole first and threads the ring
+at full Speed. No vessel file, prefab or asset is changed. A broken disc **stands back up** 2.5 s after no hull is within
+60 u of its rim (Headlong's hedge rule with a shorter reach, `breakerHullReach`; at Headlong's 150 u the coil's discs stood
+at ~70% in Unity), and a broken slab goes back to the prism pool first, so every lap meets it whole.
+
+**Kept clear:** no slab within 25 u of any other leg's line, nor within 20 u of a let-go post; the ruin keeps 20 u off
+every slab (`BrittleStarTimeRuins.BreakerClearance`, so the breakers are laid first).
+
+**Measured in the model** (`run.sh --breakers 60`): 11 discs a lap (8 rings, 3 on the straight), 749 slabs a lap, the ruin
+beside them 81 prisms (92 before). **Every pilot flies through every ring's disc on every course** (Easy, Medium, Hard,
+Legendary AI and a reading human; 0 ring discs missed over 60 courses); the straight's discs catch most lines (a human
+10.8 of 11 discs a lap, the AIs 8.7 to 9.9). The model flies through slabs without the slowdown, so its race times say
+nothing about the breakers' cost: that is for Unity.
+
+**In Unity (2026-11-24, Yash's editor, the AI on all three seats):** 11 Ruby discs a lap (749 slabs) stand before the
+rings and on the straight (purple-red in the worn colour set, apart from the Blue posts and the green ruin); every AI
+threads every ring and the race ends (leader 6 laps in ~166 s; one race without breakers on another course took ~180 s,
+so the cost to the AI is not measured yet). Two faults found and fixed in this round: a broken slab stayed hidden under
+the root and the pool cloned a new one (4,191 children after one race; 749 all race once released to the pool), and with
+Headlong's 150 u hull reach the coil's discs stood at ~70% (60 u now). The let-go posts' regrow had the same leak and
+releases a broken post too.
+
+**Held by** `BrittleStarTimeBreakersTests` (5: only I4; every ring reached through its disc, through standing slabs; no
+slab on another leg or by a post; the ruins keep off; a pure lay), three negative controls in `--self-test` (breakers on
+every rung, each disc after its ring, slabs left on other legs), and `author_brittle_star_time_assets.py --check`.
+
 ## Overview
 
 `GameModes.BrittleStarTime = 74` is the **Brittle Star's Time card**: a lapped race of eight rings, flown for two laps,
@@ -24,7 +257,9 @@ any rung asks for the guns, the cords, the ring or Creation: Time and movement o
 | ... rolling and pulling (Speed Roll, the Time 5 upgrade) | 315 u/s | ~90 u |
 
 Turn rate is `0.1 x speed + 80` deg/s; Speed Roll's pull adds 90 deg/s. Speed eases toward its target at 1.5 a second
-(`VesselTransformer.LERP_AMOUNT`), so letting go of Speed Mode is a coast-down, not a stop: there is no brake.
+(`VesselTransformer.LERP_AMOUNT`), after the mode's own 0.35 s blend (`modeBlendSeconds`), so letting go of Speed Mode
+is a coast-down, not a stop. The nearest thing to a brake is Creation Mode (B), x0.5 cruise (22.5 u/s); pressing A again
+returns to Cruise (45 u/s).
 
 ## The ladder (`BrittleStarTimeCourse.BuildLap`; `BrittleStarTimeCourseTests`)
 
@@ -59,16 +294,18 @@ optional `card_extra` for the StartingElements table). The card art is rendered 
 ## Known limitations
 
 - **Not run in the editor.** The scene needs one open-and-save.
-- **The AI cannot roll.** The Brittle Star's autopilot never reads the right stick, so on I4 it cannot use Speed Roll:
-  it drops to Cruise through the coil and loses time. Teaching it is a change to the vessel's AI (Garrett's kit, trained
-  through Yash's pipeline and Froglet Compute), not to this mode.
-- **The AI's approach is sized for I1.** Its approach numbers (commit 320, lead 360, through 250) suit Speed Mode's
-  circle on long legs; the slalom's rings are ~240 u apart and the coil's ~170 u. Its Time genome is to be trained on all
-  four rungs through Compute (Plan step: time-arcade), never by hand.
+- **The AI cannot roll.** The Brittle Star's autopilot never reads the right stick (`BrittleStarExecutor.AimStick`
+  returns zero under the autopilot), so on I4 it cannot use Speed Roll. Off Speed it takes Creation (x0.5), not
+  Cruise. Teaching either is a change to the vessel's AI (Shombith's kit), not to this mode; the race coach (section 0)
+  works round both with its own corner share and nose follow.
+- **The coach is a hand-set scaffold, not the genome.** Its pace tables were searched offline (`--tune`) while Froglet
+  Compute is paused, as the AI plan allows by hand (Plan step: time-arcade). The universal Brittle Star Time genome is
+  still to be trained on all four rungs through Compute, and replaces the coach's numbers when it is.
 - **Variety per seed is orientation only** on I2-I4 (a turn about the pole, a mirror): the shapes' numbers are the
   design, so they do not jitter.
 - The Brittle Star's prefab has been stable for months. The two old branches that touched it
-  (`align-brittlestar-falcon`, `falcon-brittlestar-reintro`) are stale.
+  (`align-brittlestar-falcon`, `falcon-brittlestar-reintro`, last pushed 2026-05 and 2026-07) are stale; they change
+  vessel files only, none of this mode's.
 
 ## Superseded plan: four intensities, four races (proposed 2026-11-02, never built)
 

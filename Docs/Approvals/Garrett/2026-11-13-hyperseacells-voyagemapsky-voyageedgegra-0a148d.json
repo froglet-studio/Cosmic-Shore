@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-13-hyperseacells-voyagemapsky-voyageedgegra-0a148d",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T23:17:32+00:00",
+  "area": "the Voyage map's HyperSea cells in the game",
+  "summary": "HyperSeaCells, VoyageMapSky, VoyageEdgeGraphic and VoyageCellDraw now draw the cells as the board's uneven wet Kelvin foam (jittered BCC, power cells, knots, rounded outlines, per-cell nucleus at the cell's middle) instead of regular truncated octahedra, and the nucleus sprite is the game's white caged Nucleus look instead of the warm one; its five blues are traced into every colour set",
+  "why": "Shombith took over Voyages and picked the wet foam on the board (PR #1972); this is the game port he chose",
+  "branch": "claude/project-thread-ev7zfw",
+  "lane": "voyages",
+  "commit": "b6231058e",
+  "paths": [
+    "Assets/_Scripts/Data/Voyages/HyperSeaCells.cs",
+    "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
+    "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs"
+  ]
+}

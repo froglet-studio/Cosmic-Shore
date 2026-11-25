@@ -117,12 +117,15 @@ g.emit_asset("Assets/_SO_Assets/Games/TapestrySettings.asset", G_ASSET["Tapestry
   leadAnnounceMinGapSeconds: 10
   progressSampleSeconds: 1
   aiDecisionSeconds: 6
-  aiRaidDeficitFraction: 0.1
-  aiLateRaidSeconds: 25
+  aiRaidDeficitFraction: 0.5
+  aiLateRaidSeconds: 0
   aiDustHover: 30
+  aiWakeSampleSeconds: 0.5
+  aiWakeMemorySeconds: 40
+  aiWakeLeadSamples: 3
   aiPaintOrbitFraction: 0.6
   aiPaintOrbitDegreesPerSecond: 6
-  aiCrystalReach: 450
+  aiCrystalReach: 900
   aiModeRetrySeconds: 1
 """)
 
@@ -144,7 +147,7 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameTapestry"],
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Butterfly']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1

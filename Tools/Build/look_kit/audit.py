@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import hashlib
 import json
 import os
 import re
@@ -896,6 +897,20 @@ def fold_undecided(notes: list) -> list:
     return sorted(set(out))
 
 
+def renderer_fingerprint(rec: dict) -> str:
+    """What a renderer IS, with every asset path left out: its kind, object, materials (shader and blend state), mesh
+    and particle mode. A prefab renamed or a renderer moved to another prefab keeps its fingerprint; a renderer whose
+    material, shader or mesh changed does not. --check uses it to tell a moved offender from a new one."""
+    shape = {
+        "id": rec["id"], "kind": rec["kind"], "object": rec["object"],
+        "materials": [{k: m[k] for k in ("name", "shader", "shader_kind", "subtarget", "transparent", "additive", "queue",
+                                          "surface", "blend", "unlit_by_name", "lit_by_content")} for m in rec["materials"]],
+        "mesh": ({k: rec["mesh"][k] for k in ("name", "kind", "ratio", "has_normals")} if rec["mesh"] else None),
+        "render_mode": rec["render_mode"], "trails": rec["trails"], "alignment": rec["alignment"],
+    }
+    return hashlib.sha1(json.dumps(shape, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:16]
+
+
 def summarize(project: Project, effects: list, scenes: bool) -> dict:
     per_signal: Counter = Counter()
     shaders: Counter = Counter()
@@ -903,6 +918,7 @@ def summarize(project: Project, effects: list, scenes: bool) -> dict:
     renderer_kinds: Counter = Counter()
     modes: Counter = Counter()
     entries = []
+    fingerprints = {}
     undecided = list(project.undecided)
     empty_slots = 0
     blind = []   # effects with no signal and not one readable material: nothing was decided about them
@@ -923,6 +939,7 @@ def summarize(project: Project, effects: list, scenes: bool) -> dict:
             for s in r["signals"]:
                 per_signal[s] += 1
                 entries.append(f"{e['path']}:{r['id']}:{s}")
+                fingerprints[entries[-1]] = renderer_fingerprint(r)
             for u in r["undecided"]:
                 undecided.append((e["path"], r["id"], u))
         if not readable and not any(r["signals"] for r in e["renderers"]):
@@ -953,6 +970,7 @@ def summarize(project: Project, effects: list, scenes: bool) -> dict:
         "undecided": fold_undecided(undecided),
         "blind": sorted(blind),
         "entries": sorted(entries),
+        "fingerprints": {k: fingerprints[k] for k in sorted(fingerprints)},
         "effects": effects,
     }
 
@@ -1009,10 +1027,10 @@ def render_report(audit: dict, baseline: dict | None) -> str:
         out.append(f"| `{s}` | {c['per_signal'].get(s, 0)} | {reason} |")
     out.append("")
     if baseline is not None:
-        today = set(audit["entries"])
         base = set(baseline.get("entries", []))
+        new, fixed, moved = compare(audit, baseline)
         out.append(f"Baseline (`audit_baseline.json`, written {baseline.get('written', '?')}): {len(base)} known offenders; "
-                   f"today {len(today - base)} new, {len(base - today)} fixed since.")
+                   f"today {len(new)} new, {len(fixed)} fixed, {len(moved)} moved since.")
         out.append("")
     out.append("## The effects")
     out.append("")
@@ -1112,10 +1130,44 @@ def load_baseline(path: str) -> dict | None:
 def write_baseline(path: str, audit: dict) -> None:
     data = {"written": audit["generated"], "note": "The known flat effects, each owed work; --check fails on any signal not listed here. "
                                                     "Rewrite with: python3 Tools/Build/look_kit/audit.py --baseline",
-            "counts": audit["counts"]["per_signal"], "entries": audit["entries"]}
+            "counts": audit["counts"]["per_signal"], "entries": audit["entries"],
+            "fingerprints": audit.get("fingerprints", {})}
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2)
         fh.write("\n")
+
+
+def entry_tail(entry: str) -> str:
+    """'path:renderer:signal' -> 'renderer:signal' (the renderer id has no ':'; a path may not either on Unity)."""
+    parts = entry.rsplit(":", 2)
+    return ":".join(parts[-2:]) if len(parts) == 3 else entry
+
+
+def compare(audit: dict, baseline: dict) -> tuple:
+    """(new, fixed, moved). A signal that left one path and appeared at another with the same renderer id, signal and
+    fingerprint is the same offender MOVED (a prefab renamed, or a renderer carried to another prefab), not one fixed and
+    one new: the pair goes to `moved` and neither side fails the gate. Pairing is one to one, so a COPY (the old path
+    still has it) stays new, and a baseline written before fingerprints existed pairs nothing."""
+    today = set(audit["entries"])
+    base = set(baseline.get("entries", []))
+    new_raw = sorted(today - base)
+    fixed_raw = sorted(base - today)
+    fp_today = audit.get("fingerprints", {})
+    fp_base = baseline.get("fingerprints", {})
+    pool: dict = {}
+    for f in fixed_raw:
+        if f in fp_base:
+            pool.setdefault((entry_tail(f), fp_base[f]), []).append(f)
+    new, moved = [], []
+    for n in new_raw:
+        key = (entry_tail(n), fp_today.get(n))
+        if key[1] is not None and pool.get(key):
+            moved.append((pool[key].pop(0), n))
+        else:
+            new.append(n)
+    paired = {old for old, _ in moved}
+    fixed = [f for f in fixed_raw if f not in paired]
+    return new, fixed, moved
 
 
 def check(audit: dict, baseline: dict | None) -> int:
@@ -1124,12 +1176,15 @@ def check(audit: dict, baseline: dict | None) -> int:
         return 3
     today = set(audit["entries"])
     base = set(baseline.get("entries", []))
-    new = sorted(today - base)
-    fixed = sorted(base - today)
+    new, fixed, moved = compare(audit, baseline)
     for line in new:
         print(f"NEW flat effect: {line}")
-    print(f"look_kit audit --check: {len(today)} signals today, {len(base)} in the baseline, {len(new)} new, {len(fixed)} fixed"
-          + (" - FAIL" if new else " - ok"))
+    for old, now in moved:
+        print(f"moved (same offender, not new): {old} -> {now}")
+    print(f"look_kit audit --check: {len(today)} signals today, {len(base)} in the baseline, {len(new)} new, {len(fixed)} fixed, "
+          f"{len(moved)} moved" + (" - FAIL" if new else " - ok"))
+    if moved:
+        print("  moved offenders pass; rewrite the baseline with --baseline to record their new paths")
     if fixed:
         print("  fixed since the baseline (rewrite it with --baseline to retire them): " + ", ".join(fixed[:10])
               + (" ..." if len(fixed) > 10 else ""))
@@ -1380,6 +1435,38 @@ def self_test() -> int:
         print(f"self-test baseline           same tree {'passes' if rc_same == 0 else 'FAIL rc=' + str(rc_same)}; "
               f"new offender {'fails and is named' if rc_new == 1 and new_named else 'FAIL rc=' + str(rc_new)}")
         ok &= rc_same == 0 and rc_new == 1 and new_named
+        # a renamed or moved prefab: the same offender, not one fixed and one new (Rhino -> Swordfish, #1968)
+        bp2 = os.path.join(td, "baseline2.json")
+        write_baseline(bp2, audit2)
+        ribbon = os.path.join(td, "Assets/_Prefabs/FX/Ribbon.prefab")
+        streamer = os.path.join(td, "Assets/_Prefabs/Trails/Streamer.prefab")
+        ribbon_text = read_text(ribbon)
+        os.makedirs(os.path.dirname(streamer), exist_ok=True)
+        os.rename(ribbon, streamer)
+        audit3 = run_audit(td)
+        new3, fixed3, moved3 = compare(audit3, load_baseline(bp2))
+        rc_moved = check(audit3, load_baseline(bp2))
+        moved_ok = rc_moved == 0 and len(moved3) == 2 and not new3 and not fixed3
+        # negative control 1: a COPY (the old path still has it) is a new offender
+        _write(td, "Assets/_Prefabs/FX/Ribbon.prefab", ribbon_text)
+        rc_copy = check(run_audit(td), load_baseline(bp2))
+        os.remove(ribbon)
+        # negative control 2: moved AND its material changed (same signals, another material) is a new offender
+        _write(td, "Assets/Materials/Unlit2.mat", _mat("UnlitGlow2", 4800000, _guid("unlit.shader"), surface=1, blend=2, queue=3000), _guid("unlit2.mat"))
+        _write(td, "Assets/_Prefabs/Trails/Streamer.prefab", ribbon_text.replace(_guid("unlit.mat"), _guid("unlit2.mat")))
+        audit4 = run_audit(td)
+        same_signals = {entry_tail(e) for e in audit4["entries"] if "Streamer" in e} == {entry_tail(e) for e in audit2["entries"] if "Ribbon" in e}
+        rc_changed = check(audit4, load_baseline(bp2))
+        # negative control 3: a baseline written before fingerprints pairs nothing, so the plain move fails as before
+        _write(td, "Assets/_Prefabs/Trails/Streamer.prefab", ribbon_text)
+        old_base = {k: v for k, v in load_baseline(bp2).items() if k != "fingerprints"}
+        rc_old = check(run_audit(td), old_base)
+        neg_ok = rc_copy == 1 and rc_changed == 1 and same_signals and rc_old == 1
+        print(f"self-test moved prefab       rename {'passes as moved' if moved_ok else 'FAIL rc=' + str(rc_moved) + ' ' + str((new3, fixed3, moved3))}; "
+              f"copy {'fails' if rc_copy == 1 else 'FAIL rc=' + str(rc_copy)}; "
+              f"changed material {'fails' if rc_changed == 1 and same_signals else 'FAIL rc=' + str(rc_changed) + ' same_signals=' + str(same_signals)}; "
+              f"unfingerprinted baseline {'fails' if rc_old == 1 else 'FAIL rc=' + str(rc_old)}")
+        ok &= moved_ok and neg_ok
         rc_none = check(audit, None)
         print(f"self-test no baseline        {'exit 3' if rc_none == 3 else 'FAIL rc=' + str(rc_none)}")
         ok &= rc_none == 3

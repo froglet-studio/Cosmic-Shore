@@ -188,8 +188,9 @@ loads them; the ground is `#00041F` over `#00010A`. Copy the latest round's `<he
 
 ## 4. After the pick
 
-A pick ("go with C") is recorded in the round's section (**Picked (name, date): "..."**) and the build goes through the
-screen's generator and `/ui-redesign-tracker` (it verifies the build against the board). A follow-up round on the same
+A pick ("go with C") is recorded in the round's section (**Picked (name, date): "..."**) and the build goes through
+**`/frogma-to-unity`** (spec in `Docs/UI/specs/`, the screen's generator, the gates, the proof beside the board, the
+status note under the board) and `/ui-redesign-tracker` (it verifies the build against the board). A follow-up round on the same
 screen is a new round, not an edit of the picked board: the board a section names is the record of what was approved,
 and a changed board would silently change the record. Edit an existing board only for a typo or when the person asks
 for that board changed ("make D brighter") and say so in the doc.
@@ -295,8 +296,17 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   after each pass; never present a compile as a look.
 - **The UI kit's theming components undo a runtime restyle** (same branch, 2026-11-10). `KitThemedGraphic` (on a
   frame's Fill, Border and brackets) and `KitText` (on a label) re-apply the kit's colour, face, size and capitals in
-  `OnEnable`, so a restyle made in code holds until the window is next opened. Restyling a kit element at runtime
-  means disabling those components on it first (`VoyageWindowTabs.Plain`), or changing the element in its prefab.
+  `OnEnable`, so a restyle made in code holds until the window is next opened. **Disabling them is not enough**
+  (`claude/sweet-mccarthy-ow25e2`, 2026-11-13: Shombith saw the tabs' dark boxes again after that fix): the menu's theme
+  pass (`UIThemeLive.RepaintKit`) calls `Apply()` on every `KitThemedGraphic` and `KitText` it finds, disabled ones
+  included, so a cleared fill turns dark again on the next theme or colour-set change. To take a kit frame away at
+  runtime, switch its pieces off as objects and give the button its own clear hit graphic with no colour transition
+  (`VoyageWindowTabs.Strip`); or change the element in its prefab.
+- **An element's mark is the HUD's flower, never a glyph you draw** (Shombith, 2026-11-12, on Rev 97: "wrong elemental
+  icons, check ecology for the correct ones the ones with petals are the ones we should use"). Five copies of the
+  element's white petal (`Assets/Resources/ElementPetals/<element>_petal.png`) turned 72 degrees about the centre, as
+  `ElementalBarsView.ConfigurePetal` lays them; white, no colour of its own. On a board, compose it in the generator
+  and carry it as a data URI (`r97_voyages.py` `_petals()`); in the game, `VoyageKit.Flower`.
 
 ## The design brief comes first (2026-11-07)
 

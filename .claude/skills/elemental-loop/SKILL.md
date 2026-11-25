@@ -61,5 +61,5 @@ whole element or arena.
 
 ## 5. Hand off
 
-A playtest a person must do goes on that vessel branch's one Froglet Tasks ticket (`/team-tasks`, only with the
-person's approval). Tell the person in one line what the loop's next action is after yours.
+A playtest a person must do goes in `Docs/UNITY_VERIFICATION_CHECKLIST.md` and, with the person's approval, on the
+vessel's lane through `/handoff-for-test`. Tell the person in one line what the loop's next action is after yours.

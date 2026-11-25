@@ -16,6 +16,12 @@ namespace CosmicShore.Core
     public static class ServerEntitlementGate
     {
         public static readonly bool Enabled = false;
+
+        /// <summary>
+        /// What every call site reads: the compiled gate above AND not killed by the live flags' <c>entitlements</c> kill
+        /// switch (Docs/LAUNCH/LIVE_FLAGS.md). A kill switch only ever turns it off.
+        /// </summary>
+        public static bool IsActive => LaunchFlags.Gate(Enabled, LaunchKillSwitch.Entitlements);
     }
 
     /// <summary>The record as the server holds it after a request. Field names match entitlements.js.</summary>

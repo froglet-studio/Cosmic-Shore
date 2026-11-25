@@ -1,5 +1,7 @@
 # Stoat: the black-hole / white-hole look, parked (2026-10-27)
 
+> **History, not the current Stoat (marked 2026-11-20, Yash).** What ships is the swing: one small black hole, the stick picks the exit angle, one slingshot. The source of truth is `Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT.md` (the banner at its top) and `STOAT_DIPOLE.md` ("The swing", "One slingshot"). Kept as a record: the black hole is back as the Stoat's one hole (the swing) and the white hole is dropped for good.
+
 **Why this file exists.** Round 23 (Garrett: *"remove both the white hole and black hole. lean completely into the
 wormhole"*) and round 24 (Yash: *"we are not going with black hole and white holes, we will use black hole white holes
 later maybe, save this in project folders"*) took every black-hole and white-hole visual off the Stoat's Gate mode.

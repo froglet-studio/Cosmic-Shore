@@ -1,0 +1,71 @@
+{
+  "id": "2026-11-16-risky-merge-pr-2051-merge-ys-bleeding-ed-50f6e9",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-16T22:09:09+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2051 (Merge Ys-bleeding-edge into bleeding-edge (2026-11-17)) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/Resources/ElementalAbilityMaps/Meerkat.asset, Assets/_Prefabs/Spacevessels/Urchin.prefab, Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset, Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset; multiplayer wire format (NetworkConfig.ProtocolVersion): Assets/_Prefabs/CORE/NetworkManager.prefab; UGS or the backend: Assets/_Scripts/System/AuthenticationServiceFacade.cs; an area another person owns (Docs/TEAM.json owners): UGS and the backend (Cloud Code, Cloud Save, Access Control, Moderation, authentication, deploys) (Shombith)",
+  "branch": "Ys-bleeding-edge",
+  "pr": 2051,
+  "commit": "99f19068c",
+  "paths": [
+    ".claude/skills/asset-surgery/references/CSHARP_VERIFICATION.md",
+    "Assets/Resources/AIBoostPolicies/BrittleStarAIBoostPolicy_BrittleStarTime.asset",
+    "Assets/Resources/AIBoostPolicies/BrittleStarAIBoostPolicy_BrittleStarTime.asset.meta",
+    "Assets/Resources/ElementalAbilityMaps/Meerkat.asset",
+    "Assets/Resources/EndConditionOverrides.asset",
+    "Assets/Resources/GameModeStatsProfile.asset",
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab",
+    "Assets/_Prefabs/UI Elements/VesselHUD/MeerkatHUDVariant.prefab",
+    "Assets/_SO_Assets/Effects/Effect Containers/VesselContainers/MeerkatImpactorDataContainer.asset",
+    "Assets/_SO_Assets/Game Toasts/GameToastConfig_BrittleStarTime.asset",
+    "Assets/_SO_Assets/Game Toasts/GameToastConfig_GrizzlyTime.asset",
+    "Assets/_SO_Assets/Game Toasts/GameToastConfig_GrizzlyTime.asset.meta",
+    "Assets/_SO_Assets/Game Toasts/GameToastConfig_Spearline.asset",
+    "Assets/_SO_Assets/Game Toasts/GameToastConfig_Thornline.asset",
+    "Assets/_SO_Assets/Game Toasts/GameToastConfig_Waystation.asset",
+    "Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameBrittleStarTime.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameGrizzlyTime.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameSpearline.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameThornline.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameThresherTime.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameWaystation.asset",
+    "Assets/_SO_Assets/Mode Previews/ModePreview_BrittleStarTime.asset",
+    "Assets/_SO_Assets/Mode Previews/ModePreview_GrizzlyTime.asset",
+    "Assets/_SO_Assets/Mode Previews/ModePreview_Spearline.asset",
+    "Assets/_SO_Assets/Mode Previews/ModePreview_ThresherTime.asset",
+    "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset",
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameBrittleStarTime.unity"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/Resources/ElementalAbilityMaps/Meerkat.asset, Assets/_Prefabs/Spacevessels/Urchin.prefab, Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset, Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"
+    },
+    {
+      "key": "protocol",
+      "name": "multiplayer wire format (NetworkConfig.ProtocolVersion)",
+      "detail": "Assets/_Prefabs/CORE/NetworkManager.prefab"
+    },
+    {
+      "key": "backend",
+      "name": "UGS or the backend",
+      "detail": "Assets/_Scripts/System/AuthenticationServiceFacade.cs"
+    },
+    {
+      "key": "owned-area",
+      "name": "an area another person owns (Docs/TEAM.json owners)",
+      "detail": "UGS and the backend (Cloud Code, Cloud Save, Access Control, Moderation, authentication, deploys) (Shombith)"
+    }
+  ]
+}

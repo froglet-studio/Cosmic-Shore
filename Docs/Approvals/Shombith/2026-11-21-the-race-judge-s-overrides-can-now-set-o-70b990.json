@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-21-the-race-judge-s-overrides-can-now-set-o-70b990",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-21T17:13:29+00:00",
+  "area": "Amoebius race judge",
+  "summary": "The race judge's overrides can now set object references and lists (an AI ability list), each Brood/volume seat reports its presses, and Shadow derives from UIBehaviour so the player builds on bleeding-edge again (UIThemeLive's 'case Shadow' broke it).",
+  "why": "Train the Mass-Space AIs in each hull's own games: six of seven hulls' AIs had no ability list.",
+  "branch": "claude/project-thread-d1elkw",
+  "lane": "amoebius",
+  "commit": "8134b298b",
+  "paths": [
+    "Port/src/CosmicShore.Engine/UI/PackageComponents.cs",
+    "Port/src/CosmicShore.Player/BroodJudge.cs",
+    "Port/src/CosmicShore.Player/RaceJudge.cs"
+  ]
+}

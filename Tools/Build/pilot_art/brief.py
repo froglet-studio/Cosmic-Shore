@@ -426,9 +426,17 @@ def enum_members(path, enum):
     return [m.group(1) for m in re.finditer(r"^\s*(\w+)\s*=\s*\d+", body, re.M)]
 
 
+def rollable_animals():
+    """The AnimalSpecies a new pilot can roll: None and the painted-only ones after Species.LastRollable left out."""
+    text = open(os.path.join(ROOT, ANIMAL_SPECIES_CS), encoding="utf-8").read()
+    last = re.search(r"LastRollable\s*=\s*AnimalSpecies\.(\w+)", text).group(1)
+    members = enum_members(ANIMAL_SPECIES_CS, "AnimalSpecies")
+    return [a for a in members[:members.index(last) + 1] if a != "None"]
+
+
 def self_test():
     failures = []
-    animals = [a for a in enum_members(ANIMAL_SPECIES_CS, "AnimalSpecies") if a != "None"]
+    animals = rollable_animals()
     missing = [a for a in animals if a not in SPECIES]
     extra = [a for a in SPECIES if a not in animals]
     if missing:

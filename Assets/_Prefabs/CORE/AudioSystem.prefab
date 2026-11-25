@@ -491,6 +491,13 @@ MonoBehaviour:
   EnergyGainAudioClip: {fileID: 8300000, guid: 989a0e48e804482bbf3a677ada7d4ae8, type: 3}
   SpeedBurstAudioClip: {fileID: 8300000, guid: 653de36067c848a78ac947c561ec5143, type: 3}
   soundtrack: {fileID: 11400000, guid: 6a1c3e5b7d9f4b2a8c0e1f3a5b7c9d10, type: 2}
+  creatureBlockHitEvent:
+    Guid:
+      Data1: 1232779908
+      Data2: 1241063617
+      Data3: 1702576795
+      Data4: -1248198021
+    Path: event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
 --- !u!114 &1452114705
 MonoBehaviour:
   m_ObjectHideFlags: 0

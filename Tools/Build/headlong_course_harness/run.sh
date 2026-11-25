@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Compile the SHIPPED Headlong stampede code (RaceCourseGeometry, HeadlongCircuit, RedlineTimeCrystals.Apex, HeadlongHedges)
-# and its SHIPPED edit-mode tests (HeadlongHedgesTests) against race_course_source_harness's Unity math stub and an NUnit
+# Compile the SHIPPED Headlong stampede code (RaceCourseGeometry, HeadlongCircuit, RedlineTimeCrystals.Apex, HeadlongHedges),
+# its I4 garden ruins (HeadlongRuins, on Spearline's SpearlineRuins) and their SHIPPED edit-mode tests (HeadlongHedgesTests,
+# HeadlongRuinsTests) against race_course_source_harness's Unity math stub and an NUnit
 # shim with Roslyn, and RUN every [Test] - the 400-seed ladder in a few seconds, no Unity.
 #
 #   bash Tools/Build/headlong_course_harness/run.sh                 # every test; exit 0 = all passed
 #   bash Tools/Build/headlong_course_harness/run.sh --self-test     # ...plus negative controls that must FAIL
 #   bash Tools/Build/headlong_course_harness/run.sh --sweep         # the stampede ladder per intensity (400 seeds)
+#   bash Tools/Build/headlong_course_harness/run.sh --ruins         # the I4 garden ruins over 400 seeds: prisms, wheels
 #   bash Tools/Build/headlong_course_harness/run.sh --export I S... # JSON lines: gates, hedges, crystals (the model's input)
 #
 # Needs a .NET SDK (8+): DOTNET_ROOT, else ~/.dotnet, else the folder of `dotnet` on PATH.
@@ -27,17 +29,18 @@ OUT="${TMPDIR:-/tmp}/headlong_course_harness"
 mkdir -p "$OUT"
 
 HEDGES="$A/Controller/Arcade/Headlong/HeadlongHedges.cs"
+RUINS="$A/Controller/Arcade/Headlong/HeadlongRuins.cs"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = hedges source, $2 = output name
+build() {   # $1 = hedges source, $2 = output name, $3 = ruins source (default: the shipped one)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
     "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" "$A/Controller/Arcade/Redline/RedlineTimeCrystals.cs" \
-    "$1" "$A/Tests/Editor/HeadlongHedgesTests.cs"; do
+    "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" "$A/Controller/Arcade/Spearline/SpearlineRuins.cs"     "$1" "${3:-$RUINS}" "$A/Tests/Editor/HeadlongHedgesTests.cs" "$A/Tests/Editor/HeadlongRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -53,6 +56,7 @@ run() { "$DOTNET" "$(native "$OUT/$1.dll")" "${@:2}"; }
 build "$HEDGES" headlong
 case "${1:-}" in
   --sweep)  run headlong --sweep; exit 0 ;;
+  --ruins)  run headlong --ruins; exit 0 ;;
   --export) run headlong "$@"; exit 0 ;;
 esac
 
@@ -77,4 +81,16 @@ mutate "hedges in the rings' approach" 's/public const float RingClearance = 150
 mutate "the thorn window on the line" 's/public const float WindowOffset = 110f;/public const float WindowOffset = 0f;/' 'WindowOffset = 0f'
 mutate "I4 without Time 5" 's/StartingTimeLevelByIntensity = { 0, 0, 0, 5 }/StartingTimeLevelByIntensity = { 0, 0, 0, 0 }/' '{ 0, 0, 0, 0 }'
 mutate "slabs far apart (a hedge you slip through)" 's/public const float Pitch = 15f;/public const float Pitch = 4f;/' 'Pitch = 4f'
+mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$RUINS" > "$OUT/HeadlongRuins_neg.cs"
+  grep -q "$3" "$OUT/HeadlongRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$HEDGES" neg "$OUT/HeadlongRuins_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+mutate_ruins "ruins on the easy levels" 's/SpearlineRuins.ForIntensity(intensity)/SpearlineRuins.ForIntensity(4)/' 'ForIntensity(4)'
+mutate_ruins "ruins standing in the hedges" 's/if (Clearance(parts\[i\], hedges, crystals) < 0f) laid\[i\] = false;/if (false) laid[i] = false;/' 'if (false) laid'
+mutate_ruins "a wheel turning through a hedge" 's/if (!WheelMeets(wheel, hedges, crystals)) continue;/continue;/' '^                continue;'
+mutate_ruins "ruins on the Time crystals" 's/best = Mathf.Min(best, (p - crystals\[c\]).magnitude - half - CrystalGap);/{ }/' '^                { }'
 echo "headlong_course_harness self-test: ok"

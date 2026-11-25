@@ -260,8 +260,8 @@ namespace CosmicShore.Gameplay
             if (hole == null) return false;
             bool smooth = hole.IsSmooth;
             float radius = (smooth ? hole.Softening : hole.HorizonRadius) * hole.WarpWeight;
-            // A horizon hole's lens follows its Amplitude (1 for every hole but one being neutralized: the Stoat's
-            // slamming pair, StoatDipoleExecutor.StepCollapses). The shadow, the bend and the ring all scale with the
+            // A horizon hole's lens follows its Amplitude (1 for every hole but one being neutralized, as the
+            // Stoat's retired field dipole's slamming pair was). The shadow, the bend and the ring all scale with the
             // radius, so the pair sinks to a point as its fields cancel. A smooth well's amplitude rides its
             // LensStrength below instead, so it is not applied twice.
             if (!smooth) radius *= Mathf.Clamp01(hole.Amplitude);

@@ -49,7 +49,7 @@ subclass per MECHANIC, never per mode:
 | `SkimRingAIPolicySO` (a copy) | `StoatAIBoostPolicy` | the Squirrel's asset cloned onto `Stoat.prefab`. The Stoat binds no `SquirrelTubeActionSO`, so `CreateDriver` returns null and it is a quiet no-op; the Stoat's pace comes from its own executors' autopilot (dipole / sling) |
 
 The Rhino's **sword** has an autopilot too, and it is deliberately **not** a boost policy:
-`RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors (`InputStatus.LeftTriggerAnalog /
+`SwordfishSwordAutopilot` (Rhino root) writes the trigger mirrors (`InputStatus.LeftTriggerAnalog /
 RightTriggerAnalog`) on the machine that owns the AI's input, so the shipped sword code poses,
 swipes and energizes exactly as for a human and replicates the same way. Every `thinkSeconds`
 (0.15 s) it strokes at the nearest hostile prism in reach (stroke 0.3 s, rest 0.45 s), or holds the
@@ -87,8 +87,9 @@ spending, the next leg starts at the objective. A break-off (orbit break) and a 
 have handed over, so the hull flies exactly as before. Shipped lists:
 
 - Sparrow: Dog Fight, Wildlife Liberation (gun hunts — engagement range, not speed).
-- Dolphin: The Bends, Rampage, Broadside — the commit drift is how the AI AIMS the crystal blast
-  those modes score by; releasing it early trades aim for speed.
+- Dolphin: The Bends, Broadside — the commit drift is how the AI AIMS the crystal blast
+  those modes score by; releasing it early trades aim for speed. Rampage was listed until 2026-11-21: on the Mass-Space
+  volume books the speed is worth more than the aim there (`RAMPAGE.md` § The AI trained on the volume books).
 - Squirrel: Skim Race (its own pilot), Joust, Astro League; plus `requireAIPlayer`, because the
   ring is permanent mass and the menu's lava-lamp autopilot must not wall up Menu_Main.
 - Scarab: Astro League, Scarab Scramble, Tollway (ball modes).

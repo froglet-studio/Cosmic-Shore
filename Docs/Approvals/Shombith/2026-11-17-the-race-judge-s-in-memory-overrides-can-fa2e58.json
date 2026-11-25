@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-17-the-race-judge-s-in-memory-overrides-can-fa2e58",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-17T08:27:02+00:00",
+  "area": "Amoebius (Port/) race judge",
+  "summary": "The race judge's in-memory overrides can now edit a prefab's component by its fileID, and override paths can index List fields.",
+  "why": "Step-5 vessel tuning searches Time levers that live on prefab components (Scarab ThrottleScalerMultiplier, Sparrow BoostSpeedMultiplier, TrailFollower ride speed). Used locally for the fair before/after behind #2110-#2112 and #2125: an override of Scarab 1.5 moved its Regatta time 62 -> 49.6 s as expected. Judge-only, nothing writes assets.",
+  "branch": "claude/project-thread-cwavhz",
+  "lane": "amoebius",
+  "commit": "4c9219b27",
+  "paths": [
+    "Port/src/CosmicShore.Player/RaceJudge.cs",
+    "Port/src/CosmicShore.Player/TrainingHost.cs",
+    "Tools/Compute/evaluators/regatta_judge.py"
+  ]
+}

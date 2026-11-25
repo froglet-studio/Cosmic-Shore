@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-17-the-ark-attack-carve-out-widened-again-f-3dba46",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-17T11:25:42+00:00",
+  "area": "the ecology design principles (Docs/ECOSYSTEM.md section 0.z)",
+  "summary": "The Ark-attack carve-out widened again for voyages: kaiju (4.5x grazers born outside a hostile cell's membrane) and open-water raiders now wear an IFaunaLeash held by VoyageRun that steers them at the Ark and orders its nearest hull plate; voyage satellite cells scatter fauna and flora births through the cytoplasm (Cell.ScatterLifeSpawns).",
+  "why": "Shombith 2026-11-17: voyage cells felt small, every crystal came in one spot, and he asked for kaiju-level fauna attacking the cell from outside.",
+  "branch": "claude/project-thread-lfj3rj",
+  "lane": "ecology",
+  "commit": "182f3f40c",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/Cell.cs",
+    "Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs",
+    "Assets/_Scripts/Controller/Voyages/VoyageRun.Kaiju.cs",
+    "Docs/ECOSYSTEM.md"
+  ]
+}

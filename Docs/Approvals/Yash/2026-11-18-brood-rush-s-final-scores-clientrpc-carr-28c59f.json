@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-18-brood-rush-s-final-scores-clientrpc-carr-28c59f",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-18T01:07:57+00:00",
+  "area": "multiplayer wire and prism stats",
+  "summary": "Brood Rush's final-scores ClientRpc carries five volume-book numbers a pilot (ProtocolVersion 35 -> 36); Player's steal/kill report RPCs also book the VolumeLedger; PrismStats gained ShieldVolume and WasSuperShielded.",
+  "why": "Garrett 2026-11-18: the Mass-Space volume books and their sanity check.",
+  "branch": "claude/project-thread-e9yath",
+  "commit": "bab7ed636",
+  "paths": [
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_Scripts/Controller/Arcade/BroodRushController.cs",
+    "Assets/_Scripts/Controller/Player/Player.cs"
+  ]
+}

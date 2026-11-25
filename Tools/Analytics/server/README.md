@@ -1,13 +1,12 @@
 # Froglet Analytics server
 
-Our own analytics backend, replacing PostHog (Shombith, 2026-11-05). It takes the game's events, keeps them on our
+Our own analytics backend (Shombith, 2026-11-05). It takes the game's events, keeps them on our
 Oracle VM, and serves the **Froglet Analytics console**: the dashboard picked on Frogma as Rev 50 **B** (a rail of
 pages: Overview, Retention, Matches, Data health, Ask Claude, Erasure; `Docs/MENU_REDESIGN_B.md` §137). Claude writes
 three notes about the numbers each night and answers questions in the Ask box. UGS Analytics is unchanged.
 
 Status (2026-11-06): live on the Oracle VM, following `bleeding-edge` and updating itself nightly. The game sends to it
-directly (PostHog removed from the game). PostHog's history is in: 66,746 events over 91 days from early August 2026,
-every day matching PostHog's own count. Where it stands, what is unchecked and what it waits on:
+directly. The older PostHog history is imported (below); PostHog itself was shut down on 2026-11-23. Where it stands, what is unchecked and what it waits on:
 `Docs/Reports/ANALYTICS.md`.
 
 ## The console page
@@ -18,7 +17,7 @@ the same five files; open it there as `https://<pages>/?api=https://analytics.<t
 
 ## How the game reaches it (nothing to fill in)
 
-PostHog is gone from the game (Shombith, 2026-11-06). `FrogletAnalyticsSink` posts `{api_key, batch: [...]}` to
+`FrogletAnalyticsSink` posts `{api_key, batch: [...]}` to
 `<serverUrl>/batch/`, and `Assets/Resources/FrogletAnalyticsConfig.asset` ships already pointed at the server:
 
 | Field | Committed value |
@@ -26,7 +25,7 @@ PostHog is gone from the game (Shombith, 2026-11-06). `FrogletAnalyticsSink` pos
 | `serverUrl` | `https://analytics.130-210-34-146.sslip.io` |
 | `ingestKey` | the public key in `Tools/Analytics/server/ingest_key.public` |
 
-The ingest key is write-only and public by design (it ships in every build, as PostHog's project key did); the
+The ingest key is write-only and public by design (it ships in every build and can only write events); the
 server reads the same file, so no key is copied by hand, and a test fails if the two ever differ. The server checks
 every event against the schema and rate-limits each sender; reading needs a read key that never ships. If the
 server's address changes (a domain of our own), `serverUrl` is the one value to change, in one commit. Events a
@@ -34,31 +33,13 @@ device had queued for PostHog are sent here on its first start with the new sink
 
 ## The older data (PostHog's history)
 
-`import_posthog.py` copies PostHog's history in, once: every event the game sends and every `$identify`, one day at a
-time, through the same checks as live events, with their own timestamps. Everything PostHog added is dropped (every
-`$` property except `$set`, so no IP address is stored); the country comes from PostHog's own lookup, two letters.
-Running it again stores nothing twice. The October double-sends come in as they happened, flagged, and every count
-collapses them. It needs a PostHog **personal** API key with the `query:read` scope, in `POSTHOG_PERSONAL_API_KEY`,
-and the project id:
-
-```bash
-sudo -u froglet-analytics env FROGLET_ANALYTICS_CONFIG=/var/lib/froglet-analytics/config.json \
-  POSTHOG_PERSONAL_API_KEY="$POSTHOG_PERSONAL_API_KEY" \
-  /var/lib/froglet-analytics/venv/bin/python /var/lib/froglet-analytics/repo/Tools/Analytics/server/analytics_server.py \
-  import-posthog --project <id> --dry-run
-```
-
-Drop `--dry-run` to store; it rebuilds the numbers when it finishes. Our PostHog project is `224840` (EU cloud).
-
-It reads one count per day first, skips empty days, and checks each day it reads against that count (`days_short` in
-the summary). It pages by `timestamp`, because PostHog answers 400 to `OFFSET` on queries made with a personal API
-key, and waits when PostHog rate-limits it. Run it once more after the builds that still send to PostHog have died
-out: it adds only what is missing. Then delete the personal key in PostHog.
-
-**Run `import-posthog` once more after deploying the 2026-11-06 server.** Every `$identify` is now kept as a row of the
-player's history (`person_snapshots` in `events.db`), where before only the latest values were merged into `people`.
-Re-running the import brings PostHog's identify history in (each `$identify` once: rows are keyed by player, time and
-content, so the run is idempotent) and the Toybox's older vessel switches with it (below).
+PostHog was the second sink from July to 2026-11-06. Its history was copied in once, through the same checks as live
+events and with their own timestamps: 67,356 events over 99 days from early August 2026, every day matching PostHog's
+own count, with no IP address kept (the country came from PostHog's own lookup, two letters) and every `$identify`
+kept in `person_snapshots`. Those rows are the **imported** source and the "Old PostHog data" era below. PostHog was
+shut down on 2026-11-23 (Shombith): the last import ran, then the personal API key and project 224840 were deleted.
+The importer (`import_posthog.py`, the `import-posthog` command) was removed with them, since there is no project left
+to read; it is in git history before that commit. The events themselves stay in `events.db` and its backups.
 
 ## Updates (nightly, by itself)
 
@@ -84,7 +65,6 @@ up to date, update, failing tests (kept the old code), merged branch (moved to b
 | `test_analytics_server.py` | The server's tests: `python3 analytics_server.py --self-test` (it runs the Notebook's too; 120 together on 2026-11-07) |
 | `../console/` | The console page (Rev 50 B), served at `/` |
 | `../console/make_preview.py` | A review copy of the console with no server: invented sample data baked in (`--out page.html`), for a claude.ai link |
-| `import_posthog.py` | Copies PostHog's history in, once, without IP addresses |
 | `self-update.sh` | The nightly self-update (tests before it restarts) |
 | `ingest_key.public` | The public, write-only ingest key every build ships with |
 | `setup-analytics-vm.sh` | Installs it on the Compute VM as its own user and service, behind Caddy |
@@ -159,7 +139,7 @@ release. An era has an `id` (`[a-z0-9_]`, up to 40), a `name`, `from` and `to` d
 that finds none; the PostHog one starts on the first imported day. After that only an admin changes them.
 `era=<id>` on Overview, Retention, Matches, Play types, Cohorts, Players, `/v1/series` and dashboard tiles puts the
 era's own range (up to today), source and builds in place of the days window, and the page says which (`from`, `to`,
-`source`, `era`). **Imported** events are told apart exactly, not by date: they are the ones `import_posthog.py`
+`source`, `era`). **Imported** events are told apart exactly, not by date: they are the ones the history import
 stored with their own time (`received_ms = ts_ms`), and the rebuild carries that as `imported` on `plays`,
 `daily_events`, `daily_plays` and `returns`.
 
@@ -548,4 +528,14 @@ FROGLET_ANALYTICS_CONFIG=/tmp/fa.json python3 Tools/Analytics/server/analytics_s
 - `build_kind` stamped by the client (would split development builds from release; today they count as release).
 - Dashboard email: a dashboard's schedule ("mondays 09:00") is stored only; sending it was left out (Shombith,
   2026-11-07: "Leave emails").
-- A last `import-posthog` run, once the builds that still send to PostHog are gone; then PostHog can be shut down.
+
+## Funnels and Release compare (Rev 66 A, Shombith 2026-11-17)
+
+`analytics_compare.py`, worked out per player over `events.db` when asked; only counts come back, so any reader key may
+ask. Tests: `test_analytics_compare.py` (run with `--self-test`).
+
+| Route | What |
+|---|---|
+| `POST /v1/funnel` | `{"steps": [event \| {"event", "step_id"?, "label"?}, ...], "within_days": 1\|7\|30, "order": "strict"\|"any", "since"?, "until"?, "by": "platform"\|"device"\|"country"\|"none", "build"?, "device"?}`: players who made the first step in since..until (default the last 30 days), how many reached each step, split, time between steps, and where the ones at the biggest drop went next. `second_day` is a step: any event on a later day. 2 to 8 steps. |
+| `GET /v1/funnel/steps` | the events and FTUE nodes a step can be, with players in the last 90 days |
+| `GET /v1/releases[?a=&b=&span=first7\|calendar]` | the app_versions (newest first, new players each) and who is on which now; with `a` and `b`, B read against A per measure (too early under 30 in either base), D1 by platform, finished by mode, exceptions by day, the launch histogram (first menu of each app run only), the return curve and B's top exceptions |

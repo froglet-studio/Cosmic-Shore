@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc5ed4d85d264f68b3a7a76351aca66d, type: 3}
   m_Name: TigerMothDropAction
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.TigerMothDropActionSO
-  fullCooldownSeconds: 20
+  fullCooldownSeconds: 10
   fullCooldownDistance: 900
   cooldownMultiplierAtFullTime: 0.5
   maxCooldownMultiplier: 2

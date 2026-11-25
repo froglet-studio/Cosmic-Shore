@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-17-ainosefollowbyintensity-easy-5-and-mediu-6f6768",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-17T06:33:40+00:00",
+  "area": "Redline's AI rivals (round 5 nose table)",
+  "summary": "aiNoseFollowByIntensity: Easy 5 and Medium 7 at every rung, Hard 7 (I1-I2) / 9 (I3-I4); Legendary unchanged",
+  "why": "Real-game judge: old Easy 2-4 finished 5 of 12 races, Medium (the default) took 152/298/226/214 s with a 101 s stall at one gate. Now Easy ~215-270, Medium 91/118/137/160, Hard 91/86/121/142, every race finished. Garrett's overnight 'do your best on fun'",
+  "branch": "claude/project-thread-v7jk17",
+  "commit": "43e8bd208",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs"
+  ]
+}

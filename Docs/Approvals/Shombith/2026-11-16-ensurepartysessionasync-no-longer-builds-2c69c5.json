@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-16-ensurepartysessionasync-no-longer-builds-2c69c5",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-16T21:02:42+00:00",
+  "area": "UGS party layer (HostConnectionService)",
+  "summary": "EnsurePartySessionAsync no longer builds a Relay host while the state machine is Disconnected (the boot's Relay retry outran the presence join and left the host in InPresenceLobby for the session); it waits for or runs the init. LegalTransitions unchanged. Test: OfflineSessionTests.EnsurePartySession_WhileThePresenceJoinIsStillRunning_StartsNoHost",
+  "branch": "Ys-bleeding-edge",
+  "commit": "383d19ac2"
+}

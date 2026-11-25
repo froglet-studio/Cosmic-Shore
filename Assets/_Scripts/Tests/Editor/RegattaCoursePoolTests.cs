@@ -14,7 +14,7 @@ namespace CosmicShore.Tests
     /// Regatta's shuffled course pool (Garrett, 2026-11-06: one Regatta level, several course variants shuffled, no
     /// intensities). The contract: the host deals every enabled circuit once before any repeats and never the same one
     /// twice running; a pinned variant (a replay, a benchmark) wins; the draw reaches clients in the game-config sync;
-    /// the scene's Cell lays CellConfigs[variant]; and the shipped pool is four DIFFERENT circuits, each a Regatta arena.
+    /// the scene's Cell lays CellConfigs[variant]; and the shipped pool is DIFFERENT courses, each a Regatta arena, Ref1-Ref4 first.
     /// </summary>
     public class RegattaCoursePoolTests
     {
@@ -178,24 +178,31 @@ namespace CosmicShore.Tests
         // ── The shipped pool ───────────────────────────────────────────────────────────────
 
         [Test]
-        public void ShippedPool_IsFourDifferentRegattaCircuits()
+        public void ShippedPool_DealsOnlyDifferentRegattaCourses()
         {
             var pool = AssetDatabase.LoadAssetAtPath<RegattaCoursePoolSO>(PoolPath);
             Assert.IsNotNull(pool, $"{PoolPath} is missing - run Tools/Build/author_regatta_assets.py");
-            Assert.AreEqual(4, pool.Count);
+            // Entries 0-3 are the reference courses Ref1-Ref4 (the race judge and the training harness address them by
+            // intensity); the rest of the shuffle's searched courses follow (Tools/Build/regatta_shuffle_pool.json).
+            Assert.GreaterOrEqual(pool.Count, 4);
+            for (int i = 0; i < 4; i++)
+                StringAssert.StartsWith($"Ref{i + 1} ", pool.LabelOf(i), $"entry {i} is not reference course Ref{i + 1}");
 
             var firstGates = new List<Vector3>();
+            int enabled = 0;
             for (int i = 0; i < pool.Count; i++)
             {
                 var rails = pool.Entries[i].Rails;
                 Assert.IsNotNull(rails, $"entry {i} lays no SpawnableRegattaRails");
-                Assert.IsTrue(pool.Entries[i].Enabled, $"entry {i} is disabled");
                 var gates = rails.BuildGatesNow();
                 Assert.AreEqual(RegattaCourse.RingsPerLap, gates.Count, $"entry {i}: ring count");
+                if (!pool.Entries[i].Enabled) continue;
+                enabled++;
                 foreach (var seen in firstGates)
-                    Assert.Greater((gates[1].Position - seen).magnitude, 1f, $"entry {i} lays a circuit already in the pool");
+                    Assert.Greater((gates[1].Position - seen).magnitude, 1f, $"entry {i} lays a course already dealt");
                 firstGates.Add(gates[1].Position);
             }
+            Assert.Greater(enabled, 0, "no entry is enabled: every match would fall back to entry 0");
         }
     }
 }

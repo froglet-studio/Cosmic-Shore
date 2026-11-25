@@ -1,38 +1,33 @@
-using System;
 using System.Collections;
-using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Sparrow's strafing roll — a BASE part of the boost ability, available from level 0 with no
-    /// elemental unlock (it was the TIME level-5 upgrade until the boost redesign; TIME-5 is now the
-    /// elemental-debuff immunity held while boosting, see VesselElementalImmunity).
+    /// The Sparrow's barrel roll: a VESSEL DYNAMIC on the RIGHT stick (Shombith, 2026-11-24, moved off
+    /// the boost button). No element and no level-5 upgrade touch it - it is how the Sparrow flies, so the
+    /// Time scaling it briefly carried (rollTimeScale, 2026-11-18) is gone and the Fleet Codex lists it as
+    /// a vessel dynamic with no element.
     ///
-    /// One roll per BOOST press, inside a SHORT WINDOW after that press:
-    /// pressing boost arms a roll for <see cref="rollArmWindowSeconds"/> (0.3 s); while it is
-    /// armed, the stick at FULL deflection rolls the vessel once. Let the window lapse and the
-    /// charge is spent unfired — the boost keeps running, but another roll needs another press.
-    /// That window is what stops the spin firing unintentionally: without it a single press
-    /// armed the roll for the WHOLE boost hold, so any later moment the stick happened to reach
-    /// the perimeter — a hard turn seconds into an indefinite boost — spun the vessel. The roll
-    /// now only answers a deliberate press-then-slam. Holding the stick at the perimeter still
-    /// never repeats, and a stick already pinned at max when boost starts still rolls
-    /// immediately. That charge is what the boost ability icon displays
-    /// (<see cref="OnRollChargeChanged"/>; the Sparrow HUD stopped drawing it on 2026-10-26 - the roll is back too fast to be worth a readout), and it now empties
-    /// when the window lapses, so the pip reads real availability rather than "boost is held".
+    /// Push the right stick past <see cref="engageThreshold"/> in ANY direction and the Sparrow rolls that
+    /// way: the stick's direction is the sideways nudge, its horizontal half picks the spin (right half
+    /// clockwise, left half counterclockwise). HOLD the stick and it keeps rolling: each roll that ends with
+    /// the stick still pushed starts the next one at once, in the stick's direction at that moment. The
+    /// Sparrow steers on the LEFT stick only (SingleStickVesselTransformer), so the right stick collides with
+    /// nothing - the Scarab's juke (ScarabJukeController) uses its own right stick the same way.
+    /// Keyboard: P ; L ' (the right stick of every keyboard strategy, the one-thumb mouse strategy included).
+    /// Phone: the touch strategy publishes a right stick for a one-stick hull only from a held AIM button.
     ///
-    /// It works IDENTICALLY in the stationary/turret stance. Boost gives no speed there —
+    /// It works IDENTICALLY in the stationary/turret stance. The stance stops travel —
     /// VesselTransformer skips throttle and course travel while IsTranslationRestricted — but
-    /// the roll is still armed by the press and still strafes: its ModifyVelocity displacement
+    /// the roll still strafes: its ModifyVelocity displacement
     /// opts out of the restriction (ShipVelocityModifier.ignoresTranslationRestriction), making
     /// it the stopped Sparrow's dodge. The stance itself is unchanged by rolling.
     /// Clockwise on the right half of the stick circle, counterclockwise on the left —
     /// animating the model about its
     /// forward axis while a ModifyVelocity displacement orthogonal to travel (direction picked
-    /// by the left stick) carries the vessel sideways. The trail becomes disjointed from
+    /// by the right stick) carries the vessel sideways. The trail becomes disjointed from
     /// facing, so for the roll duration blockRotation is overridden with the ACTUAL travel
     /// direction (Course + velocityShift): the spawn loop lays travel-aligned bridging prisms,
     /// and remote peers get the same orientation through the owner-written n_BlockRotation.
@@ -49,32 +44,26 @@ namespace CosmicShore.Gameplay
     ///
     /// For the roll's duration the ability OWNS THE ROLL AXIS
     /// (VesselTransformer.BankIntoTurnSuppressed). That is not decoration: the bank-into-turn
-    /// and this roll are the same rotation about the same axis, so they add — and the trigger
-    /// is a FULL stick deflection, i.e. precisely when the bank is at maximum and pointing the
-    /// other way. Un-suppressed, 15° of authored roll landed under ~20-25° of opposing bank and
-    /// the pilot saw the horizon tilt the WRONG way. Pitch and yaw are untouched, so the vessel
-    /// still turns exactly as hard while it rolls.
+    /// and this roll are the same rotation about the same axis, so they add. When the left stick
+    /// fired the roll, the trigger WAS peak bank pointing the other way: 15° of authored roll
+    /// landed under ~20-25° of opposing bank and the pilot saw the horizon tilt the WRONG way. On
+    /// the right stick a hard left-stick turn while rolling still banks, so the suppression stays.
+    /// Pitch and yaw are untouched, so the vessel still turns exactly as hard while it rolls.
     ///
-    /// Owner-driven: input polling only acts on the locally controlled vessel; the
-    /// displacement replicates via the owner-authoritative NetworkTransform. Autopilot/AI
+    /// Owner-driven: the right stick is a NetworkVariable every peer can read
+    /// (InputStatus.n_rNorm), so the trigger is gated on IPlayer.IsLocalPilot exactly as the
+    /// Scarab's juke is; the displacement replicates via the owner-authoritative NetworkTransform. Autopilot/AI
     /// vessels never produce stick input, so the roll is inert for AI (trigger synthesis
     /// is tracked in Docs/ElementalAbilitySystem/BACKLOG.md Phase 2.5).
     /// </summary>
     public class BarrelRollController : MonoBehaviour
     {
         [Header("Trigger")]
-        [Tooltip("Stick radial magnitude treated as 'at the perimeter'. 1 = full deflection " +
-                 "only (the deadzone processor renormalizes a fully-deflected stick to " +
-                 "exactly 1, and the touch joystick clamps at its ring). Uses the " +
-                 "normalized (radially clamped) stick vector, never the eased one — the " +
-                 "per-axis ease makes diagonal magnitudes direction-dependent.")]
-        [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
-        [Tooltip("How long a boost press keeps a roll armed. The stick must reach the " +
-                 "perimeter inside this window or the charge is spent unfired and the boost " +
-                 "button must be pressed again to arm another. Stops a stick that drifts to " +
-                 "full deflection later in a long boost hold from spinning the vessel. " +
-                 "0 = no window (legacy: armed for the whole boost press).")]
-        [SerializeField, Min(0f)] float rollArmWindowSeconds = 0.3f;
+        [Tooltip("Right-stick radial magnitude that starts a roll, in any direction. Uses the " +
+                 "normalized (radially clamped) stick vector, never the eased one - the per-axis " +
+                 "ease makes diagonal magnitudes direction-dependent. Sits well above the input " +
+                 "strategies' own deadzone so a resting stick never rolls.")]
+        [SerializeField, Range(0.1f, 1f)] float engageThreshold = 0.6f;
         [Tooltip("Flip the CW/CCW mapping if the roll direction reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
 
@@ -94,38 +83,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Peak sideways displacement speed injected through ModifyVelocity (world " +
                  "units/second; the transformer clamps its channel at 100).")]
         [SerializeField, Min(0f)] float nudgeSpeed = 60f;
+        float _rollSeconds;
         [Tooltip("The transform that visually rolls. Defaults to the model's Animator " +
                  "transform, then the vessel root's first child.")]
         [SerializeField] Transform rollVisualTarget;
-
-        // Float-safe "at max" comparison: deadzone renormalization / touch clamping land
-        // a hair under 1 on some frames.
-        const float ThresholdEpsilon = 0.005f;
 
         // Interface-typed: AutoPilotEnabled and InputStatus are default interface members on
         // IVesselStatus (routed through AIPilot/Player) and are not visible on the concrete
         // VesselStatus type.
         IVesselStatus _status;
         bool _rolling;
-        bool _wasBoosting;
-        bool _rollArmed;
-        float _armExpiresAt;
         Quaternion _visualRestRotation;
 
-        /// <summary>
-        /// Raised when the once-per-press roll charge is armed (on a fresh boost press), spent (the
-        /// instant a roll triggers) or lapsed (the arm window ran out unfired). The Sparrow HUD binds
-        /// this to the boost ability icon's charge ring, which is why the roll is legible without a
-        /// heat gauge.
-        /// </summary>
-        public event Action<RollChargeState> OnRollChargeChanged;
-
-        /// <summary>
-        /// True while a strafing roll is available — i.e. inside the
-        /// <see cref="rollArmWindowSeconds"/> window opened by the current boost press, and not
-        /// yet spent.
-        /// </summary>
-        public bool IsRollArmed => _rollArmed;
+        /// <summary>True while a roll is playing.</summary>
+        public bool IsRolling => _rolling;
 
         void Awake()
         {
@@ -136,56 +107,35 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null) return;
 
-            // One roll per BOOST press, and only for a short window after it: a fresh
-            // IsBoosting false→true transition arms a roll and starts the clock;
-            // triggering consumes it, and the clock running out spends it unfired. The
-            // stick only needs to BE at the perimeter while the charge is live — a stick
-            // already pinned at max when boost starts rolls immediately, and holding it
-            // there never repeats (the next boost press grants the next roll).
-            //
-            // The window is the whole point: IsBoosting stays true for an indefinite hold,
-            // so an arm that lasted the hold fired on any later full-deflection stick — a
-            // hard turn mid-boost read as a spin nobody asked for.
-            bool boosting = _status.IsBoosting;
-            if (boosting && !_wasBoosting)
-            {
-                _armExpiresAt = Time.time + rollArmWindowSeconds;
-                SetRollCharge(RollChargeState.Armed);
-            }
-            _wasBoosting = boosting;
-
-            // Expire before the _rolling gate, so a press landing mid-roll can't bank a
-            // spin that fires the instant the current one ends.
-            if (_rollArmed && rollArmWindowSeconds > 0f && Time.time >= _armExpiresAt)
-                SetRollCharge(RollChargeState.Lapsed);
-
-            if (!_rollArmed || _rolling) return;
-            if (!boosting) return;
+            // A roll in progress finishes before the next one; holding the stick means the next
+            // one starts on the first frame after this one ends (hold to keep rolling).
+            if (_rolling) return;
             if (_status.AutoPilotEnabled) return;
 
-            // NOTE: deliberately NOT gated on IsTranslationRestricted. Stopped, the boost
-            // gives no speed (VesselTransformer skips throttle/course travel) but the roll is
-            // still a roll — one per press, same as flying. It is the stationary Sparrow's only
-            // dodge, so the displacement is exempted from the restriction rather than dropped;
-            // see ShipVelocityModifier.ignoresTranslationRestriction.
+            // THE STICK IS REPLICATED, SO THIS MUST BE OWNER-GATED - the same predicate
+            // InputController uses to decide who consumes the stick (ScarabJukeController's note).
+            if (_status.Player is not { IsLocalPilot: true }) return;
+
+            // NOTE: deliberately NOT gated on IsTranslationRestricted. Stopped in the turret
+            // stance the roll is still a roll - the stationary Sparrow's only dodge - so the
+            // displacement is exempted from the restriction rather than dropped; see
+            // ShipVelocityModifier.ignoresTranslationRestriction.
             var input = _status.InputStatus;
             if (input == null) return;
 
-            // LEFT stick only — the steering stick. (The right stick is not a Sparrow
-            // input; the earlier right-stick trigger was a spec typo.)
-            var stick = input.LeftNormalizedJoystickPosition;
-            if (stick.magnitude < perimeterThreshold - ThresholdEpsilon) return;
+            // RIGHT stick - the Sparrow steers on the left stick only.
+            var stick = input.RightNormalizedJoystickPosition;
+            if (stick.magnitude < engageThreshold) return;
 
-            // Right half of the circle → clockwise (positive angle about +forward is CW
-            // from the pilot's seat in Unity's left-handed space); left half → CCW.
-            // invertRollDirection is a taste toggle if the mapping reads backwards in
-            // playtest.
+            // Right half of the circle -> clockwise (positive angle about +forward is CW
+            // from the pilot's seat in Unity's left-handed space); left half -> CCW. Straight
+            // up or down rolls clockwise.
             float rollSign = (stick.x >= 0f ? 1f : -1f) * (invertRollDirection ? -1f : 1f);
 
             var transformer = _status.VesselTransformer;
             if (!transformer) return;
 
-            // The stick's deflection picks the orthogonal nudge direction (stick up =
+            // The stick's direction picks the orthogonal nudge direction (stick up =
             // nudge up), projected onto the plane orthogonal to travel so the
             // displacement never adds forward/backward speed.
             //
@@ -208,18 +158,10 @@ namespace CosmicShore.Gameplay
                     $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}" +
                     (restricted ? " (stopped — dodge)" : string.Empty));
 
-            SetRollCharge(RollChargeState.Spent);
-            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds,
+            _rollSeconds = rollDurationSeconds;
+            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, _rollSeconds,
                                        ignoresTranslationRestriction: true);
             StartCoroutine(RollRoutine(rollSign, transformer));
-        }
-
-        void SetRollCharge(RollChargeState state)
-        {
-            bool armed = state == RollChargeState.Armed;
-            if (armed == _rollArmed) return;
-            _rollArmed = armed;
-            OnRollChargeChanged?.Invoke(state);
         }
 
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
@@ -248,10 +190,10 @@ namespace CosmicShore.Gameplay
             // Pitch and yaw are untouched. Cleared in the tail AND in OnDisable.
             transformer.BankIntoTurnSuppressed = true;
 
-            while (elapsed < rollDurationSeconds)
+            while (elapsed < _rollSeconds)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / rollDurationSeconds);
+                float t = Mathf.Clamp01(elapsed / _rollSeconds);
                 float eased = t * t * (3f - 2f * t);                 // smoothstep 0→1
                 float angle = rollSign * 360f * eased;
 
@@ -322,12 +264,6 @@ namespace CosmicShore.Gameplay
             if (rollVisualTarget && _rolling)
                 rollVisualTarget.localRotation = _visualRestRotation;
             _rolling = false;
-
-            // A re-enabled vessel must not inherit a stale charge — the next boost PRESS arms it,
-            // and the HUD re-seeds from IsRollArmed at init.
-            _wasBoosting = false;
-            _armExpiresAt = 0f;
-            SetRollCharge(RollChargeState.Lapsed);
         }
     }
 }

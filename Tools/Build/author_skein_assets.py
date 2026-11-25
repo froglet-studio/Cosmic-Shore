@@ -74,6 +74,7 @@ def emit(path: str, text: str):
     success. A --check that never compares is a false green - it reports what the script would
     do rather than whether the tree matches it."""
     full = rel(path)
+    text = aml.placeholder_sounds(path, text)  # listed placeholder sounds survive a re-run
     existing = open(full, encoding="utf-8").read() if os.path.exists(full) else None
     state = "same" if existing == text else ("new" if existing is None else "DIFFERS")
     WRITES.append((path, state))
@@ -196,6 +197,19 @@ def arena_numbers():
         sys.argv = saved
 
 
+# The garden ruins (SKEIN.md section 20) are arena mass too: every laid prism counts in Cell.LiveVolume, so
+# the rung that has ruins carries them in its baseline or the cell would sit in Frenzy from the first frame.
+# (ruin prisms, ruin volume) on the shipped cable, from `bash Tools/Build/skein_ruins_harness/run.sh --measure`
+# (cable 0); SkeinRuinsTests.The_shipped_ruins_are_the_mass_the_phase_ladder_counts holds the same two numbers,
+# so a change to the ruins fails there until both are re-measured.
+RUINS = {4: (215, 439125)}
+
+
+def with_ruins(i: int, prisms: int, volume: int) -> tuple:
+    ruin_prisms, ruin_volume = RUINS.get(i, (0, 0))
+    return prisms + ruin_prisms, volume + ruin_volume
+
+
 def phase_thresholds(prisms: int, volume: int) -> dict:
     """
     Ride THIS intensity's own measured baseline, with the headroom Hijack ships.
@@ -227,7 +241,7 @@ STUB = ("  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
 
 
 def cell_config(i: int, prisms: int, volume: int, n: int) -> str:
-    t = phase_thresholds(prisms, volume)
+    t = phase_thresholds(*with_ruins(i, prisms, volume))
     return (HEADER + STUB
             + f"  m_Script: {{fileID: 11500000, guid: {EXISTING['CellConfigDataSO']}, type: 3}}\n"
             + f"  m_Name: Skein Cell Config {i}\n  m_EditorClassIdentifier:\n"
@@ -373,7 +387,7 @@ def arcade_card(icon_active, icon_inactive, card_bg) -> str:
             + f"  CardBackground: {{fileID: 21300000, guid: {card_bg}, type: 3}}\n"
             + "  GolfScoring: 1\n  SceneName: MinigameSkein\n"
             + f"  Vessels:\n  - {{fileID: 11400000, guid: {EXISTING['SO_Class_Urchin']}, type: 2}}\n"
-            + "  MinPlayersAllowed: 2\n  MaxPlayersAllowed: 4\n"
+            + "  MinPlayersAllowed: 2\n  MaxPlayersAllowed: 9\n"
             + "  MinDomainsAllowed: 2\n  MaxDomainsAllowed: 3\n"
             + "  MinIntensity: 1\n  MaxIntensity: 4\n"
             + "  ViewUserAction: 0\n  PlayUserAction: 0\n"
@@ -565,7 +579,7 @@ def main():
     print("\nphase ladder, derived from skein_budget (NEVER count x 16 - a (6,6,8) prism is 288):")
     for i in (1, 2, 3, 4):
         prisms, volume, n = nums[i]
-        t = phase_thresholds(prisms, volume)
+        t = phase_thresholds(*with_ruins(i, prisms, volume))
         print(f"  I{i}  N={n}  {prisms:6d} prisms  {volume:9,d} volume  "
               f"RestlessEnterVolume {t['RestlessEnterVolume']:9,d}  FrenzyEnterVolume {t['FrenzyEnterVolume']:9,d}")
 

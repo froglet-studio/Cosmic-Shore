@@ -1,0 +1,38 @@
+{
+  "id": "2026-11-19-risky-merge-pr-2270-went-in-without-wait-597b2f",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-19T20:25:48+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2270 went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/Resources/ElementalAbilityMaps/Shrike.asset, Assets/_Prefabs/Spacevessels/Shrike.prefab, Assets/_SO_Assets/Classes/SO_Class_Shrike.asset, Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+  "branch": "claude/project-thread-sfixg0",
+  "pr": 2270,
+  "commit": "b8f578023",
+  "paths": [
+    "Assets/Resources/ElementalAbilityMaps/Shrike.asset",
+    "Assets/_Prefabs/Spacevessels/Shrike.prefab",
+    "Assets/_SO_Assets/Classes/SO_Class_Shrike.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameThornbush.asset",
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShrikeExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/ShrikeRules.cs",
+    "Assets/_Scripts/Tests/Editor/ShrikeTests.cs",
+    "Containers/ShrikeConfigSO.cs",
+    "Docs/ElementalLoop/REDESIGN.md",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Tools/Build/author_shrike_assets.py",
+    "Tools/Build/author_thornbush_assets.py",
+    "Tools/Build/brood_trail_levers.py",
+    "Tools/Build/shrike_games_common.py",
+    "Tools/Build/shrike_harness/run.sh"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/Resources/ElementalAbilityMaps/Shrike.asset, Assets/_Prefabs/Spacevessels/Shrike.prefab, Assets/_SO_Assets/Classes/SO_Class_Shrike.asset, Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset"
+    }
+  ]
+}

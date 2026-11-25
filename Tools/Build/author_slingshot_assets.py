@@ -156,7 +156,7 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameSlingsho
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Stoat']}, type: 2}}
   MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 9
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -331,6 +331,17 @@ for h in re.findall(r"GlobalObjectIdHash: (\d+)", scene):
     if int(h) != 0 and int(h) in _taken:
         errors.append(f"scene GlobalObjectIdHash {h} is also carried by another scene or prefab")
 
+# The I4 ruins (SLINGSHOT.md "The ruins"): the controller lays Spearline's generator in SpawnablePrism, wired in the
+# scene. An unwired prefab lays no ruins and says so only in a warning.
+RUIN_PREFAB = "  ruinPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}"
+if RUIN_PREFAB not in scene:
+    errors.append("scene's SlingshotController has no ruinPrefab (SpawnablePrism) - the I4 ruins are not laid")
+if not os.path.exists(os.path.join(ROOT, "Assets/_Prefabs/Trails/SpawnablePrism.prefab")):
+    errors.append("SpawnablePrism.prefab is missing - the I4 ruins have no prism")
+_ruins = read_or_empty(f"{MODE_DIR}/SlingshotRuins.cs")
+if "SpearlineRuins.Lay(" not in _ruins or "SpearlineRuins.ForIntensity(intensity)" not in _ruins:
+    errors.append("SlingshotRuins does not lay Spearline's generator on its own rung (none below I4)")
+
 # The AI must actually be able to drive this hull AND use its verb (the arcade rule: never assume
 # an AI can use a human's input). An AIPilot serialized disabled never runs Update.
 _stoat = read_or_empty("Assets/_Prefabs/Spacevessels/Stoat.prefab")
@@ -338,16 +349,16 @@ _ai = re.search(r"  m_Enabled: (\d)\n  m_EditorHideFlags: 0\n  m_Script: \{fileI
                 r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _stoat)
 if not _ai or _ai.group(1) != "1":
     errors.append("Stoat.prefab's AIPilot is not enabled - an AI Stoat cannot race")
-# Since round 15 the triggers are the FIELD DIPOLE (R_VesselActions/STOAT_DIPOLE.md); the round-4
-# orbit sling is unbound, so its autopilot never presses. The AI that races is the dipole's.
-_cfg = read_or_empty("Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset")
-m = re.search(r"^  autopilotHold01: ([0-9.]+)$", _cfg, re.M)
+# The triggers fly the SWING (R_VesselActions/STOAT_DIPOLE.md section 1b; the field dipole and every other
+# slingshot were deleted 2026-11-21). The AI that races is the swing's: it presses through the replicated path.
+_cfg = read_or_empty("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset")
+m = re.search(r"^  aiSlingMinTurnDegrees: ([0-9.]+)$", _cfg, re.M)
 if not m or float(m.group(1)) <= 0:
-    errors.append("StoatDipoleConfig.autopilotHold01 is 0 or missing - an AI Stoat lays no pair, "
+    errors.append("StoatSlingConfig_Slingshot.aiSlingMinTurnDegrees is 0 or missing - an AI Stoat never presses, "
                   "so it races at cruise on its x0.4 turn")
-_exec = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatDipoleExecutor.cs")
-if "PerformShipControllerActionsReplicated" not in _exec:
-    errors.append("StoatDipoleExecutor's autopilot does not go through the replicated press path")
+_exec = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs")
+if "PerformShipControllerActionsReplicated" not in _exec or "void AutopilotSwing()" not in _exec:
+    errors.append("StoatSlingExecutor's swing autopilot does not go through the replicated press path")
 
 # The toybox must offer the hull this mode is built for, and the card's hull must be a class asset.
 _roster = read_or_empty("Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs")

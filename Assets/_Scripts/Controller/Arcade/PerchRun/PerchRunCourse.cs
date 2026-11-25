@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Perch Run, the GOBY's Time race (PERCH_RUN.md). The Goby cruises on its own flight and DARTS: hold to charge a
+    /// Perch Run, the GOBY's Time race (PERCH_RUN.md). The Goby never flies (Garrett, 2026-11-24); it only DARTS: hold to charge a
     /// length (140-600 u over 0.8 s), let go, and it flies there in one second, stopping on the first block on its line
     /// (Time 5: it phases through). So the race is the dart's two numbers, its LINE and its LENGTH, and the course is
     /// rings with CORAL - single blocks the dart stops on - that turn those two numbers into decisions:
@@ -67,13 +67,13 @@ namespace CosmicShore.Gameplay
         public const float DartRange = 600f, DartMinRange = 140f;
 
         /// <summary>`dartChargeSeconds`, `dartSeconds`, `dartCooldown`.</summary>
-        public const float DartChargeSeconds = 0.8f, DartSeconds = 1f, DartCooldown = 1.2f;
+        public const float DartChargeSeconds = 0.8f, DartSeconds = 1f, DartCooldown = 2.2f;
 
         /// <summary>`hullRadius`: the dart's line is this wide.</summary>
         public const float HullRadius = 3f;
 
-        /// <summary>`aiCruiseSpeed`, `aiTurnRate` (the seat's AI); `perchSeconds`; `islandMinLength`; `islandQueue`.</summary>
-        public const float AiCruiseSpeed = 100f, AiTurnRate = 90f, PerchSeconds = 1.5f, IslandMinLength = 900f;
+        /// <summary>`aiTurnRate` (the seat's AI, turning where it sits); `perchSeconds`; `islandMinLength`; `islandQueue`.</summary>
+        public const float AiTurnRate = 90f, PerchSeconds = 1.5f, IslandMinLength = 900f;
         public const int IslandQueue = 3;
 
         // ── The course's own constants ───────────────────────────────────
@@ -379,9 +379,17 @@ namespace CosmicShore.Gameplay
         /// centre is blocked) and the length. In order: a DOUBLE - one line that threads this ring and the next and
         /// meets no coral first; else this ring alone. Either way charged to <see cref="Overshoot"/> past the last ring it
         /// threads, clamped to the charge's range: no further, so a hairpin after it is one dart.
-        /// Length 0: no line clears (cruise: the Goby's own flight passes through coral).
+        /// When no line clears this ring, a short hop aside (<see cref="TrySidestep"/>) to see it from somewhere new: the
+        /// Goby never flies, so a dart is its only way round. Length 0 only when even that is walled in.
         /// </summary>
-        public static Vector3 PlanDart(Vector3 hull, IReadOnlyList<RaceGate> rings, int next, IReadOnlyList<Coral> coral, out float length)
+        public static Vector3 PlanDart(Vector3 hull, IReadOnlyList<RaceGate> rings, int next, IReadOnlyList<Coral> coral, out float length) =>
+            PlanDart(hull, rings, next, coral, Overshoot, out length);
+
+        /// <summary><see cref="PlanDart(Vector3, IReadOnlyList{RaceGate}, int, IReadOnlyList{Coral}, out float)"/> with
+        /// the coach's own <paramref name="overshoot"/> past the last ring (the AI search's gene; shipped
+        /// <see cref="Overshoot"/>).</summary>
+        public static Vector3 PlanDart(Vector3 hull, IReadOnlyList<RaceGate> rings, int next, IReadOnlyList<Coral> coral,
+            float overshoot, out float length)
         {
             length = 0f;
             var g = rings[next];
@@ -390,19 +398,54 @@ namespace CosmicShore.Gameplay
                 Vector3 d2 = far - hull;
                 float l2 = d2.magnitude;
                 Vector3 u = d2 / Mathf.Max(1e-3f, l2);
-                if (l2 + Overshoot <= DartRange && Threads(hull, far, g, HullRadius + RimMargin))
+                if (l2 + overshoot <= DartRange && Threads(hull, far, g, HullRadius + RimMargin))
                 {
-                    length = Mathf.Clamp(l2 + Overshoot, DartMinRange, DartRange);
-                    return far + u * Overshoot;
+                    length = Mathf.Clamp(l2 + overshoot, DartMinRange, DartRange);
+                    return far + u * overshoot;
                 }
             }
-            if (!TryRimShot(hull, rings, next, coral, out Vector3 through)) return g.Position;
+            if (!TryRimShot(hull, rings, next, coral, out Vector3 through))
+                return TrySidestep(hull, g.Position - hull, coral, out length);
             Vector3 to = through - hull;
             float dist = to.magnitude;
             Vector3 dir = to / Mathf.Max(1e-3f, dist);
-            Vector3 aim = through + dir * Overshoot;
-            length = Mathf.Clamp(dist + Overshoot, DartMinRange, DartRange);
+            Vector3 aim = through + dir * overshoot;
+            length = Mathf.Clamp(dist + overshoot, DartMinRange, DartRange);
             return aim;
+        }
+
+        /// <summary>The directions a sidestep tries, in order: 45, 70 and 100 degrees off the line to the ring, eight ways
+        /// round it at each.</summary>
+        public const int SidestepCount = 24;
+
+        /// <summary>
+        /// Sidestep <paramref name="i"/> of <see cref="SidestepCount"/> off <paramref name="toward"/> (unit): the hop the AI
+        /// takes when no dart line clears the ring from where it sits. Perch Run and Regatta (RegattaGobyDart) share it.
+        /// </summary>
+        public static Vector3 SidestepDirection(Vector3 toward, int i)
+        {
+            Vector3 f = RaceCourseGeometry.SafeNormalize(toward, Vector3.forward);
+            Vector3 e1 = RaceCourseGeometry.SafeNormalize(Vector3.Cross(f, Vector3.up), Vector3.right);
+            Vector3 e2 = Vector3.Cross(f, e1);
+            float off = (i / 8 == 0 ? 45f : i / 8 == 1 ? 70f : 100f) * Mathf.Deg2Rad, round = (i % 8) * (Mathf.PI / 4f);
+            return f * Mathf.Cos(off) + (e1 * Mathf.Cos(round) + e2 * Mathf.Sin(round)) * Mathf.Sin(off);
+        }
+
+        /// <summary>
+        /// The first sidestep whose shortest dart (<see cref="DartMinRange"/>) meets no coral: the point to aim at, and
+        /// that length. Length 0 (and the hull's own position) when every one is walled in.
+        /// </summary>
+        public static Vector3 TrySidestep(Vector3 hull, Vector3 toward, IReadOnlyList<Coral> coral, out float length)
+        {
+            for (int i = 0; i < SidestepCount; i++)
+            {
+                Vector3 dir = SidestepDirection(toward, i);
+                if (FirstCoral(hull, dir, DartMinRange + HullRadius + 2f, coral, out _)) continue;
+                length = DartMinRange;
+                return hull + dir * DartMinRange;
+            }
+            length = 0f;
+            return hull;
         }
 
         public static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)

@@ -120,6 +120,10 @@ htr.author(dict(
     member="SerpentTime", display="Serpentine", hull="Serpent", class_id=lib.VESSEL_CLASS_ID["Serpent"],
     scripts={
         "SerpentTimeController":   f"{MODE_DIR}/SerpentTimeController.cs",
+        # The I4 garden ruins: Spearline's generator (SpearlineRuins) called on this mode's lap. ruinDomains keeps its
+        # C# default (Jade, Ruby, Gold), so the scene needs no line for it.
+        "SerpentTimeControllerRuins": f"{MODE_DIR}/SerpentTimeController.Ruins.cs",
+        "SerpentineRuinsTests":    "Assets/_Scripts/Tests/Editor/SerpentineRuinsTests.cs",
         "SerpentTimeCourse":       f"{MODE_DIR}/SerpentTimeCourse.cs",
         "SerpentTimeCourseSource": f"{MODE_DIR}/SerpentTimeCourseSource.cs",
         "SerpentTimeCourseTests":  "Assets/_Scripts/Tests/Editor/SerpentTimeCourseTests.cs",

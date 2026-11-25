@@ -91,6 +91,7 @@ namespace CosmicShore.Gameplay
             }
 
             HeadlongHedges.PlaceCrystals(_course, Intensity, _hedgeScratch, _crystalScratch);
+            LayRuins(_hedgeScratch, _crystalScratch);
             if (_crystalScratch.Count > 0 && ElementalCrystalSetSO.Load() == null)
             {
                 CSDebug.LogWarning("[Headlong] no ElementalCrystalSet in Resources - the stampede has no Time crystals.");
@@ -129,6 +130,7 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             float now = Time.time;
+            TickRuins();
             TickRestand();
             if (now < _nextStampedeCheck) return;
             _nextStampedeCheck = now + 0.5f;
@@ -260,6 +262,7 @@ namespace CosmicShore.Gameplay
 
         void ClearStampede()
         {
+            ClearRuins();
             for (int h = 0; h < _hedges.Count; h++)
             {
                 var prisms = _hedges[h].Prisms;

@@ -1,0 +1,26 @@
+{
+  "id": "2026-11-24-brittle-star-time-i4-now-stands-a-ruby-d-e7596f",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-24T15:03:42+00:00",
+  "area": "Brittle Star Time",
+  "summary": "Brittle Star Time I4 now stands a Ruby disc of Headlong's hedge slabs across the way into every ring and along the return straight (11 discs, 749 slabs a lap); a Brittle Star rams through at its own kit's speed cost or shoots a hole first; the discs stand back up once no hull is within 60 u, and a broken slab or let-go post now returns to the prism pool",
+  "why": "Yash: 'Intensity 4 environment needs to be more filled along the flight path, brittle star need to break through obstacles to pass rings'",
+  "branch": "Ys-bleeding-edge",
+  "commit": "1460fb349",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeBreakers.cs",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeController.Breakers.cs",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeController.Line.cs",
+    "Assets/_Scripts/Controller/Arcade/BrittleStarTime/BrittleStarTimeRuins.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "BrittleStar"
+    ],
+    "elements": [
+      "Time"
+    ],
+    "step": "2"
+  }
+}

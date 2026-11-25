@@ -1,0 +1,28 @@
+{
+  "id": "2026-11-17-risky-merge-pr-2111-tune-scarab-time-thr-012e57",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-17T05:49:53+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2111 (tune(scarab): Time throttle Max 1.5 -> 1.3 (step 5, Regatta six-vessel pool)) went in without waiting for you.",
+  "why": "merged past a review rule (no approving review): no approving review; vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Scarab.prefab",
+  "branch": "claude/project-thread-cwavhz",
+  "pr": 2111,
+  "commit": "99f19068c",
+  "paths": [
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab",
+    "Docs/Approvals/Yash/2026-11-17-scarab-time-throttle-elementalfloat-thro-715206.json"
+  ],
+  "risky": [
+    {
+      "key": "ruleset-bypass",
+      "name": "merged past a review rule (no approving review)",
+      "detail": "no approving review"
+    },
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Scarab.prefab"
+    }
+  ]
+}

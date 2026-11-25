@@ -42,7 +42,7 @@ What each level asks:
 - **I2, hard turns.** Every other leg turns 90-120 degrees and is short. A hull misses a ring when the leg is shorter
   than about `2r sin(turn)`, and r is 131 u burning against 38 at cruise: **burn into a hard turn and you overshoot the
   ring**. Coast the turn, burn out of it.
-- **I3, walls.** A **wall** of danger prisms stands square across the line into every other ring, wider than the ring,
+- **I3, walls.** A see-through **wall** of danger prisms (a checkerboard, §3) stands square across the line into every other ring, wider than the ring,
   so the hull has to dog-leg round its edge and back in. The wall is rounded on the **inside of the turn** (the side
   the previous leg comes from), so the shortest line is also the one that makes the dog-leg. A danger prism stops the
   hull dead and the throttle takes 3 s to recover. At cruise the dog-leg is easy; burning, the hull cannot turn back in
@@ -83,10 +83,43 @@ Read honestly:
 ## 3. The walls
 
 Laid by `BreachController.OnCourseRaised` from the broadcast rings: environment prisms (`SpawnablePrism`) in the **Blue
-danger** domain, a hex disc of them every 9 u in the wall's plane, each 7 x 7 x 1.5 and turned square to the ring's axis.
+danger** domain, a **checkerboard** disc of them in the wall's plane (`IsWallCell`: every other cell of a 7 u grid), each
+7 x 7 x 1.5 and turned square to the ring's axis. Neighbours touch at their corners, so every hole is a closed 7 u square
+(9.9 u corner to corner, under the hull's `WallClear`): **you see the next ring through the wall and cannot fly through
+it** (Garrett, 2026-11-15: "make the ring visible and maintain the spirit of the level"). Until then the wall was a solid
+hex disc (every 9 u) and, from the ring before, hid the lime ring on 39% of I3 legs and 22% of I4's
+(`Docs/Reports/SIGHT_LINES.md`); now 1% and 0, with 27% fewer prisms and the same burn lesson (the helm sweep: the burn
+still saves 10.5% at I3 and 17.1% at I4). Tests: `No_hole_in_a_wall_admits_the_hull`,
+`The_ring_shows_through_its_wall_from_the_ring_before` (46% of lines clear on average, the solid wall 27%).
 A broken wall prism grows back **6 s** later, once no hull is at its wall, so every racer meets the wall and a crew that
 breaches it breaches it for itself. Which rings are walled is the ring's index, and the wall stands on the ring's axis, so
 every peer lays the same walls from the broadcast rings wherever the cell is (a test holds it). Nothing new is replicated.
+
+## 3a. The garden ruins (I4 only, decoration; Yash, 2026-11-24)
+
+The same ruins Spearline lays round its racing line (`SPEARLINE.md` §2a): `BreachRuins` CALLS `SpearlineRuins.Lay` with
+Breach's rings and adds no ruin of its own. It states Breach's clearances and leaves out what the walls need left out.
+
+- **Clearances** (`BreachRuins`): a **70 u** clear lane down every leg's flown line (the I4 ring is 54), nothing within
+  **100 u** of a ring, only on legs of **300 u** or more. Spearline's own are 60, 120 and 380; Breach's ordinary legs
+  are 300 to 380 u, so Spearline's floor would lay none.
+- **Bare legs.** A hard-turn leg (160 to 220 u) is too short. A leg INTO a walled ring is left bare, because the hull
+  does not fly that leg's line: it swings out round the wall's edge, past the lane. No ruin prism of any leg stands
+  within 20 u of a wall's disc.
+- **What stands.** Six ruins on every course (the legs into rings 1, 2, 5, 8, 11 and 14), about 420 prisms, measured
+  over 100 seeds. **No wheel**: a wheel needs 250 u clear of every ring and no Breach leg has it, so the generator
+  stands a pergola there instead. The hook still poses a wheel from the network clock if a course ever fits one.
+- **Colour.** Each ruin is one domain colour, Jade, Ruby, Gold in turn round the course (scene > `ruinDomains`; empty =
+  Blue), so they read apart from the Blue walls. They are PLAIN prisms in the walls' prefab, not danger.
+- **Rules.** The game's own for a prism: a hull or a gun breaks them and nothing grows back. Nothing reads or writes a
+  vessel. Every peer lays the same ruins from the broadcast rings (`BreachController.Ruins.cs`); nothing is replicated.
+
+Tests (`BreachRuinsTests`, 100 seeds, in `breach_harness/run.sh`): none below I4, the lane and the ring margin hold, no
+ruin on a walled or hard leg, none at a wall, a wheel whole or not at all, six ruins a course, the same lay for the
+same rings. Negative control: ruins allowed on a walled leg fail two tests.
+
+**Not measured:** the AI's I4 times with the ruins standing. The offline clock does not model prisms, and the AI
+gunners shoot any prism of another domain, so they will spend shots on ruins as well as walls.
 
 ## 4. The vessel change (OrcaCrew; the Orca is Garrett's)
 
@@ -112,6 +145,21 @@ The AI flies the gate race's own steering, with two things from the coach:
 
 The Orca's own helm spends the tank. The gunners are the shipped AI gunners.
 
+### 5.1 Re-attack after a missed ring, from the real game (2026-11-17, elemental loop step 2)
+
+The race judge (`Tools/Build/time_ladder_judge.py --mode Breach --hull Orca`, Amoebius headless) showed the AI Orca
+timing out at I3 and I4. Only 1 of 8 Medium and Legendary races at those rungs finished on seeds 1-2. The trace showed
+it missing a walled ring by a few units and then wandering 50-150 u past it until the clock ran out. Breach now turns on
+the gate race's Regatta steering (`AICommitFromApproachPoint`: commit at the approach point and re-attack after a missed
+mouth), as Spearline, Grizzly Time, Burrow Run and Lantern Run already do.
+
+| Fresh seeds 4-6 | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Legendary, median s | 120 | 116 | 160 | 141 |
+| Medium, median s | 126 | 121 | 167 | 150 |
+
+All 24 races finished. Still open: I4 is easier than I3 (0.88x), and Medium is only about 1.05x slower than Legendary.
+
 ## 6. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
@@ -121,6 +169,8 @@ The Orca's own helm spends the tank. The gunners are the shipped AI gunners.
 | Orca numbers the cut depends on | `BreachCourse` constants, read back off `Orca.prefab` and `OrcaCrewConfig.asset` by `The_course_is_cut_for_the_shipped_orca` | min speed 8.5, throttle 21.25, boost x5, turn 44 + 0.055/u, tank 3, refill 0.25, danger recovery 3 |
 | the burn's thresholds | `BreachCourse` (`BurnAlignDeg`, `HardTurnStop`, `WallStop`, `MinBurnStart`) | 8 deg, 150 u, 180 u, 1 s |
 | wall regrow | scene > `wallRegrowSeconds`, `wallRegrowPerFrame` | **6 s**, 40 |
+| ruin clearances (I4) | `BreachRuins` (`ClearRadius`, `RingMargin`, `MinLegLength`, `WallKeep`) | 70 u, 100 u, 300 u, 20 u |
+| ruin colours | scene > `ruinDomains` | Jade, Ruby, Gold |
 | detection clamp | scene > `maxPlausibleSpeed` | **500** (a 115 u/s burn, twice, with room) |
 | comeback rate | `ArcadeGameBreach.asset` | **0.25** |
 
@@ -135,11 +185,15 @@ drift gate. Card art: `render_card_backgrounds.py Breach` (an I4 course with its
 1. Open the scene once and save it (it is a text clone); then `author_breach_assets.py --check`.
 2. I1, one Orca with AI crew: hold the burn and watch the tank empty and stay empty; let go and it refills.
 3. I2: burn into a hard turn and the hull swings wide of the ring; coast it and the ring is easy.
-4. I3: the walls stand before every other ring, rounded on the inside of the turn. Fly into one: the hull stops dead.
+4. I3: the walls stand before every other ring, rounded on the inside of the turn. From the ring before, the lime ring
+   shows through the checkerboard. Fly into one: the hull stops dead (no hole lets it through).
    Watch the gunners shoot a breach; the wall grows back 6 s after.
 5. I4: a wall on the ring after each hard turn; neither ever meets the other.
 6. Two AI Orcas: they burn the straights, coast the turns and walls, and finish. Note any wall an AI hits.
 7. MPPM two clients: both see the same walls.
+8. I4 (§3a, owed since 2026-11-24, never compiled or run in Unity): six ruins stand between rings in Jade, Ruby and
+   Gold, none on a leg into a wall. Fly the line through each: the lane is open. Two AI Orcas still finish; note their
+   times against 141 s (Legendary) and whether the gunners waste the wall's shots on a ruin.
 
 ## 9. Known limitations
 

@@ -92,6 +92,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.LifeformsKilled,   Element.Space)]  // Wildlife Liberation
         [TestCase(ScoringMetric.Jousts,            Element.Charge)] // Joust
         [TestCase(ScoringMetric.CombatPoints,      Element.Charge)] // Dog Fight, The Bends, Undertow, Broadside
+        [TestCase(ScoringMetric.PetalsTaken,       Element.Charge)] // the petal ledger (SILENCE.md §6)
         public void Metric_ResolvesToItsShippedGenre(ScoringMetric metric, Element expected)
         {
             Assert.IsTrue(ModeGenre.TryElementForMetric(metric, out var element),
@@ -106,7 +107,7 @@ namespace CosmicShore.Tests
         {
             // The TestCase list above must not silently fall behind the enum: if it does, a new
             // metric could be classified in ModeGenre and still never have its genre pinned.
-            Assert.AreEqual(13, Enum.GetValues(typeof(ScoringMetric)).Length,
+            Assert.AreEqual(14, Enum.GetValues(typeof(ScoringMetric)).Length,
                 "ScoringMetric member count changed - add the new metric to ModeGenre and to " +
                 "Metric_ResolvesToItsShippedGenre's TestCase list.");
         }
@@ -223,6 +224,40 @@ namespace CosmicShore.Tests
                                                    out var first, out var second));
             Assert.AreEqual(Element.Space, first, "Harvest's card must read Space: its score is mass destroyed");
             Assert.AreEqual(Element.None, second);
+        }
+
+        // The arcade's categories (Garrett, 2026-11-17, Docs/ArcadeRestructure/PLAN.md): Mass and Space are one
+        // category, the party rows win over their genre, and a mode with no genre is Party.
+        [Test]
+        [TestCase(GameModes.Scurry,         ScoringMetric.Crystals,        ArcadeCategory.Party)]
+        [TestCase(GameModes.ScarabScramble, ScoringMetric.Goals,           ArcadeCategory.Party)]
+        [TestCase(GameModes.Tollway,        ScoringMetric.Goals,           ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.BroodRush,      ScoringMetric.Goals,           ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.Rampage,        ScoringMetric.PrismsDestroyed, ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.Hijack,         ScoringMetric.PrismsStolen,    ArcadeCategory.MassSpace)]
+        [TestCase(GameModes.SkimRace,       ScoringMetric.Crystals,        ArcadeCategory.Time)]
+        [TestCase(GameModes.Joust,          ScoringMetric.Jousts,          ArcadeCategory.Charge)]
+        public void Mode_FilesUnderItsArcadeCategory(GameModes mode, ScoringMetric metric, ArcadeCategory expected) =>
+            Assert.AreEqual(expected, ModeGenre.CategoryFor(mode, metric));
+
+        [Test]
+        public void Maelstrom_IsParty_WithOrWithoutAMetric() =>
+            Assert.AreEqual(ArcadeCategory.Party, ModeGenre.CategoryFor(GameModes.Maelstrom, null));
+
+        [Test]
+        public void APartyGame_KeepsItsGenreForItsLadder()
+        {
+            // Moving Scurry to Party changes the arcade filter and the card, not its element ladder or its analytics.
+            Assert.IsTrue(ModeGenre.TryElementsFor(GameModes.Scurry, ScoringMetric.Crystals, out var primary, out _));
+            Assert.AreEqual(Element.Mass, primary);
+        }
+
+        [Test]
+        public void AModeWithNoGenre_IsParty()                                                       // negative control
+        {
+            // Rampage has no row, so an unclassified metric leaves it genreless; genreless files under Party.
+            Assert.IsFalse(ModeGenre.TryElementsFor(GameModes.Rampage, (ScoringMetric)9999, out _, out _));
+            Assert.AreEqual(ArcadeCategory.Party, ModeGenre.CategoryFor(GameModes.Rampage, (ScoringMetric)9999));
         }
 
         // The end-to-end guard, and the one that catches the failure nobody would notice: a card

@@ -28,6 +28,169 @@ public static class Runner
     static string F(float v) => v.ToString("R", CultureInfo.InvariantCulture);
     static string V(Vector3 v) => $"[{F(v.x)},{F(v.y)},{F(v.z)}]";
 
+    // --ruins [N]: the I4 garden ruins over N seeds (BRITTLESTARTIME.md section 0a) - what stands on each course, and
+    // how near the model's pilots (the coached AIs and a reading human) come to a standing ruin prism while they race.
+    static int Ruins(int seeds)
+    {
+        const int intensity = 4;
+        float top = RaceSweep.TopSpeed(intensity);
+        string[] kindNames = { "pergola", "flower head", "vines", "wall", "tunnel", "maze", "wheel" };
+        var kinds = new int[SpearlineRuins.KindCount];
+        int total = 0, min = int.MaxValue, max = 0, courses = 0, withWheel = 0, twoOrMore = 0;
+        var nearest = new float[5];
+        var hits = new int[5];
+        for (int i = 0; i < nearest.Length; i++) nearest[i] = float.MaxValue;
+        for (int seed = 1; seed <= seeds; seed++)
+        {
+            var course = Lap(intensity, seed);
+            var posts = BrittleStarTimeLine.Marks(course, top);
+            var parts = new List<SpearlineRuinPart>();
+            var wheels = new List<SpearlineRuinWheel>();
+            var lap = BrittleStarTimeRuins.Lay(course, intensity, BrittleStarTimeCourse.CornerRadiusAt(top), posts, parts, wheels);
+            if (parts.Count == 0) { Console.WriteLine($"seed {seed}: no ruin"); continue; }
+            courses++;
+            total += parts.Count; min = Math.Min(min, parts.Count); max = Math.Max(max, parts.Count);
+            var legs = parts.Select(p => p.Leg).Distinct().ToList();
+            if (legs.Count > 1) twoOrMore++;
+            foreach (int leg in legs)
+                kinds[wheels.Any(w => parts[w.First].Leg == leg) ? SpearlineRuins.Wheel : SpearlineRuins.KindOf(leg, lap[0].Position)]++;
+            if (wheels.Count > 0) withWheel++;
+            var standing = new List<SpearlineRuinPart>();
+            for (int i = 0; i < parts.Count; i++)
+                if (!wheels.Any(w => i >= w.First && i < w.First + w.Count)) standing.Add(parts[i]);
+            if (standing.Count == 0) continue;
+            for (int pilot = 0; pilot < 5; pilot++)
+            {
+                FlightSim.Options o;
+                FlightSim.SpeedPolicy policy;
+                if (pilot < 4)
+                {
+                    var skill = (BrittleStarTimeCoach.Skill)pilot;
+                    o = RaceSweep.Autopilot(intensity, FlightSim.Steering.Line);
+                    o.NoseFollow = BrittleStarTimeCoach.NoseFollowFor(intensity, skill);
+                    policy = RaceSweep.Coach(intensity, 0, skill);
+                }
+                else
+                {
+                    o = RaceSweep.Human(intensity, FlightSim.Steering.Line);
+                    policy = (in FlightSim.State s, IReadOnlyList<RaceGate> l, int r) => s.AimAngle <= 25f;
+                }
+                o.Laps = 2;
+                float best = float.MaxValue;
+                o.Trace = pos =>
+                {
+                    foreach (var part in standing)
+                    {
+                        if ((part.Position - pos).sqrMagnitude > 200f * 200f) continue;
+                        Vector3 half = part.Forward * (0.5f * part.Scale.z);
+                        Vector3 a = part.Position - half, ab = half * 2f;
+                        float t = Mathf.Clamp01(Vector3.Dot(pos - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
+                        // Clearance to the prism's skin, taken as a rod as thick as its cross-section.
+                        float d = (pos - (a + ab * t)).magnitude - 0.5f * Mathf.Max(part.Scale.x, part.Scale.y);
+                        if (d < best) best = d;
+                    }
+                };
+                FlightSim.Fly(course, policy, o);
+                nearest[pilot] = Math.Min(nearest[pilot], best);
+                if (best < 8f) hits[pilot]++;
+            }
+        }
+        Console.WriteLine($"I4 ruins over {seeds} seeds: {courses} courses carry one, {twoOrMore} carry two or more; " +
+                          $"{(courses > 0 ? total / (float)courses : 0f):F0} prisms a course (min {min}, max {max}); a wheel on {withWheel}");
+        Console.WriteLine("kinds: " + string.Join(", ", kinds.Select((c, k) => $"{kindNames[k]} {c}")));
+        string[] pilots = { "Easy AI", "Medium AI", "Hard AI", "Legendary AI", "reading human" };
+        for (int p = 0; p < 5; p++)
+            Console.WriteLine($"  {pilots[p]}: nearest a standing ruin prism {nearest[p]:F0} u; courses flown within 8 u of one: {hits[p]}");
+        return 0;
+    }
+
+    // --breakers [N]: the I4 breakers over N seeds (BRITTLESTARTIME.md section 0b) - discs and slabs a lap, the ruin left
+    // beside them, and for the model's pilots how many discs a lap their flown line goes through (inside a disc's radius)
+    // and how many slabs it touches (a hull's reach of a slab's centre). The model flies through slabs; in the game each
+    // touch breaks the slab and slows the hull.
+    static int Breakers(int seeds)
+    {
+        const int intensity = 4;
+        const float touch = 12f;   // the hull's reach of a slab's centre: about its half-width plus the slab's
+        float top = RaceSweep.TopSpeed(intensity);
+        float turn = BrittleStarTimeCourse.CornerRadiusAt(top);
+        string[] pilots = { "Easy AI", "Medium AI", "Hard AI", "Legendary AI", "reading human" };
+        long discs = 0, slabs = 0, rings = 0, ruinPrisms = 0;
+        var throughPerLap = new double[5];
+        var touchedPerLap = new double[5];
+        var missedDisc = new int[5];
+        var missedRing = new int[5];
+        int courses = 0;
+        for (int seed = 1; seed <= seeds; seed++)
+        {
+            var course = Lap(intensity, seed);
+            var posts = BrittleStarTimeLine.Marks(course, top);
+            var hedges = new List<HeadlongHedges.Hedge>();
+            var parts = new List<HeadlongHedges.Part>();
+            var owner = new List<int>();
+            BrittleStarTimeBreakers.Place(course, intensity, turn, hedges);
+            BrittleStarTimeBreakers.Build(course, hedges, posts, parts, owner);
+            var ruin = new List<SpearlineRuinPart>();
+            BrittleStarTimeRuins.Lay(course, intensity, turn, posts, ruin, new List<SpearlineRuinWheel>(), parts);
+            courses++; discs += hedges.Count; slabs += parts.Count; rings += course.Count; ruinPrisms += ruin.Count;
+            for (int pilot = 0; pilot < 5; pilot++)
+            {
+                FlightSim.Options o;
+                FlightSim.SpeedPolicy policy;
+                if (pilot < 4)
+                {
+                    var skill = (BrittleStarTimeCoach.Skill)pilot;
+                    o = RaceSweep.Autopilot(intensity, FlightSim.Steering.Line);
+                    o.NoseFollow = BrittleStarTimeCoach.NoseFollowFor(intensity, skill);
+                    policy = RaceSweep.Coach(intensity, 0, skill);
+                }
+                else
+                {
+                    o = RaceSweep.Human(intensity, FlightSim.Steering.Line);
+                    policy = (in FlightSim.State s, IReadOnlyList<RaceGate> l, int r) => s.AimAngle <= 25f;
+                }
+                o.Laps = 2;
+                var through = new int[hedges.Count];
+                var touched = new HashSet<int>();
+                bool have = false;
+                Vector3 prev = default;
+                o.Trace = pos =>
+                {
+                    if (have)
+                        for (int h = 0; h < hedges.Count; h++)
+                        {
+                            var hedge = hedges[h];
+                            float s0 = Vector3.Dot(prev - hedge.Centre, hedge.Normal), s1 = Vector3.Dot(pos - hedge.Centre, hedge.Normal);
+                            if ((s0 < 0f) == (s1 < 0f)) continue;
+                            Vector3 at = Vector3.Lerp(prev, pos, s0 / (s0 - s1));
+                            if ((at - hedge.Centre).magnitude <= hedge.Radius) through[h]++;
+                        }
+                    for (int i = 0; i < parts.Count; i++)
+                        if ((parts[i].Position - pos).sqrMagnitude < touch * touch) touched.Add(i);
+                    prev = pos; have = true;
+                };
+                FlightSim.Fly(course, policy, o);
+                int t = 0;
+                foreach (int c in through) t += c;
+                throughPerLap[pilot] += t / 2.0;
+                touchedPerLap[pilot] += touched.Count / 2.0;   // a slab touched on either lap counts once (it regrows)
+                for (int h = 0; h < hedges.Count; h++)
+                    if (through[h] == 0)
+                    {
+                        missedDisc[pilot]++;
+                        if (course.Exists(g => Math.Abs((g.Position - hedges[h].Centre).magnitude - BrittleStarTimeBreakers.RingLead) < 0.1f)) missedRing[pilot]++;
+                    }
+            }
+        }
+        Console.WriteLine($"I4 breakers over {seeds} seeds: {discs / (float)courses:F1} discs a lap for {rings / (float)courses:F1} rings, " +
+                          $"{slabs / (float)courses:F0} slabs a lap; the ruin beside them {ruinPrisms / (float)courses:F0} prisms a lap");
+        for (int p = 0; p < 5; p++)
+            Console.WriteLine($"  {pilots[p]}: goes through {throughPerLap[p] / courses:F1} discs a lap, touches " +
+                              $"{touchedPerLap[p] / courses:F0} slabs a lap; discs never flown through: {missedDisc[p]} over {seeds} courses " +
+                              $"({missedRing[p]} of them a ring's)");
+        return 0;
+    }
+
     public static int Main(string[] args)
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
@@ -39,6 +202,11 @@ public static class Runner
                 string.Join(",", c.Select(g => $"{{\"p\":{V(g.Position)},\"a\":{V(g.Axis)},\"r\":{F(g.Radius)}}}")) + "]}");
             return 0;
         }
+        if (args.Length > 0 && args[0] == "--ruins") return Ruins(args.Length > 1 ? int.Parse(args[1]) : 40);
+        if (args.Length > 0 && args[0] == "--breakers") return Breakers(args.Length > 1 ? int.Parse(args[1]) : 40);
+        if (args.Length > 0 && args[0] == "--race") return RaceSweep.Run(args);
+        if (args.Length > 0 && args[0] == "--tune") return RaceSweep.Tune(args);
+        if (args.Length > 0 && args[0] == "--check-race") return RaceSweep.CheckRace(args);
         if (args.Length > 0 && args[0] == "--sweep")
         {
             float cruise = BrittleStarTimeCourse.CruiseRadius, speed = BrittleStarTimeCourse.SpeedModeRadius;

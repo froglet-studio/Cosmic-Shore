@@ -48,10 +48,11 @@ namespace CosmicShore.Gameplay
             // the watchdog: no slip holds the hull longer than its path would take at a share of its top speed (rideWatchdog)
             float length = 0f;
             for (int i = 1; i < _zipPath.Count; i++) length += Vector3.Distance(_zipPath[i - 1], _zipPath[i]);
-            float most = _cfg.ZipRamp + _cfg.RideWatchdog * length / Mathf.Max(1f, _cfg.ZipSpeed) + 1f;
+            float zip = _cfg.ZipSpeedFor(_status);
+            float most = _cfg.ZipRamp + _cfg.RideWatchdog * length / Mathf.Max(1f, zip) + 1f;
             _rideKind = RideKind.Slip;
-            StartRide(exitHeading, Mathf.Max(_status != null ? _status.Speed : 0f, 1f), _cfg.ZipSpeed,
-                      _cfg.ZipSpeed / Mathf.Max(0.01f, _cfg.ZipRamp), _cfg.ZipExitBoost, false, 0f, most);
+            StartRide(exitHeading, Mathf.Max(_status != null ? _status.Speed : 0f, 1f), zip,
+                      zip / Mathf.Max(0.01f, _cfg.ZipRamp), _cfg.ZipExitBoostFor(_status), false, 0f, most);
         }
 
         /// <summary>A straight ride `distance` ahead in `seconds` (Flit, Eyelet Jet, Thruster Swarm). `plow` shatters the
@@ -97,9 +98,12 @@ namespace CosmicShore.Gameplay
             _rideArriveStrike = arriveStrike;
             _rideLeft = maxSeconds;
 
+            // A ride that starts on top of one still under way (a trigger's dart, then a slip in the same frame) inherits that
+            // ride's hold: the transformer is already off, and reading IsActive here would leave it off for good when this
+            // ride ends (the hull froze mid-course until the clock ran out, 2026-11-17 race judge, about 1 Slip Line race in 10).
             var tr = _status?.VesselTransformer;
-            _zipTookTransformer = tr && tr.IsActive;
-            if (_zipTookTransformer) tr.ToggleActive(false);
+            if (!_zipping) _zipTookTransformer = tr && tr.IsActive;
+            if (_zipTookTransformer && tr) tr.ToggleActive(false);
             _zipping = true;
         }
 

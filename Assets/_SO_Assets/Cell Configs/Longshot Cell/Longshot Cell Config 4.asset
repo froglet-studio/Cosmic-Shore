@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Longshot Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Longshot
+  Description: 'Thornfield - intensity 4 of Longshot: sixteen lances zig-zagged into three short runs
+    out by the membrane. The standard 1200 u cell with its nucleus (~392 u), no environment,
+    no flora and no fauna. The field (16 lances of 48 cubes in 48 runs, 768 prisms in all,
+    847 u out) is laid by LongshotController. 2 omni crystals respawn inside the nucleus
+    (the scene''s CrystalManager). Frenzy sits 25% above the full arena (11,568 prisms,
+    943,488 volume). Authored by Tools/Build/author_longshot_assets.py - re-run it rather
+    than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: c1909a180d3977472ed66c7f8c57fcf7, type: 2}
+  EnvironmentPrefab: {fileID: 0}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 1012
+    RestlessExit: 723
+    FrenzyEnter: 14460
+    FrenzyExit: 12291
+    RestlessEnterVolume: 82555
+    RestlessExitVolume: 58968
+    FrenzyEnterVolume: 1179360
+    FrenzyExitVolume: 1002456

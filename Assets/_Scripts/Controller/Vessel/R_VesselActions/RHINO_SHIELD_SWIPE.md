@@ -24,7 +24,7 @@
 > full blade FX pass — live in **`RHINO_ENERGY_SWORD.md`**. This file covers only the
 > pose/analog-swipe control model, though the two now share the triggers: the same
 > reparameterized sum/difference that poses the blade also feeds the energize stance
-> (`FeedSwordStance` → `IRhinoSwordState.SetInStance`). The `ShieldSkimmerScaleDriver`
+> (`FeedSwordStance` → `ISwordfishSwordState.SetInStance`). The `ShieldSkimmerScaleDriver`
 > "Sword dimensions & scale ownership" section below is driven by that energy meter (no
 > tick decay).
 
@@ -100,7 +100,7 @@ prism trail, the hull colliders, the AI's aim and the sword's pivot all stay on 
   hardware — the same value it writes into the mirror, minus the netvar latency. Gamepad and
   DualMouse (binary RMBs, tracked) are followed continuously; **keyboard** (Left/Right Shift
   write 0/1 mirrors) is the rate-limited swing (`swipeOutSeconds` / `returnSeconds`), so a
-  keyboard Rhino now has a swipe pose on every peer. An AI Rhino's `RhinoSwordAutopilot`
+  keyboard Rhino now has a swipe pose on every peer. An AI Rhino's `SwordfishSwordAutopilot`
   writes the mirrors on its owning machine, so its blade replicates the same way.
   *Why it changed:* each peer cuts prisms against its OWN copy of the blade, so a remote peer
   posing from binary events swung a full ±1 the instant a trigger crossed its deadzone — a
@@ -110,7 +110,7 @@ prism trail, the hull colliders, the AI's aim and the sword's pivot all stay on 
   posed the blade until 2026-10-16; the event path now drives the pose only for a device that
   writes no mirrors (touch), and is inert everywhere else.* The gamepad strategy's trigger edges raise
   `RightStickAction(1)` / `LeftStickAction(2)`, bound in the Rhino's
-  `_gamepadActionOverrides` to `RhinoShieldSwipeRight/LeftAction.asset`. On the local
+  `_gamepadActionOverrides` to `SwordfishShieldSwipeRight/LeftAction.asset`. On the local
   analog pilot these events are inert (the analog drive owns the pose) but they
   replicate through `R_VesselActionHandler`'s RPC chain, so **remote peers animate an
   event-driven approximation**: press = full stance + half chop (rate-limited by
@@ -131,15 +131,15 @@ prism trail, the hull colliders, the AI's aim and the sword's pivot all stay on 
 | Role | File |
 |---|---|
 | Executor (all runtime state + analog drive) | `Executors/ShieldSwipeActionExecutor.cs` |
-| Shared tuning (single source, both directions) | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
-| Swing velocity model (tip-vs-hilt impact speed) | `_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs` + `SkimmerSwingKinematicsConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoSwordSwingKinematicsConfig.asset`; component added on `ForceFieldSkimmer Variant.prefab` |
-| Impact composition (vessel velocity + contact-point swing) | `PrismEffectHelper.ContactVelocity` → `SkimmerDamagePrismEffectSO` / `RhinoSkimmerDamagePrismEffectSO` |
+| Shared tuning (single source, both directions) | `Data Containers/SwordfishShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeConfig.asset` |
+| Swing velocity model (tip-vs-hilt impact speed) | `_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs` + `SkimmerSwingKinematicsConfigSO.cs` → `_SO_Assets/VesselActions/Swordfish/SwordfishSwordSwingKinematicsConfig.asset`; component added on `ForceFieldSkimmer Variant.prefab` |
+| Impact composition (vessel velocity + contact-point swing) | `PrismEffectHelper.ContactVelocity` → `SkimmerDamagePrismEffectSO` / `SwordfishSkimmerDamagePrismEffectSO` |
 | Accurate debris magnitude (velocity passed through as final + per-impact ceiling) | `PrismEffectHelper.DamageProportional` → `Prism.Damage`/`Explode` → `PrismEventData.DebrisSpeedLimit` → `PrismFactory` → `PrismExplosion.TriggerExplosion` |
 | Model tests | `_Scripts/Tests/Editor/SkimmerSwingKinematicsTests.cs` |
-| Per-direction event bindings | `Data Containers/RhinoShieldSwipeActionSO.cs` → `RhinoShieldSwipeRight/LeftAction.asset` (direction only) |
+| Per-direction event bindings | `Data Containers/SwordfishShieldSwipeActionSO.cs` → `SwordfishShieldSwipeRight/LeftAction.asset` (direction only) |
 | Prefab wiring | `Rhino.prefab`: `ShieldSwipeActionRegistry` GO under ShipActions, registered in `ActionExecutorRegistry._executors`; `_gamepadActionOverrides` events 1/2; skimmer transform rest pose |
 
-Config knobs (`RhinoShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollDegrees`
+Config knobs (`SwordfishShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollDegrees`
 90, `chopPitchDegrees` 65, `analogSmoothingSeconds` 0.04, `swipeOutSeconds` 0.18,
 `returnSeconds` 0.3, `swipeCooldownSeconds` 0.35, `swipeEngageThreshold` 0.4,
 `stanceSumThreshold` 1.5, `stanceCenterEpsilon` 0.4.
@@ -203,7 +203,7 @@ OVERLAP rather than any one effect, so it outlives whatever the container carrie
 own skimmer never impact each other.**
 *(This paragraph used to add "enemy-Rhino skims still mute the victim's right trigger". They do
 not: that mute was the same removed effect. What the sword takes from another pilot is their
-petals — `RhinoSwordStealBySkimmerEffect`, `RHINO_ENERGY_SWORD.md`.)*
+petals — `SwordfishSwordStealBySkimmerEffect`, `RHINO_ENERGY_SWORD.md`.)*
 
 ## Swing velocity model — the tip hits harder than the hilt
 
@@ -251,8 +251,8 @@ authored, so re-posing or re-parenting the sword cannot invert them.
 
 `PrismEffectHelper.ContactVelocity` composes it, and both
 `SkimmerDamagePrismEffectSO` (the generic effect, wired on every other skimmer) and
-`RhinoSkimmerDamagePrismEffectSO` (wired on the sword itself — the energy-sword branch swapped
-`RhinoForceFieldSkimmerImpactorDataContainer`'s prism slot from the generic effect to this one,
+`SwordfishSkimmerDamagePrismEffectSO` (wired on the sword itself — the energy-sword branch swapped
+`SwordfishForceFieldSkimmerImpactorDataContainer`'s prism slot from the generic effect to this one,
 see `RHINO_ENERGY_SWORD.md`; both assets carry identical swing-model values, so the velocity
 model is unchanged by that swap) call it before
 `PrismEffectHelper.Damage(..., Vector3 velocity)` → `Prism.Damage` → `Prism.Explode`
@@ -267,8 +267,8 @@ spherical skimmer is byte-for-byte unchanged.
 | `swingVelocityScale` | the damage effect SO, next to `inertia` | 1 (the physical model); 0 restores pre-model behaviour |
 | `maxImpactSpeed` | the damage effect SO | 0 = unclamped |
 | `proportionalDebris` / `restitution` / `debrisSpeedLimit` | the damage effect SO (skimmer AND hull) | on / 1/3 / 200 (see the retune group below) |
-| `restDeadbandSpeed` | `RhinoSwordSwingKinematicsConfig.asset` | 1.5 — below this a parked sword adds exactly nothing |
-| `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `RhinoSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / **off** |
+| `restDeadbandSpeed` | `SwordfishSwordSwingKinematicsConfig.asset` | 1.5 — below this a parked sword adds exactly nothing |
+| `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `SwordfishSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / **off** |
 
 ### Making the magnitude survive to the screen
 

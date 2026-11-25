@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-22-a-flora-limb-that-has-finished-evaporati-66cc46",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T02:06:04+00:00",
+  "area": "Ecology: flora limbs (Spindle, PhyllotacticFlora, BranchingFlora, SpindleLodSystem)",
+  "summary": "A flora limb that has finished evaporating now goes back to a pool (SpindlePool) and is reused by the next growth step instead of being destroyed and cloned; Spindle gained a reset-to-fresh-clone path and its Start work became Begin(), run again on reuse. PhyllotacticFlora and BranchingFlora take limbs from the pool and check a limb is still theirs before growing from it. AssembledFlora is unchanged. SpindleLodSystem gained two profiler markers only. Why: cloning limbs was the largest in-game stall in the Bloomrush and Sirocco profiles. Compiled in the editor, not played.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "b24e430f0"
+}

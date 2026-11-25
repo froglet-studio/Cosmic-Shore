@@ -51,6 +51,19 @@ namespace CosmicShore.Gameplay
                  "spectate bounced Shombith, his join bounced two more). Empty shows no toast (the join is still refused).")]
         [SerializeField, TextArea] private string leavePartyFirstToast = "You are hosting a party. Leave it first - joining another one would end it for everyone in it.";
 
+        [Tooltip("Toast when the party we tried to join runs a different version of the game: its members publish another " +
+                 "Netcode protocol, or none (a build from before the version gate). Tokens: {name} (the other pilot), " +
+                 "{otherVersion} (their protocol, or the label below), {yourVersion} (ours). Empty shows no toast " +
+                 "(the join is still refused).")]
+        [SerializeField, TextArea] private string protocolMismatchToast =
+            "{name} is on a different version of the game ({otherVersion}; yours is {yourVersion}). Update your game to play together.";
+
+        [Tooltip("{otherVersion} in the toast above when the other build publishes no version at all (it is older than the version gate).")]
+        [SerializeField] private string protocolUnpublishedLabel = "an older version";
+
+        [Tooltip("{name} in the toast above when the other pilot's name is not known.")]
+        [SerializeField] private string protocolUnknownPilotName = "That pilot";
+
         [Header("Timing")]
         // The initializers below equal what PartyServices.prefab SERIALIZES (5 / 10 / 30), so a reader
         // of this file is not misled: a serialized field's initializer is not its shipped value.
@@ -285,6 +298,13 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException)
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Accept flow cancelled.");
+            }
+            catch (ProtocolMismatchException pm)
+            {
+                // The inviter's party runs another version of the game (NetProtocol): left before the Netcode
+                // connection, so the player is told to update instead of seeing a generic bounce.
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync(ProtocolMismatchMessage(pm));
             }
             catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
@@ -522,6 +542,11 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] {label} cancelled.");
             }
+            catch (ProtocolMismatchException pm)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync(ProtocolMismatchMessage(pm));
+            }
             catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
                 // Full: the party filled between our pre-flight and the join (two players pressing Join
@@ -701,7 +726,11 @@ namespace CosmicShore.Gameplay
 
                 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-                await tcs.Task.AttachExternalCancellation(timeoutCts.Token);
+                // CancelAfter fires on a timer thread, so a timeout would resume the caller there and its bounce
+                // (NetSessionRecorder, the toast, the scene) would throw off the main thread. Found by the
+                // automatic host/join run of 2026-11-22: "get_realtimeSinceStartupAsDouble can only be called
+                // from the main thread", and the joiner never got back to its own menu.
+                await tcs.Task.AttachExternalCancellation(timeoutCts.Token).AsMainThread();
                 return true;
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
@@ -760,6 +789,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Entry for a DEFINITE server-side loss of this machine's own party session
+        /// (<c>HostConnectionService.HandleDefiniteSessionGoneAsync</c>): rebuild the solo session the same way every
+        /// other route back to a solo menu does (<see cref="RecoverFromFailedTransitionAsync"/>: the player and vessel
+        /// destroyed, the runtime data reset, the network shut down, Menu_Main reloaded, THEN the solo session).
+        ///
+        /// <para>It used to restart the host IN PLACE on the live menu. The scene's spawner then never caught the new
+        /// host Player (<c>FindUnprocessedPlayerByOwnerClientId(0) returned NULL</c>), so nothing paired it and
+        /// <c>gameData</c> kept the dead session's players. Launched from that menu, a Thresher Time match seated the
+        /// pilot who had picked Jade on Gold, with no Jade column on the scoreboard (Yash, 2026-11-07; BUGS.md B48).</para>
+        ///
+        /// <para>Silent: a solo player whose session was reaped has nothing to be told (the caller raises the
+        /// host-connection-lost notice when a real party dropped). False when a transition is already running: it owns
+        /// the session and makes its own.</para>
+        /// </summary>
+        public async UniTask<bool> RecoverFromSessionGoneAsync()
+        {
+            if (_transitioning) return false;
+            _transitioning = true;
+            try
+            {
+                NetSessionRecorder.Mark("bounce", "party session gone server-side");
+                // A recovery lands on HOME, never on the launch panel of a lobby that no longer exists (MenuReturnCard).
+                CosmicShore.UI.MenuReturnCard.Clear();
+                await RecoverFromFailedTransitionAsync();
+                return true;
+            }
+            finally
+            {
+                EndTransition();
+            }
+        }
+
+        /// <summary>
         /// Terminal "bounce": return the player to their own functional solo menu via
         /// <see cref="RecoverFromFailedTransitionAsync"/>, then surface the notice toast.
         /// Guarantees a failed join / host-loss never ends in a permanent splash hang.
@@ -780,6 +842,13 @@ namespace CosmicShore.Gameplay
             // See Docs/PartySystem/BUGS.md B10.
             if (!string.IsNullOrEmpty(toastMessage)) bounceToastChannel?.ShowPrefix(toastMessage);
         }
+
+        /// <summary>The authored "update your game" line for a party that runs another protocol (empty template: no toast).</summary>
+        private string ProtocolMismatchMessage(ProtocolMismatchException pm) =>
+            TemplateText.Fill(protocolMismatchToast,
+                "name",         string.IsNullOrEmpty(pm.RemoteName) ? protocolUnknownPilotName : pm.RemoteName,
+                "otherVersion", string.IsNullOrEmpty(pm.RemoteVersion) ? protocolUnpublishedLabel : pm.RemoteVersion,
+                "yourVersion",  pm.LocalVersion);
 
         /// <summary>
         /// Ends a transition. A host loss reported while it ran is acted on now if the link is still down (the transition
@@ -853,8 +922,21 @@ namespace CosmicShore.Gameplay
             data != null && data.IsPartyHost && !data.IsSpectating &&
             data.PartyMembers != null && data.PartyMembers.Count > 1;
 
-        /// <summary>Whether Play is running. Tests substitute it; it is Unity's own flag otherwise.</summary>
-        internal static Func<bool> IsPlaying { get; set; } = () => Application.isPlaying;
+        /// <summary>
+        /// Whether Play is running. Tests substitute it; it is Unity's own flag otherwise. In the editor a Stop that
+        /// is already requested counts as ended: <c>Application.isPlaying</c> stays true until Play has torn down,
+        /// and in that window UniTask resumes the awaiting flow from the editor's update loop, where a scene load
+        /// returns null (Bug Ledger E-0de9ec6c70 again on belac's 2026-11-06 Regatta, past the B38 guard).
+        /// </summary>
+        internal static Func<bool> IsPlaying { get; set; } = UnityIsPlaying;
+
+        internal static bool UnityIsPlaying()
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return false;
+#endif
+            return Application.isPlaying;
+        }
 
         /// <summary>
         /// True once Play has stopped or this controller is gone, so the flow that awaited must stop

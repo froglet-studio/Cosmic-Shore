@@ -62,6 +62,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The current (newest) banked ability on trigger k, or null while its base power is current.</summary>
         internal Banked Current(int k) => k >= 0 && k < 2 && Banks[k].Count > 0 ? Banks[k][^1] : null;
 
+        /// <summary>The card picture of the ability current on trigger k (0 RT, 1 LT), or null while its base power is current:
+        /// the HUD shows it on the trigger's card (<c>HoneyguideHUDView</c>).</summary>
+        public Sprite CurrentTriggerIcon(int k) => Current(k)?.Def?.icon;
         /// <summary>Every use banked on trigger k (the chip's ticks).</summary>
         internal int BankedUses(int k)
         {
@@ -164,9 +167,12 @@ namespace CosmicShore.Gameplay
                 {
                     if (riding) EndZip(true);
                     _struck.Clear();
-                    for (float d = 0f; d <= _cfg.FlitDistance; d += 3f) Strike(pos + fwd * d, _cfg.FlitStrikeRadius, _struck);
+                    int hits = 0;
+                    float strikeR = _cfg.FlitStrikeRadiusFor(_status);
+                    for (float d = 0f; d <= _cfg.FlitDistance; d += 3f) hits += Strike(pos + fwd * d, strikeR, _struck);
                     BeginJet(_cfg.FlitDistance, _cfg.FlitSeconds, false);
-                    _trigCd[1] = _cfg.FlitCooldown;
+                    // Charge 5 Relentless: a Flit that struck is ready again at once (the post-fire wait still holds)
+                    _trigCd[1] = hits > 0 && _cfg.RelentlessActive(_status) ? 0f : _cfg.FlitCooldown;
                     Play(_cfg.FlitSfx);
                 }
                 return;
@@ -251,7 +257,7 @@ namespace CosmicShore.Gameplay
         void StartPeckBurst()
         {
             float rate = _cfg.PeckAction is FullAutoActionSO gun ? Mathf.Max(0.1f, gun.FiringRate) : 10f;
-            _peckLeft = (Mathf.Max(1, _cfg.PeckBurst) - 0.5f) / rate;
+            _peckLeft = (_cfg.PeckBurstFor(_status) - 0.5f) / rate;
             PeckAt = Time.time;
             SetPeck(true);
         }

@@ -131,7 +131,6 @@ namespace CosmicShore.Gameplay
             public Tier tier;
             public bool fading;
             public bool batched;
-            public bool stillOnce;        // has been seen still for a whole pass
             public int batchSlot;
             public FarBatch batch;        // the batch it is in while batched
         }
@@ -172,6 +171,9 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_tickMarker = new("SpindleLod.Tick");
         static readonly ProfilerMarker s_drainMarker = new("SpindleLod.Drain");
         static readonly ProfilerMarker s_drawMarker = new("SpindleLod.Draw");
+        // The parts of the two above, so a capture can say which one a slow pass spent its time in.
+        static readonly ProfilerMarker s_classifyMarker = new("SpindleLod.Tick.Classify");
+        static readonly ProfilerMarker s_rebuildMarker = new("SpindleLod.Draw.Rebuild");
 
         static SpindleLodSystem s_instance;
         static bool s_unavailable;     // the profile is missing, off or broken: stop asking
@@ -219,6 +221,16 @@ namespace CosmicShore.Gameplay
         NativeArray<float4x4> _lastPose;
         NativeArray<float> _girth;
         NativeArray<byte> _tier;
+        // What the pass needs of each entry besides its tier, kept beside it so the Burst job can
+        // decide alone which limbs need the main thread (FlagStill is written by the job itself).
+        NativeArray<byte> _flags;
+        internal const byte FlagStill = 1;      // has been seen still for a whole pass
+        internal const byte FlagBatched = 2;
+        internal const byte FlagFading = 4;
+        internal const byte FlagSynthetic = 8;
+        internal const byte ActionNone = 0, ActionDead = 1, ActionPending = 2, ActionUnbatchNow = 3;
+
+        void SetFlag(int i, byte flag, bool on) => _flags[i] = (byte)(on ? _flags[i] | flag : _flags[i] & ~flag);
         float _nextTickAt;
         int _pendingCursor;
 
@@ -293,6 +305,7 @@ namespace CosmicShore.Gameplay
             if (e.fading == fading) return;
             e.fading = fading;
             system._entries[i] = e;
+            system.SetFlag(i, FlagFading, fading);
             if (fading && e.batched) system.Apply(i, e.tier, batch: false);
         }
 
@@ -495,19 +508,23 @@ namespace CosmicShore.Gameplay
             var pose = new NativeArray<float4x4>(capacity, Allocator.Persistent);
             var girth = new NativeArray<float>(capacity, Allocator.Persistent);
             var tier = new NativeArray<byte>(capacity, Allocator.Persistent);
+            var flags = new NativeArray<byte>(capacity, Allocator.Persistent);
             int n = _entries.Count;
             if (_lastPose.IsCreated)
             {
                 NativeArray<float4x4>.Copy(_lastPose, pose, n);
                 NativeArray<float>.Copy(_girth, girth, n);
                 NativeArray<byte>.Copy(_tier, tier, n);
+                NativeArray<byte>.Copy(_flags, flags, n);
                 _lastPose.Dispose();
                 _girth.Dispose();
                 _tier.Dispose();
+                _flags.Dispose();
             }
             _lastPose = pose;
             _girth = girth;
             _tier = tier;
+            _flags = flags;
         }
 
         Handle Add(Renderer renderer, MeshFilter filter, int set, Material nearMaterial, bool fading, float strength)
@@ -530,6 +547,7 @@ namespace CosmicShore.Gameplay
             _lastPose[i] = float4x4.identity;
             _girth[i] = _profile.MeshSets[set].girth;
             _tier[i] = (byte)Tier.Near;
+            _flags[i] = (byte)((fading ? FlagFading : 0) | (_profile.MeshSets[set].synthetic ? FlagSynthetic : 0));
             NearCount++;
             s_tierCount[(int)Tier.Near]++;
             return handle;
@@ -561,6 +579,7 @@ namespace CosmicShore.Gameplay
             _lastPose[i] = _lastPose[last];
             _girth[i] = _girth[last];
             _tier[i] = _tier[last];
+            _flags[i] = _flags[last];
             e.handle.index = -1;
             e.handle.owner = null;
         }
@@ -757,58 +776,48 @@ namespace CosmicShore.Gameplay
                 PublishGlobals();
                 int n = _entries.Count;
                 var desired = new NativeArray<byte>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                var moved = new NativeArray<byte>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-                var valid = new NativeArray<byte>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                var action = new NativeArray<byte>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                s_classifyMarker.Begin();
                 new ClassifyJob
                 {
                     Camera = cam.transform.position,
                     Overt = _bounds.overt,
                     SqrDistance = _bounds.sqrDistance,
                     Bounds = _bounds,
+                    BatchFar = _profile.BatchFarThreads,
                     Girth = _girth.GetSubArray(0, n),
                     Current = _tier.GetSubArray(0, n),
+                    Flags = _flags.GetSubArray(0, n),
                     LastPose = _lastPose.GetSubArray(0, n),
                     Desired = desired,
-                    Moved = moved,
-                    Valid = valid,
+                    Action = action,
                 }.ScheduleReadOnly(_transforms, 64).Complete();
+                s_classifyMarker.End();
 
                 _pending.Clear();
                 _pendingCursor = 0;
                 _dead.Clear();
-                bool batchFar = _profile.BatchFarThreads;
+                // The job decided everything a limb's own data can decide; only the limbs it flagged
+                // cost the main thread anything (this loop walked every entry, 18 ms a pass in Sirocco).
                 for (int i = 0; i < n; i++)
                 {
+                    byte a = action[i];
+                    if (a == ActionNone) continue;
                     var e = _entries[i];
-                    if (valid[i] == 0 || !e.renderer)
+                    if (a == ActionDead || !e.renderer)
                     {
                         // Its Spindle unregisters it on the way out; this only catches a renderer
                         // destroyed without its Spindle (an editor tool, a hand-deleted child).
                         _dead.Add(e.handle);
                         continue;
                     }
-                    bool still = moved[i] == 0;
-                    var want = Kept((Tier)desired[i], _profile.MeshSets[e.set].synthetic);
-                    bool wantBatch = batchFar && IsFarFamily(want) && still && e.stillOnce && !e.fading;
-
-                    if (e.stillOnce != still)
-                    {
-                        e.stillOnce = still;
-                        _entries[i] = e;
-                    }
                     // Safety direction first, unbudgeted: a batched limb that moved is drawn by its
                     // own renderer from this frame on, so the batch never draws it where it was.
-                    if (e.batched && !still)
-                    {
-                        Apply(i, want, batch: false);
-                        continue;
-                    }
-                    if (want != e.tier || wantBatch != e.batched)
-                        _pending.Add(e.handle);
+                    if (a == ActionUnbatchNow) Apply(i, (Tier)desired[i], batch: false);
+                    else _pending.Add(e.handle);
                 }
                 desired.Dispose();
-                moved.Dispose();
-                valid.Dispose();
+                action.Dispose();
                 for (int d = 0; d < _dead.Count; d++)
                     if (_dead[d].IsRegistered) Remove(_dead[d].index, restore: false);
             }
@@ -834,11 +843,15 @@ namespace CosmicShore.Gameplay
                     if (!h.IsRegistered || h.owner != this) continue;
                     int i = h.index;
                     var e = _entries[i];
-                    if (!e.renderer) continue;
+                    if (!e.renderer)
+                    {
+                        Remove(i, restore: false);
+                        continue;
+                    }
                     // Re-derive from the pass's verdict, which _tier does not yet hold for a limb
                     // still waiting: recompute it here from the pose the pass read.
                     var want = Classify(i, camPos);
-                    bool wantBatch = _profile.BatchFarThreads && IsFarFamily(want) && e.stillOnce && !e.fading;
+                    bool wantBatch = _profile.BatchFarThreads && IsFarFamily(want) && (_flags[i] & FlagStill) != 0 && !e.fading;
                     if (want == e.tier && wantBatch == e.batched) continue;
                     Apply(i, want, wantBatch);
                     budget--;
@@ -935,6 +948,7 @@ namespace CosmicShore.Gameplay
             e.batched = true;
             e.batchSlot = b.entries.Count;
             _entries[i] = e;
+            SetFlag(i, FlagBatched, true);
             b.entries.Add(i);
             // Incremental, never a rebuild: a joining limb writes its own slot and grows the box. A
             // full Rebuild per changed frame walked every limb of the batch (18,893 instanced limbs
@@ -978,6 +992,7 @@ namespace CosmicShore.Gameplay
             e.batchSlot = -1;
             e.batch = null;
             _entries[i] = e;
+            SetFlag(i, FlagBatched, false);
         }
 
         void CountIn(Tier tier, bool batched)
@@ -1015,7 +1030,9 @@ namespace CosmicShore.Gameplay
                     var batch = _batches[b];
                     int count = batch.entries.Count;
                     if (count == 0 || !batch.mesh || !batch.material) continue;
-                    if (batch.dirty) Rebuild(batch);
+                    if (batch.dirty)
+                        using (s_rebuildMarker.Auto())
+                            Rebuild(batch);
                     for (int start = 0; start < count; start += MaxInstancesPerCall)
                         Graphics.RenderMeshInstanced(batch.renderParams, batch.mesh, 0, batch.matrices,
                             Mathf.Min(MaxInstancesPerCall, count - start), start);
@@ -1094,6 +1111,7 @@ namespace CosmicShore.Gameplay
             if (_lastPose.IsCreated) _lastPose.Dispose();
             if (_girth.IsCreated) _girth.Dispose();
             if (_tier.IsCreated) _tier.Dispose();
+            if (_flags.IsCreated) _flags.Dispose();
             for (int i = 0; i < _ownedMaterials.Count; i++)
                 if (_ownedMaterials[i]) Destroy(_ownedMaterials[i]);
             _ownedMaterials.Clear();
@@ -1115,31 +1133,47 @@ namespace CosmicShore.Gameplay
             public bool Overt;
             public float SqrDistance;
             public TierBounds Bounds;
+            public bool BatchFar;
             [ReadOnly] public NativeArray<float> Girth;
             [ReadOnly] public NativeArray<byte> Current;
             public NativeArray<float4x4> LastPose;
+            public NativeArray<byte> Flags;
+            /// <summary>The tier the limb should hold, a synthetic wire's cull already kept (<see cref="Kept"/>).</summary>
             [WriteOnly] public NativeArray<byte> Desired;
-            [WriteOnly] public NativeArray<byte> Moved;
-            [WriteOnly] public NativeArray<byte> Valid;
+            /// <summary>What the main thread owes this limb: nothing, removal, a budgeted swap, or
+            /// leaving its batch this frame.</summary>
+            [WriteOnly] public NativeArray<byte> Action;
 
             public void Execute(int i, TransformAccess transform)
             {
+                byte flags = Flags[i];
+                byte current = Current[i];
                 if (!transform.isValid)
                 {
-                    Valid[i] = 0;
-                    Desired[i] = Current[i];
-                    Moved[i] = 1;
+                    Desired[i] = current;
+                    Action[i] = ActionDead;
                     return;
                 }
                 float4x4 pose = transform.localToWorldMatrix;
                 float4x4 last = LastPose[i];
                 float4 d = math.abs(pose.c0 - last.c0) + math.abs(pose.c1 - last.c1) +
                            math.abs(pose.c2 - last.c2) + math.abs(pose.c3 - last.c3);
-                Moved[i] = (byte)(math.cmax(d) > MoveEpsilon ? 1 : 0);
+                bool still = math.cmax(d) <= MoveEpsilon;
                 LastPose[i] = pose;
-                Valid[i] = 1;
 
-                Desired[i] = TierFor(Metric(pose, Camera, Girth[i], Overt, SqrDistance), Current[i], Bounds);
+                byte want = TierFor(Metric(pose, Camera, Girth[i], Overt, SqrDistance), current, Bounds);
+                if (want == (byte)Tier.Culled && (flags & FlagSynthetic) != 0) want = (byte)Tier.Min;
+                Desired[i] = want;
+
+                bool batched = (flags & FlagBatched) != 0;
+                bool farFamily = want == (byte)Tier.Far || want == (byte)Tier.Low || want == (byte)Tier.Min;
+                // Batched only once it has been still for two passes running and is not fading.
+                bool wantBatch = BatchFar && farFamily && still && (flags & FlagStill) != 0 && (flags & FlagFading) == 0;
+                Flags[i] = (byte)(still ? flags | FlagStill : flags & ~FlagStill);
+
+                Action[i] = batched && !still ? ActionUnbatchNow
+                    : want != current || wantBatch != batched ? ActionPending
+                    : ActionNone;
             }
 
             /// <summary>The style's distance, measured exactly as the shader measures it (the object

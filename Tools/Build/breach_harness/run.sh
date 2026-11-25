@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED Breach course (RaceCourseGeometry, BreachCourse) and its SHIPPED edit-mode tests
-# (BreachCourseTests) against race_course_source_harness's Unity math stub and an NUnit shim with Roslyn, and RUN
+# (BreachCourseTests, and BreachRuinsTests with Spearline's ruin generator) against race_course_source_harness's Unity math stub and an NUnit shim with Roslyn, and RUN
 # every [Test] - the 400-seed ladder in seconds, no Unity. The tests read Orca.prefab, OrcaCrewConfig.asset and the
 # danger slow from the repo root.
 #
@@ -37,7 +37,9 @@ build() {   # $1 = course source, $2 = output name
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" "$HERE/Stubs.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
-    "$1" "$A/Tests/Editor/BreachCourseTests.cs"; do
+    "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" \
+    "$A/Controller/Arcade/Spearline/SpearlineRuins.cs" "${3:-$A/Controller/Arcade/Breach/BreachRuins.cs}" \
+    "$1" "$A/Tests/Editor/BreachCourseTests.cs" "$A/Tests/Editor/BreachRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -78,6 +80,13 @@ mutate() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must
   fi
   negative "$1" "$OUT/BreachCourse_neg.cs"
 }
+# The ruins' own control first: a ruin left standing on the leg into a walled ring must fail BreachRuinsTests.
+sed 's/=> BreachCourse.IsWalled(leg + 1, course);/=> false;/' "$A/Controller/Arcade/Breach/BreachRuins.cs" > "$OUT/BreachRuins_neg.cs"
+grep -qF 'course) => false;' "$OUT/BreachRuins_neg.cs" || { echo "the mutation did not apply: ruins on a walled leg"; exit 1; }
+build "$COURSE" neg "$OUT/BreachRuins_neg.cs"
+set +e; run neg > "$OUT/neg.txt"; nrc=$?; set -e
+[ $nrc -ne 0 ] || { echo "NEGATIVE CONTROL DID NOT FIRE: ruins on a walled leg"; exit 1; }
+echo "negative control fired: ruins on a walled leg ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
 mutate "the tank refills faster than the asset" 's/BoostTank = 3f, BoostRefill = 0.25f;/BoostTank = 3f, BoostRefill = 0.5f;/' 'BoostRefill = 0.5f'
 mutate "the walls stand so far ahead a burn swings back in" 's/WallAhead = new\[\] { 0f, 0f, 110f, 90f }/WallAhead = new[] { 0f, 0f, 110f, 300f }/' '110f, 300f'
 mutate "the walls are rounded on the outside" 's/? -outward.normalized : e1;/? outward.normalized : e1;/' '? outward.normalized : e1;'

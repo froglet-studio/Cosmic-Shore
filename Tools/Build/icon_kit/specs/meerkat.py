@@ -193,6 +193,57 @@ def soliton_network():
     return rims | (tubes & ~_grown(rims, 2.5) & ~holes)
 
 
+# ---- level 5 (the roster audit, 2026-11-13): each the binding's upgradedSprite, swapped in when the upgrade unlocks ------
+def six_sentinels():
+    """Charge 5 SIX SENTINELS: the pool doubles - a rank of sentinels on one wide mouth, under one guard."""
+    lead = mesh_silhouette.silhouette(HULL_FBX, box=78, cx=64, cy=64, roll=-90, **SIDE)
+    side = empty()
+    for x in (26, 102):
+        side |= mesh_silhouette.silhouette(HULL_FBX, box=62, cx=x, cy=72, roll=-90, **SIDE)
+    rim = _mouth(64, 108, 54, 11, 7)
+    guard = band(64, 70, 58, 205, 335, w=7)
+    keep = _grown(lead | side, 4)
+    return lead | side | (rim & ~keep) | (guard & ~keep)
+
+
+def danger_portal():
+    """Mass 5 DANGER PORTAL: the way out ringed by six DANGER prisms - spiked, they hurt whoever flies through them."""
+    import motifs
+    out = ring(64, 64, 19, w=11)
+    for x, y in ngon(6, PORTAL_R, 64, 64, rot=-90):
+        out |= motifs.burst(x, y, 12.5, spikes=6, inner=0.5, rot=-90)
+    return out
+
+
+def steal():
+    """Space 5 STEAL: a rival's prism (hollow) swallowed at the way in comes out of the way out as ours (solid)."""
+    import motifs
+    from canvas import shift, stroke
+    arch = shift(soliton(), 0, 10) & (GY < 116)
+    s = 12.0
+    rival = stroke([(20 - s, 22 - s), (20 + s, 22 - s), (20 + s, 22 + s), (20 - s, 22 + s)], w=5.0, closed=True)
+    ours = prism_square_x(108, 22, s)
+    head = motifs.arrowhead((20.0, 56.0), (0.0, 1.0), 12.0) | motifs.arrowhead((108.0, 46.0), (0.0, -1.0), 12.0)
+    cut = _grown(rival | ours | head, 3)
+    return (arch & ~cut) | rival | ours | head
+
+
+def boost_out():
+    """Time 5 BOOST OUT: the hull thrown out of the way out - two long bars flanking its wake, where the plain ride leaves one short one."""
+    hull = mesh_silhouette.silhouette(HULL_FBX, box=78, cx=84, cy=58, roll=RIDE_LEAN, **SIDE)
+    x_tail = float(GX[hull].min())
+    y_tail = float(GY[hull & (GX < x_tail + 6)].mean())
+    mx = 20.0
+    mouth = _mouth(mx, y_tail + 6, 11, 30, 9, rot=RIDE_LEAN)
+    bars = empty()
+    for dy, x0, x1 in ((-15, mx + 18, x_tail + 26), (15, mx + 18, x_tail + 26)):
+        y = y_tail + dy
+        bars |= fill(rotate([(x0 + 4, y - 4.5), (x1, y - 4.5), (x1 - 4, y + 4.5), (x0, y + 4.5)],
+                            RIDE_LEAN, x_tail, y_tail))
+    keep = _grown(hull, 4)
+    return hull | (mouth & ~keep) | (bars & ~keep & ~_grown(mouth, 3))
+
+
 _GAP = "the hull's real mesh: its fins and pods float across even gaps by design (vessel-model SKILL 0.5)"
 ICONS = [
     dict(name="Meerkat_SentinelMode", element="Charge", act="Sentinel Mode: the hull on sentry over the mouth it guards",
@@ -205,6 +256,16 @@ ICONS = [
          draw=soliton, before=ICON_DIR + "Stoat_ModeTime.png"),
     dict(name="Meerkat_FasterRide", element="Time", act="Faster Ride: the hull shooting out of a mouth",
          draw=faster_ride, before=ICON_DIR + "Stoat_Pathfinder.png", exempt={"gap": _GAP, "components": _GAP}),
+]
+ICONS += [
+    dict(name="Meerkat_SixSentinels", element="Charge", act="Charge 5 Six Sentinels: the pool of sentinels doubles to six",
+         draw=six_sentinels, exempt={"gap": _GAP, "components": "six sentinels stand apart: the pool IS the act"}),
+    dict(name="Meerkat_DangerPortal", element="Mass", act="Mass 5 Danger Portal: the exit's six prisms are danger prisms",
+         draw=danger_portal, exempt={"components": "the six danger prisms ARE the act (six on a hexagon)"}),
+    dict(name="Meerkat_Steal", element="Space", act="Space 5 Steal: a rival's prism swallowed comes out as ours",
+         draw=steal, exempt={"components": "the prism in, the arch, the prism out: the steal's three parts"}),
+    dict(name="Meerkat_BoostOut", element="Time", act="Time 5 Boost Out: thrown out of every soliton at 1.5 x the exit speed",
+         draw=boost_out, exempt={"gap": _GAP, "components": _GAP}),
 ]
 ICONS += [dict(name="Meerkat_SolitonNetwork", element="Omni", family=False, draw=soliton_network,
                act="The OMNI crystal card: the Soliton Network, three solitons forking from a mouth (one white sprite)",

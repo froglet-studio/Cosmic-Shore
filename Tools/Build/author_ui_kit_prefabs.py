@@ -120,8 +120,8 @@ TOK = {
     # Rev 6's element colours: RETIRED 2026-10-24 (elements carry no colour in the UI, Docs/UI_COLOR_RULES.md). The
     # tokens keep their indices for serialized assets; no style-B surface may draw with them.
     "ElementCharge": "FFD34D", "ElementMass": "7FA8FF", "ElementSpace": "B07CFF", "ElementTime": "5FF0C8",
-    # Rev 7: whatever is selected or focused (UITheme.Selection).
-    "Selection": "3DB2FF",
+    # Whatever is selected or focused (UITheme.Selection): Jade, the control colour (Docs/UI_STYLE_GUIDE.md D3).
+    "Selection": "00D4FF",
 }
 TOKEN_INDEX = {"TextLight": 0, "TextInactive": 1, "InactiveLight": 2, "SurfaceBlack": 3,
                "SurfaceVeryDark": 4, "SurfaceDark": 5, "SurfaceLight": 6, "NeutralLightest": 7,
@@ -139,7 +139,9 @@ def lerp(a, b, t):
 
 WHITE = (1.0, 1.0, 1.0, 1.0)
 VARIANTS = {"Default": 0, "Inactive": 1, "Cancel": 2, "Purchase": 3, "Cta": 4, "Play": 5, "Danger": 6,
-            "Mass": 7, "Space": 8, "Time": 9}
+            "Mass": 7, "Space": 8, "Time": 9, "Commit": 10}
+# The style guide's on-commit (Docs/UI/froglet-tokens.json): white in every theme, UITheme.OnCommit.
+ON_COMMIT = (1.0, 1.0, 1.0, 1.0)
 # Retired rev 6 variants: they draw as Default (KitButton.PaletteFor).
 RETIRED_VARIANTS = ("Mass", "Space", "Time")
 ELEMENT_TOKENS = ("ElementCharge", "ElementMass", "ElementSpace", "ElementTime")
@@ -167,6 +169,9 @@ def button_palette(variant, opaque, disabled=False):
         cta = tok("Cta")
         return ((lerp(cta, WHITE, 0.5), cta, dark) if opaque else
                 (cta, tok("Cta", 0.24), cta))
+    if v == "Commit":          # Play / Ready, no way back: ruby (commit = Tooltip), flat, on-commit label
+        return ((tok("Tooltip"), tok("Tooltip"), ON_COMMIT) if opaque else
+                (tok("Tooltip"), tok("Tooltip", 0.12), tok("Tooltip")))
     if v == "Danger":
         return (tok("Danger"), tok("Danger"), dark)
     return ((tok("TextLight"), tok("TextLight"), dark) if opaque else
@@ -1087,7 +1092,8 @@ def build_scene():
 
     y = -134
     rows = [("Default", "CONFIRM"), ("Inactive", "UNLOCKED"), ("Cancel", "CANCEL"), ("Purchase", "UNLOCK - 4000"),
-            ("Cta", "FREE"), ("Play", "TAP TO PLAY"), ("Danger", "DELETE MY DATA")]
+            ("Cta", "FREE"), ("Play", "TAP TO PLAY"), ("Danger", "DELETE MY DATA"),
+            ("Commit", "READY")]
     for i, (variant, text) in enumerate(rows):
         lab = right.child(Node(f"btnlab{i}", f"{variant} label", rect((0, 1), None, (0, y - 16), (120, 18), (0, 1))))
         lab.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp(variant.upper(), "Label", tok("NeutralLightest"), "left")) \
@@ -1106,7 +1112,7 @@ def build_scene():
                                    rect((0, 1), None, (730, -134), small_sz, (0, 1)),
                                    button_mods("KitButton", "Default", False, "BACK", small=True)))
 
-    y = -566
+    y = -626
     tiles = [("Squirrel", "SELECTED", True, False, "Squirrel"), ("Dolphin", "LOCKED / 4000", False, True, "Dolphin"),
              ("Manta", "LOCKED / 4000", False, True, "Manta")]
     for i, (vessel, status, sel, locked, icon) in enumerate(tiles):
@@ -1251,6 +1257,8 @@ def validate(out):
     # mirrors this table.
     for variant, token in (("Play", "Cta"), ("Cta", "Cta"), ("Purchase", "Purchase"), ("Danger", "Danger")):
         assert button_palette(variant, True)[1] == tok(token), f"the {variant} button is not drawn in {token}"
+    # Frogma Style Guide 5 (Docs/UI/specs/sg5-play-ready.md): Play / Ready is the commit Ruby under a white label, flat.
+    assert button_palette("Commit", True) == (tok("Tooltip"), tok("Tooltip"), ON_COMMIT), "the Commit button is not ruby under white"
     for variant in VARIANTS:
         for opaque in (True, False):
             drawn = set(button_palette(variant, opaque))
@@ -1260,7 +1268,7 @@ def validate(out):
         assert button_palette(variant, False) == button_palette("Default", False), f"retired {variant} must draw as Default"
     """Every local fileID resolves; anchors are unique; every referenced guid has an owner."""
     # Rev 7: a selection is the glowing sky blue everywhere (Docs/MENU_REDESIGN_B.md §47.1, the owner 2026-10-17).
-    assert tok("Selection")[:3] == tuple(int("3DB2FF"[i:i + 2], 16) / 255 for i in (0, 2, 4)), "Selection is not sky blue"
+    assert tok("Selection") == tok("ControlActive"), "Selection is not Jade (Docs/UI_STYLE_GUIDE.md D3)"
     assert tile_palette(True, False)["border"] == tok("Selection"), "a selected tile's border is not the Selection blue"
     tile = out[f"{PREFAB_DIR}/KitTile.prefab"]
     assert f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n" in tile, "KitTile's selected border is not Selection"

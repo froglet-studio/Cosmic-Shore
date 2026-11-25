@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-21-home-s-two-docked-cards-weekly-challenge-7dfacf",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-21T15:03:35+00:00",
+  "area": "Home's docked Up next cards",
+  "summary": "Home's two docked cards (weekly challenge, current quest) became the Tide strip and the quest chain card: folded at rest, opened by focus or hover, with no fold or close buttons and no card art (Frogma option C, picked by Garrett).",
+  "why": "Loop Atlas era.tide: Garrett asked for the Tide and the quest chain to take over the two Up next cards, picked option C and said not to x them out.",
+  "branch": "claude/build-era.tide",
+  "pr": 2283,
+  "commit": "892c45efb",
+  "paths": [
+    "Assets/_Scenes/Menu_Main.unity",
+    "Assets/_Scripts/UI/Screens/HomeDockCard.cs",
+    "Assets/_Scripts/UI/Screens/HomeUpNext.cs",
+    "Tools/Build/author_menu_home.py"
+  ]
+}

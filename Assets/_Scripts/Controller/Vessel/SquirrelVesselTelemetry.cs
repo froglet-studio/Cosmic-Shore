@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
             if (_currentCleanStreak > MaxCleanStreak)
             {
                 MaxCleanStreak = _currentCleanStreak;
-                maxCleanStreakStat?.Raise(MaxCleanStreak);
+                Publish(maxCleanStreakStat, MaxCleanStreak);
             }
         }
 
@@ -91,14 +91,14 @@ namespace CosmicShore.Gameplay
         {
             if (!IsTracking || Vessel?.PlayerName != playerName) return;
             PrismsStolen++;
-            prismsStolen?.Raise(PrismsStolen);
+            Publish(prismsStolen, PrismsStolen);
         }
 
         private void HandleJoustEvent(string winner)
         {
             if (!IsTracking || Vessel?.PlayerName != winner) return;
             JoustsWon++;
-            joustsWonStat?.Raise(JoustsWon);
+            Publish(joustsWonStat, JoustsWon);
         }
     }
 }

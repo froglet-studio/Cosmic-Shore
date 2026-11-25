@@ -27,7 +27,7 @@ thin-mesh 5, screen-ring 0, no-normals 0. The "does not read" set, most signals 
 
 | Effect | Signals | What it is |
 |---|---|---|
-| `Spacevessels/Rhino.prefab` | 10 | five sword-blade TrailRenderers on `Custom/ViewAngleBasedColorBlendHDR` (unlit by content, additive) |
+| `Spacevessels/Swordfish.prefab` (on `Rhino.prefab` until the Swordfish took the sword, #1968) | 10 | five sword-blade TrailRenderers on `Custom/ViewAngleBasedColorBlendHDR` (unlit by content, additive) |
 | `FX/FX_skimmer_ribbons.prefab` | 8 | three particle systems on URP/Particles/Unlit (billboard, additive) |
 | `Projectile/GrizzlyBomb.prefab` | 8 | "Halo" and "Ring" quads on URP/Particles/Unlit, thin-mesh ratio 0.0, plus an additive BallTrail ribbon: the "ring that says burst" Garrett named on 2026-10-21 |
 | `FX_skimmer_greenblock` 6, `FX_skimmer_lightning` 5, `Projectile/FalconProjectile` 4, `Projectile/Projectile` 4 | | unlit billboards and flat fills |
@@ -80,7 +80,13 @@ language needs that nothing draws yet.
 
 Today (`audit.py`): the seven signals against a baseline, with a negative control for each in `--self-test`
 (an unlit world quad, an unlit-by-content graph, an additive sheet, a billboard, a screen ring in both forms, a thin
-mesh, a UI canvas quad excluded, a hull mesh left out, a baseline pass/fail/missing).
+mesh, a UI canvas quad excluded, a hull mesh left out, a baseline pass/fail/missing, a moved prefab).
+
+A renamed or moved offender is the SAME offender (2026-11-16): the baseline carries a fingerprint per signal (the
+renderer's kind, object, materials and their shader and blend state, mesh and particle mode, with every asset path left
+out), and a signal that left one path and appeared at another with the same renderer, signal and fingerprint is
+reported as `moved` and passes. A copy (the old path still has it), a move that also changed the material, and a
+baseline without fingerprints still fail; `--self-test` holds all three.
 
 Planned (`verify.py`, the icon kit's shape): lit (the two-tone measured on the sheet: facet contrast), depth (the
 thinnest extent against the longest, 0.08 or more), scale (size to the owner, measured from the prefab), the phone
@@ -106,7 +112,8 @@ owner flies it, LESSONS before the next.
 | R1 | the Orca's missile and bomb ("feel cheap"; the GrizzlyBomb's halo and ring quads are the audit's third worst) | proposed |
 | R2 | the crystal capture ("looks terrible") | proposed |
 | R3 | the black hole's vortex ring (the flat ring of 2026-10-24) | proposed |
-| R4 | a trail: the Rhino's sword-blade ribbons (the audit's worst, 10 signals) | proposed |
+| R4 | a trail: the Swordfish's sword-blade ribbons (the audit's worst, 10 signals; the Rhino's until #1968) | proposed |
+| gate | rename-safe baseline: a moved offender is not a new one | **built 2026-11-16**: the Swordfish rename (#1968) carried the five `RhinoSwordBladeTracer` trails from `Rhino.prefab` to `Swordfish.prefab` and `--check` went red on bleeding-edge with 10 new and 10 fixed, the same 10. Fingerprints in the baseline pair them as moved. Lesson: **a gate keyed on a path fails every rename, so a rename turns it red for a reason that has nothing to do with the look**; key the offender on what it is, keep the path only to name it, and prove the pairing cannot hide a copy or a changed material |
 
 ## 9. Decisions for Garrett
 

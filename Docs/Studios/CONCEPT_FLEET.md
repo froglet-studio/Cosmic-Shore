@@ -41,8 +41,8 @@ way by reading and writing the SAME records, in this order, at the start and the
    test in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, `studio_to_unity/clones.json`. Say in the commit who else works there
    (`Affects:`; `python3 Tools/Build/who_works_where.py query <paths>`), and build on their pattern rather than a new one
    (the Flea and the Omega crews are Stoat clones; the crews use the Orca's seat plumbing).
-5. **Hand-offs**: a test, a decision or content for someone else goes on Froglet Tasks through `/team-tasks suggest`
-   (it waits for the person's approval; never filed on its own, never assigned). One ticket per branch.
+5. **Hand-offs**: a test, a decision or content for someone else goes on the swim lanes board (`/handoff-open`,
+   `/handoff-for-test`; only with the person's approval, never assigned).
 
 ### The vessel id ledger (VesselClassType; re-check the branches before claiming)
 

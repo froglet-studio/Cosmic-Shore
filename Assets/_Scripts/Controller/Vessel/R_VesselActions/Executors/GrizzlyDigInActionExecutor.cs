@@ -2,13 +2,15 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using CosmicShore.Soap;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly Dig In: translation-restricted turret stance with boosted Energy regen.
+    /// Grizzly Dig In: translation-restricted turret stance that BRACES the hull: energy regenerates and the charged
+    /// cannon winds up faster by the Charge dial (<see cref="GrizzlyDigInActionSO.FillFor"/>), read live every frame.
     ///
     /// Every stuck-state from the restoration branch is closed here:
     ///  - un-plant ALWAYS routes through VesselController.SetTranslationRestricted so the
@@ -17,11 +19,30 @@ namespace CosmicShore.Gameplay
     ///    compounded), and runs on turn end, disable, AND re-Initialize,
     ///  - external un-plants (e.g. being launched by your own blast — see
     ///    VesselImpulseByExplosionEffectSO) are reconciled lazily in ReapplyRegen.
+    ///
+    /// <para><b>Battle Sight (Charge level 5).</b> While dug in with the Charge upgrade live, every
+    /// RIVAL vessel within <see cref="battleSightRadius"/> is marked in its own domain colour (hull
+    /// tint plus the through-mass halo) by the same highlighter the Dolphin's Echo Sight uses, so a
+    /// parked turret sees who is coming, through mass. A targeting aid for the pilot, so it is
+    /// drawn on the local pilot's machine only; it fades out when the Grizzly un-plants or the
+    /// upgrade relocks.</para>
     /// </summary>
     public sealed class GrizzlyDigInActionExecutor : ShipActionExecutorBase
     {
         [Header("Scene Refs")]
         [SerializeField] VesselPrismController vesselPrismController;
+
+        [Header("Battle Sight (Charge level 5)")]
+        [Tooltip("Rivals within this distance of the dug-in Grizzly are marked while the Charge " +
+                 "upgrade is live.")]
+        [SerializeField, Min(1f)] float battleSightRadius = 600f;
+        [Tooltip("Seconds a mark takes to bloom in or fade out.")]
+        [SerializeField, Min(0.01f)] float battleSightFadeSeconds = 0.25f;
+        [SerializeField, Min(1f)] float battleSightGain = 4f;
+        [SerializeField, Range(0f, 1f)] float battleSightSaturation = 0.85f;
+        [SerializeField, Min(1.05f)] float battleSightHaloScale = 2.4f;
+        [SerializeField, Min(0f)] float battleSightHaloIntensity = 1.4f;
+        [SerializeField, Range(0f, 0.5f)] float battleSightHaloMinScreenRadius = 0.055f;
 
         [Header("Events")]
         [SerializeField] ScriptableEventBool stationaryModeChanged;
@@ -31,9 +52,18 @@ namespace CosmicShore.Gameplay
         public event System.Action<bool> OnDugInChanged;
         public bool IsDugIn { get; private set; }
 
+        /// <summary>How much faster the charged cannon winds up right now: the Charge dial while dug in, else 1.</summary>
+        public float CannonChargeMultiplier =>
+            IsDugIn && _activeConfig != null && _status != null ? _activeConfig.FillFor(_status) : 1f;
+
         IVesselStatus _status;
         GrizzlyDigInActionSO _activeConfig;
         int _lastToggleFrame = -1;
+
+        // The live roster, injected (vessels get GameObjectInjector.InjectRecursive at spawn).
+        [Inject] GameDataSO _gameData;
+        EchoSightVesselHighlighter _battleSight;
+        readonly System.Collections.Generic.List<IPlayer> _rivals = new();
 
         void OnEnable()
         {
@@ -46,6 +76,54 @@ namespace CosmicShore.Gameplay
             if (OnMiniGameTurnEnd)
                 OnMiniGameTurnEnd.OnRaised -= End;
             End();
+            _battleSight?.ClearAll();
+        }
+
+        void Update()
+        {
+            // The brace follows the live Charge level (a crystal, a debuff) while planted, and notices an external
+            // un-plant (a self-launch) the frame it happens.
+            if (IsDugIn) ReapplyRegen();
+
+            bool sight = IsDugIn
+                         && _status?.Player != null && _status.Player.IsLocalPilot && !_status.AutoPilotEnabled
+                         && _status.ElementalAbilityHandler != null
+                         && _status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
+
+            if (!sight && _battleSight == null) return;
+
+            _battleSight ??= new EchoSightVesselHighlighter(
+                battleSightFadeSeconds, battleSightGain, battleSightSaturation, battleSightHaloScale,
+                battleSightHaloIntensity, battleSightHaloMinScreenRadius, true);
+
+            _rivals.Clear();
+            var self = _status?.Vessel;
+            if (sight && _gameData?.Players != null && self?.Transform)
+            {
+                var own = _status.Domain;
+                var players = _gameData.Players;
+                for (int i = 0; i < players.Count; i++)
+                {
+                    var p = players[i];
+                    if (p?.Vessel != null && p.Domain != own) _rivals.Add(p);
+                }
+            }
+
+            // Fed zero rather than skipped when the sight is off, so marks fade out instead of sticking.
+            var volume = sight && self?.Transform
+                ? LitVolume.Sphere(self.Transform.position, battleSightRadius)
+                : default;
+            _battleSight.Tick(sight ? _rivals : null, self, volume, sight ? 1f : 0f, Time.deltaTime,
+                              ResolveDomainSignalColor);
+        }
+
+        /// <summary>A vessel's own domain colour, read live off the worn colour set (as Echo Sight does).</summary>
+        Color ResolveDomainSignalColor(IVessel vessel)
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            var status = vessel?.VesselStatus;
+            var domain = status?.Player != null ? status.Domain : Domains.Blue;
+            return colorSet != null ? colorSet.GetDomainSignalColor(domain) : Color.white;
         }
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -130,16 +208,9 @@ namespace CosmicShore.Gameplay
 
             var resource = resources[so.EnergyIndex];
             if (boosted)
-            {
-                float chargeMul = ElementalScaling.Multiplier(
-                    _status, Element.Charge, so.ChargeScaleAtFull, so.ChargeScaleMinMul);
-                resource.resourceGainRate = resource.initialResourceGainRate *
-                                            so.StationaryGainMultiplier * chargeMul;
-            }
+                resource.resourceGainRate = resource.initialResourceGainRate * so.FillFor(_status);
             else
-            {
                 resource.resourceGainRate = resource.initialResourceGainRate;
-            }
         }
 
         void End()

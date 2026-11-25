@@ -20,6 +20,8 @@ MonoBehaviour:
   arkEscort: {fileID: 11400000, guid: 2bfdf0d09dc14a1e935bab5dbca107a0, type: 2}
   seedElementLevel: 0.5
   wingmateLeash: 1600
+  strayRadiusCells: 1.25
+  strayCountdownSeconds: 5
   findDistance: 520
   vaultRadius: 26
   vaultPrisms: 40
@@ -29,6 +31,8 @@ MonoBehaviour:
   cullRadius: 900
   observeRadius: 260
   rivalAbeam: 420
+  escortCrystalsPerDifficulty: 30
+  escortRewardElement: 5
   routeColor: {r: 0.7, g: 1, b: 0.35, a: 1}
   hereColor: {r: 1, g: 0.78, b: 0.25, a: 1}
   portColor: {r: 0.96, g: 0.94, b: 0.86, a: 1}

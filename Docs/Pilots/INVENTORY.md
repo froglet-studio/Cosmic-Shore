@@ -121,11 +121,13 @@ The result says the level before and after, and whether this feed crossed the tw
 - **Callsigns are a fixed set.** `Callsigns.All` is the eighteen `PilotVision` values, each ONE vision power, with ids
   `pilot.callsign.<word>`.
   - A callsign is shared: two crews can each have a VOLT.
-- **A crew holds at most one pilot per callsign** (VOYAGES.md §6.2.1). `AccountInventory.TryAddPilot` refuses a second.
+- **Callsigns may repeat inside a crew** (Garrett, 2026-11-16: "it is ok if we duplicate callsign everything else will be the different"). Each painted pilot (`PilotRecord.PaintedKey`, `PaintedCrewSO`) is held
+  at most once: `AccountInventory.TryAddPilot` refuses a second. A rolled recruit (`MintPilot`) is still refused a
+  callsign the crew already has, until recruits grow crews one unique pilot at a time.
 - **Each pilot is a person** (`PilotGenerator`, rolled from the seed and stored):
   - **name**: syllable given names (about 18,000) and compound family names (1,600). A new pilot re-rolls until the
     name is new to the crew.
-  - **heritage**: human plus two different animals (`AnimalSpecies`, 48 animals), shown as "Human / Axolotl / Koi" and
+  - **heritage**: human plus two different animals (`AnimalSpecies`: 48 a roll draws from, `Species.LastRollable`, and 38 more the painted pilots carry), shown as "Human / Axolotl / Koi" and
     as a blend ("Axoloi").
   - **faction**: one founding faction of a faction type (§3.3).
   - **homeworld and backstory**: five seeded sentences covering where they grew up, their heritage, how they joined
@@ -183,7 +185,8 @@ stand-in for tests and headless runs.
 **Invariants**, each enforced by the mutating method and repaired by `Normalize()` after any load:
 
 - Ids are unique and well formed.
-- There is at most one pilot per callsign.
+- Each painted pilot (`PaintedKey`) is held at most once; `PaintedGranted` lists every painted pilot the crew was ever
+  granted, so one who left is not granted again.
 - Every artifact is attuned to a track element, with crystals fed never negative and a sane curve.
 - The captain and every Hangar pick name something held.
 - An artifact rides one vessel at a time.

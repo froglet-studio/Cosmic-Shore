@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a mode takes to come fully on or off (thrusters, trail, the HUD's switch, the cords growing out).")]
         [SerializeField, Min(0.01f)] float modeBlendSeconds = 0.35f;
         [Tooltip("TIME: Speed Mode's multiplier on the hull's cruise speed (x6 at rest - Garrett, 2026-10-14). The Zephyr's element.")]
-        [SerializeField] ElementalFloat speedModeMultiplier = ElementalFloat.Multiplier(6f, 8f, Element.Time, 4f);
+        [SerializeField] ElementalFloat speedModeMultiplier = ElementalFloat.Multiplier(6f, 8f, Element.Time, 3f);
         [Tooltip("1 = Speed Mode stretches the base trail's spacing by exactly the speed it adds, so the hull lays the " +
                  "same prisms per second whatever its speed (the document: 'so as not to increase production output').")]
         [SerializeField, Range(0f, 1f)] float speedModeSpacingFollow = 1f;
@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
                  "corner trails' - never its length (Garrett, 2026-10-16: 'stretch the prisms in z and decrease them in x " +
                  "and y at base. mass can control the x and y'). The block itself is BrittleStar.prefab's spawner BaseScale " +
                  "(1, 1, 6). The Fabricator's element.")]
-        [SerializeField] ElementalFloat prismWidthScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [SerializeField] ElementalFloat prismWidthScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
 
         [Header("Creation Mode (a trail behind each ring corner)")]
         [Tooltip("World units between blocks along each corner's trail (the base trail's wavelength).")]
@@ -86,11 +86,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.05f)] float projectileTime = 4.5f;
         [Tooltip("SPACE: multiplier on the flight time, and so on every gun's range - x2 at Space 10 ('double that " +
                  "through the space scaling'): 387 u -> 774 u. The Hunter's element.")]
-        [SerializeField] ElementalFloat rangeMultiplier = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.7f);
+        [SerializeField] ElementalFloat rangeMultiplier = ElementalFloat.Multiplier(1f, 2f, Element.Space, 0.5f);
         [Tooltip("Round size multiplier on the projectile prefab's own size, at Charge 0 (the Sparrow's own: 1).")]
         [SerializeField, Min(0.1f)] float projectileScale = 1f;
         [Tooltip("CHARGE: the rounds' size multiplier, and the cords' cut width. Rolling Thunder's element.")]
-        [SerializeField] ElementalFloat projectileScaleMultiplier = ElementalFloat.Multiplier(1f, 1.8f, Element.Charge, 0.6f);
+        [SerializeField] ElementalFloat projectileScaleMultiplier = ElementalFloat.Multiplier(1f, 1.8f, Element.Charge, 0.5f);
         [Tooltip("In-flight growth of every round: each leaves the muzzle at its size and swells to this multiple over its " +
                  "flight, its hit radius with it - the Sparrow's look (FullAutoAction.growthFactorAtRestingMass 3). A fixed " +
                  "factor here: Mass is Creation Mode's dial on this hull, so it does not also scale the rounds.")]
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("SPACE: the heat the guns hold before they overheat, x the Space 0 capacity (1). x3.33 at Space 10, so " +
                  "the five guns' full-pull burst runs ~20 s instead of ~6 s (Garrett: 'have the maximum heat scale with " +
                  "space', 2026-10-16; 'from 6 to 20 seconds', 2026-10-17). The Hunter's element.")]
-        [SerializeField] ElementalFloat heatCapacity = ElementalFloat.Multiplier(1f, 3.3333f, Element.Space, 1f);
+        [SerializeField] ElementalFloat heatCapacity = ElementalFloat.Multiplier(1f, 3.3333f, Element.Space, 0.5f);
         [Tooltip("Heat lost per second, always (in Space 0 capacities: a bigger capacity does not cool faster).")]
         [SerializeField, Min(0f)] float coolRate = 0.12f;
         [Tooltip("Extra heat lost per second while Charge Mode's cords are out ('using charge lasers cools the guns'), " +
@@ -223,7 +223,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float ringBlastThicknessScale = 4f;
         [Tooltip("CHARGE: multiplier on the disk's THICKNESS, on top of ringBlastThicknessScale (x4 at Charge 10). Rolling " +
                  "Thunder's element: 'larger AOE on support ring detonation'.")]
-        [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 4f, Element.Charge, 1f);
+        [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 4f, Element.Charge, 0.5f);
 
         [Tooltip("The ring explosion's CORE (Shombith, 2026-11-03: the ring 'should perform an explosion which blows up " +
                  "nearby' mass): every prism within this many world units of where the ring blows is destroyed at once " +
@@ -332,9 +332,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference destructionModeEvent;
         [SerializeField] EventReference chargeModeEvent;
         [SerializeField] EventReference modeOffEvent;
+        [Tooltip("The guns fire (at most one per Fire Sound Min Seconds).")]
         [SerializeField] EventReference fireEvent;
-        [Tooltip("A cord cuts a prism (one per cut, at the cut).")]
+        [Tooltip("A cord cuts a prism (one per cut, at the cut; at most one per Cord Slice Sound Min Seconds).")]
         [SerializeField] EventReference cordSliceEvent;
+        [Tooltip("The shortest gap (s) between two fire sounds from one hull. The guns fire 90 rounds a second, so " +
+                 "without it the sound started on nearly every frame; three AI Brittle Stars left thousands of FMOD " +
+                 "instances alive and stalled FMOD's command queue for minutes (Brittle Star Time I4, 2026-11-24). " +
+                 "0 = every volley.")]
+        [SerializeField, Min(0f)] float fireSoundMinSeconds = 0.08f;
+        [Tooltip("The shortest gap (s) between two cord-slice sounds from one hull (a cord can cut dozens of prisms " +
+                 "a frame). 0 = every cut.")]
+        [SerializeField, Min(0f)] float cordSliceSoundMinSeconds = 0.05f;
         [SerializeField] EventReference ringLaunchEvent;
         [SerializeField] EventReference ringBlastEvent;
         [SerializeField] EventReference ringRebuildEvent;
@@ -436,6 +445,8 @@ namespace CosmicShore.Gameplay
         public EventReference ModeOffEvent => modeOffEvent;
         public EventReference FireEvent => fireEvent;
         public EventReference CordSliceEvent => cordSliceEvent;
+        public float FireSoundMinSeconds => fireSoundMinSeconds;
+        public float CordSliceSoundMinSeconds => cordSliceSoundMinSeconds;
         public EventReference RingLaunchEvent => ringLaunchEvent;
         public EventReference RingBlastEvent => ringBlastEvent;
         public EventReference RingRebuildEvent => ringRebuildEvent;

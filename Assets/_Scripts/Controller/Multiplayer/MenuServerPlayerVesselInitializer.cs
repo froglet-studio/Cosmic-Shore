@@ -153,12 +153,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
-            if (!player.NetIsAI.Value && player.NetDomain.Value != menuVesselDomain)
-                player.NetDomain.Value = menuVesselDomain;
+            // The voyage scene runs this initializer too: there every person flies the Ark's one domain, the host's pick
+            // (VoyageLobbyLink.ArkDomain; Shombith, 2026-11-21), so the vessels and the Ark, which wears its pilot's
+            // vessel's domain, agree.
+            var domain = InVoyageScene() ? VoyageLobbyLink.ArkDomain : menuVesselDomain;
+            if (!player.NetIsAI.Value && player.NetDomain.Value != domain)
+                player.NetDomain.Value = domain;
 
             await base.OnPlayerReadyToSpawnAsync(player, ct);
             ActivateAutopilot(player);
         }
+
+        /// <summary>True when this initializer stands in the voyage scene (loaded, whether or not it is active yet).</summary>
+        bool InVoyageScene() => gameObject.scene.name == VoyageLaunch.SceneName;
 
         // ---------------------------------------------------------
         // VESSEL SWAP (server-side)

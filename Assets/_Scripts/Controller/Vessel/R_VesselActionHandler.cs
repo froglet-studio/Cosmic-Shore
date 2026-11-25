@@ -81,7 +81,10 @@ namespace CosmicShore.Gameplay
             NetworkVariableWritePermission.Owner);
 
         /// <summary>
-        /// The Stoat's live FIELD DIPOLE (<c>R_VesselActions/STOAT_DIPOLE.md</c>): the sink's world
+        /// UNUSED since 2026-11-21: the Stoat's field dipole that wrote it was deleted. Kept, with
+        /// <see cref="NetStoatDipoleSource"/>, only so the wire layout (and with it the protocol version) does not change;
+        /// remove both with the next protocol bump. What it carried:
+        /// the Stoat's live FIELD DIPOLE (<c>R_VesselActions/STOAT_DIPOLE.md</c>): the sink's world
         /// position in xyz and both poles' horizon radius in w, or <see cref="Vector4.zero"/> when the
         /// pair is closed. With <see cref="NetStoatDipoleSource"/> it is the whole pair. Owner-write, for
         /// the <see cref="NetEchoSightShape"/> reason: the poles' separation IS the analog squeeze of
@@ -812,6 +815,103 @@ namespace CosmicShore.Gameplay
                 SendButtonPressed_ServerRpc(ie, CurrentDevice());
             else
                 PerformShipControllerActions(ie);
+        }
+
+        /// <summary>
+        /// Run an autopilot's direct start (<paramref name="start"/>) or stop of <paramref name="action"/> on EVERY
+        /// peer, the way a human press runs: server to every client, the host included. For an action whose effect
+        /// does not ride a replicated channel (<see cref="ShipActionSO.AutopilotPressTravels"/>; the Serpent's wall,
+        /// whose prisms every peer simulates on its own). The wire names the action by where this vessel's input
+        /// maps hold it (<see cref="TryLocateBoundAction"/>), which every peer builds from the same prefab.
+        ///
+        /// <para>False, and nothing is sent, when the vessel is not spawned (offline play), when this machine
+        /// neither serves nor owns it, or when no input map holds the action: the caller then runs it locally,
+        /// exactly as before.</para>
+        /// </summary>
+        public bool TrySendAutopilotAction(ShipActionSO action, bool start)
+        {
+            if (!action || !IsSpawned) return false;
+            if (!TryLocateBoundAction(ActionMaps, action, out byte map, out InputEvents ie, out byte slot)) return false;
+            if (IsServer) AutopilotAction_ClientRpc(map, ie, slot, start);
+            else if (IsOwner) AutopilotAction_ServerRpc(map, ie, slot, start);
+            else return false;
+            return true;
+        }
+
+        [ServerRpc]
+        void AutopilotAction_ServerRpc(byte map, InputEvents ie, byte slot, bool start)
+        {
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
+            {
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+                AutopilotAction_ClientRpc(map, ie, slot, start);
+            }
+        }
+
+        [ClientRpc]
+        void AutopilotAction_ClientRpc(byte map, InputEvents ie, byte slot, bool start)
+        {
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
+            {
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+                var action = BoundActionAt(ActionMaps, map, ie, slot);
+                if (!action) return;
+                if (start) action.StartAction(_executors, vesselStatus);
+                else action.StopAction(_executors, vesselStatus);
+                VesselActionTape.Observer?.OnDirectAction(vesselStatus, action, start);
+            }
+        }
+
+        /// <summary>This vessel's input maps in the order the autopilot RPC numbers them: shared, touch, gamepad.</summary>
+        Dictionary<InputEvents, List<ShipActionSO>>[] ActionMaps =>
+            _actionMaps ??= new[] { _shipControlActions, _touchOverrideActions, _gamepadOverrideActions };
+        Dictionary<InputEvents, List<ShipActionSO>>[] _actionMaps;
+
+        /// <summary>
+        /// Where <paramref name="action"/> sits in <paramref name="maps"/>: the map's index, the input and the slot in
+        /// that input's list. The instance itself first; then an action of the same asset (an AI pilot presses its
+        /// own clone of a bound asset, which no map holds). A pure read, for the autopilot RPC and its tests.
+        /// </summary>
+        internal static bool TryLocateBoundAction(IReadOnlyList<Dictionary<InputEvents, List<ShipActionSO>>> maps,
+            ShipActionSO action, out byte map, out InputEvents inputEvent, out byte slot)
+        {
+            if (TryLocate(maps, action, byName: false, out map, out inputEvent, out slot)) return true;
+            return TryLocate(maps, action, byName: true, out map, out inputEvent, out slot);
+        }
+
+        static bool TryLocate(IReadOnlyList<Dictionary<InputEvents, List<ShipActionSO>>> maps, ShipActionSO action,
+            bool byName, out byte map, out InputEvents inputEvent, out byte slot)
+        {
+            map = 0; inputEvent = default; slot = 0;
+            if (!action || maps == null) return false;
+            string name = byName ? ReplayActionName(action) : null;
+            for (int m = 0; m < maps.Count && m <= byte.MaxValue; m++)
+            {
+                if (maps[m] == null) continue;
+                foreach (var kv in maps[m])
+                {
+                    var list = kv.Value;
+                    if (list == null) continue;
+                    for (int i = 0; i < list.Count && i <= byte.MaxValue; i++)
+                    {
+                        var candidate = list[i];
+                        if (!candidate) continue;
+                        bool match = byName ? ReplayActionName(candidate) == name : candidate == action;
+                        if (!match) continue;
+                        map = (byte)m; inputEvent = kv.Key; slot = (byte)i;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The action at a place <see cref="TryLocateBoundAction"/> named, or null when this peer's maps hold none there.</summary>
+        internal static ShipActionSO BoundActionAt(IReadOnlyList<Dictionary<InputEvents, List<ShipActionSO>>> maps,
+            byte map, InputEvents inputEvent, byte slot)
+        {
+            if (maps == null || map >= maps.Count || maps[map] == null) return null;
+            return maps[map].TryGetValue(inputEvent, out var list) && list != null && slot < list.Count ? list[slot] : null;
         }
 
         /// <summary>Release counterpart of <see cref="PerformShipControllerActionsReplicated"/>.</summary>

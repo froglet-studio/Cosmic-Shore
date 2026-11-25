@@ -142,11 +142,57 @@ and each pass's write-up is in [`night/`](night/) (`*_DONE.md`). In short:
   (an `ECOSYSTEM.md` §0.x carve-out), so every tier's `BreachHull` is now **0**. The breach line in §2 is kept as an
   optional field; an escort is lost when the last plate goes.
 - **The chaos ladder** (`night/chaos_DONE.md`) replaced the pass-9 tiers: regrowth only in a held nucleus
-  (`Ark.RegrowAllowed`), the feeding lure (`Cell.SetFeedingLure`, an `ECOSYSTEM.md` §0.z carve-out), faster waves,
+  (`Ark.RegrowOverride`; outside the escort every Ark follows the fleet rule, `Ark.InOwnNucleus`), the feeding lure (`Cell.SetFeedingLure`, an `ECOSYSTEM.md` §0.z carve-out), faster waves,
   armour bites for every escort creature, and every world hostile from d1. Its final table is the shipped
   `ArkEscort.asset`; in sims d4 won 8/8, d7 1/8 and d9 0/4.
 - **Variety, roles, pacification, fauna threats, the Ark's feel**: `night/variety_DONE.md`,
   `night/escort_roles_DONE.md`, `night/pacify_DONE.md`, `night/fauna_threats_DONE.md`, `night/ark_feel_DONE.md`.
+
+### 4.2 Assaults: the fauna attack the Ark (2026-11-16, Milestone 1)
+
+Shombith, playing the voyages: "the cell faunas should attack the ark and right now the player does not know what to
+do." At d1-d4 the steady lure sends 5-12% of a hostile world's goal picks to the Ark, so it was grazed now and then and
+nothing read as an attack; with every `BreachHull` at 0 and no armour bites below d3, the hull bottomed out at its
+armoured plates (about 21%) and the escort could not be lost there.
+
+- **Assaults** (`ArkAssaultClock`, `ArkAssaultDriver`, `ArkEscortRun.Assault.cs`): in a hostile, unpacified world the
+  Ark is inside, the first assault is announced `assaultFirstDelay` (10 s) after it crosses in, with a warning of
+  `assaultWarningSeconds` (5 s). Then the world's lure jumps to the tier's `AssaultLureShare` for `AssaultSeconds`. The
+  squad drives it off by killing `AssaultRepelKills` attackers inside the escort's guard radius; otherwise it runs out
+  and the banner counts the plates it cost. The next one comes `AssaultGapSeconds` later. Pacifying the world ends its
+  assaults. Each moment has an authored banner line on `ArkEscort.asset` (`assault*Line`).
+- **Breach line** back at d1-d3 (0.25): below armour-bite tiers the Ark cannot lose its armour, so only a line above
+  the armoured share can lose the escort. From d4 the true fall stays the loss.
+- **Sim keys**: `tier.{d}.assaultLureShare`, `assaultSeconds`, `assaultGapSeconds`, `assaultRepelKills`,
+  `escort.assaultFirstDelay`, `escort.assaultWarningSeconds`. The report counts `Assaults` and `AssaultsRepelled`.
+- **Not sim-tuned.** The numbers are a first fit, written without a Unity run: d1 0.45 lure, 30 s, 40 s gap, 4 kills, up
+  to d9 0.95, 45 s, 18 s, 14 kills. The chaos ladder above was fitted without assaults, so d4 and up are now harder than
+  that table says. Re-run the escort sim before trusting the ladder.
+
+| d | AssaultLureShare | AssaultSeconds | AssaultGapSeconds | AssaultRepelKills | BreachHull |
+|---|---|---|---|---|---|
+| 1 | 0.45 | 30 | 40 | 4 | 0.25 |
+| 2 | 0.5 | 30 | 38 | 5 | 0.25 |
+| 3 | 0.55 | 32 | 35 | 6 | 0.25 |
+| 4 | 0.6 | 35 | 32 | 7 | 0 |
+| 5 | 0.65 | 35 | 30 | 8 | 0 |
+| 6 | 0.7 | 38 | 28 | 9 | 0 |
+| 7 | 0.75 | 40 | 25 | 10 | 0 |
+| 8 | 0.85 | 42 | 22 | 12 | 0 |
+| 9 | 0.95 | 45 | 18 | 14 | 0 |
+
+**Job voyages too** (`VoyageRun.Assault.cs`): a job names which cells of its leg start hostile (`hostileCells` in
+`voyage_slice.json`, a list of true/false per cell, the last entry repeating; without one only a hostile destination,
+the old rule) and a breach line (`breachHull`). Hostile cells take the escort's lure, assaults and armour-as-food at
+the escort's tier for the job's difficulty. Crystal Run (`job.raid.crystals`) is the first user: one calm cell, then
+three hostile.
+
+**The HUD's hook** (`ArkAssaultDriver.cs`): `ArkVoyageSignals.Current` is the Ark voyage sailing on this machine (an
+`IArkStatusSource`: the escort or a job voyage), its `Status` an `ArkEscortStatus` snapshot (world and next world, inside
+or not, hostile, pacified, distance to the core, hull and breach line, under attack, threats near, the assault's phase,
+time left, kills and plates), and `ArkVoyageSignals.Signal` fires an `ArkEscortSignal` for each moment: `Underway`,
+`WorldAhead`, `WorldEntered`, `AssaultIncoming`, `AssaultStarted`, `AssaultRepelled`, `AssaultPassed`, `ArkUnderAttack`,
+`ArkAttackEased`, `HullChanged`, `WorldPacified`, `Ended`. Words stay on the HUD's side.
 
 ## 5. On the galactic map (the HyperSea)
 

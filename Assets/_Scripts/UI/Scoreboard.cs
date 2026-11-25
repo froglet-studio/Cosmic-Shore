@@ -10,6 +10,7 @@ using CosmicShore.Soap;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -232,6 +233,8 @@ namespace CosmicShore.UI
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+            else
+                statsProvider.Changed += OnStatsChanged;
 
             ResolveGameController();
             if (wireButtonsInCode) WireButtons();
@@ -452,6 +455,7 @@ namespace CosmicShore.UI
                 if (mainMenuButton)   mainMenuButton.SetActive(false);
                 if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
                 StopRematchVoteRoster();
+                ScoreboardBreath.Ensure(playAgainButton)?.Hide();
                 return;   // no rematch vote mid-tournament: the next game is the lineup's, not a replay
             }
 
@@ -469,6 +473,22 @@ namespace CosmicShore.UI
             if (playAgainLabel)   playAgainLabel.text = isClient ? playAgainGuestLine : playAgainHostLine;
 
             StartRematchVoteRoster();
+
+            // The breath (P5): one offered next step beside Play again, for whoever decides where the party goes.
+            var breath = ScoreboardBreath.Ensure(playAgainButton);
+            if (breath)
+            {
+                if (isClient) breath.Hide();
+                else breath.Show(gameData, LocalPlacedFirst());
+            }
+        }
+
+        /// <summary>The local player's domain took first place this game (the breath's "after a win").</summary>
+        bool LocalPlacedFirst()
+        {
+            var local = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
+            var order = PlacementOrder();
+            return order.Count > 0 && order[0] == local;
         }
 
         /// <summary>
@@ -578,6 +598,13 @@ namespace CosmicShore.UI
         {
             s_boards.Remove(this);
             _entranceSeq?.Kill();
+            if (statsProvider) statsProvider.Changed -= OnStatsChanged;
+        }
+
+        // Another pilot's last numbers can land a moment after the board was drawn (B21): redraw the stat block only.
+        void OnStatsChanged()
+        {
+            if (scoreboardPanel && scoreboardPanel.gameObject.activeInHierarchy) PopulateDynamicStats();
         }
 
         /// <summary>
@@ -873,7 +900,7 @@ namespace CosmicShore.UI
                 {
                     if (!teamHeaderPrefab) continue;
                     var header = Instantiate(teamHeaderPrefab, playerCardContainer);
-                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), TeamLine(entry));
+                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), WithRuleTeamLine(TeamLine(entry), entry.Domain));
                     _spawnedHeaders.Add(header);
                     continue;
                 }
@@ -892,7 +919,8 @@ namespace CosmicShore.UI
             for (int s = 0; s < sides.Length; s++)
             {
                 var side = sides[s];
-                versusView.BindSide(s, side.Domain.ToString(), GetDomainColor(side.Domain), side.Won, side.Score);
+                versusView.BindSide(s, side.Domain.ToString(), GetDomainColor(side.Domain), side.Won, side.Score,
+                                    RuleTeamLine(side.Domain));
                 foreach (var entry in side.Rows)
                     SpawnRow(versusRowPrefab, versusView.Rows(s), results[entry.ResultIndex], entry,
                              entry.ShowsScore, stagger++, winnerName);
@@ -921,6 +949,17 @@ namespace CosmicShore.UI
                 card.ShowCrystalReward(reward);
 
             _spawnedCards.Add(card);
+        }
+
+        /// <summary>The scoring rule's own line for a team (the Mass-Space volume books), or null.</summary>
+        string RuleTeamLine(Domains domain) =>
+            gameData != null && gameData.ScoringRule != null ? gameData.ScoringRule.TeamLine(gameData, domain) : null;
+
+        string WithRuleTeamLine(string line, Domains domain)
+        {
+            string rule = RuleTeamLine(domain);
+            if (string.IsNullOrEmpty(rule)) return line;
+            return string.IsNullOrEmpty(line) ? rule : line + "\n" + rule;
         }
 
         string TeamLine(ScoreboardLadder.Entry header)
@@ -977,7 +1016,7 @@ namespace CosmicShore.UI
             if (service == null) return;
 
             var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
-            int amount = CrystalsForPlacement(localDomain);
+            int amount = CrystalsForPlacement(PayDomain(localDomain));
             string source = gameData.IsMaelstromMode ? "tournament_placement" : "game_placement";
 
             _crystalsAwardedThisGame = true;
@@ -997,6 +1036,44 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogError($"[Scoreboard] Crystal award failed for '{localName}' ({source}, {amount}): {e}");
             }
+        }
+
+        // The party, for party pay (arc.social hole; RetentionTuningSO.PayPartyByBestPlacing). Injected like the arcade
+        // controllers' copy; absent in a scene with no Reflex scope, where every player is paid by their own domain.
+        [Inject] HostConnectionDataSO _party;
+
+        /// <summary>
+        /// The domain the local player is paid by: their own, or with party pay on, the best-placed domain any member of
+        /// their party flew for in this match (<see cref="RetentionPay.PayDomain"/>). Party members are matched to the
+        /// match's pilots by display name, the name the round stats carry.
+        /// </summary>
+        Domains PayDomain(Domains localDomain)
+        {
+            var tuning = RetentionTuningSO.Load();
+            if (!tuning.PayPartyByBestPlacing || _party == null || _party.PartyMembers == null || _party.PartyMembers.Count < 2)
+                return localDomain;
+            if (gameData.RoundStatsList == null) return localDomain;
+
+            var names = new HashSet<string>();
+            foreach (var m in _party.PartyMembers)
+                if (!string.IsNullOrEmpty(m.DisplayName)) names.Add(m.DisplayName);
+            var partyDomains = new List<Domains>();
+            foreach (var stats in gameData.RoundStatsList)
+                if (stats != null && names.Contains(stats.Name) && !partyDomains.Contains(stats.Domain))
+                    partyDomains.Add(stats.Domain);
+
+            return RetentionPay.PayDomain(localDomain, PlacementOrder(), partyDomains);
+        }
+
+        /// <summary>Domains best first: the mode rule's order when it has one, else the rank order of the results.</summary>
+        List<Domains> PlacementOrder()
+        {
+            if (_shufflePlacement != null && _shufflePlacement.Count > 0) return _shufflePlacement;
+            var order = new List<Domains>();
+            if (gameData.Results == null) return order;
+            foreach (var r in gameData.Results)
+                if (!order.Contains(r.Domain)) order.Add(r.Domain);
+            return order;
         }
 
         /// <summary>
@@ -1181,6 +1258,7 @@ namespace CosmicShore.UI
             if (playAgainButton) playAgainButton.SetActive(false);
             if (mainMenuButton)  mainMenuButton.SetActive(false);
             if (continueButton)  continueButton.SetActive(false);
+            ScoreboardBreath.Ensure(playAgainButton)?.Hide();
         }
 
         /// <summary>

@@ -121,6 +121,8 @@ namespace CosmicShore.Gameplay
             }
 
             VesselStatus.Player = player;
+            // Every hull counts its pilot's drift, boost and prisms damaged, whether or not its prefab carries telemetry.
+            VesselTelemetryBootstrapper.Ensure(gameObject, gameData);
             VesselStatus.VesselAnimation.Initialize(VesselStatus);
             VesselStatus.VesselPrismController.Initialize(VesselStatus);
 

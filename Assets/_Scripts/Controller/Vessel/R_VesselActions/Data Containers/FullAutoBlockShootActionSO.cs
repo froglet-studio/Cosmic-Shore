@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
         /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
         /// </summary>
         [SerializeField] ElementalFloat massPrismStretchMultiplier =
-            ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.4f);
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.5f);
         [SerializeField] private Vector3 rotationOffsetEuler = Vector3.zero;
 
         [Header("Pooling")]

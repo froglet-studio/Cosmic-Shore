@@ -577,10 +577,10 @@ def squads_page(root):
     return page
 
 
-# The PILOTS tab: one cell a callsign (a crew holds at most one pilot a callsign, Docs/Pilots/INVENTORY.md 3.1), six
-# across and three down, right of the friends orb and inside the page's right and bottom margins.
-CALLSIGNS = len(re.findall(r"^\s+\w+ = [1-9]\d*,", open(os.path.join(
-    REPO, "Assets/_Scripts/Data/Enums/PilotVision.cs"), encoding="utf-8").read(), re.M))
+# The PILOTS tab: one PAGE of the crew, six across and three down, right of the friends orb and inside the page's right
+# and bottom margins. The crew is every painted pilot for now (fifty, Garrett 2026-11-16) and later grows one pilot at
+# a time, so ArkPilotsPage steps through it a page at a time with PREVIOUS and NEXT on the caption row.
+PILOT_CELLS = 18
 PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 260, 256, 32
 PILOT_X, PILOT_Y = A.ORB_CLEARANCE, LIST_Y + 32          # the grid's top left; the caption sits on LIST_Y
 PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 180, 12, 16        # the close-up's side and top, and the callsign's inset
@@ -590,19 +590,22 @@ PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 200, 24, 226, 18   # th
 # than the callsign's row).
 PILOT_NAME_PAD, WIDEST_NAME = 6, "Darthawen Lanternweaver"
 SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
-PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"))
+PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"),
+               ("pageTemplate", "{page} / {pages}"))
+PAGER_W, PAGER_H, PAGE_LABEL_W = 48, 32, 96               # PREVIOUS, the page's number and NEXT, right of the count
 
 
 def pilot_tokens():
-    """The tokens ArkPilotsPage fills in each of its lines, read from its own two TemplateText.Fill calls, so the
-    lists cannot drift from the page: a cell's two lines take the pilot's facts, the count takes {count} alone."""
+    """The tokens ArkPilotsPage fills in each of its lines, read from its own TemplateText.Fill calls, so the lists
+    cannot drift from the page: a cell's two lines take the pilot's facts, the count {count}, the page {page} {pages}."""
     source = open(os.path.join(REPO, "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs"), encoding="utf-8").read()
     cell = re.search(r"TemplateText\.Fill\(template,(.*?)\);", source, re.S)
     count = re.search(r"TemplateText\.Fill\(countTemplate,(.*?)\);", source, re.S)
-    assert cell and count, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
-    cell, count = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count))
-    assert cell and count, "ArkPilotsPage's filled tokens read as empty"
-    return {"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count}
+    page = re.search(r"TemplateText\.Fill\(pageTemplate,(.*?)\);", source, re.S)
+    assert cell and count and page, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
+    cell, count, page = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count, page))
+    assert cell and count and page, "ArkPilotsPage's filled tokens read as empty"
+    return {"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count, "pageTemplate": page}
 
 
 PILOT_TOKENS = pilot_tokens()
@@ -622,8 +625,15 @@ def pilots_page(root):
     page_backdrop(page, "Pilots")
     grid_w = PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP
     C.section_label(page, "Pilots/Caption", "Caption", "Your crew", TL(PILOT_X, LIST_Y, 220, 18))
-    label(page.child(N("Pilots/Count", "Count", TL(PILOT_X + grid_w - 220, LIST_Y, 220, 18))), "", "Label",
-          "NeutralLightest", align="right")
+    right = PILOT_X + grid_w
+    pager_y = LIST_Y + 9 - PAGER_H // 2                   # centred on the caption's row
+    small_button(page, "Pilots/Next", "Next", ">", TL(right - PAGER_W, pager_y, PAGER_W, PAGER_H))
+    label(page.child(N("Pilots/Page", "Page", TL(right - PAGER_W - PAGE_LABEL_W, LIST_Y, PAGE_LABEL_W, 18))), "",
+          "Label", "TextLight", align="center")
+    small_button(page, "Pilots/Previous", "Previous", "<",
+                 TL(right - 2 * PAGER_W - PAGE_LABEL_W, pager_y, PAGER_W, PAGER_H))
+    label(page.child(N("Pilots/Count", "Count", TL(right - 2 * PAGER_W - PAGE_LABEL_W - 16 - 220, LIST_Y, 220, 18))),
+          "", "Label", "NeutralLightest", align="right")
     e = page.child(N("Pilots/Empty", "Empty", TL(PILOT_X, 250, grid_w, 200)))
     e.add("cg", 225, canvas_group(False))
     label(e.child(N("Pilots/Empty/Heading", "Heading", stretch_x(0, 0, 40, 40))), "No pilots yet", "H2", "TextLight",
@@ -631,7 +641,7 @@ def pilots_page(root):
     label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(300, 300, 90, 60))),
           "Your crew appears here once your account has loaded.", "Body", "NeutralLightest", align="center", wrap=True)
     words_w = PILOT_W - 2 * PILOT_PAD
-    for i in range(CALLSIGNS):
+    for i in range(PILOT_CELLS):
         x, y = pilot_cell_rect(i)
         pick_chip(page, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
                   TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE),
@@ -642,7 +652,10 @@ def pilots_page(root):
     def body(ctx, go):
         return mono(go, S["pilots"],
                     f"  scenes: {K.ref(11400000, SCENE_CATALOG, 2)}\n"
-                    "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(CALLSIGNS)], "chip")
+                    "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(PILOT_CELLS)], "chip")
+                    + f"  previousButton: {ref(ctx.c('Pilots/Previous', 'button'))}\n"
+                    f"  nextButton: {ref(ctx.c('Pilots/Next', 'button'))}\n"
+                    f"  pageText: {ref(ctx.c('Pilots/Page', 'tmp'))}\n"
                     + f"  emptyGroup: {ref(ctx.c('Pilots/Empty', 'cg'))}\n"
                     f"  countText: {ref(ctx.c('Pilots/Count', 'tmp'))}\n  screenSwitcher: {{fileID: 0}}\n"
                     + PILOT_WORDS)
@@ -1000,7 +1013,7 @@ def listed(body, field):
 
 
 PILOT_CELL_FIELDS = dict(CHIP_FIELDS, line=TMP, image=IMG)      # a crew cell needs its callsign line and its close-up
-PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP)
+PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP, pageText=TMP, previousButton=S["button"], nextButton=S["button"])
 
 
 def rect_xy(view, fid, field):
@@ -1016,8 +1029,8 @@ def validate_pilots(view, V):
         C.wired(view, page, field, want, "ArkPilotsPage")
     assert f"guid: {SCENE_CATALOG}" in page, "ArkPilotsPage reads no pilot scene catalog"
     cells = listed(page, "cells")
-    assert len(cells) == CALLSIGNS and all(i != "0" and A.kind_of(view, i)[1] == S["chip"] for i in cells), \
-        f"ArkPilotsPage.cells is not {CALLSIGNS} wired SquadPickChips (one a callsign)"
+    assert len(cells) == PILOT_CELLS and all(i != "0" and A.kind_of(view, i)[1] == S["chip"] for i in cells), \
+        f"ArkPilotsPage.cells is not {PILOT_CELLS} wired SquadPickChips (one page of the crew)"
     assert len(set(cells)) == len(cells), "ArkPilotsPage.cells names a cell twice"
     for i in cells:
         for field, want in PILOT_CELL_FIELDS.items():
@@ -1033,7 +1046,7 @@ def validate_pilots(view, V):
                 f"ArkPilotsPage.{field} names {{{token}}}, which the page does not fill there"
     for field, words in PILOT_LINES:
         assert yfield(field, words) in page, f"ArkPilotsPage.{field} is not the authored line"
-    for i in range(CALLSIGNS):
+    for i in range(PILOT_CELLS):
         rt = V(f"Pilots/Cell{i}#rt")
         assert rect_xy(view, rt, "m_AnchorMin") == (0, 1) and rect_xy(view, rt, "m_Pivot") == (0, 1), \
             f"crew cell {i} is not laid out from the page's top left"
@@ -1193,7 +1206,7 @@ def self_test(files):
         ("the Pilots tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Pilots")))),
         ("the Pilots tab reading no scene catalog", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(f"guid: {SCENE_CATALOG}", f"guid: {PILOT_CATALOG}")))),
-        ("a callsign with no crew cell", lambda f: f.__setitem__(view, in_doc(
+        ("a page of the crew one cell short", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell17#chip')}}}\n", "")))),
         ("a crew cell with no close-up", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots/Cell3#chip"), lambda d: re.sub(r"(  image: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d)))),

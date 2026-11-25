@@ -9,39 +9,56 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Home's two "Up next" cards (Docs/MENU_REDESIGN_B.md section 21.2): this week's challenge - its
-    /// mode, objective, a live "Ends in" countdown and your best - and the current quest - its mode,
-    /// the next goal and the intensity meter. Both read data the game already keeps
-    /// (<see cref="WeeklyChallengeService"/>, <see cref="GameModeProgressionService"/>); the weekly card
-    /// opens the challenge in the Arcade's configure window, the quest card the Voyage window (Rev 13: the quest track
-    /// moved there from the Profile).
+    /// Home's two docked cards under the pilot chip (Loop Atlas <c>era.tide</c>, the picked Frogma option C,
+    /// Garrett 2026-11-21): <b>The Tide</b> - a strip with the week of the Tide (<see cref="TideCalendar"/>), a
+    /// six-week clock and this week's card, opening to the challenge's mode, objective, "Ends in" countdown and
+    /// your best - and <b>the quest chain</b> - the current quest with the ones around it as linked nodes (done,
+    /// current, ahead), its next goal and its intensity. Both read data the game already keeps
+    /// (<see cref="WeeklyChallengeService"/>, <see cref="GameModeProgressionService"/>); the Tide card opens the
+    /// challenge in the Arcade's configure window, the quest card the Voyage window. Each folds at rest and
+    /// opens on focus or hover (<see cref="HomeDockCard"/>).
     ///
-    /// <para>A card whose service is missing or has nothing to show hides through its CanvasGroup
-    /// (<see cref="KitVisibility"/>) rather than showing an empty frame.</para>
+    /// <para>A card with nothing to show hides through its CanvasGroup (<see cref="KitVisibility"/>) rather than
+    /// showing an empty frame.</para>
     /// </summary>
     public class HomeUpNext : MonoBehaviour
     {
-        [Header("Weekly challenge")]
+        [Header("The Tide")]
         [SerializeField] Button weeklyButton;
         [SerializeField] CanvasGroup weeklyGroup;
-        [SerializeField] Image weeklyArt;
+        [SerializeField, Tooltip("The strip's one line: the week of the Tide and this week's card.")]
+        TMP_Text tideSummaryText;
+        [SerializeField, Tooltip("One per week of the Tide, first first: passed weeks soft, this week light, the rest dark.")]
+        KitThemedGraphic[] tideSegments = Array.Empty<KitThemedGraphic>();
         [SerializeField] TMP_Text weeklyModeText;
         [SerializeField] TMP_Text weeklyObjectiveText;
         [SerializeField] TMP_Text weeklyCountdownText;
         [SerializeField] TMP_Text weeklyBestText;
 
-        [Header("Current quest")]
+        [Header("The Tide's clock")]
+        [SerializeField, Tooltip("The day Tide 1 began, yyyy-MM-dd in UTC. Empty hides the clock.")]
+        string tideStartUtc = "2026-11-16";
+        [SerializeField, Min(1), Tooltip("Weeks in a Tide.")]
+        int tideWeeks = 6;
+
+        [Header("Quest chain")]
         [SerializeField] Button questButton;
         [SerializeField] CanvasGroup questGroup;
-        [SerializeField] Image questArt;
-        [SerializeField] TMP_Text questTitleText;
+        [SerializeField, Tooltip("The strip's one line: the current quest and where it sits in the chain.")]
+        TMP_Text questSummaryText;
         [SerializeField] TMP_Text questNextText;
         [SerializeField] TMP_Text questMeterText;
-        [SerializeField, Tooltip("One per intensity, lowest first: Light while unlocked, Neutral Dark ahead.")]
-        KitThemedGraphic[] questMeterSegments = Array.Empty<KitThemedGraphic>();
+        [SerializeField, Tooltip("The chain's nodes, left to right: done soft, current dark inside its ring, ahead dark.")]
+        KitThemedGraphic[] chainNodes = Array.Empty<KitThemedGraphic>();
+        [SerializeField, Tooltip("One ring per node; only the current quest's shows.")]
+        KitThemedGraphic[] chainRings = Array.Empty<KitThemedGraphic>();
+        [SerializeField, Tooltip("The links between nodes (one fewer than the nodes): lit up to the current quest.")]
+        KitThemedGraphic[] chainLinks = Array.Empty<KitThemedGraphic>();
+        [SerializeField, Tooltip("Each node's quest name.")]
+        KitText[] chainLabels = Array.Empty<KitText>();
 
         [Header("Data")]
-        [SerializeField, Tooltip("The arcade cards: a mode's name and art come from its card.")]
+        [SerializeField, Tooltip("The arcade cards: a mode's name comes from its card.")]
         SO_GameList games;
         [SerializeField, Tooltip("Leave empty to find the one in the scene.")]
         ScreenSwitcher screenSwitcher;
@@ -49,17 +66,19 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Seconds between redraws (the countdown's resolution).")]
         float refreshSeconds = 1f;
 
-        [Header("Docking (rev 3)")]
-        [SerializeField, Tooltip("The weekly card's fold / close. A closed card stays hidden for the session.")]
-        HomeDockCard weeklyDock;
-        [SerializeField, Tooltip("The quest card's fold / close.")]
-        HomeDockCard questDock;
-
         [Header("Words")]
+        [SerializeField, Tooltip("The Tide strip; {week}, {weeks} and {mode} (this week's card) are filled in.")]
+        string tideSummaryTemplate = "Week {week} of {weeks} \u00b7 {mode}";
+        [SerializeField, Tooltip("The Tide strip when there is no card this week; {week} and {weeks} are filled in.")]
+        string tideWeekOnlyTemplate = "Week {week} of {weeks}";
+        [SerializeField, Tooltip("The Tide strip when there is no clock; {mode} is this week's card.")]
+        string tideNoClockTemplate = "{mode}";
         [SerializeField, Tooltip("The weekly best when nothing has been played this week. Empty shows nothing.")]
         string noBestText = "None yet";
-        [SerializeField, Tooltip("The quest line when its reward waits in the Voyage window.")]
-        string readyToClaimText = "Ready to claim in Voyage";
+        [SerializeField, Tooltip("The quest strip; {quest}, {number} and {count} are filled in.")]
+        string questSummaryTemplate = "{quest} \u00b7 {number} of {count}";
+        [SerializeField, Tooltip("The quest line when its reward waits in the Quests window.")]
+        string readyToClaimText = "Ready to claim in Quests";
         [SerializeField, Tooltip("The quest line for the next goal; {goal} is the quest's authored goal.")]
         string nextGoalTemplate = "Next: {goal}";
         [SerializeField, Tooltip("The quest line once every intensity is open.")]
@@ -103,32 +122,57 @@ namespace CosmicShore.UI
 
         void OpenQuest()
         {
-            if (screenSwitcher) screenSwitcher.OnClickMissionNav();
+            if (screenSwitcher) screenSwitcher.OnClickQuests();
         }
 
-        // ── Weekly challenge ───────────────────────────────────────────────
+        // ── The Tide ───────────────────────────────────────────────────────
 
         void DrawWeekly()
         {
             var service = WeeklyChallengeService.Instance;
-            bool show = service != null && service.ThisWeek.IsValid && !(weeklyDock && weeklyDock.IsClosed);
+            bool hasWeek = service != null && service.ThisWeek.IsValid;
+            var start = TideCalendar.ParseStart(tideStartUtc);
+            bool show = hasWeek || start.HasValue;
             if (weeklyGroup) KitVisibility.SetShown(weeklyGroup, show);
             if (!show) return;
 
-            var challenge = service.ThisWeek;
-            var card = CardFor(challenge.GameMode);
-            Set(weeklyModeText, card ? card.DisplayName : challenge.GameMode.ToString());
-            Set(weeklyObjectiveText, challenge.ObjectiveText);
-            if (weeklyArt && card && card.CardBackground && weeklyArt.sprite != card.CardBackground)
-                weeklyArt.sprite = card.CardBackground;
-
-            string countdown = WeeklyChallengeCard.FormatCountdown(service.TimeUntilNextChallenge);
-            if (countdown != _lastCountdown)
+            string mode = string.Empty;
+            if (hasWeek)
             {
-                _lastCountdown = countdown;
-                Set(weeklyCountdownText, countdown);
+                var challenge = service.ThisWeek;
+                var card = CardFor(challenge.GameMode);
+                mode = card ? card.DisplayName : challenge.GameMode.ToString();
+                Set(weeklyModeText, mode);
+                Set(weeklyObjectiveText, challenge.ObjectiveText);
+                string countdown = WeeklyChallengeCard.FormatCountdown(service.TimeUntilNextChallenge);
+                if (countdown != _lastCountdown)
+                {
+                    _lastCountdown = countdown;
+                    Set(weeklyCountdownText, countdown);
+                }
+                Set(weeklyBestText, BestText(service.BestTimeThisWeekMs, service.BestValueThisWeek, noBestText));
             }
-            Set(weeklyBestText, BestText(service.BestTimeThisWeekMs, service.BestValueThisWeek, noBestText));
+
+            if (start.HasValue)
+            {
+                var week = TideCalendar.At(DateTime.UtcNow, start.Value, tideWeeks);
+                Set(tideSummaryText, TemplateText.Fill(hasWeek ? tideSummaryTemplate : tideWeekOnlyTemplate,
+                    "week", week.Week.ToString(), "weeks", week.Weeks.ToString(), "mode", mode));
+                for (int i = 0; i < tideSegments.Length; i++)
+                {
+                    if (!tideSegments[i]) continue;
+                    int n = i + 1;
+                    if (n > week.Weeks) tideSegments[i].SetToken(UIColorToken.SurfaceDark, 0f);
+                    else tideSegments[i].SetToken(n < week.Week ? UIColorToken.NeutralLightest
+                                                : n == week.Week ? UIColorToken.TextLight : UIColorToken.SurfaceDark);
+                }
+            }
+            else
+            {
+                Set(tideSummaryText, TemplateText.Fill(tideNoClockTemplate, "mode", mode));
+                foreach (var seg in tideSegments)
+                    if (seg) seg.SetToken(UIColorToken.SurfaceDark, 0f);
+            }
         }
 
         /// <summary>The week's best as the card shows it: a race time, else a score, else "None yet".</summary>
@@ -137,14 +181,14 @@ namespace CosmicShore.UI
             : bestValue > 0 ? bestValue.ToString()
             : noBest ?? string.Empty;
 
-        // ── Current quest ──────────────────────────────────────────────────
+        // ── Quest chain ────────────────────────────────────────────────────
 
         void DrawQuest()
         {
             var service = GameModeProgressionService.Instance;
             var list = service ? service.QuestList : null;
             int index = service && service.IsInitialized ? QuestFrontier.FrontierIndex(list, service) : -1;
-            bool show = index >= 0 && list.Quests[index] && !(questDock && questDock.IsClosed);
+            bool show = index >= 0 && list.Quests[index];
             if (questGroup) KitVisibility.SetShown(questGroup, show);
             if (!show) return;
 
@@ -152,20 +196,39 @@ namespace CosmicShore.UI
             var state = QuestFrontier.StateOf(list, index, service);
             int maxIntensity = service.Config ? service.Config.MaxIntensity : 4;
             int unlocked = quest.FeatureKind == FeatureKind.GameMode ? Mathf.Max(1, service.GetMaxUnlockedIntensity(quest.GameMode)) : 0;
+            int count = list.Quests.Count;
 
-            Set(questTitleText, quest.DisplayName);
+            Set(questSummaryText, TemplateText.Fill(questSummaryTemplate,
+                "quest", quest.DisplayName, "number", (index + 1).ToString(), "count", count.ToString()));
             Set(questNextText, NextGoal(quest, state, service.IsQuestCompleted(quest.GameMode), unlocked, maxIntensity));
-            Set(questMeterText, unlocked > 0 && !string.IsNullOrEmpty(meterTemplate)
-                ? meterTemplate.Replace("{level}", unlocked.ToString()).Replace("{max}", maxIntensity.ToString())
+            Set(questMeterText, unlocked > 0
+                ? TemplateText.Fill(meterTemplate, "level", unlocked.ToString(), "max", maxIntensity.ToString())
                 : string.Empty);
-            for (int i = 0; i < questMeterSegments.Length; i++)
+            DrawChain(list, index, count);
+        }
+
+        void DrawChain(SO_UnlockList list, int current, int count)
+        {
+            int slots = chainNodes.Length;
+            int first = TideCalendar.ChainStart(count, current, slots);
+            for (int i = 0; i < slots; i++)
             {
-                if (!questMeterSegments[i]) continue;
-                questMeterSegments[i].SetToken(i < unlocked ? UIColorToken.Cta : UIColorToken.SurfaceDark);   // earned progress is good: lime
+                int q = first + i;
+                bool used = first >= 0 && q < count && list.Quests[q];
+                if (chainNodes[i])
+                    chainNodes[i].SetToken(q < current ? UIColorToken.NeutralLightest
+                                         : q == current ? UIColorToken.SurfaceVeryDark : UIColorToken.SurfaceDark, used ? 1f : 0f);
+                if (i < chainRings.Length && chainRings[i])
+                    chainRings[i].SetToken(UIColorToken.TextLight, used && q == current ? 1f : 0f);
+                if (i < chainLabels.Length && chainLabels[i])
+                {
+                    chainLabels[i].SetText(used ? list.Quests[q].DisplayName : string.Empty);
+                    chainLabels[i].SetColorToken(q == current ? UIColorToken.TextLight : UIColorToken.NeutralLightest);
+                }
+                if (i < chainLinks.Length && chainLinks[i])
+                    chainLinks[i].SetToken(q < current ? UIColorToken.NeutralLightest : UIColorToken.SurfaceDark,
+                                           used && q + 1 < count ? 1f : 0f);
             }
-            var card = CardFor(quest.GameMode);
-            var art = card && card.CardBackground ? card.CardBackground : quest.Icon;
-            if (questArt && art && questArt.sprite != art) questArt.sprite = art;
         }
 
         /// <summary>

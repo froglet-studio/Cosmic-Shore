@@ -87,6 +87,39 @@ namespace CosmicShore.Gameplay
                  "sampled on this cadence and the cached point is flown at in between.")]
         [SerializeField, Min(0.25f)] float massClusterRetargetInterval = 1.5f;
 
+        [Header("Combat: an attack a crystal fires")]
+        [Tooltip("This hull's attack is fired BY collecting a crystal (the Dolphin's cone). In a mode whose objective is " +
+                 "another pilot (ConfigureForGameMode with seek-players: Joust, Dog Fight, Broadside) such a hull keeps " +
+                 "seeking crystals instead, since chasing a pilot never fires it, and aims its committed drift at the " +
+                 "nearest rival in reach - the Bends pattern, carried by the hull so every combat mode gets it. A mode's " +
+                 "own SetDriftLookTargetProvider still wins.")]
+        [SerializeField] bool attackFiredByCrystal;
+        [Tooltip("Farthest rival (u) the drift is aimed at; beyond it the drift looks at the mass cluster as usual.")]
+        [SerializeField, Min(1f)] float rivalAimMaxRange = 2400f;
+        [Tooltip("The attack's reach (u) and how long its front takes to get there (s): the lead inverts the cone's " +
+                 "ease, reach * sin(t / duration * PI/2), as The Bends does (AOEConicExplosion).")]
+        [SerializeField, Min(1f)] float rivalAimBlastReach = 2400f;
+        [SerializeField, Min(0.1f)] float rivalAimBlastDuration = 2.7f;
+        [Tooltip("Extra lead (s) on top of the front's travel time.")]
+        [SerializeField, Min(0f)] float rivalAimLeadSeconds = 0.35f;
+        [Tooltip("Seconds between choices of which rival to aim at (the aim point itself is live).")]
+        [SerializeField, Min(0.25f)] float rivalAimRetargetSeconds = 1.25f;
+        [Tooltip("A human rival reads as this many times closer than it is, so the AI aims at people first.")]
+        [SerializeField, Min(1f)] float rivalAimHumanFocus = 3f;
+        [Tooltip("Picking a crystal, count this much of the distance from the crystal to the nearest rival on top of the " +
+                 "distance to the crystal: the blast goes off where the crystal is, so a crystal beside a rival is worth " +
+                 "more than a nearer one in empty water. 0 = nearest crystal only.")]
+        [SerializeField, Min(0f)] float rivalCrystalWeight = 1f;
+
+        [Header("Combat: a hit that lands by ramming")]
+        [Tooltip("In a mode whose objective is another pilot, fly this far (u) PAST the chased rival along the run, so a " +
+                 "ram goes through them instead of braking short or orbiting, and the run is a straight line (the Rhino's " +
+                 "ramp spools only on straights, and its gore needs the speed). 0 = fly at the rival itself. The Rhino's " +
+                 "Bullrush hunter uses 140 (JackstrawHunter's overshoot), carried by the hull so every combat mode gets it.")]
+        [SerializeField, Min(0f)] float rivalRunOvershoot;
+        [Tooltip("Seconds of the rival's motion to lead the run by (with rivalRunOvershoot on).")]
+        [SerializeField, Min(0f)] float rivalRunLeadSeconds = 0.2f;
+
         [Header("Orbit break (extend and re-attack)")]
         [Tooltip("Off returns this pilot to plain pure pursuit, which ORBITS any objective that " +
                  "sits inside its own minimum turn radius - see PursuitReachability. Only switch " +
@@ -158,6 +191,23 @@ namespace CosmicShore.Gameplay
                  "instead; if it is the only one, the pilot keeps it and just re-attacks.")]
         [SerializeField, Min(0f)] float orbitAbandonSeconds = 5f;
 
+        [Header("Spin escape (a tight circle far from the objective)")]
+        [Tooltip("Seconds of flight each spin check looks back over. A spin is the hull turning a full circle in place, far " +
+                 "from what it chases: the bearing to the objective barely turns, so the orbit detector never sees it. The " +
+                 "nose lead caused the one measured (2026-11-17 race judge: Spearline's Swordfish circled 11 u wide, 630 u " +
+                 "from its ring, for up to 185 s).")]
+        [SerializeField, Min(0.5f)] float spinWindowSeconds = 3f;
+        [Tooltip("Degrees the heading must turn inside one window to count as a spin. 360 is a full circle.")]
+        [SerializeField, Min(180f)] float spinSweepDegrees = 360f;
+        [Tooltip("The most the hull may have got anywhere in that window, as a share of the distance its speed flew: a " +
+                 "turn that goes somewhere (a ring's U-turn, a weave) is never a spin.")]
+        [SerializeField, Range(0.05f, 0.9f)] float spinMaxProgressFraction = 0.35f;
+        [Tooltip("A spin counts only while the objective is at least this many of the hull's minimum turn radii away, so " +
+                 "the turning-circle break-off keeps everything near the objective.")]
+        [SerializeField, Min(1f)] float spinFarTurnRadii = 4f;
+        [Tooltip("Seconds the nose lead is let go after a spin: the pilot judges from the nose and flies out of the circle.")]
+        [SerializeField, Min(0.5f)] float spinLeadOffSeconds = 3f;
+
         /// <summary>The mode this pilot races in, once its game data is known (a hull's drive reads its mode's tuning).</summary>
         public bool TryGetGameMode(out GameModes mode)
         {
@@ -171,7 +221,10 @@ namespace CosmicShore.Gameplay
         public void ConfigureForGameMode(GameDataSO gameDataRef, bool shouldSeekPlayers, float skill)
         {
             gameData = gameDataRef;
-            seekPlayers = shouldSeekPlayers;
+            // A hull whose attack a crystal fires keeps seeking crystals and aims its drift at rivals instead.
+            _aimDriftAtRivals = shouldSeekPlayers && attackFiredByCrystal;
+            seekPlayers = shouldSeekPlayers && !attackFiredByCrystal;
+            _rival = null;
             skillLevel = Mathf.Clamp01(skill);
         }
 
@@ -274,6 +327,11 @@ namespace CosmicShore.Gameplay
         /// target, a chased vessel) — read-only, for an ability that must aim the way the AI is
         /// going (the Stoat's autopilot sling). Steering may differ (the drift look target).</summary>
         public Vector3 TargetPosition => _targetPosition;
+        /// <summary>True in a mode whose objective is another pilot (ConfigureForGameMode with seek-players: Joust, Dog
+        /// Fight, Broadside) - read-only, for a hull's own combat hook (<see cref="AnglerHuntAutopilot"/>).</summary>
+        public bool SeeksPlayers => seekPlayers;
+        /// <summary>The match this pilot was configured for (ConfigureForGameMode); null before.</summary>
+        public GameDataSO GameData => gameData;
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
         Transform _targetVesselTransform;
@@ -419,7 +477,7 @@ namespace CosmicShore.Gameplay
         {
             gain = 0f;
             commandedForward = default;
-            if (NoseLeadGain <= 0f || VesselStatus.IsDrifting) return false;
+            if (NoseLeadGain <= 0f || VesselStatus.IsDrifting || Time.time < _spinLeadOffUntil) return false;
             var transformer = VesselStatus.VesselTransformer;
             if (!transformer) return false;
             gain = EffectiveNoseLeadGain(NoseLeadGain, transformer.NoseFollowRate);
@@ -725,6 +783,8 @@ namespace CosmicShore.Gameplay
             _eligibleDistances.Clear();
 
             var myDomain = VesselStatus.Domain;
+            // An attack a crystal fires: a crystal near a rival is the one worth taking (rivalCrystalWeight).
+            var rivalTf = _aimDriftAtRivals && rivalCrystalWeight > 0f ? NearestRival(transform.position)?.Vessel?.Transform : null;
 
             foreach (var item in cellItems)
             {
@@ -749,7 +809,9 @@ namespace CosmicShore.Gameplay
                     continue;
 
                 _eligibleObjectives.Add(item);
-                _eligibleDistances.Add(Vector3.Distance(item.transform.position, transform.position));
+                float cost = Vector3.Distance(item.transform.position, transform.position);
+                if (rivalTf != null) cost += rivalCrystalWeight * Vector3.Distance(item.transform.position, rivalTf.position);
+                _eligibleDistances.Add(cost);
             }
 
             // A crystal this pilot just gave up on (it circled it, or would have broken off it a
@@ -843,9 +905,11 @@ namespace CosmicShore.Gameplay
         bool TryGetProvidedLookDirection(out Vector3 direction)
         {
             direction = default;
-            if (_driftLookTargetProvider == null) return false;
+            Vector3? provided;
+            if (_driftLookTargetProvider != null) provided = _driftLookTargetProvider();
+            else if (_aimDriftAtRivals) provided = RivalAimPoint();
+            else return false;
 
-            var provided = _driftLookTargetProvider();
             if (!provided.HasValue) return false;
 
             var offset = provided.Value - transform.position;
@@ -853,6 +917,78 @@ namespace CosmicShore.Gameplay
 
             direction = offset.normalized;
             return true;
+        }
+
+        /// <summary>A ram hull's run (<see cref="rivalRunOvershoot"/>): through the chased rival's led position and on past
+        /// it along the run - JackstrawHunter.RunPoint, carried by the hull.</summary>
+        Vector3 RivalRunPoint()
+        {
+            Vector3 aim = _targetVesselTransform.position;
+            var status = _targetVesselStatus;
+            if (status != null) aim += status.Course * (status.Speed * rivalRunLeadSeconds);
+            Vector3 run = aim - transform.position;
+            return run.sqrMagnitude > 1e-4f ? aim + run.normalized * rivalRunOvershoot : aim;
+        }
+
+        IVesselStatus _targetVesselStatus;
+
+        // The hull's own rival aim (attackFiredByCrystal in a seek-players mode).
+        bool _aimDriftAtRivals;
+        IPlayer _rival;
+        float _nextRivalSample;
+
+        /// <summary>
+        /// Where to point an <see cref="attackFiredByCrystal"/> hull's drift: the nearest live rival in reach (humans
+        /// first), led by the time the attack's front takes to arrive. Null = no rival in reach (the mass cluster).
+        /// The Bends' aim hook, carried by the hull (BendsController.ArmAimHooks).
+        /// </summary>
+        Vector3? RivalAimPoint()
+        {
+            if (gameData == null || VesselStatus == null) return null;
+            Vector3 selfPos = transform.position;
+            if (Time.time >= _nextRivalSample || !IsLiveRival(_rival))
+            {
+                _nextRivalSample = Time.time + rivalAimRetargetSeconds;
+                _rival = NearestRival(selfPos);
+            }
+
+            var rivalTf = _rival?.Vessel?.Transform;
+            if (rivalTf == null) return null;
+            Vector3 rivalPos = rivalTf.position;
+            if ((rivalPos - selfPos).sqrMagnitude > rivalAimMaxRange * rivalAimMaxRange) return null;
+
+            var status = _rival.Vessel.VesselStatus;
+            Vector3 velocity = status != null ? status.Course * status.Speed : Vector3.zero;
+            // Two passes: where the rival will be when the front arrives, then the arrival time at that point.
+            float lead = RivalAimLeadTime(Vector3.Distance(rivalPos, selfPos));
+            lead = RivalAimLeadTime(Vector3.Distance(rivalPos + velocity * lead, selfPos));
+            return rivalPos + velocity * lead;
+        }
+
+        float RivalAimLeadTime(float distance) =>
+            (2f * rivalAimBlastDuration / Mathf.PI) * Mathf.Asin(Mathf.Clamp01(distance / rivalAimBlastReach)) + rivalAimLeadSeconds;
+
+        bool IsLiveRival(IPlayer candidate) =>
+            candidate != null && candidate.Domain != VesselStatus.Domain && candidate.Vessel?.Transform != null &&
+            !ReferenceEquals(candidate.Vessel, vessel);
+
+        IPlayer NearestRival(Vector3 from)
+        {
+            IPlayer best = null;
+            float bestScore = float.MaxValue;
+            float humanFocusSqr = rivalAimHumanFocus * rivalAimHumanFocus;
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var candidate = players[i];
+                if (!IsLiveRival(candidate)) continue;
+                float score = (candidate.Vessel.Transform.position - from).sqrMagnitude;
+                if (!candidate.IsInitializedAsAI) score /= humanFocusSqr;
+                if (score >= bestScore) continue;
+                bestScore = score;
+                best = candidate;
+            }
+            return best;
         }
 
         bool TryGetMassClusterDirection(Vector3 towardTarget, out Vector3 direction)
@@ -901,6 +1037,7 @@ namespace CosmicShore.Gameplay
             var myDomain = VesselStatus.Domain;
             float closestSqDist = Mathf.Infinity;
             Transform best = null;
+            IVesselStatus bestStatus = null;
 
             foreach (var player in gameData.Players)
             {
@@ -916,10 +1053,12 @@ namespace CosmicShore.Gameplay
                 {
                     closestSqDist = sqDist;
                     best = candidate;
+                    bestStatus = player.Vessel.VesselStatus;
                 }
             }
 
             _targetVesselTransform = best;
+            _targetVesselStatus = bestStatus;
 
             if (best != null)
                 _targetPosition = best.position;
@@ -1118,7 +1257,7 @@ namespace CosmicShore.Gameplay
             // _targetVesselTransform is null (no opponent / destroyed) we keep the fallback target
             // the coroutine set (cell centre).
             if (seekPlayers && _targetVesselTransform != null)
-                _targetPosition = _targetVesselTransform.position;
+                _targetPosition = rivalRunOvershoot > 0f ? RivalRunPoint() : _targetVesselTransform.position;
 
             // External steering hook (e.g. Astro League ball striking) overrides all other
             // targeting when set - checked last so it always wins.
@@ -1138,6 +1277,7 @@ namespace CosmicShore.Gameplay
             // says to break off the steering below flies an escape point rather than the objective.
             Vector3 toObjective = _targetPosition - transform.position;
             UpdateOrbitBreak(toObjective);
+            UpdateSpinEscape(toObjective);
 
             Vector3 steerTarget = _extending
                 ? transform.position + PursuitReachability.EscapeDirection(
@@ -1501,6 +1641,52 @@ namespace CosmicShore.Gameplay
             // crystal straight back.
             _objectiveItem = null;
             UpdateCellContent();
+        }
+
+        float _spinSweep, _spinElapsed, _spinPath, _spinLeadOffUntil = -1f;
+        Vector3 _spinStart, _spinLastHeading, _spinLastPos;
+        bool _spinArmed;
+
+        /// <summary>True while the nose lead is let go after a spin (<see cref="UpdateSpinEscape"/>).</summary>
+        public bool IsEscapingSpin => Time.time < _spinLeadOffUntil;
+
+        /// <summary>
+        /// The SPIN escape: the hull has turned a full circle in place, far from its objective. The orbit detector cannot
+        /// see this (the bearing to an objective hundreds of units off barely turns) and the turning-circle test does not
+        /// apply (the objective is nowhere near the circle). Measured cause: the nose lead (<see cref="NoseLeadGain"/>),
+        /// whose command, up to <see cref="NoseLeadMaxExtraDegrees"/> past the aim, kept the nose turning (2026-11-17,
+        /// Spearline). The pilot lets the lead go for <see cref="spinLeadOffSeconds"/> and judges from the nose, which
+        /// flies it out; nothing else changes, so a pilot that never spins flies exactly as before.
+        /// </summary>
+        void UpdateSpinEscape(Vector3 toObjective)
+        {
+            Vector3 heading = HeadingDirection();
+            Vector3 pos = transform.position;
+            if (!_spinArmed || VesselStatus.IsDrifting || VesselStatus.IsAttached || _aimIsPathLead || NoseLeadGain <= 0f ||
+                heading.sqrMagnitude < 1e-6f)
+            {
+                _spinArmed = heading.sqrMagnitude >= 1e-6f;
+                _spinSweep = _spinElapsed = _spinPath = 0f;
+                _spinStart = _spinLastPos = pos;
+                _spinLastHeading = heading;
+                return;
+            }
+
+            _spinSweep += Vector3.Angle(_spinLastHeading, heading);
+            _spinPath += Vector3.Distance(_spinLastPos, pos);
+            _spinElapsed += Time.deltaTime;
+            _spinLastHeading = heading;
+            _spinLastPos = pos;
+            if (_spinElapsed < spinWindowSeconds) return;
+
+            float radius = VesselStatus.VesselTransformer != null ? VesselStatus.VesselTransformer.MinTurnRadius : 0f;
+            bool far = toObjective.magnitude > Mathf.Max(radius * spinFarTurnRadii, objectiveCaptureRadius);
+            bool inPlace = _spinPath > 1f && Vector3.Distance(_spinStart, pos) < _spinPath * spinMaxProgressFraction;
+            if (far && inPlace && _spinSweep >= spinSweepDegrees)
+                _spinLeadOffUntil = Time.time + spinLeadOffSeconds;
+
+            _spinSweep = _spinElapsed = _spinPath = 0f;
+            _spinStart = pos;
         }
 
         /// <summary>The roll stick that turns the belly onto <see cref="_bellyTarget"/> about the nose: the signed angle,

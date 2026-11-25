@@ -211,8 +211,23 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// A rejoin offer or "The host left" is about a match this player is no longer in, and both are raised on
+        /// the menu only. Once the player is in a game scene they have moved on, so the window must not ride along
+        /// into the new match: nobody had dismissed "The host left" on a guest, it stayed up through a whole
+        /// tournament the guest was playing with a live host (2026-11-17).
+        /// </summary>
+        internal static bool MatchNoticeIsStale(bool aboutAMatch, bool showing, string activeScene) =>
+            aboutAMatch && showing && activeScene != MenuScene;
+
         void Update()
         {
+            if (_targetAlpha > 0f && _mode != Mode.Connection &&
+                MatchNoticeIsStale(true, true, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name))
+            {
+                SetMode(Mode.Connection);
+                Hide();
+            }
             CheckRejoin();
             if (_group == null) return;
             var step = _config.FadeSeconds <= 0f
@@ -270,11 +285,16 @@ namespace CosmicShore.UI
         /// match, offer to rejoin it; when nobody has for a while, give it up - saying "The host left" after a drop, since
         /// the host is a player and its match ends with it.
         /// </summary>
+        const string MenuScene = "Menu_Main";
+
         void CheckRejoin()
         {
             if (Time.unscaledTime < _nextRejoinCheck) return;
             _nextRejoinCheck = Time.unscaledTime + _config.RejoinCheckSeconds;
             if (_targetAlpha > 0f || _launching || _busy) return;
+            // The menu only. In a game scene the remembered match is either this one or an older one this player has
+            // moved on from, and giving the older one up there put "The host left" over the new match (2026-11-15).
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != MenuScene) { _presenceOnlineFor = 0f; return; }
             if (!MatchRejoin.TryLoad(out var record)) { _presenceOnlineFor = 0f; return; }
 
             var hcs = HostConnectionService.Instance;
@@ -300,7 +320,7 @@ namespace CosmicShore.UI
             _presenceOnlineFor += _config.RejoinCheckSeconds;
             if (_presenceOnlineFor < _config.RejoinGiveUpSeconds) return;
             _presenceOnlineFor = 0f;
-            if (record.Dropped)
+            if (MatchRejoin.GiveUpSaysHostLeft(record.Dropped, MatchRejoin.DroppedThisRun))
             {
                 SetMode(Mode.HostLeft);
                 Show(_config.TitleHostLeft, _config.BodyHostLeft, offerReconnect: false);

@@ -117,6 +117,23 @@ namespace CosmicShore.Gameplay
         /// <summary>Rings per lap. The race target is <c>laps x GatesPerLap</c>.</summary>
         public const int GatesPerLap = 8;
 
+        /// <summary>Laps per intensity, I1..I4: the race is <c>LapsFor x GatesPerLap</c> rings. The higher rungs' laps are
+        /// short (a reading pilot flies an I3 hairpin lap in ~15 s offline against I1's ~24 s), so they fly more of them:
+        /// sized so a pilot who reads the course lands near the ~90 s arcade target on every rung (BRITTLESTARTIME.md
+        /// section 0, `brittle_star_time_course_harness --race`). I1's laps are the authored race
+        /// (<c>brittleStarTimeGateTarget</c>); the others scale from it. I3 and I4 went from 3 and 4 to 6 laps on
+        /// 2026-11-17 so the ladder climbs: the Legendary AI raced 49 / 54 / 36 / 57 s, and I3 (its team crystals speed
+        /// it up) was the fastest rung; now 49 / 54 / 65 / 90 s (real-game judge, seeds 1-3).</summary>
+        public static readonly int[] LapsByIntensity = { 2, 3, 6, 6 };
+
+        public static int LapsFor(int intensity) => LapsByIntensity[Mathf.Clamp(intensity, 1, 4) - 1];
+
+        /// <summary><paramref name="i1Value"/> (an I1 count: laps, or the race's rings) scaled to
+        /// <paramref name="intensity"/>'s laps, never below 1. 16 rings at I1 is 24 / 24 / 32 at I2-I4: the rings per lap
+        /// never change.</summary>
+        public static int ScaleForRung(int i1Value, int intensity) =>
+            Mathf.Max(1, Mathf.RoundToInt(i1Value * (float)LapsFor(intensity) / LapsFor(1)));
+
         /// <summary>The mouth radius per intensity, I1..I4.</summary>
         public static float MouthRadius(int intensity) => new[] { 80f, 60f, 44f, 42f }[Mathf.Clamp(intensity, 1, 4) - 1];
 

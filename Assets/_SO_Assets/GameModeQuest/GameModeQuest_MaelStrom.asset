@@ -29,6 +29,7 @@ MonoBehaviour:
   Intensity4GoalDescription: Play Intensity 3 to unlock
   Order: 5
   IsPlaceholder: 0
+  RewardColorSet: {fileID: 11400000, guid: de30bf08df564c14bddcbb3fe0edf203, type: 2}
   CallToActionTargetID: -1
   CompletionUserAction: -1
   DependencyTargetIDs: 

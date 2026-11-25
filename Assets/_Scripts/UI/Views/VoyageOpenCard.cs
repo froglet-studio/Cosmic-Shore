@@ -605,7 +605,6 @@ namespace CosmicShore.UI
         string Who(SavedSquad squad, int seat, SquadSlot slot)
         {
             if (IsMySeat(squad, seat)) return _lines.CardSeatYou;
-            if (slot.IsOpen()) return _lines.CardSeatOpen;
             if (slot.IsPlayer()) return slot.MemberName;
             return _lines.CardSeatAi;
         }

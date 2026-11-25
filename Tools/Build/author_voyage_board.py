@@ -28,10 +28,14 @@ STYLE_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs"
 BOARD_CS = "Assets/_Scripts/UI/Views/VoyageBoard.cs"
 TOKENS = "Docs/UI/froglet-tokens.json"
 KIT = "Assets/_Graphics/UI/Kit"
+PILOT_SCENES = "Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset"  # Rev 114 C2: the job told over its pilot's scene
 LABEL_FONT = "Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset"
 
 SPRITES = [  # field, kit file
     ("Sliver10Fill", "kit_sliver10_fill"), ("Sliver10Line", "kit_sliver10_line1"),
+]
+PICTURES = [  # field, png (Frogma Rev 113 Sea and Crew draw the Ark on the escort's card)
+    ("ArkPicture", "Assets/_Graphics/UI/Loading/loading_tour_ark.png"),
 ]
 # field, hex, alpha, the token it is (a hex the tokens file must hold)
 COLOURS = [
@@ -44,7 +48,7 @@ HULL_PAD = 6  # px of air kept round each measured hull
 NUMBERS = [
     # The Sea table's columns (Rev 89 A, 1840 across): chips 0-310, the table 340-1360, the squad from 1390.
     ("ListRight", "0.1685"), ("CourseLeft", "0.1848"), ("CourseRight", "0.7391"), ("PanelLeft", "0.7554"),
-    ("RowHeight", "76"),
+    ("RowHeight", "96"),
 ]
 
 
@@ -99,6 +103,9 @@ def asset(style_guid):
            "  m_EditorClassIdentifier: "]
     for field, kit in SPRITES:
         out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(f'{KIT}/{kit}.png')}, type: 3}}")
+    for field, png in PICTURES:
+        out.append(f"  {field}: {{fileID: 21300000, guid: {meta_guid(png)}, type: 3}}")
+    out.append(f"  PilotScenes: {{fileID: 11400000, guid: {meta_guid(PILOT_SCENES)}, type: 2}}")
     out.append(f"  LabelFont: {{fileID: 11400000, guid: {meta_guid(LABEL_FONT)}, type: 2}}")
     for field, hexv, alpha in COLOURS:
         out.append(f"  {field}: {colour(hexv, alpha)}")
