@@ -198,6 +198,14 @@ namespace CosmicShore.Gameplay
                 return;
             }
             Sail(_request);
+            if (_harbour && !_harbour.IsUnderway)
+            {
+                // Nothing set out (the harbour said why): back to the menu now, not after the sail timeout behind the
+                // loading screen.
+                CSDebug.LogWarning($"[VoyageScene] {_request} did not set sail - back to the menu.");
+                ReturnToMenu(0f);
+                return;
+            }
             WatchSailAsync(ct).Forget();
         }
 

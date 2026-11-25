@@ -26780,3 +26780,19 @@ changed files. None of it has run in the Unity editor.
 - [ ] Fly into the tube from the lip, through the hall and out of an exit: no invisible walls. The hull, decks and crystal are solid.
 - [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
 - [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).
+
+## A voyage left at sea no longer strands every later launch on the loading screen (2026-11-25)
+
+🔴 unverified. Shombith's report: play a voyage, leave it, launch again: the loading screen never lifts, and a restart
+does not help. Cause: leaving after the Ark reached a world saves the record AT SEA with a waypoint (`voyage.state.v1`
+in PlayerPrefs, #P13). The next launch named the waiting job from the menu's own read of the record, `TakeJob` matched it
+to the run's record by REFERENCE (never equal), skipped the resume, and `VoyageRules.Take` refuses every job while the
+record is at sea, so nothing sailed. The embark still counted as a voyage out, so the scene held the splash until its
+100 s deadline over an empty sea. Fix: `VoyageRules.SameJob` (by template, pilot, places, named voyage), a record still at
+sea with another job is given up with a warning, a launch that sets no leg ends the embark, and the voyage scene returns
+to the menu at once when nothing set sail. Test: `VoyageRulesTests.TheWaitingVoyageIsKnownByWhatItIs_NotByReference`.
+- [ ] Sail a Crystal Run, pass the first world, leave from the HUD: the menu offers the waiting voyage; sail it: the
+      loading screen lifts onto "VOYAGE RESUMED", from that world.
+- [ ] With the bad record from before the fix still saved, launch any voyage: it sails (a `[Voyage] ... given up`
+      warning or a resume), never a stuck loading screen.
+- [ ] Leave a voyage before the first world: the next launch sails a fresh job.
