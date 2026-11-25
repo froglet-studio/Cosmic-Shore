@@ -46,10 +46,10 @@
       in the first sittings. The I1 AI reaches it with fun, suboptimal behaviour loops (the AI complexity rule), never random
       mistakes.'
   - 'on': npx
-    q: 'Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys
-      (Mira, the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all.'
-    fill: 'Activation starts where the player arrived: an invite starts in the inviter''s party and the seat it named,
-      and the Lesson for that seat (a crew board, a hull) runs there.'
+    q: 'Activation has one door: first launch, the spotlight, a Lesson that flies a Time verb. Two of the six journeys (Mira,
+      the night crew) arrive by invite and never pass through it, and Mira does not want to fly at all.'
+    fill: 'Activation starts where the player arrived: an invite starts in the inviter''s party and the seat it named, and
+      the Lesson for that seat (a crew board, a hull) runs there.'
   src:
   - Docs/ACTIVATION.md
   - Docs/ModePreview/TRAINING_PLAN.md
@@ -72,8 +72,9 @@
   reps: '4'
   repsOf: quests before the Hangar
   now:
-    s: dark
-    note: Scurry, Hex Race, Joust, Maelstrom, then the Vessel Hangar. Stood down by the master unlock.
+    s: built
+    note: A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after
+      the Hangar.
   holes:
   - 'on': np
     q: The chain orders 4 cards. About 80 others have no order, so after the Hangar opens nothing says what to play next.
@@ -83,17 +84,6 @@
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2
   - Docs/QUEST_TRACK_AND_BREADCRUMB.md
   - Docs/LoopAtlas/sim/REPORT.md
-  plan:
-    s: decided
-    note: A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after
-      the Hangar.
-  build:
-    s: building
-    what: A quest clears at I2, so the chain is about four to eight wins, and I3 and I4 stay the ladder's challenge after
-      the Hangar.
-    by: Garrett
-    at: '2026-11-21'
-    branch: claude/retain-economy
 - id: arc.fleet
   parent: era
   at: 4
@@ -139,10 +129,10 @@
     fill: A tester build that keeps the unlock for modes and the Hangar but locks vessels, so the earn-to-buy step can be
       watched before launch.
   - 'on': npx
-    q: 'Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new
-      after two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks.'
-    fill: 'Pay a team win to every seat on the team, crew seats included, and pay a little for finishing, so a
-      friend''s fleet grows at the group''s pace.'
+    q: Only the winner is paid. In a group of friends who beat each other, the one who wins least owns nothing new after
+      two weeks; in the night crew journey that friend leaves on day 17 and the crew shrinks.
+    fill: Pay a team win to every seat on the team, crew seats included, and pay a little for finishing, so a friend's fleet
+      grows at the group's pace.
   src:
   - Docs/ECONOMY_AND_PRICING.md
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2c
@@ -324,8 +314,7 @@
   repsOf: sittings with a friend
   now:
     s: built
-    note: The party lobby, invites, friends and AI backfill exist. Crew vessels (two to four seats on one hull) are local
-      only until networked.
+    note: A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.
   prop:
     s: change
     note: 'A crew vessel''s empty seat is the invite: ''fly the kite on my Wrasse''.'
@@ -344,8 +333,8 @@
     fill: The protocol mismatch toast carries the live flags' per-platform update link for whichever side is older, so a
       split party ends in an update instead of a lost evening.
   - 'on': n
-    q: 'The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the
-      Orca, Honeyguide, Wrasse and Goby. One of them is stale.'
+    q: The now note says crew vessels are local only, but Docs/CREW_STATIONS.md has the rider seat networked on the Orca,
+      Honeyguide, Wrasse and Goby. One of them is stale.
   - 'on': np
     q: 'A group of four meets three seats everywhere: a squad, a voyage party, a team in Brood Rush. Simulated, one of the
       Night Crew sits out 47% of their team matches. No crew vessel has an arena card, so a crew vessel cannot take the
@@ -356,15 +345,6 @@
   - Docs/claude/MULTIPLAYER_AND_SOCIAL.md
   - Docs/Voyages/PARTY.md
   - Docs/LoopAtlas/sim/REPORT.md
-  plan:
-    s: decided
-    note: A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.
-  build:
-    s: building
-    what: A party match pays every member by the party's best placing. Losing still pays nothing in solo play, as decided.
-    by: Garrett
-    at: '2026-11-21'
-    branch: claude/retain-economy
 - id: arc.replay
   parent: era
   at: 3

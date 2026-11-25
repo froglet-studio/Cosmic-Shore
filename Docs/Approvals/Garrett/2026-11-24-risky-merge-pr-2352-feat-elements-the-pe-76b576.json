@@ -1,0 +1,51 @@
+{
+  "id": "2026-11-24-risky-merge-pr-2352-feat-elements-the-pe-76b576",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-24T23:23:02+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2352 (feat(elements): the per-attacker petal ledger (SILENCE.md §6)) went in without waiting for you.",
+  "why": "multiplayer wire format (NetworkConfig.ProtocolVersion): Assets/_Prefabs/CORE/NetworkManager.prefab",
+  "branch": "ship-ledger",
+  "pr": 2352,
+  "commit": "24206864a",
+  "paths": [
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_Scripts/Controller/Arcade/Scoring/ScoringMetrics.cs",
+    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/ElementalTransfer.cs",
+    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/PetalLedger.cs",
+    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/PetalLedger.cs.meta",
+    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel",
+    "Assets/_Scripts/Controller/ImpactEffects/Impactors/NetworkVesselImpactor.cs",
+    "Assets/_Scripts/Controller/Managers/StatsManager.cs",
+    "Assets/_Scripts/Controller/Player/RoundStats.cs",
+    "Assets/_Scripts/Data/Enums/IRoundStats.cs",
+    "Assets/_Scripts/Data/Enums/ScoringMetric.cs",
+    "Assets/_Scripts/Data/ModeGenre.cs",
+    "Assets/_Scripts/Tests/Editor/ChumReefTests.cs",
+    "Assets/_Scripts/Tests/Editor/GameDataSOTests.cs",
+    "Assets/_Scripts/Tests/Editor/GlasshouseScoringTests.cs",
+    "Assets/_Scripts/Tests/Editor/HarvestTests.cs",
+    "Assets/_Scripts/Tests/Editor/HaulTests.cs",
+    "Assets/_Scripts/Tests/Editor/HedgerowTests.cs",
+    "Assets/_Scripts/Tests/Editor/IRoundStatsCleanupTests.cs",
+    "Assets/_Scripts/Tests/Editor/LongshotTests.cs",
+    "Assets/_Scripts/Tests/Editor/ModeGenreTests.cs",
+    "Assets/_Scripts/Tests/Editor/PetalLedgerTests.cs",
+    "Assets/_Scripts/Tests/Editor/PetalLedgerTests.cs.meta",
+    "Assets/_Scripts/Tests/Editor/RaceRankToastDriverTests.cs",
+    "Assets/_Scripts/Tests/Editor/RegattaTeamPlayTests.cs",
+    "Assets/_Scripts/Tests/Editor/ScoringRuleFieldedDomainTests.cs",
+    "Assets/_Scripts/Tests/Editor/SparrowCombatTierTests.cs",
+    "Assets/_Scripts/Tests/Editor/StarweaveScoringTests.cs",
+    "Assets/_Scripts/Utility/DataContainers/GameDataSO.cs",
+    "Docs/Approvals/Yash/2026-11-23-petal-ledger-silence-md-6-networkvesseli-159023.json"
+  ],
+  "risky": [
+    {
+      "key": "protocol",
+      "name": "multiplayer wire format (NetworkConfig.ProtocolVersion)",
+      "detail": "Assets/_Prefabs/CORE/NetworkManager.prefab"
+    }
+  ]
+}

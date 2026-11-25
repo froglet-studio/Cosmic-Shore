@@ -61,5 +61,15 @@ namespace CosmicShore.Data
         /// that binds it the card is directly left of the omnicrystal's.
         /// </summary>
         Objective = 3,
+
+        /// <summary>
+        /// The Sparrow's barrel roll: push the RIGHT stick any way and the hull rolls that way, sliding
+        /// sideways; hold it and it keeps rolling (BarrelRollController; Shombith 2026-11-24 moved it off
+        /// the boost button). Core flight like the drift - no element upgrades it - so a bare plate with no
+        /// emblem. A stick deflection is no <c>InputEvents</c> member, so the card draws no control chip;
+        /// the Fleet Codex names the control. It sits beside the drift: a hull binds at most one of the two
+        /// flight moves (<see cref="CosmicShore.UI.VesselHUDView.FlightMoveAbilities"/>).
+        /// </summary>
+        BarrelRoll = 4,
     }
 }

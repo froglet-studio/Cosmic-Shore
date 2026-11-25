@@ -251,9 +251,94 @@ static class Driver
               "an empty mask takes nothing");
 
         T11Silence();
+        T12PetalLedger();
 
         Console.WriteLine(_fail == 0 ? "\nALL PASS" : $"\n{_fail} FAILED");
         return _fail == 0 ? 0 : 1;
+    }
+
+    // THE PER-ATTACKER PETAL LEDGER (Docs/ElementalAbilitySystem/SILENCE.md §6): score(i) = the petals
+    // opposing pilots lose because of pilot i - strips, steals, and the burns of danger prisms i laid.
+    // Driven against the REAL ElementalTransfer and PetalLedger: what is credited is what settled,
+    // once, on the victim's owner, and a networked owner hands it to its relay (the server's ledger).
+    static void T12PetalLedger()
+    {
+        Console.WriteLine("T12 the petal ledger credits what each attacker really took, once");
+        PetalLedger.Reset();
+        VesselSilence.ClearAll();
+        var st = ElementalTransferForm.Steal;
+        var ej = ElementalTransferForm.Eject;
+        var any = UnityEngine.Vector3.zero;
+
+        // Offline: a strip (eject) and a steal are credited to the attacker, the settled count exactly.
+        var ava = FakeStatus.On(null);
+        var bo = FakeStatus.On(null);
+        bo.ResourceSystem.Settles[(int)Element.Charge] = 2;
+        bo.ResourceSystem.Settles[(int)Element.Space] = 1;
+        int stripped = ElementalTransfer.ApplyAllAuthoritative(ej, bo, ava, 0.3f, any, ElementalDebuffSources.Explosion);
+        Check(stripped == 3 && PetalLedger.TotalFor(ava.PlayerName) == 3,
+              $"a strip credits its attacker exactly what settled ({PetalLedger.TotalFor(ava.PlayerName)} of {stripped})");
+        Check(PetalLedger.TotalFor(bo.PlayerName) == 0, "  ... and the victim earns nothing for losing");
+        ElementalTransfer.ApplyAllAuthoritative(st, bo, ava, 0.5f, any, ElementalDebuffSources.VesselContact);
+        Check(PetalLedger.TotalFor(ava.PlayerName) == 6, "a steal adds what it took (3 + 3)");
+        ElementalTransfer.Apply(st, bo, ava, Element.Charge, 0.2f, any, ElementalDebuffSources.VesselContact);
+        Check(PetalLedger.TotalFor(ava.PlayerName) == 8, "  ... through the one-element Apply too (6 + 2)");
+
+        // A burn has no attacker in the transfer: the danger effect credits the prism's layer itself.
+        int burned = ElementalTransfer.Burn(bo, Element.Charge, 0.1f, ElementalDebuffSources.DangerPrism);
+        Check(burned == 2 && PetalLedger.TotalFor(ava.PlayerName) == 8, "a bare Burn credits nobody");
+        var cy = FakeStatus.On(null);
+        ElementalTransfer.CreditTake(cy.PlayerName, bo, burned);
+        Check(PetalLedger.TotalFor(cy.PlayerName) == 2, "the layer of the danger prism is credited what it burned");
+
+        // What does not count.
+        var empty = FakeStatus.On(null);   // Settles all 0: warded, or holding nothing
+        ElementalTransfer.ApplyAllAuthoritative(ej, empty, ava, 0.3f, any, ElementalDebuffSources.Explosion);
+        Check(PetalLedger.TotalFor(ava.PlayerName) == 8, "a hit on a pilot with nothing to lose credits nothing");
+        ElementalTransfer.CreditTake(bo.PlayerName, bo, 4);
+        Check(PetalLedger.TotalFor(bo.PlayerName) == 0, "a pilot's loss to themselves credits nothing");
+        ElementalTransfer.CreditTake(null, bo, 4);
+        ElementalTransfer.CreditTake(cy.PlayerName, null, 4);
+        Check(PetalLedger.Totals.Count == 2, "no attacker, or no victim, credits nobody");
+        VesselSilence.Record(ava.PlayerName, Domains.Jade, 5f);
+        ElementalTransfer.ApplyAllAuthoritative(ej, bo, ava, 0.3f, any, ElementalDebuffSources.Explosion);
+        Check(PetalLedger.TotalFor(ava.PlayerName) == 8, "a silenced attacker takes nothing and is credited nothing");
+        VesselSilence.ClearAll();
+
+        // Networked: only the victim's owner credits, and it hands the credit to its relay, which
+        // records it on the server (directly on the host, by RPC from a client).
+        var ownedRelay = new FakeRelay { Networked = true, Owned = true };
+        var ownedVictim = FakeStatus.On(ownedRelay);
+        ElementalTransfer.CreditTake(cy.PlayerName, ownedVictim, 3);
+        Check(ownedRelay.Reports == 1 && ownedRelay.ReportedPetals == 3 && ownedRelay.LastReportedAttacker == cy.PlayerName,
+              "the victim's owner reports the take through its relay");
+        Check(PetalLedger.TotalFor(cy.PlayerName) == 2, "  ... and does not also record it locally (no double count)");
+        var replayRelay = new FakeRelay { Networked = true, Owned = false };
+        ElementalTransfer.CreditTake(cy.PlayerName, FakeStatus.On(replayRelay), 3);
+        Check(replayRelay.Reports == 0 && PetalLedger.TotalFor(cy.PlayerName) == 2,
+              "a peer's replay of the same contact credits nothing (the double-count control)");
+
+        // The relayed take: the decider names the attacker on the wire, the owner settles and credits.
+        var victimRelay = new FakeRelay { Networked = true, Owned = false };
+        var shooter = FakeStatus.On(new FakeRelay { Networked = true, Owned = true });
+        ElementalTransfer.ApplyAllAuthoritative(ej, FakeStatus.On(victimRelay), shooter, 0.3f, any,
+                                                ElementalDebuffSources.Explosion);
+        Check(victimRelay.Takes == 1 && victimRelay.LastAttackerName == shooter.PlayerName,
+              "the shooter's owner sends its name with the take");
+        var settleRelay = new FakeRelay { Networked = true, Owned = true };
+        var settleVictim = FakeStatus.On(settleRelay);
+        settleVictim.ResourceSystem.Settles[(int)Element.Mass] = 2;
+        ElementalTransfer.SettleTake(settleVictim, ElementalTransfer.AllElementsMask, 0.2f,
+                                     ElementalDebuffSources.Explosion, shooter.PlayerName);
+        Check(settleRelay.Reports == 1 && settleRelay.ReportedPetals == 2 && settleRelay.LastReportedAttacker == shooter.PlayerName,
+              "the victim's owner credits the settled count to the named attacker");
+        var anon = FakeStatus.On(new FakeRelay { Networked = true, Owned = true });
+        anon.ResourceSystem.Settles[(int)Element.Mass] = 2;
+        ElementalTransfer.SettleTake(anon, ElementalTransfer.AllElementsMask, 0.2f, ElementalDebuffSources.Explosion);
+        Check(((FakeRelay)anon.Vessel.Transform.Attached).Reports == 0, "  ... and an unnamed take credits nobody");
+
+        PetalLedger.Reset();
+        Check(PetalLedger.Totals.Count == 0, "Reset starts the next match at zero");
     }
 
     // SILENCE (Docs/ElementalAbilitySystem/SILENCE.md): every SCORED HIT silences its victim for what
@@ -407,13 +492,21 @@ class FakeRelay : IElementalLossRelay, ISilenceRelay
     public IElementalLossRelay LastPayee;
     public bool IsNetworked => Networked;
     public bool IsOwnedHere => Networked && Owned;
+    public string LastAttackerName;
+    public int Reports, ReportedPetals;
+    public string LastReportedAttacker;
     public int RelayTakeToOwner(ElementalTransferForm form, int elementMask, float normalizedAmountPerElement,
-                                UnityEngine.Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee)
+                                UnityEngine.Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee,
+                                string attackerName)
     {
-        Takes++; LastForm = form; LastPayee = payee;
+        Takes++; LastForm = form; LastPayee = payee; LastAttackerName = attackerName;
         return 0;
     }
     public void RelayGrantToOwner(uint packedPetals) { Grants++; }
+    public void ReportPetalsTaken(string attackerName, int petals)
+    {
+        Reports++; ReportedPetals += petals; LastReportedAttacker = attackerName;
+    }
 }
 
 class FakeVessel : IVessel

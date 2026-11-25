@@ -1,5 +1,5 @@
 {
- "_about": "What each ability DOES in play, for the Fleet Codex's cards. The ability maps record what each element scales and the level-5 upgrade, but not what the ability itself does, so this is the codex's second hand table (seats.json is the first). Per vessel (the map's file name) and element: ability (must equal the map's AbilityLabel, or the entry is dropped with a warning), does (what the player does and what happens), trigger (how it fires; the page draws the button), scales (what more of the element does, in player words) and source (the doc or code it was read from: assets and code win over docs). Omni is what an omni crystal does for the hull. An optional tint ({rest, l5}: domain or omni) records an icon the HUD paints other than the pilot's domain, with its source. Written 2026-11-02 from each source; re-read the source and update the entry whenever the generator warns or the ability changes.",
+ "_about": "What each ability DOES in play, for the Fleet Codex's cards. The ability maps record what each element scales and the level-5 upgrade, but not what the ability itself does, so this is the codex's second hand table (seats.json is the first). Per vessel (the map's file name) and element: ability (must equal the map's AbilityLabel, or the entry is dropped with a warning), does (what the player does and what happens), trigger (how it fires; the page draws the button), scales (what more of the element does, in player words) and source (the doc or code it was read from: assets and code win over docs). Omni is what an omni crystal does for the hull. An optional tint ({rest, l5}: domain or omni) records an icon the HUD paints other than the pilot's domain, with its source. Written 2026-11-02 from each source; re-read the source and update the entry whenever the generator warns or the ability changes. Dynamics (optional, a list) are a vessel's core flight moves no element changes (the Sparrow's barrel roll, 2026-11-24): ability, does, trigger, pad, pc, touch, icon (the repo PNG its HUD core card shows) and source.",
  "Angler": {
   "Charge": {
    "ability": "Erase / Lock-on",
@@ -516,7 +516,7 @@
   },
   "Time": {
    "ability": "Afterburner",
-   "does": "Boost for as long as you hold - no heat, no meter. Push the stick fully to one side as you start boosting and the Sparrow does a quick strafing roll, even while stopped.",
+   "does": "Boost for as long as you hold - no heat, no meter.",
    "trigger": "Hold",
    "scales": "More Time raises your boost speed.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md"
@@ -526,7 +526,19 @@
    "does": "For 8 seconds danger prisms, blasts and overtakes cannot lower your elements; buffs still land. Missiles now reload by shooting prisms, not from crystals.",
    "trigger": "Pick up an omni crystal",
    "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/VesselWardByCrystalEffectSO.cs"
-  }
+  },
+  "Dynamics": [
+   {
+    "ability": "Barrel Roll",
+    "does": "Push the right stick any way and the Sparrow rolls that way, sliding sideways as it spins. Hold the stick and it keeps rolling, one roll after another. Works stopped in Turret Stance too. No element changes it: it is how the Sparrow flies.",
+    "trigger": "Push the right stick, hold to keep rolling",
+    "pad": "Right stick",
+    "pc": "P ; L '",
+    "touch": "Not on the phone yet",
+    "icon": "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Core/Sparrow_BarrelRoll.png",
+    "source": "Assets/_Scripts/Controller/Vessel/BarrelRollController.cs"
+   }
+  ]
  },
  "Squirrel": {
   "Charge": {

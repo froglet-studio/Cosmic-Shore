@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The per-attacker petal ledger counts what each pilot takes from opponents (`claude/project-thread-6znms8`, 2026-11-23, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed.** `PetalLedger` (SILENCE.md §6): every strip and steal is credited to its attacker, and every hostile
+danger burn to the pilot who laid the prism, with the whole petals that really came loose. On the server it lands in
+`IRoundStats.PetalsTaken` (a new `RoundStats` NetworkVariable), readable as `ScoringMetric.PetalsTaken` (13). The relayed eject and steal RPCs on `NetworkVesselImpactor` now
+carry the attacker's name, and a client owner forwards each credit to the server (`PetalsTaken_ServerRpc`).
+Reference compile (player and editor configs): 0 errors in changed files. `elemental_transfer_harness` T12 passes.
+
+1. **Offline, Broadside or Dog Fight with AIs**: after a minute, each pilot's `PetalsTaken` (inspector on its
+   `RoundStats`) is about its combat points divided by ten, and lower when it hits pilots who hold nothing.
+2. **A pilot flying into an opponent's danger trail**: the trail's layer gains the petals the burn took; flying into
+   your own trail credits nobody.
+3. **Host plus one client**: a hit by the client on an AI, and a hit by an AI on the client, each credit once on the
+   host (no double count), and the client's inspector mirrors the host's value.
+4. **A new match starts at 0** for every pilot.
+
+---
 ### 🔴 Skim Race flights record a finish: the crystal target and the team's crystals (`Ys-bleeding-edge`, 2026-11-23, Yash) — NOT COMPILED BY ITS AUTHOR, NOT RUN IN EDITOR
 
 **What was wrong.** `HumanFlightRecorder` took a flight's `raceTarget` only from `SwitchTargetCount`, which only a gate
@@ -26332,6 +26349,16 @@ untouched files, from packages this machine cannot fetch); a planted error in `F
 - [ ] A RELEASE (non-development) Windows, Android and iOS build: the counter works there too.
 - [ ] Phone with a notch: the number is not under the notch or a rounded corner.
 
+## Swordfish: bigger afterimages, its Brood Rush Mass lever (2026-11-21, NOT PLAYED)
+
+`SwordfishSwordAfterimageConfig.asset` `massVolumeMultiplier` x1 -> x2.5 became x1.7 -> x4.25 (`SWORDFISH.md` § "Brood
+Rush"). Measured in the Amoebius Brood Rush judge only (index 0.73 -> 1.03 at Medium, 3 teams of 3). No Unity editor ran;
+the reference compile has 0 errors in the changed files.
+
+- [ ] Toybox or Palisade: energize the Swordfish and let go. The afterimages laid in the next 5 s read as the sword's
+      ghost, about 1.2x thicker on every axis than before, and the bill still cuts them after a second.
+- [ ] Brood Rush with the Swordfish seated (once the card seats it again): its score sits with the field's, not at the bottom.
+
 ## Grizzly scope camera at teardown (2026-11-22)
 
 Bug ledger E-5e0864d332: leaving a match while the Grizzly's scope camera was out on a round logged "Cannot set the
@@ -26528,6 +26555,10 @@ seeds 101-103, 24 of 24 finished): Legendary 148.5 / 142.3 / 135.2 / 143.6 s, Me
 - [ ] The same at Medium, I1: it finishes (model 195 s) and never circles away from a ring.
 - [ ] Away from a sealed ring the AI's bill does not stand up and stay up (the sword hand's new reach of 6 and crowd of 1).
 
+2026-11-24, in the editor, AI only (mode smoke test, three Legendary AI, clock 4x): I1 four times, I2, I3 and I4 once each
+all finished with a winner and no error in the match (I1 135.5-150.5 s, I2 146.3 s, I3 163.4 s, I4 195.9 s). The three
+boxes above stay open: nobody watched the races or flew one, and I4's 195.9 s is not within 10% of 144 s.
+
 ## Retention economy: party pay, voyage dock pay, quests at intensity 2 (2026-11-21)
 
 The economy fixes of the Loop Atlas retention build (Garrett: "Build everything proposed. Get all personas retained";
@@ -26582,3 +26613,79 @@ session. The reference compile has 0 errors in the changed files; `economy.test.
 - [ ] Fly the Honeyguide in freestyle, swap to the Ratel, leave and fly it again: it starts on the Ratel's board. Swap
       back to flying, leave and return: it starts flying.
 - [ ] Finish a painting in the Toybox gallery: the wallet rises by 150. A third painting the same day pays nothing.
+
+## The Goby's dart cooldown runs from launch; its hull leaves the pair's own prisms alone (2026-11-24)
+
+The Goby's dart cooldown now starts when the dart launches, not when it lands (`GobyPistolDuo.FireDart`). `dartCooldown`
+goes 1.2 s -> 2.2 s, the old 1 s dart plus 1.2 s reload, so a full dart's cycle is unchanged at every Time level and
+in Regatta. A dart a block cuts short now waits longer than before. The Time HUD card shows the cooldown filling while
+the dart flies. The Goby's hull no longer rams or bounces off the pair's own prisms (perch pads, the Pistol's dens and
+ground: `IHullPrismFilter`, read by `VesselImpactor.TouchesPrism` on both halves of a contact). Not run in the Unity
+editor: none in this session. The reference compile has 0 errors in the changed files; the Perch Run harness passes
+11/11 with race clocks identical to before; `GobyPistolTests` was not run.
+
+- [ ] Fly the Goby in freestyle and dart: the Time card's cooldown starts at launch, and the next full dart is ready
+      2.2 s after launch at rest (1.2 s after a 1 s dart lands, as before).
+- [ ] Charge fully, then tap: each is ready 2.2 s after its own launch.
+- [ ] Dart until the Goby perches and lays its 5-block pad, then turn hard and pitch away from it: the hull passes
+      through the pad and the den without stopping, bouncing or destroying them. A rival's prisms still stop a dart.
+- [x] ~~A person's Goby is never held at a perch~~: superseded the same day by "The Goby never flies" below.
+- [ ] Race Perch Run and Regatta with an AI Goby: it still darts through every ring, and the Regatta Goby's times are
+      about the same as before (REGATTA.md 6.6: card 78.1 s, L5 62.6 s).
+
+## The Goby never flies: it only darts perch to perch (2026-11-24)
+
+Garrett: "I want the goby's only movement to be stretches of different length between perches. it should never fly.
+only shoot itself from perch to perch. it can charge up its distance so it can still go short distances. it should
+have two thumb controls so it can orient the shrimp's plane." The Goby is pinned always (`GobyPistolDuo.Pin`, every
+landing), so the person's two thumbs only turn it, and the turn sets the Pistol's plane at the next launch. A dart
+(140-600 u by charge) is its only movement. The Pistol's islands keep their rule (a landing 900 u past the last island
+end, while fewer than 3 wait). The AI Goby, the Perch Run coach and the Regatta coach turn where they sit and hop
+aside (the shortest dart, 45/70/100 degrees off the line) when coral stops the dart at the nose; `aiCruiseSpeed`,
+`aiTurnMargin`, `InsideTurn` and `TurnRadius` are gone. Not run in the Unity editor: none in this session. The
+reference compile has 0 errors in the changed files; the Perch Run harness passes 11/11 (+ self-test), and its sweep
+gives the reader the same clocks as before (36.0 / 37.8 / 36.8 / 30.5 s); `GobyPistolTests` was not run.
+
+- [ ] Fly the Goby in freestyle: the sticks turn it in place and never move it; only Dart moves it, a tap 140 u and a
+      full 0.8 s charge 600 u. It stays put after every landing.
+- [ ] Turn the Goby, dart, then swap to the Pistol: the Pistol's plane follows the hull's turn at that launch.
+- [ ] Dart into a block at point-blank: it does not move, and the next dart turned aside gets it out.
+- [ ] Short hops only (under 900 u): no island is laid; a landing 900 u past the last island end lays one.
+- [ ] Race Perch Run I1-I4 with an AI Goby: it finishes every race, hopping aside where coral blocks its line.
+- [ ] Race Regatta with an AI Goby: it never flies, and finishes (REGATTA.md 6.6 had card 78.1 s, L5 62.6 s).
+- [ ] Will's (ownerbynight) Perch Run sign-off from #2359 was flown with the cruise: re-fly it.
+
+## The Pistol's trail: closer prisms, a little more hill variance (2026-11-24)
+
+Garrett: "the trail it leaves should look a bit more continuous with a shorter gap between prisms and a few more prisms
+per hill. the hills should have a bit more frequency and amplitude variance, not a lot". `trailBlockGap` 6 -> 4 u (about
+6 prisms a hill, 4 before; each block's length follows the gap, so shielded neighbours still meet tip to tip). Half-hills
+10-15 -> 9-16 u on and 3.6-7.2 -> 3-7.8 u up or down, the same means, so the pace and screen-fit numbers hold. A jump's
+energy is kept per u flown: `energyPerSkippedBlock` 1 -> 0.6667 and `energyFlightBonus` 0.2 -> 0.1333, so dens stay the
+size they were. An island now has 1.5x the blocks (up to 450 on an 1800 u island). Not run in the Unity editor; the
+goby_pistol harness passes 14/14 (+ self-test) and the Perch Run harness 11/11; `GobyPistolTests` (the ride's pace) was
+not run.
+
+- [ ] Ride the Pistol over a fresh island: the trail reads as a near-continuous line, about 6 prisms a hill.
+- [ ] The hills vary a little more in length and height than before, and the ride still flies off crests.
+- [ ] Big jumps still build about the same size den as before; frame rate holds with three islands queued.
+
+## The Sparrow's barrel roll is on the right stick, with its own HUD card (2026-11-24)
+
+Shombith: "Currently pressing the boost button would make the sparrow roll, move that to the right stick of the
+controller. Any direction the stick goes the sparrow barrel rolls and if you keep that button pressed it will keep doing
+that barrel roll." `BarrelRollController` now reads the right stick (past `engageThreshold` 0.6, any direction), repeats
+while held, and is owner-gated like the Scarab's juke; the boost arming, its 0.3 s window, `RollChargeState` and the Time
+`rollTimeScale` are gone. The one-thumb mouse scheme now publishes P ; L ' as the right stick (it published zero), which
+also gives the Scarab a keyboard juke there. New core card `CoreAbility.BarrelRoll` on the Sparrow HUD from
+`Sparrow_BarrelRoll.png` (icon kit, Core/). The Honeyguide carries the same component and rolls on the right stick too.
+Not run in the Unity editor: unity_refcompile and the gates only.
+
+- [ ] Pad: push the right stick right, left, up, down and diagonally - the Sparrow rolls that way each time.
+- [ ] Hold the right stick: it keeps rolling, one roll straight after another; let go and it stops after the current roll.
+- [ ] Boost (B) no longer rolls, with the left stick at any deflection.
+- [ ] Turret Stance: the right stick still rolls and strafes while stopped.
+- [ ] Desktop with the mouse flying: P ; L ' roll the Sparrow; the Scarab jukes on the same keys.
+- [ ] The Sparrow HUD shows the barrel-roll card (three rolling Sparrows) left of the four elemental cards, no flower, no chip.
+- [ ] Multiplayer: a remote Sparrow's roll plays once on other machines (no doubled displacement).
+- [ ] Honeyguide: decide whether its right-stick roll should stay.

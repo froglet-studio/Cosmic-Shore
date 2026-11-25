@@ -49,6 +49,7 @@ namespace CosmicShore.Data
         public event Action<IRoundStats> OnDebuffHitsLandedChanged;
         public event Action<IRoundStats> OnStrikeHitsLandedChanged;
         public event Action<IRoundStats> OnCombatPointsChanged;
+        public event Action<IRoundStats> OnPetalsTakenChanged;
         public event Action<IRoundStats> OnSwitchesThreadedChanged;
         public event Action<IRoundStats> OnFusesBeatenChanged;
 
@@ -78,7 +79,7 @@ namespace CosmicShore.Data
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
         int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _goalsScoredLocal, _lifeformsKilledLocal;
         int _bulletHitsLandedLocal, _missileHitsLandedLocal, _debuffHitsLandedLocal, _combatPointsLocal;
-        int _strikeHitsLandedLocal;
+        int _strikeHitsLandedLocal, _petalsTakenLocal;
         int _switchesThreadedLocal;
         int _fusesBeatenLocal;
 
@@ -196,6 +197,9 @@ namespace CosmicShore.Data
         readonly NetworkVariable<int> n_CombatPoints =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_PetalsTaken =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<int> n_SwitchesThreaded =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
@@ -292,6 +296,7 @@ namespace CosmicShore.Data
             OnDebuffHitsLandedChanged = null;
             OnStrikeHitsLandedChanged = null;
             OnCombatPointsChanged = null;
+            OnPetalsTakenChanged = null;
             OnSwitchesThreadedChanged = null;
             OnFusesBeatenChanged = null;
 
@@ -742,6 +747,18 @@ namespace CosmicShore.Data
             }
         }
 
+        public int PetalsTaken
+        {
+            get => _petalsTakenLocal;
+            set
+            {
+                _petalsTakenLocal = value;
+                if (IsSpawned && IsServer) n_PetalsTaken.Value = value;
+
+                RaiseSpecific(OnPetalsTakenChanged);
+            }
+        }
+
         public int SwitchesThreaded
         {
             get => _switchesThreadedLocal;
@@ -923,6 +940,7 @@ namespace CosmicShore.Data
             _debuffHitsLandedLocal      = n_DebuffHitsLanded.Value;
             _strikeHitsLandedLocal      = n_StrikeHitsLanded.Value;
             _combatPointsLocal          = n_CombatPoints.Value;
+            _petalsTakenLocal           = n_PetalsTaken.Value;
             _switchesThreadedLocal      = n_SwitchesThreaded.Value;
             _fusesBeatenLocal           = n_FusesBeaten.Value;
 
@@ -1148,6 +1166,13 @@ namespace CosmicShore.Data
                 _combatPointsLocal = v;
                 if (!IsServer)
                     RaiseSpecific(OnCombatPointsChanged);
+            };
+
+            n_PetalsTaken.OnValueChanged += (_, v) =>
+            {
+                _petalsTakenLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnPetalsTakenChanged);
             };
 
             n_SwitchesThreaded.OnValueChanged += (_, v) =>
