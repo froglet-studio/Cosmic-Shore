@@ -32,10 +32,50 @@ Where this section and the older text below disagree, this section is right.
   arena. Now a crystal is always inside the mass, so the longer bill is earned by cutting to it.
 - **The AI turns for its team's crystals** on one strike in three when one is within `aiCrystalReach` (450 u), never on
   a raid beat. Before, an AI played I3 exactly as it played I2.
-- **Shield Breaker has nothing to break.** No arena lays a shielded prism (`cleave_budget` check 3). The reason given
-  below (the AI cannot energize) stopped being true on 2026-10-16, and the sword hand now energizes at one prism. A
-  super-shielded seam on I3 or I4 would make Space 5's upgrade part of the game; it is an arena change nobody has
-  flown, so it waits for a person's yes.
+- **Shield Breaker now has something to break: the I3 and I4 lances** (below). The arenas themselves still lay no
+  shielded prism (`cleave_budget` check 3 is about the arenas only).
+
+### Lances: every piece gives the Swordfish an edge or a cost (Yash, 2026-11-25)
+
+Yash: the environment is shaped by intensity, easier at I1 and harder at I4, and every piece is there for a reason,
+something the Swordfish's kit exploits or something that costs it. The four arenas are unchanged (their bakes, card
+art and measurements too); on top of each, the controller lays **lances**: straight bars of small prisms on the six
+axis directions, from inside the arena to near its edge (`CleaveLances`, `CleaveController.Lances.cs`).
+
+| Rung | What stands where | Advantage for the Swordfish | Cost |
+|---|---|---|---|
+| I1 Panes | 6 plain 2x2 bars, 0.12-0.95 of the radius, through the pane gaps | a straight line through mass: hold it, the slices refuel the ramp and the ramp pays; "line up and commit" | none added |
+| I2 Swell | 6 plain 3x3 bundles, same span, danger at the outer end | the wide bundle is the Space lesson: the Space 5 bill (every hull starts there) cuts more of it a pass | overshoot the outer end at ramp speed and the danger tip stops you (4 s debuff) |
+| I3 Cage | 6 short super-shielded bars in the heart, 0.1-0.6 (inside the innermost rind, with the team crystals) | Shield Breaker: an energized blade at Space 5 pops a run of them | a cold blade binds (turn rate x0.3) in the heart |
+| I4 Twistbands | 6 bars 0.15-0.98, plain and super-shielded segments alternating (a seam), danger at the outer end | an energized run unzips the seam; the plain segments still feed the ramp | binds when cold, danger at the outer end, on a surface that already rolls |
+
+Rules the code keeps (one `CleaveLadderTests` test each): inside the rung's arena and clear of the centre; flush, no
+two lance prisms overlap; the six never meet; I1 plain only; I2 the widest, danger only at the outer end; I3 all armour,
+inside the innermost rind; I4 a seam with danger at the outer end; colours cycle Jade, Ruby, Gold, Blue (Blue is no team's, so
+three quarters of every lance scores for any team); the same parts on every peer; arena plus lances under the 20,153
+colliders the mode has shipped (`cleave_budget` check 5 counts them too: 1,416 / 3,186 / 288 / 456 at most).
+
+**No lance prism passes through an arena prism.** The parts are laid on every peer when the countdown ends, and a part
+is skipped where its bounding sphere would touch any standing prism's. Two cheaper tests were tried first and missed
+the arena (measured on I1 in the editor): the prism index had not filed the arena yet, and `Physics.CheckBox` found
+no colliders (arena colliders switch on near a vessel). On I1 the sphere test skips 8 of 1,416 parts.
+
+**The AI's throttle floor (`aiThrottleFloor`, shipped 0).** The Swordfish cruises at 50 u/s x throttle; its speed is
+the ramp (up to x16.8), which engages only at full throttle on a straight. Cleave never set the floor a race sets, so
+its AI holds ~0.85 throttle and cruises at ~42 u/s. The field is there; at 1, with the lances, the four rungs measured
+no faster (table below), so it ships at 0 and the AI flies as it did.
+
+**Lances, measured** (editor, Legendary AI on all 4 seats, x4, one seed):
+
+| | I1 | I2 | I3 | I4 |
+|---|---:|---:|---:|---:|
+| Before (no lances) | 465 s | 408 s | 323 s | 307 s |
+| Lances + floor 1 (sampled) | no winner at 532 s | no winner at 443 s | 378 s | not run |
+| Lances, floor 0, danger at both ends | 456 s | 580 s | not run | 273 s |
+| Lances, floor 0, outer tips only (shipped) | 456 s | 417 s | 333 s | 340 s |
+
+The lances do not fix the AI's pace. They are the environment a pilot reads, and whether they help a PERSON is a
+playtest.
 
 **The AI, measured (2026-11-25, in the Unity editor).** The 2026-11-19 sword-hand training ("The sword hand, trained"
 below) scored the Brood Rush volume books, and those books do not hold arena prisms (`StatsManager.PrismDestroyed`
@@ -53,11 +93,20 @@ four times slower than the ~90 s the targets aim at, and slower than a person (1
 old target). The rungs DO get faster as the arena gets denser (I1 slowest), which is the reverse of what a
 difficulty ladder wants from match length.
 
-**One steering fix was tried and failed.** Holding each station until the AI arrived (instead of picking a new one
-every 2 s) made all four rungs run past 600 game seconds without a winner, so it was reverted: the 2 s beat is
-better than it looks. The pace is open, and it is a step-3 question (Plan step: `space-arcade`,
-`Docs/AI_SYSTEM/AI_PLAN.md`): whether the AI should cut faster or the targets should come down is for a person who has
-flown a rung to decide, since the targets were set from a person's run.
+**What was tried for the AI's pace, and what it taught** (I1 in the editor, sampled every few seconds):
+
+| Try | Result |
+|---|---|
+| Hold each station until arrival, no throttle floor | no rung finished in 600 s: at 42 u/s a 5,000 u crossing takes two minutes |
+| Throttle floor, 2 s stations (sampled) | cruise 50 u/s; the ramp still never engaged ("waiting for a straight"): a new station every 2 s keeps it turning |
+| Floor, hold to arrival, fly beside each lance | ramps to x2.5 (125-175 u/s), but cut ~100 prisms an AI in 425 s: no winner |
+| Floor, hold to arrival, ride each lance | 103 prisms in the first 26 s, then the lines were eaten and it stalled: no winner at 487 s |
+
+So the limit is not speed or lines: an AI cuts when it loiters in dense mass (the first sample showed every AI ending
+up near the centre, cutting there), and it cannot find more mass once a line is gone. The shipped AI keeps its
+golden-angle stations and gains only the throttle floor. The pace is open and is a step-3 question (Plan step:
+`space-arcade`, `Docs/AI_SYSTEM/AI_PLAN.md`): an AI that seeks the densest hostile mass in bill reach, or lower
+targets. Which one is for a person who has flown a rung, since the targets were set from a person's run.
 
 **I4 logged 8 errors from the fauna** (`Boid.Update`: `Quaternion.Lerp` toward an unset, all-zero rotation before a
 new creature's first steering tick). Fixed in `Boid.Initialize` (seed the turn target with the spawn rotation); the
@@ -72,8 +121,8 @@ the AI keeps its value, work on the scoring and end-game does not.
 
 **Verified 2026-11-25:** `author_cleave_assets.py --check` (37 files) and `cleave_budget.py` pass (on Windows only with
 CRLF normalised: the source hashes are of LF files); the runtime and editor assemblies compile with Unity's Roslyn and
-references outside the editor; the project compiles in the open editor and `CleaveLadderTests` (10) pass there; an
-all-AI match ran on every rung (the table above). **Not verified:** no person has flown any rung since the Swordfish
+references outside the editor; the project compiles in the open editor and `CleaveLadderTests` (20) pass there; an
+all-AI match ran on every rung, with and without the lances (the tables above). **Not verified:** no person has flown any rung since the Swordfish
 took the mode; nobody has watched the AI (only its times are measured); one seed per rung; the team crystals and the
 4-seat card were not looked at on screen. The list is in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Cleave: the Swordfish's Space game").

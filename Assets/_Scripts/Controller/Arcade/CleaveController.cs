@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
     /// SpawnProfileSO.InitialFaunaReleaseTier). They are general, documented, and one data change
     /// away from bringing the ladder back. See CLEAVE.md and Docs/ECOSYSTEM.md §22.
     /// </summary>
-    public class CleaveController : MultiplayerDomainGamesController
+    public partial class CleaveController : MultiplayerDomainGamesController
     {
         [Header("Scoring")]
         [Tooltip("Drag CleaveScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
@@ -82,6 +82,11 @@ namespace CosmicShore.Gameplay
                  "running intensity), the envelope that intensity's arena is built to. Override " +
                  "only for a resized arena, and note an override is intensity-BLIND.")]
         [SerializeField, Min(0f)] float aiArenaRadiusOverride = 0f;
+
+        [Tooltip("The least throttle an AI flies (0..1). 1 lets the Swordfish's ramp engage on a straight (it only " +
+                 "engages at full throttle); 0 leaves the AI's own skill throttle. Shipped 0: with lances, 1 measured " +
+                 "no faster in the editor (CLEAVE.md 'What was tried for the AI's pace').")]
+        [SerializeField, Range(0f, 1f)] float aiThrottleFloor = 0f;
 
         [Tooltip("From I3 up each team has Space crystals inside the arena (a longer blade). On one strike in " +
                  "three an AI within this distance of one its team can take flies at it instead of at its next " +
@@ -136,6 +141,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             StopProgressSampler();
+            ClearLances();
             base.OnNetworkDespawn();
         }
 
@@ -144,6 +150,9 @@ namespace CosmicShore.Gameplay
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer) return;
+            // The lances first, so they stand on every peer before the turn starts (the arena is already up).
+            LayLances_ClientRpc(gameData != null && gameData.SelectedIntensity != null
+                ? gameData.SelectedIntensity.Value : 1);
             base.OnCountdownTimerEnded(); // ClientRpc: SetPlayersActive + StartTurn
             ArmCageBreakers();
 
@@ -345,6 +354,11 @@ namespace CosmicShore.Gameplay
                 int beat = 0;                 // advances one waypoint per sample
                 Vector3 cached = centre;
                 float nextSample = 0f;
+
+                // Full throttle, as a race asks: the Swordfish's ramp (its speed, up to 16.8x a 50 u/s cruise)
+                // only engages at full throttle on a straight; without this floor the AI held ~0.85 throttle and
+                // cruised at ~42 u/s (measured in the editor, 2026-11-25).
+                pilot.SetThrottleFloor(aiThrottleFloor);
 
                 pilot.SetExternalTargetProvider(() =>
                 {

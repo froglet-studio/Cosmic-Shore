@@ -537,6 +537,16 @@ if n == 0:
                        f"  spawnRingRadiusFloorByIntensity:\n{_ring_list}", scene, count=1)
 assert n == 1, "scene spawnRingRadiusFloorByIntensity could not be written"
 
+# 6c. The lances (CLEAVE.md "Lances"): the prism they are laid from, and the AI's throttle floor that lets the
+# Swordfish's ramp engage. Written after aiArenaRadiusOverride; idempotent (an existing line is rewritten in place).
+LANCE_PREFAB = ("  lancePrefab: {fileID: 4563009547826722997, guid: " + EXISTING["Prism_prefab"] + ", type: 3}\n")
+AI_THROTTLE_FLOOR = "  aiThrottleFloor: 0\n"   # shipped off: with lances, 1 measured no faster (CLEAVE.md)
+for _line, _key in ((AI_THROTTLE_FLOOR, "aiThrottleFloor"), (LANCE_PREFAB, "lancePrefab")):
+    scene, n = re.subn(rf"  {_key}: [^\n]*\n", _line, scene, count=1)
+    if n == 0:
+        scene, n = re.subn(r"(  aiArenaRadiusOverride: [^\n]*\n)", lambda m: m.group(1) + _line, scene, count=1)
+    assert n == 1, f"scene controller {_key} could not be written"
+
 emit(SCENE_PATH, scene)
 emit(SCENE_PATH + ".meta", scene_meta(G_ASSET["MinigameCleave.unity"]))
 
@@ -680,9 +690,10 @@ if _want_rings not in sc:
     errors.append(f"scene per-intensity spawn ring floors are not {SPAWN_RING_BY_INTENSITY}")
 # Every serialized key on the controller must still exist on the class - a renamed field is
 # dropped silently by Unity, which reads as "the override stopped working" and nothing else.
-_ctrl_fields = cs_fields("Assets/_Scripts/Controller/Arcade/CleaveController.cs")
+_ctrl_fields = (cs_fields("Assets/_Scripts/Controller/Arcade/CleaveController.cs")
+                | cs_fields("Assets/_Scripts/Controller/Arcade/CleaveController.Lances.cs"))
 for _k in ("rule", "arenaCell", "firstMilestoneFraction", "secondMilestoneFraction",
-           "progressSampleSeconds", "aiRetargetSeconds", "aiArenaRadiusOverride"):
+           "progressSampleSeconds", "aiRetargetSeconds", "aiArenaRadiusOverride", "aiThrottleFloor", "lancePrefab"):
     if f"  {_k}: " not in sc:
         errors.append(f"scene controller block is missing '{_k}'")
     elif _k not in _ctrl_fields:

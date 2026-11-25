@@ -150,6 +150,155 @@ namespace CosmicShore.Tests
             }
         }
 
+        // ── Lances (CLEAVE.md "Lances"): one test per placement rule ──
+
+        static List<CleaveLancePart> Lances(int intensity)
+        {
+            var parts = new List<CleaveLancePart>();
+            CleaveLances.Lay(intensity, Vector3.zero, parts);
+            return parts;
+        }
+
+        [Test]
+        public void Lances_StayInsideTheirRungsArena_AndClearOfTheCentre()
+        {
+            for (int i = 1; i <= 4; i++)
+            {
+                var rung = CleaveLances.ForIntensity(i);
+                float arena = SliceArenaGeometry.OuterRadiusFor(i);
+                foreach (var p in Lances(i))
+                {
+                    float along = Vector3.Dot(p.Position, p.Forward);
+                    Assert.GreaterOrEqual(along - CleaveLances.SegmentLength * 0.5f, arena * rung.InnerFraction - 0.01f,
+                        $"I{i}: a lance reaches into the centre knot every chord crosses");
+                    Assert.LessOrEqual(along + CleaveLances.SegmentLength * 0.5f, arena, $"I{i}: a lance pokes out of its arena");
+                }
+            }
+        }
+
+        [Test]
+        public void Lances_AreFlush_NoTwoPrismsOverlap()
+        {
+            for (int i = 1; i <= 4; i++)
+            {
+                var parts = Lances(i);
+                for (int a = 0; a < parts.Count; a++)
+                for (int b = a + 1; b < parts.Count; b++)
+                {
+                    if (parts[a].Lance != parts[b].Lance) continue;
+                    var d = parts[b].Position - parts[a].Position;
+                    float alongGap = Mathf.Abs(Vector3.Dot(d, parts[a].Forward));
+                    float acrossGap = Vector3.ProjectOnPlane(d, parts[a].Forward).magnitude;
+                    bool apart = alongGap >= CleaveLances.SegmentLength - 0.01f || acrossGap >= CleaveLances.Section - 0.01f;
+                    Assert.IsTrue(apart, $"I{i}: two lance prisms interpenetrate");
+                }
+            }
+        }
+
+        [Test]
+        public void TheSixLances_NeverMeet()
+        {
+            // Axis lances only meet at the centre, which every rung keeps clear of.
+            for (int i = 1; i <= 4; i++)
+            {
+                var rung = CleaveLances.ForIntensity(i);
+                float halfBar = rung.Bundle * CleaveLances.Section * 0.71f;
+                Assert.Greater(SliceArenaGeometry.OuterRadiusFor(i) * rung.InnerFraction, halfBar * 2f,
+                    $"I{i}: two lances' first segments would cross at the centre");
+            }
+        }
+
+        [Test]
+        public void I1_OnlyHelps_PlainBarsAndNoCost()
+        {
+            foreach (var p in Lances(1)) Assert.AreEqual(PrismKind.Plain, p.Kind);
+            Assert.AreEqual(2, CleaveLances.ForIntensity(1).Bundle);
+        }
+
+        [Test]
+        public void I2_IsTheWidestBundle_WithDangerOnlyAtTheOuterEnd()
+        {
+            var rung = CleaveLances.ForIntensity(2);
+            Assert.Greater(rung.Bundle, CleaveLances.ForIntensity(1).Bundle, "the Space 5 bill's lesson is a wider bar");
+            int segments = CleaveLances.SegmentsFor(2);
+            foreach (var p in Lances(2))
+            {
+                bool tip = p.Segment >= segments - rung.DangerTips;
+                Assert.AreEqual(tip ? PrismKind.Danger : PrismKind.Plain, p.Kind, $"segment {p.Segment}");
+            }
+        }
+
+        [Test]
+        public void I3_IsArmouredInTheCagesHeart()
+        {
+            foreach (var p in Lances(3))
+            {
+                Assert.AreEqual(PrismKind.SuperShielded, p.Kind, "Shield Breaker's lesson: the heart is armour");
+                Assert.Less(p.Position.magnitude + CleaveLances.SegmentLength, CageInnermostRind,
+                    "the heart's lances stay inside the innermost rind");
+            }
+        }
+
+        [Test]
+        public void I4_IsASeam_ArmourAlternatesWithPlain_AndTheTipsAreDanger()
+        {
+            var rung = CleaveLances.ForIntensity(4);
+            int segments = CleaveLances.SegmentsFor(4);
+            int plain = 0, armour = 0;
+            foreach (var p in Lances(4))
+            {
+                bool tip = p.Segment >= segments - rung.DangerTips;
+                if (tip) { Assert.AreEqual(PrismKind.Danger, p.Kind); continue; }
+                Assert.AreEqual(p.Segment % 2 == 1 ? PrismKind.SuperShielded : PrismKind.Plain, p.Kind);
+                if (p.Kind == PrismKind.Plain) plain++; else armour++;
+            }
+            Assert.Greater(plain, 0, "the plain segments still feed the ramp");
+            Assert.Greater(armour, 0);
+        }
+
+        [Test]
+        public void Lances_ScoreForEveryTeam_NoColourOwnsMoreThanAQuarter()
+        {
+            for (int i = 1; i <= 4; i++)
+            {
+                var counts = new Dictionary<Domains, int>();
+                var parts = Lances(i);
+                foreach (var p in parts) counts[p.Domain] = counts.TryGetValue(p.Domain, out var n) ? n + 1 : 1;
+                Assert.IsTrue(counts.ContainsKey(Domains.Blue), "Blue is no team's, so part of every lance scores for all");
+                foreach (var kv in counts)
+                    Assert.LessOrEqual(kv.Value, parts.Count / 4 + parts.Count / 20,
+                        $"I{i}: {kv.Key} owns too much of the lances, so that team scores little of them");
+            }
+        }
+
+        [Test]
+        public void Lances_AreTheSameOnEveryPeer()
+        {
+            for (int i = 1; i <= 4; i++)
+            {
+                var a = Lances(i);
+                var b = Lances(i);
+                Assert.AreEqual(a.Count, b.Count);
+                for (int k = 0; k < a.Count; k++)
+                {
+                    Assert.AreEqual(a[k].Position, b[k].Position);
+                    Assert.AreEqual(a[k].Kind, b[k].Kind);
+                    Assert.AreEqual(a[k].Domain, b[k].Domain);
+                }
+                Assert.AreEqual(CleaveLances.PartCountFor(i), a.Count);
+            }
+        }
+
+        [Test]
+        public void ArenaPlusLances_StaysUnderTheCollidersTheModeShipped()
+        {
+            // cleave_budget.HISTORICAL_COLLIDER_CEILING; the arena counts are cleave_arena_measurements.json's.
+            const int ceiling = 20153;
+            int[] arena = { 15380, 14277, 14731, 16423 };
+            for (int i = 1; i <= 4; i++)
+                Assert.LessOrEqual(arena[i - 1] + CleaveLances.PartCountFor(i), ceiling, $"I{i}");
+        }
+
         [Test]
         public void ScatteredCrystals_LandInTheShell()
         {

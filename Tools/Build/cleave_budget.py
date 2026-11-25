@@ -94,6 +94,21 @@ RHINO_TRAIL_PRISM_VOLUME = 3.0 * 3.0 * 0.5
 SPAWN_PROFILE = os.path.join(REPO, "Assets/_SO_Assets/Cell Configs/Cleave Cell/Cleave Spawn Profile.asset")
 
 
+# The lances (CleaveLances.cs): per rung (inner, outer fraction of the arena radius, bundle side), six axis
+# lances of SEGMENT-long prisms. Kept in step with the C# by CleaveLadderTests.ArenaPlusLances_... and
+# Lances_AreTheSameOnEveryPeer (PartCountFor).
+LANCES = {1: (0.12, 0.95, 2), 2: (0.12, 0.95, 3), 3: (0.10, 0.60, 2), 4: (0.15, 0.98, 2)}
+LANCE_SEGMENT = 30.0
+OUTER_RADIUS = {1: 2160.0, 2: 2160.0, 3: 720.0, 4: 720.0}
+
+
+def lance_parts(intensity):
+    """Every lance prism on a rung before the controller skips the ones the arena fills (an upper bound)."""
+    inner, outer, bundle = LANCES[intensity]
+    segments = max(1, int(OUTER_RADIUS[intensity] * (outer - inner) // LANCE_SEGMENT))
+    return 6 * segments * bundle * bundle
+
+
 def load():
     """The measurements, with every hashed source re-checked against the tree."""
     if not os.path.exists(MEASUREMENTS):
@@ -222,10 +237,12 @@ def verify(data):
         frac = a["byKind"]["Danger"] / a["prisms"]
         assert 0.005 <= frac <= 0.06, f"{a['key']} is {frac:.1%} danger prisms - outside 0.5%..6%"
 
-    # 5. COLLIDER BUDGET. One box collider per prism.
-    heaviest = max(a["prisms"] for a in arenas)
+    # 5. COLLIDER BUDGET. One box collider per prism - the arena's plus its rung's lances (CLEAVE.md "Lances",
+    #    laid by the controller; LANCES is the twin of CleaveLances, and CleaveLadderTests holds the C# to the same
+    #    count). The lance count is an upper bound: the controller skips parts where the arena stands.
+    heaviest = max(a["prisms"] + lance_parts(a["intensity"]) for a in arenas)
     assert heaviest <= HISTORICAL_COLLIDER_CEILING, (
-        f"the heaviest arena is {heaviest} prisms, above the {HISTORICAL_COLLIDER_CEILING} this "
+        f"the heaviest arena plus its lances is {heaviest} prisms, above the {HISTORICAL_COLLIDER_CEILING} this "
         "mode has already shipped. That needs a fresh product decision, not a re-run.")
 
     # 6. PRE-SIZING. LayCapacity only avoids list growth churn, so it is a soft check - but a

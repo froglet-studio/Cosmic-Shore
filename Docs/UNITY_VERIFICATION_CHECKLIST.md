@@ -27239,14 +27239,24 @@ is still open too.
       above). Holding each station until arrival made every rung run past 600 s, so it was reverted.
 - [ ] Watch an AI at I1 and I2: does it cross the 2,160 arena or meander at the edge (a new station every 2 s)? At
       I3, does it turn into the cage for its team's crystal and come back out, with none left circling one?
-- [ ] A person's call on pace: the AI takes 307-465 s against a ~90 s aim, and the dense rungs (I3, I4) finish
-      faster than the open ones. Should the AI cut faster (step 3), or the targets come down?
+- [ ] A person's call on pace: the AI takes 307-465 s against a ~90 s aim (the lances did not change that), and the
+      dense rungs (I3, I4) finish faster than the open ones. Should the AI cut faster (step 3), or the targets come
+      down? What was tried is in CLEAVE.md ("What was tried for the AI's pace").
 - [ ] 4 seats, 2v2 and 2/1/1: the frame rate at I4, and the spawn ring seats four without overlap.
 - [ ] A person's judgment (the fun card): is cutting with the bill the fun, and does a longer bill (I2, a crystal at
       I3) feel like the reason you win? Are the four rungs four different rounds, each harder than the last? Are
       950 / 950 / 1,000 / 1,000 near 90 s for an experienced pilot?
-- [ ] A person's call: Shield Breaker (Space 5) has nothing to break in any Cleave arena. Should I3 or I4 carry a
-      super-shielded seam so the upgrade matters?
+- [ ] Lances (2026-11-25, CLEAVE.md "Lances"; compiled and `CleaveLadderTests` 20/20 in the editor; the AI ran
+      every rung with them, but no person has looked): on each rung, six straight bars of small prisms on the axes.
+      They read as solid bars, not dotted; no lance prism sits inside an arena prism (look where a lance meets a
+      pane, a road, the cage and a band: a short gap is right, a crossing is not); colours cycle Jade, Ruby, Gold,
+      Blue.
+- [ ] I1: fly a lance end to end at full throttle. Does the ramp build, and do the slices keep it fed?
+- [ ] I2: the 3x3 bundle. Does the Space 5 bill cut more of it a pass than a rest bill would? Overshoot the outer
+      end on the ramp: the danger tip stops you.
+- [ ] I3: energize and fly into the heart. The super-shielded bars pop (Shield Breaker); a cold blade binds.
+- [ ] I4: the seam alternates plain and armoured segments; an energized run unzips it; the outer tip is danger.
+- [ ] A person's call: do the lances make the rungs read easier at I1 and harder at I4, and do they look good?
 
 ## 2026-11-25 - Riposte (the Swordfish's Charge game): its own AI pilots, on I1-I4
 
