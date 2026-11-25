@@ -6,8 +6,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly sniper: hold to scope (PiP — the HUD listens to OnScopeChanged),
-    /// release to fire a fast precision round. The round's super-shield crack is a
+    /// Grizzly sniper. On the triggers (design ask, 2026-10-16): LT HOLDS the scope
+    /// (<see cref="BeginScope"/> / <see cref="EndScope"/> - the HUD listens to OnScopeChanged) and
+    /// RT FIRES (<see cref="Fire"/>), gated by the asset's cooldown and energy; pressure is
+    /// irrelevant. A round fired while scoped takes the view with it for as long as LT stays
+    /// held (GrizzlyHUDView). The single-button path (<see cref="OnPress"/> /
+    /// <see cref="OnRelease"/>: hold to scope, release to fire) is kept for any binding that
+    /// still uses it. The scope closes when the active weapon changes away from the sniper. The round's super-shield crack is a
     /// ProjectilePrismEffectSO on the sniper projectile's impact container
     /// (SniperCrackSuperShieldPrismEffectSO) — impact effects, not end effects,
     /// because end effects fire without an impactee.
@@ -28,10 +33,16 @@ namespace CosmicShore.Gameplay
 
         /// <summary>HUD: the round landed or expired - hand the PiP back to the ship.</summary>
         public event Action OnRoundEnded;
+        /// <summary>HUD: the scope's field of view, degrees - LT's pressure is the zoom (2026-10-17).</summary>
+        public event Action<float> OnScopeFovChanged;
+
         /// <summary>HUD: cooldown started, param = seconds.</summary>
         public event Action<float> OnCooldownStarted;
 
         IVesselStatus _status;
+        GrizzlyWeaponModeExecutor _modes;
+        GrizzlySniperShotActionSO _scopeConfig;
+        float _scopeFov = -1f;
         float _lastShotTime = float.NegativeInfinity;
         bool _scoped;
         Projectile _round;
@@ -42,9 +53,62 @@ namespace CosmicShore.Gameplay
             if (sniperGun != null)
                 sniperGun.Initialize(shipStatus);
             SetScoped(false);
+
+            if (_modes != null) _modes.OnModeChanged -= HandleModeChanged;
+            _modes = TryGetComponent<ActionExecutorRegistry>(out var registry)
+                ? registry.Get<GrizzlyWeaponModeExecutor>()
+                : null;
+            if (_modes != null) _modes.OnModeChanged += HandleModeChanged;
         }
 
         void OnDisable() => SetScoped(false);
+
+        void OnDestroy()
+        {
+            if (_modes != null) _modes.OnModeChanged -= HandleModeChanged;
+        }
+
+        void HandleModeChanged(GrizzlyWeaponModeExecutor.WeaponMode mode)
+        {
+            if (mode != GrizzlyWeaponModeExecutor.WeaponMode.Sniper) SetScoped(false);
+        }
+
+        /// <summary>LT pressed: open the scope. Aiming is free; only firing is gated. LT's pressure then sets the
+        /// zoom every frame (<see cref="Update"/>), from <paramref name="so"/>'s wide to narrow field of view.</summary>
+        public void BeginScope(GrizzlySniperShotActionSO so)
+        {
+            _scopeConfig = so;
+            if (so) SetFov(so.ScopeFovForPressure(ScopePressure()), force: true);
+            SetScoped(true);
+        }
+
+        /// <summary>The zoom follows LT while the scope is up.</summary>
+        void Update()
+        {
+            if (!_scoped || !_scopeConfig) return;
+            float target = _scopeConfig.ScopeFovForPressure(ScopePressure());
+            float eased = _scopeFov + (target - _scopeFov) * (1f - Mathf.Exp(-_scopeConfig.ScopeZoomRate * Time.deltaTime));
+            SetFov(eased, force: false);
+        }
+
+        /// <summary>LT's pull, 0..1. A device with no analog trigger (mouse, keyboard, touch, an autopilot) is a
+        /// full squeeze: the deepest zoom.</summary>
+        float ScopePressure()
+        {
+            var input = _status?.InputStatus;
+            if (input == null || input.ActiveInputDevice != InputDeviceType.Gamepad) return 1f;
+            return Mathf.Clamp01(input.LeftTriggerAnalog);
+        }
+
+        void SetFov(float fov, bool force)
+        {
+            if (!force && Mathf.Abs(fov - _scopeFov) < 0.01f) return;
+            _scopeFov = fov;
+            OnScopeFovChanged?.Invoke(fov);
+        }
+
+        /// <summary>LT released: close the scope, and with it any ride on a round.</summary>
+        public void EndScope() => SetScoped(false);
 
         public void OnPress(GrizzlySniperShotActionSO so, IVesselStatus status)
         {
@@ -55,7 +119,13 @@ namespace CosmicShore.Gameplay
         public void OnRelease(GrizzlySniperShotActionSO so, IVesselStatus status)
         {
             SetScoped(false);
+            Fire(so, status);
+        }
 
+        /// <summary>RT pressed (or the single-button release): fire one round if the cooldown has
+        /// run and the energy is there. Leaves the scope as it is.</summary>
+        public void Fire(GrizzlySniperShotActionSO so, IVesselStatus status)
+        {
             if (!so || status?.ResourceSystem == null || sniperGun == null) return;
             if (Time.time - _lastShotTime < so.CooldownSeconds) return;
 

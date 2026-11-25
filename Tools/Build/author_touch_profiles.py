@@ -127,7 +127,9 @@ PROFILES = [
     profile("Urchin", "TotemButtons"),
     profile("Sparrow", "TotemButtons"),
     profile("Serpent", "TotemButtons", toggles=["Space"]),
-    profile("Grizzly", "TotemButtons", extras=[
+    # The Grizzly's weapons are all on the triggers (grizzly-v3): X is unbound, so the Charged Cannon (Space) card shows
+    # what Space scales and presses nothing; the two bomb buttons follow the active weapon like LT / RT.
+    profile("Grizzly", "TotemButtons", displayOnly=["Space"], extras=[
         button("LeftStick", "TouchIcon_Bomb", primary=True),
         button("RightStick", "TouchIcon_Bomb", primary=True)]),
     profile("Scarab", "TotemButtons", displayOnly=["Time"], slider=True, sliderStart=0.5, extras=[

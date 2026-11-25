@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-25-grizzly-v3-lands-lb-raises-a-new-inputev-054ee3",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-25T00:05:15+00:00",
+  "area": "Grizzly Time and the gamepad input strategy",
+  "summary": "grizzly-v3 lands: LB raises a new InputEvents.LeftShoulderAction (16) in GamepadInputStrategy, bound only by the Grizzly. Grizzly Time's Kegs.cs, course maths and tests are unchanged from bleeding-edge, because the bomb launch stays away-from-bomb (the PR's forward-launch rewrite of the bank shot was dropped).",
+  "branch": "cece/exciting-hawking-x4x49j",
+  "lane": "grizzly",
+  "commit": "88b959fb4",
+  "paths": [
+    "Assets/_Scripts/Controller/IO/GamepadInputStrategy.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Grizzly"
+    ]
+  }
+}
