@@ -288,6 +288,20 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
+## 🔴 Leak fixes: bound arcade delays and score trackers that unsubscribe on destroy (2026-11-25, Garrett, salvaged from `cece/nice-brahmagupta-ojclij` part K, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Four fire-and-forget delays in the arcade controllers are bound to their owner's lifetime
+(`SkimRaceController.SpawnTrackEarly` 1.5 s, `NetworkScoreTracker.DelayAndSendResults` 0.5 s,
+`MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay` 0.5 s, `ResetServerRoundAfterDelay` 0.1 s), and
+`BaseScoreTracker.OnDestroy` unsubscribes every scorer, so a tracker destroyed without a turn end no longer keeps
+adding time score from the menu. Reference compile only.
+
+- [ ] Skim Race online, then Play Again: the fade, the reload and the fresh track still happen. Quit during the
+      half-second fade: back in the menu, the next launch is a normal start, not a replay reload
+      (`GameData.IsReplayReload` false).
+- [ ] A time-scored mode (Freestyle or any `ScoringModes.TimePlayed` card): quit to the menu mid-turn, then watch
+      `GameData.asset`'s RoundStatsList for ten seconds: no Score moves. A normal turn end still stops the scorers.
+
 ## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, NOT RUN IN EDITOR)
 
 Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"): one to three
