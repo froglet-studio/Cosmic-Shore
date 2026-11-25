@@ -27401,6 +27401,16 @@ and one generated string constant. Checked by the generators' `--check` gates on
 - [ ] Clear PlayerPrefs (or a fresh install) and boot: the prisms, trails and HUD wear Photic, not Nocturne.
 - [ ] Profile > colour sets says "Wearing Photic"; picking Nocturne still works and survives a restart.
 - [ ] With Nocturne picked, the Ark, Codex and Configure screens follow Nocturne (their own Photic palette is only the fallback).
+- [ ] The FBX imports: four slots (Domain, Body, Window, Engine) remap to the Ark's materials, with no pink.
+- [ ] Start any voyage: the round Ark is drawn, its 581 hull prisms laid in the Ark's domain, and nothing floats off the hull.
+- [ ] The decks turn, each against its neighbour; the two ring gates turn against each other; the pods orbit. Their prisms ride along.
+- [ ] Trail 3: eight streams, one per bell, in the domain's trail colours, straight behind the Ark; they stop when the hull is lost. Check every domain (Ruby especially).
+- [ ] The omni crystal in the gap is the neutral lime crystal in every domain, never the team colour; its collar turns.
+- [ ] Turning the Ark vectors the bells (pitch, yaw, roll); the streams follow the bells.
+- [ ] Fly into the tube from the lip, through the hall and out of an exit: no invisible walls. The hull, decks and crystal are solid.
+- [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
+- [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).
+
 ## A voyage left at sea no longer strands every later launch on the loading screen (2026-11-25)
 
 🔴 unverified. Shombith's report: play a voyage, leave it, launch again: the loading screen never lifts, and a restart
@@ -27416,3 +27426,12 @@ to the menu at once when nothing set sail. Test: `VoyageRulesTests.TheWaitingVoy
 - [ ] With the bad record from before the fix still saved, launch any voyage: it sails (a `[Voyage] ... given up`
       warning or a resume), never a stuck loading screen.
 - [ ] Leave a voyage before the first world: the next launch sails a fresh job.
+
+## No voyage is kept for later: leaving ends it, Set sail starts fresh from home (2026-11-25)
+
+🔴 unverified. Shombith, after the waypoint fix: "when I set sail it just continues and every button is bugged ... For now
+there is no saving, if they leave they leave. Set sail restarts the level." `VoyageRun.EndAtStop` now gives the voyage up
+(home, nothing aboard) instead of keeping a waypoint or anchoring at the stop, and `VoyageRun.LoadOrBegin` brings any
+saved record at sea or away from home back home, so older saves are repaired. The galaxy (days, news, standing) is kept.
+- [ ] Sail any voyage, leave it mid-leg: back in the menu the full board shows; Set sail starts a new voyage from home.
+- [ ] Finish a job at a stop and leave: the next Set sail starts from home, not the stop.
