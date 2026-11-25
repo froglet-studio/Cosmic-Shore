@@ -66,6 +66,12 @@ DONOR = {
 BUTTERFLY_ID = lib.VESSEL_CLASS_ID["TigerMoth"]
 SWORDFISH_ID = lib.VESSEL_CLASS_ID["Swordfish"]
 
+# ── The arena (PALISADE.md section 9): PalisadeArena lays it in C#; the generator authors only the prism it is laid with ──
+ARENA_PRISM_PATH = "Assets/_Prefabs/Trails/SpawnablePrism.prefab"   # the environment prism Spearline's seals use
+ARENA_PRISM = lib.existing_guid(ARENA_PRISM_PATH)
+ARENA_PRISM_FILE_ID = 4563009547826722997                           # its root Prism component
+ARENA_SOURCES = [f"{AR}/Palisade/PalisadeArena.cs", f"{AR}/Palisade/PalisadeController.Arena.cs"]
+
 # ── The round ────────────────────────────────────────────────────────────────
 ROUND_SECONDS = 90        # kept in sync with EndConditionOverridesSO.DefaultPalisadeRoundSeconds
 CRYSTALS_BY_INTENSITY = [24, 16, 10, 6]
@@ -140,6 +146,7 @@ g.emit_asset("Assets/_SO_Assets/Scoring Rules/PalisadeScoringRule.asset", G_ASSE
 # ── 3. Settings ──────────────────────────────────────────────────────────────
 g.emit_asset("Assets/_SO_Assets/Games/PalisadeSettings.asset", G_ASSET["PalisadeSettings"],
              lib.header_for(G_SCRIPT["PalisadeSettingsSO"], "PalisadeSettings") +
+             f"  arenaPrism: {{fileID: {ARENA_PRISM_FILE_ID}, guid: {ARENA_PRISM}, type: 3}}\n" +
              "  elementalCrystalCountByIntensity:\n" +
              "".join(f"  - {n}\n" for n in CRYSTALS_BY_INTENSITY) + f"""  crystalScatterRadius: 900
   crystalScatterSeed: {MODE_ID}
@@ -152,6 +159,8 @@ g.emit_asset("Assets/_SO_Assets/Games/PalisadeSettings.asset", G_ASSET["Palisade
   aiBuildOrbitFraction: 0.6
   aiBuildOrbitDegreesPerSecond: 6
   aiCrystalReach: 450
+  aiLaneArriveDistance: 60
+  aiLaneLegSeconds: 16
 """)
 
 # ── 4. Card ─────────────────────────────────────────────────────────────────
@@ -273,6 +282,22 @@ for banned in ("PerformShipControllerActions", "InputStatus", "ElementalScaling"
                "ButterflyAutopilotModeDriver"):
     if banned in ctl:
         errors.append(f"PalisadeController mentions {banned} - a mode never changes the vessel")
+# The arena: its sources exist, never touch the vessel, are laid in the no-team colour, and the prism they are laid
+# with is still the prefab's root Prism.
+for rel in ARENA_SOURCES:
+    src = g.read(rel)
+    for banned in ("PerformShipControllerActions", "InputStatus", "ElementalScaling", "IsUpgradeActive", "VesselStatus"):
+        if banned in src:
+            errors.append(f"{rel} mentions {banned} - a mode never changes the vessel")
+arena_cs = g.read(ARENA_SOURCES[1])
+if "Domains.Blue, part.Kind" not in arena_cs:
+    errors.append("the arena is no longer laid in Domains.Blue - a team's colour would count it in that team's eyes")
+if "public partial class PalisadeController" not in ctl or "LayArena();" not in ctl or ctl.count("ClearArena();") < 2:
+    errors.append("PalisadeController no longer lays the arena at the countdown's end and clears it on despawn and replay")
+if f"&{ARENA_PRISM_FILE_ID}\nMonoBehaviour:" not in g.read(ARENA_PRISM_PATH):
+    errors.append(f"{ARENA_PRISM_PATH} has no MonoBehaviour {ARENA_PRISM_FILE_ID} - the arena prism reference would dangle")
+if "public Prism arenaPrism;" not in g.read(SCRIPT_PATHS["PalisadeSettingsSO"]):
+    errors.append("PalisadeSettingsSO lost arenaPrism - the settings asset names it")
 for field in ("PalisadeSettingsSO settings;", "ScoringRuleSO rule;", "Cell arenaCell;"):
     if field not in ctl:
         errors.append(f"PalisadeController lost '{field}' - the cloned scene's controller block names it")

@@ -27285,3 +27285,28 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
 - [ ] A person's judgment: are the four rungs four different rounds? Late in a match, is there still enough heap left
       to fuel the ramp (the AIs cut 140-2,800 prisms a match)?
 - [ ] AI levels: is Easy beatable by a first-time pilot and Legendary hard for a good one?
+
+## Palisade's arena: picket lanes, frames and rubble (2026-11-25, NEVER RUN)
+
+`Assets/_Scripts/Controller/Arcade/PALISADE.md` section 9. The layout is compiled and tested headless
+(`bash Tools/Build/palisade_harness/run.sh --self-test`: 11 tests, 14 negative controls). The laying and the AI's lane
+runs (`PalisadeController.Arena.cs`) were not compiled: no Unity, Amoebius or reference compile ran.
+
+- [ ] The project compiles; `PalisadeArenaTests` (11) pass in the editor.
+- [ ] I1: at GO three rows of 14 posts stand about 640 u out, each ending in a closed hoop of 12 shielded stones. All
+      of it is the neutral (Blue) colour of the worn colour set and none of it looks flat.
+- [ ] The arena appears at GO, not during the countdown. Is that acceptable, or should it be laid earlier?
+- [ ] Fly beside a row with the blade out: every post is cut without the hull touching one, the ramp winds, and the
+      sword lights by the row's end. Let go at the frame: the afterimages fall in or just past the hoop.
+- [ ] A wall in a closed frame: a rival cannot cut it from the side without two strokes on a stone.
+- [ ] I2: 10 posts a row, every 5th shielded; the hoops are open on the side facing the cell's centre.
+- [ ] I3: two rows of 8, half hoops whose two end stones are danger spikes, 10 shielded chunks in the open.
+- [ ] I4: two rows of 6, third hoops with spikes, 18 chunks of which 6 are danger.
+- [ ] No arena prism adds to any team's Volume on the board, at GO or at the whistle.
+- [ ] Building AIs run the rows and go out through the hoops, their swords light there and they leave afterimages. No
+      AI rams the posts, sticks at a frame or circles a spent lane doing nothing.
+- [ ] A raiding AI still goes for the rival's walls, not for the arena's posts.
+- [ ] Two machines: both see the same posts, hoops and chunks in the same places.
+- [ ] Play Again: the arena is cleared and laid once, not twice.
+- [ ] A person's judgment: does each piece read as help or as cost at a glance, and does I1 feel generous and I4 mean?
+- [ ] The card's background still shows the bare cell: re-run `/cardart` for Palisade.

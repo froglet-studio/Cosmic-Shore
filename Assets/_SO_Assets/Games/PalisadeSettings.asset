@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bced15c5175ece31be635dc02db2f4df, type: 3}
   m_Name: PalisadeSettings
   m_EditorClassIdentifier:
+  arenaPrism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   elementalCrystalCountByIntensity:
   - 24
   - 16
@@ -28,3 +29,5 @@ MonoBehaviour:
   aiBuildOrbitFraction: 0.6
   aiBuildOrbitDegreesPerSecond: 6
   aiCrystalReach: 450
+  aiLaneArriveDistance: 60
+  aiLaneLegSeconds: 16

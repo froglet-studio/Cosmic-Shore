@@ -4,6 +4,7 @@
 > elemental game, on the ids `Docs/ElementalLoop/GAME_KIT_ROSTER.md` reserved for it (row 8: `GameModes` 98, hint toast
 > 173). **Nothing here has been run in the Unity editor, and nobody has flown it.** Reviewed on 2026-11-25 for the
 > Swordfish's voyage kit: where it stands is section 7, and the Mass-Space merge that will replace it is section 8.
+> The same day it got an arena of its own (section 9): picket lanes, frames and rubble, shaped by intensity.
 
 `GameModes.Palisade = 98` is the **Swordfish's Mass card**: walls you swing into place (`VolumeRemaining`, timed).
 Its Space card is Cleave, its Time card Spearline (96) and its Charge card Riposte (97).
@@ -20,7 +21,7 @@ Swordfish's trail and its afterimages). The sword both builds and raids, and the
 one move: an energized run through a rival's wall cuts it down, and the afterimages fall as the blade cools, right
 where it was. At Mass 5 the walls are danger, so a rival who rams through to cut them pays the 4 s debuff.
 
-The vessel is untouched (the LOCKED mode rule). The mode's levers are the bare arena, the crystals and the AI.
+The vessel is untouched (the LOCKED mode rule). The mode's levers are the arena (section 9), the crystals and the AI.
 
 ## 2. What is reused
 
@@ -84,6 +85,8 @@ Four rungs, from two sources. The card authors no `StartingElements` row and the
 | I3 challenging | 4 team Mass crystals a team, regrowing after 12 s | 10 | Mass can be pushed toward 10 (x4.25), but only by the team that keeps visiting its own crystals. |
 | I4 very hard | Mass fauna in the cell's colour | 6 | The Barren cell has a nucleus, so by `Cell.IsPreyForHerbivore` walls outside it are grazed and walls inside it are not: where you swing them starts to matter. |
 
+The third source is the arena, which trades help for cost rung by rung (section 9).
+
 Read from the code and assets, not observed: nobody has seen I2's danger walls, I3's crystals or I4's fauna in this
 scene. I4 is the rung to watch. Tapestry kept fauna out of this cell because a grazer can eat the trailing team's mass;
 with the nucleus the diet is colour-blind outside it, which should be fair, but the AI's building orbit (540 u) may sit
@@ -110,8 +113,12 @@ from a trail prism, and the Mass-Space merge (section 8) replaces this scoring r
 - Card art is rendered (`CardBackgrounds/Palisade.png`).
 - **Not run in Unity and not flown.** The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Palisade: the
   Swordfish's Mass game".
-- **2026-11-25 changes are not compiled**: the AI's team-crystal detour (3.2) and `PalisadeLadderTests`. The reference
-  compile does not run on the Windows machine they were written on, and no Unity or Amoebius run was made.
+- **2026-11-25 changes are not compiled in Unity**: the AI's team-crystal detour (3.2), `PalisadeLadderTests`, and
+  the arena's laying and lane runs (`PalisadeController.Arena.cs`, section 9). The reference compile does not run on
+  the Windows machine they were written on, and no Unity or Amoebius run was made.
+- The arena's LAYOUT is compiled and tested headless: `bash Tools/Build/palisade_harness/run.sh --self-test`
+  compiles the shipped `PalisadeArena.cs` and `PalisadeArenaTests.cs` with Roslyn and runs them (11 tests, 14
+  negative controls, all firing).
 
 ## 7. Where it stands (2026-11-25, elemental loop steps 1-3)
 
@@ -133,3 +140,56 @@ environments. The Swordfish is in the first group. For Palisade that means:
   detour as the AI's Mass half, and the ladder (the merged game uses the same standard rungs).
 - **So:** work that only polishes this scoring rule is likely thrown away; work on the AI and on how the Afterimage
   reads is kept. Nothing was merged here: Palisade and Cleave are still two cards.
+
+## 9. The arena (Yash, 2026-11-25)
+
+"The environmental objects and shapes are placed so they give an advantage or a disadvantage and also look good."
+Palisade played in the bare Barren cell; it now has a place of its own. Three pieces, each there for what the
+Swordfish's kit does with it (`Palisade/PalisadeArena.cs`, pure; `PalisadeController.Arena.cs` lays it):
+
+- **Picket lane.** A straight row of thin posts (8 x 8 x 34 u, 30 u apart) across the cell's radius, 640 u out. A pilot
+  runs beside it, 14 u to its outer side, so the blade (24 u at rest) reaches every post and the hull touches none.
+  Slicing them fuels the ramp and lights the sword, so the afterimage window opens as the row ends. A shielded post
+  takes two strokes; a missed one is a ram.
+- **Frame.** 90 u past each row's last post, on its axis: a hoop of 12 shielded stones round a 60 u mouth, each stone
+  long down the lane so the hoop is a collar with depth. An afterimage wall laid in it is flanked by shielded mass, so
+  a raid has to come through the mouth. A broken frame keeps its outer arc and loses the side facing the cell's
+  centre, where the traffic is; from I3 its two ends are danger spikes.
+- **Rubble.** Loose chunks (14-22 u) hashed into the shell between 600 and 950 u, at least 90 u from every lane and
+  60 u from each other. Shielded, and a third of them danger at I4. They break a ramp line and cost a stroke or a
+  debuff.
+
+| Rung | What stands (prisms) | Helps the Swordfish | Costs it |
+|---|---|---|---|
+| I1 | 3 lanes of 14 plain posts, 3 closed frames (78) | 540 u of straight fuel a lane, the blade lit at a closed frame: teaches Afterimage | Nothing |
+| I2 | 3 lanes of 10, every 5th post shielded; frames three quarters closed (57) | 420 u a lane, cover on three sides | 6 shielded posts; a raid can enter the frame from the centre's side |
+| I3 | 2 lanes of 8, every 3rd shielded; half frames with danger tips; 10 rubble (38) | 360 u a lane, half cover | 4 shielded posts, 4 danger tips at the mouth, 10 shielded chunks in the ramp lines |
+| I4 | 2 lanes of 6, every 2nd shielded; third frames with danger tips; 18 rubble, 6 danger (38) | 300 u a lane, a sliver of cover | Half the posts shielded, tips, 18 chunks: where a wall goes is the read (and the fauna graze outside the nucleus) |
+
+Counted from the shipped C# by `palisade_harness/run.sh --census`.
+
+**Rules it keeps.**
+- Laid on every peer the same way: the layout is a pure function of the rung, every draw a hash of an integer, so no
+  message is sent. It is laid when the countdown ends, with the crystal scatter, because the intensity is synced by
+  then. So it appears at GO, not behind the loading screen (a look question for a person, section 6).
+- **It counts for no team.** Every prism is `Domains.Blue`, the platform's no-team colour, with owner id
+  `PalisadeArena`: `StatsManager.PrismCreated` credits a roster name, and this is none, so no team's standing volume
+  includes it. Blue is hostile to every blade (`StatsManager.IsFriendlyEnvironmentPrism`). Cutting it does book VD in
+  the volume books (`VolumeLedger`), which Palisade's score does not read but the Brood Rush judge does: a re-judge
+  will read higher for that reason alone.
+- Colours are the Blue domain's own materials from the worn colour set; no colour is authored here. The prisms are the
+  lit environment prism (`SpawnablePrism.prefab`, on `PalisadeSettings.arenaPrism`), none thinner than 8 u.
+- The vessel is untouched. The generator fails if an arena source mentions an input, an element scale or a vessel
+  status, or lays in any colour but Blue.
+- Nothing regrows. A lane is fuel once; its frame stands until someone cuts it (two strokes a stone).
+
+**The AI uses it (the watch item of section 3).** A building AI used to orbit empty space and lay only trail, because
+the sword hand lights near hostile prisms and there were none. It now runs the lanes (`TryLaneTarget`): to a lane's
+run start, beside the row to its far end, out through the frame, then the next lane; seat N starts on lane N. Each leg
+is given up after 16 s. Crystals still come first, and a raid is unchanged. Steering only.
+
+**Not known yet.** Nothing here has been seen in the game. In particular: whether the rows read as pickets and the
+frames as gates from a pilot's eye; whether the AI's blade really takes the posts from 14 u; whether a raid
+(`Cell.GetExplosionTarget`, the densest mass not of the raider's colour) now aims at the arena's plain posts instead
+of a rival's walls; whether 80 neutral prisms move the cell's phase or the I4 fauna's spawn threshold; and the card's
+background, which still shows the bare cell and needs `/cardart` re-run.
