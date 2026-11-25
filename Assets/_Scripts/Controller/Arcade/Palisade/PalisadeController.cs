@@ -276,7 +276,7 @@ namespace CosmicShore.Gameplay
                     if (_aiRaiding.TryGetValue(captured, out var raid) && raid && arenaCell)
                         return arenaCell.GetExplosionTarget(captured.Domain);
 
-                    if (TryNearestCrystal(selfTf.position, out var crystalPos)) return crystalPos;
+                    if (TryNearestCrystal(selfTf.position, captured.Domain, out var crystalPos)) return crystalPos;
 
                     float radius = settings.crystalScatterRadius * settings.aiBuildOrbitFraction;
                     float angle = (Time.time - gameData.TurnStartTime) * settings.aiBuildOrbitDegreesPerSecond;
@@ -312,11 +312,31 @@ namespace CosmicShore.Gameplay
             return _clock ? _clock.TimeRemaining : -1f;
         }
 
-        bool TryNearestCrystal(Vector3 from, out Vector3 position)
+        /// <summary>
+        /// The nearest crystal a builder of <paramref name="domain"/> can take within
+        /// <see cref="PalisadeSettingsSO.aiCrystalReach"/>: the mode's own scatter, and from I3 its team's Mass crystals
+        /// (the standard element ladder's rung, laid by the platform's <see cref="ElementLadderCrystals"/>). A team
+        /// crystal is the rung's whole lesson - Mass makes the afterimage walls bigger - so an AI that flew past its
+        /// own would play I3 exactly as it plays I2.
+        /// </summary>
+        bool TryNearestCrystal(Vector3 from, Domains domain, out Vector3 position)
         {
             position = default;
             float bestSqr = settings.aiCrystalReach * settings.aiCrystalReach;
             bool found = false;
+
+            var active = Crystal.Active;
+            for (int i = 0, n = active.Count; i < n; i++)
+            {
+                var c = active[i];
+                if (!c || !ElementLadderCrystals.IsLadderCrystal(c) || !c.CanBeCollected(domain)) continue;
+                float d = (c.transform.position - from).sqrMagnitude;
+                if (d >= bestSqr) continue;
+                bestSqr = d;
+                position = c.transform.position;
+                found = true;
+            }
+
             for (int i = 0; i < _spawnedCrystals.Count; i++)
             {
                 var c = _spawnedCrystals[i];

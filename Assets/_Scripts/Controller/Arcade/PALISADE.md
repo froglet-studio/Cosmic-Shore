@@ -2,7 +2,8 @@
 
 > **Status.** Authored headless on 2026-11-15 (`claude/swordfish-game-kit`), for Garrett's ask to build every missing
 > elemental game, on the ids `Docs/ElementalLoop/GAME_KIT_ROSTER.md` reserved for it (row 8: `GameModes` 98, hint toast
-> 173). **Nothing here has been run in the Unity editor, and nobody has flown it.**
+> 173). **Nothing here has been run in the Unity editor, and nobody has flown it.** Reviewed on 2026-11-25 for the
+> Swordfish's voyage kit: where it stands is section 7, and the Mass-Space merge that will replace it is section 8.
 
 `GameModes.Palisade = 98` is the **Swordfish's Mass card**: walls you swing into place (`VolumeRemaining`, timed).
 Its Space card is Cleave, its Time card Spearline (96) and its Charge card Riposte (97).
@@ -23,9 +24,10 @@ The vessel is untouched (the LOCKED mode rule). The mode's levers are the bare a
 
 ## 2. What is reused
 
-- **Tapestry's shape** (the Butterfly's timed mass war, `TAPESTRY.md`): the bare Barren cell (no food web: a grazer
-  would eat the trailing team's mass, an anti-comeback current), the peer-local crystal scatter (a Mass crystal is a
-  bigger wall), the timed monitor as the only end, the server lead sampler, the snapshot carrying volume and prisms.
+- **Tapestry's shape** (the Butterfly's timed mass war, `TAPESTRY.md`): the bare Barren cell (no food web of its own
+  at I1-I3; at I4 the platform's element ladder adds Mass fauna, section 4), the peer-local crystal scatter (a Mass
+  crystal is a bigger wall), the timed monitor as the only end, the server lead sampler, the snapshot carrying volume
+  and prisms.
 - **`PalisadeScoringRuleSO : TapestryScoringRuleSO`**: the same rule, its results lines authored templates on its own
   asset (`{volume} Volume`, `{prisms} prisms`).
 - **`PalisadeController`** is Tapestry's controller without the Butterfly's mode press (the Swordfish has no mode to
@@ -60,9 +62,32 @@ I2 on fresh seeds 11-12, the other rungs on seeds 21-22. Knee (seeds 1-2, I2, Pa
 3 +51% / +97%, 4.5 +55% / +115%, 6 +86% / +130%. The hand is the vessel's own AI, so every mode flies it. Regatta, which fuels the Swordfish's ramp from its slices, is unchanged (shuffle, 3 seeds: card 71.9 -> 72.7 s, L5 65.8 -> 65.1 s); Broadside and Spearline were not re-judged. Raw:
 `/mnt/project-files/regatta-flywheel/mass/`.
 
+### 3.2 The AI takes its team's Mass crystals (2026-11-25)
+
+From I3 the platform lays each team its own Mass crystals (section 4). A building AI detoured only for the mode's
+scatter, so it flew past them and played I3 exactly as it played I2. `TryNearestCrystal` now also reads the ladder's
+crystals its own team can take (`Crystal.Active`, `ElementLadderCrystals.IsLadderCrystal`, `Crystal.CanBeCollected`,
+the gate race AI's test), within the same `aiCrystalReach`. Steering only, as before. Not compiled or run yet
+(section 6).
+
 ## 4. Ladder
 
-Scarcity, Tapestry's: elemental crystals 24 / 16 / 10 / 6 by intensity in the same bare cell.
+Four rungs, from two sources. The card authors no `StartingElements` row and the game reads as Mass
+(`VolumeRemaining`, `ModeGenre`), so the platform's standard element ladder applies (`ElementLadder`,
+`Docs/ElementalLoop/PLAYBOOK.md` step 2); on top of it the mode thins its own scatter (Tapestry's scarcity).
+`PalisadeLadderTests` reads each of those facts off the shipped assets.
+
+| Rung | The platform adds | Mode scatter | What it asks of the Mass ability |
+|---|---|---|---|
+| I1 intro | nothing: Mass at rest | 24 crystals | Afterimages are plain walls, x1.7 volume. Learn that the blade leaves them as it cools. |
+| I2 fun | every hull starts at Mass 5 | 16 | Danger Afterimages from the first swing, about x3 volume: a wall now punishes the rival who rams it. |
+| I3 challenging | 4 team Mass crystals a team, regrowing after 12 s | 10 | Mass can be pushed toward 10 (x4.25), but only by the team that keeps visiting its own crystals. |
+| I4 very hard | Mass fauna in the cell's colour | 6 | The Barren cell has a nucleus, so by `Cell.IsPreyForHerbivore` walls outside it are grazed and walls inside it are not: where you swing them starts to matter. |
+
+Read from the code and assets, not observed: nobody has seen I2's danger walls, I3's crystals or I4's fauna in this
+scene. I4 is the rung to watch. Tapestry kept fauna out of this cell because a grazer can eat the trailing team's mass;
+with the nucleus the diet is colour-blind outside it, which should be fair, but the AI's building orbit (540 u) may sit
+outside the nucleus and lose its walls. If so the fix is the mode AI's orbit at I4, not the fauna.
 
 ## 5. Comeback
 
@@ -70,16 +95,41 @@ Sized against a volume read off the shipped Swordfish (`author_palisade_assets.p
 `Swordfish.prefab` at half the 840 u/s ramp, plus one window of Mass 0 afterimages every 15 s, for a domain of two who
 build half the round. A quarter of that behind buys 1.5 element levels; the generator asserts at least 1.
 
-**What the model says about the score.** In it the trail is about 189 vol/s and the afterimages about 31 vol/s (one
-16-image window of 28.8 each every 15 s, Mass 0), so most of a domain's standing volume is TRAIL and the afterimages
-are the big, Mass-scaled pieces of it. Mass 10 makes the afterimages x2.5 (about a quarter of the score). If the
-playtest says the walls should be more of the game, the levers are the mode's (a reward for afterimage volume, or a
-cell that eats trail faster than walls), never the vessel's trail or afterimage numbers.
+**What the model says about the score** (numbers since the 2026-11-21 afterimage tune). The trail is about 189 vol/s.
+One 16-image window every 15 s lays about 52 vol/s at Mass 0 (49 each), 91 vol/s at Mass 5 and 131 vol/s at Mass 10.
+So the Mass ability is about 22% of a domain's standing volume at I1, a third at I2 and at most 41% at I3: most of the
+score is TRAIL on every rung, and the game teaches Afterimage less than its name promises. This is Palisade's main
+design gap. The levers are the mode's (a reward for afterimage volume, or a cell that eats trail faster than walls),
+never the vessel's trail or afterimage numbers. Neither is built: both need a platform stat that tells an afterimage
+from a trail prism, and the Mass-Space merge (section 8) replaces this scoring rule anyway.
 
 ## 6. Verification status
 
-- Authored headless: `author_palisade_assets.py --check`, the reference compile and the static gates (see the PR).
-- **Not run in Unity, not flown, no card art rendered yet.** Hand test: two Swordfish on two teams at I1; confirm the
-  afterimages count in the score, a lit run through a rival's wall cuts it and leaves yours, and the whistle at 90 s
-  shows each pilot's volume and prisms.
-- Card art: `/cardart` needs a `Palisade` recipe (the bare cell with afterimage walls).
+- Authored headless: `author_palisade_assets.py --check` (25 files match, 2026-11-25), the reference compile and the
+  static gates of the first PR.
+- Card art is rendered (`CardBackgrounds/Palisade.png`).
+- **Not run in Unity and not flown.** The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Palisade: the
+  Swordfish's Mass game".
+- **2026-11-25 changes are not compiled**: the AI's team-crystal detour (3.2) and `PalisadeLadderTests`. The reference
+  compile does not run on the Windows machine they were written on, and no Unity or Amoebius run was made.
+
+## 7. Where it stands (2026-11-25, elemental loop steps 1-3)
+
+| Step | State | What is missing |
+|---|---|---|
+| 1 fun, one intensity | built, never flown | A person's fun card. On the model the Mass ability is a minority of the score (section 5). |
+| 2 I1-I4 | built on paper (section 4) | Nobody has seen a rung in this scene; a person's sign-off on all four. |
+| 3 AI on I1-I4 | judged headless 2026-11-19 (3.1) | A re-judge: the afterimages grew x1.7 on 2026-11-21 and the AI learned the team crystals on 2026-11-25. A lone builder still lays trail only, because the sword hand energizes near hostile prisms. |
+
+## 8. The Mass-Space merge (`Docs/ArcadeRestructure/PLAN.md`, Garrett 2026-11-17)
+
+Each vessel's Mass and Space games are to become ONE Mass-Space game on Brood Rush's rule (fauna born under your
+nucleus claim score your team), in teams of up to three, in an environment that learns from the old games' I1-I4
+environments. The Swordfish is in the first group. For Palisade that means:
+
+- **Goes:** this card, the standing-volume rule, the 90 s clock and the bare arena. Palisade has no environment of its
+  own for the merged game to learn from; Cleave's cage does.
+- **Stays:** the sword hand trained here (3.1, it is the vessel's AI), the build-or-raid policy and the team-crystal
+  detour as the AI's Mass half, and the ladder (the merged game uses the same standard rungs).
+- **So:** work that only polishes this scoring rule is likely thrown away; work on the AI and on how the Afterimage
+  reads is kept. Nothing was merged here: Palisade and Cleave are still two cards.

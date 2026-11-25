@@ -27167,3 +27167,26 @@ Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section
 - [ ] In Play mode, start the mode smoke test from the command line or the Unity CLI
       (`CosmicShore.Editor.ModeSmokeLauncher.Run`): the console says "[ModeSmoke] cannot start: the editor is in Play
       mode: leave Play mode first", with no exception, and the offline preference is unchanged (`c7f4c53311`).
+
+## Palisade: the Swordfish's Mass game (2026-11-25, NEVER RUN)
+
+`Assets/_Scripts/Controller/Arcade/PALISADE.md`. The mode has never been opened in the editor. The 2026-11-25 change
+(the AI detours for its team's I3 Mass crystals, `PalisadeController.TryNearestCrystal`; `PalisadeLadderTests`) was
+not compiled: no Unity, Amoebius or reference compile ran. `author_palisade_assets.py --check` passes.
+
+- [ ] The project compiles and `PalisadeLadderTests` (7 tests) pass.
+- [ ] Palisade loads from its arcade card at I1 with two teams; the hint toast shows once; at 90 s the board shows
+      each pilot's volume and prisms and names a winner.
+- [ ] I1: energize and let go. The afterimages count in the score, and a lit run through a rival's wall cuts it and
+      leaves yours standing there.
+- [ ] I2: every hull starts at Mass 5, so the first afterimages are danger prisms and visibly bigger than I1's.
+- [ ] I3: each team has 4 Mass crystals in its own colour, only that team can take them, and they regrow. A building
+      AI turns for its own team's crystal when it passes within about 450 u, and never for a rival's.
+- [ ] I4: Mass fauna spawn in the cell's colour. Do they graze the walls outside the nucleus and leave the ones
+      inside? Do the AIs' walls (orbit at 540 u) survive, or does every AI team end near zero?
+- [ ] AI seats at I1-I4: every AI flies the whole 90 s, builds, raids when 10% behind and in the last 25 s, and the
+      sword lights on a raid. No AI circles the centre or sits still.
+- [ ] 9 vessels, 3 teams, 3 a team: the frame rate holds with three teams' walls standing.
+- [ ] A person's judgment (the fun card): does the round feel like swinging walls into place, or like laying trail?
+      On the model the afterimages are about 22% of the score at I1 and a third at I2 (PALISADE.md section 5).
+- [ ] A person's judgment: are I1-I4 four different rounds, and is I4's grazing fair to the team that is behind?
