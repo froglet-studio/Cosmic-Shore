@@ -1,4 +1,4 @@
-# Bug Hunt — where it stands (2026-11-23)
+# Bug Hunt — where it stands (2026-11-24)
 
 **Owner:** Yash. **Branch:** fixes land on `Ys-bleeding-edge` first and reach `bleeding-edge` with each merge.
 **Board:** [Team Bug Board](https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno). Mechanism: `Docs/DIAGNOSTICS.md` § "The Bug Ledger".
@@ -39,6 +39,27 @@
   E-e6054bc064, E-fda866d511, DTLS E-afa8c57ab8; multiplayer), the `weekly_challenge` board and the `launch-flags`
   404 (E-c8e2f49696, E-930ca435ca; Shombith's backend) and the Rider folder on Yash's machine (E-15034bdc73, 52
   sightings; Preferences > External Tools). No new phone session; `check_gamelist_scenes.py` is clean.
+- **Daily sweep, 2026-11-24 03:57 UTC (206 branches): 390 open, 30 being checked after a fix** (420 issues).
+  Seventeen issues were seen since the 11-23 sweep. Two were code and are fixed (section 3): the Jacks net drawing
+  into a destroyed renderer on Garrett's machine (E-720d217e81, 705 sightings in 19 s) and the mode smoke test started
+  while the editor was playing on Yash's machine (E-ca266cef07). The sweep's compile also found that
+  `Ys-bleeding-edge` did not compile since `f2e457b577` (a missing `using` in `GrizzlyTimeController.Ruins.cs`, on
+  no ledger branch); fixed in `2a3e56faac`. Recorded for the multiplayer work, not edited here: "Received error
+  message from Relay: not connected" (E-5fa838820d, 811 sightings, four machines), the Lobby rate limit
+  (E-4559c252c9), the pre-instantiated `StatsManager` NetworkObject at the offline host's start (E-8186f3205f), the
+  session singleton (E-81100c14a5), and a remembered domain pick dropped when the config opens from a lobby change
+  before the local Player is resolved (E-9befe1d612, Garrett's and Andrew's machines; the line numbers match today's
+  file, so `1424652888` does not cover this path). Needs a capture: "Projectile already released!" (E-fc9c4c779c,
+  three sightings since September, the stack names no caller). Not code, unchanged: Vivox and the 403s
+  (E-ca127debd0, E-33876f4909, E-ae8d2e4fa2), the services core cancel (E-3e9077e16b), the `launch-flags` 404 and
+  the `weekly_challenge` board (E-930ca435ca, E-c8e2f49696; Shombith's backend), Claude's editor commands timing out
+  (E-e5bc8c31c5, E-8909c619e5) and the Rider folder on Yash's machine (E-15034bdc73, seen again at 01:09 UTC after
+  the 11-22 setting change, one regression counted). The phone report lists one session, from 2026-11-02 on an old
+  build (warnings only: the `Boost Amount` FMOD parameter, Charles's content); `check_gamelist_scenes.py` is clean.
+  The `/ship` gates fail on `Ys-bleeding-edge` in files no fix here touched: `doc_summaries` (`VoyageRun.cs:1114`),
+  `colour_trace` (`Scoreboard.cs:1127`, `Color.gray`), `maelstrom_tiers` (two cards), and generator drift in
+  `author_harvest_assets.py`, `author_tandava_assets.py`, `author_tandava_severing_assets.py`; `author_shatterplane_assets.py`
+  has an f-string that the sweep machine's Python rejects.
 - **Ledger on 2026-11-21 (03:57 UTC sweep, 182 branches): 386 open, 35 being checked after a fix** (421 issues).
   The routine's first run with the repository attached: its push to `Ys-bleeding-edge` worked. Eight issues were new
   or seen again since the 11-20 report. One was code and is fixed (`65ffb622dd`, section 3); the rest are not code or
@@ -113,6 +134,16 @@ games the daily challenge should offer is its owner's call.
    player: a machine condition, never a code fix.
 
 ## 3. Fixed
+
+### 2026-11-24 (not run in the editor; `unity_refcompile` 0 errors)
+
+Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § "Bug ledger fixes (2026-11-24)".
+
+| Error | Machines | Cause | Fix |
+|---|---|---|---|
+| "MissingReferenceException: The object of type 'UnityEngine.MeshRenderer' has been destroyed" in `JacksBodies.NetMesh.Draw` (E-720d217e81) | one (Garrett) | the Jacks net is a scene-root object made in `Awake`, so it could be destroyed while the hull lived on, and the hull drew into it every frame. Which unload did it on that run is inferred, not captured | `a5a7ef89c3`: `DrawNet` builds the net again when its renderer is gone. Affects Garrett's Jacks (queued for `/approve`) |
+| "InvalidOperationException: This cannot be used during play mode" in `ModeSmokeLauncher.RunNext` (E-ca266cef07) | one (Yash) | only the menu entry checked for Play mode; `Run()` from the command line or the Unity CLI planned the run and then could not open Bootstrap | `c7f4c53311`: the check is in `Start`, for every entry point. Affects Shombith's launch tooling (queued for `/approve`) |
+| `error CS0103` twice in `GrizzlyTimeController.Ruins.cs` (no ledger issue: the branch did not compile) | the branch | `CSDebug` used without `using CosmicShore.Utility` since `f2e457b577` | `2a3e56faac` |
 
 ### 2026-11-22 (not run in the editor, which did not answer the CLI; compiled with Unity's compiler, 0 errors)
 
@@ -343,41 +374,42 @@ T-20261015-56dd, -3e0b, -3972, -1551, -7edd.
 This block is refreshed by `python3 Tools/Build/team_report.py area bug-hunt --write`.
 
 <!-- team_report:begin (generated by Tools/Build/team_report.py; do not edit) -->
-_Generated 2026-11-23 from git (last 14 days), who_works_where.py: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
+_Generated 2026-11-24 from git (last 14 days), who_works_where.py: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
 
 ### Recent changes (25+)
-- 2026-11-23 `656805897` bugledger: 70 open error(s) from Owner's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `6ea011c53` bugledger: E-720d217e81 fixed in a5a7ef89c3 — on another branch
+- 2026-11-24 `aecd77cb2` bugledger: E-ca266cef07 fixed in c7f4c53311 — on another branch
+- 2026-11-24 `3bf426a2c` bugledger: 65 open error(s) from Owner's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `8ca039c88` bugledger: 85 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-24 `efbdf1629` bugledger: 65 open error(s) from Owner's play tests — on another branch
+- 2026-11-23 `2d3d3acc4` bugledger: 84 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `ce76ca858` bugledger: 22 open error(s) from mrglo's play tests, 5 report file(s) — on another branch
+- 2026-11-23 `20aad166a` bugledger: 22 open error(s) from mrglo's play tests, 2 report file(s) — on another branch
+- 2026-11-23 `bee772845` bugledger: 204 open error(s) from gradi's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `f1f2aa3df` bugledger: 129 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `43b75ce91` bugledger: 31 open error(s) from belac's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `2c8e28687` bugledger: 128 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `a479e364a` bugledger: 203 open error(s) from gradi's play tests, 12 report file(s) — on another branch
+- 2026-11-23 `852d0318d` bugledger: 31 open error(s) from belac's play tests, 3 report file(s) — on another branch
+- 2026-11-23 `d2c260abe` bugledger: 70 open error(s) from Owner's play tests, 12 report file(s) — on another branch
 - 2026-11-22 `aa57c603f` bugledger: 83 open error(s) from yskha's play tests, 12 report file(s) — on another branch
 - 2026-11-22 `56f95e07b` bugledger: 80 open error(s) from yskha's play tests, 12 report file(s) — on another branch
 - 2026-11-22 `ba2c191b3` bugledger: E-853e9f9090 fixed in 1424652888 — on another branch
 - 2026-11-22 `f7cbab687` bugledger: E-908f18b36f fixed in 1424652888 — on another branch
 - 2026-11-22 `188cfc381` bugledger: E-31b2135ed2 fixed in ecdcc06b6e — on another branch
 - 2026-11-22 `6d004fea8` bugledger: E-15034bdc73 fixed in 860bc615d2 — on another branch
+- 2026-11-21 `8cb52c585` docs(handoff): backend to Shombith - the launch-flags Cloud Code script is not deployed — on Ys-bleeding-edge, bleeding-edge
 - 2026-11-21 `61ccab7e6` bugledger: E-6bc7e07601 fixed in 97aab2a6a7 — on another branch
 - 2026-11-21 `e8f67f948` bugledger: E-71cedd035d fixed in b6c5ad826 — on another branch
 - 2026-11-21 `40dd460e0` bugledger: E-6f8a396c25 fixed in 475c34feb7 — on another branch
-- 2026-11-21 `850b17da5` bugledger: E-2367abc157 fixed in fe32896d7b — on another branch
-- 2026-11-21 `99b49b12e` bugledger: E-05e4645aad fixed in 25d287a0b2 — on another branch
-- 2026-11-21 `e286592b0` bugledger: E-b872184a91 fixed in 981fff05df — on another branch
-- 2026-11-21 `d30c1751a` bugledger: E-c223e6e8e9 fixed in beb7a758b0 — on another branch
-- 2026-11-21 `426b51b23` bugledger: E-5e0864d332 fixed in 536a720a85 — on another branch
-- 2026-11-21 `6a8b205c4` bugledger: 81 open error(s) from yskha's play tests, 12 report file(s) — on another branch
-- 2026-11-21 `1d6e9cda5` bugledger: 80 open error(s) from yskha's play tests — on another branch
-- 2026-11-21 `8b6430ebb` bugledger: 124 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
-- 2026-11-21 `7c3e77a6e` bugledger: 67 open error(s) from Owner's play tests, 12 report file(s) — on another branch
-- 2026-11-21 `abd59fc71` bugledger: E-8ddade9b04 fixed in 65ffb622dd — on another branch
-- 2026-11-20 `3f070b974` bugledger: 123 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
-- 2026-11-20 `eb61686fb` chore(tooling): retire Froglet Tasks for Swim Lanes — on Ys-bleeding-edge, bleeding-edge
-- 2026-11-20 `fbb1961a4` docs(bug-hunt): why a build's scene errors never reached the ledger, and what the sweep reads now — on Ys-bleeding-edge, bleeding-edge
-- 2026-11-20 `bcd3f0f58` bugledger: E-0de9ec6c70 fixed in 93765d6aa8 — on another branch
-- 2026-11-20 `a41069da5` bugledger: E-245165ae01 fixed in 540bac6a24 — on another branch
 
 ### Also in flight on other branches
-- `bugledger/owner` (Andrew, Yash, 2026-11-22): bugledger: 70 open error(s) from Owner's play tests, 12 report file(s)
-- `bugledger/yskha` (Yash, 2026-11-22): bugledger: 83 open error(s) from yskha's play tests, 12 report file(s)
-- `bugledger/belac` (Caleb, Yash, 2026-11-22): bugledger: E-6bc7e07601 fixed in 97aab2a6a7
-- `bugledger/shombith` (Shombith, Yash, 2026-11-22): bugledger: E-6bc7e07601 fixed in 97aab2a6a7
-- `bugledger/gradi` (Garrett, Yash, 2026-11-22): bugledger: E-6bc7e07601 fixed in 97aab2a6a7
+- `bugledger/gradi` (Garrett, Yash, 2026-11-24): bugledger: E-720d217e81 fixed in a5a7ef89c3
+- `bugledger/yskha` (Yash, 2026-11-24): bugledger: E-ca266cef07 fixed in c7f4c53311
+- `bugledger/owner` (Andrew, Yash, 2026-11-23): bugledger: 65 open error(s) from Owner's play tests, 12 report file(s)
+- `bugledger/mrglo` (jtgjones, 2026-11-23): bugledger: 22 open error(s) from mrglo's play tests, 5 report file(s)
+- `bugledger/shombith` (Shombith, Yash, 2026-11-24): bugledger: 129 open error(s) from Shombith's play tests, 12 report file(s)
+- `bugledger/belac` (Caleb, Yash, 2026-11-23): bugledger: 31 open error(s) from belac's play tests, 12 report file(s)
 - `bugledger/will` (Yash, ownerbynight, 2026-11-20): bugledger: E-0de9ec6c70 fixed in 93765d6aa8
 - `claude/project-thread-jw78fe` (Garrett, 2026-11-18): test(proven-win): vessel hull off-screen skinning rejected (~3 us per hull)
 <!-- team_report:end -->

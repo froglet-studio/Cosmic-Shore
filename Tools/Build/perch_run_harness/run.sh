@@ -27,17 +27,20 @@ OUT="${TMPDIR:-/tmp}/perch_run_harness"
 mkdir -p "$OUT"
 
 COURSE="$A/Controller/Arcade/PerchRun/PerchRunCourse.cs"
+RUINS="$A/Controller/Arcade/PerchRun/PerchRunRuins.cs"
 cd "$ROOT"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = course source, $2 = output name
+build() {   # $1 = course source, $2 = output name, $3 = ruins source (default: the shipped PerchRunRuins.cs)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" "$HERE/Stubs.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
-    "$1" "$A/Tests/Editor/PerchRunCourseTests.cs"; do
+    "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" \
+    "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" "$A/Controller/Arcade/Spearline/SpearlineRuins.cs" \
+    "${3:-$RUINS}" "$1" "$A/Tests/Editor/PerchRunCourseTests.cs" "$A/Tests/Editor/PerchRunRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -81,4 +84,17 @@ mutate "the blocker stands off its leg" 's/coral.Add(new Coral(Vector3.Lerp(ring
 mutate "the AI ignores the coral" 's/if (FirstCoral(from, dir, len + HullRadius + 2f, coral, out _)) continue;/if (false) continue;/' 'if (false) continue;'
 mutate "no hairpins" 's/HairpinSlot = new\[\] { -1, 1, 3, 4 }\[i\]/HairpinSlot = new[] { -1, -1, 3, 4 }[i]/' 'HairpinSlot = new\[\] { -1, -1, 3, 4 }'
 mutate "the double is too long for one dart" 's/DoubleLegMin = 200f, DoubleLegMax = 240f/DoubleLegMin = 360f, DoubleLegMax = 400f/' 'DoubleLegMin = 360f'
+
+# The ruins (PerchRunRuins.cs): each mutated copy must make PerchRunRuinsTests fail.
+mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$RUINS" > "$OUT/PerchRunRuins_neg.cs"
+  grep -q "$3" "$OUT/PerchRunRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$COURSE" neg "$OUT/PerchRunRuins_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+mutate_ruins "the ruins stand round the rings' curve, not the dart's line" 's/lap.Add(new RaceGate(a.Position, line, a.Radius));/lap.Add(new RaceGate(a.Position, a.Axis, a.Radius));/' 'a.Position, a.Axis, a.Radius'
+mutate_ruins "ruins on every rung" 's/SpearlineRuins.ForIntensity(intensity)/SpearlineRuins.ForIntensity(4)/' 'ForIntensity(4)'
+mutate_ruins "the start run is not kept clear" 's/lap.Add(new RaceGate(first.Position - first.Axis \* PerchRunCourse.StartStandoff, first.Axis, first.Radius));/lap.Add(new RaceGate(first.Position - first.Axis * 0.001f, first.Axis, first.Radius));/' 'first.Axis \* 0.001f'
 echo "perch_run_harness self-test: ok"

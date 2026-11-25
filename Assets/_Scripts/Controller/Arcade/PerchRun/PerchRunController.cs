@@ -20,9 +20,10 @@ namespace CosmicShore.Gameplay
     /// (GobyPistolDuo.TryDartReach), which serves every mode the Goby flies.</para>
     ///
     /// <para><b>Every peer lays the same coral</b> from the broadcast rings (<see cref="PerchRunCourse.CoralFor"/>), so
-    /// nothing new is replicated.</para>
+    /// nothing new is replicated. At I4 the legs also carry garden ruins, decoration laid the same way
+    /// (PerchRunController.Ruins.cs, <see cref="PerchRunRuins"/>).</para>
     /// </summary>
-    public class PerchRunController : GateRaceController, IPlayerSpawnLine, IGobyRaceCoach
+    public partial class PerchRunController : GateRaceController, IPlayerSpawnLine, IGobyRaceCoach
     {
         [Header("Perch Run")]
         [Tooltip("The prism every coral head is laid from: the environment prism (SpawnablePrism). Authored by " +
@@ -52,6 +53,7 @@ namespace CosmicShore.Gameplay
                 if (goby && ReferenceEquals(goby.RaceCoach, this)) goby.RaceCoach = null;
             _coached.Clear();
             ClearCoral();
+            ClearRuins();
             base.OnNetworkDespawn();
         }
 
@@ -71,6 +73,8 @@ namespace CosmicShore.Gameplay
         protected override void OnCourseRaised()
         {
             ClearCoral();
+            ClearRuins();
+            LayRuins();
             var settings = PerchRunCourse.ForIntensity(Intensity);
             settings.RingCount = _course.Count;
             PerchRunCourse.CoralFor(_course, settings, _coral);

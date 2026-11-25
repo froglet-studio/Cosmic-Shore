@@ -74,6 +74,10 @@ htr.author(dict(
         "SlipLineCourse":       f"{MODE_DIR}/SlipLineCourse.cs",
         "SlipLineCourseSource": f"{MODE_DIR}/SlipLineCourseSource.cs",
         "SlipLineCourseTests":  "Assets/_Scripts/Tests/Editor/SlipLineCourseTests.cs",
+        # the I4 ruins (SLIP_LINE.md section 3a): Spearline's generator, called round the straight race line
+        "SlipLineRuins":            f"{MODE_DIR}/SlipLineRuins.cs",
+        "SlipLineController.Ruins": f"{MODE_DIR}/SlipLineController.Ruins.cs",
+        "SlipLineRuinsTests":       "Assets/_Scripts/Tests/Editor/SlipLineRuinsTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/SLIP_LINE.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThresherTime.unity",

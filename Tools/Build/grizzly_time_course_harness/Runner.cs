@@ -169,6 +169,23 @@ public static class Runner
                 Console.WriteLine($"    throw chain, 2 laps (model: one launch a gate, no carry bomb): median {Pct(reader, 0.5f):F1} s, p90 {Pct(reader, 0.9f):F1} s");
                 Console.WriteLine($"    the same with a Rush on every straight the Energy allows: median {Pct(rusher, 0.5f):F1} s, p90 {Pct(rusher, 0.9f):F1} s, {Pct(rushCount, 0.5f):F0} Rushes a race");
             }
+            // The I4 ruins (GrizzlyTimeRuins): what Spearline's generator lays on this circuit, and what is left once
+            // the Grizzly's throw lanes, keg lines and keg spaces are cut out of it.
+            var rawCount = new List<float>(); var kept = new List<float>(); var ruinLegs = new List<float>();
+            var wheelCount = new List<float>(); var rawWheelCount = new List<float>();
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var lap = Circuit(4, seed);
+                var raw = new List<SpearlineRuinPart>(); var rawWheels = new List<SpearlineRuinWheel>();
+                SpearlineRuins.Lay(lap, SpearlineRuins.ForIntensity(4), raw, rawWheels);
+                var ruins = new List<SpearlineRuinPart>(); var wheels = new List<SpearlineRuinWheel>();
+                GrizzlyTimeRuins.Lay(lap, 4, ruins, wheels);
+                rawCount.Add(raw.Count); kept.Add(ruins.Count);
+                ruinLegs.Add(ruins.Select(p => p.Leg).Distinct().Count());
+                wheelCount.Add(wheels.Count); rawWheelCount.Add(rawWheels.Count);
+            }
+            Console.WriteLine($"I4 ruins: Spearline lays median {Pct(rawCount, 0.5f):F0} prisms a lap; kept min {kept.Min():F0}, median {Pct(kept, 0.5f):F0}, max {kept.Max():F0} " +
+                              $"(mean {kept.Average():F0}); ruins a lap min {ruinLegs.Min():F0}, mean {ruinLegs.Average():F1}; wheels {wheelCount.Sum():F0} of {rawWheelCount.Sum():F0} kept over {Seeds} laps");
             return 0;
         }
 

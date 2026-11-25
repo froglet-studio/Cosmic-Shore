@@ -801,6 +801,8 @@ MonoBehaviour:
   helixIntensityScaling: 4
   seed: 0
   rule: {fileID: 11400000, guid: 63bafccfd69743c086ad1bdc7623cc4c, type: 2}
+  ruinTrack: {fileID: 1899528610}
+  ruinPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0

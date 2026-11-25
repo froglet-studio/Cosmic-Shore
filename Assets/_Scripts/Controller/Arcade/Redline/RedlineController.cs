@@ -196,6 +196,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             ClearTimeCrystals();
+            ClearRuins();
             ClearHeat();
             base.OnNetworkDespawn();
         }
@@ -207,6 +208,8 @@ namespace CosmicShore.Gameplay
             ResetHeat();
             ClearTimeCrystals();
             RedlineTimeCrystals.Place(_course, Intensity, _placeScratch);
+            // The I4 ruins stand round the crystals' places (RedlineController.Ruins), so they are laid from them.
+            LayRuins(_placeScratch);
             if (_placeScratch.Count == 0) return;
             if (ElementalCrystalSetSO.Load() == null)
             {
@@ -289,6 +292,7 @@ namespace CosmicShore.Gameplay
         {
             TickHeat();
             TickTimeCrystals();
+            TickRuins();
         }
 
         void TickTimeCrystals()
