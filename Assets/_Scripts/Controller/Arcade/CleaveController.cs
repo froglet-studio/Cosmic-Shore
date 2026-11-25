@@ -10,7 +10,8 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Cleave - the Rhino-only SLICING race. Domains race to destroy hostile prisms with the
+    /// Cleave - the Swordfish's Space game (the Rhino's until 2026-11-07; read "Rhino" below as "Swordfish"): a
+    /// SLICING race. Domains race to destroy hostile prisms with the
     /// sword; the first to the destruction target wins. Structurally a sibling of
     /// <see cref="RampageController"/> (1 round / 1 turn, HasEndGame=false, server winner
     /// detection in OnTurnEndedCustom, snapshot SyncFinalScores_ClientRpc) - the destruction
@@ -82,6 +83,11 @@ namespace CosmicShore.Gameplay
                  "only for a resized arena, and note an override is intensity-BLIND.")]
         [SerializeField, Min(0f)] float aiArenaRadiusOverride = 0f;
 
+        [Tooltip("From I3 up each team has Space crystals inside the arena (a longer blade). On one strike in " +
+                 "three an AI within this distance of one its team can take flies at it instead of at its next " +
+                 "station. 0 = the AI never turns for a crystal.")]
+        [SerializeField, Min(0f)] float aiCrystalReach = 450f;
+
         // Where the AI's stations sit, as a multiple of the arena radius. Both numbers live on
         // SliceArenaGeometry rather than here, because the ARENAS are built against them too and
         // two copies of an envelope is how one of them drifts. STRICTLY > 1: AIPilot has no
@@ -90,6 +96,9 @@ namespace CosmicShore.Gameplay
         const float AiStationStandoff = SliceArenaGeometry.AiStationStandoff;
         // One strike in N is a raid on live opposing mass instead of the cage.
         const int AiRaidEveryNthStrike = 4;
+        // One strike in N may be spent on the team's own Space crystal (I3 up). A minority, and a crystal is gone
+        // once taken, so this cannot become the orbit-from-within defect a standing interior target is.
+        const int AiCrystalEveryNthStrike = 3;
 
         // Milestone rungs the leading domain crosses. Feedback only - nothing here changes
         // game state, so a missed or late sample costs a toast, never a rule.
@@ -248,6 +257,41 @@ namespace CosmicShore.Gameplay
                 d.ToString(), sum.ToString(), target.ToString());
         }
 
+        // ── Element ladder: the I3 team Space crystals sit INSIDE the arena ──
+
+        // The cage's heart, as fractions of the arena radius. The cage's innermost rind is at 460 of 720 (0.639), so
+        // 0.16-0.5 (115-360) is wholly inside it: a team reaches its crystals by cutting through all three rinds.
+        const float CageHeartInnerFraction = 0.16f;
+        const float CageHeartOuterFraction = 0.5f;
+        // Every other arena: through the mass, clear of the centre knot and of the rim.
+        const float ArenaBodyInnerFraction = 0.3f;
+        const float ArenaBodyOuterFraction = 0.85f;
+
+        /// <summary>
+        /// The shell (around the cell centre) this intensity's team Space crystals are scattered in. The platform
+        /// default scatters out to 0.8 of the membrane (960 at I3 and I4), which puts 58% of them by volume in the
+        /// empty moat outside the 720 arena: a free pickup that asks nothing of the sword. Here a crystal is always
+        /// inside the mass, so the longer blade it gives is earned by cutting to it; at I3 it is in the cage's
+        /// heart, behind all three rinds (the rung's verb is "peel inward"). Pure, so the tests read it.
+        /// </summary>
+        public static void LadderCrystalShell(int intensity, out float inner, out float outer)
+        {
+            float arena = SliceArenaGeometry.OuterRadiusFor(intensity);
+            bool cage = intensity == 3;
+            inner = arena * (cage ? CageHeartInnerFraction : ArenaBodyInnerFraction);
+            outer = arena * (cage ? CageHeartOuterFraction : ArenaBodyOuterFraction);
+        }
+
+        public override void CollectLadderCrystalPoints(Domains team, int count, System.Random rng,
+            System.Collections.Generic.List<Vector3> into)
+        {
+            int intensity = gameData != null && gameData.SelectedIntensity != null
+                ? gameData.SelectedIntensity.Value : 1;
+            LadderCrystalShell(intensity, out float inner, out float outer);
+            Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
+            ElementLadderCrystals.ScatterInShell(centre, inner, outer, count, rng, into);
+        }
+
         // ── AI cage-breakers (server) ────────────────────────────────────
 
         /// <summary>
@@ -317,6 +361,16 @@ namespace CosmicShore.Gameplay
                         return cached;
                     }
 
+                    // The I3 rung's lesson is that Space makes the blade longer, so an AI that flew past its own
+                    // team's crystals would play I3 exactly as it plays I2.
+                    var selfTf = captured.Vessel?.Transform;
+                    if (selfTf && IsCrystalStrike(strike, seatIndex) &&
+                        TryNearestTeamCrystal(selfTf.position, captured.Domain, out var crystal))
+                    {
+                        cached = crystal;
+                        return cached;
+                    }
+
                     // Golden-angle spiral over the sphere: successive strikes are ~137 degrees
                     // apart, so the CHORD between one station and the next passes close to the
                     // centre - a full crossing of the cage, which is what shatters bars. It is
@@ -336,6 +390,33 @@ namespace CosmicShore.Gameplay
                     return cached;
                 });
             }
+        }
+
+        /// <summary>Whether this strike may be spent on a team crystal: one in three, never a raid beat. Pure.</summary>
+        public static bool IsCrystalStrike(int strike, int seatIndex) =>
+            (strike + seatIndex) % AiRaidEveryNthStrike != 0 &&
+            (strike + seatIndex) % AiCrystalEveryNthStrike == 1;
+
+        /// <summary>The nearest element-ladder crystal <paramref name="domain"/> can take within the AI's reach.</summary>
+        bool TryNearestTeamCrystal(Vector3 from, Domains domain, out Vector3 position)
+        {
+            position = default;
+            if (aiCrystalReach <= 0f) return false;
+            float bestSqr = aiCrystalReach * aiCrystalReach;
+            bool found = false;
+
+            var active = Crystal.Active;
+            for (int i = 0, n = active.Count; i < n; i++)
+            {
+                var c = active[i];
+                if (!c || !ElementLadderCrystals.IsLadderCrystal(c) || !c.CanBeCollected(domain)) continue;
+                float d = (c.transform.position - from).sqrMagnitude;
+                if (d >= bestSqr) continue;
+                bestSqr = d;
+                position = c.transform.position;
+                found = true;
+            }
+            return found;
         }
 
         // ── Server-authoritative game end ─────────────────────────────────

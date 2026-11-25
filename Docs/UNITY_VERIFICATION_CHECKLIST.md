@@ -27190,3 +27190,32 @@ not compiled: no Unity, Amoebius or reference compile ran. `author_palisade_asse
 - [ ] A person's judgment (the fun card): does the round feel like swinging walls into place, or like laying trail?
       On the model the afterimages are about 22% of the score at I1 and a third at I2 (PALISADE.md section 5).
 - [ ] A person's judgment: are I1-I4 four different rounds, and is I4's grazing fair to the team that is behind?
+
+## Cleave: the Swordfish's Space game (2026-11-25, Yash, COMPILED OUTSIDE THE EDITOR, NEVER RUN)
+
+`Assets/_Scripts/Controller/Arcade/CLEAVE.md` ("Where Cleave stands"). The 2026-11-25 change: the I3 and I4 team Space
+crystals are laid inside the arena (`CleaveController.CollectLadderCrystalPoints`; I3 in the cage's heart), the AI
+turns for its team's crystal on one strike in three, and `CleaveLadderTests` (10 tests). The runtime and editor
+assemblies compile with Unity's Roslyn and references outside the editor; no test ran and nothing was played.
+`author_cleave_assets.py --check` and `cleave_budget.py` pass. No person or AI has flown any rung since the Swordfish
+took the mode (2026-11-07), and the older list in CLEAVE.md ("In-editor verification") is still open too.
+
+- [ ] The project compiles in the editor and `CleaveLadderTests` pass.
+- [ ] I1 (Panes), 2 teams: every seat is a Swordfish, the bill is at rest, the goal row says 950, a mullion run is
+      the best cut. Cutting a prism in your own team's colour does not score; any other colour does.
+- [ ] I2 (Swell): every hull starts at Space 5. The bill is visibly longer than at I1 and the HUD's Space card shows it.
+- [ ] I3 (Cage): each team has 4 Space crystals in its own colour INSIDE the innermost rind, none in the open space
+      round the cage; only that team can take them; one regrows about 12 s after it is taken; taking one lengthens
+      the bill.
+- [ ] I4 (Twistbands): the team crystals sit among the bands, and Space fauna hatch in the cell's colour. Do they
+      eat enough of the bands to starve a team of its 1,000? Do they crowd the frame rate (16,423 prisms plus 23
+      creatures)?
+- [ ] AI seats at I1-I4, one match each with the AI on every seat: does a team reach its target, and in how long? On
+      I1 and I2 does an AI cross the 2,160 arena or meander (a new station every 2 s)? On I3 does an AI turn into
+      the cage for its team's crystal and come back out, with none left circling one?
+- [ ] 9 vessels, 3 teams: the frame rate at I4, and the spawn ring seats nine without overlap.
+- [ ] A person's judgment (the fun card): is cutting with the bill the fun, and does a longer bill (I2, a crystal at
+      I3) feel like the reason you win? Are the four rungs four different rounds, each harder than the last? Are
+      950 / 950 / 1,000 / 1,000 near 90 s for an experienced pilot?
+- [ ] A person's call: Shield Breaker (Space 5) has nothing to break in any Cleave arena. Should I3 or I4 carry a
+      super-shielded seam so the upgrade matters?

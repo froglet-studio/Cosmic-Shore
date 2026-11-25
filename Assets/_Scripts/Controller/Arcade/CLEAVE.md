@@ -2,6 +2,61 @@
 
 > **2026-11-07: Cleave is the SWORDFISH's.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the sword went to the Swordfish, so Cleave seats the Swordfish for the player and all four AI (card, scene `aiInitializeDatas`, `TrainingModeCatalog`). Its hull RAMS (destroys), so a hull contact scores again, as it did before the plough. Read "the Rhino" below as "the Swordfish".
 
+## Where Cleave stands (2026-11-25, Yash's voyage-ready pass; read this first)
+
+Cleave is the Swordfish's **Space** game (`ModeGenre`: `PrismsDestroyed` reads as Space alone). Its Space ability is
+**Blade Reach** (the bill 24 -> 40 with Space) and, at Space 5, **Shield Breaker** (`R_VesselActions/SWORDFISH.md`).
+Where this section and the older text below disagree, this section is right.
+
+**The ladder today.** Each rung is its own arena, and the platform's standard element ladder
+(`Docs/ElementalLoop/PLAYBOOK.md` step 2, 2026-11-16) stacks on top with no Cleave code:
+
+| Rung | Arena (verb) | Target | The element ladder adds |
+|---|---|---:|---|
+| I1 | The Panes (commit to a line), radius 2,160 | 950 | nothing: the bill at rest |
+| I2 | The Swell (follow the road), radius 2,160 | 950 | every hull starts at Space 5: a longer bill, Shield Breaker live |
+| I3 | The Cage (peel inward), radius 720 | 1,000 | 4 Space crystals a team, in the cage's HEART (115-360 from the centre, behind all three rinds), regrowing 12 s after one is taken |
+| I4 | The Twistbands (roll the blade), radius 720 | 1,000 | Space fauna in the cell's colour (`Resources/ElementLadderFauna`: shark, piranha, brittle star, tadpole, 23 live at most), and the team crystals through the bands (216-612) |
+
+- **Targets are 950 / 950 / 1,000 / 1,000** since 2026-10-26 (`cleave_budget.TARGET_BY_INTENSITY`; a solo human took
+  152.7 s to clear 1,500 on rung 4). The 1,200 / 1,500 figures below are history. The card seats up to 9, 3 a team.
+- **A prism in your own team's colour does not score** (`StatsManager.IsFriendlyEnvironmentPrism`). The arenas are
+  painted in the domain colours, so about a quarter to a third of the mass is worth nothing to each team. The text
+  below that says arena mass is hostile "whatever colour it wears" is stale.
+- **"No fauna" is true of I1-I3 only.** Cleave's spawn profile still authors none, and that is exactly what gives I4
+  the ladder's set (`Cell.FaunaRoster`). The cell's phase stays Calm all match whatever they do: a destruction race
+  only takes volume away, so the float32 note under "Stated cost" stays harmless.
+- **Team crystals are placed by the mode** (`CleaveController.CollectLadderCrystalPoints`, 2026-11-25). The platform
+  default scatters to 0.8 of the membrane (960), which put 58% of them by volume in the empty moat outside the 720
+  arena. Now a crystal is always inside the mass, so the longer bill is earned by cutting to it.
+- **The AI turns for its team's crystals** on one strike in three when one is within `aiCrystalReach` (450 u), never on
+  a raid beat. Before, an AI played I3 exactly as it played I2.
+- **Shield Breaker has nothing to break.** No arena lays a shielded prism (`cleave_budget` check 3). The reason given
+  below (the AI cannot energize) stopped being true on 2026-10-16, and the sword hand now energizes at one prism. A
+  super-shielded seam on I3 or I4 would make Space 5's upgrade part of the game; it is an arena change nobody has
+  flown, so it waits for a person's yes.
+
+**The AI, honestly.** The 2026-11-19 sword-hand training ("The sword hand, trained" below) scored the Brood Rush volume
+books, and those books do not hold arena prisms (`StatsManager.PrismDestroyed` returns before the books when the prism
+has no rostered owner). So the numbers there are trail and afterimage volume, not Cleave's score. **Nobody has measured
+an AI seat's prisms destroyed or its time to the target on any rung.** The steering has one more open question: a new
+station is picked every 2 s whether or not the hull arrived, and a crossing of the 2,160 arenas takes longer than
+that, so on I1 and I2 the AI may meander rather than cross. Watch it before tuning it (Plan step: `space-arcade`,
+`Docs/AI_SYSTEM/AI_PLAN.md`).
+
+**The Mass-Space merge** (`Docs/ArcadeRestructure/PLAN.md`, Garrett 2026-11-17): Cleave and Palisade are to become ONE
+Swordfish Mass-Space game on Brood Rush's rule (fauna born under your nucleus claim score your team; VC + VD on the
+board; teams of 3, up to 9). What carries over from Cleave: the four arenas as that game's I1-I4 environments, the
+crystal placement and the AI's cutting. What retires with it: the destruction target, the milestones, the golf-timed
+scoring rule, and "no nucleus" (Brood Rush's rule needs one). Nothing has been merged here; work on the arenas and
+the AI keeps its value, work on the scoring and end-game does not.
+
+**Verified 2026-11-25:** `author_cleave_assets.py --check` (37 files) and `cleave_budget.py` pass (on Windows only with
+CRLF normalised: the source hashes are of LF files); the runtime and editor assemblies compile with Unity's Roslyn and
+references outside the editor. **Not verified:** nothing was run in the editor, `CleaveLadderTests` has not been run,
+and no AI or person has flown any rung since the Swordfish took the mode. The list is in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Cleave: the Swordfish's Space game").
+
 > **Naming.** `GameModes.Cleave = 39` is the code/data/enum identity. The mode has been renamed
 > TWICE — `Ribcage` → `PeelTheCage` (2026-09) → `Cleave` (immediately after, when three of its four
 > intensities stopped being cages). Enum VALUES are pinned forever, so both historical names
