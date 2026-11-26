@@ -18,11 +18,15 @@ namespace CosmicShore.UI
     /// <item><b>Docked at</b>: where the Ark is and how many jobs are on the quay.</item>
     /// <item><b>The jobs</b>: one 230 x 420 card per voyage type's giver (Salvage, Escort the Ark, Bounty, Hold the Core,
     /// the Voyage Codex's order) and the Milestone 1 Crystal Run as it is, 240 apart: the giver's picture, the kind, the
-    /// voyage's name and the archetypes it asks for; the picked one bright with one cyan line at its foot.</item>
+    /// voyage's name and the archetypes it asks for, stacked; the picked one bright with one cyan line at its foot.</item>
     /// <item><b>On the chart</b> (620 x 420, right): the lane from the port to the voyage's end, a ring per cell between,
-    /// the length and the sea under it, Full screen in its corner.</item>
-    /// <item><b>The ask</b>: the giver and their faction, the giver's words, "Bring me" and the role's; See every class (Y).</item>
-    /// <item><b>Your crew says</b>: each seat's pilot, their line and their mood (<see cref="VoyageMood"/>).</item>
+    /// the length and the difficulty under it, Full screen in its corner. While the live HyperSea map stands behind it
+    /// (<see cref="LiveMap"/>) the map draws the course.</item>
+    /// <item><b>The ask</b> (Rev 146 A, "Seat asks", picked by Shombith 2026-11-26, section 236): the giver and their
+    /// faction, the giver's words, then "Bring me" and one row per asked seat: the archetype, the giver's reason, and at
+    /// the right the squad's vessel that fills it, met fully or by half (<see cref="VoyageSeatFill"/>).</item>
+    /// <item><b>Your crew says</b>: each seat's pilot, their line and their mood (<see cref="VoyageMood"/>); See every
+    /// archetype (Y) under it.</item>
     /// <item><b>The foot</b>: the squad fit, the pay in crystals and Take the job (A), which opens Your Ark.</item>
     /// </list>
     /// </summary>
@@ -32,9 +36,12 @@ namespace CosmicShore.UI
         public const float CardY = 30f, CardWidth = 230f, CardHeight = 420f, CardStep = 240f;
         public const int MaxCards = 5;
         public static readonly Rect Chart = new(1220f, 30f, 620f, 420f);
-        const float AskY = 480f, AskWidth = 1180f, QuoteY = 506f, QuoteHeight = 120f, BringY = 634f, CrewX = 1220f,
-            CrewY = 510f, CrewStep = 56f, FootY = 829f, FootHeight = 56f, TakeWidth = 290f, SeeX = 860f, SeeY = 630f,
-            SeeWidth = 270f, SeeHeight = 44f, Inset = 18f, FootShade = 190f, DimPicture = 0.55f, FitWidth = 180f;
+        // Rev 146 A ("Seat asks", picked by Shombith 2026-11-26, section 236): the giver's words in two lines, then a row
+        // per asked seat (58 tall): the archetype, the giver's reason, and the squad vessel that fills it at the right.
+        const float AskY = 470f, AskWidth = 1180f, QuoteY = 494f, QuoteHeight = 84f, BringY = 580f, RowY = 602f,
+            RowHeight = 58f, ReasonX = 200f, CrewX = 1220f, CrewY = 531f, CrewStep = 56f, FootY = 829f, FootHeight = 56f,
+            TakeWidth = 290f, SeeX = 1220f, SeeY = 720f, SeeWidth = 350f, SeeHeight = 44f, Inset = 18f, FootShade = 190f,
+            DimPicture = 0.55f, FitWidth = 180f, CardRow = 22f;
 
         readonly VoyageBoard _board;
         readonly VoyageKit _kit;
@@ -47,9 +54,12 @@ namespace CosmicShore.UI
         readonly CanvasGroup _group;
         readonly List<CardView> _cards = new();
         readonly List<int> _order = new();
-        TMP_Text _docked, _askLabel, _askQuote, _bringMe, _crewLabel, _fitText, _pay, _chartLabel, _chartFoot, _from, _to;
+        TMP_Text _docked, _askLabel, _askQuote, _bringMe, _yourSquad, _crewLabel, _fitText, _pay, _chartLabel, _chartFoot, _from, _to;
         RectTransform _ask, _crew, _fit, _payRow, _chart;
-        readonly List<(RectTransform root, VoyageGlyph glyph, TMP_Text name)> _bringTags = new();
+        Image _chartFill;
+        bool _liveMap;
+        readonly List<AskRow> _askRows = new();
+        readonly List<IReadOnlyList<VesselArchetype>> _squadArchetypes = new();
         readonly List<CrewRow> _crewRows = new();
         readonly Image[] _fitSegments = new Image[3];
         readonly List<VoyageRing> _cellRings = new();
@@ -62,9 +72,17 @@ namespace CosmicShore.UI
             public RectTransform Root;
             public Image Picture, Foot;
             public VoyageOutline Edge;
-            public TMP_Text Kind, Title;
-            public readonly List<VoyageGlyph> Glyphs = new();
+            public TMP_Text Kind, Title, AsksNone;
+            public readonly List<(RectTransform root, VoyageGlyph glyph, TMP_Text name)> Asks = new();
             public Button Button;
+        }
+
+        sealed class AskRow
+        {
+            public RectTransform Root;
+            public VoyageGlyph Glyph;
+            public TMP_Text Name, Reason, Squad;
+            public VoyageMetMark Met;
         }
 
         sealed class CrewRow
@@ -95,6 +113,19 @@ namespace CosmicShore.UI
 
         /// <summary>The chart's rect in the page's units: the window's table stands there (the full screen grows from it).</summary>
         public static Rect ChartRect => Chart;
+
+        // Over the live map the chart keeps only a whisper of its ground, so its label and foot stay readable.
+        const float ChartFillOverMap = 0.12f;
+
+        /// <summary>
+        /// True while the live HyperSea map stands behind the chart (Shombith, 2026-11-26: "the hypersea map UI does not show
+        /// up in the minimized board"): the chart's panel turns clear and its drawn lane stands down for the map's own course.
+        /// </summary>
+        public bool LiveMap
+        {
+            get => _liveMap;
+            set => _liveMap = value;
+        }
 
         // ── Building ─────────────────────────────────────────────────────────
 
@@ -131,8 +162,10 @@ namespace CosmicShore.UI
         void BuildChart()
         {
             // A dark panel inside one thin line; "On the chart" at its top left; the lane drawn in the chart's own units.
+            // With the live HyperSea map standing behind it (LiveMap) the panel is clear and the map draws the course.
             _chart = At("Chart", Root, Chart.x, Chart.y, Chart.width, Chart.height);
-            _kit.Box(_chart, VoyageKit.Fade(_kit.Popup, 0.86f), VoyageKit.Fade(_kit.Outline, 0.8f));
+            (_chartFill, _) = _kit.Box(_chart, VoyageKit.Fade(_kit.Popup, 0.86f), VoyageKit.Fade(_kit.Outline, 0.8f));
+            _chartFill.raycastTarget = false;
             _chartLabel = Label(_chart, "OnTheChart", 20f, 16f, 300f, 20f, 14f, _kit.Sub);
             VoyageKit.Set(_chartLabel, _words ? _words.OnTheChart : null);
             var lane = At("Lane", _chart, 0f, 0f, Chart.width, Chart.height);
@@ -171,18 +204,28 @@ namespace CosmicShore.UI
             _askQuote.textWrappingMode = TextWrappingModes.Normal;
             _askQuote.overflowMode = TextOverflowModes.Ellipsis;
             _askQuote.lineSpacing = 10f;
-            _bringMe = Label(_ask, "BringMe", 0f, BringY, 130f, 28f, 14f, _kit.Sub);
+            // "Bring me" over the asks at the left and "Your squad" over the vessels at the right (caps 14, Sub).
+            _bringMe = Label(_ask, "BringMe", 0f, BringY, 300f, 20f, 14f, _kit.Sub);
             _bringMe.overflowMode = TextOverflowModes.Overflow;
             VoyageKit.Set(_bringMe, _words ? _words.BringMe : null);
+            _yourSquad = Label(_ask, "YourSquad", AskWidth - 300f, BringY, 300f, 20f, 14f, _kit.Sub, TextAlignmentOptions.Right);
+            VoyageKit.Set(_yourSquad, _words ? _words.YourSquad : null);
+            // A row per asked seat: the role's glyph (20) and the archetype (19, Light); the giver's reason (16, Sub); the
+            // squad's vessel (16) right-aligned with its met mark (16) before it; one muted line under the row.
             for (int i = 0; i < 3; i++)
             {
-                var tag = At("Class" + i, _ask, 0f, BringY, 160f, 28f);
-                var glyph = Glyph(tag, 0f, 4f, 20f);
-                var name = Text(tag, "Name", 28f, 0f, 140f, 28f, 17f, _kit.Light);
-                name.overflowMode = TextOverflowModes.Overflow;
-                _bringTags.Add((tag, glyph, name));
+                var row = new AskRow { Root = At("Ask" + i, _ask, 0f, RowY + i * RowHeight, AskWidth, RowHeight) };
+                row.Glyph = Glyph(row.Root, 0f, 19f, 20f);
+                row.Name = Text(row.Root, "Archetype", 30f, 0f, ReasonX - 40f, RowHeight - 1f, 19f, _kit.Light);
+                row.Reason = Text(row.Root, "Reason", ReasonX, 0f, 680f, RowHeight - 1f, 16f, _kit.Sub);
+                row.Reason.overflowMode = TextOverflowModes.Ellipsis;
+                row.Squad = Text(row.Root, "Squad", AskWidth - 260f, 0f, 260f, RowHeight - 1f, 16f, _kit.Light,
+                    TextAlignmentOptions.Right);
+                row.Met = At("Met", row.Root, 0f, 21f, 16f, 16f).gameObject.AddComponent<VoyageMetMark>();
+                VoyageKit.Block(At("Rule", row.Root, 0f, RowHeight - 1f, AskWidth, 1f), VoyageKit.Fade(_kit.Outline, 0.5f));
+                _askRows.Add(row);
             }
-            var see = At("SeeEveryClass", Root, SeeX, SeeY, SeeWidth, SeeHeight);
+            var see = At("SeeEveryArchetype", Root, SeeX, SeeY, SeeWidth, SeeHeight);
             _kit.Quiet(see, _words ? _words.SeeClassesKey : null, _words ? _words.SeeClasses : null, _board.BrowseVessels,
                 out var seeWords);
             if (seeWords) seeWords.fontSize = 15f;
@@ -246,13 +289,21 @@ namespace CosmicShore.UI
                 var ink = _kit.RowPicked;
                 var deep = VoyageKit.Fade(ink, 0.95f / Mathf.Max(0.01f, ink.a));
                 g.Set(VoyageKit.Fade(ink, 0f), deep, deep, 0.5f);
-                // From the foot up: the classes (18), the name (19, two lines), the kind (caps 14).
-                for (int i = 0; i < 3; i++) view.Glyphs.Add(Glyph(view.Root, Inset + i * 26f, CardHeight - Inset - 18f, 18f));
-                view.Title = Text(view.Root, "Title", Inset, CardHeight - Inset - 18f - 12f - 52f, CardWidth - 2f * Inset, 52f,
-                    19f, _kit.Light, TextAlignmentOptions.BottomLeft);
+                // From the foot up (Rev 146 A): the asked archetypes stacked, a role glyph (14) and the name (15) each 22
+                // apart, or "Asks for no one"; the name (19, two lines); the kind (caps 14). DrawCard stands them.
+                for (int i = 0; i < 3; i++)
+                {
+                    var row = At("Ask" + i, view.Root, Inset, 0f, CardWidth - 2f * Inset, CardRow);
+                    var glyph = Glyph(row, 0f, 4f, 14f);
+                    var name = Text(row, "Name", 24f, 0f, CardWidth - 2f * Inset - 24f, CardRow, 15f, _kit.Light);
+                    view.Asks.Add((row, glyph, name));
+                }
+                view.AsksNone = Text(view.Root, "AsksNone", Inset, 0f, CardWidth - 2f * Inset, CardRow, 15f, _kit.Sub);
+                VoyageKit.Set(view.AsksNone, _words ? _words.AsksNone : null);
+                view.Title = Text(view.Root, "Title", Inset, 0f, CardWidth - 2f * Inset, 52f, 19f, _kit.Light,
+                    TextAlignmentOptions.BottomLeft);
                 view.Title.textWrappingMode = TextWrappingModes.Normal;
-                view.Kind = Label(view.Root, "Kind", Inset, CardHeight - Inset - 18f - 12f - 52f - 8f - 20f,
-                    CardWidth - 2f * Inset, 20f, 14f, _kit.Light);
+                view.Kind = Label(view.Root, "Kind", Inset, 0f, CardWidth - 2f * Inset, 20f, 14f, _kit.Light);
                 var edge = VoyageKit.Node("Edge", view.Root);
                 VoyageKit.Stretch(edge);
                 view.Edge = edge.gameObject.AddComponent<VoyageOutline>();
@@ -392,23 +443,8 @@ namespace CosmicShore.UI
             string say = info != null && !string.IsNullOrEmpty(info.Say) ? info.Say : offer.Story;
             VoyageKit.Set(_askQuote, string.IsNullOrEmpty(say) ? null : TemplateText.Fill(_words.AskQuote, "say", say));
             var wants = _archetypes ? _archetypes.AskOf(job, offer.VoyageId) : System.Array.Empty<VesselArchetype>();
-            _bringMe.gameObject.SetActive(wants.Count > 0);
-            // "Bring me", then each class 34 after the last word ends.
-            float x = 140f;
-            for (int i = 0; i < _bringTags.Count; i++)
-            {
-                var (root, glyph, name) = _bringTags[i];
-                root.gameObject.SetActive(i < wants.Count);
-                if (i >= wants.Count) continue;
-                glyph.Form = VoyageGlyph.Of(wants[i]);
-                glyph.color = _kit.Light;
-                VoyageKit.Set(name, _archetypes.NameOf(wants[i]));
-                float w = 28f + Mathf.Ceil(name.GetPreferredValues(name.text).x);
-                VoyageKit.At(root, x, BringY, w, 28f);
-                x += w + 34f;
-            }
-
             var squad = VoyageSeatRecord.Get(offer.Key) ?? VoyageSeats.Active;
+            DrawAsks(job, offer.VoyageId, wants, squad);
             DrawCrew(offer, squad);
             DrawFit(job, offer.VoyageId, squad, wants.Count > 0);
             int pay = VoyageBoard.PayAt(offer, difficulty);
@@ -420,7 +456,9 @@ namespace CosmicShore.UI
         /// a ring for each cell crossed on the way (at most four), the names beside the diamonds, the length and sea under.</summary>
         void DrawChart(VoyageBoard.Offer offer, int difficulty)
         {
-            bool shown = offer != null;
+            // The live map draws the real course itself; the drawn lane stands in only when there is no map to show.
+            _chartFill.color = _liveMap ? VoyageKit.Fade(_kit.Popup, ChartFillOverMap) : VoyageKit.Fade(_kit.Popup, 0.86f);
+            bool shown = offer != null && !_liveMap;
             var a = new Vector2(60f, 328f);
             var b = new Vector2(450f, 150f);
             _lane.Set(shown ? new[] { a, b } : null, 2f, 8f, 8f, 0f);
@@ -444,9 +482,9 @@ namespace CosmicShore.UI
             VoyageKit.At(_to.rectTransform, b.x + 18f, b.y - 11f, Chart.width - b.x - 18f, 22f);
             VoyageKit.Set(_from, shown ? (string.IsNullOrEmpty(offer.From) ? _board.Here : offer.From) : null);
             VoyageKit.Set(_to, shown ? offer.Place : null);
-            VoyageKit.Set(_chartFoot, shown && _words
+            VoyageKit.Set(_chartFoot, offer != null && _words
                 ? TemplateText.Fill(_words.ChartFoot, "cells", Mathf.Max(1, offer.Cells).ToString(CultureInfo.InvariantCulture),
-                    "danger", _words.Danger(difficulty))
+                    "difficulty", Mathf.Clamp(difficulty, 1, 9).ToString(CultureInfo.InvariantCulture), "danger", _words.Danger(difficulty))
                 : null);
         }
 
@@ -468,20 +506,95 @@ namespace CosmicShore.UI
             VoyageKit.Set(view.Title, offer.Title);
             view.Title.color = on ? _kit.Light : VoyageKit.Fade(_kit.Light, 0.85f);
             var wants = _archetypes ? _archetypes.AskOf(VoyageArchetypesSO.JobOf(offer.Key), offer.VoyageId) : System.Array.Empty<VesselArchetype>();
-            for (int i = 0; i < view.Glyphs.Count; i++)
+            // The asks stand on the card's foot; the name and the kind stand on the asks.
+            int rows = Mathf.Max(1, wants.Count);
+            float top = CardHeight - Inset - rows * CardRow;
+            for (int i = 0; i < view.Asks.Count; i++)
             {
+                var (root, glyph, name) = view.Asks[i];
                 bool shown = i < wants.Count;
-                view.Glyphs[i].gameObject.SetActive(shown);
+                root.gameObject.SetActive(shown);
                 if (!shown) continue;
-                view.Glyphs[i].Form = VoyageGlyph.Of(wants[i]);
-                view.Glyphs[i].color = on ? _kit.Light : _kit.Sub;
+                VoyageKit.At(root, Inset, top + i * CardRow, CardWidth - 2f * Inset, CardRow);
+                glyph.Form = VoyageGlyph.Of(wants[i]);
+                glyph.color = on ? _kit.Light : _kit.Sub;
+                VoyageKit.Set(name, _archetypes.NameOf(wants[i]));
+                name.color = on ? _kit.Light : VoyageKit.Fade(_kit.Light, 0.85f);
             }
+            view.AsksNone.gameObject.SetActive(wants.Count == 0);
+            VoyageKit.At(view.AsksNone.rectTransform.parent as RectTransform, Inset, top, CardWidth - 2f * Inset, CardRow);
+            VoyageKit.At(view.Title.rectTransform.parent as RectTransform, Inset, top - 10f - 52f, CardWidth - 2f * Inset, 52f);
+            VoyageKit.At(view.Kind.rectTransform.parent as RectTransform, Inset, top - 10f - 52f - 6f - 20f,
+                CardWidth - 2f * Inset, 20f);
             // The picked job: one cyan line at its foot; the others inside one thin line.
             view.Foot.enabled = on;
             view.Edge.enabled = !on;
             view.Edge.Solid(VoyageKit.Fade(_kit.Outline, 0.6f));
             view.Button.onClick.RemoveAllListeners();
             view.Button.onClick.AddListener(() => _board.Pick(index));
+        }
+
+        /// <summary>
+        /// The squad's vessels in seat order with each one's archetypes, and which asked seat each fills
+        /// (<see cref="VoyageSeatFill"/>): what the quay's rows and Your Ark's chips both show.
+        /// </summary>
+        public static VoyageSeatFill.Filled[] FillOf(VoyageArchetypesSO archetypes, string job, string voyageId, SavedSquad squad,
+            List<IReadOnlyList<VesselArchetype>> into)
+        {
+            into.Clear();
+            if (!archetypes || squad == null) return System.Array.Empty<VoyageSeatFill.Filled>();
+            for (int s = 0; s < SavedSquad.SlotCount; s++) into.Add(archetypes.ArchetypesOf(squad.GetSlot(s).Vessel));
+            return VoyageSeatFill.Assign(archetypes.AskOf(job, voyageId), into);
+        }
+
+        /// <summary>The giver's reason for asked seat <paramref name="seat"/>: a named voyage's swapped seat says the crew
+        /// it counters; every other seat keeps its type's reason for that archetype.</summary>
+        public static string ReasonOf(VoyageArchetypesSO archetypes, string job, string voyageId, int seat)
+        {
+            if (!archetypes) return null;
+            var seats = archetypes.AskOf(job, voyageId);
+            if (seat < 0 || seat >= seats.Count) return null;
+            var a = seats[seat];
+            var own = archetypes.VoyageAskOf(voyageId);
+            // The crew's name can open the sentence lower case ("the Ironmouth breakers fly Sappers"); a reason starts capital.
+            if (own != null && own.Countered == a && archetypes.CounterReason(voyageId) is { Length: > 0 } counter)
+                return char.ToUpperInvariant(counter[0]) + counter.Substring(1);
+            var type = archetypes.TypeAskOf(job);
+            if (type == null) return null;
+            for (int i = 0; i < type.Seats.Count && i < type.Reasons.Count; i++)
+                if (type.Seats[i] == a) return type.Reasons[i];
+            return null;
+        }
+
+        void DrawAsks(string job, string voyageId, IReadOnlyList<VesselArchetype> wants, SavedSquad squad)
+        {
+            _bringMe.gameObject.SetActive(wants.Count > 0);
+            _yourSquad.gameObject.SetActive(wants.Count > 0 && squad != null);
+            var filled = FillOf(_archetypes, job, voyageId, squad, _squadArchetypes);
+            for (int i = 0; i < _askRows.Count; i++)
+            {
+                var row = _askRows[i];
+                bool shown = i < wants.Count;
+                row.Root.gameObject.SetActive(shown);
+                if (!shown) continue;
+                row.Glyph.Form = VoyageGlyph.Of(wants[i]);
+                row.Glyph.color = _kit.Light;
+                VoyageKit.Set(row.Name, _archetypes.NameOf(wants[i]));
+                VoyageKit.Set(row.Reason, ReasonOf(_archetypes, job, voyageId, i));
+                var f = i < filled.Length ? filled[i] : default;
+                bool has = squad != null;
+                row.Squad.gameObject.SetActive(has);
+                row.Met.gameObject.SetActive(has);
+                if (!has) continue;
+                var vessel = f.Vessel >= 0 ? _rules.VesselOf(squad.GetSlot(f.Vessel).Vessel) : null;
+                string name = vessel ? vessel.CardName : null;
+                VoyageKit.Set(row.Squad, f.Meets <= 0f || string.IsNullOrEmpty(name) ? _words.SquadNone
+                    : TemplateText.Fill(f.Meets >= 1f ? _words.SquadFull : _words.SquadHalf, "vessel", name));
+                row.Squad.color = f.Meets > 0f ? _kit.Light : _kit.Sub;
+                row.Met.Set(f.Meets, f.Meets > 0f ? _kit.Light : VoyageKit.Fade(_kit.Sub, 0.8f));
+                float w = Mathf.Ceil(row.Squad.GetPreferredValues(row.Squad.text).x);
+                VoyageKit.At(row.Met.rectTransform, AskWidth - w - 10f - 16f, 21f, 16f, 16f);
+            }
         }
 
         void DrawCrew(VoyageBoard.Offer offer, SavedSquad squad)

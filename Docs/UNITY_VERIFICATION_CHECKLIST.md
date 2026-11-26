@@ -27157,6 +27157,13 @@ every move is swept. Reference compile: 0 errors in the changed files. The edit-
 - [ ] The sortie still launches out of the exits (a launch is not swept), and a released wingmate is not stopped at the hull.
 - [ ] A raid's shed crystals land outside the hull, not inside it.
 
+2026-11-26, the see-through hull (option C): `ArkHullGraph.shadergraph` (VesselGraph plus the prisms' corridor) was
+written as JSON by `Tools/Build/author_ark_hull_graph.py` and has never been imported or compiled by Unity.
+
+- [ ] ArkHullGraph imports and compiles (no pink Ark); `ArkRoundModelTests.Hull_IsSeeThroughBetweenTheCameraAndThePilot` passes.
+- [ ] The Ark's colours are unchanged in every domain (the copies keep their values when the shader is swapped).
+- [ ] Fly into the tube and through the hall with the Sparrow: where the camera sits outside the wall, the hull dissolves around your vessel with the prisms' screen door, and only there.
+
 ## The Goby never flies: it only darts perch to perch (2026-11-24)
 
 Garrett: "I want the goby's only movement to be stretches of different length between perches. it should never fly.
@@ -27481,3 +27488,19 @@ Refcompile: 0 errors in the changed files (the run's 29 pre-existing errors are 
 - [ ] Unity imports `Assets/Resources/Vessels/VesselArchetypes.asset` with no missing-script warning, and its Inspector shows roles, archetypes, 24 vessels and 12 counters.
 - [ ] Hangar: the line over each vessel's name reads its role, its archetypes primary first, then Owned / Locked (Squirrel: CULTIVATOR · PUMPER / HARRASER · OWNED). A vessel the board leaves out still reads VESSEL · OWNED.
 - [ ] Run the edit-mode tests `VesselArchetypesTests`.
+
+
+## Voyages UI, Rev 146 A "Seat asks", and the live map in the small chart (2026-11-26)
+
+🔴 unverified in Unity: built from code and checked in Amoebius with screenshots beside the Frogma boards
+(`Docs/MENU_REDESIGN_B.md` section 236); refcompile run; the EditMode tests (`VoyageSeatFillTests`) were not run.
+- [ ] Voyages tab: the small chart on the quay shows the live HyperSea map (cells, pins), not an empty panel; Full
+  screen still grows from it.
+- [ ] Each job card lists its three asked archetypes under its name; the Crystal Run says "Asks for no one".
+- [ ] Salvage with Sparrow, Squirrel, Dolphin: "Bring me" rows read Nuke / Sapper / Harraser with the giver's reasons,
+  and at the right Dolphin, Sparrow, "Squirrel, half"; fit 2.5 of 3.
+- [ ] Your Ark: "Fills Sapper" over Sparrow, "Fills Harraser  half: its second" over Squirrel, "Fills Nuke" over
+  Dolphin; the header shows nine difficulty segments with "Difficulty N" and ASKS FOR with three archetypes.
+- [ ] Press Squirrel's hull: Vessels opens on Harraser (Starling, Jacks on the floor), the "Harraser second or third"
+  tiles at the right with "In this seat now" on Squirrel, nine archetype tabs (Zoner "(none yet)"); LB / RB step them;
+  Take Starling puts it in the seat and the fit reads 3 of 3.

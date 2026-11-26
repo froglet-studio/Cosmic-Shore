@@ -551,6 +551,7 @@ namespace CosmicShore.Gameplay
                         if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);          // ShaderGraph / URP: Off
                         if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
                         if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f); // URP Lit: Both
+                        SeeThrough(copy);
                         MakeOpaque(copy);
                         if (copy.HasProperty(ColorMultiplierId))
                             copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * SlotBrightness(SlotOf(m)));
@@ -561,6 +562,32 @@ namespace CosmicShore.Gameplay
                 }
                 if (changed) renderer.sharedMaterials = materials;
             }
+        }
+
+        /// <summary>
+        /// The hull dissolves between the chase camera and the pilot's vessel, by the prisms' own corridor (Shombith's pick,
+        /// 2026-11-26: inside the tube the camera sits outside the wall). The copy wears the definition's see-through graph
+        /// (the same properties, so its colours are unchanged) with alpha clip on: the corridor's screen door.
+        /// </summary>
+        void SeeThrough(Material copy)
+        {
+            var shader = _def.SeeThroughShader;
+            if (!shader || copy.shader == shader || !CanWear(copy.shader, shader)) return;
+            copy.shader = shader;
+            if (copy.HasProperty(AlphaClipId)) copy.SetFloat(AlphaClipId, 1f);
+            copy.EnableKeyword("_ALPHATEST_ON");
+        }
+
+        static readonly int AlphaClipId = Shader.PropertyToID("_AlphaClip");
+
+        /// <summary>True when <paramref name="to"/> has every property <paramref name="from"/> has (the see-through graph is the
+        /// vessel graph plus the corridor), so a material swapped to it keeps all its values.</summary>
+        static bool CanWear(Shader from, Shader to)
+        {
+            if (!from) return false;
+            for (int i = 0, n = from.GetPropertyCount(); i < n; i++)
+                if (to.FindPropertyIndex(from.GetPropertyName(i)) < 0) return false;
+            return true;
         }
 
         /// <summary>

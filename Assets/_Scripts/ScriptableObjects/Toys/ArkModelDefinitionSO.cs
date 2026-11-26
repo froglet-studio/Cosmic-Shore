@@ -103,6 +103,13 @@ namespace CosmicShore.ScriptableObjects
                                  "tunnel; Round = the round Ark's tube, junction hall and three stern exits.")]
         ArkHullShape hullShape = ArkHullShape.Reverse;
 
+        [Header("See-through hull - the pilot's vessel is never hidden by the Ark")]
+        [SerializeField, Tooltip("The shader the Ark's own material copies wear instead of the vessel graph: the same graph " +
+                                 "with the prisms' camera-to-vessel corridor (ArkHullGraph, Tools/Build/author_ark_hull_graph.py), so the " +
+                                 "hull dissolves between the chase camera and the pilot's vessel (Shombith's pick, 2026-11-26). Empty = " +
+                                 "the hull stays solid to the eye.")]
+        Shader seeThroughShader;
+
         [Header("Engine trails - the streams the rig table's trails leave (the round Ark's Trail 3)")]
         [SerializeField, Tooltip("The streams' material (additive, vertex-coloured). Empty = no streams.")]
         Material engineTrailMaterial;
@@ -120,6 +127,7 @@ namespace CosmicShore.ScriptableObjects
         public Mesh ReactorCrystalMesh => reactorCrystalMesh;
         public Material ReactorCrystalMaterial => reactorCrystalMaterial;
         public ArkHullShape HullShape => hullShape;
+        public Shader SeeThroughShader => seeThroughShader;
         public Material EngineTrailMaterial => engineTrailMaterial;
         public float EngineTrailSeconds => engineTrailSeconds;
         public float EngineTrailAlpha => engineTrailAlpha;

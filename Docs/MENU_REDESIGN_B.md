@@ -9342,3 +9342,66 @@ The Toy Box grid is scaled to 0.84 under the taller Today card. Generator
 `KitCenteredGrid` (four over three, centred) and `KitDive` (Navigate grows the live preview to the full window before the
 hand-off). Differs: the lens and banner show the kit sea, not a world frame; Shuffle is a button beside Back with its
 line; the Today lens is the toy's glyph. Offline render beside the board: `Docs/Look/toybox-rev145h_2026-11-25.jpg`.
+
+## 236. Rev 146 mockups: roles and archetypes on the Voyages quay, Your Ark and Vessels, three ways (2026-11-26, A picked and built)
+
+**Asked** (Shombith, 2026-11-26, through the project coordinator): redesign the Voyages UI wherever roles touch it (the
+Vessels page, the seat picker, the class tags and the givers' recommendations), drawn on Frogma first. The roles board is
+final (https://claude.ai/artifact/Duwb9xJ7XdAykxMKAnMyFe; his JSON `/mnt/project-files/archetypes/board-2026-11-26.json`):
+Cultivator, Destroyer and Guardian are ROLES; Pumper, Builder, Burster / Sapper, Specialist, Nuke / Harraser, Zoner, Enhancer
+are ARCHETYPES; each vessel has a primary, a secondary and sometimes a tertiary archetype. They replace the seven Milestone 2
+classes.
+
+**On the canvas**: tab Voyages, "Rev 146 - Voyages: roles and archetypes on the quay, Your Ark and Vessels, three ways";
+copies `Docs/MenuRedesignB/board/R146*.dc.html`, generator `Docs/MenuRedesignB/rounds/r146_voyages_roles.py <root> 146`.
+The canvas held 508 of its 512 files, so each option is ONE tall board (1920 x 3240: the quay, Your Ark, Vessels from
+Seat 2, stacked); the compare and notes boards stay here (`--with-notes` writes them). The picked Rev 138 screens are kept;
+only what the classes did is redrawn, and difficulty is 1-9 (Rev 138's four-step sea bar is gone). The ask and fit rule
+come from the gameplay thread (2026-11-26): three seats, each one archetype (Salvage: Nuke, Sapper, Harraser; Escort:
+Enhancer, Harraser, Nuke; Bounty: Harraser, Specialist, Sapper; Hold the Core: Pumper, Burster, Sapper; the Crystal Run
+asks for no one); a vessel meets a seat fully on its primary, half on a secondary or tertiary; squad fit 0-3 in halves
+(Sparrow, Squirrel, Dolphin: 2.5). Only the three role glyphs (Rev 133's sprout, star and shield) are drawn; archetypes are
+words.
+- **A Seat asks (recommended)**: the giver asks for three archetypes, each with a reason, and your squad answers beside
+  each with a full or half ring; the job cards list the three archetypes; each seat on Your Ark wears "Fills <archetype>"
+  above the hull and the vessel's archetypes beside its name; Vessels opens on the seat's ask (vessels that lead with it on
+  the floor, those that have it second beside them, one line of counters, nine tabs under three roles).
+- **B Know the crew**: the giver names the rival crew's three vessels and their archetypes and asks for what counters each;
+  each seat names the rival it answers; Vessels picks by a counter wheel of the nine archetypes (arrows: what it counters,
+  what counters it).
+- **C Plain words**: the ask is one sentence ("Bring me a Nuke, a Sapper and a Harraser") with one line on the squad's fit;
+  seats say the ask they fill in words under the pilot; Vessels is a list of the nine under their roles with how many
+  vessels lead with each.
+- Recommended A: every screen answers the one question (which seat fills which ask, fully or half). B puts a rival crew on
+  every job, which only Bounty and the rival voyages have; C hides the half fit.
+- `check_mockup.py` noise fails on all three as it does on the picked R138 boards (the nav and sea chrome); kept equal.
+- Open: no vessel leads with Zoner; no starter (Squirrel, Sparrow, Dolphin, Thresher, Tiger Moth, Swordfish) leads with a
+  Guardian archetype; starters carry no mark; Tiger Moth has no hangar preview.
+
+**Differs from the build**: `VoyageClassesSO`, the class glyphs, the class tags on Your Ark, the class row in Vessels E and
+the quay's "Bring me" classes all give way to the archetypes; the data layer (`VesselRole`, `VesselArchetype`,
+`VoyageArchetypesSO`) is built by the gameplay thread "Redesign voyages around roles and archetypes", and this round's
+screens build on it after the pick.
+
+**Picked** (Shombith, 2026-11-26): "Lets go with A, also the hypersea map UI does not show up in the minimized board of the
+voyages."
+
+**Built** (2026-11-26, on the data layer of PR #2406):
+- Quay (`VoyageQuay`): each job card stacks its three asked archetypes (role glyph and name), the Crystal Run says "Asks
+  for no one"; under the giver's words, "Bring me" and one row per asked seat: the archetype, the giver's reason (the type's
+  `Reasons`; a named voyage's swapped seat says the crew it counters), and at the right under "Your squad" the vessel that
+  fills it with a met mark (`VoyageMetMark`: ring and dot whole, half or none) and ", half" when it is a second or third
+  archetype. Which vessel fills which seat is `VoyageSeatFill.Assign` (the best assignment `VesselArchetypes.Fit` totals,
+  ties in squad order). See every archetype (Y) moved under Your crew says, as the board stands it.
+- The chart's foot is "3 cells · Difficulty 4". The live map: `VoyageSeaPage` faded the window's table with the full-screen
+  ease (`alpha = e`), so the map was invisible while the quay stood; the table now stays drawn behind the chart (it takes
+  presses only once open) and the chart's panel turns clear over it (`VoyageQuay.LiveMap`), its drawn lane standing down.
+- Your Ark / Vessels header (`VoyageJobHeader`): a nine-segment difficulty meter and "Difficulty N" (1-9), "ASKS FOR" and
+  the asked archetypes with their role glyphs.
+- Your Ark (`VoyageArkPage`): a "Fills <archetype>" chip over each hull's top left ("half: its second" when partial; "Fills
+  no seat asked" when the vessel fills none), and the vessel's archetypes beside its name, the primary first.
+- Vessels (`VoyageVesselsPage`): opens on the archetype the seat fills (else the first unmet ask, else its primary); the
+  vessels that lead with it on the floor (archetypes and "Meets the seat fully." / "by half."), the ones with it second or
+  third as tiles at the right ("In this seat now" on the seat's vessel), the archetype's line with "Counters ..." and
+  "Countered by ...", the nine archetypes in their three roles as tabs (LB / RB step all nine; "(none yet)" on one no vessel
+  leads with), the fit change in the bar and "TAKE <VESSEL>".

@@ -440,6 +440,7 @@ namespace CosmicShore.UI
         public void Redraw()
         {
             var offer = _open >= 0 && _open < _offers.Count ? _offers[_open] : null;
+            _quay.LiveMap = _map && _map.Chart != null;
             _quay.Draw(_offers, _open, _board.Difficulty);
             _fullLayer.Draw(_offers, _open, _board.Difficulty, _map);
             if (offer == null) return;
@@ -875,8 +876,9 @@ namespace CosmicShore.UI
             Place(_dim, table);
             Place(_message, table);
             LayoutTable(table.size, e);
-            // In the window the quay's own chart stands where the table grows from; the live map shows in full screen.
-            _tableGroup.alpha = e;
+            // The live map shows in the window too, inside the quay's chart (Shombith, 2026-11-26), and grows from there to
+            // the full screen; it takes presses only in full screen, so the chart's Full screen button stays the way in.
+            _tableGroup.alpha = 1f;
             _tableGroup.blocksRaycasts = e >= 0.5f;
             _dimGroup.alpha = e;
 

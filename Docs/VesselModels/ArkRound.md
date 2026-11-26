@@ -101,6 +101,13 @@ Since 2026-11-26 (Shombith: "I can literally go inside the ark's model while boo
   the path first meets the hull, so a boost cannot step over a wall between two frames. A jump longer than 25 world
   units (a launch, a reset) is held out only where it lands. A vessel the launch holds (`IsStationary`) is not swept.
 
+**See-through hull.** Shombith picked option C on the concept page (round 14, 2026-11-26): inside the tube the chase
+camera sits outside the wall, so the hull dissolves between the camera and the pilot's vessel. It is the prisms' own
+corridor (`PrismOcclusionCorridor.cs` and `.hlsl`), not a second one. `ArkHullGraph.shadergraph` is `VesselGraph` plus
+the corridor's `PrismOcclusionFade` call wired to Alpha and the clip threshold, written by
+`Tools/Build/author_ark_hull_graph.py` (`--check` fails when it drifts from `VesselGraph`). `ArkModel` swaps the Ark's own
+material copies to it (`ArkModelDefinitionSO.seeThroughShader`); the vessels keep `VesselGraph`.
+
 ## Numbers
 
 - 149,160 triangles and 79,124 vertices, FBX 3.46 MB.

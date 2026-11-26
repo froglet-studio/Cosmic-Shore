@@ -29,8 +29,8 @@ namespace CosmicShore.ScriptableObjects
         public string Docked = "Docked at {place}.  {count} jobs on the quay.";
         [Tooltip("The chart's label, top left.")]
         public string OnTheChart = "ON THE CHART";
-        [Tooltip("Under the chart: the voyage's length and its sea. Tokens {cells} and {danger}.")]
-        public string ChartFoot = "{cells} cells  ·  {danger} sea";
+        [Tooltip("Under the chart: the voyage's length and its difficulty (1-9). Tokens {cells}, {difficulty} and {danger}.")]
+        public string ChartFoot = "{cells} cells  ·  Difficulty {difficulty}";
 
         [Header("Voyage types (a card's kind; a type is never a voyage's name)")]
         public string KindSalvage = "Salvage";
@@ -51,6 +51,16 @@ namespace CosmicShore.ScriptableObjects
         public string AskQuote = "\"{say}\"";
         [Tooltip("Before the archetypes the voyage asks for.")]
         public string BringMe = "BRING ME";
+        [Tooltip("Over the squad column at the right of the asks (Frogma Rev 146 A).")]
+        public string YourSquad = "YOUR SQUAD";
+        [Tooltip("An asked seat your squad meets fully: the vessel. Token {vessel}.")]
+        public string SquadFull = "{vessel}";
+        [Tooltip("An asked seat your squad meets by half (a second or third archetype). Token {vessel}.")]
+        public string SquadHalf = "{vessel}, half";
+        [Tooltip("An asked seat no vessel in your squad meets.")]
+        public string SquadNone = "No one yet";
+        [Tooltip("On a job card that asks for no archetype (the Crystal Run).")]
+        public string AsksNone = "Asks for no one";
 
         [Header("Your crew")]
         [Tooltip("Over the crew's answers.")]
@@ -67,9 +77,9 @@ namespace CosmicShore.ScriptableObjects
         public string TakeJob = "TAKE THE JOB";
         [Tooltip("The keycap on Take the job.")]
         public string TakeJobKey = "A";
-        [Tooltip("Opens Vessels to browse every class.")]
-        public string SeeClasses = "SEE EVERY CLASS";
-        [Tooltip("The keycap on See every class.")]
+        [Tooltip("Opens Vessels to browse every archetype.")]
+        public string SeeClasses = "SEE EVERY ARCHETYPE";
+        [Tooltip("The keycap on See every archetype.")]
         public string SeeClassesKey = "Y";
 
         [Header("The full screen")]
@@ -122,9 +132,23 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Your Ark")]
         [Tooltip("Over the archetypes the job asks for, top right of Your Ark.")]
-        public string Wanted = "WANTED";
+        public string Wanted = "ASKS FOR";
         [Tooltip("Beside the danger meter under the job's name: the sea. Token {danger}.")]
         public string ArkSea = "{danger} sea";
+        [Tooltip("Beside the nine-segment difficulty meter under the job's name. Token {difficulty} (1-9).")]
+        public string ArkDifficulty = "Difficulty {difficulty}";
+        [Tooltip("The chip over a seat's hull: the asked archetype the vessel fills. Token {archetype}.")]
+        public string Fills = "Fills {archetype}";
+        [Tooltip("After Fills when the vessel meets the seat by half. Token {rank} (Second or Third below).")]
+        public string FillsHalf = "half: its {rank}";
+        [Tooltip("The chip over a seat's hull when the vessel fills no asked seat. Blank: no chip.")]
+        public string FillsNone = "Fills no seat asked";
+        [Tooltip("{rank} for a vessel's second archetype.")]
+        public string Second = "second";
+        [Tooltip("{rank} for a vessel's third archetype.")]
+        public string Third = "third";
+        [Tooltip("Between a vessel's archetypes beside its name.")]
+        public string ArchetypeJoin = "  ·  ";
         [Tooltip("After the sea under the job's name. Tokens {cells}, {giver}.")]
         public string ArkFor = "{cells} cells  ·  for {giver}";
         [Tooltip("Left of Set sail: what the job pays. Token {pay}.")]
@@ -156,6 +180,9 @@ namespace CosmicShore.ScriptableObjects
         public static int DangerLevel(int difficulty) => difficulty <= 2 ? 1 : difficulty <= 4 ? 2 : difficulty <= 7 ? 3 : 4;
 
         /// <summary>The sea's danger at <paramref name="difficulty"/>, in words.</summary>
+        /// <summary>{rank}: the word for a vessel's archetype at <paramref name="rank"/> (1 second, 2 third), or empty.</summary>
+        public string Rank(int rank) => rank == 1 ? Second : rank == 2 ? Third : string.Empty;
+
         public string Danger(int difficulty) => DangerLevel(difficulty) switch
         {
             1 => DangerCalm,
