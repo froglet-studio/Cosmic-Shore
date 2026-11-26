@@ -143,24 +143,30 @@ namespace CosmicShore.Gameplay
                          (JackstrawSettingsSO.Rung(_settings.aiMissRadius, h.Level) * (float)h.Rng.NextDouble());
         }
 
-        IPlayer ChooseRival(Hunter h, Transform self)
+        IPlayer ChooseRival(Hunter h, Transform self) => ChooseRival(_gameData, _settings, h.Player, self, h.Level);
+
+        /// <summary>The cheapest rival for <paramref name="hunter"/> at AI level <paramref name="level"/> (null when
+        /// none is in the rung's hunt range): by distance and bearing, cheaper if human or silenced. Shared with
+        /// Riposte's pilots (<see cref="RiposteDuelist"/>), which hunt by the same rule.</summary>
+        public static IPlayer ChooseRival(GameDataSO gameData, JackstrawSettingsSO settings, IPlayer hunter,
+                                          Transform self, int level)
         {
-            float huntRange = JackstrawSettingsSO.Rung(_settings.aiHuntRange, h.Level);
-            float silencedFocus = Mathf.Max(1f, JackstrawSettingsSO.Rung(_settings.aiSilencedPreyFocus, h.Level));
+            float huntRange = JackstrawSettingsSO.Rung(settings.aiHuntRange, level);
+            float silencedFocus = Mathf.Max(1f, JackstrawSettingsSO.Rung(settings.aiSilencedPreyFocus, level));
             IPlayer best = null;
             float bestCost = float.MaxValue;
-            var players = _gameData.Players;
+            var players = gameData.Players;
             for (int i = 0; i < players.Count; i++)
             {
                 var candidate = players[i];
-                if (!IsLiveRival(candidate, h.Player)) continue;
+                if (!IsLiveRival(candidate, hunter)) continue;
                 Vector3 to = candidate.Vessel.Transform.position - self.position;
                 float distance = to.magnitude;
                 if (distance > huntRange) continue;
                 // A rival dead ahead costs its distance; one straight behind costs ~3x it.
                 float facing = distance > 1e-3f ? Vector3.Dot(self.forward, to / distance) : 1f;
                 float cost = distance / Mathf.Lerp(0.35f, 1f, 0.5f * (facing + 1f));
-                if (!candidate.IsInitializedAsAI) cost /= _settings.aiHumanFocus;
+                if (!candidate.IsInitializedAsAI) cost /= settings.aiHumanFocus;
                 if (VesselSilence.IsSilenced(candidate.Vessel.VesselStatus)) cost /= silencedFocus;
                 if (cost >= bestCost) continue;
                 bestCost = cost;
@@ -169,7 +175,8 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        static bool IsLiveRival(IPlayer candidate, IPlayer self)
+        /// <summary>A pilot of another domain with a hull in the world.</summary>
+        public static bool IsLiveRival(IPlayer candidate, IPlayer self)
         {
             if (candidate == null || self == null || ReferenceEquals(candidate, self)) return false;
             if (candidate.Domain == self.Domain) return false;   // the flail never strikes a team-mate

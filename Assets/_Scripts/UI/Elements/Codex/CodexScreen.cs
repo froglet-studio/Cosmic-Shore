@@ -13,7 +13,7 @@ namespace CosmicShore.UI
     /// <summary>
     /// The CODEX screen, the top bar's first tab (Docs/MENU_REDESIGN_B.md sections 88 and 97). The chapters along the
     /// top - ELEMENTS (the four elements and their Etherions, Omni, prisms, spindles), ECOLOGY (Flora / Fauna, every
-    /// species the Toy Box offers) and LEXICON (one card each for the arcade, quests, voyages, missions, vessels, pilots,
+    /// species the Toy Box offers; Vessels / Roles, each hull's role and archetypes and which archetype counters which) and LEXICON (one card each for the arcade, quests, voyages, missions, vessels, pilots,
     /// artifacts and toys) - step on LB / RB. Each chapter is drawn in one of two layouts (section 98, Shombith 2026-10-27:
     /// "keep this design only for elements section others can have design B"): ELEMENTS as the Orbit (Rev 30 board C,
     /// the entries on tilted rings round the picked one's picture, <see cref="CodexOrbit"/>), ECOLOGY and LEXICON as the
@@ -27,8 +27,15 @@ namespace CosmicShore.UI
     [AddComponentMenu("Cosmic Shore/UI/Codex Screen")]
     public class CodexScreen : MonoBehaviour, IScreen
     {
-        const int StopCount = 4;
+        const int StopCount = 6;
         static readonly CodexChapter[] TabStops = { CodexChapter.Elements, CodexChapter.Flora, CodexChapter.Lexicon };
+        /// <summary>LB / RB order: ECOLOGY's four stops sit between ELEMENTS and LEXICON (the enum's values are serialized
+        /// array indices, so the order lives here).</summary>
+        static readonly CodexChapter[] StopOrder =
+        {
+            CodexChapter.Elements, CodexChapter.Flora, CodexChapter.Fauna, CodexChapter.Vessels, CodexChapter.Roles,
+            CodexChapter.Lexicon,
+        };
 
         /// <summary>One way of drawing a chapter: its entries, how they are placed and the page they open.</summary>
         [Serializable]
@@ -68,20 +75,24 @@ namespace CosmicShore.UI
 
         [Header("Words")]
         [SerializeField] private CodexWords words = new();
-        [Tooltip("The title per stop: Elements, Flora, Fauna, Lexicon.")]
-        [SerializeField] private string[] stopTitles = { "Elements", "Flora", "Fauna", "Lexicon" };
+        [Tooltip("The title per stop, in the chapters' value order: Elements, Flora, Fauna, Lexicon, Vessels, Roles.")]
+        [SerializeField] private string[] stopTitles = { "Elements", "Flora", "Fauna", "Lexicon", "Vessels", "Roles" };
         [Tooltip("The count. {count} is the number of entries.")]
         [SerializeField] private string countTemplate = "{count} entries";
         [Tooltip("What an empty stop says, per stop (same order as the titles). Empty: nothing.")]
-        [SerializeField] private string[] emptyLines = { "", "", "", "" };
+        [SerializeField] private string[] emptyLines = { "", "", "", "", "", "" };
 
         [Header("Chapters")]
         [Tooltip("One tab per chapter: Elements, Ecology, Lexicon.")]
         [SerializeField] private KitTextTab[] chapterTabs = new KitTextTab[3];
-        [Tooltip("Flora and Fauna, shown under the chapters while ECOLOGY is open.")]
+        [Tooltip("Flora, Fauna, Vessels and Roles, shown under the chapters while ECOLOGY is open.")]
         [SerializeField] private CanvasGroup ecologyTabsGroup;
         [SerializeField] private KitTextTab floraTab;
         [SerializeField] private KitTextTab faunaTab;
+        [Tooltip("Every vessel's role and archetypes (Docs/Vessels/archetypes.json).")]
+        [SerializeField] private KitTextTab vesselsTab;
+        [Tooltip("The three roles and nine archetypes, and which archetype counters which.")]
+        [SerializeField] private KitTextTab rolesTab;
         [Tooltip("Step the chapters with the pad's shoulder buttons (LB / RB).")]
         [SerializeField] private bool shoulderInput = true;
 
@@ -117,6 +128,8 @@ namespace CosmicShore.UI
             }
             if (floraTab) floraTab.onClick.AddListener(() => ShowStop(CodexChapter.Flora));
             if (faunaTab) faunaTab.onClick.AddListener(() => ShowStop(CodexChapter.Fauna));
+            if (vesselsTab) vesselsTab.onClick.AddListener(() => ShowStop(CodexChapter.Vessels));
+            if (rolesTab) rolesTab.onClick.AddListener(() => ShowStop(CodexChapter.Roles));
         }
 
         public void OnScreenEnter()
@@ -162,8 +175,9 @@ namespace CosmicShore.UI
         /// <summary>LB / RB: the next or previous stop, stopping at the ends.</summary>
         public void Step(int direction)
         {
-            int next = Mathf.Clamp((int)_stop + direction, 0, StopCount - 1);
-            if (next != (int)_stop) ShowStop((CodexChapter)next);
+            int at = Array.IndexOf(StopOrder, _stop);
+            int next = Mathf.Clamp(at + direction, 0, StopOrder.Length - 1);
+            if (next != at) ShowStop(StopOrder[next]);
         }
 
         public void ShowStop(CodexChapter stop)
@@ -173,11 +187,12 @@ namespace CosmicShore.UI
             int s = (int)stop;
 
             for (int i = 0; i < chapterTabs.Length && i < TabStops.Length; i++)
-                if (chapterTabs[i]) chapterTabs[i].IsSelected = TabStops[i] == stop || (TabStops[i] == CodexChapter.Flora && stop == CodexChapter.Fauna);
-            bool ecology = stop is CodexChapter.Flora or CodexChapter.Fauna;
-            KitVisibility.SetShown(ecologyTabsGroup, ecology);
+                if (chapterTabs[i]) chapterTabs[i].IsSelected = TabStops[i] == stop || (TabStops[i] == CodexChapter.Flora && IsEcology(stop));
+            KitVisibility.SetShown(ecologyTabsGroup, IsEcology(stop));
             if (floraTab) floraTab.IsSelected = stop == CodexChapter.Flora;
             if (faunaTab) faunaTab.IsSelected = stop == CodexChapter.Fauna;
+            if (vesselsTab) vesselsTab.IsSelected = stop == CodexChapter.Vessels;
+            if (rolesTab) rolesTab.IsSelected = stop == CodexChapter.Roles;
 
             if (gridTitle) gridTitle.text = s < stopTitles.Length ? stopTitles[s] : string.Empty;
             if (gridCount) gridCount.text = items.Count > 0 ? TemplateText.Fill(countTemplate, "count", items.Count.ToString()) : string.Empty;
@@ -209,6 +224,18 @@ namespace CosmicShore.UI
             _lastSelected = EventSystem.current ? EventSystem.current.currentSelectedGameObject : null;
         }
 
+        /// <summary>The ECOLOGY chapter's four stops: what lives, and the vessels by the part they play in it.</summary>
+        static bool IsEcology(CodexChapter stop) =>
+            stop is CodexChapter.Flora or CodexChapter.Fauna or CodexChapter.Vessels or CodexChapter.Roles;
+
+        KitTextTab EcologyTab(CodexChapter stop) => stop switch
+        {
+            CodexChapter.Fauna => faunaTab,
+            CodexChapter.Vessels => vesselsTab,
+            CodexChapter.Roles => rolesTab,
+            _ => floraTab,
+        };
+
         bool OnEntries(Transform t) =>
             (orbitLayout.content && t.IsChildOf(orbitLayout.content)) || (guideLayout.content && t.IsChildOf(guideLayout.content));
 
@@ -216,7 +243,7 @@ namespace CosmicShore.UI
         {
             int s = (int)stop;
             return _items[s] ??= CodexCatalog.Build(stop, CodexSO.Load(), vessels, elementShapes, words, null, roster, elementFlipbooks,
-                                                LifePalette());
+                                                LifePalette(), VesselArchetypesSO.Load());
         }
 
         Color[] _lifePalette;
@@ -266,7 +293,7 @@ namespace CosmicShore.UI
         /// </summary>
         void WireNavigation()
         {
-            Selectable up = KitVisibility.IsShown(ecologyTabsGroup) ? (_stop == CodexChapter.Fauna ? faunaTab : floraTab) : null;
+            Selectable up = KitVisibility.IsShown(ecologyTabsGroup) ? EcologyTab(_stop) : null;
             if (!up)
                 for (int i = 0; i < chapterTabs.Length && i < TabStops.Length; i++)
                     if (chapterTabs[i] && chapterTabs[i].IsSelected) up = chapterTabs[i];

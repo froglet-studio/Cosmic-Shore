@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-25-added-a-rule-never-run-eval-in-a-loop-ag-3a8d0b",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-25T19:19:49+00:00",
+  "area": "tooling docs: the Unity CLI rules (CLAUDE.md, Docs/unity-cli-setup.md)",
+  "summary": "Added a rule: never run eval in a loop against the open editor, and never switch the Profiler on from an eval in Play.",
+  "why": "Measured 2026-11-26: each eval freezes the editor 1.2-1.6 s with 114 MB of garbage; a test script polling every 2 s was the freeze Yash saw every few seconds in the menu. The Profiler switched on from an eval ended the editor.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "2beef5168",
+  "paths": [
+    "CLAUDE.md",
+    "Docs/unity-cli-setup.md"
+  ]
+}

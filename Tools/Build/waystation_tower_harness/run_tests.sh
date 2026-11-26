@@ -98,7 +98,8 @@ mutate_ruins() {
 }
 mutate_ruins "ruins round the ring-to-ring line, not the cruise and the fall" \
   's/if (i >= 1 && WaystationTower.IsTowerRing(course\[i\], s))/if (i < 0)/' 'if (i < 0)'
-mutate_ruins "a kind may stand twice" 's/if (used\[c.Kind\]) continue;/;/' '^ *;$'
+mutate_ruins "a drop gap keeps the curved lane, not the chord" 's/bool longGap = i >= 1 \&\&/bool longGap = i < 0 \&\&/' 'bool longGap = i < 0'
+mutate_ruins "the autopilot sees no ruin on its path" 's/if ((d - dir \* along).sqrMagnitude >= clear2) continue;/if ((d - dir * along).sqrMagnitude >= 0f) continue;/' 'sqrMagnitude >= 0f) continue;'
 mutate_ruins "ruins on every rung" \
   's/if (settings.PerLap <= 0 || course == null/settings.PerLap = 7; if (course == null/' 'settings.PerLap = 7;'
 echo "waystation_tower_harness tests self-test: ok"

@@ -85,6 +85,27 @@ namespace CosmicShore.Player
             return f?.GetValue(pc) is ElementalFloat ef ? Math.Round(ef.EvaluateLive(p.Vessel.VesselStatus), 3) : null;
         }
 
+        /// <summary>Every standing prism's volume (box plus booked shield, as <c>VolumeLedger.CountLive</c> counts it), by
+        /// pilot and then by the type of the trail that laid it.</summary>
+        static Dictionary<string, JsonObject> HeldByTrail()
+        {
+            var sums = new Dictionary<string, Dictionary<string, double>>();
+            var index = PrismSpatialIndex.Instance;
+            if (index == null) return new Dictionary<string, JsonObject>();
+            var live = new List<Prism>(index.LiveCount);
+            index.CopyLivePrisms(live);
+            foreach (var prism in live)
+            {
+                if (!prism || prism.prismProperties == null || string.IsNullOrEmpty(prism.PlayerName)) continue;
+                string kind = prism.Trail?.GetType().Name ?? "none";
+                if (!sums.TryGetValue(prism.PlayerName, out var byKind)) sums[prism.PlayerName] = byKind = new Dictionary<string, double>();
+                byKind[kind] = (byKind.TryGetValue(kind, out var v) ? v : 0d)
+                               + Math.Max(prism.prismProperties.volume, 0f) + prism.BookedShieldVolume;
+            }
+            return sums.ToDictionary(kv => kv.Key,
+                kv => new JsonObject(kv.Value.Select(x => KeyValuePair.Create(x.Key, (JsonNode)Math.Round(x.Value, 1)))));
+        }
+
         /// <summary>The live AI pilot's difficulty as the spawn configured it (ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode):
         /// its autopilot skill (arena: Easy 0.25 .. Legendary 1) and its belief's mistakes (null on Legendary). Proves the spec's
         /// "difficulty" reached every seat the way Unity's launch panel does.</summary>
@@ -148,6 +169,11 @@ namespace CosmicShore.Player
                 var presses = new PressCounter(VesselActionTape.Observer is PressCounter old ? old.Inner : VesselActionTape.Observer);
                 VesselActionTape.Observer = presses;
 
+                // Elemental crystal pickups by pilot: ElementalCrystalImpactor raises its own event, not StatsManager's.
+                var elementalTaken = new Dictionary<string, int>();
+                void OnElemental(string who) => elementalTaken[who ?? ""] = (elementalTaken.TryGetValue(who ?? "", out var n) ? n : 0) + 1;
+                ElementalCrystalImpactor.OnCrystalCollected += OnElemental;
+
                 var host = gameData.LocalPlayer;
                 // "ai_objective": "nucleus" - an experiment, in memory only: every AI steers for the nucleus while outside it and
                 // flies straight on through while inside, the way BroodRushObjectiveProvider guides a player (the shipped mode
@@ -202,10 +228,12 @@ namespace CosmicShore.Player
                     yield return null;
                 }
                 float raceS = Time.time - start;
+                ElementalCrystalImpactor.OnCrystalCollected -= OnElemental;
                 // The controller counts the live field at its own end; count again here so a timeout reads the same way.
                 var roster = gameData.RoundStatsList.Where(s => s != null).Select(s => s.Name).ToList();
                 gameData.VolumeLedger.CountLive(PrismSpatialIndex.Instance, roster);
                 var books = gameData.VolumeLedger;
+                var heldByTrail = HeldByTrail();
 
                 var broods = new JsonObject();
                 foreach (var d in GameDataSO.ActiveDomains.Take(gameData.RequestedDomainCount))
@@ -225,6 +253,9 @@ namespace CosmicShore.Player
                         ["vd"] = Math.Round(line.Reduced, 1),
                         ["lost"] = Math.Round(line.Lost, 1),
                         ["held"] = line.HasCount ? Math.Round(line.Counted, 1) : null,
+                        // The same standing volume split by the trail that laid it (the vessel's own trail is "Trail";
+                        // an ability's prisms carry their own, e.g. the Swordfish's "RhinoAfterimageTrail").
+                        ["held_by_trail"] = heldByTrail.TryGetValue(p.Name, out var byTrail) ? byTrail : new JsonObject(),
                         ["super_shields"] = line.SuperShieldsBroken,
                         ["nucleus_s"] = Math.Round(insideS[k], 1),
                         ["start_levels"] = startLevels[k],
@@ -235,6 +266,7 @@ namespace CosmicShore.Player
                         ["stolen"] = p.RoundStats is { } rs1 ? Math.Round(rs1.VolumeStolen, 1) : null,
                         ["destroyed"] = p.RoundStats is { } rs2 ? Math.Round(rs2.HostileVolumeDestroyed, 1) : null,
                         ["crystals"] = p.RoundStats?.CrystalsCollected,
+                        ["elemental_crystals"] = elementalTaken.TryGetValue(p.Name, out var taken) ? taken : 0,
                         ["trail_volume"] = TrailVolumeOf(p),
                         ["pilot"] = PilotOf(p),
                         ["presses"] = presses.Of(p.Vessel?.VesselStatus),

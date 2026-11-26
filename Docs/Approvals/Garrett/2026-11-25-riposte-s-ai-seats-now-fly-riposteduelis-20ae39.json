@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-25-riposte-s-ai-seats-now-fly-riposteduelis-20ae39",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T01:19:10+00:00",
+  "area": "the Swordfish (its Charge game Riposte and its AI)",
+  "summary": "Riposte's AI seats now fly RiposteDuelist (cut sticks for ramp fuel, charge through a rival, run out, turn back in) with a mode ramp tuning SwordfishAIBoostPolicy_Riposte, replacing Jackstraw's hunter for this mode. Nothing on the vessel changed. Real-game judge, 2v2 AI, I1-I4: matches went from 10-63 s decided by the first touch to 26-202 s with close scores.",
+  "why": "loop step 3 for Swordfish Charge; Plan step charge-arcade",
+  "branch": "Ys-bleeding-edge",
+  "commit": "c519b8bc0",
+  "paths": [
+    "Assets/Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Riposte.asset",
+    "Assets/_Scripts/Controller/Arcade/Riposte"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Charge"
+    ],
+    "step": "3"
+  }
+}

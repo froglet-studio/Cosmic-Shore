@@ -45,6 +45,9 @@ namespace CosmicShore.ScriptableObjects
             [Min(0)] public int Players;
             [Tooltip("Game seconds the match may run before the smoke calls it a timeout. 0 = the default.")]
             [Min(0f)] public float MatchBudgetSeconds;
+            [Tooltip("Teams (domains) the seats split into (clamped to the card's domain range). 0 = the default: as many " +
+                     "as there are seats, up to three. Riposte sets 2 so its four seats duel 2v2, as the game seats them.")]
+            [Min(0)] public int Domains;
         }
 
         [Header("Which modes")]
@@ -116,6 +119,15 @@ namespace CosmicShore.ScriptableObjects
             int wanted = o != null && o.Players > 0 ? o.Players : defaultPlayers;
             int max = Mathf.Max(1, card.MaxSeats);
             return Mathf.Clamp(wanted, Mathf.Clamp(card.MinPlayersAllowed, 1, max), max);
+        }
+
+        /// <summary>Teams the <paramref name="players"/> seats split into: the override's, else one a seat up to three,
+        /// clamped to the card's domain range.</summary>
+        public int DomainsFor(SO_ArcadeGame card, int players)
+        {
+            var o = Override(card.Mode);
+            int wanted = o != null && o.Domains > 0 ? o.Domains : Mathf.Min(players, 3);
+            return Mathf.Clamp(wanted, Mathf.Max(1, card.MinDomainsAllowed), Mathf.Max(card.MinDomainsAllowed, card.MaxDomainsAllowed));
         }
 
         public float MatchBudgetFor(GameModes mode)

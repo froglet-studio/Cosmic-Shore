@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-abilities-json-dolphin-time-renamed-char-7e6206",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-26T20:37:20+00:00",
+  "area": "Fleet Codex hand table (Docs/FleetCodex)",
+  "summary": "abilities.json: Dolphin Time renamed Charge Fill Rate -> Drift Charge and Swordfish Time Ramp Spool -> Quickdraw to match the ability maps (the generator dropped both entries); Thresher Charge 'scales' now says Charge lowers the smash speed (ThresherConfig.asset smashSpeedScale 1 -> 0.6), not petals stolen. README example no longer calls Scurry the Squirrel's Mass game. The published codex was not regenerated: this account cannot write to the artifact.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "b1d4d2975"
+}

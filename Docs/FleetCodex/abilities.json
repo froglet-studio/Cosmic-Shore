@@ -101,11 +101,11 @@
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md"
   },
   "Time": {
-   "ability": "Charge Fill Rate",
+   "ability": "Drift Charge",
    "does": "Hold to drift, sliding at the speed you entered with while your boost meter fills. Let go and the stored boost carries you off in a burst that fades back to cruise.",
    "trigger": "Hold, release to boost",
-   "scales": "More Time fills the boost meter faster while you drift; it does not raise boost speed.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md"
+   "scales": "More Time fills the boost meter faster while you drift, up to 2.5 times as fast at Time 10; it does not raise boost speed.",
+   "source": "Assets/Resources/ElementalAbilityMaps/Dolphin.asset"
   },
   "Omni": {
    "ability": "triggers its blast",
@@ -665,11 +665,11 @@
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
   },
   "Time": {
-   "ability": "Ramp Spool",
-   "does": "Fly at full throttle in a straight line and the Swordfish winds up steadily toward a very high top speed. Turning bleeds it off. Its hull breaks the prisms it rams, and ramming costs it no speed.",
-   "trigger": "Passive - fly flat out and straight",
-   "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md"
+   "ability": "Quickdraw",
+   "does": "Time is how fast the sword works: how long you hold to light it, how long it cools before you can light it again, and how soon you can swing again after a swipe.",
+   "trigger": "Passive - always on",
+   "scales": "More Time shortens the hold to light the sword (1 s at rest, 0.4 s at Time 10), its cooldown (5 s to 2 s) and each swipe's recovery (0.35 s to 0.14 s).",
+   "source": "Assets/Resources/ElementalAbilityMaps/Swordfish.asset"
   },
   "Omni": {
    "ability": "Surge",
@@ -683,8 +683,8 @@
    "ability": "Wrecking Ball",
    "does": "Your chained ball smashes rival prisms and bounces off your own. Swung to smash speed it turns red and blows up every prism it hits, yours too. Ball or chain striking a rival steals their petals.",
    "trigger": "Always on",
-   "scales": "More Charge steals more petals with every strike on a rival.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md"
+   "scales": "More Charge lowers the speed at which the ball turns red: at Charge 10 it smashes at 0.6 of the resting smash speed.",
+   "source": "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset"
   },
   "Mass": {
    "ability": "Mass Mode",

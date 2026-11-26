@@ -71,6 +71,33 @@ namespace CosmicShore.Gameplay
         /// (Riposte, the Swordfish's) names its own.</summary>
         protected virtual GameToastSituation HintSituation => GameToastSituation.JackstrawHint;
 
+        // ── The AI seam (Riposte flies the same heap with its own pilots, RiposteDuelist) ──
+
+        /// <summary>The settings asset the scene wires (a mode on this controller may author a subclass of it).</summary>
+        protected JackstrawSettingsSO Settings => settings;
+
+        /// <summary>The arena centre in world space.</summary>
+        protected Vector3 ArenaCentre => Centre;
+
+        /// <summary>The heap's environment, or null before the cell has built it.</summary>
+        protected SpawnableJackstraw Heap()
+        {
+            var env = arenaCell ? arenaCell.GetComponentInChildren<SpawnableJackstraw>(true) : null;
+            return env ? env : FindAnyObjectByType<SpawnableJackstraw>();
+        }
+
+        /// <summary>Server: hand every AI seat to the mode's pilots as the turn starts.</summary>
+        protected virtual void ArmAI() => _hunter.Arm(gameData, settings, Centre, NearestLiveCrystal);
+
+        /// <summary>Hand every autopilot back. Safe to call twice.</summary>
+        protected virtual void DisarmAI() => _hunter.Disarm();
+
+        /// <summary>True while the mode's pilots hold any AI seat.</summary>
+        protected virtual bool AIArmed => _hunter.IsArmed;
+
+        /// <summary>Server, once a frame while a turn runs.</summary>
+        protected virtual void TickAI() => _hunter.Tick();
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -89,7 +116,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
-            _hunter.Disarm();
+            DisarmAI();
             ClearCrystals();
             base.OnNetworkDespawn();
         }
@@ -124,7 +151,7 @@ namespace CosmicShore.Gameplay
                                    "fly the platform's own steering.");
                 return;
             }
-            _hunter.Arm(gameData, settings, Centre, NearestLiveCrystal);
+            ArmAI();
         }
 
         void Update()
@@ -153,15 +180,14 @@ namespace CosmicShore.Gameplay
                 RegrowCrystals();
             }
 
-            if (IsServer && _hunter.IsArmed) _hunter.Tick();
+            if (IsServer && AIArmed) TickAI();
         }
 
         /// <summary>Every clearing in world space, read off the arena's own environment.</summary>
         List<SpawnableJackstraw.Clearing> CollectClearings()
         {
             _clearings.Clear();
-            var env = arenaCell ? arenaCell.GetComponentInChildren<SpawnableJackstraw>(true) : null;
-            if (!env) env = FindAnyObjectByType<SpawnableJackstraw>();
+            var env = Heap();
             if (!env) return _clearings;
             env.CollectClearings(_clearings);
             for (int i = 0; i < _clearings.Count; i++)
@@ -248,7 +274,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The nearest crystal still there to take, on this machine (the AI's refuel target).</summary>
-        Vector3? NearestLiveCrystal(Vector3 from)
+        protected Vector3? NearestLiveCrystal(Vector3 from)
         {
             Vector3? best = null;
             float bestSqr = float.MaxValue;
@@ -297,7 +323,7 @@ namespace CosmicShore.Gameplay
             gameData.CalculateDomainStats(UseGolfRules);
 
             _finalResultsSent = true;
-            _hunter.Disarm();
+            DisarmAI();
             SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
 
@@ -381,7 +407,7 @@ namespace CosmicShore.Gameplay
             _hintPosted = false;
             _raceToasts = null;
 
-            _hunter.Disarm();
+            DisarmAI();
             ClearCrystals();
             VesselCombatHitLatch.Clear();
 

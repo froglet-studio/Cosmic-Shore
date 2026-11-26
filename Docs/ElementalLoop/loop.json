@@ -340,8 +340,16 @@
     "3": {
      "state": "built",
      "by": "Claude",
-     "date": "2026-11-19",
-     "evidence": "AI trained on the Brood Rush volume books (VC+VD) in its own Mass and Space games together, I1-I4 all up (PALISADE.md 3.1 / DEN_BUILDER.md); judged in Brood Rush by the arena thread"
+     "date": "2026-11-25",
+     "evidence": "Flown in the Unity editor 2026-11-25 (ModeSmokeLauncher, Legendary on all 4 seats, time x4, one seed): every seat moved and every rung ended with a winner, I1-I4 465/408/323/307 game s, about 4x the ~90 s aim. The 2026-11-19 sword-hand training scored volume books that hold no arena prisms. Holding stations to arrival was tried and failed (>600 s). CLEAVE.md 'Where Cleave stands'"
+    }
+   },
+   "Charge": {
+    "3": {
+     "state": "built",
+     "by": "Claude",
+     "date": "2026-11-25",
+     "evidence": "RiposteDuelist + SwordfishAIBoostPolicy_Riposte (hand-set, no search): real-game judge in Amoebius headless 2026-11-25, four Swordfish AIs 2v2, Easy/Medium/Legendary x I1-I4 x seeds 1-2, 24 of 24 matches ended, 26-202 s, median 96 s (Jackstraw's hunter before: median 21 s, a 30 u/s knot). Not run in the Unity editor, Hard not judged. RIPOSTE.md 3-5"
     }
    }
   },

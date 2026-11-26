@@ -76,7 +76,10 @@ SIDE = 40
 ORB_CLEAR = H.LIST_BOTTOM                           # the grid stops above the friends orb, bottom left
 # Section 90 (2026-10-27): the Etherions folded into Elements; pilots, vessels, artifacts and toys became Lexicon cards.
 CHAPTERS = ("Elements", "Ecology", "Lexicon")
-STOPS = ("Elements", "Flora", "Fauna", "Lexicon")
+STOPS = ("Elements", "Flora", "Fauna", "Lexicon", "Vessels", "Roles")   # CodexChapter's values, in order
+# ECOLOGY's stops (2026-11-26, Shombith: the roles and archetypes on the ecology page): what lives, then every vessel's
+# role and archetypes, then the roles, archetypes and counters themselves (Docs/Vessels/archetypes.json).
+ECOLOGY_TABS = ("Flora", "Fauna", "Vessels", "Roles")
 TAB_ROLE, TAB_PAD, TAB_GAP, TAB_H = "Body", 18, 22, 52
 CHAPTER_TOP = 16
 ZONE_TOP = CHAPTER_TOP + TAB_H + 28                 # the grid and the page start under the chapters
@@ -130,6 +133,8 @@ def ystr(value):
     v = str(value)
     if any(ord(ch) > 127 for ch in v):
         return '"' + "".join(f"\\u{ord(ch):04X}" if ord(ch) > 127 else ("\\\"" if ch == '"' else ch) for ch in v) + '"'
+    if v != v.strip() or v.startswith(","):   # ", " keeps its space and its comma only quoted
+        return "'" + v.replace("'", "''") + "'"
     return K.yaml_scalar(v)
 
 
@@ -276,10 +281,10 @@ def head_row(content):
     z = content.child(N("Head", "Head", R((0, 1), (1, 1), (0, -ZONE_TOP), (-2 * SIDE, HEAD_ROW), (0.5, 1))))
     label(z.child(N("Head/Title", "Title", TL(0, 0, 300, 34))), "Elements", "H3", "TextLight")
     label(z.child(N("Head/Count", "Count", TR(0, 6, 260, 24))), "7 entries", "Label", "NeutralLightest", align="right")
-    eco = z.child(N("Head/Ecology", "EcologyTabs", TL(260, -9, 320, TAB_H)))
+    eco = z.child(N("Head/Ecology", "EcologyTabs", TL(260, -9, 640, TAB_H)))
     eco.add("cg", 225, H.canvas_group(False))
     eco.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), TAB_GAP, 3, (0, 0), (0, 0)))
-    for name in ("Flora", "Fauna"):
+    for name in ECOLOGY_TABS:
         H.text_tab(eco, f"Head/Ecology/{name}", name, name.upper(), "BodySmall", K.label_width(name.upper(), "BodySmall") + 12, TAB_H)
     empty = content.child(N("Empty", "Empty", R((0, 0.5), (1, 0.5), (0, 0), (-120, 120))))
     empty.add("cg", 225, H.canvas_group(False))
@@ -579,9 +584,21 @@ WORDS = (  # CodexWords, in declaration order: (field, value)
     ("lawsHeading", "Elemental laws"),
     ("loreHeading", LORE_HEADING),
     ("lexicon", LEXICON),
+    # ECOLOGY's VESSELS and ROLES stops (CodexRoles): the names and lines come from Docs/Vessels/archetypes.json.
+    ("roleKicker", "Role"),
+    ("roleRowsHeading", "Archetypes"),
+    ("rankNames", ["Primary", "Secondary", "Tertiary"]),
+    ("vesselRowsHeading", "Archetypes"),
+    ("vesselRowTemplate", "{archetype} - {rank}"),
+    ("archetypeRowsHeading", "Vessels"),
+    ("roleLabel", "Role"),
+    ("countersLabel", "Counters"),
+    ("counteredByLabel", "Countered by"),
+    ("listSeparator", ", "),
+    ("noneLine", "None"),
 )
 STOP_TITLES = list(STOPS)
-EMPTY_LINES = ["", "", "", ""]
+EMPTY_LINES = [""] * len(STOPS)
 
 
 def cards_list(name, cards, indent="    "):
@@ -624,6 +641,7 @@ def screen_body(ctx):
             + refs("chapterTabs", [ctx.c(f"Chapters/{n}", "tab") for n in CHAPTERS])
             + f"  ecologyTabsGroup: {ref(ctx.c('Head/Ecology', 'cg'))}\n"
             f"  floraTab: {ref(ctx.c('Head/Ecology/Flora', 'tab'))}\n  faunaTab: {ref(ctx.c('Head/Ecology/Fauna', 'tab'))}\n"
+            f"  vesselsTab: {ref(ctx.c('Head/Ecology/Vessels', 'tab'))}\n  rolesTab: {ref(ctx.c('Head/Ecology/Roles', 'tab'))}\n"
             "  shoulderInput: 1\n"
             f"  gridTitle: {ref(ctx.c('Head/Title', 'tmp'))}\n  gridCount: {ref(ctx.c('Head/Count', 'tmp'))}\n"
             f"  emptyGroup: {ref(ctx.c('Empty', 'cg'))}\n  emptyText: {ref(ctx.c('Empty', 'tmp'))}\n"
@@ -778,7 +796,8 @@ def validate(files):
     assert sbody and S["screen"] in sbody, "CodexView.prefab: the root carries no CodexScreen"
     tabs = re.findall(r"^  - \{fileID: (-?\d+)\}", sbody.split("  chapterTabs:")[1].split("  ecologyTabsGroup:")[0], re.M)
     assert tabs == [str(V(f"Chapters/{n}#tab")) for n in CHAPTERS], "CodexScreen.chapterTabs must be the chapter tabs, in order"
-    for field, want in (("ecologyTabsGroup", 225), ("floraTab", S["tab"]), ("faunaTab", S["tab"]), ("gridTitle", K.TMP_UGUI),
+    for field, want in (("ecologyTabsGroup", 225), ("floraTab", S["tab"]), ("faunaTab", S["tab"]),
+                        ("vesselsTab", S["tab"]), ("rolesTab", S["tab"]), ("gridTitle", K.TMP_UGUI),
                         ("gridCount", K.TMP_UGUI), ("emptyGroup", 225), ("emptyText", K.TMP_UGUI)):
         C.wired(view, sbody, field, want, "CodexScreen")
     # Section 91.1: the Orbit for ELEMENTS only, the Field Guide for the rest; each layout fully wired.
@@ -810,8 +829,11 @@ def validate(files):
     assert f"  colorSet: {K.ref(11400000, C.COLOR_SET, 2)}\n" in sbody, "CodexScreen: lifeforms need the domain palette"
     for chapter in CHAPTERS:
         assert f"  m_text: {chapter.upper()}\n" in view, f"the {chapter.upper()} chapter tab is missing"
-    for retired in ("ETHIRIONS", "PILOTS", "VESSELS", "ARTIFACTS", "TOYS", "TOOLS"):
+    for retired in ("ETHIRIONS", "PILOTS", "ARTIFACTS", "TOYS", "TOOLS"):
         assert f"  m_text: {retired}\n" not in view, f"{retired} is no chapter any more (section 97)"
+    # VESSELS came back on 2026-11-26 as an ECOLOGY stop (roles and archetypes), never as a chapter of its own.
+    for tab in ECOLOGY_TABS:
+        assert view.count(f"  m_text: {tab.upper()}\n") == 1, f"the {tab.upper()} tab must be ECOLOGY's, once"
     titles = re.search(r"^  stopTitles:\n((?:  - .*\n)*)", sbody, re.M)
     assert titles and len(re.findall(r"^  - ", titles.group(1), re.M)) == len(STOPS), "CodexScreen.stopTitles needs one title per stop"
     assert "Artifacts are found far out in the HyperSea" in sbody, "the Artifacts lexicon card must say where artifacts come from"

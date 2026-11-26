@@ -1,0 +1,24 @@
+{
+  "id": "2026-11-26-cleave-s-per-rung-prism-targets-950-950-8ce47b",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-26T20:07:37+00:00",
+  "area": "Cleave's end-game targets (the 2026-10-26 ~90 s pass)",
+  "summary": "Cleave's per-rung prism targets 950/950/1000/1000 -> 300/400/550/600: the all-AI match took 280/208/161/152 s at real speed, so each target is what that cut rate reaches in ~90 s. cleave_budget's 12x arena-per-target ceiling moved to 40x for it.",
+  "why": "Yash: finish the Swordfish; Cleave's pace was 2-3x the 90 s aim. Re-run of the four rungs in the editor follows.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "126073453",
+  "paths": [
+    "Assets/Resources/EndConditionOverrides.asset",
+    "Tools/Build/cleave_budget.py"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Space"
+    ],
+    "step": "2"
+  }
+}
