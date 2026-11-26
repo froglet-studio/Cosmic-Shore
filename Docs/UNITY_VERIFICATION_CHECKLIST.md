@@ -27157,6 +27157,13 @@ every move is swept. Reference compile: 0 errors in the changed files. The edit-
 - [ ] The sortie still launches out of the exits (a launch is not swept), and a released wingmate is not stopped at the hull.
 - [ ] A raid's shed crystals land outside the hull, not inside it.
 
+2026-11-26, the see-through hull (option C): `ArkHullGraph.shadergraph` (VesselGraph plus the prisms' corridor) was
+written as JSON by `Tools/Build/author_ark_hull_graph.py` and has never been imported or compiled by Unity.
+
+- [ ] ArkHullGraph imports and compiles (no pink Ark); `ArkRoundModelTests.Hull_IsSeeThroughBetweenTheCameraAndThePilot` passes.
+- [ ] The Ark's colours are unchanged in every domain (the copies keep their values when the shader is swapped).
+- [ ] Fly into the tube and through the hall with the Sparrow: where the camera sits outside the wall, the hull dissolves around your vessel with the prisms' screen door, and only there.
+
 ## The Goby never flies: it only darts perch to perch (2026-11-24)
 
 Garrett: "I want the goby's only movement to be stretches of different length between perches. it should never fly.

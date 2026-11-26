@@ -25,6 +25,8 @@ namespace CosmicShore.Tests
         const string ArkwaySettingsPath = "Assets/_SO_Assets/Toys/Wander_WithArk.asset";
         const string DomainPlaceholderPath = "Assets/_Graphics/Materials/GreenAccentVesselMaterial.mat";
         const string TrailMaterialPath = "Assets/_Graphics/Materials/ArkEngineTrail.mat";
+        const string VesselGraphPath = "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph";
+        const string ArkHullGraphPath = "Assets/_Graphics/Materials/Graphs/ArkHullGraph.shadergraph";
 
         /// <summary>The table's build-only numbers (JsonUtility skips them on <see cref="ArkRigTable"/>).</summary>
         [Serializable]
@@ -155,6 +157,31 @@ namespace CosmicShore.Tests
             Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>(TrailMaterialPath), definition.EngineTrailMaterial, "the streams' material");
             Assert.Greater(definition.EngineTrailSeconds, 0f);
             Assert.That(definition.EngineTrailAlpha, Is.InRange(0.05f, 1f));
+        }
+
+        [Test]
+        public void Hull_IsSeeThroughBetweenTheCameraAndThePilot()
+        {
+            // Shombith's pick (2026-11-26, option C): the hull dissolves along the prisms' camera-to-vessel corridor. Every
+            // slot the model wears is VesselGraph, and ArkHullGraph carries every VesselGraph property, so ArkModel swaps
+            // each slot's copy to it with its values kept.
+            var definition = AssetDatabase.LoadAssetAtPath<ArkModelDefinitionSO>(DefinitionPath);
+            Assert.IsNotNull(definition, DefinitionPath);
+            var vessel = AssetDatabase.LoadAssetAtPath<Shader>(VesselGraphPath);
+            var ark = AssetDatabase.LoadAssetAtPath<Shader>(ArkHullGraphPath);
+            Assert.IsNotNull(vessel, VesselGraphPath);
+            Assert.IsNotNull(ark, ArkHullGraphPath + " (Tools/Build/author_ark_hull_graph.py writes it)");
+            Assert.AreEqual(ark, definition.SeeThroughShader, "the definition must wear ArkHullGraph");
+            Assert.IsTrue(ark.isSupported, "ArkHullGraph does not compile");
+            for (int i = 0; i < vessel.GetPropertyCount(); i++)
+                Assert.GreaterOrEqual(ark.FindPropertyIndex(vessel.GetPropertyName(i)), 0,
+                    $"ArkHullGraph lacks VesselGraph's {vessel.GetPropertyName(i)}: the Ark would not swap to it");
+            foreach (var r in AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath).GetComponentsInChildren<Renderer>(true))
+                foreach (var m in r.sharedMaterials)
+                    if (m) Assert.AreEqual(vessel, m.shader, $"{m.name} on {r.name} is not VesselGraph, so it would stay solid to the eye");
+            string graph = System.IO.File.ReadAllText(ArkHullGraphPath);
+            StringAssert.Contains("\"m_FunctionName\": \"PrismOcclusionFade\"", graph, "ArkHullGraph has no corridor");
+            StringAssert.Contains("\"m_AlphaClip\": true", graph, "ArkHullGraph does not clip, so the corridor cannot open it");
         }
 
         [Test]
