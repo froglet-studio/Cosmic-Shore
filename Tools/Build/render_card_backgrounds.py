@@ -96,6 +96,9 @@ SOURCES = [
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
     f"{_MG}/SpawnableJackstraw.cs",
+    f"{_AR}/Riposte/RiposteYard.cs",
+    f"{_AR}/Riposte/RiposteLanes.cs",
+    f"{_MG}/SpawnableRiposteYard.cs",
     f"{_MG}/FlatlinePanes.cs",
     f"{_MG}/SpawnableFlatline.cs",
     f"{_MG}/SpawnableKelpwood.cs",
@@ -820,6 +823,9 @@ CAMERAS = {
     # Jackstraw: close into the heap, so the sticks cross the whole plate and the red-hot ball swinging through
     # them onto a rival (the strike, the one thing that scores) sits in the middle of it.
     "Jackstraw": (40, 18, 0.7, 46),
+    # Riposte: the Lists from the far side to Jackstraw and higher, so the straight stick-free lanes and the fuel
+    # rails of pickets beside them read as lines through the heap (the arena is built for the run down a lane).
+    "Riposte": (215, 30, 0.8, 44),
     # Flatline: the I2 Tunnels from just inside the field, so the loose panes read as thin plates scattered with room
     # round each, a tunnel's crystal reads through its bore, and the cords crossing a pane (the act that scores) read
     # against its face.
