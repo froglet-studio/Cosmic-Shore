@@ -159,6 +159,24 @@ The garden opened the ends: I1 got faster (fuel) and I4 slower (pillars, danger)
 **Still flat:** I1-I3 sit within 4% for Legendary, and Medium I1 is still its slowest rung (a pre-existing oddity, not
 explained). Three seeds a rung; the spread inside a rung (up to 30 s) is as large as most steps.
 
+**Why the garden cannot steepen the ladder** (2026-11-27, same judge, Amoebius headless; not committed, patch kept in
+the session notes). Three changes were flown, each against the shipped AI at Medium and Legendary:
+
+| Change | Medium I1-I4 (s) | Legendary I1-I4 (s) | Seeds |
+|---|---|---|---|
+| I1 hedge 200 -> 360 u (I1 only) | 171.3 | 146.3 | 101-103 |
+| + two plain rows a side at I1; pillars 0 / 2 / 4 / 6 (late ones past the hedge) | 177.7 / 165.7 / 165.3 / 165.8 | 138.8 / 147.7 / 134.1 / 149.1 | 101-103 |
+| + pillar danger every 3rd / 2nd / 2nd / every band (I2-I4) | 159.5 / 169.3 / 158.9 / 167.0 | 141.6 / 138.7 / 145.8 / 146.9 | 101-106 |
+
+No change moved a rung by more than the spread inside it (up to 40 s). The reason is in the kit: the AI's sword hand
+swings at the nearest hostile prism in reach, so a prism near the line is cut before the hull meets it, and every
+cut is ramp fuel. A pillar, armoured or danger, is fuel to a Swordfish, not a cost. More fuel at I1 helped Medium
+(184.8 -> 159.5-171 s) and not Legendary, which fuels from the seals. The race time is set by the first lap (about
+50 s on every rung, the tank filling at the 125 u/s cap) and by the course. The lap is Headlong's (`HeadlongCircuitSettings.ForIntensity`),
+cut for the Rhino: its I4 has five straight corners in eight, which a ramp likes. A steeper ladder needs Spearline's
+own corner profile per rung (the track, which a mode may change) or fewer seals to fuel from at the lower rungs. Both
+move the seals, ruins and their golden counts, so they wait for Yash's call.
+
 ## 3. The AI (`SpearlineController.Coach.cs`)
 
 - **The read.** For its next sealed ring, the AI takes `SpearlineSeals.Read`: of 37 crossings on a polar grid inside the
