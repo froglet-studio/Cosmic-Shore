@@ -27268,3 +27268,10 @@ saved record at sea or away from home back home, so older saves are repaired. Th
 Refcompile: 0 errors in the changed files (the run's 30 pre-existing errors are elsewhere). No Unity editor or phone build ran.
 - [ ] Android phone build with the system auto-rotate lock ON: in the menus, turn the phone landscape and portrait; the app shell turns with it (it used to stay where the lock held it). Gameplay still locks landscape.
 - [ ] Toy Box > Vessel Changer opens with a model in the live preview (the hull you are flying, else the first hull) before anything is picked; picking a hull replaces it; Switch stays dark until a pick.
+
+## The Hangar names each vessel's role and archetypes (2026-11-26, claude/project-thread-fm5smg)
+
+Refcompile: 0 errors in the changed files (the run's 29 pre-existing errors are elsewhere). Seen in Amoebius (the kicker reads "DESTROYER · SAPPER / HARRASER / BUILDER · OWNED" on the Sparrow). No Unity editor ran, so the new edit-mode tests (`VesselArchetypesTests`) have not run.
+- [ ] Unity imports `Assets/Resources/Vessels/VesselArchetypes.asset` with no missing-script warning, and its Inspector shows roles, archetypes, 24 vessels and 12 counters.
+- [ ] Hangar: the line over each vessel's name reads its role, its archetypes primary first, then Owned / Locked (Squirrel: CULTIVATOR · PUMPER / HARRASER · OWNED). A vessel the board leaves out still reads VESSEL · OWNED.
+- [ ] Run the edit-mode tests `VesselArchetypesTests`.

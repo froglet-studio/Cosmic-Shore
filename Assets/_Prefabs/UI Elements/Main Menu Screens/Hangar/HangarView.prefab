@@ -80,7 +80,9 @@ MonoBehaviour:
   cancelButton: {fileID: 87075499399712979}
   lockedWord: Locked
   ownedWord: Owned
-  kickerTemplate: "VESSEL \xB7 {state}"
+  kickerTemplate: "{role} \xB7 {archetypes} \xB7 {state}"
+  roleLessKickerTemplate: "VESSEL \xB7 {state}"
+  archetypeSeparator: ' / '
   unlockTemplate: UNLOCK - {cost}
   unlockFreeWord: UNLOCK - FREE
   spendTemplate: '{cost} to unlock {vessel}'
