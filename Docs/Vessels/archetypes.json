@@ -1,0 +1,486 @@
+{
+ "v": 1,
+ "archetypes": [
+  {
+   "id": "cult",
+   "name": "Cultivator",
+   "emoji": "🌱",
+   "color": "jade",
+   "goal": "Increases allied prism volume",
+   "label": {
+    "x": 50,
+    "y": 830
+   },
+   "subs": [
+    {
+     "id": "pumper",
+     "name": "Pumper",
+     "desc": "Steadily create prisms at a higher rate than others. (Drawn as \"Racer\" on the graph sketch.)",
+     "stat": "Volume created"
+    },
+    {
+     "id": "scout",
+     "name": "Builder",
+     "desc": "Creates prisms that protect fauna and other stationary prisms.",
+     "stat": "Volume created"
+    },
+    {
+     "id": "burster",
+     "name": "Burster",
+     "desc": "Cause a large and quick increase in team volume to give your team an immediate boost to your score.",
+     "stat": "Fauna collected"
+    }
+   ]
+  },
+  {
+   "id": "dest",
+   "name": "Destroyer",
+   "emoji": "⚔️",
+   "color": "ruby",
+   "goal": "Destroy enemy prisms",
+   "label": {
+    "x": 470,
+    "y": 60
+   },
+   "subs": [
+    {
+     "id": "sapper",
+     "name": "Sapper",
+     "desc": "Steadily reduce enemy prisms over time.",
+     "stat": ""
+    },
+    {
+     "id": "specialist",
+     "name": "Specialist",
+     "desc": "Reliably get to primary targets, counter special prisms, and prevent burst cultivation.",
+     "stat": ""
+    },
+    {
+     "id": "nuke",
+     "name": "Nuke",
+     "desc": "Destroy large numbers of enemy prisms all at once.",
+     "stat": ""
+    }
+   ]
+  },
+  {
+   "id": "guard",
+   "name": "Guardian",
+   "emoji": "🛡️",
+   "color": "gold",
+   "goal": "Protects allied prisms",
+   "label": {
+    "x": 790,
+    "y": 830
+   },
+   "subs": [
+    {
+     "id": "hunters",
+     "name": "Harraser",
+     "desc": "Use silence abilites to counteract enemy Aggressors.",
+     "stat": ""
+    },
+    {
+     "id": "builders",
+     "name": "Zoner",
+     "desc": "Creates fields that prevent prism damage",
+     "stat": ""
+    },
+    {
+     "id": "enhancers",
+     "name": "Enhancer",
+     "desc": "Buff ally prisms to protect and heal them from enemy attacks.",
+     "stat": ""
+    }
+   ]
+  }
+ ],
+ "vessels": [
+  {
+   "id": "v_manta",
+   "name": "Manta",
+   "roles": {
+    "pumper": "s",
+    "nuke": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_squirrel",
+   "name": "Squirrel",
+   "roles": {
+    "hunters": "s",
+    "pumper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_tigermoth",
+   "name": "Tiger Moth",
+   "roles": {
+    "enhancers": "s",
+    "pumper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_wombat",
+   "name": "Wombat",
+   "roles": {
+    "burster": "p"
+   },
+   "notes": "Named in the archetype draft; not in the game roster yet"
+  },
+  {
+   "id": "v_scarab",
+   "name": "Scarab",
+   "roles": {
+    "scout": "s",
+    "burster": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_sparrow",
+   "name": "Sparrow",
+   "roles": {
+    "hunters": "s",
+    "scout": "s",
+    "sapper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_brittlestar",
+   "name": "Brittle Star",
+   "roles": {
+    "hunters": "s",
+    "sapper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_grizzly",
+   "name": "Grizzly",
+   "roles": {
+    "nuke": "s",
+    "sapper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_shrike",
+   "name": "Shrike",
+   "roles": {
+    "scout": "s",
+    "specialist": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_serpent",
+   "name": "Serpent",
+   "roles": {
+    "specialist": "s",
+    "scout": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_dolphin",
+   "name": "Dolphin",
+   "roles": {
+    "hunters": "s",
+    "pumper": "s",
+    "nuke": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_thresher",
+   "name": "Thresher",
+   "roles": {
+    "pumper": "s",
+    "nuke": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_urchin",
+   "name": "Urchin",
+   "roles": {
+    "burster": "s",
+    "enhancers": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_rhino",
+   "name": "Rhino",
+   "roles": {
+    "sapper": "s",
+    "specialist": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_stoat",
+   "name": "Stoat",
+   "roles": {
+    "nuke": "s",
+    "sapper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_angler",
+   "name": "Angler",
+   "roles": {
+    "hunters": "s",
+    "sapper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_gobypistol",
+   "name": "Goby & Pistol",
+   "roles": {
+    "sapper": "s",
+    "pumper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_wrassegrouper",
+   "name": "Wrasse & Grouper",
+   "roles": {
+    "sapper": "s",
+    "pumper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_orca",
+   "name": "Orca",
+   "roles": {
+    "sapper": "s",
+    "specialist": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_starling",
+   "name": "Starling",
+   "roles": {
+    "sapper": "s",
+    "hunters": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_jacks",
+   "name": "Jacks",
+   "roles": {
+    "sapper": "s",
+    "hunters": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_honeyguideratel",
+   "name": "Honeyguide & Ratel",
+   "roles": {
+    "pumper": "s",
+    "sapper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_meerkat",
+   "name": "Meerkat",
+   "roles": {
+    "scout": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_swordfish",
+   "name": "Swordfish",
+   "roles": {
+    "specialist": "s",
+    "sapper": "p"
+   },
+   "notes": ""
+  },
+  {
+   "id": "v_jewelwasp",
+   "name": "Jewel Wasp",
+   "roles": {
+    "sapper": "s",
+    "hunters": "s",
+    "specialist": "p"
+   },
+   "notes": ""
+  }
+ ],
+ "pos": {
+  "sapper": {
+   "x": 412,
+   "y": 170
+  },
+  "specialist": {
+   "x": 568,
+   "y": 175
+  },
+  "nuke": {
+   "x": 722,
+   "y": 182
+  },
+  "scout": {
+   "x": 257,
+   "y": 448
+  },
+  "pumper": {
+   "x": 330,
+   "y": 585
+  },
+  "burster": {
+   "x": 402,
+   "y": 722
+  },
+  "hunters": {
+   "x": 881,
+   "y": 440
+  },
+  "builders": {
+   "x": 811,
+   "y": 562
+  },
+  "enhancers": {
+   "x": 737,
+   "y": 692
+  },
+  "ark": {
+   "x": 560,
+   "y": 450
+  }
+ },
+ "extras": [
+  {
+   "id": "ark",
+   "name": "The Ark",
+   "color": "gold",
+   "desc": "The squad escorts it. Draw what each role does for, or to, the Ark."
+  }
+ ],
+ "kinds": [
+  {
+   "id": "k_counter",
+   "name": "Counters",
+   "color": "danger"
+  },
+  {
+   "id": "k_feeds",
+   "name": "Feeds / supports",
+   "color": "cta"
+  }
+ ],
+ "links": [
+  {
+   "id": "l0",
+   "from": "scout",
+   "to": "sapper",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l1",
+   "from": "sapper",
+   "to": "pumper",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l2",
+   "from": "scout",
+   "to": "specialist",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l3",
+   "from": "nuke",
+   "to": "scout",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l4",
+   "from": "specialist",
+   "to": "burster",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l5",
+   "from": "burster",
+   "to": "nuke",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l6",
+   "from": "sapper",
+   "to": "enhancers",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l7",
+   "from": "specialist",
+   "to": "enhancers",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l8",
+   "from": "enhancers",
+   "to": "nuke",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l9",
+   "from": "nuke",
+   "to": "builders",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l10",
+   "from": "builders",
+   "to": "sapper",
+   "kind": "k_counter",
+   "label": ""
+  },
+  {
+   "id": "l11",
+   "from": "hunters",
+   "to": "specialist",
+   "kind": "k_counter",
+   "label": ""
+  }
+ ],
+ "notes": [
+  {
+   "id": "n4",
+   "text": "Manta sits in Scout and Nuke, Serpent in Specialist and Builders. Which is primary?",
+   "by": "Question"
+  },
+  {
+   "id": "n5",
+   "text": "Eleven vessels have no role yet (amber tiles). Where does each one specialise?",
+   "by": "Question"
+  }
+ ]
+}
