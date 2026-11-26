@@ -631,9 +631,30 @@ namespace CosmicShore.UI
             }
 
             AutoSelectLoneRow();
+            PreviewWhileUnpicked();
             UpdateSwitchButton();
             UpdateDescription();
             DrawLabels();
+        }
+
+        /// <summary>
+        /// A layer opened with nothing picked still shows a model: the row you are on (the hull you are flying), else the
+        /// first row that can build one. The window used to open black with "Pick a variation." under it, which read as a
+        /// broken preview on the phone (Shombith, 2026-11-25). This only fills the picture; nothing is selected, so Switch
+        /// stays dark until the player picks.
+        /// </summary>
+        void PreviewWhileUnpicked()
+        {
+            if (!preview || _selected >= 0 || preview.IsWatching || preview.IsShowingVariant) return;
+
+            int pick = -1;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                if (_rows[i]?.BuildPreview == null) continue;
+                if (_rows[i].IsCurrent) { pick = i; break; }
+                if (pick < 0) pick = i;
+            }
+            if (pick >= 0) preview.ShowVariant(_rows[pick].BuildPreview);
         }
 
         /// <summary>

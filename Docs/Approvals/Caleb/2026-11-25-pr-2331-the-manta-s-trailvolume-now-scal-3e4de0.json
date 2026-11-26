@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-25-pr-2331-the-manta-s-trailvolume-now-scal-3e4de0",
+  "to": "Caleb",
+  "by": "Garrett",
+  "date": "2026-11-25T01:04:39+00:00",
+  "area": "Manta trail tuning",
+  "summary": "PR #2331: the Manta's trailVolume now scales with Mass (Enabled, element Mass): 0.1113x at rest to 0.5136x at level 10, floor 0.065 (was 1x flat). Brood Rush index 3.76 -> about 0.95 in the Amoebius judge; Regatta unchanged. Includes the 3x3 Medium refit's x0.856 (2adc902632). Your #1907 speed-shaped trail curves are untouched; only the volume multiplier moved. Not run in Unity.",
+  "branch": "ship-manta",
+  "commit": "b64dd11d8"
+}

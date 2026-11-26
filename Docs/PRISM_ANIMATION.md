@@ -904,6 +904,13 @@ its faces exactly as before. `SegmentSpawner.SuperShieldSpawnedPrisms`, which po
 shield component directly rather than going through `PrismStateManager`, honours the
 same rule explicitly.
 
+**Corollary: a recycled prism re-themes AFTER `Initialize`, never before.** The birth window
+opens when `Initialize` clears `IsCreationComplete`. A prism re-posed from the pool is still
+`IsCreationComplete` from its previous life until then, so a kind wipe run before `Initialize`
+is a live disengage: shatter debris and a `ShieldDeactivate` SFX on every recycled shielded
+prism. `Microscene.RearrangeIntoAsync` (the Wanderway conveyor) calls `PrismKinds.Retheme`
+once, after `Initialize` (2026-10-26, salvaged from `claude/prism-clock-followup-prompts-two-mhvad9`).
+
 ### 4.6 The batched pure-entity debris carrier (both death visuals, shipped 2026-08-02/04)
 
 The clock law says an effect's animation is a stamp plus a scheduled end. It does not

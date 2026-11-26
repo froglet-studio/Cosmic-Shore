@@ -312,9 +312,10 @@ namespace CosmicShore.Utility.AITraining
         public void ApplyNucleusRushDefaults()
         {
             SetPersonalMetricRecipe(
-                "Brood Rush: GoalsScored. Each fauna wave is stamped on one representative " +
-                "player of the controlling domain, then summed by domain. Fitness follows that " +
-                "stamp. Score copies GoalsScored (higher is better) and is not negated.",
+                "Brood Rush: GoalsScored. Each fauna wave is the team's brood, carried on one " +
+                "representative player of the controlling domain and summed by domain for the race. " +
+                "Fitness follows that carrier. Score is the pilot's VC + VD (the scoreboard's volume " +
+                "books), is not weighted here and is not negated.",
                 ComponentKind.GoalsScored, 100f, "Brood");
         }
 
