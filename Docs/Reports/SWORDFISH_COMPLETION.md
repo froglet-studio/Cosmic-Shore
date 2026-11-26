@@ -129,3 +129,17 @@ complete: four games exist. Arenas: Regatta and Brood Rush seat it; steps 4 and 
 
 Steps 1 and 2 need no flying and unblock everything else. Steps 4 to 6 are the real remaining work and only a person
 can do them.
+
+## 7. Landed since this audit (checked 2026-11-27 at `57268fb3f3`)
+
+- TODO 7 done in code: a human seat the AI holds duels in Riposte (`126073453e`). Not run in Unity.
+- TODO 11 half done: Riposte's and Cleave's card backgrounds re-rendered (`81fb470183`, `1a30c0aff0`). Spearline's and
+  Palisade's are still from 2026-11-23.
+- TODO 12 done: `SwordfishLevelFiveGateTests.cs` (`447518919d`). Not run in Unity as far as the commit says.
+- Spearline's card now seats exactly 4 (`9ae4252f26`, `934537256a`).
+- Cleave's targets are 300 / 400 / 550 / 600 (`a7a530d779`); the AI times in section 3 are on the old targets.
+- Palisade re-judged headless with the arena: Afterimage is about 90% of the score, not 22% (`07ada7c6bf`). So the
+  "trail outweighs Afterimage" problem in section 3 no longer stands.
+- `RIPOSTE.md` section 5 now says the Lists compile in Unity (`d3649dd000`).
+
+The six-vessel view is in [`SIX_VESSEL_MATRIX.md`](SIX_VESSEL_MATRIX.md).

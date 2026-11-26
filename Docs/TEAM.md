@@ -28,6 +28,11 @@ Correct them in [`TEAM.json`](TEAM.json), which also maps each person's git name
 `claude/*` and `cece/*` branches are Claude Code sessions. The person behind one is whoever merges or pushes
 it; `who_works_where.py` reports a session nobody has merged as unattributed.
 
+**Yash's current focus (2026-11-27): complete six vessels** - Squirrel, Sparrow, Dolphin, Swordfish, Thresher and
+Tiger Moth: every ability and level-5 upgrade, a full game kit, I1-I4 and an AI per element. It is his focus inside
+Garrett's elemental loop, which still covers every vessel. The matrix and what is left:
+[`Reports/SIX_VESSEL_MATRIX.md`](Reports/SIX_VESSEL_MATRIX.md).
+
 **Attribution audit (2026-10-27): Yash's work took no credit from anyone.** Across all 553 branches and the
 full history, no commit, line, area owner or role moved credit from another collaborator to Yash
 ([`Reports/ATTRIBUTION_AUDIT.md`](Reports/ATTRIBUTION_AUDIT.md)). Anyone can audit anyone:
