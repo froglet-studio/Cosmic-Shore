@@ -1,0 +1,101 @@
+{
+    "schemaVersion": 1,
+    "reportId": "4d61ccc72d22",
+    "timestamp": "2026-11-26T13:26:35.1051865Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "System Product Name (ASUS)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "c6d0470c02",
+    "trigger": "Return to menu — MinigameGrizzlyCharge → Menu_Main",
+    "loadKind": "menuReturn",
+    "completionReason": "INTERRUPTED — application terminated during load (recovered snapshot)",
+    "interrupted": true,
+    "sceneFrom": "MinigameGrizzlyCharge",
+    "sceneTo": "MinigameGrizzlyCharge",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 352.89569091796877,
+    "visualReadyMs": -1.0,
+    "waitMs": 282.6304931640625,
+    "humanWaitMs": 0.0,
+    "workMs": 70.26519775390625,
+    "unattributedMs": 70.26519775390625,
+    "framesDuringLoad": 1,
+    "avgFpsDuringLoad": 2.8336985111236574,
+    "worstFrameMs": 16.943601608276368,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 70.26519775390625,
+            "endMs": 352.89569091796877,
+            "durationMs": 282.6304931640625,
+            "exclusiveMs": 282.6304931640625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": true,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 282.6304931640625,
+            "percent": 80.08895874023438,
+            "spanCount": 1,
+            "waitMs": 282.6304931640625
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 70.26519775390625,
+            "percent": 19.911039352416993,
+            "spanCount": 0,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 282.6304931640625,
+            "exclusiveMs": 282.6304931640625,
+            "maxSingleMs": 282.6304931640625,
+            "isWait": true
+        }
+    ],
+    "stalls": [],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Return to menu — MinigameGrizzlyCharge → Menu_Main"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Active prisms when load ended",
+            "value": 9542
+        }
+    ],
+    "accumulators": [],
+    "errors": [],
+    "hints": []
+}
