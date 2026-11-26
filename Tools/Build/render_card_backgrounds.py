@@ -131,6 +131,9 @@ SOURCES = [
     f"{_SP}/ICellPhaseBaseline.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
+    f"{_AR}/Spearline/SpearlineSeals.cs",
+    f"{_AR}/Spearline/SpearlineRuins.cs",
+    f"{_AR}/Spearline/SpearlineGarden.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
     f"{_AR}/Redline/RedlineCourse.cs",
     f"{_AR}/GrizzlyTime/GrizzlyTimeCourse.cs",
@@ -1051,8 +1054,8 @@ def recipe(stem, card_path, pal, ends):
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
             # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse) and Burrow Run flies it whole
             # (BurrowRunCourseSource): the same generator.
-            # Spearline lays Headlong's circuit (SpearlineCourseSource; its seals' mouths are the controller's, not drawn).
-            layers.append({"kind": {"Warpline": "slingshot", "BurrowRun": "slingshot", "Spearline": "headlong"}.get(s, s.lower()), "intensity": INTENSITY,
+            # Spearline lays Headlong's circuit at its seals' mouths (SpearlineCourseSource) and its race garden; the seals are not drawn.
+            layers.append({"kind": {"Warpline": "slingshot", "BurrowRun": "slingshot", "Spearline": "spearline"}.get(s, s.lower()), "intensity": INTENSITY,
                            "seed": stable_seed(s), "path": True, "settings": settings, "tube": 0.14,
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
                                      "Redline": [1.5, 0.25, 0.35],
