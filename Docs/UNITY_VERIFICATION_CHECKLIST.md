@@ -27165,6 +27165,13 @@ see-through hull (C) is taken out again. Reference compile only.
 - [ ] Fly down the tube hugging its wall: the vessel slides along it and steers away freely.
 - [ ] `ArkRoundModelTests.HoldOut_SlidesAGlancingMoveAlongTheHull_SoAVesselNeverSticks` passes.
 
+2026-11-26, the rifled tube (concept round 15, A): the tube is narrower (wall radius 21 in game, open 19; exits 16) with a
+black lining, six spiralling steel lands and a prism row in each groove. `ArkRound.fbx` rebuilt by bpy; never imported.
+
+- [ ] `ArkRound.fbx` reimports with no missing bones or materials, and the Ark looks as before outside.
+- [ ] Fly the tube with the Squirrel, Dolphin and Sparrow cams: the spiral reads, the prisms sit in the grooves, and no vessel scrapes the lands in the middle of the tube.
+- [ ] The three launches still leave cleanly out of the narrower exits.
+
 ## The Goby never flies: it only darts perch to perch (2026-11-24)
 
 Garrett: "I want the goby's only movement to be stretches of different length between perches. it should never fly.

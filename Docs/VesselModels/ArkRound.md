@@ -44,15 +44,15 @@ The rig table stores both numbers (`artifactScale`, `artifactOrigin`). `ArkRound
 the artifact's proportion against its Squirrel for scale (2.42 long there, 6.451 in the game): about 70 Squirrels. At
 scale 1 it was 30 Squirrels, and Shombith's playtest (2026-11-26) found it too small and too short against the artifact.
 `Definition_DrawsTheArkAtTheArtifactsSize_AgainstASquirrel` holds it there. Everything the model carries scales with it:
-sockets, prisms, solid, streams, crystal and launch tubes. The tube's open radius is 22 world units, the hall's 39 and
-each exit's 19. The voyage reads the Ark's half length from the model (`Ark.HalfLengthOr`), not from the spindle's
+sockets, prisms, solid, streams, crystal and launch tubes. The tube's open radius is 19 world units, the hall's 39 and
+each exit's 16 (round 15 narrowed both, below). The voyage reads the Ark's half length from the model (`Ark.HalfLengthOr`), not from the spindle's
 `arkHullLength`, for the intro's framing, the squad's slots and the crystals a raid sheds.
 
-**Prism budget.** `PRISM_CELL = 2.2` gives **581 hull prisms**:
+**Prism budget.** `PRISM_CELL = 2.2` gives **593 hull prisms**:
 
 | Tier | Count |
 |---|---|
-| Plain | 297 |
+| Plain | 309 |
 | SuperShielded | 129 |
 | Shielded | 115 |
 | Danger | 40 |
@@ -87,6 +87,12 @@ the same neutral as every other omni crystal.
 
 `ArkFormation.Hangar` launches each seat out of its own exit.
 
+**The rifled tube** (concept page round 15, 2026-11-26; Shombith: "I want the inside to be cooler and the radius can
+be a bit smaller"). The tube's wall radius went from 9.2 to 8 artifact units (24 to 21 in game) and the exits' from 8.2 to
+7.13 in proportion. Its lining is black, with six raised steel lands spiralling down it (one turn every 40 artifact
+units, 106 in game) and a row of prisms in each groove (`tubeLining` in `ark_round_geometry.js`). Nothing in the
+passage turns. The page's other two insides (turning rings, a gallery of windows into the deck rooms) were not built.
+
 **Solid.** `ArkRoundSolid` is a signed distance over the hull. It carves out the passage: the tube from the lip, the
 junction hall, and the three exits. The gap between the mouth and the hull is open water. The pods' solid turns with
 them. `ArkHullSolid` dispatches to it when the definition's `hullShape` is `Round`.
@@ -110,8 +116,8 @@ not good". The tube stays opaque; the bigger Ark (B) is what lets the camera fol
 
 ## Numbers
 
-- 149,160 triangles and 79,124 vertices, FBX 3.46 MB.
-- Polygons per slot: Domain 23,504, Body 50,278, Window 186, Engine 612.
+- 156,848 triangles and 83,825 vertices, FBX 3.6 MB.
+- Polygons per slot: Domain 22,784, Body 54,842, Window 186, Engine 612.
 - The slots, and the `.meta`'s slot remap, are the same as ArkReverse's.
 
 ## Rebuild

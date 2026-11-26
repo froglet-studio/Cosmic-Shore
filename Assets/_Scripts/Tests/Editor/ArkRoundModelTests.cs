@@ -68,7 +68,7 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(size.x > 0f && size.y > 0f && size.z > 0f, $"{s.name}: size {size}");
                 Assert.IsTrue(s.RidesHull || turning.Contains(s.bone), $"{s.name} rides '{s.bone}', which neither the hull nor a turning part is");
             }
-            // The prism cell (PRISM_CELL in the spec) sets the count: 581 at 2.2. Far outside this band is a budget change.
+            // The prism cell (PRISM_CELL in the spec) sets the count: 593 at 2.2 (the rifled tube, round 15). Far outside this band is a budget change.
             Assert.That(table.sockets.Length, Is.InRange(400, 800), "the round Ark's hull prism count left its budget");
         }
 
@@ -317,7 +317,7 @@ namespace CosmicShore.Tests
             Assert.Less(reach, 1f, "the move passed through the tube's wall");
             var stop = Vector3.Lerp(from, to, reach);
             Assert.GreaterOrEqual(ArkRoundSolid.Distance(stop), margin, "the sweep stopped the vessel inside the margin");
-            Assert.Greater(stop.y, (9.2f + 1.2f) * ArkRoundSolid.Scale, "the sweep let the vessel past the wall");
+            Assert.Greater(stop.y, (8f + 1.2f) * ArkRoundSolid.Scale, "the sweep let the vessel past the wall");
 
             // A clear move is left alone.
             var along = ArkRoundSolid.FromArtifact(new Vector3(-20f, 0f, 0f));
@@ -331,8 +331,8 @@ namespace CosmicShore.Tests
             // Shombith's playtest, 2026-11-26: "once the vessel sticks to the ark ... we get stuck". A move that meets the
             // tube's outside at a slant keeps the part of it that runs along the surface: only the part into the hull is
             // taken away, and the vessel ends clear of it, further on than where it touched.
-            var from = ArkRoundSolid.FromArtifact(new Vector3(5f, 14f, 0f));
-            var to = ArkRoundSolid.FromArtifact(new Vector3(5f, 9.5f, 4f));
+            var from = ArkRoundSolid.FromArtifact(new Vector3(5f, 13f, 0f));
+            var to = ArkRoundSolid.FromArtifact(new Vector3(5f, 8f, 4f));
             const float margin = 1f;
             float reach = ArkHullSolid.FirstContact(ArkHullShape.Round, Quaternion.identity, from, to, margin);
             Assert.Less(reach, 1f, "the move did not meet the tube");

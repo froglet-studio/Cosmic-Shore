@@ -19,8 +19,8 @@ namespace CosmicShore.Gameplay
         public const float Scale = 1.154979f, CentreX = -19.45f;
 
         // ── the artifact's numbers ───────────────────────────────────────────
-        const float RT = 9.2f, HULL_END = 0f, GAP_END = 33f, CX = 21f, STERN = -82.8f, XB = STERN - 9.5f;
-        const float WALK_R = 17.5f, JX0 = -71f, JX1 = STERN - 1.5f, JR = 15.5f, JCX = -77.5f, RB = 8.2f;
+        const float RT = 8f, HULL_END = 0f, GAP_END = 33f, CX = 21f, STERN = -82.8f, XB = STERN - 9.5f;
+        const float WALK_R = 17.5f, JX0 = -71f, JX1 = STERN - 1.5f, JR = 15.5f, JCX = -77.5f, RB = 7.13f;
         const float BRANCH_EX = -91.8f, BRANCH_ER = 30.5f, POD_X0 = -4f, POD_X1 = -78f, POD_R0 = 31.5f, POD_R1 = 35.5f;
         const float POD_PR = 4.6f, PRISM_SKIN = 0.9f, BELL_RING = 13.2f;
         static readonly (float x0, float x1)[] Decks = { (-16.5f, -7f), (-30f, -20.5f), (-43.5f, -34f), (-57f, -47.5f), (-70.5f, -61f) };
