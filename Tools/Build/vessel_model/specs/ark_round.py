@@ -27,7 +27,7 @@ THE SHIP (the artifact's frame: x the nose axis, y up; the round Ark is radially
                     the streams from the rig table's `trails`)
 Every prism is the game's block prism. Super-shielded lead (the front of every deck run, the pods' leading ends, the
 gates), shielded form the gates' belts, normal prisms are the largest share, danger only at the mouth's lip and the
-stern. Prisms never turn on their own: they ride the decks, the pods and the gates (rig table `spins`).
+stern. Prisms never turn on their own: they ride the decks, the pods, the gates and the tube's rings (rig table `spins`).
 
 Contract (FLEET_CONVENTION sections 1-4 for a NEW body; the Ark's own contract is ArkModel / ArkRigTable):
   file      Assets/_Models/Vessel Models/ArkRound.fbx, preset "zup"
@@ -121,8 +121,10 @@ def build(ctx):
     gates = sorted([m for m in mean_x if abs(abs(motions[m]["speed"]) - 0.14) < 1e-6], key=lambda m: -mean_x[m])
     decks = sorted([m for m in mean_x if abs(abs(motions[m]["speed"]) - 0.10) < 1e-6], key=lambda m: -mean_x[m])
     pods = [m for m in mean_x if abs(motions[m]["speed"] + 0.12) < 1e-6]
-    assert len(gates) == 2 and len(decks) == 5 and len(pods) == 1, (gates, decks, pods, motions)
-    bone_of_motion = {gates[0]: "gate.0", gates[1]: "gate.1", pods[0]: "pods"}
+    # the tube's turning rings (round 15, +-0.16): the even drums (the lip's way) on ring.0, the odd ones on ring.1
+    rings = sorted([m for m in mean_x if abs(abs(motions[m]["speed"]) - 0.16) < 1e-6], key=lambda m: -motions[m]["speed"])
+    assert len(gates) == 2 and len(decks) == 5 and len(pods) == 1 and len(rings) == 2, (gates, decks, pods, rings, motions)
+    bone_of_motion = {gates[0]: "gate.0", gates[1]: "gate.1", pods[0]: "pods", rings[0]: "ring.0", rings[1]: "ring.1"}
     for k, m in enumerate(decks):
         bone_of_motion[m] = "deck.%d" % k
 

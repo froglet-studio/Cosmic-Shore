@@ -22,6 +22,9 @@ namespace CosmicShore.Gameplay
         const float RT = 8f, HULL_END = 0f, GAP_END = 33f, CX = 21f, STERN = -82.8f, XB = STERN - 9.5f;
         const float WALK_R = 17.5f, JX0 = -71f, JX1 = STERN - 1.5f, JR = 15.5f, JCX = -77.5f, RB = 7.13f;
         const float BRANCH_EX = -91.8f, BRANCH_ER = 30.5f, POD_X0 = -4f, POD_X1 = -78f, POD_R0 = 31.5f, POD_R1 = 35.5f;
+        /// <summary>How far the tube's turning rings and their prisms stand in from its wall (round 15: drums at RT - 1.25,
+        /// prisms to about RT - 1.5). They turn about the tube's axis, so the solid needs no turn of its own.</summary>
+        const float TubeLining = 1.5f;
         const float POD_PR = 4.6f, PRISM_SKIN = 0.9f, BELL_RING = 13.2f;
         static readonly (float x0, float x1)[] Decks = { (-16.5f, -7f), (-30f, -20.5f), (-43.5f, -34f), (-57f, -47.5f), (-70.5f, -61f) };
         static readonly (float x0, float x1, float r)[] MouthStack = { (34.6f, 40f, 12.5f), (40f, 46f, 14f), (46f, 52f, 13f), (52f, 57.5f, 11.5f), (57.5f, 62.6f, 9.5f) };
@@ -119,7 +122,7 @@ namespace CosmicShore.Gameplay
         /// them, the hall's skin.</summary>
         static float Hull(Vector3 a)
         {
-            float d = Ring(a, JX0 - 0.5f, HULL_END + 8.6f, RT - 0.6f, RT + 1.2f);              // the tube's wall and its rings
+            float d = Ring(a, JX0 - 0.5f, HULL_END + 8.6f, RT - TubeLining, RT + 1.2f);     // the tube's wall, its turning rings
             d = Mathf.Min(d, Ring(a, HULL_END + 7f, HULL_END + 9.2f, RT, RT + 1.9f));         // its lip
             d = Mathf.Min(d, Ring(a, -5.6f, 0.3f, RT, WALK_R + 2.4f));                       // the hull's head
             for (int i = 0; i < Decks.Length; i++)
@@ -174,7 +177,7 @@ namespace CosmicShore.Gameplay
         // ── the passage ─────────────────────────────────────────────────────
         static float Passage(Vector3 a)
         {
-            float d = Ring(a, JX0 - 1f, HULL_END + 12f, 0f, RT - 0.9f);                       // the tube
+            float d = Ring(a, JX0 - 1f, HULL_END + 12f, 0f, RT - TubeLining - 0.2f);          // the tube, inside its rings
             d = Mathf.Min(d, Ring(a, JX1 + 0.3f, JX0, 0f, JR - 0.9f));                        // the hall
             for (int k = 0; k < 3; k++)
             {

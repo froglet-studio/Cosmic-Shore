@@ -68,7 +68,7 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(size.x > 0f && size.y > 0f && size.z > 0f, $"{s.name}: size {size}");
                 Assert.IsTrue(s.RidesHull || turning.Contains(s.bone), $"{s.name} rides '{s.bone}', which neither the hull nor a turning part is");
             }
-            // The prism cell (PRISM_CELL in the spec) sets the count: 593 at 2.2 (the rifled tube, round 15). Far outside this band is a budget change.
+            // The prism cell (PRISM_CELL in the spec) sets the count: 637 at 2.2 (with the tube's turning rings, round 15). Far outside this band is a budget change.
             Assert.That(table.sockets.Length, Is.InRange(400, 800), "the round Ark's hull prism count left its budget");
         }
 
@@ -96,7 +96,7 @@ namespace CosmicShore.Tests
         public void RigTable_TurningPartsAlternate_AboutTheNoseAxis()
         {
             var table = LoadTable();
-            Assert.AreEqual(8, table.spins.Length, "five decks, two gates and the pods turn");
+            Assert.AreEqual(10, table.spins.Length, "five decks, two gates, the pods and the tube's two sets of rings turn");
             ArkRigTable.Spin Find(string bone) => table.spins.FirstOrDefault(s => s.bone == bone);
             foreach (var s in table.spins)
             {
@@ -118,6 +118,11 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(g1, "gate.1");
             Assert.Less(Vector3.Dot(g0.Axis, g1.Axis), 0f, "the two ring gates turn against each other");
             Assert.IsNotNull(Find("pods"), "the pods turn on their cables");
+            var r0 = Find("ring.0");
+            var r1 = Find("ring.1");
+            Assert.IsNotNull(r0, "ring.0");
+            Assert.IsNotNull(r1, "ring.1");
+            Assert.Less(Vector3.Dot(r0.Axis, r1.Axis), 0f, "the tube's neighbouring rings turn the same way");
             Assert.AreEqual(1f, Mathf.Abs(table.ReactorAxis.normalized.z), 1e-3f, "the omni crystal's collar turns about the nose axis");
             Assert.Greater(table.reactorRadius, 0f);
         }
@@ -354,6 +359,16 @@ namespace CosmicShore.Tests
                 ArkRoundSolid.Distance(p + Vector3.right * e) - ArkRoundSolid.Distance(p - Vector3.right * e),
                 ArkRoundSolid.Distance(p + Vector3.up * e) - ArkRoundSolid.Distance(p - Vector3.up * e),
                 ArkRoundSolid.Distance(p + Vector3.forward * e) - ArkRoundSolid.Distance(p - Vector3.forward * e)).normalized;
+        }
+
+        [Test]
+        public void Solid_TheTubesTurningRingsAreSolid_AndItsMiddleIsOpen()
+        {
+            // Round 15: the drums stand 1.25 in from the tube's wall (8), their prisms to about 1.5; a vessel flies the
+            // middle and meets the rings, not the wall behind them.
+            Assert.Less(ArkRoundSolid.Distance(ArkRoundSolid.FromArtifact(new Vector3(-30f, 6.9f, 0f))), 0f, "a ring is not solid");
+            Assert.IsTrue(ArkRoundSolid.InPassage(ArkRoundSolid.FromArtifact(new Vector3(-30f, 5.5f, 0f))), "the tube's middle is closed");
+            Assert.IsTrue(ArkRoundSolid.InPassage(ArkRoundSolid.FromArtifact(new Vector3(-30f, 0f, 0f))), "the tube's axis is closed");
         }
 
         [Test]

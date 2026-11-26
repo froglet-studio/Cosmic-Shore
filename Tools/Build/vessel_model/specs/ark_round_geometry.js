@@ -9,7 +9,7 @@
      the escort drawn for scale, and the rooms and people inside the decks (closed in the game; nobody sees them).
    Re-extract from the artifact (the block between "colours" and the round-13 callouts) when the concept changes,
    then re-apply the PC edits: expRows, expPod, plating, tubeLining and branchTube's plate spacing.
-   Round 15 (2026-11-26, version 16): the tube's radius 9.2 -> 8 and the exits' 8.2 -> 7.13, and the rifled lining (A). */
+   Round 15 (2026-11-26, version 16): the tube's radius 9.2 -> 8 and the exits' 8.2 -> 7.13, and the turning rings lining (B). */
 let PC=1;
 /* ================= colours ================= */
 // Domain pigments: face = OutsideBlock, rim = InsideBlock of each shipped set; Fire = Danger.
@@ -356,15 +356,19 @@ function cityInterior(M,x0,x1,R,spin,o={}){RNG=11;M.a=SPIN(spin);
 const XJ=STERN+12,RB=7.13,EXITS=[0,1,2].map(k=>TOP+2*Math.PI*k/3);
 const angDist=(a,b)=>{const d=((a-b)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);return Math.min(d,2*Math.PI-d)};
 const nearExit=(t,w)=>EXITS.some(e=>angDist(t,e)<w);
-// Round 15 (Shombith, 2026-11-26: "I want the inside to be cooler and the radius can be a bit smaller"): A, Rifled. A black
-// lining with six raised steel lands that spiral down the tube, one turn every 40 units, a row of prisms in each groove.
-function tubeLining(M,lo,hi,r){const TW=2*Math.PI/40;
-  M.latheX(fine([[lo,r-0.25],[hi,r-0.25]],1.2),60,"dark",{tone:(i,j)=>j%10===0?0.7:1});
-  const along=(x,t)=>norm(add(X,mul(tangent(t),-(r-0.5)*TW)));
-  const pts=[];for(let k=0;k<6;k++){const t0=2*Math.PI*k/6;
-    for(let x=hi-0.8;x>lo+0.6;x-=0.9){const t=t0+(hi-x)*TW;M.box(face(x,r-0.55,t),along(x,t),radial(t),cross(along(x,t),radial(t)),0.5,0.32,0.3,"metal",k%2?0.8:1)}
-    for(let x=hi-2;x>lo+1.2;x-=2.6*PC){const t=t0+Math.PI/6+(hi-x)*TW;plate(M,face(x,r-0.3,t),mul(radial(t),-1),along(x,t),"prism",0.55);if(!pts.length&&x<-30)pts.push(face(x,r-1.6,t))}}
-  M.anchor("lining",pts)}
+// Round 15 (Shombith, 2026-11-26: "I want the inside to be cooler and the radius can be a bit smaller"; he picked B):
+// Turning rings. The tube is a stack of short black drums on a dark lining, each lined with eight prisms raked the way it
+// turns; neighbours turn opposite ways, the first one (at the lip) the way the first deck does. The even drums share one
+// motion and the odd ones another, so the rig has two ring bones (ring.0, ring.1).
+const RING_SPIN=[SPIN(0.16),SPIN(-0.16)];
+function tubeLining(M,lo,hi,r){const L=4.2,g=0.6;let i=0;
+  M.latheX([[lo,r-0.25],[hi,r-0.25]],48,"dark",{tone:(ii,j)=>j%8===0?0.6:0.85});
+  const pts=[];for(let x=hi-0.8;x-L>lo+0.4;x-=L+g,i++){const sp=RING_SPIN[i%2];M.a=sp;
+    M.latheX([[x,r-0.3],[x,r-0.95],[x-0.35,r-1.25],[x-L+0.35,r-1.25],[x-L,r-0.95],[x-L,r-0.3]],60,"hull",{tone:(ii,j)=>j%5===0?0.75:1});
+    M.torusX(x-0.2,r-1.2,0.2,60,"metal",6);M.torusX(x-L+0.2,r-1.2,0.2,60,"metal",6);
+    for(let k=0;k<8;k++){const t=(k+(i%2?0.5:0))*2*Math.PI/8,T=mul(tangent(t),Math.sign(sp.speed));plate(M,face(x-L/2,r-1.42,t),mul(radial(t),-1),T,"prism",0.6);
+      if(!pts.length&&x<-28)pts.push(face(x-L/2,r-2.6,t))}}
+  M.a=null;M.anchor("lining",pts)}
 function frameAt(path,i){const a=path[Math.max(0,i-1)],b=path[Math.min(path.length-1,i+1)],T=norm(sub(b,a)),N=norm(cross(T,Math.abs(T[0])<0.9?X:[0,1,0])),B=cross(T,N);return [T,N,B]}
 function branchTube(M,ctrl,r){const path=catmull(ctrl,7);
   M.sweep(path,r,40,"panel",{tone:(i,j)=>j%6===0?0.82:1});M.sweep(path,r-0.25,40,"metal",{tone:(i,j)=>j%8===0?0.55:(j%2?0.8:1)});
