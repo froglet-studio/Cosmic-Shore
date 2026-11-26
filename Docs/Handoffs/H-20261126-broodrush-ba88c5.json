@@ -1,0 +1,16 @@
+{
+  "id": "H-20261126-broodrush-ba88c5",
+  "kind": "claim",
+  "lane": "broodrush",
+  "laneName": "Brood Rush",
+  "laneKind": "game",
+  "by": "Caleb",
+  "on": "2026-11-26T16:24:04+00:00",
+  "branch": "claude/sleepy-ride-r3wozq",
+  "signals": {
+    "laneKind": "game",
+    "handTests": false,
+    "merged": false
+  },
+  "source": "cli"
+}
