@@ -1447,7 +1447,8 @@ def build_view(row_guid):
                       f"  confirmButton: {ref(ctx.iref('ConfirmButton', 'root#button'))}\n"
                       f"  confirmLabel: {ref(ctx.iref('ConfirmButton', 'Label#kt'))}\n"
                       f"  cancelButton: {ref(ctx.iref('CancelButton', 'root#button'))}\n"
-                      "  lockedWord: Locked\n  ownedWord: Owned\n  kickerTemplate: \"VESSEL \\xB7 {state}\"\n"
+                      "  lockedWord: Locked\n  ownedWord: Owned\n  kickerTemplate: \"{role} \\xB7 {archetypes} \\xB7 {state}\"\n"
+                      "  roleLessKickerTemplate: \"VESSEL \\xB7 {state}\"\n  archetypeSeparator: ' / '\n"
                       "  unlockTemplate: UNLOCK - {cost}\n"
                       "  unlockFreeWord: UNLOCK - FREE\n  spendTemplate: '{cost} to unlock {vessel}'\n"
                       "  confirmTemplate: CONFIRM - {cost}\n  shortfallTemplate: You need {amount} more OmniCrystals.\n")
