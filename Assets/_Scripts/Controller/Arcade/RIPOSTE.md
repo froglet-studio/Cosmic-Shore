@@ -201,9 +201,12 @@ comparison:
   0-1, speeds to 451 u/s. Lengths also swing match to match: Hard I3 ran 33, 94 and 32 s, Hard I2 20 and 56 s.
   So the editor times say nothing against the judge's table; a 2v2 match of four mode AIs has not been played in
   Unity, because the smoke test cannot seat one.
-- **Open (a person's call):** a human seat the AI holds (an idle guest, the AI-flies toggle) flies the stock
-  autopilot here, slow and unramped, and is the duelists' preferred target. Switchback arms such seats with its
-  own pilot; Riposte and Jackstraw do not.
+- **A human seat the AI holds now duels** (2026-11-27, the obvious default taken for Yash): a human's hull the
+  platform autopilot flies when the countdown ends (the smoke test's host seat, an idle guest) is armed as a duelist
+  like an AI seat, and a hull handed over later (PilotControl's AI-flies toggle, an idle guest the server adopts)
+  is armed then (`RiposteController : IAIPilotArming`, `RiposteDuelist.ArmOne`), as Switchback's race does. It flies
+  at the match's AI level and stays a human seat to the rivals' targeting (`aiHumanFocus`). Not run in Unity yet;
+  whether the hull's ramp uses the Riposte boost variant when it was not spawned as an AI is not checked.
 - **The Lists (the arena of section 4) and the lane-reading duelist compile in Unity** (2026-11-25, the open
   editor, ba00cb40a1: `recompile` up to date with no errors, `RiposteYard`, `RiposteLanes` and `SpawnableRiposteYard`
   load as types). **Not yet verified in Unity:** `RiposteYardTests` (10) and `RiposteLanesTests` (7) in the test
