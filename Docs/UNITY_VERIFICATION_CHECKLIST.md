@@ -27522,6 +27522,12 @@ Refcompile: 0 errors in project code. No Unity editor ran; `EffectiveSeatCount_I
 - [ ] Full lobby of 4 (any teams): unchanged, the same 4 every round. Play Again from the summary keeps the same field.
 - [ ] Two humans: one leaves mid-tournament; the next round seats an AI in their place (the field keeps its size).
 
+## The Toy Box trail never waits on PC; only the lava lamp does (2026-11-26, claude/stoic-ptolemy-kls5cc)
+
+Refcompile: 0 errors in project code. No Unity editor ran; `DesktopAndMobileHigh_LavaLampWaits_ToyBoxTrailNeverDoes` is new and `DesktopAndMobileHigh_ChangeNothingAboutContent` (red since 2026-11-21) should be green again; neither has run.
+- [ ] Desktop, Toy Box, Squirrel: idle the gamepad and drift far from the cell for several minutes (past 20,000 cell prisms, `diag`); the trail never stops. Swap to the Manta: it lays trail too.
+- [ ] Desktop, menu (lava lamp) idle 10+ minutes: its trail still stops at about 20,000 cell prisms, and the load out of the menu stays short (B45).
+
 ## Mass-Space AI rows (2026-11-21)
 
 `AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
