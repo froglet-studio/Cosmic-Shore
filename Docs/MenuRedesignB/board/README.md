@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-25 from the canvas of **Frogma**: Rev 41 to Rev 145, 457 boards on 18 tabs. The canvas opens on the tab `toy-box`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-26 from canvas version `1795724523-65f0` of **Frogma**: Rev 41 to Rev 146, 460 boards on 18 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -440,6 +440,12 @@ Copied on 2026-11-25 from the canvas of **Frogma**: Rev 41 to Rev 145, 457 board
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 146 - Voyages: roles and archetypes on the quay, Your Ark and Vessels, three ways
+
+- [`R146A.dc.html`](R146A.dc.html) - Rev 146 A - Seat asks: three archetypes with a reason each, each seat shows the ask it fills (recommended)
+- [`R146B.dc.html`](R146B.dc.html) - Rev 146 B - Know the crew: the rival crew's archetypes and their counters, a counter wheel in Vessels
+- [`R146C.dc.html`](R146C.dc.html) - Rev 146 C - Plain words: the ask as a sentence, archetypes as words, Vessels as a grouped list
 
 #### Rev 138 - Voyages: the final app shell, every screen and what you press
 
