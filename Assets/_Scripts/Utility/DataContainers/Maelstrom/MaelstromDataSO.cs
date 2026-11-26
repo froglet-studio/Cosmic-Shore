@@ -273,16 +273,41 @@ namespace CosmicShore.Utility
 
         [Header("Roster")]
         [SerializeField, Range(1, 4), Tooltip(
-            "How many pilots a Maelstrom round seats, ALWAYS. A tournament is a fixed field: the " +
-            "same faces for every round, with AI filling whatever the party does not. A party of " +
-            "four brings no AI at all; a solo player brings three. This is deliberately NOT the " +
-            "launch modal's player stepper - that number is a lobby preference for one match, and " +
-            "a tournament whose field size changed between rounds would be scoring a different " +
-            "game each time.")]
+            "The MOST pilots a Maelstrom round seats. The field itself is the lobby the host " +
+            "built (humans plus the AI they placed, captured once at the start - FieldSize), so a " +
+            "1v1 stays a 1v1 for the whole tournament; this caps it. It is fixed across rounds " +
+            "either way: a tournament whose field size changed between rounds would be scoring a " +
+            "different game each time.")]
         int seatCount = 4;
 
-        /// <summary>The fixed number of pilots every round of a Maelstrom seats (humans + AI).</summary>
+        /// <summary>The most pilots a round of a Maelstrom seats (humans + AI).</summary>
         public int SeatCount => Mathf.Clamp(seatCount, 1, 4);
+
+        /// <summary>
+        /// The lobby's seat count (humans + the AI the host placed), captured once at a fresh start
+        /// from the launch. 0 means none was captured. Like <see cref="IntensityCeiling"/> it survives
+        /// <see cref="ResetRuntime"/>, so Play Again keeps the same field.
+        ///
+        /// <para>It used to be ignored: every round seated <see cref="SeatCount"/> and padded the seats
+        /// the host left empty with balanced AI, whose Jade-Ruby-Gold tie-break turned the default solo
+        /// 1v1 (you on Jade, an AI on Ruby) into Jade, Ruby, Gold, Ruby - "two on Ruby whatever teams I
+        /// make" (Shombith, 2026-11-26).</para>
+        /// </summary>
+        [System.NonSerialized] public int FieldSize;
+
+        /// <summary>
+        /// The pilots every round of this tournament seats: <see cref="FieldSize"/>, kept between the
+        /// card's minimum and <see cref="SeatCount"/>; <see cref="SeatCount"/> when nothing was captured.
+        /// </summary>
+        public int EffectiveSeatCount
+        {
+            get
+            {
+                if (FieldSize <= 0) return SeatCount;
+                int min = ModeCard != null ? Mathf.Clamp(ModeCard.MinPlayersAllowed, 1, SeatCount) : 1;
+                return Mathf.Clamp(FieldSize, min, SeatCount);
+            }
+        }
 
         [SerializeField, Tooltip(
             "The profile list AI seats are named and faced from. Held HERE rather than read off " +

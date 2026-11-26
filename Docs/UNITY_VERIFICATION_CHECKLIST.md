@@ -27513,3 +27513,11 @@ Refcompile: 0 errors in the changed files (the run's 29 pre-existing errors are 
 - [ ] Unity imports `Assets/Resources/Vessels/VesselArchetypes.asset` with no missing-script warning, and its Inspector shows roles, archetypes, 24 vessels and 12 counters.
 - [ ] Hangar: the line over each vessel's name reads its role, its archetypes primary first, then Owned / Locked (Squirrel: CULTIVATOR · PUMPER / HARRASER · OWNED). A vessel the board leaves out still reads VESSEL · OWNED.
 - [ ] Run the edit-mode tests `VesselArchetypesTests`.
+
+## The Maelstrom seats the lobby you built, not always four (2026-11-26, claude/optimistic-clarke-7bxd4m)
+
+Refcompile: 0 errors in project code. No Unity editor ran; `EffectiveSeatCount_IsTheLobbyField_CappedAtSeatCount` (MaelstromDataSOTests) is new and not yet run.
+- [ ] Solo, Maelstrom card, default lobby (you + 1 AI): the hub and every round seat exactly 2 pilots, on the domains the lobby showed (it used to pad to 4: Jade, Ruby, Gold, Ruby).
+- [ ] Solo, you on Gold, place AI on Jade and Ruby (3 seats): every round has those 3, on those domains.
+- [ ] Full lobby of 4 (any teams): unchanged, the same 4 every round. Play Again from the summary keeps the same field.
+- [ ] Two humans: one leaves mid-tournament; the next round seats an AI in their place (the field keeps its size).
