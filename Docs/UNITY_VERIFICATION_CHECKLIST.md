@@ -27393,14 +27393,19 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
 - [x] Why an AI match is shorter in the editor than in the judge (2026-11-25, three probed matches): the smoke
       test seats three teams and its host seat flies the stock autopilot at 31-47 u/s, not the mode's AI; it is
       the hull that gets struck. The duelists flew as in the judge. `RIPOSTE.md` section 5.
-- [ ] A 2v2 match of four mode AIs in the editor (the smoke test cannot seat one), timed against the judge.
+- [x] A 2v2 match of four AI seats in the editor (2026-11-27, the Lists, Hard, clock 1x; the smoke config's new
+      per-mode `Domains` override seats Riposte 2v2, read in play: two Ruby AIs against a Jade AI and the Jade host
+      seat, which now flies the duelist): I1-I4 ended with a winner in 84 / 139 / 48 / 187 game s, all four seats
+      AI and moving, no error in the match or at exit (only the Cloud Code `NotFound` at boot, plus at I1 a
+      command of mine that timed out). The judge's Hard in the Lists: 81-111 / 38-190 / 104-112 / 151-218 s.
 - [x] **The Lists, Riposte's own arena (2026-11-25, `RIPOSTE.md` section 4).** The open editor (6000.3.17f1) compiled
       the project with `SpawnableRiposteYard`, `RiposteYard` and `RiposteLanes` (recompile up to date, no errors, the
       types loaded).
-- [ ] `RiposteYardTests` (10) and `RiposteLanesTests` (7) pass in the editor's test runner. Tried 2026-11-25: the
-      run aborted because the editor was in Play mode when the runner restored its scene, and the editor stopped
-      answering commands afterwards. They pass headless (`riposte_harness --self-test`).
-- [ ] Each of the four `SpawnableRiposteYard` prefabs lays the census's prism count: 480 / 1,110 / 2,090 / 3,410.
+- [x] `RiposteYardTests` (10) and `RiposteLanesTests` (7) pass in the editor's test runner (2026-11-27, with
+      `RiposteDuelTests` 14 of 14, after the recompile that took the held-seat duelist).
+- [x] Each of the four `SpawnableRiposteYard` prefabs lays the census's prism count: 480 / 1,110 / 2,090 / 3,410
+      (2026-11-27, `GetTrailData` on each prefab in the editor; shielded 0 / 46 / 94 / 222, danger 0 / 0 / 28 / 48,
+      lanes 4 / 4 / 4 / 3, rails 16 / 12 / 8 / 3, all as the Python census).
 - [ ] Riposte I1-I4 load their own cells: straight empty lanes run from the centre clearing to a refuel clearing,
       rails of short pickets line each lane, gates stand in the lanes from I2, red tips line the lane walls from
       I3, the sticks round the centre are ironwood at I4; crystals float in every clearing; pilots spawn outside
@@ -27412,8 +27417,9 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
       Windows); until the bake, the game lays the yard live with a warning.
 - [ ] A person's judgment: do the lanes read as the place to wind up, can the rails be cut for fuel without
       leaving the line, is a gate a fair obstacle at ramp speed, and does it look good (not flat, not noise)?
-- [ ] Decide: should a human seat the AI holds fly Riposte's duelist (as Switchback's does) and not the stock
-      autopilot?
+- [x] A human seat the AI holds flies Riposte's duelist (2026-11-27, built as the obvious default; compiled and
+      seen armed in the editor: the smoke test's host seat read `held` and its match ended 2v2). Not yet tried:
+      a hull handed over mid-match with the AI-flies toggle, and an idle guest.
 - [ ] A sword hit scores only while the striker is the faster hull; a struck pilot is silenced and can refuel at the
       clearing crystals; at I2 every hull starts at Charge 5; at I3 each team has its Charge crystals; at I4 the
       fauna hatch and an unlit blade binds on ironwood.
