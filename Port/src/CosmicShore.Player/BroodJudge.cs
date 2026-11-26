@@ -85,6 +85,18 @@ namespace CosmicShore.Player
             return f?.GetValue(pc) is ElementalFloat ef ? Math.Round(ef.EvaluateLive(p.Vessel.VesselStatus), 3) : null;
         }
 
+        /// <summary>The live AI pilot's difficulty as the spawn configured it (ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode):
+        /// its autopilot skill (arena: Easy 0.25 .. Legendary 1) and its belief's mistakes (null on Legendary). Proves the spec's
+        /// "difficulty" reached every seat the way Unity's launch panel does.</summary>
+        static JsonObject PilotOf(IPlayer p)
+        {
+            if (p.Vessel?.VesselStatus is not Component c || !c || !c.TryGetComponent(out AIPilot pilot)) return null;
+            var f = typeof(AIPilot).GetField("skillLevel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var o = new JsonObject { ["skill"] = f?.GetValue(pilot) is float sk ? Math.Round(sk, 3) : null };
+            if (pilot.Belief is { } b) { o["reaction_s"] = Math.Round(b.Level.ReactionSeconds, 3); o["mistake"] = Math.Round(b.Level.MistakeChance, 3); }
+            return o;
+        }
+
         static MultiplayerDomainGamesController FindBrood() => CosmicShore.Engine.Object.FindAnyObjectByType<MultiplayerDomainGamesController>();
 
         IEnumerator BroodMatches(GameDataSO gameData, VesselClassType hostHull, int intensity)
@@ -108,7 +120,8 @@ namespace CosmicShore.Player
                     }
                     yield return 0.25f;
                 }
-                var race = new JsonObject { ["seed"] = seed, ["mode"] = "teams", ["game"] = _mode, ["intensity"] = intensity, ["host_hull"] = hostHull.ToString() };
+                var race = new JsonObject { ["seed"] = seed, ["mode"] = "teams", ["game"] = _mode, ["intensity"] = intensity, ["host_hull"] = hostHull.ToString(),
+                    ["difficulty"] = gameData.RequestedAIDifficulty.ToString(), ["domains"] = gameData.RequestedDomainCount };
                 _races.Add(race);
                 if (controller == null || (cell == null && _mode == "BroodRush") || ais == null || ais.Count < _hulls.Count)
                 {
@@ -223,6 +236,7 @@ namespace CosmicShore.Player
                         ["destroyed"] = p.RoundStats is { } rs2 ? Math.Round(rs2.HostileVolumeDestroyed, 1) : null,
                         ["crystals"] = p.RoundStats?.CrystalsCollected,
                         ["trail_volume"] = TrailVolumeOf(p),
+                        ["pilot"] = PilotOf(p),
                         ["presses"] = presses.Of(p.Vessel?.VesselStatus),
                         ["ability_s"] = p.RoundStats is { } rs3 ? new JsonArray(Math.Round(rs3.Button1AbilityActiveTime, 1), Math.Round(rs3.Button2AbilityActiveTime, 1),
                             Math.Round(rs3.Button3AbilityActiveTime, 1), Math.Round(rs3.LeftStickAbilityActiveTime, 1), Math.Round(rs3.RightStickAbilityActiveTime, 1),

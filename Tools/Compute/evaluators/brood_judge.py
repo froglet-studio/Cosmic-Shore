@@ -44,10 +44,10 @@ CARD = ["Squirrel", "Manta", "Dolphin", "Rhino", "Swordfish", "Serpent", "Sparro
 BAR = 0.10
 
 
-def deal(hulls, rounds, team_size=3, seed=0):
-    """Rosters of two teams of `team_size`, every hull once a round (a short last match is filled from the round's
-    start, never with a hull already in it)."""
-    per = 2 * team_size
+def deal(hulls, rounds, team_size=3, seed=0, teams=2):
+    """Rosters of `teams` teams of `team_size`, every hull once a round (a short last match is filled from the round's
+    start, never with a hull already in it). The card seats 2-3 domains and 2-9 pilots, at most 3 a team."""
+    per = teams * team_size
     out = []
     for r in range(rounds):
         rng = random.Random(seed * 1000 + r)
@@ -59,12 +59,12 @@ def deal(hulls, rounds, team_size=3, seed=0):
             order += [h for h in order if h not in last][:per - rem]
         for i in range(0, len(order), per):
             m = order[i:i + per]
-            out.append([m[:team_size], m[team_size:]])
+            out.append([m[k * team_size:(k + 1) * team_size] for k in range(teams)])
     return out
 
 
 def judge(rosters, seeds_per_roster=1, seed0=1, limit_s=300, workers=None, workdir=None, intensity=2, overrides=None,
-          start=None, ai_objective=None, mode="BroodRush"):
+          start=None, ai_objective=None, mode="BroodRush", difficulty=None):
     rj.build()
     t0 = time.time()
     workdir = workdir or tempfile.mkdtemp(prefix="brood-judge-")
@@ -76,6 +76,8 @@ def judge(rosters, seeds_per_roster=1, seed0=1, limit_s=300, workers=None, workd
             spec["overrides"] = overrides
         if start is not None:
             spec["start"] = start
+        if difficulty:
+            spec["difficulty"] = difficulty          # the launch panel's AI difficulty (RaceJudge default Legendary; Unity's is Medium)
         if ai_objective:
             spec["ai_objective"] = ai_objective      # "nucleus": the AI steers for the nucleus (experiment, BroodJudge.cs)
         if mode != "BroodRush":
@@ -182,6 +184,9 @@ def main():
     ap.add_argument("--limit", type=float, default=300)
     ap.add_argument("--overrides", help="JSON file: [{asset, fields}] in-memory asset edits for this run")
     ap.add_argument("--start", help="starting element levels: card (default), rest, or a JSON table")
+    ap.add_argument("--difficulty", help="Easy, Medium, Hard or Legendary (the judge's default). Unity's launch panel opens on Medium")
+    ap.add_argument("--n-teams", type=int, default=2, help="teams a match (the card allows 2-3)")
+    ap.add_argument("--team-size", type=int, default=3)
     ap.add_argument("--mode", default="BroodRush", help="any domain game: a hull's own Mass or Space game is judged on the same volume books (train an AI there, never in the arena)")
     ap.add_argument("--report", help="print the table of a saved result")
     ap.add_argument("--out")
@@ -196,10 +201,12 @@ def main():
     if a.teams:
         rosters = [[t.split(",") for t in a.teams.split("/")]]
         seeds = [int(s) for s in a.seeds.split(",")]
-        res = judge(rosters, seeds_per_roster=len(seeds), seed0=seeds[0], limit_s=a.limit, overrides=overrides, start=start, mode=a.mode)
+        res = judge(rosters, seeds_per_roster=len(seeds), seed0=seeds[0], limit_s=a.limit, overrides=overrides, start=start, mode=a.mode,
+                    difficulty=a.difficulty)
     else:
-        rosters = deal(hulls, a.rounds, seed=a.deal_seed)
-        res = judge(rosters, seeds_per_roster=a.seeds_per_roster, limit_s=a.limit, overrides=overrides, start=start, mode=a.mode)
+        rosters = deal(hulls, a.rounds, team_size=a.team_size, seed=a.deal_seed, teams=a.n_teams)
+        res = judge(rosters, seeds_per_roster=a.seeds_per_roster, limit_s=a.limit, overrides=overrides, start=start, mode=a.mode,
+                    difficulty=a.difficulty)
     print(report(res, None)[0])
     if a.out:
         with open(a.out, "w") as f:

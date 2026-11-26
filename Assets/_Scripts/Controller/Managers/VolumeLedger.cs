@@ -81,6 +81,22 @@ namespace CosmicShore.Gameplay
             else if (delta < 0f) AddLost(name, -delta);
         }
 
+        /// <summary>
+        /// A change in a pilot's own SHIELD shell. A shell going up is created; a shell coming off takes back the
+        /// credit it was given, rather than booking it lost. VC is the volume a pilot increased, so a shield that goes
+        /// up and comes off again added nothing: booked gross, a hull that toggles its shield often (the Orca) read
+        /// several times its real hold on space. A shell carried away by a steal or a destruction still goes through
+        /// the destroyed and stolen paths, which book it lost and credit the attacker.
+        /// </summary>
+        public void AddShieldDelta(string name, float delta)
+        {
+            if (string.IsNullOrEmpty(name) || delta == 0f) return;
+            if (delta > 0f) { AddCreated(name, delta); return; }
+            var line = Get(name);
+            line.Created = Mathf.Max(0f, line.Created + delta);
+            _lines[name] = line;
+        }
+
         public void AddCreated(string name, float volume)
         {
             if (string.IsNullOrEmpty(name) || volume <= 0f) return;

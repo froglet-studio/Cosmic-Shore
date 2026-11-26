@@ -51,6 +51,26 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// <see cref="Multiplier"/> at the vessel's REPLICATED integer level
+        /// (<c>R_VesselElementalAbilityHandler.ReplicatedLevel</c>), so every peer computes the SAME number. Use it
+        /// where the multiplier shapes an outcome every peer simulates for itself (a wall's bricks and reach):
+        /// element levels never replicate, so <see cref="Multiplier"/> on a remote copy reads whatever level that
+        /// replica happens to sit at. The costs are <c>ElementalFloat.EvaluateReplicated</c>'s: integer resolution,
+        /// and the deficit band reads as level 0. Falls back to <see cref="Multiplier"/> off-vessel.
+        /// </summary>
+        public static float ReplicatedMultiplier(IVesselStatus status, Element element,
+            float atFull = 2f, float minMul = 0.25f)
+        {
+            var abilities = status?.ElementalAbilityHandler;
+            if (!abilities) return Multiplier(status, element, atFull, minMul);
+            return MultiplierAt(abilities.ReplicatedLevel(element) / 10f, atFull, minMul);
+        }
+
+        /// <summary><see cref="Multiplier"/>'s lerp at a normalized level <paramref name="t"/> (0 at rest, 1 at level 10).</summary>
+        public static float MultiplierAt(float t, float atFull = 2f, float minMul = 0.25f) =>
+            Mathf.Max(minMul, Mathf.LerpUnclamped(1f, atFull, t));
+
+        /// <summary>
         /// The same lerp as <see cref="Multiplier"/> but with an EXPLICIT resting endpoint, for a
         /// parameter whose design deliberately does not sit at 1x when the element is at rest.
         ///
