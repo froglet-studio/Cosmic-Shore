@@ -27268,3 +27268,11 @@ saved record at sea or away from home back home, so older saves are repaired. Th
 Refcompile: 0 errors in the changed files (the run's 30 pre-existing errors are elsewhere). No Unity editor or phone build ran.
 - [ ] Android phone build with the system auto-rotate lock ON: in the menus, turn the phone landscape and portrait; the app shell turns with it (it used to stay where the lock held it). Gameplay still locks landscape.
 - [ ] Toy Box > Vessel Changer opens with a model in the live preview (the hull you are flying, else the first hull) before anything is picked; picking a hull replaces it; Switch stays dark until a pick.
+
+## The Maelstrom seats the lobby you built, not always four (2026-11-26, claude/optimistic-clarke-7bxd4m)
+
+Refcompile: 0 errors in project code. No Unity editor ran; `EffectiveSeatCount_IsTheLobbyField_CappedAtSeatCount` (MaelstromDataSOTests) is new and not yet run.
+- [ ] Solo, Maelstrom card, default lobby (you + 1 AI): the hub and every round seat exactly 2 pilots, on the domains the lobby showed (it used to pad to 4: Jade, Ruby, Gold, Ruby).
+- [ ] Solo, you on Gold, place AI on Jade and Ruby (3 seats): every round has those 3, on those domains.
+- [ ] Full lobby of 4 (any teams): unchanged, the same 4 every round. Play Again from the summary keeps the same field.
+- [ ] Two humans: one leaves mid-tournament; the next round seats an AI in their place (the field keeps its size).
