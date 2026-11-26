@@ -27306,7 +27306,7 @@ Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section
 (the AI detours for its team's I3 Mass crystals, `PalisadeController.TryNearestCrystal`; `PalisadeLadderTests`) was
 not compiled: no Unity, Amoebius or reference compile ran. `author_palisade_assets.py --check` passes.
 
-- [ ] The project compiles and `PalisadeLadderTests` (7 tests) pass.
+- [x] The project compiles and `PalisadeLadderTests` (7 tests) pass (the open editor, 6000.3.17f1, 2026-11-27).
 - [ ] Palisade loads from its arcade card at I1 with two teams; the hint toast shows once; at 90 s the board shows
       each pilot's volume and prisms and names a winner.
 - [ ] I1: energize and let go. The afterimages count in the score, and a lit run through a rival's wall cuts it and
@@ -27436,7 +27436,14 @@ clock 1x, why the editor's matches are shorter than the judge's, and nobody has 
 (`bash Tools/Build/palisade_harness/run.sh --self-test`: 11 tests, 14 negative controls). The laying and the AI's lane
 runs (`PalisadeController.Arena.cs`) were not compiled: no Unity, Amoebius or reference compile ran.
 
-- [ ] The project compiles; `PalisadeArenaTests` (11) pass in the editor.
+- [x] The project compiles; `PalisadeArenaTests` (11) pass in the editor (2026-11-27). The settings asset loads with
+      its arena prism (`SpawnablePrism`).
+- [ ] One all-AI match per rung at clock 1x in the editor: tried twice at I1 with the mode smoke test (4 Legendary
+      Swordfish, 2v2), both stopped at Boot, before the menu. The editor was in the background: the first time
+      `set_autotick` was lost in the domain reload on entering Play and the offline data init timed out (5 s), and its
+      continuation then ran off the main thread (`OfflineModeService.cs:173`, FindAnyObjectByType); the second time,
+      with autotick persisted, the editor's main thread stalled 20 s at a time. Needs the editor in front (a person, or
+      the go-ahead to bring it forward), then `Logs/ModeSmoke/Palisade_I<n>_x1/summary.json`.
 - [ ] I1: at GO three rows of 14 posts stand about 640 u out, each ending in a closed hoop of 12 shielded stones. All
       of it is the neutral (Blue) colour of the worn colour set and none of it looks flat.
 - [ ] The arena appears at GO, not during the countdown. Is that acceptable, or should it be laid earlier?
