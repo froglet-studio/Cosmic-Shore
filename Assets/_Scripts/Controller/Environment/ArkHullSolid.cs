@@ -51,12 +51,24 @@ namespace CosmicShore.Gameplay
         /// <summary>How far outside the surface a vessel's centre is held (its body still meets an edge-out blade).</summary>
         public const float VesselMargin = 1.2f;
 
+        /// <summary>The round Ark holds a vessel's centre further out: a hull's half width, so its wings and nose stay
+        /// out of the plating and the chase camera behind it stays out of the hull (Shombith's playtest, 2026-11-26: "I
+        /// can literally go inside the ark's model while boosting").</summary>
+        public const float RoundVesselMargin = 3f;
+
+        /// <summary>World units a vessel moves in one frame, at most, for the move to be swept (checked along its
+        /// length, so a boost cannot step over a wall between two frames); a longer jump is a teleport (a launch, a
+        /// reset) and is only held out where it lands.</summary>
+        public const float MaxSweep = 25f;
+
         /// <summary>The bulkhead's radius from the hinge: just aft of the brood's last row, just ahead of the jets.</summary>
         public const float BulkheadRho = 117.2f;
 
         const float MaxPushPerFrame = 30f;
         const float GradientStep = 0.4f;
         const float ReachPadding = 30f;
+        const float MinTraceStep = 0.25f;   // model units: thinner than any wall of either model
+        const int MaxTraceSteps = 96;
 
         static Vector3[] s_tunnel;
         static float[] s_mids;
@@ -66,6 +78,17 @@ namespace CosmicShore.Gameplay
         ArkHullShape _shape = ArkHullShape.Reverse;
         Quaternion _podTurn = Quaternion.identity;
         float _scale = 1f;
+
+        // Where each vessel was held last (model units, the Ark's frame) and on which frame: the start of its next sweep.
+        struct Track
+        {
+            public Vector3 Local;
+            public int Frame;
+            public bool Stationary;
+        }
+
+        readonly Dictionary<VesselStatus, Track> _tracks = new();
+        readonly List<VesselStatus> _stale = new();
 
         const string PodsBone = "pods";   // the round Ark's orbiting pods (ArkRoundSolid turns their solid with them)
 
@@ -92,10 +115,40 @@ namespace CosmicShore.Gameplay
         /// <summary>Which model's solid this is.</summary>
         public ArkHullShape Shape => _shape;
 
+        /// <summary>How far outside the surface (world units) <paramref name="shape"/>'s solid holds a vessel's centre.</summary>
+        public static float MarginFor(ArkHullShape shape) => shape == ArkHullShape.Round ? RoundVesselMargin : VesselMargin;
+
+        /// <summary>The distance of <paramref name="shape"/>'s solid (model units, Ark local at scale 1), the round Ark's
+        /// pods turned by <paramref name="pods"/>.</summary>
+        public static float DistanceOf(ArkHullShape shape, Vector3 arkLocal, Quaternion pods) =>
+            shape == ArkHullShape.Round ? ArkRoundSolid.Distance(arkLocal, pods) : Distance(arkLocal);
+
+        /// <summary>
+        /// How far along the move <paramref name="from"/> -> <paramref name="to"/> (model units) a vessel can go before it
+        /// comes within <paramref name="margin"/> of <paramref name="shape"/>'s surface: 1 when the whole move is clear, else
+        /// the share of it (0..1) at the last clear point. Traced in steps no longer than the clearance itself, so a wall
+        /// thinner than one frame's travel still stops the vessel.
+        /// </summary>
+        public static float FirstContact(ArkHullShape shape, Quaternion pods, Vector3 from, Vector3 to, float margin)
+        {
+            var move = to - from;
+            float length = move.magnitude;
+            if (length < 1e-5f) return 1f;
+            float s = 0f, clear = 0f;
+            for (int i = 0; i < MaxTraceSteps && s < length; i++)
+            {
+                float d = DistanceOf(shape, from + move * (s / length), pods);
+                if (d < margin) return s > 0f ? clear / length : 0f;
+                clear = s;
+                s += Mathf.Max(d - margin, MinTraceStep);
+            }
+            if (DistanceOf(shape, to, pods) < margin) return clear / length;
+            return 1f;
+        }
+
         /// <summary>This Ark's signed distance now (Ark local, scale 1): its model's shape, the round Ark's pods where
         /// they have turned to.</summary>
-        public float DistanceNow(Vector3 arkLocal) =>
-            _shape == ArkHullShape.Round ? ArkRoundSolid.Distance(arkLocal, _podTurn) : Distance(arkLocal);
+        public float DistanceNow(Vector3 arkLocal) => DistanceOf(_shape, arkLocal, _podTurn);
 
         // ── The volume ───────────────────────────────────────────────────────
 
@@ -378,6 +431,16 @@ namespace CosmicShore.Gameplay
                 if (!HasAuthority(vessel)) continue;
                 HoldOut(vessel, t, arkT, unit);
             }
+            if ((Time.frameCount & 127) == 0) ForgetStale();
+        }
+
+        void ForgetStale()
+        {
+            _stale.Clear();
+            foreach (var kv in _tracks)
+                if (!kv.Key || Time.frameCount - kv.Value.Frame > 2) _stale.Add(kv.Key);
+            for (int i = 0; i < _stale.Count; i++) _tracks.Remove(_stale[i]);
+            _stale.Clear();
         }
 
         static bool HasAuthority(Component vessel)
@@ -390,19 +453,62 @@ namespace CosmicShore.Gameplay
         void HoldOut(VesselStatus vessel, Transform t, Transform arkT, float unit)
         {
             var local = arkT.InverseTransformPoint(t.position) / _scale;
-            float margin = VesselMargin / unit;   // the world margin, in model units
+            float margin = MarginFor(_shape) / unit;   // the world margin, in model units
+            IVesselStatus status = vessel;
+            bool stationary = status.IsStationary;   // held by a script (the launch), which places it itself
+
+            // Swept: a vessel that flew here since the last frame is stopped where its path first meets the hull, so a
+            // boost cannot carry it over a wall between two checks. A jump (a launch, a reset) is held where it lands.
+            if (!stationary && _tracks.TryGetValue(vessel, out var track) && track.Frame == Time.frameCount - 1 &&
+                !track.Stationary && (local - track.Local).sqrMagnitude * unit * unit < MaxSweep * MaxSweep &&
+                DistanceNow(track.Local) >= margin * 0.5f)
+            {
+                float reach = FirstContact(_shape, _podTurn, track.Local, local, margin);
+                if (reach < 1f)
+                {
+                    local = Vector3.Lerp(track.Local, local, reach);
+                    t.position = arkT.TransformPoint(local * _scale);
+                    Contacts++;
+                }
+            }
+
             float d = DistanceNow(local);
-            if (d >= margin) return;
+            if (d >= margin)
+            {
+                Remember(vessel, local, stationary);
+                TurnAlong(status, t, arkT, local, margin, d);
+                return;
+            }
 
             var n = Gradient(local);
-            if (n.sqrMagnitude < 1e-8f) return;
+            if (n.sqrMagnitude < 1e-8f)
+            {
+                Remember(vessel, local, stationary);
+                return;
+            }
             float push = Mathf.Min(margin - d, MaxPushPerFrame / unit);
             var worldN = arkT.TransformDirection(n).normalized;
             t.position += worldN * (push * unit);
             Contacts++;
+            Remember(vessel, arkT.InverseTransformPoint(t.position) / _scale, stationary);
+            TurnAlong(status, t, worldN);
+        }
 
-            // The nose turns along the hull: the part of its heading that points into the surface is taken away.
-            IVesselStatus status = vessel;
+        void Remember(VesselStatus vessel, Vector3 local, bool stationary) =>
+            _tracks[vessel] = new Track { Local = local, Frame = Time.frameCount, Stationary = stationary };
+
+        /// <summary>A vessel stopped short by the sweep (clear of the surface, but on it) turns along it too.</summary>
+        void TurnAlong(IVesselStatus status, Transform t, Transform arkT, Vector3 local, float margin, float d)
+        {
+            if (d > margin + 2f * MinTraceStep) return;   // the sweep stops within a trace step of the surface
+            var n = Gradient(local);
+            if (n.sqrMagnitude < 1e-8f) return;
+            TurnAlong(status, t, arkT.TransformDirection(n).normalized);
+        }
+
+        /// <summary>The nose turns along the hull: the part of its heading that points into the surface is taken away.</summary>
+        static void TurnAlong(IVesselStatus status, Transform t, Vector3 worldN)
+        {
             var transformer = status.VesselTransformer;
             if (!transformer) return;
             float into = Vector3.Dot(t.forward, worldN);

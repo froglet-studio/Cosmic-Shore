@@ -27147,6 +27147,16 @@ changed files. None of it has run in the Unity editor.
 - [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
 - [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).
 
+2026-11-26, the size and the collision (Shombith's playtest): the Ark is drawn at scale 2.3 (about 451 long, the
+artifact's 70 Squirrels), the slots between the decks are closed, a vessel's centre is held 3 units off the hull, and
+every move is swept. Reference compile: 0 errors in the changed files. The edit-mode tests were not run.
+
+- [ ] The Ark reads as big as the concept page against your vessel; the intro frames the whole Ark; the squad's slots clear it.
+- [ ] Boost straight at the hull, the decks, the slots between them, the hall's skin and the exit walls: you slide along, never inside.
+- [ ] The tube at 22 units radius: Squirrel, Dolphin and Sparrow cameras can follow you down the tube and through the hall.
+- [ ] The sortie still launches out of the exits (a launch is not swept), and a released wingmate is not stopped at the hull.
+- [ ] A raid's shed crystals land outside the hull, not inside it.
+
 ## The Goby never flies: it only darts perch to perch (2026-11-24)
 
 Garrett: "I want the goby's only movement to be stretches of different length between perches. it should never fly.
@@ -27410,6 +27420,16 @@ and one generated string constant. Checked by the generators' `--check` gates on
 - [ ] Fly into the tube from the lip, through the hall and out of an exit: no invisible walls. The hull, decks and crystal are solid.
 - [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
 - [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).
+
+2026-11-26, the size and the collision (Shombith's playtest): the Ark is drawn at scale 2.3 (about 451 long, the
+artifact's 70 Squirrels), the slots between the decks are closed, a vessel's centre is held 3 units off the hull, and
+every move is swept. Reference compile: 0 errors in the changed files. The edit-mode tests were not run.
+
+- [ ] The Ark reads as big as the concept page against your vessel; the intro frames the whole Ark; the squad's slots clear it.
+- [ ] Boost straight at the hull, the decks, the slots between them, the hall's skin and the exit walls: you slide along, never inside.
+- [ ] The tube at 22 units radius: Squirrel, Dolphin and Sparrow cameras can follow you down the tube and through the hall.
+- [ ] The sortie still launches out of the exits (a launch is not swept), and a released wingmate is not stopped at the hull.
+- [ ] A raid's shed crystals land outside the hull, not inside it.
 
 ## A voyage left at sea no longer strands every later launch on the loading screen (2026-11-25)
 

@@ -275,6 +275,57 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Definition_DrawsTheArkAtTheArtifactsSize_AgainstASquirrel()
+        {
+            // The artifact draws a Squirrel for scale, 2.42 long (escort() in ark_round_geometry.js: 2 * 2.2 * 0.55), beside
+            // its Ark; the game's Squirrel is 6.451 long (Docs/VesselModels/Squirrel.md 1.3). Shombith's playtest,
+            // 2026-11-26: "the ark need to bigger and longer it does not match the artifact size".
+            const float ArtifactSquirrel = 2.42f, GameSquirrel = 6.451f;
+            var table = LoadTable();
+            var definition = AssetDatabase.LoadAssetAtPath<ArkModelDefinitionSO>(DefinitionPath);
+            Assert.IsNotNull(definition, DefinitionPath);
+            float artifactRatio = table.noseToJets / ArkRoundSolid.Scale / ArtifactSquirrel;
+            float gameRatio = table.noseToJets * definition.Scale / GameSquirrel;
+            Assert.That(gameRatio / artifactRatio, Is.InRange(0.93f, 1.07f),
+                $"the Ark is {gameRatio:0} Squirrels long in the game and {artifactRatio:0} in the artifact");
+        }
+
+        [Test]
+        public void Solid_ClosesTheSlotsBetweenTheTurningDecks()
+        {
+            // A slot between two decks is a crevice, not a passage: open, it let a vessel sit inside the model.
+            foreach (var x in new[] { -6.3f, -18.5f, -32f, -45.5f, -59f })
+                for (int k = 0; k < 6; k++)
+                {
+                    float t = k * Mathf.PI / 3f + 0.2f;
+                    var p = ArkRoundSolid.FromArtifact(new Vector3(x, 13f * Mathf.Cos(t), 13f * Mathf.Sin(t)));
+                    Assert.Less(ArkRoundSolid.Distance(p), 0f, $"the slot at nose x {x} is open at {t:0.0} rad");
+                }
+        }
+
+        [Test]
+        public void HoldOut_SweepsAFastMove_SoABoostCannotStepOverAWall()
+        {
+            // Both ends of one frame's boost are clear (the gap's water outside the tube's lip, the tube's inside), but the
+            // straight line between them crosses the tube's wall: the sweep stops the vessel before the wall.
+            var from = ArkRoundSolid.FromArtifact(new Vector3(5f, 14f, 0f));
+            var to = ArkRoundSolid.FromArtifact(new Vector3(5f, 3f, 0f));
+            const float margin = 1f;
+            Assert.Greater(ArkRoundSolid.Distance(from), margin, "the start is not clear");
+            Assert.Greater(ArkRoundSolid.Distance(to), margin, "the end is not clear");
+            float reach = ArkHullSolid.FirstContact(ArkHullShape.Round, Quaternion.identity, from, to, margin);
+            Assert.Less(reach, 1f, "the move passed through the tube's wall");
+            var stop = Vector3.Lerp(from, to, reach);
+            Assert.GreaterOrEqual(ArkRoundSolid.Distance(stop), margin, "the sweep stopped the vessel inside the margin");
+            Assert.Greater(stop.y, (9.2f + 1.2f) * ArkRoundSolid.Scale, "the sweep let the vessel past the wall");
+
+            // A clear move is left alone.
+            var along = ArkRoundSolid.FromArtifact(new Vector3(-20f, 0f, 0f));
+            Assert.AreEqual(1f, ArkHullSolid.FirstContact(ArkHullShape.Round, Quaternion.identity, to, along, margin),
+                "a move down the open tube was stopped");
+        }
+
+        [Test]
         public void SocketLays_LayTheWholeRoundHull()
         {
             var definition = AssetDatabase.LoadAssetAtPath<ArkModelDefinitionSO>(DefinitionPath);

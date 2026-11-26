@@ -315,6 +315,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The model this Ark is drawn as, or null (the spindle).</summary>
         public ArkModel Model => _model;
 
+        /// <summary>Half the drawn hull's length when this Ark is drawn as a model (<see cref="ArkModel.Length"/>), else
+        /// <paramref name="spindleHalfLength"/>, the half length the spindle hull was laid to.</summary>
+        public float HalfLengthOr(float spindleHalfLength) =>
+            _model && _model.Length > 0f ? _model.Length * 0.5f : spindleHalfLength;
+
         /// <summary>
         /// Give this Ark a reactor (call before <see cref="LayHullAsync"/>): the omni crystal aboard regrows its hull at
         /// a fixed rate. A null definition leaves the hull as laid: no regrowth.

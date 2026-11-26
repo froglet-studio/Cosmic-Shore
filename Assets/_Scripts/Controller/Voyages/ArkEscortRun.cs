@@ -122,8 +122,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The world the Ark is in or bound for, or null.</summary>
         public Cell CurrentCell => _corridor ? _corridor.CurrentCell : null;
 
-        /// <summary>Half the Ark hull's length: the sphere a weapon's lane keeps clear.</summary>
-        public float HullHalfLength => _cfg != null ? Mathf.Max(30f, _cfg.ArkHullLength) * 0.5f : 55f;
+        /// <summary>Half the Ark hull's length, the sphere a weapon's lane keeps clear: its model's when it is drawn as
+        /// one (the round Ark), else the spindle's.</summary>
+        public float HullHalfLength => Ark ? Ark.HalfLengthOr(SpindleHalfLength) : SpindleHalfLength;
+
+        float SpindleHalfLength => _cfg != null ? Mathf.Max(30f, _cfg.ArkHullLength) * 0.5f : 55f;
 
         NamedVoyage _named;
 
