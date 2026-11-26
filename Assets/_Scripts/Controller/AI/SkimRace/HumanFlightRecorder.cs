@@ -185,6 +185,10 @@ namespace CosmicShore.Gameplay
         // data reset (leaving to the menu mid-race wrote a flight with hull "Unknown" and raceTarget 0, 2026-10-16).
         string _hullName = "Unknown", _modeName = "Unknown", _domainName = "";
         int _target, _intensity;
+        // Skim Race: the race has no ring target. It ends when a team's summed crystals reach CrystalTargetCount, so
+        // that is the flight's raceTarget and the pilot's team's crystals are its "rings" (Yash, 2026-11-23).
+        bool _teamCrystalRace;
+        int _teamCrystals;
         string _waiting = "waiting for a match", _railWhy = "";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -311,6 +315,11 @@ namespace CosmicShore.Gameplay
             if (!_gameData) return;
             _modeName = _gameData.GameMode.ToString();
             if (_gameData.SwitchTargetCount > 0) _target = _gameData.SwitchTargetCount;
+            // Before this a Skim Race flight was written with raceTarget 0, so it could never be marked finished
+            // (the chart read 0 of 33 finished, 2026-11-22).
+            // Sticky for the race: the game data may already be reset when the last sample is taken.
+            _teamCrystalRace |= _gameData.GameMode == GameModes.SkimRace && _gameData.SwitchTargetCount <= 0;
+            if (_teamCrystalRace && _gameData.CrystalTargetCount > 0) _target = _gameData.CrystalTargetCount;
             if (_gameData.SelectedIntensity != null && _gameData.SelectedIntensity.Value > 0) _intensity = _gameData.SelectedIntensity.Value;
             _funType = _gameData.GameMode == GameModes.Switchback ? "BlastRun" : "";
         }
@@ -345,6 +354,19 @@ namespace CosmicShore.Gameplay
 
         int LastRings() => _samples.Count > 0 ? _samples[_samples.Count - 1].Rings : 0;
 
+        /// <summary>The pilot's team's summed crystals this round: Skim Race's progress, the same sum
+        /// <c>SkimRaceObjective.SharedProgress</c> and the scoring rule read. Never falls back once read, so a round's
+        /// stats being cleared before the last sample cannot un-finish a race.</summary>
+        int TeamCrystals()
+        {
+            if (!_gameData || !_player || _gameData.RoundStatsList == null) return _teamCrystals;
+            var list = _gameData.RoundStatsList;
+            int sum = 0;
+            for (int i = 0; i < list.Count; i++)
+                if (list[i] != null && list[i].Domain == _player.Domain) sum += list[i].CrystalsCollected;
+            return Mathf.Max(_teamCrystals, sum);
+        }
+
         bool TryFindLocalHuman()
         {
             if (_gameData.LocalPlayer is Player local && local && !local.IsInitializedAsAI && local.Vessel != null)
@@ -373,6 +395,7 @@ namespace CosmicShore.Gameplay
             if (input == null || !tf) return;
             float t = now - _raceStart;
             NameRace();
+            if (_teamCrystalRace) _teamCrystals = TeamCrystals();
             int rivalStart = _rivals.Count, crystalStart = _crystals.Count;
             RecordRivals();
             RecordKite(tf, _ownKite);
@@ -657,6 +680,8 @@ namespace CosmicShore.Gameplay
             _hullName = _modeName = "Unknown";
             _domainName = "";
             _target = _intensity = 0;
+            _teamCrystalRace = false;
+            _teamCrystals = 0;
         }
 
         /// <summary>Every other pilot's hull this sample: position, velocity and rings threaded, in the match's player order (the
@@ -830,7 +855,9 @@ namespace CosmicShore.Gameplay
             for (int r = 0; r < _rails.Count; r++) railPrisms += _rails[r].Points.Count;
             var sb = new StringBuilder(64 * 1024 + railPrisms * 60 + _samples.Count * 400 + _crystals.Count * 6);
             int target = _target;
-            int rings = _samples[_samples.Count - 1].Rings;
+            // A Skim Race flight's "rings" is its team's crystals (see _teamCrystalRace); the per-sample "rings" column
+            // stays the pilot's own gates threaded, which is 0 there.
+            int rings = _teamCrystalRace ? _teamCrystals : _samples[_samples.Count - 1].Rings;
             int ringCount = _ringData.Count / 8;
             int intensity = _intensity;
             sb.Append("{\n");

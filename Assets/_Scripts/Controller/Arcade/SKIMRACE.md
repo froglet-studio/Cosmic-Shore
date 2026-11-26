@@ -298,6 +298,42 @@ are ~23,500 u (78 s at the Squirrel's 300 u/s top speed); the ribbon is 24,700 u
 - **The I4 AI benchmark limit (70 s) is below the course's physical floor** (~78 s on crystal
   chords): a product decision, recorded in `Docs/SKIM_RACE_AI.md` §6.13.
 
+### 5b. Intensity 4: garden ruins round the ribbon
+
+Decoration (Yash, 2026-11-24): the same garden ruins Spearline lays round its racing line at I4
+(`SPEARLINE.md` §2a), laid round Relativity's ribbon. I1-I3 lay none. Skim Race adds no ruin of its
+own and does not copy the generator: `SkimRaceRuins` (pure) turns the ribbon into the gates
+`SpearlineRuins.Lay` reads and decides which of its ruins this course keeps;
+`SkimRaceController.Ruins.cs` lays them. They are plain prisms with the game's own rules (a hull
+breaks them, nothing grows back). Nothing reads or writes a vessel, a crystal or the ribbon.
+
+**What Skim Race decides** (the ruin shapes, the 120 u margin round a gate and the 380 u minimum leg
+are Spearline's):
+
+| Rule | Value | Why |
+|---|---|---|
+| Gates | one at each of the 26 crystal markers, facing along the ribbon, radius 35 u | a crystal appears on a 35 u shell round its anchor |
+| Ruins a lap | 7, picked from the 25 legs: spread evenly, never on neighbouring legs, a different kind each where the course allows | Spearline's lap has 7 legs; Relativity has 25 |
+| Clear lane | 60 u round the ribbon AND round each straight crystal-to-crystal line | a pilot skims the ribbon or cuts the chord (the AI flies chords) |
+| Nucleus | no ruin prism within 330 u of the cell's centre | the five passes cross there |
+| Smallest ruin | 24 prisms left standing, or the leg carries none | fewer does not read as a ruin |
+| Colours | Jade, Ruby, Gold in turn round the lap (`ruinDomains` on the controller; empty = Blue) | the ribbon and its markers are Blue |
+
+**On the shipped I4 track** (run headless on the baked track, 2026-11-24): 7 ruins, 516 prisms, on
+legs 1 (maze), 5 (vines), 9 (pergola), 11 (flower head), 13 (wall), 19 (vines) and 21 (tunnel).
+**No turning wheel:** Spearline's wheel needs its centre 305 u from every gate, so a leg of at
+least 610 u; Relativity's legs are 394-512 u. Six of the seven kinds stand, vines twice.
+
+**Wiring.** `ruinTrack` (the scene's `SpawnableWaypointTrack`) and `ruinPrefab` (the prism
+Spearline's ruins use) on `SkimRaceController` in `MinigameSkimRace.unity`; either unset means no
+ruins and one warning. The ruins are laid inside the arena-build bracket, right after the track, so
+the connecting screen waits for them. Tests: `SkimRaceRuinsTests` (a ribbon built in the test) and
+`SkimRaceRuinsShippedTrackTests` (the baked track).
+
+**Not yet checked in the editor:** how the ruins look, the frame cost of 516 more prisms at I4, and
+whether the Skim Race AI loses time in them (its chords are kept clear, but it does not know the
+ruins are there).
+
 ### 6. Ready State & Countdown
 
 ```
@@ -596,6 +632,8 @@ ugsStatsManager.ReportSkimRaceStats(
 | Role | File | Location |
 |---|---|---|
 | Game controller | `SkimRaceController.cs` | `_Scripts/Controller/Arcade/` |
+| Garden ruins (I4): which of Spearline's ruins stand here | `SkimRaceRuins.cs` | `_Scripts/Controller/Arcade/` |
+| Garden ruins (I4): the controller hook | `SkimRaceController.Ruins.cs` | `_Scripts/Controller/Arcade/` |
 | Base multiplayer controller | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
 | Base multiplayer mini-game | `MultiplayerMiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Base mini-game controller | `MiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |

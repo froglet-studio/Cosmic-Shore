@@ -77,6 +77,15 @@ namespace CosmicShore.UI
         [Tooltip("Fallback colour of the hull part until the controller pushes the pilot's domain colour.")]
         [SerializeField] private Color afterburnerHullFallbackColor = Color.white;
 
+        [Header("Barrel Roll - the core card (no element)")]
+        [Tooltip("The barrel roll's icon (Sparrow_BarrelRoll, the icon kit's Core/ card: three Sparrows rolling " +
+                 "as they slide sideways). The roll is a vessel dynamic on the right stick that no element " +
+                 "changes, so it is a CORE card (CoreAbility.BarrelRoll) - a bare plate left of the elemental " +
+                 "row, no flower. Empty = no card.")]
+        [SerializeField] private Sprite barrelRollSprite;
+        [Tooltip("Size of the generated barrel-roll icon inside its card, in canvas units.")]
+        [SerializeField, Min(1f)] private float barrelRollIconSize = 80f;
+
         [SerializeField] private Image weaponModeIcon;
         [SerializeField] private Sprite[] weaponModeIcons = new Sprite[2];
 
@@ -191,6 +200,8 @@ namespace CosmicShore.UI
         }
 
         const string BayName = "RocketBay";
+        const string BarrelRollHostName = "BarrelRollCard";
+        Image _barrelRollIcon;
         private RectTransform _bayHost;
         readonly List<BayRocket> _bayRockets = new();
         private int _bayHeld;
@@ -629,6 +640,34 @@ namespace CosmicShore.UI
 
             BuildGunSpray();
             BuildBay();
+            BuildBarrelRollCard();
+        }
+
+        /// <summary>
+        /// The barrel roll's core card: a host made OUTSIDE the row (the lockup re-homes it, as it does the
+        /// omni crystal's) with the icon under it, bound as <see cref="CoreAbility.BarrelRoll"/>. Idempotent.
+        /// </summary>
+        void BuildBarrelRollCard()
+        {
+            if (!barrelRollSprite || _barrelRollIcon) return;
+
+            var host = transform.Find(BarrelRollHostName) as RectTransform;
+            if (!host)
+            {
+                host = new GameObject(BarrelRollHostName, typeof(RectTransform)).GetComponent<RectTransform>();
+                host.SetParent(transform, false);
+            }
+
+            _barrelRollIcon = ResolveGeneratedChild<Image>(host, "BarrelRollIcon");
+            var rt = _barrelRollIcon.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(barrelRollIconSize, barrelRollIconSize);
+            _barrelRollIcon.sprite = barrelRollSprite;
+            _barrelRollIcon.preserveAspect = true;
+            _barrelRollIcon.raycastTarget = false;
+            _barrelRollIcon.color = Color.white;
+
+            BindCoreAbilityIcon(CoreAbility.BarrelRoll, _barrelRollIcon);
         }
 
         /// <summary>

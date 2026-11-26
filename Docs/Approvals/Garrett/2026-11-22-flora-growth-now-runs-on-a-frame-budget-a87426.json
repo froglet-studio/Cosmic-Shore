@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-22-flora-growth-now-runs-on-a-frame-budget-a87426",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-22T15:22:52+00:00",
+  "area": "Ecology: flora growth (Flora, PhyllotacticFlora)",
+  "summary": "Flora growth now runs on a frame budget: every plant's grow tick and PhyllotacticFlora's queued limb spawns go through the new FloraGrowthPump (3 ms a frame, first come first served, at least one a frame) instead of each plant growing in the frame its own clock expires. What grows and how fast per plant is unchanged in the rules; only when in the frame sequence it runs. Why: plants' clocks expired together after a long frame and made the next frame long too. Measured in a built player against bleeding-edge, p95 / worst frame ms: Sirocco 113/220 -> 49/81, DepthCharge 100/252 -> 49/84, Fulmen 89/288 -> 52/106, Bloomrush 61/179 -> 39/96. Not played by a person; hand tests in the checklist.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "15c651bf6"
+}

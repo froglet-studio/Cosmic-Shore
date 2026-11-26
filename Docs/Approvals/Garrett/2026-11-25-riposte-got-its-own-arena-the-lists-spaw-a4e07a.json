@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-25-riposte-got-its-own-arena-the-lists-spaw-a4e07a",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T16:52:10+00:00",
+  "area": "Riposte (the Swordfish's Charge game)",
+  "summary": "Riposte got its own arena, the Lists (SpawnableRiposteYard, four Riposte cell configs): lanes, fuel rails, gates, thorned lane walls and an ironwood core, by intensity; it no longer plays in Jackstraw's cells. Jackstraw is untouched.",
+  "why": "Yash asked for an environment shaped per intensity that the Swordfish's kit can exploit",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a63579354",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/RIPOSTE.md",
+    "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRiposteYard.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Charge"
+    ]
+  }
+}

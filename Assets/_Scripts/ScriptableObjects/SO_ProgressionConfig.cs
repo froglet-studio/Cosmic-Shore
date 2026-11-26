@@ -48,6 +48,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1)] int defaultMaxIntensity = 3;
         public int DefaultMaxIntensity => defaultMaxIntensity;
 
+        [Tooltip("The rung whose goal completes a mode's quest (Loop Atlas arc.unlock hole, Garrett 2026-11-21: " +
+                 "'Build everything proposed'). 3: the intensity-3 goal completes it (the quest asks for I4). 2: the " +
+                 "intensity-2 goal (the plays or stat that would open I3) completes it, so the chain is four to eight " +
+                 "wins and I3 and I4 stay the ladder's challenge after the Hangar.")]
+        [SerializeField, Range(2, 3)] int questGoalIntensity = 3;
+        public int QuestGoalIntensity => questGoalIntensity;
+
         [Tooltip("Absolute maximum intensity tier any mode can reach.")]
         [SerializeField, Min(1)] int maxIntensity = 4;
         public int MaxIntensity => maxIntensity;

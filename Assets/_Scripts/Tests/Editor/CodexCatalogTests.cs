@@ -222,6 +222,48 @@ namespace CosmicShore.Tests
             Assert.IsNull(With(CodexChapter.Elements)[0].Palette);
             Assert.IsNull(With(CodexChapter.Lexicon)[0].Palette);
         }
+
+        // ------------------------------------------------------------------ ECOLOGY: vessels and roles (the shipped table)
+        List<CodexItem> BuildRoles(CodexChapter chapter) =>
+            CodexCatalog.Build(chapter, _codex, _vessels, new Sprite[4], new CodexWords(), null, null, null, null,
+                               VesselArchetypesSO.Load());
+
+        [Test]
+        public void Vessels_NameEachHullsRole_ArchetypesPrimaryFirst_AndItsPrimarysCounters()
+        {
+            Assert.IsNotNull(VesselArchetypesSO.Load(), "Resources/Vessels/VesselArchetypes is missing");
+            var items = BuildRoles(CodexChapter.Vessels);
+            Assert.AreEqual(new[] { "Squirrel", "Sparrow" }, items.ConvertAll(i => i.Name).ToArray(), "the Hangar's order");
+            var sparrow = items[1].Page;
+            Assert.AreEqual("Destroyer", sparrow.Kicker);
+            Assert.AreEqual(new[] { "Sapper - Primary", "Harraser - Secondary", "Builder - Tertiary" },
+                            sparrow.Rows.ConvertAll(r => r.Title).ToArray());
+            Assert.AreEqual(new[] { "Role", "Counters", "Countered by" }, sparrow.Facts.ConvertAll(f => f.Label).ToArray());
+            StringAssert.Contains("Pumper", sparrow.Facts[1].Value, "Sapper counters Pumper (the board's arrow)");
+            StringAssert.Contains("Builder", sparrow.Facts[2].Value, "Builder counters Sapper (the board's arrow)");
+            Assert.AreEqual("Pumper", items[0].Sub, "a vessel's tile names its primary archetype");
+        }
+
+        [Test]
+        public void Roles_AreEachRoleThenItsThreeArchetypes_WithTheirHolders()
+        {
+            var items = BuildRoles(CodexChapter.Roles);
+            Assert.AreEqual(new[] { "Cultivator", "Pumper", "Builder", "Burster", "Destroyer", "Sapper", "Specialist", "Nuke",
+                                    "Guardian", "Harraser", "Zoner", "Enhancer" }, items.ConvertAll(i => i.Name).ToArray());
+            Assert.AreEqual(new[] { "Pumper", "Builder", "Burster" }, items[0].Page.Rows.ConvertAll(r => r.Title).ToArray());
+            var harraser = items[9].Page;
+            Assert.AreEqual("Guardian", harraser.Kicker);
+            // Squirrel and Sparrow both hold Harraser as their second archetype.
+            Assert.AreEqual(new[] { "Squirrel", "Sparrow" }, harraser.Rows.ConvertAll(r => r.Title).ToArray());
+            Assert.AreEqual(new[] { "Secondary", "Secondary" }, harraser.Rows.ConvertAll(r => r.Line).ToArray());
+        }
+
+        [Test]
+        public void VesselsAndRoles_WithoutATable_AreEmpty_NotAnError()
+        {
+            Assert.IsEmpty(CodexCatalog.Build(CodexChapter.Vessels, _codex, _vessels, new Sprite[4], new CodexWords()));
+            Assert.IsEmpty(CodexCatalog.Build(CodexChapter.Roles, _codex, _vessels, new Sprite[4], new CodexWords()));
+        }
     }
 }
 #endif

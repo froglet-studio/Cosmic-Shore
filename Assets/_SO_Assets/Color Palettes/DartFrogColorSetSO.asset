@@ -178,7 +178,7 @@ MonoBehaviour:
     Note: 'UI theme token Tooltip; 0 uses: Assets/_SO_Assets/UI/UITheme.asset UIThemeSO'
   - Id: ui:00010A
     Color: {r: 0.0247118603, g: 0.000406245119, b: 0, a: 0.970000029}
-    Note: 'UI theme token SurfaceBlack; 214 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image'
+    Note: 'UI theme token SurfaceBlack; 216 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image'
   - Id: ui:00020E
     Color: {r: 0.0294324365, g: 0.00469550164, b: 0, a: 0}
     Note: '1 use: Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)'
@@ -187,7 +187,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code'
   - Id: ui:00041F
     Color: {r: 0.0812535584, g: 0.00559305912, b: 0, a: 0.550000012}
-    Note: 'UI theme token SurfaceVeryDark; 328 uses: Assets/Resources/UI/ToastNotificationItem.prefab Image; Assets/_Prefabs/CORE/GameCanvas.prefab Image'
+    Note: 'UI theme token SurfaceVeryDark; 327 uses: Assets/Resources/UI/ToastNotificationItem.prefab Image; Assets/_Prefabs/CORE/GameCanvas.prefab Image'
   - Id: ui:0005BE
     Color: {r: 0.290290385, g: 0.518128633, b: 0.745283008, a: 1}
     Note: '1 use: Assets/_Prefabs/UI Elements/In Game/ThreeButtonPanel.prefab Image'
@@ -202,7 +202,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Silhouettes/BlockSilhouette.prefab Image'
   - Id: ui:00D4FF
     Color: {r: 0.522452056, g: 0.882352293, b: 0.759762406, a: 1}
-    Note: 'UI theme token ControlActive; 559 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/Resources/UI/ToastNotificationItem.prefab Image'
+    Note: 'UI theme token ControlActive; 547 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/Resources/UI/ToastNotificationItem.prefab Image'
   - Id: ui:00FF00
     Color: {r: 0.78965205, g: 1, b: 0.150193065, a: 1}
     Note: '3 uses: Assets/_Scripts/UI/DomainVolumeHexGraphic.cs code; Assets/_Scripts/UI/Modals/HangarTrainingModal.cs code'
@@ -256,7 +256,7 @@ MonoBehaviour:
     Note: '2 uses: Assets/_Prefabs/Spacevessels/Grizzly.prefab Image'
   - Id: ui:222645
     Color: {r: 0.246520415, g: 0.125851288, b: 0.0449870713, a: 1}
-    Note: 'UI theme token SurfaceDark; 474 uses: Assets/_Prefabs/CORE/GameCanvas.prefab Image; Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image'
+    Note: 'UI theme token SurfaceDark; 481 uses: Assets/_Prefabs/CORE/GameCanvas.prefab Image; Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image'
   - Id: ui:228A93
     Color: {r: 0.326607078, g: 0.575471699, b: 0.49129054, a: 1}
     Note: '1 use: Assets/_Prefabs/UI Elements/In Game/ThreeButtonPanel.prefab Image'
@@ -325,7 +325,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Scripts/UI/View/GrizzlyHUDView.cs code'
   - Id: ui:434C89
     Color: {r: 0.4576433, g: 0.268917292, b: 0.147400722, a: 1}
-    Note: 'UI theme token SurfaceLight; 230 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/Resources/UI/ToastNotificationItem.prefab Image'
+    Note: 'UI theme token SurfaceLight; 229 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/Resources/UI/ToastNotificationItem.prefab Image'
   - Id: ui:44FF00
     Color: {r: 0.788235307, g: 1, b: 0.145098045, a: 1}
     Note: '1 use: Assets/_Prefabs/CORE/GameCanvas.prefab Image'
@@ -361,7 +361,7 @@ MonoBehaviour:
     Note: '4 uses: Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab FactionMessageRow; Assets/_Prefabs/UI Elements/Main Menu Screens/Port/FactionMessageRow.prefab KitTwoToneGradient'
   - Id: ui:5C5F70
     Color: {r: 0.428634912, g: 0.361274779, b: 0.322075754, a: 1}
-    Note: 'UI theme token InactiveLight; 12 uses: Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image; Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/ArkView.prefab SquadMateCard'
+    Note: 'UI theme token InactiveLight; 13 uses: Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image; Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeGameCard.prefab TextMeshProUGUI'
   - Id: ui:5CC7F2
     Color: {r: 0.591867387, g: 0.949999988, b: 0.825864315, a: 1}
     Note: '1 use: Assets/_Scripts/UI/Elements/VesselInfoPopup.cs code'
@@ -379,7 +379,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Scripts/UI/Elements/GameCard.cs code'
   - Id: ui:747BAD
     Color: {r: 0.669583797, g: 0.537965, b: 0.460614383, a: 1}
-    Note: 'UI theme token NeutralLightest; 822 uses: Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI; Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)'
+    Note: 'UI theme token NeutralLightest; 826 uses: Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI; Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)'
   - Id: ui:74F394
     Color: {r: 0.634737134, g: 0.952830195, b: 0.839807391, a: 1}
     Note: '1 use: Assets/_SO_Assets/UI/HUDAnimationSettings.asset HUDAnimationSettingsSO'
@@ -397,7 +397,7 @@ MonoBehaviour:
     Note: 'UI theme token ElementMass; 4 uses: Assets/_Graphics/Materials/Shaders/UI/SelectionBar.mat Material(CosmicShore/UI/ElementRim); Assets/_Graphics/Materials/Shaders/UI/SelectionRim.mat Material(CosmicShore/UI/ElementRim)'
   - Id: ui:808080
     Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    Note: '3 uses: Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/SettingsView.prefab GameSettingsPanelController; Assets/_Scripts/UI/MiniGameHUD.cs code'
+    Note: '4 uses: Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/SettingsView.prefab GameSettingsPanelController; Assets/_Scripts/UI/MiniGameHUD.cs code'
   - Id: ui:808599
     Color: {r: 0.586718559, g: 0.504925191, b: 0.457448125, a: 1}
     Note: '1 use: Assets/_Scripts/UI/Views/VoyageSlabPage.cs code'
@@ -460,7 +460,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Scenes/Menu_Main.unity TextMeshProUGUI'
   - Id: ui:99FF80
     Color: {r: 0.76081109, g: 0.963976204, b: 0.143186986, a: 0}
-    Note: 'UI theme token Cta; 281 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/_Prefabs/CORE/GameCanvas.prefab Image'
+    Note: 'UI theme token Cta; 279 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/_Prefabs/CORE/GameCanvas.prefab Image'
   - Id: ui:9AA0CC
     Color: {r: 0.496182024, g: 0.629255056, b: 0.800000012, a: 1}
     Note: '1 use: Assets/_Scripts/UI/Views/VoyageOpenCard.cs code'
@@ -544,7 +544,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Prefabs/UI Elements/Main Menu Screens/Port/PortView.prefab TextMeshProUGUI'
   - Id: ui:C8C8C8
     Color: {r: 0.784313738, g: 0.784313738, b: 0.784313738, a: 1}
-    Note: '350 uses: Assets/_Prefabs/CORE/GameCanvas.prefab Button; Assets/_Prefabs/Spacevessels/Serpent.prefab Button'
+    Note: '346 uses: Assets/_Prefabs/CORE/GameCanvas.prefab Button; Assets/_Prefabs/Spacevessels/Serpent.prefab Button'
   - Id: ui:C8D2E6
     Color: {r: 0.729884923, g: 0.798232138, b: 0.90196079, a: 0.600000024}
     Note: '1 use: Assets/_Scripts/UI/Views/VoyageMapSky.cs code'
@@ -592,7 +592,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code'
   - Id: ui:E6E9FF
     Color: {r: 0.965559363, g: 0.906941831, b: 0.873382509, a: 0.159999996}
-    Note: 'UI theme token TextLight; 1234 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI'
+    Note: 'UI theme token TextLight; 1240 uses: Assets/Resources/Pilots/PilotProfileView.prefab Image; Assets/Resources/Pilots/PilotProfileView.prefab TextMeshProUGUI'
   - Id: ui:EBF2FF
     Color: {r: 0.921568632, g: 0.949019611, b: 1, a: 1}
     Note: '1 use: Assets/_Scripts/UI/Views/VoyageCellDraw.cs code'
@@ -742,7 +742,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/CrystalMaterials/CrystalMaterial.mat Material(Shader Graphs/CrystalGraph)'
   - Id: world:0007FF
     Color: {r: 0.403921574, g: 0.70588237, b: 1, a: 1}
-    Note: '10 uses: Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph); Assets/_Graphics/Materials/GyroidSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)'
+    Note: '30 uses: Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph); Assets/_Graphics/Materials/Fauna/AmmonChargeSpindle.mat Material(Shader Graphs/SpindleGraph)'
   - Id: world:000811
     Color: {r: 0.00961030368, g: 0.0324264541, b: 0.0665512234, a: 1}
     Note: '6 uses: Assets/_Graphics/Materials/BlockMaterials/DangerBlockMaterial.mat Material(Shader Graphs/BlockGraph); Assets/_Graphics/Materials/BlockMaterials/ExplodingBlockMaterial.mat Material(Shader Graphs/ExplodingBlockGraph)'
@@ -821,9 +821,6 @@ MonoBehaviour:
   - Id: world:030476
     Color: {r: 0.16817899, g: 0.315442592, b: 0.46226418, a: 1}
     Note: '1 use: Assets/_Prefabs/Environment/Materials/FX/fx_BlueCrackle.prefab ParticleSystem'
-  - Id: world:040614
-    Color: {r: 0.0120208124, g: 0.0405578725, b: 0.0784313753, a: 1}
-    Note: '1 use: Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderDots.cs code'
   - Id: world:040EF8
     Color: {r: 0.387979507, g: 0.680277526, b: 0.971698105, a: 1}
     Note: '1 use: Assets/_Graphics/Materials/Shaders/TrailViewerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)'
@@ -1082,6 +1079,9 @@ MonoBehaviour:
   - Id: world:3F7FD8
     Color: {r: 0.334177226, g: 0.590974033, b: 0.847000003, a: 1}
     Note: '3 uses: Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow'
+  - Id: world:400505
+    Color: {r: 0.25, g: 0.0435213409, b: 0.0301068928, a: 1}
+    Note: '2 uses: Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset GrizzlyFlamethrowerActionSO; Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyFlamethrowerActionSO.cs code'
   - Id: world:408CFF
     Color: {r: 0.392156869, g: 0.698039234, b: 1, a: 1}
     Note: '1 use: Assets/_Graphics/Materials/ProjectileChargeFieldMaterial.mat Material(Shader Graphs/ProjectileChargeField)'
@@ -1159,7 +1159,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/SparrowProjectileMaterial.mat Material(Custom/SpreadFresnelShader)'
   - Id: world:5E65F4
     Color: {r: 0.381195545, g: 0.669017136, b: 0.955974817, a: 1}
-    Note: '9 uses: Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph); Assets/_Graphics/Materials/GyroidSpindleMaterial.mat Material(Shader Graphs/SpindleGraph)'
+    Note: '29 uses: Assets/_Graphics/Materials/AssemblySpindleMaterial.mat Material(Shader Graphs/SpindleGraph); Assets/_Graphics/Materials/Fauna/AmmonChargeSpindle.mat Material(Shader Graphs/SpindleGraph)'
   - Id: world:5F670C
     Color: {r: 0.313813031, g: 0.405660391, b: 0.0347500332, a: 1}
     Note: '1 use: Assets/_Graphics/Materials/YellowConicExplosionMaterial.mat Material(Shader Graphs/LaserGraph)'
@@ -1276,7 +1276,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/Graphs/CloakGhost.mat Material(CosmicShore/CloakGhost)'
   - Id: world:96A6C2
     Color: {r: 0.500078499, g: 0.611521304, b: 0.75999999, a: 1}
-    Note: '5 uses: Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO; Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO'
+    Note: '1 use: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController'
   - Id: world:96EB29
     Color: {r: 0.539521992, g: 0.920000017, b: 0.0180789996, a: 1}
     Note: '4 uses: Assets/Resources/ElementalBarsConfig.asset ElementalBarsConfigSO; Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalArcs.mat Material(Custom/CrystalChargeArcsShader)'
@@ -1306,7 +1306,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)'
   - Id: world:9DFF2E
     Color: {r: 0.792156875, g: 1, b: 0.149019614, a: 1}
-    Note: '10 uses: Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO; Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO'
+    Note: '6 uses: Assets/_Prefabs/Spacevessels/Goby.prefab GobyPistolHUDController; Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset GobyPistolConfigSO'
   - Id: world:9E6BF0
     Color: {r: 0.838365257, g: 0.537712812, b: 0.939999998, a: 1}
     Note: '27 uses: Assets/Resources/Codex.asset CodexSO'
@@ -1558,7 +1558,7 @@ MonoBehaviour:
     Note: '1 use: Assets/_Graphics/Materials/DangerProjectileMaterial.mat Material(Custom/SpreadFresnelShader)'
   - Id: world:FF1F14
     Color: {r: 1, g: 0.232168704, b: 0.163855091, a: 1}
-    Note: '2 uses: Assets/Resources/VesselSilenceConfig.asset VesselSilenceConfigSO; Assets/_Scripts/ScriptableObjects/VesselSilenceConfigSO.cs code'
+    Note: '4 uses: Assets/Resources/VesselSilenceConfig.asset VesselSilenceConfigSO; Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset GrizzlyFlamethrowerActionSO'
   - Id: world:FF2699
     Color: {r: 1, g: 0.262392581, b: 0.206462532, a: 1}
     Note: '3 uses: Assets/_Prefabs/Environment/AstroLeagueBall.prefab AstroLeagueBall; Assets/_Scenes/Multiplayer Scenes/MinigameAstroLeague.unity AstroLeagueBall'
@@ -1604,9 +1604,6 @@ MonoBehaviour:
   - Id: world:FF5C6C
     Color: {r: 1, g: 0.410231858, b: 0.382880062, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs code'
-  - Id: world:FF731F
-    Color: {r: 1, g: 0.247836083, b: 0.186514631, a: 1}
-    Note: '1 use: Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs code'
   - Id: world:FF7359
     Color: {r: 1, g: 0.401402771, b: 0.373032957, a: 1}
     Note: '2 uses: Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO; Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code'

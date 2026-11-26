@@ -43,6 +43,29 @@ unity doctor
 - A save from the CLI (`save_all`) right after Play mode can write Play-time values into the open scene
   (Bootstrap.unity's camera, 2026-11-06). Check `git status` after it and `git checkout` a scene you did not mean to change.
 
+## `eval` freezes the editor for about a second: never call it in a loop (2026-11-26)
+
+Every `eval` compiles its snippet with Roslyn on the editor's main thread. Measured on the open editor in Play in
+`Menu_Main` (RTX 4070 Ti PC, 2026-11-26): one `eval` = one stuck frame of **1.2 to 1.6 s** and **114 MB** of garbage,
+whatever the snippet does (a one-line snippet reported `executionTimeMs` 1,062). A test script that ran an `eval`
+probe every 2 s gave the person at the editor a frozen picture every 3.6 s (11 stuck frames in 40 s) for as long as
+it ran, in the menu as well as in a race ("a sudden screen stuck, every second", Yash). It also spoils the run it is
+watching: a third of the wall time is frozen.
+
+- **Never `eval` on a timer or in a wait loop**, and never while a person is playing. A handful of single calls
+  (start a run, read a result once) is fine.
+- **To watch a run, install the probe ONCE**: one `eval` that subscribes a callback (`EditorApplication.update`, or a
+  game event) which appends to a file under `Logs/` or keeps arrays in `AppDomain.CurrentDomain.SetData`; read the file
+  from the shell (`tail`, `grep`) as often as you like, and fetch the arrays with one last `eval`.
+- **To wait for Play to start or stop, poll `editor_status`** (no compile), or a file the run writes
+  (`Logs/ModeSmoke/<label>/summary.json`), with the sleep in the shell.
+- **A loop must end when the editor goes away**: stop when `Library/Pipeline/.unity-pipeline-port` is missing or the
+  call fails, so a restarted editor is not met by an old loop.
+- **Never switch the editor's Profiler on from an `eval` while in Play** (`ProfilerDriver.enabled` with
+  `profileEditor`): on 2026-11-26 it ended the editor in `profiling::Profiler::EmitUIEvents` ("Allocating too large
+  buffer for profiler!"; the menu canvas holds about 7,000 graphics). `Unity.Profiling.ProfilerRecorder` on named
+  markers is safe and needs no Profiler session.
+
 ## What changes
 
 Claude drives the open Editor directly — no alt-tabbing, no copy-pasting console errors; it can enter Play mode and verify its own work. Editing a `.cs` file still triggers a normal recompile + domain reload; eval only skips the reload for the eval snippet itself.

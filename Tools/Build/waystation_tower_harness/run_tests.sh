@@ -27,6 +27,7 @@ mkdir -p "$OUT"
 
 TOWER="$A/Controller/Arcade/Waystation/WaystationTower.cs"
 PLAN="$A/Controller/Arcade/Waystation/WaystationHopPlan.cs"
+RUINS="$A/Controller/Arcade/Waystation/WaystationRuins.cs"
 cd "$ROOT"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
@@ -35,9 +36,11 @@ build() {   # $1 = tower source, $2 = plan source, $3 = output name
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
-  for f in "$HERE/Unity.cs" "$HERE/Stubs.cs" "$HERE/NUnitShim.cs" "$HERE/TestRunner.cs" \
+  for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/Stubs.cs" "$HERE/NUnitShim.cs" "$HERE/TestRunner.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Controller/Arcade/Waystation/WaystationCourse.cs" \
-    "$1" "$2" "$A/Tests/Editor/WaystationTowerTests.cs" "$A/Tests/Editor/WaystationHopPlanTests.cs"; do
+    "$1" "$2" "$A/Tests/Editor/WaystationTowerTests.cs" "$A/Tests/Editor/WaystationHopPlanTests.cs" \
+    "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Spearline/SpearlineSeals.cs" \
+    "$A/Controller/Arcade/Spearline/SpearlineRuins.cs" "${4:-$RUINS}" "$A/Tests/Editor/WaystationRuinsTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -57,8 +60,8 @@ cat "$OUT/result.txt"
 [ "${1:-}" = "--self-test" ] || exit 0
 
 # Negative controls: each mutated copy of the shipped source must make the tests fail.
-negative() {   # $1 = label, $2 = tower source, $3 = plan source
-  build "$2" "$3" neg
+negative() {   # $1 = label, $2 = tower source, $3 = plan source, $4 = ruins source (default: the shipped one)
+  build "$2" "$3" neg "${4:-}"
   set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
   if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
   echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
@@ -88,4 +91,15 @@ mutate_plan "the autopilot aims at the window's far edge" \
   's/return Mathf.Clamp(aim, s.WindowLow + AiSafety, WaystationTower.FarEdge(course, i, s) - AiSafety);/return s.WindowHigh;/' 'return s.WindowHigh;'
 mutate_plan "a clean landing breaks the streak" \
   's/if (grade == HopGrade.Clean) return streak;/if (grade == HopGrade.Clean) return new Streak(0, 0);/' 'Clean) return new Streak(0, 0)'
+mutate_ruins() {
+  sed "$2" "$RUINS" > "$OUT/WaystationRuins_neg.cs"
+  grep -q "$3" "$OUT/WaystationRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  negative "$1" "$TOWER" "$PLAN" "$OUT/WaystationRuins_neg.cs"
+}
+mutate_ruins "ruins round the ring-to-ring line, not the cruise and the fall" \
+  's/if (i >= 1 && WaystationTower.IsTowerRing(course\[i\], s))/if (i < 0)/' 'if (i < 0)'
+mutate_ruins "a drop gap keeps the curved lane, not the chord" 's/bool longGap = i >= 1 \&\&/bool longGap = i < 0 \&\&/' 'bool longGap = i < 0'
+mutate_ruins "the autopilot sees no ruin on its path" 's/if ((d - dir \* along).sqrMagnitude >= clear2) continue;/if ((d - dir * along).sqrMagnitude >= 0f) continue;/' 'sqrMagnitude >= 0f) continue;'
+mutate_ruins "ruins on every rung" \
+  's/if (settings.PerLap <= 0 || course == null/settings.PerLap = 7; if (course == null/' 'settings.PerLap = 7;'
 echo "waystation_tower_harness tests self-test: ok"

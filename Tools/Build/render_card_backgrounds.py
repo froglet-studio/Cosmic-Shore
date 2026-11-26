@@ -96,6 +96,9 @@ SOURCES = [
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
     f"{_MG}/SpawnableJackstraw.cs",
+    f"{_AR}/Riposte/RiposteYard.cs",
+    f"{_AR}/Riposte/RiposteLanes.cs",
+    f"{_MG}/SpawnableRiposteYard.cs",
     f"{_MG}/FlatlinePanes.cs",
     f"{_MG}/SpawnableFlatline.cs",
     f"{_MG}/SpawnableKelpwood.cs",
@@ -128,6 +131,9 @@ SOURCES = [
     f"{_SP}/ICellPhaseBaseline.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
+    f"{_AR}/Spearline/SpearlineSeals.cs",
+    f"{_AR}/Spearline/SpearlineRuins.cs",
+    f"{_AR}/Spearline/SpearlineGarden.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
     f"{_AR}/Redline/RedlineCourse.cs",
     f"{_AR}/GrizzlyTime/GrizzlyTimeCourse.cs",
@@ -820,6 +826,9 @@ CAMERAS = {
     # Jackstraw: close into the heap, so the sticks cross the whole plate and the red-hot ball swinging through
     # them onto a rival (the strike, the one thing that scores) sits in the middle of it.
     "Jackstraw": (40, 18, 0.7, 46),
+    # Riposte: the Lists from the far side to Jackstraw and higher, so the straight stick-free lanes and the fuel
+    # rails of pickets beside them read as lines through the heap (the arena is built for the run down a lane).
+    "Riposte": (215, 30, 0.8, 44),
     # Flatline: the I2 Tunnels from just inside the field, so the loose panes read as thin plates scattered with room
     # round each, a tunnel's crystal reads through its bore, and the cords crossing a pane (the act that scores) read
     # against its face.
@@ -939,7 +948,9 @@ def recipe(stem, card_path, pal, ends):
         # ball in front of it - so it is drawn as one (an opaque sphere swallowed Joust whole).
         r = r or nuc
         if r > 0:
-            layers.append({"kind": "shell", "c": [0, 0, 0], "r": r, "color": [0.22, 0.28, 0.75], "strength": strength * 0.3})
+            # Faint, near-neutral glass (Frogma Rev 129, "Inside the cell"): drawn blue at 0.3 it washed a third of
+            # Skim Race's card blue-violet; the race inside it keeps its own colours.
+            layers.append({"kind": "shell", "c": [0, 0, 0], "r": r, "color": NUCLEUS_GLASS, "strength": strength * 0.14})
 
     def crystal(pos, size, colour=(0.55, 1.2, 0.25)):
         layers.append({"kind": "sphere", "c": list(pos), "r": size, "base": [c * 0.3 for c in colour],
@@ -1043,8 +1054,8 @@ def recipe(stem, card_path, pal, ends):
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
             # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse) and Burrow Run flies it whole
             # (BurrowRunCourseSource): the same generator.
-            # Spearline lays Headlong's circuit (SpearlineCourseSource; its seals' mouths are the controller's, not drawn).
-            layers.append({"kind": {"Warpline": "slingshot", "BurrowRun": "slingshot", "Spearline": "headlong"}.get(s, s.lower()), "intensity": INTENSITY,
+            # Spearline lays Headlong's circuit at its seals' mouths (SpearlineCourseSource) and its race garden; the seals are not drawn.
+            layers.append({"kind": {"Warpline": "slingshot", "BurrowRun": "slingshot", "Spearline": "spearline"}.get(s, s.lower()), "intensity": INTENSITY,
                            "seed": stable_seed(s), "path": True, "settings": settings, "tube": 0.14,
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
                                      "Redline": [1.5, 0.25, 0.35],
@@ -1796,28 +1807,35 @@ def recipe(stem, card_path, pal, ends):
         stage["denbuilder"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
         nucleus()
     elif s == "Palisade":
-        # MODEL tier: the Barren cell, where the score is the prism volume each domain has STANDING at the bell
-        # (PalisadeController, VolumeRemaining). The card draws what stands: arcs of tall blade-afterimage prisms
-        # (SwordfishSwordAfterimage lays up to 16 a swing) in two colours round the nucleus, each wall cut where the
-        # other colour's blade went through it.
+        # MODEL tier: Palisade's own arena at the card's rung (PalisadeArena.cs, drawn through its parity-held twin
+        # Tools/Build/palisade_arena.py): picket lanes of posts ending in shielded frames, in the no-team colour, and
+        # the Swordfish's afterimage walls - about 90% of what stands at the whistle (PALISADE.md 7.1) - laid where
+        # its blade lights: down each lane beside the posts and in the frame's mouth, Jade and Ruby a lane each.
+        import palisade_arena as pa
         tier = "MODEL"
         rng = Rng(stable_seed(s))
         rows = []
-        up = [0.0, 1.0, 0.0]
-        for w in range(12):
-            dom = (JADE, RUBY)[w % 2]
-            ring = nuc * 1.35 + (R * 0.62 - nuc * 1.35) * rng.u()
-            a0 = 2 * math.pi * w / 12 + 0.3 * rng.u()
-            y = (rng.u() - 0.5) * R * 0.3
-            cut = int(rng.u() * 16)
-            for k in range(16):
-                if cut <= k < cut + 3:
-                    continue
-                a = a0 + 0.035 * k
-                q = [ring * math.cos(a), y, ring * math.sin(a)]
-                tangent = [-math.sin(a), 0.0, math.cos(a)]
-                rows.append(prism(q, tangent, up, [R * 0.004, R * 0.05, R * 0.016], dom, PLAIN))
+        kinds = {pa.PLAIN: PLAIN, pa.DANGER: DANGER, pa.SHIELDED: SHIELDED}
+        for part in pa.lay(INTENSITY):
+            rows.append(prism(part["pos"], part["fwd"], part["up"], part["scale"], BLUE, kinds[part["kind"]]))
+        rung = pa.BY_RUNG[INTENSITY - 1]
+        for k in range(rung["lanes"]):
+            lane = pa.lane_of(k, rung)
+            dom = (JADE, RUBY, GOLD)[k % 3]
+            other = pa.norm(pa.cross(lane["axis"], lane["side"]))
+            # A wall of afterimages beside the row, on the run's far side, rising as the blade lifts.
+            for n in range(16):
+                t = n / 15.0
+                q = pa.add(pa.add(lane["first"], pa.mul(lane["axis"], -pa.RUN_IN * 0.3 + t * (pa.dist(lane["first"], lane["frame"]) + 20))),
+                           pa.add(pa.mul(lane["side"], pa.RUN_OFFSET * 2.2), pa.mul(other, (rng.u() - 0.5) * 10)))
+                rows.append(prism(q, lane["axis"], other, [6.0, 30.0 + 10 * rng.u(), 22.0], dom, PLAIN))
+            # And one across the frame's mouth, flanked by its stones.
+            for n in range(7):
+                q = pa.add(lane["frame"], pa.mul(other, (n - 3) * 8.5))
+                rows.append(prism(q, other, lane["side"], [6.0, 40.0, 9.0], dom, PLAIN))
         layers.append({"kind": "prisms", "rows": rows})
+        cam["target"] = list(pa.mul(pa.lane_of(0, rung)["frame"], 0.92))
+        cam["radius"] = 260.0
         nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
@@ -1885,13 +1903,25 @@ def recipe(stem, card_path, pal, ends):
     accents(s, layers, stage, cam, pal, R, card_path)
 
     if R > 0:
-        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", [0.2, 0.3, 0.8]),
+        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", WALL_COLOUR),
                        "strength": 0.1})
+        # Inside the cell (Shombith picked it, 2026-11-23, Frogma Rev 129): every card is in a cell, so it shows the
+        # cell's wall - the net of many-sided panes - and the white dust you fly through, on the deep-sea ground
+        # instead of the old purple-blue one.
+        for k, v in CELL_LOOK.items():
+            look.setdefault(k, v)
+        look.setdefault("CellRadius", R)
     return {"tier": tier, "layers": layers, "camera": cam, "look": look, "stage": stage,
             "cell": facts["name"] if facts else None, "env": env.stem if env else None,
             "track": track.stem if track else None}
 
 
+# The look of the cell (Frogma Rev 129 "Inside the cell", Docs/MENU_REDESIGN_B.md section 222.1): the deep-sea ground
+# (the style guide's Deep Sea navy, no violet nebula), the wall's panes and the dust. Linear RGB, before ACES.
+NUCLEUS_GLASS = [0.30, 0.38, 0.48]
+WALL_COLOUR = [0.42, 0.52, 0.62]
+CELL_LOOK = {"SkyTop": [0.0015, 0.003, 0.011], "SkyBottom": [0.002, 0.004, 0.013], "Nebula": [0.004, 0.008, 0.015],
+             "Stars": 0, "WallColour": WALL_COLOUR, "WallStrength": 0.42, "WallPanes": 240, "Dust": 650}
 OMNI = (0.55, 1.25, 0.22)   # the CTA lime a free crystal wears (Docs/PALETTE.md §2.2)
 
 
@@ -1943,7 +1973,32 @@ def accents(s, layers, stage, cam, pal, R, card_path):
     def jitter(k=1.0):
         return v_add(centre, v_mul(rng.unit(), span * k * rng.u() ** 0.5))
 
-    if s == "Rampage":
+    if s == "Cleave":
+        # The lances (CleaveLances.cs, mirrored at the card's rung): six axis bars of small prisms through the arena,
+        # each segment one colour of Jade/Ruby/Gold/Blue, danger at the outer end. Not the arena's generator, so the
+        # controller lays them and the card draws them here. CleaveLadderTests holds the C# to the same rules.
+        rung = {1: (0.12, 0.95, 2, 0), 2: (0.12, 0.95, 3, 2), 3: (0.10, 0.60, 2, 0), 4: (0.15, 0.98, 2, 2)}
+        inner, outer, bundle, tips = rung[INTENSITY]
+        arena = {1: 2160.0, 2: 2160.0, 3: 720.0, 4: 720.0}[INTENSITY]
+        seg_len, section = 30.0, 6.8
+        segments = max(1, int(arena * (outer - inner) // seg_len))
+        doms = (JADE, RUBY, GOLD, BLUE)
+        dirs = ([1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1])
+        rows = []
+        for l, fwd in enumerate(dirs):
+            up = [0, 0, 1] if abs(fwd[1]) > 0.5 else [0, 1, 0]
+            side = v_norm(v_cross(up, fwd))
+            for k in range(segments):
+                along = arena * inner + (k + 0.5) * seg_len
+                kind = DANGER if tips and k >= segments - tips else PLAIN
+                for i in range(bundle):
+                    for j in range(bundle):
+                        u = (i - (bundle - 1) * 0.5) * section
+                        w = (j - (bundle - 1) * 0.5) * section
+                        pos = v_add(v_add(v_mul(fwd, along), v_mul(side, u)), v_mul(up, w))
+                        rows.append(prism(pos, fwd, up, [section, section, seg_len], doms[(k + l) % 4], kind))
+        layers.append({"kind": "prisms", "rows": rows})
+    elif s == "Rampage":
         tgt = jitter(0.3)
         apex = v_add(tgt, v_mul(v_norm([0.6, 0.25, -0.75]), span * 0.95))
         cone(apex, tgt, 17, JADE, 0.28, 1.4)

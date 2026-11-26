@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-25-added-physics-checkbox-center-halfextent-92d409",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-25T16:52:10+00:00",
+  "area": "Amoebius engine (Unity compat)",
+  "summary": "Added Physics.CheckBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction) to EngineCompat: the Cleave session's new code calls it and the live build failed without it. The mask and trigger policy are accepted and not consulted, as in the other overloads.",
+  "why": "the headless judge could not build",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a63579354",
+  "paths": [
+    "Port/src/CosmicShore.Engine/Compat/EngineCompat.cs"
+  ]
+}

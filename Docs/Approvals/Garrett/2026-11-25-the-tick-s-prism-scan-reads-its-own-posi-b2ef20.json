@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-25-the-tick-s-prism-scan-reads-its-own-posi-b2ef20",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T20:50:42+00:00",
+  "area": "ecology: the light fauna behaviour tick (LightFauna.UpdateBehavior)",
+  "summary": "The tick's prism scan reads its own position once and each prism's position once (it was up to three reads a prism); IsEdibleForHerbivore gained an overload that takes the position. Same behaviour.",
+  "why": "The menu slows as its cell fills (106 fps to 81-98 in a built player over 15 min); the scan reached 26.8 ms in one frame. This saves about 9% per prism (paired A/B in the editor). The spikes remain: the scan still visits every prism in range per creature, about 19 scans a second for 11 creatures. Also found: for 9% of sensed prisms the spatial index position is more than 1 cm off the transform (up to 34 m).",
+  "branch": "Ys-bleeding-edge",
+  "lane": "ecology",
+  "commit": "885255b85",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs"
+  ]
+}

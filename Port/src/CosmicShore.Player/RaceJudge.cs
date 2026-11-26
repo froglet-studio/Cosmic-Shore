@@ -44,7 +44,7 @@ namespace CosmicShore.Player
         /// a race at intensity 1-4 lays when its genome is not handed to RegattaCourseGenome.Override.</summary>
         const string CoursePoolPath = "Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Course Pool.asset";
         const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
-        const double TickSeconds = 1.0 / 60.0;
+        static readonly double TickSeconds = JudgeDt.Dt;
         /// <summary>The sim time every judge launches its game at, whatever frame the boot reached the menu on, so a run
         /// repeats exactly (the menu came at 0.2-1.3 s in every measured boot).</summary>
         const double LaunchAtSeconds = 5.0;
@@ -73,8 +73,11 @@ namespace CosmicShore.Player
         /// <summary>Pod Hunt (the Orca's Charge game): scored like Broadside (CombatPoints, the shared combat-point turn
         /// monitor, the Boneyard), but the first domain to its blast target ends the turn, so "race_s" is the time to win.</summary>
         bool IsPodHunt => _mode == "PodHunt";
-        /// <summary>A combat-point game: Broadside or Pod Hunt.</summary>
-        bool IsCombat => IsBroadside || IsPodHunt;
+        /// <summary>A strike duel in the heap of sticks (Jackstraw, the Thresher's Charge game, and Riposte, the Swordfish's,
+        /// on the same controller): scored like Pod Hunt, the first domain to its strike target ends the turn.</summary>
+        bool IsStrikeDuel => _mode is "Jackstraw" or "Riposte";
+        /// <summary>A combat-point game: Broadside, Pod Hunt or a strike duel.</summary>
+        bool IsCombat => IsBroadside || IsPodHunt || IsStrikeDuel;
         /// <summary>Brood Rush (the Mass-Space arena game): no gates and no finish. <c>"teams": [["Rhino", "Manta"], ["Serpent",
         /// "Sparrow"]]</c> seats each team on its own domain (Jade, Ruby, Gold in order); the match runs to the mode's own end
         /// (first team to the brood target) or <c>limit_s</c>, and every seat reports its volume books (VolumeLedger: VC
@@ -127,7 +130,7 @@ namespace CosmicShore.Player
             }
             if (_hulls.Count == 0) throw new InvalidOperationException("the spec has no seats");
             _field = _spec["field"]?.GetValue<bool>() ?? _seatTeam.Count > 0;
-            if ((_spec["mode"]?.GetValue<string>() ?? "Regatta") is "Broadside" or "PodHunt") _field = true;
+            if ((_spec["mode"]?.GetValue<string>() ?? "Regatta") is "Broadside" or "PodHunt" or "Jackstraw" or "Riposte") _field = true;
             if (!_field && _hulls.Count != 1)
                 throw new InvalidOperationException("an alone race seats one hull per process; set \"field\": true or run one process per hull");
             foreach (var n in _spec["seeds"]?.AsArray() ?? new JsonArray { 1 }) _seeds.Add(n!.GetValue<int>());
@@ -610,6 +613,8 @@ namespace CosmicShore.Player
                 ? CosmicShore.Engine.Object.FindAnyObjectByType<BroadsideController>()
                 : IsPodHunt
                 ? CosmicShore.Engine.Object.FindAnyObjectByType<PodHuntController>()
+                : IsStrikeDuel
+                ? CosmicShore.Engine.Object.FindAnyObjectByType<JackstrawController>()
                 : CosmicShore.Engine.Object.FindAnyObjectByType<GateRaceController>();
 
         /// <summary>The course is laid: a gate race knows its gates; Skim Race has drawn its track seed.</summary>
@@ -619,6 +624,7 @@ namespace CosmicShore.Player
             SkimRaceController s => s.TrackSeed != 0,
             BroadsideController => true,
             PodHuntController => true,
+            JackstrawController => true,
             _ => false,
         };
 

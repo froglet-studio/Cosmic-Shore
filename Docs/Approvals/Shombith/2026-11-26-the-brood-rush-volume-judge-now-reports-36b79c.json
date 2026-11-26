@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-the-brood-rush-volume-judge-now-reports-36b79c",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-26T20:26:59+00:00",
+  "area": "Amoebius race judge (BroodJudge)",
+  "summary": "The Brood Rush / volume judge now reports, per seat, the standing volume split by the trail type that laid it (held_by_trail) and elemental crystal pickups (elemental_crystals; ElementalCrystalImpactor raises its own event, so the existing crystals field reads 0 for them). Added to measure Palisade's Afterimage share; nothing else changed.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "e1e8fc047"
+}

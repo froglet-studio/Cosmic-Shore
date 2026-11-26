@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -70,6 +73,97 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aiJukeMaxSeconds = 1.4f;
         [Tooltip("How far inside the rim (u) the AI wants to cross: a line that grazes the rim counts as a miss.")]
         [SerializeField, Min(0f)] float aiJukeMargin = 6f;
+
+        // ── The garden ruins (SCARABRALLY.md "The ruins") ──────────────────────
+
+        [Header("Garden ruins (I4)")]
+        [Tooltip("The prism the I4 ruins are laid in (SpawnablePrism). Decoration (Yash, 2026-11-24): Spearline's ruins " +
+                 "round this course's rings, cut clear of the block fields. Empty = no ruins.")]
+        [SerializeField] Prism scarabRuinPrismPrefab;
+        [Tooltip("The domain colours the ruins are laid in, one ruin after another along the course, so they read apart " +
+                 "from the block fields (Blue) and the lime ring. Empty = Blue, as the fields.")]
+        [SerializeField] Domains[] scarabRuinDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        const string ScarabRuinOwnerId = "ScarabRallyRuins";
+
+        readonly List<SpearlineRuinPart> _scarabRuinParts = new();
+        readonly List<SpearlineRuinWheel> _scarabRuinWheels = new();
+        readonly List<bool> _scarabRuinLaid = new();
+        readonly List<Prism> _scarabRuinPrisms = new();
+        Transform _scarabRuinRoot;
+
+        /// <summary>Every peer, after Switchback's own course furniture: the I4 ruins, from the same rings.</summary>
+        protected override void OnCourseRaised()
+        {
+            base.OnCourseRaised();
+            LayScarabRuins();
+        }
+
+        /// <summary>Scenery with the game's own prism rules: a hull breaks a ruin prism and nothing grows back. Nothing
+        /// here reads or writes a vessel, and nothing turns (ScarabRallyRuins lays no wheel), so there is no tick.</summary>
+        void LayScarabRuins()
+        {
+            ClearScarabRuins();
+            int intensity = Intensity;
+            if (SpearlineRuins.ForIntensity(intensity).PerLap <= 0) return;
+            if (!scarabRuinPrismPrefab)
+            {
+                CSDebug.LogWarning("[Scarab Rally] no ruin prism prefab on the controller - the I4 ruins are not laid.");
+                return;
+            }
+            // The field Switchback just laid, computed again from the same inputs (its layout is private to it).
+            ResolveShell(out float inner, out _);
+            var field = LaysBlastRun(intensity)
+                ? SwitchbackBlastRun.Layout(_course, intensity, ResolveCellCentre(),
+                                            inner / innerRadiusNucleusFactor + ScarabRallyRuins.FieldNucleusMargin, BlastRunGauntlet).Prisms
+                : null;
+            ScarabRallyRuins.Lay(_course, intensity, field, _scarabRuinParts, _scarabRuinWheels, _scarabRuinLaid);
+
+            // The ordinal of each ruin along the chain picks its colour, so neighbours differ whichever legs stand.
+            var trail = new Trail();
+            int ruin = -1, lastLeg = -1;
+            for (int i = 0; i < _scarabRuinParts.Count; i++)
+            {
+                if (!_scarabRuinLaid[i]) continue;
+                var part = _scarabRuinParts[i];
+                if (part.Leg != lastLeg) { lastLeg = part.Leg; ruin++; }
+                if (!_scarabRuinRoot)
+                {
+                    _scarabRuinRoot = new GameObject(ScarabRuinOwnerId).transform;
+                    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(_scarabRuinRoot.gameObject, gameObject.scene);
+                }
+                _scarabRuinPrisms.Add(PrismTrailBuilder.LayOne(scarabRuinPrismPrefab,
+                    new PrismLay(new SpawnPoint(part.Position, Quaternion.LookRotation(part.Forward, part.Up), part.Scale),
+                                 ScarabRuinDomain(ruin), PrismKind.Plain),
+                    _scarabRuinRoot, trail, ScarabRuinOwnerId, admitAuthoredScale: true));
+            }
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Scarab Rally] ruins at intensity {intensity}: {_scarabRuinPrisms.Count} prisms in {ruin + 1} ruins.");
+        }
+
+        Domains ScarabRuinDomain(int ruin) =>
+            scarabRuinDomains is { Length: > 0 } ? scarabRuinDomains[ruin % scarabRuinDomains.Length] : Domains.Blue;
+
+        void ClearScarabRuins()
+        {
+            for (int i = 0; i < _scarabRuinPrisms.Count; i++)
+            {
+                var prism = _scarabRuinPrisms[i];
+                if (prism && prism.ownerID == ScarabRuinOwnerId && !EnvironmentPrismPool.TryRelease(prism)) Destroy(prism.gameObject);
+            }
+            _scarabRuinPrisms.Clear();
+            _scarabRuinParts.Clear();
+            _scarabRuinWheels.Clear();
+            _scarabRuinLaid.Clear();
+            if (_scarabRuinRoot) Destroy(_scarabRuinRoot.gameObject);
+            _scarabRuinRoot = null;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            ClearScarabRuins();
+            base.OnNetworkDespawn();
+        }
 
         /// <summary>The Scarab AI holds full throttle and steers, so a mouth twisted off its line at I3 was a lift or a
         /// miss (TIME_GAME_FUN_SCORES.md round 3). The juke is the Scarab's own fix for that, and the autopilot can press

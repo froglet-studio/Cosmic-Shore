@@ -32,10 +32,12 @@
     note: 'Give the last phase a name and a clock: the Tide (see The Tide).'
   holes:
   - 'on': np
-    q: How many sittings make one pass, and how often a person comes back, is not measured. Analytics events are declared
-      but no funnel reads them yet.
-    fill: Target 3 to 5 sittings a week and one Tide every 6 weeks. Measure it from game_started and game_completed per
-      account before tuning anything above the Round.
+    q: How often a person comes back is now read (the Froglet Analytics console's Sessions and Retention pages, from
+      session_started and session_ended in builds after 2026-11-07; PostHog was closed on 2026-11-23), but how many
+      sittings make one pass is not, because nothing marks a pass or a Tide.
+    fill: Target 3 to 5 sittings a week and one Tide every 6 weeks. Read sittings per week from the Sessions page's
+      sessions per player, and mark the pass with a tide_started event when the Tide ships, before tuning anything above
+      the Round.
   src:
   - Docs/ElementalLoop/PLAYBOOK.md section 0
   - Docs/Voyages/DEPTH.md

@@ -116,6 +116,9 @@ htr.author(dict(
         "SpearlineSeals":        f"{MODE_DIR}/SpearlineSeals.cs",
         "SpearlineCourseSource": f"{MODE_DIR}/SpearlineCourseSource.cs",
         "SpearlineSealsTests":   "Assets/_Scripts/Tests/Editor/SpearlineSealsTests.cs",
+        "SpearlineController.Garden": f"{MODE_DIR}/SpearlineController.Garden.cs",
+        "SpearlineGarden":       f"{MODE_DIR}/SpearlineGarden.cs",
+        "SpearlineGardenTests":  "Assets/_Scripts/Tests/Editor/SpearlineGardenTests.cs",
     },
     doc="Assets/_Scripts/Controller/Arcade/SPEARLINE.md",
     donor_scene=f"{lib.SCENES_DIR}/MinigameThornline.unity",
@@ -126,6 +129,8 @@ htr.author(dict(
     # Headlong's steering numbers (the same circuit and airframe); the clamp covers the 840 u/s ramp twice over.
     new_fields=FIELDS.format(rule="__RULE__", commit=260, lead=300, through=220, speed=2000) + SEAL_FIELDS,
     max_speed=840,
+    # Every Swordfish game seats 4 for now (Yash, 2026-11-25).
+    min_players=4, max_players=4,   # every Swordfish card seats 4 (Yash, 2026-11-25)
     target=GATES_PER_LAP * LAPS, laps=LAPS, target_key="spearlineGateTarget", target_after="thornlineGateTarget",
     # A quarter-of-race deficit (6 rings) x 0.2 = 1.2 element levels; Time speeds the sword, so the buff lands on the
     # very thing the seals ask for.

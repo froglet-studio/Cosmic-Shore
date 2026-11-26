@@ -1,0 +1,222 @@
+# Loop Atlas model: loops, systems. Docs/LoopAtlas/README.md explains the fields.
+# Edit here; Tools/Build/loop_atlas.py build rebuilds model.json and the page.
+# Loops the game already runs that no loop in the atlas spelled out (2026-11-21). Each is on the Proposed layer until
+# Garrett plans it; its prop note says what is in the game today and where.
+- id: sys.petals
+  in: x
+  parent: round.charge
+  at: 3
+  name: Petals and silence
+  tier: 3
+  kind: loop
+  t: [5, 40]
+  element: Charge
+  is: 'Every scored hit takes a petal, which comes loose as a crystal anyone can grab, and silences the victim for what
+    the hit is worth: their abilities still fire but harm nothing. The race for the loose petal is the duel''s second
+    half.'
+  phases:
+  - n: A scored hit lands
+  - n: A petal comes loose as a crystal
+    d: Only what the victim holds above level 0; nothing partial ever leaves.
+  - n: The victim is silenced
+    d: Seconds = the hit's points / 10 x 4 x seconds per petal, capped.
+  - n: Both race for the loose crystal
+    d: A silenced pilot can still collect, so the victim can win it back.
+  - n: Kept, or won back
+  drivers: [rival, stake, mastery]
+  reps: null
+  repsOf: petal moves per match
+  prop:
+    s: add
+    note: In the game today (ResourceSystem.AccrueElementalLoss, ElementalCrystalEjector, the silence window). Proposed
+      as a loop of its own so its count is measured and taught.
+  measure:
+    in: x
+    event: petal_changed_hands
+    params: [mode, from_vessel, to_vessel, won_back, silence_s]
+    target: 6 to 10 petal moves per pilot in a 90-second Charge match, and a third of loose petals won back by the pilot
+      who lost them.
+    first: 4
+    expect: A new pilot loses a petal and wins one back in their first Charge game.
+  holes:
+  - 'on': px
+    q: Nothing tells a new pilot that the crystal leaving them is their own petal, or that a silenced pilot can still
+      take it back.
+    fill: 'The Mentor''s first Charge tip: "That crystal is your petal. Take it back." The flower''s step and the crystal
+      are the same event, so the tip points at the flower.'
+  src:
+  - Docs/ElementalAbilitySystem/SILENCE.md section 1
+  - Docs/ELEMENTAL_ECONOMY.md section 2
+- id: sys.element
+  in: x
+  parent: arcade
+  at: 3
+  name: The element meter
+  tier: 2
+  kind: loop
+  t: [5, 60]
+  is: A crystal is one petal and one level of its element. The level scales the verb that element owns on this vessel,
+    a hit or a danger prism takes a level away, and recovery pulls levels back into the band at one per five seconds.
+  phases:
+  - n: See a crystal of an element
+  - n: Take it
+    d: One petal, one level; the HUD flower steps.
+  - n: That element's verb is stronger
+    d: What it scales is the vessel's own (its element map).
+  - n: A hit or a danger prism takes a level
+  - n: Recovery pulls it back toward the band
+    d: One level per five seconds, from either end.
+  drivers: [find, reward, mastery]
+  reps: null
+  repsOf: level changes per round
+  prop:
+    s: add
+    note: In the game today (ResourceSystem, ElementalBarsConfigSO, ElementalAbilityMapSO, the four-petal flower). Runs
+      inside every round; proposed as a loop so a round's element swing is measured.
+  measure:
+    in: x
+    event: element_level_changed
+    params: [vessel, element, level, cause]
+    target: A level moves every 10 to 20 seconds of a round, and a pilot ends most rounds above where they started.
+    first: 2
+    expect: In the Lesson a new pilot takes one crystal and sees the flower step and the verb grow.
+  src:
+  - Docs/ELEMENTAL_ECONOMY.md sections 1 and 3
+  - Docs/claude/VESSEL_HUD_AND_ELEMENTS.md
+- id: sys.hearts
+  in: x
+  parent: round.ms
+  at: 3
+  name: Hearts
+  tier: 2
+  kind: loop
+  t: [8, 60]
+  element: Mass-Space
+  is: Creatures and plants carry elemental crystals as hearts. Wither or kill one and its heart comes loose, worth one
+    petal to whoever takes it.
+  phases:
+  - n: Spot a lifeform carrying a heart
+    d: A crystal sight (VOLT, ANVIL, ZODIAC, SUNDIAL) shows which ones carry what.
+  - n: Wither or kill it
+    d: A joust, a blast, a sting, dust.
+  - n: The heart comes loose
+  - n: Take it
+  drivers: [find, break, reward]
+  reps: null
+  repsOf: hearts freed per match
+  prop:
+    s: add
+    note: In the game today (LifeFormCrystal, the Squirrel's crystal joust, every kill that frees a heart). Proposed as a
+      loop so hunting has a count.
+  measure:
+    in: x
+    event: heart_freed
+    params: [species, element, by_vessel, taken_by]
+    target: 1 to 3 hearts freed per pilot per Mass-Space match.
+    first: 4
+    expect: A new pilot frees and takes one heart in their first Mass-Space game.
+  src:
+  - Docs/ECOSYSTEM.md
+  - Assets/_Scripts/Controller/Environment/FloraAndFauna/LifeFormCrystal.cs
+- id: sys.cellphase
+  in: x
+  parent: round.ms
+  at: 1
+  name: The cell's mood
+  tier: 3
+  kind: loop
+  t: [30, 180]
+  element: Mass-Space
+  is: The cell's live volume sets its phase, Calm, Restless, then Frenzy, and the phase changes what spawns and how
+    the fauna behave. More mass makes a wilder cell, and a wilder cell eats mass.
+  phases:
+  - n: Calm
+  - n: Volume rises past the Restless threshold
+  - n: Restless
+    d: Spawns and fauna shift with the phase.
+  - n: Frenzy at the top of the ladder
+  - n: Volume falls; the cell settles
+  drivers: [stake, goal, find]
+  reps: null
+  repsOf: phase changes per match
+  prop:
+    s: add
+    note: In the game today (Cell.ResolvedThresholds, CellPhase Calm / Restless / Frenzy, the concentric hexagon volume
+      indicator). Proposed as a loop so a match's arc is read and measured.
+  measure:
+    in: x
+    event: cell_phase_changed
+    params: [phase, live_volume, seconds_in_match]
+    target: Calm to Restless inside the first 60 seconds of a Mass-Space match, and Frenzy reached in about half of matches.
+    first: 4
+    expect: A new pilot's first Mass-Space match reaches Restless.
+  src:
+  - Assets/_Scripts/Data/Enums/CellPhase.cs
+  - Assets/_Scripts/Controller/Environment/Cell.cs
+- id: sys.trail
+  in: x
+  parent: round.ms
+  at: 1
+  name: The trail
+  tier: 2
+  kind: loop
+  t: [5, 30]
+  element: Mass-Space
+  is: Every vessel lays prisms of its colour behind it. That trail is mass, yours to skim and defend and theirs to break
+    or steal, and the volume it adds up to is what the nucleus counts.
+  phases:
+  - n: Fly
+  - n: Your trail is laid in your colour
+  - n: It is mass
+    d: You skim it for speed; rivals break, steal or shrink it.
+  - n: What stands is your volume
+  drivers: [make, joy, own]
+  reps: null
+  repsOf: passes per match
+  prop:
+    s: add
+    note: In the game today, on every hull (the trail, the volume books on Brood Rush's scoreboard). Proposed as a loop
+      so made and removed volume are read per pilot.
+  measure:
+    in: x
+    event: volume_booked
+    params: [vessel, made, removed, lost]
+    target: Made and removed within a factor of two of each other for a vessel the plateau calls balanced.
+    first: 4
+    expect: A new pilot's volume made is above zero in their first Mass-Space game, and the result screen shows it.
+  src:
+  - Docs/MassAndSpaceGames/PLAN.md
+  - Docs/ArcadeRestructure/PLAN.md
+- id: sys.sight
+  in: x
+  parent: voy.cell
+  at: 1
+  name: The pilot's sight
+  tier: 1
+  kind: loop
+  t: [2, 10]
+  is: Hold LB and what your pilot's callsign sees lights through the mass, for you only. Pick one, let go, fly at it.
+    For an AI pilot the same callsign weights what it goes after.
+  phases:
+  - n: Hold LB
+  - n: What the callsign sees lights up
+    d: Others see your callsign plate light, so they know you are looking.
+  - n: Pick one
+  - n: Let go and fly at it
+  drivers: [find, mastery]
+  reps: null
+  repsOf: looks per cell
+  prop:
+    s: add
+    note: In the game today (PilotSight, PilotSightGesture, CallsignSetSO), unverified in the editor. Proposed as a loop
+      so a callsign's worth is measured, and so the genes' sight bias has a human twin.
+  measure:
+    in: x
+    event: sight_used
+    params: [callsign, held_s, went_for]
+    target: Held at least once a cell, and followed by flying at what it showed more than half the time.
+    first: 4
+    expect: A pilot who has seated a callsign holds the sight once in their first voyage cell.
+  src:
+  - Docs/Pilots/CALLSIGNS.md sections 2 and 4
+  - Assets/_Scripts/Controller/PilotSight/PilotSight.cs

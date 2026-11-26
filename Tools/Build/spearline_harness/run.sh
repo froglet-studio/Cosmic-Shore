@@ -27,16 +27,19 @@ OUT="${TMPDIR:-/tmp}/spearline_harness"
 mkdir -p "$OUT"
 
 SEALS="$A/Controller/Arcade/Spearline/SpearlineSeals.cs"
+RUINS="$A/Controller/Arcade/Spearline/SpearlineRuins.cs"
+GARDEN="$A/Controller/Arcade/Spearline/SpearlineGarden.cs"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = seals source, $2 = output name
+build() {   # $1 = seals source, $2 = output name, $3 = ruins source (default: the shipped one)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
-    "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" "$1" "$A/Tests/Editor/SpearlineSealsTests.cs"; do
+    "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" "$1" "${3:-$RUINS}" "$A/Tests/Editor/SpearlineSealsTests.cs" \
+    "$A/Tests/Editor/SpearlineRuinsTests.cs" "${4:-$GARDEN}" "$A/Tests/Editor/SpearlineGardenTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -79,4 +82,32 @@ mutate "Headlong's 25% mouth step" 's/MouthByRung = { 96f, 84f, 74f, 66f }/Mouth
 mutate "the hardest corners sealed" 's/int c = turn\[x\].CompareTo(turn\[y\]);/int c = turn[y].CompareTo(turn[x]);/' 'turn\[y\].CompareTo(turn\[x\])'
 mutate "armour everywhere at I2 (no plain face to read)" 's/ArmourByRung = { 0f, 120f, 180f, 240f }/ArmourByRung = { 0f, 330f, 180f, 240f }/' '0f, 330f'
 mutate "the read ignores armour (cuts it as plain)" 's/                        Vector3 band = s < 0 ? Vector3.zero : strokes\[s\];/                        Vector3 band = strokes.Count > 0 ? strokes[0] : Vector3.zero;/' 'strokes.Count > 0 ? strokes\[0\]'
+mutate_ruins() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$RUINS" > "$OUT/SpearlineRuins_neg.cs"
+  grep -q "$3" "$OUT/SpearlineRuins_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$SEALS" neg "$OUT/SpearlineRuins_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+# The lay clears its prisms through LaneCache.Stands (the sampled lines), so that is the lane check to break.
+mutate_ruins "ruins that block the lane" 's/if (!(Mathf.Sqrt(best) >= s.ClearRadius)) return false;/if (best < 0f) return false;/' 'if (best < 0f) return false;'
+mutate_ruins "ruins at a ring" 's/PartRingClearance(lap, part) >= s.RingMargin;/true;/' '&& true;'
+mutate_ruins "ruins on the easy rungs" 's/PerLapByRung = { 0, 0, 0, 7 }/PerLapByRung = { 0, 7, 0, 7 }/' '0, 7, 0, 7'
+mutate_ruins "a wheel with no open hub" 's/HubRadius + (k + 0.5f) \* spokeStone/(k + 0.5f) * spokeStone/' 'c + radial \* ((k + 0.5f)'
+mutate_ruins "a wheel that does not turn" 's/float angle = wheel.DegreesPerSecond \* seconds \* Mathf.Deg2Rad;/float angle = 0f;/' 'float angle = 0f;'
+mutate_ruins "thin ruins" 's/var scale = new Vector3(9f, 9f, 13f);/var scale = new Vector3(5f, 5f, 13f);/' 'Vector3(5f, 5f, 13f)'
+mutate_garden() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$GARDEN" > "$OUT/SpearlineGarden_neg.cs"
+  grep -q "$3" "$OUT/SpearlineGarden_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$SEALS" neg "$RUINS" "$OUT/SpearlineGarden_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+mutate_garden "a hedge in the hull's path" 's/public const float HedgeInner = 22f;/public const float HedgeInner = 6f;/' 'HedgeInner = 6f'
+mutate_garden "hedges on legs into sealed rings" 's/if (!@sealed\[next\])/if (@sealed[next])/' 'if (@sealed\[next\])'
+mutate_garden "a pillar at I1" 's/HedgeBothSides = true, HedgeLength = 200f, Pillars = 0,/HedgeBothSides = true, HedgeLength = 200f, Pillars = 1,/' 'HedgeLength = 200f, Pillars = 1'
+mutate_garden "garden at a ring" 's/if (SpearlineRuins.RingClearance(lap, p) < RingMargin) return false;/if (false) return false;/' 'if (false) return false;'
+mutate_garden "the same garden on every rung" 's/switch (Mathf.Clamp(intensity, 1, 4))/switch (1)/' 'switch (1)'
 echo "spearline_harness self-test: ok"

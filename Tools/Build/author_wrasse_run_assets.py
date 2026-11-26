@@ -56,9 +56,11 @@ guid = lib.guid
 MODE_DIR = "Assets/_Scripts/Controller/Arcade/WrasseRun"
 SCRIPT_PATHS = {
     "WrasseRunController":   f"{MODE_DIR}/WrasseRunController.cs",
+    "WrasseRunController.Ruins": f"{MODE_DIR}/WrasseRunController.Ruins.cs",
     "WrasseRunCourse":       f"{MODE_DIR}/WrasseRunCourse.cs",
     "WrasseRunCourseSource": f"{MODE_DIR}/WrasseRunCourseSource.cs",
     "WrasseRunCourseTests":  "Assets/_Scripts/Tests/Editor/WrasseRunCourseTests.cs",
+    "WrasseRunRuinsTests":   "Assets/_Scripts/Tests/Editor/WrasseRunRuinsTests.cs",
     "KiteNavigatorSlingTests": "Assets/_Scripts/Tests/Editor/KiteNavigatorSlingTests.cs",
 }
 DOC = "Assets/_Scripts/Controller/Arcade/WRASSERUN.md"
@@ -224,6 +226,10 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_RULE}, type: 2}}
   maxPlausibleSpeed: {MAX_PLAUSIBLE_SPEED}
   reportResyncSeconds: 3
 """
+# The garden ruins (I4, WRASSERUN.md 3a): the pooled environment prism they are laid from. Added to the committed
+# scene by hand on 2026-11-24 (the clone is spent); the colours are the controller's serialized default.
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+RUIN_FIELDS = f"  ruinPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
 
 
 def project_network_hashes() -> "set[int]":
@@ -265,7 +271,7 @@ def clone_scene() -> str:
 
 scene, scene_errors = lib.committed_scene(
     SCENE, clone_scene,
-    authored_blocks=(NEW_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
+    authored_blocks=(NEW_FIELDS, RUIN_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
@@ -349,6 +355,12 @@ if not m or int(m.group(1)) != LAPS:
 _ctrl = read_or_empty(SCRIPT_PATHS["WrasseRunController"])
 if "protected override bool HullThreadsWhileProbeLive => false;" not in _ctrl:
     errors.append("WrasseRunController does not make the kite the ring collector (HullThreadsWhileProbeLive)")
+# The ruins are Spearline's generator, CALLED: a copy here would drift from the one its tests hold.
+_ruins = read_or_empty(SCRIPT_PATHS["WrasseRunController.Ruins"])
+if "SpearlineRuins.Lay(_course, SpearlineRuins.ForIntensity(Intensity)" not in _ruins:
+    errors.append("WrasseRunController.Ruins.cs does not lay SpearlineRuins round the lap")
+if "public partial class WrasseRunController" not in _ctrl:
+    errors.append("WrasseRunController is not partial - its ruins hook cannot compile")
 
 if "case GameModes.WrasseRun:" not in read_or_empty("Assets/_Scripts/UI/MiniGameHUD.cs"):
     errors.append("MiniGameHUD.CreateObjectiveProviderForGameMode has no WrasseRun case")

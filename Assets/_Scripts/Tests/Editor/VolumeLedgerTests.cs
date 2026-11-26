@@ -4,6 +4,8 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using NUnit.Framework;
+using UnityEngine;
+using FakeStats = CosmicShore.Tests.ScoringRuleFieldedDomainTests.FakeStats;
 
 namespace CosmicShore.Tests
 {
@@ -152,6 +154,53 @@ namespace CosmicShore.Tests
             Assert.AreEqual("12.3k", BroodRushScoringRuleSO.FormatVolume(12345f));
             Assert.AreEqual("-12.3k", BroodRushScoringRuleSO.FormatVolume(-12345f));
             Assert.AreEqual("12.3M", BroodRushScoringRuleSO.FormatVolume(12345678f));
+        }
+
+        [Test]
+        public void BroodRush_EveryTeammateScoresTheirOwnBooks_AndTheBroodsAreTheTeams()
+        {
+            var rule = ScriptableObject.CreateInstance<BroodRushScoringRuleSO>();
+            var gameData = ScriptableObject.CreateInstance<GameDataSO>();
+            try
+            {
+                typeof(ScoringRuleSO).GetField("metric", System.Reflection.BindingFlags.Instance |
+                                                         System.Reflection.BindingFlags.NonPublic)
+                                     .SetValue(rule, ScoringMetric.Goals);
+                gameData.RequestedDomainCount = 2;
+                // The controller carries all three Jade broods on the first roster entry, the team's counter.
+                gameData.RoundStatsList.Add(new FakeStats { Name = "ann", Domain = Jade, GoalsScored = 3 });
+                gameData.RoundStatsList.Add(new FakeStats { Name = "cy", Domain = Jade });
+                gameData.RoundStatsList.Add(new FakeStats { Name = "bo", Domain = Ruby, GoalsScored = 1 });
+                gameData.VolumeLedger.AddCreated("ann", 100f);
+                gameData.VolumeLedger.AddCreated("cy", 300f);
+                gameData.VolumeLedger.BookLoss("bo", Ruby, "cy", Jade, 50f);
+                gameData.VolumeLedger.AddCreated("bo", 500f);
+
+                Assert.AreEqual(Jade, rule.ResolveWinner(gameData), "the race is still the domain's broods");
+                rule.AssignScores(gameData, Jade, 0f);
+                Assert.AreEqual(100f, gameData.RoundStatsList[0].Score, 1e-3f, "ann: her VC, not the team's 3 broods");
+                Assert.AreEqual(350f, gameData.RoundStatsList[1].Score, 1e-3f, "cy: VC 300 + VD 50, not 0 broods");
+                Assert.AreEqual(500f, gameData.RoundStatsList[2].Score, 1e-3f);
+
+                gameData.WinnerDomain = Jade;
+                var results = rule.BuildResults(gameData);
+                Assert.AreEqual(new[] { "cy", "ann", "bo" }, results.ConvertAll(r => r.Name).ToArray(),
+                    "the winning team first, best score leading it");
+                Assert.AreEqual("350", results[0].ScoreText);
+                Assert.AreEqual("100", results[1].ScoreText);
+                Assert.AreEqual(2, results[0].Rank, "the rank is the VC + VD order across every pilot");
+                Assert.AreEqual(3, results[1].Rank);
+                Assert.AreEqual(1, results[2].Rank);
+                foreach (var r in results)
+                    StringAssert.DoesNotContain("Brood", r.ScoreText + r.Secondary, "no pilot carries the team's broods");
+                StringAssert.StartsWith("3 Broods", rule.TeamLine(gameData, Jade));
+                StringAssert.StartsWith("1 Brood\n", rule.TeamLine(gameData, Ruby));
+            }
+            finally
+            {
+                Object.DestroyImmediate(rule);
+                Object.DestroyImmediate(gameData);
+            }
         }
     }
 }

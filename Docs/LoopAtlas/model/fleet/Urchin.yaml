@@ -67,4 +67,89 @@ combos:
     - Chain spikes into their territory
   drivers: [make, joy, rival]
   feel: Grinding a line nobody else can.
+  gene:
+    genome: Mass
+    cue: [rival_mass_ahead, bank_low]
+    dials:
+    - - rideShare
+      - share of a trail ridden before slipping off
+      - 0.2
+      - 1.0
+      - fraction
+    - - spikeRange
+      - distance into rival territory the spikes are fired
+      - 10
+      - 120
+      - u
+    done: A rival trail is stolen and the spikes chain through their mass.
+- in: x
+  name: Rail to the gate
+  t: [5, 15]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Project a rail at the gate, ride it, slip off at the mouth.
+  chain:
+  - - Space
+    - Project a rail toward the gate
+  - [Mass, Ride it]
+  - [Time, Slip off at the mouth]
+  drivers: [joy, mastery]
+  feel: Laying your own track.
+  gene:
+    genome: Time
+    cue: [gate_next, verb_ready]
+    dials:
+    - - slipLead
+      - distance before the gate the slip is made
+      - 0
+      - 120
+      - u
+    done: A gate is threaded within a second of a slip.
+    sight: NEEDLE
+- in: x
+  name: Spike burst
+  t: [6, 20]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: Ride a rival's trail toward them and burst spikes as you pass.
+  chain:
+  - - Mass
+    - 'Ride a rival''s trail toward them: ammo refills'
+  - - Charge
+    - 'Hold and release: spikes in every direction'
+  drivers: [rival, break]
+  feel: Riding their road into them.
+  gene:
+    genome: Charge
+    cue: [rival_near, bank_full]
+    dials:
+    - - burstRange
+      - rival distance at which the burst is released
+      - 10
+      - 100
+      - u
+    done: Spikes chain through rival prisms around a rival.
+    sight: BANDIT
+- in: x
+  name: Rail into their land
+  t: [10, 30]
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  is: A rail projected into rival territory, ridden so their trail is stolen round it.
+  chain:
+  - - Space
+    - Project a rail into rival territory
+  - - Mass
+    - 'Ride it: their trail round it is stolen'
+  - [Charge, Spikes chain on]
+  drivers: [make, rival]
+  feel: A road that takes the land it crosses.
+  gene:
+    genome: Space
+    cue: [rival_mass_ahead, verb_ready]
+    dials:
+    - - projectAim
+      - how far into rival mass the rail is aimed
+      - 20
+      - 200
+      - u
+    done: A projected rail is ridden and rival trail is stolen along it.
+    sight: ENSIGN
 doc: Assets/Resources/ElementalAbilityMaps/Urchin.asset

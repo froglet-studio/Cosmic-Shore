@@ -37,6 +37,68 @@ every gap but the last, and one long drop to finish. Every pilot flies the same 
 | Compile harnesses | `Tools/Build/waystation_tower_harness/` (towers; `run_tests.sh` runs the shipped `WaystationTowerTests` and `WaystationHopPlanTests` without Unity), `Tools/Build/waystation_harness/` (clusters) |
 | Generator | `Tools/Build/author_waystation_assets.py` (`--check`; it also retires the prototype's assets and registrations) |
 
+## Garden ruins (I4, 2026-11-24)
+
+Yash asked for the environment update Spearline got (`SPEARLINE.md` §2a): the ruins of old flora gardens round the
+racing line on the hardest rung. Decoration only: plain prisms with the game's own rules. Nothing reads or writes a
+vessel, and I1-I3 are unchanged.
+
+**The generator is Spearline's, called and not copied.** `WaystationRuins.Lay` (pure) calls `SpearlineRuins.Lay` with
+Spearline's own numbers: a 60 u clear lane, nothing within 120 u of a gate, only on legs of 380 u or more, the seven
+kinds (pergola, flower head, vines, wall with a doorway, tunnel, 3D maze, turning wheel at 25 deg/s). Three things are
+Waystation's own, in `Waystation/WaystationRuins.cs`:
+
+- **The racing line.** A tower ring is not flown to. The pilot cruises level to the press point and falls along the
+  ring's axis. `RacingLine` states that as gates: the press point twice (once on the arriving heading, once on the fall
+  line), then the ring. Both tower legs are then straight, so the clear lane lies where the hull goes, and every press
+  point gets the 120 u margin a ring has.
+- **The towers.** No ruin prism stands within 14 u (`WallClear`) of a wall tile or a lantern segment, and a wheel
+  turns only where its whole sweep is clear of them. On the ten test seeds the lane and the margins already keep every
+  ruin off the towers, so this filter removes nothing there; it is a guard for other seeds.
+- **Which legs.** The generator lays the first legs it meets, which on a chain is all at the start. Waystation lays
+  every leg with room and keeps at most seven, each kind once, the longest leg (the long last drop) first, then the
+  legs farthest along the chain from those already picked. A ruin cut to under 12 prisms is dropped.
+
+**How many (measured, 20 seeds at I4, 5 clusters):** one to three ruins a course, 34 to 418 prisms, not Spearline's
+seven. A Drop Tower's legs are mostly shorter than 380 u (a course has 1 to 6 legs that long), so most ruins stand on
+the long last drop and on a tower's longer cruise legs. A wheel stood on 2 of the 20 seeds, on the long drop. More
+ruins would need a shorter minimum leg and gate margin in `SpearlineRuins`' settings; those are not changed here.
+
+**In the world** (`WaystationController.Ruins.cs`): every peer lays the ruins from the broadcast course in the walls'
+prism (`wallPrefab`), under the controller like the walls, before the walls. Each ruin is one domain colour,
+`ruinDomains` in turn (Jade, Ruby, Gold; empty = Blue), which reads apart from the Blue walls and lanterns. A wheel's
+prisms are posed every frame from the network clock. Ruins do not regrow and are released with the walls. The scene
+needs no new field: `ruinDomains` takes its default.
+
+**The drop gaps are straight (2026-11-25).** A gap of 700 u or more between two rings (`DropGap`, the controller's
+`aiFoldMinDistance`) is crossed by the Drop, a straight fall. The generator's lane between two rings is a curve that
+leaves and arrives along the rings' axes, so on such a gap the ruins stood on the chord the hull falls down. `RacingLine`
+now gives each end of a drop gap twice (radius 0, on the chord), and the lane there is the chord. This moved the ruins;
+the "how many" numbers above were measured before it and have not been measured again.
+
+**The AI and the ruins (2026-11-25, Yash: "AI is hitting prisms on the way a lot").** Measured in the editor before the
+fix (one I4 race, three Legendary bots, a sampler on every hull): the hulls struck a ruin twice and fell from 67 to
+23 u/s, both times 90 to 160 u off the straight line, after drifting while they lined the belly up. Inputs only, in
+`WaystationController.Ruins.cs` (`aiRuinClearance` 24 u, `aiRuinLookahead` 240 u; clearance 0 = off): a bot does not
+start or press a Drop while a ruin prism is within the clearance of its fall line (`RuinOnFallLine`), and with a ruin on
+the next 240 u of its way it steers at the first point of its leg's clear lane it can reach in a straight line, else
+round the prism (`WaystationRuins.TrySteerRound`, pure). A person's controls, the Drop and every vessel number are
+untouched; I1-I3 lay no ruins, so nothing there changes. After the fix, one I4 race in the editor: no hull came within
+12 u of a ruin prism, none was broken, the winner finished in 226 s (214 s and 245 s in the two races before it; each
+race is a different course, so the three times do not rank the fix).
+
+**Gates:** `WaystationRuinsTests` (11 tests: none below I4, one to seven ruins numbered along the chain, the lane, the
+straight tower legs and drop gaps, the ring and press-point margin, the walls and lanterns, a wheel's own prisms,
+purity, and three for the AI: the flown line is never blocked, what blocks a path, the steer-round target), run without
+Unity by `Tools/Build/waystation_tower_harness/run_tests.sh`; `--self-test` adds four negative controls that fire
+(the ring-to-ring line instead of the cruise and the fall, a drop gap left curved, a path check that sees nothing,
+ruins on every rung). The control "a kind standing twice" stopped firing when the ruins moved and was removed: no test
+seed now offers two legs of one kind, so that rule has no failing check.
+
+**Not done:** one race is not a measure of the AI's I4 times, and the hop miss recovery (600 u past a press point and
+round) was not seen crossing a ruin but is not ruled out. `author_waystation_assets.py --check` was not run (no Python
+on the machine this was written on); the generator needed no change.
+
 ## Lantern Towers (2026-11-11)
 
 **The problem it solves.** A Drop Tower hop was a timing test with one right answer per rung: hold for the window's

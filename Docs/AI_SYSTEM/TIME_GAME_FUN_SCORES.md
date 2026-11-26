@@ -90,7 +90,7 @@ note on what blocks each one.
 | Goby (+ Pistol) | The Time verb belongs to the Pistol seat, but the Goby flies the race | Needs a design decision: which seat races |
 | Jacks | Racing gates conflicts with herding | Needs a decision: hull flight or herding |
 | Starling | The pilot does not steer (a passive swarm), so a gate race contradicts the vessel | Needs a different kind of Time goal |
-| Meerkat | Already has one, Burrow Run (71), on `Ys-bleeding-edge` | - |
+| Meerkat | Already has one, Warpline (65). Burrow Run (71) was its second and moved to the Jewel Wasp on 2026-11-22 | - |
 | Termite, Falcon | Not live vessels (no ability map, not in the Vessel Changer) | - |
 
 ## 2026-11-07, round 3: the unowned floors, raised
@@ -187,3 +187,16 @@ with an uncounted ring 0/60 -> 60/60 finished at every intensity. Details: `Cont
 | Vessel | Game | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
 |---|---|---|---|---|---|---|---|---|---|
 | Honeyguide | Slip Line (82) | 8 | 6 | 6 (I1 "right", Garrett) | 6 | **5** (was 2) | **4** (was 3) | **5.8** est. (was 5.2) | 4 Fairness |
+
+## 2026-11-23: Breakwater, the fun pass (elemental loop step 1)
+
+Rivals and Fairness were re-read from the flights recorded since the first estimate (`VESSEL_MODE_CHART.md` §3: 14
+flights by three people, 9 finished, median 83.8 s; the AI finished 21 of 25; Medium flies 110-120 s since
+2026-11-17). That left Feedback as the floor, and the heat raises it: stations graded by the verb chosen (eye, hot eye,
+door), shock rings off the eye, streaks, lap splits (toasts 430-436, 8 empty FMOD slots; `BREAKWATER.md` "The heat").
+The hot eye ties the afterburner to the reward. Not compiled in Unity and not flown; the numbers are estimates until a
+fun card.
+
+| Vessel | Game | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
+|---|---|---|---|---|---|---|---|---|---|
+| Sparrow | Breakwater (50) | **7** (was 6) | 6 | 7 | **6** (was 4) | **6** (was 4) | 7 | **6.5** est. (was 5.7) | 6 Flow/Feedback/Rivals |

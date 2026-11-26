@@ -30,11 +30,6 @@ namespace CosmicShore.UI
         [Header("Seat")]
         [Tooltip("\"You / Host\", \"You\", \"Host\" or \"Pilot\" (Label role).")]
         [SerializeField] private KitText roleText;
-        [Tooltip("The octagon behind the avatar. The party panel pushes the seated pilot's domain colour " +
-                 "(SO_ColorSet) every tick; Surface Dark while that domain is not known yet.")]
-        [SerializeField] private Image domainRing;
-        [Tooltip("The chrome theme, for the ring's unknown-domain colour.")]
-        [SerializeField] private UIThemeSO theme;
 
         // The seated pilot's domain colour, for the profile popup's ring.
         private Color? _domain;
@@ -58,13 +53,10 @@ namespace CosmicShore.UI
 
         public void RequestJoin() { }
 
-        // The ring replaces the legacy slot's generated halo, so none is built.
-        protected override void EnsureDomainGlow() { }
-
         public override void SetDomainGlow(Color? domainColour)
         {
-            if (domainRing)
-                domainRing.color = domainColour ?? UITheme.Resolve(theme, UIColorToken.SurfaceDark);
+            // The seat's avatar border (round cut, domain ring, waves, halo; Frogma Rev 127 D) is the base slot's.
+            base.SetDomainGlow(domainColour);
             if (_domain == domainColour) return;
             _domain = domainColour;
             ProfileChanged?.Invoke();

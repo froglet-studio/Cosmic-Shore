@@ -314,7 +314,7 @@ namespace CosmicShore.UI
             if (nextFlower) nextFlower.Set(row.element, Mathf.Min(row.level + 1, HangarUpgradeStore.MaxLevel));
             if (nextText) nextText.text = TemplateText.Fill(nextTemplate, "level", next);
 
-            bool hasUpgrade = !row.open && !string.IsNullOrEmpty(entry.UpgradeLabel);
+            bool hasUpgrade = !open && !string.IsNullOrEmpty(entry.UpgradeLabel);
             KitVisibility.SetShown(upgradeGroup, hasUpgrade);
             if (hasUpgrade)
             {

@@ -88,6 +88,34 @@ form, the budget).
   next lever (wait or arrive on the shutters' open beat), and I4 is still about twice the pre-Belfry 111 s.
 - The AI numbers are authored by the generator (`BELFRY_AI_FIELDS`, checked equal to the C# defaults).
 
+## 0b. Garden ruins round the line at I4 (Yash, 2026-11-24)
+
+The update Spearline got (SPEARLINE.md §2a), here: at intensity 4 the legs between the rings run through the ruins of
+old flora gardens. Decoration only: plain prisms with the game's own rules (a hull, the ball or a blast breaks them,
+nothing grows back), and nothing reads or writes a vessel. No ruins at I1-I3.
+
+- **Spearline's generator is called, not copied.** `ThresherTimeRuins.Lay` hands `SpearlineRuins.Lay` this course's
+  eight gates. One ruin to a leg, the seven kinds taking turns (pergola, flower head, vines, a wall with a doorway, a
+  tunnel, a 3D maze, a turning wheel); the leg that closes the lap carries none; only legs of 380 u or more.
+- **The Belfry's clearances.** The rings swing here, so the numbers are this mode's (`ThresherTimeRuins.ForIntensity`):
+  - the clear lane is **140 u** (Spearline's is 60): the I4 ring swings 94 u from rest, plus its 46 u mouth, so the
+    line between any two poses of a leg's rings stays open by a mouth's width;
+  - no ruin prism within **140 u** of a ring's mouth at rest (Spearline's 120 + 20), which leaves at least 40 u to a
+    ring at any point of its swing.
+- **Out of the maces' way.** A ruin prism that would stand where a mace swings is not laid, and a wheel that would
+  turn through one is left out whole, so a danger mace is never hidden inside a ruin.
+- **Colours.** One domain colour a ruin, Jade, Ruby, Gold in turn (`ruinDomains` on the controller; empty = Blue), so
+  they read apart from the Belfry's Blue rings, chains, maces and shutters.
+- **The wheel** turns at 25 deg/s, posed every frame off the Belfry's shared clock, so every peer sees the same angle.
+  It is the only ruin that sweeps the line (its hub and the gaps between its spokes are open).
+- **How much.** Measured headless on 12 seeds: 830 to 1,190 standing prisms a lap on all seven legs (the Belfry itself
+  is 448 at I4); about 20 to 80 a lap are left out for the maces. A wheel was laid on 6 of the 12 courses.
+- **Code.** `ThresherTime/ThresherTimeRuins.cs` (pure), `ThresherTimeController.Ruins.cs` (the hook: `LayRuins` after
+  the Belfry is raised, `TickRuins`, `ClearRuins`). Tests: `ThresherTimeRuinsTests`.
+- **Not done.** Compiled and tested outside Unity only (§7); nobody has seen it. The AI does not know the ruins are
+  there: it flies its line, which the lane keeps clear, but a planted orbit swings wide of it. The frame cost of the
+  extra prisms at I4 is not measured.
+
 ## 0. Targets: a nest to break at every gate (Yash, 2026-11-04)
 
 > "It should not have rings, it should have objects that it can break as target, and then move to another object
@@ -407,6 +435,12 @@ circuits' recipe in `render_card_backgrounds.py`.
   Thresher chain harness's stubs and flying `ThresherAnalogTriggerTests`'s stand-in pilot (the same
   `Flight` model) at full-throttle cruise.
 
+- **The I4 ruins (§0b, 2026-11-24)**: `ThresherTimeRuinsTests` compiled with Roslyn against the Spearline harness's
+  shims and run, **7/7** on 12 seeds, and watched failing under two mutations (mace filter off: the mace test and its
+  control; Spearline's own lane and a narrower ring margin: the lane and ring tests). The game assembly was compiled
+  with Unity's own compiler arguments outside the editor (no error in this mode's files). Not compiled in the editor,
+  no edit-mode run in Unity, never seen in Play.
+
 ### In-editor verification
 
 1. **Arcade card.** Menu → Arcade: **Thresher Time** appears, clickable on a fresh account; its launch
@@ -427,6 +461,9 @@ circuits' recipe in `render_card_backgrounds.py`.
 8. **Regressions.** Grizzly Time, Redline and Headlong unchanged.
 9. **The ball threads (2026-10-19).** Fly past the lit ring just outside its mouth and swing the ball
    through it: the ring counts once and the next one lights. A respawn beside a ring threads nothing.
+10. **Ruins (2026-11-24).** Intensity 4: each leg but the last runs through a ruin in Jade, Ruby or Gold, the lane to
+    the swinging ring is open, no mace swings through a ruin, the wheel (not on every course) turns. Intensities 1-3:
+    no ruins. Frame rate at I4 against before.
 
 ## 8. Known limitations / follow-ups
 

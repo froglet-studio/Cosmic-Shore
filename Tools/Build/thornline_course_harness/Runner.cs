@@ -17,6 +17,7 @@ public static class Runner
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         if (args.Length > 0 && args[0] == "--sweep") { Sweep(); return 0; }
+        if (args.Length > 0 && args[0] == "--ruins") { Ruins(); return 0; }
         if (args.Length > 0 && args[0] == "--ai") return AiSweep(args);
         if (args.Length > 0 && args[0] == "--read") { Read(args.Length > 1 ? int.Parse(args[1]) : 100); return 0; }
 
@@ -30,6 +31,29 @@ public static class Runner
             }
         Console.WriteLine($"{pass} passed, {fail} failed");
         return fail == 0 && pass > 0 ? 0 : 1;
+    }
+
+    /// <summary>The I4 ruins (ThornlineRuins) per seed: ruins standing, prisms, wheels, and the legs that could carry one.</summary>
+    static void Ruins()
+    {
+        var thorns = new List<Vector3>(); var lanes = new List<RaceGate>(); var legs = new List<int>();
+        var parts = new List<SpearlineRuinPart>(); var wheels = new List<SpearlineRuinWheel>();
+        var course = ThornlineCourse.ForIntensity(4);
+        int minRuins = int.MaxValue, minPrisms = int.MaxValue, maxPrisms = 0, sumRuins = 0, sumPrisms = 0, sumWheels = 0, sumEligible = 0, maxLanes = 0;
+        const int seeds = 60;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        for (int seed = 1; seed <= seeds; seed++)
+        {
+            ThornlineCourse.Generate(seed, course, thorns);
+            ThornlineRuins.Lay(thorns, 4, lanes, legs, parts, wheels);
+            int ruins = parts.Select(p => p.Leg).Distinct().Count();
+            int eligible = Enumerable.Range(0, thorns.Count - 1).Count(k => ThornlineRuins.Eligible(thorns, course, k));
+            minRuins = Math.Min(minRuins, ruins); minPrisms = Math.Min(minPrisms, parts.Count); maxPrisms = Math.Max(maxPrisms, parts.Count);
+            sumRuins += ruins; sumPrisms += parts.Count; sumWheels += wheels.Count; sumEligible += eligible; maxLanes = Math.Max(maxLanes, lanes.Count);
+            if (seed <= 10) Console.WriteLine($"seed {seed}: {eligible} legs could carry one, {legs.Count} chosen, {ruins} standing, {parts.Count} prisms, {wheels.Count} wheel, {lanes.Count} lane gates");
+        }
+        Console.WriteLine($"I4, {seeds} seeds: ruins min {minRuins} mean {sumRuins / (float)seeds:F2}; prisms min {minPrisms} mean {sumPrisms / (float)seeds:F0} max {maxPrisms}; " +
+                          $"a wheel on {sumWheels} courses; eligible legs mean {sumEligible / (float)seeds:F1}; most lane gates {maxLanes}; {watch.ElapsedMilliseconds / (float)seeds:F0} ms a lay");
     }
 
     /// <summary>The race clock of a pilot who slings the moment the cooldown is up (aim time not counted). Time rises

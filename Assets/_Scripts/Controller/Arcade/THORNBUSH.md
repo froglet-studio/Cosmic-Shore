@@ -66,6 +66,15 @@ and lances rival mass on its line. So the builder picks where to go:
 Difficulty is the seat's AI level, never the intensity. The heap's radius is the map, so the controller reads it by
 intensity and hands it to the builder.
 
+### 4.1 The builder searched, left as shipped (2026-11-21, elemental loop step 3)
+
+Raced on the Brood Rush volume books (VC + VD, `brood_judge.py --mode Thornbush`, Shrike against Shrike, Legendary),
+the shipped builder already uses its nest well: it docks and presses Mass 8 to 9 times in the 90 s round (the 8 s nest
+cooldown allows about 11). Nothing beat it on fresh seeds (I2, seeds 21-28, 16 seats: shipped 58.0k; raid chance 0
+56.2k, 0.9 54.9k, perch spacing 300 u 50.0k, perch 2 s 53.1k; the Shrike's `aiLanceMinTargets` 5 / 8 looked +13-19% on
+seeds 1-6 and lost 10% on seeds 11-14; `aiDockSeconds` 1 / 6 -5% / -10%). Shipped per rung (seeds 11-14, 8 seats): I1
+25.8k, I2 57.1k, I3 55.4k, I4 51.5k. The ceiling here is the kit's nest cooldown and cap, not the AI.
+
 ## 5. Files
 
 | What | Where |

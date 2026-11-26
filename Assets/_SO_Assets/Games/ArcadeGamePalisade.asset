@@ -27,12 +27,12 @@ MonoBehaviour:
   SceneName: MinigamePalisade
   Vessels:
   - {fileID: 11400000, guid: a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96, type: 2}
-  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 9
+  MinPlayersAllowed: 4
+  MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.000266
+  ComebackRatePerScoreDeficit: 0.000227

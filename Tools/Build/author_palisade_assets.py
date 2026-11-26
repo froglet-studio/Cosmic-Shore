@@ -6,7 +6,7 @@ Docs/ElementalLoop/GAME_KIT_ROSTER.md reserved for row 8).
 Palisade is the Swordfish's MASS game (Garrett, 2026-11-15: "make all the missing games you can"): a TIMED wall war
 scored on the prism volume a domain has STANDING at the whistle (ScoringMetric.VolumeRemaining, a live stock). The
 Swordfish's Mass ability is Afterimage - for 5 s after the blade leaves the energized state it leaves prism copies of
-itself where it swings, Mass scales their volume x1 -> x2.5, and at Mass 5 they are laid as danger. Its blade cuts any
+itself where it swings, Mass scales their volume x1.7 -> x4.25, and at Mass 5 they are laid as danger. Its blade cuts any
 rival prism it reaches. So the sword builds and the sword raids: an energized run through a rival's wall cuts it down
 and leaves your afterimages standing in its place. See Assets/_Scripts/Controller/Arcade/PALISADE.md.
 
@@ -66,6 +66,12 @@ DONOR = {
 BUTTERFLY_ID = lib.VESSEL_CLASS_ID["TigerMoth"]
 SWORDFISH_ID = lib.VESSEL_CLASS_ID["Swordfish"]
 
+# ── The arena (PALISADE.md section 9): PalisadeArena lays it in C#; the generator authors only the prism it is laid with ──
+ARENA_PRISM_PATH = "Assets/_Prefabs/Trails/SpawnablePrism.prefab"   # the environment prism Spearline's seals use
+ARENA_PRISM = lib.existing_guid(ARENA_PRISM_PATH)
+ARENA_PRISM_FILE_ID = 4563009547826722997                           # its root Prism component
+ARENA_SOURCES = [f"{AR}/Palisade/PalisadeArena.cs", f"{AR}/Palisade/PalisadeController.Arena.cs"]
+
 # ── The round ────────────────────────────────────────────────────────────────
 ROUND_SECONDS = 90        # kept in sync with EndConditionOverridesSO.DefaultPalisadeRoundSeconds
 CRYSTALS_BY_INTENSITY = [24, 16, 10, 6]
@@ -91,15 +97,21 @@ RAMP_TOP = 840.0          # the Swordfish's ramp ceiling (RampBoostActionExecuto
 CRUISE = RAMP_TOP * 0.5   # a pilot who turns, cuts and raids averages about half of it
 KEY_VOLUME = (base_x * x_scaler / 2.0) * base_y * base_z            # VesselPrismController.CreateBlock, no width scaler
 TRAIL_RATE = KEY_VOLUME * CRUISE / wavelength if trail_on else 0.0  # volume / second, one pilot
+# Measured 2026-11-27 (PALISADE.md 7.1): what STANDS at the whistle is about 90% afterimage and the trail's share is
+# about a tenth of this rate's. The reference domain volume below still matches the measured I1 domain (~26,000), so
+# the comeback rate is kept; do not read the trail/afterimage split off this model.
 
 seg_len = one(AFTER, r"^  segmentLength: ([0-9.]+)$", "segmentLength")
 coverage = one(AFTER, r"^  lengthCoverage: ([0-9.]+)$", "lengthCoverage")
 width = one(AFTER, r"^  width: ([0-9.]+)$", "width")
 thick = one(AFTER, r"^  thickness: ([0-9.]+)$", "thickness")
 per_window = one(AFTER, r"^  maxAfterimagesPerWindow: ([0-9]+)$", "maxAfterimagesPerWindow")
+MV = re.search(r"^  massVolumeMultiplier:\n    Enabled: 1\n    Value: [0-9.]+\n    Min: ([0-9.]+)\n    Max: ([0-9.]+)\n    element: 2\n",
+               AFTER, re.M)
+MASS_AT_REST, MASS_AT_FULL = (float(v) for v in MV.groups()) if MV else (0.0, 0.0)   # x1.7 -> x4.25 since 2026-11-21
 BLADE_AT_REST = 24.0      # Space 0 blade length (SWORDFISH.md, Blade Reach 24 -> 40)
 SEGMENTS = max(1, round(BLADE_AT_REST / seg_len))
-AFTERIMAGE_VOLUME = SEGMENTS * seg_len * coverage * width * thick   # one afterimage at Mass 0
+AFTERIMAGE_VOLUME = SEGMENTS * seg_len * coverage * width * thick * MASS_AT_REST   # one afterimage at Mass 0
 WINDOW_VOLUME = per_window * AFTERIMAGE_VOLUME                      # one energize's worth at Mass 0
 WINDOWS_PER_ROUND = ROUND_SECONDS / 15.0                            # an energize about every 15 s (crowds, cooldown)
 
@@ -137,6 +149,7 @@ g.emit_asset("Assets/_SO_Assets/Scoring Rules/PalisadeScoringRule.asset", G_ASSE
 # ── 3. Settings ──────────────────────────────────────────────────────────────
 g.emit_asset("Assets/_SO_Assets/Games/PalisadeSettings.asset", G_ASSET["PalisadeSettings"],
              lib.header_for(G_SCRIPT["PalisadeSettingsSO"], "PalisadeSettings") +
+             f"  arenaPrism: {{fileID: {ARENA_PRISM_FILE_ID}, guid: {ARENA_PRISM}, type: 3}}\n" +
              "  elementalCrystalCountByIntensity:\n" +
              "".join(f"  - {n}\n" for n in CRYSTALS_BY_INTENSITY) + f"""  crystalScatterRadius: 900
   crystalScatterSeed: {MODE_ID}
@@ -149,10 +162,13 @@ g.emit_asset("Assets/_SO_Assets/Games/PalisadeSettings.asset", G_ASSET["Palisade
   aiBuildOrbitFraction: 0.6
   aiBuildOrbitDegreesPerSecond: 6
   aiCrystalReach: 450
+  aiLaneArriveDistance: 60
+  aiLaneLegSeconds: 16
 """)
 
 # ── 4. Card ─────────────────────────────────────────────────────────────────
-# MinPlayers 2 / MinDomains 2: a wall war with one side has nobody to cut.
+# MinDomains 2: a wall war with one side has nobody to cut. Min and Max players 4: every Swordfish game seats exactly
+# four for now (Yash, 2026-11-25), under the fleet's 9 (Garrett, 2026-11-17); the scene carries four AI seats.
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGamePalisade.asset", G_ASSET["ArcadeGamePalisade"],
              lib.header_for(EXISTING["SO_ArcadeGame"], "ArcadeGamePalisade") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
@@ -165,8 +181,8 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGamePalisade.asset", G_ASSET["Arcade
   SceneName: MinigamePalisade
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Swordfish']}, type: 2}}
-  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 9
+  MinPlayersAllowed: 4
+  MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -250,9 +266,8 @@ if len(CRYSTALS_BY_INTENSITY) != 4 or any(b > a for a, b in zip(CRYSTALS_BY_INTE
     errors.append("the crystal ladder must be four rungs, non-increasing (intensity is SCARCITY)")
 if AFTERIMAGE_VOLUME <= 0:
     errors.append("the afterimage model lays no volume - SwordfishSwordAfterimageConfig changed shape")
-if not re.search(r"^  massVolumeMultiplier:\n    Enabled: 1\n    Value: [0-9.]+\n    Min: 1\n    Max: 2\.5\n    element: 2\n",
-                 AFTER, re.M):
-    errors.append("SwordfishSwordAfterimageConfig no longer scales afterimage volume x1 -> x2.5 with Mass - the "
+if not MV or MASS_AT_REST <= 0 or abs(MASS_AT_FULL / MASS_AT_REST - 2.5) > 1e-3:
+    errors.append("SwordfishSwordAfterimageConfig no longer scales afterimage volume x2.5 from rest to full Mass - the "
                   "card's Mass promise is gone")
 if f"Palisade = {MODE_ID}," not in g.read("Assets/_Scripts/Data/Enums/GameModes.cs"):
     errors.append(f"GameModes.Palisade is not the roster's reserved {MODE_ID}")
@@ -270,6 +285,22 @@ for banned in ("PerformShipControllerActions", "InputStatus", "ElementalScaling"
                "ButterflyAutopilotModeDriver"):
     if banned in ctl:
         errors.append(f"PalisadeController mentions {banned} - a mode never changes the vessel")
+# The arena: its sources exist, never touch the vessel, are laid in the no-team colour, and the prism they are laid
+# with is still the prefab's root Prism.
+for rel in ARENA_SOURCES:
+    src = g.read(rel)
+    for banned in ("PerformShipControllerActions", "InputStatus", "ElementalScaling", "IsUpgradeActive", "VesselStatus"):
+        if banned in src:
+            errors.append(f"{rel} mentions {banned} - a mode never changes the vessel")
+arena_cs = g.read(ARENA_SOURCES[1])
+if "Domains.Blue, part.Kind" not in arena_cs:
+    errors.append("the arena is no longer laid in Domains.Blue - a team's colour would count it in that team's eyes")
+if "public partial class PalisadeController" not in ctl or "LayArena();" not in ctl or ctl.count("ClearArena();") < 2:
+    errors.append("PalisadeController no longer lays the arena at the countdown's end and clears it on despawn and replay")
+if f"&{ARENA_PRISM_FILE_ID}\nMonoBehaviour:" not in g.read(ARENA_PRISM_PATH):
+    errors.append(f"{ARENA_PRISM_PATH} has no MonoBehaviour {ARENA_PRISM_FILE_ID} - the arena prism reference would dangle")
+if "public Prism arenaPrism;" not in g.read(SCRIPT_PATHS["PalisadeSettingsSO"]):
+    errors.append("PalisadeSettingsSO lost arenaPrism - the settings asset names it")
 for field in ("PalisadeSettingsSO settings;", "ScoringRuleSO rule;", "Cell arenaCell;"):
     if field not in ctl:
         errors.append(f"PalisadeController lost '{field}' - the cloned scene's controller block names it")
