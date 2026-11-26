@@ -126,6 +126,19 @@ crystal placement and the AI's cutting. What retires with it: the destruction ta
 scoring rule, and "no nucleus" (Brood Rush's rule needs one). Nothing has been merged here; work on the arenas and
 the AI keeps its value, work on the scoring and end-game does not.
 
+**Left open on purpose (2026-11-27, Swordfish completion list):**
+- **2v2 or three teams.** The card seats exactly 4 and allows 2 or 3 teams (2v2 or 2/1/1). Yash has not decided which;
+  if it is 2v2, `MaxDomainsAllowed` 3 -> 2 in `author_cleave_assets.py` is the whole change.
+- **No UGS stats reporter.** Cleave reports nothing to UGS (no per-mode stats, no leaderboard). Not built, because the
+  mode is due to merge.
+- **No end-game controller of its own.** The shared scoreboard ends the match. Not built, for the same reason: Cleave
+  and Palisade are to become one Swordfish Mass-Space game on Brood Rush's rule (`Docs/ArcadeRestructure/PLAN.md`), and
+  that game's end and its reporting are Brood Rush's.
+
+**Swordfish level-5 gates are tested** (`SwordfishLevelFiveGateTests`): Shield Breaker (Space 5), Danger Afterimages
+(Mass 5) and Sword Steal (Charge 5) are each driven off and on through the shipped asset's own gate method, so removing
+a gate fails a test. The card (`/cardart`) shows the I2 lances.
+
 **Verified 2026-11-25:** `author_cleave_assets.py --check` (37 files) and `cleave_budget.py` pass (on Windows only with
 CRLF normalised: the source hashes are of LF files); the runtime and editor assemblies compile with Unity's Roslyn and
 references outside the editor; the project compiles in the open editor and `CleaveLadderTests` (20) pass there; an
