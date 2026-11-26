@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Unity.Netcode;
@@ -109,7 +111,10 @@ namespace CosmicShore.Gameplay
                 if (v > most) { most = v; rival = d; }
             }
             var prefabs = swapper.VesselPrefabContainer;
-            var list = _def.CoreRetakeHulls;
+            // A named hold meets its own crew, the one its giver warned of and its archetype ask counters
+            // (VoyageArchetypesSO.VoyageAsk.CrewHulls, Docs/Voyages/ARCHETYPES.md §4); any other hold the toy's list.
+            var named = VoyageArchetypesSO.Load() is { } archetypes ? archetypes.VoyageAskOf(_state.Current?.VoyageId) : null;
+            IReadOnlyList<VesselClassType> list = named is { CrewHulls: { Count: > 0 } } ? named.CrewHulls : _def.CoreRetakeHulls;
             int sent = 0;
             for (int i = 0; i < list.Count && sent < hulls; i++)
             {

@@ -575,7 +575,7 @@ def validate(spec):
             errors.append(f"voyage {vid}: '{name}' is a voyage type, not a name")
 
     # Each voyage type's giver: a crew pilot gives it, known faction types, and every type a named voyage sails has one
-    # (the classes it wants are VoyageClassesSO's, Tools/Build/author_voyage_classes.py).
+    # (the archetypes it asks for are VoyageArchetypesSO's, Tools/Build/author_voyage_archetypes.py).
     crew_ids = {p["pilot"] for p in spec["crew"]}
     typed = set()
     for t in spec.get("voyageTypes", []):

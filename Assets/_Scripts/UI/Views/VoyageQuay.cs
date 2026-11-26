@@ -18,10 +18,10 @@ namespace CosmicShore.UI
     /// <item><b>Docked at</b>: where the Ark is and how many jobs are on the quay.</item>
     /// <item><b>The jobs</b>: one 230 x 420 card per voyage type's giver (Salvage, Escort the Ark, Bounty, Hold the Core,
     /// the Voyage Codex's order) and the Milestone 1 Crystal Run as it is, 240 apart: the giver's picture, the kind, the
-    /// voyage's name and the classes it wants; the picked one bright with one cyan line at its foot.</item>
+    /// voyage's name and the archetypes it asks for; the picked one bright with one cyan line at its foot.</item>
     /// <item><b>On the chart</b> (620 x 420, right): the lane from the port to the voyage's end, a ring per cell between,
     /// the length and the sea under it, Full screen in its corner.</item>
-    /// <item><b>The ask</b>: the giver and their faction, the giver's words, "Bring me" and the classes; See every class (Y).</item>
+    /// <item><b>The ask</b>: the giver and their faction, the giver's words, "Bring me" and the role's; See every class (Y).</item>
     /// <item><b>Your crew says</b>: each seat's pilot, their line and their mood (<see cref="VoyageMood"/>).</item>
     /// <item><b>The foot</b>: the squad fit, the pay in crystals and Take the job (A), which opens Your Ark.</item>
     /// </list>
@@ -40,7 +40,7 @@ namespace CosmicShore.UI
         readonly VoyageKit _kit;
         readonly VoyageSeats _rules;
         readonly VoyageQuaySO _words;
-        readonly VoyageClassesSO _classes;
+        readonly VoyageArchetypesSO _archetypes;
         readonly PilotArtifactCatalogSO _catalog;
 
         public RectTransform Root { get; }
@@ -81,7 +81,7 @@ namespace CosmicShore.UI
             _kit = kit;
             _rules = rules;
             _words = VoyageQuaySO.Load();
-            _classes = VoyageClassesSO.Load();
+            _archetypes = VoyageArchetypesSO.Load();
             _catalog = PilotArtifactCatalogSO.Load();
             Root = VoyageKit.Node("Quay", frame);
             Root.anchorMin = Root.anchorMax = Root.pivot = Vector2.zero;
@@ -280,7 +280,7 @@ namespace CosmicShore.UI
 
         /// <summary>The giver of <paramref name="offer"/>'s voyage type (the Voyage Codex), or null (the Crystal Run).</summary>
         public static VoyageTypeInfo TypeOf(VoyageBoard.Offer offer) =>
-            offer == null ? null : Content?.VoyageType(VoyageClassesSO.JobOf(offer.Key));
+            offer == null ? null : Content?.VoyageType(VoyageArchetypesSO.JobOf(offer.Key));
 
         /// <summary>The faction of the pilot a seat flies with: the player's own pilot record, else the authored crew.</summary>
         public static FactionType FactionOf(string pilotId)
@@ -314,7 +314,7 @@ namespace CosmicShore.UI
             if (types != null)
                 foreach (var info in types)
                     for (int i = 0; i < offers.Count && into.Count < MaxCards; i++)
-                        if (offers[i] != null && VoyageClassesSO.JobOf(offers[i].Key) == info?.Type && !into.Contains(i))
+                        if (offers[i] != null && VoyageArchetypesSO.JobOf(offers[i].Key) == info?.Type && !into.Contains(i))
                         {
                             into.Add(i);
                             break;
@@ -326,7 +326,7 @@ namespace CosmicShore.UI
         /// <summary>The kind a card shows: its voyage type's, else the job's own (the Crystal Run keeps its words).</summary>
         public string KindOf(VoyageBoard.Offer offer)
         {
-            string kind = _words ? _words.KindOf(VoyageClassesSO.JobOf(offer?.Key)) : null;
+            string kind = _words ? _words.KindOf(VoyageArchetypesSO.JobOf(offer?.Key)) : null;
             return string.IsNullOrEmpty(kind) ? offer?.Kind : kind;
         }
 
@@ -385,13 +385,13 @@ namespace CosmicShore.UI
             if (offer == null || !_words) return;
 
             var info = TypeOf(offer);
-            string job = VoyageClassesSO.JobOf(offer.Key);
+            string job = VoyageArchetypesSO.JobOf(offer.Key);
             string giver = GiverName(info, offer);
             VoyageKit.Set(_askLabel, TemplateText.Fill(_words.AskLabel, "kind", KindOf(offer), "giver", giver,
                 "faction", GiverFaction(info, offer)));
             string say = info != null && !string.IsNullOrEmpty(info.Say) ? info.Say : offer.Story;
             VoyageKit.Set(_askQuote, string.IsNullOrEmpty(say) ? null : TemplateText.Fill(_words.AskQuote, "say", say));
-            var wants = _classes ? _classes.WantedBy(job) : System.Array.Empty<VoyageClass>();
+            var wants = _archetypes ? _archetypes.AskOf(job, offer.VoyageId) : System.Array.Empty<VesselArchetype>();
             _bringMe.gameObject.SetActive(wants.Count > 0);
             // "Bring me", then each class 34 after the last word ends.
             float x = 140f;
@@ -402,7 +402,7 @@ namespace CosmicShore.UI
                 if (i >= wants.Count) continue;
                 glyph.Form = VoyageGlyph.Of(wants[i]);
                 glyph.color = _kit.Light;
-                VoyageKit.Set(name, _classes.NameOf(wants[i]));
+                VoyageKit.Set(name, _archetypes.NameOf(wants[i]));
                 float w = 28f + Mathf.Ceil(name.GetPreferredValues(name.text).x);
                 VoyageKit.At(root, x, BringY, w, 28f);
                 x += w + 34f;
@@ -410,7 +410,7 @@ namespace CosmicShore.UI
 
             var squad = VoyageSeatRecord.Get(offer.Key) ?? VoyageSeats.Active;
             DrawCrew(offer, squad);
-            DrawFit(job, squad, wants.Count > 0);
+            DrawFit(job, offer.VoyageId, squad, wants.Count > 0);
             int pay = VoyageBoard.PayAt(offer, difficulty);
             _payRow.gameObject.SetActive(offer.Pays);
             VoyageKit.Set(_pay, offer.Pays ? pay.ToString(CultureInfo.InvariantCulture) : null);
@@ -467,7 +467,7 @@ namespace CosmicShore.UI
             view.Kind.color = on ? _kit.Light : _kit.Sub;
             VoyageKit.Set(view.Title, offer.Title);
             view.Title.color = on ? _kit.Light : VoyageKit.Fade(_kit.Light, 0.85f);
-            var wants = _classes ? _classes.WantedBy(VoyageClassesSO.JobOf(offer.Key)) : System.Array.Empty<VoyageClass>();
+            var wants = _archetypes ? _archetypes.AskOf(VoyageArchetypesSO.JobOf(offer.Key), offer.VoyageId) : System.Array.Empty<VesselArchetype>();
             for (int i = 0; i < view.Glyphs.Count; i++)
             {
                 bool shown = i < wants.Count;
@@ -507,16 +507,16 @@ namespace CosmicShore.UI
             _crew.gameObject.SetActive(any);
         }
 
-        void DrawFit(string job, SavedSquad squad, bool shown)
+        void DrawFit(string job, string voyageId, SavedSquad squad, bool shown)
         {
-            _fit.gameObject.SetActive(shown && squad != null && _classes);
+            _fit.gameObject.SetActive(shown && squad != null && _archetypes);
             if (!_fit.gameObject.activeSelf) return;
             var vessels = new List<VesselClassType>(SavedSquad.SlotCount);
             for (int s = 0; s < SavedSquad.SlotCount; s++) vessels.Add(squad.GetSlot(s).Vessel);
-            int fit = _classes.Fit(job, vessels);
+            float fit = _archetypes.Fit(job, voyageId, vessels);
             for (int i = 0; i < _fitSegments.Length; i++)
-                _fitSegments[i].color = i < fit ? _kit.Light : VoyageKit.Fade(_kit.Outline, 0.6f);
-            VoyageKit.Set(_fitText, TemplateText.Fill(_words.Fit, "fit", fit.ToString(CultureInfo.InvariantCulture)));
+                _fitSegments[i].color = VoyageKit.FitSegment(_kit, fit, i);
+            VoyageKit.Set(_fitText, TemplateText.Fill(_words.Fit, "fit", VoyageArchetypesSO.FitText(fit)));
         }
     }
 }

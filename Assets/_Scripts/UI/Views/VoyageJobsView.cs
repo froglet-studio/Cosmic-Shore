@@ -522,6 +522,7 @@ namespace CosmicShore.UI
                 Cells = job.Cells > 0 ? job.Cells : Mathf.Max(1, (route?.Count ?? 1) - 1),
                 Pilot = person?.Name,
                 Key = VoyageSeatRecord.JobKey(job),
+                VoyageId = job.VoyageId,
                 Faction = PilotLoadoutStore.TryGetPilot(job.PilotId, out var record) ? record.FactionName : null,
                 House = record != null ? record.FactionType : person?.Faction ?? FactionType.None,
                 Story = !string.IsNullOrEmpty(job.Summary) ? job.Summary : person?.Story,
@@ -611,6 +612,7 @@ namespace CosmicShore.UI
             var offer = EscortOffer(content, lines, escort, VoyageDifficulty.Clamp(v.Difficulty), route, sail: false);
             offer.Key = VoyageSeatRecord.EscortKey;
             offer.Title = v.Name;
+            offer.VoyageId = v.Id;
             offer.Story = v.Line;
             offer.SailLabel = null;
             string id = v.Id;
@@ -636,7 +638,11 @@ namespace CosmicShore.UI
             };
             // A type is never a title (Voyage Codex): the escort carries its named voyage's name, the one that ends where
             // this course ends, else the first the Codex names.
-            if (NamedEscort(content, course) is { } named) offer.Title = named.Name;
+            if (NamedEscort(content, course) is { } named)
+            {
+                offer.Title = named.Name;
+                offer.VoyageId = named.Id;
+            }
             if (course is { Count: >= 2 })
             {
                 var sea = VoyageChart.For(content)?.Along(course);

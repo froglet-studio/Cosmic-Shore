@@ -38,8 +38,8 @@ All four types are built and on the board (Hold the Core and Bounty through `voy
 Each voyage type has a giver on the quay (`voyageTypes` in `voyage_slice.json`, `VoyageTypeInfo` in `VoyageContent.cs`,
 `content.VoyageType(type)`): the crew pilot who offers it (Cass Morrow, GALLEON, for Salvage; Captain Theo Lark, WINGMAN,
 for the escort; Juno Rask, BANDIT, for Bounty; Marshal Edda Kroll, RAMPART, for Hold the Core), what they say, the type's
-lore, and the faction types keen, reluctant or refusing to sail it. The three classes a type wants are the shell's
-(`VoyageClassesSO`, `Tools/Build/author_voyage_classes.py`).
+lore, and the faction types keen, reluctant or refusing to sail it. The archetypes a type asks for are
+`VoyageArchetypesSO`'s (`Docs/Voyages/ARCHETYPES.md`; the seven classes were retired 2026-11-26).
 
 ## 3 Difficulty 1-9
 

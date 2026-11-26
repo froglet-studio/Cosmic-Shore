@@ -27435,3 +27435,17 @@ there is no saving, if they leave they leave. Set sail restarts the level." `Voy
 saved record at sea or away from home back home, so older saves are repaired. The galaxy (days, news, standing) is kept.
 - [ ] Sail any voyage, leave it mid-leg: back in the menu the full board shows; Set sail starts a new voyage from home.
 - [ ] Finish a job at a stop and leave: the next Set sail starts from home, not the stop.
+
+## Voyages ask for roles and archetypes, not the seven classes (2026-11-26)
+
+🔴 unverified in Unity: refcompile found no errors in the changed files (its 30 errors are the sandbox's missing UGS
+packages, the same on clean bleeding-edge); `author_voyage_archetypes.py --self-test` and `--check` pass; the EditMode
+tests (`VoyageArchetypesTests`) were not run. `Docs/Voyages/ARCHETYPES.md`. The pages still use the old layout; the new
+screens are the voyage UI thread's.
+- [ ] Voyages tab: a Salvage card shows three role glyphs (Destroyer, Destroyer, Guardian); the Crystal Run shows none.
+- [ ] Your Ark on a Salvage with Sparrow, Squirrel, Dolphin: fit reads 2.5 of 3, two segments lit and one half lit;
+  each seat shows its vessel's primary archetype (Sapper, Pumper, Nuke).
+- [ ] Vessels page: three role tabs (Cultivator, Destroyer, Guardian); LB / RB step them; each vessel's line is its
+  primary archetype's.
+- [ ] Ironmouth Holds (difficulty 4): wave 2's retake crew is a Sparrow (its named crew's lead), not the toy's list.
+- [ ] Finish a Salvage with fit 2.5: the pay banked is 25% over the card's.

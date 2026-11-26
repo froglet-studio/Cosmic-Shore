@@ -6,8 +6,8 @@ namespace CosmicShore.UI
     /// <summary>
     /// A small stroked icon drawn as a mesh (Frogma Rev 120 B's chip): a crystal (a diamond with its girdle), the Ark (a
     /// hull with its cabin and mast) or a clock (a ring with two hands). No sprite, so it stays sharp at any size and takes
-    /// its colour from <see cref="Graphic.color"/>, which the caller traces through the colour set. The seven voyage
-    /// classes have their glyphs here too, on the 30 x 30 box the Milestone 2 boards draw them on (Frogma Rev 133-138).
+    /// its colour from <see cref="Graphic.color"/>, which the caller traces through the colour set. The three vessel
+    /// roles have their glyphs here too, on the 30 x 30 box the Milestone 2 boards draw them on (Frogma Rev 133-138).
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class VoyageGlyph : MaskableGraphic
@@ -37,18 +37,17 @@ namespace CosmicShore.UI
             Pathfinder = 15,
         }
 
-        /// <summary>The glyph of a voyage class (the Gem for none).</summary>
-        public static Shape Of(CosmicShore.Data.VoyageClass c) => c switch
+        /// <summary>The glyph of a vessel role (the Gem for none). The board draws a role's mark beside each archetype.</summary>
+        public static Shape Of(CosmicShore.Data.VesselRole role) => role switch
         {
-            CosmicShore.Data.VoyageClass.Guardian => Shape.Guardian,
-            CosmicShore.Data.VoyageClass.Protector => Shape.Protector,
-            CosmicShore.Data.VoyageClass.Destroyer => Shape.Destroyer,
-            CosmicShore.Data.VoyageClass.Cultivator => Shape.Cultivator,
-            CosmicShore.Data.VoyageClass.Hunter => Shape.Hunter,
-            CosmicShore.Data.VoyageClass.Shepherd => Shape.Shepherd,
-            CosmicShore.Data.VoyageClass.Pathfinder => Shape.Pathfinder,
+            CosmicShore.Data.VesselRole.Cultivator => Shape.Cultivator,
+            CosmicShore.Data.VesselRole.Destroyer => Shape.Destroyer,
+            CosmicShore.Data.VesselRole.Guardian => Shape.Guardian,
             _ => Shape.Gem,
         };
+
+        /// <summary>The glyph of an archetype: its role's.</summary>
+        public static Shape Of(CosmicShore.Data.VesselArchetype a) => Of(CosmicShore.Data.VesselArchetypes.RoleOf(a));
 
         const float Stroke = 2f;
         const int ClockSegments = 28;
