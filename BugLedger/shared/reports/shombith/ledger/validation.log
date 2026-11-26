@@ -488,3 +488,14 @@
 2026-11-25T21:17:57.566Z E-111d87fec0: fix 3f7ec9c5a is not in this checkout yet — waiting for a pull
 2026-11-25T21:27:01.407Z PlayMode session ended (217s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
 2026-11-25T21:31:01.184Z PlayMode session ended (227s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-25T21:58:07.737Z EditMode session ended (41min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-930ca435ca E-7a7d6b1042
+2026-11-25T21:58:18.924Z scripts compiled clean: closed 1 compile error(s)
+2026-11-25T21:58:18.927Z editor load: play=False capture=True minPlay=15s issues=128
+2026-11-25T21:58:43.841Z E-111d87fec0: fix 3f7ec9c5a is not in this checkout yet — waiting for a pull
+2026-11-25T22:00:07.973Z PlayMode session ended (83s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-25T22:21:03.158Z EditMode session ended (22min editor session): 0 fix(es) waiting; counted: none; fired: E-930ca435ca
+2026-11-25T22:26:14.729Z editor load: play=False capture=True minPlay=15s issues=128
+2026-11-25T22:28:10.600Z E-111d87fec0: fix 3f7ec9c5a is not in this checkout yet — waiting for a pull
+2026-11-26T20:04:04.739Z editor load: play=False capture=True minPlay=15s issues=128
+2026-11-26T20:12:59.450Z E-111d87fec0: fix 3f7ec9c5a is not in this checkout yet — waiting for a pull
+2026-11-26T20:15:54.815Z PlayMode session ended (168s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-930ca435ca

@@ -1,0 +1,897 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-27 01:34:04 (next editor launch after the abnormal exit)
+session:        20261125-222614624  (pid 13668, Unity 6000.3.17f1)
+started:        2026-11-25T22:26:14.636Z UTC
+last heartbeat: 2026-11-25T23:29:07.523Z UTC
+last state:     EditMode
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+hang dump:      C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261125-222614624.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261125-222614624
+started: 2026-11-25T22:26:14.636Z UTC
+unity:   6000.3.17f1
+pid:     13668
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[03:57:00.759] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261125-222614624.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[03:57:54.824] ---- main thread stalled ~100s and RECOVERED — slow, not hung ----
+[04:57:41.739] ---- main thread stalled ~3520s and RECOVERED — slow, not hung ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/UnityExtensions/Timer.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/ToLookup.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/ToList.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/ToArray.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Range.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/ForEach.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/First.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Count.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Contains.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Average.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Internal/TaskTracker.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Internal/Error.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/AsyncUnit.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/AsyncLazy.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/SerializeProperty.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageView.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageSlab.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageSeats.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageRing.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyagePips.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageMapSky.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageKit.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageGlyph.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/VoyageBoard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/QuestsRules.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/View/StoatHUDView.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/View/OrcaHUDView.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/View/JacksHUDView.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/View/ArcadeLaunch/LobbySlotRow.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/UIThemeSO.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/UIThemeLive.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/ToastSystem/ToastService.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/ToastSystem/ToastChannel.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/ThumbCursor.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/StatRowUI.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/StatModuleSO.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/TideCalendar.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/StoreScreen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/PosterFit.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/PosterExit.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/PosterDrift.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/HomeUpNext.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/HomeScreen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/HomeDockCard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/HangarScreen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/BootStepBar.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Screens/ArcadeScreen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Scoreboard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/PortraitRect.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/PauseMenu.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/PauseButton.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Modals/ToyboxModal.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Modals/QuestsModal.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Modals/ProfileModal.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Modals/CreditsModal.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/MiniGameHUD.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/MenuAudio.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/TabularText.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitTextTab.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitStepBar.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitSightline.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitRimMesh.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitMotion.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitLoadBar.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitHoverTint.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitGradient.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitEntrance.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitButton.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitAmbient.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/HubShoulders.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Guide/MenuGuide.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/GameToastSystem/GameToastAPI.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/GameCanvas.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/FX/JustRotate.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/FX/IconEmitter.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/ToyboxCard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/SliderRange.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/ProfileImage.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Profile/KitQuestCard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Port/PortScreen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/PipViewFrame.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/PartyRoster.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Party/KitPartySlot.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Party/KitOnlineRow.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/LoadoutCard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/IntStepper.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/IconRotator.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/HubWindowNav.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/GoalStack.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/FpsCounter.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/FavoriteIcon.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Configure/KitHullTile.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Codex/CodexTile.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Codex/CodexScreen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Codex/CodexOrbit.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Codex/CodexLine.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Codex/CodexCatalog.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Buttons/PurchaseCard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Ark/SquadsPage.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Ark/SquadRowView.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Ark/ArkTabsView.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/Arcade/KitGameCard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/ButtonPanel.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Xp/XpHandler.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/WebToybox.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Voyages/VoyageStore.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/UserAction/UserAction.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Systems/Authentication/SignInTypes.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Steam/SteamSignIn.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Squads/SquadSystem.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/SceneLoader.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Runtime/Models/RewardData.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Runtime/Models/DialogueSet.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Runtime/Models/DialogueLine.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Runtime/Helpers/SplitterGUILayout.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/RewindSystem/RewindBase.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Platform/GraphicsCuts.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/PauseSystem.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Instrumentation/FlightClock.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/IAPManager.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Economy/VirtualItem.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Economy/StoreShelve.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Economy/ItemPrice.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Economy/Inventory.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/CloudData/ServerScores.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/CloudData/LaunchFlags.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/CloudData/FairPlayAge.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/BuildStamp.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Audio/AudioSystem.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/AppManager.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/VoyageWorld.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/VoyageState.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/VoyageRules.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/VoyageRivals.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/VoyageRaid.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/VoyageCourse.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/VoyageChart.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/HyperSeaSky.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/TemplateText.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Structs/SquadSlot.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Structs/SquadBook.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Structs/ScoreResult.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Structs/SavedSquad.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Retention/RetentionPay.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Retention/BreathRules.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/ModeGenre.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Inventory/SeededRandom.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Inventory/PilotRecord.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Inventory/Callsigns.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Inventory/ArtifactWire.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Inventory/AnimalSpecies.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Enums/IRoundStats.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Enums/FaunaDiet.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Settings/GameSetting.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Player/RoundStats.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableShapeSign.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableShapeBase.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/SkyburstMissiles.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/PrismBlocksShot.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Serpent/SniperScopeAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Grizzly/GrizzlySniperShotAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Pilots/Transforms/AegisTransform.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/TrawlSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/HoneycombSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Toasts/GameToastSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Prisms/EventOnPrismStolen.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Prisms/EventOnPrismRestored.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Prisms/EventOnPrismCreated.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Environment/OmniCrystalCadence.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileShockwave.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Crystal Effects/ButterflyScaleDustWitherLifeformEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/ButterflyCrystalSkimmerImpactorDataContainer.asset
+ 0.1 kb	 0.0% Assets/_Graphics/RenderTextures/PipRenderTexture.renderTexture
+ 0.1 kb	 0.0% Assets/Resources/SwarmMemberInstancedFallback.mat
+ 0.1 kb	 0.0% Assets/Resources/ScarabNucleusFieldConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Wrasse_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Thresher_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Stoat_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Sparrow_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Shrike_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Serpent_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Scarab_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Rhino_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Meerkat_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Manta_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Grizzly_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Dolphin_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceLines/Angler_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/PrismSuperShieldJiggleConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/PipFrameStyle.asset
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/StudioListener.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/StudioBankLoader.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/RuntimeManager.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/PlatformGroup.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/PlatformDefault.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/FMODEventTrack.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/EventReference.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/BankRefAttribute.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/AutomatableSlots.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/win/src/PlatformWindows.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/visionos/src/PlatformVisionOS.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/tvos/src/PlatformAppleTV.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/linux/src/PlatformLinux.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/html5/src/PlatformWebGL.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/android/src/PlatformAndroid.cs
+ 0.1 kb	 0.0% Assets/FTUE/Scripts/Graph/QuestPorts.cs
+ 0.1 kb	 0.0% Assets/FTUE/Scripts/Graph/QuestNodeSO.cs
+ 0.1 kb	 0.0% Assets/FTUE/Scripts/Graph/QuestEdge.cs
+ 0.1 kb	 0.0% Assets/FTUE/Scripts/Graph/Nodes/QuestEndNode.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Culling/IClipRegion.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TextMeshPro.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_TextInfo.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_SubMesh.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_Style.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_Sprite.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_Settings.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_MeshInfo.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_LineInfo.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_Dropdown.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_Asset.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/FastAction.cs
+ 0.1 kb	 0.0% Packages/com.unity.timeline/Runtime/Events/Marker.cs
+ 0.1 kb	 0.0% Packages/com.unity.timeline/Runtime/Events/IMarker.cs
+ 0.1 kb	 0.0% Packages/com.unity.splines/Runtime/Spline.cs
+ 0.1 kb	 0.0% Packages/com.unity.splines/Runtime/ISpline.cs
+ 0.1 kb	 0.0% Packages/com.unity.services.wire/Runtime/websocket-sharp/Ext.cs
+ 0.1 kb	 0.0% Packages/com.unity.services.multiplayer/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyPatcher.cs
+ 0.1 kb	 0.0% Packages/com.unity.mathematics/Unity.Mathematics/int4.gen.cs
+ 0.1 kb	 0.0% Packages/com.unity.mathematics/Unity.Mathematics/int3.gen.cs
+ 0.1 kb	 0.0% Packages/com.unity.mathematics/Unity.Mathematics/int2.gen.cs
+ 0.1 kb	 0.0% Packages/com.unity.inputsystem/InputSystem/Devices/Pen.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/AspectTypes.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/Common.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/Arm/NEON_ctor.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/Arm/NEON_AArch64.cs
+ 0.1 kb	 0.0% Packages/com.unity.ai.assistant/Modules/Unity.AI.Tracing/TraceSinks.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Core/ContainerScope.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Core/ContainerBuilder.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/UniTask.Run.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/SavePng.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/Network/IPFinder.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/Lit/PrismLit.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/ImageSSU.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/FlipWave.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/Effects/Impact.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Utility/Effects/FadeIn.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Trail.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Skimmer.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Resource.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksNet.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Prism.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/IVessel.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/DriftJet.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Crew/OrcaCrew.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Crew/HiveCore.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyDen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Crew/CrewSeat.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Toys/SwapToy.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Timer.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Player/Player.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Player/IPlayer.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Payload/ArkHold.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Payload/ArkFall.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Managers/Hangar.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Managers/Elements.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/IO/TouchControls/TiltMath.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/IO/FlipUI.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/MiniGameObjects/CellItem.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FlowField/ZeroFlow.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FlowField/OvalFlow.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FlowField/Crystal.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/Spindle.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/LifeForm.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/Bees/BeeMath.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/Bees/BeeFauna.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/ArkModel.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEye.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Arcade/Chum/ChumReef.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/AI/Jacks/JacksAI.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/AI/Goby/PistolAI.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/AI/AIPilot.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/AI/AIGunner.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/PrismsDamaged.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/Longest Drift.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/CleanCrystals.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Sparrow/ModeSwitchingFire.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Light Fauna Manager Data/MassBrittleStarPopulationDataSO.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/Event_InviteSent.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/BroadsideSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/Event_FriendRequestReceived.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnUpdateTurnMonitorDisplayString.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnSquirrelCrystalExplosion.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnInitializePlayerCamera.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselCombatHitBySword.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselCombatHitByJoust.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselCombatHitByGore.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissileDirect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByGrizzlyBlast.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByCrystalBlast.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/UrchinVesselChangeResourceByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/DolphinVesselChangeResourceByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Explosion Crystal Effects/ScarabCavitationWitherLifeformEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Explosion Crystal Effects/ScarabBallForgeByExplosionEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Explosion Crystal Effects/MissileWarheadWitherLifeformEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Explosion Crystal Effects/ButterflyBloomWitherLifeformEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/NoEffectsSkimmerImpactorDataContainer.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/SkyBurstExplosionImpactorDataContainer.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/BootstrapConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/SteamConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/SolitonTunnelAdditive.mat
+ 0.1 kb	 0.0% Assets/Resources/PrismCradleConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/IncorporealDepth.asset
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/fmod_studio.cs
+ 0.1 kb	 0.0% Packages/com.unity.visualeffectgraph/Runtime/Utilities/RuntimeResources.asset
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/VertexModifiers/Shadow.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/VertexModifiers/Outline.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Toggle.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Slider.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/RawImage.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Image.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/IMask.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Graphic.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/FontData.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Dropdown.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Culling/Clipping.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Button.cs
+ 0.1 kb	 0.0% Packages/com.unity.mathematics/Unity.Mathematics/svd.cs
+ 0.1 kb	 0.0% Packages/com.unity.mathematics/Unity.Mathematics/math.cs
+ 0.1 kb	 0.0% Packages/com.unity.mathematics/Unity.Mathematics/half.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Transforms/Parent.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Scenes/SceneSystem.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/World.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/Types/TypeHash.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/Types/Hash128.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/Types/Entity.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/Types/Chunk.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/Stubs/Unity.Assertions/Assert.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/Static.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/ISystem.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/SharedStatic.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Ssse3.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Sse4_2.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Sse4_1.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Popcnt.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Common.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/CompilerServices/Hint.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/BurstString.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/BurstRuntime.cs
+ 0.1 kb	 0.0% Packages/com.unity.ai.inference/Runtime/Core/Serialization/SentisFlatBuffer/Null.cs
+ 0.1 kb	 0.0% Packages/com.unity.ai.inference/Runtime/Core/Serialization/SentisFlatBuffer/Int.cs
+ 0.1 kb	 0.0% Packages/com.unity.ai.inference/Runtime/Core/Serialization/SentisFlatBuffer/EDim.cs
+ 0.1 kb	 0.0% Packages/com.unity.ai.inference/Runtime/Core/Serialization/SentisFlatBuffer/Byte.cs
+ 0.1 kb	 0.0% Packages/com.unity.ai.inference/Runtime/Core/Serialization/SentisFlatBuffer/Bool.cs
+ 0.1 kb	 0.0% Packages/com.unity.ai.assistant/Modules/Unity.AI.Tracing/Trace.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Resolvers/IResolver.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Logging/ReflexLogger.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/UniTask.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/TaskPool.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Progress.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Sum.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Min.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Max.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Last.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/Any.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Linq/All.cs
+ 0.1 kb	 0.0% Packages/com.cysharp.unitask/Runtime/Channel.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/VolumeUI.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/UITheme.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/PipUI.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitTile.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitText.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitSpark.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitSlant.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitShake.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitDrain.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Kit/KitDive.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Interfaces/IScreen.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/FX/Pulse.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/NavLink.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/NavGroup.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/GoalRow.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Elements/GameCard.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/UGSKeys.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Squads/Squad.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/RewindSystem/SaveLoad.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/LoadOut/Loadout.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Audio/Jukebox.cs
+ 0.1 kb	 0.0% Assets/_Scripts/ScriptableObjects/SO_VesselList.cs
+ 0.1 kb	 0.0% Assets/_Scripts/ScriptableObjects/SO_VesselAbility.cs
+ 0.1 kb	 0.0% Assets/_Scripts/ScriptableObjects/Captain.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Voyages/HyperSea.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Data/Inventory/UniqueId.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Managers/Arcade.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/PrismStolen.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyDigInAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombRightAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombLeftAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/BroadsideScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Light Fauna Manager Data/MassSharkPopulationDataSO.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/UndertowSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnPlayerNetworkSpawnedUlong.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/Event_FriendRequestSent.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnVesselHUDInitialized.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnSkimmerBoostChange.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnRhinoCrystalExplosion.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/SquirrelVesselChangeSpeedByPrism.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/SparrowVesselChangeSpeedByPrism.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/MantaVesselChangeSpeedByPrism.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/DolphinVesselChangeSpeedByPrism.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByCavitation.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Crystal Effects/ButterflyDustNourishLifeformEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Projectile Prism Effects/ProjectileDamagePrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/SparrowSkimmerImpactorDataContainer.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/GrizzlyBombProjectileImpactContainer.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Cell Data/Event_OnFaunaWaveSpawned.asset
+ 0.1 kb	 0.0% Assets/Resources/PrismOcclusionConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/GameOfTheWeek.asset
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/RuntimeUtils.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/EventHandler.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/mac/src/PlatformMac.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/platforms/ios/src/PlatformIOS.cs
+ 0.1 kb	 0.0% Assets/FTUE/Scripts/Graph/QuestSO.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/TMP/TMP_Text.cs
+ 0.1 kb	 0.0% Packages/com.unity.inputsystem/InputSystem/Plugins/UI/UISupport.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Core/TimeData.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Core/Hashes/XXHash.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Sse3.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Sse2.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Sse.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Fma.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/F16C.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Csr.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Bmi2.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Bmi1.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Avx2.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/x86/Avx.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/v64.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/v256.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/v128.cs
+ 0.1 kb	 0.0% Packages/com.unity.burst/Runtime/Intrinsics/Arm/NEON.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Core/IInstaller.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Core/Container.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Vessel/Pip.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Toys/Toy.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Projectiles/Mine.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Projectiles/Gun.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/Bone.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/FloraAndFauna/Boid.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/Cell.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Environment/Ark.cs
+ 0.1 kb	 0.0% Assets/_Scripts/Controller/Animation/Pan.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/Jousts Won.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Squirrel/SquirrelJoustSpeed.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Maelstrom/Event_MaelstromGameResultRecorded.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/Event_InviteReceived.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/DustupSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnPlayerPairInitialized.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/Event_FriendRemoved.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/Event_FriendAdded.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnPipInitializedPipData.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnExplosionDebuffApplied.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnCrystalCollected.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnButtonReleasedInputEvent.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnButtonPressedInputEvent.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnAbilityExecuted.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitBySpike.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByBullet.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/RhinoPloughFuelByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/DolphinVesselChangeResourceByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/DolphinVesselChangeBoostByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/ScarabSwitchChargeByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Boot Status/Event_BootStatusRequest.asset
+ 0.1 kb	 0.0% Assets/Resources/StoatPathDots.mat
+ 0.1 kb	 0.0% Assets/Resources/ReflexSettings.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceAIRefuelGenes.asset
+ 0.1 kb	 0.0% Assets/Plugins/NativeShare/NativeShare.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Text.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Misc.cs
+ 0.1 kb	 0.0% Packages/com.unity.ugui/Runtime/UGUI/UI/Core/Mask.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Scenes/SubScene.cs
+ 0.1 kb	 0.0% Packages/com.unity.entities/Unity.Entities/Stubs/Unity/Debug.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Diagnosis/Diagnosis.cs
+ 0.1 kb	 0.0% Assets/_Scripts/UI/Views/View.cs
+ 0.1 kb	 0.0% Assets/_Scripts/System/Audio/Song.cs
+ 0.1 kb	 0.0% Assets/_Scripts/ScriptableObjects/SO_Vessel.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselStats/MaxBoost.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Rhino/RhinoGoreSpeed.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/DogFightScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/BreakwaterScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/MenuFreestyle/EventOnMenuStateTransitionStart.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/MenuFreestyle/EventOnMenuStateTransitionEnd.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/MenuFreestyle/EventOnGameStateTransitionStart.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/MenuFreestyle/EventOnGameStateTransitionEnd.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Maelstrom/Event_MaelstromStandingsChanged.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/Event_HostConnectionEstablished.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnToggleReadyButtonBool.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnSkimmerVesselCollision.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnReturnToMainMenuNoParam.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnLifeformDestroyedInt.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselImpulseByExplosionEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/SerpentWallShieldByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/ScarabBallEnergyByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/JacksOmniWormByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Crystal Effects/SkimmerAdjustElementLevelByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Boot Status/Event_BootStatusRetryRequested.asset
+ 0.1 kb	 0.0% Assets/Resources/StoatRipple.mat
+ 0.1 kb	 0.0% Assets/Resources/SpeedTunnelConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/SkimRaceDifficulty.asset
+ 0.1 kb	 0.0% Assets/Resources/MobileSignInConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/Channels/GameToastChannel.asset
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/fmod_dsp.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/Settings.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/Platform.cs
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/ParamRef.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Core/Binding.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/XP/EpisodeList.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Rhino/RhinoPloughSteerRightAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Rhino/RhinoPloughSteerLeftAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/WildlifeLiberationScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/UndertowScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/TandavaSeveringScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/BrittleStarTimeScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Pilots/Transforms/JavelinTransform.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/Event_OnInviteJoinResolved.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnVesselNetworkSpawned.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnSceneTransition.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnMiniGameRoundStart.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/List_OutgoingRequests.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/List_IncomingRequests.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/Event_FriendsServiceReady.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Lifecycle/EventOnSceneUnloading.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Lifecycle/EventOnAppFocusChanged.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnStartGameRequested.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnQueenDroneSpawned.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnMoundDroneSpawned.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnLifeformCreated.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnJoustCollision.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnDoubleDriftStarted.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnClickToMainMenuButton.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Skimmer Effects/TigerMothDustCleanseAllyBySkimmerEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoGoreBySkimmerEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselDeviationByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/RhinoStampedeByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/MantaPlantBombByLifeformJoustEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Projectile Prism Effects/SniperCrackSuperShieldPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Cell Data/Event_OnCellPhaseChanged.asset
+ 0.1 kb	 0.0% Assets/Resources/Channels/ToastNotificationChannel.asset
+ 0.1 kb	 0.0% Assets/Resources/Channels/NotificationChannel.asset
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/fmod_errors.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeRightAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeLeftAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/WaystationScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/ThresherTimeScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SwitchbackScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SerpentTimeScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/ScarabScrambleScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/ScarabRallyScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/LanternRunScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/GrizzlyTimeScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/DustupScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Maelstrom/Event_MaelstromStarted.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Maelstrom/Event_MaelstromCompleted.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/List_PartyMembers.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/List_OnlinePlayers.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/Event_PartyJoinCompleted.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Host Connection Data/Event_HostConnectionLost.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/SiroccoSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnWinnerCalculated.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnSessionStarted.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnResetForReplay.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnMiniGameTurnStart.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnMiniGameTurnEnd.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnMiniGameRoundEnd.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnInitializeGame.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/List_BlockedPlayers.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Lifecycle/EventOnSceneLoaded.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnModeChanged.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnCrystalSpawned.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnCellItemUpdated.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnActiveSessionEnd.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselRamRewardByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/SquirrelVesselHapticsByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/VesselAbsorbCrystalMorphByCrystal.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/SparrowVesselWardByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/FulmenByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/BrittleStarRingChargeByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Crystal Effects/SkimmerHandsCrystalToHullEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Projectile Prism Effects/ProjectileEmbedPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Projectile Prism Effects/ProjectileChainFirePrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Projectile End Effects/DetonateSparrowProjectileEndEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Application State/EventOnStateChanged.asset
+ 0.1 kb	 0.0% Assets/Resources/VesselElementalMorphConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/RetentionTuning.asset
+ 0.1 kb	 0.0% Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset
+ 0.1 kb	 0.0% Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Redline.asset
+ 0.1 kb	 0.0% Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Bloomrush.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Thresher/ThresherTouchLaunchAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Sparrow/ToggleStationaryModeAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Serpent/ToggleStationaryModeAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonShortenAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarRingDetonation.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarDestructionMode.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Toys/ArkReactor.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/WreckingBallScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/WrasseRunScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/WarplineScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/ThornlineScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/TandavaScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SpearlineScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SlipLineScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SlingshotScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/RedlineScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/PerchRunScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/HeadlongScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/DecoyRunScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/BurrowRunScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/BreachScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/BendsScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/AstroLeagueScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Pilots/Transforms/HydraTransform.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/NetworkMonitor Data/EventOnNetworkLost.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/NetworkMonitor Data/EventOnNetworkFound.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/ShockfrontSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/FlitstrikeSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnMiniGameEnd.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnLaunchGame.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnEndGameScreen.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Game Data/EventOnClientReady.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Lifecycle/EventOnAppQuitting.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Lifecycle/EventOnAppPaused.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnDriftStarted.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnDriftEnded.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventGameplaySFX.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselHapticsBySkimmerEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Skimmer Effects/MantaStingPlantBombVesselEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselRollByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/VesselHapticsByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/ThresherWindmillByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/SquirrelCrystalMorphByCrystal.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/SphereBlastCrystalMorphByCrystal.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/MantaDecoyByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/JewelWaspHatchByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/HoneyguideCrystalMorphByCrystal.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/FaunaBirthCrystalMorphByCrystal.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/DolphinCrystalMorphByCrystal.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Prism Effects/SkimmerStealPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Prism Effects/SkimmerHapticsByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Payload Prism Effects/PayloadCrackPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Authentication Data/EventOnSignInFailed.asset
+ 0.1 kb	 0.0% Assets/Unity Assests/Adaptive Performance/Provider/Samsung Android Provider Loader.asset
+ 0.1 kb	 0.0% Assets/Resources/SelfTrailContactConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/RaceAICrystalGenes.asset
+ 0.1 kb	 0.0% Assets/Resources/PrismMotionConfig.asset
+ 0.1 kb	 0.0% Assets/Plugins/FMOD/src/fmod.cs
+ 0.1 kb	 0.0% Packages/com.gustavopsantos.reflex/Resolvers/CallSite.cs
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Urchin/UrchinSlipAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Thresher/ThresherMassModeAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Stoat/StoatSlingRightAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonFormAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSentinelModeAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Manta/MantaAnalogTurnBoostAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarCreationMode.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarChargeMode.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/TollwayScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SkimRaceScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SkeinScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SiroccoScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/ScurryScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/RampageScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/LandslideScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/HijackScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/CleaveScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Friends Data/List_Friends.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/FlowData/ZeroFlowData.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/Prisms/EventOnSpawnPrismAndReturn.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselHapticsByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/MantaDetonateByPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/ShrikeCrystalMorphByCrystal.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/HoneyguideOmniCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/AnglerTameByCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Skimmer Prism Effects/MantaStingSkimPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Projectile Prism Effects/ProjectileStealPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Projectile Mine Effects/ProjectileExplodeMineEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Authentication Data/EventOnSignedOut.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Authentication Data/EventOnSignedIn.asset
+ 0.1 kb	 0.0% Assets/Resources/PrismRenderConfig.asset
+ 0.1 kb	 0.0% Assets/Resources/PerformanceTestRunSettings.json
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Thresher/ThresherWinchAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Thresher/ThresherPlantAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Stoat/StoatSlingLeftAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Starling/StarlingPickSpace.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Starling/StarlingPickCharge.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Manta/MantaSoarBoostAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspRightAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspLeftAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/JewelWasp/JewelWaspLeaveAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Jacks/JacksTeleportRight.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Jacks/JacksTeleportLeft.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideRTAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideLTAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyCycleWeaponAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Dolphin/EchoSightAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarSpeedMode.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/SalvoScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Scoring Rules/JoustScoringRule.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Pilots/Transforms/AftershockTransform.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/WoodpeckerSettings.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Games/GameLists/AllGames.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Event Channels/EventOnInputEventBlock.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselAttachPrismEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/OrcaOmniCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/KiteOmniCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/GobyOmniCrystalEffect.asset
+ 0.1 kb	 0.0% Assets/Resources/GamepadFlightConfig.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Stoat/StoatHoldAction.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Starling/StarlingPickTime.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Starling/StarlingPickMass.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Shrike/ShrikeTrigger.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Shrike/ShrikeTimeMode.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Shrike/ShrikeSpaceMode.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Shrike/ShrikeChargeMode.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Jacks/JacksTeleport.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewTriggerRT.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewTriggerLT.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarFire.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/ProjectileDetonator.asset
+ 0.1 kb	 0.0% Assets/_SO_Assets/Effects/Vessel Crystal Effects/ShrikeCrystalEffect.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Shrike/ShrikeZoom.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Shrike/ShrikeMass.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Jacks/JacksWide.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Jacks/JacksCall.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Dolphin/DriftTrailAction.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewButton1.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewButton0.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Common Vessel Action/BoostAction.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Angler/AnglerPaint.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Angler/AnglerLure.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Angler/AnglerErase.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/VesselActions/Angler/AnglerDash.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/Toast/ToastChannel.asset
+ 0.0 kb	 0.0% Assets/_SO_Assets/GameplayShaderWarmup.shadervariants
+-------------------------------------------------------------------------------
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 4732 unused Assets / (39.5 MB). Loaded Objects now: 94238.
+Memory consumption went from 1.10 GB to 1.06 GB.
+Total: 920.257700 ms (FindLiveObjects: 13.015900 ms CreateObjectMapping: 8.790800 ms MarkObjects: 843.030100 ms  DeleteObjects: 55.419400 ms)
+
+DisplayProgressNotification: Build Successful
+Build Finished, Result: Success.
+##utp:{"type":"PlayerBuildInfo","version":2,"phase":"Immediate","time":1795649254635,"processId":13668,"steps":[{"description":"Preprocess Player","duration":21575},{"description":"Prepare For Build","duration":26804},{"description":"ProducePlayerScriptAssemblies","duration":77803},{"description":"Verify Build setup","duration":319},{"description":"Prepare assets for target platform","duration":34},{"description":"Prepare splash screen","duration":17},{"description":"Building scenes","duration":497199},{"description":"Build scripts DLLs","duration":94},{"description":"Build GlobalGameManagers file","duration":369},{"description":"Writing asset files","duration":56314},{"description":"Building Resources/unity_builtin_extra","duration":1144},{"description":"Write data build dirty tracking information","duration":4819},{"description":"Postprocess built player","duration":2544069}],"duration":3230560}
+Unloading 32 Unused Serialized files (Serialized files now loaded: 0)
+Refreshing native plugins compatible for Editor in 41.98 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.23 ms.
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            350.046 ms
+	Integration:            2098.369 ms
+	Integration of assets:  78.260 ms
+	Thread Wait Time:       0.085 ms
+	Total Operation Time:   2526.761 ms
+Unloading 2 unused Assets / (4.2 KB). Loaded Objects now: 95281.
+Memory consumption went from 1.00 GB to 1.00 GB.
+Total: 496.033200 ms (FindLiveObjects: 9.115400 ms CreateObjectMapping: 9.092200 ms MarkObjects: 477.522500 ms  DeleteObjects: 0.301500 ms)
+
+[Build] Succeeded in 00:58:36. Size: 548.6 MB.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.CosmicShoreBuildPipeline:RunAndroidDevelopment () (at Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs:254)
+CosmicShore.Editor.CosmicShoreBuildPipeline:BuildAndroidDevelopment () (at Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs:74)
+
+(Filename: Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs Line: 254)
+
+Starting new worker id: 3 with log in C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Logs/AssetImportWorker3.log
+[Worker1] Start importing Assets/StreamingAssets/SFX.bank using Guid(969932c39f10df8479764ec131a9852a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_Graphics/URP_Asset.asset using Guid(6ba5ad9d00bac4f4c9085412a28181ac) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'be1f3e177e4508570cd9745adde4bdaa') in 0.0500906 seconds
+[Worker2]  -> (artifact id: 'daed37d5838de45511fba634258811da') in 0.2653878 seconds
+[Worker2] Start importing Assets/Plugins/Android/settingsTemplate.gradle using Guid(611c0755e19411b4db86ff4747afde5d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/Bangers SDF.asset using Guid(125cb55b44b24c4393181402bc6200e6) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'd0a83f9c840f39c7f9ba49e2066ae77d') in 0.014873 seconds
+[Worker1]  -> (artifact id: '696122a18f652f24e850624fbcfe6247') in 0.0707968 seconds
+[Worker2] Start importing Assets/DefaultVolumeProfile.asset using Guid(e03da098fe4f9344e983e14707a49127) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/Plugins/Android/mainTemplate.gradle using Guid(5fc8bdf13a188bb4ca1b336d325cc027) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '044d3657d91f99d632cff9cef41306b2') in 0.0140965 seconds
+[Worker2]  -> (artifact id: '3f08812b2e016016425a83c3fb9f6e6d') in 0.0788734 seconds
+[Worker1] Start importing Assets/StreamingAssets/Master.strings.bank using Guid(3201f4167f03ccf48b97bbf84059652b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '088b3cfc529eefa1942d7093c5a79e19') in 0.0175262 seconds
+[Worker1] Start importing Assets/StreamingAssets/Master.bank using Guid(10560bbb6b772c544a55f047da1c98ae) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '5acfc0959379d6f4783869e5f9dc389b') in 0.013526 seconds
+[Worker1] Start importing Assets/_Graphics/UniversalRenderPipelineGlobalSettings.asset using Guid(69a6d76128d739c419c5277b28888b44) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'f014657f3496ed2ab10e97e8c4343081') in 0.2830168 seconds
+[Worker1] Start importing Assets/Plugins/Android/mainTemplate.gradle.backup using Guid(7abe760cd4948f140a5c114b1eccc502) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'ac4885c4866e917947d265da6306cc99') in 0.0138941 seconds
+[Worker1] Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab using Guid(ed93dc5ea823c1def2fdf7422454ed55) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'acf282f303e56153dd038af42cc168c8') in 3.3809175 seconds
+[Worker1] Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Licensing::Client] Successfully resolved entitlement details
+[Worker1]  -> (artifact id: 'a371e2549868fc9879431796eb859250') in 11.1335537 seconds
+[Worker2]  -> (artifact id: '8e149425736369b9f6c41c4a7a1e5188') in 15.5235763 seconds
+Worker ready: AssetImportWorker3 3
+IPCStream (Upm-13668): IPC stream failed to read (Not connected)
+Android Extension - Scanning For ADB Devices 3676098 ms
+Unexpected transport error from import worker 3 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker3.log
+0x00007ffa89814e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa8b04f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa8b04fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa897c587f (Unity) DebugStringToFile
+0x00007ffa8c060ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffa8c06da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffa8c030207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffa8c032aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffa8c0290c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffa8c033f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffa8c040867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffa8c02ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffa8c02dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffa8c03d809 (Unity) IOService::Run
+0x00007ffa8c03e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffa8b042b80 (Unity) Thread::RunThreadWrapper
+0x00007ffb3b41dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffb3cab9c6c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 3: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker3.log
+Unexpected transport error from import worker 2 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker2.log
+0x00007ffa89814e2e (Unity) StackWalker::ShowCallstack
+0x00007ffa8b04f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffa8b04fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffa897c587f (Unity) DebugStringToFile
+0x00007ffa8c060ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffa8c06da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffa8c030207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffa8c032aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffa8c0290c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffa8c033f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffa8c040867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffa8c02ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffa8c02dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffa8c03d809 (Unity) IOService::Run
+0x00007ffa8c03e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffa8b042b80 (Unity) Thread::RunThreadWrapper
+0x00007ffb3b41dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffb3cab9c6c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 2: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker2.log
+[LAYOUT] About to save layout C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/Shombith/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+
