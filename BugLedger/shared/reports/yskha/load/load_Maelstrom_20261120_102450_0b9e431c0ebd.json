@@ -1,0 +1,453 @@
+{
+    "schemaVersion": 1,
+    "reportId": "0b9e431c0ebd",
+    "timestamp": "2026-11-20T10:24:50.6786356Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "To Be Filled By O.E.M. (To Be Filled By O.E.M.)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "bleeding-edge",
+    "gitCommitHash": "99f24a9bb8",
+    "trigger": "Cell swap -> Boneyard",
+    "loadKind": "launch",
+    "completionReason": "Cell swap: the new world is laid and grown, the veil lifts",
+    "interrupted": false,
+    "sceneFrom": "Maelstrom",
+    "sceneTo": "Maelstrom",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 2,
+    "totalMs": 6132.82373046875,
+    "visualReadyMs": -1.0,
+    "waitMs": 76.9906997680664,
+    "humanWaitMs": 0.0,
+    "workMs": 6055.8330078125,
+    "unattributedMs": 164.59080505371095,
+    "framesDuringLoad": 40,
+    "avgFpsDuringLoad": 6.522281169891357,
+    "worstFrameMs": 2302.792236328125,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 0.7620000243186951,
+            "endMs": 77.75270080566406,
+            "durationMs": 76.9906997680664,
+            "exclusiveMs": 76.9906997680664,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: 8 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 77.76580047607422,
+            "endMs": 101.0614013671875,
+            "durationMs": 23.29560089111328,
+            "exclusiveMs": 23.29560089111328,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 101.06559753417969,
+            "endMs": 126.06659698486328,
+            "durationMs": 25.000999450683595,
+            "exclusiveMs": 25.000999450683595,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 126.8499984741211,
+            "endMs": 126.91179656982422,
+            "durationMs": 0.061798095703125,
+            "exclusiveMs": 0.061798095703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell environment spawn (cell 0, SpawnableBoneyard1)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 126.92379760742188,
+            "endMs": 142.78720092773438,
+            "durationMs": 15.8634033203125,
+            "exclusiveMs": 5.2834014892578129,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 4,
+            "depth": 1,
+            "label": "Spawnable node: SpawnableBoneyard1 (SpawnableBoneyard)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 132.2071990966797,
+            "endMs": 142.7512969970703,
+            "durationMs": 10.544097900390625,
+            "exclusiveMs": 0.8061065673828125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 5,
+            "depth": 2,
+            "label": "Prism layout bake: SpawnableBoneyard",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 132.45350646972657,
+            "endMs": 142.0511932373047,
+            "durationMs": 9.597686767578125,
+            "exclusiveMs": 9.597686767578125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 5,
+            "depth": 2,
+            "label": "Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 142.61099243164063,
+            "endMs": 4613.00927734375,
+            "durationMs": 4470.3984375,
+            "exclusiveMs": 4470.3984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4775.9921875,
+            "endMs": 6132.79052734375,
+            "durationMs": 1356.79833984375,
+            "exclusiveMs": 1356.79833984375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 5891.2421875,
+            "percent": 96.06084442138672,
+            "spanCount": 8,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 164.59080505371095,
+            "percent": 2.6837687492370607,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 76.9906997680664,
+            "percent": 1.2553874254226685,
+            "spanCount": 1,
+            "waitMs": 76.9906997680664
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 4470.3984375,
+            "exclusiveMs": 4470.3984375,
+            "maxSingleMs": 4470.3984375,
+            "isWait": false
+        },
+        {
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1356.79833984375,
+            "exclusiveMs": 1356.79833984375,
+            "maxSingleMs": 1356.79833984375,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: the retiring world suctions away (1.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 76.9906997680664,
+            "exclusiveMs": 76.9906997680664,
+            "maxSingleMs": 76.9906997680664,
+            "isWait": true
+        },
+        {
+            "label": "Cell swap: the retired world is released (500 prisms a frame)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 25.000999450683595,
+            "exclusiveMs": 25.000999450683595,
+            "maxSingleMs": 25.000999450683595,
+            "isWait": false
+        },
+        {
+            "label": "Cell swap: 8 pooled trail prisms return to their pool",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 23.29560089111328,
+            "exclusiveMs": 23.29560089111328,
+            "maxSingleMs": 23.29560089111328,
+            "isWait": false
+        },
+        {
+            "label": "Prism layout bake: SpawnableBoneyard",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 9.597686767578125,
+            "exclusiveMs": 9.597686767578125,
+            "maxSingleMs": 9.597686767578125,
+            "isWait": false
+        },
+        {
+            "label": "Cell environment spawn (cell 0, SpawnableBoneyard1)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 15.8634033203125,
+            "exclusiveMs": 5.2834014892578129,
+            "maxSingleMs": 15.8634033203125,
+            "isWait": false
+        },
+        {
+            "label": "Spawnable node: SpawnableBoneyard1 (SpawnableBoneyard)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 10.544097900390625,
+            "exclusiveMs": 0.8061065673828125,
+            "maxSingleMs": 10.544097900390625,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.061798095703125,
+            "exclusiveMs": 0.061798095703125,
+            "maxSingleMs": 0.061798095703125,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 4615.1923828125,
+            "durationMs": 2302.792236328125,
+            "during": "Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)"
+        },
+        {
+            "atMs": 75.20909881591797,
+            "durationMs": 1326.1356201171875,
+            "during": "Cell swap: the retiring world suctions away (1.1s)"
+        },
+        {
+            "atMs": 1811.7259521484375,
+            "durationMs": 532.296142578125,
+            "during": "Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)"
+        },
+        {
+            "atMs": 4860.7275390625,
+            "durationMs": 442.8005676269531,
+            "during": "Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)"
+        },
+        {
+            "atMs": 1038.43994140625,
+            "durationMs": 337.1985778808594,
+            "during": "Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)"
+        },
+        {
+            "atMs": 5613.9853515625,
+            "durationMs": 212.1667022705078,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        },
+        {
+            "atMs": 529.7119750976563,
+            "durationMs": 193.4001007080078,
+            "during": "Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)"
+        },
+        {
+            "atMs": 5026.8291015625,
+            "durationMs": 185.42730712890626,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        },
+        {
+            "atMs": 5199.79833984375,
+            "durationMs": 172.99859619140626,
+            "during": "Arena settle: creation queue + grow-in (behind connecting screen)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Cell swap -> Boneyard"
+        },
+        {
+            "atMs": 4487.64111328125,
+            "label": "Netcode scene load complete: Maelstrom (client 3)"
+        },
+        {
+            "atMs": 4487.8173828125,
+            "label": "Netcode scene load completed on ALL clients: Maelstrom"
+        },
+        {
+            "atMs": 4779.275390625,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Prisms reused from the environment pool",
+            "value": 0
+        },
+        {
+            "name": "Prisms cloned by InstantiateAsync",
+            "value": 9043
+        },
+        {
+            "name": "Frames an async clone batch waited to integrate",
+            "value": 17
+        },
+        {
+            "name": "Prisms laid during load",
+            "value": 9043
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 9012
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism clone: InstantiateAsync batch, call to integrated (wall time)",
+            "count": 5,
+            "totalMs": 3847.184814453125,
+            "maxSingleMs": 2221.573974609375
+        },
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 9061,
+            "totalMs": 1169.8687744140625,
+            "maxSingleMs": 8.960800170898438
+        },
+        {
+            "label": "Prism lay: Initialize (reset + grow coroutine start)",
+            "count": 9043,
+            "totalMs": 145.8549041748047,
+            "maxSingleMs": 3.15339994430542
+        },
+        {
+            "label": "Prism lay: team + pose",
+            "count": 9043,
+            "totalMs": 122.78880310058594,
+            "maxSingleMs": 9.029999732971192
+        },
+        {
+            "label": "Prism lay: kind + trail.Add",
+            "count": 9043,
+            "totalMs": 19.07430076599121,
+            "maxSingleMs": 0.18129999935626985
+        },
+        {
+            "label": "Prism lay: TargetScale (scale-manager registration)",
+            "count": 9043,
+            "totalMs": 14.110300064086914,
+            "maxSingleMs": 0.613099992275238
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "single-dominator",
+            "severity": 1,
+            "title": "One cost dominates this load",
+            "finding": "\"Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)\" alone is 73% of the load (4.5s).",
+            "fixAdvice": "See the hot-path breakdown for its per-stage costs. Cut its workload (content/intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 2.3s during \"Streamed prism lay (SpawnableBoneyard1::BLOCK, 9043 prisms)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "spawn-heavy",
+            "severity": 0,
+            "title": "Object spawning is the main workload",
+            "finding": "5.9s (96%) went to spawning environment/lifeforms/AI.",
+            "fixAdvice": "Pool the prefabs, pre-instantiate during the splash, or spread instantiation across more frames.",
+            "matchedMarker": ""
+        }
+    ]
+}
