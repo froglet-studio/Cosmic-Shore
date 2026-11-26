@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-editor-churn-now-works-on-a-long-lived-b-2f6af5",
+  "to": "Shombith",
+  "by": "Caleb",
+  "date": "2026-11-26T16:49:22+00:00",
+  "area": "gates and hooks (Editor Churn W7)",
+  "summary": "Editor Churn now works on a long-lived branch, claude/editor-churn-integration. Gate, hook and GUID-safety fixes still come to bleeding-edge as small PRs of their own as they land, so you review them one at a time; the noise fixes wait and arrive in one PR at the end. Rules: Docs/EditorChurn/TRACKER.md, How the project's branches work.",
+  "branch": "claude/editor-churn-integration",
+  "commit": "8f172a910"
+}
