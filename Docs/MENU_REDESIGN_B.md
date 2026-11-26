@@ -9343,7 +9343,7 @@ The Toy Box grid is scaled to 0.84 under the taller Today card. Generator
 hand-off). Differs: the lens and banner show the kit sea, not a world frame; Shuffle is a button beside Back with its
 line; the Today lens is the toy's glyph. Offline render beside the board: `Docs/Look/toybox-rev145h_2026-11-25.jpg`.
 
-## 236. Rev 146 mockups: roles and archetypes on the Voyages quay, Your Ark and Vessels, three ways (2026-11-26, awaiting a pick)
+## 236. Rev 146 mockups: roles and archetypes on the Voyages quay, Your Ark and Vessels, three ways (2026-11-26, A picked and built)
 
 **Asked** (Shombith, 2026-11-26, through the project coordinator): redesign the Voyages UI wherever roles touch it (the
 Vessels page, the seat picker, the class tags and the givers' recommendations), drawn on Frogma first. The roles board is
@@ -9382,3 +9382,26 @@ words.
 the quay's "Bring me" classes all give way to the archetypes; the data layer (`VesselRole`, `VesselArchetype`,
 `VoyageArchetypesSO`) is built by the gameplay thread "Redesign voyages around roles and archetypes", and this round's
 screens build on it after the pick.
+
+**Picked** (Shombith, 2026-11-26): "Lets go with A, also the hypersea map UI does not show up in the minimized board of the
+voyages."
+
+**Built** (2026-11-26, on the data layer of PR #2406):
+- Quay (`VoyageQuay`): each job card stacks its three asked archetypes (role glyph and name), the Crystal Run says "Asks
+  for no one"; under the giver's words, "Bring me" and one row per asked seat: the archetype, the giver's reason (the type's
+  `Reasons`; a named voyage's swapped seat says the crew it counters), and at the right under "Your squad" the vessel that
+  fills it with a met mark (`VoyageMetMark`: ring and dot whole, half or none) and ", half" when it is a second or third
+  archetype. Which vessel fills which seat is `VoyageSeatFill.Assign` (the best assignment `VesselArchetypes.Fit` totals,
+  ties in squad order). See every archetype (Y) moved under Your crew says, as the board stands it.
+- The chart's foot is "3 cells · Difficulty 4". The live map: `VoyageSeaPage` faded the window's table with the full-screen
+  ease (`alpha = e`), so the map was invisible while the quay stood; the table now stays drawn behind the chart (it takes
+  presses only once open) and the chart's panel turns clear over it (`VoyageQuay.LiveMap`), its drawn lane standing down.
+- Your Ark / Vessels header (`VoyageJobHeader`): a nine-segment difficulty meter and "Difficulty N" (1-9), "ASKS FOR" and
+  the asked archetypes with their role glyphs.
+- Your Ark (`VoyageArkPage`): a "Fills <archetype>" chip over each hull's top left ("half: its second" when partial; "Fills
+  no seat asked" when the vessel fills none), and the vessel's archetypes beside its name, the primary first.
+- Vessels (`VoyageVesselsPage`): opens on the archetype the seat fills (else the first unmet ask, else its primary); the
+  vessels that lead with it on the floor (archetypes and "Meets the seat fully." / "by half."), the ones with it second or
+  third as tiles at the right ("In this seat now" on the seat's vessel), the archetype's line with "Counters ..." and
+  "Countered by ...", the nine archetypes in their three roles as tabs (LB / RB step all nine; "(none yet)" on one no vessel
+  leads with), the fit change in the bar and "TAKE <VESSEL>".

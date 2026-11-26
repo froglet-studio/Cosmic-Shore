@@ -138,8 +138,33 @@ namespace CosmicShore.ScriptableObjects
         string fitSame = "Squad fit {fit} of 3";
         [SerializeField, Tooltip("The giver's reason when a named voyage meets a crew. Tokens {crew}, {threat} and {counter}.")]
         string counterLine = "{crew} fly {threat}s. Bring a {counter}.";
-        [SerializeField, Tooltip("The call to action: put the picked vessel in the seat.")]
-        string take = "TAKE THE VESSEL";
+        [SerializeField, Tooltip("The call to action: put the picked vessel in the seat. Token {vessel}.")]
+        string take = "TAKE {vessel}";
+        [SerializeField, Tooltip("Rev 146 A: the seat's line when its vessel fills an asked seat fully. Tokens {seat}, {who}, " +
+                                 "{archetype}.")]
+        string seatFills = "{seat}  ·  {who}  ·  fills {archetype}";
+        [SerializeField, Tooltip("The seat's line when its vessel fills an asked seat by half. Tokens {seat}, {who}, " +
+                                 "{archetype}, {vessel} and {rank} (second or third).")]
+        string seatFillsHalf = "{seat}  ·  {who}  ·  fills {archetype}, half ({vessel}'s {rank})";
+        [SerializeField, Tooltip("Over the tiles at the right: the vessels with the open archetype second or third. Token " +
+                                 "{archetype}.")]
+        string alsoTitle = "{archetype} SECOND OR THIRD";
+        [SerializeField, Tooltip("Under the tile of the vessel in the seat now.")]
+        string inSeat = "In this seat now";
+        [SerializeField, Tooltip("Under a vessel on the floor that meets the seat's ask with its primary.")]
+        string meetsFull = "Meets the seat fully.";
+        [SerializeField, Tooltip("Under a vessel that meets the seat's ask with its second or third archetype.")]
+        string meetsHalf = "Meets the seat by half.";
+        [SerializeField, Tooltip("On the counters line: what the open archetype counters. Token {list}.")]
+        string countersLine = "Counters {list}.";
+        [SerializeField, Tooltip("On the counters line: what counters the open archetype. Token {list}.")]
+        string counteredByLine = "Countered by {list}.";
+        [SerializeField, Tooltip("{list} when there is none.")]
+        string nothing = "nothing";
+        [SerializeField, Tooltip("Between the names in {list}.")]
+        string listJoin = ", ";
+        [SerializeField, Tooltip("An archetype's tab when no vessel leads with it yet. Token {archetype}.")]
+        string noneYet = "{archetype} (none yet)";
         [SerializeField, Tooltip("The keycap on Take the vessel.")]
         string takeKey = "A";
         [SerializeField, Tooltip("Back to Your Ark without a change.")]
@@ -171,6 +196,17 @@ namespace CosmicShore.ScriptableObjects
         public string FitSame => fitSame;
         public string CounterLine => counterLine;
         public string Take => take;
+        public string SeatFills => seatFills;
+        public string SeatFillsHalf => seatFillsHalf;
+        public string AlsoTitle => alsoTitle;
+        public string InSeat => inSeat;
+        public string MeetsFull => meetsFull;
+        public string MeetsHalf => meetsHalf;
+        public string CountersLine => countersLine;
+        public string CounteredByLine => counteredByLine;
+        public string Nothing => nothing;
+        public string ListJoin => listJoin;
+        public string NoneYet => noneYet;
         public string TakeKey => takeKey;
         public string Back => back;
         public string BackKey => backKey;
@@ -287,6 +323,15 @@ namespace CosmicShore.ScriptableObjects
             var own = VoyageAskOf(voyageId);
             if (own == null || own.Threat == VesselArchetype.None || own.Countered == VesselArchetype.None) return null;
             return TemplateText.Fill(counterLine, "crew", own.Crew, "threat", NameOf(own.Threat), "counter", NameOf(own.Countered));
+        }
+
+        /// <summary>The archetypes <paramref name="a"/> counters on the board.</summary>
+        public List<VesselArchetype> Counters(VesselArchetype a)
+        {
+            var list = new List<VesselArchetype>();
+            foreach (var c in counters)
+                if (c != null && c.From == a) list.Add(c.To);
+            return list;
         }
 
         /// <summary>The archetypes that counter <paramref name="a"/> on the board.</summary>
