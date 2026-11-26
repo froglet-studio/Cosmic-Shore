@@ -261,10 +261,9 @@ namespace CosmicShore.UI
                     VoyageKit.Foot(under, 0f, 1f);
                     var rule = VoyageKit.Block(under, VoyageKit.Fade(_kit.Outline, 0.6f));
                     _groups.Add((role.Role, glyph, rule));
-                    foreach (var entry in _archetypes.Archetypes)
+                    foreach (var a in _archetypes.Archetypes)
                     {
-                        if (entry == null || VesselArchetypes.RoleOf(entry.Archetype) != role.Role) continue;
-                        var a = entry.Archetype;
+                        if (VesselArchetypes.RoleOf(a) != role.Role) continue;
                         var tab = VoyageKit.Node("Archetype" + (int)a, group);
                         var hit = VoyageKit.Block(tab, VoyageKit.Clear, hit: true);
                         var b = tab.gameObject.AddComponent<Button>();
@@ -454,11 +453,11 @@ namespace CosmicShore.UI
             if (role != null)
                 foreach (var v in role.Vessels)
                     if (_archetypes.PrimaryOf(v) == _class && Offered(v) is { } o) _shown.Add(o);
-            foreach (var entry in _archetypes.Vessels)
+            foreach (var v in _archetypes.Vessels)
             {
-                if (entry == null || _also.Count >= MaxTiles) continue;
-                int rank = entry.Archetypes.IndexOf(_class);
-                if (rank > 0 && Offered(entry.Vessel) is { } o) _also.Add(o);
+                if (_also.Count >= MaxTiles) continue;
+                int rank = IndexOf(_archetypes.ArchetypesOf(v), _class);
+                if (rank > 0 && Offered(v) is { } o) _also.Add(o);
             }
         }
 
@@ -605,8 +604,14 @@ namespace CosmicShore.UI
         bool Leads(VesselArchetype a)
         {
             foreach (var v in _archetypes.Vessels)
-                if (v != null && v.Archetypes.Count > 0 && v.Archetypes[0] == a) return true;
+                if (_archetypes.PrimaryOf(v) == a) return true;
             return false;
+        }
+
+        static int IndexOf(IReadOnlyList<VesselArchetype> list, VesselArchetype a)
+        {
+            for (int i = 0; i < list.Count; i++) if (list[i] == a) return i;
+            return -1;
         }
 
         // "Harraser · Sapper": the vessel's archetypes, primary first.

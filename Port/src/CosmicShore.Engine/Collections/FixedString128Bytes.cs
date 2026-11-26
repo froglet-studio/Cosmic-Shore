@@ -55,8 +55,8 @@ namespace CosmicShore.Engine.Collections
             _length = (ushort)byteCount;
         }
 
-        /// <summary>Unity.Collections' CopyFromTruncated: copy <paramref name="s"/>, cutting it at the capacity (Assign
-        /// already cuts on a whole UTF-8 rune).</summary>
+        /// <summary>Unity's <c>CopyFromTruncated</c>: copies <paramref name="s"/>, cut at a code-point boundary
+        /// when it is longer than the capacity (as every assignment here already is).</summary>
         public void CopyFromTruncated(string s) => Assign(s);
 
         public static implicit operator FixedString128Bytes(string s) => new(s);

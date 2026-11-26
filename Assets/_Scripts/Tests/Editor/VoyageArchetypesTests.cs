@@ -10,7 +10,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// Vessel roles and archetypes on voyages (Docs/Voyages/ARCHETYPES.md; Tools/Build/author_voyage_archetypes.py from
-    /// Shombith's board, Docs/Voyages/archetypes.json): every rostered vessel on the board has a primary archetype, each
+    /// Shombith's board, Docs/Vessels/archetypes.json): every rostered vessel on the board has a primary archetype, each
     /// voyage type asks for three seats and the Crystal Run for none, fit scores 1 for a primary and 0.5 for a lesser
     /// archetype with one vessel per seat, a named voyage's crew is countered on the board, and each role has a glyph.
     /// </summary>

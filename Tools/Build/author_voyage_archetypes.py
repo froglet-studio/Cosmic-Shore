@@ -3,8 +3,9 @@
 
 Vessel roles (Cultivator, Destroyer, Guardian) and their nine archetypes replaced the seven Milestone 2 voyage classes
 (Shombith, 2026-11-26; Docs/Voyages/ARCHETYPES.md). The source of truth is Shombith's board
-(https://claude.ai/artifact/Duwb9xJ7XdAykxMKAnMyFe), copied to Docs/Voyages/archetypes.json: each vessel's primary,
-secondary and tertiary archetype and the counter graph. This script adds what voyages do with it: the three archetype
+(https://claude.ai/artifact/Duwb9xJ7XdAykxMKAnMyFe), copied to Docs/Vessels/archetypes.json and written into the fleet's table (VesselArchetypesSO,
+Tools/Build/author_vessel_archetypes.py): each vessel's archetypes and the counter graph. This script reads the same board
+and writes only what voyages add: the three archetype
 seats each voyage type asks for, each named voyage's own ask (the type's, with its third seat swapped for a counter of
 the crew it meets), the Hold the Core voyages' retake crews, and the starters. An archetype is never a kit change.
 
@@ -22,7 +23,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-BOARD = ROOT / "Docs/Voyages/archetypes.json"
+BOARD = ROOT / "Docs/Vessels/archetypes.json"  # the fleet's copy of the board (author_vessel_archetypes.py)
 SLICE = ROOT / "Docs/Voyages/voyage_slice.json"
 ASSET = ROOT / "Assets/Resources/Voyages/VoyageArchetypes.asset"
 SCRIPT_META = ROOT / "Assets/_Scripts/ScriptableObjects/Voyages/VoyageArchetypesSO.cs.meta"
@@ -231,23 +232,8 @@ def int_list(out, indent, key, items):
 
 
 def render(values, board, spec, existing=None):
-    arch_rows, role_rows, vessels, counters, _ = load_board(board, values)
+    _, _, vessels, counters, _ = load_board(board, values)
     out = header("VoyageArchetypes")
-    out.append("  roles:")
-    for role, goal in role_rows:
-        out += [f"  - Role: {ROLE[role]}", f"    Name: {role}", f"    Line: {yaml_str(goal)}"]
-        members = [v for v in vessels if vessels[v] and ROLE_OF[vessels[v][0]] == role]
-        int_list(out, "    ", "Vessels", [values[v] for v in members])
-    out.append("  archetypes:")
-    for name, line in arch_rows:
-        out += [f"  - Archetype: {ARCH[name]}", f"    Name: {name}", f"    Line: {yaml_str(line)}"]
-    out.append("  vessels:")
-    for v, archs in vessels.items():
-        out.append(f"  - Vessel: {values[v]}")
-        int_list(out, "    ", "Archetypes", [ARCH[a] for a in archs])
-    out.append("  counters:")
-    for f, t in counters:
-        out += [f"  - From: {ARCH[f]}", f"    To: {ARCH[t]}"]
     out.append("  asks:")
     for job, seats in ASKS:
         out.append(f"  - Job: {job}")
