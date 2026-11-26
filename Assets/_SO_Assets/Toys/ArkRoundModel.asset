@@ -58,7 +58,6 @@ MonoBehaviour:
   reactorCrystalMesh: {fileID: 4178986218149870590, guid: 6762f621cbdcb3b4591336aa864419d3, type: 3}
   reactorCrystalMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   hullShape: 1
-  seeThroughShader: {fileID: -6465566751694194690, guid: 6a1d2c58e3f04b7c9b2e0d4a7f3c81e5, type: 3}
   engineTrailMaterial: {fileID: 2100000, guid: a31aea53d72743d3afa7cba41a3530f5, type: 2}
   engineTrailSeconds: 7
   engineTrailAlpha: 0.6

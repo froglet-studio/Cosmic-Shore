@@ -27157,12 +27157,13 @@ every move is swept. Reference compile: 0 errors in the changed files. The edit-
 - [ ] The sortie still launches out of the exits (a launch is not swept), and a released wingmate is not stopped at the hull.
 - [ ] A raid's shed crystals land outside the hull, not inside it.
 
-2026-11-26, the see-through hull (option C): `ArkHullGraph.shadergraph` (VesselGraph plus the prisms' corridor) was
-written as JSON by `Tools/Build/author_ark_hull_graph.py` and has never been imported or compiled by Unity.
+2026-11-26, the hull no longer holds a vessel on it (Shombith: "once the vessel sticks to the ark ... we get stuck"): a
+swept move slides along the hull instead of stopping where it meets it, and the nose turns only on a contact. The
+see-through hull (C) is taken out again. Reference compile only.
 
-- [ ] ArkHullGraph imports and compiles (no pink Ark); `ArkRoundModelTests.Hull_IsSeeThroughBetweenTheCameraAndThePilot` passes.
-- [ ] The Ark's colours are unchanged in every domain (the copies keep their values when the shader is swapped).
-- [ ] Fly into the tube and through the hall with the Sparrow: where the camera sits outside the wall, the hull dissolves around your vessel with the prisms' screen door, and only there.
+- [ ] Fly the Sparrow, Squirrel and Dolphin into the round Ark's side at a slant, boosting and not: each glances off and keeps flying, none stays pinned to the plating.
+- [ ] Fly down the tube hugging its wall: the vessel slides along it and steers away freely.
+- [ ] `ArkRoundModelTests.HoldOut_SlidesAGlancingMoveAlongTheHull_SoAVesselNeverSticks` passes.
 
 ## The Goby never flies: it only darts perch to perch (2026-11-24)
 

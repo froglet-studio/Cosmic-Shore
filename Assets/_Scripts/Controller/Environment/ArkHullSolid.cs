@@ -457,8 +457,10 @@ namespace CosmicShore.Gameplay
             IVesselStatus status = vessel;
             bool stationary = status.IsStationary;   // held by a script (the launch), which places it itself
 
-            // Swept: a vessel that flew here since the last frame is stopped where its path first meets the hull, so a
-            // boost cannot carry it over a wall between two checks. A jump (a launch, a reset) is held where it lands.
+            // Swept: a vessel that flew here since the last frame meets the hull where its path first does, so a boost
+            // cannot carry it over a wall between two checks. It is not stopped there: the rest of its move slides along
+            // the surface (only the part into the hull is taken away), so it glances off and never sticks. A jump (a
+            // launch, a reset) is held where it lands.
             if (!stationary && _tracks.TryGetValue(vessel, out var track) && track.Frame == Time.frameCount - 1 &&
                 !track.Stationary && (local - track.Local).sqrMagnitude * unit * unit < MaxSweep * MaxSweep &&
                 DistanceNow(track.Local) >= margin * 0.5f)
@@ -466,9 +468,12 @@ namespace CosmicShore.Gameplay
                 float reach = FirstContact(_shape, _podTurn, track.Local, local, margin);
                 if (reach < 1f)
                 {
-                    local = Vector3.Lerp(track.Local, local, reach);
+                    var contact = Vector3.Lerp(track.Local, local, reach);
+                    var normal = Gradient(contact);
+                    local = contact + Slide(_shape, _podTurn, local - contact, normal, contact, margin);
                     t.position = arkT.TransformPoint(local * _scale);
                     Contacts++;
+                    if (normal.sqrMagnitude > 1e-8f) TurnAlong(status, t, arkT.TransformDirection(normal).normalized);
                 }
             }
 
@@ -476,7 +481,6 @@ namespace CosmicShore.Gameplay
             if (d >= margin)
             {
                 Remember(vessel, local, stationary);
-                TurnAlong(status, t, arkT, local, margin, d);
                 return;
             }
 
@@ -497,13 +501,15 @@ namespace CosmicShore.Gameplay
         void Remember(VesselStatus vessel, Vector3 local, bool stationary) =>
             _tracks[vessel] = new Track { Local = local, Frame = Time.frameCount, Stationary = stationary };
 
-        /// <summary>A vessel stopped short by the sweep (clear of the surface, but on it) turns along it too.</summary>
-        void TurnAlong(IVesselStatus status, Transform t, Transform arkT, Vector3 local, float margin, float d)
+        /// <summary>The part of <paramref name="rest"/> (the move left after the contact) that runs along the surface
+        /// whose outward normal is <paramref name="normal"/>, traced once more so a slide cannot cross a corner.</summary>
+        public static Vector3 Slide(ArkHullShape shape, Quaternion pods, Vector3 rest, Vector3 normal, Vector3 contact,
+            float margin)
         {
-            if (d > margin + 2f * MinTraceStep) return;   // the sweep stops within a trace step of the surface
-            var n = Gradient(local);
-            if (n.sqrMagnitude < 1e-8f) return;
-            TurnAlong(status, t, arkT.TransformDirection(n).normalized);
+            if (normal.sqrMagnitude < 1e-8f) return Vector3.zero;
+            float into = Vector3.Dot(rest, normal);
+            if (into < 0f) rest -= normal * into;
+            return rest * FirstContact(shape, pods, contact, contact + rest, margin);
         }
 
         /// <summary>The nose turns along the hull: the part of its heading that points into the surface is taken away.</summary>

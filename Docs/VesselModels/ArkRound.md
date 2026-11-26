@@ -97,16 +97,16 @@ Since 2026-11-26 (Shombith: "I can literally go inside the ark's model while boo
   the model.
 - A vessel's centre is held 3 world units off the surface (`RoundVesselMargin`; ArkReverse keeps 1.2), so its wings and
   the chase camera stay out of the plating.
-- Every move is swept. `ArkHullSolid` traces each vessel's path since the last frame (`FirstContact`) and stops it where
-  the path first meets the hull, so a boost cannot step over a wall between two frames. A jump longer than 25 world
+- Every move is swept. `ArkHullSolid` traces each vessel's path since the last frame (`FirstContact`) and meets the
+  hull where the path first does, so a boost cannot step over a wall between two frames. A jump longer than 25 world
   units (a launch, a reset) is held out only where it lands. A vessel the launch holds (`IsStationary`) is not swept.
+- A swept vessel is never stopped dead (Shombith's playtest, 2026-11-26: "once the vessel sticks to the ark ... we get
+  stuck"). Only the part of its move that points into the hull is taken away; the rest slides along the surface
+  (`Slide`, traced again so it cannot cross a corner). The nose turns along the hull only on a real contact or push,
+  no longer every frame it flies near the plating.
 
-**See-through hull.** Shombith picked option C on the concept page (round 14, 2026-11-26): inside the tube the chase
-camera sits outside the wall, so the hull dissolves between the camera and the pilot's vessel. It is the prisms' own
-corridor (`PrismOcclusionCorridor.cs` and `.hlsl`), not a second one. `ArkHullGraph.shadergraph` is `VesselGraph` plus
-the corridor's `PrismOcclusionFade` call wired to Alpha and the clip threshold, written by
-`Tools/Build/author_ark_hull_graph.py` (`--check` fails when it drifts from `VesselGraph`). `ArkModel` swaps the Ark's own
-material copies to it (`ArkModelDefinitionSO.seeThroughShader`); the vessels keep `VesselGraph`.
+The see-through hull (option C on the concept page, PR #2410) was built and taken out the same day: Shombith, "C is
+not good". The tube stays opaque; the bigger Ark (B) is what lets the camera follow a vessel inside.
 
 ## Numbers
 
