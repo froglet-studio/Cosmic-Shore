@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     ///
     /// SWORDFISH-ONLY is enforced by the arcade card's Vessels list. See <c>Arcade/PALISADE.md</c>.
     /// </summary>
-    public class PalisadeController : MultiplayerDomainGamesController
+    public partial class PalisadeController : MultiplayerDomainGamesController
     {
         [Header("Config")]
         [Tooltip("Drag PalisadeSettings.asset - crystals, lead feedback and the AI's build/raid policy. The round " +
@@ -44,8 +44,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScoringRuleSO rule;
 
         [Header("Arena")]
-        [Tooltip("The Barren cell. Read-only to this controller: its centre anchors the crystal scatter and the AI's " +
-                 "building orbit, and its targeting grids answer 'where is the densest opposing mass' for a raid.")]
+        [Tooltip("The Barren cell. Read-only to this controller: its centre anchors the arena, the crystal scatter and " +
+                 "the AI's building orbit, and its targeting grids answer 'where is the densest opposing mass' for a raid.")]
         [SerializeField] Cell arenaCell;
 
         readonly List<Crystal> _spawnedCrystals = new();
@@ -80,6 +80,7 @@ namespace CosmicShore.Gameplay
             StopProgressSampler();
             DisarmPilots();
             ClearElementalCrystals();
+            ClearArena();
             base.OnNetworkDespawn();
         }
 
@@ -109,7 +110,9 @@ namespace CosmicShore.Gameplay
 
         protected override void OnCountdownTimerEnded()
         {
-            // Peer-local BEFORE the server gate: the scatter is local and deterministic, so every machine lays it.
+            // Peer-local BEFORE the server gate: the arena and the scatter are local and deterministic, so every
+            // machine lays them.
+            LayArena();
             ClearElementalCrystals();
             SpawnElementalCrystals();
 
@@ -229,8 +232,9 @@ namespace CosmicShore.Gameplay
         /// a crowd of them, so the afterimages follow every raid on their own.
         /// <list type="bullet">
         /// <item><b>Build</b> while its domain is not trailing the best rival by more than
-        /// <see cref="PalisadeSettingsSO.aiRaidDeficitFraction"/>: a slow orbit of the cell (its own great circle, so
-        /// two builders do not lay one arc twice), detouring for any elemental crystal within reach.</item>
+        /// <see cref="PalisadeSettingsSO.aiRaidDeficitFraction"/>: a run down the arena's lanes and out through their
+        /// frames (<see cref="TryLaneTarget"/>), detouring for any elemental crystal within reach. With no arena laid
+        /// it falls back to a slow orbit of the cell on its own great circle.</item>
         /// <item><b>Raid</b> while it trails, and in the last <see cref="PalisadeSettingsSO.aiLateRaidSeconds"/>
         /// regardless: straight at the densest opposing mass (<see cref="Cell.GetExplosionTarget"/>).</item>
         /// </list>
@@ -257,6 +261,7 @@ namespace CosmicShore.Gameplay
 
                 var captured = p;
                 float nextDecision = 0f;
+                int seat = index;
                 var axis = Quaternion.AngleAxis(index++ * 67f, Vector3.up)
                            * Quaternion.AngleAxis(35f, Vector3.right) * Vector3.up;
                 var cross = Vector3.Cross(axis, Vector3.forward);
@@ -276,7 +281,11 @@ namespace CosmicShore.Gameplay
                     if (_aiRaiding.TryGetValue(captured, out var raid) && raid && arenaCell)
                         return arenaCell.GetExplosionTarget(captured.Domain);
 
-                    if (TryNearestCrystal(selfTf.position, out var crystalPos)) return crystalPos;
+                    if (TryNearestCrystal(selfTf.position, captured.Domain, out var crystalPos)) return crystalPos;
+
+                    // The arena's lanes: beside a row of posts and out through its frame, so the sword hand has
+                    // hostile prisms to light on and the afterimages fall where the frame covers them.
+                    if (TryLaneTarget(captured, seat, selfTf.position, out var lanePos)) return lanePos;
 
                     float radius = settings.crystalScatterRadius * settings.aiBuildOrbitFraction;
                     float angle = (Time.time - gameData.TurnStartTime) * settings.aiBuildOrbitDegreesPerSecond;
@@ -312,11 +321,31 @@ namespace CosmicShore.Gameplay
             return _clock ? _clock.TimeRemaining : -1f;
         }
 
-        bool TryNearestCrystal(Vector3 from, out Vector3 position)
+        /// <summary>
+        /// The nearest crystal a builder of <paramref name="domain"/> can take within
+        /// <see cref="PalisadeSettingsSO.aiCrystalReach"/>: the mode's own scatter, and from I3 its team's Mass crystals
+        /// (the standard element ladder's rung, laid by the platform's <see cref="ElementLadderCrystals"/>). A team
+        /// crystal is the rung's whole lesson - Mass makes the afterimage walls bigger - so an AI that flew past its
+        /// own would play I3 exactly as it plays I2.
+        /// </summary>
+        bool TryNearestCrystal(Vector3 from, Domains domain, out Vector3 position)
         {
             position = default;
             float bestSqr = settings.aiCrystalReach * settings.aiCrystalReach;
             bool found = false;
+
+            var active = Crystal.Active;
+            for (int i = 0, n = active.Count; i < n; i++)
+            {
+                var c = active[i];
+                if (!c || !ElementLadderCrystals.IsLadderCrystal(c) || !c.CanBeCollected(domain)) continue;
+                float d = (c.transform.position - from).sqrMagnitude;
+                if (d >= bestSqr) continue;
+                bestSqr = d;
+                position = c.transform.position;
+                found = true;
+            }
+
             for (int i = 0; i < _spawnedCrystals.Count; i++)
             {
                 var c = _spawnedCrystals[i];
@@ -333,6 +362,7 @@ namespace CosmicShore.Gameplay
         void DisarmPilots()
         {
             _aiRaiding.Clear();
+            _laneRuns.Clear();
             var players = gameData != null ? gameData.Players : null;
             if (players == null) return;
             foreach (var p in players)
@@ -454,6 +484,7 @@ namespace CosmicShore.Gameplay
             StopProgressSampler();
             DisarmPilots();
             ClearElementalCrystals();
+            ClearArena();
 
             foreach (var s in gameData.RoundStatsList)
             {

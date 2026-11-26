@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-25-palisade-s-building-ai-now-also-detours-7827dc",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T00:58:48+00:00",
+  "area": "Palisade (Swordfish Mass game) AI",
+  "summary": "Palisade's building AI now also detours for its own team's I3 Mass crystals (the element ladder's rung); it flew past them before. Steering only, no vessel or scoring change. Added PalisadeLadderTests and rewrote PALISADE.md's ladder, score model and merge sections. Not compiled or run.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "cdfc901d4",
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Mass"
+    ],
+    "step": "3"
+  }
+}

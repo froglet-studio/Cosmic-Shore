@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-25-boid-initialize-now-seeds-desiredrotatio-63012b",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T15:50:44+00:00",
+  "area": "fauna steering (Boid.cs)",
+  "summary": "Boid.Initialize now seeds desiredRotation with the spawn rotation. Before, Update lerped toward the zero quaternion until the first steering tick (delayed by normalizedIndex x behaviorUpdateRate), and Quaternion.Lerp asserted '!CompareApproximately(aScalar, 0.0F)': 8 times in one Cleave I4 match at time x4.",
+  "why": "Found running Cleave I4 (the element ladder's Space fauna) in the editor. The re-run logged no match errors.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "a8e5d8b4e",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Boid.cs"
+  ]
+}

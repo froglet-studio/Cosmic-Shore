@@ -103,6 +103,9 @@ namespace CosmicShore.Gameplay
 
         int LayoutSeed => seed != 0 ? seed : DefaultSeed;
 
+        /// <summary>Radius (u, local) of the ball the sticks fill. Read by a mode's AI that routes through the heap.</summary>
+        public float HeapRadius => heapRadius;
+
         /// <summary>One clearing: a ball no stick enters, in this structure's local space.</summary>
         public readonly struct Clearing
         {

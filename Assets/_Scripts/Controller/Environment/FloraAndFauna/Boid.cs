@@ -216,6 +216,10 @@ namespace CosmicShore.Gameplay
             ArmourBody();
 
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
+            // Update turns toward desiredRotation from the first frame, but the first steering tick waits
+            // initialDelay. Left at default it is the zero quaternion, and Quaternion.Lerp toward it asserts
+            // ('!CompareApproximately(aScalar, 0.0F)') once the turn step nears 1 (a fast clock or a feeding boost).
+            desiredRotation = transform.rotation;
             float initialDelay = normalizedIndex * behaviorUpdateRate;
             StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
         }

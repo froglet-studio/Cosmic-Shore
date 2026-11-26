@@ -28,6 +28,7 @@ mkdir -p "$OUT"
 
 SEALS="$A/Controller/Arcade/Spearline/SpearlineSeals.cs"
 RUINS="$A/Controller/Arcade/Spearline/SpearlineRuins.cs"
+GARDEN="$A/Controller/Arcade/Spearline/SpearlineGarden.cs"
 
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
@@ -38,7 +39,7 @@ build() {   # $1 = seals source, $2 = output name, $3 = ruins source (default: t
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
     "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" "$1" "${3:-$RUINS}" "$A/Tests/Editor/SpearlineSealsTests.cs" \
-    "$A/Tests/Editor/SpearlineRuinsTests.cs"; do
+    "$A/Tests/Editor/SpearlineRuinsTests.cs" "${4:-$GARDEN}" "$A/Tests/Editor/SpearlineGardenTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -96,4 +97,17 @@ mutate_ruins "ruins on the easy rungs" 's/PerLapByRung = { 0, 0, 0, 7 }/PerLapBy
 mutate_ruins "a wheel with no open hub" 's/HubRadius + (k + 0.5f) \* spokeStone/(k + 0.5f) * spokeStone/' 'c + radial \* ((k + 0.5f)'
 mutate_ruins "a wheel that does not turn" 's/float angle = wheel.DegreesPerSecond \* seconds \* Mathf.Deg2Rad;/float angle = 0f;/' 'float angle = 0f;'
 mutate_ruins "thin ruins" 's/var scale = new Vector3(9f, 9f, 13f);/var scale = new Vector3(5f, 5f, 13f);/' 'Vector3(5f, 5f, 13f)'
+mutate_garden() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
+  sed "$2" "$GARDEN" > "$OUT/SpearlineGarden_neg.cs"
+  grep -q "$3" "$OUT/SpearlineGarden_neg.cs" || { echo "the mutation did not apply: $1"; exit 1; }
+  build "$SEALS" neg "$RUINS" "$OUT/SpearlineGarden_neg.cs"
+  set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
+  if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
+  echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
+}
+mutate_garden "a hedge in the hull's path" 's/public const float HedgeInner = 22f;/public const float HedgeInner = 6f;/' 'HedgeInner = 6f'
+mutate_garden "hedges on legs into sealed rings" 's/if (!@sealed\[next\])/if (@sealed[next])/' 'if (@sealed\[next\])'
+mutate_garden "a pillar at I1" 's/HedgeBothSides = true, HedgeLength = 200f, Pillars = 0,/HedgeBothSides = true, HedgeLength = 200f, Pillars = 1,/' 'HedgeLength = 200f, Pillars = 1'
+mutate_garden "garden at a ring" 's/if (SpearlineRuins.RingClearance(lap, p) < RingMargin) return false;/if (false) return false;/' 'if (false) return false;'
+mutate_garden "the same garden on every rung" 's/switch (Mathf.Clamp(intensity, 1, 4))/switch (1)/' 'switch (1)'
 echo "spearline_harness self-test: ok"

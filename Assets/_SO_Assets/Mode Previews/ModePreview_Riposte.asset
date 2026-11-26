@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: ModePreview_Riposte
   m_EditorClassIdentifier:
   Mode: 97
-  Notes: 'Jackstraw''s heap at each intensity, flown by the Swordfish. OPEN-ENDED - it scores on striking rival
-    pilots and a solo preview has none; what it teaches is cutting a straight lane through the sticks to wind up in.
+  Notes: 'The Lists at each intensity, flown by the Swordfish. OPEN-ENDED - it scores on striking rival
+    pilots and a solo preview has none; what it teaches is winding up down a lane and cutting its rails for fuel.
     Vessel pinned to Swordfish(30).'
-  PreviewCell: {fileID: 11400000, guid: 7abd842e8115e8dc15821598513030d5, type: 2}
+  PreviewCell: {fileID: 11400000, guid: aac24ff5f0a0b84de1e0a36c0157db65, type: 2}
   PreviewCellsByIntensity:
-  - {fileID: 11400000, guid: 7abd842e8115e8dc15821598513030d5, type: 2}
-  - {fileID: 11400000, guid: 0cfcfdad3b660ddde75fa198af1f6031, type: 2}
-  - {fileID: 11400000, guid: 6976e1020638a6f34c27fbccb200001a, type: 2}
-  - {fileID: 11400000, guid: ae2d4f7f1f8090103ca6bbe41da0254b, type: 2}
+  - {fileID: 11400000, guid: aac24ff5f0a0b84de1e0a36c0157db65, type: 2}
+  - {fileID: 11400000, guid: 92bfa40aceca4bc29cfb57cf92a7c13f, type: 2}
+  - {fileID: 11400000, guid: 1495368b70708e1b3cde94a537a3b1b8, type: 2}
+  - {fileID: 11400000, guid: 22f20fd7d7f3deae68829caf149f5a28, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}

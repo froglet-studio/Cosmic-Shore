@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-game-kit-roster-md-said-scurry-is-the-sq-1e8caa",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-26T20:37:22+00:00",
+  "area": "Elemental loop docs (GAME_KIT_ROSTER.md)",
+  "summary": "GAME_KIT_ROSTER.md said Scurry is the Squirrel's Mass game; corrected to match your 2026-11-17 rule (Scurry is Party) and STATUS.md (Squirrel Mass missing). Also Docs/TEAM.md gained a dated line: Yash's current focus is completing six vessels (Squirrel, Sparrow, Dolphin, Swordfish, Thresher, Tiger Moth) inside your loop; see Docs/Reports/SIX_VESSEL_MATRIX.md.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "b1d4d2975"
+}

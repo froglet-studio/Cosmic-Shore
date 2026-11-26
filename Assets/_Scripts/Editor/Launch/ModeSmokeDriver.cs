@@ -172,8 +172,7 @@ namespace CosmicShore.Editor
             _gameData.ConfigurePlayerCounts(_result.players, 1);
             _gameData.SetRequestedAIDomains(null);
             _gameData.SetRequestedAIVessels(null);
-            _gameData.RequestedDomainCount = Mathf.Clamp(Mathf.Min(_result.players, 3),
-                Mathf.Max(1, _card.MinDomainsAllowed), Mathf.Max(_card.MinDomainsAllowed, _card.MaxDomainsAllowed));
+            _gameData.RequestedDomainCount = _config.DomainsFor(_card, _result.players);
             _gameData.RequestedAIDifficulty = AIDifficultyRules.Resolve(_config.AIDifficulty);
             _gameData.SetRequestedAIDifficulties(null);
         }

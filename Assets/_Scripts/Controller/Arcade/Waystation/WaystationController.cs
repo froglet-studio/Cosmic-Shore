@@ -275,13 +275,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
-            if (TryHopAim(pilot, out target)) return true;
+            if (TryHopAim(pilot, out target))
+            {
+                if (TrySteerRoundRuins(pilot, target, out var round)) target = round;
+                return true;
+            }
             target = default;
             var status = pilot?.Vessel?.VesselStatus;
             if (status == null || !BellyAimWanted(pilot, status, out var toGate))
             {
                 if (pilot != null) ForgetBellyAim(pilot);
-                return false;
+                // No drop to line up: the base steers at the ring, unless a ruin stands on the way (I4).
+                return TryGetNextGate(pilot, out var next) && next != null
+                       && TrySteerRoundRuins(pilot, next.position, out target);
             }
             Transform hull = status.Transform;
             if (_bellyRolls.Contains(pilot))
@@ -340,6 +346,12 @@ namespace CosmicShore.Gameplay
 
             toGate = gate.position - status.Transform.position;
             if (toGate.magnitude < aiFoldMinDistance) return false;
+            // A ruin on the fall line (I4): no drop from here. Fly on into the clear lane and line up there.
+            if (RuinOnFallLine(status.Transform.position, gate.position))
+            {
+                ForgetBellyAim(pilot);
+                return false;
+            }
 
             if (_bellyAimSince.TryGetValue(pilot, out float since))
             {
@@ -407,6 +419,7 @@ namespace CosmicShore.Gameplay
                 if (distance < aiFoldMinDistance) continue;
                 float aim = TigerMothDropMath.BellyAimError(status.Transform.rotation, toGate);
                 if (aim > aiDropAimDegrees) continue;
+                if (RuinOnFallLine(hull, gate.position)) continue;   // never drop through a ruin (I4)
 
                 // The hold IS the distance (the drop's numbers read off its own asset). Land short of the ring's plane by the authored margin plus twice the miss the aim carries, so the hull
                 // has room to turn into the mouth; the drop is travel, so a ring it crosses on the way is threaded anyway.

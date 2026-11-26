@@ -340,6 +340,12 @@ RANGES = {
 FLOORS = {("Sparrow", "Breakwater"): {"releaseRunwaySeconds": 1.25}}
 
 
+# What --check holds an existing asset to, where the C# bound is wider than the learner's write clamp above: a
+# hand-authored mode tuning may sit outside what the learner would write (SwordfishAIBoostPolicy_Riposte flies
+# cornerSpeed 2000 so the duel never brakes for a corner; RampBoostAIPolicySO.cornerSpeed is [Min(1f)], no maximum).
+CHECK_RANGES = {**RANGES, "cornerSpeed": (1.0, float("inf"))}
+
+
 def apply_floors(hull, mode, learned):
     for field, floor in FLOORS.get((hull, mode), {}).items():
         if field in learned and learned[field] < floor:
@@ -1144,8 +1150,8 @@ def check():
         for k, v in re.findall(r"(?m)^  (\w+): ([-0-9.eE]+)$", text):
             if k == "engageRunwaySeconds" and float(v) == STAND_DOWN_RUNWAY_S:
                 continue                       # a mode that stands the hull's boost down (BrittleStarTime: its coach drives)
-            if k in RANGES and not RANGES[k][0] <= float(v) <= RANGES[k][1]:
-                problems.append(f"{fn}: {k} {v} outside {RANGES[k]}")
+            if k in CHECK_RANGES and not CHECK_RANGES[k][0] <= float(v) <= CHECK_RANGES[k][1]:
+                problems.append(f"{fn}: {k} {v} outside {CHECK_RANGES[k]}")
     for p in problems:
         print("check:", p)
     print(f"check: {'OK' if not problems else 'FAILED'}")

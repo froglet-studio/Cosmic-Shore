@@ -113,12 +113,11 @@ namespace CosmicShore.Tests
                 for (int i = 0; i < parts.Count; i++)
                 {
                     if (Turns(wheels, i)) continue;
-                    Vector3 half = parts[i].Forward * (0.5f * parts[i].Scale.z);
+                    // The generator's own measure: a prism up to 16 u long is read at its centre, a longer one along
+                    // its length, so a short prism's end may reach up to 8 u into the 60 u.
                     Assert.GreaterOrEqual(SpearlineRuins.LaneDistance(line, parts[i].Position), SpearlineRuins.LaneRadius - 0.01f,
                         $"seed {seed}: a ruin prism stands in the lane");
-                    Assert.GreaterOrEqual(SpearlineRuins.LaneDistance(line, parts[i].Position + half), SpearlineRuins.LaneRadius - 0.01f,
-                        $"seed {seed}: a ruin prism reaches into the lane");
-                    Assert.GreaterOrEqual(SpearlineRuins.LaneDistance(line, parts[i].Position - half), SpearlineRuins.LaneRadius - 0.01f,
+                    Assert.GreaterOrEqual(SpearlineRuins.PartLaneDistance(line, parts[i]), SpearlineRuins.LaneRadius - 0.01f,
                         $"seed {seed}: a ruin prism reaches into the lane");
                 }
             }
@@ -146,6 +145,15 @@ namespace CosmicShore.Tests
                         Assert.Less(Vector3.Distance(mid, 0.5f * (press + course[i].Position)), 0.5f, $"seed {seed} ring {i}: the fall bends");
                         Vector3 cruise = SpearlineRuins.LinePoint(line[at - 1], line[at], 0.5f);
                         Assert.Less(Vector3.Distance(cruise, 0.5f * (line[at - 1].Position + press)), 0.5f, $"seed {seed} ring {i}: the cruise bends");
+                        at += 2;
+                    }
+                    else if (i >= 1 && (course[i].Position - course[i - 1].Position).magnitude >= WaystationRuins.DropGap)
+                    {
+                        // A drop gap: both ends twice, and the lane between them is the straight chord.
+                        Assert.AreEqual(course[i - 1].Position, line[at].Position);
+                        Assert.AreEqual(course[i].Position, line[at + 1].Position);
+                        Vector3 mid = SpearlineRuins.LinePoint(line[at], line[at + 1], 0.5f);
+                        Assert.Less(Vector3.Distance(mid, 0.5f * (course[i - 1].Position + course[i].Position)), 0.5f, $"seed {seed} ring {i}: the drop gap bends");
                         at += 2;
                     }
                     Assert.AreEqual(course[i].Position, line[at].Position);
@@ -234,6 +242,98 @@ namespace CosmicShore.Tests
                     }
                 }
             }
+        }
+
+        // ── The autopilot and the ruins ──────────────────────────────────────────────────────────────────────────────
+
+        const float AiClearance = 24f;
+        const float AiLookahead = 240f;
+
+        static float SegmentDistance(Vector3 a, Vector3 b, Vector3 p)
+        {
+            Vector3 ab = b - a;
+            float u = ab.sqrMagnitude > 1e-6f ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
+            return (p - (a + ab * u)).magnitude;
+        }
+
+        static List<Vector3> Points(List<SpearlineRuinPart> parts)
+        {
+            var points = new List<Vector3>(parts.Count);
+            foreach (var part in parts) points.Add(part.Position);
+            return points;
+        }
+
+        [Test]
+        public void A_bot_on_the_flown_line_never_finds_a_ruin_on_its_path()
+        {
+            foreach (int seed in Seeds)
+            {
+                var points = Points(Ruins(4, seed, out var course, out _));
+                var line = new List<RaceGate>();
+                WaystationRuins.RacingLine(course, 4, line);
+                for (int i = 0; i + 1 < line.Count; i++)
+                    for (int k = 0; k < 32; k++)
+                        Assert.AreEqual(-1, WaystationRuins.FirstOnPath(points, SpearlineRuins.LinePoint(line[i], line[i + 1], k / 32f),
+                                SpearlineRuins.LinePoint(line[i], line[i + 1], (k + 1) / 32f), AiClearance),
+                        $"seed {seed}: a ruin on leg {i} of the flown line");
+            }
+        }
+
+        [Test]
+        public void A_path_is_blocked_only_by_a_prism_between_its_ends_and_within_the_clearance()
+        {
+            var prisms = new List<Vector3> { new Vector3(0f, 10f, 50f), new Vector3(0f, 5f, 30f), new Vector3(0f, 0f, -20f), new Vector3(0f, 0f, 140f) };
+            Vector3 from = Vector3.zero, to = new Vector3(0f, 0f, 100f);
+            Assert.AreEqual(1, WaystationRuins.FirstOnPath(prisms, from, to, AiClearance), "the nearer of the two in the way");
+            Assert.AreEqual(-1, WaystationRuins.FirstOnPath(prisms, from, to, 4f), "neither within 4 u");
+            prisms.RemoveRange(0, 2);
+            Assert.AreEqual(-1, WaystationRuins.FirstOnPath(prisms, from, to, AiClearance), "behind the start and past the end");
+        }
+
+        [Test]
+        public void A_bot_off_the_line_with_a_ruin_ahead_steers_to_a_point_it_can_reach_in_the_clear_lane()
+        {
+            int steered = 0;
+            foreach (int seed in Seeds)
+            {
+                var parts = Ruins(4, seed, out var course, out _);
+                var points = Points(parts);
+                var line = new List<RaceGate>();
+                WaystationRuins.RacingLine(course, 4, line);
+                // From beside each ruin prism, well outside the lane, flying at the end of the leg the ruin stands on.
+                for (int p = 0; p < parts.Count; p += 7)
+                {
+                    int leg = 0;
+                    float best = float.MaxValue;
+                    for (int i = 0; i + 1 < line.Count; i++)
+                    {
+                        float d = SpearlineRuins.LegDistance(line, i, parts[p].Position);
+                        if (d < best) { best = d; leg = i; }
+                    }
+                    Vector3 a = line[leg].Position, b = line[leg + 1].Position;
+                    Vector3 legDir = (b - a).normalized;
+                    Vector3 out_ = parts[p].Position - a;
+                    out_ -= legDir * Vector3.Dot(out_, legDir);
+                    if (out_.magnitude < 1f) continue;
+                    Vector3 hull = parts[p].Position + out_.normalized * 120f - legDir * 150f;
+                    if (WaystationRuins.FirstOnPath(points, hull, hull + (b - hull).normalized * Mathf.Min(AiLookahead, (b - hull).magnitude), AiClearance) < 0)
+                    {
+                        Assert.IsFalse(WaystationRuins.TrySteerRound(points, hull, b, line[leg], line[leg + 1], AiClearance, AiLookahead, out _),
+                            $"seed {seed}: a clear way was steered off");
+                        continue;
+                    }
+                    Assert.IsTrue(WaystationRuins.TrySteerRound(points, hull, b, line[leg], line[leg + 1], AiClearance, AiLookahead, out Vector3 target));
+                    steered++;
+                    bool onLane = SpearlineRuins.LegDistance(line, leg, target) < 1f;
+                    if (onLane)
+                        Assert.AreEqual(-1, WaystationRuins.FirstOnPath(points, hull, target, AiClearance),
+                            $"seed {seed}: the lane point is behind a ruin");
+                    else
+                        Assert.GreaterOrEqual((target - parts[WaystationRuins.FirstOnPath(points, hull, hull + (b - hull).normalized * Mathf.Min(AiLookahead, (b - hull).magnitude), AiClearance)].Position).magnitude,
+                            AiClearance * 2f - 0.01f, $"seed {seed}: the step aside is inside the clearance");
+                }
+            }
+            Assert.Greater(steered, 0, "no case had a ruin in the way: the test proves nothing");
         }
 
         [Test]
