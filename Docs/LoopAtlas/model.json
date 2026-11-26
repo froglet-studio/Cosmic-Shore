@@ -1403,7 +1403,7 @@
    "repsOf": "voyage per sitting",
    "now": {
     "s": "part",
-    "note": "V1 is built as the slice and D1 deepens it on the device: the living galaxy, rival crews by the same rules, work verbs, sagas, standing. Run once in Unity by Garrett. The networked Ark, rival Arks in the world and meeting other squads are not built."
+    "note": "V1 is built as the slice and D1 deepens it on the device: the living galaxy, rival crews by the same rules, work verbs, sagas, standing. Run once in Unity by Garrett. No voyage is kept for later: leaving ends it, and Set sail starts fresh from home (Shombith, 2026-11-25, commit db10caf70). The networked Ark, rival Arks in the world and meeting other squads are not built."
    },
    "plan": {
     "note": "V2 to V4: squads meet on arrival, placed by galactic traffic control so the meeting makes sense to both sides' missions. 3 to 6 legs, 20 to 40 minutes."
@@ -1420,8 +1420,8 @@
     },
     {
      "on": "npx",
-     "q": "A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in Docs/LoopAtlas/personas/journeys.yaml) never finishes one.",
-     "fill": "The Ark docks at the location it reached when the player leaves; the next sitting sails from there, one leg at a time."
+     "q": "A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in Docs/LoopAtlas/personas/journeys.yaml) never finishes one. Docking where the player left is off for now: Shombith, 2026-11-25, \"for now there is no saving, if they leave they leave. Set sail restarts the level\" (commit db10caf70).",
+     "fill": "Until saving returns, the port board always offers one job that fits a six-minute sitting (one cell out and the way home at 2x), so a short sitting still ends at a dock with its find; the Crystal Run stays the longer job."
     },
     {
      "on": "np",
