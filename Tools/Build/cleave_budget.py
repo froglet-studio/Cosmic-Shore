@@ -69,10 +69,14 @@ MEMBRANE_RADIUS = {1: 3600.0, 2: 3600.0, 3: 1200.0, 4: 1200.0}
 # Hostile mass a rung's arena must hold per prism of its own destruction target
 # (EndConditionOverridesSO.cleavePrismTargetByIntensity). See check 1. 1200/1200/1500/1500 until
 # 2026-10-26: a solo human took 152.7 s to clear 1500 on rung 4, so the ladder came down to aim an
-# experienced match near 90-100 s. 950 is the lowest the rung-1 arena allows under the 12x ceiling.
-TARGET_BY_INTENSITY = {1: 950, 2: 950, 3: 1000, 4: 1000}
+# experienced match near 90-100 s. 950 / 950 / 1000 / 1000 until 2026-11-27: the all-AI match then took
+# 280 / 208 / 161 / 152 s at real speed (editor, 4 Legendary seats, CLEAVE.md), so each rung came down to what
+# that cut rate (3.4 / 4.6 / 6.2 / 6.6 prisms a second) reaches in ~90 s. The ladder still rises.
+TARGET_BY_INTENSITY = {1: 300, 2: 400, 3: 550, 4: 600}
 MIN_ARENA_TARGET_MULTIPLE = 4.0
-MAX_ARENA_TARGET_MULTIPLE = 12.0
+# Was 12x ("over it the arena is mostly scenery"). A 90 s match only ever takes a slice of an arena this size, so
+# the upper bound now only stops a target that asks for almost nothing; 40x is that bound (I1 is ~37x).
+MAX_ARENA_TARGET_MULTIPLE = 40.0
 
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
 BLOB_DELTAS = dict(re=700, rx=500, fe=3600, fx=3000,

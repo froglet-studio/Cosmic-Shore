@@ -13,13 +13,15 @@ Where this section and the older text below disagree, this section is right.
 
 | Rung | Arena (verb) | Target | The element ladder adds |
 |---|---|---:|---|
-| I1 | The Panes (commit to a line), radius 2,160 | 950 | nothing: the bill at rest |
-| I2 | The Swell (follow the road), radius 2,160 | 950 | every hull starts at Space 5: a longer bill, Shield Breaker live |
-| I3 | The Cage (peel inward), radius 720 | 1,000 | 4 Space crystals a team, in the cage's HEART (115-360 from the centre, behind all three rinds), regrowing 12 s after one is taken |
-| I4 | The Twistbands (roll the blade), radius 720 | 1,000 | Space fauna in the cell's colour (`Resources/ElementLadderFauna`: shark, piranha, brittle star, tadpole, 23 live at most), and the team crystals through the bands (216-612) |
+| I1 | The Panes (commit to a line), radius 2,160 | 300 | nothing: the bill at rest |
+| I2 | The Swell (follow the road), radius 2,160 | 400 | every hull starts at Space 5: a longer bill, Shield Breaker live |
+| I3 | The Cage (peel inward), radius 720 | 550 | 4 Space crystals a team, in the cage's HEART (115-360 from the centre, behind all three rinds), regrowing 12 s after one is taken |
+| I4 | The Twistbands (roll the blade), radius 720 | 600 | Space fauna in the cell's colour (`Resources/ElementLadderFauna`: shark, piranha, brittle star, tadpole, 23 live at most), and the team crystals through the bands (216-612) |
 
-- **Targets are 950 / 950 / 1,000 / 1,000** since 2026-10-26 (`cleave_budget.TARGET_BY_INTENSITY`; a solo human took
-  152.7 s to clear 1,500 on rung 4). The 1,200 / 1,500 figures below are history. The card seats exactly 4 (Yash, 2026-11-25: every Swordfish game, for now; it was up to 9, 3 a team), in 2 or 3
+- **Targets are 300 / 400 / 550 / 600** since 2026-11-27 (`cleave_budget.TARGET_BY_INTENSITY`): each is what the
+  all-AI match cut in about 90 s at real speed (950 / 950 / 1,000 / 1,000 took the AI 280 / 208 / 161 / 152 s). The
+  ladder still rises, and each target is 18x-37x the hostile mass its arena holds (`cleave_budget` check 1, whose
+  upper bound moved 12x -> 40x for this). The 950 / 1,000 / 1,200 / 1,500 figures below are history. The card seats exactly 4 (Yash, 2026-11-25: every Swordfish game, for now; it was up to 9, 3 a team), in 2 or 3
   teams by the launch panel's pick: 2v2 or 2/1/1.
 - **A prism in your own team's colour does not score** (`StatsManager.IsFriendlyEnvironmentPrism`). The arenas are
   painted in the domain colours, so about a quarter to a third of the mass is worth nothing to each team. The text

@@ -113,6 +113,17 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShippedTargets_AreTheNinetySecondOnes()
+        {
+            // cleave_budget.TARGET_BY_INTENSITY (2026-11-27): what the all-AI match cut in ~90 s at real speed. Another
+            // generator that rewrites EndConditionOverrides.asset can put the old 950 / 1,000 back; this fails then.
+            int[] want = { 300, 400, 550, 600 };
+            var ends = EndConditionOverridesSO.Instance;
+            for (int i = 1; i <= 4; i++)
+                Assert.AreEqual(want[i - 1], ends.GetCleavePrismTarget(i), $"I{i}");
+        }
+
+        [Test]
         public void TeamCrystals_AreAlwaysInsideTheArena()
         {
             for (int i = ElementLadder.TeamCrystalsFrom; i <= 4; i++)
