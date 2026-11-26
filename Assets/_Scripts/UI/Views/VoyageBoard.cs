@@ -263,13 +263,13 @@ namespace CosmicShore.UI
                 _ark.ClosePicker();
                 return;
             }
-            // Your Ark steps back to the quay (Rev 138 Flow: Take the job opens Your Ark from the quay).
-            if (_page == Page.Ark) ShowPage(Page.Sea);
-            else if (_page > Page.Sea) ShowPage(_page - 1);
+            // Each page steps back to the one before it: Your Ark to The voyage, The voyage to the quay.
+            if (_page > Page.Sea) ShowPage(_page - 1);
         }
 
-        /// <summary>Take the job (A) on the quay or the full screen: the open voyage goes to Your Ark (Rev 138 Flow).</summary>
-        public void TakeJob() => ShowPage(Page.Ark);
+        /// <summary>Take the job (A) on the quay or the full screen: the open voyage goes to The voyage (02), whose call
+        /// to action goes on to Your Ark (Shombith, 2026-11-26: "not straight to the ark screen").</summary>
+        public void TakeJob() => ShowPage(Page.Voyage);
 
         /// <summary>See every class (Y) on the quay: Vessels over the quay, on your seat of the open voyage.</summary>
         public void BrowseVessels()

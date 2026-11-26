@@ -37,8 +37,13 @@ namespace CosmicShore.UI
         const float Margin = 0f, SeatLineY = 62f, StandY = 84f, StandHeight = 420f, FloorLeft = 80f, FloorRight = 1200f;
         const float MaxStandWidth = 520f, StandGap = 80f, PictureY = 0f, PictureHeight = 290f, NameY = 306f, RuleY = 354f,
             LineY = 372f;
-        const float AlsoX = 1300f, AlsoY = 95f, TileY = 124f, TileWidth = 260f, TileHeight = 180f, TileGap = 20f,
-            TilePicture = 128f;
+        // The tiles three to a row: the first row above the floor, the second on it, so no tile straddles the floor's edge
+        // (Shombith, 2026-11-26: the second row's hulls sat across the line).
+        const float AlsoX = 1300f, AlsoY = 95f, TileY = 124f, TileWidth = 170f, TileGap = 15f, TilePicture = 128f,
+            TileRow2Y = 340f;
+        const int TilesInRow = 3;
+        // A leader's picture ends on the floor's edge and stands on it (bottom-aligned), never across it.
+        const float StandPicture = 224f;
         const int MaxTiles = 6, MaxInRow = 4;
         // More than four leaders stand in two rows of short stands (Sapper has seven).
         const float SmallPicture = 140f, SmallStand = 264f, MinStandWidth = 220f;
@@ -179,7 +184,7 @@ namespace CosmicShore.UI
         void BuildAlso()
         {
             // The tiles' title (caps 14, Sub) over two columns of small tiles at the right.
-            _alsoTitle = _kit.Label(At("AlsoTitle", AlsoX, AlsoY, 2f * TileWidth + TileGap, 20f), 14, _kit.Sub);
+            _alsoTitle = _kit.Label(At("AlsoTitle", AlsoX, AlsoY, TilesInRow * TileWidth + (TilesInRow - 1) * TileGap, 20f), 14, _kit.Sub);
             VoyageKit.Stretch(_alsoTitle.rectTransform);
         }
 
@@ -191,7 +196,8 @@ namespace CosmicShore.UI
                 int n = _tiles.Count;
                 var view = new TileView
                 {
-                    Root = At("Also" + n, AlsoX + n % 2 * (TileWidth + TileGap), TileY + n / 2 * TileHeight, TileWidth, TileHeight),
+                    Root = At("Also" + n, AlsoX + n % TilesInRow * (TileWidth + TileGap), n < TilesInRow ? TileY : TileRow2Y,
+                        TileWidth, TilePicture + 56f),
                 };
                 view.Group = view.Root.gameObject.AddComponent<CanvasGroup>();
                 var hit = VoyageKit.Block(view.Root, VoyageKit.Clear, hit: true);
@@ -200,6 +206,7 @@ namespace CosmicShore.UI
                 view.Button.transition = Selectable.Transition.None;
                 view.Picture = At("Picture", 0f, 0f, TileWidth, TilePicture, view.Root);
                 view.Hull = VoyageSeats.HullBox(view.Picture);
+                StandOnFloor(view.Hull);
                 view.Name = _kit.Text(At("Name", 10f, TilePicture + 6f, TileWidth - 50f, 24f, view.Root), 17, _kit.Light,
                     TextAlignmentOptions.Left);
                 VoyageKit.Stretch(view.Name.rectTransform);
@@ -320,6 +327,7 @@ namespace CosmicShore.UI
                 // The hangar preview standing on the floor, as Your Ark stands a seat's hull.
                 view.Picture = VoyageKit.Node("Picture", view.Root);
                 view.Hull = VoyageSeats.HullBox(view.Picture);
+                StandOnFloor(view.Hull);
                 view.Name = _kit.Text(VoyageKit.Node("Name", view.Root), 22, _kit.Light, TextAlignmentOptions.Left);
                 view.Rule = VoyageKit.Block(VoyageKit.Node("Rule", view.Root), _kit.Outline);
                 view.Line = _kit.Text(VoyageKit.Node("Line", view.Root), 15, _kit.Sub, TextAlignmentOptions.TopLeft);
@@ -330,10 +338,14 @@ namespace CosmicShore.UI
             return _stands[index];
         }
 
+        // The picture sits on the bottom of its box (the floor), centred across it, as large as the box allows.
+        static void StandOnFloor(VoyageSeats.HullView hull) =>
+            hull.Image.rectTransform.pivot = new Vector2(0.5f, 0f);
+
         // A stand at (x, y), w wide; a short stand (two rows of leaders) keeps the same order at a smaller picture.
         void Lay(StandView view, float x, float y, float w, bool picked, bool small)
         {
-            float picture = small ? SmallPicture : PictureHeight, drop = PictureHeight - picture;
+            float picture = small ? SmallPicture : StandPicture, drop = small ? PictureHeight - SmallPicture : 0f;
             VoyageKit.At(view.Root, x, y, w, small ? SmallStand : StandHeight);
             VoyageKit.At(view.Picture, 0f, PictureY, w, picture);
             VoyageKit.At(view.Name.rectTransform.parent as RectTransform, 0f, NameY - drop, w, 30f);
