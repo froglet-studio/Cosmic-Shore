@@ -27267,7 +27267,7 @@ not compiled: no Unity, Amoebius or reference compile ran. `author_palisade_asse
 - [ ] The launch panel offers at most 4 vessels (Yash, 2026-11-25: every Swordfish game seats 4 for now), and with 4
       seated the frame rate holds with every team's walls standing.
 - [ ] A person's judgment (the fun card): does the round feel like swinging walls into place, or like laying trail?
-      On the model the afterimages are about 22% of the score at I1 and a third at I2 (PALISADE.md section 5).
+      Measured headless, the afterimages are about 90% of what stands at the whistle (PALISADE.md section 7.1).
 - [ ] A person's judgment: are I1-I4 four different rounds, and is I4's grazing fair to the team that is behind?
 
 ## Cleave: the Swordfish's Space game (2026-11-25, Yash, COMPILED AND TESTED IN THE EDITOR, AI RAN EVERY RUNG, NOT FLOWN BY A PERSON)

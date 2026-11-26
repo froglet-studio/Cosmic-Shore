@@ -98,13 +98,14 @@ Sized against a volume read off the shipped Swordfish (`author_palisade_assets.p
 `Swordfish.prefab` at half the 840 u/s ramp, plus one window of Mass 0 afterimages every 15 s, for a domain of two who
 build half the round. A quarter of that behind buys 1.5 element levels; the generator asserts at least 1.
 
-**What the model says about the score** (numbers since the 2026-11-21 afterimage tune). The trail is about 189 vol/s.
-One 16-image window every 15 s lays about 52 vol/s at Mass 0 (49 each), 91 vol/s at Mass 5 and 131 vol/s at Mass 10.
-So the Mass ability is about 22% of a domain's standing volume at I1, a third at I2 and at most 41% at I3: most of the
-score is TRAIL on every rung, and the game teaches Afterimage less than its name promises. This is Palisade's main
-design gap. The levers are the mode's (a reward for afterimage volume, or a cell that eats trail faster than walls),
-never the vessel's trail or afterimage numbers. Neither is built: both need a platform stat that tells an afterimage
-from a trail prism, and the Mass-Space merge (section 8) replaces this scoring rule anyway.
+**What the score is made of, measured (2026-11-27).** The generator's model above says the trail is about 189 vol/s
+and Afterimage only 22% of the score at I1. **That is wrong.** Counted in the real game code (the Brood Rush judge in
+Amoebius, headless, every prism standing at the whistle split by the trail that laid it), Afterimage is **88-91% of
+every pilot's standing volume on every rung**: at I1 a seat holds about 13,000, of which about 1,600 is trail. The
+trail is laid but is small and is cut; the walls are what stands. So the game already scores the Mass ability, and no
+scoring change was made (the merge in section 8 would replace one anyway). Why the model's trail rate is about ten
+times too high is not known; the comeback rate it sets still holds, because the measured domain volume at I1 (about
+26,000) is the model's reference (26,410).
 
 ## 6. Verification status
 
@@ -120,13 +121,34 @@ from a trail prism, and the Mass-Space merge (section 8) replaces this scoring r
   compiles the shipped `PalisadeArena.cs` and `PalisadeArenaTests.cs` with Roslyn and runs them (11 tests, 14
   negative controls, all firing).
 
-## 7. Where it stands (2026-11-25, elemental loop steps 1-3)
+## 7. Where it stands (2026-11-27, elemental loop steps 1-3)
 
 | Step | State | What is missing |
 |---|---|---|
-| 1 fun, one intensity | built, never flown | A person's fun card. On the model the Mass ability is a minority of the score (section 5). |
-| 2 I1-I4 | built on paper (section 4) | Nobody has seen a rung in this scene; a person's sign-off on all four. |
-| 3 AI on I1-I4 | judged headless 2026-11-19 (3.1) | A re-judge: the afterimages grew x1.7 on 2026-11-21 and the AI learned the team crystals on 2026-11-25. A lone builder still lays trail only, because the sword hand energizes near hostile prisms. |
+| 1 fun, one intensity | built, never flown | A person's fun card. Measured, Afterimage is about 90% of the score (section 5). |
+| 2 I1-I4 | built, each rung distinct in assets and in the judge (7.1) | Nobody has seen a rung in this scene; a person's sign-off on all four. |
+| 3 AI on I1-I4 | re-judged headless with the arena, 2026-11-27 (7.1) | The editor match per rung (the checklist). |
+
+### 7.1 The re-judge (2026-11-27, Plan step: mass-arcade)
+
+`brood_judge.judge(mode="Palisade")`, Amoebius headless on this checkout, four Legendary Swordfish AIs in two teams of
+two, seeds 1-3 with the arena (and, for the effect of the arena, the same with `arenaPrism` overridden to none).
+Every seat of every match played the full 90 s (48 of 48 with the arena, 48 of 48 without).
+
+| Mean seat | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| VC + VD, with the arena | 18,422 | 25,146 | 26,753 | 26,722 |
+| VC + VD, bare cell | 15,378 | 22,540 | 22,880 | 20,853 |
+| VD (cut), with the arena | 1,181 | 1,707 | 2,531 | 1,839 |
+| Standing at the whistle, with the arena | 13,757 | 17,495 | 15,528 | 12,469 |
+| Afterimage share of what stands | 87.9% | 91.0% | 90.7% | 89.5% |
+| Elemental crystals taken (seeds 1-2) | 5.1 | 4.1 | 2.6 | 1.8 |
+
+The arena raises every rung's VC + VD (12-28%) and doubles what is cut at I3. The rungs read apart for the AI: I1 is the
+low-Mass round, I2 and I3 the most walls, and I4 the least left standing (its rubble, tips and fauna), with crystals
+taken falling with the scatter. The AI's team-crystal detour (3.2) works: they take crystals on every rung. VC and VD
+are the volume books, which also count arena prisms cut, so VD includes the arena. 2,016 judged pilot-seconds; nothing
+here was played in the Unity editor.
 
 ## 8. The Mass-Space merge (`Docs/ArcadeRestructure/PLAN.md`, Garrett 2026-11-17)
 

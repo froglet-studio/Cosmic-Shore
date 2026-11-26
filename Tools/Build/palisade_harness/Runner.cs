@@ -17,6 +17,20 @@ public static class Runner
     public static int Main(string[] args)
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+        if (args.Length > 0 && args[0] == "--parts")
+        {
+            // One JSON line per prism, every rung: what Tools/Build/palisade_arena.py --parity compares its twin with.
+            static string V(UnityEngine.Vector3 v) => $"[{v.x:R},{v.y:R},{v.z:R}]";
+            for (int rung = 1; rung <= 4; rung++)
+            {
+                var parts = new List<PalisadeArenaPart>();
+                PalisadeArena.Lay(PalisadeArena.ForIntensity(rung), parts, new List<PalisadeLane>());
+                foreach (var p in parts)
+                    Console.WriteLine($"{{\"intensity\":{rung},\"pos\":{V(p.Position)},\"fwd\":{V(p.Forward)},\"up\":{V(p.Up)}," +
+                                      $"\"scale\":{V(p.Scale)},\"kind\":{(int)p.Kind},\"piece\":{p.Piece},\"lane\":{p.Lane}}}");
+            }
+            return 0;
+        }
         if (args.Length > 0 && args[0] == "--census")
         {
             for (int rung = 1; rung <= 4; rung++)

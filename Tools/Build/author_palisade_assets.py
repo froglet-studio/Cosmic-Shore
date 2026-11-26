@@ -97,6 +97,9 @@ RAMP_TOP = 840.0          # the Swordfish's ramp ceiling (RampBoostActionExecuto
 CRUISE = RAMP_TOP * 0.5   # a pilot who turns, cuts and raids averages about half of it
 KEY_VOLUME = (base_x * x_scaler / 2.0) * base_y * base_z            # VesselPrismController.CreateBlock, no width scaler
 TRAIL_RATE = KEY_VOLUME * CRUISE / wavelength if trail_on else 0.0  # volume / second, one pilot
+# Measured 2026-11-27 (PALISADE.md 7.1): what STANDS at the whistle is about 90% afterimage and the trail's share is
+# about a tenth of this rate's. The reference domain volume below still matches the measured I1 domain (~26,000), so
+# the comeback rate is kept; do not read the trail/afterimage split off this model.
 
 seg_len = one(AFTER, r"^  segmentLength: ([0-9.]+)$", "segmentLength")
 coverage = one(AFTER, r"^  lengthCoverage: ([0-9.]+)$", "lengthCoverage")

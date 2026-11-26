@@ -6,6 +6,7 @@
 #   bash Tools/Build/palisade_harness/run.sh               # every test; exit 0 = all passed
 #   bash Tools/Build/palisade_harness/run.sh --self-test   # ...plus negative controls that must FAIL
 #   bash Tools/Build/palisade_harness/run.sh --census      # what stands on each rung, counted from the shipped C#
+#   bash Tools/Build/palisade_harness/run.sh --parts       # every prism of every rung as JSON (palisade_arena.py --parity)
 #
 # Needs a .NET SDK (8+): DOTNET_ROOT, else ~/.dotnet, else the folder of `dotnet` on PATH.
 set -euo pipefail
@@ -50,12 +51,18 @@ run() { "$DOTNET" "$(native "$OUT/$1.dll")" "${@:2}"; }
 build "$ARENA" palisade
 case "${1:-}" in
   --census) run palisade --census; exit 0 ;;
+  --parts) run palisade --parts; exit 0 ;;
 esac
 
 set +e; run palisade > "$OUT/result.txt"; rc=$?; set -e
 cat "$OUT/result.txt"
 [ $rc -eq 0 ] || exit $rc
 [ "${1:-}" = "--self-test" ] || exit 0
+
+# The card renderer's Python twin must lay what the shipped C# lays.
+PY=$(command -v python3 >/dev/null 2>&1 && python3 -c "" 2>/dev/null && echo python3 || echo py)
+run palisade --parts > "$OUT/parts.jsonl"
+"$PY" "$ROOT/Tools/Build/palisade_arena.py" --parity "$(native "$OUT/parts.jsonl")"
 
 # Negative controls: each mutated copy of PalisadeArena.cs must make the tests fail.
 mutate() {   # $1 = label, $2 = sed expression, $3 = probe the mutated copy must contain
