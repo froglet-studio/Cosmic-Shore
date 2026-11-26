@@ -1,0 +1,621 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "bounce",
+  "user": "Owner",
+  "unityVersion": "6000.4.11f1",
+  "branch": "bleeding-edge",
+  "commit": "3b4335a077",
+  "playStartedUtc": "2026-11-25T23:51:59.2278652Z",
+  "playEndedUtc": "2026-11-26T00:28:09.6441389Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-11-25T23:52:23.0644531Z",
+    "durationSeconds": 2146.488525390625,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "host",
+    "counters": {
+        "requests": 156,
+        "lobbyReads": 280,
+        "retries": 0,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 4,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 0,
+        "fatal": 1,
+        "presenceForceReset": 1,
+        "offlineFallback": 0,
+        "partyRosterPush": 0,
+        "presencePush": 11,
+        "lobbyReadsPerSecond": 0.13044561445713044
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 1,
+        "budgetExhaustions": 0,
+        "rateLimited": 4
+    },
+    "lifecycle": [
+        {
+            "t": 0.00010619999375194311,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 10.62713623046875,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 21.520872116088868,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 21.90777015686035,
+            "e": "netConfig",
+            "detail": "hash=af07568b66b13c33 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 27.23867416381836,
+            "e": "stall",
+            "detail": "5.1s in Menu_Main"
+        },
+        {
+            "t": 27.239538192749025,
+            "e": "stallContext",
+            "detail": "focused no; Unity reserved 10851 MB, managed 1973 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 27.613330841064454,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 27.621137619018556,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 5296 ms; GC.Collect 1161 ms; PostLateUpdate.PlayerUpdateCanvases 604 ms; UGUI.Rendering.UpdateBatches 603 ms; Update.ScriptRunBehaviourUpdate 346 ms; PreLateUpdate.ScriptRunBehaviourLateUpdate 283 ms"
+        },
+        {
+            "t": 33.74820327758789,
+            "e": "relayDrop",
+            "detail": "after a 5.1 s freeze 6.5 s earlier"
+        },
+        {
+            "t": 33.76066207885742,
+            "e": "bounce",
+            "detail": "Connection lost"
+        },
+        {
+            "t": 40.92759323120117,
+            "e": "party",
+            "detail": "InParty->HostingParty"
+        },
+        {
+            "t": 49.458641052246097,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 49.612117767333987,
+            "e": "netConfig",
+            "detail": "hash=af07568b66b13c33 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 52.823551177978519,
+            "e": "stall",
+            "detail": "3.1s in Menu_Main"
+        },
+        {
+            "t": 52.8236083984375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10846 MB, managed 2028 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 52.870540618896487,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 3040 ms; GC.Collect 1876 ms; PostLateUpdate.PlayerUpdateCanvases 618 ms; UGUI.Rendering.UpdateBatches 618 ms; Update.ScriptRunBehaviourUpdate 215 ms"
+        },
+        {
+            "t": 53.00779342651367,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 291.0594787597656,
+            "e": "trailRelease",
+            "detail": "2380 still out when the cover ended, back in 0.5s"
+        },
+        {
+            "t": 294.8368225097656,
+            "e": "stall",
+            "detail": "3.8s in Menu_Main"
+        },
+        {
+            "t": 294.8368835449219,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10572 MB, managed 2044 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 294.92779541015627,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 3844 ms; PreLateUpdate.ScriptRunBehaviourLateUpdate 2271 ms; GC.Collect 1364 ms"
+        },
+        {
+            "t": 299.9993896484375,
+            "e": "stall",
+            "detail": "4.6s in Menu_Main, ending in MinigameAstroLeague"
+        },
+        {
+            "t": 299.99945068359377,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10548 MB, managed 1991 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 300.85833740234377,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 4734 ms; EarlyUpdate.UpdatePreloading 4400 ms; Loading.UpdatePreloading 4400 ms; Application.Integrate Assets in Background 4400 ms; Application.LoadLevelAsync Integrate 3746 ms; GC.Collect 1737 ms; Destroy 1188 ms; UnloadScene 1178 ms"
+        },
+        {
+            "t": 346.2261962890625,
+            "e": "readyGate",
+            "detail": "AstroLeagueController: Soncub pressed Ready"
+        },
+        {
+            "t": 494.0061340332031,
+            "e": "sceneExitDrain",
+            "detail": "0 destroyed, 0 parked in 0.7s"
+        },
+        {
+            "t": 494.2019958496094,
+            "e": "trailRelease",
+            "detail": "1363 still out when the cover ended, back in 0.2s"
+        },
+        {
+            "t": 499.1219482421875,
+            "e": "stall",
+            "detail": "4.9s in MinigameAstroLeague"
+        },
+        {
+            "t": 499.1220397949219,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10049 MB, managed 2019 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 499.1499938964844,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 4928 ms; Update.ScriptRunDelayedDynamicFrameRate 2697 ms; Destroy 2697 ms; GC.Collect 2063 ms"
+        },
+        {
+            "t": 506.0574035644531,
+            "e": "stall",
+            "detail": "6.3s in MinigameAstroLeague, ending in Menu_Main"
+        },
+        {
+            "t": 506.0574951171875,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10049 MB, managed 2034 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 507.8069152832031,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 7100 ms; EarlyUpdate.UpdatePreloading 5104 ms; Loading.UpdatePreloading 5104 ms; Application.Integrate Assets in Background 5104 ms; Application.LoadLevelAsync Integrate 4809 ms; GC.Collect 1998 ms; Loading.AwakeFromLoad 1267 ms; EarlyUpdate.ScriptRunDelayedStartupFrame 1040 ms"
+        },
+        {
+            "t": 781.9035034179688,
+            "e": "trailRelease",
+            "detail": "5338 still out when the cover ended, back in 1.3s"
+        },
+        {
+            "t": 1254.0782470703125,
+            "e": "stall",
+            "detail": "4.3s in Voyage"
+        },
+        {
+            "t": 1254.078369140625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10190 MB, managed 2318 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 1254.4111328125,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 3361 ms; Update.ScriptRunBehaviourUpdate 2762 ms; Update.ScriptRunDelayedDynamicFrameRate 430 ms; GC.Collect 258 ms"
+        },
+        {
+            "t": 1272.93505859375,
+            "e": "stall",
+            "detail": "3.4s in Voyage"
+        },
+        {
+            "t": 1272.93505859375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10317 MB, managed 2367 MB, of 32373 MB RAM; async prism clones waiting 2"
+        },
+        {
+            "t": 1274.811279296875,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 1373 ms; Update.ScriptRunDelayedDynamicFrameRate 565 ms; Update.ScriptRunBehaviourUpdate 381 ms"
+        },
+        {
+            "t": 1946.084228515625,
+            "e": "stall",
+            "detail": "11.5s in Voyage"
+        },
+        {
+            "t": 1946.0843505859375,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 11017 MB, managed 2633 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 1946.145751953125,
+            "e": "sceneExitDrain",
+            "detail": "cut short at 8.0s"
+        },
+        {
+            "t": 1953.081787109375,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 15734 ms; Update.ScriptRunBehaviourUpdate 11132 ms; Update.ScriptRunDelayedDynamicFrameRate 4276 ms; Destroy 4041 ms"
+        },
+        {
+            "t": 1953.0826416015625,
+            "e": "stall",
+            "detail": "7.0s in Voyage"
+        },
+        {
+            "t": 1953.0826416015625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 11073 MB, managed 2640 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 1953.1356201171875,
+            "e": "trailRelease",
+            "detail": "cut short at 4.0s with 18506 of 19658 left"
+        },
+        {
+            "t": 1962.0789794921875,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 10662 ms; Update.ScriptRunBehaviourUpdate 5419 ms; GC.Collect 3561 ms; Update.ScriptRunDelayedDynamicFrameRate 898 ms"
+        },
+        {
+            "t": 1962.0789794921875,
+            "e": "stall",
+            "detail": "9.0s in Voyage"
+        },
+        {
+            "t": 1962.0791015625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 11073 MB, managed 2540 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 1964.7783203125,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 7182 ms; GC.Collect 3561 ms; Update.ScriptRunBehaviourUpdate 1907 ms; Update.ScriptRunDelayedDynamicFrameRate 1011 ms"
+        },
+        {
+            "t": 1987.9580078125,
+            "e": "stall",
+            "detail": "23.2s in Voyage, ending in Menu_Main"
+        },
+        {
+            "t": 1987.9581298828125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10815 MB, managed 2513 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 1991.495849609375,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 24316 ms; EarlyUpdate.UpdatePreloading 18900 ms; Loading.UpdatePreloading 18900 ms; Application.Integrate Assets in Background 18900 ms; Application.LoadLevelAsync Integrate 18094 ms; Destroy 9971 ms; UnloadScene 9885 ms; GameObject.ActivateAwakeRecursively 4503 ms"
+        },
+        {
+            "t": 1991.49658203125,
+            "e": "stall",
+            "detail": "3.5s in Menu_Main"
+        },
+        {
+            "t": 1991.49658203125,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10815 MB, managed 2534 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 1993.245849609375,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 26975 ms; EarlyUpdate.UpdatePreloading 20796 ms; Loading.UpdatePreloading 20796 ms; Application.Integrate Assets in Background 20796 ms; Application.LoadLevelAsync Integrate 18094 ms; Destroy 9964 ms; UnloadScene 9885 ms; GameObject.ActivateAwakeRecursively 4503 ms"
+        },
+        {
+            "t": 1997.7757568359375,
+            "e": "stall",
+            "detail": "4.5s in Menu_Main"
+        },
+        {
+            "t": 1997.77587890625,
+            "e": "stallContext",
+            "detail": "focused yes; Unity reserved 10799 MB, managed 2420 MB, of 32373 MB RAM; async prism clones waiting 1"
+        },
+        {
+            "t": 1998.091064453125,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 4545 ms; GC.Collect 2797 ms; Update.ScriptRunBehaviourUpdate 452 ms; EarlyUpdate.UpdateAsyncInstantiate 330 ms; Update.ScriptRunDelayedDynamicFrameRate 234 ms"
+        },
+        {
+            "t": 2111.175048828125,
+            "e": "bounce",
+            "detail": "party session gone server-side"
+        },
+        {
+            "t": 2119.582275390625,
+            "e": "party",
+            "detail": "InParty->HostingParty"
+        },
+        {
+            "t": 2126.120361328125,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 2126.29150390625,
+            "e": "netConfig",
+            "detail": "hash=af07568b66b13c33 prefabs=33 234294682:Rhino 297461143:Angler 336337177:BrittleStar 504450242:Termite 515096987:Grizzly 532772460:Honeyguide 758961507:StatsManager 873610668:Urchin 1012147755:Stoat 1066882345:NetworkVesselSpawner 1124080984:Sparrow 1234547654:AstroLeagueBall 1554866019:Serpent 1887398589:Thresher 1945657574:TigerMoth 2256742461:Squirrel 2358568326:TadPoleFauna 2437889963:Orca 2603481845:MassSharkFauna 2640575084:Jacks 2854954169:Falcon 3228241887:BeeFauna 3347286452:Goby 3392890734:Manta 3401243537:Shrike 3404334551:Dolphin 3630817127:Swordfish 3827091966:Scarab 3939330856:Player 3950253892:JewelWasp 4022926403:Starling 4044113297:Wrasse 4221370039:Meerkat"
+        },
+        {
+            "t": 2129.414794921875,
+            "e": "stall",
+            "detail": "3.1s in Menu_Main"
+        },
+        {
+            "t": 2129.414794921875,
+            "e": "stallContext",
+            "detail": "focused no; Unity reserved 10775 MB, managed 2388 MB, of 32373 MB RAM; async prism clones waiting 0"
+        },
+        {
+            "t": 2129.4365234375,
+            "e": "stallFrame",
+            "detail": "PlayerLoop 3089 ms; GC.Collect 2318 ms; Update.ScriptRunBehaviourUpdate 323 ms"
+        },
+        {
+            "t": 2129.62353515625,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 2129.627197265625,
+            "e": "party",
+            "detail": "InParty->Reconnecting"
+        },
+        {
+            "t": 2130.677490234375,
+            "e": "party",
+            "detail": "Reconnecting->InParty"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 6,
+    "warnings": 96,
+    "dropped": 0,
+    "lines": [
+      {"t": 0.508, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 2.779, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "Unity.Debug:LogWarning (object) (at ./Library/PackageCache/com.unity.entities@73a2af2e76de/Unity.Entities/Stubs/Unity/Debug.cs:13)"},
+      {"t": 3.169, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "CosmicShore.Core.DeveloperUnlockGate:AnnounceOnce () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/System/Progression/DeveloperUnlockGate.cs:152)"},
+      {"t": 3.341, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 3.359, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 3.378, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 8.738, "type": "log", "msg": "Overriding environment to 'development' through InitializationOptions"},
+      {"t": 9.389, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:147)"},
+      {"t": 9.391, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "CosmicShore.Core.DailyChallengeSystem:TryFetchDailyChallenge (CosmicShore.Data.DailyChallenge&) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/System/DailyChallengeSystem.cs:147)"},
+      {"t": 10.951, "type": "error", "msg": "NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n", "at": "Unity.Services.CloudCode.CloudCodeInternal:BuildException (bool,long,int,string,Unity.Services.CloudCode.Internal.Http.HttpException) (at ./Library/PackageCache/com.unity.services.cloudcode@4d38bd1f7a5b/Runtime/CloudCode.cs:182)"},
+      {"t": 10.968, "type": "warning", "msg": "[LaunchFlags] The flags could not be fetched (NotFound\r\n(404) HTTP/1.1 404 Not Found\r\nError\r\nScript could not be found\r\n); keeping the Default flags.", "at": "CosmicShore.Core.LaunchFlagsService/<FetchAsync>d__7:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/System/CloudData/LaunchFlagsService.cs:62)"},
+      {"t": 11.196, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 11.518, "type": "log", "msg": "Container Bootstrap (-5533180) disposed"},
+      {"t": 11.532, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 12.862, "type": "warning", "msg": "Failed to create material drawer Header with arguments 'Seamless mouth (a crystal wormhole, Docs CRYSTAL_WORMHOLE.md)'", "at": "UnityEditor.MaterialPropertyHandler:GetShaderPropertyDrawer (string,bool&)"},
+      {"t": 26.499, "type": "warning", "msg": "[HostConnectionService] Rate limited during refresh - backing off", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshAsync>d__147:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:1862)"},
+      {"t": 28.259, "type": "log", "msg": "Container Authentication (-106607444) disposed"},
+      {"t": 29.917, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.918, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.918, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.919, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.921, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.922, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.939, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.941, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 29.944, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 34.898, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."},
+      {"t": 39.538, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (2048 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 43.547, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 43.56, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 7ms"},
+      {"t": 43.567, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 3ms"},
+      {"t": 43.568, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 2ms"},
+      {"t": 43.57, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 2ms"},
+      {"t": 43.571, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 43.574, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 2ms"},
+      {"t": 43.575, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 1ms"},
+      {"t": 43.577, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 1ms"},
+      {"t": 43.578, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 43.579, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 2ms"},
+      {"t": 43.58, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 1ms"},
+      {"t": 43.856, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 275ms waiting avg 5ms per response"},
+      {"t": 43.857, "type": "log", "msg": "QosJob: took 311ms to process 11 servers"},
+      {"t": 45.495, "type": "warning", "msg": "[MouseFlight] One-thumb mouse controls are NOT engaged: the player has no vessel yet (or it was despawned). If this is the only message you see, the player-vessel pair never resolved on this machine. Flight stays on the dual-WASD keyboard scheme. See _Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md.", "at": "CosmicShore.Gameplay.MouseFlightDiagnostics:Decline (CosmicShore.Gameplay.MouseFlightDiagnostics/Reason,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/IO/MouseFlightDiagnostics.cs:79)"},
+      {"t": 50.265, "type": "warning", "msg": "[AuthScene] Relay session not ready (attempt 1/3) - retrying HCS init...", "at": "CosmicShore.Core.AuthenticationSceneController/<LoadMainMenuNetworkedAsync>d__71:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/System/AuthenticationSceneController.cs:976)"},
+      {"t": 56.833, "type": "error", "msg": "Failed to establish connection with the Relay server (server didn't answer any BIND message).", "at": "Unity.Jobs.JobHandle:Complete ()"},
+      {"t": 57.575, "type": "error", "msg": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.OnTransportFailure to be notified of such events programmatically.", "at": "Unity.Netcode.Transports.UTP.UnityTransport:OnEarlyUpdate () (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Transports/UTP/UnityTransport.cs:1187)"},
+      {"t": 57.581, "type": "error", "msg": "[Netcode] Host is shutting down due to network transport failure of UnityTransport!", "at": "Unity.Netcode.Logging.ContextualLogger:Log (UnityEngine.LogType,Unity.Netcode.Logging.Context) (at ./Library/PackageCache/com.unity.netcode.gameobjects@277a288a1cea/Runtime/Logging/ContextualLogger.cs:153)"},
+      {"t": 57.584, "type": "warning", "msg": "[Net] Transport failure - bouncing to solo menu.", "at": "CosmicShore.Gameplay.MultiplayerSetup/<OnTransportFailure>d__38:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs:636)"},
+      {"t": 57.597, "type": "warning", "msg": "[PartyInviteController] Bouncing to solo menu: Connection lost", "at": "CosmicShore.Gameplay.PartyInviteController/<BounceToSoloMenuAsync>d__45:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/PartyInviteController.cs:831)"},
+      {"t": 61.376, "type": "log", "msg": "Container Menu_Main (-106608716) disposed"},
+      {"t": 62.49, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.491, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.491, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.491, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.492, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.492, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.501, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.501, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 62.503, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 67.343, "type": "log", "msg": "[DiagnosticsHUD] capture Menu_Main-slow 15 → capture 'Menu_Main-slow': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 67.862, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (2048 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 71.798, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 71.8, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 0ms"},
+      {"t": 71.803, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 4ms"},
+      {"t": 71.805, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 2ms"},
+      {"t": 71.81, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 3ms"},
+      {"t": 71.811, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 1ms"},
+      {"t": 71.815, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 3ms"},
+      {"t": 71.816, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 0ms"},
+      {"t": 71.817, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 2ms"},
+      {"t": 71.818, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 1ms"},
+      {"t": 71.821, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 2ms"},
+      {"t": 71.822, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 0ms"},
+      {"t": 72.088, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 265ms waiting avg 5ms per response"},
+      {"t": 72.089, "type": "log", "msg": "QosJob: took 293ms to process 11 servers"},
+      {"t": 85.216, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\diag_Menu_Main_Menu_Main-slow_20261125_185324.json"},
+      {"t": 114.329, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 128.5 ms avg (p99 410.9, max 468.3), PlayerLoop 102.6 (max 444.8) - top self: GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU 45.79, ClipperRegistry.Cull 7.61, KitRectMask2D.Clip 7.49 - top alloc: LightFauna.Feed 4.8 KB/f - saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\prof_Menu_Main_Menu_Main-slow_20261125_185353.json"},
+      {"t": 114.501, "type": "log", "msg": "[DiagnosticsHUD] cells: 1 | flora objects 13, fauna objects 12 | cell 0 'Garland Cell Config' Calm spawner=RandomLifeSpawner flora 13 fauna 12 planting on\n  saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\cells_Menu_Main_20261125_185353.json"},
+      {"t": 114.895, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\capture_Menu_Main_Menu_Main-slow_20261125_185354.json — type 'capture copy' and paste it"},
+      {"t": 130.576, "type": "log", "msg": "<color=cyan>Gamepad connected/reconnected: Xbox Controller</color>"},
+      {"t": 130.584, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 193.281, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshPartyMembersAsync>d__170:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:2540)"},
+      {"t": 279.716, "type": "log", "msg": "[DiagnosticsHUD] capture S2-4min 15 → capture 'S2-4min': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 294.938, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\diag_Menu_Main_S2-4min_20261125_185654.json"},
+      {"t": 306.301, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 37.4 ms avg (p99 239.5, max 425.1), PlayerLoop 26.8 (max 411.4) - top self: Assembly-CSharp.dll!CosmicShore.Gameplay::ThemeManager.Update() [Invoke] 3.09, GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU 2.53, Profiler.CollectUIStats 2.43 - top alloc: Assembly-CSharp.dll!CosmicShore.UI::AvatarRippleBorder.Update() [Invoke] 2.9 KB/f - saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\prof_Menu_Main_S2-4min_20261125_185705.json"},
+      {"t": 306.485, "type": "log", "msg": "[DiagnosticsHUD] cells: 1 | flora objects 21, fauna objects 14 | cell 0 'Garland Cell Config' Calm spawner=RandomLifeSpawner flora 21 fauna 14 planting on\n  saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\cells_Menu_Main_20261125_185705.json"},
+      {"t": 306.494, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\capture_Menu_Main_S2-4min_20261125_185705.json — type 'capture copy' and paste it"},
+      {"t": 314.134, "type": "log", "msg": "[LoadInsights] ● Recording load — Game launch — AstroLeague → MinigameAstroLeague"},
+      {"t": 320.539, "type": "log", "msg": "Container Menu_Main (-106845428) disposed"},
+      {"t": 320.741, "type": "log", "msg": "Scene (MinigameAstroLeague) Bindings Installed"},
+      {"t": 324.779, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Rhino_Charge_HullFusionBake' is STALE (it was solved for hull 'fusalage.002', the vessel draws 'fusalage.002'). Solving Swordfish/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 324.797, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Rhino_Mass_HullFusionBake' is STALE (it was solved for hull 'fusalage.002', the vessel draws 'fusalage.002'). Solving Swordfish/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 324.799, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Rhino_Space_HullFusionBake' is STALE (it was solved for hull 'fusalage.002', the vessel draws 'fusalage.002'). Solving Swordfish/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 324.8, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Rhino_Time_HullFusionBake' is STALE (it was solved for hull 'fusalage.002', the vessel draws 'fusalage.002'). Solving Swordfish/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 325.883, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 11.71s · Loaded — arena complete (laid + grown), connecting screen done → C:/Users/Owner/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_MinigameAstroLeague_20261125_235725_045d976f7600.json"},
+      {"t": 374.149, "type": "warning", "msg": "[MouseFlight] One-thumb mouse controls are NOT engaged: the vessel (Swordfish) is a TWO-stick hull — IsSingleStickControls is false, so it reads the dual-stick mix the mouse cannot drive without cross-talk. If this is a Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike or Scarab, its VesselTransformer is not the SingleStick/Scarab one, or Initialize never ran on it. Flight stays on the dual-WASD keyboard scheme. See _Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md.", "at": "CosmicShore.Gameplay.MouseFlightDiagnostics:Decline (CosmicShore.Gameplay.MouseFlightDiagnostics/Reason,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/IO/MouseFlightDiagnostics.cs:79)"},
+      {"t": 414.719, "type": "log", "msg": "[DiagnosticsHUD] capture MinigameAstroLeague 15 → capture 'MinigameAstroLeague': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 429.851, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\diag_MinigameAstroLeague_MinigameAstroLeague_20261125_185909.json"},
+      {"t": 435.812, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 19.1 ms avg (p99 34.0, max 121.6), PlayerLoop 9.6 (max 26.6) - top self: Profiler.CollectUIStats 2.41, Profiler.FlushMemoryCounters 1.42, GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU 0.82 - top alloc: UnityEngine.IMGUIModule.dll!UnityEngine::GUIUtility.BeginGUI() [Invoke] 1.0 KB/f - saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\prof_MinigameAstroLeague_MinigameAstroLeague_20261125_185915.json"},
+      {"t": 435.868, "type": "log", "msg": "[DiagnosticsHUD] cells: 1 | flora objects 0, fauna objects 0 | cell 0 'Astro League Cell Config' Calm spawner=RandomLifeSpawner flora 0 fauna 0 planting on\n  saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\cells_MinigameAstroLeague_20261125_185915.json"},
+      {"t": 435.88, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\capture_MinigameAstroLeague_MinigameAstroLeague_20261125_185915.json — type 'capture copy' and paste it"},
+      {"t": 517.161, "type": "log", "msg": "[LoadInsights] ● Recording load — Return to menu — MinigameAstroLeague → Menu_Main"},
+      {"t": 517.353, "type": "warning", "msg": "[CustomCameraController] The player camera lost its follow target while on screen, so it stopped following the ship. No live player vessel to re-latch onto. The Transform it was following was DESTROYED without the camera being re-pointed.", "at": "CosmicShore.Gameplay.CustomCameraController:RecoverLostFollowTarget () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:1086)"},
+      {"t": 523.811, "type": "log", "msg": "Container MinigameAstroLeague (-107343844) disposed"},
+      {"t": 525.353, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.354, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.354, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.355, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.355, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.355, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.366, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.367, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 525.371, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 539.486, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 22.32s · Menu shown - the splash faded → C:/Users/Owner/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_Menu_Main_20261126_000058_61573217f0fc.json"},
+      {"t": 654.304, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshPartyMembersAsync>d__170:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:2540)"},
+      {"t": 804.297, "type": "log", "msg": "[LoadInsights] ● Recording load — Game launch — AstroLeague → Voyage"},
+      {"t": 808.264, "type": "log", "msg": "Container Menu_Main (-107534082) disposed"},
+      {"t": 808.281, "type": "log", "msg": "Scene (Voyage) Bindings Installed"},
+      {"t": 812.849, "type": "log", "msg": "[LoadInsights] ■ Load recording ended — 8.55s · Superseded by new load (Cell swap -> Barren) → C:/Users/Owner/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_Voyage_20261126_000532_24ca4c558980.json"},
+      {"t": 812.849, "type": "log", "msg": "[LoadInsights] ● Recording load — Cell swap -> Barren"},
+      {"t": 812.868, "type": "warning", "msg": "[MouseFlight] One-thumb mouse controls are NOT engaged: unknown reason. Flight stays on the dual-WASD keyboard scheme. See _Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md.", "at": "CosmicShore.Gameplay.MouseFlightDiagnostics:Decline (CosmicShore.Gameplay.MouseFlightDiagnostics/Reason,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/IO/MouseFlightDiagnostics.cs:79)"},
+      {"t": 812.892, "type": "warning", "msg": "[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.DriftStart. Wire it on the AudioSystem GameObject. (This warning fires once per category.)", "at": "CosmicShore.Core.AudioSystem:PlayGameplaySFXInternal (CosmicShore.Core.GameplaySFXCategory,bool,UnityEngine.Vector3) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/System/Audio/AudioSystem.cs:813)"},
+      {"t": 813.812, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 0.96s · Cell swap: nothing to build behind a veil → C:/Users/Owner/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_Voyage_20261126_000533_4447ff3f87ed.json"},
+      {"t": 813.97, "type": "warning", "msg": "[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.DriftEnd. Wire it on the AudioSystem GameObject. (This warning fires once per category.)", "at": "CosmicShore.Core.AudioSystem:PlayGameplaySFXInternal (CosmicShore.Core.GameplaySFXCategory,bool,UnityEngine.Vector3) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/System/Audio/AudioSystem.cs:813)"},
+      {"t": 820.966, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassSharkFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string,bool) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:124)"},
+      {"t": 824.38, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'TadPoleFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string,bool) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:124)"},
+      {"t": 900.463, "type": "log", "msg": "[DiagnosticsHUD] capture Voyage 15 → capture 'Voyage': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 915.98, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\diag_Voyage_Voyage_20261125_190715.json"},
+      {"t": 928.198, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 46.6 ms avg (p99 124.2, max 338.7), PlayerLoop 36.0 (max 152.9) - top self: GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU 2.36, Profiler.FlushMemoryCounters 1.54, WaitForJobGroupID 1.44 - top alloc: Assembly-CSharp.dll!CosmicShore.Gameplay::Cell.SpawnFaunaPopulation() [Coroutine: MoveNext] [Invoke] 14.9 KB/f - saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\prof_Voyage_Voyage_20261125_190727.json"},
+      {"t": 928.927, "type": "log", "msg": "[DiagnosticsHUD] cells: 4 | flora objects 89, fauna objects 75 | cell 0 'Barren Cell Config' Calm spawner=RandomLifeSpawner flora 0 fauna 0 planting on | cell 0 'Caldera Cell Config' Calm spawner=RandomLifeSpawner flora 35 fauna 27 planting on | cell 0 'Orrery Cell Config' Restless spawner=RandomLifeSpawner flora 36 fauna 48 planting on | cell 0 'Garland Cell Config' Calm spawner=RandomLifeSpawner flora 18 fauna 0 planting on\n  saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\cells_Voyage_20261125_190728.json"},
+      {"t": 928.931, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\capture_Voyage_Voyage_20261125_190728.json — type 'capture copy' and paste it"},
+      {"t": 935.204, "type": "log", "msg": "[DiagnosticsHUD] capture Voyage-slow 15 → capture 'Voyage-slow': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 951.365, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\diag_Voyage_Voyage-slow_20261125_190750.json"},
+      {"t": 968.02, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 50.1 ms avg (p99 128.5, max 547.3), PlayerLoop 37.3 (max 201.2) - top self: LightFauna.Tick.PrismScan 2.73, WaitForJobGroupID 2.02, GfxDeviceD3D12.WaitForLastPresentation.WaitForGPU 1.99 - top alloc: LightFauna.Feed 3.5 KB/f - saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\prof_Voyage_Voyage-slow_20261125_190807.json"},
+      {"t": 968.94, "type": "log", "msg": "[DiagnosticsHUD] cells: 4 | flora objects 100, fauna objects 98 | cell 0 'Barren Cell Config' Calm spawner=RandomLifeSpawner flora 0 fauna 0 planting on | cell 0 'Caldera Cell Config' Calm spawner=RandomLifeSpawner flora 46 fauna 38 planting on | cell 0 'Orrery Cell Config' Frenzy spawner=RandomLifeSpawner flora 35 fauna 44 planting OFF | cell 0 'Garland Cell Config' Calm spawner=RandomLifeSpawner flora 19 fauna 16 planting on\n  saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\cells_Voyage_20261125_190808.json"},
+      {"t": 968.97, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\capture_Voyage_Voyage-slow_20261125_190808.json — type 'capture copy' and paste it"},
+      {"t": 1207.156, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Charge_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 1207.171, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Mass_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 1207.173, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Space_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 1207.178, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Manta_Time_HullFusionBake' is STALE (it was solved for hull 'manta', the vessel draws 'manta'). Solving Manta/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "CosmicShore.Gameplay.CrystalHullFusion:WarnOnce (string,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs:1458)"},
+      {"t": 1273.564, "type": "log", "msg": "[DiagnosticsHUD] capture Voyage-slower 15 → capture 'Voyage-slower': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 1277.926, "type": "warning", "msg": "[MouseFlight] Engaged, but Mouse.current.delta has read exactly zero for 4s. The stick cannot deflect, so the vessel will not turn. Check the Input System's Update Mode (a project set to 'Process Events In Fixed Update' delivers no delta to Update), and that the Game view has focus with the cursor captured.", "at": "CosmicShore.Gameplay.SingleStickMouseInputStrategy:ReportIfMouseIsSilent (UnityEngine.Vector2) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/IO/SingleStickMouseInputStrategy.cs:387)"},
+      {"t": 1277.926, "type": "warning", "msg": "[MouseFlight] Active for 3s and Mouse.current.delta has read EXACTLY ZERO the whole time, so the virtual stick cannot deflect and the vessel cannot turn. Mouse BUTTONS come from different controls and are unaffected, which is why this reads as the mouse half-working. Check the Input System's Update Mode (a project set to 'Process Events In Fixed Update' delivers no delta to Update - this project ships NO InputSystem settings asset, so it is on the package default) and that the Game view has focus with the cursor captured.", "at": "CosmicShore.Gameplay.SingleStickMouseInputStrategy:WatchForDeadFlight (UnityEngine.Vector2) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/IO/SingleStickMouseInputStrategy.cs:252)"},
+      {"t": 1293.553, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\diag_Voyage_Voyage-slower_20261125_191332.json"},
+      {"t": 1298.648, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (254 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 1298.706, "type": "log", "msg": "[DiagnosticsHUD] prof: 0 frames - main thread 0.0 ms avg (p99 0.0, max 0.0) [INCOMPLETE] - saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\prof_Voyage_Voyage-slower_20261125_191337.json"},
+      {"t": 1300.6, "type": "log", "msg": "[DiagnosticsHUD] cells: 7 | flora objects 237, fauna objects 221 | cell 0 'Barren Cell Config' Calm spawner=RandomLifeSpawner flora 0 fauna 0 planting on | cell 0 'Caldera Cell Config' Calm spawner=RandomLifeSpawner flora 101 fauna 44 planting on | cell 0 'Orrery Cell Config' Frenzy spawner=RandomLifeSpawner flora 23 fauna 56 planting OFF | cell 0 'Garland Cell Config' Calm spawner=RandomLifeSpawner flora 19 fauna 16 planting on | cell 0 'Geode Cell Config' Calm spawner=RandomLifeSpawner flora 84 fauna 56 planting on | cell 0 'Caldera Cell Config' Calm spawner=RandomLifeSpawner flora 5 fauna 22 planting on | cell 0 'Orrery Cell Config' Calm spawner=RandomLifeSpawner flora 5 fauna 27 planting on\n  saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\cells_Voyage_20261125_191339.json"},
+      {"t": 1300.606, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\capture_Voyage_Voyage-slower_20261125_191339.json — type 'capture copy' and paste it"},
+      {"t": 1302.994, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (255 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 1303.004, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (256 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 1525.357, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (859.45, -1495.99, -3746.09) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (1/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1537.019, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (859.45, -1495.99, -3746.09) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (2/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1561.571, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (817.11, -1500.46, -3403.29) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (3/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1572.344, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (848.92, -1513.44, -3376.09) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (4/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1584.452, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (829.77, -1492.95, -3820.01) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (5/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1627.559, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (923.46, -1618.40, -3517.80) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (6/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1678.967, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (896.34, -1662.00, -3514.95) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (7/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1689.954, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (871.29, -1661.66, -3507.40) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (8/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1701.113, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (seed-blocked) at (1032.70, -1735.64, -3544.88) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (9/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1741.288, "type": "error", "msg": "[GyroidColony] INCOHERENT SEED HANDOFF: GyroidFlora(Clone) seed EG recomputes its centre 22.04u away from the adopted centre - GyroidOctagonData's tables are wrong in-engine (regenerate: Tools/Build/measure_gyroid_octagons.py)", "at": "CosmicShore.Gameplay.AssembledFlora:CreateNewAssembler () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:2112)"},
+      {"t": 1754.383, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (904.47, -16093.30, -15111.64) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (10/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1763.78, "type": "error", "msg": "[GyroidColony] INCOHERENT SEED HANDOFF: GyroidFlora(Clone) seed EG recomputes its centre 22.04u away from the adopted centre - GyroidOctagonData's tables are wrong in-engine (regenerate: Tools/Build/measure_gyroid_octagons.py)", "at": "CosmicShore.Gameplay.AssembledFlora:CreateNewAssembler () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:2112)"},
+      {"t": 1799.72, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (-1934.10, -16457.60, -15892.30) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (11/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1799.72, "type": "warning", "msg": "[GyroidColony] LATTICE MISALIGNMENT (grown-blocked) at (-2016.49, -16438.12, -15835.89) by GyroidFlora(Clone) - an existing prism sits 3.1-5.5u away (healthy minimum is 6.6u), so the site was declined rather than grown. (12/24 logged)", "at": "CosmicShore.Gameplay.GyroidColonyDiagnostics:ReportDefect (string,UnityEngine.Vector3,string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs:143)"},
+      {"t": 1960.167, "type": "log", "msg": "[LoadInsights] ● Recording load — Return to menu — Voyage → Menu_Main"},
+      {"t": 1969.81, "type": "warning", "msg": "[CustomCameraController] The player camera lost its follow target while on screen, so it stopped following the ship. No live player vessel to re-latch onto. The Transform it was following was DESTROYED without the camera being re-pointed.", "at": "CosmicShore.Gameplay.CustomCameraController:RecoverLostFollowTarget () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:1086)"},
+      {"t": 1969.922, "type": "warning", "msg": "[Net] The game froze for 11.5 s in Voyage while online. Unity Relay drops a connection after about 10 s without traffic, so this session may end with 'player timed out due to inactivity' (Docs/PartySystem/BUGS.md B36).", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:151)"},
+      {"t": 1976.919, "type": "warning", "msg": "[Net] What held that frozen frame: PlayerLoop 15734 ms; Update.ScriptRunBehaviourUpdate 11132 ms; Update.ScriptRunDelayedDynamicFrameRate 4276 ms; Destroy 4041 ms", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:112)"},
+      {"t": 2000.318, "type": "log", "msg": "Container Voyage (-108091338) disposed"},
+      {"t": 2002.017, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.018, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.018, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.019, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.019, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.02, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.023, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.024, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2002.028, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 2011.795, "type": "warning", "msg": "[Net] The game froze for 23.2 s in Voyage, ending in Menu_Main while online. Unity Relay drops a connection after about 10 s without traffic, so this session may end with 'player timed out due to inactivity' (Docs/PartySystem/BUGS.md B36).", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:151)"},
+      {"t": 2015.333, "type": "warning", "msg": "[Net] What held that frozen frame: PlayerLoop 24316 ms; EarlyUpdate.UpdatePreloading 18900 ms; Loading.UpdatePreloading 18900 ms; Application.Integrate Assets in Background 18900 ms; Application.LoadLevelAsync Integrate 18094 ms; Destroy 9971 ms; UnloadScene 9885 ms; GameObject.ActivateAwakeRecursively 4503 ms", "at": "CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:112)"},
+      {"t": 2021.965, "type": "log", "msg": "[LoadInsights] ■ Load report ready — 61.79s · Menu shown - the splash faded → C:/Users/Owner/AppData/LocalLow/Froglet Games/Cosmic Shore\\Benchmarks/LoadInsights\\load_Menu_Main_20261126_002541_0bc7dbf46cde.json"},
+      {"t": 2134.995, "type": "warning", "msg": "[HostConnectionService] Party session gone server-side (SessionException): Player is not part of an active lobby. - auto-recovering to solo session.", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshPartyMembersAsync>d__170:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:2552)"},
+      {"t": 2137.428, "type": "log", "msg": "Container Menu_Main (-114766594) disposed"},
+      {"t": 2139.065, "type": "warning", "msg": "[OfflineUIGate] 'Mission_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.066, "type": "warning", "msg": "[OfflineUIGate] 'ToyboxScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.067, "type": "warning", "msg": "[OfflineUIGate] 'MissionScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.067, "type": "warning", "msg": "[OfflineUIGate] 'Arena_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.067, "type": "warning", "msg": "[OfflineUIGate] 'Toybox_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.067, "type": "warning", "msg": "[OfflineUIGate] 'ArenaScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.072, "type": "warning", "msg": "[OfflineUIGate] 'Arcade_Panel' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.073, "type": "warning", "msg": "[OfflineUIGate] 'ArcadeScreenModal' has no objects or controls wired - it will do nothing.", "at": "CosmicShore.UI.OfflineUIGate:OnValidate () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/UI/Elements/OfflineUIGate.cs:179)"},
+      {"t": 2139.077, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 2145.525, "type": "log", "msg": "[DiagnosticsHUD] capture Menu_Main-slow 15 → capture 'Menu_Main-slow': burst, diag 15s, prof 180 frames, renderers, cells → one file. Hands off the editor until it says saved."},
+      {"t": 2146.424, "type": "warning", "msg": "[EnvironmentPrismPool] Async clone batch (2048 prisms) not integrated after 4s — forcing WaitForCompletion. The engine's async-instantiate budget is being starved by other loading.", "at": "CosmicShore.Gameplay.EnvironmentPrismPool/<GetBatchAsync>d__8:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:138)"},
+      {"t": 2149.094, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 2149.096, "type": "log", "msg": "QosJob: send to 34.146.99.138:7778 took 0ms"},
+      {"t": 2149.099, "type": "log", "msg": "QosJob: send to 8.231.126.202:7778 took 3ms"},
+      {"t": 2149.1, "type": "log", "msg": "QosJob: send to 34.142.230.217:7778 took 1ms"},
+      {"t": 2149.103, "type": "log", "msg": "QosJob: send to 34.116.71.234:7778 took 2ms"},
+      {"t": 2149.104, "type": "log", "msg": "QosJob: send to 34.116.187.244:7778 took 0ms"},
+      {"t": 2149.106, "type": "log", "msg": "QosJob: send to 34.88.56.54:7778 took 2ms"},
+      {"t": 2149.107, "type": "log", "msg": "QosJob: send to 34.90.19.193:7778 took 1ms"},
+      {"t": 2149.11, "type": "log", "msg": "QosJob: send to 35.199.98.209:7778 took 3ms"},
+      {"t": 2149.111, "type": "log", "msg": "QosJob: send to 35.194.37.245:7778 took 0ms"},
+      {"t": 2149.113, "type": "log", "msg": "QosJob: send to 34.74.55.21:7778 took 2ms"},
+      {"t": 2149.114, "type": "log", "msg": "QosJob: send to 34.169.230.114:7778 took 1ms"},
+      {"t": 2149.379, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 265ms waiting avg 5ms per response"},
+      {"t": 2149.381, "type": "log", "msg": "QosJob: took 285ms to process 11 servers"},
+      {"t": 2153.463, "type": "warning", "msg": "[HostConnectionService] The presence lobby removed us or was deleted - rejoining at once", "at": "CosmicShore.Gameplay.HostConnectionService:HandlePresenceMembershipLost () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:1921)"},
+      {"t": 2157.274, "type": "warning", "msg": "[HostConnectionService] Rate limited during refresh - backing off", "at": "CosmicShore.Gameplay.HostConnectionService/<RefreshAsync>d__147:MoveNext () (at C:/Users/Owner/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:1862)"},
+      {"t": 2163.169, "type": "log", "msg": "[DiagnosticsHUD] Diagnostic saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\diag_Menu_Main_Menu_Main-slow_20261125_192802.json"},
+      {"t": 2167.894, "type": "log", "msg": "[DiagnosticsHUD] prof: 180 frames - main thread 17.5 ms avg (p99 27.2, max 84.6), PlayerLoop 10.9 (max 16.0) - top self: Profiler.FlushMemoryCounters 1.64, BehaviourUpdate 1.32, KitRectMask2D.Clip 0.79 - top alloc: UnityEngine.IMGUIModule.dll!UnityEngine::GUIUtility.BeginGUI() [Invoke] 1.4 KB/f - saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\prof_Menu_Main_Menu_Main-slow_20261125_192807.json"},
+      {"t": 2167.949, "type": "log", "msg": "[DiagnosticsHUD] cells: 1 | flora objects 13, fauna objects 0 | cell 0 'Garland Cell Config' Calm spawner=RandomLifeSpawner flora 13 fauna 0 planting on\n  saved C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\cells_Menu_Main_20261125_192807.json"},
+      {"t": 2167.953, "type": "log", "msg": "[DiagnosticsHUD] capture saved: C:\\Users\\Owner\\Documents\\CosmicShore Diagnostics\\capture_Menu_Main_Menu_Main-slow_20261125_192807.json — type 'capture copy' and paste it"}
+    ]
+  }
+}
