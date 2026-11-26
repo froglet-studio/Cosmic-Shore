@@ -204,14 +204,14 @@ comparison:
 - **Open (a person's call):** a human seat the AI holds (an idle guest, the AI-flies toggle) flies the stock
   autopilot here, slow and unramped, and is the duelists' preferred target. Switchback arms such seats with its
   own pilot; Riposte and Jackstraw do not.
-- **The Lists (the arena of section 4) are NOT verified in Unity.** Everything dated above was measured in
-  Jackstraw's heap. The editor was in another session's Play run when the arena landed, so: not compiled by Unity,
-  `RiposteYardTests` not run by Unity's test runner, no match played in it, and the Python census (480 / 1,110 /
-  2,090 / 3,410 prisms) not yet compared with what the C# lays (the Linux-only prism clip audit and layout bake
-  cannot run on this Windows machine, so the four prefabs have no baked layout and no clip-audit run: the game
-  lays them live with a warning until `bake_prism_layouts.py` is run on Linux). Headless, the Amoebius live
-  build compiles the arena and the judge played 64 matches in it. The lane-reading duelist is in the same state:
-  compiled and judged headless, never compiled, tested or watched in Unity.
+- **The Lists (the arena of section 4) and the lane-reading duelist compile in Unity** (2026-11-25, the open
+  editor, ba00cb40a1: `recompile` up to date with no errors, `RiposteYard`, `RiposteLanes` and `SpawnableRiposteYard`
+  load as types). **Not yet verified in Unity:** `RiposteYardTests` (10) and `RiposteLanesTests` (7) in the test
+  runner (the first try aborted because another session's Play run was live), the C# prism count per rung against
+  the Python census (480 / 1,110 / 2,090 / 3,410), and any match played in the Lists. Headless, the Amoebius live
+  build compiles both and the judge played 64 matches in the Lists.
+- **Open: the Lists have no baked layout.** `bake_prism_layouts.py` and the prism clip audit run on Linux only, so
+  the four `SpawnableRiposteYard` prefabs are laid live, with a warning, until someone runs the bake on Linux.
 - **Not done:** no I1 match in the editor at clock 1x; no 2v2 match of four mode AIs in the editor; nobody has flown it; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
 - **Open questions a flight answers:** whether 6 strikes is the right length with a person in it (AI matches run
   26-202 s); whether a silenced pilot under a 0.5 s sword latch can get away (the AI now runs out after each pass, a
