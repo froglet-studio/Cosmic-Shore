@@ -875,7 +875,7 @@ namespace CosmicShore.UI
             Place(_table, table);
             Place(_dim, table);
             Place(_message, table);
-            LayoutTable(table.size, e);
+            LayoutTable(table.size, e, F.x);
             // The live map shows in the window too, inside the quay's chart (Shombith, 2026-11-26), and grows from there to
             // the full screen; it takes presses only in full screen, so the chart's Full screen button stays the way in.
             _tableGroup.alpha = 1f;
@@ -913,7 +913,7 @@ namespace CosmicShore.UI
 
         /// <summary>The map and its side view in the table: the map lies back (50 degrees to flat) over the side view,
         /// which fades as the table opens to full screen.</summary>
-        void LayoutTable(Vector2 size, float e)
+        void LayoutTable(Vector2 size, float e, float fullWidth)
         {
             if (!_mapHost) return;
             // The quay's chart lies flat (Rev 134 Board B): no side view under it.
@@ -937,10 +937,14 @@ namespace CosmicShore.UI
             // The flat map is as tall as it must be for its far edge to be seen at the host's top.
             var rt = _map.rectTransform;
             float flat = angle > 0.01f ? VoyageTableTilt.FlatHeight(size.x, seen, angle) : seen;
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = new Vector2(1f, 0f);
-            rt.pivot = new Vector2(0.5f, 0f);
-            rt.sizeDelta = new Vector2(0f, flat);
+            // The map is always laid out as wide as the full screen and scaled down into the quay's chart, so the chart is
+            // a miniature of the full screen: the same light years across, the same stars, water and dot sizes. Laid out
+            // at the chart's own 620 px it kept the full screen's light years in a third of the pixels, and its fixed-size
+            // stars and water crowded into a dense speckle of other colours (Shombith, 2026-11-26).
+            float mini = Mathf.Clamp(size.x / Mathf.Max(1f, fullWidth), 0.05f, 1f);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0f);
+            rt.sizeDelta = new Vector2(size.x, flat) / mini;
+            rt.localScale = new Vector3(mini, mini, 1f);
             rt.anchoredPosition = Vector2.zero;
             _map.Redraw();
         }
