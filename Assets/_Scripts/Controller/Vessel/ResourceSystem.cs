@@ -80,8 +80,13 @@ namespace CosmicShore.Gameplay
 
         public void MarkSpawned() => SpawnedAt = Time.time;
 
+        // NOTE: this name collides with Unity's edit-mode `Reset` MESSAGE, which the editor calls on
+        // a component the moment it is added (inspector "Add Component" or an editor tool's
+        // AddComponent) — before any serialized list exists. `Resources` is null then, so the guard
+        // is load-bearing: without it adding a ResourceSystem in the editor throws.
         public void Reset()
         {
+            if (Resources == null) return;
             for (int i = 0; i < Resources.Count; i++)
             {
                 var r = Resources[i];

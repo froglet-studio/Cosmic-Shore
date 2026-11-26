@@ -22,9 +22,11 @@ namespace CosmicShore.Gameplay
     /// (SeedFullWaveEveryTick, one fauna species) and raise the SOAP wave event
     /// (CellRuntimeDataSO.OnFaunaWaveSpawned ← RandomLifeSpawner); this controller only
     /// LISTENS. Scoring is server-authoritative: the server's wave event increments a
-    /// representative RoundStats' GoalsScored (NetworkVariable - replicates to every
-    /// peer; domain sums ride the base controller's domain-sum NetworkVariables), and
-    /// BroodRushWaveTurnMonitor ends the turn when a domain reaches the target.
+    /// representative RoundStats' GoalsScored, the team's brood counter (NetworkVariable -
+    /// replicates to every peer; domain sums ride the base controller's domain-sum
+    /// NetworkVariables), and BroodRushWaveTurnMonitor ends the turn when a domain reaches
+    /// the target. That counter is the team's, never a pilot's score: at the end each pilot
+    /// scores their volume books, VC + VD (BroodRushScoringRuleSO, Garrett 2026-11-18).
     /// End-game runs the SkimRace/Joust/Scurry SyncFinalScores pattern.
     /// </summary>
     public class BroodRushController : MultiplayerDomainGamesController
@@ -105,10 +107,11 @@ namespace CosmicShore.Gameplay
             if (!IsServer || !_turnActive || _finalResultsSent) return;
             if (!wave.NucleusControlled || wave.Domain == Domains.Blue) return;
 
-            // Credit the brood to a representative player on the claiming domain -
-            // domain SUMS drive the race (ScoringMetrics.SumByDomain over GoalsScored),
-            // so which teammate carries the point is presentation only. First roster
-            // entry keeps it deterministic (server is the only writer).
+            // The team's brood counter rides a representative player's GoalsScored -
+            // domain SUMS drive the race (ScoringMetrics.SumByDomain over GoalsScored).
+            // It is never shown as that pilot's: the scoreboard scores every pilot on
+            // VC + VD and says the broods once, on the team line. First roster entry
+            // keeps it deterministic (server is the only writer).
             var stats = gameData.RoundStatsList.FirstOrDefault(s => s != null && s.Domain == wave.Domain);
             if (stats == null) return;
 
@@ -142,24 +145,25 @@ namespace CosmicShore.Gameplay
             var winningDomain = rule.ResolveWinner(gameData);
             if (winningDomain == Domains.Blue) return;
 
-            var winnerRep = gameData.RoundStatsList
-                .Where(s => s.Domain == winningDomain)
-                .OrderByDescending(s => s.GoalsScored)
-                .FirstOrDefault();
-            if (winnerRep == null) return;
-
-            rule.AssignScores(gameData, winningDomain, 0f);
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-
-            _finalResultsSent = true;
+            if (!gameData.RoundStatsList.Any(s => s != null && s.Domain == winningDomain)) return;
 
             // The second way to the number: what every pilot still owns, measured from the field, beside the books
             // the match kept (Garrett, 2026-11-18). A difference names a pilot whose books miss an event.
             gameData.VolumeLedger.CountLive(PrismSpatialIndex.Instance,
                 gameData.RoundStatsList.Where(s => s != null).Select(s => s.Name).ToList());
             ReportBooksGaps();
+
+            // Every pilot's score is their own VC + VD; the winning team's best scorer is the named winner.
+            rule.AssignScores(gameData, winningDomain, 0f);
+            var winnerRep = gameData.RoundStatsList
+                .Where(s => s != null && s.Domain == winningDomain)
+                .OrderByDescending(s => s.Score)
+                .First();
+
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+
+            _finalResultsSent = true;
 
             SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
@@ -214,6 +218,8 @@ namespace CosmicShore.Gameplay
             var nameArray = new FixedString64Bytes[count];
             var scoreArray = new float[count];
             var domainArray = new int[count];
+            // The team brood counters (GoalsScored on each team's representative), so every client's
+            // domain sums - the team line and the reveal margin - match the server's.
             var broodsArray = new int[count];
             // The volume books, five numbers a pilot (VC, VD, lost, super-shields, counted): the server
             // kept them, so every client's scoreboard shows the server's.
