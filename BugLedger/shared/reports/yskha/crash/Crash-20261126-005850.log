@@ -1,0 +1,1907 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-26 00:58:50 (next editor launch after the abnormal exit)
+session:        20261125-124843082  (pid 16372, Unity 6000.3.17f1)
+started:        2026-11-25T12:48:43.088Z UTC
+last heartbeat: 2026-11-25T19:13:18.364Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~50s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261125-124843082.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261125-124843082
+started: 2026-11-25T12:48:43.088Z UTC
+unity:   6000.3.17f1
+pid:     16372
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[18:19:29.074] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261125-124843082.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[18:20:07.161] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[18:20:33.149] ---- main thread stalled ~110s and RECOVERED — slow, not hung ----
+[18:39:02.539] ---- entering play mode ----
+[18:39:07.430] ---- play mode running ----
+[18:39:08.664] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258e094df3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258e094dd43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258e094d9fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[18:40:30.303] ---- leaving play mode ----
+[18:40:32.705] ---- edit mode restored ----
+[18:40:34.864] ---- domain reload begins (script compilation / play-mode transition) ----
+[18:40:42.329] ---- domain reload complete — session re-adopted ----
+[18:40:44.214] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[18:40:51.431] ---- entering play mode ----
+[18:40:51.961] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[18:40:55.747] ---- play mode running ----
+[18:40:57.810] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[18:41:28.159] ---- leaving play mode ----
+[18:41:28.279] [PlayMode] Error: Rpc methods can only be invoked after starting the NetworkManager!
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[18:41:29.838] ---- edit mode restored ----
+[19:44:49.437] ---- entering play mode ----
+[19:44:52.067] ---- play mode running ----
+[19:44:53.280] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[19:45:38.044] ---- leaving play mode ----
+[19:45:39.371] ---- edit mode restored ----
+[20:01:42.731] ---- entering play mode ----
+[20:01:45.614] ---- play mode running ----
+[20:01:47.253] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:02:42.093] ---- leaving play mode ----
+[20:02:43.612] ---- edit mode restored ----
+[20:03:17.530] ---- entering play mode ----
+[20:03:20.021] ---- play mode running ----
+[20:03:21.279] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:04:50.608] ---- leaving play mode ----
+[20:04:52.573] ---- edit mode restored ----
+[20:04:57.658] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:05:35.623] ---- entering play mode ----
+[20:05:38.133] ---- play mode running ----
+[20:05:39.401] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:06:17.374] ---- leaving play mode ----
+[20:06:19.371] ---- edit mode restored ----
+[20:06:50.898] ---- entering play mode ----
+[20:06:53.315] ---- play mode running ----
+[20:06:56.235] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:07:49.117] ---- leaving play mode ----
+[20:07:50.616] ---- edit mode restored ----
+[20:08:25.369] ---- entering play mode ----
+[20:08:27.803] ---- play mode running ----
+[20:08:29.109] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:09:08.675] ---- leaving play mode ----
+[20:09:10.040] ---- edit mode restored ----
+[20:21:48.569] ---- entering play mode ----
+[20:21:51.039] ---- play mode running ----
+[20:21:52.289] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:24:13.010] ---- leaving play mode ----
+[20:24:14.784] ---- edit mode restored ----
+[20:25:28.898] ---- entering play mode ----
+[20:25:31.435] ---- play mode running ----
+[20:25:32.717] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:26:33.223] ---- leaving play mode ----
+[20:26:35.866] ---- edit mode restored ----
+[20:27:21.378] ---- entering play mode ----
+[20:27:23.881] ---- play mode running ----
+[20:27:25.153] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:28:56.739] ---- leaving play mode ----
+[20:28:58.486] ---- edit mode restored ----
+[20:40:50.373] ---- entering play mode ----
+[20:40:52.219] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:40:54.091] ---- play mode running ----
+[20:40:55.423] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:41:29.520] ---- leaving play mode ----
+[20:41:31.711] ---- edit mode restored ----
+[20:45:00.292] ---- entering play mode ----
+[20:45:02.857] ---- play mode running ----
+[20:45:04.238] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:47:19.400] ---- leaving play mode ----
+[20:47:22.455] ---- edit mode restored ----
+[20:49:13.436] ---- entering play mode ----
+[20:49:16.167] ---- play mode running ----
+[20:49:17.588] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:52:03.299] ---- leaving play mode ----
+[20:52:06.283] ---- edit mode restored ----
+[20:52:18.833] ---- entering play mode ----
+[20:52:21.531] ---- play mode running ----
+[20:52:22.984] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:54:50.636] ---- leaving play mode ----
+[20:54:53.829] ---- edit mode restored ----
+[20:55:06.268] ---- entering play mode ----
+[20:55:09.146] ---- play mode running ----
+[20:55:11.570] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:57:10.569] ---- leaving play mode ----
+[20:57:13.595] ---- edit mode restored ----
+[20:57:26.127] ---- entering play mode ----
+[20:57:28.829] ---- play mode running ----
+[20:57:30.310] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9ea24e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9ea053 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9e9d0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:57:57.234] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:58:17.965] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:58:38.648] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:58:38.649] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:58:51.058] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:58:59.387] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:58:59.388] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:59:07.582] [PlayMode] Assert: Assertion failed on expression: '!CompareApproximately(aScalar, 0.0F)'
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc8253be (Unity) AssertImplementation
+        0x00007ff8cc3702f5 (Unity) operator/
+        0x00007ff8cc37cc78 (Unity) Lerp
+        0x00007ff8cc60827d (Unity) Quaternion_CUSTOM_Internal_Lerp
+        ...
+[20:59:26.910] ---- leaving play mode ----
+[20:59:29.488] ---- edit mode restored ----
+[21:02:22.722] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:02:32.822] ---- domain reload complete — session re-adopted ----
+[21:02:34.914] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:03:13.012] ---- entering play mode ----
+[21:03:17.075] ---- play mode running ----
+[21:03:19.354] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:06:51.981] ---- leaving play mode ----
+[21:06:55.333] ---- edit mode restored ----
+[21:07:07.554] ---- entering play mode ----
+[21:07:10.467] ---- play mode running ----
+[21:07:11.926] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:10:39.049] ---- leaving play mode ----
+[21:10:42.456] ---- edit mode restored ----
+[21:10:54.695] ---- entering play mode ----
+[21:10:57.468] ---- play mode running ----
+[21:10:59.936] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:14:25.829] ---- leaving play mode ----
+[21:14:29.365] ---- edit mode restored ----
+[21:14:41.601] ---- entering play mode ----
+[21:14:44.356] ---- play mode running ----
+[21:14:46.856] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:18:13.153] ---- leaving play mode ----
+[21:18:16.412] ---- edit mode restored ----
+[21:19:50.245] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:19:59.343] ---- domain reload complete — session re-adopted ----
+[21:20:01.242] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:28:53.811] ---- entering play mode ----
+[21:28:57.724] ---- play mode running ----
+[21:29:01.129] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:31:24.398] ---- leaving play mode ----
+[21:31:27.288] ---- edit mode restored ----
+[21:37:40.972] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:37:54.711] ---- domain reload complete — session re-adopted ----
+[21:37:58.332] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:39:13.061] ---- entering play mode ----
+[21:39:13.302] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:39:21.319] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:39:30.053] ---- play mode running ----
+[21:39:30.557] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:39:36.677] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:40:36.652] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:40:44.991] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:41:40.674] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:41:48.811] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:42:07.310] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:42:25.903] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:42:58.029] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d7ccf9ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d7ccf7b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d7ccf46b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:43:00.393] ---- leaving play mode ----
+[21:43:05.436] ---- edit mode restored ----
+[21:45:05.994] ---- main thread unresponsive ~46s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261125-124843082.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[21:47:04.485] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:47:57.269] ---- domain reload complete — session re-adopted ----
+[21:48:01.886] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:48:55.994] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:49:13.805] ---- entering play mode ----
+[21:49:19.070] ---- play mode running ----
+[21:49:24.341] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:49:32.871] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:49:42.147] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:51:45.533] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:51:54.267] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:53:24.922] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:54:52.081] ---- leaving play mode ----
+[21:54:56.025] ---- edit mode restored ----
+[21:54:59.376] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:55:11.579] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258d78704ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258d78702b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258d786fc0b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:55:45.964] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:56:02.632] ---- domain reload complete — session re-adopted ----
+[21:56:05.274] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:56:14.197] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258de80ed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258de80eb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258de80e7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:58:20.833] ---- domain reload begins (script compilation / play-mode transition) ----
+[21:58:30.459] ---- domain reload complete — session re-adopted ----
+[21:58:32.977] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[21:58:41.018] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258f1a3ed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258f1a3eb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258f1a3e7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:58:53.223] ---- entering play mode ----
+[21:58:57.811] ---- play mode running ----
+[21:59:03.559] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000258f1a3ed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000258f1a3eb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000258f1a3e7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:04:34.475] ---- leaving play mode ----
+[22:04:38.419] ---- edit mode restored ----
+[22:07:05.223] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:07:15.261] ---- domain reload complete — session re-adopted ----
+[22:07:17.571] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[22:08:14.736] ---- entering play mode ----
+[22:08:19.173] ---- play mode running ----
+[22:08:23.048] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:08:39.253] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:17:25.849] ---- leaving play mode ----
+[22:17:31.156] ---- edit mode restored ----
+[22:17:33.130] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:17:49.767] ---- entering play mode ----
+[22:17:53.468] ---- play mode running ----
+[22:17:57.482] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:28:46.686] ---- leaving play mode ----
+[22:28:50.372] ---- edit mode restored ----
+[22:29:02.180] ---- entering play mode ----
+[22:29:05.006] ---- play mode running ----
+[22:29:05.919] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:29:08.736] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:31:33.945] ---- leaving play mode ----
+[22:31:36.715] ---- edit mode restored ----
+[22:31:58.153] ---- entering play mode ----
+[22:31:59.457] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:32:03.540] ---- play mode running ----
+[22:32:07.094] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:32:17.580] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:37:15.248] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:37:28.484] ---- leaving play mode ----
+[22:37:33.704] ---- edit mode restored ----
+[22:37:51.281] ---- entering play mode ----
+[22:37:52.199] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:37:57.292] ---- play mode running ----
+[22:38:00.224] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:38:03.332] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:43:28.316] ---- leaving play mode ----
+[22:43:33.465] ---- edit mode restored ----
+[22:43:46.362] ---- entering play mode ----
+[22:43:47.756] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:43:49.738] ---- play mode running ----
+[22:43:53.817] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:46:32.019] ---- leaving play mode ----
+[22:46:35.888] ---- edit mode restored ----
+[22:46:37.483] [EditMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:48:00.181] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:48:12.372] ---- domain reload complete — session re-adopted ----
+[22:48:15.426] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[22:49:09.134] ---- domain reload begins (script compilation / play-mode transition) ----
+[22:49:17.237] ---- domain reload complete — session re-adopted ----
+[22:49:20.080] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[22:49:48.245] ---- entering play mode ----
+[22:49:52.375] ---- play mode running ----
+[22:49:54.784] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:52:57.358] ---- leaving play mode ----
+[22:53:00.327] ---- edit mode restored ----
+[22:53:13.124] ---- entering play mode ----
+[22:53:15.980] ---- play mode running ----
+[22:53:17.387] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:56:57.608] ---- leaving play mode ----
+[22:57:00.938] ---- edit mode restored ----
+[22:57:13.352] ---- entering play mode ----
+[22:57:16.090] ---- play mode running ----
+[22:57:17.170] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:57:19.367] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:04:50.184] ---- leaving play mode ----
+[23:04:52.983] ---- edit mode restored ----
+[23:05:05.713] ---- entering play mode ----
+[23:05:09.052] ---- play mode running ----
+[23:05:11.709] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:05:29.244] [PlayMode] Exception: InvalidOperationException: This cannot be used during play mode, please use SceneManager.CreateScene() instead.
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene (UnityEditor.SceneManagement.NewSceneSetup setup, UnityEditor.SceneManagement.NewSceneMode mode) (at <8740d1a42447456fb4d6b16f148b70d3>:0)
+        UnityEditor.TestTools.TestRunner.TestRun.Tasks.CreateBootstrapSceneTask+<Execute>d__4.MoveNext () (at ./Library/PackageCache/com.unity.test-framework@ecf40a72f8c1/UnityEditor.TestRunner/TestRun/Tasks/CreateBootstrapSceneTask.cs:32)
+        UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner.ExecuteStep () (at ./Library/PackageCache/com.unity.test-framework@ecf40a72f8c1/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEditor.EditorApplication:Internal_CallUpdateFunctions()
+[23:05:29.252] [PlayMode] Error: An unexpected error happened while running tests.
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:05:29.795] [PlayMode] Exception: InvalidOperationException: This cannot be used during play mode, please use SceneManager.CreateScene() instead.
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene (UnityEditor.SceneManagement.NewSceneSetup setup, UnityEditor.SceneManagement.NewSceneMode mode) (at <8740d1a42447456fb4d6b16f148b70d3>:0)
+        UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.RestoreSceneSetupTask+<>c.<.ctor>b__2_0 (UnityEditor.SceneManagement.NewSceneSetup setup, UnityEditor.SceneManagement.NewSceneMode mode) (at ./Library/PackageCache/com.unity.test-framework@ecf40a72f8c1/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:10)
+        UnityEditor.TestTools.TestRunner.TestRun.Tasks.Scene.RestoreSceneSetupTask+<Execute>d__3.MoveNext () (at ./Library/PackageCache/com.unity.test-framework@ecf40a72f8c1/UnityEditor.TestRunner/TestRun/Tasks/Scene/RestoreSceneSetupTask.cs:27)
+        UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner.ExecuteStep () (at ./Library/PackageCache/com.unity.test-framework@ecf40a72f8c1/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:173)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEditor.EditorApplication:Internal_CallUpdateFunctions()
+[23:05:29.796] [PlayMode] Error: An unexpected error happened while running tests.
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:06:40.867] ---- leaving play mode ----
+[23:06:43.500] ---- edit mode restored ----
+[23:28:53.473] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261125-124843082.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[23:29:00.789] ---- domain reload begins (script compilation / play-mode transition) ----
+[23:29:11.040] ---- domain reload complete — session re-adopted ----
+[23:29:13.532] [EditMode] Exception: DirectoryNotFoundException: Could not find a part of the path 'A:\Installed Apps\Rider\JetBrains Rider 2025.1.4\plugins\rider-unity\EditorPlugin'.
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult].CreateDirectoryHandle (System.String path, System.Boolean ignoreNotFound) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerator`1[TResult]..ctor (System.String directory, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1+DelegateEnumerator[TResult]..ctor (System.IO.Enumeration.FileSystemEnumerable`1[TResult] enumerable) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerable`1[TResult]..ctor (System.String directory, System.IO.Enumeration.FileSystemEnumerable`1+FindTransform[TResult] transform, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Enumeration.FileSystemEnumerableFactory.UserFiles (System.String directory, System.String expression, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.InternalEnumeratePaths (System.String path, System.String searchPattern, System.IO.SearchTarget searchTarget, System.IO.EnumerationOptions options) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.EnumerationOptions enumerationOptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.IO.Directory.GetFiles (System.String path, System.String searchPattern, System.IO.SearchOption searchOption) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        ...
+[23:30:38.642] ---- entering play mode ----
+[23:30:42.530] ---- play mode running ----
+[23:30:44.704] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:30:53.403] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:33:18.909] ---- leaving play mode ----
+[23:33:23.990] ---- edit mode restored ----
+[23:33:37.853] ---- entering play mode ----
+[23:33:40.824] ---- play mode running ----
+[23:33:42.275] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:34:30.269] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:34:50.293] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 20000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:34:58.328] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:36:25.261] ---- leaving play mode ----
+[23:36:28.181] ---- edit mode restored ----
+[23:36:43.598] ---- entering play mode ----
+[23:36:46.784] ---- play mode running ----
+[23:36:49.277] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:36:57.608] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:38:59.093] ---- leaving play mode ----
+[23:39:02.008] ---- edit mode restored ----
+[23:43:48.543] ---- entering play mode ----
+[23:43:51.611] ---- play mode running ----
+[23:43:54.219] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:50:02.523] ---- leaving play mode ----
+[23:50:06.309] ---- edit mode restored ----
+[23:50:22.003] ---- entering play mode ----
+[23:50:25.168] ---- play mode running ----
+[23:50:27.728] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:55:05.914] ---- leaving play mode ----
+[23:55:09.183] ---- edit mode restored ----
+[23:55:22.648] ---- entering play mode ----
+[23:55:25.561] ---- play mode running ----
+[23:55:26.218] [PlayMode] Error: Failed to handle /api/exec request: Main thread operation timed out after 5000ms
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:55:27.959] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:20:38.165] ---- leaving play mode ----
+[00:20:41.362] ---- edit mode restored ----
+[00:21:05.319] ---- entering play mode ----
+[00:21:08.474] ---- play mode running ----
+[00:21:11.095] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:24:41.280] ---- leaving play mode ----
+[00:24:44.050] ---- edit mode restored ----
+[00:25:19.219] ---- entering play mode ----
+[00:25:22.099] ---- play mode running ----
+[00:25:24.783] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:29:03.711] ---- leaving play mode ----
+[00:29:07.462] ---- edit mode restored ----
+[00:30:18.774] ---- entering play mode ----
+[00:30:21.679] ---- play mode running ----
+[00:30:24.230] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:39:16.546] [PlayMode] Error: ExecuteCommandByName: No command named 'list' is available. Available: [get_build_settings, clear_occlusion_culling, editor_focus, clear_navmesh, set_input_settings, screenshot, package_resolve, set_tags_layers, get_graphics_settings, set_audio_settings, write_text_file, get_performance_stats, get_console_logs, create_folder, set_active_scene, create_scene, open_scene, set_time_settings, lighting_bake_status, cancel_lighting_bake, search, set_graphics_settings, get_authoring_root, add_animator_parameter, set_autotick, instantiate_prefab, get_physics_settings, build, audit, find_assets, set_animation_curve, audit_status, read_text_file, move_asset, get_serialized_fields, add_animator_transition, get_audio_settings, get_import_settings, package_remove, run_tests, add_scene_to_build, build_status, bake_lighting, set_authoring_root, set_material_properties, create_prefab_variant, cancel_navmesh_bake, set_tag, list_build_profiles, set_transform, cancel_occlusion_bake, add_timeline_track, find_gameobjects, unpack_prefab, create_prefab, capture_game_view, get_quality_settings, set_parent, revert_prefab_overrides, package_status, get_scene_hierarchy, clear_console, save_scene, create_asset, package_add, get_animator_controller, create_animation_clip, package_search, list_tests, get_lighting_settings, menu, recompile, rename_asset, rename_gameobject, test_status, get_tags_layers, create_gameobject, copy_asset, remove_animation_curve, set_navmesh_settings, get_shader_properties, import_asset, list_shaders, list_build_targets, editor_play, clear_baked_lighting, editor_status, get_input_settings, remove_scene_from_build, bake_occlusion_culling, capture_scene_view, get_animation_clip, remove_component, create_gameobjects, navmesh_bake_status, create_timeline, bake_navmesh, editor_pause, package_list, set_build_settings, get_navmesh_settings, add_animator_layer, delete_asset, set_selection, set_quality_settings, save_all, create_animator_controller, attach_script, switch_build_target_status, add_component, bake_navmesh_surfaces, add_animator_state, editor_stop, create_script, apply_prefab_overrides, get_component_properties, list_open_scenes, delete_gameobject, set_active, switch_build_target, set_layer, set_lighting_settings, get_time_settings, occlusion_bake_status, set_serialized_field, add_timeline_clip, get_timeline, get_selection, get_material_properties, set_component_properties, set_player_settings, set_physics_settings, set_import_settings, get_player_settings, recompile_status, save_prefab_contents, cancel_tests, eval, reload_file_override, set_timescale, runtime_status, eval_file, simulate_key, simulate_pointer, console, cleanup_hotreload, hotreload_status, log, set_target_framerate, reload_file, quit]
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc6e1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025a4a9eed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025a4a9eeb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025a4a9ee7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:42:28.465] [PlayMode] Assert: Allocating too large buffer for profiler!
+        0x00007ff8cc874e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8ce0af369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8ce0afbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8cc82587f (Unity) DebugStringToFile
+        0x00007ff8cc825439 (Unity) AssertImplementation
+        0x00007ff8cd061c2a (Unity) profiling::Dispatcher::AcquireFreeBuffer
+        0x00007ff8cd0895ac (Unity) profiling::BufferSerializer::AcquireNewBuffer
+        0x00007ff8cd08a5c7 (Unity) profiling::PerThreadProfiler::EmitUIEvents
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Utility.PerformanceBenchmark.BurstProbe+ProbeJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Utility.PerformanceBenchmark.BurstProbe+ProbeJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.PrismMotion+ContactJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.PrismMotion+ContactJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.SwarmPoseJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SwarmPoseJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.PrismMotion+MapSlotsJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.PrismMotion+MapSlotsJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.PrismSpatialIndex+UpdatePositionsJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.PrismSpatialIndex+UpdatePositionsJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+UnityEngine.Jobs.IJobParallelForTransformExtensions+TransformParallelForLoopStruct`1[[CosmicShore.Gameplay.SpindleLodSystem+ClassifyJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SpindleLodSystem+ClassifyJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+UnityEngine.Jobs.IJobParallelForTransformExtensions+TransformParallelForLoopStruct`1[[CosmicShore.Gameplay.BlackHoleGravityField+WritePoseJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.BlackHoleGravityField+WritePoseJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.SwitchbackSenseBatch+BuildJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SwitchbackSenseBatch+BuildJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.SubstrateAgentJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SubstrateAgentJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.SegmentOccupancyJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SegmentOccupancyJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.LodClassifyJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.LodClassifyJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.AOESpatialQueryJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.AOESpatialQueryJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.CellVolumeSumJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.CellVolumeSumJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+WriteLocalToWorldJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+WriteLocalToWorldJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+SetLookJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+SetLookJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+InitCreatedJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+InitCreatedJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.LinearCapsuleScanJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.LinearCapsuleScanJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.BlackHoleGravityField+IntegrateJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.BlackHoleGravityField+IntegrateJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.AOECylinderSweepQueryJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.AOECylinderSweepQueryJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.SwitchbackSenseBatch+PickJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SwitchbackSenseBatch+PickJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+UnityEngine.Jobs.IJobParallelForTransformExtensions+TransformParallelForLoopStruct`1[[CosmicShore.Gameplay.BlackHoleGravityField+ReadPoseJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.BlackHoleGravityField+ReadPoseJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.AOEConicSweepQueryJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.AOEConicSweepQueryJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobForExtensions+ForJobStruct`1[[CosmicShore.Gameplay.SwarmHeartPoseJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SwarmHeartPoseJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.FindDensestRegionJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.FindDensestRegionJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+TypeManager.Initialize took: 581ms
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 19.91 ms, found 15 plugins.
+Start HTTP server: port:7800
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007fffd8824e2e (Unity) StackWalker::ShowCallstack
+0x00007fffda05f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffda05fbee (Unity) Stacktrace::GetStacktrace
+0x00007fffd87d587f (Unity) DebugStringToFile
+0x00007fffd8691b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000019f60b9ed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000019f60b9eb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000019f60b9e7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000019f60b9dc7e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000019f60b9d91d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000019f60b9d74b (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:88)
+0x0000019f60b3f6b1 (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:237)
+0x0000019f60b3d753 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:164)
+0x0000019f60b35e7b (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:44)
+0x0000019f5eab3435 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007fffd31c6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffd3108984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffd3103965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007fffd3039fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007fffd306cbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x0000019f2a963f52 (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x0000019f2a963e0b (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x0000019f2a95daab (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x000001a100b4b40b (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007fffd31c6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffd3108984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffd3108a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffd905fdd4 (Unity) scripting_method_invoke
+0x00007fffd9066c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffd9062235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007fffd9652433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007fffd8f7d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007fffd8f74cf3 (Unity) MonoManager::FinalizeReload
+0x00007fffdaf45cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007fffdafd52d6 (Unity) ImportOutOfDateAssets
+0x00007fffdafde3fa (Unity) RefreshInternalV2
+0x00007fffdafe6f17 (Unity) StopAssetImportingV2Internal
+0x00007fffdafdf51c (Unity) RefreshV2
+0x00007fffdaf51073 (Unity) AssetDatabase::Refresh
+0x00007fffd9882951 (Unity) Application::AutoRefresh
+0x00007fffd96b4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ff8b0ce52e6 (USER32) CallWindowProcW
+0x00007ff8b0ce4dac (USER32) CallWindowProcW
+0x00007ff8945aced8 (COMCTL32) DefSubclassProc
+0x00007ff8945ace08 (COMCTL32) DefSubclassProc
+0x00007ff8a14333f3 (AppUINativePlugin) 
+0x00007ff8945aced8 (COMCTL32) DefSubclassProc
+0x00007ff8945accaf (COMCTL32) GetWindowSubclass
+0x00007ff8b0ce52e6 (USER32) CallWindowProcW
+0x00007ff8b0ce4b6c (USER32) GetFocus
+0x00007ff8b0d0f543 (USER32) GetWindowDpiAwarenessContext
+0x00007ff8b317a424 (ntdll) KiUserCallbackDispatcher
+0x00007ff8b04f1304 (win32u) NtUserPeekMessage
+0x00007ff8b0ce19df (USER32) PeekMessageW
+0x00007ff8b0ce1968 (USER32) PeekMessageW
+0x00007fffd9679b24 (Unity) MainMessageLoop
+0x00007fffd9681a12 (Unity) UnityMain
+0x00007ff77aff2f2a (Unity) __scrt_common_main_seh
+0x00007ff8b1c2dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff8b30d9c5c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[Licensing::Client] Successfully resolved entitlement details
+Reflex LogLevel set to Info
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Logging.ReflexLogger:.cctor () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:15)
+Reflex.Configuration.ReflexSettings:OnValidate () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Configuration/ReflexSettings.cs:39)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs Line: 15)
+
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  8.592 seconds
+Domain Reload Profiling: 37649ms
+	BeginReloadAssembly (4840ms)
+		ExecutionOrderSort (17ms)
+		DisableScriptedObjects (341ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (7ms)
+		CreateAndSetChildDomain (3393ms)
+	RebuildCommonClasses (47ms)
+	RebuildNativeTypeToScriptingClass (19ms)
+	initialDomainReloadingComplete (95ms)
+	LoadAllAssembliesAndSetupDomain (24056ms)
+		LoadAssemblies (23265ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (940ms)
+			TypeCache.Refresh (131ms)
+				TypeCache.ScanAssembly (94ms)
+			BuildScriptInfoCaches (751ms)
+			ResolveRequiredComponents (43ms)
+	FinalizeReload (8593ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (6340ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (55ms)
+			SetLoadedEditorAssemblies (11ms)
+			BeforeProcessingInitializeOnLoad (955ms)
+			ProcessInitializeOnLoadAttributes (4441ms)
+			ProcessInitializeOnLoadMethodAttributes (860ms)
+			AfterProcessingInitializeOnLoad (14ms)
+			EditorAssembliesLoaded (4ms)
+		ExecutionOrderSort2 (7ms)
+		AwakeInstancesAfterBackupRestoration (615ms)
+Start importing Assets/_Scenes/Menu_Main.unity using Guid(102d08d71236a7342a94518fff75949c) (DefaultImporter) -> (artifact id: '807432942e472534386fcbd755012344') in 0.0139003 seconds
+Start importing Assets/_Graphics/Materials/GreenSpikeMaterial.mat using Guid(77e1afb46629cc7469cfccbdae90a628) (NativeFormatImporter) -> (artifact id: 'f6dccf5b8c0d9470384f218d2a99f31a') in 0.0024628 seconds
+Start importing Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset using Guid(116ff08ebc0c4e6db955bab003a86ce4) (NativeFormatImporter) -> (artifact id: 'cf655799bd1e1e0b20c360eb508c74fa') in 0.002028 seconds
+Start importing Assets/_SO_Assets/Color Palettes/ProtanopiaColorSetSO.asset using Guid(31cde80f4f78432bac8960d826595421) (NativeFormatImporter) -> (artifact id: '5ad6dc2506baced926887802bce57de8') in 0.0018428 seconds
+Start importing Assets/_SO_Assets/Color Palettes/UkiyoEColorSetSO.asset using Guid(32a11b7b922d4094bce00730a8568ae3) (NativeFormatImporter) -> (artifact id: '124fcd12c71bbb76d4d557b656d2da4f') in 0.0022603 seconds
+Start importing Assets/_SO_Assets/VesselActions/Grizzly/GrizzlySniperShotAction.asset using Guid(52f08890cabc4e48891138d622f0ba57) (NativeFormatImporter) -> (artifact id: 'a29d3a044779c84d3e29af3bb9654e60') in 0.0019896 seconds
+Start importing Assets/_SO_Assets/Color Palettes/ContrastColorSetSO.asset using Guid(a2b69fd4235d40b683d21c958716a7f8) (NativeFormatImporter) -> (artifact id: '075021bb751baeeecc8343987af93eb0') in 0.0019917 seconds
+Start importing Assets/_SO_Assets/Games/RiposteSettings.asset using Guid(93c4caea8b24256976f2419b4f21a1c2) (NativeFormatImporter) -> (artifact id: '40e7ae4f3c8e2306c104afe65560be60') in 0.0023121 seconds
+Start importing Assets/_SO_Assets/Color Palettes/TritanopiaColorSetSO.asset using Guid(744330f0b8aa4ef1a9adcdd29ad77dda) (NativeFormatImporter) -> (artifact id: 'f16f3c44f3c8be9a010513229de2b576') in 0.0020329 seconds
+Start importing Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset using Guid(55d0a36755aa4d22a9bf278180c97f13) (NativeFormatImporter) -> (artifact id: '4c5209defded29fffa34a1b102df3658') in 0.0013745 seconds
+Start importing Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyFlamethrowerAction.asset using Guid(a6a49ba11f7b4b04a075230bda3d3306) (NativeFormatImporter) -> (artifact id: 'be86c4fade12a748517f4b6345f1e94c') in 0.0014914 seconds
+Start importing Assets/_SO_Assets/Color Palettes/DeuteranopiaColorSetSO.asset using Guid(c60912e872a449699ac1e217150b1eeb) (NativeFormatImporter) -> (artifact id: '929e1d0a47ad45c197a284e89cd43927') in 0.0018548 seconds
+Start importing Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyModeSwitchingFire.asset using Guid(2769aeee18874babb62d45b67f0f4f44) (NativeFormatImporter) -> (artifact id: '8e3f0a028fcf724696045b04f07a0659') in 0.0013527 seconds
+Start importing Assets/Resources/TouchControlProfiles.asset using Guid(a8f12c18f05f86c77afa921677e8f2ff) (NativeFormatImporter) -> (artifact id: '75ed9b8dc20f9b7d2b54fc681618ddd3') in 0.0828155 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Grizzly.asset using Guid(d90d75e4812343a6975c594506e6494b) (NativeFormatImporter) -> (artifact id: '66155d5fd1434921c3930713482fb920') in 0.0019176 seconds
+Start importing Assets/_SO_Assets/Color Palettes/LowVisionColorSetSO.asset using Guid(e94dde772fbd4e3dbe87f5514b3ac707) (NativeFormatImporter) -> (artifact id: '9a5478cfebf15e61b97a59e986568703') in 0.0020066 seconds
+Start importing Assets/Resources/AIBoostPolicies/SwordfishAIBoostPolicy_Riposte.asset using Guid(5a53117208481c0ad88adfa5ffa39844) (NativeFormatImporter) -> (artifact id: '8817974e1c2e24b283b798e601fda742') in 0.0022077 seconds
+Start importing Assets/_SO_Assets/Color Palettes/NeonNoirColorSetSO.asset using Guid(6a7e9e76e42c40b19d5216644774eb96) (NativeFormatImporter) -> (artifact id: '837b1598a66bcb609192fcbeba4b7f98') in 0.0020404 seconds
+Start importing Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombRightAction.asset using Guid(bbc0e75c0415410e874749d355db77bd) (NativeFormatImporter) -> (artifact id: 'c7ea0b7799aa610d590ab84dd86bda8e') in 0.0015028 seconds
+Start importing Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombLeftAction.asset using Guid(3c8aa1be073b49eaa930e891c4659ac5) (NativeFormatImporter) -> (artifact id: 'bbf38220e4a2829095d238aa105b3d7b') in 0.0021525 seconds
+Start importing Assets/_SO_Assets/Color Palettes/NacreColorSetSO.asset using Guid(5c23989fe41646f5998662aa44c15ffa) (NativeFormatImporter) -> (artifact id: '4cb111caf6e853d3359d7522f7fe13b5') in 0.0017138 seconds
+Start importing Assets/_SO_Assets/Color Palettes/DartFrogColorSetSO.asset using Guid(fc278fc4db3642deb6d5c94314865280) (NativeFormatImporter) -> (artifact id: 'e9d1ed216b364d51ccd26cb5347fbf39') in 0.0018743 seconds
+Start importing Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset using Guid(8d1c1bdcb636a424d9c54fbd1afc952f) (NativeFormatImporter) -> (artifact id: '467a1c3e7c4296eed987e5521d2e8955') in 0.0017589 seconds
+Start importing Assets/_SO_Assets/Color Palettes/DuskColorSetSO.asset using Guid(7e428642c62b47f4a40c7da1717b9699) (NativeFormatImporter) -> (artifact id: '725aebb144cf8443757a6857b9a2e9bf') in 0.0016792 seconds
+Start importing Assets/_SO_Assets/Color Palettes/BlueRingedOctopusColorSetSO.asset using Guid(de30bf08df564c14bddcbb3fe0edf203) (NativeFormatImporter) -> (artifact id: 'f38d29bc3b082884b5176dac286a30f3') in 0.0024126 seconds
+Start importing Assets/_SO_Assets/Color Palettes/AchromatopsiaColorSetSO.asset using Guid(dfa527e6fbe540f5bac81322305c848f) (NativeFormatImporter) -> (artifact id: '6a193eadf8a6b2094634947111fa15e9') in 0.001831 seconds
+Start importing Assets/_Scripts/Controller/Arcade/RIPOSTE.md using Guid(e3c66af5a726c1104e8707b9bb9c5763) (TextScriptImporter) -> (artifact id: 'eea8bdc38fb6e87322d54cb0cf627954') in 0.0034559 seconds
+Start importing Assets/_Scripts/Controller/Arcade/PALISADE.md using Guid(489ac81e1e864316fe54596c03d393f4) (TextScriptImporter) -> (artifact id: 'bc29808b8350cb0f90304b39eef781f5') in 0.0021537 seconds
+Start importing Assets/_Scripts/Controller/Arcade/CLEAVE.md using Guid(f879ae60f6ca5dd4bb9d596ef0c7e9eb) (TextScriptImporter) -> (artifact id: '67c84245288bd1d7ede5676f506a8ad1') in 0.0028412 seconds
+Start importing Assets/_Scripts/Controller/Arcade/WAYSTATION.md using Guid(f9229600f4c89db439d73e3f90043bfe) (TextScriptImporter) -> (artifact id: '518f4bcdba2f45247578632c64b20062') in 0.0021024 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md using Guid(afb83880e067482c80aa9f234b602e4b) (TextScriptImporter) -> (artifact id: '454b8d68780f0199de1b628ab17c807b') in 0.0031457 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab using Guid(f0a24806a0485254389f97d4c93f7615) (PrefabImporter) -> (artifact id: '2f59e055e4fb179d5d116b82fcce906a') in 0.0206646 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/StarlingHUDVariant.prefab using Guid(31700dc4c04545cb445d0a088417e352) (PrefabImporter) -> (artifact id: '3b4b835773f8c868ec8cd0f7ec6654d9') in 0.0772392 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab using Guid(c1572db06ad4244469ad3f25d86940b8) (PrefabImporter) -> (artifact id: 'cd9826dac137227fe0d756a01fb36ba8') in 0.0111536 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/ToyVariantTile.prefab using Guid(4250cea229cb3f6f8deeeaa068f63de9) (PrefabImporter) -> (artifact id: '51ba924ff641a14f616048d74447f830') in 0.0079052 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/ToyCard.prefab using Guid(43617493665bc2d454c4cde6100e8f80) (PrefabImporter) -> (artifact id: '65b68e1d5f2953128ea88416254edb63') in 0.0086121 seconds
+Start importing Assets/_Prefabs/Spacevessels/Falcon.prefab using Guid(633ae27c43a2006459b22e655df7ab4f) (PrefabImporter) -> (artifact id: '1deb3e36f5efd718f4f7de387a5ce4c3') in 0.0373755 seconds
+Start importing Assets/_Prefabs/Spacevessels/Grizzly.prefab using Guid(73c8fd79b947fef4f80df7c233451d3c) (PrefabImporter) -> (artifact id: '315708b4119a60b49be07789526a4745') in 0.0378712 seconds
+Start importing Assets/_Prefabs/Spacevessels/Squirrel.prefab using Guid(84755e5175a641e0bff6b47d35746cff) (PrefabImporter) -> (artifact id: 'b1a5280c2101ad976b28269690ebd002') in 0.0261573 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/ScarabHUDVariant.prefab using Guid(4f3ce7d760a1e0c76f3bc8c6a6842a92) (PrefabImporter) -> (artifact id: '45a6fe52ee7d047120f8185d89707cca') in 0.0122425 seconds
+Start importing Assets/_Prefabs/Spacevessels/Scarab.prefab using Guid(945f7384d7042607da0b61b8d18f3f9b) (PrefabImporter) -> (artifact id: 'bd5064e2efe7ae7d49c3824784ee6db7') in 0.0277292 seconds
+Start importing Assets/_Prefabs/Spacevessels/Serpent.prefab using Guid(c4488e14125bf4a4ebc9f4ee60939f9b) (PrefabImporter) -> (artifact id: '01d379cbb1918faa4e69c4ab49640754') in 0.0647523 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/SwordfishHUDVariant.prefab using Guid(15b22331fedd41f289866efe156ecc53) (PrefabImporter) -> (artifact id: '4e36436ff87750c98ffb3dc582166c63') in 0.0052274 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/RhinoHUDVariant.prefab using Guid(2656b477a4af7304180e65f2848a84b3) (PrefabImporter) -> (artifact id: 'c27fbe427fa6c1442748e84107562f93') in 0.005508 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/JewelWaspHUDVariant.prefab using Guid(268b298ff2868181ad72cbddebb7d295) (PrefabImporter) -> (artifact id: '03a23ffc25e68d62e954645ee22f3fd0') in 0.0096692 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/ToyboxView.prefab using Guid(66f5ddc6f79659758939fc374feae21b) (PrefabImporter) -> (artifact id: '2c03bef96790938a3ea6778da129543b') in 0.0194996 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/HoneyguideHUDVariant.prefab using Guid(db0096ceb92ff119c1e7fdf8d49762be) (PrefabImporter) -> (artifact id: '9af28a48d63279c882b784d3e53529d0') in 0.0104484 seconds
+Start importing Assets/_Prefabs/Spacevessels/Honeyguide.prefab using Guid(f6abe5afafae41909d25da175bc23493) (PrefabImporter) -> (artifact id: '11ac4c46d08f10a18f970054f4a46a60') in 0.0309599 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/UrchinHUDVariant.prefab using Guid(777a6a3c8b0bcf4644b0f45ee909c1fe) (PrefabImporter) -> (artifact id: '98b9b9f1d1a592724ba0cc505a68f42b') in 0.0107048 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/GobyHUDVariant.prefab using Guid(6bdd09c80ab85367dd77f55a98e8cc3c) (PrefabImporter) -> (artifact id: 'ce40a061f9cc533909bb1f84248fc8cb') in 0.0071328 seconds
+Start importing Assets/_Prefabs/Spacevessels/Goby.prefab using Guid(982ad3e4c35f4421ae0424bf7bb1ee47) (PrefabImporter) -> (artifact id: 'eb569df5251be142ebf9c72a9557e1b4') in 0.0209872 seconds
+Start importing Assets/_Prefabs/Spacevessels/Rhino.prefab using Guid(b8c185f31f5b4add8202df2e3efeacce) (PrefabImporter) -> (artifact id: '16df2aae51bff244079adec91d11e9e8') in 0.0611855 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/WrasseHUDVariant.prefab using Guid(ad91de5ed543de1c14c3bd603667df5d) (PrefabImporter) -> (artifact id: 'c0a2b494901f93eb58ccf6def069fd20') in 0.0095161 seconds
+Start importing Assets/_Prefabs/Spacevessels/Wrasse.prefab using Guid(c81d6c43058343b796fee1128ce6ccda) (PrefabImporter) -> (artifact id: '89687bc2e304121931da5c775b1741fd') in 0.0247748 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab using Guid(6b2f9e1c3a7d4e8f9a0b1c2d3e4f5a6b) (PrefabImporter) -> (artifact id: '8ef95a17716ab6fd19239d0399f85672') in 0.0149661 seconds
+Start importing Assets/_Prefabs/Spacevessels/Thresher.prefab using Guid(291d45422a244f3ab14f4e592c941c8d) (PrefabImporter) -> (artifact id: '0b9cb4ecd17c971dabb9dcb471add750') in 0.0211683 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab using Guid(1f9b41e6fa58494599674753191b495b) (PrefabImporter) -> (artifact id: '717333e391e79ae3536d4efee7b59451') in 0.0134027 seconds
+Start importing Assets/_Prefabs/Spacevessels/Stoat.prefab using Guid(599b396ff054448db5bccc9307dfb4c9) (PrefabImporter) -> (artifact id: '2cd9bb72478f73b0e114c493a2215aa4') in 0.0195202 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/BrittleStarHUDVariant.prefab using Guid(7ac1cc6d8d5eb58225aa040a9ec0f459) (PrefabImporter) -> (artifact id: 'ca9be56c8020700ba2fb97255fae1d78') in 0.0131142 seconds
+Start importing Assets/_Prefabs/Spacevessels/BrittleStar.prefab using Guid(c905ec6b1a740194b8cf888ffee149f7) (PrefabImporter) -> (artifact id: '4dca940b7e088f8f6bb70bf9709134d0') in 0.0170649 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/ToyConfigureView.prefab using Guid(c919d398ba8825d2511f4108cc3e11c0) (PrefabImporter) -> (artifact id: 'b61d088899e5417eda77900313923c09') in 0.0226834 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/ShrikeHUDVariant.prefab using Guid(e91e5d18d7e161878c9ebf5f98e422d5) (PrefabImporter) -> (artifact id: '2fd88df7d838de982e2d0ac75efeba3c') in 0.0132836 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/OrcaHUDVariant.prefab using Guid(f98a63f13708b36032aae42ca65cd74e) (PrefabImporter) -> (artifact id: 'f76e1a957c085739d264b2ecb6dcf4a8') in 0.0091699 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab using Guid(3a48a770e15885e4dbc159855aebb73e) (PrefabImporter) -> (artifact id: '663d979c0415258bcf75e752684b1453') in 0.0068498 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/JacksHUDVariant.prefab using Guid(dacce99a4a521d2995cc614beb26d6a3) (PrefabImporter) -> (artifact id: 'e3a948ae070a503748d1e2809ddbb75c') in 0.0044515 seconds
+Start importing Assets/_Prefabs/Spacevessels/Orca.prefab using Guid(db757691ec7343cc9decf08f3fd8c8cc) (PrefabImporter) -> (artifact id: '3f9b71958890b9b0683d34225fc74b53') in 0.0261508 seconds
+Start importing Assets/_Prefabs/Spacevessels/Manta.prefab using Guid(0cf574eea9a5c404d93969f2befd9c73) (PrefabImporter) -> (artifact id: 'be482ac5b56f39ddd6ab070f99725cdf') in 0.0246883 seconds
+Start importing Assets/_Prefabs/Spacevessels/Dolphin.prefab using Guid(3cc1c31e8138b6448ae4264dd90d24ac) (PrefabImporter) -> (artifact id: '8648d55998c9b82e3be11934594b670d') in 0.0219765 seconds
+Start importing Assets/_Prefabs/Spacevessels/JewelWasp.prefab using Guid(6cb50bd6489047e19ff32101c7d5146a) (PrefabImporter) -> (artifact id: 'b4760f98258e771cf0a62e9a6d6056b1') in 0.0173402 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab using Guid(bf76590dbaead2445fb6dc454394aa4a) (PrefabImporter) -> (artifact id: 'b35cf4df4003de48fe898ab89d6d239f') in 0.013607 seconds
+Start importing Assets/_Prefabs/Spacevessels/Angler.prefab using Guid(7c567527c09c5ea6e632b9186484fc68) (PrefabImporter) -> (artifact id: 'c2e69cd4e0cbfb0a1b2129eaea33df05') in 0.0198266 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/ButterflyHUDVariant.prefab using Guid(dd198b52721e3c346970524ad4972959) (PrefabImporter) -> (artifact id: '5764b98e50703dcf230a0be25d29badc') in 0.0095992 seconds
+Start importing Assets/_Prefabs/Spacevessels/TigerMoth.prefab using Guid(bc7a968aa0d04c48b77ada29fb301291) (PrefabImporter) -> (artifact id: '8b2f0d898839ee111338db3357315369') in 0.0184608 seconds
+Start importing Assets/_Prefabs/Spacevessels/Urchin.prefab using Guid(cc90998ce81596a49be5dba224e2d7a6) (PrefabImporter) -> (artifact id: 'e0e86492a7a12e36560454026e0adb84') in 0.0258826 seconds
+Start importing Assets/_Prefabs/Spacevessels/Termite.prefab using Guid(2d5833ab632135248959e37cc8aef2be) (PrefabImporter) -> (artifact id: 'dbf0f8e8f082d15179b157b71265b92c') in 0.0325455 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/MeerkatHUDVariant.prefab using Guid(5d49e3f0fa4f801553ac3c6de6f80713) (PrefabImporter) -> (artifact id: '6b060163d8906b2a8b59854ccaea967a') in 0.0097717 seconds
+Start importing Assets/_Prefabs/Spacevessels/Swordfish.prefab using Guid(5d0f3c9e8a7b4e21b6c4f1a2e9d80b37) (PrefabImporter) -> (artifact id: '425c70422633536285eeeffdc952d1d2') in 0.034221 seconds
+Start importing Assets/_Prefabs/Spacevessels/Jacks.prefab using Guid(5d7f0a3c9e2b4f61a8c47e1b2d9f6a03) (PrefabImporter) -> (artifact id: 'cecdf8576c15c000e4c65a53a96a5b09') in 0.0110485 seconds
+Start importing Assets/_Prefabs/Spacevessels/Starling.prefab using Guid(1e5ceb8a48f583eabb3d3bfc5d277a15) (PrefabImporter) -> (artifact id: '1b6cbdc4a2f5654f3561ae4fde3e0d7f') in 0.0176333 seconds
+Start importing Assets/_Prefabs/Spacevessels/Meerkat.prefab using Guid(4e2a8c1f7b9d4f3e8a6c5b2d1e0f9a87) (PrefabImporter) -> (artifact id: '33459ae926303b4e8d43f9014f2a5a53') in 0.0189752 seconds
+Start importing Assets/_Prefabs/Spacevessels/Shrike.prefab using Guid(ae83e6dd3b718654db0175585a46edb2) (PrefabImporter) -> (artifact id: 'bdc09762d08d48ef8fdd7fe4d7391c6f') in 0.0153122 seconds
+Start importing Assets/_Prefabs/Spacevessels/Sparrow.prefab using Guid(ce4d2e03456b4b508af88b54f396d76e) (PrefabImporter) -> (artifact id: '7aa0c529f895eb803c4b0725f10c1e70') in 0.0243005 seconds
+Refreshing native plugins compatible for Editor in 21.13 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.13 ms.
+Asset Pipeline Refresh (id=2a7e09783219b9747bccc043bd89f7de): Total: 100.614 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=82 (actual=82, local cache=0, cache server=0)
+		Asset DB Process Time: managed=16 ms, native=12935 ms
+		Asset DB Callback time: managed=978 ms, native=69 ms
+		Scripting: domain reloads=1, domain reload time=29123 ms, compile time=57490 ms, other=0 ms
+		Project Asset Count: scripts=4769, non-scripts=14451
+		Asset File Changes: new=13, changed=69, moved=0, deleted=1
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.023ms
+	InvokePackagesCallback: 28.407ms
+	ApplyChangesToAssetFolders: 2.792ms
+	Scan: 254.858ms
+	OnSourceAssetsModified: 15.678ms
+	CategorizeAssetsWithTransientArtifact: 7.336ms
+	ProcessAssetsWithTransientArtifactChanges: 71.465ms
+	UnregisterDeletedAssets: 0.013ms
+	CategorizeAssets: 250.038ms
+	ImportOutOfDateAssets: 11411.384ms (-48750.760ms without children)
+		ImportManagerImport: 1922.530ms (641.172ms without children)
+			ImportInProcess: 1280.298ms
+			UpdateCategorizedAssets: 1.060ms
+		CompileScripts: 57490.104ms
+		CollectScriptTypesHashes: 52.536ms
+		ReloadNativeAssets: 39.098ms
+		UnloadImportedAssets: 63.007ms
+		ReloadImportedAssets: 586.032ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 3.510ms
+		InitializingProgressBar: 0.002ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.003ms
+		OnDemandSchedulerStart: 5.323ms
+	PostProcessAllAssets: 970.279ms
+	Hotreload: 35.909ms
+	GatherAllCurrentPrimaryArtifactRevisions: 17.433ms
+	UnloadStreamsBegin: 9.109ms
+	PersistCurrentRevisions: 1.524ms
+	UnloadStreamsEnd: 0.040ms
+	GenerateScriptTypeHashes: 30.570ms
+	Untracked: 87537.514ms
+
+Unloading 86 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Unloading 8280 unused Assets / (65.7 MB). Loaded Objects now: 46709.
+Memory consumption went from 1.28 GB to 1.22 GB.
+Total: 111.681600 ms (FindLiveObjects: 4.724200 ms CreateObjectMapping: 7.411100 ms MarkObjects: 66.760400 ms  DeleteObjects: 32.784000 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+Asset Pipeline Refresh (id=63508c8756ad7f744a3ff4bf21619ef4): Total: 0.011 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 10.720ms
+Scanning for USB devices : 9.812ms
+Scanning for USB devices : 11.232ms
+Scanning for USB devices : 9.835ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 10.274ms
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "JbPz2Djn"... (expires: 2026-11-25T04:10:52Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "5SR6qQuK"... (expires: 2026-11-25T06:10:04Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "Cf4cZBF3"... (expires: 2026-11-25T08:10:08Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "lxeVFKHP"... (expires: 2026-11-25T10:09:36Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 10.173ms
+Scanning for USB devices : 10.032ms
+Scanning for USB devices : 9.952ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 10.200ms
+Scanning for USB devices : 9.611ms
+Scanning for USB devices : 10.690ms
+Scanning for USB devices : 9.878ms
+Scanning for USB devices : 9.588ms
+
