@@ -23,7 +23,8 @@ asks for, who counters whom, and what the squad is paid. Voyages keep difficulty
   and the starters' best fit). To take a new board state: save the board's JSON over `archetypes.json` and re-run.
 - The board's ids are its first draft's (`scout` is Builder, `hunters` Harraser, `builders` Zoner, `enhancers`
   Enhancer). A board vessel not in `VesselClassType` (the Wombat) is skipped.
-- Tertiary: where the board gives two secondaries (Sparrow, Dolphin, Jewel Wasp), the second listed is the tertiary.
+- Tertiary: where the board gives two secondaries (Sparrow, Dolphin, Jewel Wasp), the second listed is the tertiary
+  (Shombith, 2026-11-26). Zoner, which no vessel has, stays out of every ask for now.
 
 ## 2 The ask and fit
 
@@ -56,7 +57,7 @@ Bring a Builder.").
 ## 5 What fit does
 
 When a Salvage, Bounty or Hold voyage sets sail, its fit is recorded on the job (`VoyageJob.SquadFit`) and its pay
-rises `fitPayPerPoint` (0.1) per point, once (`VoyageRun.PayFit`). The escort pays nothing today, so its fit is shown
+rises `fitPayPerPoint` (0.1, Shombith 2026-11-26) per point, once (`VoyageRun.PayFit`). The escort pays nothing today, so its fit is shown
 only. Set `fitPayPerPoint` to 0 on the asset to turn fit pay off.
 
 ## 6 Not built yet
