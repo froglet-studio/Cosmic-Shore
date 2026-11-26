@@ -3,7 +3,8 @@
 Each trigger owns **one bomb**. Pull and release to fire it; pull again to **freeze** it where it
 is; let go to **detonate** it. How hard you squeeze is the bomb: the peak pressure of the firing
 pull sets the **ammo spent** and the **size** of both the bomb and its blast. A Grizzly inside its
-own blast is **thrown away from the bomb**. **Only the trigger detonates a bomb** — never a clock,
+own blast is **thrown away from the bomb** — or, **mid-Rush (B), straight along the nose**.
+**Space** grows the blast's reach. **Only the trigger detonates a bomb** — never a clock,
 never a contact. A bomb **cruises** — constant velocity, no drag, no range limit — until the
 trigger freezes it **or it touches another vessel**, which freezes it too.
 
@@ -40,6 +41,12 @@ History, all at the design owner's request after playtests:
   bombs to make grizzly go forward. we want grizzly to blow up away from bombs."* The launch is back
   to the 1 s shove **away from the bomb** (below); the 180 u/s muzzle speed and the rest of the
   fifth pass stay.
+- **2026-11-25 — `grizzly-v4` (design owner, after playtesting v3 on `bleeding-edge`):** *"I want
+  to add space to the bombs and I want the dash to make the ship boost forward through a bomb blast
+  no matter what angle it goes in from it just accelerates forward, only when the B boost is
+  activated."* Space now scales the bombs' **reach** (×2.5 at level 10); a blast that catches you
+  **mid-Rush** throws you along the nose whatever side the bomb is on. Without Rush the launch is
+  Garrett's away-from-the-bomb shove, unchanged.
 
 ## The triggers follow the weapon (2026-10-16)
 
@@ -167,6 +174,11 @@ three are the whole of its retirement. An unfrozen bomb flies on until one of th
   you back. (Sitting exactly on it, the nose stands in for "away".) The charged cannon still
   launches you along the nose (`VesselImpulseByExplosionEffectSO`); only the trigger bombs push
   away from themselves.
+- **Mid-Rush (B): along the nose.** While a Grizzly Rush burst is live (its 1 s, plus
+  `rushLaunchGraceSeconds` 0.15 s), the direction is **your nose**, whatever side the bomb is on —
+  ahead, beside, behind or under you. Dash through your own blast and it accelerates you forward.
+  Same strength, falloff and ceiling as the away launch (`GrizzlyTriggerBombConfigSO.LaunchDirection`;
+  `rushLaunchesForward` turns it off).
 - **Strength:** the blast's own impulse, `blast scale / ExplosionDuration (1.2 s)`, ×
   `selfLaunchMultiplier` (**4.5** — three times the 1.5 it first shipped at) — **full at the bomb,
   easing to half at the blast's edge** (`selfLaunchEdgeStrength` 0.5), nothing outside it — over
@@ -179,8 +191,15 @@ three are the whole of its retirement. An unfrozen bomb flies on until one of th
   Grizzly takes keeps the 100. A full squeeze ridden close hands over 750 u/s at the bomb, sits
   **on the 300 ceiling for its whole second** — 350 u/s with cruise, seven times cruise — and
   carries the hull **~300 u** (`GrizzlyTimeCourse.CarryAfterLaunch`).
-- **Reach:** blast radius is half its scale (the AOE sphere's collider radius is 0.5): **100 u**
-  for a full squeeze, **25 u** for a tap.
+- **Reach:** blast radius is half its scale (the AOE sphere's collider radius is 0.5): **40 u**
+  for a full squeeze, **10 u** for a tap, at Space rest.
+- **Space grows the reach, not the throw.** The blast's scale is × the Space multiplier
+  (`spaceBlastScaleAtFull` **2.5** at level 10, 1× at rest, floor `spaceBlastScaleMinMul` 0.5), read
+  at the **replicated** level so every peer's copy of the blast is the same size: a full squeeze
+  reaches **100 u** at Space 10. The launch's strength is still worked from the **un-scaled**
+  blast, so the throw (and Grizzly Time's course maths, which assume the 20-80 blast) is the same
+  at every Space level — Space only lets it catch you from farther away. The level-5 upgrade
+  (Safe Detonation) is not wired to the bombs: they already spare your own domain at every level.
 - **Your own trail is SPARED.** The blast is spawned with `AffectSelfOverride = false`: your own
   domain's mass shields instead of breaking and teammates are untouched, while enemy mass and
   pilots inside it are hit and knocked back radially (the impulse effect's bystander path). The
@@ -368,8 +387,10 @@ Gated on the PILOT, so the menu's lava-lamp Grizzly and released companions bomb
 | `projectileSpeed` | 180 | Muzzle speed over the hull's; the bomb then cruises at that velocity, unlimited range |
 | `minProjectileScale` / `maxProjectileScale` | 2.5 / 5 | Bomb diameter — small on purpose |
 | `sideYawDegrees` | 3 | LT left / RT right |
-| `minBlastScale` / `maxBlastScale` | 50 / 200 | Blast diameter → reach (½) and launch strength |
-| `selfLaunchMultiplier` / `selfLaunchCeiling` / `selfLaunchSeconds` / `selfLaunchEdgeStrength` | 4.5 / 300 / 1 / 0.5 | The launch away from the bomb |
+| `minBlastScale` / `maxBlastScale` | 20 / 80 | Blast diameter → reach (½) and launch strength |
+| `spaceBlastScaleAtFull` / `spaceBlastScaleMinMul` | 2.5 / 0.5 | Space × the blast's reach (not its throw) |
+| `selfLaunchMultiplier` / `selfLaunchCeiling` / `selfLaunchSeconds` / `selfLaunchEdgeStrength` | 11.25 / 300 / 1 / 0.5 | The launch away from the bomb |
+| `rushLaunchesForward` / `rushLaunchGraceSeconds` | on / 0.15 | Mid-Rush (B) the launch is along the nose |
 | `fallbackDangerColor` / `sideHueShift` | (1, 0.072, 0.105) / 0.045 | Danger shade per trigger |
 | `aiFireStickBand` / `aiFreezeDistance` / `aiDetonateBehindDistance` / `aiFireIntervalSeconds` | 0.35 / 18 / 10 / 0.6 | Autopilot |
 | `fireEvent` / `detonateEvent` | empty | FMOD — ship silent until audio authors them (LOCKED convention) |

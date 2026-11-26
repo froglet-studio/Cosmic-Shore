@@ -36,6 +36,11 @@ namespace CosmicShore.Gameplay
         int _charges = -1;              // -1 = uninitialized; set from SO on first use
         int _maxCharges;
         float _lastRushTime = float.NegativeInfinity;
+        float _rushEndsAt = float.NegativeInfinity;
+
+        /// <summary>True while a Rush burst is live, or ended within <paramref name="graceSeconds"/>.
+        /// The trigger bombs read it: a blast that catches a rushing Grizzly throws it forward.</summary>
+        public bool IsRushing(float graceSeconds = 0f) => Time.time <= _rushEndsAt + Mathf.Max(0f, graceSeconds);
         CancellationTokenSource _refillCts;
         CancellationTokenSource _pulseCts;
         CancellationTokenSource _ramCts;
@@ -74,6 +79,7 @@ namespace CosmicShore.Gameplay
             _status = shipStatus;
             _charges = -1;              // re-seed from SO on next rush attempt
             _lastRushTime = float.NegativeInfinity;
+            _rushEndsAt = float.NegativeInfinity;
             CancelToken(ref _refillCts);
             CancelToken(ref _pulseCts);
             CancelToken(ref _ramCts);
@@ -108,6 +114,7 @@ namespace CosmicShore.Gameplay
 
             _charges--;
             _lastRushTime = Time.time;
+            _rushEndsAt = Time.time + so.Duration;
             OnChargesChanged?.Invoke(_charges, _maxCharges);
 
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);

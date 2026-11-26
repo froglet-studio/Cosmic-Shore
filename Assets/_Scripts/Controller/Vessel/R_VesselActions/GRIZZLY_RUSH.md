@@ -18,6 +18,9 @@ now a weapon: rush through a wall. (2026-11-16, the weakest-abilities pass: the 
 - **Time is the refill**: `refillSeconds` (ElementalFloat, 6 s at rest -> 2.5 s at Time 10, never under 1),
   read per charge. With the bank empty the Time card's veil counts the next charge back; every ram flashes the card.
 - The ram sweeps (`ramTickSeconds`, 0.05 s) run on the vessel's authority only, so a prism breaks once.
+- **Rush through your own bomb blast** (grizzly-v4, 2026-11-25): while the burst is live (`IsRushing`, plus the
+  bomb config's 0.15 s grace), a trigger-bomb blast that catches the hull throws it **along the nose**, whatever side
+  the bomb went off on, instead of away from the bomb. See GRIZZLY_TRIGGER_BOMBS.md, "The launch".
 - Charges: executor-instance state (`MaxCharges`, refill one per
   `ChargeRefillSeconds`) — NEVER stored on the shared SO asset. HUD pips via
   `OnChargesChanged(current, max)`.

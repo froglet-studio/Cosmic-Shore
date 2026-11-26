@@ -32,7 +32,10 @@ namespace CosmicShore.Gameplay
     /// BOMB itself (<see cref="LaunchSelf"/>), strongest at the bomb and easing toward the edge.
     /// (The charged cannon's self-launch, through <see cref="VesselImpulseByExplosionEffectSO"/>,
     /// steers by the nose instead; the bombs were asked to push you away from them, 2026-10-08,
-    /// and a forward launch was tried and declined, 2026-11-25.)
+    /// and an always-forward launch was tried and declined, 2026-11-25.) The one exception is a
+    /// RUSH (B, <see cref="GrizzlyRushActionExecutor"/>): a blast that catches a Grizzly mid-burst
+    /// throws it forward along its nose, whatever side the bomb is on (grizzly-v4, 2026-11-25).
+    /// SPACE grows the blast's reach (x2.5 at level 10) but not its throw.
     /// The bombs own the triggers only in EXPLOSIVES mode: in the claw or sniper modes the triggers
     /// drive those weapons (<see cref="GrizzlyBombActionSO"/>), presses here are ignored, and
     /// leaving Explosives retires every live bomb without a blast.
@@ -456,7 +459,10 @@ namespace CosmicShore.Gameplay
         {
             if (!config || config.AoePrefabs == null || _status == null) return;
 
-            float scale = config.BlastScaleForSize(size01);
+            // Space grows the reach, at the REPLICATED level so every peer's blast is the same size.
+            float baseScale = config.BlastScaleForSize(size01);
+            float scale = baseScale * ElementalScaling.ReplicatedMultiplier(
+                _status, Element.Space, config.SpaceBlastScaleAtFull, config.SpaceBlastScaleMinMul);
             float blastSeconds = 0f;
             foreach (var prefab in config.AoePrefabs)
             {
@@ -479,7 +485,7 @@ namespace CosmicShore.Gameplay
                 if (blastSeconds <= 0f) blastSeconds = spawned.Duration;
             }
 
-            LaunchSelf(pos, scale, blastSeconds);
+            LaunchSelf(pos, scale, baseScale, blastSeconds);
 
             PlayAt(config.DetonateEvent, pos);
             OnBombDetonated?.Invoke(s.Side, size01);
@@ -488,7 +494,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Throws the pilot AWAY from their own bomb when the blast catches them: direction is
         /// bomb -> hull, so a bomb left behind you throws you forward, one beside you throws you
-        /// sideways, and one ahead of you stops you dead. Strength is the blast's own impulse
+        /// sideways, and one ahead of you stops you dead. MID-RUSH (B) the throw is along the nose
+        /// instead, whatever side the bomb is on (<see cref="GrizzlyTriggerBombConfigSO.LaunchDirection"/>).
+        /// Reach is the Space-scaled <paramref name="blastScale"/>; strength is worked from the
+        /// un-scaled <paramref name="baseBlastScale"/>, so Space never changes the throw. Strength is the blast's own impulse
         /// (<c>scale / ExplosionDuration</c>, the AOE's <c>Impulse</c>) times
         /// <c>selfLaunchMultiplier</c>, full at the bomb and eased to <c>selfLaunchEdgeStrength</c>
         /// at the blast's edge (radius = half its scale - the AOE sphere's collider radius is 0.5),
@@ -501,7 +510,7 @@ namespace CosmicShore.Gameplay
         /// hull's transform is what replicates, and a peer pushing its copy of someone else's
         /// vessel would only fight that replication.</para>
         /// </summary>
-        void LaunchSelf(Vector3 blastPos, float blastScale, float blastSeconds)
+        void LaunchSelf(Vector3 blastPos, float blastScale, float baseBlastScale, float blastSeconds)
         {
             if (_status == null || !IsSimAuthority(_status)) return;
             var hull = _status.Transform;
@@ -514,9 +523,13 @@ namespace CosmicShore.Gameplay
             if (distance > radius) return;
 
             // Sitting on the bomb has no "away"; the one direction the pilot controls stands in.
-            Vector3 direction = distance > 0.01f ? away / distance : hull.forward;
+            // Mid-Rush the nose wins outright: dash through your own blast and keep accelerating.
+            bool rushing = TryGetComponent<ActionExecutorRegistry>(out var execs) &&
+                           execs.Get<GrizzlyRushActionExecutor>() is { } rush &&
+                           rush.IsRushing(config.RushLaunchGraceSeconds);
+            Vector3 direction = config.LaunchDirection(away, hull.forward, rushing);
             float falloff = Mathf.Lerp(1f, config.SelfLaunchEdgeStrength, radius > 0f ? distance / radius : 0f);
-            float speed = blastScale / blastSeconds * config.SelfLaunchMultiplier * falloff;
+            float speed = baseBlastScale / blastSeconds * config.SelfLaunchMultiplier * falloff;
 
             // A dug-in Grizzly is blasted out of turret stance, as the cannon's blast does - routed
             // through the controller so the replicated flag stays in sync.

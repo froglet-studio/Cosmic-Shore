@@ -186,6 +186,42 @@ namespace CosmicShore.Tests
             Assert.GreaterOrEqual(_cfg.SelfLaunchEdgeStrength, 0f, "a negative edge strength would pull you INTO the bomb");
             Assert.LessOrEqual(_cfg.SelfLaunchEdgeStrength, 1f, "the edge of a blast must not throw harder than its heart");
         }
+
+        [Test]
+        public void SpaceGrowsTheBlastFromOneTimesAtRestToTwoAndAHalfAtTen()
+        {
+            for (float size = 0f; size <= 1.0001f; size += 0.25f)
+            {
+                Assert.AreEqual(_cfg.BlastScaleForSize(size), _cfg.BlastScaleForSize(size, 0f), 1e-4f,
+                    "Space at rest must leave the blast exactly as tuned");
+                Assert.AreEqual(_cfg.BlastScaleForSize(size) * 2.5f, _cfg.BlastScaleForSize(size, 1f), 1e-3f,
+                    "Space 10 is 2.5x the reach");
+                Assert.Greater(_cfg.BlastScaleForSize(size, 0.5f), _cfg.BlastScaleForSize(size, 0f));
+            }
+            Assert.GreaterOrEqual(_cfg.BlastScaleForSize(1f, -1f), _cfg.BlastScaleForSize(1f) * _cfg.SpaceBlastScaleMinMul - 1e-4f,
+                "a Space deficit cannot shrink the blast below the floor");
+        }
+
+        [Test]
+        public void ABlastThrowsYouAwayFromTheBombUnlessYouAreRushing()
+        {
+            var nose = Vector3.forward;
+            var bombToHull = new Vector3(1f, 0f, -1f);            // bomb behind-left of the hull
+            Assert.AreEqual(0f, Vector3.Distance(bombToHull.normalized, _cfg.LaunchDirection(bombToHull, nose, false)), 1e-5f,
+                "not rushing: away from the bomb (Garrett, 2026-11-25)");
+            Assert.AreEqual(0f, Vector3.Distance(nose, _cfg.LaunchDirection(Vector3.zero, nose, false)), 1e-5f,
+                "sitting on the bomb: along the nose");
+
+            // Rushing: along the nose whatever side the bomb is on - ahead, behind, beside, on it.
+            foreach (var side in new[] { Vector3.forward, Vector3.back, Vector3.left, Vector3.up, new Vector3(0.3f, -0.8f, 0.5f), Vector3.zero })
+                Assert.AreEqual(0f, Vector3.Distance(nose, _cfg.LaunchDirection(side * 12f, nose, true)), 1e-5f,
+                    $"rushing, a bomb at {side} must still throw you forward");
+
+            var slanted = new Vector3(0f, 2f, 2f);                // an un-normalized nose comes back unit length
+            Assert.AreEqual(1f, _cfg.LaunchDirection(Vector3.back, slanted, true).magnitude, 1e-5f);
+            Assert.IsTrue(_cfg.RushLaunchesForward, "the Rush launch ships on");
+            Assert.Greater(_cfg.RushLaunchGraceSeconds, 0f);
+        }
     }
 
     /// <summary>

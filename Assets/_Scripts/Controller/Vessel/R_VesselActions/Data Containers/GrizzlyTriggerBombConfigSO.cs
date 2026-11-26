@@ -67,6 +67,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Blast scale of a maximum bomb. Reach is half the scale: 40 u. One radius for the self-launch, rival harm and prisms (Garrett, 2026-11-20: smaller radius, launch kept).")]
         float maxBlastScale = 80f;
 
+        [Header("Space (blast reach)")]
+        [SerializeField, Tooltip("Space element multiplier on the blast's scale (its reach) at Space 10; 1x at rest. Read at the REPLICATED level, so every peer's copy of a blast is the same size. Space grows the reach only: the self-launch's strength is still worked from the un-scaled blast, so the throw Garrett tuned (and Grizzly Time's course maths) holds at every Space level.")]
+        float spaceBlastScaleAtFull = 2.5f;
+        [SerializeField, Tooltip("Floor on the Space multiplier (a deficit Space level cannot shrink the blast below this).")]
+        float spaceBlastScaleMinMul = 0.5f;
+
         [Header("Self launch (away from the bomb)")]
         [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by Self Launch Ceiling. 11.25 keeps the launch of the 50-200 blast at x4.5 now the blast is 20-80 (Garrett, 2026-11-20).")]
         float selfLaunchMultiplier = 11.25f;
@@ -76,6 +82,12 @@ namespace CosmicShore.Gameplay
         float selfLaunchSeconds = 1f;
         [SerializeField, Tooltip("Launch strength at the blast's EDGE as a fraction of the strength at the bomb. 1 = flat; lower rewards blowing it close.")]
         [Range(0f, 1f)] float selfLaunchEdgeStrength = 0.5f;
+
+        [Header("Rush launch (B: forward through the blast)")]
+        [SerializeField, Tooltip("While a Grizzly Rush burst (B) is live, a blast that catches the pilot throws them FORWARD ALONG THE NOSE instead of away from the bomb, whatever side the bomb is on - dash through your own blast to keep accelerating. Same strength and falloff as the away launch. Off = Rush changes nothing.")]
+        bool rushLaunchesForward = true;
+        [SerializeField, Tooltip("Seconds after a Rush burst ends that still count as rushing, so a blast that lands a frame late still sends you forward.")]
+        float rushLaunchGraceSeconds = 0.15f;
 
         [Header("Colour")]
         [SerializeField, Tooltip("Fallback DANGER colour, used only when the theme palette authors none (SO_ColorSet.GetDangerSignalColor answers alpha 0). The shipped palette's danger rim wins.")]
@@ -119,6 +131,10 @@ namespace CosmicShore.Gameplay
         public float SelfLaunchSeconds => selfLaunchSeconds;
         public float SelfLaunchEdgeStrength => selfLaunchEdgeStrength;
         public float SelfLaunchCeiling => selfLaunchCeiling;
+        public float SpaceBlastScaleAtFull => spaceBlastScaleAtFull;
+        public float SpaceBlastScaleMinMul => spaceBlastScaleMinMul;
+        public bool RushLaunchesForward => rushLaunchesForward;
+        public float RushLaunchGraceSeconds => rushLaunchGraceSeconds;
         public Color FallbackDangerColor => ColorTrace.Retrace(ColorTrace.World, fallbackDangerColor);
         public float SideHueShift => sideHueShift;
         public float AiFireIntervalSeconds => aiFireIntervalSeconds;
@@ -153,6 +169,25 @@ namespace CosmicShore.Gameplay
         public float AmmoCostForSize(float size01) => Mathf.Lerp(minAmmoCost, maxAmmoCost, Mathf.Clamp01(size01));
         public float ProjectileScaleForSize(float size01) => Mathf.Lerp(minProjectileScale, maxProjectileScale, Mathf.Clamp01(size01));
         public float BlastScaleForSize(float size01) => Mathf.Lerp(minBlastScale, maxBlastScale, Mathf.Clamp01(size01));
+
+        /// <summary>The blast's scale with Space applied: <see cref="BlastScaleForSize"/> times the
+        /// Space multiplier at normalized level <paramref name="spaceLevel01"/> (0 at rest, 1 at
+        /// level 10). Pure; edit-mode tested.</summary>
+        public float BlastScaleForSize(float size01, float spaceLevel01) =>
+            BlastScaleForSize(size01) * ElementalScaling.MultiplierAt(spaceLevel01, spaceBlastScaleAtFull, spaceBlastScaleMinMul);
+
+        /// <summary>
+        /// Which way a blast throws the pilot. Away from the bomb (<paramref name="bombToHull"/>;
+        /// sitting on it, the nose) - unless <paramref name="rushing"/> and
+        /// <see cref="RushLaunchesForward"/>: then along the nose, whatever side the bomb is on.
+        /// Pure; edit-mode tested.
+        /// </summary>
+        public Vector3 LaunchDirection(Vector3 bombToHull, Vector3 hullForward, bool rushing)
+        {
+            if (rushing && rushLaunchesForward) return hullForward.normalized;
+            float d = bombToHull.magnitude;
+            return d > 0.01f ? bombToHull / d : hullForward.normalized;
+        }
 
         /// <summary>
         /// The size actually fired for a pull that asked for <paramref name="requestedSize01"/>

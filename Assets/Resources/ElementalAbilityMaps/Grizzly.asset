@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 3
     AbilityLabel: Trigger Bombs
-    AbilityDescription: 'LT and RT each own a bomb in Explosives: pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to blow it. A blast you sit in throws you away from the bomb, so leave it behind you and blow it to be thrown forward. Space and the level-5 upgrade still belong to the charged cannon, which has no button since the bombs moved to the triggers.'
+    AbilityDescription: 'LT and RT each own a bomb in Explosives: pull and release to fire it, sized by how hard you squeezed; pull again to freeze it; let go to blow it. A blast you sit in throws you away from the bomb - or, mid-Rush, straight along your nose. Space grows the blast''s reach, 2.5x at level 10; the throw stays the same.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -50,7 +50,8 @@ MonoBehaviour:
     AbilityDescription: Spend energy to RAM forward - for the length of the burst
       the hull smashes every rival prism it ploughs into (plain and shielded;
       super-shielded mass holds). Time refills a spent rush faster, 6 s at rest
-      and 2.5 s at level 10. At level 5 the ram follows your nose.
+      and 2.5 s at level 10. At level 5 the ram follows your nose. Rush through
+      your own bomb blast and it throws you forward, whatever side it went off on.
     Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
