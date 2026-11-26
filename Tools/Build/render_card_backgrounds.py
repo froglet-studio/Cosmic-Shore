@@ -1963,7 +1963,32 @@ def accents(s, layers, stage, cam, pal, R, card_path):
     def jitter(k=1.0):
         return v_add(centre, v_mul(rng.unit(), span * k * rng.u() ** 0.5))
 
-    if s == "Rampage":
+    if s == "Cleave":
+        # The lances (CleaveLances.cs, mirrored at the card's rung): six axis bars of small prisms through the arena,
+        # each segment one colour of Jade/Ruby/Gold/Blue, danger at the outer end. Not the arena's generator, so the
+        # controller lays them and the card draws them here. CleaveLadderTests holds the C# to the same rules.
+        rung = {1: (0.12, 0.95, 2, 0), 2: (0.12, 0.95, 3, 2), 3: (0.10, 0.60, 2, 0), 4: (0.15, 0.98, 2, 2)}
+        inner, outer, bundle, tips = rung[INTENSITY]
+        arena = {1: 2160.0, 2: 2160.0, 3: 720.0, 4: 720.0}[INTENSITY]
+        seg_len, section = 30.0, 6.8
+        segments = max(1, int(arena * (outer - inner) // seg_len))
+        doms = (JADE, RUBY, GOLD, BLUE)
+        dirs = ([1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1])
+        rows = []
+        for l, fwd in enumerate(dirs):
+            up = [0, 0, 1] if abs(fwd[1]) > 0.5 else [0, 1, 0]
+            side = v_norm(v_cross(up, fwd))
+            for k in range(segments):
+                along = arena * inner + (k + 0.5) * seg_len
+                kind = DANGER if tips and k >= segments - tips else PLAIN
+                for i in range(bundle):
+                    for j in range(bundle):
+                        u = (i - (bundle - 1) * 0.5) * section
+                        w = (j - (bundle - 1) * 0.5) * section
+                        pos = v_add(v_add(v_mul(fwd, along), v_mul(side, u)), v_mul(up, w))
+                        rows.append(prism(pos, fwd, up, [section, section, seg_len], doms[(k + l) % 4], kind))
+        layers.append({"kind": "prisms", "rows": rows})
+    elif s == "Rampage":
         tgt = jitter(0.3)
         apex = v_add(tgt, v_mul(v_norm([0.6, 0.25, -0.75]), span * 0.95))
         cone(apex, tgt, 17, JADE, 0.28, 1.4)
