@@ -27521,3 +27521,17 @@ Refcompile: 0 errors in project code. No Unity editor ran; `EffectiveSeatCount_I
 - [ ] Solo, you on Gold, place AI on Jade and Ruby (3 seats): every round has those 3, on those domains.
 - [ ] Full lobby of 4 (any teams): unchanged, the same 4 every round. Play Again from the summary keeps the same field.
 - [ ] Two humans: one leaves mid-tournament; the next round seats an AI in their place (the field keeps its size).
+
+## Mass-Space AI rows (2026-11-21)
+
+`AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
+Meerkat, Sparrow, Stoat and Urchin AIs a learned ability cycle and steering in Mass-Space modes only; the Urchin also gets
+`UrchinAutopilotConfig_Hijack` / `_BroodRush`. Measured in Amoebius only; not run in the Unity editor. The reference
+compile has 0 errors in the changed files.
+
+- [ ] Brood Rush with AI Meerkat, Sparrow and Stoat: the Meerkat AI forms and shortens solitons, the Sparrow AI goes
+      stationary and fires its guns, the Stoat AI slings. No errors in the console when they spawn.
+- [ ] Regatta with the same hulls: their AIs fly exactly as before (no soliton, sling or stationary presses there).
+- [ ] Warren, Cave-in, Salvo, Wildlife Liberation, Fulmen, Hijack at I1 and I4: the AI plays, nothing stalls.
+- [ ] Multiplayer host with an AI Sparrow in Brood Rush: a client sees its guns fire (AI presses replicate once #2322's
+      AutopilotPressTravels lands).

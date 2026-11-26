@@ -1068,9 +1068,46 @@ namespace CosmicShore.Gameplay
                 _targetPosition = cellData.Cell.transform.position;
         }
 
+        // The prefab's own ability list and steering, captured the first time a Mass-Space plan row replaces them,
+        // so a later Initialize in any other mode flies the authored AI again.
+        List<AIAbility> _authoredAbilities;
+        Vector4 _authoredSteer;
+
+        /// <summary>
+        /// In a Mass-Space mode, fly this hull's learned Mass-Space AI (<see cref="AIMassSpacePlanSO"/>): its ability
+        /// cycle replaces the prefab's list, its scales apply to both ends of the aggressiveness and throttle lerps.
+        /// Any other mode (or no row) restores the authored values.
+        /// </summary>
+        void ApplyMassSpacePlan()
+        {
+            AIMassSpacePlanSO.Row row = null;
+            bool hasRow = gameData != null && vessel?.VesselStatus != null
+                          && AIMassSpacePlanSO.TryGetRow(vessel.VesselStatus.VesselType, gameData.GameMode, out row);
+            if (!hasRow && _authoredAbilities == null) return;
+            if (_authoredAbilities == null)
+            {
+                _authoredAbilities = new List<AIAbility>();
+                foreach (var a in abilities ?? new List<AIAbility>())
+                    if (a != null)
+                        _authoredAbilities.Add(new AIAbility { Ability = a.SourceAsset ? a.SourceAsset : a.Ability, Duration = a.Duration, Cooldown = a.Cooldown });
+                _authoredSteer = new Vector4(defaultThrottleHigh, defaultThrottleLow, defaultAggressivenessHigh, defaultAggressivenessLow);
+            }
+            var source = hasRow ? row.Abilities : _authoredAbilities;
+            abilities = new List<AIAbility>();
+            foreach (var a in source)
+                if (a?.Ability)
+                    abilities.Add(new AIAbility { Ability = a.Ability, Duration = a.Duration, Cooldown = a.Cooldown });
+            float t = hasRow ? row.ThrottleScale : 1f, k = hasRow ? row.AggressivenessScale : 1f;
+            defaultThrottleHigh = Mathf.Min(1f, _authoredSteer.x * t);
+            defaultThrottleLow = Mathf.Min(1f, _authoredSteer.y * t);
+            defaultAggressivenessHigh = _authoredSteer.z * k;
+            defaultAggressivenessLow = _authoredSteer.w * k;
+        }
+
         public void Initialize(IVessel v)
         {
             vessel = v;
+            ApplyMassSpacePlan();
 
             foreach (var ability in abilities)
             {
