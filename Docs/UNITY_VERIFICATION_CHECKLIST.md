@@ -27274,3 +27274,55 @@ Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section
 - [ ] In Play mode, start the mode smoke test from the command line or the Unity CLI
       (`CosmicShore.Editor.ModeSmokeLauncher.Run`): the console says "[ModeSmoke] cannot start: the editor is in Play
       mode: leave Play mode first", with no exception, and the offline preference is unchanged (`c7f4c53311`).
+
+## Photic is the default colour set again (2026-11-25)
+
+Shombith: "the default color set in the game should be photic". `ThemeManagerDataContainer.ColorSet`, `ThemeManager`'s
+own field and the menu prefabs' fallback palettes (ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal)
+now name `PhoticColorSetSO`; the generated editor theme, UI tokens and analytics console themes were re-written.
+Not run in the Unity editor and unity_refcompile did not run (no .NET SDK in the session); the C# change is one comment
+and one generated string constant. Checked by the generators' `--check` gates only.
+
+- [ ] Clear PlayerPrefs (or a fresh install) and boot: the prisms, trails and HUD wear Photic, not Nocturne.
+- [ ] Profile > colour sets says "Wearing Photic"; picking Nocturne still works and survives a restart.
+- [ ] With Nocturne picked, the Ark, Codex and Configure screens follow Nocturne (their own Photic palette is only the fallback).
+- [ ] The FBX imports: four slots (Domain, Body, Window, Engine) remap to the Ark's materials, with no pink.
+- [ ] Start any voyage: the round Ark is drawn, its 581 hull prisms laid in the Ark's domain, and nothing floats off the hull.
+- [ ] The decks turn, each against its neighbour; the two ring gates turn against each other; the pods orbit. Their prisms ride along.
+- [ ] Trail 3: eight streams, one per bell, in the domain's trail colours, straight behind the Ark; they stop when the hull is lost. Check every domain (Ruby especially).
+- [ ] The omni crystal in the gap is the neutral lime crystal in every domain, never the team colour; its collar turns.
+- [ ] Turning the Ark vectors the bells (pitch, yaw, roll); the streams follow the bells.
+- [ ] Fly into the tube from the lip, through the hall and out of an exit: no invisible walls. The hull, decks and crystal are solid.
+- [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
+- [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).
+
+## A voyage left at sea no longer strands every later launch on the loading screen (2026-11-25)
+
+🔴 unverified. Shombith's report: play a voyage, leave it, launch again: the loading screen never lifts, and a restart
+does not help. Cause: leaving after the Ark reached a world saves the record AT SEA with a waypoint (`voyage.state.v1`
+in PlayerPrefs, #P13). The next launch named the waiting job from the menu's own read of the record, `TakeJob` matched it
+to the run's record by REFERENCE (never equal), skipped the resume, and `VoyageRules.Take` refuses every job while the
+record is at sea, so nothing sailed. The embark still counted as a voyage out, so the scene held the splash until its
+100 s deadline over an empty sea. Fix: `VoyageRules.SameJob` (by template, pilot, places, named voyage), a record still at
+sea with another job is given up with a warning, a launch that sets no leg ends the embark, and the voyage scene returns
+to the menu at once when nothing set sail. Test: `VoyageRulesTests.TheWaitingVoyageIsKnownByWhatItIs_NotByReference`.
+- [ ] Sail a Crystal Run, pass the first world, leave from the HUD: the menu offers the waiting voyage; sail it: the
+      loading screen lifts onto "VOYAGE RESUMED", from that world.
+- [ ] With the bad record from before the fix still saved, launch any voyage: it sails (a `[Voyage] ... given up`
+      warning or a resume), never a stuck loading screen.
+- [ ] Leave a voyage before the first world: the next launch sails a fresh job.
+
+## No voyage is kept for later: leaving ends it, Set sail starts fresh from home (2026-11-25)
+
+🔴 unverified. Shombith, after the waypoint fix: "when I set sail it just continues and every button is bugged ... For now
+there is no saving, if they leave they leave. Set sail restarts the level." `VoyageRun.EndAtStop` now gives the voyage up
+(home, nothing aboard) instead of keeping a waypoint or anchoring at the stop, and `VoyageRun.LoadOrBegin` brings any
+saved record at sea or away from home back home, so older saves are repaired. The galaxy (days, news, standing) is kept.
+- [ ] Sail any voyage, leave it mid-leg: back in the menu the full board shows; Set sail starts a new voyage from home.
+- [ ] Finish a job at a stop and leave: the next Set sail starts from home, not the stop.
+
+## Menu rotation follows the phone, Toy Box preview opens on a model (2026-11-25, claude/project-thread-qncdsq)
+
+Refcompile: 0 errors in the changed files (the run's 30 pre-existing errors are elsewhere). No Unity editor or phone build ran.
+- [ ] Android phone build with the system auto-rotate lock ON: in the menus, turn the phone landscape and portrait; the app shell turns with it (it used to stay where the lock held it). Gameplay still locks landscape.
+- [ ] Toy Box > Vessel Changer opens with a model in the live preview (the hull you are flying, else the first hull) before anything is picked; picking a hull replaces it; Switch stays dark until a pick.

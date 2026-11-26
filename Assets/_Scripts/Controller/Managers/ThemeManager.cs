@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
         {
             Instance = this;
             _authoredColorSet = _dataContainer.ColorSet;
-            // The player's pick, if it is in the catalog and unlocked; else the authored palette (Nocturne).
+            // The player's pick, if it is in the catalog and unlocked; else the authored palette (Photic).
             var picked = PickedColorSet(_dataContainer.Catalog, ColorSetPreference.Load());
             if (picked) _dataContainer.ColorSet = picked;
             Equipped = _dataContainer.ColorSet;

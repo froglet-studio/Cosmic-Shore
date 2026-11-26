@@ -166,8 +166,13 @@ namespace CosmicShore.Gameplay
         public void SetSail(IVesselStatus local, VoyageJob job, SavedSquad squad = null)
         {
             if (job == null || _active && _following) return;
+            bool embarked = !_active;
             if (!_active) Embark(local, following: false, squad);
-            if (_active) TakeJob(job);
+            if (!_active || TakeJob(job) || !embarked) return;
+            // Nothing sailed: an embark with no leg is no voyage. Ending it here lets the voyage scene see that and go back
+            // to the menu, instead of believing a voyage is out and holding its loading screen over an empty sea.
+            CSDebug.LogWarning($"[Voyage] '{job.Title}' ({job.From} to {job.To}) could not set sail - the voyage ends.");
+            Finish();
         }
 
         void Embark(IVesselStatus local, bool following, SavedSquad squad = null, VoyageCourse course = null)
@@ -385,6 +390,9 @@ namespace CosmicShore.Gameplay
             var state = VoyageStore.Load();
             if (state == null) return VoyageRules.NewGalaxy(content, home);
             VoyageRules.Resume(state, content, home, UniqueId.NowMs());
+            // Every voyage sets out from home (Shombith, 2026-11-25: no saving for now, Set sail restarts the level): a record
+            // left at sea (a waypoint, P13) or anchored at a far stop by an earlier build is brought home here.
+            if (state.AtSea || !state.IsHome()) VoyageRules.Abandon(state, content);
             return state;
         }
 
@@ -445,31 +453,41 @@ namespace CosmicShore.Gameplay
 
         // ── Taking a job: the leg ────────────────────────────────────────────
 
-        void TakeJob(VoyageJob job)
+        /// <summary>Sail <paramref name="job"/>; false when no leg was set (the caller ends the embark).</summary>
+        bool TakeJob(VoyageJob job)
         {
-            if (!_active || job == null) return;
+            if (!_active || job == null) return false;
             var local = LocalVessel();
-            if (local == null) return;
+            if (local == null) return false;
 
-            // A voyage left at sea waits at its waypoint: its job, sailed again, picks up at the last world reached (P13).
-            if (_state.HasWaypoint() && job == _state.Current)
+            // Still at sea from an earlier sitting: that voyage is given up so this one can sail (no voyage is resumed for
+            // now, Shombith 2026-11-25). VoyageRules.Take refuses any job while the record is at sea, so keeping it would
+            // strand every launch, on every restart, behind the loading screen.
+            if (_state.AtSea)
             {
-                ResumeWaypoint(local, job);
-                return;
+                CSDebug.LogWarning($"[Voyage] '{_state.Current?.Title}' was still out at sea from an earlier sitting - " +
+                                   $"it is given up so '{job.Title}' can sail.");
+                VoyageRules.Abandon(_state, Content);
+                SaveState();
             }
 
             // A job still open here ends now: done if its work is done, otherwise left undone.
             if (_state.Current != null && !_state.AtSea)
                 Resolve(VoyageRules.WorkDone(_state.Current, Tally()) ? JobOutcome.Succeeded : JobOutcome.Failed);
 
-            if (!VoyageRules.Take(_state, Content, job)) return;
+            if (!VoyageRules.Take(_state, Content, job))
+            {
+                CSDebug.LogWarning($"[Voyage] '{job.Title}' cannot be taken from {_state.At} (it sets out from {job.From}) - " +
+                                   "the job stays on the board.");
+                return false;
+            }
             var route = FitLeg(job, VoyageRules.Corridor(Content, job.From, job.To, _state.Day, _worlds, _state));
             if (route.Count == 0)
             {
                 CSDebug.LogWarning($"[Voyage] No course from {job.From} to {job.To} ({_worlds} worlds to sail) - the job stays on the board.");
                 _state.Current = null;
                 _state.AtSea = false;
-                return;
+                return false;
             }
 
             ClearStop();
@@ -502,14 +520,15 @@ namespace CosmicShore.Gameplay
             if (job.HullFloor > 0f && !string.IsNullOrEmpty(Lines.Convoy))
                 Banner(TemplateText.Fill(Lines.Convoy, "percent", Mathf.RoundToInt(job.HullFloor * 100f).ToString()));
             VoyageHarbour.RaiseChanged();
+            return true;
         }
 
         /// <summary>Pick up a voyage left at sea (P13, voyage chapters): the same job, sailed from the last world the Ark
-        /// reached, with what was aboard still aboard.</summary>
-        void ResumeWaypoint(IVesselStatus local, VoyageJob job)
+        /// reached, with what was aboard still aboard. False when no world is left to sail.</summary>
+        bool ResumeWaypoint(IVesselStatus local, VoyageJob job)
         {
             var route = VoyageWaypoint.Remaining(_state);
-            if (route.Count == 0) return;
+            if (route.Count == 0) return false;
             _waypointBase = _state.WaypointReached;
             ClearStop();
             _legSerial++;
@@ -529,6 +548,7 @@ namespace CosmicShore.Gameplay
             }
             if (!string.IsNullOrEmpty(Lines.WaypointResumed)) Banner(Line(Lines.WaypointResumed, job.To));
             VoyageHarbour.RaiseChanged();
+            return true;
         }
 
         /// <summary>The leg's pacing (each open cell's population, hardest in the middle) and whether the destination's
@@ -1102,11 +1122,12 @@ namespace CosmicShore.Gameplay
         void EndAtStop()
         {
             bool atSea = _state.AtSea;
-            bool waits = atSea && !_following && _state.HasWaypoint();
-            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()), keepWaypoint: !_following);
+            VoyageRules.Anchor(_state, Content, VoyageRules.WorkDone(_state.Current, Tally()), keepWaypoint: false);
+            // No voyage is kept for later (Shombith, 2026-11-25: "for now there is no saving, if they leave they leave. Set
+            // sail restarts the level"): the squad is back at home, and the next Set sail starts a fresh voyage.
+            if (!_following) VoyageRules.Abandon(_state, Content);
             SaveState();
-            if (waits) { if (!string.IsNullOrEmpty(Lines.WaypointSaved)) Banner(Lines.WaypointSaved); }
-            else if (atSea) Banner(Lines.Failed);
+            if (atSea) Banner(Lines.Failed);
         }
 
         /// <summary>Home: everything aboard and every crystal owed is the player's now, a relic with its authored name and
