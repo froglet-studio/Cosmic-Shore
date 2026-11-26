@@ -1,0 +1,41 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-26 14:19:40 (next editor launch after the abnormal exit)
+session:        20261126-190504151  (pid 132756, Unity 6000.3.17f1)
+started:        2026-11-26T19:05:04.153Z UTC
+last heartbeat: 2026-11-26T21:38:45.035Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~30s at the last heartbeat — likely a hang / freeze that was then killed
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261126-190504151
+started: 2026-11-26T19:05:04.153Z UTC
+unity:   6000.3.17f1
+pid:     132756
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[13:33:16.548] ---- domain reload begins (script compilation / play-mode transition) ----
+[13:33:23.744] ---- domain reload complete — session re-adopted ----
+[13:33:41.820] ---- entering play mode ----
+[13:33:44.235] ---- play mode running ----
+[13:33:45.254] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ffb95ae4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb9731f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb9731fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb95a9587f (Unity) DebugStringToFile
+        0x00007ffb95951b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000021e43809d1d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000021e43809be3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021e4380981b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[13:38:14.834] ---- leaving play mode ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+
