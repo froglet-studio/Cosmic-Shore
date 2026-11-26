@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-25-the-game-s-default-colour-set-goes-back-22f591",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-25T00:28:03+00:00",
+  "area": "the default colour set (Docs/PALETTE.md)",
+  "summary": "The game's default colour set goes back from Nocturne (your 2026-11-03 call) to Photic; Nocturne stays in the catalog and players who picked it keep it.",
+  "why": "Shombith asked: the default color set in the game should be photic.",
+  "branch": "claude/project-thread-oz5kx5",
+  "commit": "92b8a8332",
+  "paths": [
+    "Assets/_Prefabs/CORE/ThemeManager.prefab",
+    "Assets/_SO_Assets/ThemeManagerDataContainer.asset",
+    "Docs/PALETTE.md"
+  ]
+}

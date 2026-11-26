@@ -370,6 +370,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheWaitingVoyageIsKnownByWhatItIs_NotByReference()
+        {
+            // The replay hang (Shombith, 2026-11-25): the menu's board and the voyage scene each read the saved record, so the
+            // waiting job the launch names is never the run's own object; matched by reference, it never resumed, Take
+            // refused every job while the record was at sea, and the loading screen held on every launch after.
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            var job = Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt");
+            VoyageRules.Take(s, c, job);
+            VoyageWaypoint.Begin(s, new[] { 4, 7, 9 });
+            VoyageWaypoint.Mark(s, 1);
+
+            var saved = UnityEngine.JsonUtility.FromJson<VoyageState>(UnityEngine.JsonUtility.ToJson(s));
+            var offered = VoyageRules.Board(saved, c, new[] { Hunter })[0];
+            Assert.AreNotSame(s.Current, offered, "a record read back holds its own job");
+            Assert.IsTrue(VoyageRules.SameJob(s.Current, offered), "the same job by what it is");
+            var copy = UnityEngine.JsonUtility.FromJson<VoyageJob>(UnityEngine.JsonUtility.ToJson(offered));
+            copy.Difficulty = 7;
+            Assert.IsTrue(VoyageRules.SameJob(offered, copy), "the voyage page's copy at another difficulty");
+            Assert.IsFalse(VoyageRules.Take(s, c, offered), "the record at sea takes no job");
+
+            var other = Find(VoyageRules.Board(VoyageRules.NewGalaxy(c, Domains.Jade), c, new[] { Hunter }), "hunt");
+            other.To = other.To + "-elsewhere";
+            Assert.IsFalse(VoyageRules.SameJob(s.Current, other), "another destination is another job");
+            Assert.IsFalse(VoyageRules.SameJob(s.Current, null));
+        }
+
+        [Test]
         public void AbandoningClearsTheWaypoint()
         {
             var c = Map();

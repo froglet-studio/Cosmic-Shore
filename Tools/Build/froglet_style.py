@@ -54,10 +54,7 @@ OUT_CSS = os.path.join(REPO, "Docs", "UI", "froglet.css")
 
 # Open decisions recorded in Docs/UI_STYLE_GUIDE.md (D-numbers there); --check reports these but does not fail.
 OPEN: dict = {
-    # Garrett's call (the palette's owner): Nocturne, the default palette since 2026-11-03, draws the Gold domain at
-    # #FF8F11, inside the forbidden band between Gold and Fire on his chart. Reported, not failed; Docs/PALETTE.md.
-    ("deep-sea", "gold"): "Nocturne's Gold domain sits in the band between Gold and Fire (Garrett, Docs/PALETTE.md)",
-    ("deep-sea", "gold-fill"): "Nocturne's Gold domain sits in the band between Gold and Fire (Garrett, Docs/PALETTE.md)",
+    # Empty since Photic became the default again (2026-11-25): Nocturne's Gold sat in the band between Gold and Fire.
 }
 
 # The numbers STYLE_FOUNDATION.md owns (v0.3.3, sections 4, 5 and 7). Change them there first, then here.
@@ -119,7 +116,7 @@ def uitheme(path: str = UITHEME) -> dict:
 
 def live_color_set() -> str:
     """The palette the game runs on: the SO_ColorSet ThemeManagerDataContainer.ColorSet names, found by its guid (the
-    same rule fleet_codex.py uses), so switching the default colour set (Photic -> Nocturne, 2026-11-03) moves the
+    same rule fleet_codex.py uses), so switching the default colour set (Photic -> Nocturne, 2026-11-03; back to Photic, 2026-11-25) moves the
     tokens with the game."""
     container = open(os.path.join(REPO, "Assets", "_SO_Assets", "ThemeManagerDataContainer.asset"), encoding="utf-8").read()
     guid = re.search(r"^  ColorSet: \{fileID: \d+, guid: (\w+)", container, re.M).group(1)
