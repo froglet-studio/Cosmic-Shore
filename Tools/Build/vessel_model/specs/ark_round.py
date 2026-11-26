@@ -266,7 +266,7 @@ def build(ctx):
         table["sockets"].append({
             "name": "socket.%s.%03d" % (tier, k), "tier": tier, "kind": kind,
             "position": U(P(p["c"])), "forward": U(a), "up": U(b),
-            "size": [round(2 * hd, 4), round(2 * hb, 4), round(2 * ha, 4)],
+            "size": [round(abs(2 * hd), 4), round(abs(2 * hb), 4), round(abs(2 * ha), 4)],   # a box may be built off a reversed axis
             "bone": bone_of_motion[p["motion"]] if p["motion"] >= 0 else "hull"})
     # the turning parts: a rotation of `speed` radians a second about the artifact's +x through the origin, carried to
     # Unity (the reflection turns the sense), as an axis and degrees a second in model space
