@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-23-retrained-the-grizzly-time-ai-on-the-mer-b72ddd",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-23T07:38:58+00:00",
+  "area": "Grizzly Time AI (GrizzlyTimeController, MinigameGrizzlyTime, bomb autopilot)",
+  "summary": "Retrained the Grizzly Time AI on the merged tree (your exit-side blow point + the ram) with two wide curriculum courses: freeze 4.6->10.1, detonate 14->18.8, commit 522->541, approach 549->40, through 114->346, nose 9.05->6.8. Fresh courses 101-104: faster on every rung, ladder forward. Your Grizzly lane was occupied, so this waits on Garrett's go.",
+  "branch": "claude/project-thread-5psmk3",
+  "commit": "910c2778a"
+}

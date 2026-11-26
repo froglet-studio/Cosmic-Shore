@@ -336,9 +336,9 @@ GAMES = {
         "fields": {"aiFreezeDistance": (2.0, 36.0), "aiDetonateBehindDistance": (1.0, 36.0)},
         "ctrl_fields": {"aiCommitDistance": (40.0, 900.0), "aiApproachLead": (40.0, 1200.0),
                         "aiThroughDistance": (40.0, 900.0)},
-        "ctrl_defaults": {"aiCommitDistance": 522.0, "aiApproachLead": 549.0, "aiThroughDistance": 114.0},   # run 2026-11-20
+        "ctrl_defaults": {"aiCommitDistance": 541.0, "aiApproachLead": 40.0, "aiThroughDistance": 346.0},   # run 2026-11-23
         "ctrl": lambda p: {k: float(p[k]) for k in ("aiCommitDistance", "aiApproachLead", "aiThroughDistance")},
-        "lead": None, "rows": [], "nose_gene": 9.05,                                                     # run 2026-11-20
+        "lead": None, "rows": [], "nose_gene": 6.8,                                                      # run 2026-11-23
     },
     "Honeyguide": {
         "mode": "SlipLine",
