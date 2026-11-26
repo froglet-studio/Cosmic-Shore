@@ -27469,3 +27469,18 @@ screens are the voyage UI thread's.
   primary archetype's.
 - [ ] Ironmouth Holds (difficulty 4): wave 2's retake crew is a Sparrow (its named crew's lead), not the toy's list.
 - [ ] Finish a Salvage with fit 2.5: the pay banked is 25% over the card's.
+
+## Voyages UI, Rev 146 A "Seat asks", and the live map in the small chart (2026-11-26)
+
+🔴 unverified in Unity: built from code and checked in Amoebius with screenshots beside the Frogma boards
+(`Docs/MENU_REDESIGN_B.md` section 236); refcompile run; the EditMode tests (`VoyageSeatFillTests`) were not run.
+- [ ] Voyages tab: the small chart on the quay shows the live HyperSea map (cells, pins), not an empty panel; Full
+  screen still grows from it.
+- [ ] Each job card lists its three asked archetypes under its name; the Crystal Run says "Asks for no one".
+- [ ] Salvage with Sparrow, Squirrel, Dolphin: "Bring me" rows read Nuke / Sapper / Harraser with the giver's reasons,
+  and at the right Dolphin, Sparrow, "Squirrel, half"; fit 2.5 of 3.
+- [ ] Your Ark: "Fills Sapper" over Sparrow, "Fills Harraser  half: its second" over Squirrel, "Fills Nuke" over
+  Dolphin; the header shows nine difficulty segments with "Difficulty N" and ASKS FOR with three archetypes.
+- [ ] Press Squirrel's hull: Vessels opens on Harraser (Starling, Jacks on the floor), the "Harraser second or third"
+  tiles at the right with "In this seat now" on Squirrel, nine archetype tabs (Zoner "(none yet)"); LB / RB step them;
+  Take Starling puts it in the seat and the fit reads 3 of 3.

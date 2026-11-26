@@ -3821,6 +3821,30 @@
       "page": "toy-box",
       "title": "Rev 145 J - Pedestal and chips in Configure; Today as a live strip - interactive",
       "is_interactive": true
+    },
+    "R146A.dc.html": {
+      "x": 0,
+      "y": 66820,
+      "w": 1920,
+      "h": 3240,
+      "page": "voyages",
+      "title": "Rev 146 A - Seat asks: three archetypes with a reason each, each seat shows the ask it fills (recommended)"
+    },
+    "R146B.dc.html": {
+      "x": 2100,
+      "y": 66820,
+      "w": 1920,
+      "h": 3240,
+      "page": "voyages",
+      "title": "Rev 146 B - Know the crew: the rival crew's archetypes and their counters, a counter wheel in Vessels"
+    },
+    "R146C.dc.html": {
+      "x": 4200,
+      "y": 66820,
+      "w": 1920,
+      "h": 3240,
+      "page": "voyages",
+      "title": "Rev 146 C - Plain words: the ask as a sentence, archetypes as words, Vessels as a grouped list"
     }
   },
   "createdOnFiles": {
@@ -3829,7 +3853,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "toy-box",
+    "page": "voyages",
     "view": "canvas"
   },
   "noteOrder": [
@@ -3929,6 +3953,7 @@
     "sec-rev143",
     "sec-rev144",
     "sec-rev145",
+    "sec-rev146",
     "grp-toasts-a-d",
     "grp-crew-recommends-a-d",
     "grp-objective-box-a-d",
@@ -4036,7 +4061,8 @@
     "rev142",
     "rev143",
     "rev144",
-    "rev145"
+    "rev145",
+    "rev146"
   ],
   "notes": {
     "hud_end": {
@@ -6566,6 +6592,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "toy-box"
+    },
+    "rev146": {
+      "kind": "title1",
+      "text": "Rev 146 - Voyages: roles and archetypes on the quay, Your Ark and Vessels, three ways",
+      "x": 0,
+      "y": 66420,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev146": {
+      "kind": "rect",
+      "x": -160,
+      "y": 66260,
+      "w": 6440,
+      "h": 3960,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -7025,7 +7075,10 @@
     "R144G.dc.html",
     "R145H.dc.html",
     "R145I.dc.html",
-    "R145J.dc.html"
+    "R145J.dc.html",
+    "R146A.dc.html",
+    "R146B.dc.html",
+    "R146C.dc.html"
   ],
   "pages": [
     {

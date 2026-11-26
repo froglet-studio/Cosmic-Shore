@@ -41,6 +41,8 @@ namespace CosmicShore.UI
         const float HullY = 28f, HullHeight = 200f, NamesY = 364f, LineY = 424f, FaceY = 444f, MoodY = 566f, ReasonY = 597f,
             FootY = 650f, FootHeight = 44f;
         const float FloorY = 324f, FloorHeight = 546f, BarY = 814f, BarHeight = 56f, FitWidth = 180f;
+        // Rev 146 A: the Fills chip stands over the hull's top left (board y 284, the page's 124).
+        const float FillsY = 124f;
         const float FillWidth = 560f, SailWidth = 300f, SailAsWidth = 640f, FillRow = 52f, PayWidth = 150f;
         const string LastKitKey = "Voyages.LastKit";
 
@@ -88,7 +90,10 @@ namespace CosmicShore.UI
         sealed class SeatView
         {
             public RectTransform Root, StateRoot, Flower, Change, AiButtons;
-            public TMP_Text Role, State, Vessel, Pilot, Element, Line, Class, Mood, Quote, Reason;
+            public TMP_Text Role, State, Vessel, Pilot, Element, Line, Class, ClassRest, Mood, Quote, Reason, Fills, FillsHalf;
+            public RectTransform Chip;
+            public VoyageMetMark FillsMet;
+            public VesselClassType Shown;
             public VoyageMoodMark MoodMark;
             public RectTransform MoodRow;
             public PilotMood Feels;
@@ -247,6 +252,22 @@ namespace CosmicShore.UI
             view.ClassGlyph.raycastTarget = false;
             view.Class = _kit.Text(vesselRow, 16, _kit.Light, TextAlignmentOptions.Left);
             view.Class.overflowMode = TextOverflowModes.Overflow;
+            // Rev 146 A: the vessel's other archetypes after its primary, muted ("Sapper · Harraser · Builder").
+            view.ClassRest = _kit.Text(vesselRow, 16, _kit.Sub, TextAlignmentOptions.Left);
+            view.ClassRest.overflowMode = TextOverflowModes.Overflow;
+            view.ClassGlyph.gameObject.SetActive(false);
+
+            // Rev 146 A ("Seat asks", section 236): a chip over the hull's top left naming the asked archetype the vessel
+            // fills, its met mark first ("Fills Sapper"; "Fills Harraser  half: its second").
+            view.Chip = At("Fills", 0f, FillsY - SeatY, 300f, 30f, c);
+            _kit.Box(view.Chip, VoyageKit.Fade(_kit.Popup, 0.92f), VoyageKit.Fade(_kit.Outline, 0.9f));
+            view.FillsMet = At("Met", 12f, 7f, 16f, 16f, view.Chip).gameObject.AddComponent<VoyageMetMark>();
+            view.Fills = _kit.Text(At("Words", 38f, 0f, 200f, 30f, view.Chip), 16, _kit.Light, TextAlignmentOptions.Left);
+            VoyageKit.Stretch(view.Fills.rectTransform);
+            view.Fills.overflowMode = TextOverflowModes.Overflow;
+            view.FillsHalf = _kit.Text(At("Half", 0f, 0f, 200f, 30f, view.Chip), 14, _kit.Sub, TextAlignmentOptions.Left);
+            VoyageKit.Stretch(view.FillsHalf.rectTransform);
+            view.FillsHalf.overflowMode = TextOverflowModes.Overflow;
             view.Element = _kit.Text(At("Element", w - 120f, names + 4f, 120f, 26f, c), 16, _kit.Light, TextAlignmentOptions.Right);
             VoyageKit.Stretch(view.Element.rectTransform);
             var flowerBox = At("Flower", w - 150f, names + 7f, 20f, 20f, c);
@@ -574,6 +595,7 @@ namespace CosmicShore.UI
                 if (friend >= 0) DrawFriend(_seatViews[seat], seat, _friendIds[friend], _friends[friend]);
                 else DrawSeat(_seatViews[seat], squad, seat, you: seat == mine, editable);
             }
+            DrawFills();
             DrawSailAs(squad);
             // A friend picks their seat; the host fills the AI seats and sets sail.
             // Fill from a saved squad is hidden for now (Shombith, 2026-11-21; VoyageToyDefinitionSO.offerFillFromSquad).
@@ -593,6 +615,41 @@ namespace CosmicShore.UI
         }
 
         void DrawVoyage() => _header.Draw(_offer, _difficulty, SeatKey);
+
+        readonly List<IReadOnlyList<VesselArchetype>> _shownArchetypes = new();
+
+        // Each seat's chip: the asked archetype its vessel fills in the squad's best assignment (VoyageSeatFill), the
+        // vessels as the seats show them (a friend's own hull included); none for a voyage that asks for nothing.
+        void DrawFills()
+        {
+            string job = VoyageArchetypesSO.JobOf(SeatKey);
+            var seats = _archetypes ? _archetypes.AskOf(job, VoyageId) : System.Array.Empty<VesselArchetype>();
+            _shownArchetypes.Clear();
+            foreach (var view in _seatViews)
+                _shownArchetypes.Add(_archetypes ? _archetypes.ArchetypesOf(view.Shown) : System.Array.Empty<VesselArchetype>());
+            var filled = VoyageSeatFill.Assign(seats, _shownArchetypes);
+            for (int i = 0; i < _seatViews.Count; i++)
+            {
+                var view = _seatViews[i];
+                int at = VoyageSeatFill.SeatOf(filled, i);
+                string none = _quayWords ? _quayWords.FillsNone : null;
+                bool shown = seats.Count > 0 && _quayWords && view.Shown != default && (at >= 0 || !string.IsNullOrEmpty(none));
+                view.Chip.gameObject.SetActive(shown);
+                if (!shown) continue;
+                var f = at >= 0 ? filled[at] : default;
+                view.FillsMet.Set(f.Meets, f.Meets > 0f ? _kit.Light : VoyageKit.Fade(_kit.Sub, 0.8f));
+                VoyageKit.Set(view.Fills, at >= 0 ? TemplateText.Fill(_quayWords.Fills, "archetype", _archetypes.NameOf(f.Archetype)) : none);
+                view.Fills.color = at >= 0 ? _kit.Light : _kit.Sub;
+                bool half = at >= 0 && f.Meets < 1f;
+                VoyageKit.Set(view.FillsHalf, half
+                    ? TemplateText.Fill(_quayWords.FillsHalf, "rank", _quayWords.Rank(f.Rank(_shownArchetypes)))
+                    : null);
+                float w = Mathf.Ceil(view.Fills.GetPreferredValues(view.Fills.text).x);
+                float hw = half ? Mathf.Ceil(view.FillsHalf.GetPreferredValues(view.FillsHalf.text).x) : 0f;
+                VoyageKit.At(view.FillsHalf.rectTransform.parent as RectTransform, 38f + w + 10f, 0f, hw, 30f);
+                VoyageKit.At(view.Chip, 0f, FillsY - SeatY, 38f + w + (half ? 10f + hw : 0f) + 12f, 30f);
+            }
+        }
 
         // The squad's fit for the job, bottom left: a segment lit for each seat of the ask a vessel meets fully, half lit
         // for one met on a secondary or tertiary archetype.
@@ -679,6 +736,7 @@ namespace CosmicShore.UI
                 _rules.SetHull(view.Hull, null);
                 ShowFace(view, null);
                 VoyageKit.Set(view.Vessel, null);
+                view.Shown = default;
                 DrawClass(view, null);
                 DrawMood(view, PilotMood.None, null);
                 view.HullButton.interactable = false;
@@ -696,6 +754,7 @@ namespace CosmicShore.UI
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             ShowFace(view, pilot ? pilot.Portrait : null);
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : null);
+            view.Shown = vessel ? vessel.Class : default;
             DrawClass(view, vessel);
             DrawMood(view, VoyageQuay.MoodOf(_offer, slot, pilot), VoyageSeats.PilotName(slot, pilot, true));
             // The pilot's name alone under the line (Rev 138 Seats); the artifact is chosen in Pilots.
@@ -727,6 +786,7 @@ namespace CosmicShore.UI
             var vessel = _rules.VesselOf(VesselRequirement.IsConcrete(reportedHull) ? reportedHull : FriendHull(id, name));
             _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
             VoyageKit.Set(view.Vessel, vessel ? vessel.CardName : name);
+            view.Shown = vessel ? vessel.Class : default;
             DrawClass(view, vessel);
             // A friend's mood is theirs to show on their own page.
             DrawMood(view, PilotMood.None, null);
@@ -762,22 +822,25 @@ namespace CosmicShore.UI
             box.anchoredPosition = new Vector2(SeatWidth - w - 8f - 20f, box.anchoredPosition.y);
         }
 
-        /// <summary>The seat vessel's primary archetype beside it, with its role's glyph: Light when the open voyage asks
-        /// for one of the vessel's archetypes (or asks for nothing), muted when not; nothing for a vessel with none.</summary>
+        /// <summary>The seat vessel's archetypes beside its name (Rev 146 A): the primary Light when the open voyage asks
+        /// for one of the vessel's archetypes (or asks for nothing), muted when not, then its second and third muted;
+        /// nothing for a vessel with none.</summary>
         void DrawClass(SeatView view, SO_Vessel vessel)
         {
-            var a = _archetypes && vessel ? _archetypes.PrimaryOf(vessel.Class) : VesselArchetype.None;
-            bool any = a != VesselArchetype.None;
-            view.ClassGlyph.gameObject.SetActive(any);
+            var all = _archetypes && vessel ? _archetypes.ArchetypesOf(vessel.Class) : null;
+            bool any = all != null && all.Count > 0 && all[0] != VesselArchetype.None;
             view.Class.gameObject.SetActive(any);
+            view.ClassRest.gameObject.SetActive(any && all.Count > 1);
             if (!any) return;
             string job = VoyageArchetypesSO.JobOf(SeatKey);
             bool lit = _archetypes.AskOf(job, VoyageId).Count == 0 || _archetypes.Meets(job, VoyageId, vessel.Class) > 0f;
-            var col = lit ? _kit.Light : VoyageKit.Fade(_kit.Sub, 0.6f);
-            view.ClassGlyph.Form = VoyageGlyph.Of(a);
-            view.ClassGlyph.color = col;
-            VoyageKit.Set(view.Class, _archetypes.NameOf(a));
-            view.Class.color = col;
+            VoyageKit.Set(view.Class, _archetypes.NameOf(all[0]));
+            view.Class.color = lit ? _kit.Light : VoyageKit.Fade(_kit.Sub, 0.6f);
+            if (all.Count < 2) return;
+            string join = _quayWords ? _quayWords.ArchetypeJoin : " ";
+            var rest = new System.Text.StringBuilder();
+            for (int i = 1; i < all.Count; i++) rest.Append(i == 1 ? join.TrimStart() : join).Append(_archetypes.NameOf(all[i]));
+            VoyageKit.Set(view.ClassRest, rest.ToString());
         }
 
         /// <summary>The seat pilot's mood for the open voyage: the mark, the mood and why; nothing for a voyage with no
