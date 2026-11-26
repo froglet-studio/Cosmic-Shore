@@ -278,6 +278,10 @@ namespace CosmicShore.Data
         /// <summary>The named voyage this job sails (<see cref="NamedVoyage.Id"/>), or empty for unnamed work. A named
         /// voyage's sea is laid by its rung (<see cref="VoyageSea.Lay"/>).</summary>
         public string VoyageId;
+        /// <summary>The squad's fit for the voyage's archetype ask when it set sail (0-3 in halves;
+        /// <c>VoyageArchetypesSO.Fit</c>), and whether <see cref="Pay"/> already carries what that fit adds.</summary>
+        public float SquadFit;
+        public bool FitPaid;
 
         /// <summary>True when this job sails a named voyage.</summary>
         public bool IsNamed => !string.IsNullOrEmpty(VoyageId);

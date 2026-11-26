@@ -11,8 +11,8 @@ namespace CosmicShore.UI
     /// <summary>
     /// The job over Your Ark and Vessels (Frogma Rev 138 Seats and Vessels): the giver's picture (44 x 52), the voyage's
     /// name (20), the danger meter (four segments), the sea and "3 cells · for &lt;giver&gt;" (15, Sub) at the left; WANTED
-    /// and the classes the job wants (glyph 18, name 17) at the right. Laid out in the page's own units from its top left
-    /// (<see cref="VoyageKit.At"/>); every word is an authored field (<see cref="VoyageQuaySO"/>, <see cref="VoyageClassesSO"/>).
+    /// and the role's the job wants (glyph 18, name 17) at the right. Laid out in the page's own units from its top left
+    /// (<see cref="VoyageKit.At"/>); every word is an authored field (<see cref="VoyageQuaySO"/>, <see cref="VoyageArchetypesSO"/>).
     /// </summary>
     public sealed class VoyageJobHeader
     {
@@ -21,7 +21,7 @@ namespace CosmicShore.UI
         readonly VoyageKit _kit;
         readonly float _width;
         readonly VoyageQuaySO _words = VoyageQuaySO.Load();
-        readonly VoyageClassesSO _classes = VoyageClassesSO.Load();
+        readonly VoyageArchetypesSO _archetypes = VoyageArchetypesSO.Load();
         readonly PilotArtifactCatalogSO _catalog = PilotArtifactCatalogSO.Load();
         readonly Image _face;
         readonly TMP_Text _title, _sea, _for, _wantedLabel;
@@ -66,8 +66,8 @@ namespace CosmicShore.UI
             return t;
         }
 
-        /// <summary>Draw <paramref name="offer"/> at <paramref name="difficulty"/>; the classes come from the seats' record
-        /// <paramref name="key"/> (the job's own, <see cref="VoyageClassesSO.JobOf"/>).</summary>
+        /// <summary>Draw <paramref name="offer"/> at <paramref name="difficulty"/>; the archetypes come from the seats' record
+        /// <paramref name="key"/> (the job's own, <see cref="VoyageArchetypesSO.JobOf"/>).</summary>
         public void Draw(VoyageBoard.Offer offer, int difficulty, string key)
         {
             Root.gameObject.SetActive(offer != null);
@@ -84,13 +84,13 @@ namespace CosmicShore.UI
             VoyageKit.At(_for.rectTransform.parent as RectTransform, SeaX + seaWidth + 16f, MetaY, 600f, 20f);
             VoyageKit.Set(_for, TemplateText.Fill(_words.ArkFor, "cells",
                 Mathf.Max(1, offer.Cells).ToString(CultureInfo.InvariantCulture), "giver", VoyageQuay.GiverName(info, offer, _catalog)));
-            DrawWanted(VoyageClassesSO.JobOf(string.IsNullOrEmpty(key) ? offer.Key : key));
+            DrawWanted(VoyageArchetypesSO.JobOf(string.IsNullOrEmpty(key) ? offer.Key : key), offer.VoyageId);
         }
 
         // WANTED and each wanted class, right-aligned to the header's edge.
-        void DrawWanted(string job)
+        void DrawWanted(string job, string voyageId)
         {
-            var wants = _classes ? _classes.WantedBy(job) : null;
+            var wants = _archetypes ? _archetypes.AskOf(job, voyageId) : null;
             int count = wants?.Count ?? 0;
             _wanted.gameObject.SetActive(count > 0);
             if (count == 0) return;
@@ -114,7 +114,7 @@ namespace CosmicShore.UI
                 if (i >= count) continue;
                 glyph.Form = VoyageGlyph.Of(wants[i]);
                 glyph.color = _kit.Light;
-                VoyageKit.Set(name, _classes.NameOf(wants[i]));
+                VoyageKit.Set(name, _archetypes.NameOf(wants[i]));
                 float w = 26f + Mathf.Ceil(name.GetPreferredValues(name.text).x);
                 x -= w;
                 VoyageKit.At(root, x, 0f, w, 28f);

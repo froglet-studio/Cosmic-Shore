@@ -13,12 +13,12 @@ namespace CosmicShore.UI
     /// Docs/MENU_REDESIGN_B.md section 231), in the board's 1920 x 1080 units:
     /// <list type="bullet">
     /// <item><b>On the map</b>: the port the Ark is docked at (a filled diamond and its name); each job's pin standing over
-    /// the place it sails to (the giver's face, the kind and the classes wanted, on a stalk to a hollow diamond and the
+    /// the place it sails to (the giver's face, the kind and the role's wanted, on a stalk to a hollow diamond and the
     /// place's name), the picked one in cyan; the picked job's dashed lane with a ring per cell; and what else is out there:
     /// rival crews (a red warning mark, the crew's name, "Also bound for ..."), wrecks and blooms.</item>
     /// <item><b>Work at</b> down the right: one row per job (the giver's face, kind and faction, the voyage's name, the
     /// classes, where it sails and the sea), Hide folds it away.</item>
-    /// <item><b>The foot</b>: the picked job's card (face, kind and giver, name, route and cells, the sea, the classes it
+    /// <item><b>The foot</b>: the picked job's card (face, kind and giver, name, route and cells, the sea, the role's it
     /// wants, the squad fit, the pay) and Take the job (A).</item>
     /// </list>
     /// The page lends it a projector from the map's points to its own units every frame, so the marks ride the map as it
@@ -40,7 +40,7 @@ namespace CosmicShore.UI
         readonly VoyageSeats _rules;
         readonly VoyageQuay _quay;
         readonly VoyageQuaySO _words;
-        readonly VoyageClassesSO _classes;
+        readonly VoyageArchetypesSO _archetypes;
 
         public RectTransform Root { get; }
         readonly CanvasGroup _group;
@@ -105,7 +105,7 @@ namespace CosmicShore.UI
             _rules = rules;
             _quay = quay;
             _words = VoyageQuaySO.Load();
-            _classes = VoyageClassesSO.Load();
+            _archetypes = VoyageArchetypesSO.Load();
             Root = VoyageKit.Node("FullScreen", frame);
             Root.anchorMin = Root.anchorMax = Root.pivot = Vector2.zero;
             _group = Root.gameObject.AddComponent<CanvasGroup>();
@@ -348,11 +348,11 @@ namespace CosmicShore.UI
             view.Button.onClick.AddListener(() => _board.Pick(index));
         }
 
-        /// <summary>Show the classes <paramref name="offer"/> wants on <paramref name="glyphs"/>; the text after them moves
+        /// <summary>Show the role's <paramref name="offer"/> wants on <paramref name="glyphs"/>; the text after them moves
         /// up to where they end.</summary>
         int Glyphs(VoyageGlyph[] glyphs, VoyageBoard.Offer offer, Color color, float step, float y, TMP_Text after, float x)
         {
-            var wants = _classes ? _classes.WantedBy(VoyageClassesSO.JobOf(offer.Key)) : System.Array.Empty<VoyageClass>();
+            var wants = _archetypes ? _archetypes.AskOf(VoyageArchetypesSO.JobOf(offer.Key), offer.VoyageId) : System.Array.Empty<VesselArchetype>();
             for (int i = 0; i < glyphs.Length; i++)
             {
                 bool shown = i < wants.Count;
@@ -477,14 +477,14 @@ namespace CosmicShore.UI
             int wants = Glyphs(_footGlyphs, offer, _kit.Light, 30f, 0f, null, 0f);
             _footWantsRow.gameObject.SetActive(wants > 0);
             var squad = VoyageSeatRecord.Get(offer.Key) ?? VoyageSeats.Active;
-            _footFitRow.gameObject.SetActive(wants > 0 && squad != null && _classes);
+            _footFitRow.gameObject.SetActive(wants > 0 && squad != null && _archetypes);
             if (_footFitRow.gameObject.activeSelf)
             {
                 var vessels = new List<VesselClassType>(SavedSquad.SlotCount);
                 for (int s = 0; s < SavedSquad.SlotCount; s++) vessels.Add(squad.GetSlot(s).Vessel);
-                int fit = _classes.Fit(VoyageClassesSO.JobOf(offer.Key), vessels);
-                for (int i = 0; i < 3; i++) _fitSegs[i].color = i < fit ? _kit.Light : VoyageKit.Fade(_kit.Outline, 0.6f);
-                VoyageKit.Set(_footFit, TemplateText.Fill(_words.Fit, "fit", fit.ToString(CultureInfo.InvariantCulture)));
+                float fit = _archetypes.Fit(VoyageArchetypesSO.JobOf(offer.Key), offer.VoyageId, vessels);
+                for (int i = 0; i < 3; i++) _fitSegs[i].color = VoyageKit.FitSegment(_kit, fit, i);
+                VoyageKit.Set(_footFit, TemplateText.Fill(_words.Fit, "fit", VoyageArchetypesSO.FitText(fit)));
             }
             _footPayRow.gameObject.SetActive(offer.Pays);
             VoyageKit.Set(_footPay, offer.Pays ? VoyageBoard.PayAt(offer, difficulty).ToString(CultureInfo.InvariantCulture) : null);

@@ -7,7 +7,7 @@ namespace CosmicShore.ScriptableObjects
     /// The words of the Milestone 2 quay (Frogma Rev 134 Board B, kept in Rev 138 Board; Docs/MENU_REDESIGN_B.md section
     /// 231) and of the pilots' moods (<see cref="PilotMood"/>): the giver's ask, "Your crew says", the squad fit, Take the
     /// job, See every class, and each mood's name, line and reason. Every word is a field a person can edit or blank here
-    /// (<c>Resources/Voyages/VoyageQuay</c>, made by <c>Tools/Build/author_voyage_classes.py</c>).
+    /// (<c>Resources/Voyages/VoyageQuay</c>, made by <c>Tools/Build/author_voyage_archetypes.py</c>).
     /// </summary>
     [CreateAssetMenu(fileName = "VoyageQuay", menuName = "ScriptableObjects/Voyages/Voyage Quay")]
     public class VoyageQuaySO : ScriptableObject
@@ -49,7 +49,7 @@ namespace CosmicShore.ScriptableObjects
         public string AskLabel = "{giver}  ·  {faction}";
         [Tooltip("The giver's words. Token {say}.")]
         public string AskQuote = "\"{say}\"";
-        [Tooltip("Before the classes the voyage wants.")]
+        [Tooltip("Before the archetypes the voyage asks for.")]
         public string BringMe = "BRING ME";
 
         [Header("Your crew")]
@@ -81,13 +81,13 @@ namespace CosmicShore.ScriptableObjects
         public string Show = "SHOW";
         [Tooltip("A giver's row: its kind and the giver's faction. Tokens {kind}, {giver} and {faction}.")]
         public string GiverKicker = "{kind}  ·  {faction}";
-        [Tooltip("A giver's row, after the classes. Tokens {place} and {danger}.")]
+        [Tooltip("A giver's row, after the archetypes. Tokens {place} and {danger}.")]
         public string GiverMeta = "{place}  ·  {danger}";
         [Tooltip("The picked job's card at the foot, over its name. Tokens {kind} and {giver}.")]
         public string FullKicker = "{kind}  ·  {giver}";
         [Tooltip("The picked job's card, under its name. Tokens {from}, {to} and {cells}.")]
         public string FullRoute = "{from} to {to}  ·  {cells} cells";
-        [Tooltip("Before the classes the picked job wants.")]
+        [Tooltip("Before the archetypes the picked job asks for.")]
         public string Wants = "WANTS";
         [Tooltip("A rival crew on the map: its name, then this. Token {to}.")]
         public string RivalBound = "Also bound for {to}";
@@ -121,7 +121,7 @@ namespace CosmicShore.ScriptableObjects
         public string RefusesBlock = "{pilot} refuses this voyage";
 
         [Header("Your Ark")]
-        [Tooltip("Over the classes the job wants, top right of Your Ark.")]
+        [Tooltip("Over the archetypes the job asks for, top right of Your Ark.")]
         public string Wanted = "WANTED";
         [Tooltip("Beside the danger meter under the job's name: the sea. Token {danger}.")]
         public string ArkSea = "{danger} sea";
