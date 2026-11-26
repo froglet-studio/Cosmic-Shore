@@ -46,7 +46,7 @@ namespace CosmicShore.Data
         public List<NamedVoyage> Voyages = new();
 
         /// <summary>Who gives each voyage type (Milestone 2: the quay's givers, what they say, the pilots keen, reluctant
-        /// or refusing to sail it). The classes a type wants are <c>VoyageClassesSO</c>'s.</summary>
+        /// or refusing to sail it). The archetypes a type asks for are <c>VoyageArchetypesSO</c>'s.</summary>
         public List<VoyageTypeInfo> VoyageTypes = new();
 
         [NonSerialized] Dictionary<string, VoyageLocation> _byId;
@@ -437,7 +437,7 @@ namespace CosmicShore.Data
     }
 
     /// <summary>A voyage type's giver (Docs/Voyages/MILESTONE_2.md §2, the Voyage Codex); its wanted classes live in
-    /// <c>VoyageClassesSO</c>.</summary>
+    /// <c>VoyageArchetypesSO</c>.</summary>
     [Serializable]
     public class VoyageTypeInfo
     {

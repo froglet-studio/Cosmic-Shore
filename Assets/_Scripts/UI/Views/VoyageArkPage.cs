@@ -26,7 +26,7 @@ namespace CosmicShore.UI
     /// The seats are the voyage's own (<see cref="VoyageSeatRecord"/>, a copy of the active squad made when the page
     /// opens on a voyage): a pick never changes a saved squad, and Set sail sails exactly these seats. The seat picker
     /// slides in from the right and leaves the seats in view, so your seat changes behind it as you pick. Pressing a seat's
-    /// hull opens Vessels (<see cref="VoyageVesselsPage"/>, Rev 136 E / Rev 138), and each vessel carries its voyage class
+    /// hull opens Vessels (<see cref="VoyageVesselsPage"/>, Rev 136 E / Rev 138), and each vessel carries its archetype
     /// beside its name (Rev 134 seats), muted when the voyage does not want it.
     /// <para>On a friend's machine (<see cref="VoyageLaunch.IsPartyGuest"/>) the same page is their own seat in the host's
     /// lobby (section 209.2): they change their own seat, kept in <see cref="VoyageSeatRecord.PartyKey"/> and written to
@@ -61,7 +61,7 @@ namespace CosmicShore.UI
         VoyageSeatPicker _picker;
         VoyageVesselsPage _vessels;
         VoyagePilotsPage _pilots;
-        readonly VoyageClassesSO _classes = VoyageClassesSO.Load();
+        readonly VoyageArchetypesSO _archetypes = VoyageArchetypesSO.Load();
         readonly VoyageQuaySO _quayWords = VoyageQuaySO.Load();
 
         // The voyage, top left.
@@ -140,6 +140,8 @@ namespace CosmicShore.UI
 
         /// <summary>The record the page changes: a friend's own seat in the host's lobby, else the open voyage's.</summary>
         string SeatKey => Guest ? VoyageSeatRecord.PartyKey : _offer?.Key;
+        /// <summary>The named voyage open here (its own archetype ask), or null.</summary>
+        string VoyageId => _offer?.VoyageId;
 
         void SeatsChanged()
         {
@@ -592,19 +594,20 @@ namespace CosmicShore.UI
 
         void DrawVoyage() => _header.Draw(_offer, _difficulty, SeatKey);
 
-        // The squad's fit for the job, bottom left: three segments lit for each wanted class a seat brings.
+        // The squad's fit for the job, bottom left: a segment lit for each seat of the ask a vessel meets fully, half lit
+        // for one met on a secondary or tertiary archetype.
         void DrawFit(SavedSquad squad)
         {
-            string job = VoyageClassesSO.JobOf(SeatKey);
-            bool shown = squad != null && _classes && _quayWords && _classes.WantedBy(job).Count > 0;
+            string job = VoyageArchetypesSO.JobOf(SeatKey);
+            bool shown = squad != null && _archetypes && _quayWords && _archetypes.AskOf(job, VoyageId).Count > 0;
             _fit.gameObject.SetActive(shown);
             if (!shown) return;
             var vessels = new List<VesselClassType>(SavedSquad.SlotCount);
             for (int s = 0; s < SavedSquad.SlotCount; s++) vessels.Add(squad.GetSlot(s).Vessel);
-            int fit = _classes.Fit(job, vessels);
+            float fit = _archetypes.Fit(job, VoyageId, vessels);
             for (int i = 0; i < _fitSegments.Length; i++)
-                _fitSegments[i].color = i < fit ? _kit.Light : VoyageKit.Fade(_kit.Outline, 0.6f);
-            VoyageKit.Set(_fitWords, TemplateText.Fill(_quayWords.Fit, "fit", fit.ToString(CultureInfo.InvariantCulture)));
+                _fitSegments[i].color = VoyageKit.FitSegment(_kit, fit, i);
+            VoyageKit.Set(_fitWords, TemplateText.Fill(_quayWords.Fit, "fit", VoyageArchetypesSO.FitText(fit)));
         }
 
         // "You sail as <vessel> - <element>": the hull the voyage spawns you in (VoyageLaunch.HullThatSails, the same
@@ -759,21 +762,21 @@ namespace CosmicShore.UI
             box.anchoredPosition = new Vector2(SeatWidth - w - 8f - 20f, box.anchoredPosition.y);
         }
 
-        /// <summary>The seat's voyage class beside its vessel: Light when the open voyage wants it, muted when not;
-        /// nothing for a vessel with no class.</summary>
+        /// <summary>The seat vessel's primary archetype beside it, with its role's glyph: Light when the open voyage asks
+        /// for one of the vessel's archetypes (or asks for nothing), muted when not; nothing for a vessel with none.</summary>
         void DrawClass(SeatView view, SO_Vessel vessel)
         {
-            var c = _classes && vessel ? _classes.ClassOf(vessel.Class) : VoyageClass.None;
-            bool any = c != VoyageClass.None;
+            var a = _archetypes && vessel ? _archetypes.PrimaryOf(vessel.Class) : VesselArchetype.None;
+            bool any = a != VesselArchetype.None;
             view.ClassGlyph.gameObject.SetActive(any);
             view.Class.gameObject.SetActive(any);
             if (!any) return;
-            var wants = _classes.WantedBy(VoyageClassesSO.JobOf(SeatKey));
-            bool lit = wants.Count == 0 || _classes.Wanted(VoyageClassesSO.JobOf(SeatKey), c);
+            string job = VoyageArchetypesSO.JobOf(SeatKey);
+            bool lit = _archetypes.AskOf(job, VoyageId).Count == 0 || _archetypes.Meets(job, VoyageId, vessel.Class) > 0f;
             var col = lit ? _kit.Light : VoyageKit.Fade(_kit.Sub, 0.6f);
-            view.ClassGlyph.Form = VoyageGlyph.Of(c);
+            view.ClassGlyph.Form = VoyageGlyph.Of(a);
             view.ClassGlyph.color = col;
-            VoyageKit.Set(view.Class, _classes.NameOf(c));
+            VoyageKit.Set(view.Class, _archetypes.NameOf(a));
             view.Class.color = col;
         }
 

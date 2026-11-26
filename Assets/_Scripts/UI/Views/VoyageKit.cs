@@ -55,6 +55,14 @@ namespace CosmicShore.UI
         /// <summary><paramref name="c"/> at <paramref name="alpha"/> of its own opacity.</summary>
         public static Color Fade(Color c, float alpha) => new(c.r, c.g, c.b, c.a * alpha);
 
+        /// <summary>Squad fit segment <paramref name="i"/> (0-2) for a fit of 0-3 in halves: Light when the seat is met fully,
+        /// half Light when met half, the muted outline when not.</summary>
+        public static Color FitSegment(VoyageKit kit, float fit, int i)
+        {
+            float fill = Mathf.Clamp01(fit - i);
+            return fill >= 1f ? kit.Light : fill > 0f ? Fade(kit.Light, 0.5f) : Fade(kit.Outline, 0.6f);
+        }
+
         public static RectTransform Node(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform));

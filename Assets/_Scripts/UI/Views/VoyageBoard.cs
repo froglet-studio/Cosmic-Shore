@@ -50,6 +50,9 @@ namespace CosmicShore.UI
         {
             /// <summary>The voyage's key for the seats it sails with (<see cref="VoyageSeatRecord"/>).</summary>
             public string Key;
+            /// <summary>The named voyage it sails (<c>NamedVoyage.Id</c>), or empty for unnamed work: a named voyage may ask
+            /// for its own archetypes (<c>VoyageArchetypesSO.AskOf</c>).</summary>
+            public string VoyageId;
             /// <summary>The job's kind in words (Bounty hunt, Piracy...).</summary>
             public string Kind;
             /// <summary>The faction type of the pilot who brings it (the crew popup groups by it); None for the escort.</summary>

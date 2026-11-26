@@ -454,6 +454,21 @@ namespace CosmicShore.Gameplay
 
         // ── Taking a job: the leg ────────────────────────────────────────────
 
+        /// <summary>The squad's fit for the job's archetype ask (Docs/Voyages/ARCHETYPES.md §5) is recorded on the job and
+        /// added to its pay once, as the voyage sets sail. A job that asks for nothing (the Crystal Run, a way home) is
+        /// left as it is. Fit never touches a kit or the sea.</summary>
+        void PayFit(VoyageJob job)
+        {
+            if (job == null || job.FitPaid || job.IsReturn || _squad == null) return;
+            var archetypes = VoyageArchetypesSO.Load();
+            if (!archetypes) return;
+            var vessels = new List<VesselClassType>(SavedSquad.SlotCount);
+            for (int s = 0; s < SavedSquad.SlotCount; s++) vessels.Add(_squad.GetSlot(s).Vessel);
+            job.SquadFit = archetypes.Fit(job.TemplateId, job.VoyageId, vessels);
+            job.Pay = archetypes.FitPay(job.Pay, job.SquadFit);
+            job.FitPaid = true;
+        }
+
         /// <summary>Sail <paramref name="job"/>; false when no leg was set (the caller ends the embark).</summary>
         bool TakeJob(VoyageJob job)
         {
@@ -482,6 +497,7 @@ namespace CosmicShore.Gameplay
                                    "the job stays on the board.");
                 return false;
             }
+            PayFit(job);
             // A named voyage's sea (Milestone 2): its hostile cells, breach line and life from its difficulty, on the host, before
             // the leg is sent to the party.
             LaySea(job);

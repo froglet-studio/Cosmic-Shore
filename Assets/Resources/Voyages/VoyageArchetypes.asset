@@ -1,0 +1,309 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3028b0367b3943af8b778084f788330c, type: 3}
+  m_Name: VoyageArchetypes
+  m_EditorClassIdentifier:
+  roles:
+  - Role: 1
+    Name: Cultivator
+    Line: Increases allied prism volume
+    Vessels:
+    - 6
+    - 29
+    - 12
+    - 7
+    - 18
+    - 19
+    - 28
+  - Role: 2
+    Name: Destroyer
+    Line: Destroy enemy prisms
+    Vessels:
+    - 1
+    - 11
+    - 16
+    - 5
+    - 10
+    - 2
+    - 14
+    - 3
+    - 15
+    - 17
+    - 20
+    - 23
+    - 30
+    - 31
+  - Role: 3
+    Name: Guardian
+    Line: Protects allied prisms
+    Vessels:
+    - 4
+    - 21
+    - 22
+  archetypes:
+  - Archetype: 1
+    Name: Pumper
+    Line: Steadily create prisms at a higher rate than others.
+  - Archetype: 2
+    Name: Builder
+    Line: Creates prisms that protect fauna and other stationary prisms.
+  - Archetype: 3
+    Name: Burster
+    Line: Cause a large and quick increase in team volume to give your team an immediate boost to your score.
+  - Archetype: 4
+    Name: Sapper
+    Line: Steadily reduce enemy prisms over time.
+  - Archetype: 5
+    Name: Specialist
+    Line: Reliably get to primary targets, counter special prisms, and prevent burst cultivation.
+  - Archetype: 6
+    Name: Nuke
+    Line: Destroy large numbers of enemy prisms all at once.
+  - Archetype: 7
+    Name: Harraser
+    Line: Use silence abilites to counteract enemy Aggressors.
+  - Archetype: 8
+    Name: Zoner
+    Line: Creates fields that prevent prism damage
+  - Archetype: 9
+    Name: Enhancer
+    Line: Buff ally prisms to protect and heal them from enemy attacks.
+  vessels:
+  - Vessel: 1
+    Archetypes:
+    - 6
+    - 1
+  - Vessel: 6
+    Archetypes:
+    - 1
+    - 7
+  - Vessel: 29
+    Archetypes:
+    - 1
+    - 9
+  - Vessel: 12
+    Archetypes:
+    - 3
+    - 2
+  - Vessel: 11
+    Archetypes:
+    - 4
+    - 7
+    - 2
+  - Vessel: 16
+    Archetypes:
+    - 4
+    - 7
+  - Vessel: 5
+    Archetypes:
+    - 4
+    - 6
+  - Vessel: 10
+    Archetypes:
+    - 5
+    - 2
+  - Vessel: 7
+    Archetypes:
+    - 2
+    - 5
+  - Vessel: 2
+    Archetypes:
+    - 6
+    - 7
+    - 1
+  - Vessel: 14
+    Archetypes:
+    - 6
+    - 1
+  - Vessel: 4
+    Archetypes:
+    - 9
+    - 3
+  - Vessel: 3
+    Archetypes:
+    - 5
+    - 4
+  - Vessel: 15
+    Archetypes:
+    - 4
+    - 6
+  - Vessel: 17
+    Archetypes:
+    - 4
+    - 7
+  - Vessel: 18
+    Archetypes:
+    - 1
+    - 4
+  - Vessel: 19
+    Archetypes:
+    - 1
+    - 4
+  - Vessel: 20
+    Archetypes:
+    - 5
+    - 4
+  - Vessel: 21
+    Archetypes:
+    - 7
+    - 4
+  - Vessel: 22
+    Archetypes:
+    - 7
+    - 4
+  - Vessel: 23
+    Archetypes:
+    - 4
+    - 1
+  - Vessel: 28
+    Archetypes:
+    - 2
+  - Vessel: 30
+    Archetypes:
+    - 4
+    - 5
+  - Vessel: 31
+    Archetypes:
+    - 5
+    - 4
+    - 7
+  counters:
+  - From: 2
+    To: 4
+  - From: 4
+    To: 1
+  - From: 2
+    To: 5
+  - From: 6
+    To: 2
+  - From: 5
+    To: 3
+  - From: 3
+    To: 6
+  - From: 4
+    To: 9
+  - From: 5
+    To: 9
+  - From: 9
+    To: 6
+  - From: 6
+    To: 8
+  - From: 8
+    To: 4
+  - From: 7
+    To: 5
+  asks:
+  - Job: job.salvage.drift
+    Seats:
+    - 6
+    - 4
+    - 7
+    Reasons:
+    - Cracks a wreck's mass open in one blow.
+    - Wears a wreck's mass down to its crystal.
+    - Keeps rival skimmers off the field.
+  - Job: escort
+    Seats:
+    - 9
+    - 7
+    - 6
+    Reasons:
+    - Shores up the prisms round the Ark.
+    - Silences what comes for her hull.
+    - Clears an assault before it lands.
+  - Job: job.bounty.crew
+    Seats:
+    - 7
+    - 5
+    - 4
+    Reasons:
+    - Silenced escorts cannot wall their Ark.
+    - Breaks the walled hull.
+    - Strips the crew's mass as they run.
+  - Job: job.defence.aid
+    Seats:
+    - 1
+    - 3
+    - 4
+    Reasons:
+    - The hold runs on your volume in the nucleus.
+    - Takes the core back in one surge.
+    - Clears their mass off the core.
+  voyageAsks:
+  - Voyage: voyage.bounty.spear
+    Seats:
+    - 7
+    - 5
+    - 2
+    Crew: The Quiet Spear
+    CrewHulls:
+    - 11
+    - 11
+    - 2
+    Threat: 4
+    Countered: 2
+  - Voyage: voyage.bounty.tide
+    Seats:
+    - 7
+    - 5
+    - 6
+    Crew: Black Tide
+    CrewHulls:
+    - 7
+    - 11
+    - 6
+    Threat: 2
+    Countered: 6
+  - Voyage: voyage.bounty.grin
+    Seats:
+    - 7
+    - 5
+    - 3
+    Crew: The Rusted Grin
+    CrewHulls:
+    - 2
+    - 7
+    - 3
+    Threat: 6
+    Countered: 3
+  - Voyage: voyage.hold.ironmouth
+    Seats:
+    - 1
+    - 3
+    - 2
+    Crew: the Ironmouth breakers
+    CrewHulls:
+    - 11
+    - 5
+    - 15
+    Threat: 4
+    Countered: 2
+  - Voyage: voyage.hold.ninefold
+    Seats:
+    - 1
+    - 3
+    - 2
+    Crew: the Ninefold host
+    CrewHulls:
+    - 3
+    - 2
+    - 1
+    Threat: 5
+    Countered: 2
+  starters:
+  - 6
+  - 11
+  - 2
+  - 14
+  - 29
+  - 30
+  fitPayPerPoint: 0.1

@@ -10,21 +10,21 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Vessels, one class on the floor (Frogma Rev 136 E, picked by Shombith 2026-11-24, drawn with the game's hangar
+    /// Vessels, one role on the floor (Frogma Rev 136 E, picked by Shombith 2026-11-24, drawn with the game's hangar
     /// previews in Rev 138 Vessels; Docs/MENU_REDESIGN_B.md sections 229 and 231). It opens over Your Ark when a seat's
     /// hull is pressed, in Your Ark's hangar look:
     /// <list type="bullet">
-    /// <item>the voyage on top, with the classes it wants at the right; the seat's line under it ("Seat 3 - flown by the
+    /// <item>the voyage on top, with the archetypes it asks for at the right; the seat's line under it ("Seat 3 - flown by the
     /// AI - choose a vessel");</item>
-    /// <item>the class's vessels standing on the hangar floor: each one's hangar preview, its name, one thin line (cyan
+    /// <item>the role's vessels standing on the hangar floor: each one's hangar preview, its name, one thin line (cyan
     /// on the one picked) and one line about it; on an AI seat what the AI cannot fly is dimmed and cannot be taken;</item>
-    /// <item>the wanted line over the class row, the seven classes along the foot (LB / RB step them), the wanted ones
+    /// <item>the wanted line over the role row, the three roles along the foot (LB / RB step them), the wanted ones
     /// brighter;</item>
     /// <item>the bar: the squad fit meter and how the pick changes it, Back (B) and Take the vessel (A), the one Lime.</item>
     /// </list>
     /// A press on a vessel picks it on the page; Take the vessel saves it to the seat for THIS voyage
-    /// (<see cref="VoyageSeats.PickVoyage"/>), as the seat picker does, and closes. A class is a label only
-    /// (<see cref="VoyageClassesSO"/>); nothing here changes a vessel.
+    /// (<see cref="VoyageSeats.PickVoyage"/>), as the seat picker does, and closes. An archetype is a label only
+    /// (<see cref="VoyageArchetypesSO"/>); nothing here changes a vessel.
     /// </summary>
     public sealed class VoyageVesselsPage
     {
@@ -40,7 +40,7 @@ namespace CosmicShore.UI
         readonly VoyageBoard _board;
         readonly VoyageKit _kit;
         readonly VoyageSeats _rules;
-        readonly VoyageClassesSO _classes;
+        readonly VoyageArchetypesSO _archetypes;
 
         readonly RectTransform _root, _frame;
         VoyageJobHeader _header;
@@ -56,7 +56,7 @@ namespace CosmicShore.UI
         VoyageBoard.Offer _offer;
         string _key;
         int _seat;
-        VoyageClass _class;
+        VesselRole _class;
         VesselClassType _picked;
         readonly List<VoyageSeats.Option> _offered = new();
         readonly List<VoyageSeats.Option> _shown = new();
@@ -74,7 +74,7 @@ namespace CosmicShore.UI
 
         sealed class TabView
         {
-            public VoyageClass Class;
+            public VesselRole Class;
             public VoyageGlyph Glyph;
             public TMP_Text Name;
             public Image Bar;
@@ -87,7 +87,7 @@ namespace CosmicShore.UI
             _board = board;
             _kit = kit;
             _rules = rules;
-            _classes = VoyageClassesSO.Load();
+            _archetypes = VoyageArchetypesSO.Load();
 
             _root = VoyageKit.Node("Vessels", parent);
             VoyageKit.Stretch(_root);
@@ -129,7 +129,7 @@ namespace CosmicShore.UI
 
         void BuildTop()
         {
-            // The job and the classes it wants, as over Your Ark; the seat being chosen for (15, Sub) under it.
+            // The job and the archetypes it asks for, as over Your Ark; the seat being chosen for (15, Sub) under it.
             _header = new VoyageJobHeader(_kit, _frame, 0f, 0f, Screen.x);
             _seatLine = _kit.Text(At("SeatLine", Margin, SeatLineY, 900f, 22f), 15, _kit.Sub, TextAlignmentOptions.Left);
             VoyageKit.Stretch(_seatLine.rectTransform);
@@ -147,7 +147,7 @@ namespace CosmicShore.UI
 
         void BuildHead()
         {
-            // Over the class row: "<Class>s are wanted on this voyage" (15, Light) and the class's line (15, Sub), centred.
+            // Over the role row: "<Role>s are wanted on this voyage" (15, Light) and the role's line (15, Sub), centred.
             var head = At("Head", Margin, HeadY, Screen.x - 2f * Margin, 24f);
             VoyageKit.Row(head, 14f, TextAnchor.MiddleCenter).childForceExpandHeight = true;
             _head = _kit.Text(head, 15, _kit.Light, TextAlignmentOptions.Left);
@@ -158,20 +158,20 @@ namespace CosmicShore.UI
 
         void BuildTabs()
         {
-            // The seven classes along the foot, 8 apart, centred: a glyph (22) and the name (15); the open one Light and
+            // The three roles along the foot, 8 apart, centred: a glyph (22) and the name (15); the open one Light and
             // underlined in cyan (2); the wanted ones Sub; the rest muted. LB / RB at the row's ends.
-            var row = At("Classes", Margin, TabsY, Screen.x - 2f * Margin, TabsHeight);
+            var row = At("Roles", Margin, TabsY, Screen.x - 2f * Margin, TabsHeight);
             var h = VoyageKit.Row(row, 8f, TextAnchor.MiddleCenter);
             h.childForceExpandHeight = true;
             var prev = _kit.Label(row, 13, _kit.Sub, TextAlignmentOptions.Center);
             prev.overflowMode = TextOverflowModes.Overflow;
-            VoyageKit.Set(prev, _classes ? _classes.PrevClassKey : null);
-            if (_classes)
-                foreach (var entry in _classes.Classes)
+            VoyageKit.Set(prev, _archetypes ? _archetypes.PrevRoleKey : null);
+            if (_archetypes)
+                foreach (var entry in _archetypes.Roles)
                 {
                     if (entry == null) continue;
-                    var c = entry.Class;
-                    var tab = VoyageKit.Node("Class" + (int)c, row);
+                    var c = entry.Role;
+                    var tab = VoyageKit.Node("Role" + (int)c, row);
                     var hit = VoyageKit.Block(tab, VoyageKit.Clear, hit: true);
                     var b = tab.gameObject.AddComponent<Button>();
                     b.targetGraphic = hit;
@@ -192,7 +192,7 @@ namespace CosmicShore.UI
                 }
             var next = _kit.Label(row, 13, _kit.Sub, TextAlignmentOptions.Center);
             next.overflowMode = TextOverflowModes.Overflow;
-            VoyageKit.Set(next, _classes ? _classes.NextClassKey : null);
+            VoyageKit.Set(next, _archetypes ? _archetypes.NextRoleKey : null);
         }
 
         void BuildBar()
@@ -209,9 +209,9 @@ namespace CosmicShore.UI
 
             float takeX = Screen.x - Margin - TakeWidth;
             var back = At("Back", takeX - 24f - BackWidth, BarY, BackWidth, BarHeight);
-            _kit.Quiet(back, _classes ? _classes.BackKey : null, _classes ? _classes.Back : null, Close);
+            _kit.Quiet(back, _archetypes ? _archetypes.BackKey : null, _archetypes ? _archetypes.Back : null, Close);
             var take = At("Take", takeX, BarY, TakeWidth, BarHeight);
-            _kit.Cta(take, _classes ? _classes.TakeKey : null, _classes ? _classes.Take : null, Take);
+            _kit.Cta(take, _archetypes ? _archetypes.TakeKey : null, _archetypes ? _archetypes.Take : null, Take);
         }
 
         StandView StandFor(int index)
@@ -251,7 +251,7 @@ namespace CosmicShore.UI
         // ── Opening ──────────────────────────────────────────────────────────
 
         /// <summary>Open on <paramref name="seat"/> of <paramref name="offer"/>'s seats (the record under
-        /// <paramref name="key"/>), on the class of the vessel in it.</summary>
+        /// <paramref name="key"/>), on the role of the vessel in it.</summary>
         public void Open(VoyageBoard.Offer offer, int seat, string key, int difficulty)
         {
             _offer = offer;
@@ -260,8 +260,8 @@ namespace CosmicShore.UI
             _seat = seat;
             var squad = VoyageSeatRecord.Get(_key);
             _picked = squad != null ? squad.GetSlot(seat).Vessel : default;
-            _class = _classes ? _classes.ClassOf(_picked) : VoyageClass.None;
-            if (_class == VoyageClass.None && _tabs.Count > 0) _class = _tabs[0].Class;
+            _class = _archetypes ? _archetypes.RoleOf(_picked) : VesselRole.None;
+            if (_class == VesselRole.None && _tabs.Count > 0) _class = _tabs[0].Class;
             _root.gameObject.SetActive(true);
             _root.SetAsLastSibling();
             _fitFor = new Vector2(-1f, -1f);
@@ -279,7 +279,7 @@ namespace CosmicShore.UI
         {
         }
 
-        /// <summary>Scale the board's screen to the screen the page opens over; the shoulders step the class.</summary>
+        /// <summary>Scale the board's screen to the screen the page opens over; the shoulders step the role.</summary>
         public void Tick(float dt)
         {
             if (!IsOpen) return;
@@ -304,13 +304,13 @@ namespace CosmicShore.UI
             ShowClass(_tabs[(at + step + _tabs.Count) % _tabs.Count].Class);
         }
 
-        void ShowClass(VoyageClass c)
+        void ShowClass(VesselRole c)
         {
             _class = c;
-            // The seat's own vessel stays picked when it is of this class; else the first this seat can take.
+            // The seat's own vessel stays picked when it is of this role; else the first this seat can take.
             var squad = VoyageSeatRecord.Get(_key);
             var current = squad != null ? squad.GetSlot(_seat).Vessel : default;
-            if (_classes && _classes.ClassOf(current) == c) _picked = current;
+            if (_archetypes && _archetypes.RoleOf(current) == c) _picked = current;
             else
             {
                 _picked = default;
@@ -327,12 +327,12 @@ namespace CosmicShore.UI
 
         // ── Drawing ──────────────────────────────────────────────────────────
 
-        /// <summary>The open class's vessels this seat is offered, in the class's own order.</summary>
+        /// <summary>The open role's vessels this seat is offered, in the role's own order.</summary>
         void Gather(SavedSquad squad)
         {
             _shown.Clear();
             _rules.Offer(VoyageSeats.Vessel, squad, _seat, _offered);
-            var entry = _classes ? _classes.EntryOf(_class) : null;
+            var entry = _archetypes ? _archetypes.EntryOf(_class) : null;
             if (entry == null) return;
             foreach (var v in entry.Vessels)
                 foreach (var o in _offered)
@@ -352,20 +352,20 @@ namespace CosmicShore.UI
         {
             if (!IsOpen) return;
             var squad = VoyageSeatRecord.Get(_key);
-            if (squad == null || !VoyageSeats.CanEdit(squad, _seat) || !_classes)
+            if (squad == null || !VoyageSeats.CanEdit(squad, _seat) || !_archetypes)
             {
                 Close();
                 return;
             }
             bool you = VoyageOpenCard.IsMySeat(squad, _seat);
-            string job = VoyageClassesSO.JobOf(_key);
+            string job = VoyageArchetypesSO.JobOf(_key);
 
             _header.Draw(_offer, _difficulty, _key);
-            VoyageKit.Set(_seatLine, TemplateText.Fill(_classes.SeatLine, "seat", _rules.Role(_seat),
-                "who", you ? _classes.WhoYou : _classes.WhoAi));
+            VoyageKit.Set(_seatLine, TemplateText.Fill(_archetypes.SeatLine, "seat", _rules.Role(_seat),
+                "who", you ? _archetypes.WhoYou : _archetypes.WhoAi));
 
             Gather(squad);
-            var entry = _classes.EntryOf(_class);
+            var entry = _archetypes.EntryOf(_class);
             int n = _shown.Count;
             float w = n == 0 ? MaxStandWidth : Mathf.Min(MaxStandWidth, (Screen.x - 2f * Margin - (n - 1) * StandGap) / n);
             float x0 = (Screen.x - (n * w + (n - 1) * StandGap)) * 0.5f;
@@ -381,11 +381,12 @@ namespace CosmicShore.UI
                 _rules.SetHull(view.Hull, VoyageSeats.HullOf(vessel));
                 VoyageKit.Set(view.Name, o.Name);
                 view.Rule.color = picked ? _kit.Cyan : VoyageKit.Fade(_kit.Outline, 0.6f);
+                string about = _archetypes.EntryOf(_archetypes.PrimaryOf(o.Vessel))?.Line;
                 VoyageKit.Set(view.Line, !can
-                    ? _classes.NeedsPerson
-                    : ArkEscortRoles.HasRole(o.Vessel) && !string.IsNullOrEmpty(_classes.AiCanFly)
-                        ? Join(entry?.Line, _classes.AiCanFly)
-                        : entry?.Line);
+                    ? _archetypes.NeedsPerson
+                    : ArkEscortRoles.HasRole(o.Vessel) && !string.IsNullOrEmpty(_archetypes.AiCanFly)
+                        ? Join(about, _archetypes.AiCanFly)
+                        : about);
                 view.Group.alpha = can ? 1f : DimAlpha;
                 view.Button.interactable = can;
                 var vesselClass = o.Vessel;
@@ -397,17 +398,17 @@ namespace CosmicShore.UI
                 });
             }
             for (int i = n; i < _stands.Count; i++) _stands[i].Root.gameObject.SetActive(false);
-            VoyageKit.Set(_none, n == 0 ? TemplateText.Fill(_classes.NoneOwned, "class", entry?.Name) : null);
+            VoyageKit.Set(_none, n == 0 ? TemplateText.Fill(_archetypes.NoneOwned, "role", entry?.Name) : null);
 
-            bool wanted = _classes.Wanted(job, _class);
-            VoyageKit.Set(_head, wanted ? TemplateText.Fill(_classes.WantedLine, "class", entry?.Name) : null);
+            bool wanted = _archetypes.Wanted(job, _offer?.VoyageId, _class);
+            VoyageKit.Set(_head, wanted ? TemplateText.Fill(_archetypes.WantedLine, "role", entry?.Name) : null);
             _head.gameObject.SetActive(wanted);
             VoyageKit.Set(_headLine, entry?.Line);
 
             foreach (var tab in _tabs)
             {
                 bool on = tab.Class == _class;
-                var col = on ? _kit.Light : _classes.Wanted(job, tab.Class) ? _kit.Sub : VoyageKit.Fade(_kit.Sub, 0.5f);
+                var col = on ? _kit.Light : _archetypes.Wanted(job, _offer?.VoyageId, tab.Class) ? _kit.Sub : VoyageKit.Fade(_kit.Sub, 0.5f);
                 tab.Name.color = col;
                 tab.Glyph.color = col;
                 tab.Bar.enabled = on;
@@ -420,23 +421,23 @@ namespace CosmicShore.UI
 
         readonly List<VesselClassType> _fitScratch = new();
 
-        // The squad fit now and with the pick in this seat; nothing for a voyage that wants no class (the Crystal Run).
+        // The squad fit now and with the pick in this seat; nothing for a voyage that asks for nothing (the Crystal Run).
         void DrawFit(SavedSquad squad, string job)
         {
-            bool shown = _classes.WantedBy(job).Count > 0;
+            bool shown = _archetypes.AskOf(job, _offer?.VoyageId).Count > 0;
             _fitRow.gameObject.SetActive(shown);
             if (!shown) return;
             _fitScratch.Clear();
             for (int s = 0; s < SavedSquad.SlotCount; s++) _fitScratch.Add(squad.GetSlot(s).Vessel);
-            int from = _classes.Fit(job, _fitScratch);
+            float from = _archetypes.Fit(job, _offer?.VoyageId, _fitScratch);
             if (_picked != default) _fitScratch[_seat] = _picked;
-            int to = _classes.Fit(job, _fitScratch);
+            float to = _archetypes.Fit(job, _offer?.VoyageId, _fitScratch);
             for (int i = 0; i < _fitSegments.Length; i++)
-                _fitSegments[i].color = i < to ? _kit.Light : VoyageKit.Fade(_kit.Outline, 0.6f);
-            string fit = to == from
-                ? TemplateText.Fill(_classes.FitSame, "fit", to.ToString(System.Globalization.CultureInfo.InvariantCulture))
-                : TemplateText.Fill(_classes.FitChange, "from", from.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    "to", to.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                _fitSegments[i].color = VoyageKit.FitSegment(_kit, to, i);
+            string fit = Mathf.Approximately(to, from)
+                ? TemplateText.Fill(_archetypes.FitSame, "fit", VoyageArchetypesSO.FitText(to))
+                : TemplateText.Fill(_archetypes.FitChange, "from", VoyageArchetypesSO.FitText(from),
+                    "to", VoyageArchetypesSO.FitText(to));
             // "Pay 33" after the fit, as the quay's foot and Your Ark's bar.
             var words = VoyageQuaySO.Load();
             string pay = _offer != null && _offer.Pays && words

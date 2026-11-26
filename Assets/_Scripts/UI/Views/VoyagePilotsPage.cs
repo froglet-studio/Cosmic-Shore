@@ -32,7 +32,7 @@ namespace CosmicShore.UI
         readonly VoyageKit _kit;
         readonly VoyageSeats _rules;
         readonly VoyageQuaySO _words = VoyageQuaySO.Load();
-        readonly VoyageClassesSO _classes = VoyageClassesSO.Load();
+        readonly VoyageArchetypesSO _archetypes = VoyageArchetypesSO.Load();
         readonly RectTransform _root, _frame, _content;
         readonly ScrollRect _scroll;
         readonly List<RowView> _rows = new();
@@ -94,7 +94,7 @@ namespace CosmicShore.UI
             var take = At("Take", _frame, ListX, BarY, TakeWidth, BarHeight);
             _kit.Cta(take, _words ? _words.TakeSeatKey : null, _words ? _words.TakeSeat : null, Take);
             var back = At("Back", _frame, ListX + TakeWidth + 24f, BarY, BackWidth, BarHeight);
-            _kit.Quiet(back, _classes ? _classes.BackKey : null, _classes ? _classes.Back : null, Close);
+            _kit.Quiet(back, _archetypes ? _archetypes.BackKey : null, _archetypes ? _archetypes.Back : null, Close);
 
             _root.gameObject.SetActive(false);
         }
