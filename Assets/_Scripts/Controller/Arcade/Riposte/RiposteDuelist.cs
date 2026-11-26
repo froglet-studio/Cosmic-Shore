@@ -93,38 +93,66 @@ namespace CosmicShore.Gameplay
             _heapRadius = Mathf.Max(60f, heapRadius);
             _nearestCrystal = nearestCrystal;
 
+            // Every AI seat, plus a human's hull the autopilot already holds (an idle guest, the AI-flies toggle): it
+            // duels like a seat instead of flying the stock autopilot slow and unramped (RIPOSTE.md section 5).
             var players = gameData.Players;
             for (int i = 0; i < players.Count; i++)
             {
                 var p = players[i];
-                if (p == null || !p.IsInitializedAsAI) continue;
-                var status = p.Vessel?.VesselStatus;
-                if (status == null) continue;
-                // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a hull without one.
-                var autopilot = status is Component c && c && c.TryGetComponent(out AIPilot ai) ? ai : null;
-                if (autopilot == null) continue;
-
-                int level = (int)gameData.AIDifficultyFor(p);
-                var duelist = new Duelist
-                {
-                    Player = p,
-                    Level = level,
-                    Status = status,
-                    Autopilot = autopilot,
-                    Rng = new System.Random(unchecked((int)p.PlayerNetId * 7919 + 97)),
-                    Steer = centre,
-                    Phase = RiposteDuel.Phase.Charge,
-                    PhaseEndsAt = Time.time + _settings.duelPhaseSeconds,
-                };
-                if (status.ActionHandler != null &&
-                    status.ActionHandler.TryGetBoundAction<RampBoostActionSO>(out var ramp, out _) && ramp.UsesFuel)
-                    duelist.FuelIndex = ramp.FuelResourceIndex;
-
-                _duelists.Add(duelist);
-                var captured = duelist;
-                autopilot.SetExternalTargetProvider(() => captured.Steer);
-                autopilot.SetThrottleFloor(JackstrawSettingsSO.Rung(_settings.duelThrottleFloor, level));
+                if (p != null && (p.IsInitializedAsAI || HeldByAutopilot(p))) Add(p);
             }
+        }
+
+        /// <summary>A human's hull the platform autopilot flies right now. TryGetComponent, not VesselStatus.AIPilot:
+        /// that getter ADDS an autopilot to a hull without one.</summary>
+        public static bool HeldByAutopilot(IPlayer p) =>
+            p?.Vessel?.VesselStatus is Component status && status &&
+            status.TryGetComponent(out AIPilot autopilot) && autopilot.AutoPilotEnabled;
+
+        /// <summary>Arms ONE pilot mid-match: a human's hull handed to the AI after the start (PilotControl, an idle
+        /// guest the server adopted). False before <see cref="Arm"/> has run, or when the hull has no autopilot.
+        /// A pilot already flying as a duelist is re-armed on its current hull.</summary>
+        public bool ArmOne(IPlayer p)
+        {
+            if (p == null || _settings == null || _gameData == null) return false;
+            for (int i = _duelists.Count - 1; i >= 0; i--)
+            {
+                if (!ReferenceEquals(_duelists[i].Player, p)) continue;
+                if (_duelists[i].Autopilot) _duelists[i].Autopilot.ClearExternalTargetProvider();
+                _duelists.RemoveAt(i);
+            }
+            return Add(p);
+        }
+
+        bool Add(IPlayer p)
+        {
+            var status = p.Vessel?.VesselStatus;
+            if (status == null) return false;
+            // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a hull without one.
+            var autopilot = status is Component c && c && c.TryGetComponent(out AIPilot ai) ? ai : null;
+            if (autopilot == null) return false;
+
+            int level = (int)_gameData.AIDifficultyFor(p);
+            var duelist = new Duelist
+            {
+                Player = p,
+                Level = level,
+                Status = status,
+                Autopilot = autopilot,
+                Rng = new System.Random(unchecked((int)p.PlayerNetId * 7919 + 97)),
+                Steer = _centre,
+                Phase = RiposteDuel.Phase.Charge,
+                PhaseEndsAt = Time.time + _settings.duelPhaseSeconds,
+            };
+            if (status.ActionHandler != null &&
+                status.ActionHandler.TryGetBoundAction<RampBoostActionSO>(out var ramp, out _) && ramp.UsesFuel)
+                duelist.FuelIndex = ramp.FuelResourceIndex;
+
+            _duelists.Add(duelist);
+            var captured = duelist;
+            autopilot.SetExternalTargetProvider(() => captured.Steer);
+            autopilot.SetThrottleFloor(JackstrawSettingsSO.Rung(_settings.duelThrottleFloor, level));
+            return true;
         }
 
         /// <summary>Hands every autopilot back (the throttle floor goes with the target). Safe to call twice.</summary>
@@ -133,6 +161,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _duelists.Count; i++)
                 if (_duelists[i].Autopilot) _duelists[i].Autopilot.ClearExternalTargetProvider();
             _duelists.Clear();
+            _settings = null; // the match is over: a hull handed to the AI after it is not armed (ArmOne)
         }
 
         public void Tick()

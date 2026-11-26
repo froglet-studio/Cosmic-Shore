@@ -492,6 +492,10 @@ for needed in ("SetExternalTargetProvider", "SetThrottleFloor", "AIDifficultyFor
                "RiposteLanes.MouthAhead(", "RiposteLanes.RunIn("):
     if needed not in duelist_cs:
         errors.append(f"RiposteDuelist no longer calls {needed}")
+# A human seat the AI holds (an idle guest, the AI-flies toggle) duels like a seat, not on the stock autopilot.
+if "IAIPilotArming" not in ctl or "_duelist.ArmOne(" not in ctl or "HeldByAutopilot(p)" not in duelist_cs:
+    errors.append("RiposteController must arm a human hull the AI holds as a duelist (IAIPilotArming, "
+                  "RiposteDuelist.ArmOne, HeldByAutopilot at the start)")
 if "_duelist.Arm(" not in ctl or "protected virtual void ArmAI()" not in g.read(f"{AR}/Jackstraw/JackstrawController.cs"):
     errors.append("RiposteController must arm its duelists through JackstrawController's ArmAI seam")
 policy_cs = g.read(RAMP_POLICY_CS) + g.read("Assets/_Scripts/Controller/AI/Boost/AIBoostPolicySO.cs")

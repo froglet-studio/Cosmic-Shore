@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// fuel, charge through a rival, run out, turn back in), its settings asset, rule words, target and hint.
     /// SWORDFISH-ONLY is enforced by the card's Vessels list.</para>
     /// </summary>
-    public class RiposteController : JackstrawController
+    public class RiposteController : JackstrawController, IAIPilotArming
     {
         readonly RiposteDuelist _duelist = new();
         readonly System.Collections.Generic.List<RiposteLanes.Line> _lanes = new(), _rails = new();
@@ -59,6 +59,11 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < lines.Count; i++)
                 lines[i] = new RiposteLanes.Line(arena.TransformPoint(lines[i].A), arena.TransformPoint(lines[i].B));
         }
+
+        /// <summary>A human's hull handed to the AI mid-match (PilotControl's AI-flies toggle, an idle guest the server
+        /// adopted) duels as a seat does (<see cref="RiposteDuelist.ArmOne"/>). Server only; false before the countdown
+        /// has armed the duelists.</summary>
+        public bool ArmAIPilot(IPlayer player) => IsServer && _duelist.ArmOne(player);
 
         protected override void DisarmAI()
         {
