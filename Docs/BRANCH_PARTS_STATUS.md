@@ -3,7 +3,7 @@
 **The one place to answer "what is the state of the A–M parts / the 2026-10-12 test plan?".** Update the
 tables below in the same commit that lands, tests or drops a part, and change the "as of" line.
 
-**As of 2026-10-24**, measured on `origin/Ys-bleeding-edge` and `origin/bleeding-edge`.
+**As of 2026-11-25**, F, J and K re-measured on `origin/bleeding-edge` (the rest as of 2026-10-24, on `origin/Ys-bleeding-edge` and `origin/bleeding-edge`).
 
 - **Source branch:** `cece/nice-brahmagupta-ojclij` (head `77a6c35b`, 2026-10-13). Thirteen independent parts, A to M.
 - **The test plan:** `Docs/BRANCH_TEST_PLAN_2026-10-12.md` **on that branch** (not on this one). It has every
@@ -23,12 +23,12 @@ tables below in the same commit that lands, tests or drops a part, and change th
 | C | Steam dual-app uploader, Playtest runbook | **Landed on Ys-bleeding-edge and bleeding-edge** (2 of 2) | Step 10 docs read-through; step 11 after Steamworks A2/A4 | Shombith, Garrett |
 | D | Plans and docs only | Not landed | Last, with or after the parts it describes; then `/qa-backlog` | — |
 | E | AI training fixes, deployed tournament genome | Not landed | Editor steps | Editor tester |
-| F | Skim Race AI intensity-4 policy v2-i4 | Not landed | Editor steps | Editor tester |
+| F | Skim Race AI intensity-4 policy v2-i4 | **On bleeding-edge by another path**: `Assets/Resources/SkimRaceAIConfig_I4.asset` ships `PolicyVersion: skimrace-v2-i4` (measured 2026-11-25) | Nothing | — |
 | G | Load-time target, unattended load sweep | Not landed | Editor steps; needs E (M is in) | Editor tester |
 | H | Parity harness, Unity side | Not landed | Editor steps; M is in, so H can go next | Editor tester |
 | I | Prisma/Amoebius engine (Port/ only) | Not landed | After H; Port-only push | — |
-| J | Multiplayer QoL (friends, recent players, ready lights, invite inbox) | Not landed | Two-account editor steps | Two UGS accounts |
-| K | Leak and lifetime fixes | Not landed | Editor steps | Editor tester |
+| J | Multiplayer QoL (friends, recent players, ready lights, invite inbox) | Not landed (2026-11-25: no recent-players list or friend-request sending on bleeding-edge; 15 commits, 6 weeks behind) | A port onto today's party layer, then the two-account steps; UGS and multiplayer, so Shombith and Yash decide | Two UGS accounts |
+| K | Leak and lifetime fixes | **2 of 5 landed 2026-11-25** (`cece/busy-fermi-edr18h`): the bound arcade delays (f375809ea) and `BaseScoreTracker.OnDestroy` (e12a8165a). The three cooldown-table commits were not: bleeding-edge's `VesselOvertakeBySkimmerEffectSO` now prunes its own table, and `VesselElementalDebuffBySkimmerEffectSO` still says "No prune path" | Editor steps (checklist: "Leak fixes: bound arcade delays ..."); prune the debuff table the overtake table's way | Editor tester |
 | L | Heritable genome, off by default | Not landed | Editor steps + owner sign-off on the LOCKED rule and worm fission | Editor tester; Garrett |
 | M | Engine APIs the game's new code compiles against | **Landed on Ys-bleeding-edge and bleeding-edge** (2 of 2) | Nothing | — |
 

@@ -143,7 +143,7 @@ def author(spec: dict):
     g.emit_asset(rule, g_rule, lib.header_for(GATE_RACE_SCORING_RULE_SO, f"{member}ScoringRule") +
                  "  metric: 9\n  golfRules: 1\n")
 
-    # 3. card - one hull in Vessels drives all three vessel clamps; 2/2 minimum by default (a race needs a rival); a spec's min_players / max_players fix its seats.
+    # 3. card - one hull in Vessels drives all three vessel clamps; 2/2 minimum: a race needs a rival.
     g.emit_asset(card, g_card, lib.header_for(lib.SCRIPT_GUIDS["SO_ArcadeGame"], f"ArcadeGame{member}") + f"""  Mode: {mid}
   IsMultiplayer: 1
   DisplayName: {spec['display']}
@@ -155,7 +155,7 @@ def author(spec: dict):
   SceneName: {scene_name}
   Vessels:
   - {{fileID: 11400000, guid: {vessel_guid}, type: 2}}
-  MinPlayersAllowed: {spec.get('min_players', 2)}
+  MinPlayersAllowed: 2
   MaxPlayersAllowed: {spec.get('max_players', 9)}
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3

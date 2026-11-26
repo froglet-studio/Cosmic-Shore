@@ -130,7 +130,7 @@ htr.author(dict(
     new_fields=FIELDS.format(rule="__RULE__", commit=260, lead=300, through=220, speed=2000) + SEAL_FIELDS,
     max_speed=840,
     # Every Swordfish game seats 4 for now (Yash, 2026-11-25).
-    min_players=4, max_players=4,   # every Swordfish card seats 4 (Yash, 2026-11-25)
+    max_players=4,
     target=GATES_PER_LAP * LAPS, laps=LAPS, target_key="spearlineGateTarget", target_after="thornlineGateTarget",
     # A quarter-of-race deficit (6 rings) x 0.2 = 1.2 element levels; Time speeds the sword, so the buff lands on the
     # very thing the seals ask for.
