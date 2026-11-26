@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using CosmicShore.Utility;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
 {
@@ -78,9 +79,15 @@ namespace CosmicShore.UI
         [Header("Words")]
         [SerializeField] private string lockedWord = "Locked";
         [SerializeField] private string ownedWord = "Owned";
-        [Tooltip("Rev 24: the header's kicker above the vessel's name on OVERVIEW; {state} is the owned / locked word. " +
+        [Tooltip("The header's kicker above the vessel's name on OVERVIEW (roles and archetypes, Shombith 2026-11-26): " +
+                 "{role} is the vessel's role, {archetypes} its archetypes primary first, {state} the owned / locked word. " +
                  "Upper-cased. Empty shows nothing.")]
-        [SerializeField] private string kickerTemplate = "VESSEL · {state}";
+        [SerializeField] private string kickerTemplate = "{role} · {archetypes} · {state}";
+        [Tooltip("The kicker for a vessel the archetype board gives no role yet; {state} is the owned / locked word. " +
+                 "Upper-cased. Empty shows nothing.")]
+        [SerializeField] private string roleLessKickerTemplate = "VESSEL · {state}";
+        [Tooltip("Between the archetypes in {archetypes} (primary, then secondary, then tertiary).")]
+        [SerializeField] private string archetypeSeparator = " / ";
         [Tooltip("The unlock button; {cost} is filled in.")]
         [SerializeField] private string unlockTemplate = "UNLOCK - {cost}";
         [SerializeField] private string unlockFreeWord = "UNLOCK - FREE";
@@ -169,7 +176,8 @@ namespace CosmicShore.UI
 
             // Rev 24: the header above the vessel belongs to the tabs (it follows the tab); OVERVIEW shows this one.
             if (tabs)
-                tabs.SetVesselHeader(TemplateText.Fill(kickerTemplate, "state", isLocked ? lockedWord : ownedWord).ToUpperInvariant(),
+                tabs.SetVesselHeader(HangarArchetypeWords.Kicker(VesselArchetypesSO.Load(), _currentShip.Class, kickerTemplate,
+                                         roleLessKickerTemplate, archetypeSeparator, isLocked ? lockedWord : ownedWord),
                                      _currentShip.CardName.ToUpperInvariant(), _currentShip.Description);
 
             if (chipLabel)

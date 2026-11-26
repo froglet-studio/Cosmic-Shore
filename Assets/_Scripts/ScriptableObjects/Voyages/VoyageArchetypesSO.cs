@@ -7,12 +7,11 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Vessel ROLES and ARCHETYPES on voyages (Docs/Voyages/ARCHETYPES.md; Shombith's board of 2026-11-26,
-    /// https://claude.ai/artifact/Duwb9xJ7XdAykxMKAnMyFe, copied to Docs/Voyages/archetypes.json). Holds each archetype's
-    /// words, each vessel's archetypes (primary first), the counter graph, the three archetype seats each voyage type and
-    /// each named voyage asks for, the crews a named voyage meets, and what squad fit pays. It replaced the seven
-    /// Milestone 2 voyage classes. An archetype never changes a vessel's kit: it decides what a voyage asks for, who
-    /// counters whom, and the pay.
+    /// Vessel ROLES and ARCHETYPES on voyages (Docs/Voyages/ARCHETYPES.md). Each vessel's archetypes, the counter graph
+    /// and the role and archetype words are the FLEET's (<see cref="VesselArchetypesSO"/>, Resources/Vessels/VesselArchetypes,
+    /// the table the Hangar and the ecology page read too); this asset holds only what voyages add: the three archetype
+    /// seats each voyage type and each named voyage asks for, the crews a named voyage meets, the starters, what squad
+    /// fit pays, and the voyage pages' words. An archetype never changes a vessel's kit.
     /// <para>Written by <c>Tools/Build/author_voyage_archetypes.py</c> (its <c>--check</c> is the drift gate) into
     /// <c>Resources/Voyages/VoyageArchetypes</c>. The tables are the generator's; the words under "Words" are a person's
     /// and survive a re-run.</para>
@@ -32,45 +31,22 @@ namespace CosmicShore.ScriptableObjects
             return s_loaded;
         }
 
-        /// <summary>One role: its name, its goal, and the vessels whose primary archetype is one of its three (in the order
-        /// the Vessels floor stands them).</summary>
-        [Serializable]
-        public class RoleEntry
+        /// <summary>One role as the Vessels floor shows it, from the fleet's table: its name, its goal, and the vessels
+        /// whose primary archetype is one of its three, in the fleet table's order.</summary>
+        public sealed class RoleEntry
         {
             public VesselRole Role;
-            [Tooltip("The role's name as players read it.")]
             public string Name;
-            [Tooltip("The role's goal, one line (the board's).")]
             public string Line;
-            [Tooltip("The vessels whose primary archetype is in this role, in floor order.")]
-            public List<VesselClassType> Vessels = new();
+            public readonly List<VesselClassType> Vessels = new();
         }
 
-        /// <summary>One archetype: its name, what it does, and the measure the end board credits it in.</summary>
-        [Serializable]
-        public class ArchetypeEntry
+        /// <summary>One archetype's words, from the fleet's table.</summary>
+        public sealed class ArchetypeEntry
         {
             public VesselArchetype Archetype;
-            [Tooltip("The archetype's name as players read it.")]
             public string Name;
-            [Tooltip("What the archetype does, one line (the board's).")]
             public string Line;
-        }
-
-        /// <summary>A vessel's archetypes, primary first, then secondary, then tertiary.</summary>
-        [Serializable]
-        public class VesselEntry
-        {
-            public VesselClassType Vessel;
-            public List<VesselArchetype> Archetypes = new();
-        }
-
-        /// <summary>One arrow of the board's graph: <see cref="From"/> counters <see cref="To"/>.</summary>
-        [Serializable]
-        public class Counter
-        {
-            public VesselArchetype From;
-            public VesselArchetype To;
         }
 
         /// <summary>The three seats a voyage type asks for, and why each one.</summary>
@@ -103,10 +79,6 @@ namespace CosmicShore.ScriptableObjects
         }
 
         [Header("Tables (written by Tools/Build/author_voyage_archetypes.py)")]
-        [SerializeField] List<RoleEntry> roles = new();
-        [SerializeField] List<ArchetypeEntry> archetypes = new();
-        [SerializeField] List<VesselEntry> vessels = new();
-        [SerializeField] List<Counter> counters = new();
         [SerializeField] List<Ask> asks = new();
         [SerializeField] List<VoyageAsk> voyageAsks = new();
         [SerializeField, Tooltip("The starter vessels voyages are built around.")]
@@ -151,10 +123,21 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("The keycap at the role row's right end.")]
         string nextRoleKey = "RB";
 
-        public IReadOnlyList<RoleEntry> Roles => roles;
-        public IReadOnlyList<ArchetypeEntry> Archetypes => archetypes;
-        public IReadOnlyList<VesselEntry> Vessels => vessels;
-        public IReadOnlyList<Counter> CounterGraph => counters;
+        /// <summary>The fleet's table every vessel fact here is read from (null when it is missing).</summary>
+        static VesselArchetypesSO Fleet => VesselArchetypesSO.Load();
+
+        /// <summary>The three roles in order, built from the fleet's table.</summary>
+        public IReadOnlyList<RoleEntry> Roles
+        {
+            get
+            {
+                var list = new List<RoleEntry>(3);
+                var fleet = Fleet;
+                foreach (VesselRole r in Enum.GetValues(typeof(VesselRole)))
+                    if (r != VesselRole.None) list.Add(EntryOf(r, fleet));
+                return list;
+            }
+        }
         public IReadOnlyList<Ask> Asks => asks;
         public IReadOnlyList<VoyageAsk> VoyageAsks => voyageAsks;
         public IReadOnlyList<VesselClassType> Starters => starters;
@@ -179,13 +162,9 @@ namespace CosmicShore.ScriptableObjects
 
         // ── Vessels ─────────────────────────────────────────────────────────
 
-        /// <summary><paramref name="vessel"/>'s archetypes, primary first (empty for a vessel with none).</summary>
-        public IReadOnlyList<VesselArchetype> ArchetypesOf(VesselClassType vessel)
-        {
-            foreach (var e in vessels)
-                if (e != null && e.Vessel == vessel) return e.Archetypes;
-            return Array.Empty<VesselArchetype>();
-        }
+        /// <summary><paramref name="vessel"/>'s archetypes, primary first (the fleet's; empty for a vessel with none).</summary>
+        public IReadOnlyList<VesselArchetype> ArchetypesOf(VesselClassType vessel) =>
+            Fleet is { } fleet ? fleet.ArchetypesOf(vessel) : Array.Empty<VesselArchetype>();
 
         /// <summary><paramref name="vessel"/>'s primary archetype, or None.</summary>
         public VesselArchetype PrimaryOf(VesselClassType vessel)
@@ -197,27 +176,32 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The role of <paramref name="vessel"/>'s primary archetype, or None.</summary>
         public VesselRole RoleOf(VesselClassType vessel) => VesselArchetypes.RoleOf(PrimaryOf(vessel));
 
-        // ── Words ───────────────────────────────────────────────────────────
+        // ── Words (the fleet's) ─────────────────────────────────────────────
 
-        public RoleEntry EntryOf(VesselRole role)
+        public RoleEntry EntryOf(VesselRole role) => role == VesselRole.None ? null : EntryOf(role, Fleet);
+
+        static RoleEntry EntryOf(VesselRole role, VesselArchetypesSO fleet)
         {
-            foreach (var e in roles)
-                if (e != null && e.Role == role) return e;
-            return null;
+            var e = new RoleEntry { Role = role };
+            if (!fleet) return e;
+            e.Name = fleet.RoleName(role);
+            e.Line = fleet.RoleLine(role);
+            foreach (var v in fleet.Vessels)
+                if (fleet.RoleOf(v) == role) e.Vessels.Add(v);
+            return e;
         }
 
         public ArchetypeEntry EntryOf(VesselArchetype a)
         {
-            foreach (var e in archetypes)
-                if (e != null && e.Archetype == a) return e;
-            return null;
+            if (a == VesselArchetype.None || !(Fleet is { } fleet)) return null;
+            return new ArchetypeEntry { Archetype = a, Name = fleet.ArchetypeName(a), Line = fleet.ArchetypeLine(a) };
         }
 
         /// <summary>The role's name, or empty.</summary>
-        public string NameOf(VesselRole role) => EntryOf(role)?.Name ?? string.Empty;
+        public string NameOf(VesselRole role) => Fleet is { } fleet ? fleet.RoleName(role) : string.Empty;
 
         /// <summary>The archetype's name, or empty.</summary>
-        public string NameOf(VesselArchetype a) => EntryOf(a)?.Name ?? string.Empty;
+        public string NameOf(VesselArchetype a) => Fleet is { } fleet ? fleet.ArchetypeName(a) : string.Empty;
 
         // ── The ask ─────────────────────────────────────────────────────────
 
@@ -289,14 +273,9 @@ namespace CosmicShore.ScriptableObjects
             return TemplateText.Fill(counterLine, "crew", own.Crew, "threat", NameOf(own.Threat), "counter", NameOf(own.Countered));
         }
 
-        /// <summary>The archetypes that counter <paramref name="a"/> on the board.</summary>
-        public List<VesselArchetype> CounteredBy(VesselArchetype a)
-        {
-            var list = new List<VesselArchetype>();
-            foreach (var c in counters)
-                if (c != null && c.To == a) list.Add(c.From);
-            return list;
-        }
+        /// <summary>The archetypes that counter <paramref name="a"/> on the board (the fleet's graph).</summary>
+        public List<VesselArchetype> CounteredBy(VesselArchetype a) =>
+            Fleet is { } fleet ? fleet.CounteredBy(a) : new List<VesselArchetype>();
 
         /// <summary>The job template id behind a voyage's seat key (<c>VoyageSeatRecord.JobKey</c>: template|pilot|to; the
         /// escort's key is its own id).</summary>

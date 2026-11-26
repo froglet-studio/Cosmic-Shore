@@ -6,8 +6,9 @@ namespace CosmicShore.Data
     /// <summary>
     /// A vessel's ROLE (Shombith, 2026-11-26, the archetypes board https://claude.ai/artifact/Duwb9xJ7XdAykxMKAnMyFe):
     /// Cultivators increase allied prism volume, Destroyers destroy enemy prisms, Guardians protect allied prisms. A
-    /// role is the family of three <see cref="VesselArchetype"/>s; it replaced the seven Milestone 2 voyage classes.
-    /// Values are fixed for serialization.
+    /// role is the family of three <see cref="VesselArchetype"/>s. The fleet's table is
+    /// <c>VesselArchetypesSO</c> (Resources/Vessels/VesselArchetypes, Docs/Vessels/ARCHETYPES.md); the Hangar, the
+    /// ecology page and voyages all read it. Values are fixed for serialization.
     /// </summary>
     public enum VesselRole
     {
@@ -18,9 +19,8 @@ namespace CosmicShore.Data
     }
 
     /// <summary>
-    /// A vessel's ARCHETYPE, the nine sub-types of the three roles (Docs/Voyages/archetypes.json, the board's copy). Each
-    /// vessel has a primary, a secondary and sometimes a tertiary archetype; a voyage asks for three archetype seats
-    /// (Docs/Voyages/ARCHETYPES.md). An archetype is never a kit change (CLAUDE.md, a game mode never changes the vessel).
+    /// A vessel's ARCHETYPE, the nine sub-types of the three roles (Docs/Vessels/archetypes.json, the board's copy). Each
+    /// vessel has a primary, a secondary and sometimes a tertiary archetype. An archetype is never a kit change (CLAUDE.md, a game mode never changes the vessel).
     /// Values are fixed for serialization; the three of a role are consecutive.
     /// </summary>
     public enum VesselArchetype
@@ -37,8 +37,8 @@ namespace CosmicShore.Data
         Enhancer = 9,
     }
 
-    /// <summary>The rules every voyage reads archetypes by: the role of an archetype, how well a vessel meets a seat,
-    /// and the squad's fit for a voyage's ask (Docs/Voyages/ARCHETYPES.md §2).</summary>
+    /// <summary>The rules archetypes are read by: the role of an archetype, how well a vessel meets a seat, and a
+    /// squad's fit for an ask of archetype seats (voyages ask for three).</summary>
     public static class VesselArchetypes
     {
         /// <summary>A vessel on its primary archetype meets the seat fully.</summary>

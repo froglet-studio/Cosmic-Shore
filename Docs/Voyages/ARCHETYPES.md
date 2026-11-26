@@ -3,7 +3,7 @@
 Shombith, 2026-11-26: voyages ask for vessel roles and archetypes, and the starters' archetypes matter. This replaced
 the seven Milestone 2 voyage classes (Guardian, Protector, Destroyer, Cultivator, Hunter, Shepherd, Pathfinder).
 Design doc: https://claude.ai/artifact/CBSraD4VoGxfvc7in3E7MR. Board (the source of truth):
-https://claude.ai/artifact/Duwb9xJ7XdAykxMKAnMyFe, copied to `Docs/Voyages/archetypes.json`.
+https://claude.ai/artifact/Duwb9xJ7XdAykxMKAnMyFe, copied to `Docs/Vessels/archetypes.json`.
 
 An archetype never changes a vessel's kit (CLAUDE.md, a game mode never changes the vessel). It decides what a voyage
 asks for, who counters whom, and what the squad is paid. Voyages keep difficulty 1-9. The Crystal Run
@@ -17,10 +17,14 @@ asks for, who counters whom, and what the squad is paid. Voyages keep difficulty
 | Destroyer (destroys enemy prisms) | Sapper, Specialist, Nuke |
 | Guardian (protects allied prisms) | Harraser, Zoner, Enhancer |
 
-- Enums: `VesselRole`, `VesselArchetype` (`Data/Voyages/VesselArchetype.cs`), fit rules in `VesselArchetypes`.
-- Table: `Resources/Voyages/VoyageArchetypes` (`VoyageArchetypesSO`), written by
-  `python3 Tools/Build/author_voyage_archetypes.py` (`--check` drift gate, `--self-test`, `--table` prints every ask
-  and the starters' best fit). To take a new board state: save the board's JSON over `archetypes.json` and re-run.
+- Enums and fit rules: `VesselRole`, `VesselArchetype`, `VesselArchetypes` (`Data/VesselArchetype.cs`), shared with the
+  Hangar and the ecology page.
+- Each vessel's archetypes, the counter graph and the role and archetype words: the fleet's table, `VesselArchetypesSO`
+  (`Resources/Vessels/VesselArchetypes`, `Tools/Build/author_vessel_archetypes.py`, `Docs/Vessels/ARCHETYPES.md`).
+- What voyages add (the asks, named voyages' crews and counters, starters, fit pay, the voyage pages' words):
+  `Resources/Voyages/VoyageArchetypes` (`VoyageArchetypesSO`, which reads every vessel fact from the fleet's table),
+  written by `python3 Tools/Build/author_voyage_archetypes.py` (`--check`, `--self-test`, `--table`) from the same board
+  copy. To take a new board state: save it over `Docs/Vessels/archetypes.json` and re-run both generators.
 - The board's ids are its first draft's (`scout` is Builder, `hunters` Harraser, `builders` Zoner, `enhancers`
   Enhancer). A board vessel not in `VesselClassType` (the Wombat) is skipped.
 - Tertiary: where the board gives two secondaries (Sparrow, Dolphin, Jewel Wasp), the second listed is the tertiary
