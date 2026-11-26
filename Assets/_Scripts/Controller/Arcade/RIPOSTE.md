@@ -205,17 +205,24 @@ comparison:
   platform autopilot flies when the countdown ends (the smoke test's host seat, an idle guest) is armed as a duelist
   like an AI seat, and a hull handed over later (PilotControl's AI-flies toggle, an idle guest the server adopts)
   is armed then (`RiposteController : IAIPilotArming`, `RiposteDuelist.ArmOne`), as Switchback's race does. It flies
-  at the match's AI level and stays a human seat to the rivals' targeting (`aiHumanFocus`). Not run in Unity yet;
-  whether the hull's ramp uses the Riposte boost variant when it was not spawned as an AI is not checked.
+  at the match's AI level and stays a human seat to the rivals' targeting (`aiHumanFocus`). Compiled in Unity;
+  whether the hull's ramp uses the Riposte boost variant when it was not spawned as an AI is not checked. In the
+  editor (2026-11-27) the smoke test's host seat read held and was armed; a mid-match hand-over is not tried.
+- **2026-11-27, the Lists in Unity (the open editor, after a recompile with the held-seat duelist):** no compile
+  error; `RiposteYardTests` 10 of 10, `RiposteLanesTests` 7 of 7 and `RiposteDuelTests` 14 of 14 in the test
+  runner; each `SpawnableRiposteYard` prefab lays exactly the Python census (480 / 1,110 / 2,090 / 3,410 prisms,
+  shielded 0 / 46 / 94 / 222, danger 0 / 0 / 28 / 48). One match a rung, Hard, clock 1x, 2v2 (the smoke config's
+  new per-mode `Domains` override; read in play: Ruby, Ruby against Jade AI and the Jade host seat, flown as a
+  duelist): I1 84 s, I2 139 s, I3 48 s, I4 187 s to the sixth strike, every seat AI and moving, a winner each time,
+  no error in the match or at exit. The judge's Hard in the Lists ran 81-111 / 38-190 / 104-112 / 151-218 s, so the
+  editor now sits inside the judge's spread on I1, I2 and I4 and below it on I3 (one match a cell; lengths swing).
+  Nobody watched the hulls fly a rail or a lane; the counts and the end of the match are all this shows.
 - **The Lists (the arena of section 4) and the lane-reading duelist compile in Unity** (2026-11-25, the open
   editor, ba00cb40a1: `recompile` up to date with no errors, `RiposteYard`, `RiposteLanes` and `SpawnableRiposteYard`
-  load as types). **Not yet verified in Unity:** `RiposteYardTests` (10) and `RiposteLanesTests` (7) in the test
-  runner (the first try aborted because another session's Play run was live), the C# prism count per rung against
-  the Python census (480 / 1,110 / 2,090 / 3,410), and any match played in the Lists. Headless, the Amoebius live
-  build compiles both and the judge played 64 matches in the Lists.
+  load as types). Tests, counts and matches in it: the 2026-11-27 entry above.
 - **Open: the Lists have no baked layout.** `bake_prism_layouts.py` and the prism clip audit run on Linux only, so
   the four `SpawnableRiposteYard` prefabs are laid live, with a warning, until someone runs the bake on Linux.
-- **Not done:** no I1 match in the editor at clock 1x; no 2v2 match of four mode AIs in the editor; nobody has flown it; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
+- **Not done:** nobody has flown it or watched a hull use a rail or lane; 3v3 and three-domain matches were not judged; no search has tuned the duelist.
 - **Open questions a flight answers:** whether 6 strikes is the right length with a person in it (AI matches run
   26-202 s); whether a silenced pilot under a 0.5 s sword latch can get away (the AI now runs out after each pass, a
   person may not); whether the heap, cut 140-2,800 prisms a match, still gives fuel late on.
