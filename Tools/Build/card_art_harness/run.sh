@@ -27,7 +27,11 @@ REFDIR=$(ls -d "$DOTNET_ROOT"/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 2>/de
 TFM=$(basename "$REFDIR")
 OUT="${TMPDIR:-/tmp}/card_art_harness"
 mkdir -p "$OUT"
-ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
+# Windows (Git Bash): csc and dotnet take Windows paths, and "Program Files" has a space, so every path handed to
+# them is converted and quoted. A no-op elsewhere.
+native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
+: > "$OUT/refs.rsp"
+for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
 
 # The log-channel enum, lifted verbatim out of the real logger so generators that name a channel
 # compile without the logger's own dependencies.
@@ -43,11 +47,11 @@ python3 "$HERE/../render_card_backgrounds.py" --list-sources | sed "s|^|$ROOT/|"
 {
   printf '%s\n' "$HERE/UnityShim.cs" "$HERE/PlatformShim.cs" "$HERE/Renderer.cs" "$HERE/Program.cs" "$OUT/Generated.cs"
   cat "$OUT/sources.txt"
-} | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
+} | while IFS= read -r f; do printf '"%s"\n' "$(native "$f")"; done > "$OUT/files.rsp"
 
-"$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
+"$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0660,CS0661,CS0108,CS0162,CS0219 \
-  -target:exe -main:Program -out:"$OUT/cardart.exe" "@$OUT/files.rsp"
+  -target:exe -main:Program -out:"$(native "$OUT/cardart.exe")" "@$(native "$OUT/files.rsp")"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | sort -V | tail -1)
 printf '{"runtimeOptions":{"tfm":"'"$TFM"'","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/cardart.runtimeconfig.json"
-"$DOTNET" "$OUT/cardart.exe" "$@"
+"$DOTNET" "$(native "$OUT/cardart.exe")" "$@"

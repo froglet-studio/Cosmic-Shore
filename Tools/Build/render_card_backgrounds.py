@@ -1804,28 +1804,35 @@ def recipe(stem, card_path, pal, ends):
         stage["denbuilder"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
         nucleus()
     elif s == "Palisade":
-        # MODEL tier: the Barren cell, where the score is the prism volume each domain has STANDING at the bell
-        # (PalisadeController, VolumeRemaining). The card draws what stands: arcs of tall blade-afterimage prisms
-        # (SwordfishSwordAfterimage lays up to 16 a swing) in two colours round the nucleus, each wall cut where the
-        # other colour's blade went through it.
+        # MODEL tier: Palisade's own arena at the card's rung (PalisadeArena.cs, drawn through its parity-held twin
+        # Tools/Build/palisade_arena.py): picket lanes of posts ending in shielded frames, in the no-team colour, and
+        # the Swordfish's afterimage walls - about 90% of what stands at the whistle (PALISADE.md 7.1) - laid where
+        # its blade lights: down each lane beside the posts and in the frame's mouth, Jade and Ruby a lane each.
+        import palisade_arena as pa
         tier = "MODEL"
         rng = Rng(stable_seed(s))
         rows = []
-        up = [0.0, 1.0, 0.0]
-        for w in range(12):
-            dom = (JADE, RUBY)[w % 2]
-            ring = nuc * 1.35 + (R * 0.62 - nuc * 1.35) * rng.u()
-            a0 = 2 * math.pi * w / 12 + 0.3 * rng.u()
-            y = (rng.u() - 0.5) * R * 0.3
-            cut = int(rng.u() * 16)
-            for k in range(16):
-                if cut <= k < cut + 3:
-                    continue
-                a = a0 + 0.035 * k
-                q = [ring * math.cos(a), y, ring * math.sin(a)]
-                tangent = [-math.sin(a), 0.0, math.cos(a)]
-                rows.append(prism(q, tangent, up, [R * 0.004, R * 0.05, R * 0.016], dom, PLAIN))
+        kinds = {pa.PLAIN: PLAIN, pa.DANGER: DANGER, pa.SHIELDED: SHIELDED}
+        for part in pa.lay(INTENSITY):
+            rows.append(prism(part["pos"], part["fwd"], part["up"], part["scale"], BLUE, kinds[part["kind"]]))
+        rung = pa.BY_RUNG[INTENSITY - 1]
+        for k in range(rung["lanes"]):
+            lane = pa.lane_of(k, rung)
+            dom = (JADE, RUBY, GOLD)[k % 3]
+            other = pa.norm(pa.cross(lane["axis"], lane["side"]))
+            # A wall of afterimages beside the row, on the run's far side, rising as the blade lifts.
+            for n in range(16):
+                t = n / 15.0
+                q = pa.add(pa.add(lane["first"], pa.mul(lane["axis"], -pa.RUN_IN * 0.3 + t * (pa.dist(lane["first"], lane["frame"]) + 20))),
+                           pa.add(pa.mul(lane["side"], pa.RUN_OFFSET * 2.2), pa.mul(other, (rng.u() - 0.5) * 10)))
+                rows.append(prism(q, lane["axis"], other, [6.0, 30.0 + 10 * rng.u(), 22.0], dom, PLAIN))
+            # And one across the frame's mouth, flanked by its stones.
+            for n in range(7):
+                q = pa.add(lane["frame"], pa.mul(other, (n - 3) * 8.5))
+                rows.append(prism(q, other, lane["side"], [6.0, 40.0, 9.0], dom, PLAIN))
         layers.append({"kind": "prisms", "rows": rows})
+        cam["target"] = list(pa.mul(pa.lane_of(0, rung)["frame"], 0.92))
+        cam["radius"] = 260.0
         nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
