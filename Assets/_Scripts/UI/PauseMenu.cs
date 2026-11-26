@@ -275,6 +275,11 @@ namespace CosmicShore.UI
         {
             _stage = windowGroup && PauseMenuStage.Current is { Wanted: true } stage ? stage : null;
             if (_stage == null) return;
+            // Show() just enabled the panel, so the window's KitEntrance is fading it in: Play() wrote alpha 0 and
+            // will fade up to the alpha it captured (1). Writing 0 over its own 0 is not seen as a change, so the
+            // entrance would carry on and bring the window back up behind the voyage chart (both pauses on screen).
+            // Finish it first, as KitEntrance asks of any code that zeroes its group.
+            if (windowGroup.TryGetComponent(out KitEntrance entrance)) entrance.Finish();
             windowGroup.alpha = 0f;
             SetWindowInteractable(true);
             _stage.Open(this);
