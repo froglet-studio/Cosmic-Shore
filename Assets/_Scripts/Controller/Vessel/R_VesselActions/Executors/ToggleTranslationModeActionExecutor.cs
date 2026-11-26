@@ -66,6 +66,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void Update()
         {
+            MirrorReplicatedStance();
+
             if (flightCameraHeight >= 1f || _status == null) return;
 
             float target = _status.IsTranslationRestricted ? 1f : 0f;
@@ -121,22 +123,43 @@ namespace CosmicShore.Gameplay
             var controller = status.Vessel as VesselController;
             if (!controller) return;
 
-            bool netActive = NetworkManager.Singleton && NetworkManager.Singleton.IsListening &&
-                             (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
-            bool hasAuthority = !netActive || NetworkManager.Singleton.IsServer || controller.IsOwner;
-            if (!hasAuthority) return;
+            // Every peer learns which stance this hull has, for MirrorReplicatedStance (the press may arrive
+            // after the replicated flag it caused).
+            _serpentStance = so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent;
+
+            if (!HasAuthority(controller)) return;
 
             bool isOn = !status.IsTranslationRestricted;
 
             controller.SetTranslationRestricted(isOn);
+            ApplyStance(isOn);
+        }
 
-            if (so.StationaryMode == ToggleTranslationModeActionSO.Mode.Serpent && seedAssemblerExecutor)
+        /// <summary>Whether this hull's stance is the Serpent's (it seeds a wall). Known from the first press on any
+        /// peer; before one, from the stance's seed config, which only the Serpent's prefab sets.</summary>
+        bool SerpentStance => _serpentStance ?? stationarySeedConfig != null;
+        bool? _serpentStance;
+
+        /// <summary>The stance as this peer last ran it: the press on a peer with authority, the replicated flag on
+        /// every other (<see cref="MirrorReplicatedStance"/>).</summary>
+        bool _stanceApplied;
+
+        /// <summary>
+        /// Everything a stance change does beyond the flag: the trail stops or resumes and the Serpent's stance seeds
+        /// its held wall or lets it go. Runs on EVERY peer, because the trail and the wall are prisms, which every
+        /// peer simulates for itself and nothing sends.
+        /// </summary>
+        void ApplyStance(bool isOn)
+        {
+            _stanceApplied = isOn;
+
+            if (SerpentStance && seedAssemblerExecutor)
             {
                 if (isOn)
                 {
                     // The stance's seed is held, not super-shielded: its wall steals until the
                     // Serpent flies again (SERPENT_SEED_WALL.md, "The stance's wall").
-                    var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status, heldByStance: true);
+                    var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, _status, heldByStance: true);
                     vesselPrismController?.StopSpawn();
                     if (seeded) seedAssemblerExecutor.BeginBonding();
                 }
@@ -160,6 +183,33 @@ namespace CosmicShore.Gameplay
             }
 
             stationaryModeChanged?.Raise(isOn);
+        }
+
+        /// <summary>
+        /// The press decides the stance only where it can write the replicated flag (the owner) or serve it (the
+        /// server): <see cref="Toggle"/> returns early everywhere else, so the flag stays single-writer. Those other
+        /// peers used to stop there, so a third machine never stopped the hull's trail or grew the Serpent's held
+        /// wall: an AI Serpent on the host walled on the host alone. Here every such peer follows the replicated
+        /// flag instead and runs the same <see cref="ApplyStance"/>.
+        /// </summary>
+        void MirrorReplicatedStance()
+        {
+            if (_status == null || _status.Vessel is not VesselController controller) return;
+            if (!NeedsMirror(HasAuthority(controller), _status.IsTranslationRestricted, _stanceApplied)) return;
+            ApplyStance(_status.IsTranslationRestricted);
+        }
+
+        /// <summary>A peer without authority runs a stance change when the replicated flag differs from the stance it
+        /// last ran. A peer with authority never mirrors: its press already ran the change. Pure, for the tests.</summary>
+        internal static bool NeedsMirror(bool hasAuthority, bool replicatedStance, bool appliedStance) =>
+            !hasAuthority && replicatedStance != appliedStance;
+
+        /// <summary>This machine may decide the stance: offline, the server, or the hull's owner.</summary>
+        static bool HasAuthority(VesselController controller)
+        {
+            var nm = NetworkManager.Singleton;
+            bool netActive = nm && nm.IsListening && (nm.IsClient || nm.IsServer);
+            return !netActive || nm.IsServer || controller.IsOwner;
         }
      
      
@@ -185,6 +235,7 @@ namespace CosmicShore.Gameplay
             if (_status.Vessel is VesselController controller) controller.SetTranslationRestricted(false);
             else _status.IsTranslationRestricted = false;
 
+            _stanceApplied = false;
             vesselPrismController?.StartSpawn();
             if (seedAssemblerExecutor)
             {

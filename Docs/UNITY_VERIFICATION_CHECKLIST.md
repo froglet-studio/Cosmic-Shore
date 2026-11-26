@@ -288,6 +288,60 @@ and beats at its joints on the CPU.
 Not built: a Codex page. The other four grown creatures (Nettle, Plume, Lantern, Ammon) have their four forms in the
 lab and port by one command each (`unity_port.py <name> --dry` passes); they wait for this entry's check 0 to 4.
 
+## 🔴 Leak fixes: bound arcade delays and score trackers that unsubscribe on destroy (2026-11-25, Garrett, salvaged from `cece/nice-brahmagupta-ojclij` part K, NOT COMPILED IN UNITY, NOT RUN IN EDITOR)
+
+Four fire-and-forget delays in the arcade controllers are bound to their owner's lifetime
+(`SkimRaceController.SpawnTrackEarly` 1.5 s, `NetworkScoreTracker.DelayAndSendResults` 0.5 s,
+`MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay` 0.5 s, `ResetServerRoundAfterDelay` 0.1 s), and
+`BaseScoreTracker.OnDestroy` unsubscribes every scorer, so a tracker destroyed without a turn end no longer keeps
+adding time score from the menu. Reference compile only.
+
+- [ ] Skim Race online, then Play Again: the fade, the reload and the fresh track still happen. Quit during the
+      half-second fade: back in the menu, the next launch is a normal start, not a replay reload
+      (`GameData.IsReplayReload` false).
+- [ ] A time-scored mode (Freestyle or any `ScoringModes.TimePlayed` card): quit to the menu mid-turn, then watch
+      `GameData.asset`'s RoundStatsList for ten seconds: no Score moves. A normal turn end still stops the scorers.
+
+## 🔴 2026-10-26 — ResourceSystem.Reset tolerates Unity's edit-mode Reset message (`cece/exciting-thompson-wdi3wm`, salvaged from `cece/inspiring-einstein-k6syi5` a109b25848) (unverified: no Unity CLI in the session)
+
+`ResourceSystem.Reset()` shares its name with Unity's edit-mode `Reset` message, which the editor sends the instant
+the component is added, before `Resources` exists. The method now returns when `Resources` is null.
+
+- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
+- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
+
+## 🔴 2026-10-26 — Wanderway conveyor: recycled shielded prisms re-theme after Initialize (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/prism-clock-followup-prompts-two-mhvad9` bbb47c111b) (unverified: no Unity CLI in the session)
+
+`Microscene.RearrangeIntoAsync` used to clear a prism's kind before `Prism.Initialize`, while it was still
+"created" from its last life, so every recycled shielded prism shattered and played `ShieldDeactivate` over its
+grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
+
+- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
+- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
+
+## 🔴 2026-10-26 — Time crystal: no sound through a muted SFX setting (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/sparrow-crystal-sound-bug-bnocj6`) (unverified: no Unity CLI in the session)
+
+`CrystalTime.prefab` lost its two bare `StudioEventEmitter`s ("Creature colide" on TriggerEnter and ObjectDestroy).
+
+- [ ] Open the prefab: no missing-script or broken component on its root.
+- [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
+
+## 🔴 The Serpent's wall on every peer (2026-11-21, branch `claude/project-thread-nqfbgz`) — NOT EDITOR-VERIFIED
+
+Garrett's Brood Rush playtest: "the Serpent's wall was still not syncing". `unity_refcompile` (player and editor
+configs: 0 errors in the changed files; the remaining errors are this sandbox's missing packages) and the gates ran;
+no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_VesselActions/SERPENT_SEED_WALL.md`
+"Multiplayer"; protocol 41 (both machines need this build).
+
+- [ ] EditMode `SerpentWallSyncTests` pass (the flag table: 29 cases, plus 3 tests).
+- [ ] Host + client, an AI Sparrow and an AI Squirrel: the client sees the Sparrow's shots break prisms and the Squirrel's tube rings, where the host does.
+- [ ] MPPM, host + one client, Brood Rush with an AI Serpent on the host: when the AI cloaks, the client sees its
+  hull vanish and its wall grow at the same place as the host's; the AI's walls are on both screens.
+- [ ] Host + two clients, client A flies the Serpent and stops (the stance): client B sees A's trail stop and the held
+  wall grow; when A flies on, B's copy stops growing and stands.
+- [ ] An AI Serpent at Mass 8+ (crystals): its bricks are the same size on host and client.
+- [ ] Serpent Hood / Serpent Time, an AI that scopes: it never cloaks on the client while scoped on the host.
+
 ## 🟡 The editor's picture sticks every few seconds in Play: a session polling it with `eval` (2026-11-26, Yash, CAUSE AND "AFTER" MEASURED IN THE EDITOR; NO CODE CHANGE; NOT PLAYED BY A PERSON)
 
 **What was seen** (Yash): "a sudden screen stuck, every second of the game playing even in just lavalamp".
@@ -27394,3 +27448,55 @@ runs (`PalisadeController.Arena.cs`) were not compiled: no Unity, Amoebius or re
 - [ ] Play Again: the arena is cleared and laid once, not twice.
 - [ ] A person's judgment: does each piece read as help or as cost at a glance, and does I1 feel generous and I4 mean?
 - [ ] The card's background still shows the bare cell: re-run `/cardart` for Palisade.
+
+## Photic is the default colour set again (2026-11-25)
+
+Shombith: "the default color set in the game should be photic". `ThemeManagerDataContainer.ColorSet`, `ThemeManager`'s
+own field and the menu prefabs' fallback palettes (ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal)
+now name `PhoticColorSetSO`; the generated editor theme, UI tokens and analytics console themes were re-written.
+Not run in the Unity editor and unity_refcompile did not run (no .NET SDK in the session); the C# change is one comment
+and one generated string constant. Checked by the generators' `--check` gates only.
+
+- [ ] Clear PlayerPrefs (or a fresh install) and boot: the prisms, trails and HUD wear Photic, not Nocturne.
+- [ ] Profile > colour sets says "Wearing Photic"; picking Nocturne still works and survives a restart.
+- [ ] With Nocturne picked, the Ark, Codex and Configure screens follow Nocturne (their own Photic palette is only the fallback).
+- [ ] The FBX imports: four slots (Domain, Body, Window, Engine) remap to the Ark's materials, with no pink.
+- [ ] Start any voyage: the round Ark is drawn, its 581 hull prisms laid in the Ark's domain, and nothing floats off the hull.
+- [ ] The decks turn, each against its neighbour; the two ring gates turn against each other; the pods orbit. Their prisms ride along.
+- [ ] Trail 3: eight streams, one per bell, in the domain's trail colours, straight behind the Ark; they stop when the hull is lost. Check every domain (Ruby especially).
+- [ ] The omni crystal in the gap is the neutral lime crystal in every domain, never the team colour; its collar turns.
+- [ ] Turning the Ark vectors the bells (pitch, yaw, roll); the streams follow the bells.
+- [ ] Fly into the tube from the lip, through the hall and out of an exit: no invisible walls. The hull, decks and crystal are solid.
+- [ ] Sortie: Port, Starboard and Top launch out of their own stern exits and clear the hull.
+- [ ] Perf: frame time in a voyage with 581 hull prisms plus eight trails, against ArkReverse's 108 (phone especially).
+
+## A voyage left at sea no longer strands every later launch on the loading screen (2026-11-25)
+
+🔴 unverified. Shombith's report: play a voyage, leave it, launch again: the loading screen never lifts, and a restart
+does not help. Cause: leaving after the Ark reached a world saves the record AT SEA with a waypoint (`voyage.state.v1`
+in PlayerPrefs, #P13). The next launch named the waiting job from the menu's own read of the record, `TakeJob` matched it
+to the run's record by REFERENCE (never equal), skipped the resume, and `VoyageRules.Take` refuses every job while the
+record is at sea, so nothing sailed. The embark still counted as a voyage out, so the scene held the splash until its
+100 s deadline over an empty sea. Fix: `VoyageRules.SameJob` (by template, pilot, places, named voyage), a record still at
+sea with another job is given up with a warning, a launch that sets no leg ends the embark, and the voyage scene returns
+to the menu at once when nothing set sail. Test: `VoyageRulesTests.TheWaitingVoyageIsKnownByWhatItIs_NotByReference`.
+- [ ] Sail a Crystal Run, pass the first world, leave from the HUD: the menu offers the waiting voyage; sail it: the
+      loading screen lifts onto "VOYAGE RESUMED", from that world.
+- [ ] With the bad record from before the fix still saved, launch any voyage: it sails (a `[Voyage] ... given up`
+      warning or a resume), never a stuck loading screen.
+- [ ] Leave a voyage before the first world: the next launch sails a fresh job.
+
+## No voyage is kept for later: leaving ends it, Set sail starts fresh from home (2026-11-25)
+
+🔴 unverified. Shombith, after the waypoint fix: "when I set sail it just continues and every button is bugged ... For now
+there is no saving, if they leave they leave. Set sail restarts the level." `VoyageRun.EndAtStop` now gives the voyage up
+(home, nothing aboard) instead of keeping a waypoint or anchoring at the stop, and `VoyageRun.LoadOrBegin` brings any
+saved record at sea or away from home back home, so older saves are repaired. The galaxy (days, news, standing) is kept.
+- [ ] Sail any voyage, leave it mid-leg: back in the menu the full board shows; Set sail starts a new voyage from home.
+- [ ] Finish a job at a stop and leave: the next Set sail starts from home, not the stop.
+
+## Menu rotation follows the phone, Toy Box preview opens on a model (2026-11-25, claude/project-thread-qncdsq)
+
+Refcompile: 0 errors in the changed files (the run's 30 pre-existing errors are elsewhere). No Unity editor or phone build ran.
+- [ ] Android phone build with the system auto-rotate lock ON: in the menus, turn the phone landscape and portrait; the app shell turns with it (it used to stay where the lock held it). Gameplay still locks landscape.
+- [ ] Toy Box > Vessel Changer opens with a model in the live preview (the hull you are flying, else the first hull) before anything is picked; picking a hull replaces it; Switch stays dark until a pick.

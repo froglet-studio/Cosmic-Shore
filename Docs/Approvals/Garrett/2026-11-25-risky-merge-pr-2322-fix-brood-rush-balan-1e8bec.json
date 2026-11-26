@@ -1,0 +1,56 @@
+{
+  "id": "2026-11-25-risky-merge-pr-2322-fix-brood-rush-balan-1e8bec",
+  "to": "Garrett",
+  "by": "Garrett",
+  "date": "2026-11-25T00:51:25+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2322 (fix(brood-rush): balanced roster, per-pilot VC+VD scoreboard, Serpent wall on every peer) went in without waiting for you.",
+  "why": "vessel kit numbers (abilities, stats, element maps, hull prefabs): Assets/_Prefabs/Spacevessels/Honeyguide.prefab, Assets/_Prefabs/Spacevessels/Meerkat.prefab, Assets/_Prefabs/Spacevessels/Scarab.prefab, Assets/_Prefabs/Spacevessels/Sparrow.prefab and 5 more; multiplayer wire format (NetworkConfig.ProtocolVersion): Assets/_Prefabs/CORE/NetworkManager.prefab",
+  "branch": "ship-brood",
+  "pr": 2322,
+  "commit": "391e784c6",
+  "paths": [
+    "Assets/_Prefabs/CORE/NetworkManager.prefab",
+    "Assets/_Prefabs/Spacevessels/Honeyguide.prefab",
+    "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+    "Assets/_Prefabs/Spacevessels/Scarab.prefab",
+    "Assets/_Prefabs/Spacevessels/Sparrow.prefab",
+    "Assets/_Prefabs/Spacevessels/Squirrel.prefab",
+    "Assets/_Prefabs/Spacevessels/Swordfish.prefab",
+    "Assets/_Prefabs/Spacevessels/Urchin.prefab",
+    "Assets/_Prefabs/Spacevessels/Wrasse.prefab",
+    "Assets/_SO_Assets/AI",
+    "Assets/_SO_Assets/Games/ArcadeGameBroodRush.asset",
+    "Assets/_SO_Assets/Games/ArcadeGameThornbush.asset",
+    "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+    "Assets/_Scripts/Controller/Arcade/BroodRushController.cs",
+    "Assets/_Scripts/Controller/Arcade/Scoring/BroodRushScoringRuleSO.cs",
+    "Assets/_Scripts/Controller/Assemblers/SerpentWallAssembler.cs",
+    "Assets/_Scripts/Controller/Managers/StatsManager.cs",
+    "Assets/_Scripts/Controller/Managers/VolumeLedger.cs",
+    "Assets/_Scripts/Controller/Vessel/ElementalScaling.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActionHandler.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SeedAssemblerActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ToggleTranslationModeActionExecutor.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md",
+    "Assets/_Scripts/Controller/Vessel/VesselActionTape.cs",
+    "Assets/_Scripts/Tests/Editor/SerpentWallSyncTests.cs",
+    "Assets/_Scripts/Tests/Editor/SerpentWallSyncTests.cs.meta",
+    "Assets/_Scripts/Tests/Editor/VolumeLedgerTests.cs",
+    "Assets/_Scripts/UI/View/CloakSeedWallActionSO.cs",
+    "Assets/_Scripts/Utility/AITraining/Fitness/FitnessProfileSO.cs"
+  ],
+  "risky": [
+    {
+      "key": "vessel-kit",
+      "name": "vessel kit numbers (abilities, stats, element maps, hull prefabs)",
+      "detail": "Assets/_Prefabs/Spacevessels/Honeyguide.prefab, Assets/_Prefabs/Spacevessels/Meerkat.prefab, Assets/_Prefabs/Spacevessels/Scarab.prefab, Assets/_Prefabs/Spacevessels/Sparrow.prefab and 5 more"
+    },
+    {
+      "key": "protocol",
+      "name": "multiplayer wire format (NetworkConfig.ProtocolVersion)",
+      "detail": "Assets/_Prefabs/CORE/NetworkManager.prefab"
+    }
+  ]
+}

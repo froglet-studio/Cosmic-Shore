@@ -22,15 +22,15 @@
   --fs-commit: #A600FF;
   --fs-commit-fill: #A600FF;
   --fs-on-commit: #FFFFFF;
-  --fs-jade: #21C0BD;
-  --fs-ruby: #BD1BC8;
-  --fs-gold: #FF9B11;
-  --fs-gold-fill: #FF9B11;
+  --fs-jade: #0EC0B6;
+  --fs-ruby: #C800C3;
+  --fs-gold: #FFA700;
+  --fs-gold-fill: #FFA700;
   --fs-on-fill: #00041F;
   color-scheme: dark;
 }
 
-:root:not([data-fs-theme]), [data-fs-theme="nocturne"] {
+[data-fs-theme="nocturne"] {
   --fs-ground: #13010C;
   --fs-ground-deep: #050003;
   --fs-surface: #3C1D31;
@@ -71,7 +71,7 @@
   --sea-glow: #65E1DF;
 }
 
-[data-fs-theme="photic"] {
+:root:not([data-fs-theme]), [data-fs-theme="photic"] {
   --fs-ground: #00041F;
   --fs-ground-deep: #00010A;
   --fs-surface: #222645;

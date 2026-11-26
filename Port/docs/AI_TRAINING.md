@@ -124,7 +124,7 @@ holder on its reference chain. After 10 SkimRace matches, ~27,700 destroyed pris
 |---|---|---|
 | `SquirrelVesselTelemetry` in `SkimmerStealPrismEffectSO.OnSkimmerStolenPrism` (turn hooks released only at a turn end a watchdog-ended match never raises) | found first | **fixed** in `VesselTelemetry` (base owns the hook pairing; releases on disable) |
 | `VesselOvertakeBySkimmerEffectSO._lastEffectTime` — a static dictionary keyed by `ResourceSystem`, never pruned; each dead key holds its vessel and trail | 11,874 | open (game code) |
-| a pending uncancelled `Delay` continuation in the SkimRace score tracker's async method | 10,268 | transient: released when the delay comes due |
+| a pending `Delay` continuation held by the score tracker: `TimePlayedScoring.UpdateScoreLoop`, whose token is cancelled only by a turn end, so a tracker destroyed without one (a watchdog-ended match, a quit, a host-loss bounce) kept the loop pending and kept adding time score from the menu | 10,268 (12,053 on the 2026-10-10 scan) | **fixed** in game code: `BaseScoreTracker.OnDestroy` unsubscribes every scorer (from `cece/nice-brahmagupta-ojclij` part K, landed 2026-11-25; not re-measured on bleeding-edge) |
 | the port's scene-load history | 5,549 | bounded to the current load |
 
 The port's own leaks the same investigation found are fixed (`LongRunMemoryTests`): the renderer
