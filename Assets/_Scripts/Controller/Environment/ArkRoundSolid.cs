@@ -115,17 +115,29 @@ namespace CosmicShore.Gameplay
             return d;
         }
 
-        /// <summary>The hull: the tube's wall from its lip to the hall, the hull's head, the five decks, the hall's skin.</summary>
+        /// <summary>The hull: the tube's wall from its lip to the hall, the hull's head, the five decks and the slots between
+        /// them, the hall's skin.</summary>
         static float Hull(Vector3 a)
         {
             float d = Ring(a, JX0 - 0.5f, HULL_END + 8.6f, RT - 0.6f, RT + 1.2f);              // the tube's wall and its rings
             d = Mathf.Min(d, Ring(a, HULL_END + 7f, HULL_END + 9.2f, RT, RT + 1.9f));         // its lip
             d = Mathf.Min(d, Ring(a, -5.6f, 0.3f, RT, WALK_R + 2.4f));                       // the hull's head
-            foreach (var (x0, x1) in Decks)
-                d = Mathf.Min(d, Ring(a, x0, x1, RT, 15f - 0.03f * (x0 + x1) + PRISM_SKIN));
+            for (int i = 0; i < Decks.Length; i++)
+            {
+                var (x0, x1) = Decks[i];
+                d = Mathf.Min(d, Ring(a, x0, x1, RT, DeckRadius(i)));
+                // The slot fore of it, between it and the deck (or the hull's head) ahead, is closed to the lower of the
+                // two: a crevice between two turning decks is no passage, and a vessel let into it sits inside the model.
+                float foreX0 = i == 0 ? -5.6f : Decks[i - 1].x0;
+                float foreR = i == 0 ? WALK_R + 2.4f : DeckRadius(i - 1);
+                d = Mathf.Min(d, Ring(a, x1, foreX0, RT, Mathf.Min(DeckRadius(i), foreR)));
+            }
             d = Mathf.Min(d, Ring(a, JX1, JX0, JR - 0.6f, JR + 0.6f));                        // the hall's skin
             return d;
         }
+
+        /// <summary>A deck's outer radius, its prisms' skin included.</summary>
+        static float DeckRadius(int i) => 15f - 0.03f * (Decks[i].x0 + Decks[i].x1) + PRISM_SKIN;
 
         /// <summary>The stern: its cap, the booster's skirt and the eight bells, and the three exits' walls.</summary>
         static float Stern(Vector3 a)

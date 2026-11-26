@@ -116,7 +116,10 @@ namespace CosmicShore.Gameplay
 
         public Ark Ark => _sea ? _sea.Ark : null;
         public Cell CurrentCell => _corridor ? _corridor.CurrentCell : null;
-        public float HullHalfLength => _arkCfg != null ? Mathf.Max(30f, _arkCfg.ArkHullLength) * 0.5f : 55f;
+        /// <summary>Half the Ark's length: its model's when it is drawn as one (the round Ark), else the spindle's.</summary>
+        public float HullHalfLength => Ark ? Ark.HalfLengthOr(SpindleHalfLength) : SpindleHalfLength;
+
+        float SpindleHalfLength => _arkCfg != null ? Mathf.Max(30f, _arkCfg.ArkHullLength) * 0.5f : 55f;
         public ArkEscortContext Context => _escort;
         /// <summary>A voyage pacifies nothing: its cultivators lay for the hold, not the escort's claim.</summary>
         public bool IsPacified(Cell cell) => false;

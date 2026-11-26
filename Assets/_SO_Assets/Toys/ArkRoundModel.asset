@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   model: {fileID: 919132149155446097, guid: f1276727fc424e7d9720218899130bd7, type: 3}
   rigTable: {fileID: 4900000, guid: dfac986a927b4453abf83fc75c7081d2, type: 3}
-  scale: 1
+  scale: 2.3
   domainReplacesMaterials:
   - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
   yawRateFull: 40

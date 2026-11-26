@@ -111,6 +111,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The sockets the hull wears - its full-health count.</summary>
         public int SocketCount => _table?.sockets.Length ?? 0;
 
+        /// <summary>The drawn hull's length, nose to jets, in the Ark's local units (the model's own length times its
+        /// definition's scale): what the voyage frames, spaces and sheds crystals around.</summary>
+        public float Length => (_table?.noseToJets ?? 0f) * _scale;
+
         /// <summary>The live input blend (pitch, yaw, roll, speed), for the HUD or a test.</summary>
         public Vector4 Input => _input;
 
