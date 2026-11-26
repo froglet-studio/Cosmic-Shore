@@ -17,6 +17,30 @@ evidence.
 the harness (open in Unity once, then twice, capture each). `--self-test` holds both. `--md` prints rows in this
 table's shape.
 
+## How the project's branches work (Caleb, 2026-11-26)
+
+The project has one long-lived integration branch, **`claude/editor-churn-integration`**. It is the project's source
+of truth: this tracker is current there, and it is what merges into `bleeding-edge` when the project is done.
+
+- **Start a thread** from the integration branch: `git fetch origin claude/editor-churn-integration`, branch
+  `claude/editor-churn-<workstream>` from it, and read this file there (not on `bleeding-edge`, where it lags).
+- **End a thread** with a PR whose base is `claude/editor-churn-integration`, not `bleeding-edge`. `/ship` targets
+  `bleeding-edge` by default, so set the base by hand. Merging into the integration branch still waits for Caleb's GO.
+- **Safety fixes also go to `bleeding-edge` straight away**, as small PRs of their own, so the team is protected now
+  and Shombith reviews them one at a time rather than in one large PR at the end. A safety fix is: a row whose harm
+  is **damage** (a forked GUID, a nulled reference), a gate or hook (W7, Shombith's queue), or anything else a
+  teammate's checkout needs to stop corrupting files. Branch it from `bleeding-edge`, keep `TRACKER.md` out of it
+  (the tracker changes only on the integration branch, so the two never conflict there), and record it here in the
+  same thread. Noise fixes (harmless churn) wait on the integration branch.
+- **Keep it in step with `bleeding-edge` by merging, never by rebasing**: `git merge origin/bleeding-edge` into the
+  integration branch, at least weekly and after each safety fix lands. Thread branches are cut from it, so a
+  rebase would rewrite history under them.
+- **Before the final merge**, re-run the clean-open check on the merged result: a fresh clone of the integration
+  branch (just after merging `bleeding-edge` in), opened in Unity twice, on Windows and macOS, recorded under
+  Measurements. Only then a PR to `bleeding-edge`, on Caleb's GO.
+- This branch is an exception to `GIT_RULES.md` §1.2 (agent branches are short-lived). It is not a `main` branch,
+  which §1.1 forbids, and it is deleted once it merges.
+
 ## File table
 
 Categories are `editor_churn.py`'s: missing-meta, generator-yaml, package-settings, version-skew, line-endings,
@@ -29,7 +53,7 @@ per-machine, editor-on-load, unknown. "Writer" is the classifier's candidate lis
 | 3 | `Assets/_Scripts/Controller/Vessel/JacksRacePlan.cs.meta` | missing-meta | as row 1 | as row 1 | **damage**: as row 1 | as row 1 | as row 1 | root-caused | #2169 |
 | 4 | `Assets/_Scripts/Tests/Editor/RegattaCourseFeaturesTests.cs.meta` | missing-meta | as row 1 | as row 1 | **damage**: as row 1 | as row 1 | as row 1 | root-caused | #2169 |
 | 5 | `Assets/_Scripts/Tests/Editor/SkeinRailSeekTests.cs.meta` | missing-meta | as row 1 | as row 1 | **damage**: as row 1 | as row 1 | as row 1 | root-caused | #2169 |
-| 6 | `Assets/_Prefabs/ArcadeGameConfigureModal.prefab` | generator-yaml | `author_ai_difficulty_row.py`, `author_menu_configure.py`, `fix_domain_picker_wiring.py` | Unity re-serializes on open or save (unproven) | unknown until a diff is seen; this prefab carried the nulled-reference domain-picker bug (`CLAUDE.md` § Shared prefabs) | W3 | Generators write canonical YAML | measured 2026-11-20, nothing to fix for a plain open: see Measurements | `claude/editor-churn-w3-build-settings` | | rows 6-9: need the diff Caleb saw, or the trigger that made it |
+| 6 | `Assets/_Prefabs/ArcadeGameConfigureModal.prefab` | generator-yaml | `author_ai_difficulty_row.py`, `author_menu_configure.py`, `fix_domain_picker_wiring.py` | Unity re-serializes on open or save (unproven) | unknown until a diff is seen; this prefab carried the nulled-reference domain-picker bug (`CLAUDE.md` § Shared prefabs) | W3 | W3 | seen | |
 | 7 | `Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab` | generator-yaml | `author_menu_configure.py` (the plan also names `author_arena_launch_panel_layout.py`; the classifier does not find it naming this file) | as row 6 | unknown until a diff is seen | W3 | W3 | seen | |
 | 8 | `Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab` | generator-yaml | `author_menu_configure.py` | as row 6 | unknown until a diff is seen | W3 | W3 | seen | |
 | 9 | `Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab` | generator-yaml | `author_ai_difficulty_row.py`, `author_menu_configure.py`, `author_menu_toyconfigure.py`, `author_ui_lattice.py` | as row 6 | unknown until a diff is seen | W3 | W3 | seen | |
@@ -55,12 +79,12 @@ the five scripts in rows 1-5; the two `.DS_Store` in row 17; 12 files inside FMO
 
 | W | what | status | branch | PR | next |
 |---|---|---|---|---|---|
-| W1 | Reproduce and measure: `editor_churn.py` (classify + measure harness) | merged 2026-11-16; self-test and the harness's own controls pass; **not yet run against a real Unity** | `claude/editor-churn-w1-harness` | #2027 | run `measure` on a fresh clone with Unity 6000.3.17f1 (Windows and macOS) and record the first real measurement |
-| W2 | Missing and forked `.meta` files | `check_meta_files.py` built (`--self-test`, `--fix`); rows 1-5 landed upstream in #2169 first (W2's copies dropped); rows 18-19 and 20 found, left for a real Unity open | `claude/editor-churn-w2-meta` | | wire `check_meta_files.py --tracked` into `gates.sh` (W7, Shombith's queue); confirm rows 18-19 in a real open, then `.gitkeep` them |
-| W3 | Generators write canonical YAML | not started | | | rows 6-10, once a real diff shows what Unity changes |
+| W1 | Reproduce and measure: `editor_churn.py` (classify + measure harness) | merged 2026-11-16; run against a real Unity on Windows 2026-11-19 (#2273, #2278: clean after two opens) | `claude/editor-churn-w1-harness` | #2027 | **the macOS measurement** (needs someone with a Mac and Unity 6000.3.17f1; nobody named yet) |
+| W2 | Missing and forked `.meta` files | merged 2026-11-19: `check_meta_files.py` built (`--self-test`, `--fix`); rows 1-5 landed upstream in #2169 first (W2's copies dropped); rows 18-19 and 20 found, left for a real Unity open | `claude/editor-churn-w2-meta` | #2268 | wire `check_meta_files.py --tracked` into `gates.sh` (W7, Shombith's queue); confirm rows 18-19 in a real open, then `.gitkeep` them |
+| W3 | Generators write canonical YAML | merged 2026-11-20: measured, nothing to fix for a plain open (all 113 `author_*_assets.py --check` pass; row 10 was row 21's CRLF); stale and erroring generators listed under Measurements | `claude/editor-churn-w3-build-settings` | #2287 | rows 6-9: need the diff Caleb saw, or the trigger that made it |
 | W4 | Package auto-writers (EDM4U, Vivox, URP) | not started | | | rows 12-16 |
 | W5 | Version skew and line endings | row 21 merged as #2274 (`text eol=lf` for Unity YAML) and verified on caleb-windows-verify | `claude/editor-churn-w4-eol` (named W4 by mistake) | #2274 | macOS |
-| W6 | Editor code that writes on load | row 11: `check_material_versions.py` (URP's MaterialPostprocessor filter: the 11 hand-written URP shaders and every URP Shader Graph; `--self-test` with a history control: the pre-#1770 file fails); `editor_churn.py` now names that writer | `claude/editor-churn-w6-material-version` | | wire into `gates.sh` (W7) |
+| W6 | Editor code that writes on load | merged 2026-11-20: row 11: `check_material_versions.py` (URP's MaterialPostprocessor filter: the 11 hand-written URP shaders and every URP Shader Graph; `--self-test` with a history control: the pre-#1770 file fails); `editor_churn.py` now names that writer | `claude/editor-churn-w6-material-version` | #2279 | wire into `gates.sh` (W7) |
 | W7 | Gates | not started | | | Shombith's `/approve` |
 | W8 | The ruleset `Docs/claude/EDITOR_CHURN.md` | not started | | | |
 | W9 | The hand test (Windows + macOS) | not started | | | one checklist entry, `/handoff-for-test` on a yes |
@@ -120,3 +144,14 @@ Every `Tools/Build/author_*.py` and `fix_*.py` with a `--check` was run against 
 - **Open:** `check_meta_files.py --tracked` is red on rows 18-19 until they are fixed, so wiring it into `gates.sh`
   waits for them (or for an allow-list Shombith agrees to).
 - **Open:** the plan counted 23 tracked `Assets/` files without a `.meta` at `4d580c31`; 22 at `26c275a19`.
+- **2026-11-26 (reorient thread, Claude for Caleb; Caleb approved):** the project gets one long-lived integration
+  branch, `claude/editor-churn-integration`, cut from `bleeding-edge` at `8f172a91`. Threads branch from it and merge
+  into it; it merges into `bleeding-edge` at the end. Caleb's first idea was to send everything through it; he
+  adopted the middle ground the coordinator raised: safety fixes (damage rows, gates, hooks) also go to
+  `bleeding-edge` in small PRs as they land, because they protect the team only once they are there. Named
+  `-integration`, not `main`, because `GIT_RULES.md` §1.1 says this repository has no `main` branch. Kept in step by
+  merging `bleeding-edge` in, not rebasing, since thread branches hang off it. The clean-open check is re-run on the
+  merged result before the final merge. Rules: § How the project's branches work.
+- **2026-11-26 (reorient):** the workstream table had drifted: W2, W3 and W6 had no PR numbers and W3 read "not
+  started", and the W3 row had been pasted into file-table row 6's cells. Both fixed from the merged PRs (#2268,
+  #2287, #2279).
