@@ -250,9 +250,8 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(model, ModelPath);
             // The crystal's bone (omni) and the launch tubes' bones carry no geometry: an importer that drops unweighted
             // bones leaves the Ark with no omni crystal and its squad launching from the old door.
-            var importer = AssetImporter.GetAtPath(ModelPath) as ModelImporter;
-            Assert.IsNotNull(importer, ModelPath);
-            Assert.IsFalse(importer.optimizeBones, "ArkRound.fbx must keep its unweighted bones (omni, hangar.slot/exit)");
+            StringAssert.Contains("optimizeBones: 0", System.IO.File.ReadAllText(ModelPath + ".meta"),
+                "ArkRound.fbx must keep its unweighted bones (omni, hangar.slot/exit)");
             var byName = new Dictionary<string, Transform>();
             foreach (var t in model.GetComponentsInChildren<Transform>(true))
                 byName.TryAdd(t.name, t);
