@@ -26,8 +26,8 @@ MonoBehaviour:
   menuAutopilotLaysNoTrail: 0
   freestyleCellPrismBudget: 0
   freestyleCellPrismResume: 0
-  lavaLampCellPrismBudget: 20000
-  lavaLampCellPrismResume: 19700
+  lavaLampCellPrismBudget: 13000
+  lavaLampCellPrismResume: 12700
   skimRaceTrail:
     raceBudget: 0
     floorPerVessel: 1
