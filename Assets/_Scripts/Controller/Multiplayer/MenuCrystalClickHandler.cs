@@ -405,7 +405,9 @@ namespace CosmicShore.Gameplay
             var controller = TrailControllerOf(gameData ? gameData.LocalPlayer : null);
             if (!controller)
             {
-                CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.ClearStats(TrailDiagSection);
+                // Say why instead of hiding the section: a missing row reads as "not built", not "no vessel".
+                CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat(TrailDiagSection, "Cell prisms", "n/a (no local vessel)");
+                CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat(TrailDiagSection, "Trail held", "n/a");
                 return;
             }
 
