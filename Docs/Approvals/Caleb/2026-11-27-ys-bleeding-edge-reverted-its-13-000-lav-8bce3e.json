@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-27-ys-bleeding-edge-reverted-its-13-000-lav-8bce3e",
+  "to": "Caleb",
+  "by": "Yash",
+  "date": "2026-11-27T08:38:51+00:00",
+  "area": "lava lamp / freestyle trail budget (#2417)",
+  "summary": "Ys-bleeding-edge reverted its 13,000 lava-lamp budget back to your 20,000 (9cb043f4a3). Also a new rule: perf changes to trail budgets need Design-approved-by in the commit. Yash will ask you about removing the wait altogether.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "9cb043f4a"
+}

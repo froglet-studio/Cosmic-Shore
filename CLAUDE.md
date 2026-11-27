@@ -306,6 +306,25 @@ speed), no per-mode rescaling, no edits to vessel code or assets for one mode. B
 and retired for this. A kit change is a vessel change, made on the vessel (its owner hears of it through `/approve`), never through
 a mode. `/arcadegame` §6.
 
+## Performance never changes the design (LOCKED rule, Yash, 2026-11-27)
+
+"If we stop spawning prisms, we can never stop spawning prisms." A performance change makes the SAME game cheaper.
+One that buys frames by giving the player less is a design change and lands only with a person's yes:
+- fewer, paused or held prisms or trails, a cap, an earlier wither;
+- fewer creatures or crystals, a removed or thinned effect;
+- a feature switched off on a device tier, or a changed rule.
+
+Ask Yash and the area's owner with the measured numbers. Then write `Design-approved-by: <name> (<where they said it>)`
+in the commit. Everything else in performance work is automatic: measure, fix, prove, commit, no questions.
+
+Run `py Tools/Build/check_perf_design.py` before committing performance work (`--self-test` proves it fires). It fails
+on a changed content lever (the `PlatformProfileSO` content fields, `SetTierHold`, trail caps) without that line.
+
+Why: a performance commit (2fadca9772, 2026-11-21) made the menu trail wait at 20,000 cell prisms through a field the
+Toy Box shares, so every vessel's trail stopped for good in freestyle (Caleb found it; #2417 fixed it). A second
+(5c5affcecf) lowered the lava lamp's wait to 13,000 and was reverted. Both were measured wins, and nobody had asked
+for either design change.
+
 ## Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)
 
 "All colors come from a color set. If that rule is broken then it is a sign of incompleteness or a bug, not something

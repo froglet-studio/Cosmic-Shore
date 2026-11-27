@@ -96,6 +96,11 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
 Load `/unity-performance` for the method and `/csharp-zero-gc` for an allocation item; the repo's measured rules win
 where they disagree (`Docs/claude/PLUGINS_AND_CONNECTORS.md`). Before writing code, go down this list:
 
+- **Same game, cheaper; never less game (LOCKED, Yash 2026-11-27, CLAUDE.md).** Fewer or paused prisms or trails, a
+  cap, a hold, an earlier wither, fewer creatures, a thinned effect or a tier switch is a DESIGN change. Stop and ask
+  Yash and the area's owner with the numbers; commit it only with `Design-approved-by: <name> (<where>)`.
+  `py Tools/Build/check_perf_design.py` (staged) or `--range` fails without that line. Everything else is automatic.
+
 - **Hot path named.** Every per-frame cost has a `ProfilerMarker` named `System.Part` so `diag`, `prof` and the Amoebius
   run can see it. If the thing you are fixing has none, add the marker in the same commit - that is how the "after" gets
   measured.

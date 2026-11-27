@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-27-new-locked-rule-claude-md-a-perf-change-218b54",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-27T08:38:51+00:00",
+  "area": "ecology: pausing the spawner as the sanctioned idle lever (Docs/ECOSYSTEM.md section 0)",
+  "summary": "New LOCKED rule (CLAUDE.md): a perf change that pauses or holds prism creation (SetTierHold, trail budgets) now needs a named person's yes in the commit. ECOSYSTEM.md still names pausing the spawner as sanctioned; Yash says the trail should never stop. Worth talking about.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "9cb043f4a"
+}

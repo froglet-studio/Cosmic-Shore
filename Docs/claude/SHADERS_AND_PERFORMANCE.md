@@ -97,6 +97,10 @@ motion, give it a volume. A screen-space ring, a label or a word over it is the 
 
 ### Performance Standards
 
+- **Performance never changes the design (LOCKED, Yash 2026-11-27, CLAUDE.md).** Buy frames by making the same game
+  cheaper, never by laying fewer prisms, pausing a trail, capping, withering early or switching content off. That is a
+  design change that needs `Design-approved-by:` in the commit. Gate: `py Tools/Build/check_perf_design.py`.
+
 - Use `Unity.Profiling.ProfilerMarker` with `using (marker.Auto())` for profiling, not manual `Begin`/`EndSample`
 - Watch for `Gfx.WaitForPresentOnGfxThread` bottlenecks — usually indicates GPU sync issues, not CPU
 - Static batching, object pooling, and draw call management are always priorities

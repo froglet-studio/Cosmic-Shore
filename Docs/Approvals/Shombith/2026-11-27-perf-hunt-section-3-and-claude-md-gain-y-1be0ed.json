@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-27-perf-hunt-section-3-and-claude-md-gain-y-1be0ed",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-27T08:38:50+00:00",
+  "area": "perf-hunt skill (tooling)",
+  "summary": "perf-hunt section 3 and CLAUDE.md gain Yash's LOCKED rule 'performance never changes the design', with a new gate Tools/Build/check_perf_design.py (not yet wired into /ship or perf_hunt.py gates). Why: two perf commits stopped or shortened the vessel trail for fps.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "9cb043f4a"
+}
