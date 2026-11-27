@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-27-cleave-i1-i2-destruction-targets-300-400-2f0db7",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-27T12:37:13+00:00",
+  "area": "Cleave targets",
+  "summary": "Cleave I1/I2 destruction targets 300/400 -> 165/235 (scaled by 90 s / the all-AI x1 time, 165 / 154 s); I3/I4 stay 550/600. Comeback rate 0.0158 -> 0.025 so a quarter-of-target deficit on I1 still buys one element level.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "fb8b67b09"
+}

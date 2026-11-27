@@ -72,11 +72,13 @@ MEMBRANE_RADIUS = {1: 3600.0, 2: 3600.0, 3: 1200.0, 4: 1200.0}
 # experienced match near 90-100 s. 950 / 950 / 1000 / 1000 until 2026-11-27: the all-AI match then took
 # 280 / 208 / 161 / 152 s at real speed (editor, 4 Legendary seats, CLEAVE.md), so each rung came down to what
 # that cut rate (3.4 / 4.6 / 6.2 / 6.6 prisms a second) reaches in ~90 s. The ladder still rises.
-TARGET_BY_INTENSITY = {1: 300, 2: 400, 3: 550, 4: 600}
+# 300 / 400 / 550 / 600 then took 165 / 154 / 110 / 94 s (2026-11-27, same setup), so I1 and I2 were scaled by
+# 90 / their time to 165 / 235; I3 and I4 already land near 90 s.
+TARGET_BY_INTENSITY = {1: 165, 2: 235, 3: 550, 4: 600}
 MIN_ARENA_TARGET_MULTIPLE = 4.0
-# Was 12x ("over it the arena is mostly scenery"). A 90 s match only ever takes a slice of an arena this size, so
-# the upper bound now only stops a target that asks for almost nothing; 40x is that bound (I1 is ~37x).
-MAX_ARENA_TARGET_MULTIPLE = 40.0
+# Was 12x ("over it the arena is mostly scenery"), then 40x. A 90 s match only ever takes a slice of an arena this
+# size, so the upper bound only stops a target that asks for almost nothing; 80x is that bound (I1 is ~68x).
+MAX_ARENA_TARGET_MULTIPLE = 80.0
 
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
 BLOB_DELTAS = dict(re=700, rx=500, fe=3600, fx=3000,

@@ -13,15 +13,15 @@ Where this section and the older text below disagree, this section is right.
 
 | Rung | Arena (verb) | Target | The element ladder adds |
 |---|---|---:|---|
-| I1 | The Panes (commit to a line), radius 2,160 | 300 | nothing: the bill at rest |
-| I2 | The Swell (follow the road), radius 2,160 | 400 | every hull starts at Space 5: a longer bill, Shield Breaker live |
+| I1 | The Panes (commit to a line), radius 2,160 | 165 | nothing: the bill at rest |
+| I2 | The Swell (follow the road), radius 2,160 | 235 | every hull starts at Space 5: a longer bill, Shield Breaker live |
 | I3 | The Cage (peel inward), radius 720 | 550 | 4 Space crystals a team, in the cage's HEART (115-360 from the centre, behind all three rinds), regrowing 12 s after one is taken |
 | I4 | The Twistbands (roll the blade), radius 720 | 600 | Space fauna in the cell's colour (`Resources/ElementLadderFauna`: shark, piranha, brittle star, tadpole, 23 live at most), and the team crystals through the bands (216-612) |
 
-- **Targets are 300 / 400 / 550 / 600** since 2026-11-27 (`cleave_budget.TARGET_BY_INTENSITY`): each is what the
-  all-AI match cut in about 90 s at real speed (950 / 950 / 1,000 / 1,000 took the AI 280 / 208 / 161 / 152 s). The
-  ladder still rises, and each target is 18x-37x the hostile mass its arena holds (`cleave_budget` check 1, whose
-  upper bound moved 12x -> 40x for this). The 950 / 1,000 / 1,200 / 1,500 figures below are history. The card seats exactly 4 (Yash, 2026-11-25: every Swordfish game, for now; it was up to 9, 3 a team), in 2 or 3
+- **Targets are 165 / 235 / 550 / 600** since 2026-11-27 (300 / 400 for I1 / I2 earlier that day) (`cleave_budget.TARGET_BY_INTENSITY`): each is what the
+  all-AI match cut in about 90 s at real speed (950 / 950 / 1,000 / 1,000 took the AI 280 / 208 / 161 / 152 s; then
+  300 / 400 took 165 / 154 s, so I1 and I2 were scaled by 90 / their time). The ladder still rises, and each arena
+  holds up to ~68x its target in hostile mass (`cleave_budget` check 1, whose upper bound moved 12x -> 80x for this). The 950 / 1,000 / 1,200 / 1,500 figures below are history. The card seats exactly 4 (Yash, 2026-11-25: every Swordfish game, for now; it was up to 9, 3 a team), in 2 or 3
   teams by the launch panel's pick: 2v2 or 2/1/1.
 - **A prism in your own team's colour does not score** (`StatsManager.IsFriendlyEnvironmentPrism`). The arenas are
   painted in the domain colours, so about a quarter to a third of the mass is worth nothing to each team. The text
@@ -85,7 +85,9 @@ at x1. Even so, I1 and I2 are still two to three times the ~90 s aim.
 300 / 400 / 550 / 600 took the AI **165 / 154 / 110 / 94 s**. Every seat moved, every match ended with a winner and
 logged no match errors (the one `[boot] NotFound` line is the offline UGS lookup, on every run). I3 and I4 land near
 90 s; I1 and I2 are still slower, so the open rungs remain the longest, the reverse of a difficulty ladder. Whether
-these are right for a person is still a playtest. The edit-mode suites `CleaveLadderTests` (21/21) and
+these are right for a person is still a playtest. **I1 and I2 were then scaled by 90 / their time to 165 / 235**
+(I3 and I4 kept), with the comeback rate raised 0.0158 -> 0.025 so a quarter-of-target deficit on I1 still buys a
+whole element level; those two rungs are not re-played yet. The edit-mode suites `CleaveLadderTests` (21/21) and
 `SwordfishLevelFiveGateTests` (3/3) passed in the same editor.
 
 The lances do not fix the AI's pace. They are the environment a pilot reads, and whether they help a PERSON is a

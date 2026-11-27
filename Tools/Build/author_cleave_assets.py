@@ -210,8 +210,9 @@ CLEAVE_PRISM_TARGET = max(CLEAVE_PRISM_TARGET_BY_INTENSITY)
 # target is what binds: at a quarter-of-target deficit the trailing domain must still buy a whole
 # element level, or the buff is a rounding error in exactly the match it exists to rescue.
 # 0.0158 since the smallest rung fell 1200 -> 950 (2026-10-26): it keeps the 3.75 levels a
-# quarter-of-target deficit bought at 0.0125 x 1200.
-COMEBACK_RATE = 0.0158
+# quarter-of-target deficit bought at 0.0125 x 1200. 0.025 since I1 fell to 165 (2026-11-27): a
+# quarter-of-target deficit there still buys one whole level (1.03).
+COMEBACK_RATE = 0.025
 _worst = min(CLEAVE_PRISM_TARGET_BY_INTENSITY)
 assert _worst / 4 * COMEBACK_RATE >= 1.0, (
     f"a quarter-of-target deficit on the {_worst}-prism rungs buys "

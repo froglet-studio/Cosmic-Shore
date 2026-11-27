@@ -27354,6 +27354,8 @@ is still open too.
 - [x] The 90-second targets (300 / 400 / 550 / 600), played 2026-11-27 at x1 with the AI on all 4 seats: 165 / 154 /
       110 / 94 game seconds, every match to a winner, no match errors. `CleaveLadderTests` 21/21 and
       `SwordfishLevelFiveGateTests` 3/3 in the same editor. I1 and I2 are still slower than the ~90 s aim.
+- [ ] I1 and I2 at 165 / 235 (scaled by 90 / their time, comeback rate 0.0158 -> 0.025): re-play both at x1 with the
+      AI on all 4 seats; each should end near 90 s. `ShippedTargets_AreTheNinetySecondOnes` was edited, not re-run.
 - [ ] Watch an AI at I1 and I2: does it cross the 2,160 arena or meander at the edge (a new station every 2 s)? At
       I3, does it turn into the cage for its team's crystal and come back out, with none left circling one?
 - [ ] A person's call on pace: the AI takes 307-465 s against a ~90 s aim (the lances did not change that), and the

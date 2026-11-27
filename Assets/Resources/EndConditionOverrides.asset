@@ -25,8 +25,8 @@ MonoBehaviour:
   - 1000
   cleavePrismTarget: 600
   cleavePrismTargetByIntensity:
-  - 300
-  - 400
+  - 165
+  - 235
   - 550
   - 600
   wildlifeKillTarget: 30
@@ -137,8 +137,8 @@ MonoBehaviour:
   - 1000
   cleavePrismTargetBuild: 600
   cleavePrismTargetByIntensityBuild:
-  - 300
-  - 400
+  - 165
+  - 235
   - 550
   - 600
   wildlifeKillTargetBuild: 30
