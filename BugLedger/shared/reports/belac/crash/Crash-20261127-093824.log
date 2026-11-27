@@ -1,0 +1,369 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-27 09:38:24 (next editor launch after the abnormal exit)
+session:        20261126-221940709  (pid 21320, Unity 6000.3.17f1)
+started:        2026-11-26T22:19:40.710Z UTC
+last heartbeat: 2026-11-26T23:22:11.852Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~37s at the last heartbeat — likely a hang / freeze that was then killed
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261126-221940709
+started: 2026-11-26T22:19:40.710Z UTC
+unity:   6000.3.17f1
+pid:     21320
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[14:23:02.805] ---- domain reload begins (script compilation / play-mode transition) ----
+[14:23:09.778] ---- domain reload complete — session re-adopted ----
+[14:28:20.988] ---- entering play mode ----
+[14:28:25.161] ---- play mode running ----
+[14:28:25.696] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8a4924e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8a615f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8a615fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8a48d587f (Unity) DebugStringToFile
+        0x00007ff8a4791b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002695c6cb89d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002695c6cb763 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002695c6cb39b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:06:47.476] ---- leaving play mode ----
+[15:06:51.572] ---- edit mode restored ----
+[15:21:14.869] ---- entering play mode ----
+[15:21:16.457] ---- play mode running ----
+[15:21:16.722] [PlayMode] Error: NotFound
+(404) HTTP/1.1 404 Not Found
+Error
+Script could not be found
+
+        0x00007ff8a4924e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff8a615f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff8a615fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff8a48d587f (Unity) DebugStringToFile
+        0x00007ff8a4791b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002695c6cb89d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002695c6cb763 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002695c6cb39b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:21:35.123] ---- leaving play mode ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+C:\WINDOWS\SYSTEM32\PROPSYS.dll:PROPSYS.dll (00007FF975E50000), size: 999424 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\PROPSYS.dll', fileVersion: 7.0.26100.9974
+C:\Windows\System32\Windows.System.Launcher.dll:Windows.System.Launcher.dll (00007FF93E680000), size: 1568768 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.System.Launcher.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\windows.staterepositorycore.dll:windows.staterepositorycore.dll (00007FF95CC20000), size: 118784 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\windows.staterepositorycore.dll', fileVersion: 10.0.26100.9974
+C:\Windows\System32\thumbcache.dll:thumbcache.dll (00007FF9591E0000), size: 512000 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\thumbcache.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\policymanager.dll:policymanager.dll (00007FF976B90000), size: 745472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\policymanager.dll', fileVersion: 10.0.26100.9818
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll:burst-llvm-19.dll (00007FF88D5B0000), size: 59863040 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\301cb5e92814c1a6b60acc5865e0ab68.dll:301cb5e92814c1a6b60acc5865e0ab68.dll (00007FF973B30000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\301cb5e92814c1a6b60acc5865e0ab68.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1c97066e59f3b0e39788048eeb59aa5c.dll:1c97066e59f3b0e39788048eeb59aa5c.dll (00007FF973B20000), size: 40960 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1c97066e59f3b0e39788048eeb59aa5c.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c9c4476f50ec63be046c02b18117bdee.dll:c9c4476f50ec63be046c02b18117bdee.dll (00007FF973B10000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c9c4476f50ec63be046c02b18117bdee.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\f15c54e7940bd92c2fd0e9cea0e12773.dll:f15c54e7940bd92c2fd0e9cea0e12773.dll (00007FF973B00000), size: 49152 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\f15c54e7940bd92c2fd0e9cea0e12773.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e20c66b33f6d59ccb2b59934b37adb3a.dll:e20c66b33f6d59ccb2b59934b37adb3a.dll (00007FF973A40000), size: 32768 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e20c66b33f6d59ccb2b59934b37adb3a.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\74c7d2d57a0144e788cde312dd3dfab4.dll:74c7d2d57a0144e788cde312dd3dfab4.dll (00007FF973A30000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\74c7d2d57a0144e788cde312dd3dfab4.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1cfd2cae367288d20422259fddc8e292.dll:1cfd2cae367288d20422259fddc8e292.dll (00007FF973AF0000), size: 24576 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1cfd2cae367288d20422259fddc8e292.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\209e9bce3fba566e54f3549ce587cb73.dll:209e9bce3fba566e54f3549ce587cb73.dll (00007FF973AD0000), size: 69632 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\209e9bce3fba566e54f3549ce587cb73.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\43e67cded84215b08210510ae5e5f951.dll:43e67cded84215b08210510ae5e5f951.dll (00007FF958850000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\43e67cded84215b08210510ae5e5f951.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\ff87af95b0b2fd9a54fb871c89eb861c.dll:ff87af95b0b2fd9a54fb871c89eb861c.dll (00007FF973AC0000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\ff87af95b0b2fd9a54fb871c89eb861c.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\139d3c067090bac58f28d3cf41b12319.dll:139d3c067090bac58f28d3cf41b12319.dll (00007FF973AB0000), size: 49152 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\139d3c067090bac58f28d3cf41b12319.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\868d8fe6f8f95510ab1c661981a7b647.dll:868d8fe6f8f95510ab1c661981a7b647.dll (00007FF973AA0000), size: 32768 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\868d8fe6f8f95510ab1c661981a7b647.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\72c6341498aa0f3aa618df0dea93ec53.dll:72c6341498aa0f3aa618df0dea93ec53.dll (00007FF973A20000), size: 57344 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\72c6341498aa0f3aa618df0dea93ec53.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\d198222944adc01e43e74f80c1212c9b.dll:d198222944adc01e43e74f80c1212c9b.dll (00007FF9587D0000), size: 503808 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\d198222944adc01e43e74f80c1212c9b.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bc86e25b90dc26f97c3e14c81917683f.dll:bc86e25b90dc26f97c3e14c81917683f.dll (00007FF973A90000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bc86e25b90dc26f97c3e14c81917683f.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bfad1bca18b7bc464a63ee020dc005e0.dll:bfad1bca18b7bc464a63ee020dc005e0.dll (00007FF8FC620000), size: 503808 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bfad1bca18b7bc464a63ee020dc005e0.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\40ca2af1446eff57d376f6f46aeb3f12.dll:40ca2af1446eff57d376f6f46aeb3f12.dll (00007FF973A70000), size: 110592 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\40ca2af1446eff57d376f6f46aeb3f12.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c5be1b1505879cc62bd72463eadd148b.dll:c5be1b1505879cc62bd72463eadd148b.dll (00007FF939040000), size: 159744 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c5be1b1505879cc62bd72463eadd148b.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cfc06cb0af8765fa5d182dd8e40404c8.dll:cfc06cb0af8765fa5d182dd8e40404c8.dll (00007FF930980000), size: 376832 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cfc06cb0af8765fa5d182dd8e40404c8.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\fe65f601dd1f45f3ccaa884608d3e7bc.dll:fe65f601dd1f45f3ccaa884608d3e7bc.dll (00007FF973A10000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\fe65f601dd1f45f3ccaa884608d3e7bc.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e797366974ae160dae549a76e35b2bd5.dll:e797366974ae160dae549a76e35b2bd5.dll (00007FF930940000), size: 200704 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e797366974ae160dae549a76e35b2bd5.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\66d678432f2f72c6d6094705526d632c.dll:66d678432f2f72c6d6094705526d632c.dll (00007FF9308D0000), size: 409600 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\66d678432f2f72c6d6094705526d632c.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\8407b3f06d062c26e5e52d891251f82e.dll:8407b3f06d062c26e5e52d891251f82e.dll (00007FF8FC5E0000), size: 212992 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\8407b3f06d062c26e5e52d891251f82e.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\de70acfb82e49d7d4d6ef59e9aec6570.dll:de70acfb82e49d7d4d6ef59e9aec6570.dll (00007FF930880000), size: 270336 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\de70acfb82e49d7d4d6ef59e9aec6570.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cd4ee2df1ea77f67533168b1595b0515.dll:cd4ee2df1ea77f67533168b1595b0515.dll (00007FF924130000), size: 438272 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cd4ee2df1ea77f67533168b1595b0515.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\2ec9f5bf8fb769de095eee26c729df53.dll:2ec9f5bf8fb769de095eee26c729df53.dll (00007FF8FC6C0000), size: 602112 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\2ec9f5bf8fb769de095eee26c729df53.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\dbcbcafbc55486371db00c9947b9eb4d.dll:dbcbcafbc55486371db00c9947b9eb4d.dll (00007FF8FC340000), size: 147456 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\dbcbcafbc55486371db00c9947b9eb4d.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\7ea73d8a5fa15945236920d39c377354.dll:7ea73d8a5fa15945236920d39c377354.dll (00007FF8FC4F0000), size: 172032 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\7ea73d8a5fa15945236920d39c377354.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\98e83e53cd74c857fab3f737e6501097.dll:98e83e53cd74c857fab3f737e6501097.dll (00007FF8FC4C0000), size: 139264 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\98e83e53cd74c857fab3f737e6501097.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\826348d1f1dedac1048606d628d76bec.dll:826348d1f1dedac1048606d628d76bec.dll (00007FF8FC300000), size: 249856 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\826348d1f1dedac1048606d628d76bec.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\38df7409f8bf876b5dcaf96e018d03bd.dll:38df7409f8bf876b5dcaf96e018d03bd.dll (00007FF8FC400000), size: 774144 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\38df7409f8bf876b5dcaf96e018d03bd.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll:VivoxNative.dll (00007FF8F5E70000), size: 757760 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll:vivoxsdk.dll (00007FF898EB0000), size: 16936960 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll', fileVersion: 5.28.0.34030
+C:\WINDOWS\SYSTEM32\SensApi.dll:SensApi.dll (00007FF973A60000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\SensApi.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\dataexchange.dll:dataexchange.dll (00007FF9390C0000), size: 372736 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\dataexchange.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\dcomp.dll:dcomp.dll (00007FF977540000), size: 2310144 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dcomp.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll:Microsoft.Internal.WarpPal.dll (00007FF977E10000), size: 106496 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll'
+C:\Windows\System32\Windows.Gaming.Input.dll:Windows.Gaming.Input.dll (00007FF96BDA0000), size: 892928 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.Gaming.Input.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\inputhost.dll:inputhost.dll (00007FF93C620000), size: 2007040 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\inputhost.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\Windows.System.UserDeviceAssociation.dll:Windows.System.UserDeviceAssociation.dll (00007FF96B4A0000), size: 114688 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.System.UserDeviceAssociation.dll', fileVersion: 10.0.26100.8115
+C:\Windows\System32\usermgrproxy.dll:usermgrproxy.dll (00007FF972B70000), size: 450560 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\usermgrproxy.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\urlmon.dll:urlmon.dll (00007FF95D9F0000), size: 1966080 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\urlmon.dll', fileVersion: 11.0.26100.9818
+C:\Windows\System32\iertutil.dll:iertutil.dll (00007FF95D210000), size: 2904064 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\iertutil.dll', fileVersion: 11.0.26100.9818
+C:\Windows\System32\netutils.dll:netutils.dll (00007FF9798A0000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\netutils.dll', fileVersion: 10.0.26100.1882
+C:\Windows\System32\srvcli.dll:srvcli.dll (00007FF95D6A0000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\srvcli.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\SYSTEM32\virtdisk.dll:virtdisk.dll (00007FF93DEE0000), size: 94208 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\virtdisk.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\RdpShellExecuteRedirector.dll:RdpShellExecuteRedirector.dll (00007FF93A4F0000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\RdpShellExecuteRedirector.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\edputil.dll:edputil.dll (00007FF93A4C0000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\edputil.dll', fileVersion: 10.0.26100.9278
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c1df97736421175dac01f5f4095016e2.dll:c1df97736421175dac01f5f4095016e2.dll (00007FF973B60000), size: 200704 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c1df97736421175dac01f5f4095016e2.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Assets\Plugins\FMOD\platforms\win\lib\x86_64\fmodstudioL.dll:fmodstudioL.dll (00007FF92C8F0000), size: 4661248 (result: 0), SymType: '-deferred-', PDB: '', fileVersion: 0.2.3.13
+
+========== OUTPUTTING STACK TRACE ==================
+
+0x00007FF8A3EB4831 (D3D12Core) D3D12GetInterface
+SymInit: Symbol-SearchPath: '.;C:\Users\belac\source\repos\Cosmic-Shore;C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT;C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor;C:\WINDOWS;C:\WINDOWS\system32;', symOptions: 534, UserName: 'belac'
+OS-Version: 10.0.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.exe:Unity.exe (00007FF6505D0000), size: 290816 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity_exe_x64.pdb', fileVersion: 6000.3.17.850
+C:\WINDOWS\SYSTEM32\ntdll.dll:ntdll.dll (00007FF97E150000), size: 2539520 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\ntdll.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\KERNEL32.DLL:KERNEL32.DLL (00007FF97CF80000), size: 831488 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\KERNEL32.DLL', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\KERNELBASE.dll:KERNELBASE.dll (00007FF97B450000), size: 4231168 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\KERNELBASE.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\USER32.dll:USER32.dll (00007FF97DB10000), size: 1957888 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\USER32.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\win32u.dll:win32u.dll (00007FF97BA90000), size: 159744 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\win32u.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\GDI32.dll:GDI32.dll (00007FF97D2C0000), size: 176128 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\GDI32.dll', fileVersion: 10.0.26100.8328
+C:\WINDOWS\System32\gdi32full.dll:gdi32full.dll (00007FF97BAC0000), size: 1216512 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\gdi32full.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\msvcp_win.dll:msvcp_win.dll (00007FF97B860000), size: 667648 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\msvcp_win.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\ucrtbase.dll:ucrtbase.dll (00007FF97B2F0000), size: 1359872 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ucrtbase.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\IMM32.DLL:IMM32.DLL (00007FF97DF00000), size: 200704 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\IMM32.DLL', fileVersion: 10.0.26100.9818
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.dll:Unity.dll (00007FF8A4170000), size: 92164096 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity_x64.pdb', fileVersion: 6000.3.17.850
+C:\WINDOWS\System32\CRYPT32.dll:CRYPT32.dll (00007FF97BC80000), size: 1564672 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\CRYPT32.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\ADVAPI32.dll:ADVAPI32.dll (00007FF97CDC0000), size: 770048 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ADVAPI32.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\msvcrt.dll:msvcrt.dll (00007FF97D1F0000), size: 692224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\msvcrt.dll', fileVersion: 7.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\libfbxsdk.dll:libfbxsdk.dll (00007FF8F97F0000), size: 8019968 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\libfbxsdk.dll', fileVersion: 2020.3.7.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\s3tcompress.dll:s3tcompress.dll (00007FF9758A0000), size: 180224 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\s3tcompress.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\etccompress.dll:etccompress.dll (00007FF8F9310000), size: 5070848 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\etccompress.dll'
+C:\WINDOWS\System32\sechost.dll:sechost.dll (00007FF97BE10000), size: 688128 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\sechost.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\RPCRT4.dll:RPCRT4.dll (00007FF97D9F0000), size: 1146880 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\RPCRT4.dll', fileVersion: 10.0.26100.9974
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\compress_bc7e.dll:compress_bc7e.dll (00007FF918910000), size: 1433600 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\compress_bc7e.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\FreeImage.dll:FreeImage.dll (0000000180000000), size: 5332992 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\FreeImage.dll', fileVersion: 3.18.0.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\ispc_texcomp.dll:ispc_texcomp.dll (00007FF8F9150000), size: 1826816 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\ispc_texcomp.dll'
+C:\WINDOWS\System32\WS2_32.dll:WS2_32.dll (00007FF97C0D0000), size: 524288 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\WS2_32.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\ole32.dll:ole32.dll (00007FF97D050000), size: 1675264 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\ole32.dll', fileVersion: 10.0.26100.9974
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\WinPixEventRuntime.dll:WinPixEventRuntime.dll (00007FF977FE0000), size: 57344 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\WinPixEventRuntime.dll', fileVersion: 1.0.2403.8001
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\umbraoptimizer64.dll:umbraoptimizer64.dll (00007FF8FCEA0000), size: 1187840 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\umbraoptimizer64.dll'
+C:\WINDOWS\System32\combase.dll:combase.dll (00007FF97CA10000), size: 3821568 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\combase.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\SETUPAPI.dll:SETUPAPI.dll (00007FF97D560000), size: 4747264 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SETUPAPI.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\MSVCP140.dll:MSVCP140.dll (00007FF960140000), size: 643072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCP140.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\System32\SHELL32.dll:SHELL32.dll (00007FF97C250000), size: 8060928 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHELL32.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\VCRUNTIME140.dll:VCRUNTIME140.dll (00007FF960110000), size: 180224 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VCRUNTIME140.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\System32\SHLWAPI.dll:SHLWAPI.dll (00007FF97CF10000), size: 425984 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHLWAPI.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\VCRUNTIME140_1.dll:VCRUNTIME140_1.dll (00007FF95FDF0000), size: 49152 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VCRUNTIME140_1.dll', fileVersion: 14.51.36247.0
+C:\WINDOWS\System32\OLEAUT32.dll:OLEAUT32.dll (00007FF97C160000), size: 892928 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\OLEAUT32.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\bcrypt.dll:bcrypt.dll (00007FF97B1D0000), size: 172032 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\bcrypt.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9818_none_3e071914e3359bdd\COMCTL32.dll:COMCTL32.dll (00007FF95F690000), size: 2691072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.9818_none_3e071914e3359bdd\COMCTL32.dll', fileVersion: 6.10.26100.9818
+C:\WINDOWS\System32\WINTRUST.dll:WINTRUST.dll (00007FF97BBF0000), size: 536576 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\WINTRUST.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\d3d11.dll:d3d11.dll (00007FF9772D0000), size: 2486272 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d11.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\d3d12.dll:d3d12.dll (00007FF9225F0000), size: 143360 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d12.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\dwmapi.dll:dwmapi.dll (00007FF978620000), size: 188416 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dwmapi.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\dxgi.dll:dxgi.dll (00007FF9784B0000), size: 1323008 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxgi.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\HID.DLL:HID.DLL (00007FF9795D0000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\HID.DLL', fileVersion: 10.0.26100.1150
+C:\WINDOWS\SYSTEM32\IPHLPAPI.DLL:IPHLPAPI.DLL (00007FF979900000), size: 208896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\IPHLPAPI.DLL', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\OPENGL32.dll:OPENGL32.dll (00007FF8E6870000), size: 1097728 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\OPENGL32.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\WINHTTP.dll:WINHTTP.dll (00007FF973800000), size: 1191936 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINHTTP.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\GLU32.dll:GLU32.dll (00007FF8E6830000), size: 229376 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\GLU32.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\WINMM.dll:WINMM.dll (00007FF96AC30000), size: 221184 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINMM.dll', fileVersion: 10.0.26100.9818
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpAPI.dll:SketchUpAPI.dll (00007FF8F88B0000), size: 8990720 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpAPI.dll', fileVersion: 23.0.0.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NativeProxyHelper.dll:NativeProxyHelper.dll (00007FF8F86F0000), size: 1789952 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NativeProxyHelper.dll'
+C:\WINDOWS\SYSTEM32\VERSION.dll:VERSION.dll (00007FF974F20000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\VERSION.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\SYSTEM32\WSOCK32.dll:WSOCK32.dll (00007FF8E7BA0000), size: 40960 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WSOCK32.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\SYSTEM32\powrprof.dll:powrprof.dll (00007FF97B140000), size: 385024 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\powrprof.dll', fileVersion: 10.0.26100.3912
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpCommonPreferences.dll:SketchUpCommonPreferences.dll (00007FF9364C0000), size: 499712 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\SketchUpCommonPreferences.dll', fileVersion: 23.0.0.0
+C:\WINDOWS\SYSTEM32\Secur32.dll:Secur32.dll (00007FF9781D0000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Secur32.dll', fileVersion: 10.0.26100.7705
+C:\WINDOWS\SYSTEM32\dxcore.dll:dxcore.dll (00007FF978440000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dxcore.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\SSPICLI.DLL:SSPICLI.DLL (00007FF97A250000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\SSPICLI.DLL', fileVersion: 10.0.26100.9818
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL.dll:OpenRL.dll (00000266BFD80000), size: 12779520 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL.dll', fileVersion: 1.5.0.2907
+C:\WINDOWS\SYSTEM32\MSVCR100.dll:MSVCR100.dll (0000000064A00000), size: 860160 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCR100.dll', fileVersion: 10.0.40219.325
+C:\WINDOWS\SYSTEM32\MSVCP100.dll:MSVCP100.dll (0000000064960000), size: 622592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSVCP100.dll', fileVersion: 10.0.40219.325
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\embree.dll:embree.dll (00007FF8F7700000), size: 16711680 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\embree.dll', fileVersion: 2.14.0.0
+C:\WINDOWS\SYSTEM32\cfgmgr32.DLL:cfgmgr32.DLL (00007FF97AEB0000), size: 335872 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\cfgmgr32.DLL', fileVersion: 10.0.26100.9818
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\tbb.dll:tbb.dll (00007FF973F60000), size: 303104 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\tbb.dll', fileVersion: 2020.3.2022.1111
+C:\WINDOWS\SYSTEM32\MSWSOCK.DLL:MSWSOCK.DLL (00007FF97A550000), size: 438272 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSWSOCK.DLL', fileVersion: 10.0.26100.9818
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL_pthread.dll:OpenRL_pthread.dll (00000266C09B0000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\OpenRL_pthread.dll', fileVersion: 2.9.0.0
+C:\WINDOWS\SYSTEM32\UMPDC.dll:UMPDC.dll (00007FF97B120000), size: 86016 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\UMPDC.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\MSASN1.dll:MSASN1.dll (00007FF97A8C0000), size: 77824 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MSASN1.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\bcryptprimitives.dll:bcryptprimitives.dll (00007FF97B910000), size: 704512 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\bcryptprimitives.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\kernel.appcore.dll:kernel.appcore.dll (00007FF979F70000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\kernel.appcore.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\uxtheme.dll:uxtheme.dll (00007FF978340000), size: 696320 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\uxtheme.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\windows.storage.dll:windows.storage.dll (00007FF978D00000), size: 9175040 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\windows.storage.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\SHCORE.dll:SHCORE.dll (00007FF97BF80000), size: 1015808 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\SHCORE.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\profapi.dll:profapi.dll (00007FF97B200000), size: 167936 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\profapi.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\clbcatq.dll:clbcatq.dll (00007FF97DF40000), size: 716800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\clbcatq.dll', fileVersion: 2001.12.10941.16384
+C:\WINDOWS\system32\wbem\wbemprox.dll:wbemprox.dll (00007FF95A0A0000), size: 73728 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\wbemprox.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\wbemcomn.dll:wbemcomn.dll (00007FF95E8D0000), size: 548864 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wbemcomn.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\CRYPTSP.dll:CRYPTSP.dll (00007FF97A840000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CRYPTSP.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\IconCodecService.dll:IconCodecService.dll (00007FF91E960000), size: 45056 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\system32\IconCodecService.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\rsaenh.dll:rsaenh.dll (00007FF979ED0000), size: 233472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\rsaenh.dll', fileVersion: 10.0.26100.7705
+C:\WINDOWS\SYSTEM32\WindowsCodecs.dll:WindowsCodecs.dll (00007FF9766C0000), size: 2347008 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WindowsCodecs.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\CRYPTBASE.dll:CRYPTBASE.dll (00007FF97A860000), size: 49152 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CRYPTBASE.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\System32\imagehlp.dll:imagehlp.dll (00007FF97BEC0000), size: 131072 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\imagehlp.dll', fileVersion: 10.0.26100.4202
+C:\WINDOWS\System32\netprofm.dll:netprofm.dll (00007FF975930000), size: 450560 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\netprofm.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\wbem\wbemsvc.dll:wbemsvc.dll (00007FF9595F0000), size: 86016 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\wbemsvc.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\npmproxy.dll:npmproxy.dll (00007FF973390000), size: 102400 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\npmproxy.dll', fileVersion: 10.0.26100.9711
+C:\WINDOWS\system32\wbem\fastprox.dll:fastprox.dll (00007FF959730000), size: 1003520 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wbem\fastprox.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\amsi.dll:amsi.dll (00007FF96C3C0000), size: 118784 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\amsi.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\USERENV.dll:USERENV.dll (00007FF97A5F0000), size: 212992 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\USERENV.dll', fileVersion: 10.0.26100.9818
+C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26100.4-0\MpOav.dll:MpOav.dll (00007FF958EF0000), size: 675840 (result: 0), SymType: '-exported-', PDB: 'C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.26100.4-0\MpOav.dll', fileVersion: 4.18.26100.4
+C:\WINDOWS\SYSTEM32\gpapi.dll:gpapi.dll (00007FF97A5C0000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\gpapi.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\cryptnet.dll:cryptnet.dll (00007FF973660000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\cryptnet.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\WINNSI.DLL:WINNSI.DLL (00007FF978320000), size: 57344 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\WINNSI.DLL', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\NSI.dll:NSI.dll (00007FF97D2B0000), size: 40960 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\NSI.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\MSCTF.dll:MSCTF.dll (00007FF97DD00000), size: 1425408 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\MSCTF.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\TextShaping.dll:TextShaping.dll (00007FF938540000), size: 1044480 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\TextShaping.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\textinputframework.dll:textinputframework.dll (00007FF9383F0000), size: 1335296 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\textinputframework.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\Oleacc.dll:Oleacc.dll (00007FF958BC0000), size: 479232 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\Oleacc.dll', fileVersion: 7.2.26100.9818
+C:\WINDOWS\SYSTEM32\CoreMessaging.dll:CoreMessaging.dll (00007FF977C10000), size: 1232896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CoreMessaging.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\CoreUIComponents.dll:CoreUIComponents.dll (00007FF974740000), size: 3067904 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CoreUIComponents.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\wintypes.dll:wintypes.dll (00007FF9745D0000), size: 1482752 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wintypes.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\dhcpcsvc6.DLL:dhcpcsvc6.DLL (00007FF973FC0000), size: 122880 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dhcpcsvc6.DLL', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\dhcpcsvc.DLL:dhcpcsvc.DLL (00007FF973770000), size: 151552 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dhcpcsvc.DLL', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\DNSAPI.dll:DNSAPI.dll (00007FF9799F0000), size: 1359872 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DNSAPI.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\DSPARSE.dll:DSPARSE.dll (00007FF97A330000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DSPARSE.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\napinsp.dll:napinsp.dll (00007FF95D570000), size: 98304 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\napinsp.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\System32\winrnr.dll:winrnr.dll (00007FF95D050000), size: 77824 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\winrnr.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\nlansp_c.dll:nlansp_c.dll (00007FF95CBF0000), size: 159744 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\nlansp_c.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\wshbth.dll:wshbth.dll (00007FF95CB40000), size: 90112 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\wshbth.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\fwpuclnt.dll:fwpuclnt.dll (00007FF9732C0000), size: 548864 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\fwpuclnt.dll', fileVersion: 10.0.26100.9974
+C:\Windows\System32\rasadhlp.dll:rasadhlp.dll (00007FF972A60000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\rasadhlp.dll', fileVersion: 10.0.26100.9711
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\AMDUnityPlugin.DLL:AMDUnityPlugin.DLL (00007FF8C3D80000), size: 8843264 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\AMDUnityPlugin.DLL'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NVUnityPlugin.DLL:NVUnityPlugin.DLL (00007FF8C3BE0000), size: 1646592 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\NVUnityPlugin.DLL'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\astcenc-avx2.dll:astcenc-avx2.dll (00007FF8D3FB0000), size: 352256 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\astcenc-avx2.dll'
+C:\WINDOWS\SYSTEM32\mfplat.dll:mfplat.dll (00007FF974CF0000), size: 2256896 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\mfplat.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\RTWorkQ.DLL:RTWorkQ.DLL (00007FF974360000), size: 241664 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\RTWorkQ.DLL', fileVersion: 10.0.26100.8972
+C:\WINDOWS\SYSTEM32\mfreadwrite.dll:mfreadwrite.dll (00007FF8D7D90000), size: 872448 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\mfreadwrite.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\Mf.dll:Mf.dll (00007FF9755B0000), size: 622592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Mf.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\MFCORE.DLL:MFCORE.DLL (00007FF975120000), size: 4300800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\MFCORE.DLL', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\CompPkgSup.DLL:CompPkgSup.DLL (00007FF9618F0000), size: 217088 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\CompPkgSup.DLL', fileVersion: 10.0.26100.9818
+C:\Windows\System32\Windows.Media.dll:Windows.Media.dll (00007FF9358C0000), size: 6914048 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.Media.dll', fileVersion: 10.0.26100.9974
+C:\Windows\System32\Windows.ApplicationModel.dll:Windows.ApplicationModel.dll (00007FF955960000), size: 880640 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.ApplicationModel.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\Windows.StateRepositoryPS.dll:Windows.StateRepositoryPS.dll (00007FF94D210000), size: 802816 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.StateRepositoryPS.dll', fileVersion: 10.0.26100.9974
+C:\Windows\System32\AppXDeploymentClient.dll:AppXDeploymentClient.dll (00007FF974F80000), size: 1515520 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\AppXDeploymentClient.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\MMDevApi.dll:MMDevApi.dll (00007FF96C200000), size: 630784 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\MMDevApi.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\System32\DEVOBJ.dll:DEVOBJ.dll (00007FF97AE70000), size: 192512 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DEVOBJ.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\AUDIOSES.DLL:AUDIOSES.DLL (00007FF96A770000), size: 1785856 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\AUDIOSES.DLL', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\resourcepolicyclient.dll:resourcepolicyclient.dll (00007FF9789B0000), size: 81920 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\resourcepolicyclient.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\system32\explorerframe.dll:explorerframe.dll (00007FF92B390000), size: 3305472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\explorerframe.dll', fileVersion: 10.0.26100.9974
+C:\WINDOWS\SYSTEM32\directxdatabasehelper.dll:directxdatabasehelper.dll (00007FF975540000), size: 389120 (result: 0), SymType: '-nosymbols-', PDB: 'C:\WINDOWS\SYSTEM32\directxdatabasehelper.dll', fileVersion: 10.0.26100.9818
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\D3D12\D3D12Core.dll:D3D12Core.dll (00007FF8A3C50000), size: 4780032 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\D3D12\D3D12Core.dll', fileVersion: 1.618.1.0
+C:\WINDOWS\SYSTEM32\wldp.dll:wldp.dll (00007FF97A940000), size: 458752 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\wldp.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\drvstore.dll:drvstore.dll (00007FF9734E0000), size: 1552384 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\drvstore.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\nvspcap64.dll:nvspcap64.dll (00007FF8C8F30000), size: 1495040 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\nvspcap64.dll', fileVersion: 11.0.9.565
+C:\WINDOWS\SYSTEM32\ntmarta.dll:ntmarta.dll (00007FF97A0C0000), size: 221184 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\ntmarta.dll', fileVersion: 10.0.26100.7019
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvppex.dll:nvppex.dll (00007FF94EB70000), size: 7499776 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvppex.dll', fileVersion: 32.0.16.1088
+C:\WINDOWS\SYSTEM32\D3DSCache.dll:D3DSCache.dll (00007FF89E000000), size: 913408 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\D3DSCache.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvldumdx.dll:nvldumdx.dll (00007FF973930000), size: 827392 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvldumdx.dll', fileVersion: 32.0.16.1088
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvgpucomp64.dll:nvgpucomp64.dll (00007FF96CBA0000), size: 98623488 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvgpucomp64.dll', fileVersion: 32.0.16.1088
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\Display.NvContainer\NvMessageBus.dll:NvMessageBus.dll (00007FF961BE0000), size: 3555328 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\Display.NvContainer\NvMessageBus.dll', fileVersion: 3.22.3719.8856
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\NvMemMapStoragex.dll:NvMemMapStoragex.dll (00007FF96AC70000), size: 1290240 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\NvMemMapStoragex.dll'
+C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvwgf2umx.dll:nvwgf2umx.dll (00007FF964CB0000), size: 89804800 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispig.inf_amd64_cc526ccc3287f5cd\nvwgf2umx.dll', fileVersion: 32.0.16.1088
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\DirectML.dll:DirectML.dll (00007FF8A2EE0000), size: 14061568 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\DirectML.dll', fileVersion: 1.13.1.0
+C:\WINDOWS\SYSTEM32\DXGIDebug.dll:DXGIDebug.dll (00007FF93C180000), size: 155648 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\DXGIDebug.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\d3d11on12.dll:d3d11on12.dll (00007FF8A2E30000), size: 688128 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\d3d11on12.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\opencl.dll:opencl.dll (00007FF8A2DA0000), size: 540672 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\opencl.dll', fileVersion: 3.0.6.0
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\radeonrays.dll:radeonrays.dll (00007FF8C0ED0000), size: 344064 (result: 0), SymType: '-exported-', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\radeonrays.dll'
+C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\MonoBleedingEdge\EmbedRuntime\mono-2.0-bdwgc.dll:mono-2.0-bdwgc.dll (00007FF8A2350000), size: 10756096 (result: 0), SymType: 'PDB', PDB: 'C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\mono-2.0-bdwgc.pdb'
+C:\WINDOWS\SYSTEM32\dbghelp.dll:dbghelp.dll (00007FF963340000), size: 2408448 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dbghelp.dll', fileVersion: 10.0.26100.9818
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\MonoDebuggerHandling.dll:MonoDebuggerHandling.dll (00007FF9577E0000), size: 368640 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\MonoDebuggerHandling.dll'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.dt.app-ui@8ac7e730dd5d\Runtime\Core\Platform\Windows\Plugins\x64\AppUINativePlugin.dll:AppUINativePlugin.dll (00007FF973B40000), size: 61440 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.dt.app-ui@8ac7e730dd5d\Runtime\Core\Platform\Windows\Plugins\x64\AppUINativePlugin.dll'
+C:\Windows\System32\Windows.UI.dll:Windows.UI.dll (00007FF957630000), size: 1421312 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.UI.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\Windows.UI.Immersive.dll:Windows.UI.Immersive.dll (00007FF93A980000), size: 1380352 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.UI.Immersive.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\twinapi.appcore.dll:twinapi.appcore.dll (00007FF96BA00000), size: 2424832 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\twinapi.appcore.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\system32\apphelp.dll:apphelp.dll (00007FF978120000), size: 651264 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\apphelp.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\PROPSYS.dll:PROPSYS.dll (00007FF975E50000), size: 999424 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\PROPSYS.dll', fileVersion: 7.0.26100.9974
+C:\Windows\System32\Windows.System.Launcher.dll:Windows.System.Launcher.dll (00007FF93E680000), size: 1568768 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.System.Launcher.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\windows.staterepositorycore.dll:windows.staterepositorycore.dll (00007FF95CC20000), size: 118784 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\windows.staterepositorycore.dll', fileVersion: 10.0.26100.9974
+C:\Windows\System32\thumbcache.dll:thumbcache.dll (00007FF9591E0000), size: 512000 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\thumbcache.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\policymanager.dll:policymanager.dll (00007FF976B90000), size: 745472 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\policymanager.dll', fileVersion: 10.0.26100.9818
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll:burst-llvm-19.dll (00007FF88D5B0000), size: 59863040 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.burst@6bb9aca3ef38\.Runtime\burst-llvm-19.dll'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\301cb5e92814c1a6b60acc5865e0ab68.dll:301cb5e92814c1a6b60acc5865e0ab68.dll (00007FF973B30000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\301cb5e92814c1a6b60acc5865e0ab68.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1c97066e59f3b0e39788048eeb59aa5c.dll:1c97066e59f3b0e39788048eeb59aa5c.dll (00007FF973B20000), size: 40960 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1c97066e59f3b0e39788048eeb59aa5c.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c9c4476f50ec63be046c02b18117bdee.dll:c9c4476f50ec63be046c02b18117bdee.dll (00007FF973B10000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c9c4476f50ec63be046c02b18117bdee.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\f15c54e7940bd92c2fd0e9cea0e12773.dll:f15c54e7940bd92c2fd0e9cea0e12773.dll (00007FF973B00000), size: 49152 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\f15c54e7940bd92c2fd0e9cea0e12773.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e20c66b33f6d59ccb2b59934b37adb3a.dll:e20c66b33f6d59ccb2b59934b37adb3a.dll (00007FF973A40000), size: 32768 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e20c66b33f6d59ccb2b59934b37adb3a.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\74c7d2d57a0144e788cde312dd3dfab4.dll:74c7d2d57a0144e788cde312dd3dfab4.dll (00007FF973A30000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\74c7d2d57a0144e788cde312dd3dfab4.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1cfd2cae367288d20422259fddc8e292.dll:1cfd2cae367288d20422259fddc8e292.dll (00007FF973AF0000), size: 24576 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\1cfd2cae367288d20422259fddc8e292.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\209e9bce3fba566e54f3549ce587cb73.dll:209e9bce3fba566e54f3549ce587cb73.dll (00007FF973AD0000), size: 69632 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\209e9bce3fba566e54f3549ce587cb73.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\43e67cded84215b08210510ae5e5f951.dll:43e67cded84215b08210510ae5e5f951.dll (00007FF958850000), size: 20480 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\43e67cded84215b08210510ae5e5f951.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\ff87af95b0b2fd9a54fb871c89eb861c.dll:ff87af95b0b2fd9a54fb871c89eb861c.dll (00007FF973AC0000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\ff87af95b0b2fd9a54fb871c89eb861c.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\139d3c067090bac58f28d3cf41b12319.dll:139d3c067090bac58f28d3cf41b12319.dll (00007FF973AB0000), size: 49152 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\139d3c067090bac58f28d3cf41b12319.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\868d8fe6f8f95510ab1c661981a7b647.dll:868d8fe6f8f95510ab1c661981a7b647.dll (00007FF973AA0000), size: 32768 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\868d8fe6f8f95510ab1c661981a7b647.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\72c6341498aa0f3aa618df0dea93ec53.dll:72c6341498aa0f3aa618df0dea93ec53.dll (00007FF973A20000), size: 57344 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\72c6341498aa0f3aa618df0dea93ec53.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\d198222944adc01e43e74f80c1212c9b.dll:d198222944adc01e43e74f80c1212c9b.dll (00007FF9587D0000), size: 503808 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\d198222944adc01e43e74f80c1212c9b.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bc86e25b90dc26f97c3e14c81917683f.dll:bc86e25b90dc26f97c3e14c81917683f.dll (00007FF973A90000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bc86e25b90dc26f97c3e14c81917683f.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bfad1bca18b7bc464a63ee020dc005e0.dll:bfad1bca18b7bc464a63ee020dc005e0.dll (00007FF8FC620000), size: 503808 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\bfad1bca18b7bc464a63ee020dc005e0.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\40ca2af1446eff57d376f6f46aeb3f12.dll:40ca2af1446eff57d376f6f46aeb3f12.dll (00007FF973A70000), size: 110592 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\40ca2af1446eff57d376f6f46aeb3f12.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c5be1b1505879cc62bd72463eadd148b.dll:c5be1b1505879cc62bd72463eadd148b.dll (00007FF939040000), size: 159744 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c5be1b1505879cc62bd72463eadd148b.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cfc06cb0af8765fa5d182dd8e40404c8.dll:cfc06cb0af8765fa5d182dd8e40404c8.dll (00007FF930980000), size: 376832 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cfc06cb0af8765fa5d182dd8e40404c8.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\fe65f601dd1f45f3ccaa884608d3e7bc.dll:fe65f601dd1f45f3ccaa884608d3e7bc.dll (00007FF973A10000), size: 53248 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\fe65f601dd1f45f3ccaa884608d3e7bc.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e797366974ae160dae549a76e35b2bd5.dll:e797366974ae160dae549a76e35b2bd5.dll (00007FF930940000), size: 200704 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\e797366974ae160dae549a76e35b2bd5.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\66d678432f2f72c6d6094705526d632c.dll:66d678432f2f72c6d6094705526d632c.dll (00007FF9308D0000), size: 409600 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\66d678432f2f72c6d6094705526d632c.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\8407b3f06d062c26e5e52d891251f82e.dll:8407b3f06d062c26e5e52d891251f82e.dll (00007FF8FC5E0000), size: 212992 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\8407b3f06d062c26e5e52d891251f82e.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\de70acfb82e49d7d4d6ef59e9aec6570.dll:de70acfb82e49d7d4d6ef59e9aec6570.dll (00007FF930880000), size: 270336 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\de70acfb82e49d7d4d6ef59e9aec6570.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cd4ee2df1ea77f67533168b1595b0515.dll:cd4ee2df1ea77f67533168b1595b0515.dll (00007FF924130000), size: 438272 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\cd4ee2df1ea77f67533168b1595b0515.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\2ec9f5bf8fb769de095eee26c729df53.dll:2ec9f5bf8fb769de095eee26c729df53.dll (00007FF8FC6C0000), size: 602112 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\2ec9f5bf8fb769de095eee26c729df53.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\dbcbcafbc55486371db00c9947b9eb4d.dll:dbcbcafbc55486371db00c9947b9eb4d.dll (00007FF8FC340000), size: 147456 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\dbcbcafbc55486371db00c9947b9eb4d.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\7ea73d8a5fa15945236920d39c377354.dll:7ea73d8a5fa15945236920d39c377354.dll (00007FF8FC4F0000), size: 172032 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\7ea73d8a5fa15945236920d39c377354.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\98e83e53cd74c857fab3f737e6501097.dll:98e83e53cd74c857fab3f737e6501097.dll (00007FF8FC4C0000), size: 139264 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\98e83e53cd74c857fab3f737e6501097.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\826348d1f1dedac1048606d628d76bec.dll:826348d1f1dedac1048606d628d76bec.dll (00007FF8FC300000), size: 249856 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\826348d1f1dedac1048606d628d76bec.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\38df7409f8bf876b5dcaf96e018d03bd.dll:38df7409f8bf876b5dcaf96e018d03bd.dll (00007FF8FC400000), size: 774144 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\38df7409f8bf876b5dcaf96e018d03bd.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll:VivoxNative.dll (00007FF8F5E70000), size: 757760 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\VivoxNative.dll'
+C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll:vivoxsdk.dll (00007FF898EB0000), size: 16936960 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Plugins\x86_64\vivoxsdk.dll', fileVersion: 5.28.0.34030
+C:\WINDOWS\SYSTEM32\SensApi.dll:SensApi.dll (00007FF973A60000), size: 45056 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\SensApi.dll', fileVersion: 10.0.26100.1
+C:\WINDOWS\system32\dataexchange.dll:dataexchange.dll (00007FF9390C0000), size: 372736 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\system32\dataexchange.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\dcomp.dll:dcomp.dll (00007FF977540000), size: 2310144 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\dcomp.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll:Microsoft.Internal.WarpPal.dll (00007FF977E10000), size: 106496 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\Microsoft.Internal.WarpPal.dll'
+C:\Windows\System32\Windows.Gaming.Input.dll:Windows.Gaming.Input.dll (00007FF96BDA0000), size: 892928 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.Gaming.Input.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\inputhost.dll:inputhost.dll (00007FF93C620000), size: 2007040 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\inputhost.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\Windows.System.UserDeviceAssociation.dll:Windows.System.UserDeviceAssociation.dll (00007FF96B4A0000), size: 114688 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\Windows.System.UserDeviceAssociation.dll', fileVersion: 10.0.26100.8115
+C:\Windows\System32\usermgrproxy.dll:usermgrproxy.dll (00007FF972B70000), size: 450560 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\usermgrproxy.dll', fileVersion: 10.0.26100.9818
+C:\Windows\System32\urlmon.dll:urlmon.dll (00007FF95D9F0000), size: 1966080 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\urlmon.dll', fileVersion: 11.0.26100.9818
+C:\Windows\System32\iertutil.dll:iertutil.dll (00007FF95D210000), size: 2904064 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\iertutil.dll', fileVersion: 11.0.26100.9818
+C:\Windows\System32\netutils.dll:netutils.dll (00007FF9798A0000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\netutils.dll', fileVersion: 10.0.26100.1882
+C:\Windows\System32\srvcli.dll:srvcli.dll (00007FF95D6A0000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\Windows\System32\srvcli.dll', fileVersion: 10.0.26100.1150
+C:\WINDOWS\SYSTEM32\virtdisk.dll:virtdisk.dll (00007FF93DEE0000), size: 94208 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\virtdisk.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\System32\RdpShellExecuteRedirector.dll:RdpShellExecuteRedirector.dll (00007FF93A4F0000), size: 110592 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\System32\RdpShellExecuteRedirector.dll', fileVersion: 10.0.26100.9818
+C:\WINDOWS\SYSTEM32\edputil.dll:edputil.dll (00007FF93A4C0000), size: 167936 (result: 0), SymType: '-exported-', PDB: 'C:\WINDOWS\SYSTEM32\edputil.dll', fileVersion: 10.0.26100.9278
+C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c1df97736421175dac01f5f4095016e2.dll:c1df97736421175dac01f5f4095016e2.dll (00007FF973B60000), size: 200704 (result: 0), SymType: 'PDB', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Library\BurstCache\JIT\c1df97736421175dac01f5f4095016e2.pdb'
+C:\Users\belac\source\repos\Cosmic-Shore\Assets\Plugins\FMOD\platforms\win\lib\x86_64\fmodstudioL.dll:fmodstudioL.dll (00007FF92C8F0000), size: 4661248 (result: 0), SymType: '-exported-', PDB: 'C:\Users\belac\source\repos\Cosmic-Shore\Assets\Plugins\FMOD\platforms\win\lib\x86_64\fmodstudioL.dll', fileVersion: 0.2.3.13
+  ERROR: SymGetSymFromAddr64, GetLastError: 'Attempt to access invalid address.' (Address: 00007FF8A3C58E36)
+0x00007FF8A3C58E36 (D3D12Core) (function-name not available)
+  ERROR: SymGetSymFromAddr64, GetLastError: 'Attempt to access invalid address.' (Address: 00007FF8A3C9B82E)
+0x00007FF8A3C9B82E (D3D12Core) (function-name not available)
+  ERROR: SymGetSymFromAddr64, GetLastError: 'Attempt to access invalid address.' (Address: 00007FF8A3C896DB)
+0x00007FF8A3C896DB (D3D12Core) (function-name not available)
+  ERROR: SymGetSymFromAddr64, GetLastError: 'Attempt to access invalid address.' (Address: 00007FF9225F1707)
+0x00007FF9225F1707 (d3d12) (function-name not available)
+0x00007FF8A3CBBF7D (D3D12Core) D3D12GetInterface
+0x00007FF8A3E2B2F7 (D3D12Core) D3D12GetInterface
+0x00007FF8A3E607EF (D3D12Core) D3D12GetInterface
+0x00007FF8A3E6A5F8 (D3D12Core) D3D12GetInterface
+0x00007FF8A3E6A259 (D3D12Core) D3D12GetInterface
+0x00007FF8A49CE461 (Unity) D3D12PipelineCacheLibrary::LoadGraphicsPipeline
+0x00007FF8A496D068 (Unity) D3D12PipelineCache::LoadGraphicsPipeline
+0x00007FF8A496BBC8 (Unity) PipelineUtilities::CreateGraphicsPipelineState
+0x00007FF8A49AEE6A (Unity) ConcurrentCache<D3D12PipelineKey,ID3D12PipelineState * __ptr64,D3D12PipelineKeyHasher,D3D12PipelineKeyComparer>::FindOrInsert<ID3D12PipelineState * __ptr64 (__cdecl*)(D3D12PipelineKey const & __ptr64)>
+0x00007FF8A499B5F8 (Unity) D3D12DeviceState::Transition
+0x00007FF8A4973BE4 (Unity) D3D12CommandListWithState::ApplyStateDrawcall
+0x00007FF8A49C5736 (Unity) GfxDeviceD3D12Base::DrawBuffersCommon
+0x00007FF8A49C52EE (Unity) GfxDeviceD3D12Base::DrawBufferRanges
+0x00007FF8A49C55A9 (Unity) GfxDeviceD3D12Base::DrawBuffers
+0x00007FF8A489112C (Unity) GfxDeviceWorker::RunCommand
+0x00007FF8A489490C (Unity) GfxDeviceWorker::RunExt
+0x00007FF8A4894A3F (Unity) GfxDeviceWorker::RunGfxDeviceWorker
+0x00007FF8A6152B80 (Unity) Thread::RunThreadWrapper
+0x00007FF97CFADDA7 (KERNEL32) BaseThreadInitThunk
+0x00007FF97E219C5C (ntdll) RtlUserThreadStart
+
+========== END OF STACKTRACE ===========
+
+A crash has been intercepted by the crash handler. For call stack and other details, see the latest crash report generated in:
+ * C:/Users/belac/AppData/Local/Temp/Unity/Editor/Crashes
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+[INFO ] [relay] log Auto-shutdown timer fired after 180s inactivity, shutting down: Dedicated client disconnected
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+
