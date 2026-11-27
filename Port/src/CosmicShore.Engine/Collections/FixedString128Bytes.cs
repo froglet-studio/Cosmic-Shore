@@ -55,6 +55,10 @@ namespace CosmicShore.Engine.Collections
             _length = (ushort)byteCount;
         }
 
+        /// <summary>Unity's <c>CopyFromTruncated</c>: copies <paramref name="s"/>, cut at a code-point boundary
+        /// when it is longer than the capacity (as every assignment here already is).</summary>
+        public void CopyFromTruncated(string s) => Assign(s);
+
         public static implicit operator FixedString128Bytes(string s) => new(s);
         public static implicit operator string(FixedString128Bytes f) => f.Value;
 

@@ -66,6 +66,12 @@ DONOR = {
 BUTTERFLY_ID = lib.VESSEL_CLASS_ID["TigerMoth"]
 SWORDFISH_ID = lib.VESSEL_CLASS_ID["Swordfish"]
 
+# ── The arena (PALISADE.md section 9): PalisadeArena lays it in C#; the generator authors only the prism it is laid with ──
+ARENA_PRISM_PATH = "Assets/_Prefabs/Trails/SpawnablePrism.prefab"   # the environment prism Spearline's seals use
+ARENA_PRISM = lib.existing_guid(ARENA_PRISM_PATH)
+ARENA_PRISM_FILE_ID = 4563009547826722997                           # its root Prism component
+ARENA_SOURCES = [f"{AR}/Palisade/PalisadeArena.cs", f"{AR}/Palisade/PalisadeController.Arena.cs"]
+
 # ── The round ────────────────────────────────────────────────────────────────
 ROUND_SECONDS = 90        # kept in sync with EndConditionOverridesSO.DefaultPalisadeRoundSeconds
 CRYSTALS_BY_INTENSITY = [24, 16, 10, 6]
@@ -91,6 +97,9 @@ RAMP_TOP = 840.0          # the Swordfish's ramp ceiling (RampBoostActionExecuto
 CRUISE = RAMP_TOP * 0.5   # a pilot who turns, cuts and raids averages about half of it
 KEY_VOLUME = (base_x * x_scaler / 2.0) * base_y * base_z            # VesselPrismController.CreateBlock, no width scaler
 TRAIL_RATE = KEY_VOLUME * CRUISE / wavelength if trail_on else 0.0  # volume / second, one pilot
+# Measured 2026-11-27 (PALISADE.md 7.1): what STANDS at the whistle is about 90% afterimage and the trail's share is
+# about a tenth of this rate's. The reference domain volume below still matches the measured I1 domain (~26,000), so
+# the comeback rate is kept; do not read the trail/afterimage split off this model.
 
 seg_len = one(AFTER, r"^  segmentLength: ([0-9.]+)$", "segmentLength")
 coverage = one(AFTER, r"^  lengthCoverage: ([0-9.]+)$", "lengthCoverage")
@@ -140,6 +149,7 @@ g.emit_asset("Assets/_SO_Assets/Scoring Rules/PalisadeScoringRule.asset", G_ASSE
 # ── 3. Settings ──────────────────────────────────────────────────────────────
 g.emit_asset("Assets/_SO_Assets/Games/PalisadeSettings.asset", G_ASSET["PalisadeSettings"],
              lib.header_for(G_SCRIPT["PalisadeSettingsSO"], "PalisadeSettings") +
+             f"  arenaPrism: {{fileID: {ARENA_PRISM_FILE_ID}, guid: {ARENA_PRISM}, type: 3}}\n" +
              "  elementalCrystalCountByIntensity:\n" +
              "".join(f"  - {n}\n" for n in CRYSTALS_BY_INTENSITY) + f"""  crystalScatterRadius: 900
   crystalScatterSeed: {MODE_ID}
@@ -152,10 +162,13 @@ g.emit_asset("Assets/_SO_Assets/Games/PalisadeSettings.asset", G_ASSET["Palisade
   aiBuildOrbitFraction: 0.6
   aiBuildOrbitDegreesPerSecond: 6
   aiCrystalReach: 450
+  aiLaneArriveDistance: 60
+  aiLaneLegSeconds: 16
 """)
 
 # ── 4. Card ─────────────────────────────────────────────────────────────────
-# MinPlayers 2 / MinDomains 2: a wall war with one side has nobody to cut.
+# MinDomains 2: a wall war with one side has nobody to cut. Min and Max players 4: every Swordfish game seats exactly
+# four for now (Yash, 2026-11-25), under the fleet's 9 (Garrett, 2026-11-17); the scene carries four AI seats.
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGamePalisade.asset", G_ASSET["ArcadeGamePalisade"],
              lib.header_for(EXISTING["SO_ArcadeGame"], "ArcadeGamePalisade") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
@@ -168,8 +181,8 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGamePalisade.asset", G_ASSET["Arcade
   SceneName: MinigamePalisade
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Swordfish']}, type: 2}}
-  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 9
+  MinPlayersAllowed: 4
+  MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
@@ -272,6 +285,22 @@ for banned in ("PerformShipControllerActions", "InputStatus", "ElementalScaling"
                "ButterflyAutopilotModeDriver"):
     if banned in ctl:
         errors.append(f"PalisadeController mentions {banned} - a mode never changes the vessel")
+# The arena: its sources exist, never touch the vessel, are laid in the no-team colour, and the prism they are laid
+# with is still the prefab's root Prism.
+for rel in ARENA_SOURCES:
+    src = g.read(rel)
+    for banned in ("PerformShipControllerActions", "InputStatus", "ElementalScaling", "IsUpgradeActive", "VesselStatus"):
+        if banned in src:
+            errors.append(f"{rel} mentions {banned} - a mode never changes the vessel")
+arena_cs = g.read(ARENA_SOURCES[1])
+if "Domains.Blue, part.Kind" not in arena_cs:
+    errors.append("the arena is no longer laid in Domains.Blue - a team's colour would count it in that team's eyes")
+if "public partial class PalisadeController" not in ctl or "LayArena();" not in ctl or ctl.count("ClearArena();") < 2:
+    errors.append("PalisadeController no longer lays the arena at the countdown's end and clears it on despawn and replay")
+if f"&{ARENA_PRISM_FILE_ID}\nMonoBehaviour:" not in g.read(ARENA_PRISM_PATH):
+    errors.append(f"{ARENA_PRISM_PATH} has no MonoBehaviour {ARENA_PRISM_FILE_ID} - the arena prism reference would dangle")
+if "public Prism arenaPrism;" not in g.read(SCRIPT_PATHS["PalisadeSettingsSO"]):
+    errors.append("PalisadeSettingsSO lost arenaPrism - the settings asset names it")
 for field in ("PalisadeSettingsSO settings;", "ScoringRuleSO rule;", "Cell arenaCell;"):
     if field not in ctl:
         errors.append(f"PalisadeController lost '{field}' - the cloned scene's controller block names it")

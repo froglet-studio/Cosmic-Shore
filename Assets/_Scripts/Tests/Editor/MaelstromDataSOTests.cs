@@ -337,6 +337,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EffectiveSeatCount_IsTheLobbyField_CappedAtSeatCount()
+        {
+            Assert.AreEqual(_data.SeatCount, _data.EffectiveSeatCount,
+                "Nothing captured: the tournament seats its maximum.");
+
+            _data.FieldSize = 2;
+            Assert.AreEqual(2, _data.EffectiveSeatCount,
+                "A 1v1 built in the lobby stays a 1v1 - it is not padded to four with balanced AI.");
+
+            _data.FieldSize = 9;
+            Assert.AreEqual(_data.SeatCount, _data.EffectiveSeatCount, "Capped at SeatCount.");
+
+            _data.FieldSize = 3;
+            _data.ResetRuntime();
+            Assert.AreEqual(3, _data.EffectiveSeatCount,
+                "The field persists through ResetRuntime, so Play Again keeps it.");
+        }
+
+        [Test]
         public void PointsForPlace_MapsTableAndZeroesOutOfRange()
         {
             Assert.AreEqual(2, _data.PointsForPlace(1));

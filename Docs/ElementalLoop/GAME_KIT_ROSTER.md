@@ -79,7 +79,7 @@ freely before it lands (the generator mints guids from the name), but keep the i
 | Vessel | Element | Why no game |
 |---|---|---|
 | Dolphin | Mass | no mass-making ability (Garrett's own example); Rampage is its Space game. Already excused in `loop.json`. |
-| Squirrel | Space | already excused in `loop.json`; Scurry is its Mass game. |
+| Squirrel | Space | already excused in `loop.json`. Scurry was its Mass game until 2026-11-17, when it became a Party game (`PLAYBOOK.md`); the Squirrel has no Mass game now (`STATUS.md`). |
 | Grizzly | Mass | Weapon Systems only destroys; there is nothing the Grizzly makes to score. Its Space game is Grizzly Charge (scores as Space). |
 | Jacks | Mass | its Mass ability (The Call) moves the herd, and a herd is not mass; Trawl is its Space game. |
 | Stoat | Mass | Heavy Launch is a harder kick out of the orbit and touches no mass; Fulmen is its Space game. |

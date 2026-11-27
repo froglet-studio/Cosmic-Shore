@@ -23,12 +23,12 @@ MonoBehaviour:
   - 1700
   - 1300
   - 1000
-  cleavePrismTarget: 1000
+  cleavePrismTarget: 600
   cleavePrismTargetByIntensity:
-  - 950
-  - 950
-  - 1000
-  - 1000
+  - 300
+  - 400
+  - 550
+  - 600
   wildlifeKillTarget: 30
   dogFightPointTarget: 40
   grizzlyChargePointTarget: 90
@@ -135,12 +135,12 @@ MonoBehaviour:
   - 1700
   - 1300
   - 1000
-  cleavePrismTargetBuild: 1000
+  cleavePrismTargetBuild: 600
   cleavePrismTargetByIntensityBuild:
-  - 950
-  - 950
-  - 1000
-  - 1000
+  - 300
+  - 400
+  - 550
+  - 600
   wildlifeKillTargetBuild: 30
   dogFightPointTargetBuild: 40
   grizzlyChargePointTargetBuild: 90

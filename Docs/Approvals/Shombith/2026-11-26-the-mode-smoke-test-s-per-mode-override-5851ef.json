@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-26-the-mode-smoke-test-s-per-mode-override-5851ef",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-26T21:30:34+00:00",
+  "area": "the mode smoke test (launch tooling)",
+  "summary": "The mode smoke test's per-mode override gained a Domains field (0 = the old one-team-a-seat-up-to-three), so a mode can be seated 2v2; ModeSmokeDriver reads it through ModeSmokeConfigSO.DomainsFor.",
+  "why": "Riposte seats 4 as 2v2 in the game; the smoke test always split 4 seats into 3 teams, so its matches were not the game's.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "c05031289",
+  "paths": [
+    "Assets/_Scripts/Editor/Launch/ModeSmokeDriver.cs",
+    "Assets/_Scripts/ScriptableObjects/ModeSmokeConfigSO.cs"
+  ]
+}

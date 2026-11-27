@@ -1,0 +1,16 @@
+{
+  "id": "H-20261126-regatta-737018",
+  "kind": "claim",
+  "lane": "regatta",
+  "laneName": "Regatta",
+  "laneKind": "game",
+  "by": "Caleb",
+  "on": "2026-11-26T16:24:03+00:00",
+  "branch": "claude/sleepy-ride-r3wozq",
+  "signals": {
+    "laneKind": "game",
+    "handTests": false,
+    "merged": false
+  },
+  "source": "cli"
+}

@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60ccfa5546eb8edbf0eee641f47a49da, type: 3}
+  m_Script: {fileID: 11500000, guid: ad20952585fac3e8c1cc8a82e63f65a2, type: 3}
   m_Name: RiposteSettings
   m_EditorClassIdentifier:
   progressSampleSeconds: 0.5
@@ -49,3 +49,41 @@ MonoBehaviour:
   - 2
   aiOvershoot: 120
   aiHumanFocus: 2
+  duelThrottleFloor:
+  - 0.7
+  - 0.85
+  - 1
+  - 1
+  duelReapBelowFuel:
+  - 0
+  - 0.03
+  - 0.06
+  - 0.1
+  duelReapUntilFuel:
+  - 0
+  - 0.08
+  - 0.15
+  - 0.25
+  duelChargeOvershoot:
+  - 150
+  - 250
+  - 350
+  - 450
+  duelExtendDistance:
+  - 120
+  - 220
+  - 320
+  - 420
+  duelLaneUse:
+  - 0.25
+  - 0.5
+  - 0.85
+  - 1
+  duelPassRadius: 240
+  duelPhaseSeconds: 6
+  duelReapSpreadDegrees: 35
+  duelArriveRadius: 90
+  duelLineUpRadius: 40
+  duelMouthConeDegrees: 60
+  duelLaneBreakDistance: 320
+  duelRailDryGain: 0.02

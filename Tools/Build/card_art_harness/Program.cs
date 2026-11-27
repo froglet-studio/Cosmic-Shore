@@ -106,6 +106,7 @@ static class Program
             }
             case "switchback":
             case "headlong":
+            case "spearline":
             case "redline":
             case "grizzlytime":
             case "slingshot":
@@ -129,6 +130,7 @@ static class Program
                 {
                     "switchback" => SwitchbackCourse.Generate(seed, Apply(SwitchbackCourseSettings.ForIntensity(intensity), layer)),
                     "headlong" => HeadlongCircuit.Generate(seed, Apply(HeadlongCircuitSettings.ForIntensity(intensity), layer)),
+                    "spearline" => HeadlongCircuit.Generate(seed, SpearlineLap(intensity, layer)),
                     "redline" => HeadlongCircuit.Generate(seed, Apply(RedlineCourse.ForIntensity(intensity), layer)),
                     "grizzlytime" => HeadlongCircuit.Generate(seed, Apply(GrizzlyTimeCourse.ForIntensity(intensity), layer)),
                     "slingshot" => HeadlongCircuit.Generate(seed, Apply(SlingshotCourse.ForIntensity(intensity), layer)),
@@ -205,6 +207,18 @@ static class Program
                         AddPrism(scene, new SpawnPoint(position, Quaternion.LookRotation(gates[ring].Axis), scl), pal.For(Domains.Blue, PrismKind.Danger));
                     return wall.Count;
                 }
+                if (kind == "spearline")
+                {
+                    // the race garden (SPEARLINE.md 2b): fuel hedges and pillars in Blue, as SpearlineController.Garden lays
+                    // them from the lap and its sealed rings
+                    var parts = new List<SpearlineGardenPart>();
+                    SpearlineGarden.Lay(gates, SpearlineSeals.SealedRings(gates, SpearlineSeals.ForIntensity(intensity)),
+                                        SpearlineGarden.ForIntensity(intensity), parts);
+                    foreach (var part in parts)
+                        AddPrism(scene, new SpawnPoint(part.Position, Quaternion.LookRotation(part.Forward, part.Up), part.Scale),
+                                 pal.For(Domains.Blue, part.Kind));
+                    return parts.Count;
+                }
                 if (kind == "thornline")
                 {
                     var laid = new List<Thorn>();
@@ -279,6 +293,14 @@ static class Program
 
     /// <summary>Brittle Star Time's lap as BrittleStarTimeCourseSource.Build lays it: the rung's own shape
     /// (BrittleStarTimeCourse.BuildLap) in the card's shell, else the Gearbox (Headlong's solver).</summary>
+    /// <summary>Spearline's lap: Headlong's circuit with the seals' mouth for its ring radius (SpearlineCourseSource).</summary>
+    static HeadlongCircuitSettings SpearlineLap(int intensity, JsonElement layer)
+    {
+        var st = Apply(HeadlongCircuitSettings.ForIntensity(intensity), layer);
+        st.RingRadius = SpearlineSeals.ForIntensity(intensity).MouthRadius;
+        return st;
+    }
+
     static List<RaceGate> BrittleStarTimeLap(int seed, int intensity, JsonElement layer)
     {
         var gearbox = Apply(BrittleStarTimeCourse.Gearbox(), layer);
