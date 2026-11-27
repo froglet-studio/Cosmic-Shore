@@ -320,7 +320,7 @@ namespace CosmicShore.Tests
             AssertSameBelt(authored, applied, tier.ToString());
         }
 
-        [TestCase(DeviceTier.Desktop, 13000)]
+        [TestCase(DeviceTier.Desktop, 20000)]
         [TestCase(DeviceTier.MobileHigh, 15000)]
         public void DesktopAndMobileHigh_LavaLampWaits_ToyBoxTrailNeverDoes(DeviceTier tier, int lampBudget)
         {

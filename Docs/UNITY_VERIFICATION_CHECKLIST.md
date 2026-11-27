@@ -27535,19 +27535,6 @@ Refcompile: 0 errors in project code. No Unity editor ran; `DesktopAndMobileHigh
 - [ ] Desktop, Toy Box, Squirrel: idle the gamepad and drift far from the cell for several minutes (past 20,000 cell prisms, `diag`); the trail never stops. Swap to the Manta: it lays trail too.
 - [ ] Desktop, menu (lava lamp) idle 10+ minutes: its trail still stops at about 20,000 cell prisms, and the load out of the menu stays short (B45).
 
-## On PC the lava lamp's trail now waits at 13,000 cell prisms, not 20,000 (2026-11-27, Ys-bleeding-edge)
-
-Why: a 24-minute built-player menu run (2026-11-26, Ultra, uncapped) held 101-104 fps up to about 13,000 live cell
-prisms and fell to 78-93 fps between 17,000 and 20,000 as draw calls grew (431 to 2,800 when the camera faced the
-trail); a 12-minute editor run fell from 72 to 57-60 fps the same way. Only `lavaLampCellPrismBudget` / `Resume` on
-`PlatformProfile_Desktop` changed (Caleb's field, #2417); the Toy Box trail, phones and web are unchanged.
-The open editor compiled it (`unity recompile`, success). `DesktopAndMobileHigh_LavaLampWaits_ToyBoxTrailNeverDoes`
-(now expecting 13,000) has not run: this editor's CLI is too old for `run_tests` and the batch-mode copy was busy.
-- [ ] EditMode: `DeviceTierTests` passes.
-- [ ] Desktop build, menu idle 15+ minutes: the lava lamp's trail stops at about 13,000 cell prisms (`diag` cells line)
-      and the menu stays near 100 fps; compare with a bleeding-edge build of the same day.
-- [ ] Desktop, Toy Box freestyle: your own trail still never stops, past 13,000 and past 20,000.
-
 ## Mass-Space AI rows (2026-11-21)
 
 `AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
