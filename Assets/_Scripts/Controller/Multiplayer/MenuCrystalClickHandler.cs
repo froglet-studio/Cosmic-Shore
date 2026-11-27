@@ -116,6 +116,9 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             ReleaseTierTrailHolds();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.ClearStats(TrailDiagSection);
+#endif
         }
 
         /// <summary>
@@ -149,6 +152,7 @@ namespace CosmicShore.Gameplay
             if (!edge && Time.unscaledTime < _nextTierTrailPolicyAt) return;
             _nextTierTrailPolicyAt = Time.unscaledTime + TierTrailPolicySeconds;
             ApplyTierTrailPolicy();
+            PublishTrailDiagnostics();
         }
 
         /// <summary>
@@ -384,6 +388,40 @@ namespace CosmicShore.Gameplay
             waiting = waiting ? live >= resume : live >= budget;
             _cellTrailWaiting[cell] = waiting;
             return waiting;
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        const string TrailDiagSection = "Trail";
+#endif
+
+        /// <summary>The <c>diag</c> overlay's Trail rows (development players and the editor only): the
+        /// live prism count of the local pilot's cell against the budget that applies right now (the
+        /// freestyle one in the Toy Box, the lava lamp's in the menu), and whether that budget is
+        /// holding the trail. Read from the same cell and numbers <see cref="ApplyTierTrailPolicy"/>
+        /// decides on, once a second with it.</summary>
+        void PublishTrailDiagnostics()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            var controller = TrailControllerOf(gameData ? gameData.LocalPlayer : null);
+            if (!controller)
+            {
+                // Say why instead of hiding the section: a missing row reads as "not built", not "no vessel".
+                CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat(TrailDiagSection, "Cell prisms", "n/a (no local vessel)");
+                CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat(TrailDiagSection, "Trail held", "n/a");
+                return;
+            }
+
+            Vector3 at = controller.transform.position;
+            var cell = Cell.FindCellContaining(at) ?? Cell.FindNearestActiveCell(at);
+            var profile = PlatformProfile.Current;
+            int budget = !profile ? 0 : _isInFreestyle ? profile.FreestyleCellPrismBudget : profile.LavaLampCellPrismBudget;
+
+            string count = cell ? cell.LiveBlockCount.ToString("N0") : "no cell";
+            string limit = budget > 0 ? $" / {budget:N0} budget" : " (no budget)";
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat(TrailDiagSection, "Cell prisms", count + limit);
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat(TrailDiagSection, "Trail held",
+                _tierHeld.Contains(controller) ? "YES (paused by the tier trail policy)" : "no");
+#endif
         }
 
         void PruneDeadCells()
