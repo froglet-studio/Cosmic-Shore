@@ -8,7 +8,8 @@
    - the export at the bottom (run by specs/ark_round.py through node), which leaves out what only the page needs:
      the escort drawn for scale, and the rooms and people inside the decks (closed in the game; nobody sees them).
    Re-extract from the artifact (the block between "colours" and the round-13 callouts) when the concept changes,
-   then re-apply the PC edits: expRows, expPod, plating, tubeLining and branchTube's plate spacing. */
+   then re-apply the PC edits: expRows, expPod, plating, tubeLining and branchTube's plate spacing.
+   Round 15 (2026-11-26, version 16): the tube's radius 9.2 -> 8 and the exits' 8.2 -> 7.13, and the turning rings lining (B). */
 let PC=1;
 /* ================= colours ================= */
 // Domain pigments: face = OutsideBlock, rim = InsideBlock of each shipped set; Fire = Danger.
@@ -111,7 +112,7 @@ function catmull(ctrl,steps){const out=[];for(let i=0;i<ctrl.length-1;i++){const
 // a halo, bay doors, the booster skirt, a rib cage). Motion is done in the vertex shader from each piece's pivot,
 // axis and phase (Mesh.a), so the model stays one draw per material. Every design has a launch ENTRY (facing the
 // gap, where escorts gather) and a launch EXIT you can see. No emission anywhere: it is the model only.
-const RT=9.2,HULL_END=0,GAP_END=33,CX=21,STERN=-82.8,MOUTH_R=22,HULL_LEN=HULL_END-STERN,WIDE=1.2;
+const RT=8,HULL_END=0,GAP_END=33,CX=21,STERN=-82.8,MOUTH_R=22,HULL_LEN=HULL_END-STERN,WIDE=1.2;
 function rAt(x){if(x>HULL_END)return MOUTH_R;const u=Math.min(1,Math.max(0,(HULL_END-x)/HULL_LEN));return WIDE*(16+12*Math.pow(u,1.4))}
 function capsuleProf(xa,xb,r,steps=12){const out=[];for(let i=0;i<=steps;i++){const u=i/steps,e=Math.abs(2*u-1);out.push([xa+(xb-xa)*u,r*Math.pow(Math.max(0,1-Math.pow(e,3)),1/3)])}out[0][1]=0.01;out[steps][1]=0.01;return out}
 // hull motion kinds (vertex shader): 2 spin about ax through piv; 3 hinge about ax by amp*wave; 4 step-turn by amp each beat
@@ -352,13 +353,22 @@ function cityInterior(M,x0,x1,R,spin,o={}){RNG=11;M.a=SPIN(spin);
 // One big coil-strip tube opens into the gap (the entry), runs down the middle of the hull to a junction near the stern,
 // and splits into three branch tubes that leave through the stern skirt at 120 degrees. Inside: a steel lining with
 // ribs and rows of normal prisms to skim on the way out.
-const XJ=STERN+12,RB=8.2,EXITS=[0,1,2].map(k=>TOP+2*Math.PI*k/3);
+const XJ=STERN+12,RB=7.13,EXITS=[0,1,2].map(k=>TOP+2*Math.PI*k/3);
 const angDist=(a,b)=>{const d=((a-b)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);return Math.min(d,2*Math.PI-d)};
 const nearExit=(t,w)=>EXITS.some(e=>angDist(t,e)<w);
-function tubeLining(M,lo,hi,r){M.latheX([[lo,r-0.25],[hi,r-0.25]],48,"metal",{tone:(i,j)=>j%8===0?0.55:(j%2?0.8:1)});
-  for(let x=lo+2;x<hi-1;x+=4)M.torusX(x,r-0.45,0.3,48,"panel",6);
-  const pts=[];for(let k=0;k<6;k++){const t=(k+0.5)*2*Math.PI/6;for(let x=hi-2.5;x>lo+1;x-=3.2*PC){plate(M,face(x,r-0.3,t),mul(radial(t),-1),X,"prism",0.55);if(x<-30&&x>-34&&k===4)pts.push(face(x,r-1.6,t))}}
-  M.anchor("lining",pts.slice(0,1))}
+// Round 15 (Shombith, 2026-11-26: "I want the inside to be cooler and the radius can be a bit smaller"; he picked B):
+// Turning rings. The tube is a stack of short black drums on a dark lining, each lined with eight prisms raked the way it
+// turns; neighbours turn opposite ways, the first one (at the lip) the way the first deck does. The even drums share one
+// motion and the odd ones another, so the rig has two ring bones (ring.0, ring.1).
+const RING_SPIN=[SPIN(0.16),SPIN(-0.16)];
+function tubeLining(M,lo,hi,r){const L=4.2,g=0.6;let i=0;
+  M.latheX([[lo,r-0.25],[hi,r-0.25]],48,"dark",{tone:(ii,j)=>j%8===0?0.6:0.85});
+  const pts=[];for(let x=hi-0.8;x-L>lo+0.4;x-=L+g,i++){const sp=RING_SPIN[i%2];M.a=sp;
+    M.latheX([[x,r-0.3],[x,r-0.95],[x-0.35,r-1.25],[x-L+0.35,r-1.25],[x-L,r-0.95],[x-L,r-0.3]],60,"hull",{tone:(ii,j)=>j%5===0?0.75:1});
+    M.torusX(x-0.2,r-1.2,0.2,60,"metal",6);M.torusX(x-L+0.2,r-1.2,0.2,60,"metal",6);
+    for(let k=0;k<8;k++){const t=(k+(i%2?0.5:0))*2*Math.PI/8,T=mul(tangent(t),Math.sign(sp.speed));plate(M,face(x-L/2,r-1.42,t),mul(radial(t),-1),T,"prism",0.6);
+      if(!pts.length&&x<-28)pts.push(face(x-L/2,r-2.6,t))}}
+  M.a=null;M.anchor("lining",pts)}
 function frameAt(path,i){const a=path[Math.max(0,i-1)],b=path[Math.min(path.length-1,i+1)],T=norm(sub(b,a)),N=norm(cross(T,Math.abs(T[0])<0.9?X:[0,1,0])),B=cross(T,N);return [T,N,B]}
 function branchTube(M,ctrl,r){const path=catmull(ctrl,7);
   M.sweep(path,r,40,"panel",{tone:(i,j)=>j%6===0?0.82:1});M.sweep(path,r-0.25,40,"metal",{tone:(i,j)=>j%8===0?0.55:(j%2?0.8:1)});

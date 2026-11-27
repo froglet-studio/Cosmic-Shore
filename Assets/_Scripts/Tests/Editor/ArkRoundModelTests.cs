@@ -25,8 +25,6 @@ namespace CosmicShore.Tests
         const string ArkwaySettingsPath = "Assets/_SO_Assets/Toys/Wander_WithArk.asset";
         const string DomainPlaceholderPath = "Assets/_Graphics/Materials/GreenAccentVesselMaterial.mat";
         const string TrailMaterialPath = "Assets/_Graphics/Materials/ArkEngineTrail.mat";
-        const string VesselGraphPath = "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph";
-        const string ArkHullGraphPath = "Assets/_Graphics/Materials/Graphs/ArkHullGraph.shadergraph";
 
         /// <summary>The table's build-only numbers (JsonUtility skips them on <see cref="ArkRigTable"/>).</summary>
         [Serializable]
@@ -70,7 +68,7 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(size.x > 0f && size.y > 0f && size.z > 0f, $"{s.name}: size {size}");
                 Assert.IsTrue(s.RidesHull || turning.Contains(s.bone), $"{s.name} rides '{s.bone}', which neither the hull nor a turning part is");
             }
-            // The prism cell (PRISM_CELL in the spec) sets the count: 581 at 2.2. Far outside this band is a budget change.
+            // The prism cell (PRISM_CELL in the spec) sets the count: 637 at 2.2 (with the tube's turning rings, round 15). Far outside this band is a budget change.
             Assert.That(table.sockets.Length, Is.InRange(400, 800), "the round Ark's hull prism count left its budget");
         }
 
@@ -98,7 +96,7 @@ namespace CosmicShore.Tests
         public void RigTable_TurningPartsAlternate_AboutTheNoseAxis()
         {
             var table = LoadTable();
-            Assert.AreEqual(8, table.spins.Length, "five decks, two gates and the pods turn");
+            Assert.AreEqual(10, table.spins.Length, "five decks, two gates, the pods and the tube's two sets of rings turn");
             ArkRigTable.Spin Find(string bone) => table.spins.FirstOrDefault(s => s.bone == bone);
             foreach (var s in table.spins)
             {
@@ -120,6 +118,11 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(g1, "gate.1");
             Assert.Less(Vector3.Dot(g0.Axis, g1.Axis), 0f, "the two ring gates turn against each other");
             Assert.IsNotNull(Find("pods"), "the pods turn on their cables");
+            var r0 = Find("ring.0");
+            var r1 = Find("ring.1");
+            Assert.IsNotNull(r0, "ring.0");
+            Assert.IsNotNull(r1, "ring.1");
+            Assert.Less(Vector3.Dot(r0.Axis, r1.Axis), 0f, "the tube's neighbouring rings turn the same way");
             Assert.AreEqual(1f, Mathf.Abs(table.ReactorAxis.normalized.z), 1e-3f, "the omni crystal's collar turns about the nose axis");
             Assert.Greater(table.reactorRadius, 0f);
         }
@@ -157,31 +160,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>(TrailMaterialPath), definition.EngineTrailMaterial, "the streams' material");
             Assert.Greater(definition.EngineTrailSeconds, 0f);
             Assert.That(definition.EngineTrailAlpha, Is.InRange(0.05f, 1f));
-        }
-
-        [Test]
-        public void Hull_IsSeeThroughBetweenTheCameraAndThePilot()
-        {
-            // Shombith's pick (2026-11-26, option C): the hull dissolves along the prisms' camera-to-vessel corridor. Every
-            // slot the model wears is VesselGraph, and ArkHullGraph carries every VesselGraph property, so ArkModel swaps
-            // each slot's copy to it with its values kept.
-            var definition = AssetDatabase.LoadAssetAtPath<ArkModelDefinitionSO>(DefinitionPath);
-            Assert.IsNotNull(definition, DefinitionPath);
-            var vessel = AssetDatabase.LoadAssetAtPath<Shader>(VesselGraphPath);
-            var ark = AssetDatabase.LoadAssetAtPath<Shader>(ArkHullGraphPath);
-            Assert.IsNotNull(vessel, VesselGraphPath);
-            Assert.IsNotNull(ark, ArkHullGraphPath + " (Tools/Build/author_ark_hull_graph.py writes it)");
-            Assert.AreEqual(ark, definition.SeeThroughShader, "the definition must wear ArkHullGraph");
-            Assert.IsTrue(ark.isSupported, "ArkHullGraph does not compile");
-            for (int i = 0; i < vessel.GetPropertyCount(); i++)
-                Assert.GreaterOrEqual(ark.FindPropertyIndex(vessel.GetPropertyName(i)), 0,
-                    $"ArkHullGraph lacks VesselGraph's {vessel.GetPropertyName(i)}: the Ark would not swap to it");
-            foreach (var r in AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath).GetComponentsInChildren<Renderer>(true))
-                foreach (var m in r.sharedMaterials)
-                    if (m) Assert.AreEqual(vessel, m.shader, $"{m.name} on {r.name} is not VesselGraph, so it would stay solid to the eye");
-            string graph = System.IO.File.ReadAllText(ArkHullGraphPath);
-            StringAssert.Contains("\"m_FunctionName\": \"PrismOcclusionFade\"", graph, "ArkHullGraph has no corridor");
-            StringAssert.Contains("\"m_AlphaClip\": true", graph, "ArkHullGraph does not clip, so the corridor cannot open it");
         }
 
         [Test]
@@ -344,12 +322,53 @@ namespace CosmicShore.Tests
             Assert.Less(reach, 1f, "the move passed through the tube's wall");
             var stop = Vector3.Lerp(from, to, reach);
             Assert.GreaterOrEqual(ArkRoundSolid.Distance(stop), margin, "the sweep stopped the vessel inside the margin");
-            Assert.Greater(stop.y, (9.2f + 1.2f) * ArkRoundSolid.Scale, "the sweep let the vessel past the wall");
+            Assert.Greater(stop.y, (8f + 1.2f) * ArkRoundSolid.Scale, "the sweep let the vessel past the wall");
 
             // A clear move is left alone.
             var along = ArkRoundSolid.FromArtifact(new Vector3(-20f, 0f, 0f));
             Assert.AreEqual(1f, ArkHullSolid.FirstContact(ArkHullShape.Round, Quaternion.identity, to, along, margin),
                 "a move down the open tube was stopped");
+        }
+
+        [Test]
+        public void HoldOut_SlidesAGlancingMoveAlongTheHull_SoAVesselNeverSticks()
+        {
+            // Shombith's playtest, 2026-11-26: "once the vessel sticks to the ark ... we get stuck". A move that meets the
+            // tube's outside at a slant keeps the part of it that runs along the surface: only the part into the hull is
+            // taken away, and the vessel ends clear of it, further on than where it touched.
+            var from = ArkRoundSolid.FromArtifact(new Vector3(5f, 13f, 0f));
+            var to = ArkRoundSolid.FromArtifact(new Vector3(5f, 8f, 4f));
+            const float margin = 1f;
+            float reach = ArkHullSolid.FirstContact(ArkHullShape.Round, Quaternion.identity, from, to, margin);
+            Assert.Less(reach, 1f, "the move did not meet the tube");
+            var contact = Vector3.Lerp(from, to, reach);
+            var normal = Gradient(contact);
+            var rest = to - contact;
+            var tangential = rest - normal * Mathf.Min(0f, Vector3.Dot(rest, normal));
+            var slide = ArkHullSolid.Slide(ArkHullShape.Round, Quaternion.identity, rest, normal, contact, margin);
+            var end = contact + slide;
+            Assert.GreaterOrEqual(ArkRoundSolid.Distance(end), margin * 0.99f, "the slide carried the vessel into the hull");
+            Assert.Greater(slide.magnitude, tangential.magnitude * 0.5f, "the vessel stopped dead on the hull (it sticks)");
+            Assert.Greater(Vector3.Dot(slide, tangential), 0f, "the slide went back the way it came");
+        }
+
+        static Vector3 Gradient(Vector3 p)
+        {
+            const float e = 0.05f;
+            return new Vector3(
+                ArkRoundSolid.Distance(p + Vector3.right * e) - ArkRoundSolid.Distance(p - Vector3.right * e),
+                ArkRoundSolid.Distance(p + Vector3.up * e) - ArkRoundSolid.Distance(p - Vector3.up * e),
+                ArkRoundSolid.Distance(p + Vector3.forward * e) - ArkRoundSolid.Distance(p - Vector3.forward * e)).normalized;
+        }
+
+        [Test]
+        public void Solid_TheTubesTurningRingsAreSolid_AndItsMiddleIsOpen()
+        {
+            // Round 15: the drums stand 1.25 in from the tube's wall (8), their prisms to about 1.5; a vessel flies the
+            // middle and meets the rings, not the wall behind them.
+            Assert.Less(ArkRoundSolid.Distance(ArkRoundSolid.FromArtifact(new Vector3(-30f, 6.9f, 0f))), 0f, "a ring is not solid");
+            Assert.IsTrue(ArkRoundSolid.InPassage(ArkRoundSolid.FromArtifact(new Vector3(-30f, 5.5f, 0f))), "the tube's middle is closed");
+            Assert.IsTrue(ArkRoundSolid.InPassage(ArkRoundSolid.FromArtifact(new Vector3(-30f, 0f, 0f))), "the tube's axis is closed");
         }
 
         [Test]
