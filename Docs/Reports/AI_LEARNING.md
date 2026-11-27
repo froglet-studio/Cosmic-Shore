@@ -1,106 +1,12 @@
 # AI learning: what the last races taught
 
-Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-11-26 22:22 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
+Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-11-27 22:20 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
 
-**11 new flight(s)** since the last learn.
-
-## Bloomrush
-
-New flights: Manta 3.
-
-- `learn_drives_from_flights --write`: OK. Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Bloomrush.asset.
-- `learn_drives_from_flights --check`: OK. check: OK
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Manta | I1 | 18 | 0 | - | 2 of 2 | 2026-11-22 23:16 |
-| Manta | I3 | 2 | 0 | - | - | 2026-10-26 04:52 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-```
-
-## Gorge
-
-New flights: JewelWasp 1.
-
-**No learner reads these yet** (the sweep's to-do): JewelWasp.
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| JewelWasp | I1 | 1 | 0 | - | - | 2026-11-22 20:10 |
-| JewelWasp | I4 | 1 | 0 | - | - | 2026-11-16 19:37 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-```
-
-## GrizzlyCharge
-
-New flights: Grizzly 2.
-
-- **Grizzly: measured, not written** - its AI bombs through GrizzlyTriggerBombConfigSO's autopilot fields, which do not load per mode, and jtgjones's grizzly-v3 is reworking the bomb triggers (15 unmerged commits): learn it once that lands.
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Grizzly | I1 | 13 | 0 | - | 2 of 2 | 2026-11-26 07:37 |
-| Unknown | I1 | 1 | 0 | - | - | 2026-10-17 06:02 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-```
-
-## Joust
-
-New flights: Squirrel 1.
-
-- **Squirrel: measured, not written** - SquirrelAIBoostPolicy is switched off in Joust (disabledInModes).
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Squirrel | I1 | 2 | 0 | - | - | 2026-11-25 20:24 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-```
-
-## Marionette
-
-New flights: JewelWasp 1.
-
-**No learner reads these yet** (the sweep's to-do): JewelWasp.
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| JewelWasp | I1 | 1 | 0 | - | - | 2026-11-22 20:11 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-```
+**3 new flight(s)** since the last learn.
 
 ## Switchback
 
-New flights: Dolphin 2.
+New flights: Dolphin 3.
 
 - `learn_drives_from_flights --write`: OK. nothing.
 - `learn_drives_from_flights --check`: OK. check: OK
@@ -109,7 +15,7 @@ The person, every recorded race in this mode:
 
 | Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
 |---|---|---:|---:|---:|---:|---|
-| Dolphin | I1 | 30 | 9 | 58 s | 9 of 18 | 2026-11-20 19:54 |
+| Dolphin | I1 | 33 | 10 | 58 s | 11 of 20 | 2026-11-20 19:54 |
 | Dolphin | I2 | 19 | 12 | 80 s | 7 of 9 | 2026-11-16 21:10 |
 | Dolphin | I3 | 3 | 0 | - | 0 of 2 | 2026-10-29 07:13 |
 | Dolphin | I4 | 20 | 4 | 106 s | 1 of 9 | 2026-11-04 15:41 |
@@ -118,47 +24,23 @@ The AI rivals in those races (`regatta_rival_report.py`; judge only races flown 
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-dolphin      139     14    7.2    83       4%     3%   28/139  0: 132, 3: 38, 7: 32, 6: 31
-```
-
-## Trawl
-
-New flights: Jacks 1.
-
-- **Jacks: measured, not written** - no measure for RampBoostAIPolicySO yet (its policy RhinoAIBoostPolicy).
-
-The person, every recorded race in this mode:
-
-| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |
-|---|---|---:|---:|---:|---:|---|
-| Jacks | I1 | 3 | 0 | - | - | 2026-11-22 20:08 |
-
-The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
-
-```
-hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
+dolphin      142     14    7.4    84       4%     3%   29/142  0: 134, 3: 38, 7: 32, 6: 31
 ```
 
 ## Files the learners changed
 
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Bloomrush.md`
 - `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`
 
-## What the sweep judged (2026-11-26)
+## What the sweep judged (2026-11-27)
 
-11 new flights: 3 Bloomrush (Manta), 2 Switchback (Dolphin), 2 Grizzly Charge, 1 Gorge and 1 Marionette (Jewel Wasp),
-1 Joust (Squirrel), 1 Trawl (Jacks). **No asset under `Assets/Resources/AIBoostPolicies` changed**; only the two
-learned-drive docs were refreshed.
+3 new flights, all Switchback (Dolphin), all flown on 2026-11-20 15:50-15:51 at I1 (1 finished) and only now
+received. **No asset under `Assets/Resources/AIBoostPolicies` changed**; only `LEARNED_DRIVES_Switchback.md` was refreshed.
 
-- **Bloomrush (Manta, 3 new):** the relearn wrote the same `MantaSoarAITuning_Bloomrush` numbers (`BoostStickBand` 0.03,
-  `YawsteryStickBand` 0.97), so the asset is unchanged. The AI still never soars (`meanSoar` 0.00 of 576 samples
-  against the person's 0.13): the Waiting on item stands; numbers will not fix it.
-- **Switchback (Dolphin, 2 new, both from 2026-11-20, 1 finished at I1):** I1 alone has 2 finished races, under the 3
-  that write; the mode-wide variant keeps its written values (`alignDegrees` 30.23, `engageRunwaySeconds` 1.30,
-  `spendAtCharge01` 0.92, `stickBand` 0.23). Rivals finished 28 of 139 races and stall at ring 0 (new Waiting on item).
-- **Grizzly Charge (2), Joust (Squirrel, switched off there), Trawl (Jacks, no `RampBoostAIPolicySO` measure):** report only.
-- **Gorge and Marionette (Jewel Wasp):** no learner yet (To build).
-- `promote_trained_drives.py --check` OK; `learn_drives_from_flights.py --check` and `--self-test` OK.
+- **Switchback (Dolphin, 3 new):** the mode-wide variant keeps its written values (`alignDegrees` 30.23,
+  `engageRunwaySeconds` 1.30, `spendAtCharge01` 0.92, `stickBand` 0.23). I1 alone now has 3 finished races but too few
+  discharge moments in them (under 6), so nothing is written for I1. The rivals still stall at ring 0 (134 of 142
+  races, 29 finished): numbers will not fix that; the Waiting on item stands.
+- `promote_trained_drives.py --check` OK; `learn_drives_from_flights.py --check` OK.
 
 ## Waiting on
 
@@ -193,7 +75,7 @@ learned-drive docs were refreshed.
   stuck. They finished 8 of 13 and the person won 4 of 9 at I1.
 - **No measure for `RampBoostAIPolicySO` yet:** Swordfish (Brood Rush 5, Spearline 4 races waiting) and Jacks (Decoy
   Run 1, Trawl 3).
-- **Switchback's Dolphin AI stalls at ring 0** (132 stalls at index 0 over 139 rival races, 28 finished, 2026-11-26):
+- **Switchback's Dolphin AI stalls at ring 0** (132 stalls at index 0 over 139 rival races, 28 finished, 2026-11-26; 134 of 142, 29 finished, 2026-11-27):
   look at the start leg with `/vessel-ai` before more numbers are written; whoever owns the Dolphin AI in Switchback.
 - **To build:** a Tiger Moth learner (Tapestry, Waystation, Dustup, Sirocco), a Jewel Wasp learner (Gorge 2, Marionette 1) and a
   Brittle Star measure (`BrittleStarSpeedModeAIPolicySO`, Flatline 4 races waiting).
