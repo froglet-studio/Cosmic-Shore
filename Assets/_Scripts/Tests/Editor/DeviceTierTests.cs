@@ -320,6 +320,18 @@ namespace CosmicShore.Tests
             AssertSameBelt(authored, applied, tier.ToString());
         }
 
+        [TestCase(DeviceTier.Desktop, 20000)]
+        [TestCase(DeviceTier.MobileHigh, 15000)]
+        public void DesktopAndMobileHigh_LavaLampWaits_ToyBoxTrailNeverDoes(DeviceTier tier, int lampBudget)
+        {
+            // 2026-11-26: the lava lamp's B45 wait first shared the freestyle budget, which lifted the
+            // player's own Toy Box pen on PC at 20,000 cell prisms (far from the cell, for good).
+            var profile = ShippedProfile(tier);
+            Assert.AreEqual(0, profile.FreestyleCellPrismBudget, $"{tier} freestyle budget");
+            Assert.AreEqual(lampBudget, profile.LavaLampCellPrismBudget, $"{tier} lava-lamp budget");
+            Assert.Less(profile.LavaLampCellPrismResume, profile.LavaLampCellPrismBudget, $"{tier} hysteresis");
+        }
+
         [Test]
         public void MobileLow_RunsTheStripsContentNumbers()
         {

@@ -127,7 +127,8 @@ def abilities():
     r = subprocess.run([sys.executable, os.path.join(HERE, "element_ability_table.py"), "--json"], capture_output=True, text=True)
     out = {}
     try:
-        for row in json.loads(r.stdout):
+        data = json.loads(r.stdout)
+        for row in (data.get("rows", []) if isinstance(data, dict) else data):  # {"rows", "kits"} since 2026-11-25
             out.setdefault(row["vessel"], {})[row["element"]] = row.get("ability") or ""
     except (ValueError, KeyError):
         pass

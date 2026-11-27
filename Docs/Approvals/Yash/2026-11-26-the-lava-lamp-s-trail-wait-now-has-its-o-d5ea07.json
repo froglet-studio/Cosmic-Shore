@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-the-lava-lamp-s-trail-wait-now-has-its-o-d5ea07",
+  "to": "Yash",
+  "by": "Caleb",
+  "date": "2026-11-26T23:26:52+00:00",
+  "area": "B45 menu trail budget (PlatformProfile Desktop/MobileHigh, MenuCrystalClickHandler)",
+  "summary": "The lava lamp's trail wait now has its own budget (lavaLampCellPrismBudget/Resume: 20,000/19,700 Desktop, 15,000/14,700 MobileHigh); freestyleCellPrismBudget on those tiers is back to 0. Sharing the freestyle budget lifted the Toy Box pen on PC once a cell held 20,000 prisms; far from the cell nothing grazed it back down, so the Squirrel/Manta trail stopped for good (Caleb and Yash both hit it). The lava-lamp B45 fix is kept as you built it.",
+  "branch": "claude/stoic-ptolemy-kls5cc",
+  "commit": "abe264f9f"
+}

@@ -54,7 +54,8 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("\"2 / 1 / 0\" - placement points, first to last.")]
         TMPro.TMP_Text pointsByPlaceText;
 
-        [SerializeField, Tooltip("\"4\" - the fixed field every round seats.")]
+        [SerializeField, Tooltip("\"4\" - the most pilots a round seats (SeatCount). The field itself is the " +
+                                 "lobby built here, kept for every round.")]
         TMPro.TMP_Text seatsText;
 
         public override bool Handles(SO_ArcadeGame game)

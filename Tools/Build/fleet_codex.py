@@ -151,7 +151,8 @@ def ability_rows():
     if r.returncode != 0:
         sys.exit(f"element_ability_table.py failed:\n{r.stderr}")
     out = {}
-    for row in json.loads(r.stdout):
+    data = json.loads(r.stdout)
+    for row in (data.get("rows", []) if isinstance(data, dict) else data):  # {"rows", "kits"} since 2026-11-25
         out.setdefault(row["vessel"], {})[row["element"]] = row
     return out
 

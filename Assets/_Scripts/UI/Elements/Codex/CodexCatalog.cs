@@ -17,6 +17,8 @@ namespace CosmicShore.UI
         Flora = 1,
         Fauna = 2,
         Lexicon = 3,    // one card each: vessels, pilots, artifacts, toys
+        Vessels = 4,    // ECOLOGY: every vessel's role and archetypes, primary first (CodexRoles)
+        Roles = 5,      // ECOLOGY: the three roles and nine archetypes, and which counters which (CodexRoles)
     }
 
     /// <summary>One line of facts on a page: a label and its value.</summary>
@@ -144,6 +146,30 @@ namespace CosmicShore.UI
 
         [Tooltip("The LEXICON: one card per idea (vessels, pilots, artifacts, toys).")]
         public List<CodexCard> lexicon = new();
+
+        [Header("Vessels and Roles (ECOLOGY)")]
+        [Tooltip("A role's page kicker.")]
+        public string roleKicker = "Role";
+        [Tooltip("The heading over a role's three archetypes.")]
+        public string roleRowsHeading = "Archetypes";
+        [Tooltip("A vessel's archetype ranks, primary first: primary, secondary, tertiary.")]
+        public string[] rankNames = { "Primary", "Secondary", "Tertiary" };
+        [Tooltip("The heading over a vessel's archetypes.")]
+        public string vesselRowsHeading = "Archetypes";
+        [Tooltip("A vessel's archetype row title. {archetype} is its name, {rank} its rank.")]
+        public string vesselRowTemplate = "{archetype} - {rank}";
+        [Tooltip("The heading over the vessels an archetype page lists.")]
+        public string archetypeRowsHeading = "Vessels";
+        [Tooltip("The fact naming the role.")]
+        public string roleLabel = "Role";
+        [Tooltip("The fact listing what the archetype (a vessel's primary) counters.")]
+        public string countersLabel = "Counters";
+        [Tooltip("The fact listing what counters the archetype (a vessel's primary).")]
+        public string counteredByLabel = "Countered by";
+        [Tooltip("Between the names in a counters fact.")]
+        public string listSeparator = ", ";
+        [Tooltip("A counters fact with no archetype in it.")]
+        public string noneLine = "None";
     }
 
     /// <summary>
@@ -175,7 +201,7 @@ namespace CosmicShore.UI
         public static List<CodexItem> Build(CodexChapter chapter, CodexSO codex, SO_VesselList vessels, Sprite[] petals,
                                             CodexWords words, Func<VesselClassType, ElementalAbilityMapSO> maps = null,
                                             SpawnMatrixToyDefinitionSO roster = null, Texture2D[] elementFlipbooks = null,
-                                            Color[] lifePalette = null)
+                                            Color[] lifePalette = null, VesselArchetypesSO archetypes = null)
         {
             maps ??= ElementalAbilityMapSO.LoadFor;
             words ??= new CodexWords();
@@ -187,6 +213,8 @@ namespace CosmicShore.UI
                 CodexChapter.Fauna => Lifeforms(codex, CodexKingdom.Fauna, Names(roster ? roster.Fauna : null, f => f?.Name), roster,
                                                 words.faunaKicker, words, petals),
                 CodexChapter.Lexicon => Cards(words.lexicon, words),
+                CodexChapter.Vessels => CodexRoles.Vessels(archetypes, vessels, words),
+                CodexChapter.Roles => CodexRoles.Roles(archetypes, vessels, words),
                 _ => new List<CodexItem>(),
             };
             // A lifeform is nobody's on its page, and in the world it wears its owner's colour: the picture drifts through
@@ -328,7 +356,7 @@ namespace CosmicShore.UI
             if (page.Facts.Count > 0) page.FactsHeading = words.factsHeading;
         }
 
-        static void AddFact(CodexPage page, string label, string value)
+        internal static void AddFact(CodexPage page, string label, string value)
         {
             if (!string.IsNullOrWhiteSpace(value)) page.Facts.Add(new CodexFact(label ?? string.Empty, value.Trim()));
         }

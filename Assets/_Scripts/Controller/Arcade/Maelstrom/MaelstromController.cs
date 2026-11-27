@@ -279,9 +279,18 @@ namespace CosmicShore.Gameplay
             // random intensity in [1..X]. Set AFTER ResetRuntime so a fresh start re-captures the
             // player's current choice; skipped on Play Again so the original ceiling survives.
             if (captureCeiling)
+            {
                 _tournament.IntensityCeiling = _gameData.SelectedIntensity != null
                     ? Mathf.Max(1, _gameData.SelectedIntensity.Value)
                     : 1;
+
+                // The field the host built in the launch panel (humans + placed AI), captured here
+                // for the same reason as the ceiling: SelectedPlayerCount still holds the launch's
+                // value, and ApplyRoster overwrites it with the field from the first deal on.
+                _tournament.FieldSize = _gameData.SelectedPlayerCount != null
+                    ? _gameData.SelectedPlayerCount.Value
+                    : 0;
+            }
             _gameData.IsMaelstromMode = true;
             _stateMachine.ResetToIdle();
             _stateMachine.TransitionTo(MaelstromPhase.Lobby);
@@ -329,17 +338,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Fix the tournament's FIELD: <see cref="MaelstromDataSO.SeatCount"/> pilots every round,
-        /// the party's humans plus AI for the rest - and deal those AI once, here in the hub,
+        /// Fix the tournament's FIELD: <see cref="MaelstromDataSO.EffectiveSeatCount"/> pilots every
+        /// round, the party's humans plus AI for the rest - and deal those AI once, here in the hub,
         /// rather than lazily in the first round that happens to backfill.
         ///
-        /// <para><b>Why the seat count is not the launch modal's number.</b> The stepper on the
-        /// arcade card is a preference for ONE match. A tournament is scored across sixteen of
-        /// them, so a field that changed size between rounds would be scoring a different game
-        /// each time - a three-player round and a four-player round are not comparable, and the
-        /// placement table (<see cref="MaelstromDataSO.PointsByPlace"/>) is per DOMAIN, so the
-        /// shape of the teams is the shape of the scoring. Four is the card's own maximum, so a
-        /// full party of four brings no AI at all and a solo player brings three.</para>
+        /// <para><b>The field is the lobby the host built, captured once.</b> A tournament is scored
+        /// across many games, so a field that changed size between rounds would be scoring a
+        /// different game each time - the placement table (<see cref="MaelstromDataSO.PointsByPlace"/>)
+        /// is per DOMAIN, so the shape of the teams is the shape of the scoring. It used to be a
+        /// fixed four whatever the lobby said, and the padding re-balanced every team the host had
+        /// made (a 1v1 always came out Jade, Ruby, Gold, Ruby). The lobby's seat count is captured at
+        /// the fresh start (<see cref="MaelstromDataSO.FieldSize"/>), capped at
+        /// <see cref="MaelstromDataSO.SeatCount"/>; a player who leaves mid-tournament is still
+        /// replaced by an AI, because the field stays the same size.</para>
         ///
         /// <para><b>Why the roster is dealt HERE.</b> It used to be dealt by the first round's
         /// spawner, which made the intro hub honest about nothing: the party readied up against a
@@ -371,7 +382,7 @@ namespace CosmicShore.Gameplay
                     if (humans[i] is Player pl && pl.IsSpawned && !pl.NetIsAI.Value)
                         _rosterHumans.Add(pl);
 
-            int seats = _tournament.SeatCount;
+            int seats = _tournament.EffectiveSeatCount;
             _gameData.ConfigurePlayerCounts(seats, _rosterHumans.Count);
 
             DealAISeats(Mathf.Max(0, seats - _rosterHumans.Count), _rosterHumans);

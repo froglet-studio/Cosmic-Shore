@@ -27520,3 +27520,31 @@ Refcompile: 0 errors in the changed files (the run's 29 pre-existing errors are 
 - [ ] Unity imports `Assets/Resources/Vessels/VesselArchetypes.asset` with no missing-script warning, and its Inspector shows roles, archetypes, 24 vessels and 12 counters.
 - [ ] Hangar: the line over each vessel's name reads its role, its archetypes primary first, then Owned / Locked (Squirrel: CULTIVATOR · PUMPER / HARRASER · OWNED). A vessel the board leaves out still reads VESSEL · OWNED.
 - [ ] Run the edit-mode tests `VesselArchetypesTests`.
+
+## The Maelstrom seats the lobby you built, not always four (2026-11-26, claude/optimistic-clarke-7bxd4m)
+
+Refcompile: 0 errors in project code. No Unity editor ran; `EffectiveSeatCount_IsTheLobbyField_CappedAtSeatCount` (MaelstromDataSOTests) is new and not yet run.
+- [ ] Solo, Maelstrom card, default lobby (you + 1 AI): the hub and every round seat exactly 2 pilots, on the domains the lobby showed (it used to pad to 4: Jade, Ruby, Gold, Ruby).
+- [ ] Solo, you on Gold, place AI on Jade and Ruby (3 seats): every round has those 3, on those domains.
+- [ ] Full lobby of 4 (any teams): unchanged, the same 4 every round. Play Again from the summary keeps the same field.
+- [ ] Two humans: one leaves mid-tournament; the next round seats an AI in their place (the field keeps its size).
+
+## The Toy Box trail never waits on PC; only the lava lamp does (2026-11-26, claude/stoic-ptolemy-kls5cc)
+
+Refcompile: 0 errors in project code. No Unity editor ran; `DesktopAndMobileHigh_LavaLampWaits_ToyBoxTrailNeverDoes` is new and `DesktopAndMobileHigh_ChangeNothingAboutContent` (red since 2026-11-21) should be green again; neither has run.
+- [ ] Desktop, Toy Box, Squirrel: idle the gamepad and drift far from the cell for several minutes (past 20,000 cell prisms, `diag`); the trail never stops. Swap to the Manta: it lays trail too.
+- [ ] Desktop, menu (lava lamp) idle 10+ minutes: its trail still stops at about 20,000 cell prisms, and the load out of the menu stays short (B45).
+
+## Mass-Space AI rows (2026-11-21)
+
+`AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
+Meerkat, Sparrow, Stoat and Urchin AIs a learned ability cycle and steering in Mass-Space modes only; the Urchin also gets
+`UrchinAutopilotConfig_Hijack` / `_BroodRush`. Measured in Amoebius only; not run in the Unity editor. The reference
+compile has 0 errors in the changed files.
+
+- [ ] Brood Rush with AI Meerkat, Sparrow and Stoat: the Meerkat AI forms and shortens solitons, the Sparrow AI goes
+      stationary and fires its guns, the Stoat AI slings. No errors in the console when they spawn.
+- [ ] Regatta with the same hulls: their AIs fly exactly as before (no soliton, sling or stationary presses there).
+- [ ] Warren, Cave-in, Salvo, Wildlife Liberation, Fulmen, Hijack at I1 and I4: the AI plays, nothing stalls.
+- [ ] Multiplayer host with an AI Sparrow in Brood Rush: a client sees its guns fire (AI presses replicate once #2322's
+      AutopilotPressTravels lands).

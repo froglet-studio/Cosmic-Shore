@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-the-tournament-field-is-now-the-lobby-th-54e3d8",
+  "to": "Yash",
+  "by": "Shombith",
+  "date": "2026-11-26T21:16:21+00:00",
+  "area": "Maelstrom roster (MaelstromController.ApplyRoster, MaelstromDataSO.SeatCount)",
+  "summary": "The tournament field is now the lobby the host built (humans + placed AI, captured at the fresh start as MaelstromDataSO.FieldSize, capped at SeatCount) instead of always 4. Padding to 4 with balanced AI turned every lobby into Jade/Ruby/Gold/Ruby or Jade/Ruby/Ruby/Jade (the Ruby-first tie-break), overriding the teams the host made.",
+  "branch": "claude/optimistic-clarke-7bxd4m",
+  "commit": "645f6bb72"
+}

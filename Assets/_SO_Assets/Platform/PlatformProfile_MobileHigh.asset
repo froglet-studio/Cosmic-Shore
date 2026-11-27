@@ -24,8 +24,10 @@ MonoBehaviour:
   membraneMaxSubdivisions: -1
   foldGateWindowMaxRenderScale: 1
   menuAutopilotLaysNoTrail: 0
-  freestyleCellPrismBudget: 15000
-  freestyleCellPrismResume: 14700
+  freestyleCellPrismBudget: 0
+  freestyleCellPrismResume: 0
+  lavaLampCellPrismBudget: 15000
+  lavaLampCellPrismResume: 14700
   skimRaceTrail:
     raceBudget: 0
     floorPerVessel: 1
