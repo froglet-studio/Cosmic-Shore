@@ -64,7 +64,7 @@ monitor, toast config in the library, mode preview, generator, card background.
 | Environment by intensity | garden I1-I4 (`fd5145d403`), ruins at I4 | the Lists (`0f31da4d4c`) | lanes, frames, rubble (`a63579354a`) | four arenas + lances (`5269ddfdef`) |
 | Compiled in Unity | yes, 2026-11-23, before the garden; garden unconfirmed | arena and lane AI: yes per `ba00cb40a1` (the doc's section 5 still says no) | **no** for the 2026-11-25 changes | yes |
 | Unity tests | `SpearlineSealsTests` 11/11; garden tests not run in Unity | `RiposteDuelTests` 14/14; yard and lane tests not run in Unity | none run | `CleaveLadderTests` 20 pass |
-| AI match in Unity | I1-I4 finished, before the garden; with the garden: none | I1 at 4x and I2-I4 at 1x, all in the OLD arena and with a wrong seating; none in the Lists | none | all four rungs at 1x, 280/208/161/152 s (`2beef51681`) |
+| AI match in Unity | with the garden, 4 AI seats, clock 1x: I1 129.6 s, I3 118.0 s, I4 140.6 s, all ended with a winner; I3 fps mean 57 (min 41), 410 garden parts placed, none missing; I2 not run yet; one boot error each (`[LaunchFlags] ... NotFound`, the backend flags, not Spearline) | I1 at 4x and I2-I4 at 1x, all in the OLD arena and with a wrong seating; none in the Lists | none | all four rungs at 1x, 280/208/161/152 s (`2beef51681`) |
 | Headless judge | 24 of 24 finished with the garden | 24 of 24 (old arena), 64 matches in the Lists | 2026-11-19 only, before the arena | not Cleave's score |
 | Flown by a person | no | no | no | no since the Swordfish took it |
 | Card art | 2026-11-23, older than the garden | 2026-11-23, older than the Lists | 2026-11-23, older than the arena (`PALISADE.md` section 9 asks for a re-render) | 2026-11-23, without lances |
