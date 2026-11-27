@@ -112,7 +112,9 @@ combos:
 - in: x
   name: The palisade
   t: [10, 30]
-  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)'
+  src: 'Proposed 2026-11-21 from the kit text: one combo per genome (combo genes). 2026-11-27: Palisade re-judged with
+    its arena (07ada7c6b, PALISADE.md): afterimages are 88-91% of what stands for four Legendary Swordfish AIs on every
+    rung, so this combo is already how the Mass game is won.'
   is: 'Light the sword by the nucleus and swing as it goes out: the afterimages are walls.'
   chain:
   - - Charge

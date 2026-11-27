@@ -45,10 +45,11 @@ items:
   in: x
   prop:
     s: add
-    note: 'Garrett''s design: every move the Goby makes is a charged launch from one perch to the next. A tap is a short
-      hop (140 u) and a full 0.8 s charge goes 600 u; the landing is always a perch, so short hops count too. While perched,
-      the person''s two thumbs turn the hull, and the turn sets the Pistol''s plane. Today the Goby cruises between perches
-      on two-thumb flight (its AI at aiCruiseSpeed 100), only darts that end 900 u or more from the last perch make a perch,
-      and shorter ones are dashes.'
+    note: 'Built in the game on Garrett''s word (1a5ece719, 2026-11-24): the Goby is pinned at every landing, the two thumbs
+      only turn it and set the Pistol''s plane, and a 140-600 u dart by charge is its only movement; the seat AI and the
+      Perch Run and Regatta coaches turn in place and hop aside when coral blocks the line. Perch Run''s reader clocks stay
+      36.0 / 37.8 / 36.8 / 30.5 s. The atlas still shows this as an idea: it needs the owner''s develop and done to reach
+      Now, and the Goby''s Proposed combo ''Length and line'' describes what now ships. Not yet flown in the Unity editor
+      (checklist entry).'
   src:
   - Garrett, project chat, 2026-11-24
