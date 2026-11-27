@@ -27,7 +27,7 @@ namespace CosmicShore.UI
     /// the right the squad's vessel that fills it, met fully or by half (<see cref="VoyageSeatFill"/>).</item>
     /// <item><b>Your crew says</b>: each seat's pilot, their line and their mood (<see cref="VoyageMood"/>); See every
     /// archetype (Y) under it.</item>
-    /// <item><b>The foot</b>: the squad fit, the pay in crystals and Take the job (A), which opens Your Ark.</item>
+    /// <item><b>The foot</b>: the squad fit, the pay in crystals and Take the job (A), which opens The voyage.</item>
     /// </list>
     /// </summary>
     public sealed class VoyageQuay

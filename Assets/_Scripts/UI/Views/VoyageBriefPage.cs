@@ -272,13 +272,21 @@ namespace CosmicShore.UI
             _offer = offer;
             if (offer == null) return;
 
-            VoyageKit.ShowCover(_portrait, offer.Portrait, new Vector2(520f, Design.y), new Vector2(0.5f, 0.2f));
-            VoyageKit.Set(_faction, offer.Faction);
-            VoyageKit.Set(_pilot, offer.Pilot);
+            // The same giver, kind and face the quay showed for this job (Shombith, 2026-11-26: the page named another
+            // pilot and an old kind): the voyage type's giver from the Codex, else the pilot who brings it.
+            var info = VoyageQuay.TypeOf(offer);
+            var catalog = PilotArtifactCatalogSO.Load();
+            string giver = VoyageQuay.GiverName(info, offer, catalog);
+            var words = VoyageQuaySO.Load();
+            string typeKind = words ? words.KindOf(VoyageArchetypesSO.JobOf(offer.Key)) : null;
+            string kind = string.IsNullOrEmpty(typeKind) ? offer.Kind : typeKind;
+            VoyageKit.ShowCover(_portrait, VoyageQuay.GiverFace(info, offer, catalog), new Vector2(520f, Design.y), new Vector2(0.5f, 0.2f));
+            VoyageKit.Set(_faction, VoyageQuay.GiverFaction(info, offer));
+            VoyageKit.Set(_pilot, giver);
             VoyageKit.Set(_story, offer.Story);
 
-            VoyageKit.Set(_kicker, string.IsNullOrEmpty(offer.Pilot) ? offer.Kind
-                : TemplateText.Fill(_lines?.BriefKicker, "kind", offer.Kind, "pilot", offer.Pilot));
+            VoyageKit.Set(_kicker, string.IsNullOrEmpty(giver) ? kind
+                : TemplateText.Fill(_lines?.BriefKicker, "kind", kind, "pilot", giver));
             VoyageKit.Set(_title, offer.Title);
             VoyageKit.Set(_stats, string.IsNullOrEmpty(offer.Ly) ? null
                 : TemplateText.Fill(_lines?.BriefStats, "ly", offer.Ly, "minutes", offer.Minutes,
@@ -302,8 +310,8 @@ namespace CosmicShore.UI
                 Animate();
             }
 
-            VoyageKit.Set(_recommended, string.IsNullOrEmpty(offer.Pilot) ? null
-                : TemplateText.Fill(_lines?.BriefRecommended, "pilot", offer.Pilot,
+            VoyageKit.Set(_recommended, string.IsNullOrEmpty(giver) ? null
+                : TemplateText.Fill(_lines?.BriefRecommended, "pilot", giver,
                     "difficulty", offer.Recommended.ToString(CultureInfo.InvariantCulture)));
             for (int i = 0; i < _difficulty.Count; i++)
             {
@@ -329,7 +337,8 @@ namespace CosmicShore.UI
             _standing.Root.gameObject.SetActive(!string.IsNullOrEmpty(offer.Faction));
             VoyageKit.Set(_standing.Main, TemplateText.Fill(_lines?.BriefStanding, "faction", offer.Faction));
             VoyageKit.Set(_standing.By, _lines?.BriefStandingBy);
-            _role.Root.gameObject.SetActive(!string.IsNullOrEmpty(offer.Role));
+            // A voyage that asks for archetypes says so on the quay and Your Ark; the old squad role stays off it.
+            _role.Root.gameObject.SetActive(info == null && !string.IsNullOrEmpty(offer.Role));
             VoyageKit.Set(_role.Main, TemplateText.Fill(_lines?.BriefRole, "role", offer.Role));
             VoyageKit.Set(_role.By, null);
             StackRewards();

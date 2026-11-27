@@ -27513,3 +27513,13 @@ Refcompile: 0 errors in the changed files (the run's 29 pre-existing errors are 
 - [ ] Press Squirrel's hull: Vessels opens on Harraser (Starling, Jacks on the floor), the "Harraser second or third"
   tiles at the right with "In this seat now" on Squirrel, nine archetype tabs (Zoner "(none yet)"); LB / RB step them;
   Take Starling puts it in the seat and the fit reads 3 of 3.
+
+## Voyages: Take the job opens The voyage; Vessels hulls stand on the floor (2026-11-26)
+
+Take the job on the quay now opens 02 The voyage (its Ready your Ark goes on to Your Ark; Back steps back one page). The
+voyage page names the same giver, face and kind as the quay, and drops the old "Your squad sails as" line for voyages that
+ask for archetypes. On Vessels, a leader's picture ends on the floor's edge, and the side tiles stand three to a row (the
+first row above the floor, the second on it). Checked in Amoebius; not run in the Unity editor.
+
+- [ ] Quay > Take the job: 02 The voyage opens with the quay's giver; Ready your Ark opens Your Ark; Back returns to 02.
+- [ ] Your Ark > press a hull: no hull or tile crosses the floor's edge; try Builder (two leaders) and Sapper (seven).
