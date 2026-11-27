@@ -480,6 +480,11 @@
      "on": "npx",
      "q": "Every arc in the atlas is fed by winning. A player who only makes things (the painter in Docs/LoopAtlas/personas/journeys.yaml) moves no arc, and has seen every painting and microscene by week 3.",
      "fill": "Each week of the Tide adds one painting and one microscene, and a shared painting opens the same canvas for whoever taps it."
+    },
+    {
+     "on": "np",
+     "q": "Today's activity is not on the map. Since 2026-09 the Toy Box draws one toy activity a day from the live toys (a painting, a wander, a voyage) and pays crystals once a day for starting it (DailyToyActivity.cs); since 2026-11-25 it is the banner across the top of the redesigned Toy Box with a countdown (Rev 145 H, 94caa2566). The loop shows no daily phase and its hole above says the Toybox pays no progress, so the toy-only player's one daily reason to come back, and its one payout, is missing from the model and the simulation.",
+     "fill": "Add 'Open today's activity' as the Toybox's first phase with reward among its drivers, count its daily crystals in the economy simulation, and let the breath (P5) offer it when no daily job is waiting."
     }
    ],
    "src": [
@@ -876,14 +881,18 @@
    "holes": [
     {
      "on": "n",
-     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. 2026-11-24: two more cards show it. Spearline's Legendary Swordfish AI (eda5d81aa, SPEARLINE.md) runs I1 148.5 s, I2 142.3, I3 135.2, I4 143.6, so I3 is the quickest rung, and Perch Run's reader runs 36.0, 37.8, 36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder.",
+     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. 2026-11-24: two more cards show it. Spearline's Legendary Swordfish AI (eda5d81aa, SPEARLINE.md) runs I1 148.5 s, I2 142.3, I3 135.2, I4 143.6, so I3 is the quickest rung, and Perch Run's reader runs 36.0, 37.8, 36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder. 2026-11-25: the new I4 ruins do not widen the gap for the AI either. Thornline's Legendary AI wins I4 in 44.5, 42.7 and 48.3 s with the ruins standing against 42.0 and 52.3 s with them cleared (f118062a8, THORNLINE.md), and five Headlong races show no cost in time (40074b262, HEADLONG.md).",
      "fill": "Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off."
     }
    ],
    "src": [
     "Docs/ElementalLoop/PLAYBOOK.md step 2",
     "Docs/MENU_PROGRESSION_AND_IAP.md section 2b"
-   ]
+   ],
+   "prop": {
+    "s": "change",
+    "note": "Make ruins across the line the standard I4 demand on Time cards, beside the fauna. Since 2026-11-24 ten Time cards lay ruins at I4 only (Spearline, Headlong, Thornline, Scarab Rally, Switchback, Waystation, Slingshot, Grizzly Time, Breakwater's barriers, Brittle Star Time's breakers), each built on its own: write the shared rule into the I4 phase (which kinds, how far off the line, grows back once the field passes) so the next Time card starts from it. Sources: SPEARLINE.md, THORNLINE.md, HEADLONG.md, BREAKWATER.md, commits 78801c514, ebc817f9b, f6334e839."
+   }
   },
   {
    "id": "round.time",
@@ -1394,7 +1403,7 @@
    "repsOf": "voyage per sitting",
    "now": {
     "s": "part",
-    "note": "V1 is built as the slice and D1 deepens it on the device: the living galaxy, rival crews by the same rules, work verbs, sagas, standing. Run once in Unity by Garrett. The networked Ark, rival Arks in the world and meeting other squads are not built."
+    "note": "V1 is built as the slice and D1 deepens it on the device: the living galaxy, rival crews by the same rules, work verbs, sagas, standing. Run once in Unity by Garrett. No voyage is kept for later: leaving ends it, and Set sail starts fresh from home (Shombith, 2026-11-25, commit db10caf70). The networked Ark, rival Arks in the world and meeting other squads are not built."
    },
    "plan": {
     "note": "V2 to V4: squads meet on arrival, placed by galactic traffic control so the meeting makes sense to both sides' missions. 3 to 6 legs, 20 to 40 minutes."
@@ -1411,8 +1420,8 @@
     },
     {
      "on": "npx",
-     "q": "A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in Docs/LoopAtlas/personas/journeys.yaml) never finishes one.",
-     "fill": "The Ark docks at the location it reached when the player leaves; the next sitting sails from there, one leg at a time."
+     "q": "A voyage is 20 to 40 minutes and leaving abandons it, so a player whose sittings are six minutes (the commuter in Docs/LoopAtlas/personas/journeys.yaml) never finishes one. Docking where the player left is off for now: Shombith, 2026-11-25, \"for now there is no saving, if they leave they leave. Set sail restarts the level\" (commit db10caf70).",
+     "fill": "Until saving returns, the port board always offers one job that fits a six-minute sitting (one cell out and the way home at 2x), so a short sitting still ends at a dock with its find; the Crystal Run stays the longer job."
     },
     {
      "on": "np",
@@ -8110,7 +8119,7 @@
    "verbs": {
     "Time": {
      "ability": "Afterburner",
-     "does": "Boost for as long as you hold - no heat, no meter. Push the stick fully to one side as you start boosting and the Sparrow does a quick strafing roll, even while stopped.",
+     "does": "Boost for as long as you hold - no heat, no meter. The strafing roll is no longer on boost: since 2026-11-24 it is a vessel move on the right stick (push any way to roll that way, hold to keep rolling) that no element scales.",
      "trigger": "Hold",
      "scales": "More Time raises your boost speed.",
      "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md",
@@ -8271,8 +8280,8 @@
        "Shape it while you fire"
       ],
       [
-       "Time",
-       "Strafing roll out under boost"
+       "",
+       "Roll out on the right stick"
       ]
      ],
      "drivers": [
@@ -8320,8 +8329,8 @@
        "Afterburn on the line"
       ],
       [
-       "Time",
-       "A strafing roll past the mass at the mouth"
+       "",
+       "A right-stick roll past the mass at the mouth"
       ],
       [
        "Space",
@@ -10863,7 +10872,7 @@
    "in": "x",
    "prop": {
     "s": "add",
-    "note": "Garrett's design: every move the Goby makes is a charged launch from one perch to the next. A tap is a short hop (140 u) and a full 0.8 s charge goes 600 u; the landing is always a perch, so short hops count too. While perched, the person's two thumbs turn the hull, and the turn sets the Pistol's plane. Today the Goby cruises between perches on two-thumb flight (its AI at aiCruiseSpeed 100), only darts that end 900 u or more from the last perch make a perch, and shorter ones are dashes."
+    "note": "Built in the game on Garrett's word (1a5ece719, 2026-11-24): the Goby is pinned at every landing, the two thumbs only turn it and set the Pistol's plane, and a 140-600 u dart by charge is its only movement; the seat AI and the Perch Run and Regatta coaches turn in place and hop aside when coral blocks the line. Perch Run's reader clocks stay 36.0 / 37.8 / 36.8 / 30.5 s. The atlas still shows this as an idea: it needs the owner's develop and done to reach Now, and the Goby's Proposed combo 'Length and line' describes what now ships. Not yet flown in the Unity editor (checklist entry)."
    },
    "src": [
     "Garrett, project chat, 2026-11-24"
