@@ -4,8 +4,8 @@ label: Sparrow
 verbs:
   Time:
     ability: Afterburner
-    does: Boost for as long as you hold - no heat, no meter. Push the stick fully to one side as you start boosting and
-      the Sparrow does a quick strafing roll, even while stopped.
+    does: 'Boost for as long as you hold - no heat, no meter. The strafing roll is no longer on boost: since 2026-11-24
+      it is a vessel move on the right stick (push any way to roll that way, hold to keep rolling) that no element scales.'
     trigger: Hold
     scales: More Time raises your boost speed.
     source: Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md
@@ -97,8 +97,8 @@ combos:
   - - Mass
     - 'Turret Stance: shots become prisms'
   - [Space, Shape it while you fire]
-  - - Time
-    - Strafing roll out under boost
+  - - ''
+    - Roll out on the right stick
   drivers: [make, joy]
   feel: A wall where there was none.
   gene:
@@ -119,8 +119,8 @@ combos:
   is: Afterburn the line, roll past the mass at the mouth, cold shots clear the rest.
   chain:
   - [Time, Afterburn on the line]
-  - - Time
-    - A strafing roll past the mass at the mouth
+  - - ''
+    - A right-stick roll past the mass at the mouth
   - - Space
     - Cold shots clear the gate
   drivers: [joy, mastery]
