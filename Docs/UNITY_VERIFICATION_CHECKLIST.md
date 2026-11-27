@@ -26920,6 +26920,10 @@ Time this mode's AI at 1x.
 
 Machine side done: `SpearlineGardenTests` 8 of 8 headless, compiles in the editor, the headless ladder judge finished
 24 of 24 (Legendary 141 / 143 / 139 / 154 s, `SPEARLINE.md` 2b). Not flown in the editor.
+2026-11-27, open editor 6000.3.17f1, Ys-bleeding-edge at 0cb1aedaac: `SpearlineSealsTests`, `SpearlineRuinsTests` and
+`SpearlineGardenTests` 33 of 33 pass. AI races with the garden, 4 Swordfish AI seats, clock 1x, each ended with a winner:
+I1 129.6 s, I2 133.1 s (274 garden parts, fps mean 56, min 32), I3 118.0 s (410 parts, fps mean 57, min 41), I4 140.6 s.
+No garden part missing or off place. One boot error each, `[LaunchFlags] ... NotFound` (the backend flags). Not flown by a person.
 
 - [ ] I1: a stroke into a fuel hedge refills the ramp and you feel the speed; the hull alone passes the hedges clean.
 - [ ] I2-I4: a pillar before a seal makes you choose a dodge or a cut, and costs time either way, never a trap.
