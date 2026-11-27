@@ -27438,12 +27438,12 @@ runs (`PalisadeController.Arena.cs`) were not compiled: no Unity, Amoebius or re
 
 - [x] The project compiles; `PalisadeArenaTests` (11) pass in the editor (2026-11-27). The settings asset loads with
       its arena prism (`SpawnablePrism`).
-- [ ] One all-AI match per rung at clock 1x in the editor: tried twice at I1 with the mode smoke test (4 Legendary
-      Swordfish, 2v2), both stopped at Boot, before the menu. The editor was in the background: the first time
-      `set_autotick` was lost in the domain reload on entering Play and the offline data init timed out (5 s), and its
-      continuation then ran off the main thread (`OfflineModeService.cs:173`, FindAnyObjectByType); the second time,
-      with autotick persisted, the editor's main thread stalled 20 s at a time. Needs the editor in front (a person, or
-      the go-ahead to bring it forward), then `Logs/ModeSmoke/Palisade_I<n>_x1/summary.json`.
+- [x] One all-AI match per rung at clock 1x in the editor (2026-11-27, commit 0cb1aedaac, the editor in front, the mode
+      smoke test, 4 Legendary Swordfish AIs, 2v2): I1, I2, I3 and I4 each ran the full match (91.4, 91.6, 91.3, 91.5 s
+      of game time), all 4 seats AI and all 4 moving, the game ended and a winner was called, 0 errors and 0
+      exceptions in the match. Each summary says "failed" only for the one boot line `[boot] NotFound` (the offline UGS
+      lookup, on every smoke run). `Logs/ModeSmoke/Palisade_I<n>_x1/summary.json`. The two earlier I1 tries stopped at
+      Boot with the editor in the background (the off-main-thread boot, fixed in 23dd974a86).
 - [ ] I1: at GO three rows of 14 posts stand about 640 u out, each ending in a closed hoop of 12 shielded stones. All
       of it is the neutral (Blue) colour of the worn colour set and none of it looks flat.
 - [ ] The arena appears at GO, not during the countdown. Is that acceptable, or should it be laid earlier?

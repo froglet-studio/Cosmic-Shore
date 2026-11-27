@@ -114,8 +114,8 @@ times too high is not known; the comeback rate it sets still holds, because the 
 - Card art is rendered (`CardBackgrounds/Palisade.png`).
 - **Compiled and tested in Unity (2026-11-27, the open editor, 6000.3.17f1):** no compile errors, every Palisade type
   loads, `PalisadeLadderTests` 7 of 7 and `PalisadeArenaTests` 11 of 11 pass, and `PalisadeSettings` loads with its arena
-  prism. **Not played in Unity:** two all-AI I1 matches at clock 1x stopped at Boot because the editor was in the
-  background (the checklist says why). Nobody has flown it. The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`,
+  prism. **Played all-AI in Unity at clock 1x, I1-I4 (2026-11-27):** each rung ran its full 90 s match with 4 Legendary
+  Swordfish AIs, all 4 seats moving, a winner called, no errors in the match (the checklist). Nobody has flown it. The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`,
   "Palisade: the Swordfish's Mass game" and "Palisade's arena".
 - **2026-11-25 changes are not compiled in Unity**: the AI's team-crystal detour (3.2), `PalisadeLadderTests`, and
   the arena's laying and lane runs (`PalisadeController.Arena.cs`, section 9). The reference compile does not run on
@@ -130,7 +130,7 @@ times too high is not known; the comeback rate it sets still holds, because the 
 |---|---|---|
 | 1 fun, one intensity | built, never flown | A person's fun card. Measured, Afterimage is about 90% of the score (section 5). |
 | 2 I1-I4 | built, each rung distinct in assets and in the judge (7.1) | Nobody has seen a rung in this scene; a person's sign-off on all four. |
-| 3 AI on I1-I4 | re-judged headless with the arena, 2026-11-27 (7.1) | The editor match per rung (the checklist). |
+| 3 AI on I1-I4 | re-judged headless with the arena, 2026-11-27 (7.1) | Done: one all-AI editor match per rung at 1x, 2026-11-27 (the checklist). A person's flight. |
 
 ### 7.1 The re-judge (2026-11-27, Plan step: mass-arcade)
 
