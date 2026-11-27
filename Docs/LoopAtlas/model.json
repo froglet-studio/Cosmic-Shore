@@ -881,8 +881,8 @@
    "holes": [
     {
      "on": "n",
-     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. 2026-11-24: two more cards show it. Spearline's Legendary Swordfish AI (eda5d81aa, SPEARLINE.md) runs I1 148.5 s, I2 142.3, I3 135.2, I4 143.6, so I3 is the quickest rung, and Perch Run's reader runs 36.0, 37.8, 36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder. 2026-11-25: the new I4 ruins do not widen the gap for the AI either. Thornline's Legendary AI wins I4 in 44.5, 42.7 and 48.3 s with the ruins standing against 42.0 and 52.3 s with them cleared (f118062a8, THORNLINE.md), and five Headlong races show no cost in time (40074b262, HEADLONG.md).",
-     "fill": "Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off."
+     "q": "Nothing checks that the rungs are four steps for the fixed AI. Grizzly Time's AI (fb750ac38, GRIZZLYTIME.md, 24 courses) finishes I1 70 s, I2 72, I3 82, I4 83: the rungs come out as two pairs, so I2's level-5 start and I4's fauna add almost nothing for it. 2026-11-24: two more cards show it. Spearline's Legendary Swordfish AI (eda5d81aa, SPEARLINE.md) runs I1 148.5 s, I2 142.3, I3 135.2, I4 143.6, so I3 is the quickest rung, and Perch Run's reader runs 36.0, 37.8, 36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder. 2026-11-25: the new I4 ruins do not widen the gap for the AI either. Thornline's Legendary AI wins I4 in 44.5, 42.7 and 48.3 s with the ruins standing against 42.0 and 52.3 s with them cleared (f118062a8, THORNLINE.md), and five Headlong races show no cost in time (40074b262, HEADLONG.md). 2026-11-27: Spearline says why for a hull that cuts. Three garden changes (a longer I1 hedge, more pillars, danger pillars) moved no rung by more than the spread inside it, because the Swordfish's sword cuts any prism near the line before the hull meets it and every cut is ramp fuel: an obstacle is fuel, not a cost. The race time is set by the first lap and by Headlong's corners (c05031289, SPEARLINE.md).",
+     "fill": "Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer than about 5% as a ladder to retune before step 3 signs off. A ladder steepens through the track (a corner profile per rung, which a mode may change), never by adding prisms a vessel's kit turns into fuel."
     }
    ],
    "src": [
@@ -1087,7 +1087,7 @@
    ],
    "now": {
     "s": "built",
-    "note": "Maelstrom is always unlocked and runs as a shuffle: placement points across games, first to the target."
+    "note": "Maelstrom is always unlocked and runs as a shuffle: placement points across games, first to the target. Since 2026-11-26 the tournament seats the lobby the host built (humans plus placed AI, fixed for the whole tournament), not always four (390cee00c)."
    },
    "plan": {
     "note": "Trains for nothing downstream, by decision."
@@ -1300,6 +1300,13 @@
    "plan": {
     "note": "Balances net control of space. Each vessel's place between cultivator and destroyer is measured from play, never set."
    },
+   "holes": [
+    {
+     "on": "np",
+     "q": "Since 2026-11-26 every vessel has a role set by hand: Cultivator, Destroyer or a third, Guardian (protects allied prisms), with nine archetypes and counters, shown in the Hangar (Shombith's board, Docs/Vessels/ARCHETYPES.md, 125231223). The plan above says a vessel's place is measured, never set, and the phases have no step for guarding. Nothing says which wins when a hull's role and its measured place disagree.",
+     "fill": "Treat the board's role as the design intent and the volume judge (standing volume by trail type, e90ea20a9) as the measure. A hull whose measured place contradicts its role goes back to its redesign, and 'Guard your claim' joins the phases once a Guardian is seated."
+    }
+   ],
    "src": [
     "Docs/ArcadeRestructure/PLAN.md rulings 10 to 12",
     "Docs/ElementalLoop/PLAYBOOK.md section 1"
@@ -9486,7 +9493,7 @@
       10,
       30
      ],
-     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes)",
+     "src": "Proposed 2026-11-21 from the kit text: one combo per genome (combo genes). 2026-11-27: Palisade re-judged with its arena (07ada7c6b, PALISADE.md): afterimages are 88-91% of what stands for four Legendary Swordfish AIs on every rung, so this combo is already how the Mass game is won.",
      "is": "Light the sword by the nucleus and swing as it goes out: the afterimages are walls.",
      "chain": [
       [

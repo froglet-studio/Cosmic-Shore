@@ -114,6 +114,15 @@
   plan:
     note: Balances net control of space. Each vessel's place between cultivator and destroyer is measured from play, never
       set.
+  holes:
+  - 'on': np
+    q: 'Since 2026-11-26 every vessel has a role set by hand: Cultivator, Destroyer or a third, Guardian (protects allied
+      prisms), with nine archetypes and counters, shown in the Hangar (Shombith''s board, Docs/Vessels/ARCHETYPES.md,
+      125231223). The plan above says a vessel''s place is measured, never set, and the phases have no step for guarding.
+      Nothing says which wins when a hull''s role and its measured place disagree.'
+    fill: Treat the board's role as the design intent and the volume judge (standing volume by trail type, e90ea20a9) as
+      the measure. A hull whose measured place contradicts its role goes back to its redesign, and 'Guard your claim'
+      joins the phases once a Guardian is seated.
   src:
   - Docs/ArcadeRestructure/PLAN.md rulings 10 to 12
   - Docs/ElementalLoop/PLAYBOOK.md section 1

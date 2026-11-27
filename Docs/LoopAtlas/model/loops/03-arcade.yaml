@@ -89,9 +89,13 @@
       36.0, 37.8, 36.8, 30.5 s, so I4 is the quickest. Step 3 was recorded built on Spearline with that ladder. 2026-11-25:
       the new I4 ruins do not widen the gap for the AI either. Thornline''s Legendary AI wins I4 in 44.5, 42.7 and 48.3
       s with the ruins standing against 42.0 and 52.3 s with them cleared (f118062a8, THORNLINE.md), and five Headlong races
-      show no cost in time (40074b262, HEADLONG.md).'
+      show no cost in time (40074b262, HEADLONG.md). 2026-11-27: Spearline says why for a hull that cuts. Three garden
+      changes (a longer I1 hedge, more pillars, danger pillars) moved no rung by more than the spread inside it, because
+      the Swordfish''s sword cuts any prism near the line before the hull meets it and every cut is ramp fuel: an obstacle
+      is fuel, not a cost. The race time is set by the first lap and by Headlong''s corners (c05031289, SPEARLINE.md).'
     fill: Judge each card's ladder by the fixed AI's time per rung (regatta_judge) and flag two neighbouring rungs closer
-      than about 5% as a ladder to retune before step 3 signs off.
+      than about 5% as a ladder to retune before step 3 signs off. A ladder steepens through the track (a corner profile
+      per rung, which a mode may change), never by adding prisms a vessel's kit turns into fuel.
   src:
   - Docs/ElementalLoop/PLAYBOOK.md step 2
   - Docs/MENU_PROGRESSION_AND_IAP.md section 2b
@@ -211,7 +215,9 @@
   drivers: [crew, joy, find]
   now:
     s: built
-    note: 'Maelstrom is always unlocked and runs as a shuffle: placement points across games, first to the target.'
+    note: 'Maelstrom is always unlocked and runs as a shuffle: placement points across games, first to the target. Since
+      2026-11-26 the tournament seats the lobby the host built (humans plus placed AI, fixed for the whole tournament),
+      not always four (390cee00c).'
   plan:
     note: Trains for nothing downstream, by decision.
   src:
