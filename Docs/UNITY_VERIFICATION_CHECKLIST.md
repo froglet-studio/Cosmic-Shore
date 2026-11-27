@@ -27525,8 +27525,9 @@ Refcompile: 0 errors in project code. No Unity editor ran; `EffectiveSeatCount_I
 ## The Toy Box trail never waits on PC; only the lava lamp does (2026-11-26, claude/stoic-ptolemy-kls5cc)
 
 Refcompile: 0 errors in project code. No Unity editor ran; `DesktopAndMobileHigh_LavaLampWaits_ToyBoxTrailNeverDoes` is new and `DesktopAndMobileHigh_ChangeNothingAboutContent` (red since 2026-11-21) should be green again; neither has run.
-- [ ] Desktop, Toy Box, Squirrel: idle the gamepad and drift far from the cell for several minutes, until the `diag` overlay's **Trail > Cell prisms** row reads past 20,000 (on PC it says "(no budget)" in the Toy Box, and **Trail held** stays "no"); the trail never stops. (Caleb, 2026-11-27: trail stayed on through a long Editor session; count not yet read.) Swap to the Manta: it lays trail too.
-- [ ] Desktop, menu (lava lamp) idle 10+ minutes: its trail still stops at about 20,000 cell prisms (`diag`: **Cell prisms** shows "/ 20,000 budget", **Trail held** turns YES), and the load out of the menu stays short (B45).
+- [x] Desktop, Toy Box: fly far from the cell until the `diag` overlay's **Trail > Cell prisms** row reads past 20,000; it says "(no budget)", **Trail held** stays "no", and the trail never stops. (Caleb, 2026-11-27, Editor on PC: trail kept on to 26,000 cell prisms.)
+- [x] Desktop, back to the menu (lava lamp) with the cell over 20,000: its trail stops, **Cell prisms** shows "/ 20,000 budget" and **Trail held** turns YES. (Caleb, 2026-11-27, Editor on PC.)
+- [ ] Not yet checked: a swap to another vessel (the Manta) past 20,000 still lays trail; the load out of the menu after a long idle stays short (B45); the two `DeviceTierTests` named above pass.
 
 ## Mass-Space AI rows (2026-11-21)
 
