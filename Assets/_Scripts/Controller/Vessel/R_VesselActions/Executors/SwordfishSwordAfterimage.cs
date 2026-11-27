@@ -128,6 +128,10 @@ namespace CosmicShore.Gameplay
                 _hasLastTip = true;
                 _laidThisWindow++;
                 _nextLayAt = now + config.LayIntervalSeconds;
+
+                var laidEvent = config.AfterimageLaidEvent;
+                if (!laidEvent.IsNull && Core.AudioSystem.Instance)
+                    Core.AudioSystem.Instance.PlaySFXEvent(laidEvent, tip);
             }
         }
 

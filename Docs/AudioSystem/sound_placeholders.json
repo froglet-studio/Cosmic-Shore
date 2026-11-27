@@ -2219,6 +2219,96 @@
    "group_act": "One per tap-string combo; the plain ones are swipes, the energized ones swipes with an energy layer."
   },
   {
+   "sound": "Swordfish energize",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The blade lights (ENERGIZED), from the both-triggers stance or a surge, on every peer (ShieldSkimmerScaleDriver.SetEnergizePhase).",
+   "kind": "one-shot",
+   "placeholder": null,
+   "target": "event:/SFX/Vessels/Swordfish/Energize",
+   "brief": "The sword igniting: a rising charge that snaps into a humming, dangerous edge.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset:energizeEvent"
+   ],
+   "group": "Swordfish abilities (slots added empty, 2026-11-27)",
+   "group_act": "The Swordfish's ability moments that had no sound slot; each ships empty and silent until its target is authored."
+  },
+  {
+   "sound": "Swordfish swipe",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "A lateral sword swipe starts: a trigger crosses the engage threshold in a direction that is not recovering; not under a combo (ShieldSwipeActionExecutor).",
+   "kind": "one-shot",
+   "placeholder": null,
+   "target": "event:/SFX/Vessels/Swordfish/Swipe",
+   "brief": "A single sword swipe through water: short, fast, repeatable (it can fire several times a second when energized).",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeConfig.asset:swipeEvent"
+   ],
+   "group": "Swordfish abilities (slots added empty, 2026-11-27)",
+   "group_act": "The Swordfish's ability moments that had no sound slot; each ships empty and silent until its target is authored."
+  },
+  {
+   "sound": "Swordfish afterimage laid",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "The Mass ability lays one afterimage of the blade (after an energize, and throughout a surge; up to every 0.3 s), at the blade tip (SwordfishSwordAfterimage).",
+   "kind": "one-shot",
+   "placeholder": null,
+   "target": "event:/SFX/Vessels/Swordfish/Afterimage",
+   "brief": "A ghostly blade echo crystallising into mass: soft, short, fine to repeat in a quick run.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordAfterimageConfig.asset:afterimageLaidEvent"
+   ],
+   "group": "Swordfish abilities (slots added empty, 2026-11-27)",
+   "group_act": "The Swordfish's ability moments that had no sound slot; each ships empty and silent until its target is authored."
+  },
+  {
+   "sound": "Swordfish Surge",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "An omni crystal starts the Surge: the ring of swords rises round the hull, on every peer; not replayed when a crystal extends a running surge (ShieldSkimmerScaleDriver).",
+   "kind": "one-shot",
+   "placeholder": null,
+   "target": "event:/SFX/Vessels/Swordfish/Surge",
+   "brief": "A big power-up beat: many blades drawn at once, a swell into the eight-second frenzy.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset:surgeEvent"
+   ],
+   "group": "Swordfish abilities (slots added empty, 2026-11-27)",
+   "group_act": "The Swordfish's ability moments that had no sound slot; each ships empty and silent until its target is authored."
+  },
+  {
+   "sound": "Swordfish shield break",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "Shield Breaker (Space level 5): the energized blade pops a super-shielded prism, at the prism (ShieldSkimmerScaleDriver.NotifyPrismDestroyed).",
+   "kind": "one-shot",
+   "placeholder": null,
+   "target": "event:/SFX/Vessels/Swordfish/Shield break",
+   "brief": "Hard armour shattering under the blade: a glassy crack with a heavy body, distinct from an ordinary cut.",
+   "slots": [
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset:shieldBreakEvent"
+   ],
+   "group": "Swordfish abilities (slots added empty, 2026-11-27)",
+   "group_act": "The Swordfish's ability moments that had no sound slot; each ships empty and silent until its target is authored."
+  },
+  {
+   "sound": "Swordfish sword steal",
+   "owner": "Swordfish",
+   "tier": "P3",
+   "act": "A sword hit pockets the victim's petals (Charge level 5 unlocked), on the thief, where the steal is decided (VesselOvertakeBySkimmerEffectSO.TakeFrom). Not played when the petals are only knocked loose.",
+   "kind": "one-shot",
+   "placeholder": null,
+   "target": "event:/SFX/Vessels/Swordfish/Sword steal",
+   "brief": "A quick grab-and-pocket: the blade's hit plus a bright collect, so the thief hears they got paid.",
+   "slots": [
+    "Assets/_SO_Assets/Effects/Vessel Skimmer Effects/SwordfishSwordStealBySkimmerEffect.asset:stealEvent"
+   ],
+   "group": "Swordfish abilities (slots added empty, 2026-11-27)",
+   "group_act": "The Swordfish's ability moments that had no sound slot; each ships empty and silent until its target is authored."
+  },
+  {
    "sound": "Redline clean thread",
    "owner": "Mode Redline",
    "tier": "P3",

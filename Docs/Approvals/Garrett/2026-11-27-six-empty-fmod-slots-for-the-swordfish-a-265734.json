@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-27-six-empty-fmod-slots-for-the-swordfish-a-265734",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-27T10:00:25+00:00",
+  "area": "the Swordfish kit (sword sounds)",
+  "summary": "Six empty FMOD slots for the Swordfish abilities that had none: energize, Surge and shield break on ShieldSkimmerScaleConfig, swipe on SwordfishShieldSwipeConfig, afterimage laid on SwordfishSwordAfterimageConfig, sword steal on SwordfishSwordStealBySkimmerEffect. All ship empty and silent; no ability behaviour or number changed. Listed in sound_placeholders.json (placeholder null) with targets under SFX/Vessels/Swordfish/.",
+  "why": "The LOCKED FMOD rule: every ability moment gets its own exposed EventReference; SWORDFISH_COMPLETION.md section 2 listed these six as missing.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "56b9ada61",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleDriver.cs",
+    "Docs/AudioSystem/sound_placeholders.json"
+  ]
+}

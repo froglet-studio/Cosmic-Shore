@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using FMODUnity;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -230,6 +231,22 @@ namespace CosmicShore.Gameplay
         public float BindJiggleImpactSpeed     => Mathf.Max(0f, bindJiggleImpactSpeed);
         public float BindHapticIntervalSeconds => Mathf.Max(0.06f, bindHapticIntervalSeconds);
         public float BindHapticStrength        => Mathf.Clamp01(bindHapticStrength);
+
+        [Header("Audio")]
+        [Tooltip("FMOD event played on the blade when it ENERGIZES (lights), on every peer, whether the stance " +
+                 "or a surge lit it. Leave empty for silence.")]
+        [SerializeField] private EventReference energizeEvent;
+        [Tooltip("FMOD event played on the blade when an omni-crystal SURGE starts (the sword ring rises), on " +
+                 "every peer. Not replayed when a second crystal extends a running surge. Leave empty for silence.")]
+        [SerializeField] private EventReference surgeEvent;
+        [Tooltip("FMOD event played at the prism when the energized blade (Space level-5, Shield Breaker) POPS a " +
+                 "super-shielded prism. Every peer cuts against its own blade, so every peer hears its own pop. " +
+                 "Leave empty for silence.")]
+        [SerializeField] private EventReference shieldBreakEvent;
+
+        public EventReference EnergizeEvent    => energizeEvent;
+        public EventReference SurgeEvent       => surgeEvent;
+        public EventReference ShieldBreakEvent => shieldBreakEvent;
 
         // ApplyMaxSizeDebuff is RETIRED (Sep 2026, Docs/ELEMENTAL_ECONOMY.md §9). The Sparrow's
         // guns called it to shrink a Rhino's blade for 3s, which is taking a pilot's CONTROLS -

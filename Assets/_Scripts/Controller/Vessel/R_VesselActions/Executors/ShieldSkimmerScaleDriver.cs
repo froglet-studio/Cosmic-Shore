@@ -212,6 +212,8 @@ namespace CosmicShore.Gameplay
         public void NotifyPrismDestroyed(bool superShielded, Vector3 prismWorldPosition)
         {
             Fx?.NotifyKill(superShielded, prismWorldPosition);
+            if (superShielded && config && !config.ShieldBreakEvent.IsNull && Core.AudioSystem.Instance)
+                Core.AudioSystem.Instance.PlaySFXEvent(config.ShieldBreakEvent, prismWorldPosition);
         }
 
         public void NotifyPopDenied(Vector3 prismWorldPosition)
@@ -221,7 +223,18 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The surge's opening beat: a full flash, a whole-blade crackle and a camera shake.
         /// The ring itself fans out from <see cref="LateUpdate"/>.</summary>
-        void PlaySurgeStart() => Fx?.NotifySurge();
+        void PlaySurgeStart()
+        {
+            Fx?.NotifySurge();
+            PlayAttached(config ? config.SurgeEvent : default);
+        }
+
+        /// <summary>Plays one of the config's sword sounds on the blade. An empty slot is silent.</summary>
+        void PlayAttached(FMODUnity.EventReference sound)
+        {
+            if (sound.IsNull || !Core.AudioSystem.Instance) return;
+            Core.AudioSystem.Instance.PlaySFXEventAttached(sound, skimmerRoot ? skimmerRoot.gameObject : gameObject);
+        }
 
         SwordfishSwordFXController Fx
         {
@@ -434,6 +447,7 @@ namespace CosmicShore.Gameplay
                     // so the ignition edge re-runs the standing contacts through the same
                     // effect chains — the pop the player just paid for lands immediately.
                     RedispatchStandingBladeContacts();
+                    PlayAttached(config ? config.EnergizeEvent : default);
                     break;
             }
 

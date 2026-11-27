@@ -445,8 +445,8 @@ namespace CosmicShore.Gameplay
 
             // Track the swing/release edges off the RAW target, so suppressing a direction can
             // never make it look released and re-arm itself mid-hold.
-            UpdateSwipeEdge(ref _rightSwung, ref _rightReadyAt, diffTarget >= threshold, now);
-            UpdateSwipeEdge(ref _leftSwung, ref _leftReadyAt, -diffTarget >= threshold, now);
+            UpdateSwipeEdge(ref _rightSwung, ref _rightReadyAt, diffTarget >= threshold, now, energized);
+            UpdateSwipeEdge(ref _leftSwung, ref _leftReadyAt, -diffTarget >= threshold, now, energized);
 
             if (energized)
             {
@@ -461,8 +461,12 @@ namespace CosmicShore.Gameplay
             return diffTarget;
         }
 
-        void UpdateSwipeEdge(ref bool swung, ref float readyAt, bool engaged, float now)
+        void UpdateSwipeEdge(ref bool swung, ref float readyAt, bool engaged, float now, bool free)
         {
+            // The swing's sound: the rising edge of a direction that is free to swing (a recovering
+            // direction holds centre, so it makes no swing to hear). Sound only; the edge logic is unchanged.
+            if (engaged && !swung && (free || now >= readyAt) && _flourish == null)
+                PlaySwipeSound();
             if (engaged) swung = true;
             else if (swung)
             {
@@ -470,6 +474,13 @@ namespace CosmicShore.Gameplay
                 _lastRecoverySeconds = config.SwipeCooldownSecondsFor(_status);
                 readyAt = now + _lastRecoverySeconds;   // recovery starts on release; Time (Quickdraw) shortens it
             }
+        }
+
+        void PlaySwipeSound()
+        {
+            var sound = config.SwipeEvent;
+            if (sound.IsNull || !AudioSystem.Instance || !shieldRoot) return;
+            AudioSystem.Instance.PlaySFXEventAttached(sound, shieldRoot.gameObject);
         }
 
         float _lastRecoverySeconds;

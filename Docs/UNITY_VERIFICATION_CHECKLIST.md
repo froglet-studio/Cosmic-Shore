@@ -27535,6 +27535,16 @@ Refcompile: 0 errors in project code. No Unity editor ran; `DesktopAndMobileHigh
 - [ ] Desktop, Toy Box, Squirrel: idle the gamepad and drift far from the cell for several minutes (past 20,000 cell prisms, `diag`); the trail never stops. Swap to the Manta: it lays trail too.
 - [ ] Desktop, menu (lava lamp) idle 10+ minutes: its trail still stops at about 20,000 cell prisms, and the load out of the menu stays short (B45).
 
+## Swordfish ability sound slots, shipped empty (2026-11-27, Ys-bleeding-edge)
+
+Six new `EventReference` fields, all empty: `energizeEvent`, `surgeEvent`, `shieldBreakEvent` on `ShieldSkimmerScaleConfigSO`,
+`swipeEvent` on `SwordfishShieldSwipeConfigSO`, `afterimageLaidEvent` on `SwordfishSwordAfterimageConfigSO`, `stealEvent` on
+`VesselOvertakeBySkimmerEffectSO`. Not compiled in the Unity editor (another session held it). A Roslyn compile with Unity's own
+`Assembly-CSharp.rsp` showed no error in these files; no tests ran.
+- [ ] The editor compiles; the four assets show an "Audio" header with the empty slots (the Squirrel's joust asset shows an empty `stealEvent` too).
+- [ ] Fly the Swordfish in the Toy Box with the slots still empty: swipe, energize, a Surge, an afterimage run, a Shield Breaker pop and a sword steal; no audio errors or warnings in the console.
+- [ ] Put any banked event in each slot by hand (do not commit it): each plays once at its moment; the swipe does not play under a combo flourish or while a direction is recovering.
+
 ## Mass-Space AI rows (2026-11-21)
 
 `AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the

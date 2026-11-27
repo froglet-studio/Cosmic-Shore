@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using FMODUnity;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -129,6 +130,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Minimum seconds between overtake effects on the same vessel")]
         [SerializeField] private float cooldown = 1f;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event played on the thief when a hit STEALS (the petals are pocketed, i.e. the steal " +
+                 "upgrade is unlocked or none is needed). Not played when the petals are only knocked loose " +
+                 "(Eject). Plays where the steal is decided, the thief's owner. Each hull's asset has its own " +
+                 "slot (the Swordfish's sword steal, the Squirrel's joust). Leave empty for silence.")]
+        [SerializeField] private EventReference stealEvent;
+
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
@@ -236,9 +244,13 @@ namespace CosmicShore.Gameplay
             if (victim == null || attacker == null) return;
             float amount = -debuffMagnitude * StealScale(attacker);
             if (StealUnlocked(attacker))
+            {
                 ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, victim, attacker,
                                                         amount, Vector3.zero,
                                                         ElementalDebuffSources.VesselContact);
+                if (!stealEvent.IsNull && AudioSystem.Instance && attacker.ShipTransform)
+                    AudioSystem.Instance.PlaySFXEventAttached(stealEvent, attacker.ShipTransform.gameObject);
+            }
             else
                 ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, attacker,
                                                         amount, attacker.Course * attacker.Speed,

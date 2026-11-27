@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using FMODUnity;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -68,6 +69,12 @@ namespace CosmicShore.Gameplay
                  "replicated unlock bit (IsUpgradeActive), snapshotted per afterimage.")]
         [SerializeField] Element dangerUpgradeElement = Element.Mass;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event played at the blade each time an afterimage is laid (every peer lays its own, so " +
+                 "every peer hears it). Leave empty for silence.")]
+        [SerializeField] EventReference afterimageLaidEvent;
+
+        public EventReference AfterimageLaidEvent => afterimageLaidEvent;
         public float WindowSeconds => windowSeconds;
         public float LayIntervalSeconds => layIntervalSeconds;
         public float MinTipTravel => minTipTravel;

@@ -113,6 +113,13 @@ namespace CosmicShore.Gameplay
                  "either way. Authored by Tools/Build/author_swordfish_sword_combos.py.")]
         [SerializeField] SwordfishSwordComboLibrarySO comboLibrary;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event played on the blade when a lateral SWIPE starts: a trigger crosses the engage " +
+                 "threshold in a direction that is not recovering. Not played under a combo flourish (each combo " +
+                 "carries its own sound in the combo library). Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference swipeEvent;
+
+        public FMODUnity.EventReference SwipeEvent => swipeEvent;
         public SwordfishSwordComboLibrarySO ComboLibrary => comboLibrary;
         public SwordPoseMapping PoseMapping => poseMapping;
         public float BillSideYawDegrees => billSideYawDegrees;

@@ -45,7 +45,7 @@ Source: `Assets/Resources/ElementalAbilityMaps/Swordfish.asset` (labels, descrip
 | Authored text: labels and descriptions, ability and upgrade | built | the ability map asset |
 | Sound: 24 combo slots | placeholder | all point at `event:/SFX/Oneshots/Gameplay sfx/Skim`; listed in `Docs/AudioSystem/sound_placeholders.json` with targets `SFX/Vessels/Swordfish/Combo ...` |
 | Sound: drift release | placeholder | same ledger, target `SFX/Vessels/Swordfish/Drift release` |
-| Sound: energize, swipe, afterimage, Surge, shield break, steal | **missing** | no `EventReference` field in any Swordfish executor, config or effect except `SwordfishSwordComboLibrarySO.cs:90` |
+| Sound: energize, swipe, afterimage, Surge, shield break, steal | empty slots (2026-11-27) | `energizeEvent`/`surgeEvent`/`shieldBreakEvent` on `ShieldSkimmerScaleConfigSO`, `swipeEvent` on `SwordfishShieldSwipeConfigSO`, `afterimageLaidEvent` on `SwordfishSwordAfterimageConfigSO`, `stealEvent` on `VesselOvertakeBySkimmerEffectSO`; silent until filled; ledger targets `SFX/Vessels/Swordfish/...`; not yet compiled in the editor |
 | Engine sound | Rhino's | `Swordfish.prefab:1379` `space ship engine main Rhino` |
 | Class card, hangar art, model | built | `SO_Class_Swordfish.asset`, `Swordfish_Hangar_Preview.png`, `Swordfish.fbx` |
 | Crystal hull fusion bakes | Rhino's, stale | `SWORDFISH.md` Follow-ups |
