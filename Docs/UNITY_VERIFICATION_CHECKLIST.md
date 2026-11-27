@@ -27347,6 +27347,9 @@ is still open too.
       creatures)?
 - [x] AI seats at I1-I4, one match each with the AI on every seat: a team reaches its target on every rung (times
       above). Holding each station until arrival made every rung run past 600 s, so it was reverted.
+- [x] The 90-second targets (300 / 400 / 550 / 600), played 2026-11-27 at x1 with the AI on all 4 seats: 165 / 154 /
+      110 / 94 game seconds, every match to a winner, no match errors. `CleaveLadderTests` 21/21 and
+      `SwordfishLevelFiveGateTests` 3/3 in the same editor. I1 and I2 are still slower than the ~90 s aim.
 - [ ] Watch an AI at I1 and I2: does it cross the 2,160 arena or meander at the edge (a new station every 2 s)? At
       I3, does it turn into the cage for its team's crystal and come back out, with none left circling one?
 - [ ] A person's call on pace: the AI takes 307-465 s against a ~90 s aim (the lances did not change that), and the

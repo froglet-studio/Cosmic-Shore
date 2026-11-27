@@ -81,6 +81,13 @@ I3 161 s, I4 152 s, every match to a winner with no match errors. The x4 clock t
 the AI steer and cut worse, so every x4 number in this section overstates the pace problem by about 2x; judge pace
 at x1. Even so, I1 and I2 are still two to three times the ~90 s aim.
 
+**The 90-second targets, played** (2026-11-27, editor in front, x1, Legendary AI on all 4 seats, one seed, offline):
+300 / 400 / 550 / 600 took the AI **165 / 154 / 110 / 94 s**. Every seat moved, every match ended with a winner and
+logged no match errors (the one `[boot] NotFound` line is the offline UGS lookup, on every run). I3 and I4 land near
+90 s; I1 and I2 are still slower, so the open rungs remain the longest, the reverse of a difficulty ladder. Whether
+these are right for a person is still a playtest. The edit-mode suites `CleaveLadderTests` (21/21) and
+`SwordfishLevelFiveGateTests` (3/3) passed in the same editor.
+
 The lances do not fix the AI's pace. They are the environment a pilot reads, and whether they help a PERSON is a
 playtest.
 
