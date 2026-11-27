@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-25-palisade-s-card-seats-at-most-4-was-9-ya-71592e",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T15:09:59+00:00",
+  "area": "Palisade seat count",
+  "summary": "Palisade's card seats at most 4 (was 9): Yash's decision that every Swordfish game mode seats 4 for now. Card asset and author_palisade_assets.py; the scene already carries four AI seats.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "b1037f54e",
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Mass"
+    ]
+  }
+}

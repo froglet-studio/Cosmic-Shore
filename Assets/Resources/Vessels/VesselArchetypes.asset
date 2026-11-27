@@ -1,0 +1,176 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32e1685ec8e6490f908ecf35fc6028b5, type: 3}
+  m_Name: VesselArchetypes
+  m_EditorClassIdentifier:
+  roles:
+  - Role: 1
+    Name: Cultivator
+    Line: Increases allied prism volume
+  - Role: 2
+    Name: Destroyer
+    Line: Destroy enemy prisms
+  - Role: 3
+    Name: Guardian
+    Line: Protects allied prisms
+  archetypes:
+  - Archetype: 1
+    Name: Pumper
+    Line: Steadily create prisms at a higher rate than others.
+  - Archetype: 2
+    Name: Builder
+    Line: Creates prisms that protect fauna and other stationary prisms.
+  - Archetype: 3
+    Name: Burster
+    Line: Cause a large and quick increase in team volume to give your team an immediate boost to your score.
+  - Archetype: 4
+    Name: Sapper
+    Line: Steadily reduce enemy prisms over time.
+  - Archetype: 5
+    Name: Specialist
+    Line: "Reliably get to primary targets, counter special prisms, and prevent burst cultivation."
+  - Archetype: 6
+    Name: Nuke
+    Line: Destroy large numbers of enemy prisms all at once.
+  - Archetype: 7
+    Name: Harraser
+    Line: Use silence abilites to counteract enemy Aggressors.
+  - Archetype: 8
+    Name: Zoner
+    Line: Creates fields that prevent prism damage
+  - Archetype: 9
+    Name: Enhancer
+    Line: Buff ally prisms to protect and heal them from enemy attacks.
+  vessels:
+  - Vessel: 1
+    Archetypes:
+    - 6
+    - 1
+  - Vessel: 6
+    Archetypes:
+    - 1
+    - 7
+  - Vessel: 29
+    Archetypes:
+    - 1
+    - 9
+  - Vessel: 12
+    Archetypes:
+    - 3
+    - 2
+  - Vessel: 11
+    Archetypes:
+    - 4
+    - 7
+    - 2
+  - Vessel: 16
+    Archetypes:
+    - 4
+    - 7
+  - Vessel: 5
+    Archetypes:
+    - 4
+    - 6
+  - Vessel: 10
+    Archetypes:
+    - 5
+    - 2
+  - Vessel: 7
+    Archetypes:
+    - 2
+    - 5
+  - Vessel: 2
+    Archetypes:
+    - 6
+    - 7
+    - 1
+  - Vessel: 14
+    Archetypes:
+    - 6
+    - 1
+  - Vessel: 4
+    Archetypes:
+    - 9
+    - 3
+  - Vessel: 3
+    Archetypes:
+    - 5
+    - 4
+  - Vessel: 15
+    Archetypes:
+    - 4
+    - 6
+  - Vessel: 17
+    Archetypes:
+    - 4
+    - 7
+  - Vessel: 18
+    Archetypes:
+    - 1
+    - 4
+  - Vessel: 19
+    Archetypes:
+    - 1
+    - 4
+  - Vessel: 20
+    Archetypes:
+    - 5
+    - 4
+  - Vessel: 21
+    Archetypes:
+    - 7
+    - 4
+  - Vessel: 22
+    Archetypes:
+    - 7
+    - 4
+  - Vessel: 23
+    Archetypes:
+    - 4
+    - 1
+  - Vessel: 28
+    Archetypes:
+    - 2
+  - Vessel: 30
+    Archetypes:
+    - 4
+    - 5
+  - Vessel: 31
+    Archetypes:
+    - 5
+    - 4
+    - 7
+  counters:
+  - From: 2
+    To: 4
+  - From: 4
+    To: 1
+  - From: 2
+    To: 5
+  - From: 6
+    To: 2
+  - From: 5
+    To: 3
+  - From: 3
+    To: 6
+  - From: 4
+    To: 9
+  - From: 5
+    To: 9
+  - From: 9
+    To: 6
+  - From: 6
+    To: 8
+  - From: 8
+    To: 4
+  - From: 7
+    To: 5

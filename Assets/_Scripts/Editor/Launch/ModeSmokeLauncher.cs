@@ -249,6 +249,20 @@ namespace CosmicShore.Editor
             int next = _state.summary.modes.FindIndex(m => m.status == ModeSmokeResult.NotRun);
             if (next < 0) { Complete(); return; }
 
+            // Start refuses in Play mode, but this runs a frame later and again after every mode: Play entered in
+            // between (a person's Play button, a command from the Unity CLI) makes OpenScene below throw and leaves
+            // the run active with the offline preference overwritten. End the run with the reason instead.
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                _state.current = next;
+                _modeStartedAt = EditorApplication.timeSinceStartup;
+                var blocked = _state.summary.modes[next];
+                blocked.harnessFault = "the editor entered Play mode outside the smoke run before this mode could start";
+                Settle(blocked);
+                Complete();
+                return;
+            }
+
             _state.current = next;
             SaveState();
             var r = _state.summary.modes[next];

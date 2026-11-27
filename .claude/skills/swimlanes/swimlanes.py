@@ -422,9 +422,11 @@ def l5_rows(root):
     tool = os.path.join(root, 'Tools', 'Build', 'element_ability_table.py')
     try:
         r = subprocess.run([sys.executable, tool, '--json'], cwd=root, capture_output=True, text=True, timeout=180)
-        return json.loads(r.stdout)
+        data = json.loads(r.stdout)
     except (OSError, ValueError, subprocess.TimeoutExpired):
         return []
+    # The table printed a bare list until 2026-11-25 (da702b5333), then {"rows": [...], "kits": ...}.
+    return data.get('rows', []) if isinstance(data, dict) else data
 
 
 def unquote(v):

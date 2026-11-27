@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-both-read-element-ability-table-py-json-0a94b6",
+  "to": "Yash",
+  "by": "Caleb",
+  "date": "2026-11-26T16:39:46+00:00",
+  "area": "fleet_codex.py and vessel_mode_chart.py",
+  "summary": "Both read element_ability_table.py --json as a list; since da702b5333 (2026-11-25) it prints {rows, kits}, so they crashed. Now they accept both shapes; checked each loader returns 24 vessels.",
+  "branch": "claude/sleepy-ride-r3wozq",
+  "commit": "a8476cb81"
+}

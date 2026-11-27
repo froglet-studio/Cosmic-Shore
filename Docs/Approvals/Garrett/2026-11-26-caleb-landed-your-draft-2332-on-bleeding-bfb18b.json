@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-caleb-landed-your-draft-2332-on-bleeding-bfb18b",
+  "to": "Garrett",
+  "by": "Caleb",
+  "date": "2026-11-26T21:49:49+00:00",
+  "area": "Mass-Space AI rows (#2332, Urchin / Froglet Compute lanes)",
+  "summary": "Caleb landed your draft #2332 on bleeding-edge as your hand-off asked: merged bleeding-edge into claude/project-thread-d1elkw (conflicts in BroodJudge.cs, PackageComponents.cs and the checklist, resolved by keeping both sides), refcompile and gates run, then merged.",
+  "branch": "pr2332",
+  "commit": "b8649cfe6"
+}

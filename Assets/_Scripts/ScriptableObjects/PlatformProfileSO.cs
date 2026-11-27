@@ -90,7 +90,7 @@ namespace CosmicShore.ScriptableObjects
                  "a live mode preview lay trail as usual.")]
         [SerializeField] bool menuAutopilotLaysNoTrail;
 
-        [Tooltip("Freestyle trail, and the lava lamp's where it lays one, WAITS while the pilot's cell holds " +
+        [Tooltip("Freestyle trail (the Toy Box) WAITS while the pilot's cell holds " +
                  "more than this many live prisms (the pen lifts), and comes back down at the resume count " +
                  "below once the food web has grazed room. A spawner that waits - never a cap. 0 = the " +
                  "trail never waits.")]
@@ -99,6 +99,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The freestyle pen comes back down when the cell drops to this many live prisms " +
                  "(hysteresis under the budget above).")]
         [SerializeField, Min(0)] int freestyleCellPrismResume;
+
+        [Tooltip("The lava lamp's trail (the Menu_Main autopilot, on a tier where it lays one) WAITS while " +
+                 "its cell holds more than this many live prisms, and comes back down at the resume count " +
+                 "below. Separate from the freestyle budget: the player's own Toy Box trail never waits on a " +
+                 "tier whose freestyle budget is 0. Unbounded, the lamp's trail grew ~2,500 prisms a minute " +
+                 "and every load out of the menu froze longer the longer the menu idled (B45). 0 = never waits.")]
+        [SerializeField, Min(0)] int lavaLampCellPrismBudget;
+
+        [Tooltip("The lava lamp's pen comes back down when the cell drops to this many live prisms " +
+                 "(hysteresis under the budget above).")]
+        [SerializeField, Min(0)] int lavaLampCellPrismResume;
 
         [Tooltip("Skim Race trail cap on this tier: each vessel keeps its share of a race-wide budget " +
                  "of trail prisms; past it the OLDEST prism withers away (RaceTrailCap). An owner-" +
@@ -153,6 +164,12 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>Live cell prisms at which a waiting freestyle trail resumes.</summary>
         public int FreestyleCellPrismResume => freestyleCellPrismResume;
+
+        /// <summary>Live cell prisms above which the lava lamp's trail waits; 0 = never.</summary>
+        public int LavaLampCellPrismBudget => lavaLampCellPrismBudget;
+
+        /// <summary>Live cell prisms at which a waiting lava-lamp trail resumes.</summary>
+        public int LavaLampCellPrismResume => lavaLampCellPrismResume;
 
         /// <summary>Skim Race trail cap on this tier.</summary>
         public RaceTrailBudget SkimRaceTrail => skimRaceTrail;

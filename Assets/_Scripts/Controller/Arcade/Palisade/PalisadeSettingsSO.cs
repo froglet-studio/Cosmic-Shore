@@ -10,6 +10,11 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "PalisadeSettings", menuName = "ScriptableObjects/Arcade/PalisadeSettings")]
     public class PalisadeSettingsSO : ScriptableObject
     {
+        [Header("Arena")]
+        [Tooltip("The prism the arena's posts, frames and rubble are laid with (PalisadeArena; the environment prism " +
+                 "the other mode-laid structures use). Empty lays no arena.")]
+        public Prism arenaPrism;
+
         [Header("Elemental crystal pickups")]
         [Tooltip("Elemental crystals scattered through the cell at the start, by intensity (index = intensity - 1). A " +
                  "Mass crystal grows the afterimages (x1 -> x2.5 volume across Mass 0-10); at Mass 5 they are laid as " +
@@ -58,5 +63,13 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("A building AI detours for an elemental crystal within this distance (u).")]
         [Min(0f)] public float aiCrystalReach = 450f;
+
+        [Header("AI - lane runs")]
+        [Tooltip("A building AI has reached a lane run's point when it is within this distance (u).")]
+        [Min(10f)] public float aiLaneArriveDistance = 60f;
+
+        [Tooltip("Seconds an AI gives one leg of a lane run before it gives the lane up and takes the next (a rival's " +
+                 "wall may stand in it).")]
+        [Min(2f)] public float aiLaneLegSeconds = 16f;
     }
 }

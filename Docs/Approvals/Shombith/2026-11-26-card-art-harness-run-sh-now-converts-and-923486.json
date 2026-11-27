@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-26-card-art-harness-run-sh-now-converts-and-923486",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-26T20:37:00+00:00",
+  "area": "card art harness (/cardart)",
+  "summary": "card_art_harness/run.sh now converts and quotes the paths it hands csc and dotnet (cygpath -m when present), so /cardart renders on a Windows Git Bash machine; a no-op elsewhere. render_card_backgrounds.py --check: 90 cards match.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "57268fb3f"
+}

@@ -1,0 +1,27 @@
+{
+  "id": "2026-11-26-risky-merge-pr-2412-fix-maelstrom-the-to-932f1d",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-26T21:37:46+00:00",
+  "area": "risky merges",
+  "summary": "Risky merge PR #2412 (fix(maelstrom): the tournament seats the lobby the host built, not always four) went in without waiting for you.",
+  "why": "a swim lane someone else occupies (approvals.py check exit 2): Maelstrom",
+  "branch": "claude/optimistic-clarke-7bxd4m",
+  "pr": 2412,
+  "commit": "7165004b4",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromController.cs",
+    "Assets/_Scripts/Tests/Editor/MaelstromDataSOTests.cs",
+    "Assets/_Scripts/UI/View/ArcadeLaunch/MaelstromLaunchPanel.cs",
+    "Assets/_Scripts/Utility/DataContainers/Maelstrom/MaelstromDataSO.cs",
+    "Docs/Approvals/Yash/2026-11-26-the-tournament-field-is-now-the-lobby-th-54e3d8.json",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+  ],
+  "risky": [
+    {
+      "key": "lane",
+      "name": "a swim lane someone else occupies (approvals.py check exit 2)",
+      "detail": "Maelstrom"
+    }
+  ]
+}

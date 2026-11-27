@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-25-palisade-no-longer-plays-in-the-bare-bar-c3e092",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T16:18:44+00:00",
+  "area": "Palisade (Swordfish Mass game) arena",
+  "summary": "Palisade no longer plays in the bare Barren cell: it lays its own arena by intensity (picket lanes of posts, shielded frames at their ends, rubble), neutral Blue prisms that count for no team, and its building AI runs the lanes. Yash asked for it. Mode only, no vessel change. Layout tested headless; nothing run in Unity.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "1b7d1fc1c",
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Mass"
+    ],
+    "step": "2"
+  }
+}

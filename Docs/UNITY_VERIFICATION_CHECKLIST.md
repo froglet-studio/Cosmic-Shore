@@ -342,12 +342,73 @@ no Unity editor, so `SerpentWallSyncTests` has not run. What changed is in `R_Ve
 - [ ] An AI Serpent at Mass 8+ (crystals): its bricks are the same size on host and client.
 - [ ] Serpent Hood / Serpent Time, an AI that scopes: it never cloaks on the client while scoped on the host.
 
-## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, NOT RUN IN EDITOR)
+## 🟡 The editor's picture sticks every few seconds in Play: a session polling it with `eval` (2026-11-26, Yash, CAUSE AND "AFTER" MEASURED IN THE EDITOR; NO CODE CHANGE; NOT PLAYED BY A PERSON)
 
-Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"): one to three
-ruins a course, in Jade, Ruby and Gold. Run headless: `Tools/Build/waystation_tower_harness/run_tests.sh --self-test`
-(30 tests pass, the three ruins negative controls fire).
+**What was seen** (Yash): "a sudden screen stuck, every second of the game playing even in just lavalamp".
 
+**Cause, measured** (open editor, Play in `Menu_Main`, a per-frame sampler of `ProfilerRecorder`s, no Profiler session):
+a Spearline test script of another session ran an `eval` probe against the editor every 2 s; every `eval` compiles on
+the editor's main thread. It is not game code and a built player cannot have it (`win_pc1122c`, 2026-11-22: menu worst
+frame 45 ms, no frame over 50 ms).
+
+| Menu, editor, `Ys-bleeding-edge` | script polling (00:40) | script stopped, 2.5 min into Play | script stopped, 10 min into Play |
+|---|---|---|---|
+| frames / seconds | 1,490 / 39.6 | 3,583 / 52.9 | 2,919 / 52.9 |
+| frames over 1 s | 11 (1,197 to 1,599 ms, one every 3.6 s, 114 MB each) | 0 | 0 |
+| worst frame | 1,599 ms | 62 ms (one GC) | 62 ms |
+| fps | 37.6 | 67.8 | 55.2 |
+| median / p99 frame | 16.0 / 61.5 ms | 14.2 / 24.3 ms | 17.2 / 34.7 ms |
+| garbage per frame | 869 KB | 23 KB | 23 KB |
+
+**Fix**: the script was stopped, and a rule, not code: `Docs/unity-cli-setup.md` § "`eval` freezes the editor" and
+`CLAUDE.md` § Unity CLI verification (never `eval` in a loop; install a probe once and read its file).
+
+**Hand test** (with no session driving the editor):
+- [ ] Play, stay in the menu for a minute, then fly the lava lamp: the picture never sticks for a second.
+- [ ] Start any arcade game: the same.
+
+**Still open, found by the same sampler** (game code, Garrett's ecology; nothing changed):
+- The menu gets slower the longer it runs (67.8 fps at 2.5 min, 55.2 at 10 min, 52.5 at 12 min; 81 frames over 35 ms
+  in 44 s at 12 min). Both spikes are the menu cell's light fauna, named by their own markers in a 44 s capture 12 min
+  into Play: `LightFauna.Tick.PrismScan` (the behaviour coroutine's prism scan) 3,790 ms in 44 s, up to 53 ms a call,
+  absent at 2.5 min; and `Fauna.Light.Update` / `LightFauna.Feed` up to 36 ms in one frame, every 2 s.
+  `PrismSpatialIndex.LinearScan` 627 ms in the same 44 s.
+- Those numbers are with the editor's Code Optimization on **Debug** (C# several times slower). Not measured with the
+  editor on Release.
+- **Built player, 15 minutes in the menu** (`win_pc1122c`, 2026-11-26 01:19 to 01:43, tag `lf26a`, one run, editor out
+  of Play throughout, one capture a minute; the light fauna code has not changed since that build): the same slowdown,
+  smaller, and never a stuck picture. fps by minute: 106, 104, 99, 89, 83, 81, 88, 98, 91, 95, 87, 95, 83, 88, 85
+  (under the 100 fps target from minute 3). Frames over 50 ms: 4 in 15 minutes (worst 215 ms at minute 13, not
+  caught by a capture; 77 ms at minute 6). `LightFauna.Tick.PrismScan` worst call 1.2 ms in minute 1, 26.8 ms in
+  minute 6, 3.5 to 9.8 ms after; `LightFauna.Feed` worst 2.6 ms in minute 1, 27.3 ms in minute 6. The cell fills:
+  entities 9,733 to 24,188, memory 775 to 974 MB. Data: `A:/CosmicShoreBuild/bench_2026-11-20/phonebench_lf26a_*.jsonl`,
+  `PerfRuns/diag_lf26a`.
+- **A small exact saving in the scan is in** (`LightFauna.UpdateBehavior`, 2026-11-26; compiled in the editor, 0
+  errors; not played by a person): the creature's own position is read once per tick and each prism's once per visit
+  (it was read up to three times a prism). Same behaviour by construction. Paired in one Play session, Menu_Main,
+  9 to 12 min in, 11 light fauna, old and new alternating every 10 s, editor on Debug: 1.936 ms a scan (1,499 scans,
+  522 prisms each) against 1.646 ms (1,555 scans, 488 prisms each); per prism 3,704 ns against 3,373 ns (-9%).
+  It does NOT remove the spikes: the cost is still one visit per prism in range per creature, at about 19 scans a
+  second for 11 creatures in the menu cell. Not measured in a player.
+  - [ ] Menu and one fauna-heavy game: light fauna still graze, avoid each other and hunt as before.
+- **Tried and dropped**: taking each prism's position from `PrismSpatialIndex` instead (-34% per prism in the same
+  kind of pairing). Of 91,112 prisms sensed in 30 s, 8,031 (9%) had an index position more than 1 cm off the
+  transform, the worst 33.9 m, so it would have moved meals and separation pushes. That gap is itself a finding for
+  the index's owner: `QuerySphere` selects by those positions.
+- The measuring session ended the editor once (00:42) by switching its Profiler on from an `eval`
+  (`profiling::Profiler::EmitUIEvents`); the rule above forbids it.
+
+## 🟡 Waystation: garden ruins at I4 (2026-11-24, Yash, COMPILED IN UNITY, THREE I4 AI RACES IN THE EDITOR)
+
+Waystation lays Spearline's ruins round the Tiger Moth's flown line on I4 (WAYSTATION.md "Garden ruins"), in Jade,
+Ruby and Gold. Run headless: `Tools/Build/waystation_tower_harness/run_tests.sh --self-test` (33 tests pass, the four
+ruins negative controls fire).
+
+- [x] The AI fix (2026-11-25, drop gaps laid straight, no Drop through a ruin, steer back to the clear lane): it
+      compiled in Yash's open editor (`recompile`, no errors), `WaystationRuinsTests` 11 of 11 pass there, and one I4
+      race of three Legendary bots finished in 226 s with no hull within 12 u of a ruin prism and none broken. Before
+      the fix, two races: 214 s and 245 s, two ruin strikes in the one that was sampled. Each race is another course.
+- [ ] More I4 races: one race after the fix is not a measure of the AI's times or of how often it still touches a ruin.
 - [x] It compiles (2026-11-25): Yash's open editor compiled `Assembly-CSharp.dll` and `Assembly-CSharp-Editor.dll` at
       03:54, after every ruins source and the latest `SpearlineRuins.cs`, and both DLLs carry the ruins types and
       `WaystationRuinsTests`; Unity writes them only on a clean compile.
@@ -26913,6 +26974,16 @@ boxes above stay open: nobody watched the races or flew one, and I4's 195.9 s is
 The 195.9 s came from the 4x clock: I4 again at 1x with the same three AIs took 130.9 s (one seed), within 10% of 144 s.
 Time this mode's AI at 1x.
 
+### Spearline: the race garden by intensity (2026-11-25)
+
+Machine side done: `SpearlineGardenTests` 8 of 8 headless, compiles in the editor, the headless ladder judge finished
+24 of 24 (Legendary 141 / 143 / 139 / 154 s, `SPEARLINE.md` 2b). Not flown in the editor.
+
+- [ ] I1: a stroke into a fuel hedge refills the ramp and you feel the speed; the hull alone passes the hedges clean.
+- [ ] I2-I4: a pillar before a seal makes you choose a dodge or a cut, and costs time either way, never a trap.
+- [ ] I4: clipping a hedge's danger cap or a pillar's danger band slows you hard.
+- [ ] Hedges and pillars read as part of the course, not clutter; they grow back behind the leader.
+
 ### Spearline: the I4 garden ruins (2026-11-24)
 
 Machine side done: `SpearlineRuinsTests` 8 of 8 headless, compiles in the editor, one I4 AI race at 1x with 723 ruin
@@ -27275,6 +27346,173 @@ Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section
       (`CosmicShore.Editor.ModeSmokeLauncher.Run`): the console says "[ModeSmoke] cannot start: the editor is in Play
       mode: leave Play mode first", with no exception, and the offline preference is unchanged (`c7f4c53311`).
 
+## Bug ledger fixes (2026-11-25)
+
+Two console-error fixes from the daily sweep (`Docs/Reports/BUG_HUNT.md` section 3). Not run in the Unity editor
+(cloud sweep); `Tools/Build/unity_refcompile` reports 0 errors in project code.
+
+- [ ] Hangar, Upgrades page, with an element that has no ability on the vessel focused: convert crystals in the
+      elemental converter. The page redraws with the open-slot title, no upgrade block and no
+      `NullReferenceException` from `HangarUpgradesPage.DrawFocused` (`3f7ec9c5a4`).
+- [ ] Start the mode smoke test from the menu and press Play yourself before its first mode opens (or between two
+      modes): the run ends with the mode marked "the editor entered Play mode outside the smoke run before this mode
+      could start", no `InvalidOperationException`, and the offline preference is back to what it was (`0fe1070306`).
+
+## Palisade: the Swordfish's Mass game (2026-11-25, NEVER RUN)
+
+`Assets/_Scripts/Controller/Arcade/PALISADE.md`. The mode has never been opened in the editor. The 2026-11-25 change
+(the AI detours for its team's I3 Mass crystals, `PalisadeController.TryNearestCrystal`; `PalisadeLadderTests`) was
+not compiled: no Unity, Amoebius or reference compile ran. `author_palisade_assets.py --check` passes.
+
+- [ ] The project compiles and `PalisadeLadderTests` (7 tests) pass.
+- [ ] Palisade loads from its arcade card at I1 with two teams; the hint toast shows once; at 90 s the board shows
+      each pilot's volume and prisms and names a winner.
+- [ ] I1: energize and let go. The afterimages count in the score, and a lit run through a rival's wall cuts it and
+      leaves yours standing there.
+- [ ] I2: every hull starts at Mass 5, so the first afterimages are danger prisms and visibly bigger than I1's.
+- [ ] I3: each team has 4 Mass crystals in its own colour, only that team can take them, and they regrow. A building
+      AI turns for its own team's crystal when it passes within about 450 u, and never for a rival's.
+- [ ] I4: Mass fauna spawn in the cell's colour. Do they graze the walls outside the nucleus and leave the ones
+      inside? Do the AIs' walls (orbit at 540 u) survive, or does every AI team end near zero?
+- [ ] AI seats at I1-I4: every AI flies the whole 90 s, builds, raids when 10% behind and in the last 25 s, and the
+      sword lights on a raid. No AI circles the centre or sits still.
+- [ ] The launch panel offers at most 4 vessels (Yash, 2026-11-25: every Swordfish game seats 4 for now), and with 4
+      seated the frame rate holds with every team's walls standing.
+- [ ] A person's judgment (the fun card): does the round feel like swinging walls into place, or like laying trail?
+      Measured headless, the afterimages are about 90% of what stands at the whistle (PALISADE.md section 7.1).
+- [ ] A person's judgment: are I1-I4 four different rounds, and is I4's grazing fair to the team that is behind?
+
+## Cleave: the Swordfish's Space game (2026-11-25, Yash, COMPILED AND TESTED IN THE EDITOR, AI RAN EVERY RUNG, NOT FLOWN BY A PERSON)
+
+`Assets/_Scripts/Controller/Arcade/CLEAVE.md` ("Where Cleave stands"). The 2026-11-25 changes: the I3 and I4 team Space
+crystals are laid inside the arena (`CleaveController.CollectLadderCrystalPoints`; I3 in the cage's heart), the AI
+turns for its team's crystal on one strike in three, `CleaveLadderTests` (10 tests), the card seats exactly 4, and a
+fauna fix (`Boid.Initialize` seeds the turn target; I4 logged 8 `Quaternion.Lerp` assertions without it).
+`author_cleave_assets.py --check` and `cleave_budget.py` pass. The mode smoke test flew every rung with the Legendary
+AI on all 4 seats (time x4, one seed): every seat moved and every match ended with a winner, in 465 / 408 / 323 /
+307 game seconds (I1-I4), about four times the ~90 s target. The older list in CLEAVE.md ("In-editor verification")
+is still open too.
+
+- [x] The project compiles in the editor and `CleaveLadderTests` pass (10/10, 2026-11-25).
+- [ ] I1 (Panes), 2 teams: every seat is a Swordfish, the bill is at rest, the goal row says 950, a mullion run is
+      the best cut. Cutting a prism in your own team's colour does not score; any other colour does.
+- [ ] I2 (Swell): every hull starts at Space 5. The bill is visibly longer than at I1 and the HUD's Space card shows it.
+- [ ] I3 (Cage): each team has 4 Space crystals in its own colour INSIDE the innermost rind, none in the open space
+      round the cage; only that team can take them; one regrows about 12 s after it is taken; taking one lengthens
+      the bill.
+- [ ] I4 (Twistbands): the team crystals sit among the bands, and Space fauna hatch in the cell's colour. Do they
+      eat enough of the bands to starve a team of its 1,000? Do they crowd the frame rate (16,423 prisms plus 23
+      creatures)?
+- [x] AI seats at I1-I4, one match each with the AI on every seat: a team reaches its target on every rung (times
+      above). Holding each station until arrival made every rung run past 600 s, so it was reverted.
+- [ ] Watch an AI at I1 and I2: does it cross the 2,160 arena or meander at the edge (a new station every 2 s)? At
+      I3, does it turn into the cage for its team's crystal and come back out, with none left circling one?
+- [ ] A person's call on pace: the AI takes 307-465 s against a ~90 s aim (the lances did not change that), and the
+      dense rungs (I3, I4) finish faster than the open ones. Should the AI cut faster (step 3), or the targets come
+      down? What was tried is in CLEAVE.md ("What was tried for the AI's pace").
+- [ ] 4 seats, 2v2 and 2/1/1: the frame rate at I4, and the spawn ring seats four without overlap.
+- [ ] A person's judgment (the fun card): is cutting with the bill the fun, and does a longer bill (I2, a crystal at
+      I3) feel like the reason you win? Are the four rungs four different rounds, each harder than the last? Are
+      950 / 950 / 1,000 / 1,000 near 90 s for an experienced pilot?
+- [ ] Lances (2026-11-25, CLEAVE.md "Lances"; compiled and `CleaveLadderTests` 20/20 in the editor; the AI ran
+      every rung with them, but no person has looked): on each rung, six straight bars of small prisms on the axes.
+      They read as solid bars, not dotted; no lance prism sits inside an arena prism (look where a lance meets a
+      pane, a road, the cage and a band: a short gap is right, a crossing is not); colours cycle Jade, Ruby, Gold,
+      Blue.
+- [ ] I1: fly a lance end to end at full throttle. Does the ramp build, and do the slices keep it fed?
+- [ ] I2: the 3x3 bundle. Does the Space 5 bill cut more of it a pass than a rest bill would? Overshoot the outer
+      end on the ramp: the danger tip stops you.
+- [ ] I3: energize and fly into the heart. The super-shielded bars pop (Shield Breaker); a cold blade binds.
+- [ ] I4: the seam alternates plain and armoured segments; an energized run unzips it; the outer tip is danger.
+- [ ] A person's call: do the lances make the rungs read easier at I1 and harder at I4, and do they look good?
+
+## 2026-11-25 - Riposte (the Swordfish's Charge game): its own AI pilots, on I1-I4
+
+**What changed (Yash's Swordfish pass, `RIPOSTE.md` 3-5).** Riposte's AI seats fly `RiposteDuelist` (cut sticks for
+ramp fuel, charge through a rival and on past them, run straight out, turn back in) with a mode ramp tuning
+(`SwordfishAIBoostPolicy_Riposte`), in place of Jackstraw's hunter. `JackstrawController` gained an AI seam (its own
+behaviour unchanged). The vessel is untouched. **Verified without Unity:** the generator's `--check`,
+`riposte_harness` (the shipped `RiposteDuelTests`, 14 of 14, five negative controls), the static gates, and the
+real-game judge in Amoebius (headless, four Swordfish AIs 2v2, Easy / Medium / Legendary on I1-I4, two seeds: 24 of 24
+matches ended, 26-202 s, median 96 s). **In the open editor the same day (Unity 6000.3.17f1):** it compiles,
+`RiposteDuelTests` pass 14 of 14, and the mode smoke test played one I1 match (three Legendary AI, 2v1, clock 4x): a
+winner in 30.5 game seconds, no error in the match. Then I2-I4 at clock 1x, four AI seats 2v2, one match a cell:
+Legendary 25 / 35 / 67 s, Hard 20 / 33 / 21 s, each with a winner and no error in the match. **Not verified:** I1 at
+clock 1x, why the editor's matches are shorter than the judge's, and nobody has flown the mode.
+
+- [x] The project compiles in the editor and `RiposteDuelTests` pass (2026-11-25, 14 of 14).
+- [ ] Jackstraw (the Thresher) still plays as before: AI Threshers hunt, a match ends, Play Again works (its
+      controller's AI calls moved behind a seam).
+- [ ] Riposte I1, AI on every seat, clock 1x: the AI hulls fly long straight passes and reach a few hundred u/s (not a
+      slow knot in the middle), strikes land on both teams, and a match ends in roughly 1-3 minutes.
+- [x] Riposte I1-I4, one AI match each: each ends with a winner and no error (2026-11-25; I1 at 4x with three
+      seats, I2-I4 at 1x with four). The judge's times were 39-150 / 26-109 / 52-165 / 40-202 s; the editor's
+      were 25 / 35 / 67 s (Legendary) and 20 / 33 / 21 s (Hard) on I2-I4: shorter, which is a finding.
+- [x] Why an AI match is shorter in the editor than in the judge (2026-11-25, three probed matches): the smoke
+      test seats three teams and its host seat flies the stock autopilot at 31-47 u/s, not the mode's AI; it is
+      the hull that gets struck. The duelists flew as in the judge. `RIPOSTE.md` section 5.
+- [x] A 2v2 match of four AI seats in the editor (2026-11-27, the Lists, Hard, clock 1x; the smoke config's new
+      per-mode `Domains` override seats Riposte 2v2, read in play: two Ruby AIs against a Jade AI and the Jade host
+      seat, which now flies the duelist): I1-I4 ended with a winner in 84 / 139 / 48 / 187 game s, all four seats
+      AI and moving, no error in the match or at exit (only the Cloud Code `NotFound` at boot, plus at I1 a
+      command of mine that timed out). The judge's Hard in the Lists: 81-111 / 38-190 / 104-112 / 151-218 s.
+- [x] **The Lists, Riposte's own arena (2026-11-25, `RIPOSTE.md` section 4).** The open editor (6000.3.17f1) compiled
+      the project with `SpawnableRiposteYard`, `RiposteYard` and `RiposteLanes` (recompile up to date, no errors, the
+      types loaded).
+- [x] `RiposteYardTests` (10) and `RiposteLanesTests` (7) pass in the editor's test runner (2026-11-27, with
+      `RiposteDuelTests` 14 of 14, after the recompile that took the held-seat duelist).
+- [x] Each of the four `SpawnableRiposteYard` prefabs lays the census's prism count: 480 / 1,110 / 2,090 / 3,410
+      (2026-11-27, `GetTrailData` on each prefab in the editor; shielded 0 / 46 / 94 / 222, danger 0 / 0 / 28 / 48,
+      lanes 4 / 4 / 4 / 3, rails 16 / 12 / 8 / 3, all as the Python census).
+- [ ] Riposte I1-I4 load their own cells: straight empty lanes run from the centre clearing to a refuel clearing,
+      rails of short pickets line each lane, gates stand in the lanes from I2, red tips line the lane walls from
+      I3, the sticks round the centre are ironwood at I4; crystals float in every clearing; pilots spawn outside
+      the heap. Jackstraw's own arena is unchanged.
+- [ ] The lane-reading AI (`RiposteLanes`, 2026-11-25; not run in Unity): `RiposteLanesTests` pass (7 tests), and
+      in an I1 match with Hard or Legendary seats an AI hull can be seen flying along a rail of pickets, running
+      out to a refuel clearing, and coming back down the lane before it turns onto a rival.
+- [ ] On Linux: `bake_prism_layouts.py` and `audit_prism_clipping.py SpawnableRiposteYard` (neither runs on
+      Windows); until the bake, the game lays the yard live with a warning.
+- [ ] A person's judgment: do the lanes read as the place to wind up, can the rails be cut for fuel without
+      leaving the line, is a gate a fair obstacle at ramp speed, and does it look good (not flat, not noise)?
+- [x] A human seat the AI holds flies Riposte's duelist (2026-11-27, built as the obvious default; compiled and
+      seen armed in the editor: the smoke test's host seat read `held` and its match ended 2v2). Not yet tried:
+      a hull handed over mid-match with the AI-flies toggle, and an idle guest.
+- [ ] A sword hit scores only while the striker is the faster hull; a struck pilot is silenced and can refuel at the
+      clearing crystals; at I2 every hull starts at Charge 5; at I3 each team has its Charge crystals; at I4 the
+      fauna hatch and an unlit blade binds on ironwood.
+- [ ] A person's judgment (the fun card), flying against AI seats: is cutting sticks for fuel and then running a
+      rival through the fun? Is 6 strikes the right length? Once struck (silenced, 0.5 s sword latch), can you get
+      away, or does one lost pass lose the match?
+- [ ] A person's judgment: are the four rungs four different rounds? Late in a match, is there still enough heap left
+      to fuel the ramp (the AIs cut 140-2,800 prisms a match)?
+- [ ] AI levels: is Easy beatable by a first-time pilot and Legendary hard for a good one?
+
+## Palisade's arena: picket lanes, frames and rubble (2026-11-25, NEVER RUN)
+
+`Assets/_Scripts/Controller/Arcade/PALISADE.md` section 9. The layout is compiled and tested headless
+(`bash Tools/Build/palisade_harness/run.sh --self-test`: 11 tests, 14 negative controls). The laying and the AI's lane
+runs (`PalisadeController.Arena.cs`) were not compiled: no Unity, Amoebius or reference compile ran.
+
+- [ ] The project compiles; `PalisadeArenaTests` (11) pass in the editor.
+- [ ] I1: at GO three rows of 14 posts stand about 640 u out, each ending in a closed hoop of 12 shielded stones. All
+      of it is the neutral (Blue) colour of the worn colour set and none of it looks flat.
+- [ ] The arena appears at GO, not during the countdown. Is that acceptable, or should it be laid earlier?
+- [ ] Fly beside a row with the blade out: every post is cut without the hull touching one, the ramp winds, and the
+      sword lights by the row's end. Let go at the frame: the afterimages fall in or just past the hoop.
+- [ ] A wall in a closed frame: a rival cannot cut it from the side without two strokes on a stone.
+- [ ] I2: 10 posts a row, every 5th shielded; the hoops are open on the side facing the cell's centre.
+- [ ] I3: two rows of 8, half hoops whose two end stones are danger spikes, 10 shielded chunks in the open.
+- [ ] I4: two rows of 6, third hoops with spikes, 18 chunks of which 6 are danger.
+- [ ] No arena prism adds to any team's Volume on the board, at GO or at the whistle.
+- [ ] Building AIs run the rows and go out through the hoops, their swords light there and they leave afterimages. No
+      AI rams the posts, sticks at a frame or circles a spent lane doing nothing.
+- [ ] A raiding AI still goes for the rival's walls, not for the arena's posts.
+- [ ] Two machines: both see the same posts, hoops and chunks in the same places.
+- [ ] Play Again: the arena is cleared and laid once, not twice.
+- [ ] A person's judgment: does each piece read as help or as cost at a glance, and does I1 feel generous and I4 mean?
+- [ ] The card's background still shows the bare cell: re-run `/cardart` for Palisade.
+
 ## Photic is the default colour set again (2026-11-25)
 
 Shombith: "the default color set in the game should be photic". `ThemeManagerDataContainer.ColorSet`, `ThemeManager`'s
@@ -27326,3 +27564,38 @@ saved record at sea or away from home back home, so older saves are repaired. Th
 Refcompile: 0 errors in the changed files (the run's 30 pre-existing errors are elsewhere). No Unity editor or phone build ran.
 - [ ] Android phone build with the system auto-rotate lock ON: in the menus, turn the phone landscape and portrait; the app shell turns with it (it used to stay where the lock held it). Gameplay still locks landscape.
 - [ ] Toy Box > Vessel Changer opens with a model in the live preview (the hull you are flying, else the first hull) before anything is picked; picking a hull replaces it; Switch stays dark until a pick.
+
+## The Hangar names each vessel's role and archetypes (2026-11-26, claude/project-thread-fm5smg)
+
+Refcompile: 0 errors in the changed files (the run's 29 pre-existing errors are elsewhere). Seen in Amoebius (the kicker reads "DESTROYER · SAPPER / HARRASER / BUILDER · OWNED" on the Sparrow). No Unity editor ran, so the new edit-mode tests (`VesselArchetypesTests`) have not run.
+- [ ] Unity imports `Assets/Resources/Vessels/VesselArchetypes.asset` with no missing-script warning, and its Inspector shows roles, archetypes, 24 vessels and 12 counters.
+- [ ] Hangar: the line over each vessel's name reads its role, its archetypes primary first, then Owned / Locked (Squirrel: CULTIVATOR · PUMPER / HARRASER · OWNED). A vessel the board leaves out still reads VESSEL · OWNED.
+- [ ] Run the edit-mode tests `VesselArchetypesTests`.
+
+## The Maelstrom seats the lobby you built, not always four (2026-11-26, claude/optimistic-clarke-7bxd4m)
+
+Refcompile: 0 errors in project code. No Unity editor ran; `EffectiveSeatCount_IsTheLobbyField_CappedAtSeatCount` (MaelstromDataSOTests) is new and not yet run.
+- [ ] Solo, Maelstrom card, default lobby (you + 1 AI): the hub and every round seat exactly 2 pilots, on the domains the lobby showed (it used to pad to 4: Jade, Ruby, Gold, Ruby).
+- [ ] Solo, you on Gold, place AI on Jade and Ruby (3 seats): every round has those 3, on those domains.
+- [ ] Full lobby of 4 (any teams): unchanged, the same 4 every round. Play Again from the summary keeps the same field.
+- [ ] Two humans: one leaves mid-tournament; the next round seats an AI in their place (the field keeps its size).
+
+## The Toy Box trail never waits on PC; only the lava lamp does (2026-11-26, claude/stoic-ptolemy-kls5cc)
+
+Refcompile: 0 errors in project code. No Unity editor ran; `DesktopAndMobileHigh_LavaLampWaits_ToyBoxTrailNeverDoes` is new and `DesktopAndMobileHigh_ChangeNothingAboutContent` (red since 2026-11-21) should be green again; neither has run.
+- [ ] Desktop, Toy Box, Squirrel: idle the gamepad and drift far from the cell for several minutes (past 20,000 cell prisms, `diag`); the trail never stops. Swap to the Manta: it lays trail too.
+- [ ] Desktop, menu (lava lamp) idle 10+ minutes: its trail still stops at about 20,000 cell prisms, and the load out of the menu stays short (B45).
+
+## Mass-Space AI rows (2026-11-21)
+
+`AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the
+Meerkat, Sparrow, Stoat and Urchin AIs a learned ability cycle and steering in Mass-Space modes only; the Urchin also gets
+`UrchinAutopilotConfig_Hijack` / `_BroodRush`. Measured in Amoebius only; not run in the Unity editor. The reference
+compile has 0 errors in the changed files.
+
+- [ ] Brood Rush with AI Meerkat, Sparrow and Stoat: the Meerkat AI forms and shortens solitons, the Sparrow AI goes
+      stationary and fires its guns, the Stoat AI slings. No errors in the console when they spawn.
+- [ ] Regatta with the same hulls: their AIs fly exactly as before (no soliton, sling or stationary presses there).
+- [ ] Warren, Cave-in, Salvo, Wildlife Liberation, Fulmen, Hijack at I1 and I4: the AI plays, nothing stalls.
+- [ ] Multiplayer host with an AI Sparrow in Brood Rush: a client sees its guns fire (AI presses replicate once #2322's
+      AutopilotPressTravels lands).

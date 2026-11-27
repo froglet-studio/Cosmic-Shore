@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-25-cleave-lays-its-i3-i4-team-space-crystal-e22d7c",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-25T01:02:45+00:00",
+  "area": "Cleave and the standard element ladder's I3 crystals",
+  "summary": "Cleave lays its I3/I4 team Space crystals inside the arena (I3: the cage's heart, behind all three rinds) instead of the platform scatter, which put 58% of them outside the 720 arena; its AI turns for its team's crystal on one strike in three",
+  "why": "Yash's voyage-ready pass on the Swordfish: the Space crystal should be earned by cutting to it. Compiled outside the editor, not flown.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "d6d13bf6d",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade/CleaveController.cs"
+  ],
+  "loop": {
+    "vessels": [
+      "Swordfish"
+    ],
+    "elements": [
+      "Space"
+    ],
+    "step": "2"
+  }
+}
