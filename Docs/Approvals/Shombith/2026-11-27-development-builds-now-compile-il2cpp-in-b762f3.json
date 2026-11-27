@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-27-development-builds-now-compile-il2cpp-in-b762f3",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-27T09:56:52+00:00",
+  "area": "build pipeline (CosmicShoreBuildPipeline)",
+  "summary": "Development builds now compile IL2CPP in Release by default; -il2cppDebug opts into Debug (-il2cppRelease still accepted, no effect). A Debug IL2CPP dev build froze the menu 8-19 s a frame and Relay dropped it from every party: bisected 2026-11-27, every Release build of the same commits passed. Yash asked for the change.",
+  "branch": "Ys-bleeding-edge",
+  "commit": "cbf843196"
+}

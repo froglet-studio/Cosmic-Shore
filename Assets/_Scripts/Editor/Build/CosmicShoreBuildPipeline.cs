@@ -153,11 +153,16 @@ namespace CosmicShore.Editor
                 Debug.Log($"[Build] Scripting backend -> {backend}");
             }
 
+            // IL2CPP compiles in Release for every build, development included. A Debug IL2CPP player
+            // froze the menu for 8-19 s a frame and Relay dropped it from every party (2026-11-27,
+            // Docs/BUILD_AND_DELIVERY.md); a development build stays debuggable through its
+            // development flag. Pass -il2cppDebug to get the Debug compiler configuration on purpose.
+            // -il2cppRelease, the old opt-in, is still accepted and changes nothing.
             if (backend == ScriptingImplementation.IL2CPP)
             {
                 PlayerSettings.SetIl2CppCompilerConfiguration(
                     standalone,
-                    development && !HasFlag("-il2cppRelease") ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
+                    development && HasFlag("-il2cppDebug") ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
             }
 
             // Desktop players must never inherit the mobile "keep the screen awake" behaviour or a

@@ -55,7 +55,10 @@ define itself.
 **What the script configures**
 
 - Target `StandaloneWindows64`, IL2CPP (`--useMono` flag available for fast iteration builds)
-- IL2CPP compiler configuration: `Release` for release, `Debug` for development builds
+- IL2CPP compiler configuration: `Release` for every build, development included; `-il2cppDebug` asks for
+  `Debug` on a development build. Until 2026-11-27 development builds were `Debug` unless `-il2cppRelease` was
+  passed, and such a player froze the menu for 8-19 s a frame (GameAssembly.dll 1.26 GB against 511 MB), long
+  enough for Relay to drop it from every party. `-il2cppRelease` is still accepted and changes nothing.
 - Scripting define `WINDOWS_BUILD` (mirrors `LINUX_BUILD` on the Linux profile)
 - Desktop window behaviour: landscape, resizable, fullscreen-window default, native resolution,
   runs in background
