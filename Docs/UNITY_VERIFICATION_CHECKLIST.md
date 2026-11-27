@@ -27545,6 +27545,21 @@ Six new `EventReference` fields, all empty: `energizeEvent`, `surgeEvent`, `shie
 - [ ] Fly the Swordfish in the Toy Box with the slots still empty: swipe, energize, a Surge, an afterimage run, a Shield Breaker pop and a sword steal; no audio errors or warnings in the console.
 - [ ] Put any banked event in each slot by hand (do not commit it): each plays once at its moment; the swipe does not play under a combo flourish or while a direction is recovering.
 
+## The offline boot continues on the main thread after the data-init timeout (2026-11-27, Ys-bleeding-edge)
+
+`OfflineModeService.InitializeLocalDataAsync` waited at most 5 s for the offline data init; when that timeout fired,
+`CancelAfter`'s timer thread completed the await, and the rest of `EnterOfflineSessionAsync` (FindAnyObjectByType,
+StartHost) ran off the main thread, so the boot died in the Boot scene (seen with the editor ticking slowly in the
+background; a slow phone can hit it). The wait is now `AwaitWithTimeoutOnMainThread`, which ends in `.AsMainThread()`;
+the party-layer reset await got `.AsMainThread()` too. Two new edit-mode `[UnityTest]`s in `OfflineSessionTests`
+(timeout and finished-in-time both resume on the main thread). NOT compiled in the Unity editor and the tests NOT run
+(three other sessions held the editor). A headless Roslyn compile with Unity's own Bee response files
+(CosmicShore.Data, Assembly-CSharp, Assembly-CSharp-Editor) showed no errors. These are the first `[UnityTest]`s under
+`Assets/_Scripts`: they rely on the editor pumping Unity's SynchronizationContext between `yield return null` steps.
+- [ ] The editor compiles; Test Runner > EditMode > `OfflineSessionTests`: `DataInitTimeout_ResumesOnTheMainThread` and `DataInitFinishedInTime_ReportsTrue_OnTheMainThread` pass (each well under 5 s).
+- [ ] Negative control: remove `.AsMainThread()` from `AwaitWithTimeoutOnMainThread` and the timeout test fails; put it back.
+- [ ] Boot offline (the menu's offline toggle, or no network) with the editor in the background so the data init is slow: the menu loads; a "Offline data init timed out" warning is fine, no main-thread exception.
+
 ## Mass-Space AI rows (2026-11-21)
 
 `AIMassSpacePlanSO` (`Assets/Resources/AIMassSpacePlan.asset`, written by `Tools/Build/massspace_ai_plan.py`) gives the

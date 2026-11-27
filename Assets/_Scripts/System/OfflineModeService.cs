@@ -143,7 +143,7 @@ namespace CosmicShore.Core
             {
                 try
                 {
-                    await hcs.ResetPartyLayerAsync().AttachExternalCancellation(ct);
+                    await hcs.ResetPartyLayerAsync().AttachExternalCancellation(ct).AsMainThread();
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception e)
@@ -322,21 +322,49 @@ namespace CosmicShore.Core
             if (dataService.IsInitialized)
                 return;
 
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(DATA_INIT_TIMEOUT_SECONDS));
             try
             {
-                await dataService.InitializeOfflineAsync(timeoutCts.Token)
-                    .AsUniTask()
-                    .AttachExternalCancellation(timeoutCts.Token);
+                if (!await AwaitWithTimeoutOnMainThread(dataService.InitializeOfflineAsync,
+                        TimeSpan.FromSeconds(DATA_INIT_TIMEOUT_SECONDS), ct))
+                    CSDebug.LogWarning("[OfflineModeService] Offline data init timed out - continuing with defaults.");
             }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-            {
-                CSDebug.LogWarning("[OfflineModeService] Offline data init timed out - continuing with defaults.");
-            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception e)
             {
                 CSDebug.LogWarning($"[OfflineModeService] Offline data init failed: {e.Message} - continuing with defaults.");
+            }
+        }
+
+        /// <summary>
+        /// Awaits <paramref name="work"/> for at most <paramref name="timeout"/> and returns true when it finished in
+        /// time, false when the timeout fired. Every outcome (finished, timed out, faulted, cancelled by
+        /// <paramref name="ct"/>) resumes on Unity's MAIN THREAD.
+        ///
+        /// <para>
+        /// Why it matters: <see cref="CancellationTokenSource.CancelAfter(TimeSpan)"/> fires on a .NET timer thread, and
+        /// <c>AttachExternalCancellation</c> completes the await from that cancel callback, so before this helper the code
+        /// after a TIMEOUT ran on the timer thread. On 2026-11-27 an editor ticking slowly in the background hit the 5 s
+        /// data-init timeout, and the rest of <see cref="EnterOfflineSessionAsync"/> (FindAnyObjectByType, StartHost)
+        /// threw off the main thread: the boot died in the Boot scene before the menu. A slow phone can take the same
+        /// path. <c>.AsMainThread()</c> marshals every outcome back (Docs/claude/ARCHITECTURE_CORE.md § Threading).
+        /// </para>
+        /// </summary>
+        internal static async UniTask<bool> AwaitWithTimeoutOnMainThread(
+            Func<CancellationToken, System.Threading.Tasks.Task> work, TimeSpan timeout, CancellationToken ct)
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(timeout);
+            try
+            {
+                await work(timeoutCts.Token)
+                    .AsUniTask()
+                    .AttachExternalCancellation(timeoutCts.Token)
+                    .AsMainThread();
+                return true;
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                return false;
             }
         }
     }

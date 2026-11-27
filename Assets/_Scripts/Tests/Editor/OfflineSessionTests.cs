@@ -1,10 +1,12 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -138,6 +140,66 @@ namespace CosmicShore.Tests
 
             Assert.IsFalse(started);
             Assert.IsFalse(gameData.IsOfflineSession);
+        }
+
+        // ── The data-init timeout: the boot continues on the main thread ─────────────────
+        //
+        // CancelAfter fires on a .NET timer thread and AttachExternalCancellation completes the await
+        // from that callback, so before the fix the code after a TIMEOUT (FindAnyObjectByType,
+        // StartHost) ran off the main thread and the boot died in the Boot scene (2026-11-27, an
+        // editor ticking slowly in the background). Remove .AsMainThread() from
+        // AwaitWithTimeoutOnMainThread and the first test fails.
+
+        [UnityTest]
+        public IEnumerator DataInitTimeout_ResumesOnTheMainThread()
+        {
+            EditModeLifecycle.EnsureMainThreadDispatcherInitialized();
+            Assume.That(MainThreadDispatcher.IsOnMainThread, "the test itself must start on the main thread");
+
+            var never = new TaskCompletionSource<bool>();
+            bool? finishedInTime = null;
+            var resumedOnMainThread = false;
+
+            async UniTask Run()
+            {
+                finishedInTime = await OfflineModeService.AwaitWithTimeoutOnMainThread(
+                    _ => never.Task, TimeSpan.FromMilliseconds(50), CancellationToken.None);
+                resumedOnMainThread = MainThreadDispatcher.IsOnMainThread;
+            }
+
+            var run = Run();
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (run.Status == UniTaskStatus.Pending && DateTime.UtcNow < deadline)
+                yield return null;
+
+            Assert.AreEqual(UniTaskStatus.Succeeded, run.Status, "the timeout must end the wait, not fault or hang it");
+            Assert.AreEqual(false, finishedInTime, "a work that never finishes is reported as timed out");
+            Assert.IsTrue(resumedOnMainThread, "the code after a data-init timeout must run on Unity's main thread");
+        }
+
+        [UnityTest]
+        public IEnumerator DataInitFinishedInTime_ReportsTrue_OnTheMainThread()
+        {
+            EditModeLifecycle.EnsureMainThreadDispatcherInitialized();
+
+            bool? finishedInTime = null;
+            var resumedOnMainThread = false;
+
+            async UniTask Run()
+            {
+                finishedInTime = await OfflineModeService.AwaitWithTimeoutOnMainThread(
+                    _ => Task.CompletedTask, TimeSpan.FromSeconds(5), CancellationToken.None);
+                resumedOnMainThread = MainThreadDispatcher.IsOnMainThread;
+            }
+
+            var run = Run();
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (run.Status == UniTaskStatus.Pending && DateTime.UtcNow < deadline)
+                yield return null;
+
+            Assert.AreEqual(UniTaskStatus.Succeeded, run.Status);
+            Assert.AreEqual(true, finishedInTime);
+            Assert.IsTrue(resumedOnMainThread);
         }
 
         // ── Case 4: the network dies mid-session ─────────────────────────────────────────
