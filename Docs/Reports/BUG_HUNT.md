@@ -109,8 +109,11 @@
   E-33876f4909, E-ae8d2e4fa2) and the `launch-flags` Cloud Code 404 at sign-in (E-930ca435ca, seven machines,
   22:28 UTC; Shombith's backend deploy). No new phone session (the report still lists the 2026-11-02 one);
   `check_gamelist_scenes.py` is clean.
-- **Daily sweep, 2026-11-28 (203 branches): 415 open, 8 being checked after a fix** (423 issues, none new). One
-  issue was seen since the 11-27 sweep and it is not a fault in game code, so nothing was fixed: the `launch-flags`
+- **Daily sweep, 2026-11-28 (203 branches): 414 open, 9 being checked after a fix** (424 issues). One issue is new
+  and was already fixed, now marked (section 3): the offline boot calling `FindAnyObjectByType` off the main thread
+  after the 5 s data-init timeout (E-07a99d5bfe, Yash's machine, 2026-11-26 21:34 UTC, reached his branch after the
+  11-27 sweep; fixed in `23dd974a86` on `Ys-bleeding-edge`, not yet in `bleeding-edge`). One more was seen since the
+  11-27 sweep and it is not a fault in game code: the `launch-flags`
   Cloud Code 404 at sign-in (E-930ca435ca, seven machines, last on Caleb's at 18:29 UTC; Shombith's backend deploy).
   One issue moved from being checked back to open: the Rider folder on Yash's machine (E-15034bdc73, a sighting at
   01:07 UTC on 11-27 that reached his ledger branch after that day's sweep; Preferences > External Tools, not code).
@@ -189,6 +192,14 @@ games the daily challenge should offer is its owner's call.
    player: a machine condition, never a code fix.
 
 ## 3. Fixed
+
+### 2026-11-28 (already fixed, marked; no new code)
+
+- **E-07a99d5bfe** "FindObjectsByType can only be called from the main thread" in
+  `OfflineModeService.EnterOfflineSessionAsync` (`OfflineModeService.cs:173`): the offline data-init timeout resumed
+  the boot on a .NET timer thread. Fixed by `23dd974a86` (2026-11-27, `AwaitWithTimeoutOnMainThread`, ends in
+  `.AsMainThread()`), after this sighting; marked on `bugledger/yskha`. Not run in the editor; its checklist entry
+  is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ### 2026-11-26 (already fixed, marked; no new code)
 
@@ -453,6 +464,7 @@ This block is refreshed by `python3 Tools/Build/team_report.py area bug-hunt --w
 _Generated 2026-11-28 from git (last 14 days), who_works_where.py: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
 
 ### Recent changes (25+)
+- 2026-11-28 `1aa72c928` bugledger: E-07a99d5bfe fixed in 23dd974a86 — on another branch
 - 2026-11-27 `199aae783` bugledger: 30 open error(s) from belac's play tests, 12 report file(s) — on another branch
 - 2026-11-27 `38023c949` bugledger: 111 open error(s) from yskha's play tests, 12 report file(s) — on another branch
 - 2026-11-26 `8aaf5e9e4` bugledger: 128 open error(s) from Shombith's play tests, 12 report file(s) — on another branch
@@ -477,11 +489,10 @@ _Generated 2026-11-28 from git (last 14 days), who_works_where.py: `python3 Tool
 - 2026-11-24 `7a8c11305` bugledger: 128 open error(s) from Shombith's play tests — on another branch
 - 2026-11-24 `925c798b4` bugledger: 39 open error(s) from Will's play tests, 2 report file(s) — on another branch
 - 2026-11-24 `1e157cc93` bugledger: 39 open error(s) from Will's play tests, 1 report file(s) — on another branch
-- 2026-11-24 `a364a0c88` bugledger: 39 open error(s) from Will's play tests, 10 report file(s) — on another branch
 
 ### Also in flight on other branches
+- `bugledger/yskha` (Yash, 2026-11-28): bugledger: E-07a99d5bfe fixed in 23dd974a86
 - `bugledger/belac` (Caleb, Yash, 2026-11-27): bugledger: 30 open error(s) from belac's play tests, 12 report file(s)
-- `bugledger/yskha` (Yash, 2026-11-27): bugledger: 111 open error(s) from yskha's play tests, 12 report file(s)
 - `bugledger/shombith` (Shombith, Yash, 2026-11-27): bugledger: 128 open error(s) from Shombith's play tests, 12 report file(s)
 - `bugledger/mrglo` (jtgjones, 2026-11-26): bugledger: 24 open error(s) from mrglo's play tests, 7 report file(s)
 - `bugledger/owner` (Andrew, Yash, 2026-11-26): bugledger: E-b616bf230d fixed in e56a9f1d5d
